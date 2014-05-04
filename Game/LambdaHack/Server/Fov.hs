@@ -6,6 +6,7 @@ module Game.LambdaHack.Server.Fov
   , PersLit, litInDungeon
   ) where
 
+import Control.Arrow (second)
 import qualified Data.EnumMap.Lazy as EML
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -101,10 +102,12 @@ reachableFromActor Kind.COps{cotile, coactor=Kind.Ops{okind}}
   in PerceptionReachable
      $ fullscan cotile fovModeOrBlind (bradius body) (bpos body) lvl
 
-litByItems :: FovMode -> Level -> Point -> State -> [(ItemId, Item)] -> [Point]
+litByItems :: FovMode -> Level -> Point -> State
+           -> [(ItemId, (Item, KisOn))]
+           -> [Point]
 litByItems fovMode lvl p s iis =
   let Kind.COps{cotile} = scops s
-  in case strongestLight iis of
+  in case strongestLight $ map (second itemNoDisco) iis of
     (radius, _) : _ ->
       let scan = fullscan cotile fovMode radius p lvl
       -- Optimization: filter out positions that already have ambient light.
@@ -117,13 +120,13 @@ litOnLevel fovMode lid lvl s =
   let -- Compute positions lit by the actor. Note that the actor can be blind
       -- or a projectile, in which case he doesn't see his own light
       -- (but others, from his or other factions, possibly do).
-      eqpAssocs b = bagAssocs s $ beqp b
-      bodyAssocs b = bagAssocs s $ bbody b
+      eqpAssocs b = bagAssocsK s $ beqp b
+      bodyAssocs b = bagAssocsK s $ bbody b
       allAssocs b = eqpAssocs b ++ bodyAssocs b
       liActor b = litByItems fovMode lvl (bpos b) s (allAssocs b)
       litFromActors = concatMap liActor $ actorList (const True) lid s
       -- Compute positions lit by floor items.
-      litFloorBag (p, bag) = litByItems fovMode lvl p s (bagAssocs s bag)
+      litFloorBag (p, bag) = litByItems fovMode lvl p s (bagAssocsK s bag)
       litFromFloor = concatMap litFloorBag $ EM.assocs $ lfloor lvl
   in PerceptionLit $ ES.fromList $ litFromActors ++ litFromFloor
 

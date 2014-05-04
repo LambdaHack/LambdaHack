@@ -45,14 +45,13 @@ import Game.LambdaHack.Server.State
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
 itemEffect :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> ItemId -> ItemFull -> CStore
+           => ActorId -> ActorId -> ItemId -> ItemFull
            -> m ()
-itemEffect source target iid (item, mfull) cstore = do
+itemEffect source target iid itemFull = do
   postb <- getsState $ getActorBody source
-  case mfull of
-    Just ((ik, _), Just ItemAspectEffect{jeffects}) -> do
-      let miidCstore = Just (iid, cstore)
-      bs <- mapM (\ef -> effectSem ef source target miidCstore) jeffects
+  case itemDisco itemFull of
+    Just ItemDisco{itemKindId, itemAE=Just ItemAspectEffect{jeffects}} -> do
+      bs <- mapM (\ef -> effectSem ef source target) jeffects
       -- The effect is interesting so the item gets identified, if seen
       -- (the item was at the source actor's position, so his old position
       -- is given, since the actor and/or the item may be moved by the effect;
@@ -60,17 +59,18 @@ itemEffect source target iid (item, mfull) cstore = do
       -- but also which items they relate to, to be fully accurate).
       when (and bs) $ do
         seed <- getsServer $ (EM.! iid) . sitemSeedD
-        execUpdAtomic $ UpdDiscover (blid postb) (bpos postb) iid ik seed
-    _ -> assert `failure` (source, target, iid, (item, mfull), cstore)
+        execUpdAtomic $ UpdDiscover (blid postb) (bpos postb)
+                                    iid itemKindId seed
+    _ -> assert `failure` (source, target, iid, itemFull)
 
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.
 -- The boolean result indicates if the effect was spectacular enough
 -- for the actors to identify it (and the item that caused it, if any).
 effectSem :: (MonadAtomic m, MonadServer m)
-          => Effect.Effect Int -> ActorId -> ActorId -> Maybe (ItemId, CStore)
+          => Effect.Effect Int -> ActorId -> ActorId
           -> m Bool
-effectSem effect source target miidCstore = do
+effectSem effect source target = do
   sb <- getsState $ getActorBody source
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
   case effect of
@@ -80,7 +80,7 @@ effectSem effect source target miidCstore = do
     Effect.Mindprobe _ -> effectMindprobe source target
     Effect.Dominate | source /= target -> effectDominate execSfx source target
     Effect.Dominate ->
-      effectSem (Effect.Mindprobe undefined) source target miidCstore
+      effectSem (Effect.Mindprobe undefined) source target
     Effect.Impress -> effectImpress source target
     Effect.CallFriend p -> effectCallFriend p source target
     Effect.Summon p -> effectSummon p target

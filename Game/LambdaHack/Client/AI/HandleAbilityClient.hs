@@ -218,25 +218,28 @@ manageEqp aid = do
           let bestInv = strongestItem invAssocs $ strengthSymbol cops symbol
               bestEqp = strongestItem eqpAssocs $ strengthSymbol cops symbol
           in case (bestInv, bestEqp) of
-            (_, (_, (iidEqp, itemEqp)) : _) | harmful body itemEqp -> do
+            (_, (_, (iidEqp, itemEqp)) : _) | harmful body itemEqp ->
               -- This item is harmful to this actor, take it off.
-              let k = beqp body EM.! iidEqp
-              returN "yield harmful" $ ReqMoveItem iidEqp k CEqp CInv
-            ( (_, (iidInv, itemInv)) : _, []) | not $ harmful body itemInv ->
-              returN "wield any" $ ReqMoveItem iidInv 1 CInv CEqp
-            ((vInv, (iidInv, _)) : _, (vEqp, _) : _)
-              | vInv > vEqp ->
-              returN "wield better" $ ReqMoveItem iidInv 1 CInv CEqp
-            (_, (_, (iidEqp, _)) : _) | beqp body EM.! iidEqp > 1
-                                        && rsharedInventory -> do
+              returN "yield harmful"
+              $ ReqMoveItem iidEqp (getK bestEqp) CEqp CInv
+            ((_, (iidInv, itemInv)) : _, []) | not $ harmful body itemInv ->
+              returN "wield any"
+              $ ReqMoveItem iidInv 1 CInv CEqp
+            ((vInv, (iidInv, _)) : _, (vEqp, _) : _) | vInv > vEqp ->
+              returN "wield better"
+              $ ReqMoveItem iidInv 1 CInv CEqp
+            (_, (_, (iidEqp, _)) : _) | getK bestEqp > 1
+                                        && rsharedInventory ->
               -- To share the best items with others.
-              let k = beqp body EM.! iidEqp
-              returN "yield rest" $ ReqMoveItem iidEqp (k - 1) CEqp CInv
-            (_, _ : (_, (iidEqp, _)) : _) -> do
+              returN "yield rest"
+              $ ReqMoveItem iidEqp (getK bestEqp - 1) CEqp CInv
+            (_, _ : (_, (iidEqp, _)) : _) ->
               -- To make room in limited equipment store or to share.
-              let k = beqp body EM.! iidEqp
-              returN "yield worse" $ ReqMoveItem iidEqp k CEqp CInv
+              returN "yield worse"
+              $ ReqMoveItem iidEqp (getK bestEqp) CEqp CInv
             _ -> reject
+        getK [] = 0
+        getK ((_, (_, itemFull)) : _) = itemK itemFull
     return $ msum $ map improve ritemEqp
   else return reject
 
@@ -245,7 +248,7 @@ strengthSymbol cops c = case c of
   ')' -> strengthMelee cops
   '\"' -> strengthRegen
   '=' -> strengthStead
-  '(' -> strengthLight . fst
+  '(' -> strengthLight . itemBase
   '[' -> strengthArmor
   _ -> \_ -> []
 
@@ -253,7 +256,7 @@ harmful :: Actor -> ItemFull -> Bool
 harmful body itemFull =
   -- Fast actors want to hide in darkness to ambush opponents and want
   -- to hit hard for the short span they get to survive melee.
-  not (null (strengthLight (fst itemFull) ++ strengthArmor itemFull))
+  not (null (strengthLight (itemBase itemFull) ++ strengthArmor itemFull))
   && bspeed body > speedNormal
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
@@ -392,8 +395,8 @@ ranged aid = do
                            else ritemRanged)
                           $ Kind.stdRuleset corule
           benList <- benAvailableItems aid permitted
-          let fRanged ((mben, cstore), (iid, item)) =
-                let trange = totalRange item
+          let fRanged ((mben, cstore), (iid, ItemFull{itemBase})) =
+                let trange = totalRange itemBase
                     bestRange = chessDist bpos fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
                       10 + max 0 (10 - abs (trange - bestRange))
@@ -418,7 +421,6 @@ applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
   let mk = okind $ bkind b
       permitted | applyGroup == QuenchLight = "("
@@ -426,29 +428,29 @@ applyItem aid applyGroup = do
                 | aiq mk < 10 = "!"
                 | otherwise = "!?"  -- literacy required
   benList <- benAvailableItems aid permitted
-  let itemLegal (item, full) = case applyGroup of
+  let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
           let getP (Effect.Heal p) _ | p > 0 = True
               getP _ acc = acc
-          in case full of
-            Just (_, Just ItemAspectEffect {jeffects}) ->
+          in case itemDisco itemFull of
+            Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
               foldr getP False jeffects
             _ -> False
         QuenchLight ->
-          case strengthLight item of
-            _ : _ -> not $ jisOn item
+          case strengthLight (itemBase itemFull) of
+            _ : _ -> not $ itemIsOn itemFull
             [] -> False
         ApplyAll -> True
       coeff CBody = 3  -- never destroyed by use
       coeff CGround = 2
       coeff CEqp = 1
       coeff CInv = if applyGroup == QuenchLight then 0 else 1
-      fTool ((mben, cstore), (iid, _)) =
+      fTool ((mben, cstore), (iid, itemFull)) =
         let benR = coeff cstore
                    * case mben of
                        Nothing -> 20  -- experimenting is fun
                        Just ben -> ben
-        in if itemLegal $ itemToF iid
+        in if itemLegal itemFull
            then if benR > 0
                 then Just (benR, ReqApply iid cstore)
                 else if applyGroup == QuenchLight

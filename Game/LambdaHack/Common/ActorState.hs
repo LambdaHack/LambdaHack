@@ -4,15 +4,18 @@
 module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocsLvl, actorAssocs, actorList
   , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList
-  , bagAssocs, calculateTotal, sharedInv, sharedAllOwned, sharedAllOwnedFid
-  , getInvBag, getCBag, getActorBag, getCAssocs, getActorAssocs
+  , bagAssocs, bagAssocsK, calculateTotal
+  , sharedInv, sharedAllOwned, sharedAllOwnedFid
+  , getInvBag, getCBag, getActorBag, getActorAssocs
   , nearbyFreePoints, whereTo, getCarriedAssocs
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, isSpawnFaction
-  , itemPrice, calmEnough, regenHPPeriod, regenCalmDelta, actorInDark, dispEnemy
+  , itemPrice, calmEnough, regenHPPeriod, regenCalmDelta
+  , actorShines, actorInAmbient, dispEnemy
   , totalRange, fullAssocs, itemToFull
   ) where
 
+import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
@@ -98,6 +101,11 @@ bagAssocs s bag =
   let iidItem iid = (iid, getItemBody iid s)
   in map iidItem $ EM.keys bag
 
+bagAssocsK :: State -> ItemBag -> [(ItemId, (Item, KisOn))]
+bagAssocsK s bag =
+  let iidItem (iid, kIsOn) = (iid, (getItemBody iid s, kIsOn))
+  in map iidItem $ EM.assocs bag
+
 -- | Finds an actor at a position on the current level.
 posToActor :: Point -> LevelId -> State
            -> Maybe ((ActorId, Actor), [(ItemId, Item)])
@@ -133,27 +141,31 @@ nearbyFreePoints f start lid s =
 calculateTotal :: Actor -> State -> (ItemBag, Int)
 calculateTotal body s =
   let bag = sharedAllOwned body s
-      items = map (\(iid, k) -> (getItemBody iid s, k))
+      items = map (\(iid, (k, _)) -> (getItemBody iid s, k))
               $ EM.assocs bag
   in (bag, sum $ map itemPrice items)
+
+addKIsOn :: KisOn -> KisOn -> KisOn
+addKIsOn (k1, _) (k2, _) = ((k1 + k2), True)
 
 sharedInv :: Actor -> State -> ItemBag
 sharedInv body s =
   let bs = fidActorNotProjList (bfid body) s
-  in EM.unionsWith (+) $ map binv $ if null bs then [body] else bs
+  in EM.unionsWith addKIsOn $ map binv $ if null bs then [body] else bs
 
 sharedEqp :: Actor -> State -> ItemBag
 sharedEqp body s =
   let bs = fidActorNotProjList (bfid body) s
-  in EM.unionsWith (+) $ map beqp $ if null bs then [body] else bs
+  in EM.unionsWith addKIsOn $ map beqp $ if null bs then [body] else bs
 
 sharedAllOwned :: Actor -> State -> ItemBag
-sharedAllOwned body s = EM.unionWith (+) (sharedInv body s) (sharedEqp body s)
+sharedAllOwned body s =
+  EM.unionWith addKIsOn (sharedInv body s) (sharedEqp body s)
 
 sharedAllOwnedFid :: FactionId -> State -> ItemBag
 sharedAllOwnedFid fid s =
   let bs = fidActorNotProjList fid s
-  in EM.unionsWith (+) $ map binv bs ++ map beqp bs
+  in EM.unionsWith addKIsOn $ map binv bs ++ map beqp bs
 
 -- | Price an item, taking count into consideration.
 itemPrice :: (Item, Int) -> Int
@@ -213,7 +225,7 @@ getActorBody aid s =
 
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =
-  bagAssocs s $ EM.unionsWith (+) [binv b, beqp b, bbody b]
+  bagAssocs s $ EM.unionsWith (const) [binv b, beqp b, bbody b]
 
 getInvBag :: Actor -> State -> ItemBag
 getInvBag b s =
@@ -236,11 +248,11 @@ getActorBag aid cstore s =
     CGround -> sdungeon s EM.! blid b `atI` bpos b
     CBody -> bbody b
 
-getCAssocs :: Container -> State -> [(ItemId, Item)]
-getCAssocs c s = bagAssocs s $ getCBag c s
-
 getActorAssocs :: ActorId -> CStore -> State -> [(ItemId, Item)]
 getActorAssocs aid cstore s = bagAssocs s $ getActorBag aid cstore s
+
+getActorAssocsK :: ActorId -> CStore -> State -> [(ItemId, (Item, KisOn))]
+getActorAssocsK aid cstore s = bagAssocsK s $ getActorBag aid cstore s
 
 -- | Checks if the actor is present on the current level.
 -- The order of argument here and in other functions is set to allow
@@ -294,17 +306,19 @@ regenCalmDelta b allAssocs s =
      then min calmIncr maxDeltaCalm
      else -1  -- even if all calmness spent, keep informing the client
 
-actorInDark :: Actor -> State -> Bool
-actorInDark b s =
+actorShines :: Actor -> State -> Bool
+actorShines b s =
+  let eqpAssocs = bagAssocsK s $ beqp b
+      bodyAssocs = bagAssocsK s $ bbody b
+      floorAssocs = bagAssocsK s $ sdungeon s EM.! blid b `atI` bpos b
+  in not $ null (strongestLight $ map (second itemNoDisco)
+                 $ eqpAssocs ++ bodyAssocs ++ floorAssocs)
+
+actorInAmbient :: Actor -> State -> Bool
+actorInAmbient b s =
   let Kind.COps{cotile} = scops s
       lvl = (EM.! blid b) . sdungeon $ s
-      eqpAssocs = bagAssocs s $ beqp b
-      bodyAssocs = bagAssocs s $ bbody b
-      floorAssocs = getCAssocs (CFloor (blid b) (bpos b)) s
-  in not (Tile.isLit cotile (lvl `at` bpos b))
-     && null (strongestLight eqpAssocs)
-     && null (strongestLight bodyAssocs)
-     && null (strongestLight floorAssocs)
+  in Tile.isLit cotile (lvl `at` bpos b)
 
 -- TODO: base on items not/not only on iq.
 -- Check whether an actor can be displaced by an enemy. Generally, heroes can
@@ -332,14 +346,18 @@ fullAssocs :: Kind.COps -> Discovery -> DiscoAE
            -> ActorId -> [CStore] -> State
            -> [(ItemId, ItemFull)]
 fullAssocs cops disco discoAE aid cstores s =
-  let allAssocs :: [(ItemId, Item)]
-      allAssocs = concatMap (\cstore -> getActorAssocs aid cstore s) cstores
-      iToFull (iid, item) = (iid, itemToFull cops disco discoAE iid item)
+  let allAssocs = concatMap (\cstore -> getActorAssocsK aid cstore s) cstores
+      iToFull (iid, (item, kIsOn)) =
+        (iid, itemToFull cops disco discoAE iid item kIsOn)
   in map iToFull allAssocs
 
-itemToFull :: Kind.COps -> Discovery -> DiscoAE -> ItemId -> Item -> ItemFull
-itemToFull Kind.COps{coitem=Kind.Ops{okind}} disco discoAE iid item =
-  let full = case EM.lookup (jkindIx item) disco of
+itemToFull :: Kind.COps -> Discovery -> DiscoAE -> ItemId -> Item -> KisOn
+           -> ItemFull
+itemToFull Kind.COps{coitem=Kind.Ops{okind}}
+           disco discoAE iid itemBase itemKisOn =
+  let itemDisco = case EM.lookup (jkindIx itemBase) disco of
         Nothing -> Nothing
-        Just ik -> Just ((ik, okind ik), EM.lookup iid discoAE)
-  in (item, full)
+        Just itemKindId -> Just ItemDisco{ itemKindId
+                                         , itemKind = okind itemKindId
+                                         , itemAE = EM.lookup iid discoAE }
+  in ItemFull {..}

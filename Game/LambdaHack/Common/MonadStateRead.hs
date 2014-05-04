@@ -48,8 +48,8 @@ actorInvs iid k aid = do
       takeFromInv n ((aid2, b2) : as) =
         case EM.lookup iid $ binv b2 of
           Nothing -> takeFromInv n as
-          Just m -> let ck = min n m
-                    in (ck, aid2) : takeFromInv (n - ck) as
+          Just (m, _) -> let ck = min n m
+                         in (ck, aid2) : takeFromInv (n - ck) as
   b <- getsState $ getActorBody aid
   as <- getsState $ fidActorNotProjAssocs (bfid b)
   return $ takeFromInv k $ (aid, b) : filter ((/= aid) . fst) as

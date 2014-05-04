@@ -194,7 +194,7 @@ fullAssocsClient aid cstores = do
   discoAE <- getsClient sdiscoAE
   getsState $ fullAssocs cops disco discoAE aid cstores
 
-itemToFullClient :: MonadClient m => m (ItemId -> ItemFull)
+itemToFullClient :: MonadClient m => m (ItemId -> KisOn -> ItemFull)
 itemToFullClient = do
   cops <- getsState scops
   disco <- getsClient sdisco

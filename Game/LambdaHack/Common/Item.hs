@@ -15,7 +15,8 @@ module Game.LambdaHack.Common.Item
   , strongestRegen, strongestStead, strongestLight
     -- * Item discovery types
   , ItemKindIx, Discovery, DiscoRev, serverDiscos
-  , ItemSeed, ItemSeedDict, ItemAspectEffect(..), DiscoAE, ItemFull
+  , ItemSeed, ItemSeedDict, ItemAspectEffect(..), DiscoAE
+  , KisOn, ItemFull(..), ItemDisco(..), itemK, itemIsOn, itemNoDisco
     -- * The @FlavourMap@ type
   , FlavourMap, emptyFlavourMap, dungeonFlavourMap
     -- * Inventory management types
@@ -94,9 +95,31 @@ instance Hashable.Hashable ItemAspectEffect
 -- The full map is known by the server.
 type DiscoAE = EM.EnumMap ItemId ItemAspectEffect
 
-type ItemFull = ( Item
-                , Maybe ( (Kind.Id ItemKind, ItemKind)
-                        , Maybe ItemAspectEffect ) )
+type KisOn = (Int, Bool)
+
+data ItemDisco = ItemDisco
+  { itemKindId :: Kind.Id ItemKind
+  , itemKind   :: ItemKind
+  , itemAE     :: Maybe ItemAspectEffect
+  }
+  deriving Show
+
+data ItemFull = ItemFull
+  { itemBase  :: Item
+  , itemKisOn :: KisOn
+  , itemDisco :: Maybe ItemDisco
+  }
+  deriving Show
+
+itemK :: ItemFull -> Int
+itemK = fst . itemKisOn
+
+itemIsOn :: ItemFull -> Bool
+itemIsOn = snd . itemKisOn
+
+itemNoDisco :: (Item, KisOn) -> ItemFull
+itemNoDisco (itemBase, itemKisOn) =
+  ItemFull {itemBase, itemKisOn, itemDisco=Nothing}
 
 -- | Game items in actor possesion or strewn around the dungeon.
 -- The fields @jsymbol@, @jname@ and @jflavour@ make it possible to refer to
@@ -110,7 +133,6 @@ data Item = Item
   , jflavour :: !Flavour       -- ^ individual flavour
   , jfeature :: ![IF.Feature]  -- ^ other properties
   , jweight  :: !Int           -- ^ weight in grams, obvious enough
-  , jisOn    :: !Bool          -- ^ the item is turned on
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -148,7 +170,6 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
           _ -> flavour EM.! ikChosen
       jfeature = ifeature kind
       jweight = iweight kind
-      jisOn = True
   in Item{..}
 
 -- | Generate an item based on level.
@@ -218,7 +239,7 @@ dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
   liftM (FlavourMap . fst) $
     ofoldrWithKey rollFlavourMap (return (EM.empty, S.fromList stdFlav))
 
-type ItemBag = EM.EnumMap ItemId Int
+type ItemBag = EM.EnumMap ItemId KisOn
 
 -- | All items in the dungeon (including in actor inventories),
 -- indexed by item identifier.
@@ -230,7 +251,8 @@ type ItemKnown = (Item, ItemAspectEffect)
 -- in bijection.
 type ItemRev = HM.HashMap ItemKnown ItemId
 
-strongestItem :: Ord b => [(ItemId, a)] -> (a -> [b]) -> [(b, (ItemId, a))]
+strongestItem :: Ord b => [(ItemId, ItemFull)] -> (ItemFull -> [b])
+              -> [(b, (ItemId, ItemFull))]
 strongestItem is p =
   let pv (iid, item) = map (\v -> (v, (iid, item))) (p item)
       pis = concatMap pv is
@@ -238,30 +260,32 @@ strongestItem is p =
 
 strengthAspect :: (Aspect Int -> [b]) -> ItemFull -> [b]
 strengthAspect f itemFull =
-  case itemFull of
-    (_, Just (_, Just ItemAspectEffect{jaspects})) -> concatMap f jaspects
-    (_, Just ((_, ItemKind{iaspects}), Nothing)) ->
+  case itemDisco itemFull of
+    Just ItemDisco{itemAE = Just ItemAspectEffect{jaspects}} ->
+      concatMap f jaspects
+    Just ItemDisco{itemKind=ItemKind{iaspects}} ->
       -- Default for unknown power is 999 to encourage experimenting.
       let trav x = St.evalState (aspectTrav x (return . const 999)) ()
       in concatMap f $ map trav iaspects
-    (_, Nothing) -> []
+    Nothing -> []
 
 strengthEffect :: (Effect Int -> [b]) -> ItemFull -> [b]
 strengthEffect f itemFull =
-  case itemFull of
-    (_, Just (_, Just ItemAspectEffect{jeffects})) -> concatMap f jeffects
-    (_, Just ((_, ItemKind{ieffects}), Nothing)) ->
+  case itemDisco itemFull of
+    Just ItemDisco{itemAE = Just ItemAspectEffect{jeffects}} ->
+      concatMap f jeffects
+    Just ItemDisco{itemKind=ItemKind{ieffects}} ->
       -- Default for unknown power is 999 to encourage experimenting.
       let trav x = St.evalState (effectTrav x (return . const 999)) ()
       in concatMap f $ map trav ieffects
-    (_, Nothing) -> []
+    Nothing -> []
 
 strengthFeature :: (IF.Feature -> [b]) -> Item -> [b]
 strengthFeature f item = concatMap f (jfeature item)
 
 strengthMelee :: Kind.COps -> ItemFull -> [Int]
-strengthMelee Kind.COps{corule} itemFull@(item, _) =
-  if jsymbol item `elem` ritemMelee (Kind.stdRuleset corule)
+strengthMelee Kind.COps{corule} itemFull =
+  if jsymbol (itemBase itemFull) `elem` ritemMelee (Kind.stdRuleset corule)
   then let p (Hurt d k) = [floor (Dice.meanDice d) + k]
            p _ = []
        in strengthEffect p itemFull
@@ -270,7 +294,7 @@ strengthMelee Kind.COps{corule} itemFull@(item, _) =
 strongestSword :: Kind.COps -> [(ItemId, ItemFull)]
                -> [(Int, (ItemId, ItemFull))]
 strongestSword cops is =
-  strongestItem (filter (jisOn . fst . snd) is) (strengthMelee cops)
+  strongestItem (filter (itemIsOn . snd) is)  (strengthMelee cops)
 
 strengthArmor :: ItemFull -> [Int]
 strengthArmor =
@@ -279,7 +303,7 @@ strengthArmor =
   in strengthAspect p
 
 strongestShield :: [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestShield is = strongestItem (filter (jisOn . fst . snd) is) strengthArmor
+strongestShield is = strongestItem (filter (itemIsOn . snd) is) strengthArmor
 
 strengthRegen :: ItemFull -> [Int]
 strengthRegen =
@@ -288,7 +312,7 @@ strengthRegen =
   in strengthAspect p
 
 strongestRegen :: [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestRegen is = strongestItem (filter (jisOn . fst . snd) is) strengthRegen
+strongestRegen is = strongestItem (filter (itemIsOn . snd) is) strengthRegen
 
 strengthStead :: ItemFull -> [Int]
 strengthStead =
@@ -297,7 +321,7 @@ strengthStead =
   in strengthAspect p
 
 strongestStead :: [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestStead is = strongestItem (filter (jisOn . fst . snd) is) strengthStead
+strongestStead is = strongestItem (filter (itemIsOn . snd) is) strengthStead
 
 strengthLight :: Item -> [Int]
 strengthLight =
@@ -305,8 +329,9 @@ strengthLight =
       p _ = []
   in strengthFeature p
 
-strongestLight :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
-strongestLight is = strongestItem (filter (jisOn . snd) is) strengthLight
+strongestLight :: [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
+strongestLight is =
+  strongestItem (filter (itemIsOn . snd) is) (strengthLight . itemBase)
 
 isFragile :: Item -> Bool
 isFragile item =
@@ -343,35 +368,35 @@ strengthToThrow item =
 
 -- | The part of speech describing the item.
 partItem :: ItemFull -> (MU.Part, MU.Part)
-partItem (item, mfull) =
-  let genericName = jname item
-  in case mfull of
+partItem itemFull =
+  let genericName = jname $ itemBase itemFull
+  in case itemDisco itemFull of
     Nothing ->
-      let flav = flavourToName $ jflavour item
+      let flav = flavourToName $ jflavour $ itemBase itemFull
       in (MU.Text $ flav <+> genericName, "")
     Just _ ->
-      let effTs = textAllAE (item, mfull)
+      let effTs = textAllAE itemFull
           effectText = case filter (not . T.null) effTs of
             [] -> ""
             [effT] -> effT
             [effT1, effT2] -> effT1 <+> "and" <+> effT2
             _ -> "of many effects"
-          turnedOff | jisOn item = ""
+          turnedOff | itemIsOn itemFull = ""
                     | otherwise = "{OFF}"  -- TODO: mark with colour
       in (MU.Text genericName, MU.Text $ effectText <+> turnedOff)
 
 textAllAE :: ItemFull -> [Text]
-textAllAE (item, mfull) =
-  case mfull of
+textAllAE ItemFull{itemBase, itemDisco} =
+  case itemDisco of
     Nothing -> [""]
-    Just ((_, kind), miae) -> case miae of
+    Just ItemDisco{itemKind, itemAE} -> case itemAE of
       Just ItemAspectEffect{jaspects, jeffects} ->
         map aspectToSuffix jaspects
         ++ map effectToSuffix jeffects
-        ++ map IF.featureToSuff (jfeature item)
-      Nothing -> map kindAspectToSuffix (iaspects kind)
-                 ++ map kindEffectToSuffix (ieffects kind)
-                 ++ map IF.featureToSuff (jfeature item)
+        ++ map IF.featureToSuff (jfeature itemBase)
+      Nothing -> map kindAspectToSuffix (iaspects itemKind)
+                 ++ map kindEffectToSuffix (ieffects itemKind)
+                 ++ map IF.featureToSuff (jfeature itemBase)
 
 partItemWs :: Int -> ItemFull -> MU.Part
 partItemWs count itemFull =
@@ -393,6 +418,6 @@ itemDesc :: ItemFull -> Text
 itemDesc itemFull =
   let (name, stats) = partItem itemFull
       nstats = makePhrase [name, stats MU.:> ":"]
-  in case itemFull of
-    (_, Nothing) -> nstats <+> "This item is as unremarkable as can be."
-    (_, Just ((_, kind), _)) -> nstats <+> idesc kind
+  in case itemDisco itemFull of
+    Nothing -> nstats <+> "This item is as unremarkable as can be."
+    Just ItemDisco{itemKind} -> nstats <+> idesc itemKind

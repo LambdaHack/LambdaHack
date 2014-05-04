@@ -216,12 +216,13 @@ moveItemHuman cLegalRaw toCStore verbRaw auto = do
          else getAnyItem verb cLegalRaw cLegal True True
   itemToF <- itemToFullClient
   case ggi of
-    Right ((iid, _), (k, fromCStore)) -> do
-      let msgAndSer = do
+    Right ((iid, itemFull), fromCStore) -> do
+      let (k, isOn) = itemKisOn itemFull
+          msgAndSer = do
             subject <- partAidLeader leader
             msgAdd $ makeSentence
               [ MU.SubjectVerbSg subject verb
-              , partItemWs k (itemToF iid) ]
+              , partItemWs k (itemToF iid (k, isOn)) ]
             return $ Right $ ReqMoveItem iid k fromCStore toCStore
       if fromCStore /= CGround then msgAndSer  -- slot already assigned
       else do
@@ -307,13 +308,14 @@ projectEps ts tpos eps = do
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      p item = let trange = totalRange item
-               in (jsymbol item `elem` triggerSyms || triggerSyms == [' '])
-                  && jisOn item
-                  && trange >= chessDist (bpos sb) tpos
+      p item (_, isOn) =
+        let trange = totalRange item
+        in (jsymbol item `elem` triggerSyms || triggerSyms == [' '])
+           && isOn
+           && trange >= chessDist (bpos sb) tpos
   ggi <- getGroupItem p object1 verb1 cLegal cLegal
   case ggi of
-    Right ((iid, _), (_, fromCStore)) -> do
+    Right ((iid, _), fromCStore) -> do
       return $ Right $ ReqProject tpos eps iid fromCStore
     Left slides -> return $ Left slides
 
@@ -339,10 +341,10 @@ applyHuman ts = do
         [] -> ("activate", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      p item = jsymbol item `elem` triggerSyms
+      p item _ = jsymbol item `elem` triggerSyms
   ggi <- getGroupItem p object1 verb1 cLegalRaw cLegal
   case ggi of
-    Right ((iid, _), (_, fromCStore)) -> do
+    Right ((iid, _), fromCStore) -> do
       return $ Right $ ReqApply iid fromCStore
     Left slides -> return $ Left slides
 

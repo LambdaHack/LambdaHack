@@ -100,7 +100,7 @@ memberCycleHuman = memberCycle True
 memberBackHuman :: MonadClientUI m => m Slideshow
 memberBackHuman = memberBack True
 
--- * DscribeItem
+-- * DescribeItem
 
 -- | Display items from a given container store and describe the chosen one.
 describeItemHuman :: MonadClientUI m => CStore -> m Slideshow
@@ -118,7 +118,7 @@ describeItemHuman cstore = do
       verb = "describe"
   ggi <- getStoreItem invBlurb stdBlurb verb cstore
   case ggi of
-    Right ((iid, _), _) -> promptToSlideshow $ itemDesc (itemToF iid)
+    Right ((iid, _), _) -> promptToSlideshow $ itemDesc (itemToF iid (1, True))
     Left slides -> return slides
 
 -- * AllOwned

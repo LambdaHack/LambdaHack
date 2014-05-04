@@ -260,7 +260,7 @@ drawLeaderStatus waitT width = do
            ahpS, bhpS, acalmS, bcalmS) =
             let b@Actor{bkind, bhp, bcalm} = getActorBody leader s
                 ActorKind{ahp, acalm} = okind bkind
-            in ( actorInDark b s
+            in ( not (actorShines b s || actorInAmbient b s)
                , braced b, regenHPPeriod b allAssocs s, bcalmDelta b
                , tshow (Dice.maxDice ahp), tshow bhp
                , tshow (Dice.maxDice acalm), tshow bcalm )
@@ -301,16 +301,16 @@ drawLeaderDamage width = do
                        -> Maybe (Dice.Dice, a)
                   getP (Effect.Hurt dice p) _ = Just (dice, p)
                   getP _ acc = acc
-                  (mdice, mbonus) = case itemFull of
-                    (_, Just (_, Just ItemAspectEffect{jeffects})) ->
+                  (mdice, mbonus) = case itemDisco itemFull of
+                    Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
                       case foldr getP Nothing jeffects of
                           Just (dice, p) -> (Just dice, Just p)
                           Nothing -> (Nothing, Nothing)
-                    (_, Just ((_, kind), Nothing)) ->
-                      case foldr getP Nothing (ieffects kind) of
+                    Just ItemDisco{itemKind} ->
+                      case foldr getP Nothing (ieffects itemKind) of
                         Just (dice, _) -> (Just dice, Nothing)
                         Nothing -> (Nothing, Nothing)
-                    (_, Nothing) -> (Nothing, Nothing)
+                    Nothing -> (Nothing, Nothing)
               in case mdice of
                 Nothing -> "???"
                 Just dice ->

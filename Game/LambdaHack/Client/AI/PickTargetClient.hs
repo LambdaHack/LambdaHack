@@ -103,13 +103,16 @@ targetStrategy oldLeader aid = do
         targetableMelee body || targetableRangedOrSpecial body
       nearbyFoes = filter (targetableEnemy . snd) allFoes
       unknownId = ouniqGroup "unknown space"
-      itemUsefulness iid = case maxUsefulness cops b  (itemToF iid) of
-        Just v -> v
-        Nothing -> 30  -- experimenting is fun
-      desirableItem iid item k | fightsSpawners = itemUsefulness iid /= 0
-                                              || itemPrice (item, k) > 0
-                               | otherwise = itemUsefulness iid /= 0
-      desirableBag bag = any (\(iid, k) -> desirableItem iid (itemD EM.! iid) k)
+      itemUsefulness iid kIsOn =
+        case maxUsefulness cops b (itemToF iid kIsOn) of
+          Just v -> v
+          Nothing -> 30  -- experimenting is fun
+      desirableItem iid item kIsOn@(k, _)
+        | fightsSpawners = itemUsefulness iid kIsOn /= 0
+                           || itemPrice (item, k) > 0
+        | otherwise = itemUsefulness iid kIsOn /= 0
+      desirableBag bag = any (\(iid, kIsOn) ->
+                               desirableItem iid (itemD EM.! iid) kIsOn)
                          $ EM.assocs bag
       desirable (_, (_, Nothing)) = True
       desirable (_, (_, Just bag)) = desirableBag bag

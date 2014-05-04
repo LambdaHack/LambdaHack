@@ -191,7 +191,7 @@ reqMelee source target iid = do
     -- Deduct a hitpoint for a pierce of a projectile.
     when (bproj sb) $ execUpdAtomic $ UpdHealActor source (-1)
     -- Msgs inside itemEffect describe the target part.
-    itemEffect source target iid (itemToF iid) CEqp
+    itemEffect source target iid (itemToF iid (1, True))  -- don't spam with OFF
     -- The only way to start a war is to slap an enemy. Being hit by
     -- and hitting projectiles count as unintentional friendly fire.
     let friendlyFire = bproj sb || bproj tb
@@ -363,24 +363,19 @@ reqApply aid iid cstore = do
         -- This is OK, because we don't remove the item type
         -- from the item dictionary, just an individual copy from the container.
         item <- getsState $ getItemBody iid
-        let itemFull = itemToF iid
+        bag <- getsState $ getActorBag aid cstore
+        let (k, isOn) = bag EM.! iid
+            itemFull = itemToF iid (k, isOn)
             consumable = IF.Consumable `elem` jfeature item
         if consumable then do
           -- TODO: don't destroy if not really used up; also, don't take time?
           cs <- actorConts iid 1 aid cstore
-          mapM_ (\(_, c) -> execUpdAtomic $ UpdDestroyItem iid item 1 c) cs
-          execSfxAtomic $ SfxActivate aid iid 1
-          itemEffect aid aid iid itemFull cstore
-        else do
-          let itemNew = item {jisOn = not $ jisOn item}
-          bag <- getsState $ getActorBag aid cstore
-          seed <- getsServer $ (EM.! iid) . sitemSeedD
-          let k = bag EM.! iid
-              container = CActor aid cstore
-          execUpdAtomic $ UpdLoseItem iid item k container
-          void $ registerItem (itemNew,
-                               fromJust $ snd $ fromJust $ snd itemFull)
-                              seed k container True
+          mapM_ (\(_, c) -> execUpdAtomic
+                            $ UpdDestroyItem iid item (1, isOn) c) cs
+          execSfxAtomic $ SfxActivate aid iid (1, isOn)
+          itemEffect aid aid iid itemFull
+        else
+          execUpdAtomic $ UpdMoveItem iid k aid cstore isOn cstore (not isOn)
       req = ReqApply iid cstore
   if cstore /= CInv then applyItem
   else do
@@ -419,7 +414,7 @@ triggerEffect aid feats = do
           F.Cause ef -> do
             -- No block against tile, hence unconditional.
             execSfxAtomic $ SfxTrigger aid tpos feat
-            void $ effectSem ef aid aid Nothing
+            void $ effectSem ef aid aid
             return True
           _ -> return False
   goes <- mapM triggerFeat feats

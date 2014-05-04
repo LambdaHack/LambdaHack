@@ -92,8 +92,9 @@ dropAllItems aid b hit = do
   itemToF <- itemToFullServer
   let container = CActor aid CEqp
       loseInv = do
-        let g iid k = execUpdAtomic
-                      $ UpdMoveItem iid k aid CInv CEqp
+        let g iid (k, _) = do
+              mvCmd <- generalMoveItem iid k (CActor aid CInv) (CActor aid CEqp)
+              mapM_ execUpdAtomic mvCmd
         mapActorInv_ g b
   if not rsharedInventory then loseInv
   else do
@@ -101,26 +102,28 @@ dropAllItems aid b hit = do
     case gleader fact of
       Nothing -> loseInv
       Just leader -> do
-        let g iid k = do
+        let g iid (k, _) = do
               upds <- generalMoveItem iid k (CActor aid CInv)
                                             (CActor leader CInv)
               mapM_ execUpdAtomic upds
         mapActorInv_ g b
   let isDestroyed item = hit || bproj b && isFragile item
-      f iid k = do
+      f iid kIsOn = do
         item <- getsState $ getItemBody iid
-        let itemFull = itemToF iid
+        let itemFull = itemToF iid kIsOn
         if isDestroyed item then do
           let expl = groupsExplosive itemFull
           unless (null expl) $ do
-            let ik = fst $ fst $ fromJust $ snd itemFull
+            let ik = itemKindId $ fromJust $ itemDisco itemFull
             seed <- getsServer $ (EM.! iid) . sitemSeedD
             execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik seed
           -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
-          execUpdAtomic $ UpdLoseItem iid item k container
+          execUpdAtomic $ UpdLoseItem iid item kIsOn container
           forM_ expl $ explodeItem aid b
-        else
-          execUpdAtomic $ UpdMoveItem iid k aid CEqp CGround
+        else do
+          mvCmd <- generalMoveItem iid (fst kIsOn) (CActor aid CEqp)
+                                                   (CActor aid CGround)
+          mapM_ execUpdAtomic mvCmd
   mapActorEqp_ f b
 
 explodeItem :: (MonadAtomic m, MonadServer m)
@@ -135,9 +138,9 @@ explodeItem aid b cgroup = do
   (itemKnown, seed, n1) <-
     rndToAction $ newItem coitem flavour discoRev itemFreq (blid b) ldepth depth
   let container = CActor aid CEqp
-  iid <- registerItem itemKnown seed n1 container False
+  iid <- registerItem itemKnown seed (n1, True) container False
   let Point x y = bpos b
-      projectN k100 n = when (n > 7) $ do
+      projectN k100 (n, _) = when (n > 7) $ do
         -- We pick a point at the border, not inside, to have a uniform
         -- distribution for the points the line goes through at each distance
         -- from the source. Otherwise, e.g., the points on cardinal
@@ -165,5 +168,5 @@ explodeItem aid b cgroup = do
     maybe skip (projectN k100) mn2
   bag3 <- getsState $ beqp . getActorBody aid
   let mn3 = EM.lookup iid bag3
-  maybe skip (\k -> execUpdAtomic
-                    $ UpdLoseItem iid (fst itemKnown) k container) mn3
+  maybe skip (\kIsOn -> execUpdAtomic
+                    $ UpdLoseItem iid (fst itemKnown) kIsOn container) mn3

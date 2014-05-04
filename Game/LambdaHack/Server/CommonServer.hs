@@ -92,12 +92,13 @@ revealItems :: (MonadAtomic m, MonadServer m)
 revealItems mfid mbody = do
   itemToF <- itemToFullServer
   dungeon <- getsState sdungeon
-  let discover b iid _numPieces =
-        case itemToF iid of
-          (_, Just ((ik, _), _)) -> do
+  let discover b iid kIsOn =
+        let itemFull = itemToF iid kIsOn
+        in case itemDisco itemFull of
+          Just ItemDisco{itemKindId} -> do
             seed <- getsServer $ (EM.! iid) . sitemSeedD
-            execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik seed
-          iF -> assert `failure` (mfid, mbody, iid, iF)
+            execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid itemKindId seed
+          _ -> assert `failure` (mfid, mbody, iid, itemFull)
       f aid = do
         b <- getsState $ getActorBody aid
         let ourSide = maybe True (== bfid b) mfid
@@ -192,15 +193,15 @@ electLeader fid lid aidDead = do
       execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 
 registerItem :: (MonadAtomic m, MonadServer m)
-             => ItemKnown -> ItemSeed -> Int -> Container -> Bool -> m ItemId
-registerItem itemKnown@(item, iae) seed k container verbose = do
+             => ItemKnown -> ItemSeed -> KisOn -> Container -> Bool -> m ItemId
+registerItem itemKnown@(item, iae) seed kIsOn container verbose = do
   itemRev <- getsServer sitemRev
   let cmd = if verbose then UpdCreateItem else UpdSpotItem
   case HM.lookup itemKnown itemRev of
     Just iid -> do
       -- TODO: try to avoid this case for createItems,
       -- to make items more interesting
-      execUpdAtomic $ cmd iid item k container
+      execUpdAtomic $ cmd iid item kIsOn container
       return iid
     Nothing -> do
       icounter <- getsServer sicounter
@@ -209,7 +210,7 @@ registerItem itemKnown@(item, iae) seed k container verbose = do
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
             , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
             , sdiscoAE = EM.insert icounter iae (sdiscoAE ser)}
-      execUpdAtomic $ cmd icounter item k container
+      execUpdAtomic $ cmd icounter item kIsOn container
       return $! icounter
 
 createItems :: (MonadAtomic m, MonadServer m)
@@ -224,7 +225,7 @@ createItems n pos lid = do
   replicateM_ n $ do
     (itemKnown, seed, k) <-
       rndToAction $ newItem coitem flavour discoRev litemFreq lid ldepth depth
-    void $ registerItem itemKnown seed k container True
+    void $ registerItem itemKnown seed (k, True) container True
 
 projectFail :: (MonadAtomic m, MonadServer m)
             => ActorId    -- ^ actor projecting the item (is on current lvl)
@@ -284,7 +285,10 @@ projectBla source pos rest iid cstore = do
   unless (bproj sb) $ execSfxAtomic $ SfxProject source iid
   addProjectile pos rest iid lid (bfid sb) time
   cs <- actorConts iid 1 source cstore
-  mapM_ (\(_, c) -> execUpdAtomic $ UpdLoseItem iid item 1 c) cs
+  mapM_ (\(_, c) -> do
+          bag <- getsState $ getCBag c
+          let kIsOn = bag EM.! iid
+          execUpdAtomic $ UpdLoseItem iid item kIsOn c) cs
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
@@ -298,13 +302,13 @@ addProjectile bpos rest iid blid bfid btime = do
       adj | trange < 5 = "falling"
           | otherwise = "flying"
       -- Not much detail about a fast flying item.
-      (object1, object2) = partItem (item, Nothing)
+      (object1, object2) = partItem $ itemNoDisco (item, (1, True))
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       dirTrajectory = take trange $ pathToTrajectory (bpos : rest)
       kind = okind $ projectileKindId coactor
       m = actorTemplate (projectileKindId coactor) (asymbol kind) name "it"
                         (acolor kind) speed 0 maxBound (Just dirTrajectory)
-                        bpos blid btime bfid (EM.singleton iid 1) True
+                        bpos blid btime bfid (EM.singleton iid (1, True)) True
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execUpdAtomic $ UpdCreateActor acounter m [(iid, item)]
@@ -317,7 +321,7 @@ fullAssocsServer aid cstores = do
   discoAE <- getsServer sdiscoAE
   getsState $ fullAssocs cops disco discoAE aid cstores
 
-itemToFullServer :: MonadServer m => m (ItemId -> ItemFull)
+itemToFullServer :: MonadServer m => m (ItemId -> KisOn -> ItemFull)
 itemToFullServer = do
   cops <- getsState scops
   disco <- getsServer sdisco

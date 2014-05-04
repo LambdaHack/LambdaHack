@@ -56,88 +56,95 @@ updateFaction fid f = do
   modifyState $ updateFactionD $ EM.alter alt fid
 
 insertItemContainer :: MonadStateWrite m
-                    => ItemId -> Int -> Container -> m ()
-insertItemContainer iid k c = case c of
-  CFloor lid pos -> insertItemFloor iid k lid pos
-  CActor aid store -> insertItemActor iid k aid store
+                    => ItemId -> Int -> Container -> Bool -> m ()
+insertItemContainer iid k c isOn = case c of
+  CFloor lid pos -> insertItemFloor iid k lid pos isOn
+  CActor aid store -> insertItemActor iid k aid store isOn
 
 insertItemFloor :: MonadStateWrite m
-                => ItemId -> Int -> LevelId -> Point -> m ()
-insertItemFloor iid k lid pos =
-  let bag = EM.singleton iid k
-      mergeBag = EM.insertWith (EM.unionWith (+)) pos bag
+                => ItemId -> Int -> LevelId -> Point -> Bool -> m ()
+insertItemFloor iid k lid pos isOn =
+  let bag = EM.singleton iid (k, isOn)
+      mergeBag = EM.insertWith (EM.unionWith (addKCheck)) pos bag
   in updateLevel lid $ updateFloor mergeBag
 
 insertItemActor :: MonadStateWrite m
-                => ItemId -> Int -> ActorId -> CStore -> m ()
-insertItemActor iid k aid cstore = case cstore of
+                => ItemId -> Int -> ActorId -> CStore -> Bool -> m ()
+insertItemActor iid k aid cstore isOn = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
-    insertItemFloor iid k (blid b) (bpos b)
-  CEqp -> insertItemEqp iid k aid
-  CInv -> insertItemInv iid k aid
-  CBody -> insertItemBody iid k aid
+    insertItemFloor iid k (blid b) (bpos b) isOn
+  CEqp -> insertItemEqp iid k aid isOn
+  CInv -> insertItemInv iid k aid isOn
+  CBody -> insertItemBody iid k aid isOn
 
-insertItemEqp :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
-insertItemEqp iid k aid = do
-  let bag = EM.singleton iid k
-      upd = EM.unionWith (+) bag
+insertItemEqp :: MonadStateWrite m => ItemId -> Int -> ActorId -> Bool -> m ()
+insertItemEqp iid k aid isOn = do
+  let bag = EM.singleton iid (k, isOn)
+      upd = EM.unionWith (addKCheck) bag
   updateActor aid $ \b -> b {beqp = upd (beqp b)}
 
-insertItemInv :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
-insertItemInv iid k aid = do
-  let bag = EM.singleton iid k
-      upd = EM.unionWith (+) bag
+insertItemInv :: MonadStateWrite m => ItemId -> Int -> ActorId -> Bool -> m ()
+insertItemInv iid k aid isOn = do
+  let bag = EM.singleton iid (k, isOn)
+      upd = EM.unionWith (addKCheck) bag
   updateActor aid $ \b -> b {binv = upd (binv b)}
 
-insertItemBody :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
-insertItemBody iid k aid = do
-  let bag = EM.singleton iid k
-      upd = EM.unionWith (+) bag
+insertItemBody :: MonadStateWrite m => ItemId -> Int -> ActorId -> Bool -> m ()
+insertItemBody iid k aid isOn = do
+  let bag = EM.singleton iid (k, isOn)
+      upd = EM.unionWith (addKCheck) bag
   updateActor aid $ \b -> b {bbody = upd (bbody b)}
 
+addKCheck :: KisOn -> KisOn -> KisOn
+addKCheck (k1, kIsOn1) (k2, kIsOn2) =
+  assert (kIsOn1 == kIsOn2) (k1 + k2, kIsOn1)
+
 deleteItemContainer :: MonadStateWrite m
-                    => ItemId -> Int -> Container -> m ()
-deleteItemContainer iid k c = case c of
-    CFloor lid pos -> deleteItemFloor iid k lid pos
-    CActor aid store -> deleteItemActor iid k aid store
+                    => ItemId -> Int -> Container -> Bool -> m ()
+deleteItemContainer iid k c isOn = case c of
+    CFloor lid pos -> deleteItemFloor iid k lid pos isOn
+    CActor aid store -> deleteItemActor iid k aid store isOn
 
 deleteItemFloor :: MonadStateWrite m
-                => ItemId -> Int -> LevelId -> Point -> m ()
-deleteItemFloor iid k lid pos =
+                => ItemId -> Int -> LevelId -> Point -> Bool -> m ()
+deleteItemFloor iid k lid pos isOn =
   let rmFromFloor (Just bag) =
-        let nbag = rmFromBag k iid bag
+        let nbag = rmFromBag k iid bag isOn
         in if EM.null nbag then Nothing else Just nbag
       rmFromFloor Nothing = assert `failure` "item already removed"
                                    `twith` (iid, k, lid, pos)
   in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
 
-deleteItemActor :: MonadStateWrite m => ItemId -> Int -> ActorId -> CStore -> m ()
-deleteItemActor iid k aid cstore = case cstore of
+deleteItemActor :: MonadStateWrite m
+                => ItemId -> Int -> ActorId -> CStore -> Bool -> m ()
+deleteItemActor iid k aid cstore isOn = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
-    deleteItemFloor iid k (blid b) (bpos b)
-  CEqp -> deleteItemEqp iid k aid
-  CInv -> deleteItemInv iid k aid
-  CBody -> deleteItemBody iid k aid
+    deleteItemFloor iid k (blid b) (bpos b) isOn
+  CEqp -> deleteItemEqp iid k aid isOn
+  CInv -> deleteItemInv iid k aid isOn
+  CBody -> deleteItemBody iid k aid isOn
 
-deleteItemEqp :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
-deleteItemEqp iid k aid = do
-  updateActor aid $ \b -> b {beqp = rmFromBag k iid (beqp b)}
+deleteItemEqp :: MonadStateWrite m => ItemId -> Int -> ActorId -> Bool -> m ()
+deleteItemEqp iid k aid isOn = do
+  updateActor aid $ \b -> b {beqp = rmFromBag k iid (beqp b) isOn}
 
-deleteItemInv :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
-deleteItemInv iid k aid = do
-  updateActor aid $ \b -> b {binv = rmFromBag k iid (binv b)}
+deleteItemInv :: MonadStateWrite m => ItemId -> Int -> ActorId -> Bool -> m ()
+deleteItemInv iid k aid isOn = do
+  updateActor aid $ \b -> b {binv = rmFromBag k iid (binv b) isOn}
 
-deleteItemBody :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
-deleteItemBody iid k aid = do
-  updateActor aid $ \b -> b {bbody = rmFromBag k iid (bbody b)}
+deleteItemBody :: MonadStateWrite m => ItemId -> Int -> ActorId -> Bool -> m ()
+deleteItemBody iid k aid isOn = do
+  updateActor aid $ \b -> b {bbody = rmFromBag k iid (bbody b) isOn}
 
-rmFromBag :: Int -> ItemId -> ItemBag -> ItemBag
-rmFromBag k iid bag =
+rmFromBag :: Int -> ItemId -> ItemBag -> Bool -> ItemBag
+rmFromBag k iid bag isOn =
   let rfb Nothing = assert `failure` "rm from empty bag" `twith` (k, iid, bag)
-      rfb (Just n) = case compare n k of
-        LT -> assert `failure` "rm more than there is" `twith` (n, k, iid, bag)
-        EQ -> Nothing
-        GT -> Just (n - k)
+      rfb (Just (n, isOnOld)) = assert (isOnOld == isOn) $
+        case compare n k of
+          LT -> assert `failure` "rm more than there is"
+                       `twith` (n, k, iid, bag)
+          EQ -> Nothing
+          GT -> Just (n - k, isOn)
   in EM.alter rfb iid bag

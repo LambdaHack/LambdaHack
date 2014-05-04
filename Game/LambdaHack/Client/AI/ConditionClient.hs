@@ -141,7 +141,7 @@ condCanProjectM aid = do
 
 benAvailableItems :: MonadClient m
                   => ActorId -> [Char]
-                  -> m [((Maybe Int, CStore), (ItemId, Item))]
+                  -> m [((Maybe Int, CStore), (ItemId, ItemFull))]
 benAvailableItems aid permitted = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   itemToF <- itemToFullClient
@@ -152,10 +152,12 @@ benAvailableItems aid permitted = do
         fromMaybe (assert `failure` "item body not found"
                           `twith` (iid, itemD)) $ EM.lookup iid itemD
       ben cstore bag =
-        [ ((benefit, cstore), (iid, item))
-        | (iid, item) <- map (\iid -> (iid, getItemB iid))
-                         $ EM.keys bag
-        , let benefit = maxUsefulness cops b (itemToF iid)
+        [ ((benefit, cstore), (iid, itemFull))
+        | (iid, item, kIsOn) <-
+             map (\(iid, kIsOn) -> (iid, getItemB iid, kIsOn))
+             $ EM.assocs bag
+        , let itemFull = itemToF iid kIsOn
+        , let benefit = maxUsefulness cops b itemFull
         , benefit /= Just 0
         , jsymbol item `elem` permitted ]
   floorBag <- getsState $ getActorBag aid CGround
@@ -189,19 +191,20 @@ benGroundItems aid = do
   let desirableItem item use k
         | fightsSpawners = use /= Just 0 || itemPrice (item, k) > 0
         | otherwise = use /= Just 0
-      mapDesirable (iid, k) = let item = itemD EM.! iid
-                                  use = maxUsefulness cops body (itemToF iid)
-                                  value = fromMaybe 5 use  -- experimenting fun
-                              in if desirableItem item use k
-                                 then Just ((value, k), (iid, item))
-                                 else Nothing
+      mapDesirable (iid, (k, isOn)) =
+        let item = itemD EM.! iid
+            use = maxUsefulness cops body (itemToF iid  (k, isOn))
+            value = fromMaybe 5 use  -- experimenting fun
+        in if desirableItem item use k
+           then Just ((value, k), (iid, item))
+           else Nothing
   return $ reverse $ sort $ mapMaybe mapDesirable $ EM.assocs floorItems
     -- keep it lazy
 
 maxUsefulness :: Kind.COps -> Actor -> ItemFull -> Maybe Int
 maxUsefulness cops body itemFull = do
-  case itemFull of
-    (_, Just (_, Just ItemAspectEffect{jaspects, jeffects})) ->
+  case itemDisco itemFull of
+    Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
       case map (Effect.TimedAspect 99) jaspects ++ jeffects of
         [] -> Just 0
         effs -> Just $ maximumBy (comparing abs)
@@ -229,16 +232,11 @@ condMeleeBadM aid = do
 -- Checks whether the actor stands in the dark, but is betrayed by a light,
 condLightBetraysM :: MonadClient m => ActorId -> m Bool
 condLightBetraysM aid = do
-  Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody aid
-  lvl <- getLevel $ blid b
-  eqpAss <- getsState $ getActorAssocs aid CEqp
-  bodyAssocs <- getsState $ getActorAssocs aid CBody
-  floorAss <- getsState $ getActorAssocs aid CGround
-  return $! not (Tile.isLit cotile (lvl `at` bpos b))     -- in the dark
-            && (not (null (strongestLight eqpAss))  -- betrayed
-                || not (null (strongestLight bodyAssocs))
-                || not (null (strongestLight floorAss)))
+  aShines <- getsState $ actorShines b
+  aInAmbient<- getsState $ actorInAmbient b
+  return $! not aInAmbient  -- tile is dark, so actor could hide
+            && aShines      -- but actor betrayed by his light
 
 fleeList :: MonadClient m => ActorId -> m [(Int, Point)]
 fleeList aid = do

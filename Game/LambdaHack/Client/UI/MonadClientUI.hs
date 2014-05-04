@@ -309,9 +309,9 @@ targetDesc target = do
           lvl <- getLevel lid
           case EM.assocs $ lvl `atI` p of
             [] -> return $! "exact spot" <+> (T.pack . show) p
-            [(iid, k)] -> do
+            [(iid, (k, isOn))] -> do
               itemToF <- itemToFullClient
-              let (name, stats) = partItem (itemToF iid)
+              let (name, stats) = partItem (itemToF iid (k, isOn))
               return $! makePhrase $ if k == 1
                                      then [name, stats]  -- "a sword" too wordy
                                      else [MU.CarWs k name, stats]

@@ -52,17 +52,17 @@ data UpdAtomic =
   -- Create/destroy actors and items.
     UpdCreateActor !ActorId !Actor ![(ItemId, Item)]
   | UpdDestroyActor !ActorId !Actor ![(ItemId, Item)]
-  | UpdCreateItem !ItemId !Item !Int !Container
-  | UpdDestroyItem !ItemId !Item !Int !Container
+  | UpdCreateItem !ItemId !Item !KisOn !Container
+  | UpdDestroyItem !ItemId !Item !KisOn !Container
   | UpdSpotActor !ActorId !Actor ![(ItemId, Item)]
   | UpdLoseActor !ActorId !Actor ![(ItemId, Item)]
-  | UpdSpotItem !ItemId !Item !Int !Container
-  | UpdLoseItem !ItemId !Item !Int !Container
+  | UpdSpotItem !ItemId !Item !KisOn !Container
+  | UpdLoseItem !ItemId !Item !KisOn !Container
   -- Move actors and items.
   | UpdMoveActor !ActorId !Point !Point
   | UpdWaitActor !ActorId !Bool
   | UpdDisplaceActor !ActorId !ActorId
-  | UpdMoveItem !ItemId !Int !ActorId !CStore !CStore
+  | UpdMoveItem !ItemId !Int !ActorId !CStore !Bool !CStore !Bool
   -- Change actor attributes.
   | UpdAgeActor !ActorId !(Delta Time)
   | UpdHealActor !ActorId !Int
@@ -112,8 +112,8 @@ data SfxAtomic =
   | SfxRecoil !ActorId !ActorId !ItemId !HitAtomic
   | SfxProject !ActorId !ItemId
   | SfxCatch !ActorId !ItemId
-  | SfxActivate !ActorId !ItemId !Int
-  | SfxCheck !ActorId !ItemId !Int
+  | SfxActivate !ActorId !ItemId !KisOn
+  | SfxCheck !ActorId !ItemId !KisOn
   | SfxTrigger !ActorId !Point !F.Feature
   | SfxShun !ActorId !Point !F.Feature
   | SfxEffect !FactionId !ActorId !(Effect.Effect Int)
@@ -133,16 +133,17 @@ undoUpdAtomic :: UpdAtomic -> Maybe UpdAtomic
 undoUpdAtomic cmd = case cmd of
   UpdCreateActor aid body ais -> Just $ UpdDestroyActor aid body ais
   UpdDestroyActor aid body ais -> Just $ UpdCreateActor aid body ais
-  UpdCreateItem iid item k c -> Just $ UpdDestroyItem iid item k c
-  UpdDestroyItem iid item k c -> Just $ UpdCreateItem iid item k c
+  UpdCreateItem iid item kIsOn c -> Just $ UpdDestroyItem iid item kIsOn c
+  UpdDestroyItem iid item kIsOn c -> Just $ UpdCreateItem iid item kIsOn c
   UpdSpotActor aid body ais -> Just $ UpdLoseActor aid body ais
   UpdLoseActor aid body ais -> Just $ UpdSpotActor aid body ais
-  UpdSpotItem iid item k c -> Just $ UpdLoseItem iid item k c
-  UpdLoseItem iid item k c -> Just $ UpdSpotItem iid item k c
+  UpdSpotItem iid item kIsOn c -> Just $ UpdLoseItem iid item kIsOn c
+  UpdLoseItem iid item kIsOn c -> Just $ UpdSpotItem iid item kIsOn c
   UpdMoveActor aid fromP toP -> Just $ UpdMoveActor aid toP fromP
   UpdWaitActor aid toWait -> Just $ UpdWaitActor aid (not toWait)
   UpdDisplaceActor source target -> Just $ UpdDisplaceActor target source
-  UpdMoveItem iid k aid c1 c2 -> Just $ UpdMoveItem iid k aid c2 c1
+  UpdMoveItem iid k aid c1 isOn1 c2 isOn2 ->
+    Just $ UpdMoveItem iid k aid c2 isOn2 c1 isOn1
   UpdAgeActor aid delta -> Just $ UpdAgeActor aid (timeDeltaReverse delta)
   UpdHealActor aid n -> Just $ UpdHealActor aid (-n)
   UpdCalmActor aid n -> Just $ UpdCalmActor aid (-n)
@@ -189,8 +190,8 @@ undoSfxAtomic cmd = case cmd of
   SfxRecoil source target iid b -> SfxStrike source target iid b
   SfxProject aid iid -> SfxCatch aid iid
   SfxCatch aid iid -> SfxProject aid iid
-  SfxActivate aid iid k -> SfxCheck aid iid k
-  SfxCheck aid iid k -> SfxActivate aid iid k
+  SfxActivate aid iid kIsOn -> SfxCheck aid iid kIsOn
+  SfxCheck aid iid kIsOn -> SfxActivate aid iid kIsOn
   SfxTrigger aid p feat -> SfxShun aid p feat
   SfxShun aid p feat -> SfxTrigger aid p feat
   SfxEffect{} -> cmd  -- not ideal?

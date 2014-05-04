@@ -76,7 +76,7 @@ posUpdAtomic cmd = case cmd of
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
     return $! assert (slid == tlid) $ PosSight slid [sp, tp]
-  UpdMoveItem _ _ aid _ _ -> singleAid aid
+  UpdMoveItem _ _ aid _ _ _ _ -> singleAid aid
   UpdAgeActor aid _ -> singleAid aid
   UpdHealActor aid _ -> singleAid aid
   UpdCalmActor aid _ -> singleAid aid
@@ -273,9 +273,14 @@ generalMoveItem :: MonadStateRead m
                 => ItemId -> Int -> Container -> Container
                 -> m [UpdAtomic]
 generalMoveItem iid k c1 c2 = do
+  bag1 <- getsState $ getCBag c1
+  bag2 <- getsState $ getCBag c2
+  let isOn1 = maybe True snd $ EM.lookup iid bag1
+      isOn2 = maybe True snd $ EM.lookup iid bag2
   case (c1, c2) of
-    (CActor aid1 cstore1, CActor aid2 cstore2) | aid1 == aid2 ->
-      return [UpdMoveItem iid k aid1 cstore1 cstore2]
+    (CActor aid1 cstore1, CActor aid2 cstore2) | aid1 == aid2 -> do
+      return [UpdMoveItem iid k aid1 cstore1 isOn1 cstore2 isOn2]
     _ -> do
       item <- getsState $ getItemBody iid
-      return [UpdLoseItem iid item k c1, UpdSpotItem iid item k c2]
+      return [ UpdLoseItem iid item (k, isOn1) c1
+             , UpdSpotItem iid item (k, isOn2) c2 ]
