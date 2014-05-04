@@ -455,8 +455,6 @@ discover oldcli iid = do
                    iid (itemBase itemFull) (1, True)
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
-  -- Note that transition from 1d1 to 1 is deemed meaningful, which is why 1d1
-  -- should be avoided in random item properties.
   when (textAllAE itemFull /= textAllAE oldItemFull) $ msgAdd msg
 
 -- * RespSfxAtomicUI

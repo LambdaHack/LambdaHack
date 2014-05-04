@@ -259,6 +259,11 @@ strongestItem onlyOn is p =
       pis = concatMap pv onlyIs
   in sortBy (flip $ Ord.comparing fst) pis
 
+dice999 :: Dice.Dice -> Int
+dice999 d = if Dice.minDice d == Dice.maxDice d
+            then Dice.minDice d
+            else 999
+
 strengthAspect :: (Aspect Int -> [b]) -> ItemFull -> [b]
 strengthAspect f itemFull =
   case itemDisco itemFull of
@@ -266,7 +271,7 @@ strengthAspect f itemFull =
       concatMap f jaspects
     Just ItemDisco{itemKind=ItemKind{iaspects}} ->
       -- Default for unknown power is 999 to encourage experimenting.
-      let trav x = St.evalState (aspectTrav x (return . const 999)) ()
+      let trav x = St.evalState (aspectTrav x (return . dice999)) ()
       in concatMap f $ map trav iaspects
     Nothing -> []
 
@@ -277,7 +282,7 @@ strengthEffect f itemFull =
       concatMap f jeffects
     Just ItemDisco{itemKind=ItemKind{ieffects}} ->
       -- Default for unknown power is 999 to encourage experimenting.
-      let trav x = St.evalState (effectTrav x (return . const 999)) ()
+      let trav x = St.evalState (effectTrav x (return . dice999)) ()
       in concatMap f $ map trav ieffects
     Nothing -> []
 

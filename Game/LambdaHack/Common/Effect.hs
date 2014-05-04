@@ -152,8 +152,13 @@ affixBonus p = case compare p 0 of
   LT -> "(" <> tshow p <> ")"
   GT -> "(+" <> tshow p <> ")"
 
-kindEffectToSuffix :: Show a => Effect a -> Text
-kindEffectToSuffix effect = effectToSuff effect $ const "(?)"
+affixDice :: Dice.Dice -> Text
+affixDice d = if Dice.minDice d == Dice.maxDice d
+               then affixBonus (Dice.minDice d)
+               else "(?)"
 
-kindAspectToSuffix :: Show a => Aspect a -> Text
-kindAspectToSuffix aspect = aspectToSuff aspect $ const "(?)"
+kindEffectToSuffix :: Effect Dice.Dice -> Text
+kindEffectToSuffix effect = effectToSuff effect affixDice
+
+kindAspectToSuffix :: Aspect Dice.Dice -> Text
+kindAspectToSuffix aspect = aspectToSuff aspect affixDice

@@ -308,7 +308,11 @@ drawLeaderDamage width = do
                           Nothing -> (Nothing, Nothing)
                     Just ItemDisco{itemKind} ->
                       case foldr getP Nothing (ieffects itemKind) of
-                        Just (dice, _) -> (Just dice, Nothing)
+                        Just (dice, d) ->
+                          let p = if Dice.minDice d == Dice.maxDice d
+                                  then Just $ Dice.minDice d
+                                  else Nothing
+                          in (Just dice, p)
                         Nothing -> (Nothing, Nothing)
                     Nothing -> (Nothing, Nothing)
               in case mdice of
