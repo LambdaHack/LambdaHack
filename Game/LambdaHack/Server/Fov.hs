@@ -107,7 +107,7 @@ litByItems :: FovMode -> Level -> Point -> State
            -> [Point]
 litByItems fovMode lvl p s iis =
   let Kind.COps{cotile} = scops s
-  in case strongestLight $ map (second itemNoDisco) iis of
+  in case strongestLight True $ map (second itemNoDisco) iis of
     (radius, _) : _ ->
       let scan = fullscan cotile fovMode radius p lvl
       -- Optimization: filter out positions that already have ambient light.

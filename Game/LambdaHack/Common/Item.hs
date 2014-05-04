@@ -251,11 +251,12 @@ type ItemKnown = (Item, ItemAspectEffect)
 -- in bijection.
 type ItemRev = HM.HashMap ItemKnown ItemId
 
-strongestItem :: Ord b => [(ItemId, ItemFull)] -> (ItemFull -> [b])
+strongestItem :: Ord b => Bool -> [(ItemId, ItemFull)] -> (ItemFull -> [b])
               -> [(b, (ItemId, ItemFull))]
-strongestItem is p =
+strongestItem onlyOn is p =
   let pv (iid, item) = map (\v -> (v, (iid, item))) (p item)
-      pis = concatMap pv is
+      onlyIs = if onlyOn then filter (itemIsOn . snd) is else is
+      pis = concatMap pv onlyIs
   in sortBy (flip $ Ord.comparing fst) pis
 
 strengthAspect :: (Aspect Int -> [b]) -> ItemFull -> [b]
@@ -291,10 +292,9 @@ strengthMelee Kind.COps{corule} itemFull =
        in strengthEffect p itemFull
   else []
 
-strongestSword :: Kind.COps -> [(ItemId, ItemFull)]
+strongestSword :: Kind.COps -> Bool -> [(ItemId, ItemFull)]
                -> [(Int, (ItemId, ItemFull))]
-strongestSword cops is =
-  strongestItem (filter (itemIsOn . snd) is)  (strengthMelee cops)
+strongestSword cops onlyOn is = strongestItem onlyOn is (strengthMelee cops)
 
 strengthArmor :: ItemFull -> [Int]
 strengthArmor =
@@ -302,8 +302,8 @@ strengthArmor =
       p _ = []
   in strengthAspect p
 
-strongestShield :: [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestShield is = strongestItem (filter (itemIsOn . snd) is) strengthArmor
+strongestShield :: Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
+strongestShield onlyOn is = strongestItem onlyOn is strengthArmor
 
 strengthRegen :: ItemFull -> [Int]
 strengthRegen =
@@ -311,8 +311,8 @@ strengthRegen =
       p _ = []
   in strengthAspect p
 
-strongestRegen :: [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestRegen is = strongestItem (filter (itemIsOn . snd) is) strengthRegen
+strongestRegen :: Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
+strongestRegen onlyOn is = strongestItem onlyOn is strengthRegen
 
 strengthStead :: ItemFull -> [Int]
 strengthStead =
@@ -320,8 +320,8 @@ strengthStead =
       p _ = []
   in strengthAspect p
 
-strongestStead :: [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestStead is = strongestItem (filter (itemIsOn . snd) is) strengthStead
+strongestStead :: Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
+strongestStead onlyOn is = strongestItem onlyOn is strengthStead
 
 strengthLight :: Item -> [Int]
 strengthLight =
@@ -329,9 +329,8 @@ strengthLight =
       p _ = []
   in strengthFeature p
 
-strongestLight :: [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestLight is =
-  strongestItem (filter (itemIsOn . snd) is) (strengthLight . itemBase)
+strongestLight :: Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
+strongestLight onlyOn is = strongestItem onlyOn is (strengthLight . itemBase)
 
 isFragile :: Item -> Bool
 isFragile item =

@@ -280,7 +280,7 @@ regenHPPeriod :: Actor -> [(ItemId, ItemFull)] -> State -> Int
 regenHPPeriod b allAssocs s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
-      regenPeriod = case strongestRegen allAssocs of
+      regenPeriod = case strongestRegen True allAssocs of
         (k, _) : _ ->
           let slowBaseRegen = 1000
               ar = if aregen ak == maxBound then slowBaseRegen else aregen ak
@@ -293,7 +293,7 @@ regenCalmDelta :: Actor -> [(ItemId, ItemFull)] -> State -> Int
 regenCalmDelta b allAssocs s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
-      calmIncr = case strongestStead allAssocs of
+      calmIncr = case strongestStead True allAssocs of
         (k, _) : _ -> k + 1
         [] -> 1
       maxDeltaCalm = Dice.maxDice (acalm ak) - bcalm b
@@ -311,7 +311,7 @@ actorShines b s =
   let eqpAssocs = bagAssocsK s $ beqp b
       bodyAssocs = bagAssocsK s $ bbody b
       floorAssocs = bagAssocsK s $ sdungeon s EM.! blid b `atI` bpos b
-  in not $ null (strongestLight $ map (second itemNoDisco)
+  in not $ null (strongestLight True $ map (second itemNoDisco)
                  $ eqpAssocs ++ bodyAssocs ++ floorAssocs)
 
 actorInAmbient :: Actor -> State -> Bool

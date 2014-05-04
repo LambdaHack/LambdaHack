@@ -338,7 +338,7 @@ meleeServer source = do
   sb <- getsState $ getActorBody source
   allAssocs <- fullAssocsServer source [CEqp, CBody]
   let strongest | bproj sb = map (1,) allAssocs
-                | otherwise = strongestSword cops allAssocs
+                | otherwise = strongestSword cops True allAssocs
   case strongest of
     [] -> assert `failure` (source, allAssocs)
     iis -> do

@@ -209,7 +209,7 @@ meleeClient :: MonadClient m => ActorId -> ActorId -> m (RequestTimed AbMelee)
 meleeClient source target = do
   cops <- getsState scops
   allAssocs <- fullAssocsClient source [CEqp, CBody]
-  case strongestSword cops allAssocs of
+  case strongestSword cops True allAssocs of
     [] -> assert `failure` (source, target, allAssocs)
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis

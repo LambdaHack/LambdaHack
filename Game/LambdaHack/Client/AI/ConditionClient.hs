@@ -117,14 +117,17 @@ condFloorWeaponM :: MonadClient m => ActorId -> m Bool
 condFloorWeaponM aid = do
   cops <- getsState scops
   floorAssocs <- fullAssocsClient aid [CGround]
-  let lootIsWeapon = not $ null $ strongestSword cops floorAssocs
+  -- We do consider OFF weapons, because e.g., enemies might have turned
+  -- them off or they can be wrong for other party members, but are OK for us.
+  let lootIsWeapon = not $ null $ strongestSword cops False floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
 condNoWeaponM :: MonadClient m => ActorId -> m Bool
 condNoWeaponM aid = do
   cops <- getsState scops
   allAssocs <- fullAssocsClient aid [CEqp, CBody]
-  return $ null $ strongestSword cops allAssocs  -- keep it lazy
+  -- We do not consider OFF weapons, because they apparently are not good.
+  return $ null $ strongestSword cops True allAssocs  -- keep it lazy
 
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do

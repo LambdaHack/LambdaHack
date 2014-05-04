@@ -145,10 +145,11 @@ effectHurt nDm power source target = do
   tb <- getsState $ getActorBody target
   n <- rndToAction $ castDice 0 0 nDm
   let block = braced tb
-      sshieldMult = case strongestShield sallAssocs of
+      -- OFF shield doesn't hinder attacks, so also does not protect.
+      sshieldMult = case strongestShield True sallAssocs of
         [] -> 100
         (p, _) : _ -> p
-      tshieldMult = case strongestShield tallAssocs of
+      tshieldMult = case strongestShield True tallAssocs of
         [] -> 100
         (p, _) : _ -> p
       mult = sshieldMult * tshieldMult * (if block then 100 else 50)

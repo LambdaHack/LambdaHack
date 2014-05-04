@@ -180,8 +180,8 @@ reqMelee source target iid = do
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
     let block = braced tb
-        shield = not (null $ strongestShield sallAssocs)
-                 || not (null $ strongestShield tallAssocs)
+        shield = not (null $ strongestShield True sallAssocs)
+                 || not (null $ strongestShield True tallAssocs)
         hitA = if block && shield
                then MissBlock
                else if block || shield

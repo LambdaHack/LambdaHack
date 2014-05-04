@@ -215,8 +215,11 @@ manageEqp aid = do
   let kind = okind $ bkind body
   if calmEnough body kind then do
     let improve symbol =
-          let bestInv = strongestItem invAssocs $ strengthSymbol cops symbol
-              bestEqp = strongestItem eqpAssocs $ strengthSymbol cops symbol
+          -- We don't take OFF into account, because AI can toggle it at will.
+          let bestInv = strongestItem False invAssocs
+                        $ strengthSymbol cops symbol
+              bestEqp = strongestItem False eqpAssocs
+                        $ strengthSymbol cops symbol
           in case (bestInv, bestEqp) of
             (_, (_, (iidEqp, itemEqp)) : _) | harmful body itemEqp ->
               -- This item is harmful to this actor, take it off.
