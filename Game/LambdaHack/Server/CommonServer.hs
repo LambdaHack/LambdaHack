@@ -285,10 +285,10 @@ projectBla source pos rest iid cstore = do
   unless (bproj sb) $ execSfxAtomic $ SfxProject source iid
   addProjectile pos rest iid lid (bfid sb) time
   cs <- actorConts iid 1 source cstore
-  mapM_ (\(_, c) -> do
+  mapM_ (\(k, c) -> do
           bag <- getsState $ getCBag c
-          let kIsOn = bag EM.! iid
-          execUpdAtomic $ UpdLoseItem iid item kIsOn c) cs
+          let (_, isOn) = bag EM.! iid
+          execUpdAtomic $ UpdLoseItem iid item (k, isOn) c) cs
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
