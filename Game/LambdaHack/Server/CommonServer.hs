@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, deduceQuits, deduceKilled, electLeader
   , registerItem, createItems, projectFail, fullAssocsServer, itemToFullServer
-  ,  meleeServer
+  , pickWeaponServer
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -332,8 +332,8 @@ itemToFullServer = do
 
 -- Server has to pick a random weapon or it could leak item discovery
 -- information.
-meleeServer :: MonadServer m => ActorId -> m ItemId
-meleeServer source = do
+pickWeaponServer :: MonadServer m => ActorId -> m ItemId
+pickWeaponServer source = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
   allAssocs <- fullAssocsServer source [CEqp, CBody]

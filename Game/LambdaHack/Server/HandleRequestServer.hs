@@ -143,7 +143,7 @@ reqMove source dir = do
       -- Projectiles are too small to hit each other.
       -- Attacking does not require full access, adjacency is enough.
       -- Here the only weapon of projectiles is picked, too.
-      weapon <- meleeServer source
+      weapon <- pickWeaponServer source
       reqMelee source target weapon
     _
       | accessible cops lvl spos tpos -> do
@@ -220,7 +220,7 @@ reqDisplace source target = do
   if not adj then execFailure source req DisplaceDistant
   else if atWar && not dEnemy
   then do
-    weapon <- meleeServer source
+    weapon <- pickWeaponServer source
     reqMelee source target weapon  -- DisplaceDying, DisplaceSupported
   else do
     let lid = blid sb

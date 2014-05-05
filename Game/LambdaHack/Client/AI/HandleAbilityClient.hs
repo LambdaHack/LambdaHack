@@ -299,7 +299,7 @@ meleeBlocker aid = do
                     && not (playerLeader $ gplayer fact)  -- not restrained
                     && AbMove `elem` actorAbs  -- blocked move
                     && bhp body2 < bhp b) then do -- respect power
-            mel <- meleeClient aid aid2
+            mel <- pickWeaponClient aid aid2
             return $! returN "melee in the way" mel
           else return reject
         Nothing -> return reject
@@ -312,7 +312,7 @@ meleeAny aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
-  mels <- mapM (meleeClient aid . fst) adjFoes
+  mels <- mapM (pickWeaponClient aid . fst) adjFoes
       -- TODO: prioritize somehow
   let freq = uniformFreq "melee adjacent" mels
   return $ liftFrequency freq
@@ -619,12 +619,12 @@ moveOrRunAid run source dir = do
         return $! RequestAnyAbility $ ReqDisplace target
       else
         -- If cannot displace, hit.
-        RequestAnyAbility <$> meleeClient source target
+        RequestAnyAbility <$> pickWeaponClient source target
     ((target, _), _) : _ ->  -- can be a foe, as well as a friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
       -- Attacking does not require full access, adjacency is enough.
-      RequestAnyAbility <$> meleeClient source target
+      RequestAnyAbility <$> pickWeaponClient source target
     [] -> do  -- move or search or alter
       if accessible cops lvl spos tpos then
         -- Movement requires full access.

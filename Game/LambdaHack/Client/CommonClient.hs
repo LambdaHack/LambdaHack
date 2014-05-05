@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
   , actorAbilities, updateItemSlot, fullAssocsClient, itemToFullClient
-  , meleeClient
+  , pickWeaponClient
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -205,8 +205,9 @@ itemToFullClient = do
 
 -- Client has to choose the weapon based on its partial knowledge,
 -- because if server chose it, it would leak item discovery information.
-meleeClient :: MonadClient m => ActorId -> ActorId -> m (RequestTimed AbMelee)
-meleeClient source target = do
+pickWeaponClient :: MonadClient m
+                 => ActorId -> ActorId -> m (RequestTimed AbMelee)
+pickWeaponClient source target = do
   cops <- getsState scops
   allAssocs <- fullAssocsClient source [CEqp, CBody]
   case strongestSword cops True allAssocs of
