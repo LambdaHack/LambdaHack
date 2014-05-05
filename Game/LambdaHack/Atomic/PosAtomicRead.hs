@@ -17,12 +17,15 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.ModeKind as ModeKind
 
 -- All functions here that take an atomic action are executed
@@ -235,12 +238,19 @@ breakUpdAtomic cmd = case cmd of
   -- processing of the command is lenient).
   _ -> return [cmd]
 
-loudUpdAtomic :: FactionId -> UpdAtomic -> Bool
+-- | Messages for some unseen game object creation/destruction/alteration.
+loudUpdAtomic :: MonadStateRead m => FactionId -> UpdAtomic -> m (Maybe Msg)
 loudUpdAtomic fid cmd = case cmd of
-  UpdDestroyActor _ body _ ->
+  UpdDestroyActor _ body _
     -- Death of a party member does not need to be heard, because it's seen.
-    not $ fid == bfid body || bproj body
-  _ -> False
+    | not $ fid == bfid body || bproj body -> return $ Just "You hear a shriek."
+  UpdCreateItem{} -> return $ Just "You hear a clatter."
+  UpdAlterTile _ _ fromTile _ -> do
+    Kind.COps{cotile} <- getsState scops
+    if Tile.isDoor cotile fromTile
+      then return $ Just "You hear a creaking sound."
+      else return Nothing
+  _ -> return Nothing
 
 seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
 seenAtomicCli knowEvents fid per posAtomic =
