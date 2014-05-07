@@ -301,8 +301,10 @@ regenCalmDelta b allAssocs s =
       -- on the level within 3 tiles.
       fact = (EM.! bfid b) . sfactionD $ s
       allFoes = actorRegularList (isAtWar fact) (blid b) $ s
-      closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
-  in if null closeFoes
+      isHeard body = not (waitedLastTurn body)
+                     && chessDist (bpos b) (bpos body) <= 3
+      noisyFoes = filter isHeard allFoes
+  in if null noisyFoes
      then min calmIncr maxDeltaCalm
      else -1  -- even if all calmness spent, keep informing the client
 
