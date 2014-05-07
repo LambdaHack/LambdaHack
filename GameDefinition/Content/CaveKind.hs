@@ -39,6 +39,7 @@ rogue = CaveKind
   , chidden       = 8
   , citemNum      = 7 * d 2
   , citemFreq     = [(70, "useful"), (30, "treasure")]
+  , cplaceFreq    = [(100, "rogue")]
   , cdefTile        = "fillerWall"
   , cdarkCorTile    = "floorCorridorDark"
   , clitCorTile     = "floorCorridorLit"
@@ -128,5 +129,6 @@ ambush = battle
   , cname         = "Ambush scene"
   , cfreq         = [("caveAmbush", 1)]
   , citemNum      = 24 * d 2
+  , cplaceFreq    = [(70, "ambush"), (30, "rogue")]
   , cdefTile      = "ambushSet"
   }

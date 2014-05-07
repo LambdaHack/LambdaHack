@@ -12,6 +12,7 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 
+import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
@@ -92,9 +93,9 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
   qsolidFence <- fmap (fromMaybe $ assert `failure` cfillerTile)
                  $ opick cfillerTile (const True)
   dark <- chanceDice ln depth cdarkChance
-  let cave = "rogue"
-  qkind <- fmap (fromMaybe $ assert `failure` (cave, r))
-           $ popick cave (placeCheck r)
+  placeGroup <- frequency $ toFreq "cplaceFreq" cplaceFreq
+  qkind <- fmap (fromMaybe $ assert `failure` (placeGroup, r))
+           $ popick placeGroup (placeCheck r)
   let qhollowFence = if dark then darkCorTile else litCorTile
       kr = pokind qkind
       qlegend = if dark then clegendDarkTile else clegendLitTile
