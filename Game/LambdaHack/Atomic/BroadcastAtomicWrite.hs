@@ -93,10 +93,12 @@ handleAndBroadcast knowEvents persOld doResetFidPerception dolitInDungeon
               if seenAtomicCli knowEvents fid perNew ps2
                 then sendUpdate fid $ UpdAtomic atomic2
                 else do
-                  loud <- loudUpdAtomic fid atomic2
-                  case loud of
-                    Nothing -> return ()
-                    Just msg -> sendUpdate fid $ SfxAtomic $ SfxMsgAll msg
+                  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
+                  when (isJust mleader) $ do
+                    loud <- loudUpdAtomic fid atomic2
+                    case loud of
+                      Nothing -> return ()
+                      Just msg -> sendUpdate fid $ SfxAtomic $ SfxMsgAll msg
         mapM_ send2 atomicPsBroken
       anySend fid perOld perNew = do
         let startSeen = seenAtomicCli knowEvents fid perOld ps
