@@ -2,7 +2,7 @@
 module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateMA, sizeA
-  , foldlA, ifoldlA, minIndexA, minLastIndexA, maxIndexA, maxLastIndexA
+  , foldlA, ifoldlA, imapA, minIndexA, minLastIndexA, maxIndexA, maxLastIndexA
   ) where
 
 import Control.Arrow ((***))
@@ -86,6 +86,12 @@ foldlA f z0 Array{..} =
 ifoldlA :: Enum c => (a -> Point -> c -> a) -> a -> Array c -> a
 ifoldlA f z0 Array{..} =
   U.ifoldl' (\a n c -> f a (punindex axsize n) (cnv c)) z0 avector
+
+-- | Map over an array (function applied to each element and its index).
+imapA :: (Enum c, Enum d) => (Point -> c -> d) -> Array c -> Array d
+imapA f Array{..} =
+  let v = U.imap (\n c -> cnv $ f (punindex axsize n) (cnv c)) avector
+  in Array{avector = v, ..}
 
 -- | Yield the point coordinates of a minimum element of the array.
 -- The array may not be empty.

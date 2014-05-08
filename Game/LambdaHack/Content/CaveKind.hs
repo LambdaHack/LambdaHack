@@ -32,6 +32,7 @@ data CaveKind = CaveKind
   , citemNum        :: !Dice.Dice    -- ^ the number of items in the cave
   , citemFreq       :: ![(Int, Text)]  -- ^ item groups to consider
   , cplaceFreq      :: ![(Int, Text)]  -- ^ place groups to consider
+  , cpassable       :: !Bool         -- ^ are passable default tiles permitted
   , cdefTile        :: !Text         -- ^ the default cave tile group name
   , cdarkCorTile    :: !Text         -- ^ the dark cave corridor tile group name
   , clitCorTile     :: !Text         -- ^ the lit cave corridor tile group name

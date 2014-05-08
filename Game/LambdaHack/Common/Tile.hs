@@ -15,7 +15,7 @@
 module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, hasFeature
-  , isClear, isLit, isWalkable, isPassable, isDoor, isSuspect
+  , isClear, isLit, isWalkable, isPassableKind, isPassable, isDoor, isSuspect
   , isExplorable, lookSimilar, speedup
   , openTo, closeTo, causeEffects, revealAs, hideAs
   , isOpenable, isClosable, isChangeable, isEscape, isStair
@@ -129,12 +129,7 @@ speedup allClear cotile =
                                $ kindHasFeature F.Clear
       isLitTab = Kind.createTab cotile $ not . kindHasFeature F.Dark
       isWalkableTab = Kind.createTab cotile $ kindHasFeature F.Walkable
-      isPassableTab = Kind.createTab cotile $ \tk ->
-        let getTo F.Walkable = True
-            getTo F.OpenTo{} = True
-            getTo F.Suspect = True
-            getTo _ = False
-        in any getTo $ tfeature tk
+      isPassableTab = Kind.createTab cotile isPassableKind
       isDoorTab = Kind.createTab cotile $ \tk ->
         let getTo F.OpenTo{} = True
             getTo F.CloseTo{} = True
@@ -146,6 +141,14 @@ speedup allClear cotile =
             getTo _ = False
         in any getTo $ tfeature tk
   in Kind.TileSpeedup {..}
+
+isPassableKind :: TileKind -> Bool
+isPassableKind tk =
+  let getTo F.Walkable = True
+      getTo F.OpenTo{} = True
+      getTo F.Suspect = True
+      getTo _ = False
+  in any getTo $ tfeature tk
 
 openTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 openTo Kind.Ops{okind, opick} t = do
