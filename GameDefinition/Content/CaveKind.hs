@@ -101,7 +101,7 @@ noise = rogue
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
   }
-battle = rogue  -- TODO: actors can get stuck forever among rocks
+battle = rogue
   { csymbol       = 'B'
   , cname         = "Battle field"
   , cfreq         = [("caveBattle", 1)]

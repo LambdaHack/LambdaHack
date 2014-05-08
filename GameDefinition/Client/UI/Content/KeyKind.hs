@@ -26,7 +26,9 @@ standardKeys = KeyKind
       , ("CTRL-a", ([CmdMenu], GameRestart "campaign"))
       , ("CTRL-k", ([CmdMenu], GameRestart "skirmish"))
       , ("CTRL-m", ([CmdMenu], GameRestart "ambush"))
+      , ("CTRL-b", ([CmdMenu], GameRestart "battle"))
       , ("CTRL-e", ([CmdMenu], GameRestart "defense"))
+      , ("CTRL-f", ([CmdMenu], GameRestart "safari"))
       , ("CTRL-d", ([CmdMenu], GameDifficultyCycle))
 
       -- Movement and terrain alteration
@@ -161,9 +163,5 @@ standardKeys = KeyKind
 
       -- Debug and others not to display in help screens
       , ("CTRL-s", ([CmdDebug], GameSave))
-      , ("CTRL-b", ([CmdDebug], GameRestart "battle"))
-          -- TODO: actors can get stuck forever among rocks
-      , ("CTRL-f", ([CmdDebug], GameRestart "safari"))
-          -- TODO: actors can have too little space in rooms to generate
       ]
   }

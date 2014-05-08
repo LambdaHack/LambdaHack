@@ -238,11 +238,11 @@ floorActorLit = floorArenaLit
   , tfeature = CanActor : tfeature floorArenaLit
   }
 floorItemLit = floorArenaLit
-  { tfreq    = [("ambushSet", 1000)]
+  { tfreq    = []
   , tfeature = CanItem : tfeature floorArenaLit
   }
 floorActorItemLit = floorItemLit
-  { tfreq    = [("legendLit", 100), ("emptySet", 1)]
+  { tfreq    = [("legendLit", 100), ("emptySet", 1), ("ambushSet", 1000)]
   , tfeature = CanActor : tfeature floorItemLit
   }
 floorRedLit = floorArenaLit
