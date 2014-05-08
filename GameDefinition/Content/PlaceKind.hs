@@ -11,14 +11,14 @@ cdefs = ContentDef
   , getFreq = pfreq
   , validate = validatePlaceKind
   , content =
-      [rect, pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost]
+      [rect, pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost, lampPost2, lampPost3]
   }
-rect,        pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost :: PlaceKind
+rect,        pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost, lampPost2, lampPost3 :: PlaceKind
 
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "room"
-  , pfreq    = [("rogue", 100)]
+  , pfreq    = [("rogue", 100), ("ambush", 20)]
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "--"
@@ -72,8 +72,27 @@ colonnadeW = colonnade
 lampPost = PlaceKind
   { psymbol  = 'l'
   , pname    = "lamp post"
-  , pfreq    = [("ambush", 500)]
-  , pcover   = CStretch
+  , pfreq    = [("ambush", 50)]
+  , pcover   = CVerbatim
   , pfence   = FNone
-  , ptopLeft = [ "O" ]
+  , ptopLeft = [ " . "
+               , ".O."
+               , " . "
+               ]
+  }
+lampPost2 = lampPost
+  { pfreq    = [("ambush", 50)]
+  , ptopLeft = [ "..."
+               , ".O."
+               , "..."
+               ]
+  }
+lampPost3 = lampPost
+  { pfreq    = [("ambush", 999)]
+  , ptopLeft = [ "  .  "
+               , " ... "
+               , "..O.."
+               , " ... "
+               , "  .  "
+               ]
   }

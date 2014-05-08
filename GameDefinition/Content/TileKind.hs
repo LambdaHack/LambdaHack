@@ -58,7 +58,7 @@ pillar = TileKind
   , tname    = "rock"
   , tfreq    = [ ("cachable", 70)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 55), ("skirmishSet", 3), ("ambushSet", 3)
+               , ("noiseSet", 55), ("skirmishSet", 3)
                , ("battleSet", 9) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
@@ -79,7 +79,7 @@ tree = TileKind
   , tfreq    = [("skirmishSet", 8), ("ambushSet", 8)]
   , tcolor   = BrGreen
   , tcolor2  = Green
-  , tfeature = []
+  , tfeature = [Dark]
   }
 wallV = TileKind
   { tsymbol  = '|'

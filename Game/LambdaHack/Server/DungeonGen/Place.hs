@@ -59,11 +59,13 @@ placeCheck r PlaceKind{..} =
           dycorner = length ptopLeft
           wholeOverlapped d dcorner = d > 1 && dcorner > 1 &&
                                       (d - 1) `mod` (2 * (dcorner - 1)) == 0
+          largeEnough = dx >= 2 * dxcorner - 1 && dy >= 2 * dycorner - 1
       in case pcover of
         CAlternate -> wholeOverlapped dx dxcorner &&
                       wholeOverlapped dy dycorner
-        _          -> dx >= 2 * dxcorner - 1 &&
-                      dy >= 2 * dycorner - 1
+        CStretch   -> largeEnough
+        CReflect   -> largeEnough
+        CVerbatim  -> dx >= dxcorner && dy >= dycorner
 
 -- | Calculate interior room area according to fence type, based on the
 -- total area for the room and it's fence. This is used for checking
@@ -102,10 +104,14 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
       qseen = False
       qarea = fromMaybe (assert `failure` (kr, r)) $ interiorArea (pfence kr) r
       place = Place {..}
+  darkFloorTile <- fmap (fromMaybe $ assert `failure` clegendDarkTile)
+                   $ opick clegendDarkTile $ (== '.') . tsymbol
   legend <- olegend cotile qlegend
   legendLit <- olegend cotile clegendLitTile
-  let xlegend = EM.insert 'X' qhollowFence legend
-      xlegendLit = EM.insert 'X' qhollowFence legendLit
+  let xlegend = EM.insert ' ' darkFloorTile
+                $ EM.insert 'X' qhollowFence legend
+      xlegendLit = EM.insert ' ' darkFloorTile
+                   $ EM.insert 'X' qhollowFence legendLit
       cmap = tilePlace qarea kr
       fence = case pfence kr of
         FWall -> buildFence qsolidFence qarea
@@ -181,8 +187,14 @@ tilePlace area pl@PlaceKind{..} =
         zipWith (\x y -> Point x y) [x2..] (repeat y2)
       fillInterior :: (forall a. Int -> [a] -> [a]) -> [(Point, Char)]
       fillInterior f =
-        let tileInterior (y, row) = zip (fromX (x0, y)) $ f dx row
-            reflected = zip [y0..] $ f dy $ map T.unpack ptopLeft
+        let tileInterior (y, row) =
+              let fx = f dx row
+                  xStart = x0 + ((xwidth - length fx) `div` 2)
+              in zip (fromX (xStart, y)) fx
+            reflected =
+              let fy = f dy $ map T.unpack ptopLeft
+                  yStart = y0 + ((ywidth - length fy) `div` 2)
+              in zip [yStart..] fy
         in concatMap tileInterior reflected
       tileReflect :: Int -> [a] -> [a]
       tileReflect d pat =
@@ -204,6 +216,7 @@ tilePlace area pl@PlaceKind{..} =
           let reflect :: Int -> [a] -> [a]
               reflect d pat = tileReflect d (cycle pat)
           in fillInterior reflect
+        CVerbatim -> fillInterior $ curry snd
   in EM.fromList interior
 
 instance Binary Place where

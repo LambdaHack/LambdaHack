@@ -129,6 +129,6 @@ ambush = battle
   , cname         = "Ambush scene"
   , cfreq         = [("caveAmbush", 1)]
   , citemNum      = 24 * d 2
-  , cplaceFreq    = [(70, "ambush"), (30, "rogue")]
+  , cplaceFreq    = [(100, "ambush")]
   , cdefTile      = "ambushSet"
   }
