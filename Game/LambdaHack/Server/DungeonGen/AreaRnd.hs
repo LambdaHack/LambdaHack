@@ -35,17 +35,13 @@ mkRoom :: (X, Y)    -- ^ minimum size
 mkRoom (xm, ym) (xM, yM) area = do
   let (x0, y0, x1, y1) = fromArea area
   assert (xm <= x1 - x0 + 1 && ym <= y1 - y0 + 1) skip
-  let a0 = (x0, y0, x1 - xm + 1, y1 - ym + 1)
-      area0 = fromMaybe (assert `failure` a0) $ toArea a0
-  Point rx0 ry0 <- xyInArea area0
-  let sX = rx0 + xm - 1
-      sY = ry0 + ym - 1
-      eX = min x1 (rx0 + xM - 1)
-      eY = min y1 (ry0 + yM - 1)
-      a1 = (sX, sY, eX, eY)
+  let aW = (xm, ym, min xM (x1 - x0 + 1), min yM (y1 - y0 + 1))
+      areaW = fromMaybe (assert `failure` aW) $ toArea aW
+  Point xW yW <- xyInArea areaW  -- roll size
+  let a1 = (x0, y0, max x0 (x1 - xW + 1), max y0 (y1 - yW + 1))
       area1 = fromMaybe (assert `failure` a1) $ toArea a1
-  Point rx1 ry1 <- xyInArea area1
-  let a3 = (rx0, ry0, rx1, ry1)
+  Point rx1 ry1 <- xyInArea area1  -- roll top-left corner
+  let a3 = (rx1, ry1, rx1 + xW - 1, ry1 + yW - 1)
       area3 = fromMaybe (assert `failure` a3) $ toArea a3
   return $! area3
 
@@ -64,7 +60,7 @@ mkVoidRoom area = do
 connectGrid :: (X, Y) -> Rnd [(Point, Point)]
 connectGrid (nx, ny) = do
   let unconnected = S.fromList [ Point x y
-                                | x <- [0..nx-1], y <- [0..ny-1] ]
+                               | x <- [0..nx-1], y <- [0..ny-1] ]
   -- Candidates are neighbours that are still unconnected. We start with
   -- a random choice.
   rx <- randomR (0, nx-1)
@@ -95,7 +91,7 @@ connectGrid' (nx, ny) unconnected candidates acc
 -- | Sort the sequence of two points, in the derived lexicographic order.
 sortPoint :: (Point, Point) -> (Point, Point)
 sortPoint (a, b) | a <= b    = (a, b)
-                   | otherwise = (b, a)
+                 | otherwise = (b, a)
 
 -- | Pick a single random connection between adjacent areas within a grid.
 randomConnection :: (X, Y) -> Rnd (Point, Point)
