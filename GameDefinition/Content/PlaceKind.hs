@@ -24,6 +24,7 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   , ptopLeft = [ "--"
                , "|."
                ]
+  , poverride = []
   }
 pillar = PlaceKind
   { psymbol  = 'p'
@@ -37,6 +38,7 @@ pillar = PlaceKind
                , "|...."
                , "|...."
                ]
+  , poverride = []
   }
 pillarC = pillar
   { ptopLeft = [ "-----"
@@ -63,6 +65,7 @@ colonnade = PlaceKind
   , ptopLeft = [ "O."
                , ".O"
                ]
+  , poverride = []
   }
 colonnadeW = colonnade
   { ptopLeft = [ "O."
@@ -79,6 +82,7 @@ lampPost = PlaceKind
                , ".O."
                , " . "
                ]
+  , poverride = [('O', "ambushOverO")]
   }
 lampPost2 = lampPost
   { pfreq    = [("ambush", 50)]

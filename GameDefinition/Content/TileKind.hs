@@ -19,11 +19,11 @@ cdefs = ContentDef
   , getFreq = tfreq
   , validate = validateTileKind
   , content =
-      [wall, hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit]
+      [wall, hardRock, pillar, pillarCache, lampPost, burningTree, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit]
       ++ map makeDark [wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsLit, escapeUpLit, escapeDownLit, floorCorridorLit]
       ++ map makeDarkColor [stairsUpLit, stairsDownLit, floorArenaLit, floorActorLit, floorItemLit, floorActorItemLit]
   }
-wall,        hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit :: TileKind
+wall,        hardRock, pillar, pillarCache, lampPost, burningTree, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -73,10 +73,26 @@ pillarCache = TileKind
   , tcolor2  = defFG
   , tfeature = [Cause $ Effect.CreateItem 1, ChangeTo "cachable"]
   }
+lampPost = TileKind
+  { tsymbol  = 'O'
+  , tname    = "lamp post"
+  , tfreq    = [("ambushOverO", 90)]
+  , tcolor   = BrYellow
+  , tcolor2  = Brown
+  , tfeature = []
+  }
+burningTree = TileKind
+  { tsymbol  = 'O'
+  , tname    = "burning tree"
+  , tfreq    = [("ambushOverO", 10), ("ambushSet", 3)]
+  , tcolor   = BrRed
+  , tcolor2  = Red
+  , tfeature = []
+  }
 tree = TileKind
   { tsymbol  = 'O'
   , tname    = "tree"
-  , tfreq    = [("skirmishSet", 8), ("ambushSet", 8)]
+  , tfreq    = [("skirmishSet", 8), ("ambushSet", 100)]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , tfeature = [Dark]
@@ -222,7 +238,7 @@ floorActorLit = floorArenaLit
   , tfeature = CanActor : tfeature floorArenaLit
   }
 floorItemLit = floorArenaLit
-  { tfreq    = [("ambushSet", 100)]
+  { tfreq    = [("ambushSet", 1000)]
   , tfeature = CanItem : tfeature floorArenaLit
   }
 floorActorItemLit = floorItemLit

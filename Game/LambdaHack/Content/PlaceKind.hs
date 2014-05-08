@@ -10,12 +10,13 @@ import Game.LambdaHack.Common.Misc
 
 -- | Parameters for the generation of small areas within a dungeon level.
 data PlaceKind = PlaceKind
-  { psymbol  :: !Char      -- ^ a symbol
-  , pname    :: !Text      -- ^ short description
-  , pfreq    :: !Freqs     -- ^ frequency within groups
-  , pcover   :: !Cover     -- ^ how to fill whole place based on the corner
-  , pfence   :: !Fence     -- ^ whether to fence the place with solid border
-  , ptopLeft :: ![Text]    -- ^ plan of the top-left corner of the place
+  { psymbol   :: !Char      -- ^ a symbol
+  , pname     :: !Text      -- ^ short description
+  , pfreq     :: !Freqs     -- ^ frequency within groups
+  , pcover    :: !Cover     -- ^ how to fill whole place based on the corner
+  , pfence    :: !Fence     -- ^ whether to fence the place with solid border
+  , ptopLeft  :: ![Text]    -- ^ plan of the top-left corner of the place
+  , poverride :: ![(Char, Text)]  -- ^ legend override, ignoring tile symbol
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

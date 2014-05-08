@@ -106,11 +106,14 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
       place = Place {..}
   darkFloorTile <- fmap (fromMaybe $ assert `failure` clegendDarkTile)
                    $ opick clegendDarkTile $ (== '.') . tsymbol
+  override <- ooverride cotile (poverride kr)
   legend <- olegend cotile qlegend
   legendLit <- olegend cotile clegendLitTile
-  let xlegend = EM.insert ' ' darkFloorTile
+  let xlegend = EM.union override
+                $ EM.insert ' ' darkFloorTile
                 $ EM.insert 'X' qhollowFence legend
-      xlegendLit = EM.insert ' ' darkFloorTile
+      xlegendLit = EM.union override
+                   $ EM.insert ' ' darkFloorTile
                    $ EM.insert 'X' qhollowFence legendLit
       cmap = tilePlace qarea kr
       fence = case pfence kr of
@@ -141,6 +144,17 @@ olegend Kind.Ops{ofoldrWithKey, opick} cgroup =
               $ opick cgroup $ (== s) . tsymbol
         return $! EM.insert s tk m
       legend = ES.foldr getLegend (return EM.empty) symbols
+  in legend
+
+ooverride :: Kind.Ops TileKind -> [(Char, Text)]
+          -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
+ooverride Kind.Ops{opick} poverride =
+  let getLegend (s, cgroup) acc = do
+        m <- acc
+        tk <- fmap (fromMaybe $ assert `failure` (cgroup, s))
+              $ opick cgroup (const True)  -- tile symbol ignored
+        return $! EM.insert s tk m
+      legend = foldr getLegend (return EM.empty) poverride
   in legend
 
 -- | Construct a fence around an area, with the given tile kind.
