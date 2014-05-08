@@ -78,9 +78,9 @@ lampPost = PlaceKind
   , pfreq    = [("ambush", 50)]
   , pcover   = CVerbatim
   , pfence   = FNone
-  , ptopLeft = [ " . "
+  , ptopLeft = [ "X.X"
                , ".O."
-               , " . "
+               , "X.X"
                ]
   , poverride = [('O', "ambushOverO")]
   }
@@ -93,10 +93,10 @@ lampPost2 = lampPost
   }
 lampPost3 = lampPost
   { pfreq    = [("ambush", 999)]
-  , ptopLeft = [ "  .  "
-               , " ... "
+  , ptopLeft = [ "XX.XX"
+               , "X...X"
                , "..O.."
-               , " ... "
-               , "  .  "
+               , "X...X"
+               , "XX.XX"
                ]
   }

@@ -104,17 +104,11 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
       qseen = False
       qarea = fromMaybe (assert `failure` (kr, r)) $ interiorArea (pfence kr) r
       place = Place {..}
-  darkFloorTile <- fmap (fromMaybe $ assert `failure` clegendDarkTile)
-                   $ opick clegendDarkTile $ (== '.') . tsymbol
   override <- ooverride cotile (poverride kr)
   legend <- olegend cotile qlegend
   legendLit <- olegend cotile clegendLitTile
-  let xlegend = EM.union override
-                $ EM.insert ' ' darkFloorTile
-                $ EM.insert 'X' qhollowFence legend
-      xlegendLit = EM.union override
-                   $ EM.insert ' ' darkFloorTile
-                   $ EM.insert 'X' qhollowFence legendLit
+  let xlegend = EM.union override legend
+      xlegendLit = EM.union override legendLit
       cmap = tilePlace qarea kr
       fence = case pfence kr of
         FWall -> buildFence qsolidFence qarea
@@ -122,10 +116,10 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
         FNone -> EM.empty
       (x0, y0, x1, y1) = fromArea qarea
       isEdge (Point x y) = x `elem` [x0, x1] || y `elem` [y0, y1]
-      digNight xy c | isEdge xy = xlegendLit EM.! c
-                    | otherwise = xlegend EM.! c
+      digDay xy c | isEdge xy = xlegendLit EM.! c
+                  | otherwise = xlegend EM.! c
       interior = case pfence kr of
-        FNone | not dnight -> EM.mapWithKey digNight cmap
+        FNone | not dnight -> EM.mapWithKey digDay cmap
         _ -> EM.map (xlegend EM.!) cmap
       tmap = EM.union interior fence
   return (tmap, place)
@@ -204,7 +198,7 @@ tilePlace area pl@PlaceKind{..} =
         let tileInterior (y, row) =
               let fx = f dx row
                   xStart = x0 + ((xwidth - length fx) `div` 2)
-              in zip (fromX (xStart, y)) fx
+              in filter ((/= 'X') . snd) $ zip (fromX (xStart, y)) fx
             reflected =
               let fy = f dy $ map T.unpack ptopLeft
                   yStart = y0 + ((ywidth - length fy) `div` 2)
