@@ -11,18 +11,29 @@ cdefs = ContentDef
   , getFreq = pfreq
   , validate = validatePlaceKind
   , content =
-      [rect, pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost, lampPost2, lampPost3]
+      [rect, ruin, pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost, lampPost2, lampPost3]
   }
-rect,        pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost, lampPost2, lampPost3 :: PlaceKind
+rect,        ruin, pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost, lampPost2, lampPost3 :: PlaceKind
 
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "room"
-  , pfreq    = [("rogue", 100), ("ambush", 20)]
+  , pfreq    = [("rogue", 100), ("ambush", 5)]
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "--"
                , "|."
+               ]
+  , poverride = []
+  }
+ruin = PlaceKind
+  { psymbol  = 'R'
+  , pname    = "ruin"
+  , pfreq    = [("ambush", 20)]
+  , pcover   = CStretch
+  , pfence   = FNone
+  , ptopLeft = [ "--"
+               , "|X"
                ]
   , poverride = []
   }
