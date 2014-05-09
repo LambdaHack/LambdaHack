@@ -129,6 +129,7 @@ skirmish = battle
   , cnightChance  = 0
   , cdoorChance   = 1
   , copenChance   = 0
+  , cplaceFreq    = [(50, "skirmish"), (50, "rogue")]
   , cdefTile      = "skirmishSet"
   }
 ambush = battle

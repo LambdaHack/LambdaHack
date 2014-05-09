@@ -11,9 +11,9 @@ cdefs = ContentDef
   , getFreq = pfreq
   , validate = validatePlaceKind
   , content =
-      [rect, ruin, pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost, lampPost2, lampPost3]
+      [rect, ruin, pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, rockShade, rockShade2, rockShade3]
   }
-rect,        ruin, pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost, lampPost2, lampPost3 :: PlaceKind
+rect,        ruin, pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, rockShade, rockShade2, rockShade3 :: PlaceKind
 
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
@@ -70,7 +70,7 @@ pillar3 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "colonnade"
-  , pfreq    = [("rogue", 500)]
+  , pfreq    = [("rogue", 200)]
   , pcover   = CAlternate
   , pfence   = FFloor
   , ptopLeft = [ "O."
@@ -86,28 +86,82 @@ colonnadeW = colonnade
 lampPost = PlaceKind
   { psymbol  = 'l'
   , pname    = "lamp post"
-  , pfreq    = [("ambush", 50)]
+  , pfreq    = [("ambush", 30)]
   , pcover   = CVerbatim
   , pfence   = FNone
   , ptopLeft = [ "X.X"
                , ".O."
                , "X.X"
                ]
-  , poverride = [('O', "ambushOverO")]
+  , poverride = [('O', "ambushOverLamp_O")]
   }
 lampPost2 = lampPost
-  { pfreq    = [("ambush", 50)]
-  , ptopLeft = [ "..."
+  { ptopLeft = [ "..."
                , ".O."
                , "..."
                ]
   }
 lampPost3 = lampPost
-  { pfreq    = [("ambush", 999)]
-  , ptopLeft = [ "XX.XX"
+  { ptopLeft = [ "XX.XX"
                , "X...X"
                , "..O.."
                , "X...X"
                , "XX.XX"
+               ]
+  }
+lampPost4 = lampPost
+  { ptopLeft = [ "X...X"
+               , "....."
+               , "..O.."
+               , "....."
+               , "X...X"
+               ]
+  }
+treeShade = PlaceKind
+  { psymbol  = 't'
+  , pname    = "tree shade"
+  , pfreq    = [("skirmish", 50)]
+  , pcover   = CVerbatim
+  , pfence   = FNone
+  , ptopLeft = [ "sss"
+               , "XOs"
+               , "XXs"
+               ]
+  , poverride = [('O', "skirmishOverTree_O"), ('s', "skirmishOverTree_s")]
+  }
+treeShade2 = treeShade
+  { ptopLeft = [ "sss"
+               , "XOs"
+               , "Xss"
+               ]
+  }
+treeShade3 = treeShade
+  { ptopLeft = [ "sss"
+               , "sOs"
+               , "XXs"
+               ]
+  }
+rockShade = PlaceKind
+  { psymbol  = 't'
+  , pname    = "rock shade"
+  , pfreq    = [("skirmish", 30)]
+  , pcover   = CVerbatim
+  , pfence   = FNone
+  , ptopLeft = [ "XXs"
+               , "XOs"
+               , "XXX"
+               ]
+  , poverride = [('s', "skirmishOverRock_s")]
+  }
+rockShade2 = rockShade
+  { ptopLeft = [ "Xss"
+               , "XOX"
+               , "XXX"
+               ]
+  }
+rockShade3 = rockShade
+  { ptopLeft = [ "Xss"
+               , "XOs"
+               , "XXX"
                ]
   }
