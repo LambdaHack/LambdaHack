@@ -31,15 +31,15 @@ convertTileMaps :: Kind.Ops TileKind
                 -> Rnd (Kind.Id TileKind) -> Maybe (Rnd (Kind.Id TileKind))
                 -> Int -> Int -> TileMapEM
                 -> Rnd TileMap
-convertTileMaps cotile cdefTile mcdefTilePassable cxsize cysize ltile = do
+convertTileMaps cotile cdefTile mcdefTileWalkable cxsize cysize ltile = do
   let f :: Point -> Rnd (Kind.Id TileKind)
       f p = case EM.lookup p ltile of
         Just t -> return t
         Nothing -> cdefTile
   converted1 <- PointArray.generateMA cxsize cysize f
-  case mcdefTilePassable of
-    Nothing -> return converted1  -- no passable tiles for filling the map
-    Just cdefTilePassable -> do  -- some tiles passable, so ensure connectivity
+  case mcdefTileWalkable of
+    Nothing -> return converted1  -- no walkable tiles for filling the map
+    Just cdefTileWalkable -> do  -- some tiles walkable, so ensure connectivity
       -- TODO: perhaps checking connectivity with BFS would be better,
       -- but it's still artibrary how we recover connectivity and we still
       -- need ltile not to break rooms (unless that's a good idea,
@@ -48,7 +48,7 @@ convertTileMaps cotile cdefTile mcdefTilePassable cxsize cysize ltile = do
       let passes p@Point{..} array =
             px >= 0 && px <= cxsize - 1
             && py >= 0 && py <= cysize - 1
-            && Tile.isPassable cotile (array PointArray.! p)
+            && Tile.isWalkable cotile (array PointArray.! p)
           -- If no point blocks on both ends, then I can eventually go
           -- from bottom to top of the map and from left to right
           -- unless there are disconnected areas inside rooms).
@@ -60,24 +60,24 @@ convertTileMaps cotile cdefTile mcdefTilePassable cxsize cysize ltile = do
                  || passes (Point x (y - 1)) array)
           xeven Point{..} = px `mod` 2 == 0
           yeven Point{..} = py `mod` 2 == 0
-          connect included blocks passableTile array =
+          connect included blocks walkableTile array =
             let g n c = if included n
-                           && not (Tile.isPassable cotile c)
+                           && not (Tile.isWalkable cotile c)
                            && n `EM.notMember` ltile
                            && blocks n array
-                        then passableTile
+                        then walkableTile
                         else c
             in PointArray.imapA g array
-      passable2 <- cdefTilePassable
-      let converted2 = connect xeven blocksHorizontal passable2 converted1
-      passable3 <- cdefTilePassable
-      let converted3 = connect yeven blocksVertical passable3 converted2
-      passable4 <- cdefTilePassable
+      walkable2 <- cdefTileWalkable
+      let converted2 = connect xeven blocksHorizontal walkable2 converted1
+      walkable3 <- cdefTileWalkable
+      let converted3 = connect yeven blocksVertical walkable3 converted2
+      walkable4 <- cdefTileWalkable
       let converted4 =
-            connect (not . xeven) blocksHorizontal passable4 converted3
-      passable5 <- cdefTilePassable
+            connect (not . xeven) blocksHorizontal walkable4 converted3
+      walkable5 <- cdefTileWalkable
       let converted5 =
-            connect (not . yeven) blocksVertical passable5 converted4
+            connect (not . yeven) blocksVertical walkable5 converted4
       return converted5
 
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Point]
@@ -107,18 +107,18 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
       ascendable  = Tile.kindHasFeature $ F.Cause (Effect.Ascend 1)
       descendable = Tile.kindHasFeature $ F.Cause (Effect.Ascend (-1))
       dcond kt = (cpassable
-                  || not (Tile.isPassableKind kt))
+                  || not (Tile.kindHasFeature F.Walkable kt))
                  && (not (Tile.kindHasFeature F.Clear kt)
                      || (if dnight then id else not)
                            (Tile.kindHasFeature F.Dark kt))
       pickDefTile = fmap (fromMaybe $ assert `failure` cdefTile)
                     $ opick cdefTile dcond
-      mpickPassable =
+      mpickWalkable =
         if cpassable
         then Just $ fmap (fromMaybe $ assert `failure` cdefTile)
-                  $ opick cdefTile Tile.isPassableKind
+                  $ opick cdefTile (Tile.kindHasFeature F.Walkable)
         else Nothing
-  cmap <- convertTileMaps cotile pickDefTile mpickPassable cxsize cysize dmap
+  cmap <- convertTileMaps cotile pickDefTile mpickWalkable cxsize cysize dmap
   -- We keep two-way stairs separately, in the last component.
   let makeStairs :: Bool -> Bool -> Bool
                  -> ( [(Point, Kind.Id TileKind)]
