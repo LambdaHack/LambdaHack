@@ -36,7 +36,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
@@ -175,16 +174,30 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
 populateDungeon :: (MonadAtomic m, MonadServer m) => m ()
 populateDungeon = do
   cops@Kind.COps{cotile} <- getsState scops
-  let initialItems lid (Level{ltile, litemNum, lxsize, lysize}) =
+  let initialItems lid (Level{ltile, litemNum, lxsize, lysize}) = do
+        let factionDist = max lxsize lysize - 5
         replicateM litemNum $ do
           Level{lfloor} <- getLevel lid
-          pos <- rndToAction $ findPosTry 1000 ltile
-                                 -- try really hard, for skirmish fairness
+          let dist p = minimum $ maxBound : map (chessDist p) (EM.keys lfloor)
+          pos <- rndToAction $ findPosTry 100 ltile
                    (\_ t -> Tile.isWalkable cotile t
                             && (not $ Tile.hasFeature cotile F.NoItem t))
-                   [ \p _ -> all (flip EM.notMember lfloor)
-                             $ vicinity lxsize lysize p
-                   , const (Tile.hasFeature cotile F.OftenItem)
+                   [ \p t -> Tile.hasFeature cotile F.OftenItem t
+                             && dist p > factionDist `div` 5
+                   , \p t -> Tile.hasFeature cotile F.OftenItem t
+                             && dist p > factionDist `div` 7
+                   , \p t -> Tile.hasFeature cotile F.OftenItem t
+                             && dist p > factionDist `div` 9
+                   , \p t -> Tile.hasFeature cotile F.OftenItem t
+                             && dist p > factionDist `div` 12
+                   , \p _ -> dist p > factionDist `div` 5
+                   , \p t -> Tile.hasFeature cotile F.OftenItem t
+                             || dist p > factionDist `div` 7
+                   , \p t -> Tile.hasFeature cotile F.OftenItem t
+                             || dist p > factionDist `div` 9
+                   , \p t -> Tile.hasFeature cotile F.OftenItem t
+                             || dist p > factionDist `div` 12
+                   , \p _ -> dist p > 1
                    , \p _ -> EM.notMember p lfloor
                    ]
           createItems 1 pos lid

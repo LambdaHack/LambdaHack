@@ -2,6 +2,7 @@
 module Content.TileKind ( cdefs ) where
 
 import Control.Arrow (first)
+import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -130,7 +131,7 @@ doorOpenV = TileKind
   , tfreq    = [("vertical open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Walkable, Clear
+  , tfeature = [ Walkable, Clear, NoItem
                , CloseTo "vertical closed door Lit"
                ]
   }
@@ -166,7 +167,7 @@ doorOpenH = TileKind
   , tfreq    = [("horizontal open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Walkable, Clear
+  , tfeature = [ Walkable, Clear, NoItem
                , CloseTo "horizontal closed door Lit"
                ]
   }
@@ -176,7 +177,7 @@ stairsUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Walkable, Clear, Cause $ Effect.Ascend 1]
+  , tfeature = [Walkable, Clear, NoItem, Cause $ Effect.Ascend 1]
   }
 stairsLit = TileKind
   { tsymbol  = '>'
@@ -184,7 +185,7 @@ stairsLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan  -- TODO
-  , tfeature = [ Walkable, Clear
+  , tfeature = [ Walkable, Clear, NoItem
                , Cause $ Effect.Ascend 1
                , Cause $ Effect.Ascend (-1) ]
   }
@@ -194,7 +195,7 @@ stairsDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Walkable, Clear, Cause $ Effect.Ascend (-1)]
+  , tfeature = [Walkable, Clear, NoItem, Cause $ Effect.Ascend (-1)]
   }
 escapeUpLit = TileKind
   { tsymbol  = '<'
@@ -202,7 +203,7 @@ escapeUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , tfeature = [Walkable, Clear, Cause (Effect.Escape 1)]
+  , tfeature = [Walkable, Clear, NoItem, Cause (Effect.Escape 1)]
   }
 escapeDownLit = TileKind
   { tsymbol  = '>'
@@ -210,7 +211,7 @@ escapeDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , tfeature = [Walkable, Clear, Cause (Effect.Escape (-1))]
+  , tfeature = [Walkable, Clear, NoItem, Cause (Effect.Escape (-1))]
   }
 unknown = TileKind
   { tsymbol  = ' '
@@ -232,26 +233,26 @@ floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
   , tname    = "stone floor"
   , tfreq    = [ ("floorArenaLit", 1)
-               , ("arenaSet", 1), ("noiseSet", 100)
-               , ("battleSet", 100), ("skirmishSet", 100) ]
+               , ("arenaSet", 1), ("emptySet", 1), ("noiseSet", 100)
+               , ("battleSet", 100), ("skirmishSet", 100), ("ambushSet", 1000) ]
   }
 floorActorLit = floorArenaLit
   { tfreq    = []
   , tfeature = OftenActor : tfeature floorArenaLit
   }
 floorItemLit = floorArenaLit
-  { tfreq    = [("emptySet", 1), ("ambushSet", 1000)]
+  { tfreq    = []
   , tfeature = OftenItem : tfeature floorArenaLit
   }
 floorActorItemLit = floorItemLit
-  { tfreq    = [("legendLit", 100)]
+  { tfreq    = [("legendLit", 100)]  -- no OftenItem in legendDark
   , tfeature = OftenActor : tfeature floorItemLit
   }
-floorArenaShade = floorActorItemLit
+floorArenaShade = floorActorLit
   { tname    = "stone floor"  -- TODO: "shaded ground"
   , tfreq    = [("skirmishOverTree_s", 1), ("skirmishOverRock_s", 1)]
   , tcolor2  = BrBlack
-  , tfeature = Dark : tfeature floorActorItemLit
+  , tfeature = Dark : tfeature floorActorLit  -- no OftenItem
   }
 floorRedLit = floorArenaLit
   { tname    = "brick pavement"
@@ -280,17 +281,18 @@ floorBrownLit = floorRedLit
   }
 
 makeDark :: TileKind -> TileKind
-makeDark k = let textLit :: Text -> Text
-                 textLit t = maybe t (<> "Dark") $ T.stripSuffix "Lit" t
-                 litFreq = map (first textLit) $ tfreq k
-                 litFeat (OpenTo t) = OpenTo $ textLit t
-                 litFeat (CloseTo t) = CloseTo $ textLit t
-                 litFeat (ChangeTo t) = ChangeTo $ textLit t
-                 litFeat (HideAs t) = HideAs $ textLit t
-                 litFeat (RevealAs t) = RevealAs $ textLit t
-                 litFeat feat = feat
-             in k { tfreq    = litFreq
-                  , tfeature = Dark : map litFeat (tfeature k)
+makeDark k = let darkText :: Text -> Text
+                 darkText t = maybe t (<> "Dark") $ T.stripSuffix "Lit" t
+                 darkFrequency = map (first darkText) $ tfreq k
+                 darkFeat (OpenTo t) = Just $ OpenTo $ darkText t
+                 darkFeat (CloseTo t) = Just $ CloseTo $ darkText t
+                 darkFeat (ChangeTo t) = Just $ ChangeTo $ darkText t
+                 darkFeat (HideAs t) = Just $ HideAs $ darkText t
+                 darkFeat (RevealAs t) = Just $ RevealAs $ darkText t
+                 darkFeat OftenItem = Nothing
+                 darkFeat feat = Just $ feat
+             in k { tfreq    = darkFrequency
+                  , tfeature = Dark : mapMaybe darkFeat (tfeature k)
                   }
 
 makeDarkColor :: TileKind -> TileKind
