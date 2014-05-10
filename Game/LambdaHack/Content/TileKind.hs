@@ -77,6 +77,8 @@ actionFeatures markSuspect t =
         F.HideAs{} -> Nothing
         F.RevealAs{} -> Nothing
         F.Dark -> Nothing  -- not important any longer, after FOV computed
-        F.CanItem -> Nothing
-        F.CanActor -> Nothing
+        F.OftenItem -> Nothing
+        F.OftenActor -> Nothing
+        F.NoItem -> Nothing
+        F.NoActor -> Nothing
   in S.fromList $ mapMaybe f $ tfeature t

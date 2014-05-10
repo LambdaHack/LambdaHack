@@ -26,8 +26,10 @@ data Feature =
   | Aura !(Effect Int)   -- ^ sustains the effect continuously, TODO
   | Impenetrable         -- ^ can never be excavated nor seen through
 
-  | CanItem              -- ^ items can be generated there
-  | CanActor             -- ^ actors and stairs can be generated there
+  | OftenItem            -- ^ initial items often generated there
+  | OftenActor           -- ^ initial actors and stairs often generated there
+  | NoItem               -- ^ no items ever generated there
+  | NoActor              -- ^ no actors nor stairs ever generated there
   | Trail                -- ^ used for visible trails throughout the level
   deriving (Show, Read, Eq, Ord, Generic)
 

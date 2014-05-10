@@ -184,13 +184,14 @@ rollSpawnPos Kind.COps{cotile} visible
         all (\b -> chessDist (bpos b) p > d) inhabitants
   findPosTry 40 ltile
     ( \p t -> Tile.isWalkable cotile t
+              && not (Tile.hasFeature cotile F.NoActor t)
               && unoccupied as p)
     [ \_ t -> not (isLit t)  -- no such tiles on some maps
     , distantAtLeast factionDist
     , distantAtLeast $ factionDist `div` 2
     , \p _ -> not $ p `ES.member` visible
     , distantAtLeast $ factionDist `div` 3
-    , \_ t -> Tile.hasFeature cotile F.CanActor t  -- in reachable area
+    , const $ Tile.hasFeature cotile F.OftenActor
     , distantAtLeast $ factionDist `div` 4
     , distantAtLeast 3  -- otherwise a fast actor can walk and hit in one turn
     ]

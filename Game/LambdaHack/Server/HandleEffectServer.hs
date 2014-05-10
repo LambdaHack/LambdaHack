@@ -18,6 +18,7 @@ import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -28,6 +29,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
@@ -217,9 +219,11 @@ effectCallFriend :: (MonadAtomic m, MonadServer m)
                    -> m Bool
 effectCallFriend power source target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
+  Kind.COps{cotile} <- getsState scops
   sb <- getsState (getActorBody source)
   tb <- getsState (getActorBody target)
-  ps <- getsState $ nearbyFreePoints (const True) (bpos tb) (blid tb)
+  let validTile t = not $ Tile.hasFeature cotile F.NoActor t
+  ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
   summonFriends (bfid sb) (take power ps) (blid tb)
   return True
 
@@ -248,8 +252,10 @@ effectSummon :: (MonadAtomic m, MonadServer m)
              => Int -> ActorId -> m Bool
 effectSummon power target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
+  Kind.COps{cotile} <- getsState scops
   tb <- getsState (getActorBody target)
-  ps <- getsState $ nearbyFreePoints (const True) (bpos tb) (blid tb)
+  let validTile t = not $ Tile.hasFeature cotile F.NoActor t
+  ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
   time <- getsState $ getLocalTime (blid tb)
   mfid <- pickFaction "summon" (const True)
   case mfid of

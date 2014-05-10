@@ -237,15 +237,15 @@ floorArenaLit = floorCorridorLit
   }
 floorActorLit = floorArenaLit
   { tfreq    = []
-  , tfeature = CanActor : tfeature floorArenaLit
+  , tfeature = OftenActor : tfeature floorArenaLit
   }
 floorItemLit = floorArenaLit
   { tfreq    = [("emptySet", 1), ("ambushSet", 1000)]
-  , tfeature = CanItem : tfeature floorArenaLit
+  , tfeature = OftenItem : tfeature floorArenaLit
   }
 floorActorItemLit = floorItemLit
   { tfreq    = [("legendLit", 100)]
-  , tfeature = CanActor : tfeature floorItemLit
+  , tfeature = OftenActor : tfeature floorItemLit
   }
 floorArenaShade = floorActorItemLit
   { tname    = "stone floor"  -- TODO: "shaded ground"

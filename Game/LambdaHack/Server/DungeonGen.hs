@@ -85,11 +85,13 @@ placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Point]
 placeStairs cotile cmap CaveKind{..} ps = do
   let dist cmin l _ = all (\pos -> chessDist l pos > cmin) ps
   findPosTry 1000 cmap
-    (\p t -> Tile.hasFeature cotile F.CanActor t
+    (\p t -> Tile.isWalkable cotile t
+             && not (Tile.hasFeature cotile F.NoActor t)
              && dist 0 p t)  -- can't overwrite stairs with other stairs
     [ dist $ cminStairDist
     , dist $ cminStairDist `div` 2
     , dist $ cminStairDist `div` 4
+    , const $ Tile.hasFeature cotile F.OftenActor
     , dist $ cminStairDist `div` 8
     ]
 

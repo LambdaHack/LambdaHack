@@ -180,9 +180,11 @@ populateDungeon = do
           Level{lfloor} <- getLevel lid
           pos <- rndToAction $ findPosTry 1000 ltile
                                  -- try really hard, for skirmish fairness
-                   (const (Tile.hasFeature cotile F.CanItem))
+                   (\_ t -> Tile.isWalkable cotile t
+                            && (not $ Tile.hasFeature cotile F.NoItem t))
                    [ \p _ -> all (flip EM.notMember lfloor)
                              $ vicinity lxsize lysize p
+                   , const (Tile.hasFeature cotile F.OftenItem)
                    , \p _ -> EM.notMember p lfloor
                    ]
           createItems 1 pos lid
@@ -218,7 +220,8 @@ populateDungeon = do
         time <- getsState $ getLocalTime lid
         let nmult = 1 + fromEnum fid3 `mod` 4  -- always positive
             ntime = timeShift time (timeDeltaScale (Delta timeClip) nmult)
-        psFree <- getsState $ nearbyFreePoints (const True) ppos lid
+            validTile t = not $ Tile.hasFeature cotile F.NoActor t
+        psFree <- getsState $ nearbyFreePoints validTile ppos lid
         let ps = take (playerInitial $ gplayer fact3) $ zip [0..] psFree
         forM_ ps $ \ (n, p) ->
           if not $ isHeroFact cops fact3
@@ -241,10 +244,12 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
       tryFind _ 0 = return []
       tryFind ps n = do
         np <- findPosTry 1000 ltile  -- try really hard, for skirmish fairness
-                (const (Tile.hasFeature cotile F.CanActor))
+                (\_ t -> Tile.isWalkable cotile t
+                         && (not $ Tile.hasFeature cotile F.NoActor t))
                 [ dist ps $ factionDist `div` 2
                 , dist ps $ factionDist `div` 3
                 , dist ps $ factionDist `div` 4
+                , const (Tile.hasFeature cotile F.OftenActor)
                 , dist ps $ factionDist `div` 8
                 , dist ps $ factionDist `div` 16
                 ]
