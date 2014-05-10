@@ -106,17 +106,20 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
       hasEscape p t = Tile.kindHasFeature (F.Cause $ Effect.Escape p) t
       ascendable  = Tile.kindHasFeature $ F.Cause (Effect.Ascend 1)
       descendable = Tile.kindHasFeature $ F.Cause (Effect.Ascend (-1))
+      nightCond kt = (not (Tile.kindHasFeature F.Clear kt)
+                      || (if dnight then id else not)
+                            (Tile.kindHasFeature F.Dark kt))
       dcond kt = (cpassable
                   || not (Tile.kindHasFeature F.Walkable kt))
-                 && (not (Tile.kindHasFeature F.Clear kt)
-                     || (if dnight then id else not)
-                           (Tile.kindHasFeature F.Dark kt))
+                 && nightCond kt
       pickDefTile = fmap (fromMaybe $ assert `failure` cdefTile)
                     $ opick cdefTile dcond
+      wcond kt = Tile.kindHasFeature F.Walkable kt
+                 && nightCond kt
       mpickWalkable =
         if cpassable
         then Just $ fmap (fromMaybe $ assert `failure` cdefTile)
-                  $ opick cdefTile (Tile.kindHasFeature F.Walkable)
+                  $ opick cdefTile wcond
         else Nothing
   cmap <- convertTileMaps cotile pickDefTile mpickWalkable cxsize cysize dmap
   -- We keep two-way stairs separately, in the last component.
