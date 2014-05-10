@@ -27,8 +27,7 @@ rogue = CaveKind
   , cysize        = snd normalLevelBound + 1
   , cgrid         = DiceXY (3 * d 2) (d 2 + 2)
   , cminPlaceSize = DiceXY (2 * d 2 + 2) 4
-  , cmaxPlaceSize = DiceXY (intToDice $ fst normalLevelBound)
-                           (intToDice $ snd normalLevelBound)
+  , cmaxPlaceSize = DiceXY 15 10
   , cdarkChance   = d 54 + dl 20
   , cnightChance  = 100
   , cauxConnects  = 1%3
@@ -71,8 +70,7 @@ empty = rogue
   , cfreq         = [("dng", 20), ("caveEmpty", 1)]
   , cgrid         = DiceXY (d 2 + 1) 1
   , cminPlaceSize = DiceXY 10 10
-  , cmaxPlaceSize = DiceXY (intToDice $ fst normalLevelBound * 3 `div` 5)
-                           (intToDice $ snd normalLevelBound * 3 `div` 5)
+  , cmaxPlaceSize = DiceXY 24 12
   , cdarkChance   = d 80 + dl 80
   , cnightChance  = 0
   , cauxConnects  = 1
