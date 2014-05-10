@@ -202,28 +202,34 @@ populateDungeon = do
       initialActors lid = do
         lvl <- getLevel lid
         let arenaFactions = filter ((== lid) . getEntryLevel) needInitialCrew
+            representsAlliance (fid2, fact2) =
+              not $ any (\(fid3, _) -> fid3 < fid2
+                                       && isAllied fact2 fid3) arenaFactions
+            arenaAlliances = filter representsAlliance arenaFactions
+            placeAlliance ((fid3, _), ppos) =
+              mapM_ (\(fid4, fact4) ->
+                      if isAllied fact4 fid3 || fid4 == fid3
+                      then placeActors lid ((fid4, fact4), ppos)
+                      else return ()) arenaFactions
         entryPoss <- rndToAction
-                     $ findEntryPoss cops lvl (length arenaFactions)
-        mapM_ (arenaActors lid) $ zip arenaFactions entryPoss
-      arenaActors _ ((_, Faction{gplayer = Player{playerInitial = 0}}), _) =
-        return ()
-      arenaActors lid ((side, fact), ppos) = do
+                     $ findEntryPoss cops lvl (length arenaAlliances)
+        mapM_ placeAlliance $ zip arenaAlliances entryPoss
+      placeActors lid ((fid3, fact3), ppos) = do
         time <- getsState $ getLocalTime lid
-        let nmult = 1 + fromEnum side `mod` 4  -- always positive
+        let nmult = 1 + fromEnum fid3 `mod` 4  -- always positive
             ntime = timeShift time (timeDeltaScale (Delta timeClip) nmult)
-            validTile t = Tile.hasFeature cotile F.CanActor t
         psFree <- getsState $ nearbyFreePoints (const True) ppos lid
-        let ps = take (playerInitial $ gplayer fact) $ zip [0..] psFree
+        let ps = take (playerInitial $ gplayer fact3) $ zip [0..] psFree
         forM_ ps $ \ (n, p) ->
-          if not $ isHeroFact cops fact
-          then spawnMonsters [p] lid ntime side
+          if not $ isHeroFact cops fact3
+          then spawnMonsters [p] lid ntime fid3
           else do
-            let hNames = fromMaybe [] $ EM.lookup side sheroNames
-            aid <- addHero side p lid hNames (Just n) ntime
+            let hNames = fromMaybe [] $ EM.lookup fid3 sheroNames
+            aid <- addHero fid3 p lid hNames (Just n) ntime
             mleader <- getsState
-                       $ gleader . (EM.! side) . sfactionD  -- just changed
+                       $ gleader . (EM.! fid3) . sfactionD  -- just changed
             when (isNothing mleader) $
-              execUpdAtomic $ UpdLeadFaction side Nothing (Just aid)
+              execUpdAtomic $ UpdLeadFaction fid3 Nothing (Just aid)
   mapM_ initialActors arenas
 
 -- | Find starting postions for all factions. Try to make them distant
