@@ -232,18 +232,19 @@ floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
   , tname    = "stone floor"
   , tfreq    = [ ("floorArenaLit", 1)
-               , ("arenaSet", 1), ("noiseSet", 100), ("skirmishSet", 100) ]
+               , ("arenaSet", 1), ("noiseSet", 100)
+               , ("battleSet", 100), ("skirmishSet", 100) ]
   }
 floorActorLit = floorArenaLit
-  { tfreq    = [("floorActorLit", 1), ("battleSet", 100)]
+  { tfreq    = []
   , tfeature = CanActor : tfeature floorArenaLit
   }
 floorItemLit = floorArenaLit
-  { tfreq    = []
+  { tfreq    = [("emptySet", 1), ("ambushSet", 1000)]
   , tfeature = CanItem : tfeature floorArenaLit
   }
 floorActorItemLit = floorItemLit
-  { tfreq    = [("legendLit", 100), ("emptySet", 1), ("ambushSet", 1000)]
+  { tfreq    = [("legendLit", 100)]
   , tfeature = CanActor : tfeature floorItemLit
   }
 floorArenaShade = floorActorItemLit
