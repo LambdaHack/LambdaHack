@@ -182,17 +182,18 @@ rollSpawnPos Kind.COps{cotile} visible
       isLit = Tile.isLit cotile
       distantAtLeast d p _ =
         all (\b -> chessDist (bpos b) p > d) inhabitants
-  findPosTry 40 ltile
+  -- Not considering F.OftenActor, because monsters emerge from hidden ducts,
+  -- which are easier to hide in crampy corridors that lit halls.
+  findPosTry 100 ltile
     ( \p t -> Tile.isWalkable cotile t
               && not (Tile.hasFeature cotile F.NoActor t)
               && unoccupied as p)
     [ \_ t -> not (isLit t)  -- no such tiles on some maps
     , distantAtLeast factionDist
     , distantAtLeast $ factionDist `div` 2
-    , \p _ -> not $ p `ES.member` visible
-    , distantAtLeast $ factionDist `div` 3
-    , const $ Tile.hasFeature cotile F.OftenActor
     , distantAtLeast $ factionDist `div` 4
+    , distantAtLeast $ factionDist `div` 6
+    , \p _ -> not $ p `ES.member` visible
     , distantAtLeast 3  -- otherwise a fast actor can walk and hit in one turn
     ]
 

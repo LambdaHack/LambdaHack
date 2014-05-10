@@ -131,7 +131,7 @@ doorOpenV = TileKind
   , tfreq    = [("vertical open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Walkable, Clear, NoItem
+  , tfeature = [ Walkable, Clear, NoItem, NoActor
                , CloseTo "vertical closed door Lit"
                ]
   }
@@ -167,7 +167,7 @@ doorOpenH = TileKind
   , tfreq    = [("horizontal open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Walkable, Clear, NoItem
+  , tfeature = [ Walkable, Clear, NoItem, NoActor
                , CloseTo "horizontal closed door Lit"
                ]
   }
@@ -177,7 +177,7 @@ stairsUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Walkable, Clear, NoItem, Cause $ Effect.Ascend 1]
+  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ Effect.Ascend 1]
   }
 stairsLit = TileKind
   { tsymbol  = '>'
@@ -185,7 +185,7 @@ stairsLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan  -- TODO
-  , tfeature = [ Walkable, Clear, NoItem
+  , tfeature = [ Walkable, Clear, NoItem, NoActor
                , Cause $ Effect.Ascend 1
                , Cause $ Effect.Ascend (-1) ]
   }
@@ -195,7 +195,7 @@ stairsDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Walkable, Clear, NoItem, Cause $ Effect.Ascend (-1)]
+  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ Effect.Ascend (-1)]
   }
 escapeUpLit = TileKind
   { tsymbol  = '<'
@@ -203,7 +203,7 @@ escapeUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , tfeature = [Walkable, Clear, NoItem, Cause (Effect.Escape 1)]
+  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause (Effect.Escape 1)]
   }
 escapeDownLit = TileKind
   { tsymbol  = '>'
@@ -211,7 +211,7 @@ escapeDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , tfeature = [Walkable, Clear, NoItem, Cause (Effect.Escape (-1))]
+  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause (Effect.Escape (-1))]
   }
 unknown = TileKind
   { tsymbol  = ' '
