@@ -212,7 +212,7 @@ populateDungeon = do
         let nmult = 1 + fromEnum side `mod` 4  -- always positive
             ntime = timeShift time (timeDeltaScale (Delta timeClip) nmult)
             validTile t = Tile.hasFeature cotile F.CanActor t
-        psFree <- getsState $ nearbyFreePoints validTile ppos lid
+        psFree <- getsState $ nearbyFreePoints (const True) ppos lid
         let ps = take (playerInitial $ gplayer fact) $ zip [0..] psFree
         forM_ ps $ \ (n, p) ->
           if not $ isHeroFact cops fact
