@@ -194,12 +194,11 @@ of any UI-using faction.
 
                 keys           command
                 CTRL-x         save and exit
-                CTRL-a         new campaign game
+                CTRL-u         new duel game
                 CTRL-k         new skirmish game
                 CTRL-m         new ambush game
                 CTRL-b         new battle game
-                CTRL-e         new defense game
-                CTRL-f         new safari game
+                CTRL-a         new campaign game
                 CTRL-d         cycle next game difficulty
 
 There are also some debug, testing and cheat options and game modes

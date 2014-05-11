@@ -13,9 +13,9 @@ cdefs = ContentDef
   , getFreq = mfreq
   , validate = validateModeKind
   , content =
-      [campaign, skirmish, ambush, battle, safari, pvp, coop, defense]
+      [campaign, duel, skirmish, ambush, battle, safari, pvp, coop, defense]
   }
-campaign,        skirmish, ambush, battle, safari, pvp, coop, defense :: ModeKind
+campaign,        duel, skirmish, ambush, battle, safari, pvp, coop, defense :: ModeKind
 
 campaign = ModeKind
   { msymbol  = 'a'
@@ -23,6 +23,14 @@ campaign = ModeKind
   , mfreq    = [("campaign", 1)]
   , mplayers = playersCampaign
   , mcaves   = cavesCampaign
+  }
+
+duel = ModeKind
+  { msymbol  = 'u'
+  , mname    = "duel"
+  , mfreq    = [("duel", 1)]
+  , mplayers = playersDuel
+  , mcaves   = cavesSkirmish
   }
 
 skirmish = ModeKind
@@ -82,7 +90,7 @@ defense = ModeKind
   }
 
 
-playersCampaign, playersSkirmish, playersBattle, playersSafari, playersPvP, playersCoop, playersDefense :: Players
+playersCampaign, playersDuel, playersSkirmish, playersBattle, playersSafari, playersPvP, playersCoop, playersDefense :: Players
 
 playersCampaign = Players
   { playersList = [ playerHero
@@ -92,14 +100,21 @@ playersCampaign = Players
                    , ("Adventurer Party", "Animal Kingdom") ]
   , playersAlly = [("Monster Hive", "Animal Kingdom")] }
 
-playersSkirmish = Players
-  { playersList = [ playerHero {playerName = "White"}
-                  , playerAntiHero {playerName = "Purple"}
+playersDuel = Players
+  { playersList = [ playerHero { playerName = "White"
+                               , playerInitial = 1 }
+                  , playerAntiHero { playerName = "Purple"
+                                   , playerInitial = 1 }
                   , playerHorror ]
   , playersEnemy = [ ("White", "Purple")
                    , ("White", "Horror Den")
                    , ("Purple", "Horror Den") ]
   , playersAlly = [] }
+
+playersSkirmish = playersDuel
+  { playersList = [ playerHero {playerName = "White"}
+                  , playerAntiHero {playerName = "Purple"}
+                  , playerHorror ] }
 
 playersBattle = Players
   { playersList = [ playerHero {playerInitial = 5}

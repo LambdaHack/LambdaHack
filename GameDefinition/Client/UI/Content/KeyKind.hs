@@ -23,12 +23,11 @@ standardKeys = KeyKind
 
       -- Main Menu, which apart of these includes a few extra commands
       [ ("CTRL-x", ([CmdMenu], GameExit))
-      , ("CTRL-a", ([CmdMenu], GameRestart "campaign"))
+      , ("CTRL-u", ([CmdMenu], GameRestart "duel"))
       , ("CTRL-k", ([CmdMenu], GameRestart "skirmish"))
       , ("CTRL-m", ([CmdMenu], GameRestart "ambush"))
       , ("CTRL-b", ([CmdMenu], GameRestart "battle"))
-      , ("CTRL-e", ([CmdMenu], GameRestart "defense"))
-      , ("CTRL-f", ([CmdMenu], GameRestart "safari"))
+      , ("CTRL-a", ([CmdMenu], GameRestart "campaign"))
       , ("CTRL-d", ([CmdMenu], GameDifficultyCycle))
 
       -- Movement and terrain alteration
@@ -163,5 +162,7 @@ standardKeys = KeyKind
 
       -- Debug and others not to display in help screens
       , ("CTRL-s", ([CmdDebug], GameSave))
+      , ("CTRL-f", ([CmdDebug], GameRestart "safari"))
+      , ("CTRL-e", ([CmdDebug], GameRestart "defense"))
       ]
   }

@@ -293,8 +293,8 @@ mainMenuHuman = do
                    | (km, (desc, [HumanCmd.CmdMenu], cmd)) <- bcmdList,
                      cmd /= HumanCmd.GameDifficultyCycle ]
         in [
-             -- (fst (revLookup HumanCmd.Cancel), "back to playing")
-             (fst (revLookup HumanCmd.Accept), "see more help")
+             (fst (revLookup HumanCmd.Cancel), "back to playing")
+           , (fst (revLookup HumanCmd.Accept), "see more help")
            ]
            ++ cmds
            ++ [ (fst ( revLookup HumanCmd.GameDifficultyCycle)
