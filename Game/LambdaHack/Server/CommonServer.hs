@@ -153,8 +153,9 @@ deduceQuits body status = do
       -- Only non-UI players left in the game and they all win.
       mapQuitF status{stOutcome=Conquer} keysInGame
     [] ->
-      -- Only leaderless and spawners remain (the latter can have no leader),
-      -- so they win, or we could end up in a state with no active arenas.
+      -- Only leaderless and spawners remain (the latter may sometimes
+      -- have no leader, just as the former), so they win,
+      -- or we could end up in a state with no active arena.
       mapQuitF status{stOutcome=Conquer} keysInGame
     _ | worldPeace ->
       -- Nobody is at war any more, so all win.
@@ -175,8 +176,8 @@ deduceKilled body = do
   fact <- getsState $ (EM.! fid) . sfactionD
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   when (not (isSpawnFact fact)  -- spawners never die off
-        && playerLeader (gplayer fact)  -- animals irrelevant to victory
-        && (isNothing mleader || firstDeathEnds)) $
+        && (isNothing mleader  -- includes animals (that never have leaders)
+            || firstDeathEnds)) $
     deduceQuits body $ Status Killed (fromEnum $ blid body) ""
 
 electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
