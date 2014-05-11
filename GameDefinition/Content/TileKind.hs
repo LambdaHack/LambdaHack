@@ -20,11 +20,11 @@ cdefs = ContentDef
   , getFreq = tfreq
   , validate = validateTileKind
   , content =
-      [wall, hardRock, pillar, pillarCache, lampPost, burningTree, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit]
+      [wall, hardRock, pillar, pillarCache, lampPost, burningBush, bush, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit]
       ++ map makeDark [wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsLit, escapeUpLit, escapeDownLit, floorCorridorLit]
       ++ map makeDarkColor [stairsUpLit, stairsDownLit, floorArenaLit, floorActorLit, floorItemLit, floorActorItemLit]
   }
-wall,        hardRock, pillar, pillarCache, lampPost, burningTree, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit :: TileKind
+wall,        hardRock, pillar, pillarCache, lampPost, burningBush, bush, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -82,22 +82,29 @@ lampPost = TileKind
   , tcolor2  = Brown
   , tfeature = []
   }
-burningTree = TileKind
+burningBush = TileKind
   { tsymbol  = 'O'
-  , tname    = "burning tree"
+  , tname    = "burning bush"
   , tfreq    = [("ambushOverLamp_O", 10), ("ambushSet", 3)]
   , tcolor   = BrRed
   , tcolor2  = Red
   , tfeature = []
   }
+bush = TileKind
+  { tsymbol  = 'O'
+  , tname    = "bush"
+  , tfreq    = [("ambushSet", 100) ]
+  , tcolor   = Green
+  , tcolor2  = BrBlack
+  , tfeature = [Dark]
+  }
 tree = TileKind
   { tsymbol  = 'O'
   , tname    = "tree"
-  , tfreq    = [ ("skirmishSet", 12), ("ambushSet", 100)
-               , ("skirmishOverTree_O", 1) ]
+  , tfreq    = [("skirmishSet", 12), ("skirmishOverTree_O", 1)]
   , tcolor   = BrGreen
   , tcolor2  = Green
-  , tfeature = [Dark]
+  , tfeature = []
   }
 wallV = TileKind
   { tsymbol  = '|'
