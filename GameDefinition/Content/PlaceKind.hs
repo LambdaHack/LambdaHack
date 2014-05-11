@@ -11,9 +11,9 @@ cdefs = ContentDef
   , getFreq = pfreq
   , validate = validatePlaceKind
   , content =
-      [rect, ruin, pillar, pillarC, pillar3, colonnade, colonnade2, colonnade3, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, rockShade, rockShade2, rockShade3]
+      [rect, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillarC, pillar3, colonnade, colonnade2, colonnade3, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, rockShade, rockShade2, rockShade3]
   }
-rect,        ruin, pillar, pillarC, pillar3, colonnade, colonnade2, colonnade3, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, rockShade, rockShade2, rockShade3 :: PlaceKind
+rect,        ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillarC, pillar3, colonnade, colonnade2, colonnade3, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, rockShade, rockShade2, rockShade3 :: PlaceKind
 
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
@@ -36,6 +36,35 @@ ruin = PlaceKind
                , "|X"
                ]
   , poverride = []
+  }
+collapsed = PlaceKind
+  { psymbol  = 'c'
+  , pname    = "collapsed cavern"
+  , pfreq    = [("noise", 1)]
+  , pcover   = CStretch
+  , pfence   = FNone
+  , ptopLeft = [ "O"
+               ]
+  , poverride = []
+  }
+collapsed2 = collapsed
+  { pfreq    = [("noise", 100)]
+  , ptopLeft = [ "XXO"
+               , "XOO"
+               ]
+  }
+collapsed3 = collapsed
+  { pfreq    = [("noise", 200)]
+  , ptopLeft = [ "XXXO"
+               , "XOOO"
+               ]
+  }
+collapsed4 = collapsed
+  { pfreq    = [("noise", 400)]
+  , ptopLeft = [ "XXXO"
+               , "XXXO"
+               , "XOOO"
+               ]
   }
 pillar = PlaceKind
   { psymbol  = 'p'

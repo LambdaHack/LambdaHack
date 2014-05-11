@@ -59,7 +59,7 @@ pillar = TileKind
   , tname    = "rock"
   , tfreq    = [ ("cachable", 70)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 55), ("skirmishSet", 5)
+               , ("noiseSet", 100), ("skirmishSet", 5)
                , ("battleSet", 9) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
@@ -233,7 +233,7 @@ floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
   , tname    = "stone floor"
   , tfreq    = [ ("floorArenaLit", 1)
-               , ("arenaSet", 1), ("emptySet", 1), ("noiseSet", 100)
+               , ("arenaSet", 1), ("emptySet", 1), ("noiseSet", 50)
                , ("battleSet", 100), ("skirmishSet", 100), ("ambushSet", 1000) ]
   }
 floorActorLit = floorArenaLit
