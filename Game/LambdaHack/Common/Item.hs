@@ -180,10 +180,11 @@ newItem coitem@Kind.Ops{opick, okind}
         flavour discoRev itemFreq jlid ln depth = do
   itemGroup <- frequency itemFreq
   let castItem :: Int -> Rnd (ItemKnown, ItemSeed, Int)
-      castItem 0 | nullFreq itemFreq = assert `failure` "no fallback items"
-                                              `twith` (itemFreq, ln, depth)
       castItem 0 = do
-        let newFreq = setFreq itemFreq itemGroup 0
+        let zeroedFreq = setFreq itemFreq itemGroup 0
+            newFreq = if nullFreq zeroedFreq
+                      then toFreq "fallback item" [(1, "fallback item")]
+                      else zeroedFreq
         newItem coitem flavour discoRev newFreq jlid ln depth
       castItem count = do
         ikChosen <- fmap (fromMaybe $ assert `failure` itemGroup)
