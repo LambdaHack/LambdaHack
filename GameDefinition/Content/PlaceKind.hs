@@ -11,9 +11,9 @@ cdefs = ContentDef
   , getFreq = pfreq
   , validate = validatePlaceKind
   , content =
-      [rect, ruin, pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, rockShade, rockShade2, rockShade3]
+      [rect, ruin, pillar, pillarC, pillar3, colonnade, colonnade2, colonnade3, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, rockShade, rockShade2, rockShade3]
   }
-rect,        ruin, pillar, pillarC, pillar3, colonnade, colonnadeW, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, rockShade, rockShade2, rockShade3 :: PlaceKind
+rect,        ruin, pillar, pillarC, pillar3, colonnade, colonnade2, colonnade3, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, rockShade, rockShade2, rockShade3 :: PlaceKind
 
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
@@ -70,7 +70,7 @@ pillar3 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "colonnade"
-  , pfreq    = [("rogue", 200)]
+  , pfreq    = [("rogue", 50)]
   , pcover   = CAlternate
   , pfence   = FFloor
   , ptopLeft = [ "O."
@@ -78,9 +78,15 @@ colonnade = PlaceKind
                ]
   , poverride = []
   }
-colonnadeW = colonnade
+colonnade2 = colonnade
   { ptopLeft = [ "O."
                , ".."
+               ]
+  }
+colonnade3 = colonnade
+  { pfreq    = [("rogue", 5)]
+  , ptopLeft = [ ".."
+               , ".O"
                ]
   }
 lampPost = PlaceKind
