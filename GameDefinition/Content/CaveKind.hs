@@ -80,7 +80,6 @@ empty = rogue
   , citemNum      = 4 * d 2  -- few rooms
   , cpassable     = True
   , cdefTile      = "emptySet"
-  , cdarkCorTile  = "trailLit"  -- let paths around rooms be lit
   , clitCorTile   = "floorArenaLit"
   }
 noise = rogue
@@ -119,7 +118,7 @@ battle = rogue
   , cpassable     = True
   , cdefTile      = "battleSet"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
-  , clitCorTile   = "floorArenaLit"
+  , clitCorTile   = "trailLit"
   }
 skirmish = battle
   { csymbol       = 'S'
@@ -131,6 +130,7 @@ skirmish = battle
   , copenChance   = 0
   , cplaceFreq    = [(50, "skirmish"), (50, "rogue")]
   , cdefTile      = "skirmishSet"
+  , clitCorTile   = "floorArenaLit"
   }
 ambush = battle
   { csymbol       = 'M'

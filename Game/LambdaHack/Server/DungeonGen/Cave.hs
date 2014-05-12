@@ -133,29 +133,29 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     rr1 = shrinkForFence $ qplaces M.! p1
                 connectPlaces rr0 rr1) allConnects
   let lcorridors = EM.unions (map (digCorridors pickedCorTile) cs)
-      lm = EM.unionWith (mergeCorridor cotile) lcorridors lplaces
+      lm = EM.union lplaces lcorridors
   -- Convert wall openings into doors, possibly.
-  let f t =
-        if not $ Tile.isSuspect cotile t
-          -- TODO: the floor may be lit while it should be dark.
-        then return t  -- no opening to start with
+  let f (t, cor) = do
+        -- Openings have a certain chance to be doors
+        -- and doors have a certain chance to be open.
+        rd <- chance cdoorChance
+        if not rd then return cor  -- opening kept
         else do
-          -- Openings have a certain chance to be doors
-          -- and doors have a certain chance to be open.
-          rd <- chance cdoorChance
-          if not rd then
-            let cor = if Tile.isLit cotile t then litCorTile else darkCorTile
-            in return $! cor  -- opening kept
+          ro <- chance copenChance
+          doorClosedId <- Tile.revealAs cotile t
+          if not ro then return $! doorClosedId
           else do
-            ro <- chance copenChance
-            doorClosedId <- Tile.revealAs cotile t
-            if not ro then
-              return $! doorClosedId
-            else do
-              doorOpenId <- Tile.openTo cotile doorClosedId
-              return $! doorOpenId
-  dmap <- Traversable.mapM f lm
-  let cave = Cave
+            doorOpenId <- Tile.openTo cotile doorClosedId
+            return $! doorOpenId
+      mergeCor _ pl cor =
+        let hidden = Tile.hideAs cotile pl
+        in if hidden == pl then Nothing else Just (hidden, cor)
+      intersectionCombine combine =
+        EM.mergeWithKey combine (const EM.empty) (const EM.empty)
+      interCor = intersectionCombine mergeCor lplaces lcorridors
+  doorMap <- Traversable.mapM f interCor
+  let dmap = EM.union doorMap lm
+      cave = Cave
         { dkind
         , dmap
         , dplaces
@@ -170,7 +170,3 @@ digCorridors tile (p1:p2:ps) =
   cor  = fromTo p1 p2
   corPos = EM.fromList $ zip cor (repeat tile)
 digCorridors _ _ = EM.empty
-
-mergeCorridor :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
-              -> Kind.Id TileKind
-mergeCorridor cotile _ = Tile.hideAs cotile
