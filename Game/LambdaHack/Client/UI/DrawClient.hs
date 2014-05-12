@@ -260,7 +260,7 @@ drawLeaderStatus waitT width = do
            ahpS, bhpS, acalmS, bcalmS) =
             let b@Actor{bkind, bhp, bcalm} = getActorBody leader s
                 ActorKind{ahp, acalm} = okind bkind
-            in ( not (actorShines b s || actorInAmbient b s)
+            in ( not (actorInAmbient b s)
                , braced b, regenHPPeriod b allAssocs s, bcalmDelta b
                , tshow (Dice.maxDice ahp), tshow bhp
                , tshow (Dice.maxDice acalm), tshow bcalm )
