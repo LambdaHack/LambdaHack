@@ -261,10 +261,10 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
                          && (not $ Tile.hasFeature cotile F.NoActor t))
                 [ dist ps $ factionDist `div` 2
                 , dist ps $ factionDist `div` 3
-                , dist ps $ factionDist `div` 4
                 , const (Tile.hasFeature cotile F.OftenActor)
-                , dist ps $ factionDist `div` 8
-                , dist ps $ factionDist `div` 16
+                , dist ps $ factionDist `div` 3
+                , dist ps $ factionDist `div` 4
+                , dist ps $ factionDist `div` 5
                 ]
         nps <- tryFind (np : ps) (n - 1)
         return $! np : nps
