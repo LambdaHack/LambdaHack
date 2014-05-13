@@ -60,7 +60,7 @@ pillar = TileKind
   , tfreq    = [ ("cachable", 70)
                , ("legendLit", 100), ("legendDark", 100)
                , ("noiseSet", 100), ("skirmishSet", 5)
-               , ("battleSet", 9) ]
+               , ("battleSet", 250) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = []
@@ -77,7 +77,7 @@ pillarCache = TileKind
 lampPost = TileKind
   { tsymbol  = 'O'
   , tname    = "lamp post"
-  , tfreq    = [("ambushOverLamp_O", 90)]
+  , tfreq    = [("lampPostOver_O", 90)]
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , tfeature = []
@@ -85,7 +85,7 @@ lampPost = TileKind
 burningBush = TileKind
   { tsymbol  = 'O'
   , tname    = "burning bush"
-  , tfreq    = [("ambushOverLamp_O", 10), ("ambushSet", 3)]
+  , tfreq    = [("lampPostOver_O", 10), ("ambushSet", 3), ("battleSet", 2)]
   , tcolor   = BrRed
   , tcolor2  = Red
   , tfeature = []
@@ -101,7 +101,7 @@ bush = TileKind
 tree = TileKind
   { tsymbol  = 'O'
   , tname    = "tree"
-  , tfreq    = [("skirmishSet", 12), ("skirmishOverTree_O", 1)]
+  , tfreq    = [("skirmishSet", 14), ("battleSet", 20), ("treeShadeOver_O", 1)]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , tfeature = []
@@ -241,7 +241,8 @@ floorArenaLit = floorCorridorLit
   , tname    = "stone floor"
   , tfreq    = [ ("floorArenaLit", 1)
                , ("arenaSet", 1), ("emptySet", 1), ("noiseSet", 50)
-               , ("battleSet", 100), ("skirmishSet", 100), ("ambushSet", 1000) ]
+               , ("battleSet", 1000), ("skirmishSet", 100)
+               , ("ambushSet", 1000) ]
   }
 floorActorLit = floorArenaLit
   { tfreq    = []
@@ -257,7 +258,7 @@ floorActorItemLit = floorItemLit
   }
 floorArenaShade = floorActorLit
   { tname    = "stone floor"  -- TODO: "shaded ground"
-  , tfreq    = [("skirmishOverTree_s", 1), ("skirmishOverRock_s", 1)]
+  , tfreq    = [("treeShadeOver_s", 1)]
   , tcolor2  = BrBlack
   , tfeature = Dark : tfeature floorActorLit  -- no OftenItem
   }

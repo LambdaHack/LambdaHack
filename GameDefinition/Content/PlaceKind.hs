@@ -11,9 +11,9 @@ cdefs = ContentDef
   , getFreq = pfreq
   , validate = validatePlaceKind
   , content =
-      [rect, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillarC, pillar3, colonnade, colonnade2, colonnade3, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, rockShade, rockShade2, rockShade3]
+      [rect, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillarC, pillar3, colonnade, colonnade2, colonnade3, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3]
   }
-rect,        ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillarC, pillar3, colonnade, colonnade2, colonnade3, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, rockShade, rockShade2, rockShade3 :: PlaceKind
+rect,        ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillarC, pillar3, colonnade, colonnade2, colonnade3, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3 :: PlaceKind
 
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
@@ -29,7 +29,7 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
 ruin = PlaceKind
   { psymbol  = 'R'
   , pname    = "ruin"
-  , pfreq    = [("ambush", 17)]
+  , pfreq    = [("ambush", 17), ("battle", 100)]
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "--"
@@ -48,19 +48,19 @@ collapsed = PlaceKind
   , poverride = []
   }
 collapsed2 = collapsed
-  { pfreq    = [("noise", 100)]
+  { pfreq    = [("noise", 100), ("battle", 50)]
   , ptopLeft = [ "XXO"
                , "XOO"
                ]
   }
 collapsed3 = collapsed
-  { pfreq    = [("noise", 200)]
+  { pfreq    = [("noise", 200), ("battle", 50)]
   , ptopLeft = [ "XXXO"
                , "XOOO"
                ]
   }
 collapsed4 = collapsed
-  { pfreq    = [("noise", 400)]
+  { pfreq    = [("noise", 400), ("battle", 200)]
   , ptopLeft = [ "XXXO"
                , "XXXO"
                , "XOOO"
@@ -99,7 +99,7 @@ pillar3 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "colonnade"
-  , pfreq    = [("rogue", 50)]
+  , pfreq    = [("rogue", 60)]
   , pcover   = CAlternate
   , pfence   = FFloor
   , ptopLeft = [ "O."
@@ -113,7 +113,7 @@ colonnade2 = colonnade
                ]
   }
 colonnade3 = colonnade
-  { pfreq    = [("rogue", 5)]
+  { pfreq    = [("rogue", 6)]
   , ptopLeft = [ ".."
                , ".O"
                ]
@@ -121,14 +121,14 @@ colonnade3 = colonnade
 lampPost = PlaceKind
   { psymbol  = 'l'
   , pname    = "lamp post"
-  , pfreq    = [("ambush", 30)]
+  , pfreq    = [("ambush", 30), ("battle", 10)]
   , pcover   = CVerbatim
   , pfence   = FNone
   , ptopLeft = [ "X.X"
                , ".O."
                , "X.X"
                ]
-  , poverride = [('O', "ambushOverLamp_O")]
+  , poverride = [('O', "lampPostOver_O")]
   }
 lampPost2 = lampPost
   { ptopLeft = [ "..."
@@ -155,14 +155,14 @@ lampPost4 = lampPost
 treeShade = PlaceKind
   { psymbol  = 't'
   , pname    = "tree shade"
-  , pfreq    = [("skirmish", 50)]
+  , pfreq    = [("skirmish", 100)]
   , pcover   = CVerbatim
   , pfence   = FNone
   , ptopLeft = [ "sss"
                , "XOs"
                , "XXs"
                ]
-  , poverride = [('O', "skirmishOverTree_O"), ('s', "skirmishOverTree_s")]
+  , poverride = [('O', "treeShadeOver_O"), ('s', "treeShadeOver_s")]
   }
 treeShade2 = treeShade
   { ptopLeft = [ "sss"
@@ -174,29 +174,5 @@ treeShade3 = treeShade
   { ptopLeft = [ "sss"
                , "sOs"
                , "XXs"
-               ]
-  }
-rockShade = PlaceKind
-  { psymbol  = 't'
-  , pname    = "rock shade"
-  , pfreq    = [("skirmish", 30)]
-  , pcover   = CVerbatim
-  , pfence   = FNone
-  , ptopLeft = [ "XXs"
-               , "XOs"
-               , "XXX"
-               ]
-  , poverride = [('s', "skirmishOverRock_s")]
-  }
-rockShade2 = rockShade
-  { ptopLeft = [ "Xss"
-               , "XOX"
-               , "XXX"
-               ]
-  }
-rockShade3 = rockShade
-  { ptopLeft = [ "Xss"
-               , "XOs"
-               , "XXX"
                ]
   }
