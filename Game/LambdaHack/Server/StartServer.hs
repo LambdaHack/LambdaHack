@@ -91,7 +91,7 @@ createFactions Kind.COps{cofaction=Kind.Ops{opick}} players = do
                      [colorToTeamName, colorToPlainName, colorToFancyName]
             nameoc = lowercase playerName
             prefix | playerAI = "Autonomous"
-                   | otherwise = "Human"
+                   | otherwise = "Supervised"
             (gcolor, gname) = case M.lookup nameoc cmap of
               Nothing -> (Color.BrWhite, prefix <+> playerName)
               Just c -> (c, prefix <+> playerName <+> "Team")

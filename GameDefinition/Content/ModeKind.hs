@@ -137,12 +137,21 @@ playersSafari = Players
                                    , playerEntry = toEnum (-3) }
                   , playerAnimal { playerName =
                                      "Animal Magnificent Specimen Variety"
+                                 , playerSpawn = 0
                                  , playerEntry = toEnum (-4)
-                                 , playerInitial = 20 } ]
+                                 , playerInitial = 15 }
+                  , playerAnimal { playerName =
+                                     "Animal Exquisite Herds and Packs"
+                                 , playerSpawn = 0
+                                 , playerEntry = toEnum (-5)
+                                 , playerInitial = 30 } ]
   , playersEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
                    , ("Monster Tourist Office",
-                      "Animal Magnificent Specimen Variety") ]
-  , playersAlly = [] }
+                      "Animal Magnificent Specimen Variety")
+                   , ("Monster Tourist Office",
+                      "Animal Exquisite Herds and Packs") ]
+  , playersAlly = [( "Animal Magnificent Specimen Variety"
+                   , "Animal Exquisite Herds and Packs" )] }
 
 playersPvP = Players
   { playersList = [ playerHero {playerName = "Red"}
@@ -268,4 +277,5 @@ cavesAmbush = EM.fromList [(toEnum (-5), ("caveAmbush", Nothing))]
 cavesBattle = EM.fromList [(toEnum (-3), ("caveBattle", Nothing))]
 
 cavesSafari = EM.fromList [ (toEnum (-3), ("caveAmbush", Nothing))
-                          , (toEnum (-4), ("caveBattle", Just False)) ]
+                          , (toEnum (-4), ("caveBattle", Nothing))
+                          , (toEnum (-5), ("caveSkirmish", Just False)) ]
