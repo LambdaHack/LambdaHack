@@ -132,7 +132,8 @@ deduceQuits body status@Status{stOutcome}
 deduceQuits body status = do
   let fid = bfid body
       mapQuitF statusF fids = mapM_ (quitF Nothing statusF) $ delete fid fids
-  quitF (Just body) status fid
+  as <- getsState $ fidActorNotProjList fid
+  when (null as) $ quitF (Just body) status fid
   let inGame fact = case fmap stOutcome $ gquit fact of
         Just Killed -> False
         Just Defeated -> False

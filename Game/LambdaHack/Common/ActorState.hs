@@ -2,7 +2,8 @@
 -- but not the 'Action' type.
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.Common.ActorState
-  ( fidActorNotProjAssocs, actorAssocsLvl, actorAssocs, actorList
+  ( fidActorNotProjAssocs, fidActorNotProjList
+  , actorAssocsLvl, actorAssocs, actorList
   , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList
   , bagAssocs, bagAssocsK, calculateTotal
   , sharedInv, sharedAllOwned, sharedAllOwnedFid
@@ -40,8 +41,8 @@ import Game.LambdaHack.Content.TileKind
 
 fidActorNotProjAssocs :: FactionId -> State -> [(ActorId, Actor)]
 fidActorNotProjAssocs fid s =
-  let f lvl bs = actorNotProjAssocsLvl (== fid) lvl (sactorD s) ++ bs
-  in foldr f [] $ EM.elems $ sdungeon s
+  let f (_, b) = not (bproj b) && bfid b == fid
+  in filter f $ EM.assocs $ sactorD s
 
 fidActorNotProjList :: FactionId -> State -> [Actor]
 fidActorNotProjList fid s = map snd $ fidActorNotProjAssocs fid s
@@ -63,15 +64,6 @@ actorAssocs p lid s =
 actorList :: (FactionId -> Bool) -> LevelId -> State
           -> [Actor]
 actorList p lid s = map snd $ actorAssocs p lid s
-
-actorNotProjAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
-                      -> [(ActorId, Actor)]
-actorNotProjAssocsLvl p lvl actorD =
-  mapMaybe (\aid -> let b = actorD EM.! aid
-                    in if not (bproj b) && p (bfid b)
-                       then Just (aid, b)
-                       else Nothing)
-  $ concat $ EM.elems $ lprio lvl
 
 actorRegularAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
                       -> [(ActorId, Actor)]
