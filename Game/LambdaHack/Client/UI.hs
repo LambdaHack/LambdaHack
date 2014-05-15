@@ -142,17 +142,18 @@ humanCommand msgRunStop = do
             -- If no time taken, rinse and repeat.
             -- Analyse the obtained slides.
             let (onBlank, sli) = slideshow slides
-            mLast <- case reverse sli  of
+            mLast <- case sli of
               [] -> return Nothing
-              [sLast] -> return $ Just (onBlank, sLast)
-              sls@(sLast : _) -> do
+              [sLast] ->
+                -- Avoid displaying the single slide twice.
+                return $ Just (onBlank, sLast)
+              _ -> do
                 -- Show, one by one, all slides, awaiting confirmation
-                -- for all but the last one.
+                -- for all but the last one (which is displayed twice, BTW).
                 -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
-                go <- getInitConfirms ColorFull [km]
-                      $ toSlideshow onBlank $ reverse $ map overlay sls
-                return $! if go then Just (onBlank, sLast) else Nothing
+                go <- getInitConfirms ColorFull [km] slides
+                return $! if go then Just (onBlank, last sli) else Nothing
             loop mLast
   case msgRunStop of
     Nothing -> loop Nothing

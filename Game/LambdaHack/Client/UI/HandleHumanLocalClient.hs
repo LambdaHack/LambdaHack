@@ -231,7 +231,7 @@ historyHuman = do
   arena <- getArenaUI
   local <- getsState $ getLocalTime arena
   global <- getsState stime
-  let  msg = makeSentence
+  let msg = makeSentence
         [ "You survived for"
         , MU.CarWs (global `timeFitUp` timeTurn) "half-second turn"
         , "(this level:"

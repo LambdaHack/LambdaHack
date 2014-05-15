@@ -211,11 +211,11 @@ splitOverlay onBlank yspace (Overlay msg) (Overlay ls) =
      then  -- no space left for @ls@
        Slideshow (onBlank, [Overlay $ take (yspace - 1) msg ++ [moreMsg]])
      else let splitO over =
-                if len + length over <= yspace
-                then [Overlay $ msg ++ over]  -- all fits on one screen
-                else let (pre, post) = splitAt (yspace - 1) $ msg ++ over
-                         rest = splitO post
-                     in Overlay (pre ++ [moreMsg]) : rest
+                let (pre, post) = splitAt (yspace - 1) $ msg ++ over
+                in if null (drop 1 post)  -- (don't call @length@ on @ls@)
+                   then [Overlay $ msg ++ over]  -- all fits on one screen
+                   else let rest = splitO post
+                        in Overlay (pre ++ [moreMsg]) : rest
           in Slideshow (onBlank, splitO ls)
 
 -- | A few overlays, displayed one by one upon keypress.
