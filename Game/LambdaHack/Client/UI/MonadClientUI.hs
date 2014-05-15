@@ -113,7 +113,7 @@ getInitConfirms :: MonadClientUI m
                 => ColorMode -> [K.KM] -> Slideshow -> m Bool
 getInitConfirms dm frontClear slides = do
   let (onBlank, ovs) = slideshow slides
-  frontSlides <- mapM (drawOverlay onBlank dm) ovs
+  frontSlides <- drawOverlays onBlank dm ovs
   -- The first two cases are optimizations:
   case frontSlides of
     [] -> return True
@@ -154,7 +154,11 @@ displayActorStart b frs = do
 
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadClientUI m => Bool -> ColorMode -> Overlay -> m SingleFrame
-drawOverlay onBlank dm over = do
+drawOverlay sfBlank@True _ sfTop = do
+  let sfLevel = []
+      sfBottom = []
+  return $! SingleFrame {..}
+drawOverlay sfBlank@False dm sfTop = do
   lid <- viewedLevel
   mleader <- getsClient _sleader
   tgtPos <- leaderTgtToPos
@@ -164,7 +168,15 @@ drawOverlay onBlank dm over = do
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
   cursorDesc <- targetDescCursor
-  draw onBlank dm lid cursorPos tgtPos bfsmpath cursorDesc tgtDesc over
+  draw sfBlank dm lid cursorPos tgtPos bfsmpath cursorDesc tgtDesc sfTop
+
+drawOverlays :: MonadClientUI m
+             => Bool -> ColorMode -> [Overlay] -> m [SingleFrame]
+drawOverlays _ _ [] = return []
+drawOverlays sfBlank dm (topFirst : rest) = do
+  fistFrame <- drawOverlay sfBlank dm topFirst
+  let f topNext = fistFrame {sfTop = topNext}
+  return $! fistFrame : map f rest  -- keep @rest@ lazy for responsiveness
 
 stopPlayBack :: MonadClientUI m => m ()
 stopPlayBack = do

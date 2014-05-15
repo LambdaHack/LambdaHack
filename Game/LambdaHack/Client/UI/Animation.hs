@@ -52,9 +52,9 @@ instance Binary SingleFrame
 -- To be used by simple frontends that don't display overlays
 -- in separate windows/panes/scrolled views.
 overlayOverlay :: SingleFrame -> SingleFrame
-overlayOverlay sf@SingleFrame{..} =
-  let lxsize = xsizeSingleFrame sf
-      lysize = ysizeSingleFrame sf
+overlayOverlay SingleFrame{..} =
+  let lxsize = fst normalLevelBound + 1  -- TODO
+      lysize = snd normalLevelBound + 1
       emptyLine = encodeLine
                   $ replicate lxsize (Color.AttrChar Color.defAttr ' ')
       canvasLength = if sfBlank then lysize + 3 else lysize + 1
@@ -84,13 +84,6 @@ newtype Animation = Animation [EM.EnumMap Point AttrChar]
 
 -- | Sequences of screen frames, including delays.
 type Frames = [Maybe SingleFrame]
-
-xsizeSingleFrame :: SingleFrame -> X
-xsizeSingleFrame SingleFrame{sfLevel=[]} = 0
-xsizeSingleFrame SingleFrame{sfLevel=line : _} = G.length line
-
-ysizeSingleFrame :: SingleFrame -> X
-ysizeSingleFrame SingleFrame{sfLevel} = length sfLevel
 
 -- | Render animations on top of a screen frame.
 renderAnim :: X -> Y -> SingleFrame -> Animation -> Frames
