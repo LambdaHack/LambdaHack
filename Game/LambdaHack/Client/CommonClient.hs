@@ -133,26 +133,32 @@ aidTgtAims aid lidV tgt = do
 -- actor and target position, or Nothing if none can be found.
 makeLine :: MonadClient m => Actor -> Point -> Int -> m (Maybe Int)
 makeLine body fpos epsOld = do
-  cops <- getsState scops
+  cops@Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
   lvl@Level{lxsize, lysize} <- getLevel (blid body)
   bs <- getsState $ filter (not . bproj)
                     . actorList (const True) (blid body)
-  let dist = chessDist (bpos body) fpos
-      valid eps = case bla lxsize lysize eps (bpos body) fpos of
+  let unknownId = ouniqGroup "unknown space"
+      dist = chessDist (bpos body) fpos
+      calcScore eps = case bla lxsize lysize eps (bpos body) fpos of
         Just bl ->
           let blDist = take dist bl
               blZip = zip (bpos body : blDist) blDist
               noActor p = all ((/= p) . bpos) bs || p == fpos
-          in all noActor blDist
-             && all (uncurry $ accessible cops lvl) blZip
+              accessU = all noActor blDist
+                        && all (uncurry $ accessibleUnknown cops lvl) blZip
+              nUnknown = length $ filter ((== unknownId) . (lvl `at`)) blDist
+          in if accessU then - nUnknown else minBound
         Nothing -> assert `failure` (body, fpos, epsOld)
-      tryLines curEps | curEps >= epsOld + dist = Nothing
-      tryLines curEps = if valid curEps
-                        then Just curEps
-                        else tryLines (curEps + 1)
+      tryLines curEps (acc, _) | curEps >= epsOld + dist = acc
+      tryLines curEps (acc, bestScore) =
+        let curScore = calcScore curEps
+            newAcc = if curScore > bestScore
+                     then (Just curEps, curScore)
+                     else (acc, bestScore)
+        in tryLines (curEps + 1) newAcc
   return $! if dist <= 1
             then Nothing  -- ProjectBlockActor, ProjectAimOnself
-            else tryLines epsOld
+            else tryLines epsOld (Nothing, minBound)
 
 actorAbilities :: MonadClient m => ActorId -> Maybe ActorId -> m [Ability]
 actorAbilities aid mleader = do

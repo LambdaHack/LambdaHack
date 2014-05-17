@@ -6,7 +6,8 @@ module Game.LambdaHack.Common.Level
     -- * The @Level@ type and its components
   , Level(..), ActorPrio, ItemFloor, TileMap, SmellMap
     -- * Level query
-  , at, atI, checkAccess, checkDoorAccess, accessible, accessibleDir
+  , at, atI, checkAccess, checkDoorAccess
+  , accessible, accessibleUnknown, accessibleDir
   , isSecretPos, hideTile
   , findPos, findPosTry, mapLevelActors_, mapDungeonActors_
  ) where
@@ -123,6 +124,21 @@ accessible :: Kind.COps -> Level -> Point -> Point -> Bool
 accessible cops@Kind.COps{cotile} lvl =
   let checkWalkability =
         Just $ \_ tpos -> Tile.isWalkable cotile $ lvl `at` tpos
+      conditions = catMaybes [ checkWalkability
+                             , checkAccess cops lvl
+                             , checkDoorAccess cops lvl ]
+  in \spos tpos -> all (\f -> f spos tpos) conditions
+
+-- | Check whether one position is accessible from another,
+-- using the formula from the standard ruleset,
+-- but additionally treating unknown tiles as walkable.
+-- Precondition: the two positions are next to each other.
+accessibleUnknown :: Kind.COps -> Level -> Point -> Point -> Bool
+accessibleUnknown cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} lvl =
+  let unknownId = ouniqGroup "unknown space"
+      checkWalkability =
+        Just $ \_ tpos -> let t = lvl `at` tpos
+                          in Tile.isWalkable cotile t || t == unknownId
       conditions = catMaybes [ checkWalkability
                              , checkAccess cops lvl
                              , checkDoorAccess cops lvl ]
