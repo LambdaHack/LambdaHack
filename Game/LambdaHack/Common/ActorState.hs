@@ -314,20 +314,18 @@ actorInAmbient b s =
       lvl = (EM.! blid b) . sdungeon $ s
   in Tile.isLit cotile (lvl `at` bpos b)
 
--- TODO: base on items not/not only on iq.
--- Check whether an actor can be displaced by an enemy. Generally, heroes can
--- more easily resist displacement than monsters.
-dispEnemy :: Actor -> State -> Bool
-dispEnemy b s =
-  let Kind.COps{coactor=Kind.Ops{okind}} = scops s
-      ak = okind $ bkind b
-      fact = (EM.! bfid b) . sfactionD $ s
-      friendlyFid fid = fid == bfid b || isAllied fact fid
-      sup = actorRegularList friendlyFid (blid b) s
-  in bproj b
-     || not (actorDying b)
-        && not (braced b)
-        && not (aiq ak > 12 && any (adjacent (bpos b) . bpos) sup)
+-- Check whether an actor can displace another.
+dispEnemy :: Actor -> Actor -> State -> Bool
+dispEnemy sb tb s =
+  let hasSupport b =
+        let fact = (EM.! bfid b) . sfactionD $ s
+            friendlyFid fid = fid == bfid b || isAllied fact fid
+            sup = actorRegularList friendlyFid (blid b) s
+        in any (adjacent (bpos b) . bpos) sup
+  in bproj tb
+     || not (actorDying tb
+             || braced tb
+             || hasSupport sb && hasSupport tb)  -- solo actors are flexible
 
 totalRange :: Item -> Int
 totalRange item =
