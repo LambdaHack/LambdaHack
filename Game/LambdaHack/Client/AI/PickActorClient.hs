@@ -85,6 +85,8 @@ pickActorToMove refreshTarget oldAid = do
                       then condMeleeBad && condCanFlee
                       else bcalmDelta body < -1  -- hit by a projectile
                         -- TODO: modify when reaction fire is possible
+          actorHearning (_, (TEnemyPos{}, (_, (_, d)))) | d <= 2 =
+            return False  -- noise probably due to fleeing target
           actorHearning ((_aid, b), _) = do
             allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
             let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
@@ -170,17 +172,18 @@ pickActorToMove refreshTarget oldAid = do
           oursPosGood = filter goodGeneric oursPos
           oursHearingGood = filter goodTEnemy oursHearing
           oursBlockedGood = filter goodGeneric oursBlocked
-          candidates = sortOurs oursWeakGood
-                       ++ sortOurs oursTEnemyGood
-                       ++ sortOurs oursPosGood
-                       ++ sortOurs oursHearingGood
-                       ++ sortOurs oursBlockedGood
-      case candidates of
-        [] -> return (oldAid, oldBody)
-        c : _ -> do
-          let best = takeWhile ((== overheadOurs c) . overheadOurs) candidates
+          candidates = [ sortOurs oursWeakGood
+                       , sortOurs oursTEnemyGood
+                       , sortOurs oursPosGood
+                       , sortOurs oursHearingGood
+                       , sortOurs oursBlockedGood
+                       ]
+      case filter (not . null) candidates of
+        l@(c : _) : _ -> do
+          let best = takeWhile ((== overheadOurs c) . overheadOurs) l
               freq = uniformFreq "candidates for AI leader" best
           ((aid, b), _) <- rndToAction $ frequency freq
           s <- getState
           modifyClient $ updateLeader aid s
           return (aid, b)
+        _ -> return (oldAid, oldBody)
