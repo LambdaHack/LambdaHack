@@ -25,7 +25,6 @@ import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -355,33 +354,12 @@ reqApply :: (MonadAtomic m, MonadServer m)
          -> m ()
 reqApply aid iid cstore = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  itemToF <- itemToFullServer
-  let applyItem = do
-        -- We have to destroy the item before the effect affects the item
-        -- or the actor holding it or standing on it (later on we could
-        -- lose track of the item and wouldn't be able to destroy it) .
-        -- This is OK, because we don't remove the item type
-        -- from the item dictionary, just an individual copy from the container.
-        item <- getsState $ getItemBody iid
-        bag <- getsState $ getActorBag aid cstore
-        let (k, isOn) = bag EM.! iid
-            itemFull = itemToF iid (k, isOn)
-            consumable = IF.Consumable `elem` jfeature item
-        if consumable then do
-          -- TODO: don't destroy if not really used up; also, don't take time?
-          cs <- actorConts iid 1 aid cstore
-          mapM_ (\(_, c) -> execUpdAtomic
-                            $ UpdDestroyItem iid item (1, isOn) c) cs
-          execSfxAtomic $ SfxActivate aid iid (1, isOn)
-          itemEffect aid aid iid itemFull
-        else
-          execUpdAtomic $ UpdMoveItem iid k aid cstore isOn cstore (not isOn)
-      req = ReqApply iid cstore
-  if cstore /= CInv then applyItem
+  let req = ReqApply iid cstore
+  if cstore /= CInv then applyItem True aid iid cstore
   else do
     b <- getsState $ getActorBody aid
     let kind = okind $ bkind b
-    if calmEnough b kind then applyItem
+    if calmEnough b kind then applyItem True aid iid cstore
     else execFailure aid req ItemNotCalm
 
 -- * ReqTrigger

@@ -574,6 +574,14 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         Effect.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
         Effect.Ascend{} -> assert `failure` sfx
         Effect.Escape{} -> skip
+        Effect.Paralyze{} -> actorVerbMU aid b "be paralyzed"
+        Effect.InsertMove{} -> actorVerbMU aid b "move with extreme speed"
+        Effect.DropBestWeapon -> actorVerbMU aid b "be disarmed"
+        Effect.DropAllEqp False -> actorVerbMU aid b "be stripped"
+        Effect.DropAllEqp True -> actorVerbMU aid b "be violently stripped"
+        Effect.SendFlying{} -> actorVerbMU aid b "be sent flying"
+        Effect.Teleport{} -> actorVerbMU aid b "teleport"
+        Effect.ActivateAllEqp -> skip
         Effect.TimedAspect{} -> skip  -- TODO
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg

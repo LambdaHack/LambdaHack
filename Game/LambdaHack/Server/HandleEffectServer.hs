@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
-  ( itemEffect, effectSem
+  ( itemEffect, effectSem, applyItem
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -21,6 +21,7 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -35,6 +36,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonServer
+import Game.LambdaHack.Server.EndServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicServer
 import Game.LambdaHack.Server.State
@@ -92,6 +94,13 @@ effectSem effect source target = do
     Effect.Blast p -> effectBlast execSfx p source target
     Effect.Ascend p -> effectAscend execSfx p target
     Effect.Escape{} -> effectEscape target
+    Effect.Paralyze p -> effectParalyze execSfx p target
+    Effect.InsertMove p -> effectInsertMove execSfx p target
+    Effect.DropBestWeapon -> effectDropBestWeapon execSfx target
+    Effect.DropAllEqp hit -> effectDropAllEqp execSfx hit target
+    Effect.SendFlying p1 p2 -> effectSendFlying execSfx p1 p2 source target
+    Effect.Teleport p -> effectTeleport execSfx p target
+    Effect.ActivateAllEqp -> effectActivateAllEqp execSfx target
     Effect.TimedAspect{} -> effectNoEffect target  -- TODO
 
 -- + Individual semantic functions for effects
@@ -453,3 +462,139 @@ effectEscape aid = do
   else do
     deduceQuits b $ Status Escape (fromEnum $ blid b) ""
     return True
+
+-- ** Paralyze
+
+-- | Advance target actor time by this many time clips. Not by actor moves,
+-- to hurt fast actors more.
+effectParalyze :: (MonadAtomic m, MonadServer m)
+               => m () -> Int -> ActorId -> m Bool
+effectParalyze execSfx p target = assert (p > 0) $ do
+  let t = timeDeltaScale (Delta timeClip) p
+  execUpdAtomic $ UpdAgeActor target t
+  execSfx
+  return True
+
+-- ** InsertMove
+
+-- | Give target actor the given number of extra moves. Don't give
+-- an absolute amount of time units, to benefit slow actors more.
+effectInsertMove :: (MonadAtomic m, MonadServer m)
+                 => m () -> Int -> ActorId -> m Bool
+effectInsertMove execSfx p target = assert (p > 0) $ do
+  b <- getsState $ getActorBody target
+  let tpm = ticksPerMeter $ bspeed b
+      t = timeDeltaScale tpm (-p)
+  execUpdAtomic $ UpdAgeActor target t
+  execSfx
+  return True
+
+-- ** DropBestWeapon
+
+-- | Make the target actor drop his best weapon (stack).
+effectDropBestWeapon :: (MonadAtomic m, MonadServer m)
+                     => m () -> ActorId -> m Bool
+effectDropBestWeapon execSfx target = do
+  cops <- getsState scops
+  allAssocs <- fullAssocsServer target [CEqp]
+  case strongestSword cops True allAssocs of  -- ignore OFF weapons
+    (_, (iid, _)) : _ -> do
+      b <- getsState $ getActorBody target
+      let kIsOn = beqp b EM.! iid
+      dropEqpItem target b False iid kIsOn
+      execSfx
+      return True
+    [] -> return False
+
+-- ** DropAllEqp
+
+-- | Make the target actor drop all equipment items (not just a random one,
+-- or cluttering equipment with rubbish would be beneficial).
+effectDropAllEqp :: (MonadAtomic m, MonadServer m)
+                 => m () -> Bool -> ActorId -> m Bool
+effectDropAllEqp execSfx hit target = do
+  b <- getsState $ getActorBody target
+  dropEqpItems target b hit
+  execSfx
+  return True
+
+-- ** SendFlying
+
+-- | Shend the target actor flying like a projectile. The arguments correspond
+-- to @ToThrow@ and @Linger@ properties of items. If the actors are adjacent,
+-- the vector is directed outwards, if no, inwards, if it's the same actor,
+-- boldpos is used, if it can't, a random outward vector of length 10 is picked.
+effectSendFlying :: (MonadAtomic m, MonadServer m)
+                 => m () -> Int -> Int -> ActorId -> ActorId -> m Bool
+effectSendFlying execSfx p1 p2 source target = do
+  -- TODO
+  execSfx
+  return True
+
+-- ** Teleport
+
+-- | Teleport the target actor.
+effectTeleport :: (MonadAtomic m, MonadServer m)
+               => m () -> Int -> ActorId -> m Bool
+effectTeleport execSfx range target = do
+  Kind.COps{cotile} <- getsState scops
+  b <- getsState $ getActorBody target
+  Level{ltile} <- getLevel (blid b)
+  as <- getsState $ actorList (const True) (blid b)
+  let spos = bpos b
+      dMinMax rmin rmax pos = let d = chessDist spos pos
+                              in d >= rmin && d <= rmax
+      dist rmin rmax pos _ = dMinMax rmin rmax pos
+  tpos <- rndToAction $ findPosTry 200 ltile
+    (\p t -> Tile.isWalkable cotile t
+             && (not (dMinMax (range - 9) (range - 9) p)  -- don't loop
+                 || not (Tile.hasFeature cotile F.NoActor t)
+                    && unoccupied as p))
+    [ dist (range - 1) (range - 1)
+    , dist (range - 1 - range `div` 9) (range - 1 - range `div` 9)
+    , dist (range - 1 - range `div` 7) (range - 1 - range `div` 7)
+    , dist (range - 1 - range `div` 5) (range - 1 - range `div` 5)
+    ]
+  if not (dMinMax (range - 9) (range - 9) tpos) then
+    effectNoEffect target
+  else do
+    execUpdAtomic $ UpdMoveActor target spos tpos
+    execSfx
+    return True
+
+-- ** ActivateAllEqp
+
+-- | Activate all activable items in the target actor's equipment
+-- (there's no variant that activates a random one, to avoid carrying garbage).
+-- Only one item of each stack is activated (and possibly consumed).
+effectActivateAllEqp :: (MonadAtomic m, MonadServer m)
+                     => m () -> ActorId -> m Bool
+effectActivateAllEqp execSfx target = do
+  b <- getsState $ getActorBody target
+  mapActorEqp_ (\iid _ -> applyItem False target iid CEqp) b
+  execSfx
+  return True
+
+applyItem :: (MonadAtomic m, MonadServer m)
+          => Bool -> ActorId -> ItemId -> CStore -> m ()
+applyItem turnOff aid iid cstore = do
+  -- We have to destroy the item before the effect affects the item
+  -- or the actor holding it or standing on it (later on we could
+  -- lose track of the item and wouldn't be able to destroy it) .
+  -- This is OK, because we don't remove the item type
+  -- from the item dictionary, just an individual copy from the container.
+  itemToF <- itemToFullServer
+  item <- getsState $ getItemBody iid
+  bag <- getsState $ getActorBag aid cstore
+  let (k, isOn) = bag EM.! iid
+      itemFull = itemToF iid (k, isOn)
+      consumable = IF.Consumable `elem` jfeature item
+  if consumable then do
+    -- TODO: don't destroy if not really used up; also, don't take time?
+    cs <- actorConts iid 1 aid cstore
+    mapM_ (\(_, c) -> execUpdAtomic
+                      $ UpdDestroyItem iid item (1, isOn) c) cs
+    execSfxAtomic $ SfxActivate aid iid (1, isOn)
+    itemEffect aid aid iid itemFull
+  else when turnOff $
+    execUpdAtomic $ UpdMoveItem iid k aid cstore isOn cstore (not isOn)

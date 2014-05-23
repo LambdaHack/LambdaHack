@@ -25,7 +25,7 @@ data Effect a =
     NoEffect
   | Heal !Int
   | Hurt !Dice.Dice !a
-  | Mindprobe Int  -- ^ the @Int@ is a lazy hack to send the result to clients
+  | Mindprobe Int  -- the @Int@ is a lazy hack to send the result to clients
   | Dominate
   | Impress
   | CallFriend !Int
@@ -36,6 +36,13 @@ data Effect a =
   | Blast !Int
   | Ascend !Int
   | Escape !Int
+  | Paralyze !a
+  | InsertMove !a
+  | DropBestWeapon
+  | DropAllEqp !Bool
+  | SendFlying !a !a
+  | Teleport !a
+  | ActivateAllEqp
   | TimedAspect !Int !(Aspect a)  -- enable the aspect for k clips
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
@@ -77,6 +84,22 @@ effectTrav (Burn p) _ = return $! Burn p
 effectTrav (Blast p) _ = return $! Blast p
 effectTrav (Ascend p) _ = return $! Ascend p
 effectTrav (Escape p) _ = return $! Escape p
+effectTrav (Paralyze a) f = do
+  b <- f a
+  return $! Paralyze b
+effectTrav (InsertMove a) f = do
+  b <- f a
+  return $! InsertMove b
+effectTrav DropBestWeapon _ = return DropBestWeapon
+effectTrav (DropAllEqp hit) _ = return $! DropAllEqp hit
+effectTrav (SendFlying a1 a2) f = do
+  b1 <- f a1
+  b2 <- f a2
+  return $! SendFlying b1 b2
+effectTrav (Teleport a) f = do
+  b <- f a
+  return $! Teleport b
+effectTrav ActivateAllEqp _ = return ActivateAllEqp
 effectTrav (TimedAspect k asp) f = do
   asp2 <- aspectTrav asp f
   return $! TimedAspect k asp2
@@ -116,6 +139,14 @@ effectToSuff effect f =
     Ascend 0 -> assert `failure` effect
     Ascend p -> "of descending" <+> affixPower (- p)
     Escape{} -> "of escaping"
+    Paralyze t -> "of paralysis" <+> t
+    InsertMove t -> "of speed burst" <+> t
+    DropBestWeapon -> "of disarming"
+    DropAllEqp False -> "of empty hands"
+    DropAllEqp True -> "of equipment smashing"
+    SendFlying t1 t2 -> "of flying" <+> t1 <+> t2
+    Teleport t -> "of teleport" <+> t
+    ActivateAllEqp -> "of mass activation"
     TimedAspect _ asp -> aspectTextToSuff asp
 
 aspectTextToSuff :: Aspect Text -> Text

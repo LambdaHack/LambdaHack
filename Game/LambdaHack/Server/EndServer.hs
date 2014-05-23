@@ -1,7 +1,7 @@
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
 module Game.LambdaHack.Server.EndServer
-  ( endOrLoop, dieSer
+  ( endOrLoop, dieSer, dropEqpItem, dropEqpItems
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -87,10 +87,14 @@ dieSer aid b hit = do
 dropAllItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> Bool -> m ()
 dropAllItems aid b hit = do
+  stashAllItems aid b
+  dropEqpItems aid b hit
+
+stashAllItems :: (MonadAtomic m, MonadServer m)
+              => ActorId -> Actor -> m ()
+stashAllItems aid b = do
   Kind.COps{corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
-  itemToF <- itemToFullServer
-  let container = CActor aid CEqp
       loseInv = do
         let g iid (k, _) = do
               mvCmd <- generalMoveItem iid k (CActor aid CInv) (CActor aid CEqp)
@@ -107,24 +111,36 @@ dropAllItems aid b hit = do
                                             (CActor leader CInv)
               mapM_ execUpdAtomic upds
         mapActorInv_ g b
-  let isDestroyed item = hit || bproj b && isFragile item
-      f iid kIsOn = do
-        item <- getsState $ getItemBody iid
-        let itemFull = itemToF iid kIsOn
-        if isDestroyed item then do
-          let expl = groupsExplosive itemFull
-          unless (null expl) $ do
-            let ik = itemKindId $ fromJust $ itemDisco itemFull
-            seed <- getsServer $ (EM.! iid) . sitemSeedD
-            execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik seed
-          -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
-          execUpdAtomic $ UpdLoseItem iid item kIsOn container
-          forM_ expl $ explodeItem aid b
-        else do
-          mvCmd <- generalMoveItem iid (fst kIsOn) (CActor aid CEqp)
-                                                   (CActor aid CGround)
-          mapM_ execUpdAtomic mvCmd
-  mapActorEqp_ f b
+
+dropEqpItems :: (MonadAtomic m, MonadServer m)
+             => ActorId -> Actor -> Bool -> m ()
+dropEqpItems aid b hit = mapActorEqp_ (dropEqpItem aid b hit) b
+
+-- | Drop a single actor's item. Note that if there multiple copies,
+-- at most one explodes to avoid excessive carnage and UI clutter
+-- (let's say, the multiple explosions interfere with each other or perhaps
+-- larger quantities of explosives tend to be packaged more safely).
+dropEqpItem :: (MonadAtomic m, MonadServer m)
+            => ActorId -> Actor -> Bool -> ItemId -> KisOn -> m ()
+dropEqpItem aid b hit iid kIsOn = do
+  item <- getsState $ getItemBody iid
+  itemToF <- itemToFullServer
+  let container = CActor aid CEqp
+      isDestroyed = hit || bproj b && isFragile item
+      itemFull = itemToF iid kIsOn
+  if isDestroyed then do
+    let expl = groupsExplosive itemFull
+    unless (null expl) $ do
+      let ik = itemKindId $ fromJust $ itemDisco itemFull
+      seed <- getsServer $ (EM.! iid) . sitemSeedD
+      execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik seed
+    -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
+    execUpdAtomic $ UpdLoseItem iid item kIsOn container
+    forM_ expl $ explodeItem aid b
+  else do
+    mvCmd <- generalMoveItem iid (fst kIsOn) (CActor aid CEqp)
+                                             (CActor aid CGround)
+    mapM_ execUpdAtomic mvCmd
 
 explodeItem :: (MonadAtomic m, MonadServer m)
             => ActorId -> Actor -> Text -> m ()
