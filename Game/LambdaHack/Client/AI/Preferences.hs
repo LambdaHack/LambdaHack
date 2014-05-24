@@ -38,7 +38,9 @@ effectToBenefit cops@Kind.COps{coactor=Kind.Ops{okind}} b eff =
     Effect.DropBestWeapon -> -50
     Effect.DropAllEqp False -> -80
     Effect.DropAllEqp True -> -100
-    Effect.SendFlying _ _ -> -10  -- but useful on self sometimes
+    Effect.SendFlying _ _ -> -10  -- but useful on self sometimes, too
+    Effect.PushActor _ _ -> -10
+    Effect.PullActor _ _ -> -10
     Effect.Teleport p -> -5 * p  -- but useful on self sometimes
     Effect.ActivateAllEqp -> -100
     Effect.TimedAspect k asp -> k * aspectToBenefit cops b asp `div` 50

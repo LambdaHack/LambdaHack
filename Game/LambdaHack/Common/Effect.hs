@@ -41,6 +41,8 @@ data Effect a =
   | DropBestWeapon
   | DropAllEqp !Bool
   | SendFlying !a !a
+  | PushActor !a !a
+  | PullActor !a !a
   | Teleport !a
   | ActivateAllEqp
   | TimedAspect !Int !(Aspect a)  -- enable the aspect for k clips
@@ -96,6 +98,14 @@ effectTrav (SendFlying a1 a2) f = do
   b1 <- f a1
   b2 <- f a2
   return $! SendFlying b1 b2
+effectTrav (PushActor a1 a2) f = do
+  b1 <- f a1
+  b2 <- f a2
+  return $! PushActor b1 b2
+effectTrav (PullActor a1 a2) f = do
+  b1 <- f a1
+  b2 <- f a2
+  return $! PullActor b1 b2
 effectTrav (Teleport a) f = do
   b <- f a
   return $! Teleport b
@@ -144,7 +154,9 @@ effectToSuff effect f =
     DropBestWeapon -> "of disarming"
     DropAllEqp False -> "of empty hands"
     DropAllEqp True -> "of equipment smashing"
-    SendFlying t1 t2 -> "of flying" <+> t1 <+> t2
+    SendFlying t1 t2 -> "of impact" <+> t1 <+> t2
+    PushActor t1 t2 -> "of pushing" <+> t1 <+> t2
+    PullActor t1 t2 -> "of pulling" <+> t1 <+> t2
     Teleport t -> "of teleport" <+> t
     ActivateAllEqp -> "of mass activation"
     TimedAspect _ asp -> aspectTextToSuff asp

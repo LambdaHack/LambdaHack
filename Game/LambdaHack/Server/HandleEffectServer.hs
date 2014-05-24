@@ -4,6 +4,7 @@ module Game.LambdaHack.Server.HandleEffectServer
   ( itemEffect, effectSem, applyItem
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -99,7 +100,12 @@ effectSem effect source target = do
     Effect.InsertMove p -> effectInsertMove execSfx p target
     Effect.DropBestWeapon -> effectDropBestWeapon execSfx target
     Effect.DropAllEqp hit -> effectDropAllEqp execSfx hit target
-    Effect.SendFlying p1 p2 -> effectSendFlying execSfx p1 p2 source target
+    Effect.SendFlying p1 p2 ->
+      effectSendFlying execSfx p1 p2 source target Nothing
+    Effect.PushActor p1 p2 ->
+      effectSendFlying execSfx p1 p2 source target (Just True)
+    Effect.PullActor p1 p2 ->
+      effectSendFlying execSfx p1 p2 source target (Just False)
     Effect.Teleport p -> effectTeleport execSfx p target
     Effect.ActivateAllEqp -> effectActivateAllEqp execSfx target
     Effect.TimedAspect{} -> effectNoEffect target  -- TODO
@@ -526,52 +532,59 @@ effectDropAllEqp execSfx hit target = do
 -- the vector is directed outwards, if no, inwards, if it's the same actor,
 -- boldpos is used, if it can't, a random outward vector of length 10 is picked.
 effectSendFlying :: (MonadAtomic m, MonadServer m)
-                 => m () -> Int -> Int -> ActorId -> ActorId -> m Bool
-effectSendFlying execSfx toThrow linger source target = do
-  Kind.COps{cotile} <- getsState scops
-  v <- sendFlyingVector source target
-  tb <- getsState $ getActorBody target
-  lvl@Level{lxsize, lysize} <- getLevel (blid tb)
-  let eps = 0
-      fpos = bpos tb `shift` v
-  case bla lxsize lysize eps (bpos tb) fpos of
-    Nothing -> assert `failure` (fpos, tb)
-    Just [] -> assert `failure` "projecting from the edge of level"
-                      `twith` (fpos, tb)
-    Just (pos : rest) -> do
-      let t = lvl `at` pos
-      if not $ Tile.isWalkable cotile t
-        then effectNoEffect target  -- supported by a wall
-        else do
-          let -- TODO: add weight field to actor, unless we just
-              -- sum weigths of all body parts
-              weight = 70000  -- 70 kg
-              path = bpos tb : pos : rest
-              (trajectoryNew, speed) =
-                computeTrajectory weight toThrow linger path
-              speedOld = bspeed tb
-              speedDelta = speedAdd speed (speedNegate speedOld)
-          execUpdAtomic $ UpdTrajectoryActor target (btrajectory tb)
-                                                    (Just trajectoryNew)
-          execUpdAtomic $ UpdHasteActor target speedDelta
-          execSfx
-          return True
+                 => m () -> Int -> Int -> ActorId -> ActorId -> Maybe Bool
+                 -> m Bool
+effectSendFlying execSfx toThrow linger source target modePush = do
+  mv <- sendFlyingVector source target modePush
+  case mv of
+    Nothing -> effectNoEffect target
+    Just v -> do
+      Kind.COps{cotile} <- getsState scops
+      tb <- getsState $ getActorBody target
+      lvl@Level{lxsize, lysize} <- getLevel (blid tb)
+      let eps = 0
+          fpos = bpos tb `shift` v
+      case bla lxsize lysize eps (bpos tb) fpos of
+        Nothing -> assert `failure` (fpos, tb)
+        Just [] -> assert `failure` "projecting from the edge of level"
+                          `twith` (fpos, tb)
+        Just (pos : rest) -> do
+          let t = lvl `at` pos
+          if not $ Tile.isWalkable cotile t
+            then effectNoEffect target  -- supported by a wall
+            else do
+              let -- TODO: add weight field to actor, unless we just
+                  -- sum weigths of all body parts
+                  weight = 70000  -- 70 kg
+                  path = bpos tb : pos : rest
+                  (trajectoryNew, speed) =
+                    computeTrajectory weight toThrow linger path
+                  speedOld = bspeed tb
+                  speedDelta = speedAdd speed (speedNegate speedOld)
+              execUpdAtomic $ UpdTrajectoryActor target (btrajectory tb)
+                                                        (Just trajectoryNew)
+              execUpdAtomic $ UpdHasteActor target speedDelta
+              execSfx
+              return True
 
 sendFlyingVector :: (MonadAtomic m, MonadServer m)
-                 => ActorId -> ActorId -> m Vector
-sendFlyingVector source target = do
+                 => ActorId -> ActorId -> Maybe Bool -> m (Maybe Vector)
+sendFlyingVector source target modePush = do
   sb <- getsState $ getActorBody source
   if source == target then do
-    if boldpos sb == bpos sb then rndToAction $ do
+    if modePush == Just False then return Nothing
+    else if boldpos sb == bpos sb then rndToAction $ do
       z <- randomR (-10, 10)
-      oneOf [Vector 10 z, Vector (-10) z, Vector z 10, Vector z (-10)]
+      Just <$> oneOf [Vector 10 z, Vector (-10) z, Vector z 10, Vector z (-10)]
     else
-      return $! vectorToFrom (bpos sb) (boldpos sb)
+      return $ Just $ vectorToFrom (bpos sb) (boldpos sb)
   else do
     tb <- getsState $ getActorBody target
-    return $! if adjacent (bpos sb) (bpos tb)
-             then vectorToFrom (bpos tb) (bpos sb)
-             else vectorToFrom (bpos sb) (bpos tb)
+    return $ if modePush == Just True || adjacent (bpos sb) (bpos tb)
+             then if modePush == Just False then Nothing
+                  else Just $ vectorToFrom (bpos tb) (bpos sb)
+             else if modePush == Just True then Nothing
+                  else Just $ vectorToFrom (bpos sb) (bpos tb)
 
 -- ** Teleport
 
