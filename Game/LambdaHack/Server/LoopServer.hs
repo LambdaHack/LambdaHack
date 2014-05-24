@@ -26,6 +26,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.EndServer
@@ -331,31 +332,37 @@ saveBkpAll unconditional = do
 -- blocking path of human-controlled actors and alarming the hapless human.
 setTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
 setTrajectory aid = do
-  cops <- getsState scops
-  b@Actor{bpos, btrajectory, blid, bcolor} <- getsState $ getActorBody aid
-  lvl <- getLevel blid
-  let clearTrajectory = do
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  b <- getsState $ getActorBody aid
+  lvl <- getLevel $ blid b
+  let trajectoryOld = btrajectory b
+      clearTrajectory = do
         -- Lose HP due to bumping into an obstacle.
         execUpdAtomic $ UpdHealActor aid (-1)
-        execUpdAtomic $ UpdTrajectoryActor aid btrajectory (Just [])
+        execUpdAtomic $ UpdTrajectoryActor aid trajectoryOld (Just [])
         return False
-  case btrajectory of
+  case trajectoryOld of
     Just (d : lv) ->
-      if not $ accessibleDir cops lvl bpos d
+      if not $ accessibleDir cops lvl (bpos b) d
       then clearTrajectory
       else do
         when (bproj b && null lv) $ do
           let toColor = Color.BrBlack
-          when (bcolor /= toColor) $
-            execUpdAtomic $ UpdColorActor aid bcolor toColor
+          when (bcolor b /= toColor) $
+            execUpdAtomic $ UpdColorActor aid (bcolor b) toColor
         reqMove aid d
         b2 <- getsState $ getActorBody aid
         if actorDying b2 then return False  -- don't clear trajectory
         else do
-          execUpdAtomic $ UpdTrajectoryActor aid btrajectory (Just lv)
+          execUpdAtomic $ UpdTrajectoryActor aid trajectoryOld (Just lv)
           return True
     Just [] -> do  -- non-projectile actor stops flying
-        assert (not $ bproj b) skip
-        execUpdAtomic $ UpdTrajectoryActor aid btrajectory Nothing
-        return False
+      assert (not $ bproj b) skip
+        -- Being hurled resets speed to factory defaults.
+      let speedOld = bspeed b
+          speedNew = aspeed $ okind $ bkind b
+          speedDelta = speedAdd speedNew (speedNegate speedOld)
+      execUpdAtomic $ UpdHasteActor aid speedDelta
+      execUpdAtomic $ UpdTrajectoryActor aid trajectoryOld Nothing
+      return False
     _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)

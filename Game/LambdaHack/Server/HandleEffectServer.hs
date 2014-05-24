@@ -32,6 +32,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
@@ -526,10 +527,51 @@ effectDropAllEqp execSfx hit target = do
 -- boldpos is used, if it can't, a random outward vector of length 10 is picked.
 effectSendFlying :: (MonadAtomic m, MonadServer m)
                  => m () -> Int -> Int -> ActorId -> ActorId -> m Bool
-effectSendFlying execSfx p1 p2 source target = do
-  -- TODO
-  execSfx
-  return True
+effectSendFlying execSfx toThrow linger source target = do
+  Kind.COps{cotile} <- getsState scops
+  v <- sendFlyingVector source target
+  tb <- getsState $ getActorBody target
+  lvl@Level{lxsize, lysize} <- getLevel (blid tb)
+  let eps = 0
+      fpos = bpos tb `shift` v
+  case bla lxsize lysize eps (bpos tb) fpos of
+    Nothing -> assert `failure` (fpos, tb)
+    Just [] -> assert `failure` "projecting from the edge of level"
+                      `twith` (fpos, tb)
+    Just (pos : rest) -> do
+      let t = lvl `at` pos
+      if not $ Tile.isWalkable cotile t
+        then effectNoEffect target  -- supported by a wall
+        else do
+          let -- TODO: add weight field to actor, unless we just
+              -- sum weigths of all body parts
+              weight = 70000  -- 70 kg
+              path = bpos tb : pos : rest
+              (trajectoryNew, speed) =
+                computeTrajectory weight toThrow linger path
+              speedOld = bspeed tb
+              speedDelta = speedAdd speed (speedNegate speedOld)
+          execUpdAtomic $ UpdTrajectoryActor target (btrajectory tb)
+                                                    (Just trajectoryNew)
+          execUpdAtomic $ UpdHasteActor target speedDelta
+          execSfx
+          return True
+
+sendFlyingVector :: (MonadAtomic m, MonadServer m)
+                 => ActorId -> ActorId -> m Vector
+sendFlyingVector source target = do
+  sb <- getsState $ getActorBody source
+  if source == target then do
+    if boldpos sb == bpos sb then rndToAction $ do
+      z <- randomR (-10, 10)
+      oneOf [Vector 10 z, Vector (-10) z, Vector z 10, Vector z (-10)]
+    else
+      return $! vectorToFrom (bpos sb) (boldpos sb)
+  else do
+    tb <- getsState $ getActorBody target
+    return $! if adjacent (bpos sb) (bpos tb)
+             then vectorToFrom (bpos tb) (bpos sb)
+             else vectorToFrom (bpos sb) (bpos tb)
 
 -- ** Teleport
 
