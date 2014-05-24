@@ -582,7 +582,11 @@ sendFlyingVector source target modePush = do
     tb <- getsState $ getActorBody target
     return $ if modePush == Just True || adjacent (bpos sb) (bpos tb)
              then if modePush == Just False then Nothing
-                  else Just $ vectorToFrom (bpos tb) (bpos sb)
+                  else let pos = if chessDist (boldpos sb) (bpos tb)
+                                    > chessDist (bpos sb) (bpos tb)
+                                 then boldpos sb  -- avoid cardinal dir
+                                 else bpos sb
+                       in Just $ vectorToFrom (bpos tb) pos
              else if modePush == Just True then Nothing
                   else Just $ vectorToFrom (bpos sb) (bpos tb)
 
