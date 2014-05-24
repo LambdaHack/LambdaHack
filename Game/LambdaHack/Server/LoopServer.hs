@@ -183,6 +183,12 @@ handleActors lid = do
   case mnext of
     _ | quit -> return ()
     Nothing -> return ()
+    Just (aid, b) | maybe False null (btrajectory b) && bproj b -> do
+      -- A projectile drops to the ground due to obstacles or range.
+      assert (bproj b) skip
+      startActor aid
+      dieSer aid b False
+      handleActors lid
     Just (aid, b) | bhp b < 0 && bproj b -> do
       -- A projectile hits an actor. The carried item is destroyed.
       -- TODO: perhaps don't destroy if no effect (NoEffect),
@@ -193,12 +199,6 @@ handleActors lid = do
       dieSer aid b True
       -- The attack animation for the projectile hit subsumes @DisplayPushD@,
       -- so not sending an extra @DisplayPushD@ here.
-      handleActors lid
-    Just (aid, b) | maybe False null (btrajectory b) -> do
-      -- A projectile drops to the ground due to obstacles or range.
-      assert (bproj b) skip
-      startActor aid
-      dieSer aid b False
       handleActors lid
     Just (aid, b) | bhp b <= 0 && not (bproj b) -> do
       -- An actor dies. Items drop to the ground
@@ -231,7 +231,7 @@ handleActors lid = do
             bPre <- getsState $ getActorBody aidNew
             when (hasWait /= bwait bPre) $
               execUpdAtomic $ UpdWaitActor aidNew hasWait
-      if bproj body then do  -- TODO: perhaps check Track, not bproj
+      if isJust $ btrajectory body then do
         timed <- setTrajectory aid
         when timed $ advanceTime aid
       else if queryUI then do
@@ -335,6 +335,8 @@ setTrajectory aid = do
   b@Actor{bpos, btrajectory, blid, bcolor} <- getsState $ getActorBody aid
   lvl <- getLevel blid
   let clearTrajectory = do
+        -- Lose HP due to bumping into an obstacle.
+        execUpdAtomic $ UpdHealActor aid (-1)
         execUpdAtomic $ UpdTrajectoryActor aid btrajectory (Just [])
         return False
   case btrajectory of
@@ -342,14 +344,18 @@ setTrajectory aid = do
       if not $ accessibleDir cops lvl bpos d
       then clearTrajectory
       else do
-        when (null lv) $ do
+        when (bproj b && null lv) $ do
           let toColor = Color.BrBlack
           when (bcolor /= toColor) $
             execUpdAtomic $ UpdColorActor aid bcolor toColor
         reqMove aid d
         b2 <- getsState $ getActorBody aid
-        if actorDying b2 then return False
+        if actorDying b2 then return False  -- don't clear trajectory
         else do
           execUpdAtomic $ UpdTrajectoryActor aid btrajectory (Just lv)
           return True
-    _ -> assert `failure` "null trajectory" `twith` (aid, b)
+    Just [] -> do  -- non-projectile actor stops flying
+        assert (not $ bproj b) skip
+        execUpdAtomic $ UpdTrajectoryActor aid btrajectory Nothing
+        return False
+    _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)

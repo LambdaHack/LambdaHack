@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Time
   , Delta(..), timeShift, timeDeltaToFrom, timeDeltaReverse, timeDeltaScale
   , timeDeltaToDigit, ticksPerMeter
   , Speed, toSpeed, speedZero, speedNormal, speedScale, speedAdd, speedNegate
-  , speedFromWeight, rangeFromSpeed
+  , speedFromWeight, rangeFromSpeed, rangeFromSpeedAndLinger
   ) where
 
 import Data.Binary
@@ -179,3 +179,9 @@ speedFromWeight weight bonus =
 -- that is 2 turns, and then drops to the ground.
 rangeFromSpeed :: Speed -> Int
 rangeFromSpeed (Speed v) = fromIntegral $ v `div` sInMs
+
+-- | Calculate maximum range taking into account the linger percentage.
+rangeFromSpeedAndLinger :: Speed -> Int -> Int
+rangeFromSpeedAndLinger speed linger =
+  let range = rangeFromSpeed speed
+  in linger * range `div` 100

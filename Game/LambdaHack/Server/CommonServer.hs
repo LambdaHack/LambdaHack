@@ -33,7 +33,6 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
@@ -250,7 +249,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
                       `twith` (spos, tpxy)
     Just (pos : rest) -> do
       let t = lvl `at` pos
-      if not $ Tile.isClear cotile t
+      if not $ Tile.isWalkable cotile t
         then return $ Just ProjectBlockTerrain
         else do
           mab <- getsState $ posToActor pos lid
@@ -299,21 +298,21 @@ addProjectile :: (MonadAtomic m, MonadServer m)
 addProjectile bpos rest iid blid bfid btime = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   item <- getsState $ getItemBody iid
-  let speed = speedFromWeight (jweight item) (strengthToThrow item)
-      trange = totalRange item
+  let (trajectory, speed) = itemTrajectory item (bpos : rest)
+      trange = length trajectory
       adj | trange < 5 = "falling"
           | otherwise = "flying"
       -- Not much detail about a fast flying item.
       (object1, object2) = partItem $ itemNoDisco (item, (1, True))
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      dirTrajectory = take trange $ pathToTrajectory (bpos : rest)
       kind = okind $ projectileKindId coactor
-      m = actorTemplate (projectileKindId coactor) (asymbol kind) name "it"
-                        (acolor kind) speed 0 maxBound (Just dirTrajectory)
+      b = actorTemplate (projectileKindId coactor) (asymbol kind) name "it"
+                        (acolor kind) speed 0 maxBound
                         bpos blid btime bfid (EM.singleton iid (1, True)) True
+      btra = b {btrajectory = Just trajectory}
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
-  execUpdAtomic $ UpdCreateActor acounter m [(iid, item)]
+  execUpdAtomic $ UpdCreateActor acounter btra [(iid, item)]
 
 fullAssocsServer :: MonadServer m
                  => ActorId -> [CStore] -> m [(ItemId, ItemFull)]

@@ -9,7 +9,9 @@ module Game.LambdaHack.Common.Item
     ItemId, Item(..), buildItem, newItem, seedToAspectsEffects
     -- * Item strength
   , strengthMelee, strengthArmor, strengthRegen, strengthStead, strengthLight
-  , strengthLingering, strengthToThrow, groupsExplosive, isFragile
+  , strengthLingering, strengthToThrow
+  , totalRange, itemTrajectory, computeTrajectory
+  , groupsExplosive, isFragile
   , strongestItem
   , strongestSword, strongestShield
   , strongestRegen, strongestStead, strongestLight
@@ -51,7 +53,10 @@ import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 
@@ -370,6 +375,24 @@ strengthToThrow item =
     [] -> 0
     [percent] -> percent
     vs -> assert `failure` (vs, item)
+
+totalRange :: Item -> Int
+totalRange item =
+  let linger = strengthLingering item
+      speed = speedFromWeight (jweight item) (strengthToThrow item)
+  in rangeFromSpeedAndLinger speed linger
+
+itemTrajectory :: Item -> [Point] -> ([Vector], Speed)
+itemTrajectory item path =
+  computeTrajectory (jweight item) (strengthToThrow item)
+                    (strengthLingering item) path
+
+computeTrajectory :: Int -> Int -> Int -> [Point] -> ([Vector], Speed)
+computeTrajectory weight toThrow linger path =
+  let speed = speedFromWeight weight toThrow
+      trange = rangeFromSpeedAndLinger speed linger
+      btrajectory = take trange $ pathToTrajectory path
+  in (btrajectory, speed)
 
 -- | The part of speech describing the item.
 partItem :: ItemFull -> (MU.Part, MU.Part)

@@ -13,7 +13,7 @@ module Game.LambdaHack.Common.ActorState
   , tryFindHeroK, getLocalTime, isSpawnFaction
   , itemPrice, calmEnough, regenHPPeriod, regenCalmDelta
   , actorShines, actorInAmbient, dispEnemy
-  , totalRange, fullAssocs, itemToFull
+  , fullAssocs, itemToFull
   ) where
 
 import Control.Arrow (second)
@@ -326,13 +326,6 @@ dispEnemy sb tb s =
      || not (actorDying tb
              || braced tb
              || hasSupport sb && hasSupport tb)  -- solo actors are flexible
-
-totalRange :: Item -> Int
-totalRange item =
-  let lingerPercent = strengthLingering item
-      speed = speedFromWeight (jweight item) (strengthToThrow item)
-      range = rangeFromSpeed speed
-  in lingerPercent * range `div` 100
 
 fullAssocs :: Kind.COps -> Discovery -> DiscoAE
            -> ActorId -> [CStore] -> State

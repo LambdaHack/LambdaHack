@@ -155,7 +155,7 @@ addActor ak bfid pos lid hp calm bsymbol bname bpronoun bcolor time = do
              | otherwise = hp
       speed = aspeed kind
       b = actorTemplate ak bsymbol bname bpronoun bcolor speed diffHP calm
-                        Nothing pos lid time bfid EM.empty False
+                        pos lid time bfid EM.empty False
   execUpdAtomic $ UpdCreateActor aid b []
   -- Create initial actor items.
   flavour <- getsServer sflavour

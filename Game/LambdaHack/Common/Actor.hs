@@ -89,12 +89,13 @@ partPronoun b = MU.Text $ bpronoun b
 
 -- | A template for a new actor.
 actorTemplate :: Kind.Id ActorKind -> Char -> Text -> Text
-              -> Color.Color -> Speed -> Int -> Int -> Maybe [Vector]
+              -> Color.Color -> Speed -> Int -> Int
               -> Point -> LevelId -> Time -> FactionId -> ItemBag -> Bool
               -> Actor
-actorTemplate bkind bsymbol bname bpronoun bcolor bspeed bhp bcalm btrajectory
+actorTemplate bkind bsymbol bname bpronoun bcolor bspeed bhp bcalm
               bpos blid btime bfid beqp bproj =
-  let boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
+  let btrajectory = Nothing
+      boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
       boldlid = blid
       binv    = EM.empty
       bbody   = EM.empty
