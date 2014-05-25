@@ -311,7 +311,7 @@ effectApplyPerfume :: (MonadAtomic m, MonadServer m)
                    => m () -> ActorId -> ActorId -> m Bool
 effectApplyPerfume execSfx source target =
   if source == target
-  then effectImpress source target
+  then effectNoEffect target
   else do
     tb <- getsState $ getActorBody target
     Level{lsmell} <- getLevel $ blid tb
@@ -319,7 +319,6 @@ effectApplyPerfume execSfx source target =
           execUpdAtomic $ UpdAlterSmell (blid tb) p (Just fromSm) Nothing
     mapWithKeyM_ f lsmell
     execSfx
-    void $ effectImpress source target
     return True
 
 -- ** Burn

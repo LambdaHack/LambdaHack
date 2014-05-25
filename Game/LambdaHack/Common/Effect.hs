@@ -35,7 +35,7 @@ data Effect a =
   | Burn !Int
   | Blast !Int
   | Ascend !Int
-  | Escape !Int
+  | Escape !Int  -- ^ the argument marks if can be placed on last level, etc.
   | Paralyze !a
   | InsertMove !a
   | DropBestWeapon

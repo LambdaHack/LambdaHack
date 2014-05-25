@@ -33,7 +33,7 @@ amulet = ItemKind
   , iverbProject = "cast"
   , iweight  = 30
   , iaspects = [Regeneration (2 * d 3 + dl 10)]
-  , ieffects = []
+  , ieffects = []  -- TODO: DropAllEqp? change text if so
   , ifeature = [ToThrow (-50)]  -- not dense enough
   , idesc    = "A necklace of dried herbs and healing berries."
   }
@@ -78,7 +78,7 @@ dart100 = ItemKind
   , iaspects = []
   , ieffects = [Hurt (d 1) (d 2 + dl 2)]
   , ifeature = [ToThrow 100]
-  , idesc    = "Subtly balanced for throws of great speed."
+  , idesc    = "Finely balanced for throws of great speed."
   }
 gem = ItemKind
   { isymbol  = '*'
@@ -122,14 +122,14 @@ harpoon = ItemKind
   , iname    = "harpoon"
   , ifreq    = [("useful", 25)]
   , iflavour = zipPlain [Brown]
-  , icount   = 2 * dl 2
+  , icount   = 1 + dl 3
   , iverbApply   = "break up"
   , iverbProject = "hurl"
   , iweight  = 4000
   , iaspects = []
-  , ieffects = [Hurt (3 * d 1) (d 2 + 2 * dl 2)]
+  , ieffects = [Hurt (3 * d 1) (d 2 + 2 * dl 2), PullActor 100 50]
   , ifeature = []
-  , idesc    = "A long, well balanced rod, with a cruel, barbed head."
+  , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
   }
 oilLamp = ItemKind
   { isymbol  = '('
@@ -163,7 +163,7 @@ potion = ItemKind
   }
 potion1 = potion
   { iaspects = [Explode "fragrance"]
-  , ieffects = [ApplyPerfume]
+  , ieffects = [ApplyPerfume, Impress]
   }
 potion2 = potion
   { iaspects = [Explode "healing mist"]
@@ -171,7 +171,7 @@ potion2 = potion
   }
 potion3 = potion
   { iaspects = [Explode "explosion blast 10"]
-  , ieffects = [Blast 10]
+  , ieffects = [Blast 10, PushActor 200 75]
   }
 ring = ItemKind
   { isymbol  = '='
@@ -183,9 +183,9 @@ ring = ItemKind
   , iverbProject = "toss"
   , iweight  = 15
   , iaspects = [Steadfastness (d 2 + 2 * dl 2)]
-  , ieffects = []
+  , ieffects = []  -- TODO: add something
   , ifeature = []
-  , idesc    = "Cold, solid to the touch, perfectly round, engraved with the reminder of purpose."
+  , idesc    = "Cold, solid to the touch, perfectly round, engraved with letters that meant a lot to somebody."
   }
 scroll = ItemKind
   { isymbol  = '?'
@@ -226,7 +226,7 @@ shield = ItemKind
   , iverbProject = "push"
   , iweight  = 3000
   , iaspects = [ArmorMelee 50]
-  , ieffects = []
+  , ieffects = [PushActor 100 50]
   , ifeature = [ToThrow (-80)]  -- unwieldy to throw and blunt
   , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained."
   }
