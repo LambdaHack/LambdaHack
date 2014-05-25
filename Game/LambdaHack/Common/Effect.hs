@@ -25,7 +25,6 @@ data Effect a =
     NoEffect
   | Heal !Int
   | Hurt !Dice.Dice !a
-  | Mindprobe Int  -- the @Int@ is a lazy hack to send the result to clients
   | Dominate
   | Impress
   | CallFriend !Int
@@ -75,7 +74,6 @@ effectTrav (Heal p) _ = return $! Heal p
 effectTrav (Hurt dice a) f = do
   b <- f a
   return $! Hurt dice b
-effectTrav (Mindprobe x) _ = return $! Mindprobe x
 effectTrav Dominate _ = return Dominate
 effectTrav Impress _ = return Impress
 effectTrav (CallFriend p) _ = return $! CallFriend p
@@ -136,7 +134,6 @@ effectToSuff effect f =
     Heal 0 -> assert `failure` effect
     Heal p -> "of wounding" <+> affixBonus p
     Hurt dice t -> "(" <> tshow dice <> ")" <+> t
-    Mindprobe{} -> "of soul searching"
     Dominate -> "of domination"
     Impress -> "of impression"
     CallFriend p -> "of aid calling" <+> affixPower p

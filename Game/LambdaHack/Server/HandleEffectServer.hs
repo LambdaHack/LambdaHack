@@ -83,10 +83,7 @@ effectSem effect source target = do
     Effect.NoEffect -> effectNoEffect target
     Effect.Heal p -> effectHeal execSfx p source target
     Effect.Hurt nDm p -> effectHurt nDm p source target
-    Effect.Mindprobe _ -> effectMindprobe source target
-    Effect.Dominate | source /= target -> effectDominate execSfx source target
-    Effect.Dominate ->
-      effectSem (Effect.Mindprobe undefined) source target
+    Effect.Dominate -> effectDominate execSfx source target
     Effect.Impress -> effectImpress source target
     Effect.CallFriend p -> effectCallFriend p source target
     Effect.Summon p -> effectSummon p target
@@ -181,22 +178,6 @@ effectHurt nDm power source target = do
     else Effect.Hurt nDm deltaHP{-hack-}
   return True
 
--- ** Mindprobe
-
-effectMindprobe :: MonadAtomic m => ActorId -> ActorId -> m Bool
-effectMindprobe source target = do
-  sb <- getsState $ getActorBody source
-  tb <- getsState $ getActorBody target
-  let lid = blid tb
-  fact <- getsState $ (EM.! bfid tb) . sfactionD
-  lb <- getsState $ actorRegularList (isAtWar fact) lid
-  let nEnemy = length lb
-  if nEnemy == 0 || bproj tb then
-    effectNoEffect target
-  else do
-    execSfxAtomic $ SfxEffect (bfid sb) target $ Effect.Mindprobe nEnemy
-    return True
-
 -- ** Dominate
 
 effectDominate :: (MonadAtomic m, MonadServer m)
@@ -204,8 +185,10 @@ effectDominate :: (MonadAtomic m, MonadServer m)
 effectDominate execSfx source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  if bfid tb == bfid sb || bproj tb then
+  if bproj tb then
     effectNoEffect target
+  else if bfid tb == bfid sb then
+    effectImpress source target
   else do
     execSfx
     dominateFid (bfid sb) target

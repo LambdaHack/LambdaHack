@@ -22,7 +22,6 @@ effectToBenefit cops@Kind.COps{coactor=Kind.Ops{okind}} b eff =
                      then 10 * min p (Dice.maxDice (ahp kind) - bhp b)
                      else max (-99) (10 * p)  -- usually splash damage
     Effect.Hurt d p -> -(min 99 $ 5 * p + round (5 * Dice.meanDice d))
-    Effect.Mindprobe{} -> 0            -- AI can't benefit yet
     Effect.Dominate -> -200
     Effect.Impress -> -10
     Effect.CallFriend p -> p * 100
@@ -39,7 +38,7 @@ effectToBenefit cops@Kind.COps{coactor=Kind.Ops{okind}} b eff =
     Effect.DropAllEqp False -> -80
     Effect.DropAllEqp True -> -100
     Effect.SendFlying _ _ -> -10  -- but useful on self sometimes, too
-    Effect.PushActor _ _ -> -10
+    Effect.PushActor _ _ -> -10  -- but useful on self sometimes, too
     Effect.PullActor _ _ -> -10
     Effect.Teleport p -> -5 * p  -- but useful on self sometimes
     Effect.ActivateAllEqp -> -100

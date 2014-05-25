@@ -524,10 +524,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs
         Effect.Hurt{} -> skip
-        Effect.Mindprobe nEnemy -> do
-          let msg = makeSentence
-                [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
-          msgAdd msg
         Effect.Dominate -> do
           -- For subsequent messages use the proper name, never "you".
           let subject = partActor b
