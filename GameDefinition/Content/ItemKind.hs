@@ -171,7 +171,7 @@ potion2 = potion
   }
 potion3 = potion
   { iaspects = [Explode "explosion blast 10"]
-  , ieffects = [Blast 10, PushActor 200 75]
+  , ieffects = [Blast 10, PushActor 100 75]
   }
 ring = ItemKind
   { isymbol  = '='
@@ -226,7 +226,7 @@ shield = ItemKind
   , iverbProject = "push"
   , iweight  = 3000
   , iaspects = [ArmorMelee 50]
-  , ieffects = [PushActor 100 50]
+  , ieffects = [PushActor 0 50]
   , ifeature = [ToThrow (-80)]  -- unwieldy to throw and blunt
   , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained."
   }

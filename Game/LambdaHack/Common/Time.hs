@@ -163,12 +163,13 @@ speedFromWeight weight bonus =
       b = fromIntegral bonus
       mpMs | w <= 500 = sInMs * 16
            | w > 500 && w <= 2000 = sInMs * 16 * 1500 `div` (w + 1000)
-           | otherwise = sInMs * (10000 - w) `div` 1000
+           | w < 8000 = sInMs * (10000 - w) `div` 1000
+           | otherwise = sInMs * 2  -- one step per turn is the minimum
       v = mpMs * (100 + b) `div` 100
       -- We round down to the nearest multiple of 2M (unless the speed
       -- is very low), to ensure both turns of flight cover the same distance
       -- and that the speed matches the distance traveled exactly.
-      multiple2M = sInMs * if v >= 2 * sInMs
+      multiple2M = sInMs * if v > 2 * sInMs
                            then 2 * (v `div` (2 * sInMs))
                            else v `div` sInMs
   in Speed $ max 1 multiple2M
