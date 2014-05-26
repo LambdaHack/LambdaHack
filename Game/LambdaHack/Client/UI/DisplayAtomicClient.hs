@@ -131,10 +131,12 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
         when (null closeFoes) $ do  -- obvious where the feeling comes from
           aVerbMU aid "hear something"
           msgDuplicateScrap
-  UpdHasteActor aid delta ->
-    aVerbMU aid $ if delta > speedZero
-                  then "speed up"
-                  else "slow down"
+  UpdHasteActor aid delta -> do
+    b <- getsState $ getActorBody aid
+    when (isNothing $ btrajectory b) $
+      aVerbMU aid $ if delta > speedZero
+                    then "speed up"
+                    else "slow down"
   UpdOldFidActor{} -> skip
   UpdTrajectoryActor{} -> skip
   UpdColorActor{} -> skip
