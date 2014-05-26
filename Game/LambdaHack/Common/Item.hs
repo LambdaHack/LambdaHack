@@ -404,14 +404,19 @@ partItem itemFull =
       in (MU.Text $ flav <+> genericName, "")
     Just _ ->
       let effTs = textAllAE itemFull
-          effectText = case filter (not . T.null) effTs of
+          effectFirst = case filter (not . T.null) effTs of
             [] -> ""
-            [effT] -> effT
-            [effT1, effT2] -> effT1 <+> "and" <+> effT2
-            _ -> "of many effects"
+            effT : _ -> effT
+          effectExtra = case filter (not . T.null) effTs of
+            [] -> ""
+            [_] -> ""
+            [_, effT] -> "(" <> effT <> ")"
+            [_, effT1, effT2] -> "(" <> effT1 <+> ", " <+> effT2 <> ")"
+            _ -> "(of many effects)"
           turnedOff | itemIsOn itemFull = ""
                     | otherwise = "{OFF}"  -- TODO: mark with colour
-      in (MU.Text genericName, MU.Text $ effectText <+> turnedOff)
+      in ( MU.Text genericName
+         , MU.Text $ effectFirst <+> effectExtra <+> turnedOff )
 
 textAllAE :: ItemFull -> [Text]
 textAllAE ItemFull{itemBase, itemDisco} =
