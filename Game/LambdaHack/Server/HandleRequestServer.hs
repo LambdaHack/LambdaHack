@@ -189,7 +189,10 @@ reqMelee source target iid = do
     execSfxAtomic $ SfxStrike source target iid hitA
     -- Deduct a hitpoint for a pierce of a projectile
     -- or due to a hurled actor colliding with another.
-    when (isJust $ btrajectory sb) $ execUpdAtomic $ UpdHealActor source (-1)
+    when (isJust $ btrajectory sb) $ do
+      execUpdAtomic $ UpdHealActor source (-1)
+      unless (bproj sb) $  -- non projectile can't pierce
+        execUpdAtomic $ UpdTrajectoryActor source (btrajectory sb) (Just [])
     -- Msgs inside itemEffect describe the target part.
     itemEffect source target iid (itemToF iid (1, True))  -- don't spam with OFF
     -- The only way to start a war is to slap an enemy. Being hit by

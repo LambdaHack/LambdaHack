@@ -335,13 +335,12 @@ setTrajectory aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
-  let trajectoryOld = btrajectory b
-      clearTrajectory = do
+  let clearTrajectory = do
         -- Lose HP due to bumping into an obstacle.
         execUpdAtomic $ UpdHealActor aid (-1)
-        execUpdAtomic $ UpdTrajectoryActor aid trajectoryOld (Just [])
-        return False
-  case trajectoryOld of
+        execUpdAtomic $ UpdTrajectoryActor aid (btrajectory b) (Just [])
+        return $ not $ bproj b  -- projectiles must vanish soon
+  case btrajectory b of
     Just (d : lv) ->
       if not $ accessibleDir cops lvl (bpos b) d
       then clearTrajectory
@@ -350,11 +349,12 @@ setTrajectory aid = do
           let toColor = Color.BrBlack
           when (bcolor b /= toColor) $
             execUpdAtomic $ UpdColorActor aid (bcolor b) toColor
-        reqMove aid d
+        reqMove aid d  -- hit clears trajectory of non-projectiles
         b2 <- getsState $ getActorBody aid
-        if actorDying b2 then return False  -- don't clear trajectory
+        if actorDying b2 then return $ not $ bproj b  -- don't clear trajectory
         else do
-          execUpdAtomic $ UpdTrajectoryActor aid trajectoryOld (Just lv)
+          unless (btrajectory b2 == Just []) $
+            execUpdAtomic $ UpdTrajectoryActor aid (btrajectory b2) (Just lv)
           return True
     Just [] -> do  -- non-projectile actor stops flying
       assert (not $ bproj b) skip
@@ -363,6 +363,6 @@ setTrajectory aid = do
           speedNew = aspeed $ okind $ bkind b
           speedDelta = speedAdd speedNew (speedNegate speedOld)
       execUpdAtomic $ UpdHasteActor aid speedDelta
-      execUpdAtomic $ UpdTrajectoryActor aid trajectoryOld Nothing
+      execUpdAtomic $ UpdTrajectoryActor aid (btrajectory b) Nothing
       return False
     _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)
