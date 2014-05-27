@@ -91,7 +91,7 @@ effectSem effect source target = do
     Effect.ApplyPerfume -> effectApplyPerfume execSfx source target
     Effect.Burn p -> effectBurn execSfx p source target
     Effect.Blast p -> effectBlast execSfx p source target
-    Effect.Ascend p -> effectAscend execSfx p target
+    Effect.Ascend p -> effectAscend execSfx p source target
     Effect.Escape{} -> effectEscape target
     Effect.Paralyze p -> effectParalyze execSfx p target
     Effect.InsertMove p -> effectInsertMove execSfx p target
@@ -328,29 +328,19 @@ effectBlast execSfx _power _source _target = do
 
 -- ** Ascend
 
-effectAscend :: MonadAtomic m => m () -> Int -> ActorId -> m Bool
-effectAscend execSfx power target = do
-  tb <- getsState $ getActorBody target
-  mfail <- effLvlGoUp target power
-  case mfail of
-    Nothing -> do
-      execSfx
-      return True
-    Just failMsg -> do
-      execSfxAtomic $ SfxMsgFid (bfid tb) failMsg
-      return False
-
-effLvlGoUp :: MonadAtomic m => ActorId -> Int -> m (Maybe Msg)
-effLvlGoUp aid k = do
+-- Note that projectiles can be teleported, too, for extra fun.
+effectAscend :: (MonadAtomic m, MonadServer m)
+             => m () -> Int -> ActorId -> ActorId -> m Bool
+effectAscend execSfx k source aid = do
   b1 <- getsState $ getActorBody aid
   ais1 <- getsState $ getCarriedAssocs b1
   let lid1 = blid b1
       pos1 = bpos b1
   (lid2, pos2) <- getsState $ whereTo lid1 pos1 k . sdungeon
-  if lid2 == lid1 && pos2 == pos1 then
-    return $ Just "The effect fizzles: no more levels in this direction."
-  else if bproj b1 then
-    assert `failure` "projectiles can't exit levels" `twith` (aid, k, b1)
+  if lid2 == lid1 && pos2 == pos1 then do
+    execSfxAtomic $ SfxMsgFid (bfid b1) "No more levels in this direction."
+    let effect = Effect.Teleport 30  -- powerful teleport
+    effectSem effect source aid
   else do
     let switch1 = void $ switchLevels1 ((aid, b1), ais1)
         switch2 = do
@@ -391,7 +381,8 @@ effLvlGoUp aid k = do
         mapM_ moveInh inhabitants
         -- Move the actor to his destination.
         switch2
-    return Nothing
+    execSfx
+    return True
 
 switchLevels1 :: MonadAtomic m
               => ((ActorId, Actor), [(ItemId, Item)]) -> m (Maybe ActorId)
@@ -575,6 +566,7 @@ sendFlyingVector source target modePush = do
 -- ** Teleport
 
 -- | Teleport the target actor.
+-- Note that projectiles can be teleported, too, for extra fun.
 effectTeleport :: (MonadAtomic m, MonadServer m)
                => m () -> Int -> ActorId -> m Bool
 effectTeleport execSfx range target = do
