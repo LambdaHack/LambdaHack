@@ -7,15 +7,16 @@ import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import Data.Key (mapWithKeyM)
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
-import qualified Data.Traversable as Traversable
 
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind
@@ -135,11 +136,22 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   let lcorridors = EM.unions (map (digCorridors pickedCorTile) cs)
       lm = EM.union lplaces lcorridors
   -- Convert wall openings into doors, possibly.
-  let f (t, cor) = do
+  let f pos (t, cor) = do
         -- Openings have a certain chance to be doors
         -- and doors have a certain chance to be open.
         rd <- chance cdoorChance
-        if not rd then return cor  -- opening kept
+        if not rd then  -- opening kept
+          if Tile.isLit cotile cor then return cor
+          else do
+            -- If any adjacent room tile is lit, make the opening lit.
+            let roomTileLit p =
+                  case EM.lookup p lplaces of
+                    Nothing -> False
+                    Just tile -> Tile.isLit cotile tile
+                vic = vicinity cxsize cysize pos
+            if any roomTileLit vic
+              then return litCorTile
+              else return cor
         else do
           ro <- chance copenChance
           doorClosedId <- Tile.revealAs cotile t
@@ -153,7 +165,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
       intersectionCombine combine =
         EM.mergeWithKey combine (const EM.empty) (const EM.empty)
       interCor = intersectionCombine mergeCor lplaces lcorridors
-  doorMap <- Traversable.mapM f interCor
+  doorMap <- mapWithKeyM f interCor
   let dmap = EM.union doorMap lm
       cave = Cave
         { dkind
