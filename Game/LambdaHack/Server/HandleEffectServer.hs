@@ -96,7 +96,7 @@ effectSem effect source target = do
     Effect.Paralyze p -> effectParalyze execSfx p target
     Effect.InsertMove p -> effectInsertMove execSfx p target
     Effect.DropBestWeapon -> effectDropBestWeapon execSfx target
-    Effect.DropAllEqp hit -> effectDropAllEqp execSfx hit target
+    Effect.DropEqp symbol hit -> effectDropEqp execSfx hit target symbol
     Effect.SendFlying p1 p2 ->
       effectSendFlying execSfx p1 p2 source target Nothing
     Effect.PushActor p1 p2 ->
@@ -104,7 +104,7 @@ effectSem effect source target = do
     Effect.PullActor p1 p2 ->
       effectSendFlying execSfx p1 p2 source target (Just False)
     Effect.Teleport p -> effectTeleport execSfx p target
-    Effect.ActivateAllEqp -> effectActivateAllEqp execSfx target
+    Effect.ActivateEqp symbol -> effectActivateEqp execSfx target symbol
     Effect.TimedAspect{} -> effectNoEffect target  -- TODO
 
 -- + Individual semantic functions for effects
@@ -486,15 +486,19 @@ effectDropBestWeapon execSfx target = do
       return True
     [] -> return False
 
--- ** DropAllEqp
+-- ** DropEqp
 
--- | Make the target actor drop all equipment items (not just a random one,
--- or cluttering equipment with rubbish would be beneficial).
-effectDropAllEqp :: (MonadAtomic m, MonadServer m)
-                 => m () -> Bool -> ActorId -> m Bool
-effectDropAllEqp execSfx hit target = do
+-- | Make the target actor drop all items in his equiment with the given symbol
+-- (not just a random one, or cluttering equipment with rubbish
+-- would be beneficial).
+effectDropEqp :: (MonadAtomic m, MonadServer m)
+              => m () -> Bool -> ActorId -> Char -> m Bool
+effectDropEqp execSfx hit target symbol = do
   b <- getsState $ getActorBody target
-  dropEqpItems target b hit
+  mapActorEqp_ (\iid kIsOn -> do
+    item <- getsState $ getItemBody iid
+    when (symbol == ' ' || jsymbol item == symbol) $
+      dropEqpItem target b hit iid kIsOn) b
   execSfx
   return True
 
@@ -595,16 +599,20 @@ effectTeleport execSfx range target = do
     execSfx
     return True
 
--- ** ActivateAllEqp
+-- ** ActivateEqp
 
--- | Activate all activable items in the target actor's equipment
--- (there's no variant that activates a random one, to avoid carrying garbage).
+-- | Activate all activable items with the given symbol
+-- in the target actor's equipment (there's no variant that activates
+-- a random one, to avoid the incentive for carrying garbage).
 -- Only one item of each stack is activated (and possibly consumed).
-effectActivateAllEqp :: (MonadAtomic m, MonadServer m)
-                     => m () -> ActorId -> m Bool
-effectActivateAllEqp execSfx target = do
+effectActivateEqp :: (MonadAtomic m, MonadServer m)
+                  => m () -> ActorId -> Char -> m Bool
+effectActivateEqp execSfx target symbol = do
   b <- getsState $ getActorBody target
-  mapActorEqp_ (\iid _ -> applyItem False target iid CEqp) b
+  mapActorEqp_ (\iid _ -> do
+    item <- getsState $ getItemBody iid
+    when (symbol == ' ' || jsymbol item == symbol) $
+      applyItem False target iid CEqp) b
   execSfx
   return True
 

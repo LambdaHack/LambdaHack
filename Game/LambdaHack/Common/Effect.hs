@@ -38,12 +38,12 @@ data Effect a =
   | Paralyze !a
   | InsertMove !a
   | DropBestWeapon
-  | DropAllEqp !Bool
+  | DropEqp !Char !Bool  -- ^ symbol @' '@ means all, @True@ means hit on drop
   | SendFlying !a !a
   | PushActor !a !a
   | PullActor !a !a
   | Teleport !a
-  | ActivateAllEqp
+  | ActivateEqp !Char  -- ^ symbol @' '@ means all
   | TimedAspect !Int !(Aspect a)  -- enable the aspect for k clips
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
@@ -91,7 +91,7 @@ effectTrav (InsertMove a) f = do
   b <- f a
   return $! InsertMove b
 effectTrav DropBestWeapon _ = return DropBestWeapon
-effectTrav (DropAllEqp hit) _ = return $! DropAllEqp hit
+effectTrav (DropEqp symbol hit) _ = return $! DropEqp symbol hit
 effectTrav (SendFlying a1 a2) f = do
   b1 <- f a1
   b2 <- f a2
@@ -107,7 +107,7 @@ effectTrav (PullActor a1 a2) f = do
 effectTrav (Teleport a) f = do
   b <- f a
   return $! Teleport b
-effectTrav ActivateAllEqp _ = return ActivateAllEqp
+effectTrav (ActivateEqp symbol) _ = return $! ActivateEqp symbol
 effectTrav (TimedAspect k asp) f = do
   asp2 <- aspectTrav asp f
   return $! TimedAspect k asp2
@@ -149,13 +149,13 @@ effectToSuff effect f =
     Paralyze t -> "of paralysis" <+> t
     InsertMove t -> "of speed burst" <+> t
     DropBestWeapon -> "of disarming"
-    DropAllEqp False -> "of empty hands"
-    DropAllEqp True -> "of equipment smashing"
+    DropEqp _ False -> "of empty hands"  -- TODO: we'd need symbol texts
+    DropEqp _ True -> "of equipment smashing"
     SendFlying t1 t2 -> "of impact" <+> t1 <+> t2
     PushActor t1 t2 -> "of pushing" <+> t1 <+> t2
     PullActor t1 t2 -> "of pulling" <+> t1 <+> t2
     Teleport t -> "of teleport" <+> t
-    ActivateAllEqp -> "of mass activation"
+    ActivateEqp _ -> "of spontaneous activation"
     TimedAspect _ asp -> aspectTextToSuff asp
 
 aspectTextToSuff :: Aspect Text -> Text
