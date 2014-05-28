@@ -27,7 +27,7 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Item as Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -295,7 +295,7 @@ drawLeaderDamage width = do
   stats <- case mleader of
     Just leader -> do
       allAssocs <- fullAssocsClient leader [CEqp, CBody]
-      let damage = case Item.strongestSword cops True allAssocs of
+      let damage = case strongestSword cops True allAssocs of
             (_, (_, itemFull)) : _->
               let getP :: Effect.Effect a -> Maybe (Dice.Dice, a)
                        -> Maybe (Dice.Dice, a)

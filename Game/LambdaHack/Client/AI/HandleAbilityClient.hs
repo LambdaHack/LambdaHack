@@ -32,6 +32,7 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -245,15 +246,6 @@ manageEqp aid = do
         getK ((_, (_, itemFull)) : _) = itemK itemFull
     return $ msum $ map improve ritemEqp
   else return reject
-
-strengthSymbol :: Kind.COps -> Char -> ItemFull -> [Int]
-strengthSymbol cops c = case c of
-  ')' -> strengthMelee cops
-  '\"' -> strengthRegen
-  '=' -> strengthStead
-  '(' -> strengthLight . itemBase
-  '[' -> strengthArmor
-  _ -> \_ -> []
 
 harmful :: Actor -> ItemFull -> Bool
 harmful body itemFull =

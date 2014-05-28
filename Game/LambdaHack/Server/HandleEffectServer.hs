@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
-  ( itemEffect, effectSem, applyItem
+  ( applyItem, itemEffect, effectSem
   ) where
 
 import Control.Applicative
@@ -23,6 +23,7 @@ import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemFeature as IF
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -45,6 +46,30 @@ import Game.LambdaHack.Server.PeriodicServer
 import Game.LambdaHack.Server.State
 
 -- + Semantics of effects
+
+applyItem :: (MonadAtomic m, MonadServer m)
+          => Bool -> ActorId -> ItemId -> CStore -> m ()
+applyItem turnOff aid iid cstore = do
+  -- We have to destroy the item before the effect affects the item
+  -- or the actor holding it or standing on it (later on we could
+  -- lose track of the item and wouldn't be able to destroy it) .
+  -- This is OK, because we don't remove the item type
+  -- from the item dictionary, just an individual copy from the container.
+  itemToF <- itemToFullServer
+  item <- getsState $ getItemBody iid
+  bag <- getsState $ getActorBag aid cstore
+  let (k, isOn) = bag EM.! iid
+      itemFull = itemToF iid (k, isOn)
+      consumable = IF.Consumable `elem` jfeature item
+  if consumable then do
+    -- TODO: don't destroy if not really used up; also, don't take time?
+    cs <- actorConts iid 1 aid cstore
+    mapM_ (\(_, c) -> execUpdAtomic
+                      $ UpdDestroyItem iid item (1, isOn) c) cs
+    execSfxAtomic $ SfxActivate aid iid (1, isOn)
+    itemEffect aid aid iid itemFull
+  else when turnOff $
+    execUpdAtomic $ UpdMoveItem iid k aid cstore isOn cstore (not isOn)
 
 -- TODO: when h2h items have ItemId, replace Item with ItemId
 -- | The source actor affects the target actor, with a given item.
@@ -616,27 +641,3 @@ effectActivateEqp execSfx target symbol = do
       applyItem False target iid CEqp) b
   execSfx
   return True
-
-applyItem :: (MonadAtomic m, MonadServer m)
-          => Bool -> ActorId -> ItemId -> CStore -> m ()
-applyItem turnOff aid iid cstore = do
-  -- We have to destroy the item before the effect affects the item
-  -- or the actor holding it or standing on it (later on we could
-  -- lose track of the item and wouldn't be able to destroy it) .
-  -- This is OK, because we don't remove the item type
-  -- from the item dictionary, just an individual copy from the container.
-  itemToF <- itemToFullServer
-  item <- getsState $ getItemBody iid
-  bag <- getsState $ getActorBag aid cstore
-  let (k, isOn) = bag EM.! iid
-      itemFull = itemToF iid (k, isOn)
-      consumable = IF.Consumable `elem` jfeature item
-  if consumable then do
-    -- TODO: don't destroy if not really used up; also, don't take time?
-    cs <- actorConts iid 1 aid cstore
-    mapM_ (\(_, c) -> execUpdAtomic
-                      $ UpdDestroyItem iid item (1, isOn) c) cs
-    execSfxAtomic $ SfxActivate aid iid (1, isOn)
-    itemEffect aid aid iid itemFull
-  else when turnOff $
-    execUpdAtomic $ UpdMoveItem iid k aid cstore isOn cstore (not isOn)

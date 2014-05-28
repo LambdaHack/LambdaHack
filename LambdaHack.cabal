@@ -126,6 +126,7 @@ library
                       Game.LambdaHack.Common.HighScore,
                       Game.LambdaHack.Common.Item,
                       Game.LambdaHack.Common.ItemFeature,
+                      Game.LambdaHack.Common.ItemStrongest,
                       Game.LambdaHack.Common.Kind,
                       Game.LambdaHack.Common.Level,
                       Game.LambdaHack.Common.LQueue,
