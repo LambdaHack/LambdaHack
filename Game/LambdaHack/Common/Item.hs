@@ -226,24 +226,33 @@ emptyFlavourMap = FlavourMap EM.empty
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated,
 -- except for items with only one permitted flavour.
-rollFlavourMap :: Kind.Id ItemKind -> ItemKind
-               -> Rnd (EM.EnumMap (Kind.Id ItemKind) Flavour, S.Set Flavour)
-               -> Rnd (EM.EnumMap (Kind.Id ItemKind) Flavour, S.Set Flavour)
-rollFlavourMap key ik rnd =
+rollFlavourMap :: S.Set Flavour -> Kind.Id ItemKind -> ItemKind
+               -> Rnd ( EM.EnumMap (Kind.Id ItemKind) Flavour
+                      , EM.EnumMap Char (S.Set Flavour) )
+               -> Rnd ( EM.EnumMap (Kind.Id ItemKind) Flavour
+                      , EM.EnumMap Char (S.Set Flavour) )
+rollFlavourMap fullFlavSet key ik rnd =
   let flavours = iflavour ik
   in if length flavours == 1
      then rnd
      else do
-       (assocs, available) <- rnd
-       let proper = S.fromList flavours `S.intersection` available
-       flavour <- oneOf (S.toList proper)
-       return (EM.insert key flavour assocs, S.delete flavour available)
+       (assocs, availableMap) <- rnd
+       let available = EM.findWithDefault fullFlavSet (isymbol ik) availableMap
+           proper = S.fromList flavours `S.intersection` available
+       assert (not (S.null proper)
+               `blame` "not enough flavours for items"
+               `twith` (flavours, available, ik, availableMap)) $ do
+         flavour <- oneOf (S.toList proper)
+         let availableReduced = S.delete flavour available
+         return ( EM.insert key flavour assocs
+                , EM.insert (isymbol ik) availableReduced availableMap)
 
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonFlavourMap :: Kind.Ops ItemKind -> Rnd FlavourMap
 dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
   liftM (FlavourMap . fst) $
-    ofoldrWithKey rollFlavourMap (return (EM.empty, S.fromList stdFlav))
+    ofoldrWithKey (rollFlavourMap (S.fromList stdFlav))
+                  (return (EM.empty, EM.empty))
 
 type ItemBag = EM.EnumMap ItemId KisOn
 
