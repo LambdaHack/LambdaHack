@@ -9,7 +9,6 @@ import qualified Control.Monad.State as St
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Key (mapWithKeyM_)
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -39,9 +38,10 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Server.CommonServer
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.Fov
+import Game.LambdaHack.Server.ItemRev
+import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicServer
 import Game.LambdaHack.Server.State
@@ -174,35 +174,8 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
 populateDungeon :: (MonadAtomic m, MonadServer m) => m ()
 populateDungeon = do
   cops@Kind.COps{cotile} <- getsState scops
-  let initialItems lid (Level{ltile, litemNum, lxsize, lysize}) = do
-        let factionDist = max lxsize lysize - 5
-        replicateM litemNum $ do
-          Level{lfloor} <- getLevel lid
-          let dist p = minimum $ maxBound : map (chessDist p) (EM.keys lfloor)
-          pos <- rndToAction $ findPosTry 100 ltile
-                   (\_ t -> Tile.isWalkable cotile t
-                            && (not $ Tile.hasFeature cotile F.NoItem t))
-                   [ \p t -> Tile.hasFeature cotile F.OftenItem t
-                             && dist p > factionDist `div` 5
-                   , \p t -> Tile.hasFeature cotile F.OftenItem t
-                             && dist p > factionDist `div` 7
-                   , \p t -> Tile.hasFeature cotile F.OftenItem t
-                             && dist p > factionDist `div` 9
-                   , \p t -> Tile.hasFeature cotile F.OftenItem t
-                             && dist p > factionDist `div` 12
-                   , \p _ -> dist p > factionDist `div` 5
-                   , \p t -> Tile.hasFeature cotile F.OftenItem t
-                             || dist p > factionDist `div` 7
-                   , \p t -> Tile.hasFeature cotile F.OftenItem t
-                             || dist p > factionDist `div` 9
-                   , \p t -> Tile.hasFeature cotile F.OftenItem t
-                             || dist p > factionDist `div` 12
-                   , \p _ -> dist p > 1
-                   , \p _ -> EM.notMember p lfloor
-                   ]
-          createItems 1 pos lid
+  placeItemsInDungeon
   dungeon <- getsState sdungeon
-  mapWithKeyM_ initialItems dungeon
   factionD <- getsState sfactionD
   sheroNames <- getsServer sheroNames
   let (minD, maxD) =

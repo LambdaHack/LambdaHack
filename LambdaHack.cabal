@@ -171,6 +171,8 @@ library
                       Game.LambdaHack.Server.Fov.Shadow,
                       Game.LambdaHack.Server.HandleEffectServer,
                       Game.LambdaHack.Server.HandleRequestServer,
+                      Game.LambdaHack.Server.ItemRev,
+                      Game.LambdaHack.Server.ItemServer,
                       Game.LambdaHack.Server.LoopServer,
                       Game.LambdaHack.Server.MonadServer,
                       Game.LambdaHack.Server.PeriodicServer,

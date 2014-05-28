@@ -6,39 +6,32 @@
 -- inventory manangement and items proper.
 module Game.LambdaHack.Common.Item
   ( -- * The @Item@ type
-    ItemId, Item(..), buildItem, newItem, seedToAspectsEffects
+    ItemId, Item(..), seedToAspectsEffects
     -- * Item strength
+  , strengthAspect, strengthEffect, strengthFeature
   , strengthMelee, strengthArmor, strengthRegen, strengthStead, strengthLight
-  , strengthLingering, strengthToThrow
-  , totalRange, itemTrajectory, computeTrajectory
-  , groupsExplosive, isFragile
-  , strongestItem
-  , strongestSword, strongestShield
+  , strengthLingering, strengthToThrow, isFragile
+  , strongestItem, strongestSword, strongestShield
   , strongestRegen, strongestStead, strongestLight
     -- * Item discovery types
-  , ItemKindIx, Discovery, DiscoRev, serverDiscos
-  , ItemSeed, ItemSeedDict, ItemAspectEffect(..), DiscoAE
+  , ItemKindIx, Discovery, ItemSeed, ItemAspectEffect(..), DiscoAE
   , KisOn, ItemFull(..), ItemDisco(..), itemK, itemIsOn, itemNoDisco
-    -- * The @FlavourMap@ type
-  , FlavourMap, emptyFlavourMap, dungeonFlavourMap
     -- * Inventory management types
-  , ItemBag, ItemDict, ItemKnown, ItemRev
+  , ItemBag, ItemDict, ItemKnown
     -- * Textual description
   , partItem, partItemWs, partItemAW, partItemWownW, itemDesc, textAllAE
+    -- * Assorted
+  , totalRange, computeTrajectory, itemTrajectory
   ) where
 
 import Control.Exception.Assert.Sugar
-import Control.Monad
 import qualified Control.Monad.State as St
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Hashable as Hashable
-import qualified Data.HashMap.Strict as HM
 import qualified Data.Ix as Ix
 import Data.List
-import Data.Maybe
 import qualified Data.Ord as Ord
-import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
@@ -48,7 +41,6 @@ import System.Random (mkStdGen)
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
-import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
@@ -73,18 +65,11 @@ newtype ItemKindIx = ItemKindIx Int
 -- The full map, as known by the server, is a bijection.
 type Discovery = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
 
--- | The reverse map to @Discovery@, needed for item creation.
-type DiscoRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
-
 -- | A seed for rolling aspects and effects of an item
 -- Clients have partial knowledge of how item ids map to the seeds.
 -- They gain knowledge by identifying items.
 newtype ItemSeed = ItemSeed Int
   deriving (Show, Eq, Ord, Enum, Hashable.Hashable, Binary)
-
--- | The map of item ids to item seeds.
--- The full map is known by the server.
-type ItemSeedDict = EM.EnumMap ItemId ItemSeed
 
 data ItemAspectEffect = ItemAspectEffect
   { jaspects :: ![Aspect Int]  -- ^ the aspects of the item
@@ -145,67 +130,6 @@ instance Hashable.Hashable Item
 
 instance Binary Item
 
-serverDiscos :: Kind.Ops ItemKind -> Rnd (Discovery, DiscoRev)
-serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
-  let ixs = map ItemKindIx $ take (Ix.rangeSize obounds) [0..]
-      shuffle :: Eq a => [a] -> Rnd [a]
-      shuffle [] = return []
-      shuffle l = do
-        x <- oneOf l
-        fmap (x :) $ shuffle (delete x l)
-  shuffled <- shuffle ixs
-  let f ik _ (ikMap, ikRev, ix : rest) =
-        (EM.insert ix ik ikMap, EM.insert ik ix ikRev, rest)
-      f ik  _ (ikMap, _, []) =
-        assert `failure` "too short ixs" `twith` (ik, ikMap)
-      (discoS, discoRev, _) =
-        ofoldrWithKey f (EM.empty, EM.empty, shuffled)
-  return (discoS, discoRev)
-
--- | Build an item with the given stats.
-buildItem :: FlavourMap -> DiscoRev -> Kind.Id ItemKind -> ItemKind -> LevelId
-          -> Item
-buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
-  let jkindIx  = discoRev EM.! ikChosen
-      jsymbol  = isymbol kind
-      jname    = iname kind
-      jflavour =
-        case iflavour kind of
-          [fl] -> fl
-          _ -> flavour EM.! ikChosen
-      jfeature = ifeature kind
-      jweight = iweight kind
-  in Item{..}
-
--- | Generate an item based on level.
-newItem :: Kind.Ops ItemKind -> FlavourMap -> DiscoRev
-        -> Frequency Text -> LevelId -> Int -> Int
-        -> Rnd (ItemKnown, ItemSeed, Int)
-newItem coitem@Kind.Ops{opick, okind}
-        flavour discoRev itemFreq jlid ln depth = do
-  itemGroup <- frequency itemFreq
-  let castItem :: Int -> Rnd (ItemKnown, ItemSeed, Int)
-      castItem 0 = do
-        let zeroedFreq = setFreq itemFreq itemGroup 0
-            newFreq = if nullFreq zeroedFreq
-                      then toFreq "fallback item" [(1, "fallback item")]
-                      else zeroedFreq
-        newItem coitem flavour discoRev newFreq jlid ln depth
-      castItem count = do
-        ikChosen <- fmap (fromMaybe $ assert `failure` itemGroup)
-                    $ opick itemGroup (const True)
-        let kind = okind ikChosen
-        jcount <- castDice ln depth (icount kind)
-        if jcount == 0 then
-          castItem $ count - 1
-        else do
-          seed <- fmap ItemSeed random
-          return ( ( buildItem flavour discoRev ikChosen kind jlid
-                   , seedToAspectsEffects seed kind ln depth )
-                 , seed
-                 , jcount )
-  castItem 10
-
 seedToAspectsEffects :: ItemSeed -> ItemKind -> Int -> Int
                      -> ItemAspectEffect
 seedToAspectsEffects (ItemSeed itemSeed) kind ln depth =
@@ -217,43 +141,6 @@ seedToAspectsEffects (ItemSeed itemSeed) kind ln depth =
       (jaspects, jeffects) = St.evalState rollAE (mkStdGen itemSeed)
   in ItemAspectEffect{..}
 
--- | Flavours assigned by the server to item kinds, in this particular game.
-newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)
-  deriving (Show, Binary)
-
-emptyFlavourMap :: FlavourMap
-emptyFlavourMap = FlavourMap EM.empty
-
--- | Assigns flavours to item kinds. Assures no flavor is repeated,
--- except for items with only one permitted flavour.
-rollFlavourMap :: S.Set Flavour -> Kind.Id ItemKind -> ItemKind
-               -> Rnd ( EM.EnumMap (Kind.Id ItemKind) Flavour
-                      , EM.EnumMap Char (S.Set Flavour) )
-               -> Rnd ( EM.EnumMap (Kind.Id ItemKind) Flavour
-                      , EM.EnumMap Char (S.Set Flavour) )
-rollFlavourMap fullFlavSet key ik rnd =
-  let flavours = iflavour ik
-  in if length flavours == 1
-     then rnd
-     else do
-       (assocs, availableMap) <- rnd
-       let available = EM.findWithDefault fullFlavSet (isymbol ik) availableMap
-           proper = S.fromList flavours `S.intersection` available
-       assert (not (S.null proper)
-               `blame` "not enough flavours for items"
-               `twith` (flavours, available, ik, availableMap)) $ do
-         flavour <- oneOf (S.toList proper)
-         let availableReduced = S.delete flavour available
-         return ( EM.insert key flavour assocs
-                , EM.insert (isymbol ik) availableReduced availableMap)
-
--- | Randomly chooses flavour for all item kinds for this game.
-dungeonFlavourMap :: Kind.Ops ItemKind -> Rnd FlavourMap
-dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
-  liftM (FlavourMap . fst) $
-    ofoldrWithKey (rollFlavourMap (S.fromList stdFlav))
-                  (return (EM.empty, EM.empty))
-
 type ItemBag = EM.EnumMap ItemId KisOn
 
 -- | All items in the dungeon (including in actor inventories),
@@ -261,10 +148,6 @@ type ItemBag = EM.EnumMap ItemId KisOn
 type ItemDict = EM.EnumMap ItemId Item
 
 type ItemKnown = (Item, ItemAspectEffect)
-
--- | Reverse item map, for item creation, to keep items and item identifiers
--- in bijection.
-type ItemRev = HM.HashMap ItemKnown ItemId
 
 strongestItem :: Ord b => Bool -> [(ItemId, ItemFull)] -> (ItemFull -> [b])
               -> [(b, (ItemId, ItemFull))]
@@ -352,21 +235,6 @@ strengthLight =
 strongestLight :: Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
 strongestLight onlyOn is = strongestItem onlyOn is (strengthLight . itemBase)
 
-isFragile :: Item -> Bool
-isFragile item =
-  let p IF.Fragile = [()]
-      p _ = []
-  in case strengthFeature p item of
-    [] -> False
-    [()] -> True
-    vss -> assert `failure` (vss, item)
-
-groupsExplosive :: ItemFull -> [Text]
-groupsExplosive =
-  let p (Explode cgroup) = [cgroup]
-      p _ = []
-  in strengthAspect p
-
 strengthLingering :: Item -> Int
 strengthLingering item =
   let p (IF.Linger percent) = [percent]
@@ -385,23 +253,14 @@ strengthToThrow item =
     [percent] -> percent
     vs -> assert `failure` (vs, item)
 
-totalRange :: Item -> Int
-totalRange item =
-  let linger = strengthLingering item
-      speed = speedFromWeight (jweight item) (strengthToThrow item)
-  in rangeFromSpeedAndLinger speed linger
-
-itemTrajectory :: Item -> [Point] -> ([Vector], Speed)
-itemTrajectory item path =
-  computeTrajectory (jweight item) (strengthToThrow item)
-                    (strengthLingering item) path
-
-computeTrajectory :: Int -> Int -> Int -> [Point] -> ([Vector], Speed)
-computeTrajectory weight toThrow linger path =
-  let speed = speedFromWeight weight toThrow
-      trange = rangeFromSpeedAndLinger speed linger
-      btrajectory = take trange $ pathToTrajectory path
-  in (btrajectory, speed)
+isFragile :: Item -> Bool
+isFragile item =
+  let p IF.Fragile = [()]
+      p _ = []
+  in case strengthFeature p item of
+    [] -> False
+    [()] -> True
+    vss -> assert `failure` (vss, item)
 
 -- | The part of speech describing the item.
 partItem :: ItemFull -> (MU.Part, MU.Part)
@@ -463,3 +322,21 @@ itemDesc itemFull =
   in case itemDisco itemFull of
     Nothing -> nstats <+> "This item is as unremarkable as can be."
     Just ItemDisco{itemKind} -> nstats <+> idesc itemKind
+
+totalRange :: Item -> Int
+totalRange item =
+  let linger = strengthLingering item
+      speed = speedFromWeight (jweight item) (strengthToThrow item)
+  in rangeFromSpeedAndLinger speed linger
+
+computeTrajectory :: Int -> Int -> Int -> [Point] -> ([Vector], Speed)
+computeTrajectory weight toThrow linger path =
+  let speed = speedFromWeight weight toThrow
+      trange = rangeFromSpeedAndLinger speed linger
+      btrajectory = take trange $ pathToTrajectory path
+  in (btrajectory, speed)
+
+itemTrajectory :: Item -> [Point] -> ([Vector], Speed)
+itemTrajectory item path =
+  computeTrajectory (jweight item) (strengthToThrow item)
+                    (strengthLingering item) path

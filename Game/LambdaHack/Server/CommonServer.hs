@@ -3,15 +3,13 @@
 module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, deduceQuits, deduceKilled, electLeader
-  , registerItem, createItems, projectFail, fullAssocsServer, itemToFullServer
-  , pickWeaponServer
+  , projectFail, pickWeaponServer
   ) where
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Lazy as EML
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.HashMap.Strict as HM
 import Data.List
 import Data.Maybe
 import qualified NLP.Miniutter.English as MU
@@ -37,6 +35,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Fov
+import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
@@ -193,41 +192,6 @@ electLeader fid lid aidDead = do
     unless (mleader == mleaderNew) $
       execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 
-registerItem :: (MonadAtomic m, MonadServer m)
-             => ItemKnown -> ItemSeed -> KisOn -> Container -> Bool -> m ItemId
-registerItem itemKnown@(item, iae) seed kIsOn container verbose = do
-  itemRev <- getsServer sitemRev
-  let cmd = if verbose then UpdCreateItem else UpdSpotItem
-  case HM.lookup itemKnown itemRev of
-    Just iid -> do
-      -- TODO: try to avoid this case for createItems,
-      -- to make items more interesting
-      execUpdAtomic $ cmd iid item kIsOn container
-      return iid
-    Nothing -> do
-      icounter <- getsServer sicounter
-      modifyServer $ \ser ->
-        ser { sicounter = succ icounter
-            , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
-            , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
-            , sdiscoAE = EM.insert icounter iae (sdiscoAE ser)}
-      execUpdAtomic $ cmd icounter item kIsOn container
-      return $! icounter
-
-createItems :: (MonadAtomic m, MonadServer m)
-            => Int -> Point -> LevelId -> m ()
-createItems n pos lid = do
-  Kind.COps{coitem} <- getsState scops
-  flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoRev
-  Level{ldepth, litemFreq} <- getLevel lid
-  depth <- getsState sdepth
-  let container = CFloor lid pos
-  replicateM_ n $ do
-    (itemKnown, seed, k) <-
-      rndToAction $ newItem coitem flavour discoRev litemFreq lid ldepth depth
-    void $ registerItem itemKnown seed (k, True) container True
-
 projectFail :: (MonadAtomic m, MonadServer m)
             => ActorId    -- ^ actor projecting the item (is on current lvl)
             -> Point      -- ^ target position of the projectile
@@ -313,23 +277,6 @@ addProjectile bpos rest iid blid bfid btime = do
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execUpdAtomic $ UpdCreateActor acounter btra [(iid, item)]
-
-fullAssocsServer :: MonadServer m
-                 => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
-fullAssocsServer aid cstores = do
-  cops <- getsState scops
-  disco <- getsServer sdisco
-  discoAE <- getsServer sdiscoAE
-  getsState $ fullAssocs cops disco discoAE aid cstores
-
-itemToFullServer :: MonadServer m => m (ItemId -> KisOn -> ItemFull)
-itemToFullServer = do
-  cops <- getsState scops
-  disco <- getsServer sdisco
-  discoAE <- getsServer sdiscoAE
-  s <- getState
-  let itemToF iid = itemToFull cops disco discoAE iid (getItemBody iid s)
-  return itemToF
 
 -- Server has to pick a random weapon or it could leak item discovery
 -- information.

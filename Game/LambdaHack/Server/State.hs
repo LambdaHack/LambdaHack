@@ -22,6 +22,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Server.ItemRev
 
 -- | Global, server state.
 data StateServer = StateServer

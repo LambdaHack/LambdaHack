@@ -14,6 +14,7 @@ import Data.Text (Text)
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
@@ -26,6 +27,8 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.CommonServer
+import Game.LambdaHack.Server.ItemRev
+import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
@@ -142,6 +145,12 @@ dropEqpItem aid b hit iid kIsOn = do
                                              (CActor aid CGround)
     mapM_ execUpdAtomic mvCmd
 
+groupsExplosive :: ItemFull -> [Text]
+groupsExplosive =
+  let p (Effect.Explode cgroup) = [cgroup]
+      p _ = []
+  in strengthAspect p
+
 explodeItem :: (MonadAtomic m, MonadServer m)
             => ActorId -> Actor -> Text -> m ()
 explodeItem aid b cgroup = do
@@ -185,4 +194,4 @@ explodeItem aid b cgroup = do
   bag3 <- getsState $ beqp . getActorBody aid
   let mn3 = EM.lookup iid bag3
   maybe skip (\kIsOn -> execUpdAtomic
-                    $ UpdLoseItem iid (fst itemKnown) kIsOn container) mn3
+             $ UpdLoseItem iid (fst itemKnown) kIsOn container) mn3
