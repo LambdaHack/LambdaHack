@@ -362,7 +362,8 @@ setTrajectory aid = do
       let speedOld = bspeed b
           speedNew = aspeed $ okind $ bkind b
           speedDelta = speedAdd speedNew (speedNegate speedOld)
-      execUpdAtomic $ UpdHasteActor aid speedDelta
+      when (speedDelta /= speedZero) $
+        execUpdAtomic $ UpdHasteActor aid speedDelta
       execUpdAtomic $ UpdTrajectoryActor aid (btrajectory b) Nothing
       return False
     _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)
