@@ -580,7 +580,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         Effect.SendFlying{} -> actorVerbMU aid b "be sent flying"
         Effect.PushActor{} -> actorVerbMU aid b "be pushed"
         Effect.PullActor{} -> actorVerbMU aid b "be pulled"
-        Effect.Teleport{} -> actorVerbMU aid b "teleport"
+        Effect.Teleport t | t > 9 -> actorVerbMU aid b "teleport"
+        Effect.Teleport{} -> actorVerbMU aid b "blink"
         Effect.ActivateEqp _ -> skip
         Effect.TimedAspect{} -> skip  -- TODO
   SfxMsgFid _ msg -> msgAdd msg

@@ -17,9 +17,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+      [amulet, bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
   }
-amulet,        brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+amulet,        bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -36,6 +36,20 @@ amulet = ItemKind
   , ieffects = []  -- TODO: DropAllEqp? change text if so
   , ifeature = [ToThrow (-50)]  -- not dense enough
   , idesc    = "A necklace of dried herbs and healing berries."
+  }
+bolas = ItemKind  -- TODO: mark it as plural
+  { isymbol  = '|'
+  , iname    = "bolas"
+  , ifreq    = [("useful", 10)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = 1 + dl 3
+  , iverbApply   = "tie"
+  , iverbProject = "swirl"
+  , iweight  = 500
+  , iaspects = []
+  , ieffects = [Hurt (d 1) 0, Paralyze (5 + d 5), ActivateEqp '!']
+  , ifeature = []
+  , idesc    = "Three wood balls tied with hemp rope for tripping, entangling and bringing down crashing."
   }
 brassLantern = ItemKind
   { isymbol  = '('
@@ -120,7 +134,7 @@ currency = ItemKind
 harpoon = ItemKind
   { isymbol  = '|'
   , iname    = "harpoon"
-  , ifreq    = [("useful", 25)]
+  , ifreq    = [("useful", 15)]
   , iflavour = zipPlain [Brown]
   , icount   = 1 + dl 3
   , iverbApply   = "break up"
@@ -130,6 +144,20 @@ harpoon = ItemKind
   , ieffects = [Hurt (3 * d 1) (d 2 + 2 * dl 2), PullActor 100 50]
   , ifeature = []
   , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
+  }
+jumpingPole = ItemKind
+  { isymbol  = '|'
+  , iname    = "jumping pole"
+  , ifreq    = [("useful", 3)]
+  , iflavour = zipPlain [White]
+  , icount   = 1
+  , iverbApply   = "break up"
+  , iverbProject = "extend"
+  , iweight  = 10000
+  , iaspects = []
+  , ieffects = [InsertMove 2]  -- TODO: implement with timed speed instead
+  , ifeature = [Consumable]
+  , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
   }
 oilLamp = ItemKind
   { isymbol  = '('
@@ -191,7 +219,7 @@ scroll = ItemKind
   { isymbol  = '?'
   , iname    = "scroll"
   , ifreq    = [("useful", 4)]
-  , iflavour = zipFancy darkCol  -- arcane and old
+  , iflavour = zipFancy darkCol ++ zipPlain darkCol  -- arcane and old
   , icount   = 1
   , iverbApply   = "decipher"
   , iverbProject = "lob"
@@ -215,6 +243,18 @@ scroll3 = scroll
 scroll4 = scroll
   { ifreq    = [("useful", 1)]
   , ieffects = [Dominate]
+  }
+scroll5 = scroll
+  { ifreq    = [("useful", 5)]
+  , ieffects = [Teleport 5]
+  }
+scroll6 = scroll
+  { ifreq    = [("useful", 2)]
+  , ieffects = [Teleport 15]
+  }
+scroll7 = scroll
+  { ifreq    = [("useful", 1)]
+  , ieffects = [InsertMove (1 + d 2)]
   }
 shield = ItemKind
   { isymbol  = ']'
@@ -261,7 +301,7 @@ wand = ItemKind
   , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."
   }
 wand1 = wand
-  { ieffects = [NoEffect]
+  { ieffects = [NoEffect]  -- TODO: emit a cone of sound shrapnel that makes enemy cover his ears and so drop '|' and '{'
   }
 wand2 = wand
   { ieffects = [NoEffect]
@@ -347,10 +387,10 @@ claw = fist
 smallClaw = fist
   { isymbol  = '%'
   , iname    = "small claw"
-  , ifreq    = [("small claw", 10)]
+  , ifreq    = [("small claw", 50)]
   , icount   = 2
   , iverbApply   = "slash"
-  , ieffects = [Hurt (2 * d 1) 0]
+  , ieffects = [Hurt (3 * d 1) 0]
   , idesc    = ""
   }
 snout = fist
@@ -367,7 +407,7 @@ venomTooth = fist
   , ifreq    = [("venom tooth", 100)]
   , icount   = 2
   , iverbApply   = "bite"
-  , ieffects = [Hurt (3 * d 1) 7]
+  , ieffects = [Hurt (3 * d 1) 0, Paralyze 3]
   , idesc    = ""
   }
 venomFang = fist
@@ -385,7 +425,7 @@ largeTail = fist
   , ifreq    = [("large tail", 50)]
   , icount   = 1
   , iverbApply   = "knock"
-  , ieffects = [Hurt (7 * d 1) 0]
+  , ieffects = [Hurt (5 * d 1) 0, PushActor 300 25]
   , idesc    = ""
   }
 jaw = fist
@@ -497,7 +537,7 @@ burningOil n = ItemKind
   , iverbProject = "spit"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [Burn 1]
+  , ieffects = [Burn 1]  -- TODO: sometimes make it possible to trip on oil
   , ifeature = [ ToThrow (min 0 $ n * 7 - 100)
                , Light 1
                , Fragile ]
@@ -515,7 +555,7 @@ explosionBlast n = ItemKind
   , iverbProject = "give off"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [Burn n]
+  , ieffects = [Burn (n `div` 2), DropBestWeapon]
   , ifeature = [Light n, Fragile, Linger 10]
   , idesc    = ""
   }

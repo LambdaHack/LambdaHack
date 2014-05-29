@@ -147,7 +147,7 @@ partItem itemFull =
             [] -> ""
             [_] -> ""
             [_, effT] -> "(" <> effT <> ")"
-            [_, effT1, effT2] -> "(" <> effT1 <+> ", " <+> effT2 <> ")"
+            [_, effT1, effT2] -> "(" <> effT1 <> "," <+> effT2 <> ")"
             _ -> "(of many effects)"
           turnedOff | itemIsOn itemFull = ""
                     | otherwise = "{OFF}"  -- TODO: mark with colour

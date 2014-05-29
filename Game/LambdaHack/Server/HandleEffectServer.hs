@@ -64,9 +64,9 @@ applyItem turnOff aid iid cstore = do
   if consumable then do
     -- TODO: don't destroy if not really used up; also, don't take time?
     cs <- actorConts iid 1 aid cstore
+    execSfxAtomic $ SfxActivate aid iid (1, isOn)
     mapM_ (\(_, c) -> execUpdAtomic
                       $ UpdDestroyItem iid item (1, isOn) c) cs
-    execSfxAtomic $ SfxActivate aid iid (1, isOn)
     itemEffect aid aid iid itemFull
   else when turnOff $
     execUpdAtomic $ UpdMoveItem iid k aid cstore isOn cstore (not isOn)
@@ -483,6 +483,8 @@ effectParalyze execSfx p target = assert (p > 0) $ do
 
 -- ** InsertMove
 
+-- TODO: Replace with SpeedBurst that lasts just 1 turn,
+-- but make sure the cost of this item activation is vs previous speed
 -- | Give target actor the given number of extra moves. Don't give
 -- an absolute amount of time units, to benefit slow actors more.
 effectInsertMove :: (MonadAtomic m, MonadServer m)
@@ -605,20 +607,21 @@ effectTeleport execSfx range target = do
   Level{ltile} <- getLevel (blid b)
   as <- getsState $ actorList (const True) (blid b)
   let spos = bpos b
-      dMinMax rmin rmax pos = let d = chessDist spos pos
-                              in d >= rmin && d <= rmax
-      dist rmin rmax pos _ = dMinMax rmin rmax pos
+      dMinMax delta pos =
+        let d = chessDist spos pos
+        in d >= range - delta && d <= range + delta
+      dist delta pos _ = dMinMax delta pos
   tpos <- rndToAction $ findPosTry 200 ltile
     (\p t -> Tile.isWalkable cotile t
-             && (not (dMinMax (range - 9) (range - 9) p)  -- don't loop
+             && (not (dMinMax 9 p)  -- don't loop
                  || not (Tile.hasFeature cotile F.NoActor t)
                     && unoccupied as p))
-    [ dist (range - 1) (range - 1)
-    , dist (range - 1 - range `div` 9) (range - 1 - range `div` 9)
-    , dist (range - 1 - range `div` 7) (range - 1 - range `div` 7)
-    , dist (range - 1 - range `div` 5) (range - 1 - range `div` 5)
+    [ dist $ 1
+    , dist $ 1 + range `div` 9
+    , dist $ 1 + range `div` 7
+    , dist $ 1 + range `div` 5
     ]
-  if not (dMinMax (range - 9) (range - 9) tpos) then
+  if not (dMinMax 9 tpos) then
     effectNoEffect target
   else do
     execUpdAtomic $ UpdMoveActor target spos tpos

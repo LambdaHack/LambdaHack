@@ -13,6 +13,7 @@ import qualified Control.Monad.State as St
 import Data.Binary
 import qualified Data.Hashable as Hashable
 import Data.Text (Text)
+import qualified Data.Text as T
 import GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -32,7 +33,7 @@ data Effect a =
   | CreateItem !Int
   | ApplyPerfume
   | Burn !Int
-  | Blast !Int
+  | Blast !Int  -- ^ sound blast
   | Ascend !Int
   | Escape !Int  -- ^ the argument marks if can be placed on last level, etc.
   | Paralyze !a
@@ -149,13 +150,21 @@ effectToSuff effect f =
     Paralyze t -> "of paralysis" <+> t
     InsertMove t -> "of speed burst" <+> t
     DropBestWeapon -> "of disarming"
-    DropEqp _ False -> "of empty hands"  -- TODO: we'd need symbol texts
-    DropEqp _ True -> "of equipment smashing"
+    DropEqp ' ' False -> "of equipment dropping"
+    DropEqp symbol False ->
+      "of equipment '" <> T.singleton symbol <> "' dropping"
+    DropEqp ' ' True -> "of equipment smashing"
+    DropEqp symbol True ->
+      "of equipment '" <> T.singleton symbol <> "' smashing"
     SendFlying t1 t2 -> "of impact" <+> t1 <+> t2
     PushActor t1 t2 -> "of pushing" <+> t1 <+> t2
     PullActor t1 t2 -> "of pulling" <+> t1 <+> t2
     Teleport t -> "of teleport" <+> t
-    ActivateEqp _ -> "of spontaneous activation"
+    -- TODO: Teleport t | t > 9 -> "of teleport" <+> t
+    -- Teleport t -> "of blinking" <+> t
+    ActivateEqp ' ' -> "of spontaneous activation"
+    ActivateEqp symbol ->
+      "of spontaneous '" <> T.singleton symbol <> "' activation"
     TimedAspect _ asp -> aspectTextToSuff asp
 
 aspectTextToSuff :: Aspect Text -> Text
