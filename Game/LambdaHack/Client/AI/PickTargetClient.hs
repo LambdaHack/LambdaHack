@@ -48,16 +48,18 @@ targetStrategy oldLeader aid = do
   let stepAccesible mtgt@(Just (_, (p : q : _ : _, _))) = -- goal not adjacent
         if accessible cops lvl p q then mtgt else Nothing
       stepAccesible mtgt = mtgt  -- goal can be inaccessible, e.g., suspect
-      createPath :: Target -> m (Target, PathEtc)
+      createPath :: Target -> m (Maybe (Target, PathEtc))
       createPath tgt = do
         mpos <- aidTgtToPos aid (blid b) (Just tgt)
-        let p = fromMaybe (assert `failure` (b, tgt)) mpos
-        (bfs, mpath) <- getCacheBfsAndPath aid p
-        return $! case mpath of
-          Nothing -> assert `failure` "target unreachable" `twith` (b, tgt)
-          Just path -> (tgt, ( bpos b : path
-                             , (p, fromMaybe (assert `failure` mpath)
-                                   $ accessBfs bfs p) ))
+        case mpos of
+          Nothing -> return Nothing
+          Just p -> do
+            (bfs, mpath) <- getCacheBfsAndPath aid p
+            return $! case mpath of
+              Nothing -> assert `failure` "target unreachable" `twith` (b, tgt)
+              Just path -> Just (tgt, ( bpos b : path
+                                      , (p, fromMaybe (assert `failure` mpath)
+                                            $ accessBfs bfs p) ))
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
     Just (tgt, Just path) -> do
@@ -77,8 +79,9 @@ targetStrategy oldLeader aid = do
           else
             Nothing  -- somebody pushed us off the goal; let's target again
         ([], _) -> assert `failure` (aid, b, mtgtMPath)
-    Just (tgt@TEnemyPos{}, Nothing) ->  -- special case, TEnemyPos would be lost
-      fmap Just $ createPath tgt
+    Just (tgt@TEnemyPos{}, Nothing) ->
+      -- special case, TEnemyPos would be lost otherwise
+      createPath tgt
     Just (_, Nothing) -> return Nothing  -- path invalidated, e.g. SpotActorA
     Nothing -> return Nothing  -- no target assigned yet
   assert (not $ bproj b) skip  -- would work, but is probably a bug
@@ -132,7 +135,10 @@ targetStrategy oldLeader aid = do
       focused = bspeed b < speedNormal || condHpTooLow
       canSmell = asmell $ okind $ bkind b
       setPath :: Target -> m (Strategy (Target, PathEtc))
-      setPath tgt = fmap (returN "pickNewTarget") $ createPath tgt
+      setPath tgt = do
+        mpath <- createPath tgt
+        return $!
+          maybe (assert `failure` (b, tgt)) (returN "pickNewTarget") mpath
       pickNewTarget :: m (Strategy (Target, PathEtc))
       pickNewTarget = do
         -- TODO: for foes, items, etc. consider a few nearby, not just one
