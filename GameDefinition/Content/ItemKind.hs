@@ -17,9 +17,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+      [amulet, bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
   }
-amulet,        bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+amulet,        bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -37,17 +37,17 @@ amulet = ItemKind
   , ifeature = [ToThrow (-50)]  -- not dense enough
   , idesc    = "A necklace of dried herbs and healing berries."
   }
-bolas = ItemKind  -- TODO: mark it as plural
+bolas = ItemKind  -- TODO: enble when marked as plural
   { isymbol  = '|'
   , iname    = "bolas"
-  , ifreq    = [("useful", 10)]
+  , ifreq    = []  -- [("useful", 10)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1 + dl 3
   , iverbApply   = "tie"
   , iverbProject = "swirl"
   , iweight  = 500
   , iaspects = []
-  , ieffects = [Hurt (d 1) 0, Paralyze (5 + d 5), ActivateEqp '!']
+  , ieffects = [Hurt (d 2) 0, Paralyze (5 + d 5), ActivateEqp '!']
   , ifeature = []
   , idesc    = "Three wood balls tied with hemp rope for tripping, entangling and bringing down crashing."
   }
@@ -158,6 +158,21 @@ jumpingPole = ItemKind
   , ieffects = [InsertMove 2]  -- TODO: implement with timed speed instead
   , ifeature = [Consumable]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
+  }
+net = ItemKind
+  { isymbol  = '|'
+  , iname    = "net"
+  , ifreq    = [("useful", 10)]
+  , iflavour = zipPlain [White]
+  , icount   = 1 + dl 2
+  , iverbApply   = "entangle"
+  , iverbProject = "spread"
+  , iweight  = 1000
+  , iaspects = []
+  , ieffects = [ Hurt (d 1) 0, Paralyze (5 + d 5)
+               , DropBestWeapon, DropEqp ']' False ]
+  , ifeature = []
+  , idesc    = "A wide net with weights along the edges. Entangles weapon and armor alike."  -- shield instead of armor if a separate symbol for shields
   }
 oilLamp = ItemKind
   { isymbol  = '('
