@@ -212,8 +212,12 @@ projectFail source tpxy eps iid cstore isShrapnel = do
     Nothing -> return $ Just ProjectAimOnself
     Just [] -> assert `failure` "projecting from the edge of level"
                       `twith` (spos, tpxy)
-    Just (pos : rest) -> do
-      let t = lvl `at` pos
+    Just (pos : restUnlimited) -> do
+      item <- getsState $ getItemBody iid
+      let rest = if isFragile item
+                 then take (chessDist spos tpxy - 1) restUnlimited
+                 else restUnlimited
+          t = lvl `at` pos
       if not $ Tile.isWalkable cotile t
         then return $ Just ProjectBlockTerrain
         else do
