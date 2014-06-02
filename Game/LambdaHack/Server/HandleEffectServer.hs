@@ -566,8 +566,9 @@ effectSendFlying execSfx toThrow linger source target modePush = do
                     computeTrajectory weight toThrow linger path
                   speedOld = bspeed tb
                   speedDelta = speedAdd speed (speedNegate speedOld)
-              execUpdAtomic $ UpdTrajectoryActor target (btrajectory tb)
-                                                        (Just trajectoryNew)
+              unless (btrajectory tb == Just trajectoryNew) $
+                execUpdAtomic $ UpdTrajectoryActor target (btrajectory tb)
+                                                          (Just trajectoryNew)
               when (speedDelta /= speedZero) $
                 execUpdAtomic $ UpdHasteActor target speedDelta
               execSfx

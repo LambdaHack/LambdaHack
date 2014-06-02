@@ -193,7 +193,8 @@ reqMelee source target iid = do
     -- or due to a hurled actor colliding with another.
     when (isJust $ btrajectory sb) $ do
       execUpdAtomic $ UpdHealActor source (-1)
-      unless (bproj sb) $  -- non projectile can't pierce
+      unless (bproj sb || btrajectory sb == Just []) $
+        -- Non-projectile can't pierce, so terminate their flight.
         execUpdAtomic $ UpdTrajectoryActor source (btrajectory sb) (Just [])
     -- Msgs inside itemEffect describe the target part.
     itemEffect source target iid (itemToF iid (1, True))  -- don't spam with OFF
