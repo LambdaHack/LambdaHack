@@ -92,10 +92,15 @@ pickActorToMove refreshTarget oldAid = do
             let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
             return $! bcalmDelta b == -1  -- hears an enemy
                       && null closeFoes  -- the enemy not visible; a trap!
+          -- AI has to be prudent and not lightly waste leader for meleeing,
+          -- even if his target is distant
+          actorMeleeing ((aid, _), _) = condAnyFoeAdjM aid
       oursWeak <- filterM actorWeak oursTgt
       oursStrong <- filterM (fmap not . actorWeak) oursTgt  -- TODO: partitionM
-      oursHearing <- filterM actorHearning oursStrong
-      oursNotHearing <- filterM (fmap not . actorHearning) oursStrong
+      oursMeleeing <- filterM actorMeleeing oursStrong
+      oursNotMeleeing <- filterM (fmap not . actorMeleeing) oursStrong
+      oursHearing <- filterM actorHearning oursNotMeleeing
+      oursNotHearing <- filterM (fmap not . actorHearning) oursNotMeleeing
       let targetTEnemy (_, (TEnemy{}, _)) = True
           targetTEnemy (_, (TEnemyPos{}, _)) = True
           targetTEnemy _ = False
@@ -170,11 +175,13 @@ pickActorToMove refreshTarget oldAid = do
           oursWeakGood = filter goodTEnemy oursWeak
           oursTEnemyGood = filter goodTEnemy oursTEnemy
           oursPosGood = filter goodGeneric oursPos
+          oursMeleeingGood = filter goodGeneric oursMeleeing
           oursHearingGood = filter goodTEnemy oursHearing
           oursBlockedGood = filter goodGeneric oursBlocked
           candidates = [ sortOurs oursWeakGood
                        , sortOurs oursTEnemyGood
                        , sortOurs oursPosGood
+                       , sortOurs oursMeleeingGood
                        , sortOurs oursHearingGood
                        , sortOurs oursBlockedGood
                        ]
