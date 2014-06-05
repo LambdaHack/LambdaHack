@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
-  ( applyItem, itemEffect, effectSem
+  ( applyItem, itemEffect, effectsSem
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -82,17 +82,29 @@ itemEffect source target iid itemFull = do
   postb <- getsState $ getActorBody source
   case itemDisco itemFull of
     Just ItemDisco{itemKindId, itemAE=Just ItemAspectEffect{jeffects}} -> do
-      bs <- mapM (\ef -> effectSem ef source target) jeffects
+      triggered <- effectsSem jeffects source target
       -- The effect is interesting so the item gets identified, if seen
       -- (the item was at the source actor's position, so his old position
       -- is given, since the actor and/or the item may be moved by the effect;
       -- we'd need to track not only position of atomic commands and factions,
       -- but also which items they relate to, to be fully accurate).
-      when (or bs) $ do
+      when triggered $ do
         seed <- getsServer $ (EM.! iid) . sitemSeedD
         execUpdAtomic $ UpdDiscover (blid postb) (bpos postb)
                                     iid itemKindId seed
     _ -> assert `failure` (source, target, iid, itemFull)
+
+effectsSem :: (MonadAtomic m, MonadServer m)
+           => [Effect.Effect Int] -> ActorId -> ActorId
+           -> m Bool
+effectsSem effects source target = do
+  trs <- mapM (\ef -> effectSem ef source target) effects
+  let triggered = null effects || or trs
+  sb <- getsState $ getActorBody source
+  unless (triggered  -- some effect triggered, if any present
+          || bproj sb) $  -- don't spam, projectiles can be very numerous
+    execSfxAtomic $ SfxEffect (bfid sb) target Effect.NoEffect
+  return triggered
 
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.
@@ -105,7 +117,7 @@ effectSem effect source target = do
   sb <- getsState $ getActorBody source
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
   case effect of
-    Effect.NoEffect -> effectNoEffect source target
+    Effect.NoEffect -> return False
     Effect.Heal p -> effectHeal execSfx p source target
     Effect.Hurt nDm p -> effectHurt nDm p source target
     Effect.Dominate -> effectDominate execSfx source target
@@ -117,10 +129,10 @@ effectSem effect source target = do
     Effect.Burn p -> effectBurn execSfx p source target
     Effect.Blast p -> effectBlast execSfx p source target
     Effect.Ascend p -> effectAscend execSfx p source target
-    Effect.Escape{} -> effectEscape source target
+    Effect.Escape{} -> effectEscape target
     Effect.Paralyze p -> effectParalyze execSfx p target
     Effect.InsertMove p -> effectInsertMove execSfx p target
-    Effect.DropBestWeapon -> effectDropBestWeapon execSfx source target
+    Effect.DropBestWeapon -> effectDropBestWeapon execSfx target
     Effect.DropEqp symbol hit -> effectDropEqp execSfx hit target symbol
     Effect.SendFlying p1 p2 ->
       effectSendFlying execSfx p1 p2 source target Nothing
@@ -128,22 +140,11 @@ effectSem effect source target = do
       effectSendFlying execSfx p1 p2 source target (Just True)
     Effect.PullActor p1 p2 ->
       effectSendFlying execSfx p1 p2 source target (Just False)
-    Effect.Teleport p -> effectTeleport execSfx p source target
+    Effect.Teleport p -> effectTeleport execSfx p target
     Effect.ActivateEqp symbol -> effectActivateEqp execSfx target symbol
-    Effect.TimedAspect{} -> effectNoEffect source target  -- TODO
+    Effect.TimedAspect{} -> return False  -- TODO
 
 -- + Individual semantic functions for effects
-
--- ** NoEffect
-
-effectNoEffect :: MonadAtomic m => ActorId -> ActorId -> m Bool
-effectNoEffect source target = do
-  sb <- getsState $ getActorBody source
-  tb <- getsState $ getActorBody target
-  -- FactionId is that of the target, as a simplification.
-  unless (bproj sb) $  -- don't spam --- projectiles can be very numerous
-    execSfxAtomic $ SfxEffect (bfid tb) target Effect.NoEffect
-  return False
 
 -- ** Heal
 
@@ -154,7 +155,7 @@ effectHeal execSfx power source target = do
   let bhpMax = Dice.maxDice (ahp $ okind $ bkind tb)
       deltaHP = min power (max 0 $ bhpMax - bhp tb)
   if deltaHP == 0
-    then effectNoEffect source target
+    then return False
     else do
       execUpdAtomic $ UpdHealActor target deltaHP
       when (deltaHP < 0 && source /= target) $ halveCalm target
@@ -213,7 +214,7 @@ effectDominate execSfx source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if bproj tb then
-    effectNoEffect source target
+    return False
   else if bfid tb == bfid sb then
     effectSem Effect.Impress source target
   else do
@@ -230,7 +231,7 @@ effectImpress execSfx source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if boldfid tb == bfid sb || bproj tb then
-    effectNoEffect source target
+    return False
   else do
     execSfx
     execUpdAtomic $ UpdOldFidActor target (boldfid tb) (bfid sb)
@@ -322,7 +323,7 @@ effectApplyPerfume :: (MonadAtomic m, MonadServer m)
                    => m () -> ActorId -> ActorId -> m Bool
 effectApplyPerfume execSfx source target =
   if source == target
-  then effectNoEffect source target
+  then return False
   else do
     tb <- getsState $ getActorBody target
     Level{lsmell} <- getLevel $ blid tb
@@ -458,15 +459,15 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
 -- ** Escape
 
 -- | The faction leaves the dungeon.
-effectEscape :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m Bool
-effectEscape source target = do
+effectEscape :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
+effectEscape target = do
   -- Obvious effect, nothing announced.
   b <- getsState $ getActorBody target
   let fid = bfid b
       keepArena fact = playerLeader (gplayer fact) && not (isSpawnFact fact)
   fact <- getsState $ (EM.! fid) . sfactionD
   if not (keepArena fact) || bproj b then
-    effectNoEffect source target
+    return False
   else do
     deduceQuits b $ Status Escape (fromEnum $ blid b) ""
     return True
@@ -503,8 +504,8 @@ effectInsertMove execSfx p target = assert (p > 0) $ do
 
 -- | Make the target actor drop his best weapon (stack).
 effectDropBestWeapon :: (MonadAtomic m, MonadServer m)
-                     => m () -> ActorId -> ActorId -> m Bool
-effectDropBestWeapon execSfx source target = do
+                     => m () -> ActorId -> m Bool
+effectDropBestWeapon execSfx target = do
   cops <- getsState scops
   allAssocs <- fullAssocsServer target [CEqp]
   case strongestSword cops True allAssocs of  -- ignore OFF weapons
@@ -515,7 +516,7 @@ effectDropBestWeapon execSfx source target = do
       execSfx
       return True
     [] ->
-      effectNoEffect source target
+      return False
 
 -- ** DropEqp
 
@@ -557,7 +558,7 @@ effectSendFlying execSfx toThrow linger source target modePush = do
     Just (pos : rest) -> do
       let t = lvl `at` pos
       if not $ Tile.isWalkable cotile t
-        then effectNoEffect source target  -- supported by a wall
+        then return False  -- supported by a wall
         else do
           let -- TODO: add weight field to actor, unless we just
               -- sum weigths of all body parts
@@ -607,8 +608,8 @@ sendFlyingVector source target modePush = do
 -- | Teleport the target actor.
 -- Note that projectiles can be teleported, too, for extra fun.
 effectTeleport :: (MonadAtomic m, MonadServer m)
-               => m () -> Int -> ActorId -> ActorId -> m Bool
-effectTeleport execSfx range source target = do
+               => m () -> Int -> ActorId -> m Bool
+effectTeleport execSfx range target = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody target
   Level{ltile} <- getLevel (blid b)
@@ -629,7 +630,7 @@ effectTeleport execSfx range source target = do
     , dist $ 1 + range `div` 5
     ]
   if not (dMinMax 9 tpos) then
-    effectNoEffect source target  -- very rare
+    return False  -- very rare
   else do
     execUpdAtomic $ UpdMoveActor target spos tpos
     execSfx

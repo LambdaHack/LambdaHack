@@ -399,7 +399,7 @@ triggerEffect aid feats = do
           F.Cause ef -> do
             -- No block against tile, hence unconditional.
             execSfxAtomic $ SfxTrigger aid tpos feat
-            void $ effectSem ef aid aid
+            void $ effectsSem [ef] aid aid
             return True
           _ -> return False
   goes <- mapM triggerFeat feats
