@@ -116,8 +116,10 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
       Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
       b <- getsState $ getActorBody aid
       let ActorKind{ahp, acalm} = okind $ bkind b
-      -- TODO: if one of these does not regenerate, ignore it
-      when (bhp b == Dice.maxDice ahp && bcalm b == Dice.maxDice acalm) $ do
+      allAssocs <- fullAssocsClient aid [CEqp, CBody]
+      hpPeriod <- getsState $ regenHPPeriod b allAssocs
+      when ((hpPeriod <= 0 || bhp b == Dice.maxDice ahp)
+            && (bcalmDelta b <= 0 || bcalm b == Dice.maxDice acalm)) $ do
         actorVerbMU aid b "recover fully"
         stopPlayBack
   UpdCalmActor aid calmDelta ->
