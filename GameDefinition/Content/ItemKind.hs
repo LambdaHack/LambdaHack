@@ -17,9 +17,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+      [amulet, bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
   }
-amulet,        bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+amulet,        bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -212,7 +212,12 @@ potion2 = potion
   { iaspects = [Explode "healing mist"]
   , ieffects = [Heal 5]
   }
-potion3 = potion
+potion3 = potion  -- TODO: a bit boring
+  { ifreq    = [("useful", 5)]
+  , iaspects = [Explode "wounding mist"]
+  , ieffects = [Heal (-5)]
+  }
+potion4 = potion
   { iaspects = [Explode "explosion blast 10"]
   , ieffects = [Blast 10, PushActor 100 75]
   }
@@ -552,7 +557,8 @@ burningOil n = ItemKind
   , iverbProject = "spit"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [Burn 1]  -- TODO: sometimes make it possible to trip on oil
+  , ieffects = [ Burn 1
+               , Paralyze (intToDice n) ]  -- actors strain not to trip on oil
   , ifeature = [ ToThrow (min 0 $ n * 7 - 100)
                , Light 1
                , Fragile ]
