@@ -587,15 +587,20 @@ sendFlyingVector source target modePush = do
       return $ Just $ vectorToFrom (bpos sb) (boldpos sb)
   else do
     tb <- getsState $ getActorBody target
-    return $ if modePush == Just True || adjacent (bpos sb) (bpos tb)
-             then if modePush == Just False then Nothing
-                  else let pos = if chessDist (boldpos sb) (bpos tb)
-                                    > chessDist (bpos sb) (bpos tb)
-                                 then boldpos sb  -- avoid cardinal dir
-                                 else bpos sb
-                       in Just $ vectorToFrom (bpos tb) pos
-             else if modePush == Just True then Nothing
-                  else Just $ vectorToFrom (bpos sb) (bpos tb)
+    let (sp, tp) = if adjacent (bpos sb) (bpos tb)
+                   then let pos = if chessDist (boldpos sb) (bpos tb)
+                                     > chessDist (bpos sb) (bpos tb)
+                                  then boldpos sb  -- avoid cardinal dir
+                                  else bpos sb
+                        in (pos, bpos tb)
+                   else (bpos sb, bpos tb)
+        pushV = vectorToFrom tp sp
+        pullV = vectorToFrom sp tp
+    return $ case modePush of
+               Just True -> Just pushV
+               Just False -> Just pullV
+               Nothing | adjacent (bpos sb) (bpos tb) -> Just pushV
+               Nothing -> Just pullV
 
 -- ** Teleport
 
