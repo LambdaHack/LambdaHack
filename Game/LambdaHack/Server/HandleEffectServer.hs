@@ -115,6 +115,8 @@ effectSem :: (MonadAtomic m, MonadServer m)
           -> m Bool
 effectSem effect source target = do
   sb <- getsState $ getActorBody source
+  -- @execSfx@ usually comes last in effect semantics, but not always
+  -- and we are likely to introduce more variety.
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
   case effect of
     Effect.NoEffect -> return False
@@ -527,12 +529,26 @@ effectDropEqp :: (MonadAtomic m, MonadServer m)
               => m () -> Bool -> ActorId -> Char -> m Bool
 effectDropEqp execSfx hit target symbol = do
   b <- getsState $ getActorBody target
-  mapActorEqp_ (\iid kIsOn -> do
-    item <- getsState $ getItemBody iid
-    when (symbol == ' ' || jsymbol item == symbol) $
-      dropEqpItem target b hit iid kIsOn) b
-  execSfx
-  return True
+  effectTransformEqp execSfx target symbol $
+    dropEqpItem target b hit
+
+effectTransformEqp :: forall m. (MonadAtomic m, MonadServer m)
+                   => m () -> ActorId -> Char
+                   -> (ItemId -> KisOn -> m ())
+                   -> m Bool
+effectTransformEqp execSfx target symbol m = do
+  b <- getsState $ getActorBody target
+  let hasSymbol (iid, _) = do
+        item <- getsState $ getItemBody iid
+        return $! jsymbol item == symbol
+      eqp = EM.assocs $ beqp b
+  is <- if symbol == ' ' then return eqp else filterM hasSymbol eqp
+  if null is
+    then return False
+    else do
+      mapM_ (uncurry m) is
+      execSfx
+      return True
 
 -- ** SendFlying
 
@@ -645,10 +661,5 @@ effectTeleport execSfx range target = do
 effectActivateEqp :: (MonadAtomic m, MonadServer m)
                   => m () -> ActorId -> Char -> m Bool
 effectActivateEqp execSfx target symbol = do
-  b <- getsState $ getActorBody target
-  mapActorEqp_ (\iid _ -> do
-    item <- getsState $ getItemBody iid
-    when (symbol == ' ' || jsymbol item == symbol) $
-      applyItem False target iid CEqp) b
-  execSfx
-  return True
+  effectTransformEqp execSfx target symbol $ \iid _ ->
+    applyItem False target iid CEqp
