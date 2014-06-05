@@ -2,7 +2,7 @@
 -- player actions. Has no access to the the main action type.
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
-  , getLevel, nUI, posOfContainer, posOfAid, actorConts, fightsAgainstSpawners
+  , getLevel, nUI, posOfContainer, posOfAid, actorInvs, fightsAgainstSpawners
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -40,30 +40,19 @@ posOfContainer (CFloor lid p) = return (lid, p)
 posOfContainer (CActor aid _) = posOfAid aid
 
 actorInvs :: MonadStateRead m
-          => ItemId -> Int -> ActorId -> m [(Int, ActorId)]
+          => ItemId -> Int -> ActorId -> m [(KisOn, ActorId)]
 actorInvs iid k aid = do
-  let takeFromInv :: Int -> [(ActorId, Actor)] -> [(Int, ActorId)]
+  let takeFromInv :: Int -> [(ActorId, Actor)] -> [(KisOn, ActorId)]
       takeFromInv 0 _ = []
       takeFromInv _ [] = assert `failure` (iid, k, aid)
       takeFromInv n ((aid2, b2) : as) =
         case EM.lookup iid $ binv b2 of
           Nothing -> takeFromInv n as
-          Just (m, _) -> let ck = min n m
-                         in (ck, aid2) : takeFromInv (n - ck) as
+          Just (m, isOn) -> let ck = min n m
+                            in ((ck, isOn), aid2) : takeFromInv (n - ck) as
   b <- getsState $ getActorBody aid
   as <- getsState $ fidActorNotProjAssocs (bfid b)
   return $ takeFromInv k $ (aid, b) : filter ((/= aid) . fst) as
-
-actorConts :: MonadStateRead m
-           => ItemId -> Int -> ActorId -> CStore
-           -> m [(Int, Container)]
-actorConts iid k aid cstore = case cstore of
-  CGround -> return [(k, CActor aid CGround)]
-  CEqp -> return [(k, CActor aid CEqp)]
-  CInv -> do
-    invs <- actorInvs iid k aid
-    return $! map (\(n, aid2) -> (n, CActor aid2 CInv)) invs
-  CBody -> return [(k, CActor aid CBody)]
 
 -- TODO: make a field of Faction?
 fightsAgainstSpawners :: MonadStateRead m => FactionId -> m Bool

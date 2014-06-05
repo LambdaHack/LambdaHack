@@ -320,11 +320,12 @@ reqMoveItem :: (MonadAtomic m, MonadServer m)
 reqMoveItem aid iid k fromCStore toCStore = do
   b <- getsState $ getActorBody aid
   let moveItem = do
+        item <- getsState $ getItemBody iid
+        cs <- actorConts iid item k aid fromCStore
         when (fromCStore == CGround) $ do
           seed <- getsServer $ (EM.! iid) . sitemSeedD
           execUpdAtomic $ UpdDiscoverSeed (blid b) (bpos b) iid seed
-        cs <- actorConts iid k aid fromCStore
-        let gmove (ck, c) = do
+        let gmove ((ck, _), c) = do
               upds <- generalMoveItem iid ck c (CActor aid toCStore)
               mapM_ execUpdAtomic upds
         mapM_ gmove cs

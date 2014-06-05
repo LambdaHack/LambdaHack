@@ -61,9 +61,9 @@ applyItem turnOff aid iid cstore = do
       itemFull = itemToF iid (k, isOn)
       consumable = IF.Consumable `elem` jfeature item
   if consumable then do
+    cs <- actorConts iid item 1 aid cstore
     execSfxAtomic $ SfxActivate aid iid (1, isOn)
     -- TODO: don't destroy if not really used up; also, don't take time?
-    cs <- actorConts iid 1 aid cstore
     mapM_ (\(_, c) -> execUpdAtomic
                       $ UpdDestroyItem iid item (1, isOn) c) cs
     itemEffect aid aid iid itemFull
