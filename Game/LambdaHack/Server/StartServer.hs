@@ -238,6 +238,8 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
                 , dist ps $ factionDist `div` 3
                 , dist ps $ factionDist `div` 4
                 , dist ps $ factionDist `div` 5
+                , dist ps $ factionDist `div` 7
+                , dist ps $ factionDist `div` 10
                 ]
         nps <- tryFind (np : ps) (n - 1)
         return $! np : nps
