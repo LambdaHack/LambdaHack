@@ -62,9 +62,9 @@ applyItem turnOff aid iid cstore = do
       itemFull = itemToF iid (k, isOn)
       consumable = IF.Consumable `elem` jfeature item
   if consumable then do
+    execSfxAtomic $ SfxActivate aid iid (1, isOn)
     -- TODO: don't destroy if not really used up; also, don't take time?
     cs <- actorConts iid 1 aid cstore
-    execSfxAtomic $ SfxActivate aid iid (1, isOn)
     mapM_ (\(_, c) -> execUpdAtomic
                       $ UpdDestroyItem iid item (1, isOn) c) cs
     itemEffect aid aid iid itemFull
@@ -89,7 +89,7 @@ itemEffect source target iid itemFull = do
       -- is given, since the actor and/or the item may be moved by the effect;
       -- we'd need to track not only position of atomic commands and factions,
       -- but also which items they relate to, to be fully accurate).
-      when (and bs) $ do
+      when (or bs) $ do
         seed <- getsServer $ (EM.! iid) . sitemSeedD
         execUpdAtomic $ UpdDiscover (blid postb) (bpos postb)
                                     iid itemKindId seed
