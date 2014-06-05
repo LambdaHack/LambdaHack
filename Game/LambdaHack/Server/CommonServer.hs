@@ -131,8 +131,7 @@ deduceQuits body status@Status{stOutcome}
 deduceQuits body status = do
   let fid = bfid body
       mapQuitF statusF fids = mapM_ (quitF Nothing statusF) $ delete fid fids
-  as <- getsState $ fidActorNotProjList fid
-  when (null as) $ quitF (Just body) status fid
+  quitF (Just body) status fid
   let inGame fact = case fmap stOutcome $ gquit fact of
         Just Killed -> False
         Just Defeated -> False
@@ -174,11 +173,16 @@ deduceKilled body = do
   let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
       fid = bfid body
   fact <- getsState $ (EM.! fid) . sfactionD
-  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-  when (not (isSpawnFact fact)  -- spawners never die off
-        && (isNothing mleader  -- includes animals (that never have leaders)
-            || firstDeathEnds)) $
-    deduceQuits body $ Status Killed (fromEnum $ blid body) ""
+  unless (isSpawnFact fact) $ do  -- spawners never die off
+    noActorsAlive <- if playerLeader (gplayer fact)
+                     then do
+                       mleader <- getsState $ gleader . (EM.! fid) . sfactionD
+                       return $! isNothing mleader
+                     else do
+                       as <- getsState $ fidActorNotProjList fid
+                       return $! null as
+    when (noActorsAlive || firstDeathEnds) $
+      deduceQuits body $ Status Killed (fromEnum $ blid body) ""
 
 electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
 electLeader fid lid aidDead = do
