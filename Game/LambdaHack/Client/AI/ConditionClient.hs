@@ -223,15 +223,12 @@ condMeleeBadM aid = do
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
   let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
-                       in dist < 4 && dist > 0
+                       in dist < 3 && dist > 0
       closeFriends = filter closeEnough friends
       strongCloseFriends = filter (not . hpTooLow coactor) closeFriends
       noFriendlyHelp = length closeFriends < 3 && null strongCloseFriends
-      condHpTooLow = hpTooLow coactor b
-  return $ noFriendlyHelp  -- still not getting friends' help
-           && (condHpTooLow  -- too wounded to fight alone
-               || length friends > 1)  -- friends somewhere, let's flee to them
-    -- keep it lazy
+  return noFriendlyHelp  -- still not getting friends' help
+    -- no $!; keep it lazy
 
 -- Checks whether the actor stands in the dark, but is betrayed by a light,
 condLightBetraysM :: MonadClient m => ActorId -> m Bool

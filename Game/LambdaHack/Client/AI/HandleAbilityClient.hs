@@ -15,6 +15,7 @@ import Data.Function
 import Data.List
 import Data.Maybe
 import Data.Ord
+import Data.Ratio
 import qualified Data.Traversable as Traversable
 
 import Game.LambdaHack.Client.AI.ConditionClient
@@ -79,7 +80,8 @@ actionStrategy aid = do
   let condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= nearby) . fst) threatDistL
-      condFastThreatAdj = any (\(_, (_, b)) -> bspeed b > bspeed body)
+      speed1_5 = speedScale (3%2) (bspeed body)
+      condFastThreatAdj = any (\(_, (_, b)) -> bspeed b > speed1_5)
                           $ takeWhile ((== 1) . fst) threatDistL
       condCanFlee = not (null fleeL || condFastThreatAdj)
   mleader <- getsClient _sleader
@@ -100,8 +102,10 @@ actionStrategy aid = do
             <$> trigger aid True
               -- flee via stairs, even if to wrong level
               -- may return via different stairs
-          , condOnTriggerable && (condNotCalmEnough || condHpTooLow)
-            && condThreatNearby && not condTgtEnemyPresent )
+          , condOnTriggerable
+            && ((condNotCalmEnough || condHpTooLow)
+                && condThreatNearby && not condTgtEnemyPresent
+                || condMeleeBad && condThreatAdj) )
         , ( [AbMove]
           , flee aid fleeL
           , condMeleeBad && condThreatAdj && condCanFlee )
@@ -133,11 +137,12 @@ actionStrategy aid = do
         [ ( [AbProject]  -- for high-value target, shoot even in melee
           , stratToFreq 2 $ (toAny :: ToAny AbProject)
             <$> ranged aid
-          , condTgtEnemyPresent && condCanProject )
+          , condTgtEnemyPresent && condCanProject && not condOnTriggerable )
         , ( [AbApply]
           , stratToFreq 2 $ (toAny :: ToAny AbApply)
             <$> applyItem aid ApplyAll  -- use any option or scroll
-          , condTgtEnemyPresent || condThreatNearby )  -- can affect enemies
+          , (condTgtEnemyPresent || condThreatNearby)  -- can affect enemies
+            && not condOnTriggerable )
         , ( [AbMove]
           , stratToFreq (if not condTgtEnemyPresent || condMeleeBad
                          then 1
