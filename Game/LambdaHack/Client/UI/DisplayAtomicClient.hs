@@ -640,15 +640,15 @@ strike source target iid hitStatus = assert (source /= target) $ do
                        then partItemWownW spronoun
                        else partItemAW
       msg MissBlock =
-        let (partBlock1, partBlock2) =
+        let sActs =
               if withWhat
-              then ("swing", partItemChoice itemFull)
-              else ("try to", verb)
-        in makeSentence
-          [ MU.SubjectVerbSg spart partBlock1
-          , partBlock2 MU.:> ", but"
-          , MU.SubjectVerbSg tpart "block"
-          ]
+              then [ MU.SubjectVerbSg spart "swing"
+                   , partItemChoice itemFull ]
+              else [ MU.SubjectVerbSg spart "connect" ]
+        in makeSentence [ MU.Phrase sActs MU.:> ", but"
+                        , MU.SubjectVerbSg tpart "block"
+                        , "partially"
+                        ]
       msg _ = makeSentence $
         [MU.SubjectVerbSg spart verb, tpart]
         ++ if withWhat
