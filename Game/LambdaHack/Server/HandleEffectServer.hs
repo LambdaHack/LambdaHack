@@ -4,7 +4,6 @@ module Game.LambdaHack.Server.HandleEffectServer
   ( applyItem, itemEffect, effectSem
   ) where
 
-import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -545,51 +544,47 @@ effectSendFlying :: (MonadAtomic m, MonadServer m)
                  => m () -> Int -> Int -> ActorId -> ActorId -> Maybe Bool
                  -> m Bool
 effectSendFlying execSfx toThrow linger source target modePush = do
-  mv <- sendFlyingVector source target modePush
-  case mv of
-    Nothing -> effectNoEffect source target
-    Just v -> do
-      Kind.COps{cotile} <- getsState scops
-      tb <- getsState $ getActorBody target
-      lvl@Level{lxsize, lysize} <- getLevel (blid tb)
-      let eps = 0
-          fpos = bpos tb `shift` v
-      case bla lxsize lysize eps (bpos tb) fpos of
-        Nothing -> assert `failure` (fpos, tb)
-        Just [] -> assert `failure` "projecting from the edge of level"
-                          `twith` (fpos, tb)
-        Just (pos : rest) -> do
-          let t = lvl `at` pos
-          if not $ Tile.isWalkable cotile t
-            then effectNoEffect source target  -- supported by a wall
-            else do
-              let -- TODO: add weight field to actor, unless we just
-                  -- sum weigths of all body parts
-                  weight = 70000  -- 70 kg
-                  path = bpos tb : pos : rest
-                  (trajectoryNew, speed) =
-                    computeTrajectory weight toThrow linger path
-                  speedOld = bspeed tb
-                  speedDelta = speedAdd speed (speedNegate speedOld)
-              unless (btrajectory tb == Just trajectoryNew) $
-                execUpdAtomic $ UpdTrajectoryActor target (btrajectory tb)
-                                                          (Just trajectoryNew)
-              when (speedDelta /= speedZero) $
-                execUpdAtomic $ UpdHasteActor target speedDelta
-              execSfx
-              return True
+  v <- sendFlyingVector source target modePush
+  Kind.COps{cotile} <- getsState scops
+  tb <- getsState $ getActorBody target
+  lvl@Level{lxsize, lysize} <- getLevel (blid tb)
+  let eps = 0
+      fpos = bpos tb `shift` v
+  case bla lxsize lysize eps (bpos tb) fpos of
+    Nothing -> assert `failure` (fpos, tb)
+    Just [] -> assert `failure` "projecting from the edge of level"
+                      `twith` (fpos, tb)
+    Just (pos : rest) -> do
+      let t = lvl `at` pos
+      if not $ Tile.isWalkable cotile t
+        then effectNoEffect source target  -- supported by a wall
+        else do
+          let -- TODO: add weight field to actor, unless we just
+              -- sum weigths of all body parts
+              weight = 70000  -- 70 kg
+              path = bpos tb : pos : rest
+              (trajectoryNew, speed) =
+                computeTrajectory weight toThrow linger path
+              speedOld = bspeed tb
+              speedDelta = speedAdd speed (speedNegate speedOld)
+          unless (btrajectory tb == Just trajectoryNew) $
+            execUpdAtomic $ UpdTrajectoryActor target (btrajectory tb)
+                                                      (Just trajectoryNew)
+          when (speedDelta /= speedZero) $
+            execUpdAtomic $ UpdHasteActor target speedDelta
+          execSfx
+          return True
 
 sendFlyingVector :: (MonadAtomic m, MonadServer m)
-                 => ActorId -> ActorId -> Maybe Bool -> m (Maybe Vector)
+                 => ActorId -> ActorId -> Maybe Bool -> m Vector
 sendFlyingVector source target modePush = do
   sb <- getsState $ getActorBody source
   if source == target then do
-    if modePush == Just False then return Nothing
-    else if boldpos sb == bpos sb then rndToAction $ do
+    if boldpos sb == bpos sb then rndToAction $ do
       z <- randomR (-10, 10)
-      Just <$> oneOf [Vector 10 z, Vector (-10) z, Vector z 10, Vector z (-10)]
+      oneOf [Vector 10 z, Vector (-10) z, Vector z 10, Vector z (-10)]
     else
-      return $ Just $ vectorToFrom (bpos sb) (boldpos sb)
+      return $! vectorToFrom (bpos sb) (boldpos sb)
   else do
     tb <- getsState $ getActorBody target
     let (sp, tp) = if adjacent (bpos sb) (bpos tb)
@@ -601,11 +596,11 @@ sendFlyingVector source target modePush = do
                    else (bpos sb, bpos tb)
         pushV = vectorToFrom tp sp
         pullV = vectorToFrom sp tp
-    return $ case modePush of
-               Just True -> Just pushV
-               Just False -> Just pullV
-               Nothing | adjacent (bpos sb) (bpos tb) -> Just pushV
-               Nothing -> Just pullV
+    return $! case modePush of
+                Just True -> pushV
+                Just False -> pullV
+                Nothing | adjacent (bpos sb) (bpos tb) -> pushV
+                Nothing -> pullV
 
 -- ** Teleport
 
