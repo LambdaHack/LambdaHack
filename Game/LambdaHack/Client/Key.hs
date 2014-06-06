@@ -18,8 +18,6 @@ import Prelude hiding (Left, Right)
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Vector
 
--- TODO: if the file grows much larger, split it and move a part to Utils/
-
 -- | Frontend-independent datatype to represent keys.
 data Key =
     Esc

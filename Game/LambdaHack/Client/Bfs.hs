@@ -45,7 +45,6 @@ fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
 fillBfs isEnterable passUnknown origin aInitial =
-  -- TODO: copy, thaw, mutate, freeze
   let maxUnknownBfs = pred apartBfs
       maxKnownBfs = pred maxBound
       bfs :: Seq.Seq (Point, BfsDistance)

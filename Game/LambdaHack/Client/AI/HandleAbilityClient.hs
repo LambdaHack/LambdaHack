@@ -195,7 +195,6 @@ actionStrategy aid = do
 waitBlockNow :: MonadClient m => m (Strategy (RequestTimed AbWait))
 waitBlockNow = return $! returN "wait" ReqWait
 
--- TODO: (most?) animals don't pick up. Everybody else does.
 pickup :: MonadClient m
        => ActorId -> Bool -> m (Strategy (RequestTimed AbMoveItem))
 pickup aid onlyWeapon = do

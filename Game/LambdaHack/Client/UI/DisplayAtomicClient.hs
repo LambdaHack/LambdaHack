@@ -314,11 +314,11 @@ moveItemUI :: MonadClientUI m
            => Bool -> ItemId -> Int -> ActorId
            -> CStore -> Bool -> CStore -> Bool
            -> m ()
-moveItemUI verbose iid k aid c1 isOn1 c2 _isOn2 = do
+moveItemUI verbose iid k aid c1 isOn1 c2 isOn2 = do
   side <- getsClient sside
   b <- getsState $ getActorBody aid
   case (c1, c2) of
-    (CGround, cstore) | c1 /= c2 -> do
+    (_, _) | c1 == CGround || isOn1 /= isOn2 -> do
       when (bfid b == side) $ updateItemSlot (Just aid) iid
       fact <- getsState $ (EM.! bfid b) . sfactionD
       let underAI = playerAI $ gplayer fact
@@ -326,7 +326,7 @@ moveItemUI verbose iid k aid c1 isOn1 c2 _isOn2 = do
       if Just aid == mleader && not underAI then do
         itemToF <- itemToFullClient
         (letterSlots, _) <- getsClient sslots
-        bag <- getsState $ getCBag $ CActor aid cstore
+        bag <- getsState $ getCBag $ CActor aid c2
         let (n, isOn) = bag EM.! iid
         case lookup iid $ map swap $ EM.assocs letterSlots of
           Just l -> msgAdd $ makePhrase
@@ -335,7 +335,8 @@ moveItemUI verbose iid k aid c1 isOn1 c2 _isOn2 = do
                       , partItemWs n (itemToF iid (n, isOn))
                       , "\n" ]
           Nothing -> return ()
-      else aiVerbMU aid "get" iid (k, isOn1)
+      else when (c1 == CGround && c1 /= c2) $
+        aiVerbMU aid "get" iid (k, isOn1)
     (_, CGround) | c1 /= c2 -> do
       when verbose $ aiVerbMU aid "drop" iid (k, isOn1)
       if bfid b == side
@@ -473,8 +474,12 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
   SfxProject aid iid -> aiVerbMU aid "aim" iid (1, True)
   SfxCatch aid iid -> aiVerbMU aid "catch" iid (1, True)
-  SfxActivate aid iid kIsOn -> aiVerbMU aid "activate"{-TODO: deactivate if isOn-} iid kIsOn
-  SfxCheck aid iid kIsOn -> aiVerbMU aid "check" iid kIsOn
+  SfxActivate aid iid kIsOn@(_, isOn1) isOn2 -> do
+    let verb = if isOn1 /= isOn2 && not isOn2 then "deactivate" else "activate"
+    aiVerbMU aid verb iid kIsOn
+  SfxCheck aid iid kIsOn@(_, isOn1) isOn2 -> do
+    let verb = if isOn1 /= isOn2 && not isOn1 then "deactivate" else "activate"
+    aiVerbMU aid verb iid kIsOn
   SfxTrigger aid _p _feat ->
     when verbose $ aVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->
