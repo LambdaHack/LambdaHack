@@ -46,8 +46,8 @@ refreshTarget oldLeader (aid, body) = do
       return Nothing
     else do
       -- Choose a target from those proposed by AI for the actor.
-      (tgt, path) <- rndToAction $ frequency $ bestVariant stratTarget
-      return $ Just (tgt, Just path)
+      tmp <- rndToAction $ frequency $ bestVariant stratTarget
+      return $ Just tmp
   oldTgt <- getsClient $ EM.lookup aid . stargetD
   let _debug = T.unpack
           $ "\nHandleAI symbol:"    <+> tshow (bsymbol body)

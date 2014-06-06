@@ -35,7 +35,7 @@ import Game.LambdaHack.Content.ModeKind
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m
-               => ActorId -> ActorId -> m (Strategy (Target, PathEtc))
+               => ActorId -> ActorId -> m (Strategy (Target, Maybe PathEtc))
 targetStrategy oldLeader aid = do
   cops@Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
                 , coactor=coactor@Kind.Ops{okind}
@@ -56,7 +56,7 @@ targetStrategy oldLeader aid = do
           Just p -> do
             (bfs, mpath) <- getCacheBfsAndPath aid p
             return $! case mpath of
-              Nothing -> assert `failure` "target unreachable" `twith` (b, tgt)
+              Nothing -> Nothing
               Just path -> Just (tgt, ( bpos b : path
                                       , (p, fromMaybe (assert `failure` mpath)
                                             $ accessBfs bfs p) ))
@@ -134,12 +134,12 @@ targetStrategy oldLeader aid = do
       -- TODO: make more common when weak ranged foes preferred, etc.
       focused = bspeed b < speedNormal || condHpTooLow
       canSmell = asmell $ okind $ bkind b
-      setPath :: Target -> m (Strategy (Target, PathEtc))
+      setPath :: Target -> m (Strategy (Target, Maybe PathEtc))
       setPath tgt = do
         mpath <- createPath tgt
-        return $!
-          maybe (assert `failure` (b, tgt)) (returN "pickNewTarget") mpath
-      pickNewTarget :: m (Strategy (Target, PathEtc))
+        return $! returN "pickNewTarget"
+               $ maybe (tgt, Nothing) (\(t, p) -> (t, Just p)) mpath
+      pickNewTarget :: m (Strategy (Target, Maybe PathEtc))
       pickNewTarget = do
         -- TODO: for foes, items, etc. consider a few nearby, not just one
         cfoes <- closestFoes nearbyFoes aid
@@ -174,7 +174,8 @@ targetStrategy oldLeader aid = do
                         path = trajectoryToPathBounded
                                  lxsize lysize (bpos b) (replicate 5 v)
                     return $! returN "tgt with no playerLeader"
-                      (TVector v, (bpos b : path, (last path, length path)))
+                      ( TVector v
+                      , Just (bpos b : path, (last path, length path)) )
                   [] -> do
                     let lidExplored = ES.member (blid b) explored
                     upos <- if lidExplored
@@ -213,7 +214,7 @@ targetStrategy oldLeader aid = do
         modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
       updateTgt :: Target -> PathEtc
-                -> m (Strategy (Target, PathEtc))
+                -> m (Strategy (Target, Maybe PathEtc))
       updateTgt oldTgt updatedPath@(_, (_, len)) = case oldTgt of
         TEnemy a _ -> do
           body <- getsState $ getActorBody a
@@ -223,7 +224,7 @@ targetStrategy oldLeader aid = do
              || actorDying body  -- foe already dying
           then pickNewTarget
           else if bpos body == fst (snd updatedPath)
-               then return $! returN "TEnemy" (oldTgt, updatedPath)
+               then return $! returN "TEnemy" (oldTgt, Just updatedPath)
                       -- The enemy didn't move since the target acquired.
                       -- If any walls were added that make the enemy
                       -- unreachable, AI learns that the hard way,
@@ -235,9 +236,9 @@ targetStrategy oldLeader aid = do
                    Nothing -> pickNewTarget  -- enemy became unreachable
                    Just path ->
                       return $! returN "TEnemy"
-                        (oldTgt, ( bpos b : path
-                                 , (p, fromMaybe (assert `failure` mpath)
-                                       $ accessBfs bfs p) ))
+                        (oldTgt, Just ( bpos b : path
+                                      , (p, fromMaybe (assert `failure` mpath)
+                                            $ accessBfs bfs p) ))
         TEnemyPos _ lid p _ ->
           -- Chase last position even if foe hides or dies,
           -- to find his companions, loot, etc.
@@ -246,7 +247,7 @@ targetStrategy oldLeader aid = do
           then pickNewTarget
           else if p == bpos b
                then tellOthersNothingHere p
-               else return $! returN "TEnemyPos" (oldTgt, updatedPath)
+               else return $! returN "TEnemyPos" (oldTgt, Just updatedPath)
         _ | not $ null nearbyFoes ->
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
@@ -294,8 +295,9 @@ targetStrategy oldLeader aid = do
                                       && not isStuck
                                       && allExplored)
           then pickNewTarget
-          else return $! returN "TPoint" (oldTgt, updatedPath)
-        TVector{} | len > 1 -> return $! returN "TVector" (oldTgt, updatedPath)
+          else return $! returN "TPoint" (oldTgt, Just updatedPath)
+        TVector{} | len > 1 ->
+          return $! returN "TVector" (oldTgt, Just updatedPath)
         TVector{} -> pickNewTarget
   case oldTgtUpdatedPath of
     Just (oldTgt, updatedPath) -> updateTgt oldTgt updatedPath
