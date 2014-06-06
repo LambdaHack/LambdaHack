@@ -44,7 +44,7 @@ tested-with:   GHC == 7.6.3, GHC == 7.8
 data-files:    GameDefinition/config.ui.default,
                GameDefinition/scores
 extra-source-files: GameDefinition/PLAYING.md, GameDefinition/MainMenu.ascii,
-                    README.md, LICENSE, CREDITS, changelog, Makefile
+                    README.md, LICENSE, CREDITS, CHANGELOG.md, Makefile
 author:        Andres Loeh, Mikolaj Konarski
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
 category:      Game Engine, Game
