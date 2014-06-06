@@ -36,7 +36,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.EndServer
 import Game.LambdaHack.Server.ItemServer
@@ -71,7 +70,6 @@ applyItem turnOff aid iid cstore = do
     execSfxAtomic $ SfxActivate aid iid (1, isOn) (not isOn)
     execUpdAtomic $ UpdMoveItem iid k aid cstore isOn cstore (not isOn)
 
--- TODO: when h2h items have ItemId, replace Item with ItemId
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified. This function
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
@@ -467,9 +465,8 @@ effectEscape target = do
   -- Obvious effect, nothing announced.
   b <- getsState $ getActorBody target
   let fid = bfid b
-      keepArena fact = playerLeader (gplayer fact) && not (isSpawnFact fact)
   fact <- getsState $ (EM.! fid) . sfactionD
-  if not (keepArena fact) || bproj b then
+  if not (keepArenaFact fact) || bproj b then
     return False
   else do
     deduceQuits b $ Status Escape (fromEnum $ blid b) ""

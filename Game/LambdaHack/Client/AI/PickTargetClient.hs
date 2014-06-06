@@ -30,7 +30,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
 
 -- | AI proposes possible targets for the actor. Never empty.
@@ -38,8 +37,7 @@ targetStrategy :: forall m. MonadClient m
                => ActorId -> ActorId -> m (Strategy (Target, Maybe PathEtc))
 targetStrategy oldLeader aid = do
   cops@Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
-                , coactor=coactor@Kind.Ops{okind}
-                , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
+                , coactor=coactor@Kind.Ops{okind} } <- getsState scops
   itemToF <- itemToFullClient
   modifyClient $ \cli -> cli { sbfsD = EM.delete aid (sbfsD cli)
                              , seps = seps cli + 773 }  -- randomize paths
@@ -252,8 +250,6 @@ targetStrategy oldLeader aid = do
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
           let allExplored = ES.size explored == EM.size dungeon
-              abilityLeader = fAbilityLeader $ fokind $ gkind fact
-              abilityOther = fAbilityOther $ fokind $ gkind fact
           if lid /= blid b  -- wrong level
              -- Below we check the target could not be picked again in
              -- pickNewTarget, and only in this case it is invalidated.
@@ -290,7 +286,7 @@ targetStrategy oldLeader aid = do
                            && let isStuck =
                                     waitedLastTurn b
                                     && (oldLeader == aid
-                                        || abilityLeader == abilityOther)
+                                        || isAllMoveFact cops fact)
                               in not (pos /= bpos b
                                       && not isStuck
                                       && allExplored)

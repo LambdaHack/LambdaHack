@@ -70,7 +70,6 @@ failSlides slides = do
 failSer :: MonadClientUI m => ReqFailure -> m (SlideOrCmd a)
 failSer = failWith . showReqFailure
 
--- TODO: probably move somewhere (Level?)
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.
 -- The detailed variant is for use in the targeting mode.

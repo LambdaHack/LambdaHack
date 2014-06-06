@@ -78,11 +78,13 @@ gameDifficultyCycle = do
 
 pickLeaderHuman :: MonadClientUI m => Int -> m Slideshow
 pickLeaderHuman k = do
+  cops <- getsState scops
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   s <- getState
   case tryFindHeroK s side k of
-    _ | isSpawnFact fact -> failMsg "spawners cannot manually change leaders"
+    _ | isAllMoveFact cops fact ->
+      failMsg "factions that move concurrently cannot manually change leaders"
     Nothing -> failMsg "No such member of the party."
     Just (aid, _) -> do
       void $ pickLeader True aid

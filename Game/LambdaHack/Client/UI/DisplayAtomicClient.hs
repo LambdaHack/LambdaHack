@@ -145,13 +145,14 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   -- Change faction attributes.
   UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt
   UpdLeadFaction fid (Just source) (Just target) -> do
+    cops <- getsState scops
     side <- getsClient sside
     when (fid == side) $ do
       fact <- getsState $ (EM.! side) . sfactionD
-      -- Spawners can't run with multiple actors, so the following is not
+      -- All-movers can't run with multiple actors, so the following is not
       -- a leader change while running, but rather server changing
-      -- spawner's leader, which the player should be alerted to.
-      when (isSpawnFact fact) stopPlayBack
+      -- their leader, which the player should be alerted to.
+      when (isAllMoveFact cops fact) stopPlayBack
       actorD <- getsState sactorD
       case EM.lookup source actorD of
         Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do

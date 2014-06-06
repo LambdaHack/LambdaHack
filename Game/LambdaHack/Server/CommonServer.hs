@@ -140,8 +140,7 @@ deduceQuits body status = do
   factionD <- getsState sfactionD
   let assocsInGame = filter (inGame . snd) $ EM.assocs factionD
       keysInGame = map fst assocsInGame
-      keepArena fact = playerLeader (gplayer fact) && not (isSpawnFact fact)
-      assocsKeepArena = filter (keepArena . snd) assocsInGame
+      assocsKeepArena = filter (keepArenaFact . snd) assocsInGame
       assocsUI = filter (playerUI . gplayer . snd) assocsInGame
       worldPeace =
         all (\(fid1, _) -> all (\(_, fact2) -> not $ isAtWar fact2 fid1)

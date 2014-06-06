@@ -92,6 +92,7 @@ handleRequestTimed aid cmd = case cmd of
 switchLeader :: MonadAtomic m
              => FactionId -> ActorId -> m ()
 switchLeader fid aidNew = do
+  cops <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
   bPre <- getsState $ getActorBody aidNew
   let mleader = gleader fact
@@ -99,7 +100,7 @@ switchLeader fid aidNew = do
   mapM_ execUpdAtomic leadAtoms
   assert (Just aidNew /= mleader
           && not (bproj bPre)
-          && not (isSpawnFact fact)
+          && not (isAllMoveFact cops fact)
          `blame` (aidNew, bPre, fid, fact)) skip
   assert (bfid bPre == fid
           `blame` "client tries to move other faction actors"

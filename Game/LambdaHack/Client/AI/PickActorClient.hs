@@ -25,7 +25,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.FactionKind
 
 pickActorToMove :: MonadClient m
                 => (ActorId -> (ActorId, Actor)
@@ -33,7 +32,7 @@ pickActorToMove :: MonadClient m
                 -> ActorId
                 -> m (ActorId, Actor)
 pickActorToMove refreshTarget oldAid = do
-  Kind.COps{cotile, cofaction=Kind.Ops{okind}} <- getsState scops
+  cops@Kind.COps{cotile} <- getsState scops
   oldBody <- getsState $ getActorBody oldAid
   let side = bfid oldBody
       arena = blid oldBody
@@ -41,8 +40,6 @@ pickActorToMove refreshTarget oldAid = do
   lvl <- getLevel arena
   let leaderStuck = waitedLastTurn oldBody
       t = lvl `at` bpos oldBody
-      abilityLeader = fAbilityLeader $ okind $ gkind fact
-      abilityOther = fAbilityOther $ okind $ gkind fact
   mleader <- getsClient _sleader
   ours <- getsState $ actorRegularAssocs (== side) arena
   let pickOld = do
@@ -51,12 +48,9 @@ pickActorToMove refreshTarget oldAid = do
   case ours of
     _ | -- Keep the leader: only a leader is allowed to pick another leader.
         mleader /= Just oldAid
-        -- Keep the leader: abilities are the same (we assume leader can do
-        -- at least as much as others). TODO: check not accurate,
+        -- Keep the leader: all can move. TODO: check not accurate,
         -- instead define 'movesThisTurn' and use elsehwere.
-        || abilityLeader == abilityOther
-        -- Keep the leader: spawners can't change leaders themselves.
-        || isSpawnFact fact
+        || isAllMoveFact cops fact
         -- Keep the leader: he is on stairs and not stuck
         -- and we don't want to clog stairs or get pushed to another level.
         || not leaderStuck && Tile.isStair cotile t

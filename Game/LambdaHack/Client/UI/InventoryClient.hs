@@ -155,7 +155,7 @@ transition :: forall m. MonadClientUI m
            -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
 transition _ _ _ verb [] iDS = assert `failure` (verb, iDS)
 transition p tinvSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
-  Kind.COps{corule} <- getsState scops
+  cops@Kind.COps{corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   (letterSlots, numberSlots) <- getsClient sslots
   leader <- getLeaderUI
@@ -213,7 +213,7 @@ transition p tinvSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
            })
         , (K.Tab, DefItemKey
            { defLabel = "TAB"
-           , defCond = not (isSpawnFact fact
+           , defCond = not (isAllMoveFact cops fact
                             || null (filter (\(_, b) ->
                                                blid b == blid body) hs))
            , defAction = \_ -> do
@@ -223,7 +223,7 @@ transition p tinvSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
            })
         , (K.BackTab, DefItemKey
            { defLabel = "SHIFT-TAB"
-           , defCond = not (isSpawnFact fact || null hs)
+           , defCond = not (isAllMoveFact cops fact || null hs)
            , defAction = \_ -> do
                err <- memberBack False
                assert (err == mempty `blame` err) skip
@@ -307,13 +307,15 @@ pickNumber askNumber kAll = do
 -- | Switches current member to the next on the level, if any, wrapping.
 memberCycle :: MonadClientUI m => Bool -> m Slideshow
 memberCycle verbose = do
+  cops <- getsState scops
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
   case filter (\(_, b) -> blid b == blid body) hs of
-    _ | isSpawnFact fact -> failMsg "spawners cannot manually change leaders"
+    _ | isAllMoveFact cops fact ->
+      failMsg "factions that move concurrently cannot manually change leaders"
     [] -> failMsg "Cannot pick any other member on this level."
     (np, b) : _ -> do
       success <- pickLeader verbose np
@@ -323,12 +325,14 @@ memberCycle verbose = do
 -- | Switches current member to the previous in the whole dungeon, wrapping.
 memberBack :: MonadClientUI m => Bool -> m Slideshow
 memberBack verbose = do
+  cops <- getsState scops
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
   case reverse hs of
-    _ | isSpawnFact fact -> failMsg "spawners cannot manually change leaders"
+    _ | isAllMoveFact cops fact ->
+      failMsg "factions that move concurrently cannot manually change leaders"
     [] -> failMsg "No other member in the party."
     (np, b) : _ -> do
       success <- pickLeader verbose np

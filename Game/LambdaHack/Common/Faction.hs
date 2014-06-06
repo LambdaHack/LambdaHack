@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
   , isHeroFact, isCivilianFact, isHorrorFact, isSpawnFact, isSummonFact
-  , isAtWar, isAllied
+  , isAllMoveFact, keepArenaFact, isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff
   ) where
 
@@ -11,6 +11,7 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
 
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -89,6 +90,23 @@ isSummonFact :: Kind.COps -> Faction -> Bool
 isSummonFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
   let kind = okind (gkind fact)
   in maybe False (> 0) $ lookup "summon" $ ffreq kind
+
+-- | Tell whether all moving actors of the factions can move at once.
+isAllMoveFact :: Kind.COps -> Faction -> Bool
+isAllMoveFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
+  let kind = okind (gkind fact)
+      abilityLeader = fAbilityLeader kind
+      abilityOther = fAbilityOther kind
+  in Ability.AbMove `elem` abilityLeader
+     && Ability.AbMove `elem` abilityOther
+
+-- | Tell whether a faction that is still in game, keeps arena.
+-- Keeping arena means if the faction is still in game,
+-- it always has to have a leader in the dungeon somewhere.
+-- So, leaderless factions and spawner factions do not keep an arena.
+-- Such factions win if they can escape the dungeon.
+keepArenaFact :: Faction -> Bool
+keepArenaFact fact = playerLeader (gplayer fact) && not (isSpawnFact fact)
 
 -- | Check if factions are at war. Assumes symmetry.
 isAtWar :: Faction -> FactionId -> Bool
