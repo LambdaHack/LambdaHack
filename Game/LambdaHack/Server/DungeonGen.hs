@@ -1,6 +1,9 @@
--- | The main dungeon generation routine.
+-- | The unpopulated dungeon generation routine.
 module Game.LambdaHack.Server.DungeonGen
-  ( FreshDungeon(..), dungeonGen
+  ( -- * Public API
+    FreshDungeon(..), dungeonGen
+    -- * Internal functions
+  , convertTileMaps, placeStairs, buildLevel, levelFromCaveKind, findGenerator
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -95,7 +98,7 @@ placeStairs cotile cmap CaveKind{..} ps = do
     , dist $ cminStairDist `div` 8
     ]
 
--- | Create a level from a cave, from a cave kind.
+-- | Create a level from a cave.
 buildLevel :: Kind.COps -> Cave -> Int -> Int -> Int -> Int -> Int -> Maybe Bool
            -> Rnd Level
 buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
@@ -197,6 +200,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
   return $! levelFromCaveKind cops kc ldepth ltile lstair
                               litemNum itemFreq lsecret (isJust escapeFeature)
 
+-- | Build rudimentary level from a cave kind.
 levelFromCaveKind :: Kind.COps
                   -> CaveKind -> Int -> TileMap -> ([Point], [Point])
                   -> Int -> Frequency Text -> Int -> Bool

@@ -1,11 +1,14 @@
--- | Atomic monads.
+-- | Atomic game state transformations. TODO: haddocks.
+--
+-- See
+-- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic
-  ( -- * MonadAtomic
+  ( -- * Re-exported from MonadAtomic
     MonadAtomic(..)
-  , broadcastUpdAtomic,  broadcastSfxAtomic
-    -- * CmdAtomic
+  , broadcastUpdAtomic, broadcastSfxAtomic
+    -- * Re-exported from CmdAtomic
   , CmdAtomic(..), UpdAtomic(..), SfxAtomic(..), HitAtomic(..)
-    -- * PosAtomicRead
+    -- * Re-exported from PosAtomicRead
   , PosAtomic(..), posUpdAtomic, posSfxAtomic, seenAtomicCli, generalMoveItem
   ) where
 

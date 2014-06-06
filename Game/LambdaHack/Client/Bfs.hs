@@ -1,8 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Breadth first search algorithms.
 module Game.LambdaHack.Client.Bfs
-  ( BfsDistance, MoveLegal(..), apartBfs
+  ( -- * Public API
+    BfsDistance, MoveLegal(..), apartBfs
   , fillBfs, findPathBfs, accessBfs
+    -- * Internal functions
+  , minKnownBfs
   ) where
 
 import Control.Arrow (second)
@@ -17,20 +20,26 @@ import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Vector
 
+-- | Weighted distance between points along shortest paths.
 newtype BfsDistance = BfsDistance Word8
   deriving (Show, Eq, Ord, Enum, Bounded, Bits)
 
+-- | State of legality of moves between adjacent points.
 data MoveLegal = MoveBlocked | MoveToOpen | MoveToUnknown
   deriving Eq
 
+-- | The minimal distance value assigned to paths that don't enter
+-- any unknown tiles.
 minKnownBfs :: BfsDistance
 minKnownBfs = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
 
+-- | The distance value that denote no legal path between points.
 apartBfs :: BfsDistance
 apartBfs = pred minKnownBfs
 
 -- TODO: Move somewhere; in particular, only clients need to know that.
-fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is move from a known tile legal
+-- | Fill out the given BFS array.
+fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
         -> (Point -> Point -> Bool)       -- ^ is a move from unknown legal
         -> Point                          -- ^ starting position
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
@@ -124,6 +133,7 @@ findPathBfs isEnterable passUnknown source target sepsRaw bfs =
              in track minP dist (pos : suffix)
        in Just $ track target targetDist []
 
+-- | Access a BFS array and interpret the looked up distance value.
 accessBfs :: PointArray.Array BfsDistance -> Point -> Maybe Int
 {-# INLINE accessBfs #-}
 accessBfs bfs target =

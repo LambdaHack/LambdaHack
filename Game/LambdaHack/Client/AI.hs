@@ -1,6 +1,10 @@
--- | Semantics of most 'ResponseAI' client commands.
+-- | Ways for the client to use AI to produce server requests, based on
+-- the client's view of the game state.
 module Game.LambdaHack.Client.AI
-  ( queryAI, pongAI
+  ( -- * Public API
+    queryAI, pongAI
+    -- * Internal functions
+  , refreshTarget, pickAction
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -18,6 +22,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 
+-- | Handle the move of an AI player.
 queryAI :: MonadClient m => ActorId -> m RequestAI
 queryAI oldAid = do
   (aidToMove, bToMove) <- pickActorToMove refreshTarget oldAid
@@ -27,6 +32,7 @@ queryAI oldAid = do
     then return $! ReqAILeader aidToMove req
     else return $! req
 
+-- | Client signals to the server that it's still online.
 pongAI :: MonadClient m => m RequestAI
 pongAI = return ReqAIPong
 

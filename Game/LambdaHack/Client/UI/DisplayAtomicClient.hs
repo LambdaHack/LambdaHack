@@ -53,7 +53,7 @@ import Game.LambdaHack.Content.TileKind
 -- TODO: for a start, flesh out the verbose variant and then add
 -- a single client debug option that flips verbosity
 --
--- | Visualization of atomic actions for the client is perfomed
+-- | Visualize atomic actions sent to the client. This is done
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
 displayRespUpdAtomicUI :: MonadClientUI m
@@ -463,6 +463,7 @@ discover oldcli iid = do
 
 -- * RespSfxAtomicUI
 
+-- | Display special effects (text, animation) sent to the client.
 displayRespSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
 displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxStrike source target iid b -> strike source target iid b

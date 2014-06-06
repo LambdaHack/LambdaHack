@@ -1,4 +1,6 @@
--- | Semantics of most 'ResponseAI' client commands.
+-- | Ways for the client to use player input via UI to produce server
+-- requests, based on the client's view (visualized for the player)
+-- of the game state.
 module Game.LambdaHack.Client.UI
   ( -- * Client UI monad
     MonadClientUI
@@ -7,8 +9,10 @@ module Game.LambdaHack.Client.UI
   , displayRespUpdAtomicUI, displayRespSfxAtomicUI
     -- * Startup
   , srtFrontend, KeyKind, SessionUI
-    -- * Operations exposed for the LoopClient
+    -- * Operations exposed for LoopClient
   , ColorMode(..), displayMore, msgAdd
+    -- * Internal functions
+  , humanCommand
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -161,6 +165,8 @@ humanCommand msgRunStop = do
       sli <- promptToSlideshow msg
       loop $ Just (False, head . snd $ slideshow sli)
 
+-- | Client signals to the server that it's still online, flushes frames
+-- (if needed) and sends some extra info.
 pongUI :: MonadClientUI m => m RequestUI
 pongUI = do
   escPressed <- tryTakeMVarSescMVar

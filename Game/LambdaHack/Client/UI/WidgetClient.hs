@@ -38,8 +38,8 @@ getYesNo frame = do
     K.Char 'y' -> return True
     _          -> return False
 
--- | Display a msg with a @more@ prompt. Return value indicates if the player
--- tried to cancel/escape.
+-- | Display a message with a @-more-@ prompt.
+-- Return value indicates if the player tried to cancel/escape.
 displayMore :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
   slides <- promptToSlideshow $ prompt <+> moreMsg

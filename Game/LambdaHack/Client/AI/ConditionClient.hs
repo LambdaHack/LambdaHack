@@ -81,6 +81,7 @@ condHpTooLowM aid = do
   b <- getsState $ getActorBody aid
   return $! hpTooLow coactor b
 
+-- | Require the actor stands over a triggerable tile.
 condOnTriggerableM :: MonadStateRead m => ActorId -> m Bool
 condOnTriggerableM aid = do
   Kind.COps{cotile} <- getsState scops
@@ -103,6 +104,7 @@ threatDistList aid = do
   let addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
   return $ sort $ map addDist allThreats
 
+-- | Require the actor blocks the paths of any of his party members.
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
 condBlocksFriendsM aid = do
   b <- getsState $ getActorBody aid
@@ -114,6 +116,7 @@ condBlocksFriendsM aid = do
           _ -> False
   return $ any blocked ours  -- keep it lazy
 
+-- | Require the actor stands over a weapon.
 condFloorWeaponM :: MonadClient m => ActorId -> m Bool
 condFloorWeaponM aid = do
   cops <- getsState scops
@@ -123,6 +126,7 @@ condFloorWeaponM aid = do
   let lootIsWeapon = not $ null $ strongestSword cops False floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
+-- | Require the actor doesn't stand over a weapon, unless it's deactivated.
 condNoWeaponM :: MonadClient m => ActorId -> m Bool
 condNoWeaponM aid = do
   cops <- getsState scops
@@ -130,6 +134,7 @@ condNoWeaponM aid = do
   -- We do not consider OFF weapons, because they apparently are not good.
   return $ null $ strongestSword cops True allAssocs  -- keep it lazy
 
+-- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
   Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
@@ -143,6 +148,8 @@ condCanProjectM aid = do
   let missiles = filter (maybe True (< 0) . fst . fst) benList
   return $ asight ak && calmEnough b ak && not (null missiles)  -- keep it lazy
 
+-- | Produce the benefit-sorted list of items with a given symbol
+-- available to the actor.
 benAvailableItems :: MonadClient m
                   => ActorId -> [Char]
                   -> m [((Maybe Int, CStore), (ItemId, ItemFull))]
@@ -172,6 +179,7 @@ benAvailableItems aid permitted = do
   return $ ben CGround floorBag ++ ben CEqp eqpBag ++ ben CInv invBag
     -- keep it lazy
 
+-- | Require the actor is not calm enough.
 condNotCalmEnoughM :: MonadClient m => ActorId -> m Bool
 condNotCalmEnoughM aid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
@@ -179,11 +187,13 @@ condNotCalmEnoughM aid = do
   let ak = okind $ bkind b
   return $! not (calmEnough b ak)
 
+-- | Require that the actor stands over a desirable item.
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
 condDesirableFloorItemM aid = do
   benItemL <- benGroundItems aid
   return $ not $ null benItemL  -- keep it lazy
 
+-- | Produce the benefit-sorted list of items on the ground beneath the actor.
 benGroundItems :: MonadClient m => ActorId -> m [((Int, Int), (ItemId, Item))]
 benGroundItems aid = do
   cops <- getsState scops
@@ -205,6 +215,7 @@ benGroundItems aid = do
   return $ reverse $ sort $ mapMaybe mapDesirable $ EM.assocs floorItems
     -- keep it lazy
 
+-- | Determine the maximum absolute benefit from an item.
 maxUsefulness :: Kind.COps -> Actor -> ItemFull -> Maybe Int
 maxUsefulness cops body itemFull = do
   case itemDisco itemFull of
@@ -215,6 +226,7 @@ maxUsefulness cops body itemFull = do
                                  (map (effectToBenefit cops body) effs)
     _ -> Nothing
 
+-- | Require the actor is in a bad position to melee.
 condMeleeBadM :: MonadClient m => ActorId -> m Bool
 condMeleeBadM aid = do
   Kind.COps{coactor} <- getsState scops
@@ -230,7 +242,8 @@ condMeleeBadM aid = do
   return noFriendlyHelp  -- still not getting friends' help
     -- no $!; keep it lazy
 
--- Checks whether the actor stands in the dark, but is betrayed by a light,
+-- | Require that the actor stands in the dark, but is betrayed
+-- by his own light,
 condLightBetraysM :: MonadClient m => ActorId -> m Bool
 condLightBetraysM aid = do
   b <- getsState $ getActorBody aid
@@ -239,6 +252,7 @@ condLightBetraysM aid = do
   return $! not aInAmbient  -- tile is dark, so actor could hide
             && aShines      -- but actor betrayed by his light
 
+-- | Produce a list of acceptable adjacent points to flee to.
 fleeList :: MonadClient m => ActorId -> m [(Int, Point)]
 fleeList aid = do
   cops <- getsState scops

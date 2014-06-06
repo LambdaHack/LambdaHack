@@ -1,4 +1,5 @@
--- | Semantics of server commands.
+-- | Semantics of requests that are sent to the server.
+--
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Server

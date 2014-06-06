@@ -1,15 +1,14 @@
 {-# LANGUAGE FlexibleContexts #-}
--- | Semantics of client commands.
+-- | Semantics of responses that are sent to clients.
+--
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client
   ( exeFrontend
-  , MonadClient, MonadClientUI, MonadClientReadResponse, MonadClientWriteRequest
   ) where
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.LoopClient
-import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
