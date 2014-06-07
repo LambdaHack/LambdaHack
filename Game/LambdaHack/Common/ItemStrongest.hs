@@ -160,11 +160,14 @@ itemTrajectory item path =
                     (strengthLingering item) path
 
 -- TODO: refine taking into account item kind, etc.
+-- TODO: or move some of this to RuleKind and remove some ritem*
 strengthSymbol :: Kind.COps -> Char -> ItemFull -> [Int]
-strengthSymbol cops c = case c of
-  ')' -> strengthMelee cops
-  '\"' -> strengthRegen
-  '=' -> strengthStead
-  '(' -> strengthLight . itemBase
-  '[' -> strengthArmor
-  _ -> \_ -> []
+strengthSymbol cops@Kind.COps{corule} c =
+  let RuleKind{ritemMelee} = Kind.stdRuleset corule
+  in case c of
+    _ | c `elem` ritemMelee -> strengthMelee cops
+    '\"' -> strengthRegen
+    '=' -> strengthStead
+    _ | c `elem` "(~" -> strengthLight . itemBase
+    _ | c `elem` "[]" -> strengthArmor
+    _ -> \_ -> []

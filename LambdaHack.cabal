@@ -241,7 +241,7 @@ library
 executable LambdaHack
   hs-source-dirs:     GameDefinition
   main-is:            Main.hs
-  other-modules:      Client.UI.Content.KeyKind
+  other-modules:      Client.UI.Content.KeyKind,
                       Content.ActorKind,
                       Content.CaveKind,
                       Content.FactionKind,

@@ -19,7 +19,7 @@ import Game.LambdaHack.SampleImplementation.SampleMonadServer (executorSer)
 import Game.LambdaHack.Server (mainSer)
 
 -- | Tie the LambdaHack engine client, server and frontend code
--- with the LambdaHack-specific content definitions, and run the game.
+-- with the game-specific content definitions, and run the game.
 main :: IO ()
 main =
   let -- Common content operations, created from content definitions.

@@ -1,6 +1,8 @@
 -- | Weapons and treasure for LambdaHack.
 module Content.ItemKind ( cdefs ) where
 
+import Data.List
+
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
@@ -98,7 +100,7 @@ gem = ItemKind
   { isymbol  = '*'
   , iname    = "gem"
   , ifreq    = [("treasure", 20)]  -- x3, but rare on shallow levels
-  , iflavour = zipPlain brightCol  -- natural, so not fancy
+  , iflavour = zipPlain $ delete BrYellow brightCol  -- natural, so not fancy
   , icount   = 0
   , iverbApply   = "crush"
   , iverbProject = "toss"

@@ -117,7 +117,7 @@ standardKeys = KeyKind
                                                 , symbol = '(' }]))
       , ("f", ([CmdItem, CmdMinimal], Project
            [ApplyItem { verb = "fling"
-                      , object = "throwable item"
+                      , object = "item"
                       , symbol = ' ' }]))
       , ("t", ([CmdItem], Project [ApplyItem { verb = "throw"
                                              , object = "missile"
