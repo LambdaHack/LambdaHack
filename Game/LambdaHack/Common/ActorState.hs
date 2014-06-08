@@ -273,7 +273,7 @@ regenHPPeriod :: Actor -> [(ItemId, ItemFull)] -> State -> Int
 regenHPPeriod b allAssocs s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
-      regenPeriod = case strongestRegen True allAssocs of
+      regenPeriod = case strongestRegeneration True allAssocs of
         (k, _) : _ -> max 1 $ 500 `div` (k + 1)
         [] -> 0
       maxDeltaHP = Dice.maxDice (ahp ak) - bhp b
@@ -283,7 +283,7 @@ regenCalmDelta :: Actor -> [(ItemId, ItemFull)] -> State -> Int
 regenCalmDelta b allAssocs s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
-      calmIncr = case strongestStead True allAssocs of
+      calmIncr = case strongestSteadfastness True allAssocs of
         (k, _) : _ -> k + 1
         [] -> 1
       maxDeltaCalm = Dice.maxDice (acalm ak) - bcalm b

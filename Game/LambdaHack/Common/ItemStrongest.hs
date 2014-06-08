@@ -3,10 +3,15 @@
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthAspect, strengthEffect, strengthFeature
-  , strengthMelee, strengthArmor, strengthRegen, strengthStead, strengthLight
+  , strengthMelee, strengthArmor
+  , strengthRegeneration, strengthSteadfastness
+  , strengthSightRadius, strengthSmellRadius, strengthIntelligence
+  , strengthLight
   , strengthLingering, strengthToThrow, isFragile
   , strongestItem, strongestSword, strongestShield
-  , strongestRegen, strongestStead, strongestLight
+  , strongestRegeneration, strongestSteadfastness
+  , strongestSightRadius, strongestSmellRadius, strongestIntelligence
+  , strongestLight
   , strengthSymbol
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
@@ -87,23 +92,55 @@ strengthArmor =
 strongestShield :: Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
 strongestShield onlyOn is = strongestItem onlyOn is strengthArmor
 
-strengthRegen :: ItemFull -> [Int]
-strengthRegen =
+strengthRegeneration :: ItemFull -> [Int]
+strengthRegeneration =
   let p (Regeneration k) = [k]
       p _ = []
   in strengthAspect p
 
-strongestRegen :: Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestRegen onlyOn is = strongestItem onlyOn is strengthRegen
+strongestRegeneration :: Bool -> [(ItemId, ItemFull)]
+                      -> [(Int, (ItemId, ItemFull))]
+strongestRegeneration onlyOn is = strongestItem onlyOn is strengthRegeneration
 
-strengthStead :: ItemFull -> [Int]
-strengthStead =
+strengthSteadfastness :: ItemFull -> [Int]
+strengthSteadfastness =
   let p (Steadfastness k) = [k]
       p _ = []
   in strengthAspect p
 
-strongestStead :: Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestStead onlyOn is = strongestItem onlyOn is strengthStead
+strongestSteadfastness :: Bool -> [(ItemId, ItemFull)]
+                       -> [(Int, (ItemId, ItemFull))]
+strongestSteadfastness onlyOn is = strongestItem onlyOn is strengthSteadfastness
+
+strengthSightRadius :: ItemFull -> [Int]
+strengthSightRadius =
+  let p (SightRadius k) = [k]
+      p _ = []
+  in strengthAspect p
+
+strongestSightRadius :: Bool -> [(ItemId, ItemFull)]
+                     -> [(Int, (ItemId, ItemFull))]
+strongestSightRadius onlyOn is = strongestItem onlyOn is strengthSightRadius
+
+strengthSmellRadius :: ItemFull -> [Int]
+strengthSmellRadius =
+  let p (SmellRadius k) = [k]
+      p _ = []
+  in strengthAspect p
+
+strongestSmellRadius :: Bool -> [(ItemId, ItemFull)]
+                     -> [(Int, (ItemId, ItemFull))]
+strongestSmellRadius onlyOn is = strongestItem onlyOn is strengthSmellRadius
+
+strengthIntelligence :: ItemFull -> [Int]
+strengthIntelligence =
+  let p (Intelligence k) = [k]
+      p _ = []
+  in strengthAspect p
+
+strongestIntelligence :: Bool -> [(ItemId, ItemFull)]
+                      -> [(Int, (ItemId, ItemFull))]
+strongestIntelligence onlyOn is = strongestItem onlyOn is strengthIntelligence
 
 strengthLight :: Item -> [Int]
 strengthLight =
@@ -167,8 +204,8 @@ strengthSymbol cops@Kind.COps{corule} c =
   let RuleKind{ritemMelee} = Kind.stdRuleset corule
   in case c of
     _ | c `elem` ritemMelee -> strengthMelee cops
-    '\"' -> strengthRegen
-    '=' -> strengthStead
+    '\"' -> strengthRegeneration
+    '=' -> strengthSteadfastness
     _ | c `elem` "(~" -> strengthLight . itemBase
     _ | c `elem` "[]" -> strengthArmor
     _ -> \_ -> []
