@@ -19,9 +19,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+      [amulet, bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
   }
-amulet,        bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+amulet,        bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -397,7 +397,7 @@ claw = fist
   , ifreq    = [("claw", 50)]
   , icount   = 2  -- even if more, only the fore claws used for fighting
   , iverbApply   = "slash"
-  , ieffects = [Hurt (5 * d 1) 0]
+  , ieffects = [Hurt (7 * d 1) 0]
   , idesc    = ""
   }
 smallClaw = fist
@@ -436,7 +436,7 @@ largeTail = fist
   , ifreq    = [("large tail", 50)]
   , icount   = 1
   , iverbApply   = "knock"
-  , ieffects = [Hurt (5 * d 1) 0, PushActor 300 25]
+  , ieffects = [Hurt (9 * d 1) 0, PushActor 300 25]
   , idesc    = ""
   }
 jaw = fist
@@ -452,7 +452,16 @@ largeJaw = fist
   , ifreq    = [("large jaw", 100)]
   , icount   = 1
   , iverbApply   = "crush"
-  , ieffects = [Hurt (10 * d 1) 0]
+  , ieffects = [Hurt (15 * d 1) 0]
+  , idesc    = ""
+  }
+armoredSkin = fist
+  { iname    = "armored skin"
+  , ifreq    = [("armored skin", 100)]
+  , icount   = 1
+  , iverbApply   = "bash"
+  , iaspects = [ArmorMelee 50]
+  , ieffects = [PushActor 0 50]
   , idesc    = ""
   }
 speedGland1 = speedGland 1

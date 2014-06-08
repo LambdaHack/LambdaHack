@@ -116,14 +116,14 @@ armadillo = ActorKind
   , aname   = "giant armadillo"
   , afreq   = [("animal", 10), ("horror", 10)]
   , acolor  = Brown
-  , ahp     = 17 * d 4
+  , ahp     = 8 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 1.8
   , asight  = False
   , asmell  = True
   , aiq     = 2
   , acanDo  = [minBound..maxBound]
-  , aitems  = [("claw", CBody), ("snout", CBody)]
+  , aitems  = [("claw", CBody), ("snout", CBody), ("armored skin", CBody)]
   }
 gilaMonster = ActorKind
   { asymbol = 'g'
@@ -145,7 +145,7 @@ komodoDragon = ActorKind
   , aname   = "Komodo dragon"
   , afreq   = [("animal", 10), ("horror", 10)]
   , acolor  = Blue
-  , ahp     = 17 * d 4
+  , ahp     = 10 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 2.5
   , asight  = True  -- low sight radius, bad hearing
@@ -153,8 +153,7 @@ komodoDragon = ActorKind
   , aiq     = 0
   , acanDo  = [minBound..maxBound]
   , aitems  = [ ("large tail", CBody), ("jaw", CBody), ("small claw", CBody)
-              , ("speed gland 2", CBody) ]
-                -- also, scales
+              , ("speed gland 2", CBody), ("armored skin", CBody) ]
   }
 hyena = ActorKind
   { asymbol = 'h'
@@ -175,12 +174,13 @@ alligator = ActorKind
   , aname   = "alligator"
   , afreq   = [("animal", 10), ("horror", 10)]
   , acolor  = Blue
-  , ahp     = 27 * d 4
+  , ahp     = 12 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 1.7
   , asight  = True
   , asmell  = False
   , aiq     = 0
   , acanDo  = [minBound..maxBound]
-  , aitems  = [("large jaw", CBody), ("large tail", CBody), ("claw", CBody)]
+  , aitems  = [ ("large jaw", CBody), ("large tail", CBody), ("claw", CBody)
+              , ("armored skin", CBody) ]
   }
