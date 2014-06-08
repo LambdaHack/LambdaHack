@@ -274,11 +274,8 @@ regenHPPeriod b allAssocs s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
       regenPeriod = case strongestRegen True allAssocs of
-        (k, _) : _ ->
-          let slowBaseRegen = 1000
-              ar = if aregen ak == maxBound then slowBaseRegen else aregen ak
-          in max 1 $ ar `div` (k + 1)
-        [] -> if aregen ak == maxBound then 0 else aregen ak
+        (k, _) : _ -> max 1 $ 500 `div` (k + 1)
+        [] -> 0
       maxDeltaHP = Dice.maxDice (ahp ak) - bhp b
   in if maxDeltaHP > 0 then regenPeriod else 0
 

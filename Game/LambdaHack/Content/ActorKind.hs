@@ -29,7 +29,6 @@ data ActorKind = ActorKind
   , asight  :: !Bool       -- ^ can it see?
   , asmell  :: !Bool       -- ^ can it smell?
   , aiq     :: !Int        -- ^ intelligence
-  , aregen  :: !Int        -- ^ number of turns to regenerate 1 HP
   , acanDo  :: ![Ability]  -- ^ the set of supported abilities
   , aitems  :: ![(Text, CStore)]  -- ^ initial items
   }
@@ -43,7 +42,7 @@ data ActorKind = ActorKind
 validateActorKind :: [ActorKind] -> [ActorKind]
 validateActorKind l =
   let behaviour ka = (aspeed ka, ahp ka, acalm ka, asight ka, asmell ka,
-                      aiq ka, aregen ka, sort $ acanDo ka)
+                      aiq ka, sort $ acanDo ka)
       sortedBehaviour = sortBy (Ord.comparing behaviour) l
       nubbedBehaviour = nubBy ((==) `on` behaviour) sortedBehaviour
       screen ka = (asymbol ka, acolor ka)

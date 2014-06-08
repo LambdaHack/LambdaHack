@@ -159,6 +159,7 @@ itemTrajectory item path =
   computeTrajectory (jweight item) (strengthToThrow item)
                     (strengthLingering item) path
 
+-- TODO: rewrite when we have launchers, wands and armour
 -- TODO: refine taking into account item kind, etc.
 -- TODO: or move some of this to RuleKind and remove some ritem*
 strengthSymbol :: Kind.COps -> Char -> ItemFull -> [Int]

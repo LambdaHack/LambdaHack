@@ -30,7 +30,6 @@ warrior = ActorKind
   , asight  = True
   , asmell  = False
   , aiq     = 15
-  , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
   , aitems  = [("fist", CBody), ("foot", CBody)]
   }
@@ -64,7 +63,6 @@ projectile = ActorKind  -- includes homing missiles
   , asight  = False
   , asmell  = False
   , aiq     = 0
-  , aregen  = maxBound
   , acanDo  = []
   , aitems  = []
   }
@@ -80,7 +78,6 @@ eye = ActorKind
   , asight  = True
   , asmell  = False
   , aiq     = 8
-  , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
   , aitems  = [("lash", CBody), ("tentacle", CBody)]
   }
@@ -95,9 +92,9 @@ fastEye = ActorKind
   , asight  = True
   , asmell  = False
   , aiq     = 12
-  , aregen  = 10  -- Regenerates fast (at max HP most of the time!).
   , acanDo  = [minBound..maxBound]
-  , aitems  = [("lash", CBody), ("tentacle", CBody), ("tentacle", CBody)]
+  , aitems  = [ ("lash", CBody), ("tentacle", CBody), ("tentacle", CBody)
+              , ("speed gland 5", CBody) ]
   }
 nose = ActorKind
   { asymbol = 'n'
@@ -110,7 +107,6 @@ nose = ActorKind
   , asight  = False
   , asmell  = True
   , aiq     = 0
-  , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
   , aitems  = [("nose tip", CBody), ("lip", CBody)]
   }
@@ -126,7 +122,6 @@ armadillo = ActorKind
   , asight  = False
   , asmell  = True
   , aiq     = 2
-  , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
   , aitems  = [("claw", CBody), ("snout", CBody)]
   }
@@ -141,9 +136,9 @@ gilaMonster = ActorKind
   , asight  = True
   , asmell  = True
   , aiq     = 0
-  , aregen  = 20
   , acanDo  = [minBound..maxBound]
-  , aitems  = [("venom tooth", CBody), ("small claw", CBody)]
+  , aitems  = [ ("venom tooth", CBody), ("small claw", CBody)
+              , ("speed gland 1", CBody) ]
   }
 komodoDragon = ActorKind
   { asymbol = 'd'
@@ -156,9 +151,9 @@ komodoDragon = ActorKind
   , asight  = True  -- low sight radius, bad hearing
   , asmell  = True
   , aiq     = 0
-  , aregen  = 40
   , acanDo  = [minBound..maxBound]
-  , aitems  = [("large tail", CBody), ("jaw", CBody), ("small claw", CBody)]
+  , aitems  = [ ("large tail", CBody), ("jaw", CBody), ("small claw", CBody)
+              , ("speed gland 2", CBody) ]
                 -- also, scales
   }
 hyena = ActorKind
@@ -172,7 +167,6 @@ hyena = ActorKind
   , asight  = True
   , asmell  = True
   , aiq     = 5
-  , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
   , aitems  = [("jaw", CBody)]
   }
@@ -187,7 +181,6 @@ alligator = ActorKind
   , asight  = True
   , asmell  = False
   , aiq     = 0
-  , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
   , aitems  = [("large jaw", CBody), ("large tail", CBody), ("claw", CBody)]
   }

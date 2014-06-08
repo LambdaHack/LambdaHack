@@ -19,9 +19,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+      [amulet, bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
   }
-amulet,        bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+amulet,        bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -353,8 +353,7 @@ fist = sword
   , idesc    = ""
   }
 foot = fist
-  { isymbol  = '%'
-  , iname    = "foot"
+  { iname    = "foot"
   , ifreq    = [("foot", 50)]
   , icount   = 2
   , iverbApply   = "kick"
@@ -362,8 +361,7 @@ foot = fist
   , idesc    = ""
   }
 tentacle = fist
-  { isymbol  = '%'
-  , iname    = "tentacle"
+  { iname    = "tentacle"
   , ifreq    = [("tentacle", 50)]
   , icount   = 4
   , iverbApply   = "slap"
@@ -371,8 +369,7 @@ tentacle = fist
   , idesc    = ""
   }
 lash = fist
-  { isymbol  = '%'
-  , iname    = "lash"
+  { iname    = "lash"
   , ifreq    = [("lash", 100)]
   , icount   = 1
   , iverbApply   = "lash"
@@ -380,8 +377,7 @@ lash = fist
   , idesc    = ""
   }
 noseTip = fist
-  { isymbol  = '%'
-  , iname    = "nose tip"
+  { iname    = "nose tip"
   , ifreq    = [("nose tip", 50)]
   , icount   = 1
   , iverbApply   = "poke"
@@ -389,8 +385,7 @@ noseTip = fist
   , idesc    = ""
   }
 lip = fist
-  { isymbol  = '%'
-  , iname    = "lip"
+  { iname    = "lip"
   , ifreq    = [("lip", 10)]
   , icount   = 2
   , iverbApply   = "lap"
@@ -398,8 +393,7 @@ lip = fist
   , idesc    = ""
   }
 claw = fist
-  { isymbol  = '%'
-  , iname    = "claw"
+  { iname    = "claw"
   , ifreq    = [("claw", 50)]
   , icount   = 2  -- even if more, only the fore claws used for fighting
   , iverbApply   = "slash"
@@ -407,8 +401,7 @@ claw = fist
   , idesc    = ""
   }
 smallClaw = fist
-  { isymbol  = '%'
-  , iname    = "small claw"
+  { iname    = "small claw"
   , ifreq    = [("small claw", 50)]
   , icount   = 2
   , iverbApply   = "slash"
@@ -416,16 +409,14 @@ smallClaw = fist
   , idesc    = ""
   }
 snout = fist
-  { isymbol  = '%'
-  , iname    = "snout"
+  { iname    = "snout"
   , ifreq    = [("snout", 10)]
   , iverbApply   = "bite"
   , ieffects = [Hurt (2 * d 1) 0]
   , idesc    = ""
   }
 venomTooth = fist
-  { isymbol  = '%'
-  , iname    = "venom tooth"
+  { iname    = "venom tooth"
   , ifreq    = [("venom tooth", 100)]
   , icount   = 2
   , iverbApply   = "bite"
@@ -433,8 +424,7 @@ venomTooth = fist
   , idesc    = ""
   }
 venomFang = fist
-  { isymbol  = '%'
-  , iname    = "venom fang"
+  { iname    = "venom fang"
   , ifreq    = [("venom fang", 100)]
   , icount   = 2
   , iverbApply   = "bite"
@@ -442,8 +432,7 @@ venomFang = fist
   , idesc    = ""
   }
 largeTail = fist
-  { isymbol  = '%'
-  , iname    = "large tail"
+  { iname    = "large tail"
   , ifreq    = [("large tail", 50)]
   , icount   = 1
   , iverbApply   = "knock"
@@ -451,8 +440,7 @@ largeTail = fist
   , idesc    = ""
   }
 jaw = fist
-  { isymbol  = '%'
-  , iname    = "jaw"
+  { iname    = "jaw"
   , ifreq    = [("jaw", 20)]
   , icount   = 1
   , iverbApply   = "rip"
@@ -460,14 +448,18 @@ jaw = fist
   , idesc    = ""
   }
 largeJaw = fist
-  { isymbol  = '%'
-  , iname    = "large jaw"
+  { iname    = "large jaw"
   , ifreq    = [("large jaw", 100)]
   , icount   = 1
   , iverbApply   = "crush"
   , ieffects = [Hurt (10 * d 1) 0]
   , idesc    = ""
   }
+speedGland1 = speedGland 1
+speedGland2 = speedGland 2
+speedGland3 = speedGland 3
+speedGland4 = speedGland 4
+speedGland5 = speedGland 5
 fragrance = ItemKind
   { isymbol  = '\''
   , iname    = "fragrance"
@@ -580,5 +572,16 @@ explosionBlast n = ItemKind
   , iaspects = []
   , ieffects = [Burn (n `div` 2), DropBestWeapon]
   , ifeature = [Light n, Fragile, Linger 10]
+  , idesc    = ""
+  }
+
+speedGland :: Int -> ItemKind  -- TODO: somehow unify with amulet?
+speedGland n = fist
+  { iname    = "speed gland"
+  , ifreq    = [("speed gland" <+> tshow n, 100)]
+  , icount   = 1
+  , iverbApply   = "squeeze"
+  , iaspects = [Regeneration (intToDice $ 10 * n)]  -- TODO: also speed bonus?
+  , ieffects = []
   , idesc    = ""
   }
