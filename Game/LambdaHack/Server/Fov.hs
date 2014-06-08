@@ -18,6 +18,7 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
@@ -30,6 +31,7 @@ import Game.LambdaHack.Server.Fov.Common
 import qualified Game.LambdaHack.Server.Fov.Digital as Digital
 import qualified Game.LambdaHack.Server.Fov.Permissive as Permissive
 import qualified Game.LambdaHack.Server.Fov.Shadow as Shadow
+import Game.LambdaHack.Server.State
 
 -- | Visually reachable position (light passes through them to the actor).
 newtype PerceptionReachable = PerceptionReachable
@@ -45,16 +47,16 @@ type PersLit = EML.EnumMap LevelId PerceptionLit
 
 -- | Calculate perception of the level.
 levelPerception :: PerceptionLit -> FovMode -> FactionId
-                -> LevelId -> Level -> State
+                -> LevelId -> Level -> State -> StateServer
                 -> Perception
-levelPerception litHere fovMode fid lid lvl@Level{lxsize, lysize} s =
+levelPerception litHere fovMode fid lid lvl@Level{lxsize, lysize} s ser =
   let cops@Kind.COps{cotile, coactor=Kind.Ops{okind}} = scops s
       -- Dying actors included, to let them see their own demise.
-      ours = filter (not . bproj) $ actorList (== fid) lid s
-      cR b = preachable $ reachableFromActor cops fovMode lvl b
+      ours = filter (not . bproj . snd) $ actorAssocs (== fid) lid s
+      cR (aid, b) = preachable $ reachableFromActor cops fovMode lvl aid b s ser
       totalReachable = PerceptionReachable $ concatMap cR ours
       pAndVicinity p = p : vicinity lxsize lysize p
-      noctoBodies = map (\b -> (pAndVicinity $ bpos b, b)) ours
+      noctoBodies = map (\(_, b) -> (pAndVicinity $ bpos b, b)) ours
       nocto = concat $ map fst noctoBodies
       ptotal = visibleOnLevel cotile totalReachable litHere nocto lvl
       canSmell b = asmell $ okind $ bkind b
@@ -65,18 +67,18 @@ levelPerception litHere fovMode fid lid lvl@Level{lxsize, lysize} s =
   in Perception ptotal psmell
 
 -- | Calculate perception of a faction.
-factionPerception :: FovMode -> FactionId -> State -> PersLit
+factionPerception :: FovMode -> FactionId -> State -> StateServer -> PersLit
                   -> FactionPers
-factionPerception fovMode fid s persLit =
+factionPerception fovMode fid s ser persLit =
   let lvlPer lid lvl = let lit = persLit EML.! lid
-                       in levelPerception lit fovMode fid lid lvl s
+                       in levelPerception lit fovMode fid lid lvl s ser
   in EM.mapWithKey lvlPer $ sdungeon s
 
 -- | Calculate the perception of the whole dungeon.
-dungeonPerception :: FovMode -> State -> Pers
-dungeonPerception fovMode s =
+dungeonPerception :: FovMode -> State -> StateServer -> Pers
+dungeonPerception fovMode s ser =
   let persLit = litInDungeon fovMode s
-      f fid _ = factionPerception fovMode fid s persLit
+      f fid _ = factionPerception fovMode fid s ser persLit
   in EM.mapWithKey f $ sfactionD s
 
 -- | Compute positions visible (reachable and seen) by the party.
@@ -94,14 +96,18 @@ visibleOnLevel cotile PerceptionReachable{preachable} PerceptionLit{plit}
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
-reachableFromActor :: Kind.COps -> FovMode -> Level -> Actor
+reachableFromActor :: Kind.COps -> FovMode -> Level -> ActorId -> Actor
+                   -> State -> StateServer
                    -> PerceptionReachable
-reachableFromActor Kind.COps{cotile, coactor=Kind.Ops{okind}}
-                   fovMode lvl body =
-  let sight = asight $ okind $ bkind body
-      fovModeOrBlind = if sight then fovMode else Blind
-  in PerceptionReachable
-     $ fullscan cotile fovModeOrBlind (bradius body) (bpos body) lvl
+reachableFromActor cops@Kind.COps{cotile}
+                   fovMode lvl aid body s ser =
+  let radiusDefault = 12
+      allAssocs =
+        fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CEqp, CBody] s
+      radius = case strongestSightRadius True allAssocs of
+        [] -> radiusDefault
+        (r, _) : _ -> r
+  in PerceptionReachable $ fullscan cotile fovMode radius (bpos body) lvl
 
 litByItems :: FovMode -> Level -> Point -> State
            -> [(ItemId, (Item, KisOn))]
@@ -157,9 +163,6 @@ fullscan cotile fovMode r spectatorPos lvl = spectatorPos :
       concatMap (\tr -> map tr (Permissive.scan (isCl . tr))) tr4
     Digital ->
       concatMap (\tr -> map tr (Digital.scan r (isCl . tr))) tr4
-    Blind ->  -- all actors feel adjacent positions (for easy exploration)
-      let radiusOne = 1
-      in concatMap (\tr -> map tr (Digital.scan radiusOne (isCl . tr))) tr4
  where
   isCl :: Point -> Bool
   isCl = Tile.isClear cotile . (lvl `at`)

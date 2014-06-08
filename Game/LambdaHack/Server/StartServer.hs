@@ -49,7 +49,8 @@ import Game.LambdaHack.Server.State
 initPer :: MonadServer m => m ()
 initPer = do
   fovMode <- getsServer $ sfovMode . sdebugSer
-  pers <- getsState $ dungeonPerception (fromMaybe Digital fovMode)
+  ser <- getServer
+  pers <- getsState $ \s -> dungeonPerception (fromMaybe Digital fovMode) s ser
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
 reinitGame :: (MonadAtomic m, MonadServer m) => m ()
