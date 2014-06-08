@@ -56,6 +56,9 @@ data Aspect a =
   | Haste !Int  -- ^ positive or negative percent change
   | Regeneration !a
   | Steadfastness !a
+  | SightRadius !a
+  | SmellRadius !a
+  | Intelligence !a
   | Explode !Text  -- ^ explode, producing this group of shrapnel
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
@@ -124,6 +127,15 @@ aspectTrav (Regeneration a) f = do
 aspectTrav (Steadfastness a) f = do
   b <- f a
   return $! Steadfastness b
+aspectTrav (SightRadius a) f = do
+  b <- f a
+  return $! SightRadius b
+aspectTrav (SmellRadius a) f = do
+  b <- f a
+  return $! SmellRadius b
+aspectTrav (Intelligence a) f = do
+  b <- f a
+  return $! Intelligence b
 aspectTrav (Explode t) _ = return $! Explode t
 
 -- | Suffix to append to a basic content name if the content causes the effect.
@@ -177,6 +189,9 @@ aspectTextToSuff aspect =
     Haste p -> "of slowness" <+> affixBonus (- p)
     Regeneration t -> "of regeneration" <+> t
     Steadfastness t -> "of steadfastness" <+> t
+    SightRadius t -> "of sight" <+> t
+    SmellRadius t -> "of smell" <+> t
+    Intelligence t -> "of intelligence" <+> t
     Explode{} -> ""
 
 aspectToSuff :: Show a => Aspect a -> (a -> Text) -> Text

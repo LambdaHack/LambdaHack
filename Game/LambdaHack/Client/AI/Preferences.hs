@@ -56,3 +56,6 @@ aspectToBenefit _cops _b asp =
     Effect.Regeneration p -> p
     Effect.Steadfastness p -> p
     Effect.Explode{} -> 2
+    Effect.SightRadius p -> p * 20
+    Effect.SmellRadius p -> p * 2
+    Effect.Intelligence p -> p * 5
