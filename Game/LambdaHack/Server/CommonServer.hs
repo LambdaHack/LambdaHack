@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, deduceQuits, deduceKilled, electLeader
   , projectFail, actorConts
-  , pickWeaponServer, actorBlindServer
+  , pickWeaponServer, actorBlindServer, actorCannotSmellServer
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -328,3 +328,11 @@ actorBlindServer aid = do
         [] -> 1  -- all actors feel adjacent positions (for easy exploration)
         (r, _) : _ -> r
   return $! radiusBlind radius
+
+actorCannotSmellServer :: MonadServer m => ActorId -> m Bool
+actorCannotSmellServer aid = do
+  allAssocs <- fullAssocsServer aid [CEqp, CBody]
+  let radius = case strongestSmellRadius True allAssocs of
+        [] -> 0
+        (r, _) : _ -> r
+  return $! radius == 0

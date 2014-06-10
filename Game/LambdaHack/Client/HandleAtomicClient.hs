@@ -27,7 +27,6 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
 
@@ -234,15 +233,14 @@ cmdAtomicFilterCli cmd = case cmd of
 
 deleteSmell :: MonadClient m => ActorId -> Point -> m [UpdAtomic]
 deleteSmell aid pos = do
-  Kind.COps{coactor = Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
-  let canSmell = asmell $ okind $ bkind b
-  if canSmell then do
+  cannotSmell <- actorCannotSmellClient aid
+  if cannotSmell then return []
+  else do
     lvl <- getLevel $ blid b
     let msml = EM.lookup pos $ lsmell lvl
     return $
       maybe [] (\sml -> [UpdAlterSmell (blid b) pos (Just sml) Nothing]) msml
-  else return []
 
 -- | Effect of atomic actions on client state is calculated
 -- in the global state before the command is executed.

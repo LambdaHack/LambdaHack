@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
   , actorAbilities, updateItemSlot, fullAssocsClient, itemToFullClient
-  , pickWeaponClient, actorBlindClient
+  , pickWeaponClient, actorBlindClient, actorCannotSmellClient
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -232,3 +232,11 @@ actorBlindClient aid = do
         [] -> 1  -- all actors feel adjacent positions (for easy exploration)
         (r, _) : _ -> r
   return $! radiusBlind radius
+
+actorCannotSmellClient :: MonadClient m => ActorId -> m Bool
+actorCannotSmellClient aid = do
+  allAssocs <- fullAssocsClient aid [CEqp, CBody]
+  let radius = case strongestSmellRadius True allAssocs of
+        [] -> 0
+        (r, _) : _ -> r
+  return $! radius == 0

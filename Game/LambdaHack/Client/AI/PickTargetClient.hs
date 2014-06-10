@@ -29,7 +29,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind
 
 -- | AI proposes possible targets for the actor. Never empty.
@@ -37,7 +36,7 @@ targetStrategy :: forall m. MonadClient m
                => ActorId -> ActorId -> m (Strategy (Target, Maybe PathEtc))
 targetStrategy oldLeader aid = do
   cops@Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
-                , coactor=coactor@Kind.Ops{okind} } <- getsState scops
+                , coactor } <- getsState scops
   itemToF <- itemToFullClient
   modifyClient $ \cli -> cli { sbfsD = EM.delete aid (sbfsD cli)
                              , seps = seps cli + 773 }  -- randomize paths
@@ -101,6 +100,7 @@ targetStrategy oldLeader aid = do
   -- and only if they can shoot at the moment)
   fightsSpawners <- fightsAgainstSpawners (bfid b)
   explored <- getsClient sexplored
+  cannotSmell <- actorCannotSmellClient aid
   let meleeNearby | fightsSpawners = nearby `div` 2  -- not aggresive
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
@@ -131,7 +131,7 @@ targetStrategy oldLeader aid = do
       desirable (_, (_, Just bag)) = desirableBag bag
       -- TODO: make more common when weak ranged foes preferred, etc.
       focused = bspeed b < speedNormal || condHpTooLow
-      canSmell = asmell $ okind $ bkind b
+      canSmell = not cannotSmell
       setPath :: Target -> m (Strategy (Target, Maybe PathEtc))
       setPath tgt = do
         mpath <- createPath tgt

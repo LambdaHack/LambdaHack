@@ -27,7 +27,6 @@ warrior = ActorKind
   , ahp     = 50
   , acalm   = 50
   , aspeed  = toSpeed 2
-  , asmell  = False
   , aiq     = 15
   , acanDo  = [minBound..maxBound]
   , aitems  = [("fist", CBody), ("foot", CBody), ("eye 12", CBody)]
@@ -59,7 +58,6 @@ projectile = ActorKind  -- includes homing missiles
   , ahp     = 0
   , acalm   = 0
   , aspeed  = toSpeed 0
-  , asmell  = False
   , aiq     = 0
   , acanDo  = []
   , aitems  = []
@@ -73,7 +71,6 @@ eye = ActorKind
   , ahp     = 7 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 2
-  , asmell  = False
   , aiq     = 8
   , acanDo  = [minBound..maxBound]
   , aitems  = [("lash", CBody), ("tentacle", CBody), ("pupil", CBody)]
@@ -86,7 +83,6 @@ fastEye = ActorKind
   , ahp     = d 6
   , acalm   = 50
   , aspeed  = toSpeed 4
-  , asmell  = False
   , aiq     = 12
   , acanDo  = [minBound..maxBound]
   , aitems  = [ ("lash", CBody), ("tentacle", CBody), ("tentacle", CBody)
@@ -100,10 +96,9 @@ nose = ActorKind
   , ahp     = 17 * d 2
   , acalm   = 50
   , aspeed  = toSpeed 1.8
-  , asmell  = True
   , aiq     = 0
   , acanDo  = [minBound..maxBound]
-  , aitems  = [("nose tip", CBody), ("lip", CBody)]
+  , aitems  = [("nose tip", CBody), ("lip", CBody), ("nostril", CBody)]
   }
 
 armadillo = ActorKind
@@ -114,11 +109,10 @@ armadillo = ActorKind
   , ahp     = 8 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 1.8
-  , asmell  = True
   , aiq     = 2
   , acanDo  = [minBound..maxBound]
   , aitems  = [ ("claw", CBody), ("snout", CBody), ("armored skin", CBody)
-              , ("eye 3", CBody) ]
+              , ("eye 3", CBody), ("nostril", CBody) ]
   }
 gilaMonster = ActorKind
   { asymbol = 'g'
@@ -128,13 +122,13 @@ gilaMonster = ActorKind
   , ahp     = 4 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 1.5
-  , asmell  = True
   , aiq     = 0
   , acanDo  = [minBound..maxBound]
   , aitems  = [ ("venom tooth", CBody), ("small claw", CBody)
-              , ("speed gland 1", CBody), ("eye 12", CBody) ]
+              , ("speed gland 1", CBody)
+              , ("eye 12", CBody), ("nostril", CBody) ]
   }
-komodoDragon = ActorKind
+komodoDragon = ActorKind  -- bad hearing
   { asymbol = 'd'
   , aname   = "Komodo dragon"
   , afreq   = [("animal", 10), ("horror", 10)]
@@ -142,12 +136,11 @@ komodoDragon = ActorKind
   , ahp     = 10 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 2.5
-  , asmell  = True  -- but bad hearing
   , aiq     = 0
   , acanDo  = [minBound..maxBound]
   , aitems  = [ ("large tail", CBody), ("jaw", CBody), ("small claw", CBody)
               , ("speed gland 2", CBody), ("armored skin", CBody)
-              , ("eye 6", CBody) ]
+              , ("eye 6", CBody), ("nostril", CBody) ]
   }
 hyena = ActorKind
   { asymbol = 'h'
@@ -157,10 +150,9 @@ hyena = ActorKind
   , ahp     = 7 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 3.5
-  , asmell  = True
   , aiq     = 5
   , acanDo  = [minBound..maxBound]
-  , aitems  = [("jaw", CBody), ("eye 12", CBody)]
+  , aitems  = [("jaw", CBody), ("eye 12", CBody), ("nostril", CBody)]
   }
 alligator = ActorKind
   { asymbol = 'a'
@@ -170,7 +162,6 @@ alligator = ActorKind
   , ahp     = 12 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 1.7
-  , asmell  = False
   , aiq     = 0
   , acanDo  = [minBound..maxBound]
   , aitems  = [ ("large jaw", CBody), ("large tail", CBody), ("claw", CBody)

@@ -24,7 +24,6 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.Fov.Common
@@ -50,20 +49,28 @@ levelPerception :: PerceptionLit -> FovMode -> FactionId
                 -> LevelId -> Level -> State -> StateServer
                 -> Perception
 levelPerception litHere fovMode fid lid lvl@Level{lxsize, lysize} s ser =
-  let cops@Kind.COps{cotile, coactor=Kind.Ops{okind}} = scops s
+  let cops@Kind.COps{cotile} = scops s
       -- Dying actors included, to let them see their own demise.
       ours = filter (not . bproj . snd) $ actorAssocs (== fid) lid s
       cR (aid, b) = preachable $ reachableFromActor cops fovMode lvl aid b s ser
       totalReachable = PerceptionReachable $ concatMap cR ours
       pAndVicinity p = p : vicinity lxsize lysize p
-      noctoBodies = map (\(_, b) -> (pAndVicinity $ bpos b, b)) ours
+      noctoBodies = map (\(aid, b) -> (pAndVicinity $ bpos b, aid)) ours
       nocto = concat $ map fst noctoBodies
       ptotal = visibleOnLevel cotile totalReachable litHere nocto lvl
-      canSmell b = asmell $ okind $ bkind b
-      -- We assume smell FOV radius is always 1, regardless of vision
+      cannotSmell aid =
+        let allAssocs =
+              fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CEqp, CBody] s
+            radius = case strongestSmellRadius True allAssocs of
+              [] -> 0
+              (r, _) : _ -> r
+        in radius == 0
+      -- TODO: We assume smell FOV radius is always 1, regardless of vision
       -- radius of the actor (and whether he can see at all).
+      -- Instead, use the smell radius.
+      -- TODO: filter out tiles that are solid and so can't hold smell.
       psmell = PerceptionVisible $ ES.fromList
-               $ concat $ map fst $ filter (canSmell . snd) noctoBodies
+               $ concat $ map fst $ filter (not . cannotSmell . snd) noctoBodies
   in Perception ptotal psmell
 
 -- | Calculate perception of a faction.

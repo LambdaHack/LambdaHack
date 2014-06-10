@@ -36,7 +36,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.HandleEffectServer
@@ -111,13 +110,13 @@ switchLeader fid aidNew = do
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level. For now, only heroes
 -- leave smell.
-addSmell :: MonadAtomic m => ActorId -> m ()
+addSmell :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 addSmell aid = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  cops <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let canSmell = asmell $ okind $ bkind b
-  unless (bproj b || not (isHeroFact cops fact) || canSmell) $ do
+  cannotSmell <- actorCannotSmellServer aid
+  unless (bproj b || not (isHeroFact cops fact) || not cannotSmell) $ do
     time <- getsState $ getLocalTime $ blid b
     lvl <- getLevel $ blid b
     let oldS = EM.lookup (bpos b) . lsmell $ lvl
