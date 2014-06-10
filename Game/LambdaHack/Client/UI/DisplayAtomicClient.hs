@@ -116,8 +116,9 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
       Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
       b <- getsState $ getActorBody aid
       let ActorKind{ahp, acalm} = okind $ bkind b
-      allAssocs <- fullAssocsClient aid [CEqp, CBody]
-      hpPeriod <- getsState $ regenHPPeriod b allAssocs
+      eqpAssocs <- fullAssocsClient aid [CEqp]
+      bodyAssocs <- fullAssocsClient aid [CBody]
+      hpPeriod <- getsState $ regenHPPeriod b eqpAssocs bodyAssocs
       when ((hpPeriod <= 0 || bhp b == Dice.maxDice ahp)
             && (bcalmDelta b <= 0 || bcalm b == Dice.maxDice acalm)) $ do
         actorVerbMU aid b "recover fully"

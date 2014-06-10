@@ -254,14 +254,15 @@ drawLeaderStatus waitT width = do
                                        else ("Calm", "HP")
   case mleader of
     Just leader -> do
-      allAssocs <- fullAssocsClient leader [CEqp, CBody]
+      eqpAssocs <- fullAssocsClient leader [CEqp]
+      bodyAssocs <- fullAssocsClient leader [CBody]
       let Kind.COps{coactor=Kind.Ops{okind}} = cops
           (darkL, bracedL, hpPeriod, calmDelta,
            ahpS, bhpS, acalmS, bcalmS) =
             let b@Actor{bkind, bhp, bcalm} = getActorBody leader s
                 ActorKind{ahp, acalm} = okind bkind
             in ( not (actorInAmbient b s)
-               , braced b, regenHPPeriod b allAssocs s, bcalmDelta b
+               , braced b, regenHPPeriod b eqpAssocs bodyAssocs s, bcalmDelta b
                , tshow (Dice.maxDice ahp), tshow bhp
                , tshow (Dice.maxDice acalm), tshow bcalm )
           -- This is a valuable feedback for the otherwise hard to observe

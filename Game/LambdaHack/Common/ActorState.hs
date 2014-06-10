@@ -269,23 +269,25 @@ getLocalTime lid s = ltime $ sdungeon s EM.! lid
 isSpawnFaction :: FactionId -> State -> Bool
 isSpawnFaction fid s = isSpawnFact $ sfactionD s EM.! fid
 
-regenHPPeriod :: Actor -> [(ItemId, ItemFull)] -> State -> Int
-regenHPPeriod b allAssocs s =
+regenHPPeriod :: Actor -> [(ItemId, ItemFull)] -> [(ItemId, ItemFull)] -> State
+              -> Int
+regenHPPeriod b eqpAssocs bodyAssocs s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
-      regenPeriod = case strongestRegeneration True allAssocs of
-        (k, _) : _ -> max 1 $ 500 `div` (k + 1)
-        [] -> 0
+      regenIncr = strongestBodyEqp strongestRegeneration eqpAssocs bodyAssocs
+      regenPeriod = if regenIncr == 0
+                    then 0
+                    else max 1 $ 500 `div` (regenIncr + 1)
       maxDeltaHP = Dice.maxDice (ahp ak) - bhp b
   in if maxDeltaHP > 0 then regenPeriod else 0
 
-regenCalmDelta :: Actor -> [(ItemId, ItemFull)] -> State -> Int
-regenCalmDelta b allAssocs s =
+regenCalmDelta :: Actor -> [(ItemId, ItemFull)] -> [(ItemId, ItemFull)]
+               -> State -> Int
+regenCalmDelta b eqpAssocs bodyAssocs s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
-      calmIncr = case strongestSteadfastness True allAssocs of
-        (k, _) : _ -> k + 1
-        [] -> 1
+      calmIncr = 1 +  -- normal rate or calm regen
+                 strongestBodyEqp strongestSteadfastness eqpAssocs bodyAssocs
       maxDeltaCalm = Dice.maxDice (acalm ak) - bcalm b
       -- Worry actor by enemies felt (even if not seen)
       -- on the level within 3 tiles.

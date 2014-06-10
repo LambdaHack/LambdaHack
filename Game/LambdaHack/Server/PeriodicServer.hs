@@ -242,8 +242,9 @@ advanceTime aid = do
       dominateFid (boldfid b) aid
       execSfx
     else do
-      allAssocs <- fullAssocsServer aid [CEqp, CBody]
-      newCalmDelta <- getsState $ regenCalmDelta b allAssocs
+      eqpAssocs <- fullAssocsServer aid [CEqp]
+      bodyAssocs <- fullAssocsServer aid [CBody]
+      newCalmDelta <- getsState $ regenCalmDelta b eqpAssocs bodyAssocs
       unless (newCalmDelta == 0 && bcalmDelta b == 0) $
         execUpdAtomic $ UpdCalmActor aid newCalmDelta
 
@@ -263,8 +264,9 @@ regenerateLevelHP lid = do
   time <- getsState $ getLocalTime lid
   let turnN = time `timeFit` timeTurn
       approve (aid, b) = do
-        allAssocs <- fullAssocsServer aid [CEqp, CBody]
-        hpPeriod <- getsState $ regenHPPeriod b allAssocs
+        eqpAssocs <- fullAssocsServer aid [CEqp]
+        bodyAssocs <- fullAssocsServer aid [CBody]
+        hpPeriod <- getsState $ regenHPPeriod b eqpAssocs bodyAssocs
         return $! hpPeriod /= 0 && turnN `mod` hpPeriod == 0
   toRegen <- getsState $ actorRegularAssocs (const True) lid
   appRegen <- filterM approve toRegen
