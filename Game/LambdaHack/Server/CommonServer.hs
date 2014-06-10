@@ -4,9 +4,10 @@ module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, deduceQuits, deduceKilled, electLeader
   , projectFail, actorConts
-  , pickWeaponServer, actorBlindServer, actorCannotSmellServer
+  , pickWeaponServer, strongestServer
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Lazy as EML
@@ -227,7 +228,8 @@ projectFail source tpxy eps iid cstore isShrapnel = do
         then return $ Just ProjectBlockTerrain
         else do
           mab <- getsState $ posToActor pos lid
-          actorBlind <- actorBlindServer source
+          actorBlind <- radiusBlind
+                        <$> strongestServer strongestSightRadius source
           if not $ maybe True (bproj . snd . fst) mab
             then if isShrapnel then do
                    -- Hit the blocking actor.
@@ -321,18 +323,10 @@ pickWeaponServer source = do
       (iid, _) <- rndToAction $ oneOf maxIis
       return $! iid
 
-actorBlindServer :: MonadServer m => ActorId -> m Bool
-actorBlindServer aid = do
-  allAssocs <- fullAssocsServer aid [CEqp, CBody]
-  let radius = case strongestSightRadius True allAssocs of
-        [] -> 1  -- all actors feel adjacent positions (for easy exploration)
-        (r, _) : _ -> r
-  return $! radiusBlind radius
-
-actorCannotSmellServer :: MonadServer m => ActorId -> m Bool
-actorCannotSmellServer aid = do
-  allAssocs <- fullAssocsServer aid [CEqp, CBody]
-  let radius = case strongestSmellRadius True allAssocs of
-        [] -> 0
-        (r, _) : _ -> r
-  return $! radius == 0
+strongestServer :: MonadServer m
+                => (Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))])
+                -> ActorId -> m Int
+strongestServer f aid = do
+  eqpAssocs <- fullAssocsServer aid [CEqp]
+  bodyAssocs <- fullAssocsServer aid [CBody]
+  return $! strongestBodyEqp f eqpAssocs bodyAssocs

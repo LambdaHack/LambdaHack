@@ -13,7 +13,7 @@ module Game.LambdaHack.Common.ActorState
   , tryFindHeroK, getLocalTime, isSpawnFaction
   , itemPrice, calmEnough, regenHPPeriod, regenCalmDelta
   , actorShines, actorInAmbient, dispEnemy, radiusBlind
-  , fullAssocs, itemToFull
+  , fullAssocs, itemToFull, strongestBodyEqp
   ) where
 
 import Control.Arrow (second)
@@ -330,7 +330,7 @@ dispEnemy sb tb s =
 -- is assumed to use a combination of peripherial vision, hearing, etc.,
 -- and not the actual focused, long-distance sight sense.
 radiusBlind :: Int -> Bool
-radiusBlind radius = radius < 4
+radiusBlind strongestSight = strongestSight < 3
 
 fullAssocs :: Kind.COps -> Discovery -> DiscoAE
            -> ActorId -> [CStore] -> State
@@ -351,3 +351,13 @@ itemToFull Kind.COps{coitem=Kind.Ops{okind}}
                                          , itemKind = okind itemKindId
                                          , itemAE = EM.lookup iid discoAE }
   in ItemFull {..}
+
+strongestBodyEqp :: (Bool
+                     -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))])
+                 -> [(ItemId, ItemFull)] -> [(ItemId, ItemFull)]
+                 -> Int
+strongestBodyEqp f eqpAssocs bodyAssocs =
+  let maxF ass = case f True ass of
+        [] -> 0
+        (x, _) : _ -> x
+  in maxF bodyAssocs + maxF eqpAssocs

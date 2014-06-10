@@ -381,7 +381,7 @@ ranged aid = do
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
       let mk = okind bkind
-      actorBlind <- actorBlindClient aid
+      actorBlind <- radiusBlind <$> strongestClient strongestSightRadius aid
       mnewEps <- makeLine b fpos seps
       case mnewEps of
         Just newEps | not actorBlind  -- ProjectBlind
@@ -418,7 +418,7 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid | QuenchLight
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
-  actorBlind <- actorBlindClient aid
+  actorBlind <- radiusBlind <$> strongestClient strongestSightRadius aid
   let permitted | applyGroup == QuenchLight = "("
                 | actorBlind = "!"
                 | otherwise = "!?"

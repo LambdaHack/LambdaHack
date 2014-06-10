@@ -289,7 +289,8 @@ projectPos ts tpos = do
           if not $ Tile.isWalkable cotile t
             then failSer ProjectBlockTerrain
             else do
-              actorBlind <- actorBlindClient leader
+              actorBlind <- radiusBlind
+                            <$> strongestClient strongestSightRadius leader
               mab <- getsState $ posToActor pos lid
               if maybe True (bproj . snd . fst) mab
               then if actorBlind

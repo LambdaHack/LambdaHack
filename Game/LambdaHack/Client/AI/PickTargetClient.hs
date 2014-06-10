@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -100,8 +101,9 @@ targetStrategy oldLeader aid = do
   -- and only if they can shoot at the moment)
   fightsSpawners <- fightsAgainstSpawners (bfid b)
   explored <- getsClient sexplored
-  cannotSmell <- actorCannotSmellClient aid
-  let meleeNearby | fightsSpawners = nearby `div` 2  -- not aggresive
+  smellRadius <- strongestClient strongestSmellRadius aid
+  let canSmell = smellRadius > 0
+      meleeNearby | fightsSpawners = nearby `div` 2  -- not aggresive
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
       targetableMelee body =
@@ -131,7 +133,6 @@ targetStrategy oldLeader aid = do
       desirable (_, (_, Just bag)) = desirableBag bag
       -- TODO: make more common when weak ranged foes preferred, etc.
       focused = bspeed b < speedNormal || condHpTooLow
-      canSmell = not cannotSmell
       setPath :: Target -> m (Strategy (Target, Maybe PathEtc))
       setPath tgt = do
         mpath <- createPath tgt

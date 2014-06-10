@@ -18,6 +18,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -234,8 +235,8 @@ cmdAtomicFilterCli cmd = case cmd of
 deleteSmell :: MonadClient m => ActorId -> Point -> m [UpdAtomic]
 deleteSmell aid pos = do
   b <- getsState $ getActorBody aid
-  cannotSmell <- actorCannotSmellClient aid
-  if cannotSmell then return []
+  smellRadius <- strongestClient strongestSmellRadius aid
+  if smellRadius == 0 then return []
   else do
     lvl <- getLevel $ blid b
     let msml = EM.lookup pos $ lsmell lvl

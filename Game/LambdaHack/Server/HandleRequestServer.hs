@@ -115,8 +115,8 @@ addSmell aid = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  cannotSmell <- actorCannotSmellServer aid
-  unless (bproj b || not (isHeroFact cops fact) || not cannotSmell) $ do
+  smellRadius <- strongestServer strongestSmellRadius aid
+  unless (bproj b || not (isHeroFact cops fact) || smellRadius > 0) $ do
     time <- getsState $ getLocalTime $ blid b
     lvl <- getLevel $ blid b
     let oldS = EM.lookup (bpos b) . lsmell $ lvl

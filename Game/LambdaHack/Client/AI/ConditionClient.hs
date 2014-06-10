@@ -21,6 +21,7 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , fleeList
   ) where
 
+import Control.Applicative
 import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
@@ -143,7 +144,7 @@ condCanProjectM aid = do
                    then ritemProject
                    else ritemRanged)
                   $ Kind.stdRuleset corule
-  actorBlind <- actorBlindClient aid
+  actorBlind <- radiusBlind <$> strongestClient strongestSightRadius aid
   benList <- benAvailableItems aid permitted
   let missiles = filter (maybe True (< 0) . fst . fst) benList
   return $ not actorBlind && calmEnough b ak && not (null missiles)

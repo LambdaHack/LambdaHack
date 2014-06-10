@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
   , actorAbilities, updateItemSlot, fullAssocsClient, itemToFullClient
-  , pickWeaponClient, actorBlindClient, actorCannotSmellClient
+  , pickWeaponClient, strongestClient
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -225,18 +225,10 @@ pickWeaponClient source target = do
       (iid, _) <- rndToAction $ oneOf maxIis
       return $! ReqMelee target iid
 
-actorBlindClient :: MonadClient m => ActorId -> m Bool
-actorBlindClient aid = do
-  allAssocs <- fullAssocsClient aid [CEqp, CBody]
-  let radius = case strongestSightRadius True allAssocs of
-        [] -> 1  -- all actors feel adjacent positions (for easy exploration)
-        (r, _) : _ -> r
-  return $! radiusBlind radius
-
-actorCannotSmellClient :: MonadClient m => ActorId -> m Bool
-actorCannotSmellClient aid = do
-  allAssocs <- fullAssocsClient aid [CEqp, CBody]
-  let radius = case strongestSmellRadius True allAssocs of
-        [] -> 0
-        (r, _) : _ -> r
-  return $! radius == 0
+strongestClient :: MonadClient m
+                => (Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))])
+                -> ActorId -> m Int
+strongestClient f aid = do
+  eqpAssocs <- fullAssocsClient aid [CEqp]
+  bodyAssocs <- fullAssocsClient aid [CBody]
+  return $! strongestBodyEqp f eqpAssocs bodyAssocs

@@ -58,19 +58,19 @@ levelPerception litHere fovMode fid lid lvl@Level{lxsize, lysize} s ser =
       noctoBodies = map (\(aid, b) -> (pAndVicinity $ bpos b, aid)) ours
       nocto = concat $ map fst noctoBodies
       ptotal = visibleOnLevel cotile totalReachable litHere nocto lvl
-      cannotSmell aid =
-        let allAssocs =
-              fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CEqp, CBody] s
-            radius = case strongestSmellRadius True allAssocs of
-              [] -> 0
-              (r, _) : _ -> r
-        in radius == 0
+      canSmell aid =
+        let eqpAssocs =
+              fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CEqp] s
+            bodyAssocs =
+              fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CBody] s
+            radius = strongestBodyEqp strongestSmellRadius eqpAssocs bodyAssocs
+        in radius > 0
       -- TODO: We assume smell FOV radius is always 1, regardless of vision
       -- radius of the actor (and whether he can see at all).
       -- Instead, use the smell radius.
       -- TODO: filter out tiles that are solid and so can't hold smell.
       psmell = PerceptionVisible $ ES.fromList
-               $ concat $ map fst $ filter (not . cannotSmell . snd) noctoBodies
+               $ concat $ map fst $ filter (canSmell . snd) noctoBodies
   in Perception ptotal psmell
 
 -- | Calculate perception of a faction.
@@ -108,11 +108,12 @@ reachableFromActor :: Kind.COps -> FovMode -> Level -> ActorId -> Actor
                    -> PerceptionReachable
 reachableFromActor cops@Kind.COps{cotile}
                    fovMode lvl aid body s ser =
-  let allAssocs =
-        fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CEqp, CBody] s
-      radius = case strongestSightRadius True allAssocs of
-        [] -> 1  -- all actors feel adjacent positions (for easy exploration)
-        (r, _) : _ -> r
+  let eqpAssocs =
+        fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CEqp] s
+      bodyAssocs =
+        fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CBody] s
+      radius = 1 +  -- all actors feel adjacent positions (for easy exploration)
+               strongestBodyEqp strongestSightRadius eqpAssocs bodyAssocs
   in PerceptionReachable $ fullscan cotile fovMode radius (bpos body) lvl
 
 litByItems :: FovMode -> Level -> Point -> State
