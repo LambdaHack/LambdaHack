@@ -55,7 +55,6 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
 
 -- * Move and Run
@@ -157,26 +156,22 @@ meleeAid target = do
 displaceAid :: MonadClientUI m
             => ActorId -> m (SlideOrCmd (RequestTimed AbDisplace))
 displaceAid target = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  cops <- getsState scops
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
-  let friendlyFid fid = fid == bfid tb || isAllied tfact fid
-  sup <- getsState $ actorRegularList friendlyFid (blid tb)
+  disp <- getsState $ dispEnemy sb tb
   let spos = bpos sb
       tpos = bpos tb
       adj = checkAdjacent sb tb
       atWar = isAtWar tfact (bfid sb)
-      ak = okind $ bkind tb
   if not adj then failSer DisplaceDistant
   else if not (bproj tb) && atWar
           && actorDying tb then failSer DisplaceDying
   else if not (bproj tb) && atWar
           && braced tb then failSer DisplaceBraced
-  else if not (bproj tb) && atWar
-          && aiq ak > 12
-          && any (adjacent tpos . bpos) sup then failSer DisplaceSupported
+  else if not disp && atWar then failSer DisplaceSupported
   else do
     let lid = blid sb
     lvl <- getLevel lid

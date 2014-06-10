@@ -58,7 +58,7 @@ data Aspect a =
   | Steadfastness !a
   | SightRadius !a
   | SmellRadius !a
-  | Intelligence !a
+  | Intelligence !a  -- TODO: try to use actor abilities instead
   | Explode !Text  -- ^ explode, producing this group of shrapnel
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 

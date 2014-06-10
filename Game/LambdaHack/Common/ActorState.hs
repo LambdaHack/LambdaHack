@@ -312,7 +312,7 @@ actorInAmbient b s =
       lvl = (EM.! blid b) . sdungeon $ s
   in Tile.isLit cotile (lvl `at` bpos b)
 
--- Check whether an actor can displace another.
+-- Check whether an actor can displace an enemy. We assume they are adjacent.
 dispEnemy :: Actor -> Actor -> State -> Bool
 dispEnemy sb tb s =
   let hasSupport b =

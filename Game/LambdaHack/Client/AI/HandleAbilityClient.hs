@@ -45,7 +45,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
@@ -419,13 +418,10 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid | QuenchLight
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  b <- getsState $ getActorBody aid
-  let mk = okind $ bkind b
-      permitted | applyGroup == QuenchLight = "("
-                | aiq mk < 5 = ""
-                | aiq mk < 10 = "!"
-                | otherwise = "!?"  -- literacy required
+  actorBlind <- actorBlindClient aid
+  let permitted | applyGroup == QuenchLight = "("
+                | actorBlind = "!"
+                | otherwise = "!?"
   benList <- benAvailableItems aid permitted
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
