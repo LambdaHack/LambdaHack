@@ -1,6 +1,9 @@
 -- | Monsters and heroes for LambdaHack.
 module Content.ActorKind ( cdefs ) where
 
+import Data.List
+
+import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
@@ -104,7 +107,7 @@ armadillo = ActorKind
   , ahp     = 8 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 1.8
-  , acanDo  = [minBound..maxBound]
+  , acanDo  = delete AbTrigger [minBound..maxBound]
   , aitems  = [ ("claw", CBody), ("snout", CBody), ("armored skin", CBody)
               , ("eye 3", CBody), ("nostril", CBody) ]
   }
@@ -116,7 +119,7 @@ gilaMonster = ActorKind
   , ahp     = 4 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 1.5
-  , acanDo  = [minBound..maxBound]
+  , acanDo  = delete AbTrigger [minBound..maxBound]
   , aitems  = [ ("venom tooth", CBody), ("small claw", CBody)
               , ("speed gland 1", CBody)
               , ("eye 12", CBody), ("nostril", CBody) ]

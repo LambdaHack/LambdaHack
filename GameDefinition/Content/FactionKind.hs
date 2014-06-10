@@ -66,6 +66,6 @@ meleeAdjacent = [AbWait, AbMelee]
 
 _meleeAndRanged = [AbWait, AbMelee, AbProject]  -- melee and reaction fire
 
-animalAbility = [AbMove, AbMelee, AbWait, AbTrigger]
+animalAbility = [AbMove, AbMelee, AbAlter, AbWait, AbTrigger]
 
 allAbilities = [minBound..maxBound]
