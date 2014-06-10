@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
   , actorAbilities, updateItemSlot, fullAssocsClient, itemToFullClient
-  , pickWeaponClient
+  , pickWeaponClient, actorBlindClient
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -224,3 +224,11 @@ pickWeaponClient source target = do
       -- TODO: pick the item according to the frequency of its kind.
       (iid, _) <- rndToAction $ oneOf maxIis
       return $! ReqMelee target iid
+
+actorBlindClient :: MonadClient m => ActorId -> m Bool
+actorBlindClient aid = do
+  allAssocs <- fullAssocsClient aid [CEqp, CBody]
+  let radius = case strongestSightRadius True allAssocs of
+        [] -> 1  -- all actors feel adjacent positions (for easy exploration)
+        (r, _) : _ -> r
+  return $! radiusBlind radius

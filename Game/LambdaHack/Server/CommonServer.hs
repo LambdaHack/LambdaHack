@@ -3,7 +3,8 @@
 module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, deduceQuits, deduceKilled, electLeader
-  , projectFail, actorConts, pickWeaponServer
+  , projectFail, actorConts
+  , pickWeaponServer, actorBlindServer
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -226,6 +227,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
         then return $ Just ProjectBlockTerrain
         else do
           mab <- getsState $ posToActor pos lid
+          actorBlind <- actorBlindServer source
           if not $ maybe True (bproj . snd . fst) mab
             then if isShrapnel then do
                    -- Hit the blocking actor.
@@ -234,7 +236,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
                  else return $ Just ProjectBlockActor
             else if not (isShrapnel || calmEnough sb kind) then
                    return $ Just ProjectNotCalm
-                 else if not (asight kind || bproj sb) then
+                 else if actorBlind && not (bproj sb) then
                    return $ Just ProjectBlind
                  else do
                    if isShrapnel && eps `mod` 2 == 0 then
@@ -318,3 +320,11 @@ pickWeaponServer source = do
       -- TODO: pick the item according to the frequency of its kind.
       (iid, _) <- rndToAction $ oneOf maxIis
       return $! iid
+
+actorBlindServer :: MonadServer m => ActorId -> m Bool
+actorBlindServer aid = do
+  allAssocs <- fullAssocsServer aid [CEqp, CBody]
+  let radius = case strongestSightRadius True allAssocs of
+        [] -> 1  -- all actors feel adjacent positions (for easy exploration)
+        (r, _) : _ -> r
+  return $! radiusBlind radius

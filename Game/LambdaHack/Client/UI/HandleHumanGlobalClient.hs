@@ -294,9 +294,10 @@ projectPos ts tpos = do
           if not $ Tile.isWalkable cotile t
             then failSer ProjectBlockTerrain
             else do
+              actorBlind <- actorBlindClient leader
               mab <- getsState $ posToActor pos lid
               if maybe True (bproj . snd . fst) mab
-              then if not (asight $ okind $ bkind sb)
+              then if actorBlind
                    then failSer ProjectBlind
                    else projectEps ts tpos eps
               else failSer ProjectBlockActor

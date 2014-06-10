@@ -46,7 +46,6 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.RuleKind
 
 -- | Require that the target enemy is visible by the party.
@@ -144,9 +143,11 @@ condCanProjectM aid = do
                    then ritemProject
                    else ritemRanged)
                   $ Kind.stdRuleset corule
+  actorBlind <- actorBlindClient aid
   benList <- benAvailableItems aid permitted
   let missiles = filter (maybe True (< 0) . fst . fst) benList
-  return $ asight ak && calmEnough b ak && not (null missiles)  -- keep it lazy
+  return $ not actorBlind && calmEnough b ak && not (null missiles)
+    -- keep it lazy
 
 -- | Produce the benefit-sorted list of items with a given symbol
 -- available to the actor.

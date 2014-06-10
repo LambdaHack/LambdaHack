@@ -382,9 +382,10 @@ ranged aid = do
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
       let mk = okind bkind
+      actorBlind <- actorBlindClient aid
       mnewEps <- makeLine b fpos seps
       case mnewEps of
-        Just newEps | asight mk  -- ProjectBlind
+        Just newEps | not actorBlind  -- ProjectBlind
                       && calmEnough b mk -> do  -- ProjectNotCalm
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.

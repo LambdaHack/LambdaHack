@@ -101,11 +101,10 @@ reachableFromActor :: Kind.COps -> FovMode -> Level -> ActorId -> Actor
                    -> PerceptionReachable
 reachableFromActor cops@Kind.COps{cotile}
                    fovMode lvl aid body s ser =
-  let radiusDefault = 12
-      allAssocs =
+  let allAssocs =
         fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CEqp, CBody] s
       radius = case strongestSightRadius True allAssocs of
-        [] -> radiusDefault
+        [] -> 1  -- all actors feel adjacent positions (for easy exploration)
         (r, _) : _ -> r
   in PerceptionReachable $ fullscan cotile fovMode radius (bpos body) lvl
 

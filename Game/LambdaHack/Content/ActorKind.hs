@@ -26,7 +26,6 @@ data ActorKind = ActorKind
   , aspeed  :: !Speed      -- ^ natural speed in m/s
   , ahp     :: !Dice.Dice  -- ^ encodes initial and maximal hp
   , acalm   :: !Dice.Dice  -- ^ encodes initial and maximal calm
-  , asight  :: !Bool       -- ^ can it see?
   , asmell  :: !Bool       -- ^ can it smell?
   , aiq     :: !Int        -- ^ intelligence
   , acanDo  :: ![Ability]  -- ^ the set of supported abilities
@@ -41,7 +40,7 @@ data ActorKind = ActorKind
 -- and initial values that don't play any role afterwards.
 validateActorKind :: [ActorKind] -> [ActorKind]
 validateActorKind l =
-  let behaviour ka = (aspeed ka, ahp ka, acalm ka, asight ka, asmell ka,
+  let behaviour ka = (aspeed ka, ahp ka, acalm ka, asmell ka,
                       aiq ka, sort $ acanDo ka)
       sortedBehaviour = sortBy (Ord.comparing behaviour) l
       nubbedBehaviour = nubBy ((==) `on` behaviour) sortedBehaviour
