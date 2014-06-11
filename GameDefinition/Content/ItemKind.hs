@@ -19,9 +19,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+      [amulet, bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
   }
-amulet,        bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+amulet,        bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -160,6 +160,20 @@ jumpingPole = ItemKind
   , ieffects = [InsertMove 2]  -- TODO: implement with timed speed instead
   , ifeature = [Consumable]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
+  }
+monocle = ItemKind
+  { isymbol  = '['  -- TODO: a hack
+  , iname    = "monocle"
+  , ifreq    = [("useful", 2)]
+  , iflavour = zipPlain [White]
+  , icount   = 1
+  , iverbApply   = "focus"
+  , iverbProject = "toss"
+  , iweight  = 50
+  , iaspects = [SightRadius $ d 3]
+  , ieffects = []
+  , ifeature = []
+  , idesc    = "Brings that extra sharpness to your weaker eye."
   }
 net = ItemKind
   { isymbol  = '|'

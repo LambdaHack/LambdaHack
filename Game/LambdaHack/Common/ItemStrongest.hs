@@ -207,5 +207,6 @@ strengthSymbol cops@Kind.COps{corule} c =
     '\"' -> strengthRegeneration
     '=' -> strengthSteadfastness
     _ | c `elem` "(~" -> strengthLight . itemBase
-    _ | c `elem` "[]" -> strengthArmor
+    _ | c `elem` "[" -> strengthArmor
+    _ | c `elem` "]" -> strengthSightRadius  -- TODO: hack
     _ -> \_ -> []
