@@ -18,9 +18,9 @@ cdefs = ContentDef
   , getFreq = afreq
   , validate = validateActorKind
   , content =
-      [warrior, adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, armadillo, gilaMonster, komodoDragon, hyena, alligator]
+      [warrior, adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, thornbush]
   }
-warrior,        adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, armadillo, gilaMonster, komodoDragon, hyena, alligator :: ActorKind
+warrior,        adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, thornbush :: ActorKind
 
 warrior = ActorKind
   { asymbol = '@'
@@ -98,6 +98,20 @@ nose = ActorKind
   , acanDo  = [minBound..maxBound]
   , aitems  = [("nose tip", CBody), ("lip", CBody), ("nostril", CBody)]
   }
+elbow = ActorKind
+  { asymbol = 'e'
+  , aname   = "ground elbow"
+  , afreq   = [("monster", 20), ("horror", 20)]
+  , acolor  = Magenta
+  , ahp     = 12 * d 2
+  , acalm   = 50
+  , aspeed  = toSpeed 2
+  , acanDo  = [AbWait, AbMoveItem, AbProject, AbApply]
+  , aitems  = [ ("eye 15", CBody), ("armored skin", CBody)
+              , ("speed gland 2", CBody)
+              , ("scroll", CEqp), ("scroll", CEqp), ("scroll", CEqp)
+              , ("dart", CEqp), ("fine dart", CEqp) ]  -- TODO: arrows
+  }
 
 armadillo = ActorKind
   { asymbol = 'a'
@@ -159,4 +173,15 @@ alligator = ActorKind
   , acanDo  = [minBound..maxBound]
   , aitems  = [ ("large jaw", CBody), ("large tail", CBody), ("claw", CBody)
               , ("armored skin", CBody), ("eye 12", CBody) ]
+  }
+thornbush = ActorKind
+  { asymbol = 't'
+  , aname   = "thornbush"
+  , afreq   = [("animal", 10), ("horror", 10)]
+  , acolor  = Brown
+  , ahp     = 8 * d 4
+  , acalm   = 50
+  , aspeed  = toSpeed 2
+  , acanDo  = [AbWait, AbMelee]
+  , aitems  = [ ("thorn", CBody), ("armored skin", CBody) ]
   }
