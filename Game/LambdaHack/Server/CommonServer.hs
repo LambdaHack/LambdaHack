@@ -308,7 +308,7 @@ addProjectile bpos rest iid blid bfid btime = do
 
 -- Server has to pick a random weapon or it could leak item discovery
 -- information.
-pickWeaponServer :: MonadServer m => ActorId -> m ItemId
+pickWeaponServer :: MonadServer m => ActorId -> m (Maybe ItemId)
 pickWeaponServer source = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
@@ -316,12 +316,12 @@ pickWeaponServer source = do
   let strongest | bproj sb = map (1,) allAssocs
                 | otherwise = strongestSword cops True allAssocs
   case strongest of
-    [] -> assert `failure` (source, allAssocs)
+    [] -> return Nothing
     iis -> do
       let maxIis = map snd iis
       -- TODO: pick the item according to the frequency of its kind.
       (iid, _) <- rndToAction $ oneOf maxIis
-      return $! iid
+      return $ Just iid
 
 strongestServer :: MonadServer m
                 => (Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))])

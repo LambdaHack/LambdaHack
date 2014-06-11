@@ -213,17 +213,17 @@ itemToFullClient = do
 -- Client has to choose the weapon based on its partial knowledge,
 -- because if server chose it, it would leak item discovery information.
 pickWeaponClient :: MonadClient m
-                 => ActorId -> ActorId -> m (RequestTimed AbMelee)
+                 => ActorId -> ActorId -> m [RequestTimed AbMelee]
 pickWeaponClient source target = do
   cops <- getsState scops
   allAssocs <- fullAssocsClient source [CEqp, CBody]
   case strongestSword cops True allAssocs of
-    [] -> assert `failure` (source, target, allAssocs)
+    [] -> return []
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
       -- TODO: pick the item according to the frequency of its kind.
       (iid, _) <- rndToAction $ oneOf maxIis
-      return $! ReqMelee target iid
+      return $! [ReqMelee target iid]
 
 strongestClient :: MonadClient m
                 => (Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))])

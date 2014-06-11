@@ -295,7 +295,7 @@ meleeBlocker aid = do
                     && AbMove `elem` actorAbs  -- blocked move
                     && bhp body2 < bhp b) then do -- respect power
             mel <- pickWeaponClient aid aid2
-            return $! returN "melee in the way" mel
+            return $! liftFrequency $ uniformFreq "melee in the way" mel
           else return reject
         Nothing -> return reject
     _ -> return reject  -- probably no path to the enemy, if any
@@ -309,7 +309,7 @@ meleeAny aid = do
   let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
   mels <- mapM (pickWeaponClient aid . fst) adjFoes
       -- TODO: prioritize somehow
-  let freq = uniformFreq "melee adjacent" mels
+  let freq = uniformFreq "melee adjacent" $ concat mels
   return $ liftFrequency freq
 
 -- Fast monsters don't pay enough attention to features.
@@ -609,14 +609,20 @@ moveOrRunAid run source dir = do
              || dEnemy)  -- DisplaceDying, DisplaceSupported
       then
         return $! RequestAnyAbility $ ReqDisplace target
-      else
-        -- If cannot displace, hit.
-        RequestAnyAbility <$> pickWeaponClient source target
-    ((target, _), _) : _ ->  -- can be a foe, as well as a friend (e.g., proj.)
+      else do
+        -- If cannot displace, hit. TODO: unless melee or wait not permitted.
+        wps <- pickWeaponClient source target
+        case wps of
+          [] -> return $! RequestAnyAbility ReqWait
+          wp : _ -> return $! RequestAnyAbility wp
+    ((target, _), _) : _ -> do  -- can be a foe, as well as friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
       -- Attacking does not require full access, adjacency is enough.
-      RequestAnyAbility <$> pickWeaponClient source target
+      wps <- pickWeaponClient source target
+      case wps of
+        [] -> return $! RequestAnyAbility ReqWait
+        wp : _ -> return $! RequestAnyAbility wp
     [] -> do  -- move or search or alter
       if accessible cops lvl spos tpos then
         -- Movement requires full access.
