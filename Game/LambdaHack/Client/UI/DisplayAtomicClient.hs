@@ -664,6 +664,7 @@ strike source target iid hitStatus = assert (source /= target) $ do
                         , MU.SubjectVerbSg tpart "block"
                         , if n > 1 then "doggedly" else "partly"
                         ]
+-- TODO: when other armor is in, etc.:
 --      msg HitSluggish =
 --        let adv = MU.Phrase ["sluggishly", verb]
 --        in makeSentence $ [MU.SubjectVerbSg spart adv, tpart]

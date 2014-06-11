@@ -115,9 +115,7 @@ moveRunHuman run dir = do
         -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do
           cops <- getsState scops
-          if isAllMoveFact cops fact then
-            failWith
-              "factions that move concurrently cannot manually change leaders"
+          if isAllMoveFact cops fact then failWith msgCannotChangeLeader
           else do
             -- Select adjacent actor by bumping into him. Takes no time.
             success <- pickLeader True target

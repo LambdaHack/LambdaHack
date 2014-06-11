@@ -1,7 +1,7 @@
 -- | Inventory management and party cycling.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( failMsg
+  ( failMsg, msgCannotChangeLeader
   , getGroupItem, getAnyItem, getStoreItem
   , memberCycle, memberBack, pickLeader
   ) where
@@ -314,8 +314,7 @@ memberCycle verbose = do
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
   case filter (\(_, b) -> blid b == blid body) hs of
-    _ | isAllMoveFact cops fact ->
-      failMsg "factions that move concurrently cannot manually change leaders"
+    _ | isAllMoveFact cops fact -> failMsg msgCannotChangeLeader
     [] -> failMsg "Cannot pick any other member on this level."
     (np, b) : _ -> do
       success <- pickLeader verbose np
@@ -331,13 +330,15 @@ memberBack verbose = do
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
   case reverse hs of
-    _ | isAllMoveFact cops fact ->
-      failMsg "factions that move concurrently cannot manually change leaders"
+    _ | isAllMoveFact cops fact -> failMsg msgCannotChangeLeader
     [] -> failMsg "No other member in the party."
     (np, b) : _ -> do
       success <- pickLeader verbose np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
       return mempty
+
+msgCannotChangeLeader :: Msg
+msgCannotChangeLeader = "leader change is automatic for your team"
 
 partyAfterLeader :: MonadStateRead m => ActorId -> m [(ActorId, Actor)]
 partyAfterLeader leader = do

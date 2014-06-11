@@ -83,8 +83,7 @@ pickLeaderHuman k = do
   fact <- getsState $ (EM.! side) . sfactionD
   s <- getState
   case tryFindHeroK s side k of
-    _ | isAllMoveFact cops fact ->
-      failMsg "factions that move concurrently cannot manually change leaders"
+    _ | isAllMoveFact cops fact -> failMsg msgCannotChangeLeader
     Nothing -> failMsg "No such member of the party."
     Just (aid, _) -> do
       void $ pickLeader True aid
