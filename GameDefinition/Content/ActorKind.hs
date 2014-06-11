@@ -101,16 +101,16 @@ nose = ActorKind
 elbow = ActorKind
   { asymbol = 'e'
   , aname   = "ground elbow"
-  , afreq   = [("monster", 20), ("horror", 20)]
+  , afreq   = [("monster", 10), ("horror", 20)]
   , acolor  = Magenta
-  , ahp     = 12 * d 2
+  , ahp     = 15 * d 2
   , acalm   = 50
-  , aspeed  = toSpeed 2
-  , acanDo  = [AbWait, AbMoveItem, AbProject, AbApply]
+  , aspeed  = toSpeed 1.5
+  , acanDo  = delete AbMelee [minBound..maxBound]
   , aitems  = [ ("eye 15", CBody), ("armored skin", CBody)
               , ("speed gland 2", CBody)
               , ("any scroll", CEqp), ("any scroll", CEqp), ("any scroll", CEqp)
-              , ("any arrow", CEqp), ("any arrow", CEqp) ]
+              , ("any arrow", CEqp), ("any arrow", CEqp), ("any arrow", CEqp) ]
   }
 
 armadillo = ActorKind
