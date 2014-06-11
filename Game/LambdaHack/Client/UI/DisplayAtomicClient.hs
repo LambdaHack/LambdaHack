@@ -119,7 +119,8 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
       eqpAssocs <- fullAssocsClient aid [CEqp]
       bodyAssocs <- fullAssocsClient aid [CBody]
       hpPeriod <- getsState $ regenHPPeriod b eqpAssocs bodyAssocs
-      when ((hpPeriod <= 0 || bhp b == Dice.maxDice ahp)
+      when ((bhp b == Dice.maxDice ahp || bcalm b == Dice.maxDice acalm)
+            && (hpPeriod <= 0 || bhp b == Dice.maxDice ahp)
             && (bcalmDelta b <= 0 || bcalm b == Dice.maxDice acalm)) $ do
         actorVerbMU aid b "recover fully"
         stopPlayBack
