@@ -641,34 +641,37 @@ strike source target iid hitStatus = assert (source /= target) $ do
   tpart <- partActorLeader target tb
   spronoun <- partPronounLeader source sb
   let itemFull = itemToF iid (1, True)
-      (verb, withWhat) | bproj sb = ("hit", False)
-                       | otherwise =
-        case itemDisco itemFull of
-          Nothing -> ("hit", True)  -- not identified
-          Just ItemDisco{itemKind} -> (iverbApply itemKind, True)
+      verb | bproj sb = "hit"
+           | otherwise = case itemDisco itemFull of
+                           Nothing -> "hit"  -- not identified
+                           Just ItemDisco{itemKind} -> iverbApply itemKind
       isBodyPart = iid `EM.member` bbody sb
       partItemChoice = if isBodyPart
                        then partItemWownW spronoun
                        else partItemAW
-      msg MissBlock =
+      msg HitClear = makeSentence $
+        [MU.SubjectVerbSg spart verb, tpart]
+        ++ if bproj sb
+           then []
+           else ["with", partItemChoice itemFull]
+      msg (HitBlock n) =
         let sActs =
-              if withWhat
-              then [ MU.SubjectVerbSg spart "swing"
+              if bproj sb
+              then [ MU.SubjectVerbSg spart "connect" ]
+              else [ MU.SubjectVerbSg spart "swing"
                    , partItemChoice itemFull ]
-              else [ MU.SubjectVerbSg spart "connect" ]
         in makeSentence [ MU.Phrase sActs MU.:> ", but"
                         , MU.SubjectVerbSg tpart "block"
-                        , "partially"
+                        , if n > 1 then "doggedly" else "partly"
                         ]
-      msg _ = makeSentence $
-        [MU.SubjectVerbSg spart verb, tpart]
-        ++ if withWhat
-           then ["with", partItemChoice itemFull]
-           else []
+--      msg HitSluggish =
+--        let adv = MU.Phrase ["sluggishly", verb]
+--        in makeSentence $ [MU.SubjectVerbSg spart adv, tpart]
+--                          ++ ["with", partItemChoice itemFull]
   msgAdd $ msg hitStatus
   let ps = (bpos tb, bpos sb)
-      anim Hit = twirlSplash ps Color.BrRed Color.Red
-      anim HitBlock = blockHit ps Color.BrRed Color.Red
-      anim MissBlock = blockMiss ps
+      anim HitClear = twirlSplash ps Color.BrRed Color.Red
+      anim (HitBlock 1) = blockHit ps Color.BrRed Color.Red
+      anim (HitBlock _) = blockMiss ps
   animFrs <- animate (blid sb) $ anim hitStatus
   displayActorStart sb animFrs

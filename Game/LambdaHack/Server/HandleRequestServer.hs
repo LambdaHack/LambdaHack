@@ -187,10 +187,10 @@ reqMelee source target iid = do
                    || (null $ strongestShield True tallAssocs)
         block = braced tb
         hitA = if block && not noShield
-               then MissBlock
+               then HitBlock 2
                else if block || not noShield
-                    then HitBlock
-                    else Hit
+                    then HitBlock 1
+                    else HitClear
     execSfxAtomic $ SfxStrike source target iid hitA
     -- Deduct a hitpoint for a pierce of a projectile
     -- or due to a hurled actor colliding with another.
