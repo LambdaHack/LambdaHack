@@ -109,8 +109,8 @@ elbow = ActorKind
   , acanDo  = [AbWait, AbMoveItem, AbProject, AbApply]
   , aitems  = [ ("eye 15", CBody), ("armored skin", CBody)
               , ("speed gland 2", CBody)
-              , ("scroll", CEqp), ("scroll", CEqp), ("scroll", CEqp)
-              , ("dart", CEqp), ("fine dart", CEqp) ]  -- TODO: arrows
+              , ("any scroll", CEqp), ("any scroll", CEqp), ("any scroll", CEqp)
+              , ("any arrow", CEqp), ("any arrow", CEqp) ]
   }
 
 armadillo = ActorKind
