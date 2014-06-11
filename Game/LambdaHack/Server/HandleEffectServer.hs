@@ -191,9 +191,11 @@ effectHurt nDm power source target = do
   let block = braced tb
       -- OFF shield doesn't hinder attacks, so also does not protect.
       sshieldMult = case strongestShield True sallAssocs of
+        _ | bproj sb -> 100
         [] -> 100
         (p, _) : _ -> p
       tshieldMult = case strongestShield True tallAssocs of
+        _ | bproj sb -> 100
         [] -> 100
         (p, _) : _ -> p
       mult = sshieldMult * tshieldMult * (if block then 100 else 50)

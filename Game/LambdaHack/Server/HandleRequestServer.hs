@@ -180,12 +180,15 @@ reqMelee source target iid = do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
-    let block = braced tb
-        shield = not (null $ strongestShield True sallAssocs)
-                 || not (null $ strongestShield True tallAssocs)
-        hitA = if block && shield
+    -- If the attacker is a projectile, we don't take any shield into account,
+    -- to prevent micromanagement: walking with shield, melee without.
+    let noShield = bproj sb
+                   || (null $ strongestShield True sallAssocs)
+                   || (null $ strongestShield True tallAssocs)
+        block = braced tb
+        hitA = if block && not noShield
                then MissBlock
-               else if block || shield
+               else if block || not noShield
                     then HitBlock
                     else Hit
     execSfxAtomic $ SfxStrike source target iid hitA

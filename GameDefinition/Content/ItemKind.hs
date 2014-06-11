@@ -304,7 +304,7 @@ shield = ItemKind
   , iaspects = [ArmorMelee 50]
   , ieffects = [PushActor 0 50]
   , ifeature = [ToThrow (-80)]  -- unwieldy to throw and blunt
-  , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained."
+  , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
 sword = ItemKind
   { isymbol  = ')'
