@@ -2,7 +2,7 @@
 -- | Semantics of responses that are sent to clients.
 --
 -- See
--- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
+-- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client
   ( exeFrontend
   ) where

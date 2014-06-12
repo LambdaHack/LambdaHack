@@ -1,7 +1,7 @@
 -- | Atomic game state transformations. TODO: haddocks.
 --
 -- See
--- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
+-- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic
   ( -- * Re-exported from MonadAtomic
     MonadAtomic(..)

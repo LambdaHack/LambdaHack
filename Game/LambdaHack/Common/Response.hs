@@ -1,6 +1,6 @@
 -- | Abstract syntax of client commands.
 -- See
--- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
+-- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.Response
   ( ResponseAI(..), ResponseUI(..)
   ) where

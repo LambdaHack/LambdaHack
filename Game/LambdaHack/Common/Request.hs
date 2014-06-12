@@ -1,7 +1,7 @@
 {-# LANGUAGE ExistentialQuantification, GADTs, StandaloneDeriving, DataKinds, KindSignatures #-}
 -- | Abstract syntax of server commands.
 -- See
--- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
+-- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.Request
   ( RequestAI(..), RequestUI(..), RequestTimed(..), RequestAnyAbility(..)
   , ReqFailure(..), showReqFailure, anyToUI

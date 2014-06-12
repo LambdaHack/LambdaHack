@@ -156,7 +156,7 @@ ticksPerMeter (Speed v) = Delta $ Time $ _ticksInSecond * sInMs `divUp` max 1 v
 
 -- | Calculate projectile speed from item weight in grams
 -- and speed bonus in percents.
--- See <https://github.com/kosmikus/LambdaHack/wiki/Item-statistics>.
+-- See <https://github.com/LambdaHack/LambdaHack/wiki/Item-statistics>.
 speedFromWeight :: Int -> Int -> Speed
 speedFromWeight weight bonus =
   let w = fromIntegral weight
@@ -175,7 +175,7 @@ speedFromWeight weight bonus =
   in Speed $ max 1 multiple2M
 
 -- | Calculate maximum range in meters of a projectile from its speed.
--- See <https://github.com/kosmikus/LambdaHack/wiki/Item-statistics>.
+-- See <https://github.com/LambdaHack/LambdaHack/wiki/Item-statistics>.
 -- With this formula, each projectile flies for at most 1 second,
 -- that is 2 turns, and then drops to the ground.
 rangeFromSpeed :: Speed -> Int

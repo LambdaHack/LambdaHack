@@ -1,4 +1,4 @@
-LambdaHack [![Build Status](https://secure.travis-ci.org/kosmikus/LambdaHack.png)](http://travis-ci.org/kosmikus/LambdaHack)[![Build Status](https://drone.io/github.com/kosmikus/LambdaHack/status.png)](https://drone.io/github.com/kosmikus/LambdaHack/latest)
+LambdaHack [![Build Status](https://secure.travis-ci.org/LambdaHack/LambdaHack.png)](http://travis-ci.org/LambdaHack/LambdaHack)[![Build Status](https://drone.io/github.com/LambdaHack/LambdaHack/status.png)](https://drone.io/github.com/LambdaHack/LambdaHack/latest)
 ==========
 
 This is an alpha release of LambdaHack, a [Haskell] [1] game engine
@@ -110,7 +110,7 @@ Have fun!
 [1]: http://www.haskell.org/
 [2]: http://roguebasin.roguelikedevelopment.org/index.php?title=Berlin_Interpretation
 [3]: http://hackage.haskell.org/package/LambdaHack
-[4]: https://github.com/kosmikus/LambdaHack/wiki
-[5]: http://github.com/kosmikus/LambdaHack
+[4]: https://github.com/LambdaHack/LambdaHack/wiki
+[5]: http://github.com/LambdaHack/LambdaHack
 [6]: http://allureofthestars.com
 [7]: http://www.haskell.org/platform
