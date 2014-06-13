@@ -45,6 +45,9 @@ xcbenchNull: xcbenchCampaign xcbenchBattle
 
 xcbench: xcbenchCampaign xcbenchFrontendCampaign xcbenchBattle xcbenchFrontendBattle
 
+
+xctest-travis-short: xctest-short xcbenchNull
+
 xctest-travis: xctest-short xctest-medium xcbenchNull
 
 xctest-travis-long: xctest-short xctest-long xcbenchNull
@@ -163,6 +166,8 @@ benchNull: benchCampaign benchBattle
 
 bench: benchCampaign benchFrontendCampaign benchBattle benchFrontendBattle
 
+
+test-travis-short: test-short benchNull
 
 test-travis: test-short test-medium benchNull
 

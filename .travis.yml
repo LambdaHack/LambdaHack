@@ -89,7 +89,11 @@ script:
    cd ..
 
 # mine:
- - touch /tmp/stdtest.log
- - make test-travis || (tail -n 200 /tmp/stdtest.log ; exit 77)
+ - touch /tmp/stdtest.log;
+   if [ $GHCVER = "head" ] || [ ${GHCVER%.*} = "7.8" ]; then
+     (make test-travis-short || (tail -n 200 /tmp/stdtest.log ; exit 77));
+   else
+     (make test-travis || (tail -n 200 /tmp/stdtest.log ; exit 77));
+   fi
 
 # EOF
