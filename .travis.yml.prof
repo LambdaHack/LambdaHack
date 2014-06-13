@@ -1,8 +1,0 @@
-language: haskell
-
-install:
-  - cabal install gtk2hs-buildtools
-
-script:
-  - make install-debug
-  - make xctest-travis || (tail -n 200 /tmp/stdtest.log ; exit 77)
