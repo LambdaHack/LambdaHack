@@ -36,7 +36,7 @@ civilian = FactionKind
 monster = FactionKind
   { fsymbol        = 'm'
   , fname          = "monster"
-  , ffreq          = [("monster", 1), ("summon", 50)]
+  , ffreq          = [("monster", 1), ("summon", 60)]
   , fAbilityLeader = allAbilities
   , fAbilityOther  = allAbilities
   }
@@ -44,7 +44,7 @@ monster = FactionKind
 animal = FactionKind
   { fsymbol        = 'd'
   , fname          = "animal"
-  , ffreq          = [("animal", 1), ("summon", 50)]
+  , ffreq          = [("animal", 1), ("summon", 40)]
   , fAbilityLeader = animalAbility
   , fAbilityOther  = animalAbility
   }
@@ -52,7 +52,7 @@ animal = FactionKind
 horror = FactionKind
   { fsymbol        = 'h'
   , fname          = "horror"
-  , ffreq          = [("horror", 1), ("summon", 50)]
+  , ffreq          = [("horror", 1), ("summon", 100)]
   , fAbilityLeader = allAbilities
   , fAbilityOther  = allAbilities
   }

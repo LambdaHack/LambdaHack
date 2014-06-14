@@ -30,7 +30,7 @@ data Effect a =
   | Dominate
   | Impress
   | CallFriend !Int
-  | Summon !Int
+  | Summon !a
   | CreateItem !Int
   | ApplyPerfume
   | Burn !Int
@@ -81,7 +81,9 @@ effectTrav (Calm p) _ = return $! Calm p
 effectTrav Dominate _ = return Dominate
 effectTrav Impress _ = return Impress
 effectTrav (CallFriend p) _ = return $! CallFriend p
-effectTrav (Summon p) _ = return $! Summon p
+effectTrav (Summon a) f = do
+  b <- f a
+  return $! Summon b
 effectTrav (CreateItem p) _ = return $! CreateItem p
 effectTrav ApplyPerfume _ = return ApplyPerfume
 effectTrav (Burn p) _ = return $! Burn p
@@ -135,7 +137,7 @@ aspectTrav (Intelligence a) f = do
 aspectTrav (Explode t) _ = return $! Explode t
 
 -- | Suffix to append to a basic content name if the content causes the effect.
-effectToSuff :: Show a => Effect a -> (a -> Text) -> Text
+effectToSuff :: (Show a, Ord a, Num a) => Effect a -> (a -> Text) -> Text
 effectToSuff effect f =
   case St.evalState (effectTrav effect $ return . f) () of
     NoEffect -> ""
@@ -149,7 +151,7 @@ effectToSuff effect f =
     Dominate -> "of domination"
     Impress -> "of impression"
     CallFriend p -> "of aid calling" <+> affixPower p
-    Summon p -> "of summoning" <+> affixPower p
+    Summon t -> "of summoning" <+> t
     CreateItem p -> "of item creation" <+> affixPower p
     ApplyPerfume -> "of rose water"
     Burn{} -> ""  -- often accompanies Light, too verbose, too boring
@@ -170,9 +172,11 @@ effectToSuff effect f =
     SendFlying t1 t2 -> "of impact" <+> t1 <+> t2
     PushActor t1 t2 -> "of pushing" <+> t1 <+> t2
     PullActor t1 t2 -> "of pulling" <+> t1 <+> t2
-    Teleport t -> "of teleport" <+> t
-    -- TODO: Teleport t | t > 9 -> "of teleport" <+> t
-    -- Teleport t -> "of blinking" <+> t
+    Teleport t ->
+      case effect of
+        Teleport p | p > 9 -> "of teleport" <+> t
+        Teleport _ -> "of blinking" <+> t
+        _ -> assert `failure` effect
     ActivateEqp ' ' -> "of spontaneous activation"
     ActivateEqp symbol ->
       "of spontaneous '" <> T.singleton symbol <> "' activation"

@@ -19,9 +19,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, net, oilLamp, potion1, potion2, potion3, potion4, ring1, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+      [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
   }
-bolas,        brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, net, oilLamp, potion1, potion2, potion3, potion4, ring1, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+bolas,        brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
 gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 
@@ -173,12 +173,22 @@ necklace = ItemKind
   , iaspects = []
   , ieffects = []
   , ifeature = [ToThrow (-50)]  -- not dense enough
-  , idesc    = "Tingling, rattling chain of colorful, encrusted links."
+  , idesc    = "Tingling, rattling chain of flat encrusted links."
   }
 necklace1 = necklace
-  { iaspects = [Periodic (4 * d 3 + 2 * dl 10)]
+  { iaspects = [Periodic $ 4 * d 5 + 2 * dl 10]
   , ieffects = [Heal 1]
   , idesc    = "A cord of dried herbs and healing berries."
+  }
+necklace2 = necklace
+  { ifreq    = [("useful", 1)]
+  , iaspects = [Periodic $ 20 * d 2 + dl 20]
+  , ieffects = [Summon $ 1 + dl 2]  -- TODO: + explosion
+  }
+necklace3 = necklace
+  { ifreq    = [("useful", 1)]
+  , iaspects = [Periodic $ 5 * d 20 + dl 50]
+  , ieffects = [Paralyze $ 2 + d 3 + 2 * dl 6, Calm 50]
   }
 net = ItemKind
   { isymbol  = '|'
@@ -257,9 +267,27 @@ ring = ItemKind
   , idesc    = "A sturdy ring with a strangely shining eye."
   }
 ring1 = ring
-  { iaspects = [Periodic (d 4 + 4 * dl 2)]
+  { ifreq    = [("useful", 1)]
+  , iaspects = [Periodic $ 4 * d 5 + 2 * dl 10]
   , ieffects = [Calm 1]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with letters that meant a lot to somebody."
+  }
+ring2 = ring
+  { iaspects = [Periodic $ 20 * d 20 + dl 200]
+  , ieffects = [Teleport $ 2 + d 5]
+  }
+ring3 = ring
+  { iaspects = [Periodic $ 5 * d 20 + dl 50]
+  , ieffects = [Teleport $ 15 + d 10]
+  }
+ring4 = ring
+  { iaspects = [Periodic $ 10 * d 20 + dl 100]
+  , ieffects = [PushActor 100 50]
+  }
+ring5 = ring
+  { ifreq    = [("useful", 1)]
+  , iaspects = [Periodic $ 4 * d 50 + dl 300]
+  , ieffects = [InsertMove 1, Heal (-1)]  -- TODO: allow fractions for smooth?
   }
 scroll = ItemKind
   { isymbol  = '?'
@@ -281,7 +309,7 @@ scroll1 = scroll
   , ieffects = [CallFriend 1]
   }
 scroll2 = scroll
-  { ieffects = [Summon 1]
+  { ieffects = [Summon $ 1 + dl 2]
   }
 scroll3 = scroll
   { ieffects = [Ascend (-1)]
@@ -292,15 +320,15 @@ scroll4 = scroll
   }
 scroll5 = scroll
   { ifreq    = [("useful", 5)]
-  , ieffects = [Teleport 5]
+  , ieffects = [Teleport $ 2 + d 5]
   }
 scroll6 = scroll
   { ifreq    = [("useful", 2)]
-  , ieffects = [Teleport 15]
+  , ieffects = [DropBestWeapon, Teleport $ 15 + d 10]
   }
 scroll7 = scroll
   { ifreq    = [("useful", 1)]
-  , ieffects = [InsertMove (1 + d 2)]
+  , ieffects = [InsertMove (d 2 + dl 2)]
   }
 shield = ItemKind
   { isymbol  = ']'
@@ -640,7 +668,7 @@ explosionBlast n = ItemKind
   , idesc    = ""
   }
 
-speedGland :: Int -> ItemKind  -- TODO: somehow unify with necklace?
+speedGland :: Int -> ItemKind
 speedGland n = fist
   { iname    = "speed gland"
   , ifreq    = [("speed gland" <+> tshow n, 100)]
