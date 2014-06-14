@@ -18,8 +18,11 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
@@ -31,7 +34,9 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.EndServer
 import Game.LambdaHack.Server.Fov
+import Game.LambdaHack.Server.HandleEffectServer
 import Game.LambdaHack.Server.HandleRequestServer
+import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicServer
 import Game.LambdaHack.Server.ProtocolServer
@@ -143,6 +148,7 @@ endClip arenas = do
   -- e.g., spreading leaders across levels to bump monster generation.
   if clipMod == 1 then do
     arena <- rndToAction $ oneOf arenas
+    activatePeriodicLevel arena
     generateMonster arena
     stopAfter <- getsServer $ sstopAfter . sdebugSer
     case stopAfter of
@@ -155,6 +161,25 @@ endClip arenas = do
           return False  -- don't re-enter the game loop
         else return True
   else return True
+
+-- | Trigger periodic items for all actors on the given level.
+-- This is done each game turn, not player turn, not to overpower
+-- fast actors (assuming the effects are positive).
+activatePeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
+activatePeriodicLevel lid = do
+  time <- getsState $ getLocalTime lid
+  let turnN = time `timeFit` timeTurn
+      activatePeriodicItem _ (_, ItemFull{itemKisOn=(_, False)}) = return ()
+      activatePeriodicItem aid (iid, itemFull) = do
+        case strengthPeriodic itemFull of
+          [] -> return ()
+          n : _ -> when (turnN `mod` (1000 `div` n) == 0) $
+                     itemEffect aid aid iid itemFull
+      activatePeriodicActor aid = do
+        allItems <- fullAssocsServer aid [CBody, CEqp]
+        mapM_ (activatePeriodicItem aid) allItems
+  allActors <- getsState $ actorRegularAssocs (const True) lid
+  mapM_ (\(aid, _) -> activatePeriodicActor aid) allActors
 
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less or equal to the end of current cut-off.

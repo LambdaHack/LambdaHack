@@ -226,12 +226,14 @@ dominateFid fid target = do
     -- Focus on the dominated actor, by making him a leader.
     execUpdAtomic $ UpdLeadFaction fid mleaderOld (Just target)
 
--- | Advance the move time for the given actor and his status effects
--- that are updated once per his move. We don't update status once per
--- game turn (even though it would make fast actors less overpowered),
--- beucase the effects of putting a regen item on would manifest only after
--- a couple of player turns (or perhaps never at all, if the player
--- takes the item off by that time --- disarming is less problematic).
+-- | Advance the move time for the given actor, check if he's dominated
+-- and update his calm. We don't update calm once per game turn
+-- (even though it would make fast actors less overpowered),
+-- beucase the effects of close enemies would sometimes manifest only after
+-- a couple of player turns (or perhaps never at all, if the player and enemy
+-- move away before that moment). A side effect is that under peaceful
+-- circumstances, non-max calm cases a consistent regeneration UI indicator
+-- to be displayed each turn (not every few turns).
 advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 advanceTime aid = do
   b <- getsState $ getActorBody aid

@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthAspect, strengthEffect, strengthFeature
-  , strengthMelee, strengthArmor
+  , strengthMelee, strengthPeriodic, strengthArmor
   , strengthSightRadius, strengthSmellRadius, strengthIntelligence
   , strengthLight
   , strengthLingering, strengthToThrow, isFragile
@@ -47,7 +47,7 @@ dice999 d = if Dice.minDice d == Dice.maxDice d
 strengthAspect :: (Aspect Int -> [b]) -> ItemFull -> [b]
 strengthAspect f itemFull =
   case itemDisco itemFull of
-    Just ItemDisco{itemAE = Just ItemAspectEffect{jaspects}} ->
+    Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects}} ->
       concatMap f jaspects
     Just ItemDisco{itemKind=ItemKind{iaspects}} ->
       -- Default for unknown power is 999 to encourage experimenting.
@@ -58,7 +58,7 @@ strengthAspect f itemFull =
 strengthEffect :: (Effect Int -> [b]) -> ItemFull -> [b]
 strengthEffect f itemFull =
   case itemDisco itemFull of
-    Just ItemDisco{itemAE = Just ItemAspectEffect{jeffects}} ->
+    Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
       concatMap f jeffects
     Just ItemDisco{itemKind=ItemKind{ieffects}} ->
       -- Default for unknown power is 999 to encourage experimenting.
@@ -80,6 +80,12 @@ strengthMelee Kind.COps{corule} itemFull =
 strongestSword :: Kind.COps -> Bool -> [(ItemId, ItemFull)]
                -> [(Int, (ItemId, ItemFull))]
 strongestSword cops onlyOn is = strongestItem onlyOn is (strengthMelee cops)
+
+strengthPeriodic :: ItemFull -> [Int]
+strengthPeriodic =
+  let p (Periodic k) = [k]
+      p _ = []
+  in strengthAspect p
 
 strengthArmor :: ItemFull -> [Int]
 strengthArmor =

@@ -515,6 +515,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         displayActorStart b animDie
     else case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."
+        Effect.Heal p | p == 1 -> skip  -- no spam from regen items
         Effect.Heal p | p > 0 -> do
           if fid == side then
             actorVerbMU aid b "feel healthier"
@@ -532,6 +533,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs
         Effect.Hurt{} -> skip
+        Effect.Calm p | p == 1 -> skip  -- no spam from regen items
         Effect.Calm p | p > 0 -> do
           if fid == side then
             actorVerbMU aid b "feel calmer"
