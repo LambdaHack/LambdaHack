@@ -156,7 +156,7 @@ effectHeal execSfx power source target = do
   tb <- getsState $ getActorBody target
   let bhpMax = Dice.maxDice (ahp $ okind $ bkind tb)
       deltaHP = min power (max 0 $ bhpMax - bhp tb)
-  if deltaHP == 0
+  if deltaHP == 0 && bhpDelta tb == 0
     then return False
     else do
       execUpdAtomic $ UpdHealActor target deltaHP
@@ -218,7 +218,7 @@ effectCalm execSfx power target = do
   tb <- getsState $ getActorBody target
   let calmMax = Dice.maxDice $ acalm $ okind $ bkind tb
       deltaCalm = min power (max 0 $ calmMax - bcalm tb)
-  if deltaCalm == 0
+  if deltaCalm == 0 && bcalmDelta tb == 0
     then return False
     else do
       execUpdAtomic $ UpdCalmActor target deltaCalm

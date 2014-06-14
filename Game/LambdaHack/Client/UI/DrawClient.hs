@@ -255,12 +255,12 @@ drawLeaderStatus waitT width = do
   case mleader of
     Just leader -> do
       let Kind.COps{coactor=Kind.Ops{okind}} = cops
-          (darkL, bracedL, hpPeriod, calmDelta,
+          (darkL, bracedL, hpDelta, calmDelta,
            ahpS, bhpS, acalmS, bcalmS) =
             let b@Actor{bkind, bhp, bcalm} = getActorBody leader s
                 ActorKind{ahp, acalm} = okind bkind
             in ( not (actorInAmbient b s)
-               , braced b, 1 :: Int {-bHPDelta b-}, bcalmDelta b
+               , braced b, bhpDelta b, bcalmDelta b
                , tshow (Dice.maxDice ahp), tshow bhp
                , tshow (Dice.maxDice acalm), tshow bcalm )
           -- This is a valuable feedback for the otherwise hard to observe
@@ -276,7 +276,8 @@ drawLeaderStatus waitT width = do
           calmText = bcalmS <>  (if darkL then slashPick else "/") <> acalmS
           bracePick | bracedL   = "}"
                     | otherwise = ":"
-          hpAddAttr | hpPeriod > 0 = addColor Color.BrGreen
+          hpAddAttr | hpDelta > 0 = addColor Color.BrGreen
+                    | hpDelta < 0 = addColor Color.BrRed
                     | otherwise = addAttr
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick
           hpText = bhpS <> (if bracedL then slashPick else "/") <> ahpS

@@ -212,8 +212,10 @@ updAgeActor aid delta = assert (delta /= Delta timeZero) $ do
   updCreateActor aid newBody ais
 
 updHealActor :: MonadStateWrite m => ActorId -> Int -> m ()
-updHealActor aid n = assert (n /= 0) $
-  updateActor aid $ \b -> b {bhp = bhp b + n}
+updHealActor aid n =
+  updateActor aid $ \b ->
+    b { bhp = bhp b + n
+      , bhpDelta = n }
 
 updCalmActor :: MonadStateWrite m => ActorId -> Int -> m ()
 updCalmActor aid n =

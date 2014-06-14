@@ -42,6 +42,7 @@ data Actor = Actor
   , bcolor      :: !Color.Color          -- ^ individual map color
   , bspeed      :: !Speed                -- ^ individual speed
   , bhp         :: !Int                  -- ^ current hit points
+  , bhpDelta    :: !Int                  -- ^ HP delta this turn
   , bcalm       :: !Int                  -- ^ current calm
   , bcalmDelta  :: !Int                  -- ^ calm delta this turn
   , btrajectory :: !(Maybe [Vector])     -- ^ trajectory the actor must travel
@@ -100,6 +101,7 @@ actorTemplate bkind bsymbol bname bpronoun bcolor bspeed bhp bcalm
       bbody   = EM.empty
       bwait   = False
       boldfid = bfid
+      bhpDelta = 0
       bcalmDelta = 0
   in Actor{..}
 
@@ -189,6 +191,7 @@ instance Binary Actor where
     put bcolor
     put bspeed
     put bhp
+    put bhpDelta
     put bcalm
     put bcalmDelta
     put btrajectory
@@ -212,6 +215,7 @@ instance Binary Actor where
     bcolor <- get
     bspeed <- get
     bhp <- get
+    bhpDelta <- get
     bcalm <- get
     bcalmDelta <- get
     btrajectory <- get
