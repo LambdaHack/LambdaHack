@@ -227,7 +227,11 @@ dominateFid fid target = do
     execUpdAtomic $ UpdLeadFaction fid mleaderOld (Just target)
 
 -- | Advance the move time for the given actor and his status effects
--- that are updated once per his move (as opposed to once per a time unit).
+-- that are updated once per his move. We don't update status once per
+-- game turn (even though it would make fast actors less overpowered),
+-- beucase the effects of putting a regen item on would manifest only after
+-- a couple of player turns (or perhaps never at all, if the player
+-- takes the item off by that time --- disarming is less problematic).
 advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 advanceTime aid = do
   b <- getsState $ getActorBody aid
@@ -248,17 +252,12 @@ advanceTime aid = do
       unless (newCalmDelta == 0 && bcalmDelta b == 0) $
         execUpdAtomic $ UpdCalmActor aid newCalmDelta
 
--- TODO: generalize to any list of items (or effects) applied to all actors
--- every turn. Specify the list per level in config.
--- TODO: use itemEffect or at least effectSem to get from Regeneration
--- to HealActorA. Also, Applying an item with Regeneration should do the same
--- thing, but immediately (and destroy the item).
 -- | Possibly regenerate HP for all actors on the current level.
 --
 -- We really want leader picking to be a purely UI distinction,
 -- so all actors need to regenerate, not just the leaders.
--- Actors on frozen levels don't regenerate. This prevents cheating
--- via sending an actor to a safe level and letting him regenerate there.
+-- Actors on frozen levels don't regenerate. This prevents cowardice
+-- of sending an actor to a safe level to let him regenerate there.
 regenerateLevelHP :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 regenerateLevelHP lid = do
   time <- getsState $ getLocalTime lid

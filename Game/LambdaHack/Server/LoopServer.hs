@@ -138,12 +138,11 @@ endClip arenas = do
     modifyServer $ \ser -> ser {sbkpSave = False}
     saveBkpAll False
   when (clipN `mod` leadLevelClips == 0) leadLevelFlip
-  -- Regenerate HP and add monsters each turn, not each clip.
+  -- Add monsters each turn, not each clip.
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
   if clipMod == 1 then do
     arena <- rndToAction $ oneOf arenas
-    regenerateLevelHP arena
     generateMonster arena
     stopAfter <- getsServer $ sstopAfter . sdebugSer
     case stopAfter of
