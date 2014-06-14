@@ -42,7 +42,7 @@ standard = RuleKind
   , ritemEqp       = ")\"=([]"
   -- Don't waste weapons and armour, other party members can use them.
   , ritemProject   = "!?|/("
-  , ritemNeedId    = "!?|/"
+  , ritemNeedId    = "!?|/\"="
   -- The strings containing the default configuration file
   -- included from config.ui.default.
   , rcfgUIName = "config.ui"

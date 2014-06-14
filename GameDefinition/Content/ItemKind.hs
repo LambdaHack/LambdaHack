@@ -19,11 +19,11 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+      [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, net, oilLamp, potion1, potion2, potion3, potion4, ring1, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
   }
-bolas,        brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+bolas,        brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, net, oilLamp, potion1, potion2, potion3, potion4, ring1, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
-gem, potion, scroll, wand :: ItemKind  -- generic templates
+gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 
 bolas = ItemKind
   { isymbol  = '|'
@@ -164,16 +164,21 @@ monocle = ItemKind
 necklace = ItemKind
   { isymbol  = '"'
   , iname    = "necklace"
-  , ifreq    = [("useful", 6)]
-  , iflavour = zipFancy [BrGreen]
+  , ifreq    = [("useful", 3)]
+  , iflavour = zipFancy stdCol ++ zipPlain brightCol
   , icount   = 1
   , iverbApply   = "tear down"
   , iverbProject = "cast"
   , iweight  = 30
-  , iaspects = [Periodic (4 * d 3 + 2 * dl 10)]
-  , ieffects = [Heal 1]
+  , iaspects = []
+  , ieffects = []
   , ifeature = [ToThrow (-50)]  -- not dense enough
-  , idesc    = "A necklace of dried herbs and healing berries."
+  , idesc    = "Tingling, rattling chain of colorful, encrusted links."
+  }
+necklace1 = necklace
+  { iaspects = [Periodic (4 * d 3 + 2 * dl 10)]
+  , ieffects = [Heal 1]
+  , idesc    = "A cord of dried herbs and healing berries."
   }
 net = ItemKind
   { isymbol  = '|'
@@ -209,7 +214,7 @@ potion = ItemKind
   { isymbol  = '!'
   , iname    = "potion"
   , ifreq    = [("useful", 10)]
-  , iflavour = zipFancy stdCol
+  , iflavour = zipPlain stdCol ++ zipFancy brightCol
   , icount   = 1
   , iverbApply   = "gulp down"
   , iverbProject = "lob"
@@ -240,22 +245,27 @@ potion4 = potion
 ring = ItemKind
   { isymbol  = '='
   , iname    = "ring"
-  , ifreq    = [("useful", 6)]
-  , iflavour = zipPlain [White]
+  , ifreq    = [("useful", 3)]
+  , iflavour = zipPlain stdCol ++ zipFancy darkCol
   , icount   = 1
   , iverbApply   = "squeeze down"
   , iverbProject = "toss"
   , iweight  = 15
-  , iaspects = [Periodic (d 4 + 4 * dl 2)]
-  , ieffects = [Calm 1]
+  , iaspects = []
+  , ieffects = []
   , ifeature = []
+  , idesc    = "A sturdy ring with a strangely shining eye."
+  }
+ring1 = ring
+  { iaspects = [Periodic (d 4 + 4 * dl 2)]
+  , ieffects = [Calm 1]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with letters that meant a lot to somebody."
   }
 scroll = ItemKind
   { isymbol  = '?'
   , iname    = "scroll"
   , ifreq    = [("useful", 4), ("any scroll", 100)]
-  , iflavour = zipFancy darkCol ++ zipPlain darkCol  -- arcane and old
+  , iflavour = zipFancy stdCol ++ zipPlain darkCol  -- arcane and old
   , icount   = 1
   , iverbApply   = "decipher"
   , iverbProject = "lob"
