@@ -20,12 +20,13 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Msg
 
 -- TODO: document each constructor
--- Effects of items, tiles, etc. The type argument represents power.
+-- | Effects of items, tiles, etc. The type argument represents power.
 -- either as a random formula dependent on level, or as a final rolled value.
 data Effect a =
     NoEffect
   | Heal !Int
   | Hurt !Dice.Dice !a
+  | Calm !Int
   | Dominate
   | Impress
   | CallFriend !Int
@@ -48,14 +49,12 @@ data Effect a =
   | TimedAspect !Int !(Aspect a)  -- enable the aspect for k clips
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
--- Aspects of items, tiles, etc. The type argument represents power.
+-- | Aspects of items, tiles, etc. The type argument represents power.
 -- either as a random formula dependent on level, or as a final rolled value.
 data Aspect a =
     NoAspect
+  | Periodic !a
   | ArmorMelee !Int
-  | Haste !Int  -- ^ positive or negative percent change
-  | Regeneration !a
-  | Steadfastness !a
   | SightRadius !a
   | SmellRadius !a
   | Intelligence !a  -- TODO: try to use actor abilities instead
@@ -78,6 +77,7 @@ effectTrav (Heal p) _ = return $! Heal p
 effectTrav (Hurt dice a) f = do
   b <- f a
   return $! Hurt dice b
+effectTrav (Calm p) _ = return $! Calm p
 effectTrav Dominate _ = return Dominate
 effectTrav Impress _ = return Impress
 effectTrav (CallFriend p) _ = return $! CallFriend p
@@ -119,14 +119,10 @@ effectTrav (TimedAspect k asp) f = do
 -- | Transform an apsect using a stateful function.
 aspectTrav :: Aspect a -> (a -> St.State s b) -> St.State s (Aspect b)
 aspectTrav NoAspect _ = return NoAspect
+aspectTrav (Periodic a) f = do
+  b <- f a
+  return $! Periodic b
 aspectTrav (ArmorMelee p) _ = return $! ArmorMelee p
-aspectTrav (Haste p) _ = return $! Haste p
-aspectTrav (Regeneration a) f = do
-  b <- f a
-  return $! Regeneration b
-aspectTrav (Steadfastness a) f = do
-  b <- f a
-  return $! Steadfastness b
 aspectTrav (SightRadius a) f = do
   b <- f a
   return $! SightRadius b
@@ -147,6 +143,9 @@ effectToSuff effect f =
     Heal 0 -> assert `failure` effect
     Heal p -> "of wounding" <+> affixBonus p
     Hurt dice t -> "(" <> tshow dice <> ")" <+> t
+    Calm p | p > 0 -> "of soothing" <+> affixBonus p
+    Calm 0 -> assert `failure` effect
+    Calm p -> "of alarming" <+> affixBonus p
     Dominate -> "of domination"
     Impress -> "of impression"
     CallFriend p -> "of aid calling" <+> affixPower p
@@ -177,26 +176,24 @@ effectToSuff effect f =
     ActivateEqp ' ' -> "of spontaneous activation"
     ActivateEqp symbol ->
       "of spontaneous '" <> T.singleton symbol <> "' activation"
-    TimedAspect _ asp -> aspectTextToSuff asp
+    TimedAspect _ _ ->
+      case effect of
+        TimedAspect _ aspect -> aspectToSuff aspect f
+        _ -> assert `failure` effect
 
-aspectTextToSuff :: Aspect Text -> Text
-aspectTextToSuff aspect =
-  case aspect of
+aspectToSuff :: Show a => Aspect a -> (a -> Text) -> Text
+aspectToSuff aspect f =
+  case St.evalState (aspectTrav aspect $ return . f) () of
     NoAspect -> ""
+    Periodic _ ->
+      case aspect of
+        Periodic n -> tshow n <+> "in 1000"
+        _ -> assert `failure` aspect
     ArmorMelee p -> "[" <> tshow p <> "]"
-    Haste p | p > 0 -> "of speed" <+> affixBonus p
-    Haste 0 -> assert `failure` aspect
-    Haste p -> "of slowness" <+> affixBonus (- p)
-    Regeneration t -> "of regeneration" <+> t
-    Steadfastness t -> "of steadfastness" <+> t
     SightRadius t -> "of sight" <+> t
     SmellRadius t -> "of smell" <+> t
     Intelligence t -> "of intelligence" <+> t
     Explode{} -> ""
-
-aspectToSuff :: Show a => Aspect a -> (a -> Text) -> Text
-aspectToSuff aspect f =
-  aspectTextToSuff $ St.evalState (aspectTrav aspect $ return . f) ()
 
 effectToSuffix :: Effect Int -> Text
 effectToSuffix effect = effectToSuff effect affixBonus

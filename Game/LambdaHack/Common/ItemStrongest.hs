@@ -4,12 +4,10 @@ module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthAspect, strengthEffect, strengthFeature
   , strengthMelee, strengthArmor
-  , strengthRegeneration, strengthSteadfastness
   , strengthSightRadius, strengthSmellRadius, strengthIntelligence
   , strengthLight
   , strengthLingering, strengthToThrow, isFragile
   , strongestItem, strongestSword, strongestShield
-  , strongestRegeneration, strongestSteadfastness
   , strongestSightRadius, strongestSmellRadius, strongestIntelligence
   , strongestLight
   , strengthSymbol
@@ -91,26 +89,6 @@ strengthArmor =
 
 strongestShield :: Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
 strongestShield onlyOn is = strongestItem onlyOn is strengthArmor
-
-strengthRegeneration :: ItemFull -> [Int]
-strengthRegeneration =
-  let p (Regeneration k) = [k]
-      p _ = []
-  in strengthAspect p
-
-strongestRegeneration :: Bool -> [(ItemId, ItemFull)]
-                      -> [(Int, (ItemId, ItemFull))]
-strongestRegeneration onlyOn is = strongestItem onlyOn is strengthRegeneration
-
-strengthSteadfastness :: ItemFull -> [Int]
-strengthSteadfastness =
-  let p (Steadfastness k) = [k]
-      p _ = []
-  in strengthAspect p
-
-strongestSteadfastness :: Bool -> [(ItemId, ItemFull)]
-                       -> [(Int, (ItemId, ItemFull))]
-strongestSteadfastness onlyOn is = strongestItem onlyOn is strengthSteadfastness
 
 strengthSightRadius :: ItemFull -> [Int]
 strengthSightRadius =
@@ -204,8 +182,6 @@ strengthSymbol cops@Kind.COps{corule} c =
   let RuleKind{ritemMelee} = Kind.stdRuleset corule
   in case c of
     _ | c `elem` ritemMelee -> strengthMelee cops
-    '\"' -> strengthRegeneration
-    '=' -> strengthSteadfastness
     _ | c `elem` "(~" -> strengthLight . itemBase
     _ | c `elem` "[" -> strengthArmor
     _ | c `elem` "]" -> strengthSightRadius  -- TODO: hack

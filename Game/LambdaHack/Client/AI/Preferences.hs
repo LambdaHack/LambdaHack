@@ -22,6 +22,9 @@ effectToBenefit cops@Kind.COps{coactor=Kind.Ops{okind}} b eff =
                      then 10 * min p (Dice.maxDice (ahp kind) - bhp b)
                      else max (-99) (10 * p)  -- usually splash damage
     Effect.Hurt d p -> -(min 99 $ 5 * p + round (5 * Dice.meanDice d))
+    Effect.Calm p -> if p > 0
+                     then 5 * min p (Dice.maxDice (ahp kind) - bhp b)
+                     else max (-50) (5 * p)  -- usually splash damage
     Effect.Dominate -> -200
     Effect.Impress -> -10
     Effect.CallFriend p -> p * 100
@@ -51,10 +54,8 @@ aspectToBenefit :: Kind.COps -> Actor -> Effect.Aspect Int -> Int
 aspectToBenefit _cops _b asp =
   case asp of
     Effect.NoAspect -> 0
+    Effect.Periodic n -> n `div` 50  -- should be multiplied by effect
     Effect.ArmorMelee _ -> 5
-    Effect.Haste p -> p * 5
-    Effect.Regeneration p -> p
-    Effect.Steadfastness p -> p
     Effect.Explode{} -> 2
     Effect.SightRadius p -> p * 20
     Effect.SmellRadius p -> p * 2

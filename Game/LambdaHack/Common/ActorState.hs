@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.ActorState
   , nearbyFreePoints, whereTo, getCarriedAssocs
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, isSpawnFaction
-  , itemPrice, calmEnough, regenHPPeriod, regenCalmDelta
+  , itemPrice, calmEnough, regenCalmDelta
   , actorShines, actorInAmbient, dispEnemy, radiusBlind
   , fullAssocs, itemToFull, strongestBodyEqp
   ) where
@@ -269,25 +269,11 @@ getLocalTime lid s = ltime $ sdungeon s EM.! lid
 isSpawnFaction :: FactionId -> State -> Bool
 isSpawnFaction fid s = isSpawnFact $ sfactionD s EM.! fid
 
-regenHPPeriod :: Actor -> [(ItemId, ItemFull)] -> [(ItemId, ItemFull)] -> State
-              -> Int
-regenHPPeriod b eqpAssocs bodyAssocs s =
+regenCalmDelta :: Actor -> State -> Int
+regenCalmDelta b s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
-      regenIncr = strongestBodyEqp strongestRegeneration eqpAssocs bodyAssocs
-      regenPeriod = if regenIncr == 0
-                    then 0
-                    else max 1 $ 500 `div` (regenIncr + 1)
-      maxDeltaHP = Dice.maxDice (ahp ak) - bhp b
-  in if maxDeltaHP > 0 then regenPeriod else 0
-
-regenCalmDelta :: Actor -> [(ItemId, ItemFull)] -> [(ItemId, ItemFull)]
-               -> State -> Int
-regenCalmDelta b eqpAssocs bodyAssocs s =
-  let Kind.COps{coactor=Kind.Ops{okind}} = scops s
-      ak = okind $ bkind b
-      calmIncr = 1 +  -- normal rate or calm regen
-                 strongestBodyEqp strongestSteadfastness eqpAssocs bodyAssocs
+      calmIncr = 1 -- normal rate of calm regen
       maxDeltaCalm = Dice.maxDice (acalm ak) - bcalm b
       -- Worry actor by enemies felt (even if not seen)
       -- on the level within 3 tiles.

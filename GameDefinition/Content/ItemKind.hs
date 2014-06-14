@@ -34,8 +34,8 @@ amulet = ItemKind
   , iverbApply   = "tear down"
   , iverbProject = "cast"
   , iweight  = 30
-  , iaspects = [Regeneration (2 * d 3 + dl 10)]
-  , ieffects = []  -- TODO: DropAllEqp? change text if so
+  , iaspects = [Periodic (4 * d 3 + 2 * dl 10)]
+  , ieffects = [Heal 1]
   , ifeature = [ToThrow (-50)]  -- not dense enough
   , idesc    = "A necklace of dried herbs and healing berries."
   }
@@ -246,8 +246,8 @@ ring = ItemKind
   , iverbApply   = "squeeze down"
   , iverbProject = "toss"
   , iweight  = 15
-  , iaspects = [Steadfastness (d 2 + 2 * dl 2)]
-  , ieffects = []  -- TODO: add something
+  , iaspects = [Periodic (d 4 + 4 * dl 2)]
+  , ieffects = [Calm 1]
   , ifeature = []
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with letters that meant a lot to somebody."
   }
@@ -636,8 +636,8 @@ speedGland n = fist
   , ifreq    = [("speed gland" <+> tshow n, 100)]
   , icount   = 1
   , iverbApply   = "squeeze"
-  , iaspects = [Regeneration (intToDice $ 10 * n)]  -- TODO: also speed bonus?
-  , ieffects = []
+  , iaspects = [Periodic (intToDice $ 20 * n)]  -- TODO: also speed bonus?
+  , ieffects = [Heal 1]
   , idesc    = ""
   }
 

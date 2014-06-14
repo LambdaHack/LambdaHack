@@ -121,6 +121,7 @@ effectSem effect source target = do
     Effect.NoEffect -> return False
     Effect.Heal p -> effectHeal execSfx p source target
     Effect.Hurt nDm p -> effectHurt nDm p source target
+    Effect.Calm p -> effectCalm execSfx p target
     Effect.Dominate -> effectDominate execSfx source target
     Effect.Impress -> effectImpress execSfx source target
     Effect.CallFriend p -> effectCallFriend p source target
@@ -208,6 +209,21 @@ effectHurt nDm power source target = do
     then Effect.Heal deltaHP
     else Effect.Hurt nDm deltaHP{-hack-}
   return True
+
+-- ** Calm
+
+effectCalm :: MonadAtomic m => m () -> Int -> ActorId -> m Bool
+effectCalm execSfx power target = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  tb <- getsState $ getActorBody target
+  let calmMax = Dice.maxDice $ acalm $ okind $ bkind tb
+      deltaCalm = min power (max 0 $ calmMax - bcalm tb)
+  if deltaCalm == 0
+    then return False
+    else do
+      execUpdAtomic $ UpdCalmActor target deltaCalm
+      execSfx
+      return True
 
 -- ** Dominate
 

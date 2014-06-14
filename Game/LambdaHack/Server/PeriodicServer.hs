@@ -2,7 +2,7 @@
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicServer
   ( spawnMonsters, generateMonster, addMonster, addHero, dominateFid
-  , advanceTime, regenerateLevelHP, leadLevelFlip
+  , advanceTime, leadLevelFlip
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -246,30 +246,9 @@ advanceTime aid = do
       dominateFid (boldfid b) aid
       execSfx
     else do
-      eqpAssocs <- fullAssocsServer aid [CEqp]
-      bodyAssocs <- fullAssocsServer aid [CBody]
-      newCalmDelta <- getsState $ regenCalmDelta b eqpAssocs bodyAssocs
+      newCalmDelta <- getsState $ regenCalmDelta b
       unless (newCalmDelta == 0 && bcalmDelta b == 0) $
         execUpdAtomic $ UpdCalmActor aid newCalmDelta
-
--- | Possibly regenerate HP for all actors on the current level.
---
--- We really want leader picking to be a purely UI distinction,
--- so all actors need to regenerate, not just the leaders.
--- Actors on frozen levels don't regenerate. This prevents cowardice
--- of sending an actor to a safe level to let him regenerate there.
-regenerateLevelHP :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
-regenerateLevelHP lid = do
-  time <- getsState $ getLocalTime lid
-  let turnN = time `timeFit` timeTurn
-      approve (aid, b) = do
-        eqpAssocs <- fullAssocsServer aid [CEqp]
-        bodyAssocs <- fullAssocsServer aid [CBody]
-        hpPeriod <- getsState $ regenHPPeriod b eqpAssocs bodyAssocs
-        return $! hpPeriod /= 0 && turnN `mod` hpPeriod == 0
-  toRegen <- getsState $ actorRegularAssocs (const True) lid
-  appRegen <- filterM approve toRegen
-  mapM_ (\(aid, _) -> execUpdAtomic $ UpdHealActor aid 1) appRegen
 
 leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelFlip = do

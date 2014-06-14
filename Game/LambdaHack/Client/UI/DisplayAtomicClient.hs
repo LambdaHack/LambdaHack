@@ -115,14 +115,9 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     when (Just aid == mleader) $ do
       Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
       b <- getsState $ getActorBody aid
-      let ActorKind{ahp, acalm} = okind $ bkind b
-      eqpAssocs <- fullAssocsClient aid [CEqp]
-      bodyAssocs <- fullAssocsClient aid [CBody]
-      hpPeriod <- getsState $ regenHPPeriod b eqpAssocs bodyAssocs
-      when ((bhp b == Dice.maxDice ahp || bcalm b == Dice.maxDice acalm)
-            && (hpPeriod <= 0 || bhp b == Dice.maxDice ahp)
-            && (bcalmDelta b <= 0 || bcalm b == Dice.maxDice acalm)) $ do
-        actorVerbMU aid b "recover fully"
+      let ActorKind{ahp} = okind $ bkind b
+      when (bhp b == Dice.maxDice ahp) $ do
+        actorVerbMU aid b "recover your health fully"
         stopPlayBack
   UpdCalmActor aid calmDelta ->
     when (calmDelta == -1) $ do  -- lower deltas come from hits and are obvious
@@ -537,6 +532,22 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs
         Effect.Hurt{} -> skip
+        Effect.Calm p | p > 0 -> do
+          if fid == side then
+            actorVerbMU aid b "feel calmer"
+          else
+            actorVerbMU aid b "look calmer"
+          let ps = (bpos b, bpos b)
+          animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
+          displayActorStart b animFrs
+        Effect.Calm _ -> do
+          if fid == side then
+            actorVerbMU aid b "feel distressed"
+          else
+            actorVerbMU aid b "look distressed"
+          let ps = (bpos b, bpos b)
+          animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
+          displayActorStart b animFrs
         Effect.Dominate -> do
           -- For subsequent messages use the proper name, never "you".
           let subject = partActor b
