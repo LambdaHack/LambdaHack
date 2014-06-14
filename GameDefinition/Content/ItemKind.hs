@@ -19,26 +19,12 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+      [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
   }
-amulet,        bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+bolas,        brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace, net, oilLamp, potion1, potion2, potion3, potion4, ring, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, pupil, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
-amulet = ItemKind
-  { isymbol  = '"'
-  , iname    = "amulet"
-  , ifreq    = [("useful", 6)]
-  , iflavour = zipFancy [BrGreen]
-  , icount   = 1
-  , iverbApply   = "tear down"
-  , iverbProject = "cast"
-  , iweight  = 30
-  , iaspects = [Periodic (4 * d 3 + 2 * dl 10)]
-  , ieffects = [Heal 1]
-  , ifeature = [ToThrow (-50)]  -- not dense enough
-  , idesc    = "A necklace of dried herbs and healing berries."
-  }
 bolas = ItemKind
   { isymbol  = '|'
   , iname    = "a set of bolas"
@@ -174,6 +160,20 @@ monocle = ItemKind
   , ieffects = []
   , ifeature = []
   , idesc    = "Brings that extra sharpness to your weaker eye."
+  }
+necklace = ItemKind
+  { isymbol  = '"'
+  , iname    = "necklace"
+  , ifreq    = [("useful", 6)]
+  , iflavour = zipFancy [BrGreen]
+  , icount   = 1
+  , iverbApply   = "tear down"
+  , iverbProject = "cast"
+  , iweight  = 30
+  , iaspects = [Periodic (4 * d 3 + 2 * dl 10)]
+  , ieffects = [Heal 1]
+  , ifeature = [ToThrow (-50)]  -- not dense enough
+  , idesc    = "A necklace of dried herbs and healing berries."
   }
 net = ItemKind
   { isymbol  = '|'
@@ -630,7 +630,7 @@ explosionBlast n = ItemKind
   , idesc    = ""
   }
 
-speedGland :: Int -> ItemKind  -- TODO: somehow unify with amulet?
+speedGland :: Int -> ItemKind  -- TODO: somehow unify with necklace?
 speedGland n = fist
   { iname    = "speed gland"
   , ifreq    = [("speed gland" <+> tshow n, 100)]
