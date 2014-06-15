@@ -519,6 +519,7 @@ armoredSkin = fist
   , iverbApply   = "bash"
   , iaspects = [ArmorMelee 50]
   , ieffects = []
+  , ifeature = [EqpSlot EqpSlotArmorMelee ""]
   , idesc    = ""
   }
 speedGland1 = speedGland 1
@@ -533,6 +534,7 @@ pupil = fist
   , iverbApply   = "gaze"
   , iaspects = [SightRadius 12]
   , ieffects = [Paralyze 1]
+  , ifeature = [EqpSlot EqpSlotSightRadius ""]
   , idesc    = ""
   }
 eye3 = eye 3
@@ -547,6 +549,7 @@ nostril = fist
   , iverbApply   = "sniff"
   , iaspects = [SmellRadius 1]
   , ieffects = []
+  , ifeature = [EqpSlot EqpSlotSmellRadius ""]
   , idesc    = ""
   }
 thorn = fist
@@ -692,6 +695,7 @@ eye n = fist
   , iverbApply   = "focus"
   , iaspects = [SightRadius (intToDice n)]
   , ieffects = []
+  , ifeature = [EqpSlot EqpSlotSightRadius ""]
   , idesc    = ""
   }
 
