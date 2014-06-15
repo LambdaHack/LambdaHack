@@ -35,7 +35,7 @@ bolas = ItemKind
   , iverbProject = "swirl"
   , iweight  = 500
   , iaspects = []
-  , ieffects = [Hurt (d 2) 0, Paralyze (5 + d 5), ActivateEqp '!']
+  , ieffects = [Hurt (2 * d 1) 0, Paralyze (5 + d 5), ActivateEqp '!']
   , ifeature = []
   , idesc    = "Wood balls tied with hemp rope for tripping, entangling and bringing down crashing."
   }
@@ -64,7 +64,7 @@ dart = ItemKind
   , iverbProject = "hurl"
   , iweight  = 50
   , iaspects = []
-  , ieffects = [Hurt (d 2) (d 3 + dl 3)]
+  , ieffects = [Hurt (2 * d 1) (d 3 + dl 3)]
   , ifeature = []
   , idesc    = "Little, but sharp and sturdy."
   }
@@ -443,7 +443,7 @@ lip = fist
   , ifreq    = [("lip", 10)]
   , icount   = 2
   , iverbApply   = "lap"
-  , ieffects = [Hurt (1 * d 1) 0]
+  , ieffects = [Hurt (d 1) 0]
   , idesc    = ""
   }
 claw = fist
