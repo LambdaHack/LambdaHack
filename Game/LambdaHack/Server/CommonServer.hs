@@ -136,14 +136,19 @@ deduceQuits body status = do
   let fid = bfid body
       mapQuitF statusF fids = mapM_ (quitF Nothing statusF) $ delete fid fids
   quitF (Just body) status fid
-  let inGame fact = case fmap stOutcome $ gquit fact of
+  let inGameOutcome (_, fact) = case fmap stOutcome $ gquit fact of
         Just Killed -> False
         Just Defeated -> False
         Just Restart -> False  -- effectively, commits suicide
         _ -> True
+      inGame (fid2, fact2) =
+        if inGameOutcome (fid2, fact2)
+        then anyActorsAlive fid2
+        else return False
   factionD <- getsState sfactionD
-  let assocsInGame = filter (inGame . snd) $ EM.assocs factionD
-      keysInGame = map fst assocsInGame
+  assocsInGame <- filterM inGame $ EM.assocs factionD
+  let assocsInGameOutcome = filter inGameOutcome $ EM.assocs factionD
+      keysInGame = map fst assocsInGameOutcome
       assocsKeepArena = filter (keepArenaFact . snd) assocsInGame
       assocsUI = filter (playerUI . gplayer . snd) assocsInGame
       worldPeace =
@@ -160,12 +165,13 @@ deduceQuits body status = do
       -- or we could end up in a state with no active arena.
       mapQuitF status{stOutcome=Conquer} keysInGame
     _ | worldPeace ->
-      -- Nobody is at war any more, so all win.
+      -- Nobody is at war any more, so all win (e.g., horrors, but never mind).
       mapQuitF status{stOutcome=Conquer} keysInGame
     _ | stOutcome status == Escape -> do
       -- Otherwise, in a game with many warring teams alive,
       -- only complete Victory matters, until enough of them die.
-      let (victors, losers) = partition (flip isAllied fid . snd) assocsInGame
+      let (victors, losers) = partition (flip isAllied fid . snd)
+                              assocsInGameOutcome
       mapQuitF status{stOutcome=Escape} $ map fst victors
       mapQuitF status{stOutcome=Defeated} $ map fst losers
     _ -> return ()
@@ -177,15 +183,18 @@ deduceKilled body = do
       fid = bfid body
   fact <- getsState $ (EM.! fid) . sfactionD
   unless (isSpawnFact fact) $ do  -- spawners never die off
-    noActorsAlive <- if playerLeader (gplayer fact)
-                     then do
-                       mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-                       return $! isNothing mleader
-                     else do
-                       as <- getsState $ fidActorNotProjList fid
-                       return $! null as
-    when (noActorsAlive || firstDeathEnds) $
+    actorsAlive <- anyActorsAlive fid
+    when (not actorsAlive || firstDeathEnds) $
       deduceQuits body $ Status Killed (fromEnum $ blid body) ""
+
+anyActorsAlive :: MonadServer m => FactionId -> m Bool
+anyActorsAlive fid = do
+  fact <- getsState $ (EM.! fid) . sfactionD
+  if playerLeader (gplayer fact)
+    then return $! isJust $ gleader fact
+    else do
+      as <- getsState $ fidActorNotProjList fid
+      return $! not $ null as
 
 electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
 electLeader fid lid aidDead = do
