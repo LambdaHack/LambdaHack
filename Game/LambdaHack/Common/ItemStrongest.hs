@@ -11,9 +11,11 @@ module Game.LambdaHack.Common.ItemStrongest
   , totalRange, computeTrajectory, itemTrajectory
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import qualified Control.Monad.State as St
 import Data.List
+import Data.Maybe
 import qualified Data.Ord as Ord
 import Data.Text (Text)
 
@@ -26,12 +28,12 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
 
-strongestItem :: Ord b => Bool -> [(ItemId, ItemFull)] -> (ItemFull -> [b])
+strongestItem :: Ord b => Bool -> [(ItemId, ItemFull)] -> (ItemFull -> Maybe b)
               -> [(b, (ItemId, ItemFull))]
 strongestItem onlyOn is p =
-  let pv (iid, item) = map (\v -> (v, (iid, item))) (p item)
+  let pv (iid, item) = (\v -> (v, (iid, item))) <$> (p item)
       onlyIs = if onlyOn then filter (itemIsOn . snd) is else is
-      pis = concatMap pv onlyIs
+      pis = mapMaybe pv onlyIs
   in sortBy (flip $ Ord.comparing fst) pis
 
 dice999 :: Dice.Dice -> Int
@@ -50,6 +52,13 @@ strengthAspect f itemFull =
       in concatMap f $ map trav iaspects
     Nothing -> []
 
+strengthAspectMaybe :: Show b => (Aspect Int -> [b]) -> ItemFull -> Maybe b
+strengthAspectMaybe f itemFull =
+  case strengthAspect f itemFull of
+    [] -> Nothing
+    [x] -> Just x
+    xs -> assert `failure` (xs, itemFull)
+
 strengthEffect :: (Effect Int -> [b]) -> ItemFull -> [b]
 strengthEffect f itemFull =
   case itemDisco itemFull of
@@ -64,50 +73,51 @@ strengthEffect f itemFull =
 strengthFeature :: (IF.Feature -> [b]) -> Item -> [b]
 strengthFeature f item = concatMap f (jfeature item)
 
-strengthMelee :: ItemFull -> [Int]
+strengthMelee :: ItemFull -> Maybe Int
 strengthMelee itemFull =
-  let p (Hurt d k) = [floor (Dice.meanDice d) + k]
+  let durable = IF.Durable `elem` jfeature (itemBase itemFull)
+      p (Hurt d k) = [floor (Dice.meanDice d) + k]
       p _ = []
-  in strengthEffect p itemFull
+  in Just $ sum (strengthEffect p itemFull) + if durable then 1000000 else 0
 
 strengthPeriodic :: ItemFull -> Maybe Int
-strengthPeriodic itemFull =
+strengthPeriodic =
   let p (Periodic k) = [k]
       p _ = []
-  in case strengthAspect p itemFull of
-    [] -> Nothing
-    [x] -> Just x
-    xs -> assert `failure` (xs, itemFull)
+  in strengthAspectMaybe p
 
-strengthArmor :: ItemFull -> [Int]
+strengthArmor :: ItemFull -> Maybe Int
 strengthArmor =
   let p (ArmorMelee k) = [k]
       p _ = []
-  in strengthAspect p
+  in strengthAspectMaybe p
 
-strengthSightRadius :: ItemFull -> [Int]
+strengthSightRadius :: ItemFull -> Maybe Int
 strengthSightRadius =
   let p (SightRadius k) = [k]
       p _ = []
-  in strengthAspect p
+  in strengthAspectMaybe p
 
-strengthSmellRadius :: ItemFull -> [Int]
+strengthSmellRadius :: ItemFull -> Maybe Int
 strengthSmellRadius =
   let p (SmellRadius k) = [k]
       p _ = []
-  in strengthAspect p
+  in strengthAspectMaybe p
 
-strengthIntelligence :: ItemFull -> [Int]
+strengthIntelligence :: ItemFull -> Maybe Int
 strengthIntelligence =
   let p (Intelligence k) = [k]
       p _ = []
-  in strengthAspect p
+  in strengthAspectMaybe p
 
-strengthLight :: Item -> [Int]
-strengthLight =
+strengthLight :: Item -> Maybe Int
+strengthLight item =
   let p (IF.Light k) = [k]
       p _ = []
-  in strengthFeature p
+  in case strengthFeature p item of
+    [] -> Nothing
+    [x] -> Just x
+    xs -> assert `failure` (xs, item)
 
 strengthEqpSlot :: Item -> Maybe (IF.EqpSlot, Text)
 strengthEqpSlot item =
@@ -145,7 +155,7 @@ itemTrajectory item path =
   let ThrowMod{..} = strengthToThrow item
   in computeTrajectory (jweight item) throwVelocity throwLinger path
 
-strengthFromEqpSlot :: IF.EqpSlot -> ItemFull -> [Int]
+strengthFromEqpSlot :: IF.EqpSlot -> ItemFull -> Maybe Int
 strengthFromEqpSlot eqpSlot =
   case eqpSlot of
     IF.EqpSlotArmorMelee -> strengthArmor

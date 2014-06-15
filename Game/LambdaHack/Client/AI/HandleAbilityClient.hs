@@ -278,7 +278,8 @@ harmful :: Actor -> ItemFull -> Bool
 harmful body itemFull =
   -- Fast actors want to hide in darkness to ambush opponents and want
   -- to hit hard for the short span they get to survive melee.
-  not (null (strengthLight (itemBase itemFull) ++ strengthArmor itemFull))
+  (isJust (strengthLight (itemBase itemFull))
+   || isJust (strengthArmor itemFull))
   && bspeed body > speedNormal
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
@@ -455,10 +456,9 @@ applyItem aid applyGroup = do
             Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
               foldr getP False jeffects
             _ -> False
-        QuenchLight ->
-          case strengthLight (itemBase itemFull) of
-            _ : _ -> not $ itemIsOn itemFull
-            [] -> False
+        QuenchLight -> if isJust $ strengthLight (itemBase itemFull)
+                       then not $ itemIsOn itemFull
+                       else False
         ApplyAll -> True
       coeff CBody = 3  -- never destroyed by use
       coeff CGround = 2
