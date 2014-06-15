@@ -197,7 +197,7 @@ reqMelee source target iid = do
                     else HitClear
     execSfxAtomic $ SfxStrike source target iid hitA
     -- Deduct a hitpoint for a pierce of a projectile
-    -- or due to a hurled actor colliding with another.
+    -- or due to a hurled actor colliding with another or a wall.
     when (isJust $ btrajectory sb) $ do
       execUpdAtomic $ UpdHealActor source (-1)
       unless (bproj sb || btrajectory sb == Just []) $

@@ -185,13 +185,13 @@ necklace1 = necklace
   }
 necklace2 = necklace
   { ifreq    = [("useful", 1)]
-  , iaspects = [Periodic $ 2 * d 2 + dl 2]
+  , iaspects = [Periodic $ d 4 + dl 2]
   , ieffects = [Summon $ 1 + dl 2]  -- TODO: + explosion
   }
 necklace3 = necklace
   { ifreq    = [("useful", 1)]
-  , iaspects = [Periodic $ 2 * d 2 + dl 2]
-  , ieffects = [Paralyze $ 2 + d 3 + 2 * dl 6, Calm 50]
+  , iaspects = [Periodic $ d 4 + dl 2]
+  , ieffects = [Paralyze $ 5 + d 5 + dl 5, Calm 50]
   }
 net = ItemKind
   { isymbol  = '|'
@@ -276,20 +276,20 @@ ring1 = ring
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with letters that meant a lot to somebody."
   }
 ring2 = ring
-  { iaspects = [Periodic $ 2 * d 20 + dl 20]
-  , ieffects = [Teleport $ 2 + d 5]
+  { iaspects = [Periodic $ 2 * d 10 + dl 10]
+  , ieffects = [Teleport $ 2 + d 3]
   }
 ring3 = ring
-  { iaspects = [Periodic $ 2 * d 5 + dl 5]
-  , ieffects = [Teleport $ 15 + d 10]
+  { iaspects = [Periodic $ d 4 + dl 2]
+  , ieffects = [Teleport $ 10 + d 10]
   }
 ring4 = ring
-  { iaspects = [Periodic $ 2 * d 10 + dl 10]
-  , ieffects = [PushActor (ThrowMod 200 50)]
+  { iaspects = [Periodic $ 2 * d 5 + dl 5]
+  , ieffects = [PushActor (ThrowMod 100 50)]
   }
 ring5 = ring
   { ifreq    = [("useful", 1)]
-  , iaspects = [Periodic $ 2 * d 10 + dl 30]
+  , iaspects = [Periodic $ 2 * d 10 + dl 20]
   , ieffects = [InsertMove 1, Heal (-1)]  -- TODO: allow fractions for smooth?
   , ifeature = [Durable]  -- evil players would throw before death, to destroy
   }
