@@ -42,9 +42,9 @@ effectToBenefit cops@Kind.COps{coactor=Kind.Ops{okind}} b eff =
     Effect.DropEqp ' ' True -> -100
     Effect.DropEqp _ False -> -40
     Effect.DropEqp _ True -> -50
-    Effect.SendFlying _ _ -> -10  -- but useful on self sometimes, too
-    Effect.PushActor _ _ -> -10  -- but useful on self sometimes, too
-    Effect.PullActor _ _ -> -10
+    Effect.SendFlying _ -> -10  -- but useful on self sometimes, too
+    Effect.PushActor _ -> -10  -- but useful on self sometimes, too
+    Effect.PullActor _ -> -10
     Effect.Teleport p -> -5 * p  -- but useful on self sometimes
     Effect.ActivateEqp ' ' -> -100
     Effect.ActivateEqp _ -> -50

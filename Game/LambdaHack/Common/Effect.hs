@@ -2,7 +2,7 @@
 -- | Effects of content on other content. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Common.Effect
-  ( Effect(..), Aspect(..)
+  ( Effect(..), Aspect(..), ThrowMod(..)
   , effectTrav, aspectTrav
   , effectToSuffix, aspectToSuffix, kindEffectToSuffix, kindAspectToSuffix
   , affixPower, affixBonus
@@ -41,9 +41,9 @@ data Effect a =
   | InsertMove !a
   | DropBestWeapon
   | DropEqp !Char !Bool  -- ^ symbol @' '@ means all, @True@ means hit on drop
-  | SendFlying !a !a
-  | PushActor !a !a
-  | PullActor !a !a
+  | SendFlying !(ThrowMod a)
+  | PushActor !(ThrowMod a)
+  | PullActor !(ThrowMod a)
   | Teleport !a
   | ActivateEqp !Char  -- ^ symbol @' '@ means all
   | TimedAspect !Int !(Aspect a)  -- enable the aspect for k clips
@@ -61,13 +61,24 @@ data Aspect a =
   | Explode !Text  -- ^ explode, producing this group of shrapnel
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
+-- | Parameters modifying a trow.
+data ThrowMod a = ThrowMod
+  { throwVelocity :: !a  -- ^ fly with this percentage of base throw speed
+  , throwLinger   :: !a  -- ^ fly for this percentage of 2 turns
+  }
+  deriving (Show, Read, Eq, Ord, Generic, Functor)
+
 instance Hashable.Hashable a => Hashable.Hashable (Effect a)
 
 instance Hashable.Hashable a => Hashable.Hashable (Aspect a)
 
+instance Hashable.Hashable a => Hashable.Hashable (ThrowMod a)
+
 instance Binary a => Binary (Effect a)
 
 instance Binary a => Binary (Aspect a)
+
+instance Binary a => Binary (ThrowMod a)
 
 -- TODO: Traversable?
 -- | Transform an effect using a stateful function.
@@ -98,18 +109,15 @@ effectTrav (InsertMove a) f = do
   return $! InsertMove b
 effectTrav DropBestWeapon _ = return DropBestWeapon
 effectTrav (DropEqp symbol hit) _ = return $! DropEqp symbol hit
-effectTrav (SendFlying a1 a2) f = do
-  b1 <- f a1
-  b2 <- f a2
-  return $! SendFlying b1 b2
-effectTrav (PushActor a1 a2) f = do
-  b1 <- f a1
-  b2 <- f a2
-  return $! PushActor b1 b2
-effectTrav (PullActor a1 a2) f = do
-  b1 <- f a1
-  b2 <- f a2
-  return $! PullActor b1 b2
+effectTrav (SendFlying tmod) f = do
+  tmod2 <- modTrav tmod f
+  return $! SendFlying tmod2
+effectTrav (PushActor tmod) f = do
+  tmod2 <- modTrav tmod f
+  return $! PushActor tmod2
+effectTrav (PullActor tmod) f = do
+  tmod2 <- modTrav tmod f
+  return $! PullActor tmod2
 effectTrav (Teleport a) f = do
   b <- f a
   return $! Teleport b
@@ -118,7 +126,7 @@ effectTrav (TimedAspect k asp) f = do
   asp2 <- aspectTrav asp f
   return $! TimedAspect k asp2
 
--- | Transform an apsect using a stateful function.
+-- | Transform an aspect using a stateful function.
 aspectTrav :: Aspect a -> (a -> St.State s b) -> St.State s (Aspect b)
 aspectTrav NoAspect _ = return NoAspect
 aspectTrav (Periodic a) f = do
@@ -135,6 +143,14 @@ aspectTrav (Intelligence a) f = do
   b <- f a
   return $! Intelligence b
 aspectTrav (Explode t) _ = return $! Explode t
+
+-- | Transform a throwing mod using a stateful function.
+modTrav :: ThrowMod a -> (a -> St.State s b) -> St.State s (ThrowMod b)
+modTrav ThrowMod{..} f = do
+  throwVelocityNew <- f throwVelocity
+  throwLingerNew <- f throwLinger
+  return $! ThrowMod{ throwVelocity = throwVelocityNew
+                    , throwLinger = throwLingerNew }
 
 -- | Suffix to append to a basic content name if the content causes the effect.
 effectToSuff :: (Show a, Ord a, Num a) => Effect a -> (a -> Text) -> Text
@@ -169,9 +185,9 @@ effectToSuff effect f =
     DropEqp ' ' True -> "of equipment smashing"
     DropEqp symbol True ->
       "of equipment '" <> T.singleton symbol <> "' smashing"
-    SendFlying t1 t2 -> "of impact" <+> t1 <+> t2
-    PushActor t1 t2 -> "of pushing" <+> t1 <+> t2
-    PullActor t1 t2 -> "of pulling" <+> t1 <+> t2
+    SendFlying ThrowMod{..} -> "of impact" <+> throwVelocity <+> throwLinger
+    PushActor ThrowMod{..} -> "of pushing" <+> throwVelocity <+> throwLinger
+    PullActor ThrowMod{..} -> "of pulling" <+> throwVelocity <+> throwLinger
     Teleport t ->
       case effect of
         Teleport p | p > 9 -> "of teleport" <+> t

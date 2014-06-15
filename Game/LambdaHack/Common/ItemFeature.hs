@@ -15,8 +15,7 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 data Feature =
     ChangeTo !Text             -- ^ change to this item kind group when altered
   | Fragile                    -- ^ break even when not hitting an enemy
-  | ToThrow !Int               -- ^ percentage bonus to throw speed
-  | Linger !Int                -- ^ fly for this percentage of 2 turns
+  | ToThrow !(Effect.ThrowMod Int)  -- ^ parameters modifying a throw
   | Consumable                 -- ^ can't be turned off, is consumed by use
   | Light !Int                 -- ^ item shines with the given radius
   deriving (Show, Eq, Ord, Generic)
@@ -31,6 +30,5 @@ featureToSuff feat =
     ChangeTo{} -> ""
     Fragile -> ""
     ToThrow{} -> ""
-    Linger{} -> ""
     Consumable -> ""
     Light p -> Effect.affixBonus p

@@ -259,7 +259,7 @@ calmEnough :: Actor -> ActorKind -> Bool
 calmEnough b kind =
   let calmMax = Dice.maxDice $ acalm kind
       calmCur = bcalm b
-  in 60 * calmMax <= 100 * calmCur
+  in 2 * calmMax <= 3 * calmCur
 
 -- | Get current time from the dungeon data.
 getLocalTime :: LevelId -> State -> Time

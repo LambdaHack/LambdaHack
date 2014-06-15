@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.ItemStrongest
   , strengthMelee, strengthPeriodic, strengthArmor
   , strengthSightRadius, strengthSmellRadius, strengthIntelligence
   , strengthLight
-  , strengthLingering, strengthToThrow, isFragile
+  , strengthToThrow, isFragile
   , strongestItem, strongestSword, strongestShield
   , strongestSightRadius, strongestSmellRadius, strongestIntelligence
   , strongestLight
@@ -81,11 +81,14 @@ strongestSword :: Kind.COps -> Bool -> [(ItemId, ItemFull)]
                -> [(Int, (ItemId, ItemFull))]
 strongestSword cops onlyOn is = strongestItem onlyOn is (strengthMelee cops)
 
-strengthPeriodic :: ItemFull -> [Int]
-strengthPeriodic =
+strengthPeriodic :: ItemFull -> Maybe Int
+strengthPeriodic itemFull =
   let p (Periodic k) = [k]
       p _ = []
-  in strengthAspect p
+  in case strengthAspect p itemFull of
+    [] -> Nothing
+    [fr] -> Just fr
+    vs -> assert `failure` (vs, itemFull)
 
 strengthArmor :: ItemFull -> [Int]
 strengthArmor =
@@ -135,22 +138,13 @@ strengthLight =
 strongestLight :: Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
 strongestLight onlyOn is = strongestItem onlyOn is (strengthLight . itemBase)
 
-strengthLingering :: Item -> Int
-strengthLingering item =
-  let p (IF.Linger percent) = [percent]
-      p _ = []
-  in case strengthFeature p item of
-    [] -> 100
-    [percent] -> percent
-    vs -> assert `failure` (vs, item)
-
-strengthToThrow :: Item -> Int
+strengthToThrow :: Item -> ThrowMod Int
 strengthToThrow item =
-  let p (IF.ToThrow percent) = [percent]
+  let p (IF.ToThrow tmod) = [tmod]
       p _ = []
   in case strengthFeature p item of
-    [] -> 0
-    [percent] -> percent
+    [] -> ThrowMod 100 100
+    [tmod] -> tmod
     vs -> assert `failure` (vs, item)
 
 isFragile :: Item -> Bool
@@ -164,21 +158,21 @@ isFragile item =
 
 totalRange :: Item -> Int
 totalRange item =
-  let linger = strengthLingering item
-      speed = speedFromWeight (jweight item) (strengthToThrow item)
-  in rangeFromSpeedAndLinger speed linger
+  let ThrowMod{..} = strengthToThrow item
+      speed = speedFromWeight (jweight item) throwVelocity
+  in rangeFromSpeedAndLinger speed throwLinger
 
 computeTrajectory :: Int -> Int -> Int -> [Point] -> ([Vector], Speed)
-computeTrajectory weight toThrow linger path =
-  let speed = speedFromWeight weight toThrow
-      trange = rangeFromSpeedAndLinger speed linger
+computeTrajectory weight throwVelocity throwLinger path =
+  let speed = speedFromWeight weight throwVelocity
+      trange = rangeFromSpeedAndLinger speed throwLinger
       btrajectory = take trange $ pathToTrajectory path
   in (btrajectory, speed)
 
 itemTrajectory :: Item -> [Point] -> ([Vector], Speed)
 itemTrajectory item path =
-  computeTrajectory (jweight item) (strengthToThrow item)
-                    (strengthLingering item) path
+  let ThrowMod{..} = strengthToThrow item
+  in computeTrajectory (jweight item) throwVelocity throwLinger path
 
 -- TODO: rewrite when we have launchers, wands and armour
 -- TODO: refine taking into account item kind, etc.

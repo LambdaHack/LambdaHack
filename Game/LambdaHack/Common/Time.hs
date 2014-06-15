@@ -155,17 +155,17 @@ ticksPerMeter :: Speed -> Delta Time
 ticksPerMeter (Speed v) = Delta $ Time $ _ticksInSecond * sInMs `divUp` max 1 v
 
 -- | Calculate projectile speed from item weight in grams
--- and speed bonus in percents.
+-- and velocity percent modifier.
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Item-statistics>.
 speedFromWeight :: Int -> Int -> Speed
-speedFromWeight weight bonus =
+speedFromWeight weight velocityPercent =
   let w = fromIntegral weight
-      b = fromIntegral bonus
+      vp = fromIntegral velocityPercent
       mpMs | w <= 500 = sInMs * 16
            | w > 500 && w <= 2000 = sInMs * 16 * 1500 `div` (w + 1000)
            | w < 8000 = sInMs * (10000 - w) `div` 1000
            | otherwise = sInMs * 2  -- one step per turn is the minimum
-      v = mpMs * (100 + b) `div` 100
+      v = mpMs * vp `div` 100
       -- We round down to the nearest multiple of 2M (unless the speed
       -- is very low), to ensure both turns of flight cover the same distance
       -- and that the speed matches the distance traveled exactly.

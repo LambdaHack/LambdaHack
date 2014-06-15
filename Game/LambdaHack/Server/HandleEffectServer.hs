@@ -136,12 +136,12 @@ effectSem effect source target = do
     Effect.InsertMove p -> effectInsertMove execSfx p target
     Effect.DropBestWeapon -> effectDropBestWeapon execSfx target
     Effect.DropEqp symbol hit -> effectDropEqp execSfx hit target symbol
-    Effect.SendFlying p1 p2 ->
-      effectSendFlying execSfx p1 p2 source target Nothing
-    Effect.PushActor p1 p2 ->
-      effectSendFlying execSfx p1 p2 source target (Just True)
-    Effect.PullActor p1 p2 ->
-      effectSendFlying execSfx p1 p2 source target (Just False)
+    Effect.SendFlying tmod ->
+      effectSendFlying execSfx tmod source target Nothing
+    Effect.PushActor tmod ->
+      effectSendFlying execSfx tmod source target (Just True)
+    Effect.PullActor tmod ->
+      effectSendFlying execSfx tmod source target (Just False)
     Effect.Teleport p -> effectTeleport execSfx p target
     Effect.ActivateEqp symbol -> effectActivateEqp execSfx target symbol
     Effect.TimedAspect{} -> return False  -- TODO
@@ -574,9 +574,10 @@ effectTransformEqp execSfx target symbol m = do
 -- boldpos is used, if it can't, a random outward vector of length 10
 -- is picked.
 effectSendFlying :: (MonadAtomic m, MonadServer m)
-                 => m () -> Int -> Int -> ActorId -> ActorId -> Maybe Bool
+                 => m () -> Effect.ThrowMod Int
+                 -> ActorId -> ActorId -> Maybe Bool
                  -> m Bool
-effectSendFlying execSfx toThrow linger source target modePush = do
+effectSendFlying execSfx Effect.ThrowMod{..} source target modePush = do
   v <- sendFlyingVector source target modePush
   Kind.COps{cotile} <- getsState scops
   tb <- getsState $ getActorBody target
@@ -597,7 +598,7 @@ effectSendFlying execSfx toThrow linger source target modePush = do
               weight = 70000  -- 70 kg
               path = bpos tb : pos : rest
               (trajectoryNew, speed) =
-                computeTrajectory weight toThrow linger path
+                computeTrajectory weight throwVelocity throwLinger path
               speedOld = bspeed tb
               speedDelta = speedAdd speed (speedNegate speedOld)
           unless (btrajectory tb == Just trajectoryNew) $
