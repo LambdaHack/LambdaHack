@@ -64,7 +64,7 @@ applyItem turnOff aid iid cstore = do
     execSfxAtomic $ SfxActivate aid iid (1, isOn) isOn
     -- TODO: don't destroy if not really used up; also, don't take time?
     let durable = IF.Durable `elem` jfeature item
-    when durable $
+    when (not durable) $
       mapM_ (\(_, c) -> execUpdAtomic
                         $ UpdDestroyItem iid item (1, isOn) c) cs
     itemEffect aid aid iid itemFull
