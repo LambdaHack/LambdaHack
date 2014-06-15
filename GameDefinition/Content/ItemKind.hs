@@ -407,6 +407,7 @@ fist = sword
   , iverbApply   = "punch"
   , iverbProject = "ERROR, please report: iverbProject"
   , ieffects = [Hurt (5 * d 1) 0]
+  , ifeature = [Durable]
   , idesc    = ""
   }
 foot = fist
@@ -684,6 +685,7 @@ speedGland n = fist
   , iverbApply   = "squeeze"
   , iaspects = [Periodic (intToDice $ 20 * n)]  -- TODO: also speed bonus?
   , ieffects = [Heal 1]
+  , ifeature = []
   , idesc    = ""
   }
 
