@@ -6,11 +6,9 @@ module Game.LambdaHack.Common.ItemStrongest
   , strengthMelee, strengthPeriodic, strengthArmor
   , strengthSightRadius, strengthSmellRadius, strengthIntelligence
   , strengthLight, strengthToThrow, strengthEqpSlot, isFragile
-  , strongestItem, strongestSword, strongestShield
-  , strongestSightRadius, strongestSmellRadius, strongestIntelligence
-  , strongestLight
+  , strengthFromEqpSlot, strongestSlot, strongestItem
     -- * Assorted
-  , totalRange, computeTrajectory, itemTrajectory, strengthFromAspect
+  , totalRange, computeTrajectory, itemTrajectory
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -23,12 +21,10 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemFeature as IF
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.RuleKind
 
 strongestItem :: Ord b => Bool -> [(ItemId, ItemFull)] -> (ItemFull -> [b])
               -> [(b, (ItemId, ItemFull))]
@@ -68,17 +64,11 @@ strengthEffect f itemFull =
 strengthFeature :: (IF.Feature -> [b]) -> Item -> [b]
 strengthFeature f item = concatMap f (jfeature item)
 
-strengthMelee :: Kind.COps -> ItemFull -> [Int]
-strengthMelee Kind.COps{corule} itemFull =
-  if jsymbol (itemBase itemFull) `elem` ritemMelee (Kind.stdRuleset corule)
-  then let p (Hurt d k) = [floor (Dice.meanDice d) + k]
-           p _ = []
-       in strengthEffect p itemFull
-  else []
-
-strongestSword :: Kind.COps -> Bool -> [(ItemId, ItemFull)]
-               -> [(Int, (ItemId, ItemFull))]
-strongestSword cops onlyOn is = strongestItem onlyOn is (strengthMelee cops)
+strengthMelee :: ItemFull -> [Int]
+strengthMelee itemFull =
+  let p (Hurt d k) = [floor (Dice.meanDice d) + k]
+      p _ = []
+  in strengthEffect p itemFull
 
 strengthPeriodic :: ItemFull -> Maybe Int
 strengthPeriodic itemFull =
@@ -95,18 +85,11 @@ strengthArmor =
       p _ = []
   in strengthAspect p
 
-strongestShield :: Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestShield onlyOn is = strongestItem onlyOn is strengthArmor
-
 strengthSightRadius :: ItemFull -> [Int]
 strengthSightRadius =
   let p (SightRadius k) = [k]
       p _ = []
   in strengthAspect p
-
-strongestSightRadius :: Bool -> [(ItemId, ItemFull)]
-                     -> [(Int, (ItemId, ItemFull))]
-strongestSightRadius onlyOn is = strongestItem onlyOn is strengthSightRadius
 
 strengthSmellRadius :: ItemFull -> [Int]
 strengthSmellRadius =
@@ -114,28 +97,17 @@ strengthSmellRadius =
       p _ = []
   in strengthAspect p
 
-strongestSmellRadius :: Bool -> [(ItemId, ItemFull)]
-                     -> [(Int, (ItemId, ItemFull))]
-strongestSmellRadius onlyOn is = strongestItem onlyOn is strengthSmellRadius
-
 strengthIntelligence :: ItemFull -> [Int]
 strengthIntelligence =
   let p (Intelligence k) = [k]
       p _ = []
   in strengthAspect p
 
-strongestIntelligence :: Bool -> [(ItemId, ItemFull)]
-                      -> [(Int, (ItemId, ItemFull))]
-strongestIntelligence onlyOn is = strongestItem onlyOn is strengthIntelligence
-
 strengthLight :: Item -> [Int]
 strengthLight =
   let p (IF.Light k) = [k]
       p _ = []
   in strengthFeature p
-
-strongestLight :: Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestLight onlyOn is = strongestItem onlyOn is (strengthLight . itemBase)
 
 strengthEqpSlot :: Item -> Maybe (IF.EqpSlot, Text)
 strengthEqpSlot item =
@@ -182,11 +154,20 @@ itemTrajectory item path =
   let ThrowMod{..} = strengthToThrow item
   in computeTrajectory (jweight item) throwVelocity throwLinger path
 
-strengthFromAspect :: Kind.COps -> IF.EqpSlot -> ItemFull -> [Int]
-strengthFromAspect cops eqpSlot =
+strengthFromEqpSlot :: IF.EqpSlot -> ItemFull -> [Int]
+strengthFromEqpSlot eqpSlot =
   case eqpSlot of
     IF.EqpSlotArmorMelee -> strengthArmor
     IF.EqpSlotSightRadius -> strengthSightRadius
     IF.EqpSlotSmellRadius -> strengthSmellRadius
     IF.EqpSlotLight -> strengthLight . itemBase
-    IF.EqpSlotWeapon -> strengthMelee cops
+    IF.EqpSlotWeapon -> strengthMelee
+
+strongestSlot :: IF.EqpSlot -> Bool -> [(ItemId, ItemFull)]
+              -> [(Int, (ItemId, ItemFull))]
+strongestSlot eqpSlot onlyOn is =
+  let f (_, itemFull) = case strengthEqpSlot $ itemBase itemFull of
+        Just (eqpSlot2, _) | eqpSlot2 == eqpSlot -> True
+        _ -> False
+      slotIs = filter f is
+  in strongestItem onlyOn slotIs $ strengthFromEqpSlot eqpSlot

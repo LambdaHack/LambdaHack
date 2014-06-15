@@ -19,7 +19,7 @@ import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.ItemStrongest
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -101,7 +101,7 @@ targetStrategy oldLeader aid = do
   -- and only if they can shoot at the moment)
   fightsSpawners <- fightsAgainstSpawners (bfid b)
   explored <- getsClient sexplored
-  smellRadius <- strongestClient strongestSmellRadius aid
+  smellRadius <- strongestClient IF.EqpSlotSmellRadius aid
   let canSmell = smellRadius > 0
       meleeNearby | fightsSpawners = nearby `div` 2  -- not aggresive
                   | otherwise = nearby

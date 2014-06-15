@@ -24,6 +24,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -215,9 +216,8 @@ itemToFullClient = do
 pickWeaponClient :: MonadClient m
                  => ActorId -> ActorId -> m [RequestTimed AbMelee]
 pickWeaponClient source target = do
-  cops <- getsState scops
   allAssocs <- fullAssocsClient source [CEqp, CBody]
-  case strongestSword cops True allAssocs of
+  case strongestSlot IF.EqpSlotWeapon True allAssocs of
     [] -> return []
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
@@ -226,9 +226,8 @@ pickWeaponClient source target = do
       return $! [ReqMelee target iid]
 
 strongestClient :: MonadClient m
-                => (Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))])
-                -> ActorId -> m Int
-strongestClient f aid = do
+                => IF.EqpSlot -> ActorId -> m Int
+strongestClient eqpSlot aid = do
   eqpAssocs <- fullAssocsClient aid [CEqp]
   bodyAssocs <- fullAssocsClient aid [CBody]
-  return $! strongestBodyEqp f eqpAssocs bodyAssocs
+  return $! strongestBodyEqp eqpSlot eqpAssocs bodyAssocs

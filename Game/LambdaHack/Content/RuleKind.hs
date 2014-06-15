@@ -42,7 +42,6 @@ data RuleKind = RuleKind
   , rpathsDataFile   :: FilePath -> IO FilePath
                                    -- ^ the path to data files
   , rpathsVersion    :: !Version   -- ^ the version of the game
-  , ritemMelee       :: ![Char]    -- ^ symbols of melee weapons
   , ritemRanged      :: ![Char]    -- ^ ranged weapons and missiles
   , ritemNeedId      :: ![Char]    -- ^ items that need to be identified
   , ritemProject     :: ![Char]    -- ^ symbols of items AI can project

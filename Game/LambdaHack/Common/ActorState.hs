@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -291,7 +292,7 @@ actorShines b s =
   let eqpAssocs = bagAssocsK s $ beqp b
       bodyAssocs = bagAssocsK s $ bbody b
       floorAssocs = bagAssocsK s $ sdungeon s EM.! blid b `atI` bpos b
-  in not $ null (strongestLight True $ map (second itemNoDisco)
+  in not $ null (strongestSlot IF.EqpSlotLight True $ map (second itemNoDisco)
                  $ eqpAssocs ++ bodyAssocs ++ floorAssocs)
 
 actorInAmbient :: Actor -> State -> Bool
@@ -340,12 +341,10 @@ itemToFull Kind.COps{coitem=Kind.Ops{okind}}
                                          , itemAE = EM.lookup iid discoAE }
   in ItemFull {..}
 
-strongestBodyEqp :: (Bool
-                     -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))])
-                 -> [(ItemId, ItemFull)] -> [(ItemId, ItemFull)]
+strongestBodyEqp :: IF.EqpSlot -> [(ItemId, ItemFull)] -> [(ItemId, ItemFull)]
                  -> Int
-strongestBodyEqp f eqpAssocs bodyAssocs =
-  let maxF ass = case f True ass of
+strongestBodyEqp eqpSlot eqpAssocs bodyAssocs =
+  let maxF ass = case strongestSlot eqpSlot True ass of
         [] -> 0
         (x, _) : _ -> x
   in maxF bodyAssocs + maxF eqpAssocs

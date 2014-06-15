@@ -25,6 +25,7 @@ import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -115,7 +116,7 @@ addSmell aid = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  smellRadius <- strongestServer strongestSmellRadius aid
+  smellRadius <- strongestServer IF.EqpSlotSmellRadius aid
   unless (bproj b || not (isHeroFact cops fact) || smellRadius > 0) $ do
     time <- getsState $ getLocalTime $ blid b
     lvl <- getLevel $ blid b
@@ -184,9 +185,10 @@ reqMelee source target iid = do
     sfact <- getsState $ (EM.! sfid) . sfactionD
     -- If the attacker is a projectile, we don't take any shield into account,
     -- to prevent micromanagement: walking with shield, melee without.
-    let noShield = bproj sb
-                   || (null $ strongestShield True sallAssocs)
-                   || (null $ strongestShield True tallAssocs)
+    let noShield =
+          bproj sb
+          || (null $ strongestSlot IF.EqpSlotArmorMelee True sallAssocs)
+          || (null $ strongestSlot IF.EqpSlotArmorMelee True tallAssocs)
         block = braced tb
         hitA = if block && not noShield
                then HitBlock 2

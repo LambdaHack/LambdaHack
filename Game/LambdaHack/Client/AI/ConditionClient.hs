@@ -38,6 +38,7 @@ import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -119,20 +120,20 @@ condBlocksFriendsM aid = do
 -- | Require the actor stands over a weapon.
 condFloorWeaponM :: MonadClient m => ActorId -> m Bool
 condFloorWeaponM aid = do
-  cops <- getsState scops
   floorAssocs <- fullAssocsClient aid [CGround]
   -- We do consider OFF weapons, because e.g., enemies might have turned
   -- them off or they can be wrong for other party members, but are OK for us.
-  let lootIsWeapon = not $ null $ strongestSword cops False floorAssocs
+  let lootIsWeapon =
+        not $ null $ strongestSlot IF.EqpSlotWeapon False floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
 -- | Require the actor doesn't stand over a weapon, unless it's deactivated.
 condNoWeaponM :: MonadClient m => ActorId -> m Bool
 condNoWeaponM aid = do
-  cops <- getsState scops
   allAssocs <- fullAssocsClient aid [CEqp, CBody]
   -- We do not consider OFF weapons, because they apparently are not good.
-  return $ null $ strongestSword cops True allAssocs  -- keep it lazy
+  return $ null $ strongestSlot IF.EqpSlotWeapon True allAssocs
+    -- keep it lazy
 
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => ActorId -> m Bool
@@ -144,7 +145,7 @@ condCanProjectM aid = do
                    then ritemProject
                    else ritemRanged)
                   $ Kind.stdRuleset corule
-  actorBlind <- radiusBlind <$> strongestClient strongestSightRadius aid
+  actorBlind <- radiusBlind <$> strongestClient IF.EqpSlotSightRadius aid
   benList <- benAvailableItems aid permitted
   let missiles = filter (maybe True (< 0) . fst . fst) benList
   return $ not actorBlind && calmEnough b ak && not (null missiles)

@@ -27,6 +27,7 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -288,14 +289,13 @@ drawLeaderStatus waitT width = do
 
 drawLeaderDamage :: MonadClient m => Int -> m [Color.AttrChar]
 drawLeaderDamage width = do
-  cops <- getsState scops
   mleader <- getsClient _sleader
   let addColor t = map (Color.AttrChar $ Color.Attr Color.BrCyan Color.defBG)
                    (T.unpack t)
   stats <- case mleader of
     Just leader -> do
       allAssocs <- fullAssocsClient leader [CEqp, CBody]
-      let damage = case strongestSword cops True allAssocs of
+      let damage = case strongestSlot IF.EqpSlotWeapon True allAssocs of
             (_, (_, itemFull)) : _->
               let getP :: Effect.Effect a -> Maybe (Dice.Dice, a)
                        -> Maybe (Dice.Dice, a)

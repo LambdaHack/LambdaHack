@@ -43,6 +43,7 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -290,8 +291,8 @@ projectPos ts tpos = do
           if not $ Tile.isWalkable cotile t
             then failSer ProjectBlockTerrain
             else do
-              actorBlind <- radiusBlind
-                            <$> strongestClient strongestSightRadius leader
+              actorBlind <-
+                radiusBlind <$> strongestClient IF.EqpSlotSightRadius leader
               mab <- getsState $ posToActor pos lid
               if maybe True (bproj . snd . fst) mab
               then if actorBlind

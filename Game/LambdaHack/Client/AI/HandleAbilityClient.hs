@@ -200,10 +200,9 @@ waitBlockNow = return $! returN "wait" ReqWait
 pickup :: MonadClient m
        => ActorId -> Bool -> m (Strategy (RequestTimed AbMoveItem))
 pickup aid onlyWeapon = do
-  Kind.COps{corule} <- getsState scops
-  let RuleKind{ritemMelee} = Kind.stdRuleset corule
   benItemL <- benGroundItems aid
-  let isWeapon (_, (_, item)) = jsymbol item `elem` ritemMelee
+  let isWeapon (_, (_, item)) = maybe False ((== IF.EqpSlotWeapon) . fst)
+                                $ strengthEqpSlot item
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
   case filterWeapon benItemL of
@@ -214,7 +213,7 @@ pickup aid onlyWeapon = do
 
 manageEqp :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 manageEqp aid = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   body <- getsState $ getActorBody aid
   invAssocs <- fullAssocsClient aid [CInv]
@@ -248,7 +247,7 @@ manageEqp aid = do
             _ -> reject
         getK [] = 0
         getK ((_, (_, itemFull)) : _) = itemK itemFull
-        bestInvEqp = bestByEqpSlot cops invAssocs eqpAssocs
+        bestInvEqp = bestByEqpSlot invAssocs eqpAssocs
     return $ msum $ map improve bestInvEqp
   else return reject
 
@@ -261,16 +260,16 @@ groupByEqpSlot is =
       withES = mapMaybe f is
   in M.fromListWith (++) withES
 
-bestByEqpSlot :: Kind.COps -> [(ItemId, ItemFull)] -> [(ItemId, ItemFull)]
+bestByEqpSlot :: [(ItemId, ItemFull)] -> [(ItemId, ItemFull)]
               -> [([(Int, (ItemId, ItemFull))], [(Int, (ItemId, ItemFull))])]
-bestByEqpSlot cops invAssocs eqpAssocs =
+bestByEqpSlot invAssocs eqpAssocs =
   let invMap = M.map (\g -> (g, [])) $ groupByEqpSlot invAssocs
       eqpMap = M.map (\g -> ([], g)) $ groupByEqpSlot eqpAssocs
       appendBoth (g1, g2) (h1, h2) = (g1 ++ h1, g2 ++ h2)
       invEqpMap = M.unionWith appendBoth invMap eqpMap
       -- We don't take OFF into account, because AI can toggle it at will.
       bestSingle eqpSlot g = strongestItem False g
-                             $ strengthFromAspect cops eqpSlot
+                             $ strengthFromEqpSlot eqpSlot
       bestBoth (eqpSlot, _) (g1, g2) = (bestSingle eqpSlot g1,
                                         bestSingle eqpSlot g2)
   in M.elems $ M.mapWithKey bestBoth invEqpMap
@@ -406,7 +405,7 @@ ranged aid = do
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
       let mk = okind bkind
-      actorBlind <- radiusBlind <$> strongestClient strongestSightRadius aid
+      actorBlind <- radiusBlind <$> strongestClient IF.EqpSlotSightRadius aid
       mnewEps <- makeLine b fpos seps
       case mnewEps of
         Just newEps | not actorBlind  -- ProjectBlind
@@ -443,7 +442,7 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid | QuenchLight
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
-  actorBlind <- radiusBlind <$> strongestClient strongestSightRadius aid
+  actorBlind <- radiusBlind <$> strongestClient IF.EqpSlotSightRadius aid
   let permitted | applyGroup == QuenchLight = "("
                 | actorBlind = "!"
                 | otherwise = "!?"

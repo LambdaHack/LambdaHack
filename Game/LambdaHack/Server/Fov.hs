@@ -15,6 +15,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -63,7 +64,7 @@ levelPerception litHere fovMode fid lid lvl@Level{lxsize, lysize} s ser =
               fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CEqp] s
             bodyAssocs =
               fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CBody] s
-            radius = strongestBodyEqp strongestSmellRadius eqpAssocs bodyAssocs
+            radius = strongestBodyEqp IF.EqpSlotSightRadius eqpAssocs bodyAssocs
         in radius > 0
       -- TODO: We assume smell FOV radius is always 1, regardless of vision
       -- radius of the actor (and whether he can see at all).
@@ -113,7 +114,7 @@ reachableFromActor cops@Kind.COps{cotile}
       bodyAssocs =
         fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CBody] s
       radius = 1 +  -- all actors feel adjacent positions (for easy exploration)
-               strongestBodyEqp strongestSightRadius eqpAssocs bodyAssocs
+               strongestBodyEqp IF.EqpSlotSightRadius eqpAssocs bodyAssocs
   in PerceptionReachable $ fullscan cotile fovMode radius (bpos body) lvl
 
 litByItems :: FovMode -> Level -> Point -> State
@@ -121,7 +122,7 @@ litByItems :: FovMode -> Level -> Point -> State
            -> [Point]
 litByItems fovMode lvl p s iis =
   let Kind.COps{cotile} = scops s
-  in case strongestLight True $ map (second itemNoDisco) iis of
+  in case strongestSlot IF.EqpSlotLight True $ map (second itemNoDisco) iis of
     (radius, _) : _ ->
       let scan = fullscan cotile fovMode radius p lvl
       -- Optimization: filter out positions that already have ambient light.

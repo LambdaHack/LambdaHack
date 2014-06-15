@@ -191,11 +191,11 @@ effectHurt nDm power source target = do
   n <- rndToAction $ castDice 0 0 nDm
   let block = braced tb
       -- OFF shield doesn't hinder attacks, so also does not protect.
-      sshieldMult = case strongestShield True sallAssocs of
+      sshieldMult = case strongestSlot IF.EqpSlotArmorMelee True sallAssocs of
         _ | bproj sb -> 100
         [] -> 100
         (p, _) : _ -> p
-      tshieldMult = case strongestShield True tallAssocs of
+      tshieldMult = case strongestSlot IF.EqpSlotArmorMelee True tallAssocs of
         _ | bproj sb -> 100
         [] -> 100
         (p, _) : _ -> p
@@ -524,9 +524,8 @@ effectInsertMove execSfx p target = assert (p > 0) $ do
 effectDropBestWeapon :: (MonadAtomic m, MonadServer m)
                      => m () -> ActorId -> m Bool
 effectDropBestWeapon execSfx target = do
-  cops <- getsState scops
   allAssocs <- fullAssocsServer target [CEqp]
-  case strongestSword cops True allAssocs of  -- ignore OFF weapons
+  case strongestSlot IF.EqpSlotWeapon True allAssocs of  -- ignore OFF weapons
     (_, (iid, _)) : _ -> do
       b <- getsState $ getActorBody target
       let kIsOn = beqp b EM.! iid

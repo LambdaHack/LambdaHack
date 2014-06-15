@@ -21,6 +21,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -229,7 +230,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
         else do
           mab <- getsState $ posToActor pos lid
           actorBlind <- radiusBlind
-                        <$> strongestServer strongestSightRadius source
+                        <$> strongestServer IF.EqpSlotSightRadius source
           if not $ maybe True (bproj . snd . fst) mab
             then if isShrapnel then do
                    -- Hit the blocking actor.
@@ -310,11 +311,10 @@ addProjectile bpos rest iid blid bfid btime = do
 -- information.
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe ItemId)
 pickWeaponServer source = do
-  cops <- getsState scops
   sb <- getsState $ getActorBody source
   allAssocs <- fullAssocsServer source [CEqp, CBody]
   let strongest | bproj sb = map (1,) allAssocs
-                | otherwise = strongestSword cops True allAssocs
+                | otherwise = strongestSlot IF.EqpSlotWeapon True allAssocs
   case strongest of
     [] -> return Nothing
     iis -> do
@@ -324,9 +324,8 @@ pickWeaponServer source = do
       return $ Just iid
 
 strongestServer :: MonadServer m
-                => (Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))])
-                -> ActorId -> m Int
-strongestServer f aid = do
+                => IF.EqpSlot -> ActorId -> m Int
+strongestServer eqpSlot aid = do
   eqpAssocs <- fullAssocsServer aid [CEqp]
   bodyAssocs <- fullAssocsServer aid [CBody]
-  return $! strongestBodyEqp f eqpAssocs bodyAssocs
+  return $! strongestBodyEqp eqpSlot eqpAssocs bodyAssocs
