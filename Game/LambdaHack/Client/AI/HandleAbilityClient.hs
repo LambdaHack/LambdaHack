@@ -268,8 +268,7 @@ bestByEqpSlot invAssocs eqpAssocs =
       appendBoth (g1, g2) (h1, h2) = (g1 ++ h1, g2 ++ h2)
       invEqpMap = M.unionWith appendBoth invMap eqpMap
       -- We don't take OFF into account, because AI can toggle it at will.
-      bestSingle eqpSlot g = strongestItem False g
-                             $ strengthFromEqpSlot eqpSlot
+      bestSingle eqpSlot g = strongestSlotNoFilter eqpSlot False g
       bestBoth (eqpSlot, _) (g1, g2) = (bestSingle eqpSlot g1,
                                         bestSingle eqpSlot g2)
   in M.elems $ M.mapWithKey bestBoth invEqpMap

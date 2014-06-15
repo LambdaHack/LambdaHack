@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.ItemStrongest
   , strengthMelee, strengthPeriodic, strengthArmor
   , strengthSightRadius, strengthSmellRadius, strengthIntelligence
   , strengthLight, strengthToThrow, strengthEqpSlot
-  , strengthFromEqpSlot, strongestSlot, strongestItem
+  , strongestItem, strengthFromEqpSlot, strongestSlotNoFilter, strongestSlot
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   ) where
@@ -27,14 +27,6 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
-
-strongestItem :: Ord b => Bool -> [(ItemId, ItemFull)] -> (ItemFull -> Maybe b)
-              -> [(b, (ItemId, ItemFull))]
-strongestItem onlyOn is p =
-  let pv (iid, item) = (\v -> (v, (iid, item))) <$> (p item)
-      onlyIs = if onlyOn then filter (itemIsOn . snd) is else is
-      pis = mapMaybe pv onlyIs
-  in sortBy (flip $ Ord.comparing fst) pis
 
 dice999 :: Dice.Dice -> Int
 dice999 d = if Dice.minDice d == Dice.maxDice d
@@ -78,7 +70,16 @@ strengthMelee itemFull =
   let durable = IF.Durable `elem` jfeature (itemBase itemFull)
       p (Hurt d k) = [floor (Dice.meanDice d) + k]
       p _ = []
-  in Just $ sum (strengthEffect p itemFull) + if durable then 1000000 else 0
+      hasNoEffects = case itemDisco itemFull of
+        Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
+          null jeffects
+        Just ItemDisco{itemKind=ItemKind{ieffects}} ->
+          null ieffects
+        Nothing -> True
+  in if hasNoEffects
+     then Nothing
+     else Just $ sum (strengthEffect p itemFull)
+                 + if durable then 1000000 else 0
 
 strengthPeriodic :: ItemFull -> Maybe Int
 strengthPeriodic =
@@ -155,6 +156,14 @@ itemTrajectory item path =
   let ThrowMod{..} = strengthToThrow item
   in computeTrajectory (jweight item) throwVelocity throwLinger path
 
+strongestItem :: Ord b => Bool -> [(ItemId, ItemFull)] -> (ItemFull -> Maybe b)
+              -> [(b, (ItemId, ItemFull))]
+strongestItem onlyOn is p =
+  let pv (iid, item) = (\v -> (v, (iid, item))) <$> (p item)
+      onlyIs = if onlyOn then filter (itemIsOn . snd) is else is
+      pis = mapMaybe pv onlyIs
+  in sortBy (flip $ Ord.comparing fst) pis
+
 strengthFromEqpSlot :: IF.EqpSlot -> ItemFull -> Maybe Int
 strengthFromEqpSlot eqpSlot =
   case eqpSlot of
@@ -164,6 +173,11 @@ strengthFromEqpSlot eqpSlot =
     IF.EqpSlotLight -> strengthLight . itemBase
     IF.EqpSlotWeapon -> strengthMelee
 
+strongestSlotNoFilter :: IF.EqpSlot -> Bool -> [(ItemId, ItemFull)]
+                      -> [(Int, (ItemId, ItemFull))]
+strongestSlotNoFilter eqpSlot onlyOn is =
+  strongestItem onlyOn is $ strengthFromEqpSlot eqpSlot
+
 strongestSlot :: IF.EqpSlot -> Bool -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
 strongestSlot eqpSlot onlyOn is =
@@ -171,4 +185,4 @@ strongestSlot eqpSlot onlyOn is =
         Just (eqpSlot2, _) | eqpSlot2 == eqpSlot -> True
         _ -> False
       slotIs = filter f is
-  in strongestItem onlyOn slotIs $ strengthFromEqpSlot eqpSlot
+  in strongestSlotNoFilter eqpSlot onlyOn slotIs

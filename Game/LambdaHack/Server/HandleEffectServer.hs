@@ -527,7 +527,7 @@ effectDropBestWeapon :: (MonadAtomic m, MonadServer m)
                      => m () -> ActorId -> m Bool
 effectDropBestWeapon execSfx target = do
   allAssocs <- fullAssocsServer target [CEqp]
-  case strongestSlot IF.EqpSlotWeapon True allAssocs of  -- ignore OFF weapons
+  case strongestSlotNoFilter IF.EqpSlotWeapon True allAssocs of
     (_, (iid, _)) : _ -> do
       b <- getsState $ getActorBody target
       let kIsOn = beqp b EM.! iid

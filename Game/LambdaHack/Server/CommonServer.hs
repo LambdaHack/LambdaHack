@@ -315,7 +315,8 @@ pickWeaponServer source = do
   sb <- getsState $ getActorBody source
   allAssocs <- fullAssocsServer source [CEqp, CBody]
   let strongest | bproj sb = map (1,) allAssocs
-                | otherwise = strongestSlot IF.EqpSlotWeapon True allAssocs
+                | otherwise =
+                    strongestSlotNoFilter IF.EqpSlotWeapon True allAssocs
   case strongest of
     [] -> return Nothing
     iis -> do

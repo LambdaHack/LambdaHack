@@ -217,7 +217,7 @@ pickWeaponClient :: MonadClient m
                  => ActorId -> ActorId -> m [RequestTimed AbMelee]
 pickWeaponClient source target = do
   allAssocs <- fullAssocsClient source [CEqp, CBody]
-  case strongestSlot IF.EqpSlotWeapon True allAssocs of
+  case strongestSlotNoFilter IF.EqpSlotWeapon True allAssocs of
     [] -> return []
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
