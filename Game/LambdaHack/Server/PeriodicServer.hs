@@ -251,6 +251,8 @@ advanceTime aid = do
       newCalmDelta <- getsState $ regenCalmDelta b
       unless (newCalmDelta == 0 && bcalmDelta b == 0) $
         execUpdAtomic $ UpdCalmActor aid newCalmDelta
+      unless (bhpDelta b == 0) $  -- clear delta for the next turn
+        execUpdAtomic $ UpdHealActor aid 0
 
 leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelFlip = do
