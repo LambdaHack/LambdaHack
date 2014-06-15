@@ -185,9 +185,18 @@ effectToSuff effect f =
     DropEqp ' ' True -> "of equipment smashing"
     DropEqp symbol True ->
       "of equipment '" <> T.singleton symbol <> "' smashing"
-    SendFlying ThrowMod{..} -> "of impact" <+> throwVelocity <+> throwLinger
-    PushActor ThrowMod{..} -> "of pushing" <+> throwVelocity <+> throwLinger
-    PullActor ThrowMod{..} -> "of pulling" <+> throwVelocity <+> throwLinger
+    SendFlying ThrowMod{..} ->
+      case effect of
+        SendFlying tmod -> "of impact" <+> tmodToSuff tmod
+        _ -> assert `failure` effect
+    PushActor ThrowMod{..} ->
+      case effect of
+        PushActor tmod -> "of pushing" <+> tmodToSuff tmod
+        _ -> assert `failure` effect
+    PullActor ThrowMod{..} ->
+      case effect of
+        PullActor tmod -> "of pulling" <+> tmodToSuff tmod
+        _ -> assert `failure` effect
     Teleport t ->
       case effect of
         Teleport p | p > 9 -> "of teleport" <+> t
@@ -201,13 +210,16 @@ effectToSuff effect f =
         TimedAspect _ aspect -> aspectToSuff aspect f
         _ -> assert `failure` effect
 
+tmodToSuff :: Show a => ThrowMod a -> Text
+tmodToSuff ThrowMod{..} = tshow throwVelocity <+> tshow throwLinger
+
 aspectToSuff :: Show a => Aspect a -> (a -> Text) -> Text
 aspectToSuff aspect f =
   case St.evalState (aspectTrav aspect $ return . f) () of
     NoAspect -> ""
     Periodic _ ->
       case aspect of
-        Periodic n -> tshow n <+> "in 100"
+        Periodic n -> "(" <> tshow n <+> "in 100)"
         _ -> assert `failure` aspect
     ArmorMelee p -> "[" <> tshow p <> "]"
     SightRadius t -> "of sight" <+> t
