@@ -179,18 +179,18 @@ necklace = ItemKind  -- TODO: when more items, perhaps make all Periodic necklac
   , idesc    = "Tingling, rattling chain of flat encrusted links."
   }
 necklace1 = necklace
-  { iaspects = [Periodic $ 4 * d 5 + 2 * dl 10]
+  { iaspects = [Periodic $ d 2 + dl 2]
   , ieffects = [Heal 1]
   , idesc    = "A cord of dried herbs and healing berries."
   }
 necklace2 = necklace
   { ifreq    = [("useful", 1)]
-  , iaspects = [Periodic $ 20 * d 2 + dl 20]
+  , iaspects = [Periodic $ 2 * d 2 + dl 2]
   , ieffects = [Summon $ 1 + dl 2]  -- TODO: + explosion
   }
 necklace3 = necklace
   { ifreq    = [("useful", 1)]
-  , iaspects = [Periodic $ 5 * d 20 + dl 50]
+  , iaspects = [Periodic $ 2 * d 2 + dl 2]
   , ieffects = [Paralyze $ 2 + d 3 + 2 * dl 6, Calm 50]
   }
 net = ItemKind
@@ -271,25 +271,25 @@ ring = ItemKind
   }
 ring1 = ring
   { ifreq    = [("useful", 1)]
-  , iaspects = [Periodic $ 4 * d 5 + 2 * dl 10]
+  , iaspects = [Periodic $ d 4 + dl 2]
   , ieffects = [Calm 1]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with letters that meant a lot to somebody."
   }
 ring2 = ring
-  { iaspects = [Periodic $ 20 * d 20 + dl 200]
+  { iaspects = [Periodic $ 2 * d 20 + dl 20]
   , ieffects = [Teleport $ 2 + d 5]
   }
 ring3 = ring
-  { iaspects = [Periodic $ 5 * d 20 + dl 50]
+  { iaspects = [Periodic $ 2 * d 5 + dl 5]
   , ieffects = [Teleport $ 15 + d 10]
   }
 ring4 = ring
-  { iaspects = [Periodic $ 10 * d 20 + dl 100]
+  { iaspects = [Periodic $ 2 * d 10 + dl 10]
   , ieffects = [PushActor (ThrowMod 200 50)]
   }
 ring5 = ring
   { ifreq    = [("useful", 1)]
-  , iaspects = [Periodic $ 4 * d 50 + dl 300]
+  , iaspects = [Periodic $ 2 * d 10 + dl 30]
   , ieffects = [InsertMove 1, Heal (-1)]  -- TODO: allow fractions for smooth?
   , ifeature = [Durable]  -- evil players would throw before death, to destroy
   }
@@ -683,7 +683,7 @@ speedGland n = fist
   , ifreq    = [("speed gland" <+> tshow n, 100)]
   , icount   = 1
   , iverbApply   = "squeeze"
-  , iaspects = [Periodic (intToDice $ 20 * n)]  -- TODO: also speed bonus?
+  , iaspects = [Periodic (intToDice $ 2 * n)]  -- TODO: also speed bonus?
   , ieffects = [Heal 1]
   , ifeature = []
   , idesc    = ""

@@ -207,7 +207,7 @@ aspectToSuff aspect f =
     NoAspect -> ""
     Periodic _ ->
       case aspect of
-        Periodic n -> tshow n <+> "in 1000"
+        Periodic n -> tshow n <+> "in 100"
         _ -> assert `failure` aspect
     ArmorMelee p -> "[" <> tshow p <> "]"
     SightRadius t -> "of sight" <+> t

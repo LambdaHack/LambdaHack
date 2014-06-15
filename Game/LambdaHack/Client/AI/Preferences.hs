@@ -54,7 +54,7 @@ aspectToBenefit :: Kind.COps -> Actor -> Effect.Aspect Int -> Int
 aspectToBenefit _cops _b asp =
   case asp of
     Effect.NoAspect -> 0
-    Effect.Periodic n -> n `div` 50  -- should be multiplied by effect
+    Effect.Periodic n -> n `div` 5  -- should be multiplied by effect
     Effect.ArmorMelee _ -> 5
     Effect.Explode{} -> 2
     Effect.SightRadius p -> p * 20

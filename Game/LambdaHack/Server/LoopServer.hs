@@ -173,7 +173,7 @@ activatePeriodicLevel lid = do
       activatePeriodicItem aid (iid, itemFull) = do
         case strengthPeriodic itemFull of
           Nothing -> return ()
-          Just n -> when (turnN `mod` (1000 `div` n) == 0) $
+          Just n -> when (turnN `mod` (100 `div` n) == 0) $
                       itemEffect aid aid iid itemFull
       activatePeriodicActor aid = do
         allItems <- fullAssocsServer aid [CBody, CEqp]
