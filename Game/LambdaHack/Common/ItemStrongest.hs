@@ -5,20 +5,19 @@ module Game.LambdaHack.Common.ItemStrongest
     strengthAspect, strengthEffect, strengthFeature
   , strengthMelee, strengthPeriodic, strengthArmor
   , strengthSightRadius, strengthSmellRadius, strengthIntelligence
-  , strengthLight
-  , strengthToThrow, isFragile
+  , strengthLight, strengthToThrow, strengthEqpSlot, isFragile
   , strongestItem, strongestSword, strongestShield
   , strongestSightRadius, strongestSmellRadius, strongestIntelligence
   , strongestLight
-  , strengthSymbol
     -- * Assorted
-  , totalRange, computeTrajectory, itemTrajectory
+  , totalRange, computeTrajectory, itemTrajectory, strengthFromAspect
   ) where
 
 import Control.Exception.Assert.Sugar
 import qualified Control.Monad.State as St
 import Data.List
 import qualified Data.Ord as Ord
+import Data.Text (Text)
 
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Effect
@@ -87,8 +86,8 @@ strengthPeriodic itemFull =
       p _ = []
   in case strengthAspect p itemFull of
     [] -> Nothing
-    [fr] -> Just fr
-    vs -> assert `failure` (vs, itemFull)
+    [x] -> Just x
+    xs -> assert `failure` (xs, itemFull)
 
 strengthArmor :: ItemFull -> [Int]
 strengthArmor =
@@ -138,14 +137,23 @@ strengthLight =
 strongestLight :: Bool -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
 strongestLight onlyOn is = strongestItem onlyOn is (strengthLight . itemBase)
 
+strengthEqpSlot :: Item -> Maybe (IF.EqpSlot, Text)
+strengthEqpSlot item =
+  let p (IF.EqpSlot eqpSlot t) = [(eqpSlot, t)]
+      p _ = []
+  in case strengthFeature p item of
+    [] -> Nothing
+    [x] -> Just x
+    xs -> assert `failure` (xs, item)
+
 strengthToThrow :: Item -> ThrowMod Int
 strengthToThrow item =
   let p (IF.ToThrow tmod) = [tmod]
       p _ = []
   in case strengthFeature p item of
     [] -> ThrowMod 100 100
-    [tmod] -> tmod
-    vs -> assert `failure` (vs, item)
+    [x] -> x
+    xs -> assert `failure` (xs, item)
 
 isFragile :: Item -> Bool
 isFragile item =
@@ -154,7 +162,7 @@ isFragile item =
   in case strengthFeature p item of
     [] -> False
     [()] -> True
-    vss -> assert `failure` (vss, item)
+    xs -> assert `failure` (xs, item)
 
 totalRange :: Item -> Int
 totalRange item =
@@ -174,15 +182,11 @@ itemTrajectory item path =
   let ThrowMod{..} = strengthToThrow item
   in computeTrajectory (jweight item) throwVelocity throwLinger path
 
--- TODO: rewrite when we have launchers, wands and armour
--- TODO: refine taking into account item kind, etc.
--- TODO: or move some of this to RuleKind and remove some ritem*
-strengthSymbol :: Kind.COps -> Char -> ItemFull -> [Int]
-strengthSymbol cops@Kind.COps{corule} c =
-  let RuleKind{ritemMelee} = Kind.stdRuleset corule
-  in case c of
-    _ | c `elem` ritemMelee -> strengthMelee cops
-    _ | c `elem` "(~" -> strengthLight . itemBase
-    _ | c `elem` "[" -> strengthArmor
-    _ | c `elem` "]" -> strengthSightRadius  -- TODO: hack
-    _ -> \_ -> []
+strengthFromAspect :: Kind.COps -> IF.EqpSlot -> ItemFull -> [Int]
+strengthFromAspect cops eqpSlot =
+  case eqpSlot of
+    IF.EqpSlotArmorMelee -> strengthArmor
+    IF.EqpSlotSightRadius -> strengthSightRadius
+    IF.EqpSlotSmellRadius -> strengthSmellRadius
+    IF.EqpSlotLight -> strengthLight . itemBase
+    IF.EqpSlotWeapon -> strengthMelee cops

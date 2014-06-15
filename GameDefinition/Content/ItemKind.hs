@@ -51,7 +51,7 @@ brassLantern = ItemKind
   , iaspects = [Explode "burning oil 4"]
   , ieffects = [Burn 4]
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
-               , Light 4, Fragile ]
+               , Light 4, Fragile, EqpSlot EqpSlotLight "" ]
   , idesc    = "Very bright and quite heavy brass lantern."
   }
 dart = ItemKind
@@ -150,15 +150,15 @@ jumpingPole = ItemKind
 monocle = ItemKind
   { isymbol  = '['  -- TODO: a hack
   , iname    = "monocle"
-  , ifreq    = [("useful", 2)]
+  , ifreq    = [("useful", 1)]
   , iflavour = zipPlain [White]
   , icount   = 1
   , iverbApply   = "focus"
   , iverbProject = "toss"
   , iweight  = 50
-  , iaspects = [SightRadius $ d 3]
+  , iaspects = [SightRadius $ 1 + dl 3]
   , ieffects = []
-  , ifeature = []
+  , ifeature = [EqpSlot EqpSlotSightRadius ""]
   , idesc    = "Brings that extra sharpness to your weaker eye."
   }
 necklace = ItemKind
@@ -217,7 +217,7 @@ oilLamp = ItemKind
   , iaspects = [Explode "burning oil 3"]
   , ieffects = [Burn 3]
   , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
-               , Light 3, Fragile ]
+               , Light 3, Fragile, EqpSlot EqpSlotLight "" ]
   , idesc    = "A clay lamp full of plant oil feeding a thick wick."
   }
 potion = ItemKind
@@ -341,7 +341,8 @@ shield = ItemKind
   , iweight  = 3000
   , iaspects = [ArmorMelee 50]
   , ieffects = [PushActor (ThrowMod 100 50)]
-  , ifeature = [toVelocity 20]  -- unwieldy to throw and blunt
+  , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
+               , EqpSlot EqpSlotArmorMelee "" ]
   , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
 sword = ItemKind
@@ -355,7 +356,8 @@ sword = ItemKind
   , iweight  = 2000
   , iaspects = []
   , ieffects = [Hurt (5 * d 1) (d 2 + 4 * dl 2)]
-  , ifeature = [toVelocity 40]  -- ensuring it hits with the tip costs speed
+  , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
+               , EqpSlot EqpSlotWeapon "" ]
   , idesc    = "A standard heavy weapon. Does not penetrate very effectively, but hard to block."
   }
 wand = ItemKind
@@ -391,7 +393,7 @@ woodenTorch = ItemKind
   , iweight  = 1200
   , iaspects = []
   , ieffects = [Burn 2]
-  , ifeature = [Light 2]
+  , ifeature = [Light 2, EqpSlot EqpSlotLight ""]
   , idesc    = "A heavy wooden torch, burning with a weak fire."
   }
 fist = sword

@@ -13,9 +13,11 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
 import Data.List
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Ord
 import Data.Ratio
+import Data.Text (Text)
 import qualified Data.Traversable as Traversable
 
 import Game.LambdaHack.Client.AI.ConditionClient
@@ -33,6 +35,7 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -212,19 +215,17 @@ pickup aid onlyWeapon = do
 manageEqp :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 manageEqp aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
-  let RuleKind{ritemEqp, rsharedInventory} = Kind.stdRuleset corule
+  let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   body <- getsState $ getActorBody aid
   invAssocs <- fullAssocsClient aid [CInv]
   eqpAssocs <- fullAssocsClient aid [CEqp]
   let kind = okind $ bkind body
   if calmEnough body kind then do
-    let improve symbol =
-          -- We don't take OFF into account, because AI can toggle it at will.
-          let bestInv = strongestItem False invAssocs
-                        $ strengthSymbol cops symbol
-              bestEqp = strongestItem False eqpAssocs
-                        $ strengthSymbol cops symbol
-          in case (bestInv, bestEqp) of
+    let improve :: ([(Int, (ItemId, ItemFull))],
+                    [(Int, (ItemId, ItemFull))])
+                -> Strategy (RequestTimed AbMoveItem)
+        improve (bestInv, bestEqp) =
+          case (bestInv, bestEqp) of
             (_, (_, (iidEqp, itemEqp)) : _) | harmful body itemEqp ->
               -- This item is harmful to this actor, take it off.
               returN "yield harmful"
@@ -247,8 +248,32 @@ manageEqp aid = do
             _ -> reject
         getK [] = 0
         getK ((_, (_, itemFull)) : _) = itemK itemFull
-    return $ msum $ map improve ritemEqp
+        bestInvEqp = bestByEqpSlot cops invAssocs eqpAssocs
+    return $ msum $ map improve bestInvEqp
   else return reject
+
+groupByEqpSlot :: [(ItemId, ItemFull)]
+               -> M.Map (IF.EqpSlot, Text) [(ItemId, ItemFull)]
+groupByEqpSlot is =
+  let f (iid, itemFull) = case strengthEqpSlot $ itemBase itemFull of
+        Nothing -> Nothing
+        Just es -> Just (es, [(iid, itemFull)])
+      withES = mapMaybe f is
+  in M.fromListWith (++) withES
+
+bestByEqpSlot :: Kind.COps -> [(ItemId, ItemFull)] -> [(ItemId, ItemFull)]
+              -> [([(Int, (ItemId, ItemFull))], [(Int, (ItemId, ItemFull))])]
+bestByEqpSlot cops invAssocs eqpAssocs =
+  let invMap = M.map (\g -> (g, [])) $ groupByEqpSlot invAssocs
+      eqpMap = M.map (\g -> ([], g)) $ groupByEqpSlot eqpAssocs
+      appendBoth (g1, g2) (h1, h2) = (g1 ++ h1, g2 ++ h2)
+      invEqpMap = M.unionWith appendBoth invMap eqpMap
+      -- We don't take OFF into account, because AI can toggle it at will.
+      bestSingle eqpSlot g = strongestItem False g
+                             $ strengthFromAspect cops eqpSlot
+      bestBoth (eqpSlot, _) (g1, g2) = (bestSingle eqpSlot g1,
+                                        bestSingle eqpSlot g2)
+  in M.elems $ M.mapWithKey bestBoth invEqpMap
 
 harmful :: Actor -> ItemFull -> Bool
 harmful body itemFull =
