@@ -221,7 +221,8 @@ projectFail source tpxy eps iid cstore isShrapnel = do
                       `twith` (spos, tpxy)
     Just (pos : restUnlimited) -> do
       item <- getsState $ getItemBody iid
-      let rest = if isFragile item
+      let fragile = IF.Fragile `elem` jfeature item
+          rest = if fragile
                  then take (chessDist spos tpxy - 1) restUnlimited
                  else restUnlimited
           t = lvl `at` pos

@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.ItemStrongest
     strengthAspect, strengthEffect, strengthFeature
   , strengthMelee, strengthPeriodic, strengthArmor
   , strengthSightRadius, strengthSmellRadius, strengthIntelligence
-  , strengthLight, strengthToThrow, strengthEqpSlot, isFragile
+  , strengthLight, strengthToThrow, strengthEqpSlot
   , strengthFromEqpSlot, strongestSlot, strongestItem
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
@@ -125,15 +125,6 @@ strengthToThrow item =
   in case strengthFeature p item of
     [] -> ThrowMod 100 100
     [x] -> x
-    xs -> assert `failure` (xs, item)
-
-isFragile :: Item -> Bool
-isFragile item =
-  let p IF.Fragile = [()]
-      p _ = []
-  in case strengthFeature p item of
-    [] -> False
-    [()] -> True
     xs -> assert `failure` (xs, item)
 
 totalRange :: Item -> Int

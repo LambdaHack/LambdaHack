@@ -93,7 +93,8 @@ gem = ItemKind
   , iweight  = 50
   , iaspects = []
   , ieffects = []
-  , ifeature = [Light 0]  -- just reflects strongly
+  , ifeature = [ Light 0    -- just reflects strongly
+               , Durable ]  -- prevent destruction by evil monsters
   , idesc    = "Precious, though useless. Worth around 100 gold."
   }
 gem1 = gem
@@ -116,7 +117,7 @@ currency = ItemKind
   , iweight  = 31
   , iaspects = []
   , ieffects = []
-  , ifeature = []
+  , ifeature = [Durable]
   , idesc    = "Reliably valuable in every civilized place."
   }
 harpoon = ItemKind
@@ -134,7 +135,7 @@ harpoon = ItemKind
   , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
   }
 jumpingPole = ItemKind
-  { isymbol  = '|'
+  { isymbol  = '['  -- TODO: a hack, we need a symbol for tools
   , iname    = "jumping pole"
   , ifreq    = [("useful", 3)]
   , iflavour = zipPlain [White]
@@ -144,11 +145,13 @@ jumpingPole = ItemKind
   , iweight  = 10000
   , iaspects = []
   , ieffects = [InsertMove 2]  -- TODO: implement with timed speed instead
-  , ifeature = [Consumable]
+                               -- and then make Durable, freq 2, and just trade
+                               -- taken turn now for a free turn later
+  , ifeature = [Applicable]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
   }
 monocle = ItemKind
-  { isymbol  = '['  -- TODO: a hack
+  { isymbol  = '['  -- TODO: a hack, we need a symbol for non-armor gear
   , iname    = "monocle"
   , ifreq    = [("useful", 1)]
   , iflavour = zipPlain [White]
@@ -158,10 +161,10 @@ monocle = ItemKind
   , iweight  = 50
   , iaspects = [SightRadius $ 1 + dl 3]
   , ieffects = []
-  , ifeature = [EqpSlot EqpSlotSightRadius ""]
-  , idesc    = "Brings that extra sharpness to your weaker eye."
+  , ifeature = [Durable, EqpSlot EqpSlotSightRadius ""]
+  , idesc    = "Let's you better focus your weaker eye."
   }
-necklace = ItemKind
+necklace = ItemKind  -- TODO: when more items, perhaps make all Periodic necklaces
   { isymbol  = '"'
   , iname    = "necklace"
   , ifreq    = [("useful", 3)]
@@ -232,7 +235,7 @@ potion = ItemKind
   , iaspects = []
   , ieffects = []
   , ifeature = [ toVelocity 50  -- oily, bad grip
-               , Consumable, Fragile ]
+               , Applicable, Fragile ]
   , idesc    = "A flask of bubbly, slightly oily liquid of a suspect color."
   }
 potion1 = potion
@@ -288,6 +291,7 @@ ring5 = ring
   { ifreq    = [("useful", 1)]
   , iaspects = [Periodic $ 4 * d 50 + dl 300]
   , ieffects = [InsertMove 1, Heal (-1)]  -- TODO: allow fractions for smooth?
+  , ifeature = [Durable]  -- evil players would throw before death, to destroy
   }
 scroll = ItemKind
   { isymbol  = '?'
@@ -301,7 +305,7 @@ scroll = ItemKind
   , iaspects = []
   , ieffects = []
   , ifeature = [ toVelocity 25  -- bad shape, even rolled up
-               , Consumable ]
+               , Applicable ]
   , idesc    = "A haphazardly scribbled piece of parchment. May contain directions or a secret call sign."
   }
 scroll1 = scroll
@@ -340,9 +344,9 @@ shield = ItemKind
   , iverbProject = "push"
   , iweight  = 3000
   , iaspects = [ArmorMelee 50]
-  , ieffects = [PushActor (ThrowMod 100 50)]
+  , ieffects = []
   , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
-               , EqpSlot EqpSlotArmorMelee "" ]
+               , Durable, EqpSlot EqpSlotArmorMelee "" ]
   , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
 sword = ItemKind
@@ -356,8 +360,8 @@ sword = ItemKind
   , iweight  = 2000
   , iaspects = []
   , ieffects = [Hurt (5 * d 1) (d 2 + 4 * dl 2)]
-  , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
-               , EqpSlot EqpSlotWeapon "" ]
+  , ifeature = [ toVelocity 20  -- ensuring it hits with the tip costs speed
+               , Durable, EqpSlot EqpSlotWeapon "" ]
   , idesc    = "A standard heavy weapon. Does not penetrate very effectively, but hard to block."
   }
 wand = ItemKind
@@ -372,8 +376,7 @@ wand = ItemKind
   , iaspects = []
   , ieffects = []
   , ifeature = [ toVelocity 125  -- magic
-               , Light 1
-               , Fragile ]
+               , Light 1, Applicable, Durable ]
   , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."
   }
 wand1 = wand
@@ -515,7 +518,7 @@ armoredSkin = fist
   , icount   = 1
   , iverbApply   = "bash"
   , iaspects = [ArmorMelee 50]
-  , ieffects = [PushActor (ThrowMod 100 50)]
+  , ieffects = []
   , idesc    = ""
   }
 speedGland1 = speedGland 1

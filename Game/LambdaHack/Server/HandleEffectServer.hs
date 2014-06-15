@@ -58,13 +58,15 @@ applyItem turnOff aid iid cstore = do
   bag <- getsState $ getActorBag aid cstore
   let (k, isOn) = bag EM.! iid
       itemFull = itemToF iid (k, isOn)
-      consumable = IF.Consumable `elem` jfeature item
-  if consumable then do
+      applicable = IF.Applicable `elem` jfeature item
+  if applicable then do
     cs <- actorConts iid item 1 aid cstore
     execSfxAtomic $ SfxActivate aid iid (1, isOn) isOn
     -- TODO: don't destroy if not really used up; also, don't take time?
-    mapM_ (\(_, c) -> execUpdAtomic
-                      $ UpdDestroyItem iid item (1, isOn) c) cs
+    let durable = IF.Durable `elem` jfeature item
+    when durable $
+      mapM_ (\(_, c) -> execUpdAtomic
+                        $ UpdDestroyItem iid item (1, isOn) c) cs
     itemEffect aid aid iid itemFull
   else when turnOff $ do
     execSfxAtomic $ SfxActivate aid iid (1, isOn) (not isOn)

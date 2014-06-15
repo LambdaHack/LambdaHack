@@ -15,8 +15,9 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 data Feature =
     ChangeTo !Text                  -- ^ change to this group when altered
   | Fragile                         -- ^ break even when not hitting an enemy
+  | Durable                         -- ^ don't break even hitting or applying
   | ToThrow !(Effect.ThrowMod Int)  -- ^ parameters modifying a throw
-  | Consumable                      -- ^ can't be turned off, is consumed by use
+  | Applicable                      -- ^ can't be turned off, is consumed by use
   | Light !Int                      -- ^ item shines with the given radius
   | EqpSlot !EqpSlot !Text          -- ^ the equipment slot the item fits into
   deriving (Show, Eq, Ord, Generic)
@@ -42,7 +43,8 @@ featureToSuff feat =
   case feat of
     ChangeTo{} -> ""
     Fragile -> ""
+    Durable -> ""
     ToThrow{} -> ""
-    Consumable -> ""
+    Applicable -> ""
     Light p -> Effect.affixBonus p
     EqpSlot{} -> ""

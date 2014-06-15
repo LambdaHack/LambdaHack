@@ -18,6 +18,7 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -130,7 +131,9 @@ dropEqpItem aid b hit iid kIsOn = do
   item <- getsState $ getItemBody iid
   itemToF <- itemToFullServer
   let container = CActor aid CEqp
-      isDestroyed = hit || bproj b && isFragile item
+      fragile = IF.Fragile `elem` jfeature item
+      durable = IF.Durable `elem` jfeature item
+      isDestroyed = hit && not durable || bproj b && fragile
       itemFull = itemToF iid kIsOn
   if isDestroyed then do
     let expl = groupsExplosive itemFull
