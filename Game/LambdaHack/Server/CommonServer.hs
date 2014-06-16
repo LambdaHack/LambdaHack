@@ -290,7 +290,9 @@ actorConts iid item k aid cstore = case cstore of
   _ -> do
     let c = CActor aid cstore
     bag <- getsState $ getCBag c
-    let (kBag, isOn) = bag EM.! iid
+    let (kBag, isOn) = case EM.lookup iid bag of
+          Nothing -> assert `failure` (iid, item, k, aid, cstore, bag)
+          Just ko -> ko
     assert (kBag >= k) skip
     return [((k, isOn), c)]
 

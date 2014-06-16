@@ -224,7 +224,7 @@ manageEqp aid = do
           if harmful cops body itemEqp
           then Just $ ReqMoveItem iidEqp (itemK itemEqp) CEqp CInv
           else Nothing
-        yieldHarmful = mapMaybe yieldSingleHarmful invAssocs
+        yieldHarmful = mapMaybe yieldSingleHarmful eqpAssocs
         improve :: ([(Int, (ItemId, ItemFull))],
                     [(Int, (ItemId, ItemFull))])
                 -> Strategy (RequestTimed AbMoveItem)
