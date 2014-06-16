@@ -135,7 +135,7 @@ harpoon = ItemKind
   , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
   }
 jumpingPole = ItemKind
-  { isymbol  = '['  -- TODO: a hack, we need a symbol for tools
+  { isymbol  = '-'
   , iname    = "jumping pole"
   , ifreq    = [("useful", 3)]
   , iflavour = zipPlain [White]

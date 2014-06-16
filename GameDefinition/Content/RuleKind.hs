@@ -37,9 +37,6 @@ standard = RuleKind
   , rtitle         = "LambdaHack"
   , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version
-  , ritemRanged    = "|"
-  -- Don't waste weapons and armour, other party members can use them.
-  , ritemProject   = "!?|/("
   , ritemNeedId    = "!?|/\"="
   -- The strings containing the default configuration file
   -- included from config.ui.default.

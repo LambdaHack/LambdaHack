@@ -42,9 +42,7 @@ data RuleKind = RuleKind
   , rpathsDataFile   :: FilePath -> IO FilePath
                                    -- ^ the path to data files
   , rpathsVersion    :: !Version   -- ^ the version of the game
-  , ritemRanged      :: ![Char]    -- ^ ranged weapons and missiles
   , ritemNeedId      :: ![Char]    -- ^ items that need to be identified
-  , ritemProject     :: ![Char]    -- ^ symbols of items AI can project
   , rcfgUIName       :: !FilePath  -- ^ base name of the UI config file
   , rcfgUIDefault    :: !String    -- ^ the default UI settings config file
   , rmainMenuArt     :: !Text      -- ^ the ASCII art for the Main Menu

@@ -312,8 +312,14 @@ projectEps ts tpos eps = do
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
       p item (_, isOn) =
-        let trange = totalRange item
-        in (jsymbol item `elem` triggerSyms || triggerSyms == [' '])
+        let goodKind = if ' ' `elem` triggerSyms
+                       then case strengthEqpSlot item of
+                         Just (IF.EqpSlotLight, _) -> True
+                         Just _ -> False
+                         Nothing -> True
+                       else jsymbol item `elem` triggerSyms
+            trange = totalRange item
+        in goodKind
            && isOn
            && trange >= chessDist (bpos sb) tpos
   ggi <- getGroupItem p object1 verb1 cLegal cLegal
@@ -344,7 +350,9 @@ applyHuman ts = do
         [] -> ("activate", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      p item _ = jsymbol item `elem` triggerSyms
+      p item _ = if ' ' `elem` triggerSyms
+                 then IF.Applicable `elem` jfeature item
+                 else jsymbol item `elem` triggerSyms
   ggi <- getGroupItem p object1 verb1 cLegalRaw cLegal
   case ggi of
     Right ((iid, _), fromCStore) -> do
