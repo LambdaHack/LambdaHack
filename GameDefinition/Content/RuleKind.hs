@@ -37,7 +37,6 @@ standard = RuleKind
   , rtitle         = "LambdaHack"
   , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version
-  , ritemNeedId    = "!?|/\"="
   -- The strings containing the default configuration file
   -- included from config.ui.default.
   , rcfgUIName = "config.ui"

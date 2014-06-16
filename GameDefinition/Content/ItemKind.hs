@@ -51,7 +51,7 @@ brassLantern = ItemKind
   , iaspects = [Explode "burning oil 4"]
   , ieffects = [Burn 4]
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
-               , Light 4, Fragile, EqpSlot EqpSlotLight "" ]
+               , Light 4, Fragile, EqpSlot EqpSlotLight "", Identified ]
   , idesc    = "Very bright and quite heavy brass lantern."
   }
 dart = ItemKind
@@ -93,8 +93,9 @@ gem = ItemKind
   , iweight  = 50
   , iaspects = []
   , ieffects = []
-  , ifeature = [ Light 0    -- just reflects strongly
-               , Durable ]  -- prevent destruction by evil monsters
+  , ifeature = [ Light 0  -- just reflects strongly
+               , Durable  -- prevent destruction by evil monsters
+               , Identified ]
   , idesc    = "Precious, though useless. Worth around 100 gold."
   }
 gem1 = gem
@@ -117,7 +118,7 @@ currency = ItemKind
   , iweight  = 31
   , iaspects = []
   , ieffects = []
-  , ifeature = [Durable]
+  , ifeature = [Durable, Identified]
   , idesc    = "Reliably valuable in every civilized place."
   }
 harpoon = ItemKind
@@ -147,7 +148,7 @@ jumpingPole = ItemKind
   , ieffects = [InsertMove 2]  -- TODO: implement with timed speed instead
                                -- and then make Durable, freq 2, and just trade
                                -- taken turn now for a free turn later
-  , ifeature = [Applicable]
+  , ifeature = [Applicable, Identified]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
   }
 monocle = ItemKind
@@ -220,7 +221,7 @@ oilLamp = ItemKind
   , iaspects = [Explode "burning oil 3"]
   , ieffects = [Burn 3]
   , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
-               , Light 3, Fragile, EqpSlot EqpSlotLight "" ]
+               , Light 3, Fragile, EqpSlot EqpSlotLight "", Identified ]
   , idesc    = "A clay lamp full of plant oil feeding a thick wick."
   }
 potion = ItemKind
@@ -348,7 +349,7 @@ shield = ItemKind
   , iaspects = [ArmorMelee 50]
   , ieffects = []
   , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
-               , Durable, EqpSlot EqpSlotArmorMelee "" ]
+               , Durable, EqpSlot EqpSlotArmorMelee "", Identified ]
   , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
 sword = ItemKind
@@ -398,7 +399,7 @@ woodenTorch = ItemKind
   , iweight  = 1200
   , iaspects = []
   , ieffects = [Burn 2]
-  , ifeature = [Light 2, EqpSlot EqpSlotLight ""]
+  , ifeature = [Light 2, EqpSlot EqpSlotLight "", Identified]
   , idesc    = "A heavy wooden torch, burning with a weak fire."
   }
 fist = sword
@@ -409,7 +410,7 @@ fist = sword
   , iverbApply   = "punch"
   , iverbProject = "ERROR, please report: iverbProject"
   , ieffects = [Hurt (5 * d 1) 0]
-  , ifeature = [Durable]
+  , ifeature = [Durable, Identified]
   , idesc    = ""
   }
 foot = fist
@@ -522,7 +523,7 @@ armoredSkin = fist
   , iverbApply   = "bash"
   , iaspects = [ArmorMelee 50]
   , ieffects = []
-  , ifeature = [EqpSlot EqpSlotArmorMelee ""]
+  , ifeature = [EqpSlot EqpSlotArmorMelee "", Identified]
   , idesc    = ""
   }
 speedGland1 = speedGland 1
@@ -537,7 +538,7 @@ pupil = fist
   , iverbApply   = "gaze"
   , iaspects = [SightRadius 12]
   , ieffects = [Paralyze 1]
-  , ifeature = [EqpSlot EqpSlotSightRadius ""]
+  , ifeature = [EqpSlot EqpSlotSightRadius "", Identified]
   , idesc    = ""
   }
 eye3 = eye 3
@@ -552,7 +553,7 @@ nostril = fist
   , iverbApply   = "sniff"
   , iaspects = [SmellRadius 1]
   , ieffects = []
-  , ifeature = [EqpSlot EqpSlotSmellRadius ""]
+  , ifeature = [EqpSlot EqpSlotSmellRadius "", Identified]
   , idesc    = ""
   }
 thorn = fist
@@ -576,7 +577,7 @@ fragrance = ItemKind
   , iaspects = []
   , ieffects = [Impress]
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
-               , Fragile ]
+               , Fragile, Identified ]
   , idesc    = ""
   }
 mist_healing = ItemKind
@@ -592,7 +593,7 @@ mist_healing = ItemKind
   , ieffects = [Heal 2]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Light 0
-               , Fragile ]
+               , Fragile, Identified ]
   , idesc    = ""
   }
 mist_wounding = ItemKind
@@ -607,7 +608,7 @@ mist_wounding = ItemKind
   , iaspects = []
   , ieffects = [Heal (-2)]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
-               , Fragile ]
+               , Fragile, Identified ]
   , idesc    = ""
   }
 burningOil2 = burningOil 2
@@ -625,7 +626,7 @@ glass_piece = ItemKind  -- when blowing up windows
   , iweight  = 10
   , iaspects = []
   , ieffects = [Hurt (d 1) 0]
-  , ifeature = [Fragile, toLinger 20]
+  , ifeature = [toLinger 20, Fragile, Identified]
   , idesc    = ""
   }
 smoke = ItemKind  -- when stuff burns out
@@ -640,7 +641,7 @@ smoke = ItemKind  -- when stuff burns out
   , iaspects = []
   , ieffects = []
   , ifeature = [ toVelocity 30
-               , Fragile ]
+               , Fragile, Identified ]
   , idesc    = ""
   }
 
@@ -659,7 +660,7 @@ burningOil n = ItemKind
                , Paralyze (intToDice n) ]  -- actors strain not to trip on oil
   , ifeature = [ toVelocity (min 100 $ n * 7)
                , Light 1
-               , Fragile ]
+               , Fragile, Identified ]
   , idesc    = "Sticky oil, burning brightly."
   }
 
@@ -675,7 +676,7 @@ explosionBlast n = ItemKind
   , iweight  = 1
   , iaspects = []
   , ieffects = [Burn (n `div` 2), DropBestWeapon]
-  , ifeature = [Light n, Fragile, toLinger 10]
+  , ifeature = [Light n, Fragile, toLinger 10, Identified]
   , idesc    = ""
   }
 
@@ -687,7 +688,7 @@ speedGland n = fist
   , iverbApply   = "squeeze"
   , iaspects = [Periodic (intToDice $ 2 * n)]  -- TODO: also speed bonus?
   , ieffects = [Heal 1]
-  , ifeature = []
+  , ifeature = [Identified]
   , idesc    = ""
   }
 
@@ -699,7 +700,7 @@ eye n = fist
   , iverbApply   = "focus"
   , iaspects = [SightRadius (intToDice n)]
   , ieffects = []
-  , ifeature = [EqpSlot EqpSlotSightRadius ""]
+  , ifeature = [EqpSlot EqpSlotSightRadius "", Identified]
   , idesc    = ""
   }
 

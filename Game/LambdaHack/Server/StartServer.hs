@@ -26,6 +26,7 @@ import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
@@ -55,7 +56,7 @@ initPer = do
 
 reinitGame :: (MonadAtomic m, MonadServer m) => m ()
 reinitGame = do
-  Kind.COps{coitem=Kind.Ops{okind}, corule} <- getsState scops
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sper
   knowMap <- getsServer $ sknowMap . sdebugSer
   -- This state is quite small, fit for transmition to the client.
@@ -65,8 +66,7 @@ reinitGame = do
   let defLocal | knowMap = s
                | otherwise = localFromGlobal s
   discoS <- getsServer sdisco
-  let misteriousSymbols = ritemNeedId $ Kind.stdRuleset corule
-      sdisco = let f ik = isymbol (okind ik) `notElem` misteriousSymbols
+  let sdisco = let f ik = IF.Identified `elem` ifeature (okind ik)
                in EM.filter f discoS
   sdebugCli <- getsServer $ sdebugCli . sdebugSer
   modeName <- getsServer $ sgameMode . sdebugSer

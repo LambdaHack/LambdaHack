@@ -20,6 +20,7 @@ data Feature =
   | Applicable                      -- ^ can't be turned off, is consumed by use
   | Light !Int                      -- ^ item shines with the given radius
   | EqpSlot !EqpSlot !Text          -- ^ the equipment slot the item fits into
+  | Identified                      -- ^ any such item starts identified
   deriving (Show, Eq, Ord, Generic)
 
 data EqpSlot =
@@ -48,3 +49,4 @@ featureToSuff feat =
     Applicable -> ""
     Light p -> Effect.affixBonus p
     EqpSlot{} -> ""
+    Identified -> ""
