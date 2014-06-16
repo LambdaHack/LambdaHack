@@ -94,7 +94,6 @@ itemEffect :: (MonadAtomic m, MonadServer m)
            => ActorId -> ActorId -> ItemId -> ItemFull
            -> m Bool
 itemEffect source target iid itemFull = do
-  postb <- getsState $ getActorBody source
   case itemDisco itemFull of
     Just ItemDisco{itemKindId, itemAE=Just ItemAspectEffect{jeffects}} -> do
       triggered <- effectsSem jeffects source target
@@ -104,6 +103,7 @@ itemEffect source target iid itemFull = do
       -- we'd need to track not only position of atomic commands and factions,
       -- but also which items they relate to, to be fully accurate).
       when triggered $ do
+        postb <- getsState $ getActorBody source
         seed <- getsServer $ (EM.! iid) . sitemSeedD
         execUpdAtomic $ UpdDiscover (blid postb) (bpos postb)
                                     iid itemKindId seed
@@ -115,7 +115,8 @@ effectsSem :: (MonadAtomic m, MonadServer m)
            -> m Bool
 effectsSem effects source target = do
   trs <- mapM (\ef -> effectSem ef source target) effects
-  let triggered = null effects || or trs
+  let triggered = null effects  -- item with no effects identified always
+                  || or trs
   sb <- getsState $ getActorBody source
   -- Announce no effect, which is rare and wastes time, so noteworthy.
   unless (triggered       -- some effect triggered, if any present
@@ -678,6 +679,8 @@ effectTeleport execSfx range target = do
     , dist $ 1 + range `div` 9
     , dist $ 1 + range `div` 7
     , dist $ 1 + range `div` 5
+    , dist $ 5
+    , dist $ 7
     ]
   if not (dMinMax 9 tpos) then
     return False  -- very rare
