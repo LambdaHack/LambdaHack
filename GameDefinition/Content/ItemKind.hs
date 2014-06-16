@@ -292,6 +292,8 @@ ring5 = ring
   , iaspects = [Periodic $ 2 * d 10 + dl 20]
   , ieffects = [InsertMove 1, Heal (-1)]  -- TODO: allow fractions for smooth?
   , ifeature = [Durable]  -- evil players would throw before death, to destroy
+      -- TODO: teach AI to wear only for fight; prevent players from meleeing
+      -- allies with that (Durable, perhaps require Hurt for melee)
   }
 scroll = ItemKind
   { isymbol  = '?'

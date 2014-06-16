@@ -1,6 +1,6 @@
 -- | Actor preferences for targets and actions based on actor attributes.
 module Game.LambdaHack.Client.AI.Preferences
-  ( effectToBenefit
+  ( effAspToBenefit, effectToBenefit
   ) where
 
 import Game.LambdaHack.Common.Actor
@@ -20,22 +20,22 @@ effectToBenefit cops@Kind.COps{coactor=Kind.Ops{okind}} b eff =
     Effect.NoEffect -> 0
     Effect.Heal p -> if p > 0
                      then 10 * min p (Dice.maxDice (ahp kind) - bhp b)
-                     else max (-99) (10 * p)  -- usually splash damage
-    Effect.Hurt d p -> -(min 99 $ 5 * p + round (5 * Dice.meanDice d))
+                     else max (-99) (10 * p)
+    Effect.Hurt d p -> -(min 99 $ 10 * p + round (10 * Dice.meanDice d))
     Effect.Calm p -> if p > 0
-                     then 5 * min p (Dice.maxDice (ahp kind) - bhp b)
-                     else max (-50) (5 * p)  -- usually splash damage
+                     then min p (Dice.maxDice (acalm kind) - bcalm b)
+                     else max (-20) p
     Effect.Dominate -> -200
     Effect.Impress -> -10
-    Effect.CallFriend p -> p * 100
-    Effect.Summon{} -> 1               -- may or may not spawn a friendly
-    Effect.CreateItem p -> p * 20
+    Effect.CallFriend p -> 100 * p
+    Effect.Summon{} -> -1              -- may or may not spawn a friendly
+    Effect.CreateItem p -> 20 * p
     Effect.ApplyPerfume -> -10
-    Effect.Burn p -> -(15 * p)       -- usually splash damage, etc.
-    Effect.Blast p -> -(5 * p)       -- unreliable
+    Effect.Burn p -> -15 * p           -- usually splash damage, etc.
+    Effect.Blast p -> -5 * p           -- unreliable
     Effect.Ascend{} -> 1               -- change levels sensibly, in teams
     Effect.Escape{} -> 10000           -- AI wants to win; spawners to guard
-    Effect.Paralyze p -> -10 * p
+    Effect.Paralyze p -> -20 * p
     Effect.InsertMove p -> 50 * p
     Effect.DropBestWeapon -> -50
     Effect.DropEqp ' ' False -> -80
@@ -48,15 +48,29 @@ effectToBenefit cops@Kind.COps{coactor=Kind.Ops{okind}} b eff =
     Effect.Teleport p -> -5 * p  -- but useful on self sometimes
     Effect.ActivateEqp ' ' -> -100
     Effect.ActivateEqp _ -> -50
-    Effect.TimedAspect k asp -> k * aspectToBenefit cops b asp `div` 50
+    Effect.TimedAspect k asp -> k * fst (aspectToBenefit cops b asp) `div` 50
 
-aspectToBenefit :: Kind.COps -> Actor -> Effect.Aspect Int -> Int
+-- | Return the value to add to effect value and another to multiply it.
+aspectToBenefit :: Kind.COps -> Actor -> Effect.Aspect Int -> (Int, Int)
 aspectToBenefit _cops _b asp =
   case asp of
-    Effect.NoAspect -> 0
-    Effect.Periodic n -> n `div` 5  -- should be multiplied by effect
-    Effect.ArmorMelee _ -> 5
-    Effect.Explode{} -> 2
-    Effect.SightRadius p -> p * 20
-    Effect.SmellRadius p -> p * 2
-    Effect.Intelligence p -> p * 5
+    Effect.NoAspect -> (0, 1)
+    Effect.Periodic n -> (0, n)
+    Effect.ArmorMelee _ -> (5, 1)
+    Effect.Explode{} -> (0, 10)
+    Effect.SightRadius p -> (p * 20, 1)
+    Effect.SmellRadius p -> (p * 2, 1)
+    Effect.Intelligence p -> (p * 5, 1)
+
+effAspToBenefit :: Kind.COps -> Actor
+                -> [Effect.Effect Int] -> [Effect.Aspect Int]
+                -> Int
+effAspToBenefit cops b effects aspects =
+  let eBens = map (effectToBenefit cops b) effects
+      (addBens, multBens) = unzip $ map (aspectToBenefit cops b) aspects
+      addBen = sum addBens
+      multBen = product multBens
+      scaledBen = map (* multBen) $ addBen : eBens
+  in if minimum scaledBen < -10 && maximum scaledBen > 10
+     then 0  -- this is big deal mixed blessing, AI too stupid to decide
+     else sum scaledBen

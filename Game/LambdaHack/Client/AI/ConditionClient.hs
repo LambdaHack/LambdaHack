@@ -27,7 +27,6 @@ import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
-import Data.Ord
 
 import Game.LambdaHack.Client.AI.Preferences
 import Game.LambdaHack.Client.CommonClient
@@ -35,7 +34,6 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemFeature as IF
@@ -223,10 +221,7 @@ maxUsefulness :: Kind.COps -> Actor -> ItemFull -> Maybe Int
 maxUsefulness cops body itemFull = do
   case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
-      case map (Effect.TimedAspect 99) jaspects ++ jeffects of
-        [] -> Just 0
-        effs -> Just $ maximumBy (comparing abs)
-                                 (map (effectToBenefit cops body) effs)
+      Just $ effAspToBenefit cops body jeffects jaspects
     _ -> Nothing
 
 -- | Require the actor is in a bad position to melee.
