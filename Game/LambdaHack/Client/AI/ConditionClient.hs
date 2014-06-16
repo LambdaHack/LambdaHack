@@ -32,6 +32,7 @@ import Game.LambdaHack.Client.AI.Preferences
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -127,7 +128,7 @@ condFloorWeaponM aid = do
 -- | Require the actor doesn't stand over a weapon, unless it's deactivated.
 condNoWeaponM :: MonadClient m => ActorId -> m Bool
 condNoWeaponM aid = do
-  allAssocs <- fullAssocsClient aid [CEqp, CBody]
+  allAssocs <- fullAssocsClient aid [CEqp]
   -- We do not consider OFF weapons, because they apparently are not good.
   return $ null $ strongestSlot IF.EqpSlotWeapon True allAssocs
     -- keep it lazy
@@ -224,11 +225,15 @@ maxUsefulness cops body itemFull = do
     _ -> Nothing
 
 -- | Require the actor is in a bad position to melee.
+-- We do not check if the actor has a weapon, because having
+-- no innate weapon is rare.
 condMeleeBadM :: MonadClient m => ActorId -> m Bool
 condMeleeBadM aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
+  mleader <- getsClient _sleader
+  actorAbs <- actorAbilities aid mleader
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
   let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
@@ -236,7 +241,8 @@ condMeleeBadM aid = do
       closeFriends = filter closeEnough friends
       strongCloseFriends = filter (not . hpTooLow coactor) closeFriends
       noFriendlyHelp = length closeFriends < 3 && null strongCloseFriends
-  return noFriendlyHelp  -- still not getting friends' help
+  return $ Ability.AbMelee `notElem` actorAbs
+           || noFriendlyHelp  -- still not getting friends' help
     -- no $!; keep it lazy
 
 -- | Require that the actor stands in the dark, but is betrayed
