@@ -174,7 +174,7 @@ activatePeriodicLevel lid = do
         case strengthPeriodic itemFull of
           Nothing -> return ()
           Just n -> when (turnN `mod` (100 `div` n) == 0) $
-                      itemEffect aid aid iid itemFull
+                      void $ itemEffect aid aid iid itemFull
             -- periodic activation doesn't destroy items, even non-Durable
       activatePeriodicActor aid = do
         allItems <- fullAssocsServer aid [CBody, CEqp]

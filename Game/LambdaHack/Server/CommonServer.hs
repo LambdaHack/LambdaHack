@@ -324,6 +324,8 @@ pickWeaponServer source = do
   sb <- getsState $ getActorBody source
   eqpAssocs <- fullAssocsServer source [CEqp]
   bodyAssocs <- fullAssocsServer source [CBody]
+  -- For projectiles we need to accept even items without any effect,
+  -- so that the projectile dissapears and NoEffect feedback is produced.
   let allAssocs = eqpAssocs ++ bodyAssocs
       strongest | bproj sb = map (1,) allAssocs
                 | otherwise =
@@ -331,9 +333,9 @@ pickWeaponServer source = do
   case strongest of
     [] -> return Nothing
     iis -> do
-      let maxIis = map snd iis
+      let is = map snd iis
       -- TODO: pick the item according to the frequency of its kind.
-      (iid, _) <- rndToAction $ oneOf maxIis
+      (iid, _) <- rndToAction $ oneOf is
       let cstore = if isJust (lookup iid bodyAssocs) then CBody else CEqp
       return $ Just (iid, cstore)
 

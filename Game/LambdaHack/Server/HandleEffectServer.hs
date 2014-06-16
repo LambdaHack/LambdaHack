@@ -48,11 +48,6 @@ import Game.LambdaHack.Server.State
 applyItem :: (MonadAtomic m, MonadServer m)
           => Bool -> ActorId -> ItemId -> CStore -> m ()
 applyItem turnOff aid iid cstore = do
-  -- We have to destroy the item before the effect affects the item
-  -- or the actor holding it or standing on it (later on we could
-  -- lose track of the item and wouldn't be able to destroy it) .
-  -- This is OK, because we don't remove the item type
-  -- from the item dictionary, just an individual copy from the container.
   itemToF <- itemToFullServer
   item <- getsState $ getItemBody iid
   bag <- getsState $ getActorBag aid cstore
@@ -70,28 +65,40 @@ itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
                      => ActorId -> ActorId -> ItemId -> ItemFull -> CStore
                      -> m ()
 itemEffectAndDestroy source target iid itemFull cstore = do
-  -- TODO: don't destroy if not really used up; also, don't take time?
+  -- We have to destroy the item before the effect affects the item
+  -- or the actor holding it or standing on it (later on we could
+  -- lose track of the item and wouldn't be able to destroy it) .
+  -- This is OK, because we don't remove the item type from various
+  -- item dictionaries, just an individual copy from the container,
+  -- so, e.g., the item can be identified after it's removed.
   let item = itemBase itemFull
       (_, isOn) = itemKisOn itemFull
       durable = IF.Durable `elem` jfeature item
+  cs <- actorConts iid item 1 source cstore
   when (not durable) $ do
-    cs <- actorConts iid item 1 source cstore
-    mapM_ (\(_, c) -> execUpdAtomic $ UpdDestroyItem iid item (1, isOn) c) cs
-  itemEffect source target iid itemFull
+    mapM_ (\(_, c) -> execUpdAtomic $ UpdLoseItem iid item (1, isOn) c) cs
+  triggered <- itemEffect source target iid itemFull
+  -- If none of the item's effects was performed, we try to recreate the item.
+  -- Regardless, wwe don't rewind the time, because some info is gained
+  -- (that the item does not exhibit any effects in the given context).
+  when (not triggered && not durable) $ do
+    mapM_ (\(_, c) -> do
+              valid <- getsState $ validCont c
+              when valid $ execUpdAtomic $ UpdSpotItem iid item (1, isOn) c) cs
 
 -- | The source actor affects the target actor, with a given item.
--- If the event is seen, the item may get identified. This function
+-- If any of the effect effect fires up, the item gets identified. This function
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
 itemEffect :: (MonadAtomic m, MonadServer m)
            => ActorId -> ActorId -> ItemId -> ItemFull
-           -> m ()
+           -> m Bool
 itemEffect source target iid itemFull = do
   postb <- getsState $ getActorBody source
   case itemDisco itemFull of
     Just ItemDisco{itemKindId, itemAE=Just ItemAspectEffect{jeffects}} -> do
       triggered <- effectsSem jeffects source target
-      -- The effect is interesting so the item gets identified, if seen
+      -- The effect fires up, so the item gets identified, if seen
       -- (the item was at the source actor's position, so his old position
       -- is given, since the actor and/or the item may be moved by the effect;
       -- we'd need to track not only position of atomic commands and factions,
@@ -100,6 +107,7 @@ itemEffect source target iid itemFull = do
         seed <- getsServer $ (EM.! iid) . sitemSeedD
         execUpdAtomic $ UpdDiscover (blid postb) (bpos postb)
                                     iid itemKindId seed
+      return triggered
     _ -> assert `failure` (source, target, iid, itemFull)
 
 effectsSem :: (MonadAtomic m, MonadServer m)
@@ -109,15 +117,16 @@ effectsSem effects source target = do
   trs <- mapM (\ef -> effectSem ef source target) effects
   let triggered = null effects || or trs
   sb <- getsState $ getActorBody source
-  unless (triggered  -- some effect triggered, if any present
+  -- Announce no effect, which is rare and wastes time, so noteworthy.
+  unless (triggered       -- some effect triggered, if any present
           || bproj sb) $  -- don't spam, projectiles can be very numerous
     execSfxAtomic $ SfxEffect (bfid sb) target Effect.NoEffect
   return triggered
 
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.
--- The boolean result indicates if the effect was spectacular enough
--- for the actors to identify it (and the item that caused it, if any).
+-- The boolean result indicates if the effect actually fired up,
+-- as opposed to fizzled.
 effectSem :: (MonadAtomic m, MonadServer m)
           => Effect.Effect Int -> ActorId -> ActorId
           -> m Bool
