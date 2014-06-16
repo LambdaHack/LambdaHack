@@ -213,26 +213,29 @@ pickup aid onlyWeapon = do
 
 manageEqp :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 manageEqp aid = do
-  Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   body <- getsState $ getActorBody aid
   invAssocs <- fullAssocsClient aid [CInv]
   eqpAssocs <- fullAssocsClient aid [CEqp]
   let kind = okind $ bkind body
   if calmEnough body kind then do
-    let improve :: ([(Int, (ItemId, ItemFull))],
+    let yieldSingleHarmful (iidEqp, itemEqp) =
+          if harmful cops body itemEqp
+          then Just $ ReqMoveItem iidEqp (itemK itemEqp) CEqp CInv
+          else Nothing
+        yieldHarmful = mapMaybe yieldSingleHarmful invAssocs
+        improve :: ([(Int, (ItemId, ItemFull))],
                     [(Int, (ItemId, ItemFull))])
                 -> Strategy (RequestTimed AbMoveItem)
         improve (bestInv, bestEqp) =
           case (bestInv, bestEqp) of
-            (_, (_, (iidEqp, itemEqp)) : _) | harmful body itemEqp ->
-              -- This item is harmful to this actor, take it off.
-              returN "yield harmful"
-              $ ReqMoveItem iidEqp (getK bestEqp) CEqp CInv
-            ((_, (iidInv, itemInv)) : _, []) | not $ harmful body itemInv ->
+            ((_, (iidInv, itemInv)) : _, [])
+              | not (harmful cops body itemInv) ->
               returN "wield any"
               $ ReqMoveItem iidInv 1 CInv CEqp
-            ((vInv, (iidInv, _)) : _, (vEqp, _) : _) | vInv > vEqp ->
+            ((vInv, (iidInv, itemInv)) : _, (vEqp, _) : _)
+              | not (harmful cops body itemInv) && vInv > vEqp ->
               returN "wield better"
               $ ReqMoveItem iidInv 1 CInv CEqp
             (_, (_, (iidEqp, _)) : _) | getK bestEqp > 1
@@ -248,7 +251,16 @@ manageEqp aid = do
         getK [] = 0
         getK ((_, (_, itemFull)) : _) = itemK itemFull
         bestInvEqp = bestByEqpSlot invAssocs eqpAssocs
-    return $ msum $ map improve bestInvEqp
+    case yieldHarmful of
+      [] -> return $ msum $ map improve bestInvEqp
+      _ ->
+        -- Here AI hides from the human player the Ring of Speed And Bleeding,
+        -- which is a bit harsh, but fair. However any subsequent such
+        -- rings will not be picked up at all, so the human player
+        -- doesn't lose much fun. Additionally, if AI learns alchemy later on,
+        -- they can repair the ring, wield it, drop at death and it's
+        -- in play again.
+        return $! liftFrequency $ uniformFreq "yield harmful" yieldHarmful
   else return reject
 
 groupByEqpSlot :: [(ItemId, ItemFull)]
@@ -273,13 +285,17 @@ bestByEqpSlot invAssocs eqpAssocs =
                                         bestSingle eqpSlot g2)
   in M.elems $ M.mapWithKey bestBoth invEqpMap
 
-harmful :: Actor -> ItemFull -> Bool
-harmful body itemFull =
+harmful :: Kind.COps -> Actor -> ItemFull -> Bool
+harmful cops body itemFull =
   -- Fast actors want to hide in darkness to ambush opponents and want
   -- to hit hard for the short span they get to survive melee.
-  (isJust (strengthLight (itemBase itemFull))
-   || isJust (strengthArmor itemFull))
-  && bspeed body > speedNormal
+  (bspeed body > speedNormal
+   && (isJust (strengthLight (itemBase itemFull))
+       || isJust (strengthArmor itemFull)))
+  -- Periodic items that are known and not stricly beneficial
+  -- should not be equipped.
+  || (isJust (strengthPeriodic itemFull)
+      && maybe False (\u -> u <= 0) (maxUsefulness cops body itemFull))
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
   -- (friends close, only one enemy close)
@@ -287,6 +303,7 @@ harmful body itemFull =
   -- so shields are preferable by default;
   -- also, turning on when no friends and enemies close is too late,
   -- AI should flee or fire at such times, not muck around with eqp)
+  -- Return the degree of harmfulness.
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))
