@@ -134,10 +134,13 @@ type ItemKnown = (Item, ItemAspectEffect)
 partItem :: ItemFull -> (MU.Part, MU.Part)
 partItem itemFull =
   let genericName = jname $ itemBase itemFull
+      turnedOff | itemIsOn itemFull = ""
+                | otherwise = "{OFF}"  -- TODO: mark with colour
   in case itemDisco itemFull of
     Nothing ->
       let flav = flavourToName $ jflavour $ itemBase itemFull
-      in (MU.Text $ flav <+> genericName, "")
+      in ( MU.Text $ flav <+> genericName
+         , MU.Text turnedOff )
     Just _ ->
       let effTs = textAllAE itemFull
           effectFirst = case filter (not . T.null) effTs of
@@ -149,8 +152,6 @@ partItem itemFull =
             [_, effT] -> "(" <> effT <> ")"
             [_, effT1, effT2] -> "(" <> effT1 <> "," <+> effT2 <> ")"
             _ -> "(of many effects)"
-          turnedOff | itemIsOn itemFull = ""
-                    | otherwise = "{OFF}"  -- TODO: mark with colour
       in ( MU.Text genericName
          , MU.Text $ effectFirst <+> effectExtra <+> turnedOff )
 
