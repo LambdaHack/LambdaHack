@@ -434,12 +434,20 @@ ranged aid = do
                            else ritemRanged)
                           $ Kind.stdRuleset corule
           benList <- benAvailableItems aid permitted
-          let fRanged ((mben, cstore), (iid, ItemFull{itemBase})) =
+          let coeff CGround = 4
+              coeff CBody = 3  -- can't give to others
+              coeff CInv = 2
+              coeff CEqp = 1
+              fRanged ((mben, cstore), (iid, ItemFull{itemBase})) =
                 let trange = totalRange itemBase
                     bestRange = chessDist bpos fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
                       10 + max 0 (10 - abs (trange - bestRange))
-                    benR = (if cstore == CGround then 2 else 1)
+                    durableBonus = if IF.Durable `elem` jfeature itemBase
+                                   then 2  -- we or foes keep it after the throw
+                                   else 1
+                    benR = durableBonus
+                           * coeff cstore
                            * case mben of
                                Nothing -> -20  -- experimenting is fun
                                Just ben -> ben
@@ -476,12 +484,16 @@ applyItem aid applyGroup = do
                        then not $ itemIsOn itemFull
                        else False
         ApplyAll -> True
-      coeff CBody = 3  -- never destroyed by use
-      coeff CGround = 2
+      coeff CGround = 4
+      coeff CBody = 3  -- can't give to others
+      coeff CInv = if applyGroup == QuenchLight then 0 else 2
       coeff CEqp = 1
-      coeff CInv = if applyGroup == QuenchLight then 0 else 1
       fTool ((mben, cstore), (iid, itemFull)) =
-        let benR = coeff cstore
+        let durableBonus = if IF.Durable `elem` jfeature (itemBase itemFull)
+                           then 5  -- we keep it after use
+                           else 1
+            benR = durableBonus
+                   * coeff cstore
                    * case mben of
                        Nothing -> 20  -- experimenting is fun
                        Just ben -> ben
