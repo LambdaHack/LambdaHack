@@ -216,14 +216,18 @@ itemToFullClient = do
 pickWeaponClient :: MonadClient m
                  => ActorId -> ActorId -> m [RequestTimed AbMelee]
 pickWeaponClient source target = do
-  allAssocs <- fullAssocsClient source [CEqp, CBody]
+  eqpAssocs <- fullAssocsClient source [CEqp]
+  bodyAssocs <- fullAssocsClient source [CBody]
+  let allAssocs = eqpAssocs ++ bodyAssocs
   case strongestSlotNoFilter IF.EqpSlotWeapon True allAssocs of
     [] -> return []
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
       -- TODO: pick the item according to the frequency of its kind.
       (iid, _) <- rndToAction $ oneOf maxIis
-      return $! [ReqMelee target iid]
+      -- Prefer CBody, to hint the player to trash the equivalent CEqp item.
+      let cstore = if isJust (lookup iid bodyAssocs) then CBody else CEqp
+      return $! [ReqMelee target iid cstore]
 
 strongestClient :: MonadClient m
                 => IF.EqpSlot -> ActorId -> m Int

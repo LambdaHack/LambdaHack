@@ -319,11 +319,13 @@ addProjectile bpos rest iid blid bfid btime = do
 
 -- Server has to pick a random weapon or it could leak item discovery
 -- information.
-pickWeaponServer :: MonadServer m => ActorId -> m (Maybe ItemId)
+pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
 pickWeaponServer source = do
   sb <- getsState $ getActorBody source
-  allAssocs <- fullAssocsServer source [CEqp, CBody]
-  let strongest | bproj sb = map (1,) allAssocs
+  eqpAssocs <- fullAssocsServer source [CEqp]
+  bodyAssocs <- fullAssocsServer source [CBody]
+  let allAssocs = eqpAssocs ++ bodyAssocs
+      strongest | bproj sb = map (1,) allAssocs
                 | otherwise =
                     strongestSlotNoFilter IF.EqpSlotWeapon True allAssocs
   case strongest of
@@ -332,7 +334,8 @@ pickWeaponServer source = do
       let maxIis = map snd iis
       -- TODO: pick the item according to the frequency of its kind.
       (iid, _) <- rndToAction $ oneOf maxIis
-      return $ Just iid
+      let cstore = if isJust (lookup iid bodyAssocs) then CBody else CEqp
+      return $ Just (iid, cstore)
 
 strongestServer :: MonadServer m
                 => IF.EqpSlot -> ActorId -> m Int

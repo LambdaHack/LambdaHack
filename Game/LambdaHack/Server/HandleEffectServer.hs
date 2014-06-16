@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
-  ( applyItem, itemEffect, effectsSem
+  ( applyItem, itemEffect, itemEffectAndDestroy, effectsSem
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -60,17 +60,24 @@ applyItem turnOff aid iid cstore = do
       itemFull = itemToF iid (k, isOn)
       applicable = IF.Applicable `elem` jfeature item
   if applicable then do
-    cs <- actorConts iid item 1 aid cstore
     execSfxAtomic $ SfxActivate aid iid (1, isOn) isOn
-    -- TODO: don't destroy if not really used up; also, don't take time?
-    let durable = IF.Durable `elem` jfeature item
-    when (not durable) $
-      mapM_ (\(_, c) -> execUpdAtomic
-                        $ UpdDestroyItem iid item (1, isOn) c) cs
-    itemEffect aid aid iid itemFull
+    itemEffectAndDestroy aid aid iid itemFull cstore
   else when turnOff $ do
     execSfxAtomic $ SfxActivate aid iid (1, isOn) (not isOn)
     execUpdAtomic $ UpdMoveItem iid k aid cstore isOn cstore (not isOn)
+
+itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
+                     => ActorId -> ActorId -> ItemId -> ItemFull -> CStore
+                     -> m ()
+itemEffectAndDestroy source target iid itemFull cstore = do
+  -- TODO: don't destroy if not really used up; also, don't take time?
+  let item = itemBase itemFull
+      (_, isOn) = itemKisOn itemFull
+      durable = IF.Durable `elem` jfeature item
+  when (not durable) $ do
+    cs <- actorConts iid item 1 source cstore
+    mapM_ (\(_, c) -> execUpdAtomic $ UpdDestroyItem iid item (1, isOn) c) cs
+  itemEffect source target iid itemFull
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified. This function

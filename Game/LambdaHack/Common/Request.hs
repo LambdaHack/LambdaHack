@@ -52,7 +52,7 @@ anyToUI (RequestAnyAbility cmd) = ReqUITimed cmd
 -- | Client-server requests that take game time. Sent by both AI and UI clients.
 data RequestTimed :: Ability -> * where
   ReqMove :: !Vector -> RequestTimed AbMove
-  ReqMelee :: !ActorId -> !ItemId -> RequestTimed AbMelee
+  ReqMelee :: !ActorId -> !ItemId -> !CStore -> RequestTimed AbMelee
   ReqDisplace :: !ActorId -> RequestTimed AbDisplace
   ReqAlter :: !Point -> !(Maybe F.Feature) -> RequestTimed AbAlter
   ReqWait :: RequestTimed AbWait

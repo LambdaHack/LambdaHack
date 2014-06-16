@@ -79,7 +79,7 @@ handleRequestTimed :: (MonadAtomic m, MonadServer m)
                    => ActorId -> RequestTimed a -> m ()
 handleRequestTimed aid cmd = case cmd of
   ReqMove target -> reqMove aid target
-  ReqMelee target iid -> reqMelee aid target iid
+  ReqMelee target iid cstore -> reqMelee aid target iid cstore
   ReqDisplace target -> reqDisplace aid target
   ReqAlter tpos mfeat -> reqAlter aid tpos mfeat
   ReqWait -> reqWait aid
@@ -148,7 +148,7 @@ reqMove source dir = do
       mweapon <- pickWeaponServer source
       case mweapon of
         Nothing -> reqWait source
-        Just wp -> reqMelee source target wp
+        Just (wp, cstore) -> reqMelee source target wp cstore
     _
       | accessible cops lvl spos tpos -> do
           -- Movement requires full access.
@@ -168,15 +168,15 @@ reqMove source dir = do
 -- No problem if there are many projectiles at the spot. We just
 -- attack the one specified.
 reqMelee :: (MonadAtomic m, MonadServer m)
-         => ActorId -> ActorId -> ItemId -> m ()
-reqMelee source target iid = do
+         => ActorId -> ActorId -> ItemId -> CStore -> m ()
+reqMelee source target iid cstore = do
   itemToF <- itemToFullServer
   sallAssocs <- fullAssocsServer source [CEqp, CBody]
   tallAssocs <- fullAssocsServer target [CEqp, CBody]
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let adj = checkAdjacent sb tb
-      req = ReqMelee target iid
+      req = ReqMelee target iid cstore
   if source == target then execFailure source req MeleeSelf
   else if not adj then execFailure source req MeleeDistant
   else do
@@ -204,7 +204,9 @@ reqMelee source target iid = do
         -- Non-projectile can't pierce, so terminate their flight.
         execUpdAtomic $ UpdTrajectoryActor source (btrajectory sb) (Just [])
     -- Msgs inside itemEffect describe the target part.
-    itemEffect source target iid (itemToF iid (1, True))  -- don't spam with OFF
+    itemEffectAndDestroy source target iid
+                         (itemToF iid (1, True))  -- don't spam with OFF
+                         cstore
     -- The only way to start a war is to slap an enemy. Being hit by
     -- and hitting projectiles count as unintentional friendly fire.
     let friendlyFire = bproj sb || bproj tb
@@ -236,7 +238,8 @@ reqDisplace source target = do
     mweapon <- pickWeaponServer source
     case mweapon of
       Nothing -> reqWait source
-      Just wp -> reqMelee source target wp  -- DisplaceDying, DisplaceSupported
+      Just (wp, cstore)  -> reqMelee source target wp cstore
+        -- DisplaceDying, DisplaceSupported
   else do
     let lid = blid sb
     lvl <- getLevel lid
