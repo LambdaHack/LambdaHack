@@ -414,7 +414,7 @@ trigger aid fleeViaStairs = do
 -- or zap anything else than obvious physical missiles.
 ranged :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
 ranged aid = do
-  Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   btarget <- getsClient $ getTarget aid
   b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
   mfpos <- aidTgtToPos aid blid btarget
@@ -429,10 +429,10 @@ ranged aid = do
                       && calmEnough b mk -> do  -- ProjectNotCalm
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
-          let permitted = (if True  -- aiq mk >= 10 -- TODO; let server enforce?
-                           then ritemProject
-                           else ritemRanged)
-                          $ Kind.stdRuleset corule
+          let permitted item = case strengthEqpSlot item of
+                Just (IF.EqpSlotLight, _) -> True
+                Just _ -> False
+                Nothing -> True
           benList <- benAvailableItems aid permitted
           let coeff CGround = 4
               coeff CBody = 3  -- can't give to others
@@ -468,9 +468,9 @@ applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
   actorBlind <- radiusBlind <$> strongestClient IF.EqpSlotSightRadius aid
-  let permitted | applyGroup == QuenchLight = "("
-                | actorBlind = "!"
-                | otherwise = "!?"
+  let permitted item | applyGroup == QuenchLight = jsymbol item == '('
+                     | jsymbol item == '?' && actorBlind = False
+                     | otherwise = IF.Applicable `elem` jfeature item
   benList <- benAvailableItems aid permitted
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->

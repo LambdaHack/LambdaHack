@@ -46,7 +46,6 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.RuleKind
 
 -- | Require that the target enemy is visible by the party.
 condTgtEnemyPresentM :: MonadClient m => ActorId -> m Bool
@@ -136,13 +135,13 @@ condNoWeaponM aid = do
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
-  Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   let ak = okind $ bkind b
-      permitted = (if True  -- aiq mk >= 10 -- TODO; let server enforce?
-                   then ritemProject
-                   else ritemRanged)
-                  $ Kind.stdRuleset corule
+      permitted item = case strengthEqpSlot item of
+        Just (IF.EqpSlotLight, _) -> True
+        Just _ -> False
+        Nothing -> True
   actorBlind <- radiusBlind <$> strongestClient IF.EqpSlotSightRadius aid
   benList <- benAvailableItems aid permitted
   let missiles = filter (maybe True (< 0) . fst . fst) benList
@@ -152,7 +151,7 @@ condCanProjectM aid = do
 -- | Produce the benefit-sorted list of items with a given symbol
 -- available to the actor.
 benAvailableItems :: MonadClient m
-                  => ActorId -> [Char]
+                  => ActorId -> (Item -> Bool)
                   -> m [((Maybe Int, CStore), (ItemId, ItemFull))]
 benAvailableItems aid permitted = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
@@ -171,7 +170,7 @@ benAvailableItems aid permitted = do
         , let itemFull = itemToF iid kIsOn
         , let benefit = maxUsefulness cops b itemFull
         , benefit /= Just 0
-        , jsymbol item `elem` permitted ]
+        , permitted item ]
   floorBag <- getsState $ getActorBag aid CGround
   eqpBag <- getsState $ getActorBag aid CEqp
   invBag <- if calmEnough b ak
