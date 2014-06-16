@@ -495,7 +495,11 @@ applyItem aid applyGroup = do
             benR = durableBonus
                    * coeff cstore
                    * case mben of
-                       Nothing -> 20  -- experimenting is fun
+                       Nothing -> 0
+                         -- experimenting is fun, but it's better to risk
+                         -- foes' skin than ours -- TODO: when {activated}
+                         -- is implemented, enable this for items too heavy,
+                         -- etc. for throwing
                        Just ben -> ben
         in if itemLegal itemFull
            then if benR > 0
