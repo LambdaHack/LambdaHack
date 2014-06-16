@@ -159,7 +159,7 @@ updCreateItem iid item (k, isOn) c = assert (k > 0) $ do
                               `blame` "inconsistent created item"
                               `twith` (iid, item, k, c)) item1
   modifyState $ updateItemD $ EM.insertWith f iid item
-  insertItemContainer iid k c isOn
+  insertItemContainer True iid k c isOn
 
 -- | Destroy some copies (possibly not all) of an item.
 updDestroyItem :: MonadStateWrite m
@@ -200,7 +200,7 @@ updMoveItem :: MonadStateWrite m
 updMoveItem iid k aid c1 isOn1 c2 isOn2 =
   assert (k > 0 && (c1 /= c2 || isOn1 /= isOn2)) $ do
     deleteItemActor iid k aid c1 isOn1
-    insertItemActor iid k aid c2 isOn2
+    insertItemActor False iid k aid c2 isOn2
 
 -- TODO: optimize (a single call to updatePrio is enough)
 updAgeActor :: MonadStateWrite m => ActorId -> Delta Time -> m ()

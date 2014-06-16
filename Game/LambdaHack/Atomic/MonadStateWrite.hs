@@ -56,49 +56,52 @@ updateFaction fid f = do
   modifyState $ updateFactionD $ EM.alter alt fid
 
 insertItemContainer :: MonadStateWrite m
-                    => ItemId -> Int -> Container -> Bool -> m ()
-insertItemContainer iid k c isOn = case c of
-  CFloor lid pos -> insertItemFloor iid k lid pos isOn
-  CActor aid store -> insertItemActor iid k aid store isOn
+                    => Bool -> ItemId -> Int -> Container -> Bool -> m ()
+insertItemContainer relaxed iid k c isOn = case c of
+  CFloor lid pos -> insertItemFloor relaxed iid k lid pos isOn
+  CActor aid store -> insertItemActor relaxed iid k aid store isOn
 
 insertItemFloor :: MonadStateWrite m
-                => ItemId -> Int -> LevelId -> Point -> Bool -> m ()
-insertItemFloor iid k lid pos isOn =
+                => Bool -> ItemId -> Int -> LevelId -> Point -> Bool -> m ()
+insertItemFloor relaxed iid k lid pos isOn =
   let bag = EM.singleton iid (k, isOn)
-      mergeBag = EM.insertWith (EM.unionWith (addKCheck)) pos bag
+      mergeBag = EM.insertWith (EM.unionWith (addKCheck relaxed)) pos bag
   in updateLevel lid $ updateFloor mergeBag
 
 insertItemActor :: MonadStateWrite m
-                => ItemId -> Int -> ActorId -> CStore -> Bool -> m ()
-insertItemActor iid k aid cstore isOn = case cstore of
+                => Bool -> ItemId -> Int -> ActorId -> CStore -> Bool -> m ()
+insertItemActor relaxed iid k aid cstore isOn = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
-    insertItemFloor iid k (blid b) (bpos b) isOn
-  CEqp -> insertItemEqp iid k aid isOn
-  CInv -> insertItemInv iid k aid isOn
-  CBody -> insertItemBody iid k aid isOn
+    insertItemFloor relaxed iid k (blid b) (bpos b) isOn
+  CEqp -> insertItemEqp relaxed iid k aid isOn
+  CInv -> insertItemInv relaxed iid k aid isOn
+  CBody -> insertItemBody relaxed iid k aid isOn
 
-insertItemEqp :: MonadStateWrite m => ItemId -> Int -> ActorId -> Bool -> m ()
-insertItemEqp iid k aid isOn = do
+insertItemEqp :: MonadStateWrite m
+              => Bool -> ItemId -> Int -> ActorId -> Bool -> m ()
+insertItemEqp relaxed iid k aid isOn = do
   let bag = EM.singleton iid (k, isOn)
-      upd = EM.unionWith (addKCheck) bag
+      upd = EM.unionWith (addKCheck relaxed) bag
   updateActor aid $ \b -> b {beqp = upd (beqp b)}
 
-insertItemInv :: MonadStateWrite m => ItemId -> Int -> ActorId -> Bool -> m ()
-insertItemInv iid k aid isOn = do
+insertItemInv :: MonadStateWrite m
+              => Bool -> ItemId -> Int -> ActorId -> Bool -> m ()
+insertItemInv relaxed iid k aid isOn = do
   let bag = EM.singleton iid (k, isOn)
-      upd = EM.unionWith (addKCheck) bag
+      upd = EM.unionWith (addKCheck relaxed) bag
   updateActor aid $ \b -> b {binv = upd (binv b)}
 
-insertItemBody :: MonadStateWrite m => ItemId -> Int -> ActorId -> Bool -> m ()
-insertItemBody iid k aid isOn = do
+insertItemBody :: MonadStateWrite m
+               => Bool -> ItemId -> Int -> ActorId -> Bool -> m ()
+insertItemBody relaxed iid k aid isOn = do
   let bag = EM.singleton iid (k, isOn)
-      upd = EM.unionWith (addKCheck) bag
+      upd = EM.unionWith (addKCheck relaxed) bag
   updateActor aid $ \b -> b {bbody = upd (bbody b)}
 
-addKCheck :: KisOn -> KisOn -> KisOn
-addKCheck (k1, kIsOn1) (k2, kIsOn2) =
-  assert (kIsOn1 == kIsOn2) (k1 + k2, kIsOn1)
+addKCheck :: Bool -> KisOn -> KisOn -> KisOn
+addKCheck relaxed (k1, kIsOn1) (k2, kIsOn2) =
+  assert (relaxed || kIsOn1 == kIsOn2) (k1 + k2, kIsOn1)
 
 deleteItemContainer :: MonadStateWrite m
                     => ItemId -> Int -> Container -> Bool -> m ()
