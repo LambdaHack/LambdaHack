@@ -95,7 +95,7 @@ gem = ItemKind
   , ieffects = []
   , ifeature = [ Light 0  -- just reflects strongly
                , Durable  -- prevent destruction by evil monsters
-               , Identified ]
+               , Precious ]
   , idesc    = "Precious, though useless. Worth around 100 gold."
   }
 gem1 = gem
@@ -118,7 +118,7 @@ currency = ItemKind
   , iweight  = 31
   , iaspects = []
   , ieffects = []
-  , ifeature = [Durable, Identified]
+  , ifeature = [Durable, Identified, Precious]
   , idesc    = "Reliably valuable in every civilized place."
   }
 harpoon = ItemKind
@@ -176,7 +176,7 @@ necklace = ItemKind  -- TODO: when more items, perhaps make all Periodic necklac
   , iweight  = 30
   , iaspects = []
   , ieffects = []
-  , ifeature = [toVelocity 50]  -- not dense enough
+  , ifeature = [Precious, toVelocity 50]  -- not dense enough
   , idesc    = "Tingling, rattling chain of flat encrusted links."
   }
 necklace1 = necklace
@@ -267,7 +267,7 @@ ring = ItemKind
   , iweight  = 15
   , iaspects = []
   , ieffects = []
-  , ifeature = []
+  , ifeature = [Precious]
   , idesc    = "A sturdy ring with a strangely shining eye."
   }
 ring1 = ring

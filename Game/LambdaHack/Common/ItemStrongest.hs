@@ -9,6 +9,7 @@ module Game.LambdaHack.Common.ItemStrongest
   , strongestItem, strengthFromEqpSlot, strongestSlotNoFilter, strongestSlot
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
+  , unknownPrecious, permittedRanged
   ) where
 
 import Control.Applicative
@@ -186,3 +187,16 @@ strongestSlot eqpSlot onlyOn is =
         _ -> False
       slotIs = filter f is
   in strongestSlotNoFilter eqpSlot onlyOn slotIs
+
+unknownPrecious :: ItemFull -> Bool
+unknownPrecious itemFull =
+  case itemDisco itemFull of
+    Just ItemDisco{itemAE=Just _} -> False
+    _ -> IF.Precious `elem` jfeature (itemBase itemFull)
+
+permittedRanged :: ItemFull -> Bool
+permittedRanged itemFull = not (unknownPrecious itemFull)
+                           && case strengthEqpSlot (itemBase itemFull) of
+                                Just (IF.EqpSlotLight, _) -> True
+                                Just _ -> False
+                                Nothing -> True

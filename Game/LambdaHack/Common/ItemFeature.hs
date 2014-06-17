@@ -21,6 +21,7 @@ data Feature =
   | Light !Int                      -- ^ item shines with the given radius
   | EqpSlot !EqpSlot !Text          -- ^ the equipment slot the item fits into
   | Identified                      -- ^ any such item starts identified
+  | Precious                        -- ^ precious; don't risk identifying by use
   deriving (Show, Eq, Ord, Generic)
 
 data EqpSlot =
@@ -50,3 +51,4 @@ featureToSuff feat =
     Light p -> Effect.affixBonus p
     EqpSlot{} -> ""
     Identified -> ""
+    Precious -> ""

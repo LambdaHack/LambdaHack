@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -122,9 +123,9 @@ targetStrategy oldLeader aid = do
         case maxUsefulness cops b (itemToF iid kIsOn) of
           Just v -> v
           Nothing -> 30  -- experimenting is fun
-      desirableItem iid item kIsOn@(k, _)
+      desirableItem iid item kIsOn
         | fightsSpawners = itemUsefulness iid kIsOn /= 0
-                           || itemPrice (item, k) > 0
+                           || IF.Precious `elem` jfeature item
         | otherwise = itemUsefulness iid kIsOn /= 0
       desirableBag bag = any (\(iid, kIsOn) ->
                                desirableItem iid (itemD EM.! iid) kIsOn)

@@ -219,7 +219,8 @@ pickWeaponClient source target = do
   eqpAssocs <- fullAssocsClient source [CEqp]
   bodyAssocs <- fullAssocsClient source [CBody]
   let allAssocs = eqpAssocs ++ bodyAssocs
-  case strongestSlotNoFilter IF.EqpSlotWeapon True allAssocs of
+  case filter (not . unknownPrecious . snd . snd)
+       $ strongestSlotNoFilter IF.EqpSlotWeapon True allAssocs of
     [] -> return []
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis

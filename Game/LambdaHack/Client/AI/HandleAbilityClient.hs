@@ -429,11 +429,7 @@ ranged aid = do
                       && calmEnough b mk -> do  -- ProjectNotCalm
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
-          let permitted item = case strengthEqpSlot item of
-                Just (IF.EqpSlotLight, _) -> True
-                Just _ -> False
-                Nothing -> True
-          benList <- benAvailableItems aid permitted
+          benList <- benAvailableItems aid permittedRanged
           let coeff CGround = 4
               coeff CBody = 3  -- can't give to others
               coeff CInv = 2
@@ -468,9 +464,13 @@ applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
   actorBlind <- radiusBlind <$> strongestClient IF.EqpSlotSightRadius aid
-  let permitted item | applyGroup == QuenchLight = jsymbol item == '('
-                     | jsymbol item == '?' && actorBlind = False
-                     | otherwise = IF.Applicable `elem` jfeature item
+  let permitted itemFull@ItemFull{itemBase=item} =
+        not (unknownPrecious itemFull)
+        && if applyGroup == QuenchLight
+           then jsymbol item == '('
+           else if jsymbol item == '?' && actorBlind
+                then False
+                else IF.Applicable `elem` jfeature item
   benList <- benAvailableItems aid permitted
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->

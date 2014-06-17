@@ -115,8 +115,7 @@ effectsSem :: (MonadAtomic m, MonadServer m)
            -> m Bool
 effectsSem effects source target = do
   trs <- mapM (\ef -> effectSem ef source target) effects
-  let triggered = null effects  -- item with no effects identified always
-                  || or trs
+  let triggered = or trs
   sb <- getsState $ getActorBody source
   -- Announce no effect, which is rare and wastes time, so noteworthy.
   unless (triggered       -- some effect triggered, if any present

@@ -331,7 +331,8 @@ pickWeaponServer source = do
   let allAssocs = eqpAssocs ++ bodyAssocs
       strongest | bproj sb = map (1,) allAssocs
                 | otherwise =
-                    strongestSlotNoFilter IF.EqpSlotWeapon True allAssocs
+                    filter (not . unknownPrecious . snd . snd)
+                    $ strongestSlotNoFilter IF.EqpSlotWeapon True allAssocs
   case strongest of
     [] -> return Nothing
     iis -> do

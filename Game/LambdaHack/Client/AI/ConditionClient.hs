@@ -139,12 +139,8 @@ condCanProjectM aid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   let ak = okind $ bkind b
-      permitted item = case strengthEqpSlot item of
-        Just (IF.EqpSlotLight, _) -> True
-        Just _ -> False
-        Nothing -> True
   actorBlind <- radiusBlind <$> strongestClient IF.EqpSlotSightRadius aid
-  benList <- benAvailableItems aid permitted
+  benList <- benAvailableItems aid permittedRanged
   let missiles = filter (maybe True (< 0) . fst . fst) benList
   return $ not actorBlind && calmEnough b ak && not (null missiles)
     -- keep it lazy
@@ -152,26 +148,20 @@ condCanProjectM aid = do
 -- | Produce the benefit-sorted list of items with a given symbol
 -- available to the actor.
 benAvailableItems :: MonadClient m
-                  => ActorId -> (Item -> Bool)
+                  => ActorId -> (ItemFull -> Bool)
                   -> m [((Maybe Int, CStore), (ItemId, ItemFull))]
 benAvailableItems aid permitted = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
-  itemD <- getsState sitemD
   let ak = okind $ bkind b
-      getItemB iid =
-        fromMaybe (assert `failure` "item body not found"
-                          `twith` (iid, itemD)) $ EM.lookup iid itemD
       ben cstore bag =
         [ ((benefit, cstore), (iid, itemFull))
-        | (iid, item, kIsOn) <-
-             map (\(iid, kIsOn) -> (iid, getItemB iid, kIsOn))
-             $ EM.assocs bag
+        | (iid, kIsOn) <- EM.assocs bag
         , let itemFull = itemToF iid kIsOn
         , let benefit = maxUsefulness cops b itemFull
         , benefit /= Just 0
-        , permitted item ]
+        , permitted itemFull ]
   floorBag <- getsState $ getActorBag aid CGround
   eqpBag <- getsState $ getActorBag aid CEqp
   invBag <- if calmEnough b ak
@@ -203,14 +193,14 @@ benGroundItems aid = do
   itemD <- getsState sitemD
   floorItems <- getsState $ getActorBag aid CGround
   fightsSpawners <- fightsAgainstSpawners (bfid body)
-  let desirableItem item use k
-        | fightsSpawners = use /= Just 0 || itemPrice (item, k) > 0
+  let desirableItem item use
+        | fightsSpawners = use /= Just 0 || IF.Precious `elem` jfeature item
         | otherwise = use /= Just 0
       mapDesirable (iid, (k, isOn)) =
         let item = itemD EM.! iid
             use = maxUsefulness cops body (itemToF iid  (k, isOn))
             value = fromMaybe 5 use  -- experimenting fun
-        in if desirableItem item use k
+        in if desirableItem item use
            then Just ((value, k), (iid, item))
            else Nothing
   return $ reverse $ sort $ mapMaybe mapDesirable $ EM.assocs floorItems
