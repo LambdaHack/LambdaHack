@@ -162,7 +162,7 @@ monocle = ItemKind
   , iweight  = 50
   , iaspects = [SightRadius $ 1 + dl 3]
   , ieffects = []
-  , ifeature = [Durable, EqpSlot EqpSlotSightRadius ""]
+  , ifeature = [Durable, EqpSlot EqpSlotSightRadius "", Identified]
   , idesc    = "Let's you better focus your weaker eye."
   }
 necklace = ItemKind  -- TODO: when more items, perhaps make all Periodic necklaces
@@ -364,7 +364,7 @@ sword = ItemKind
   , iaspects = []
   , ieffects = [Hurt (5 * d 1) (d 2 + 4 * dl 2)]
   , ifeature = [ toVelocity 20  -- ensuring it hits with the tip costs speed
-               , Durable, EqpSlot EqpSlotWeapon "" ]
+               , Durable, EqpSlot EqpSlotWeapon "", Identified ]
   , idesc    = "A standard heavy weapon. Does not penetrate very effectively, but hard to block."
   }
 wand = ItemKind
