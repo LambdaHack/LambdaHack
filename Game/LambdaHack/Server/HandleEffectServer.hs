@@ -317,17 +317,21 @@ effectSummon :: (MonadAtomic m, MonadServer m)
 effectSummon power source target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
+  sb <- getsState $ getActorBody source
   tb <- getsState (getActorBody target)
   let validTile t = not $ Tile.hasFeature cotile F.NoActor t
   ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
-  time <- getsState $ getLocalTime (blid tb)
+  localTime <- getsState $ getLocalTime (blid tb)
+  -- Make sure summoned actors start acting after the summoner.
+  let targetTime = timeShift localTime $ ticksPerMeter $ bspeed sb
+      afterTime = timeShift targetTime $ Delta timeClip
   mfid <- pickFaction "summon" (const True)
   case mfid of
     Nothing ->
       -- Don't make this item useless.
       effectSem (Effect.CallFriend power) source target
     Just fid -> do
-      spawnMonsters (take power ps) (blid tb) time fid
+      spawnMonsters (take power ps) (blid tb) afterTime fid
       return True
 
 -- | Roll a faction based on faction kind frequency key.
