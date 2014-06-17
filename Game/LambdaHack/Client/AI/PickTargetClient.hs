@@ -133,7 +133,7 @@ targetStrategy oldLeader aid = do
       desirable (_, (_, Nothing)) = True
       desirable (_, (_, Just bag)) = desirableBag bag
       -- TODO: make more common when weak ranged foes preferred, etc.
-      focused = bspeed b < speedNormal || condHpTooLow
+      focused = bspeed cops b < speedNormal || condHpTooLow
       setPath :: Target -> m (Strategy (Target, Maybe PathEtc))
       setPath tgt = do
         mpath <- createPath tgt

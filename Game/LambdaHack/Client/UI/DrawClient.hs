@@ -90,7 +90,8 @@ draw sfBlank dm drawnLevelId cursorPos tgtPos bfsmpathRaw
       cursorHere = find (\(_, m) -> cursorPos == Just (Actor.bpos m))
                    actorsHere
       shiftedBTrajectory = case cursorHere of
-        Just (_, Actor{btrajectory = Just p, bpos = prPos}) -> trajectoryToPath prPos p
+        Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
+          trajectoryToPath prPos (fst p)
         _ -> []
       unknownId = ouniqGroup "unknown space"
       dis pos0 =

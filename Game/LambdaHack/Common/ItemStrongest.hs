@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthAspect, strengthEffect, strengthFeature
   , strengthMelee, strengthPeriodic, strengthArmor
-  , strengthSightRadius, strengthSmellRadius, strengthIntelligence
+  , strengthSightRadius, strengthSmellRadius
   , strengthLight, strengthToThrow, strengthEqpSlot
   , strongestItem, strengthFromEqpSlot, strongestSlotNoFilter, strongestSlot
     -- * Assorted
@@ -103,12 +103,6 @@ strengthSightRadius =
 strengthSmellRadius :: ItemFull -> Maybe Int
 strengthSmellRadius =
   let p (SmellRadius k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthIntelligence :: ItemFull -> Maybe Int
-strengthIntelligence =
-  let p (Intelligence k) = [k]
       p _ = []
   in strengthAspectMaybe p
 

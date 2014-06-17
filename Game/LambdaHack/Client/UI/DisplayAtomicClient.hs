@@ -130,12 +130,6 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
         when (null closeFoes) $ do  -- obvious where the feeling comes from
           aVerbMU aid "hear something"
           msgDuplicateScrap
-  UpdHasteActor aid delta -> do
-    b <- getsState $ getActorBody aid
-    when (isNothing $ btrajectory b) $
-      aVerbMU aid $ if delta > speedZero
-                    then "speed up"
-                    else "slow down"
   UpdOldFidActor{} -> skip
   UpdTrajectoryActor{} -> skip
   UpdColorActor{} -> skip
@@ -611,6 +605,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
   SfxActorStart aid -> do
+    cops <- getsState scops
     arena <- getArenaUI
     b <- getsState $ getActorBody aid
     when (blid b == arena) $ do
@@ -625,7 +620,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
       -- but it's rare and results in a minor UI issue, so we don't care.
       timeCutOff <- getsClient $ EM.findWithDefault timeZero arena . sdisplayed
       when (btime b >= timeShift timeCutOff (Delta timeClip)
-            || btime b >= timeShiftFromSpeed b timeCutOff
+            || btime b >= timeShiftFromSpeed cops b timeCutOff
             || actorNewBorn b
             || actorDying b) $ do
         let ageDisp displayed = EM.insert arena (btime b) displayed

@@ -57,11 +57,12 @@ type ToAny a = Strategy (RequestTimed a) -> Strategy RequestAnyAbility
 toAny :: ToAny a
 toAny strat = RequestAnyAbility <$> strat
 
--- | AI strategy based on actor's sight, smell, intelligence, etc.
+-- | AI strategy based on actor's sight, smell, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy RequestAnyAbility)
 actionStrategy aid = do
+  cops <- getsState scops
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   condTgtEnemyPresent <- condTgtEnemyPresentM aid
@@ -82,8 +83,8 @@ actionStrategy aid = do
   let condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= nearby) . fst) threatDistL
-      speed1_5 = speedScale (3%2) (bspeed body)
-      condFastThreatAdj = any (\(_, (_, b)) -> bspeed b > speed1_5)
+      speed1_5 = speedScale (3%2) (bspeed cops body)
+      condFastThreatAdj = any (\(_, (_, b)) -> bspeed cops b > speed1_5)
                           $ takeWhile ((== 1) . fst) threatDistL
       condCanFlee = not (null fleeL || condFastThreatAdj)
   mleader <- getsClient _sleader
@@ -289,7 +290,7 @@ harmful :: Kind.COps -> Actor -> ItemFull -> Bool
 harmful cops body itemFull =
   -- Fast actors want to hide in darkness to ambush opponents and want
   -- to hit hard for the short span they get to survive melee.
-  (bspeed body > speedNormal
+  (bspeed cops body > speedNormal
    && (isJust (strengthLight (itemBase itemFull))
        || isJust (strengthArmor itemFull)))
   -- Periodic items that are known and not stricly beneficial
@@ -410,8 +411,6 @@ trigger aid fleeViaStairs = do
            | (benefit, feat) <- benFeat
            , benefit > 0 ]
 
--- Actors require sight to use ranged combat and intelligence to throw
--- or zap anything else than obvious physical missiles.
 ranged :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
 ranged aid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
@@ -459,7 +458,6 @@ ranged aid = do
 data ApplyItemGroup = ApplyAll | ApplyFirstAid | QuenchLight
   deriving Eq
 
--- Item application requires significant intelligence and sometimes literacy.
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do

@@ -19,15 +19,19 @@ import Game.LambdaHack.Common.Time
 -- a game content with no regeneration does not ever need to mention aregen.
 -- | Actor properties that are fixed for a given kind of actors.
 data ActorKind = ActorKind
-  { asymbol :: !Char       -- ^ map symbol
+  { -- * Initial presentation
+    asymbol :: !Char       -- ^ map symbol
   , aname   :: !Text       -- ^ short description
-  , afreq   :: !Freqs      -- ^ frequency within groups
   , acolor  :: !Color      -- ^ map color
-  , aspeed  :: !Speed      -- ^ natural speed in m/s
+    -- * Resources
   , ahp     :: !Dice.Dice  -- ^ encodes initial and maximal hp
   , acalm   :: !Dice.Dice  -- ^ encodes initial and maximal calm
+  , aspeed  :: !Speed      -- ^ natural speed in m/Ms
   , acanDo  :: ![Ability]  -- ^ the set of supported abilities
+    -- * Initial items
   , aitems  :: ![(Text, CStore)]  -- ^ initial items
+    -- * Initial distribution
+  , afreq   :: !Freqs      -- ^ frequency within groups
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

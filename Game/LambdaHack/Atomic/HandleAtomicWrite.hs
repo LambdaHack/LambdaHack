@@ -58,7 +58,6 @@ handleUpdAtomic cmd = case cmd of
   UpdAgeActor aid t -> updAgeActor aid t
   UpdHealActor aid n -> updHealActor aid n
   UpdCalmActor aid n -> updCalmActor aid n
-  UpdHasteActor aid delta -> updHasteActor aid delta
   UpdOldFidActor aid fromFid toFid -> updOldFidActor aid fromFid toFid
   UpdTrajectoryActor aid fromT toT -> updTrajectoryActor aid fromT toT
   UpdColorActor aid fromCol toCol -> updColorActor aid fromCol toCol
@@ -223,15 +222,6 @@ updCalmActor aid n =
     b { bcalm = max 0 $ bcalm b + n
       , bcalmDelta = n }  -- records original delta, for "hears something"
 
-updHasteActor :: MonadStateWrite m => ActorId -> Speed -> m ()
-updHasteActor aid delta = assert (delta /= speedZero) $ do
-  updateActor aid $ \b ->
-    let newSpeed = speedAdd (bspeed b) delta
-    in assert (newSpeed >= speedZero
-               `blame` "actor slowed below zero"
-               `twith` (aid, delta, b, newSpeed))
-       $ b {bspeed = newSpeed}
-
 updOldFidActor :: MonadStateWrite m => ActorId -> FactionId -> FactionId -> m ()
 updOldFidActor aid fromFid toFid = assert (fromFid /= toFid) $ do
   updateActor aid $ \b ->
@@ -239,7 +229,10 @@ updOldFidActor aid fromFid toFid = assert (fromFid /= toFid) $ do
     $ b {boldfid = toFid}
 
 updTrajectoryActor :: MonadStateWrite m
-                   => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
+                   => ActorId
+                   -> Maybe ([Vector], Speed)
+                   -> Maybe ([Vector], Speed)
+                   -> m ()
 updTrajectoryActor aid fromT toT = assert (fromT /= toT) $ do
   body <- getsState $ getActorBody aid
   assert (fromT == btrajectory body `blame` "unexpected actor trajectory"

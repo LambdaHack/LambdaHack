@@ -303,7 +303,7 @@ addProjectile :: (MonadAtomic m, MonadServer m)
 addProjectile bpos rest iid blid bfid btime = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   item <- getsState $ getItemBody iid
-  let (trajectory, speed) = itemTrajectory item (bpos : rest)
+  let ts@(trajectory, _) = itemTrajectory item (bpos : rest)
       trange = length trajectory
       adj | trange < 5 = "falling"
           | otherwise = "flying"
@@ -312,9 +312,9 @@ addProjectile bpos rest iid blid bfid btime = do
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       kind = okind $ projectileKindId coactor
       b = actorTemplate (projectileKindId coactor) (asymbol kind) name "it"
-                        (acolor kind) speed 0 maxBound
+                        (acolor kind) 0 maxBound
                         bpos blid btime bfid (EM.singleton iid (1, True)) True
-      btra = b {btrajectory = Just trajectory}
+      btra = b {btrajectory = Just ts}
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execUpdAtomic $ UpdCreateActor acounter btra [(iid, item)]

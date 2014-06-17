@@ -315,6 +315,7 @@ effectSummon :: (MonadAtomic m, MonadServer m)
              => Int -> ActorId -> ActorId -> m Bool
 effectSummon power source target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
+  cops <- getsState scops
   Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState (getActorBody target)
@@ -322,7 +323,7 @@ effectSummon power source target = assert (power > 0) $ do
   ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
   localTime <- getsState $ getLocalTime (blid tb)
   -- Make sure summoned actors start acting after the summoner.
-  let targetTime = timeShift localTime $ ticksPerMeter $ bspeed sb
+  let targetTime = timeShift localTime $ ticksPerMeter $ bspeed cops sb
       afterTime = timeShift targetTime $ Delta timeClip
   mfid <- pickFaction "summon" (const True)
   case mfid of
@@ -533,8 +534,9 @@ effectParalyze execSfx p target = assert (p > 0) $ do
 effectInsertMove :: (MonadAtomic m, MonadServer m)
                  => m () -> Int -> ActorId -> m Bool
 effectInsertMove execSfx p target = assert (p > 0) $ do
+  cops <- getsState scops
   b <- getsState $ getActorBody target
-  let tpm = ticksPerMeter $ bspeed b
+  let tpm = ticksPerMeter $ bspeed cops b
       t = timeDeltaScale tpm (-p)
   execUpdAtomic $ UpdAgeActor target t
   execSfx
@@ -618,15 +620,10 @@ effectSendFlying execSfx Effect.ThrowMod{..} source target modePush = do
               -- sum weigths of all body parts
               weight = 70000  -- 70 kg
               path = bpos tb : pos : rest
-              (trajectoryNew, speed) =
-                computeTrajectory weight throwVelocity throwLinger path
-              speedOld = bspeed tb
-              speedDelta = speedAdd speed (speedNegate speedOld)
-          unless (btrajectory tb == Just trajectoryNew) $
+              ts = computeTrajectory weight throwVelocity throwLinger path
+          unless (btrajectory tb == Just ts) $
             execUpdAtomic $ UpdTrajectoryActor target (btrajectory tb)
-                                                      (Just trajectoryNew)
-          when (speedDelta /= speedZero) $
-            execUpdAtomic $ UpdHasteActor target speedDelta
+                                                      (Just ts)
           execSfx
           return True
 

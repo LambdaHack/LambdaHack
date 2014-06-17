@@ -154,8 +154,7 @@ addActor ak bfid pos lid hp calm bsymbol bname bpronoun bcolor time = do
         (ceiling :: Double -> Int) $ fromIntegral hp
                                      * 1.5 ^^ difficultyCoeff sdifficultySer
              | otherwise = hp
-      speed = aspeed kind
-      b = actorTemplate ak bsymbol bname bpronoun bcolor speed diffHP calm
+      b = actorTemplate ak bsymbol bname bpronoun bcolor diffHP calm
                         pos lid time bfid EM.empty False
   execUpdAtomic $ UpdCreateActor aid b []
   -- Create initial actor items.
@@ -236,9 +235,10 @@ dominateFid fid target = do
 -- to be displayed each turn (not every few turns).
 advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 advanceTime aid = do
+  cops <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let t = ticksPerMeter $ bspeed b
+  let t = ticksPerMeter $ bspeed cops b
   execUpdAtomic $ UpdAgeActor aid t
   unless (bproj b) $ do
     if bcalm b == 0 && boldfid b /= bfid b

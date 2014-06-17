@@ -57,7 +57,6 @@ data Aspect a =
   | ArmorMelee !Int
   | SightRadius !a
   | SmellRadius !a
-  | Intelligence !a  -- TODO: try to use actor abilities instead
   | Explode !Text  -- ^ explode, producing this group of shrapnel
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
@@ -139,9 +138,6 @@ aspectTrav (SightRadius a) f = do
 aspectTrav (SmellRadius a) f = do
   b <- f a
   return $! SmellRadius b
-aspectTrav (Intelligence a) f = do
-  b <- f a
-  return $! Intelligence b
 aspectTrav (Explode t) _ = return $! Explode t
 
 -- | Transform a throwing mod using a stateful function.
@@ -224,7 +220,6 @@ aspectToSuff aspect f =
     ArmorMelee p -> "[" <> tshow p <> "]"
     SightRadius t -> "of sight" <+> t
     SmellRadius t -> "of smell" <+> t
-    Intelligence t -> "of intelligence" <+> t
     Explode{} -> ""
 
 effectToSuffix :: Effect Int -> Text

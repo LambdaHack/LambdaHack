@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Actor
   ( -- * Actor identifiers and related operations
     ActorId, monsterGenChance, partActor, partPronoun
     -- * The@ Acto@r type
-  , Actor(..), actorTemplate, timeShiftFromSpeed, braced, waitedLastTurn
+  , Actor(..), bspeed, actorTemplate, timeShiftFromSpeed, braced, waitedLastTurn
   , actorDying, actorNewBorn, hpTooLow, unoccupied, projectileKindId
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
@@ -35,28 +35,34 @@ import Game.LambdaHack.Content.ActorKind
 -- they are usually modified temporarily, but tend to return
 -- to the original value from @ActorKind@ over time. E.g., HP.
 data Actor = Actor
-  { bkind       :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
+  { -- * Link to the constant properties
+    bkind       :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
+    -- * Presentation
   , bsymbol     :: !Char                 -- ^ individual map symbol
   , bname       :: !Text                 -- ^ individual name
   , bpronoun    :: !Text                 -- ^ individual pronoun
   , bcolor      :: !Color.Color          -- ^ individual map color
-  , bspeed      :: !Speed                -- ^ individual speed
+    -- * Resources
+  , btime       :: !Time                 -- ^ absolute time of next action
   , bhp         :: !Int                  -- ^ current hit points
   , bhpDelta    :: !Int                  -- ^ HP delta this turn
   , bcalm       :: !Int                  -- ^ current calm
   , bcalmDelta  :: !Int                  -- ^ calm delta this turn
-  , btrajectory :: !(Maybe [Vector])     -- ^ trajectory the actor must travel
+    -- * Location
   , bpos        :: !Point                -- ^ current position
   , boldpos     :: !Point                -- ^ previous position
   , blid        :: !LevelId              -- ^ current level
   , boldlid     :: !LevelId              -- ^ previous level
+  , bfid        :: !FactionId            -- ^ faction the actor belongs to
+  , boldfid     :: !FactionId            -- ^ previous faction of the actor
+  , btrajectory :: !(Maybe ([Vector], Speed))  -- ^ trajectory the actor must
+                                               --   travel and his travel speed
+    -- * Items
   , binv        :: !ItemBag              -- ^ personal inventory
   , beqp        :: !ItemBag              -- ^ personal equipment
   , bbody       :: !ItemBag              -- ^ body parts
-  , btime       :: !Time                 -- ^ absolute time of next action
+    -- * Assorted
   , bwait       :: !Bool                 -- ^ is the actor waiting right now?
-  , bfid        :: !FactionId            -- ^ faction the actor belongs to
-  , boldfid     :: !FactionId            -- ^ previous faction of the actor
   , bproj       :: !Bool                 -- ^ is a projectile? (shorthand only,
                                          --   this can be deduced from bkind)
   }
@@ -89,10 +95,10 @@ partPronoun b = MU.Text $ bpronoun b
 
 -- | A template for a new actor.
 actorTemplate :: Kind.Id ActorKind -> Char -> Text -> Text
-              -> Color.Color -> Speed -> Int -> Int
+              -> Color.Color -> Int -> Int
               -> Point -> LevelId -> Time -> FactionId -> ItemBag -> Bool
               -> Actor
-actorTemplate bkind bsymbol bname bpronoun bcolor bspeed bhp bcalm
+actorTemplate bkind bsymbol bname bpronoun bcolor bhp bcalm
               bpos blid btime bfid beqp bproj =
   let btrajectory = Nothing
       boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
@@ -105,10 +111,16 @@ actorTemplate bkind bsymbol bname bpronoun bcolor bspeed bhp bcalm
       bcalmDelta = 0
   in Actor{..}
 
+bspeed :: Kind.COps -> Actor -> Speed
+bspeed Kind.COps{coactor=Kind.Ops{okind}} b =
+  case btrajectory b of
+    Nothing -> aspeed $ okind $ bkind b
+    Just (_, speed) -> speed
+
 -- | Add time taken by a single step at the actor's current speed.
-timeShiftFromSpeed :: Actor -> Time -> Time
-timeShiftFromSpeed b time =
-  let speed = bspeed b
+timeShiftFromSpeed :: Kind.COps -> Actor -> Time -> Time
+timeShiftFromSpeed cops b time =
+  let speed = bspeed cops b
       delta = ticksPerMeter speed
   in timeShift time delta
 
@@ -123,7 +135,7 @@ waitedLastTurn b = bwait b
 actorDying :: Actor -> Bool
 actorDying b = if bproj b
                then bhp b < 0
-                    || maybe True null (btrajectory b)
+                    || maybe True (null . fst) (btrajectory b)
                else bhp b <= 0
 
 actorNewBorn :: Actor -> Bool
@@ -189,7 +201,6 @@ instance Binary Actor where
     put bname
     put bpronoun
     put bcolor
-    put bspeed
     put bhp
     put bhpDelta
     put bcalm
@@ -213,7 +224,6 @@ instance Binary Actor where
     bname <- get
     bpronoun <- get
     bcolor <- get
-    bspeed <- get
     bhp <- get
     bhpDelta <- get
     bcalm <- get

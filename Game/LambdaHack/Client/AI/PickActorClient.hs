@@ -72,7 +72,7 @@ pickActorToMove refreshTarget oldAid = do
             let condThreatAdj =
                   not $ null $ takeWhile ((== 1) . fst) threatDistL
                 condFastThreatAdj =
-                  any (\(_, (_, b)) -> bspeed b > bspeed body)
+                  any (\(_, (_, b)) -> bspeed cops b > bspeed cops body)
                   $ takeWhile ((== 1) . fst) threatDistL
                 condCanFlee = not (null fleeL || condFastThreatAdj)
             return $! if condThreatAdj

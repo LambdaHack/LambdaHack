@@ -29,7 +29,6 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.EndServer
@@ -209,7 +208,7 @@ handleActors lid = do
   case mnext of
     _ | quit -> return ()
     Nothing -> return ()
-    Just (aid, b) | maybe False null (btrajectory b) && bproj b -> do
+    Just (aid, b) | maybe False (null .fst) (btrajectory b) && bproj b -> do
       -- A projectile drops to the ground due to obstacles or range.
       assert (bproj b) skip
       startActor aid
@@ -358,16 +357,18 @@ saveBkpAll unconditional = do
 -- blocking path of human-controlled actors and alarming the hapless human.
 setTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
 setTrajectory aid = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  cops <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   let clearTrajectory = do
         -- Lose HP due to bumping into an obstacle.
         execUpdAtomic $ UpdHealActor aid (-1)
-        execUpdAtomic $ UpdTrajectoryActor aid (btrajectory b) (Just [])
+        execUpdAtomic $ UpdTrajectoryActor aid
+                                           (btrajectory b)
+                                           (Just ([], speedZero))
         return $ not $ bproj b  -- projectiles must vanish soon
   case btrajectory b of
-    Just (d : lv) ->
+    Just ((d : lv), speed) ->
       if not $ accessibleDir cops lvl (bpos b) d
       then clearTrajectory
       else do
@@ -379,17 +380,13 @@ setTrajectory aid = do
         b2 <- getsState $ getActorBody aid
         if actorDying b2 then return $ not $ bproj b  -- don't clear trajectory
         else do
-          unless (btrajectory b2 == Just []) $
-            execUpdAtomic $ UpdTrajectoryActor aid (btrajectory b2) (Just lv)
+          unless (maybe False (null . fst) (btrajectory b2)) $
+            execUpdAtomic $ UpdTrajectoryActor aid
+                                               (btrajectory b2)
+                                               (Just (lv, speed))
           return True
-    Just [] -> do  -- non-projectile actor stops flying
+    Just ([], _) -> do  -- non-projectile actor stops flying
       assert (not $ bproj b) skip
-        -- Being hurled resets speed to factory defaults.
-      let speedOld = bspeed b
-          speedNew = aspeed $ okind $ bkind b
-          speedDelta = speedAdd speedNew (speedNegate speedOld)
-      when (speedDelta /= speedZero) $
-        execUpdAtomic $ UpdHasteActor aid speedDelta
       execUpdAtomic $ UpdTrajectoryActor aid (btrajectory b) Nothing
       return False
     _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)
