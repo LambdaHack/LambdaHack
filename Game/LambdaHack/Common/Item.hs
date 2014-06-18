@@ -16,7 +16,7 @@ module Game.LambdaHack.Common.Item
 import qualified Control.Monad.State as St
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.Hashable as Hashable
+import Data.Hashable (Hashable)
 import qualified Data.Ix as Ix
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -60,7 +60,7 @@ data ItemAspectEffect = ItemAspectEffect
 
 instance Binary ItemAspectEffect
 
-instance Hashable.Hashable ItemAspectEffect
+instance Hashable ItemAspectEffect
 
 -- | The map of item ids to item aspects and effects.
 -- The full map is known by the server.
@@ -107,7 +107,7 @@ data Item = Item
   }
   deriving (Show, Eq, Ord, Generic)
 
-instance Hashable.Hashable Item
+instance Hashable Item
 
 instance Binary Item
 

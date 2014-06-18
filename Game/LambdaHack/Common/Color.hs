@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.Color
 
 import Data.Binary
 import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
-import qualified Data.Hashable as Hashable
+import Data.Hashable (Hashable)
 import GHC.Generics (Generic)
 
 -- TODO: since this type may be essential to speed, consider implementing
@@ -38,7 +38,7 @@ data Color =
   | BrWhite
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
-instance Hashable.Hashable Color
+instance Hashable Color
 
 -- | The default colours, to optimize attribute setting.
 defBG, defFG :: Color

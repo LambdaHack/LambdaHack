@@ -13,7 +13,7 @@ module Game.LambdaHack.Common.Dice
 import Control.Applicative
 import Data.Binary
 import qualified Data.Char as Char
-import qualified Data.Hashable as Hashable
+import Data.Hashable (Hashable)
 import qualified Data.IntMap.Strict as IM
 import Data.Ratio
 import Data.Text (Text)
@@ -93,7 +93,7 @@ instance Show Dice where
        else if nameFrequency diceConst == "0" then scaled
        else nameFrequency diceConst <+> "+" <+> scaled
 
-instance Hashable.Hashable Dice
+instance Hashable Dice
 
 instance Binary Dice
 
@@ -158,7 +158,7 @@ meanDice Dice{..} = meanFreq diceConst + meanFreq diceLevel * (1%2)
 data DiceXY = DiceXY !Dice !Dice
   deriving (Show, Eq, Ord, Generic)
 
-instance Hashable.Hashable DiceXY
+instance Hashable DiceXY
 
 instance Binary DiceXY
 

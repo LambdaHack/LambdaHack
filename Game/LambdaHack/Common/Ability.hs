@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Ability
   ) where
 
 import Data.Binary
-import qualified Data.Hashable as Hashable
+import Data.Hashable (Hashable)
 import GHC.Generics (Generic)
 
 -- | Actor and faction abilities corresponding to client-server requests.
@@ -25,4 +25,4 @@ instance Binary Ability where
   put = putWord8 . toEnum . fromEnum
   get = fmap (toEnum . fromEnum) getWord8
 
-instance Hashable.Hashable Ability
+instance Hashable Ability

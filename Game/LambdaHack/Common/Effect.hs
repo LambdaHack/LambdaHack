@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.Effect
 import Control.Exception.Assert.Sugar
 import qualified Control.Monad.State as St
 import Data.Binary
-import qualified Data.Hashable as Hashable
+import Data.Hashable (Hashable)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -73,11 +73,11 @@ data ThrowMod a = ThrowMod
   }
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
-instance Hashable.Hashable a => Hashable.Hashable (Effect a)
+instance Hashable a => Hashable (Effect a)
 
-instance Hashable.Hashable a => Hashable.Hashable (Aspect a)
+instance Hashable a => Hashable (Aspect a)
 
-instance Hashable.Hashable a => Hashable.Hashable (ThrowMod a)
+instance Hashable a => Hashable (ThrowMod a)
 
 instance Binary a => Binary (Effect a)
 

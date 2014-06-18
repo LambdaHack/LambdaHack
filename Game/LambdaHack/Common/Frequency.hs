@@ -18,7 +18,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
 import Data.Foldable (Foldable)
-import qualified Data.Hashable as Hashable
+import Data.Hashable (Hashable)
 import Data.Ratio
 import Data.Text (Text)
 import Data.Traversable (Traversable)
@@ -73,7 +73,7 @@ instance Alternative Frequency where
   (<|>) = mplus
   empty = mzero
 
-instance Hashable.Hashable a => Hashable.Hashable (Frequency a)
+instance Hashable a => Hashable (Frequency a)
 
 instance Binary a => Binary (Frequency a)
 

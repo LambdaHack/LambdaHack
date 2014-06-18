@@ -16,7 +16,7 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Functor
-import qualified Data.Hashable as Hashable
+import Data.Hashable (Hashable)
 import qualified Data.HashMap.Strict as HM
 import Data.Key
 import Data.Text (Text)
@@ -74,7 +74,7 @@ newtype FactionId = FactionId Int
 
 -- | Abstract level identifiers.
 newtype LevelId = LevelId Int
-  deriving (Show, Eq, Ord, Enum, Hashable.Hashable, Binary)
+  deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
 -- | A unique identifier of an actor in the dungeon.
 newtype ActorId = ActorId Int
@@ -90,7 +90,7 @@ instance (Enum k, Binary k) => Binary (ES.EnumSet k) where
   put m = put (ES.size m) >> mapM_ put (ES.toAscList m)
   get = liftM ES.fromDistinctAscList get
 
-instance (Binary k, Binary v, Eq k, Hashable.Hashable k)
+instance (Binary k, Binary v, Eq k, Hashable k)
   => Binary (HM.HashMap k v) where
   put ir = put $ HM.toList ir
   get = fmap HM.fromList get

@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.ItemFeature
   ) where
 
 import Data.Binary
-import qualified Data.Hashable as Hashable
+import Data.Hashable (Hashable)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
@@ -32,9 +32,9 @@ data EqpSlot =
   | EqpSlotWeapon
   deriving (Show, Eq, Ord, Generic)
 
-instance Hashable.Hashable Feature
+instance Hashable Feature
 
-instance Hashable.Hashable EqpSlot
+instance Hashable EqpSlot
 
 instance Binary Feature
 

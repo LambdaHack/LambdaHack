@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.Flavour
   ) where
 
 import Data.Binary
-import qualified Data.Hashable as Hashable
+import Data.Hashable (Hashable)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
@@ -26,7 +26,7 @@ data Flavour = Flavour
   }
   deriving (Show, Eq, Ord, Generic)
 
-instance Hashable.Hashable Flavour
+instance Hashable Flavour
 
 instance Binary Flavour
 
