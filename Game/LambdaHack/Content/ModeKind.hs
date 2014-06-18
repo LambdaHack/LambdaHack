@@ -46,7 +46,7 @@ data Player = Player
                                --   by a human or a user-supplied AI client
   , playerAI      :: !Bool     -- ^ is the faction under AI control?
   , playerUI      :: !Bool     -- ^ does the faction have a UI client
-                                -- (for control or passive observation)
+                               -- (for control or passive observation)
   }
   deriving (Show, Eq)
 

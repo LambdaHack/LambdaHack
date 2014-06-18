@@ -7,6 +7,7 @@ import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ActorKind
 
 -- TODO: also take other ItemFeatures into account, e.g., splash damage.
@@ -56,7 +57,12 @@ aspectToBenefit _cops _b asp =
   case asp of
     Effect.NoAspect -> (0, 1)
     Effect.Periodic n -> (0, n)
-    Effect.ArmorMelee _ -> (5, 1)
+    Effect.AddMaxHP p -> (p * 10, 1)
+    Effect.AddMaxCalm p -> (p, 1)
+    Effect.AddSpeed p -> (p * 10000, 1)
+    Effect.AddAbility _ -> (50, 1)
+    Effect.DeleteAbility _ -> (-50, 1)
+    Effect.ArmorMelee p -> (p `divUp` 10, 1)
     Effect.Explode{} -> (0, 10)
     Effect.SightRadius p -> (p * 20, 1)
     Effect.SmellRadius p -> (p * 2, 1)

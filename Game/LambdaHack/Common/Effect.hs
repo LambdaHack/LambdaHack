@@ -14,6 +14,7 @@ import Data.Binary
 import qualified Data.Hashable as Hashable
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Game.LambdaHack.Common.Ability as Ability
 import GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -54,7 +55,12 @@ data Effect a =
 data Aspect a =
     NoAspect
   | Periodic !a
-  | ArmorMelee !Int
+  | AddMaxHP !a
+  | AddMaxCalm !a
+  | AddSpeed !a
+  | AddAbility !Ability.Ability
+  | DeleteAbility !Ability.Ability
+  | ArmorMelee !a
   | SightRadius !a
   | SmellRadius !a
   | Explode !Text  -- ^ explode, producing this group of shrapnel
@@ -131,7 +137,20 @@ aspectTrav NoAspect _ = return NoAspect
 aspectTrav (Periodic a) f = do
   b <- f a
   return $! Periodic b
-aspectTrav (ArmorMelee p) _ = return $! ArmorMelee p
+aspectTrav (AddMaxHP a) f = do
+  b <- f a
+  return $! AddMaxHP b
+aspectTrav (AddMaxCalm a) f = do
+  b <- f a
+  return $! AddMaxCalm b
+aspectTrav (AddSpeed a) f = do
+  b <- f a
+  return $! AddSpeed b
+aspectTrav (AddAbility as) _ = return $! AddAbility as
+aspectTrav (DeleteAbility as) _ = return $! DeleteAbility as
+aspectTrav (ArmorMelee a) f = do
+  b <- f a
+  return $! ArmorMelee b
 aspectTrav (SightRadius a) f = do
   b <- f a
   return $! SightRadius b
@@ -217,7 +236,12 @@ aspectToSuff aspect f =
       case aspect of
         Periodic n -> "(" <> tshow n <+> "in 100)"
         _ -> assert `failure` aspect
-    ArmorMelee p -> "[" <> tshow p <> "]"
+    AddMaxHP t -> "(" <> t <+> "HP)"
+    AddMaxCalm t -> "(" <> t <+> "Calm)"
+    AddSpeed t -> "of speed" <+> t
+    AddAbility t -> "of" <+> tshow t
+    DeleteAbility t -> "disabling" <+> tshow t
+    ArmorMelee t -> "[" <> t <> "]"
     SightRadius t -> "of sight" <+> t
     SmellRadius t -> "of smell" <+> t
     Explode{} -> ""

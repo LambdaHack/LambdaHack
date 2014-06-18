@@ -1,9 +1,12 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | AI strategy abilities.
 module Game.LambdaHack.Common.Ability
   ( Ability(..)
   ) where
 
 import Data.Binary
+import qualified Data.Hashable as Hashable
+import GHC.Generics (Generic)
 
 -- | Actor and faction abilities corresponding to client-server requests.
 data Ability =
@@ -16,8 +19,10 @@ data Ability =
   | AbProject
   | AbApply
   | AbTrigger
-  deriving (Show, Eq, Ord, Enum, Bounded)
+  deriving (Show, Read, Eq, Ord, Generic, Enum, Bounded)
 
 instance Binary Ability where
   put = putWord8 . toEnum . fromEnum
   get = fmap (toEnum . fromEnum) getWord8
+
+instance Hashable.Hashable Ability
