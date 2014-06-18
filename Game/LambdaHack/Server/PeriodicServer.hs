@@ -96,13 +96,11 @@ addMonster :: (MonadAtomic m, MonadServer m)
 addMonster ak bfid ppos lid time = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   let kind = okind ak
-      hp = amaxHP kind `div` 2
-      calm = amaxCalm kind
   fact <- getsState $ (EM.! bfid) . sfactionD
   pronoun <- if isCivilianFact cops fact
              then rndToAction $ oneOf ["he", "she"]
              else return "it"
-  addActor ak bfid ppos lid hp calm (asymbol kind) (aname kind) pronoun
+  addActor ak bfid ppos lid (asymbol kind) (aname kind) pronoun
            (acolor kind) time
 
 -- | Create a new hero on the current level, close to the given position.
@@ -111,15 +109,12 @@ addHero :: (MonadAtomic m, MonadServer m)
         -> Maybe Int -> Time
         -> m ActorId
 addHero bfid ppos lid heroNames mNumber time = do
-  Kind.COps{ coactor=Kind.Ops{okind, opick}
+  Kind.COps{ coactor=Kind.Ops{opick}
            , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
   Faction{gcolor, gplayer, gkind} <- getsState $ (EM.! bfid) . sfactionD
   let fName = fname $ fokind gkind
   ak <- rndToAction $ fmap (fromMaybe $ assert `failure` fName)
                       $ opick fName (const True)
-  let akind = okind ak
-      hp = amaxHP akind `div` 2
-      calm = amaxCalm akind
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
@@ -132,18 +127,19 @@ addHero bfid ppos lid heroNames mNumber time = do
            | otherwise =
         let (nameN, pronounN) = nameFromNumber n
         in (playerName gplayer <+> nameN, pronounN)
-      startHP = hp - (min 10 $ hp `div` 10) * min 5 n
-  addActor ak bfid ppos lid startHP calm symbol name pronoun gcolor time
+  addActor ak bfid ppos lid symbol name pronoun gcolor time
 
 addActor :: (MonadAtomic m, MonadServer m)
-         => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int -> Int
+         => Kind.Id ActorKind -> FactionId -> Point -> LevelId
          -> Char -> Text -> Text -> Color.Color -> Time
          -> m ActorId
-addActor ak bfid pos lid hp calm bsymbol bname bpronoun bcolor time = do
+addActor ak bfid pos lid bsymbol bname bpronoun bcolor time = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
   let kind = okind ak
+      hp = amaxHP kind `div` 2
+      calm = amaxCalm kind
   -- Create actor.
   fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
