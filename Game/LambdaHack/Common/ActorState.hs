@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.ActorState
   , nearbyFreePoints, whereTo, getCarriedAssocs
   , posToActors, posToActor, getItemBody, validCont, memActor, getActorBody
   , tryFindHeroK, getLocalTime, isSpawnFaction
-  , itemPrice, calmEnough, regenCalmDelta
+  , itemPrice, calmEnough, hpEnough, regenCalmDelta
   , actorShines, actorInAmbient, dispEnemy, radiusBlind
   , fullAssocs, itemToFull, strongestBodyEqp
   ) where
@@ -266,6 +266,12 @@ calmEnough b kind =
   let calmMax = amaxCalm kind
       calmCur = bcalm b
   in 2 * calmMax <= 3 * calmCur
+
+hpEnough :: Actor -> ActorKind -> Bool
+hpEnough b kind =
+  let hpMax = amaxHP kind
+      hpCur = bhp b
+  in 2 * hpMax <= 3 * hpCur
 
 -- | Get current time from the dungeon data.
 getLocalTime :: LevelId -> State -> Time

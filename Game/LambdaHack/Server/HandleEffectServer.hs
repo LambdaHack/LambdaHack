@@ -281,13 +281,20 @@ effectCallFriend :: (MonadAtomic m, MonadServer m)
                    -> m Bool
 effectCallFriend power source target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{cotile, coactor=Kind.Ops{okind}} <- getsState scops
   sb <- getsState (getActorBody source)
-  tb <- getsState (getActorBody target)
-  let validTile t = not $ Tile.hasFeature cotile F.NoActor t
-  ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
-  summonFriends (bfid sb) (take power ps) (blid tb)
-  return True
+  let legal = source == target
+              && hpEnough sb (okind $ bkind sb)
+              && bhp sb >= 10  -- prevent spam from regenerating wimps
+  if not legal then return False
+  else do
+    let hpMax = amaxHP $ okind $ bkind sb
+        deltaHP = hpMax `div` 3
+    execUpdAtomic $ UpdHealActor source deltaHP
+    let validTile t = not $ Tile.hasFeature cotile F.NoActor t
+    ps <- getsState $ nearbyFreePoints validTile (bpos sb) (blid sb)
+    summonFriends (bfid sb) (take power ps) (blid sb)
+    return True
 
 summonFriends :: (MonadAtomic m, MonadServer m)
               => FactionId -> [Point] -> LevelId
@@ -315,24 +322,30 @@ effectSummon :: (MonadAtomic m, MonadServer m)
              => Int -> ActorId -> ActorId -> m Bool
 effectSummon power source target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
-  cops <- getsState scops
-  Kind.COps{cotile} <- getsState scops
-  sb <- getsState $ getActorBody source
-  tb <- getsState (getActorBody target)
-  let validTile t = not $ Tile.hasFeature cotile F.NoActor t
-  ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
-  localTime <- getsState $ getLocalTime (blid tb)
-  -- Make sure summoned actors start acting after the summoner.
-  let targetTime = timeShift localTime $ ticksPerMeter $ bspeed cops sb
-      afterTime = timeShift targetTime $ Delta timeClip
-  mfid <- pickFaction "summon" (const True)
-  case mfid of
-    Nothing ->
-      -- Don't make this item useless.
-      effectSem (Effect.CallFriend power) source target
-    Just fid -> do
-      spawnMonsters (take power ps) (blid tb) afterTime fid
-      return True
+  cops@Kind.COps{cotile, coactor=Kind.Ops{okind}} <- getsState scops
+  sb <- getsState (getActorBody source)
+  let legal = source == target
+              && calmEnough sb (okind $ bkind sb)
+              && bcalm sb >= 10
+  if not legal then return False
+  else do
+    let calmMax = amaxCalm $ okind $ bkind sb
+        deltaCalm = calmMax `div` 3
+    execUpdAtomic $ UpdCalmActor source deltaCalm
+    let validTile t = not $ Tile.hasFeature cotile F.NoActor t
+    ps <- getsState $ nearbyFreePoints validTile (bpos sb) (blid sb)
+    localTime <- getsState $ getLocalTime (blid sb)
+    -- Make sure summoned actors start acting after the summoner.
+    let sourceTime = timeShift localTime $ ticksPerMeter $ bspeed cops sb
+        afterTime = timeShift sourceTime $ Delta timeClip
+    mfid <- pickFaction "summon" (const True)
+    case mfid of
+      Nothing ->
+        -- Don't make this item useless.
+        effectSem (Effect.CallFriend power) source target
+      Just fid -> do
+        spawnMonsters (take power ps) (blid sb) afterTime fid
+        return True
 
 -- | Roll a faction based on faction kind frequency key.
 pickFaction :: MonadServer m
@@ -364,8 +377,7 @@ effectCreateItem power target = assert (power > 0) $ do
 effectApplyPerfume :: (MonadAtomic m, MonadServer m)
                    => m () -> ActorId -> ActorId -> m Bool
 effectApplyPerfume execSfx source target =
-  if source == target
-  then return False
+  if source == target then return False
   else do
     tb <- getsState $ getActorBody target
     Level{lsmell} <- getLevel $ blid tb

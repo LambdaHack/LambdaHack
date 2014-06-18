@@ -63,7 +63,7 @@ draw :: MonadClient m
      -> (Text, Maybe Text) -> (Text, Maybe Text) -> Overlay
      -> m SingleFrame
 draw sfBlank dm drawnLevelId cursorPos tgtPos bfsmpathRaw
-     (cursorDesc, mcursorHp) (targetDesc, mtargetHp) sfTop = do
+     (cursorDesc, mcursorHP) (targetDesc, mtargetHP) sfTop = do
   cops <- getsState scops
   mleader <- getsClient _sleader
   s <- getState
@@ -173,7 +173,7 @@ draw sfBlank dm drawnLevelId cursorPos tgtPos bfsmpathRaw
             text = fromMaybe (pText <+> lText) mt
         in if T.null text then "" else " " <> text
       -- The indicators must fit, they are the actual information.
-      pathCsr = displayPathText cursorPos mcursorHp
+      pathCsr = displayPathText cursorPos mcursorHP
       trimTgtDesc n t = assert (not (T.null t) && n > 2) $
         if T.length t <= n then t
         else let ellipsis = "..."
@@ -205,7 +205,7 @@ draw sfBlank dm drawnLevelId cursorPos tgtPos bfsmpathRaw
                                                     - length damageStatus
                                                     - length nameStatus) " "
       -- The indicators must fit, they are the actual information.
-      pathTgt = displayPathText tgtPos mtargetHp
+      pathTgt = displayPathText tgtPos mtargetHP
       targetText =
         let n = widthTgt - T.length pathTgt - 8
         in "Target:" <+> trimTgtDesc n targetDesc
