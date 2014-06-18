@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthAspect, strengthEffect, strengthFeature
-  , strengthMelee, strengthPeriodic, strengthArmor
+  , strengthMelee, strengthPeriodic, strengthArmorMelee
   , strengthSightRadius, strengthSmellRadius
   , strengthLight, strengthToThrow, strengthEqpSlot
   , strongestItem, strengthFromEqpSlot, strongestSlotNoFilter, strongestSlot
@@ -88,8 +88,38 @@ strengthPeriodic =
       p _ = []
   in strengthAspectMaybe p
 
-strengthArmor :: ItemFull -> Maybe Int
-strengthArmor =
+strengthAddMaxHP :: ItemFull -> Maybe Int
+strengthAddMaxHP =
+  let p (AddMaxHP k) = [k]
+      p _ = []
+  in strengthAspectMaybe p
+
+strengthAddMaxCalm :: ItemFull -> Maybe Int
+strengthAddMaxCalm =
+  let p (AddMaxCalm k) = [k]
+      p _ = []
+  in strengthAspectMaybe p
+
+strengthAddSpeed :: ItemFull -> Maybe Int
+strengthAddSpeed =
+  let p (AddSpeed k) = [k]
+      p _ = []
+  in strengthAspectMaybe p
+
+strengthAbility :: ItemFull -> Maybe Int
+strengthAbility itemFull =
+  let p (InsertAbility a) = [a]
+      p _ = []
+      q (DeleteAbility a) = [a]
+      q _ = []
+      pas = fromMaybe [] $ strengthAspectMaybe p itemFull
+      qas = fromMaybe [] $ strengthAspectMaybe q itemFull
+      -- The number of added abilities; a crude approximation of the value.
+      extra = length pas - length qas
+  in if extra == 0 then Nothing else Just extra
+
+strengthArmorMelee :: ItemFull -> Maybe Int
+strengthArmorMelee =
   let p (ArmorMelee k) = [k]
       p _ = []
   in strengthAspectMaybe p
@@ -162,7 +192,11 @@ strongestItem onlyOn is p =
 strengthFromEqpSlot :: IF.EqpSlot -> ItemFull -> Maybe Int
 strengthFromEqpSlot eqpSlot =
   case eqpSlot of
-    IF.EqpSlotArmorMelee -> strengthArmor
+    IF.EqpSlotAddMaxHP -> strengthAddMaxHP
+    IF.EqpSlotAddMaxCalm -> strengthAddMaxCalm
+    IF.EqpSlotAddSpeed -> strengthAddSpeed
+    IF.EqpSlotAbility -> strengthAbility
+    IF.EqpSlotArmorMelee -> strengthArmorMelee
     IF.EqpSlotSightRadius -> strengthSightRadius
     IF.EqpSlotSmellRadius -> strengthSmellRadius
     IF.EqpSlotLight -> strengthLight . itemBase

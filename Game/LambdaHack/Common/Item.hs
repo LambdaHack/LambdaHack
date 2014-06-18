@@ -40,7 +40,7 @@ newtype ItemId = ItemId Int
 -- | An index of the kind id of an item. Clients have partial knowledge
 -- how these idexes map to kind ids. They gain knowledge by identifying items.
 newtype ItemKindIx = ItemKindIx Int
-  deriving (Show, Eq, Ord, Enum, Ix.Ix, Hashable.Hashable, Binary)
+  deriving (Show, Eq, Ord, Enum, Ix.Ix, Hashable, Binary)
 
 -- | The map of item kind indexes to item kind ids.
 -- The full map, as known by the server, is a bijection.
@@ -50,7 +50,7 @@ type Discovery = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
 -- Clients have partial knowledge of how item ids map to the seeds.
 -- They gain knowledge by identifying items.
 newtype ItemSeed = ItemSeed Int
-  deriving (Show, Eq, Ord, Enum, Hashable.Hashable, Binary)
+  deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
 data ItemAspectEffect = ItemAspectEffect
   { jaspects :: ![Aspect Int]  -- ^ the aspects of the item

@@ -58,8 +58,8 @@ data Aspect a =
   | AddMaxHP !a
   | AddMaxCalm !a
   | AddSpeed !a
-  | AddAbility !Ability.Ability
-  | DeleteAbility !Ability.Ability
+  | InsertAbility ![Ability.Ability]
+  | DeleteAbility ![Ability.Ability]
   | ArmorMelee !a
   | SightRadius !a
   | SmellRadius !a
@@ -146,7 +146,7 @@ aspectTrav (AddMaxCalm a) f = do
 aspectTrav (AddSpeed a) f = do
   b <- f a
   return $! AddSpeed b
-aspectTrav (AddAbility as) _ = return $! AddAbility as
+aspectTrav (InsertAbility as) _ = return $! InsertAbility as
 aspectTrav (DeleteAbility as) _ = return $! DeleteAbility as
 aspectTrav (ArmorMelee a) f = do
   b <- f a
@@ -239,7 +239,7 @@ aspectToSuff aspect f =
     AddMaxHP t -> "(" <> t <+> "HP)"
     AddMaxCalm t -> "(" <> t <+> "Calm)"
     AddSpeed t -> "of speed" <+> t
-    AddAbility t -> "of" <+> tshow t
+    InsertAbility t -> "of" <+> tshow t
     DeleteAbility t -> "disabling" <+> tshow t
     ArmorMelee t -> "[" <> t <> "]"
     SightRadius t -> "of sight" <+> t

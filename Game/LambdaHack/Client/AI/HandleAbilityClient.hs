@@ -292,7 +292,7 @@ harmful cops body itemFull =
   -- to hit hard for the short span they get to survive melee.
   (bspeed cops body > speedNormal
    && (isJust (strengthLight (itemBase itemFull))
-       || isJust (strengthArmor itemFull)))
+       || isJust (strengthArmorMelee itemFull)))
   -- Periodic items that are known and not stricly beneficial
   -- should not be equipped.
   || (isJust (strengthPeriodic itemFull)
