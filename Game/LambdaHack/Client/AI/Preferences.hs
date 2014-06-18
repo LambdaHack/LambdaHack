@@ -3,6 +3,8 @@ module Game.LambdaHack.Client.AI.Preferences
   ( effAspToBenefit, effectToBenefit
   ) where
 
+import Data.Maybe
+
 import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
@@ -17,6 +19,7 @@ import Game.LambdaHack.Content.ActorKind
 effectToBenefit :: Kind.COps -> Actor -> Effect.Effect Int -> Int
 effectToBenefit cops@Kind.COps{coactor=Kind.Ops{okind}} b eff =
   let kind = okind $ bkind b
+      isHorror = isJust $ lookup "horror" $ afreq kind  -- a bit of a hack
   in case eff of
     Effect.NoEffect -> 0
     Effect.Heal p -> if p > 0
@@ -28,8 +31,9 @@ effectToBenefit cops@Kind.COps{coactor=Kind.Ops{okind}} b eff =
                      else max (-20) p
     Effect.Dominate -> -200
     Effect.Impress -> -10
-    Effect.CallFriend p -> 100 * p
-    Effect.Summon{} -> -1              -- may or may not spawn a friendly
+    Effect.CallFriend p -> 20 * p
+    Effect.Summon{} | isHorror -> 1    -- probably generates friends or crazies
+    Effect.Summon{} -> 0               -- probably generates enemies
     Effect.CreateItem p -> 20 * p
     Effect.ApplyPerfume -> -10
     Effect.Burn p -> -15 * p           -- usually splash damage, etc.
