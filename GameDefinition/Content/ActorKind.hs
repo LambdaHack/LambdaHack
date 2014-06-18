@@ -24,13 +24,16 @@ warrior,        adventurer, blacksmith, forester, clerk, hairdresser, lawyer, pe
 warrior = ActorKind
   { asymbol  = '@'
   , aname    = "warrior"  -- modified if in hero faction
-  , afreq    = [("hero", 1), ("civilian", 1)]
   , acolor   = BrBlack  -- modified if in hero faction
   , amaxHP   = 50
   , amaxCalm = 50
   , aspeed   = toSpeed 2
   , aAbility = [minBound..maxBound]
+  , aArmor   = 0
+  , asight   = 0
+  , asmell   = 0
   , aitems   = [("fist", CBody), ("foot", CBody), ("eye 12", CBody)]
+  , afreq    = [("hero", 1), ("civilian", 1)]
   }
 adventurer = warrior
   { aname    = "adventurer" }
@@ -54,134 +57,167 @@ taxCollector = clerk
 projectile = ActorKind  -- includes homing missiles
   { asymbol  = '*'
   , aname    = "projectile"
-  , afreq    = [("projectile", 1)]  -- Does not appear randomly in the dungeon.
   , acolor   = BrWhite
   , amaxHP   = 0
   , amaxCalm = 0
   , aspeed   = toSpeed 0
   , aAbility = []
+  , aArmor   = 0
+  , asight   = 0
+  , asmell   = 0
   , aitems   = []
+  , afreq    = [("projectile", 1)]  -- Does not appear randomly in the dungeon.
   }
 
 eye = ActorKind
   { asymbol  = 'e'
   , aname    = "reducible eye"
-  , afreq    = [("monster", 60), ("horror", 60)]
   , acolor   = BrRed
   , amaxHP   = 25
   , amaxCalm = 50
   , aspeed   = toSpeed 2
   , aAbility = [minBound..maxBound]
+  , aArmor   = 0
+  , asight   = 0
+  , asmell   = 0
   , aitems   = [("lash", CBody), ("tentacle", CBody), ("pupil", CBody)]
+  , afreq    = [("monster", 60), ("horror", 60)]
   }
 fastEye = ActorKind
   { asymbol  = 'e'
   , aname    = "super-fast eye"
-  , afreq    = [("monster", 15), ("horror", 15)]
   , acolor   = BrBlue
   , amaxHP   = 6
   , amaxCalm = 50
   , aspeed   = toSpeed 4
   , aAbility = [minBound..maxBound]
+  , aArmor   = 0
+  , asight   = 0
+  , asmell   = 0
   , aitems   = [ ("lash", CBody), ("tentacle", CBody), ("tentacle", CBody)
                , ("speed gland 5", CBody), ("pupil", CBody) ]
+  , afreq    = [("monster", 15), ("horror", 15)]
   }
 nose = ActorKind
   { asymbol  = 'n'
   , aname    = "point-free nose"
-  , afreq    = [("monster", 20), ("horror", 20)]
   , acolor   = Green
   , amaxHP   = 35
   , amaxCalm = 50
   , aspeed   = toSpeed 1.8
   , aAbility = [minBound..maxBound]
+  , aArmor   = 0
+  , asight   = 0
+  , asmell   = 0
   , aitems   = [("nose tip", CBody), ("lip", CBody), ("nostril", CBody)]
+  , afreq    = [("monster", 20), ("horror", 20)]
   }
 elbow = ActorKind
   { asymbol  = 'e'
   , aname    = "ground elbow"
-  , afreq    = [("monster", 10), ("horror", 20)]
   , acolor   = Magenta
   , amaxHP   = 30
   , amaxCalm = 50
   , aspeed   = toSpeed 1.5
   , aAbility = delete AbMelee [minBound..maxBound]
+  , aArmor   = 0
+  , asight   = 0
+  , asmell   = 0
   , aitems   = [ ("eye 15", CBody), ("armored skin", CBody)
                , ("speed gland 2", CBody)
                , ("any scroll", CEqp), ("any scroll", CEqp)
                , ("any scroll", CEqp)
                , ("any arrow", CEqp), ("any arrow", CEqp), ("any arrow", CEqp) ]
+  , afreq    = [("monster", 10), ("horror", 20)]
   }
 
 armadillo = ActorKind
   { asymbol  = 'a'
   , aname    = "giant armadillo"
-  , afreq    = [("animal", 10), ("horror", 10)]
   , acolor   = Brown
   , amaxHP   = 30
   , amaxCalm = 50
   , aspeed   = toSpeed 1.8
   , aAbility = delete AbTrigger [minBound..maxBound]
+  , aArmor   = 0
+  , asight   = 0
+  , asmell   = 0
   , aitems   = [ ("claw", CBody), ("snout", CBody), ("armored skin", CBody)
                , ("eye 3", CBody), ("nostril", CBody) ]
+  , afreq    = [("animal", 10), ("horror", 10)]
   }
 gilaMonster = ActorKind
   { asymbol  = 'g'
   , aname    = "Gila monster"
-  , afreq    = [("animal", 10), ("horror", 10)]
   , acolor   = BrYellow
   , amaxHP   = 15
   , amaxCalm = 50
   , aspeed   = toSpeed 1.5
   , aAbility = delete AbTrigger [minBound..maxBound]
+  , aArmor   = 0
+  , asight   = 0
+  , asmell   = 0
   , aitems   = [ ("venom tooth", CBody), ("small claw", CBody)
                , ("speed gland 1", CBody)
                , ("eye 12", CBody), ("nostril", CBody) ]
+  , afreq    = [("animal", 10), ("horror", 10)]
   }
 komodoDragon = ActorKind  -- bad hearing
   { asymbol  = 'd'
   , aname    = "Komodo dragon"
-  , afreq    = [("animal", 10), ("horror", 10)]
   , acolor   = Blue
   , amaxHP   = 40
   , amaxCalm = 50
   , aspeed   = toSpeed 2.5
   , aAbility = [minBound..maxBound]
+  , aArmor   = 0
+  , asight   = 0
+  , asmell   = 0
   , aitems   = [ ("large tail", CBody), ("jaw", CBody), ("small claw", CBody)
                , ("speed gland 2", CBody), ("armored skin", CBody)
                , ("eye 6", CBody), ("nostril", CBody) ]
+  , afreq    = [("animal", 10), ("horror", 10)]
   }
 hyena = ActorKind
   { asymbol  = 'h'
   , aname    = "spotted hyena"
-  , afreq    = [("animal", 20), ("horror", 20)]
   , acolor   = Red
   , amaxHP   = 30
   , amaxCalm = 50
   , aspeed   = toSpeed 3.5
   , aAbility = [minBound..maxBound]
+  , aArmor   = 0
+  , asight   = 0
+  , asmell   = 0
   , aitems   = [("jaw", CBody), ("eye 12", CBody), ("nostril", CBody)]
+  , afreq    = [("animal", 20), ("horror", 20)]
   }
 alligator = ActorKind
   { asymbol  = 'a'
   , aname    = "alligator"
-  , afreq    = [("animal", 10), ("horror", 10)]
   , acolor   = Blue
   , amaxHP   = 50
   , amaxCalm = 50
   , aspeed   = toSpeed 1.7
   , aAbility = [minBound..maxBound]
+  , aArmor   = 0
+  , asight   = 0
+  , asmell   = 0
   , aitems   = [ ("large jaw", CBody), ("large tail", CBody), ("claw", CBody)
                , ("armored skin", CBody), ("eye 12", CBody) ]
+  , afreq    = [("animal", 10), ("horror", 10)]
   }
 thornbush = ActorKind
   { asymbol  = 't'
   , aname    = "thornbush"
-  , afreq    = [("animal", 10), ("horror", 10)]
   , acolor   = Brown
   , amaxHP   = 30
   , amaxCalm = 50
   , aspeed   = toSpeed 2
   , aAbility = [AbWait, AbMelee]
-  , aitems   = [ ("thorn", CBody), ("armored skin", CBody) ]
+  , aArmor   = 0
+  , asight   = 0
+  , asmell   = 0
+  , aitems   = [("thorn", CBody), ("armored skin", CBody)]
+  , afreq    = [("animal", 10), ("horror", 10)]
   }
