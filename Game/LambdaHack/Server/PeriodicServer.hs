@@ -18,7 +18,6 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
@@ -97,8 +96,8 @@ addMonster :: (MonadAtomic m, MonadServer m)
 addMonster ak bfid ppos lid time = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   let kind = okind ak
-  hp <- rndToAction $ castDice 0 0 $ ahp kind
-  calm <- rndToAction $ castDice 0 0 $ acalm kind
+      hp = amaxHP kind `div` 2
+      calm = amaxCalm kind
   fact <- getsState $ (EM.! bfid) . sfactionD
   pronoun <- if isCivilianFact cops fact
              then rndToAction $ oneOf ["he", "she"]
@@ -119,8 +118,8 @@ addHero bfid ppos lid heroNames mNumber time = do
   ak <- rndToAction $ fmap (fromMaybe $ assert `failure` fName)
                       $ opick fName (const True)
   let akind = okind ak
-  hp <- rndToAction $ castDice 0 0 $ ahp akind
-  calm <- rndToAction $ castDice 0 0 $ acalm akind
+      hp = amaxHP akind `div` 2
+      calm = amaxCalm akind
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
@@ -208,7 +207,7 @@ dominateFid fid target = do
   deduceKilled tb
   ais <- getsState $ getCarriedAssocs tb
   execUpdAtomic $ UpdLoseActor target tb ais
-  let calmMax = Dice.maxDice $ acalm $ okind $ bkind tb
+  let calmMax = amaxCalm $ okind $ bkind tb
       bNew = tb { bfid = fid
                 , boldfid = bfid tb
                 , bcalm = calmMax `div` 2 }

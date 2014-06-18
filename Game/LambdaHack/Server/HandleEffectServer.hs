@@ -172,7 +172,7 @@ effectHeal :: MonadAtomic m => m () -> Int -> ActorId -> ActorId -> m Bool
 effectHeal execSfx power source target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
-  let bhpMax = Dice.maxDice (ahp $ okind $ bkind tb)
+  let bhpMax = amaxHP $ okind $ bkind tb
       deltaHP = min power (max 0 $ bhpMax - bhp tb)
   if deltaHP == 0 && bhpDelta tb == 0
     then return False
@@ -186,7 +186,7 @@ halveCalm :: MonadAtomic m => ActorId -> m ()
 halveCalm target = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
-  let calmMax = Dice.maxDice $ acalm $ okind $ bkind tb
+  let calmMax = amaxCalm $ okind $ bkind tb
       calmUpperBound = if hpTooLow coactor tb
                        then 0  -- to trigger domination, etc.
                        else calmMax `div` 2
@@ -234,7 +234,7 @@ effectCalm :: MonadAtomic m => m () -> Int -> ActorId -> m Bool
 effectCalm execSfx power target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
-  let calmMax = Dice.maxDice $ acalm $ okind $ bkind tb
+  let calmMax = amaxCalm $ okind $ bkind tb
       deltaCalm = min power (max 0 $ calmMax - bcalm tb)
   if deltaCalm == 0 && bcalmDelta tb == 0
     then return False

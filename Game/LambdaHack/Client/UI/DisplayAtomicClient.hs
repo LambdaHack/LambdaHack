@@ -24,7 +24,6 @@ import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
@@ -115,8 +114,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     when (Just aid == mleader) $ do
       Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
       b <- getsState $ getActorBody aid
-      let ActorKind{ahp} = okind $ bkind b
-      when (bhp b == Dice.maxDice ahp) $ do
+      when (bhp b == amaxHP (okind $ bkind b)) $ do
         actorVerbMU aid b "recover your health fully"
         stopPlayBack
   UpdCalmActor aid calmDelta ->

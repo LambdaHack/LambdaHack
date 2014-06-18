@@ -20,7 +20,6 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
@@ -146,7 +145,7 @@ actorNewBorn b = boldpos b == Point 0 0
 hpTooLow :: Kind.Ops ActorKind -> Actor -> Bool
 hpTooLow Kind.Ops{okind} b =
   let kind = okind $ bkind b
-  in bhp b == 1 || 5 * bhp b < Dice.maxDice (ahp kind)
+  in bhp b == 1 || 5 * bhp b < amaxHP kind
 
 -- | Checks for the presence of actors in a position.
 -- Does not check if the tile is walkable.

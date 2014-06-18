@@ -24,7 +24,6 @@ import Data.List
 import Data.Maybe
 
 import Game.LambdaHack.Common.Actor
-import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemFeature as IF
@@ -264,7 +263,7 @@ memActor aid lid s =
 
 calmEnough :: Actor -> ActorKind -> Bool
 calmEnough b kind =
-  let calmMax = Dice.maxDice $ acalm kind
+  let calmMax = amaxCalm kind
       calmCur = bcalm b
   in 2 * calmMax <= 3 * calmCur
 
@@ -281,7 +280,7 @@ regenCalmDelta b s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
       calmIncr = 1 -- normal rate of calm regen
-      maxDeltaCalm = Dice.maxDice (acalm ak) - bcalm b
+      maxDeltaCalm = amaxCalm ak - bcalm b
       -- Worry actor by enemies felt (even if not seen)
       -- on the level within 3 tiles.
       fact = (EM.! bfid b) . sfactionD $ s

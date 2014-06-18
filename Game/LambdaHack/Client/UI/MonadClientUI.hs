@@ -42,7 +42,6 @@ import Game.LambdaHack.Client.UI.Frontend as Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
@@ -300,7 +299,7 @@ targetDesc target = do
       side <- getsClient sside
       b <- getsState $ getActorBody aid
       let ak = okind $ bkind b
-          maxHP = Dice.maxDice $ ahp ak
+          maxHP = amaxHP ak
           percentage = 100 * bhp b `div` max 5 maxHP
           stars | percentage < 20  = "[_____]"
                 | percentage < 40  = "[*____]"

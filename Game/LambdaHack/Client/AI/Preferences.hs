@@ -20,11 +20,11 @@ effectToBenefit cops@Kind.COps{coactor=Kind.Ops{okind}} b eff =
   in case eff of
     Effect.NoEffect -> 0
     Effect.Heal p -> if p > 0
-                     then 10 * min p (Dice.maxDice (ahp kind) - bhp b)
+                     then 10 * min p (amaxHP kind - bhp b)
                      else max (-99) (10 * p)
     Effect.Hurt d p -> -(min 99 $ 10 * p + round (10 * Dice.meanDice d))
     Effect.Calm p -> if p > 0
-                     then min p (Dice.maxDice (acalm kind) - bcalm b)
+                     then min p (amaxCalm kind - bcalm b)
                      else max (-20) p
     Effect.Dominate -> -200
     Effect.Impress -> -10

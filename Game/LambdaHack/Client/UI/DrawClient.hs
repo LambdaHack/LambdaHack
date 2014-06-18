@@ -260,11 +260,11 @@ drawLeaderStatus waitT width = do
           (darkL, bracedL, hpDelta, calmDelta,
            ahpS, bhpS, acalmS, bcalmS) =
             let b@Actor{bkind, bhp, bcalm} = getActorBody leader s
-                ActorKind{ahp, acalm} = okind bkind
+                ActorKind{amaxHP, amaxCalm} = okind bkind
             in ( not (actorInAmbient b s)
                , braced b, bhpDelta b, bcalmDelta b
-               , tshow (Dice.maxDice ahp), tshow bhp
-               , tshow (Dice.maxDice acalm), tshow bcalm )
+               , tshow amaxHP, tshow bhp
+               , tshow amaxCalm, tshow bcalm )
           -- This is a valuable feedback for the otherwise hard to observe
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]

@@ -11,7 +11,6 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
-import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Time
 
@@ -20,18 +19,18 @@ import Game.LambdaHack.Common.Time
 -- | Actor properties that are fixed for a given kind of actors.
 data ActorKind = ActorKind
   { -- * Initial presentation
-    asymbol :: !Char       -- ^ map symbol
-  , aname   :: !Text       -- ^ short description
-  , acolor  :: !Color      -- ^ map color
+    asymbol  :: !Char       -- ^ map symbol
+  , aname    :: !Text       -- ^ short description
+  , acolor   :: !Color      -- ^ map color
     -- * Resources
-  , ahp     :: !Dice.Dice  -- ^ encodes initial and maximal hp
-  , acalm   :: !Dice.Dice  -- ^ encodes initial and maximal calm
-  , aspeed  :: !Speed      -- ^ natural speed in m/Ms
-  , acanDo  :: ![Ability]  -- ^ the set of supported abilities
+  , amaxHP   :: !Int        -- ^ maximal hp
+  , amaxCalm :: !Int        -- ^ maximal calm
+  , aspeed   :: !Speed      -- ^ natural speed in m/Ms
+  , acanDo   :: ![Ability]  -- ^ the set of supported abilities
     -- * Initial items
-  , aitems  :: ![(Text, CStore)]  -- ^ initial items
+  , aitems   :: ![(Text, CStore)]  -- ^ initial items
     -- * Initial distribution
-  , afreq   :: !Freqs      -- ^ frequency within groups
+  , afreq    :: !Freqs      -- ^ frequency within groups
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
@@ -42,7 +41,7 @@ data ActorKind = ActorKind
 -- and initial values that don't play any role afterwards.
 validateActorKind :: [ActorKind] -> [ActorKind]
 validateActorKind l =
-  let behaviour ka = ( aspeed ka, ahp ka, acalm ka
+  let behaviour ka = ( aspeed ka, amaxHP ka, amaxCalm ka
                      , sort $ acanDo ka, sort $ aitems ka )
       sortedBehaviour = sortBy (Ord.comparing behaviour) l
       nubbedBehaviour = nubBy ((==) `on` behaviour) sortedBehaviour
