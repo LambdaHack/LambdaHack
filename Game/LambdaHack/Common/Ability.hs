@@ -19,7 +19,18 @@ data Ability =
   | AbProject
   | AbApply
   | AbTrigger
-  deriving (Show, Read, Eq, Ord, Generic, Enum, Bounded)
+  deriving (Read, Eq, Ord, Generic, Enum, Bounded)
+
+instance Show Ability where
+  show AbMove = "move"
+  show AbMelee = "melee"
+  show AbDisplace = "displace"
+  show AbAlter = "alter tile"
+  show AbWait = "wait"
+  show AbMoveItem = "manage items"
+  show AbProject = "fling"
+  show AbApply = "activate"
+  show AbTrigger = "trigger tile"
 
 instance Binary Ability where
   put = putWord8 . toEnum . fromEnum
