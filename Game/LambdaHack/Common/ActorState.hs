@@ -330,7 +330,7 @@ dispEnemy sb tb s =
 -- is assumed to use a combination of peripherial vision, hearing, etc.,
 -- and not the actual focused, long-distance sight sense.
 radiusBlind :: Int -> Bool
-radiusBlind strongestSight = strongestSight < 3
+radiusBlind strongestSight = strongestSight < 4
 
 fullAssocs :: Kind.COps -> Discovery -> DiscoAE
            -> ActorId -> [CStore] -> State

@@ -30,9 +30,9 @@ warrior = ActorKind
   , aspeed   = toSpeed 2
   , aAbility = [minBound..maxBound]
   , aArmor   = 0
-  , asight   = 0
+  , asight   = 3  -- no via eyes, but feel, hearing, etc.
   , asmell   = 0
-  , aitems   = [("fist", CBody), ("foot", CBody), ("eye 12", CBody)]
+  , aitems   = [("fist", CBody), ("foot", CBody), ("eye 9", CBody)]
   , afreq    = [("hero", 1), ("civilian", 1)]
   }
 adventurer = warrior
@@ -78,9 +78,9 @@ eye = ActorKind
   , aspeed   = toSpeed 2
   , aAbility = [minBound..maxBound]
   , aArmor   = 0
-  , asight   = 0
+  , asight   = 12
   , asmell   = 0
-  , aitems   = [("lash", CBody), ("tentacle", CBody), ("pupil", CBody)]
+  , aitems   = [("lash", CBody), ("pupil", CBody)]
   , afreq    = [("monster", 60), ("horror", 60)]
   }
 fastEye = ActorKind
@@ -92,7 +92,7 @@ fastEye = ActorKind
   , aspeed   = toSpeed 4
   , aAbility = [minBound..maxBound]
   , aArmor   = 0
-  , asight   = 0
+  , asight   = 12
   , asmell   = 0
   , aitems   = [ ("lash", CBody), ("tentacle", CBody), ("tentacle", CBody)
                , ("speed gland 5", CBody), ("pupil", CBody) ]
@@ -107,9 +107,9 @@ nose = ActorKind
   , aspeed   = toSpeed 1.8
   , aAbility = [minBound..maxBound]
   , aArmor   = 0
-  , asight   = 0
-  , asmell   = 0
-  , aitems   = [("nose tip", CBody), ("lip", CBody), ("nostril", CBody)]
+  , asight   = 0  -- depends solely on smell
+  , asmell   = 3
+  , aitems   = [("nose tip", CBody), ("lip", CBody)]
   , afreq    = [("monster", 20), ("horror", 20)]
   }
 elbow = ActorKind
@@ -121,9 +121,9 @@ elbow = ActorKind
   , aspeed   = toSpeed 1.5
   , aAbility = delete AbMelee [minBound..maxBound]
   , aArmor   = 0
-  , asight   = 0
+  , asight   = 4  -- can always shoot
   , asmell   = 0
-  , aitems   = [ ("eye 15", CBody), ("armored skin", CBody)
+  , aitems   = [ ("eye 12", CBody), ("armored skin", CBody)
                , ("speed gland 2", CBody)
                , ("any scroll", CEqp), ("any scroll", CEqp)
                , ("any scroll", CEqp)
@@ -140,10 +140,10 @@ armadillo = ActorKind
   , aspeed   = toSpeed 1.8
   , aAbility = delete AbTrigger [minBound..maxBound]
   , aArmor   = 0
-  , asight   = 0
+  , asight   = 3
   , asmell   = 0
   , aitems   = [ ("claw", CBody), ("snout", CBody), ("armored skin", CBody)
-               , ("eye 3", CBody), ("nostril", CBody) ]
+               , ("nostril", CBody) ]
   , afreq    = [("animal", 10), ("horror", 10)]
   }
 gilaMonster = ActorKind
@@ -155,11 +155,11 @@ gilaMonster = ActorKind
   , aspeed   = toSpeed 1.5
   , aAbility = delete AbTrigger [minBound..maxBound]
   , aArmor   = 0
-  , asight   = 0
+  , asight   = 3
   , asmell   = 0
   , aitems   = [ ("venom tooth", CBody), ("small claw", CBody)
                , ("speed gland 1", CBody)
-               , ("eye 12", CBody), ("nostril", CBody) ]
+               , ("eye 9", CBody), ("nostril", CBody) ]
   , afreq    = [("animal", 10), ("horror", 10)]
   }
 komodoDragon = ActorKind  -- bad hearing
@@ -171,11 +171,11 @@ komodoDragon = ActorKind  -- bad hearing
   , aspeed   = toSpeed 2.5
   , aAbility = [minBound..maxBound]
   , aArmor   = 0
-  , asight   = 0
+  , asight   = 3
   , asmell   = 0
   , aitems   = [ ("large tail", CBody), ("jaw", CBody), ("small claw", CBody)
                , ("speed gland 2", CBody), ("armored skin", CBody)
-               , ("eye 6", CBody), ("nostril", CBody) ]
+               , ("eye 3", CBody), ("nostril", CBody) ]
   , afreq    = [("animal", 10), ("horror", 10)]
   }
 hyena = ActorKind
@@ -187,9 +187,9 @@ hyena = ActorKind
   , aspeed   = toSpeed 3.5
   , aAbility = [minBound..maxBound]
   , aArmor   = 0
-  , asight   = 0
+  , asight   = 3
   , asmell   = 0
-  , aitems   = [("jaw", CBody), ("eye 12", CBody), ("nostril", CBody)]
+  , aitems   = [("jaw", CBody), ("eye 9", CBody), ("nostril", CBody)]
   , afreq    = [("animal", 20), ("horror", 20)]
   }
 alligator = ActorKind
@@ -200,11 +200,11 @@ alligator = ActorKind
   , amaxCalm = 50
   , aspeed   = toSpeed 1.7
   , aAbility = [minBound..maxBound]
-  , aArmor   = 0
-  , asight   = 0
+  , aArmor   = 0  -- TODO: add more, when it's not a drawback
+  , asight   = 3
   , asmell   = 0
   , aitems   = [ ("large jaw", CBody), ("large tail", CBody), ("claw", CBody)
-               , ("armored skin", CBody), ("eye 12", CBody) ]
+               , ("armored skin", CBody), ("eye 9", CBody) ]
   , afreq    = [("animal", 10), ("horror", 10)]
   }
 thornbush = ActorKind
@@ -215,9 +215,9 @@ thornbush = ActorKind
   , amaxCalm = 50
   , aspeed   = toSpeed 2
   , aAbility = [AbWait, AbMelee]
-  , aArmor   = 0
+  , aArmor   = 50
   , asight   = 0
   , asmell   = 0
-  , aitems   = [("thorn", CBody), ("armored skin", CBody)]
+  , aitems   = [("thorn", CBody)]
   , afreq    = [("animal", 10), ("horror", 10)]
   }
