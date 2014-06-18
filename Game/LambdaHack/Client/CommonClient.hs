@@ -171,7 +171,7 @@ actorAbilities aid mleader = do
   let factionAbilities
         | Just aid == mleader = fAbilityLeader $ fokind $ gkind fact
         | otherwise = fAbilityOther $ fokind $ gkind fact
-  return $! acanDo (okind $ bkind body) `intersect` factionAbilities
+  return $! aAbility (okind $ bkind body) `intersect` factionAbilities
 
 updateItemSlot :: MonadClient m => Maybe ActorId -> ItemId -> m ()
 updateItemSlot maid iid = do

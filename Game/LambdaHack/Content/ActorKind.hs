@@ -26,7 +26,7 @@ data ActorKind = ActorKind
   , amaxHP   :: !Int        -- ^ maximal hp
   , amaxCalm :: !Int        -- ^ maximal calm
   , aspeed   :: !Speed      -- ^ natural speed in m/Ms
-  , acanDo   :: ![Ability]  -- ^ the set of supported abilities
+  , aAbility :: ![Ability]  -- ^ the set of supported abilities
     -- * Initial items
   , aitems   :: ![(Text, CStore)]  -- ^ initial items
     -- * Initial distribution
@@ -42,7 +42,7 @@ data ActorKind = ActorKind
 validateActorKind :: [ActorKind] -> [ActorKind]
 validateActorKind l =
   let behaviour ka = ( aspeed ka, amaxHP ka, amaxCalm ka
-                     , sort $ acanDo ka, sort $ aitems ka )
+                     , sort $ aAbility ka, sort $ aitems ka )
       sortedBehaviour = sortBy (Ord.comparing behaviour) l
       nubbedBehaviour = nubBy ((==) `on` behaviour) sortedBehaviour
       screen ka = (asymbol ka, acolor ka)
