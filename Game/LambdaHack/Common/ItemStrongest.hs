@@ -3,10 +3,8 @@
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthAspect, strengthEffect, strengthFeature
-  , strengthMelee, strengthPeriodic, strengthArmorMelee
-  , strengthSightRadius, strengthSmellRadius
-  , strengthLight, strengthToThrow, strengthEqpSlot
-  , strongestItem, strengthFromEqpSlot, strongestSlotNoFilter, strongestSlot
+  , strengthPeriodic, strengthToThrow, strengthEqpSlot, strengthFromEqpSlot
+  , strongestSlotNoFilter, strongestSlot, sumSlotNoFilter
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   , unknownPrecious, permittedRanged
@@ -181,14 +179,8 @@ itemTrajectory item path =
   let ThrowMod{..} = strengthToThrow item
   in computeTrajectory (jweight item) throwVelocity throwLinger path
 
-strongestItem :: Ord b => Bool -> [(ItemId, ItemFull)] -> (ItemFull -> Maybe b)
-              -> [(b, (ItemId, ItemFull))]
-strongestItem onlyOn is p =
-  let pv (iid, item) = (\v -> (v, (iid, item))) <$> (p item)
-      onlyIs = if onlyOn then filter (itemIsOn . snd) is else is
-      pis = mapMaybe pv onlyIs
-  in sortBy (flip $ Ord.comparing fst) pis
-
+-- TODO: when all below are apsects, define with
+-- (IF.EqpSlotAddMaxHP, AddMaxHP k) -> [k]
 strengthFromEqpSlot :: IF.EqpSlot -> ItemFull -> Maybe Int
 strengthFromEqpSlot eqpSlot =
   case eqpSlot of
@@ -205,7 +197,10 @@ strengthFromEqpSlot eqpSlot =
 strongestSlotNoFilter :: IF.EqpSlot -> Bool -> [(ItemId, ItemFull)]
                       -> [(Int, (ItemId, ItemFull))]
 strongestSlotNoFilter eqpSlot onlyOn is =
-  strongestItem onlyOn is $ strengthFromEqpSlot eqpSlot
+  let f = strengthFromEqpSlot eqpSlot
+      g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> (f itemFull)
+      onlyIs = if onlyOn then filter (itemIsOn . snd) is else is
+  in sortBy (flip $ Ord.comparing fst) $ mapMaybe g onlyIs
 
 strongestSlot :: IF.EqpSlot -> Bool -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
@@ -215,6 +210,13 @@ strongestSlot eqpSlot onlyOn is =
         _ -> False
       slotIs = filter f is
   in strongestSlotNoFilter eqpSlot onlyOn slotIs
+
+sumSlotNoFilter :: IF.EqpSlot -> Bool -> [(ItemId, ItemFull)] -> Int
+sumSlotNoFilter eqpSlot onlyOn is =
+  let f = strengthFromEqpSlot eqpSlot
+      g (_, itemFull) = (* fst (itemKisOn itemFull)) <$> f itemFull
+      onlyIs = if onlyOn then filter (itemIsOn . snd) is else is
+  in sum $ mapMaybe g onlyIs
 
 unknownPrecious :: ItemFull -> Bool
 unknownPrecious itemFull =

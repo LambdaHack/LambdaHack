@@ -294,8 +294,8 @@ harmful cops body itemFull =
   -- Fast actors want to hide in darkness to ambush opponents and want
   -- to hit hard for the short span they get to survive melee.
   (bspeed cops body > speedNormal
-   && (isJust (strengthLight (itemBase itemFull))
-       || isJust (strengthArmorMelee itemFull)))
+   && (isJust (strengthFromEqpSlot IF.EqpSlotLight itemFull)
+       || isJust (strengthFromEqpSlot IF.EqpSlotArmorMelee itemFull)))
   -- Periodic items that are known and not stricly beneficial
   -- should not be equipped.
   || (isJust (strengthPeriodic itemFull)
@@ -424,7 +424,7 @@ ranged aid = do
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
       let mk = okind bkind
-      actorBlind <- radiusBlind <$> strongestClient IF.EqpSlotSightRadius aid
+      actorBlind <- radiusBlind <$> sumBodyEqpClient IF.EqpSlotSightRadius aid
       mnewEps <- makeLine b fpos seps
       case mnewEps of
         Just newEps | not actorBlind  -- ProjectBlind
@@ -464,7 +464,7 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid | QuenchLight
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
-  actorBlind <- radiusBlind <$> strongestClient IF.EqpSlotSightRadius aid
+  actorBlind <- radiusBlind <$> sumBodyEqpClient IF.EqpSlotSightRadius aid
   let permitted itemFull@ItemFull{itemBase=item} =
         not (unknownPrecious itemFull)
         && if applyGroup == QuenchLight
@@ -481,7 +481,7 @@ applyItem aid applyGroup = do
             Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
               foldr getP False jeffects
             _ -> False
-        QuenchLight -> if isJust $ strengthLight (itemBase itemFull)
+        QuenchLight -> if isJust $ strengthFromEqpSlot IF.EqpSlotLight itemFull
                        then not $ itemIsOn itemFull
                        else False
         ApplyAll -> True

@@ -102,7 +102,7 @@ targetStrategy oldLeader aid = do
   -- and only if they can shoot at the moment)
   fightsSpawners <- fightsAgainstSpawners (bfid b)
   explored <- getsClient sexplored
-  smellRadius <- strongestClient IF.EqpSlotSmellRadius aid
+  smellRadius <- sumBodyEqpClient IF.EqpSlotSmellRadius aid
   let canSmell = smellRadius > 0
       meleeNearby | fightsSpawners = nearby `div` 2  -- not aggresive
                   | otherwise = nearby

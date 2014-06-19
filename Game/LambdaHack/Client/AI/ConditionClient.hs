@@ -139,7 +139,7 @@ condCanProjectM aid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   let ak = okind $ bkind b
-  actorBlind <- radiusBlind <$> strongestClient IF.EqpSlotSightRadius aid
+  actorBlind <- radiusBlind <$> sumBodyEqpClient IF.EqpSlotSightRadius aid
   benList <- benAvailableItems aid permittedRanged
   let missiles = filter (maybe True (< 0) . fst . fst) benList
   return $ not actorBlind && calmEnough b ak && not (null missiles)

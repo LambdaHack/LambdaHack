@@ -48,11 +48,11 @@ brassLantern = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "heave"
   , iweight  = 2400
-  , iaspects = [Explode "burning oil 4"]
-  , ieffects = [Burn 4]
+  , iaspects = [SightRadius (-1), Explode "burning oil 3"]
+  , ieffects = [Burn 3]
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
-               , Light 4, Fragile, EqpSlot EqpSlotLight "", Identified ]
-  , idesc    = "Very bright and quite heavy brass lantern."
+               , Light 3, Fragile, EqpSlot EqpSlotLight "", Identified ]
+  , idesc    = "Very bright and very heavy brass lantern."
   }
 dart = ItemKind
   { isymbol  = '|'
@@ -212,17 +212,17 @@ net = ItemKind
 oilLamp = ItemKind
   { isymbol  = '('
   , iname    = "oil lamp"
-  , ifreq    = [("useful", 5)]
+  , ifreq    = [("useful", 4)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
   , iverbApply   = "douse"
   , iverbProject = "lob"
   , iweight  = 1000
-  , iaspects = [Explode "burning oil 3"]
-  , ieffects = [Burn 3]
+  , iaspects = [SightRadius (-1), Explode "burning oil 2"]
+  , ieffects = [Burn 2]
   , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
-               , Light 3, Fragile, EqpSlot EqpSlotLight "", Identified ]
-  , idesc    = "A clay lamp full of plant oil feeding a thick wick."
+               , Light 2, Fragile, EqpSlot EqpSlotLight "", Identified ]
+  , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
   }
 potion = ItemKind
   { isymbol  = '!'
@@ -391,16 +391,16 @@ wand2 = wand
 woodenTorch = ItemKind
   { isymbol  = '('
   , iname    = "wooden torch"
-  , ifreq    = [("useful", 10)]
+  , ifreq    = [("useful", 8)]
   , iflavour = zipPlain [Brown]
-  , icount   = d 3
+  , icount   = 1
   , iverbApply   = "douse"
   , iverbProject = "fling"
   , iweight  = 1200
-  , iaspects = []
+  , iaspects = [SightRadius (-2)]  -- not only bright, but also sparks
   , ieffects = [Burn 2]
   , ifeature = [Light 2, EqpSlot EqpSlotLight "", Identified]
-  , idesc    = "A heavy wooden torch, burning with a weak fire."
+  , idesc    = "A smoking, heavy wooden torch, burning in an unsteady fire."
   }
 fist = sword
   { isymbol  = '%'

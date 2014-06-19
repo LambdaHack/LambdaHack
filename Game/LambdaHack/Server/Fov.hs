@@ -60,11 +60,9 @@ levelPerception litHere fovMode fid lid lvl@Level{lxsize, lysize} s ser =
       nocto = concat $ map fst noctoBodies
       ptotal = visibleOnLevel cotile totalReachable litHere nocto lvl
       canSmell aid =
-        let eqpAssocs =
-              fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CEqp] s
-            bodyAssocs =
-              fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CBody] s
-            radius = strongestBodyEqp IF.EqpSlotSightRadius eqpAssocs bodyAssocs
+        let allAssocs =
+              fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CBody, CEqp] s
+            radius = sumSlotNoFilter IF.EqpSlotSightRadius True allAssocs
         in radius > 0
       -- TODO: We assume smell FOV radius is always 1, regardless of vision
       -- radius of the actor (and whether he can see at all).
@@ -109,12 +107,10 @@ reachableFromActor :: Kind.COps -> FovMode -> Level -> ActorId -> Actor
                    -> PerceptionReachable
 reachableFromActor cops@Kind.COps{cotile}
                    fovMode lvl aid body s ser =
-  let eqpAssocs =
-        fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CEqp] s
-      bodyAssocs =
-        fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CBody] s
+  let allAssocs =
+        fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CBody, CEqp] s
       radius = 1 +  -- all actors feel adjacent positions (for easy exploration)
-               strongestBodyEqp IF.EqpSlotSightRadius eqpAssocs bodyAssocs
+               sumSlotNoFilter IF.EqpSlotSightRadius True allAssocs
   in PerceptionReachable $ fullscan cotile fovMode radius (bpos body) lvl
 
 litByItems :: FovMode -> Level -> Point -> State
@@ -122,12 +118,12 @@ litByItems :: FovMode -> Level -> Point -> State
            -> [Point]
 litByItems fovMode lvl p s iis =
   let Kind.COps{cotile} = scops s
-  in case strongestSlot IF.EqpSlotLight True $ map (second itemNoDisco) iis of
-    (radius, _) : _ ->
-      let scan = fullscan cotile fovMode radius p lvl
-      -- Optimization: filter out positions that already have ambient light.
-      in filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos) scan
-    [] -> []
+      radius = sumSlotNoFilter IF.EqpSlotLight True
+               $ map (second itemNoDisco) iis
+      scan = fullscan cotile fovMode radius p lvl
+     -- Optimization: filter out positions that already have ambient light.
+      opt = filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos) scan
+  in opt
 
 -- | Compute all lit positions on a level.
 litOnLevel :: FovMode -> LevelId -> Level -> State -> PerceptionLit

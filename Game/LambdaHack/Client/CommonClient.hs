@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
   , actorAbilities, updateItemSlot, fullAssocsClient, itemToFullClient
-  , pickWeaponClient, strongestClient
+  , pickWeaponClient, sumBodyEqpClient
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -230,9 +230,9 @@ pickWeaponClient source target = do
       let cstore = if isJust (lookup iid bodyAssocs) then CBody else CEqp
       return $! [ReqMelee target iid cstore]
 
-strongestClient :: MonadClient m
-                => IF.EqpSlot -> ActorId -> m Int
-strongestClient eqpSlot aid = do
+sumBodyEqpClient :: MonadClient m
+                 => IF.EqpSlot -> ActorId -> m Int
+sumBodyEqpClient eqpSlot aid = do
   eqpAssocs <- fullAssocsClient aid [CEqp]
   bodyAssocs <- fullAssocsClient aid [CBody]
-  return $! strongestBodyEqp eqpSlot eqpAssocs bodyAssocs
+  return $! sumSlotNoFilter eqpSlot True $ eqpAssocs ++ bodyAssocs

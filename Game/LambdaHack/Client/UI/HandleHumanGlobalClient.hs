@@ -292,7 +292,7 @@ projectPos ts tpos = do
             then failSer ProjectBlockTerrain
             else do
               actorBlind <-
-                radiusBlind <$> strongestClient IF.EqpSlotSightRadius leader
+                radiusBlind <$> sumBodyEqpClient IF.EqpSlotSightRadius leader
               mab <- getsState $ posToActor pos lid
               if maybe True (bproj . snd . fst) mab
               then if actorBlind

@@ -116,7 +116,7 @@ addSmell aid = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  smellRadius <- strongestServer IF.EqpSlotSmellRadius aid
+  smellRadius <- sumBodyEqpServer IF.EqpSlotSmellRadius aid
   unless (bproj b || not (isHeroFact cops fact) || smellRadius > 0) $ do
     time <- getsState $ getLocalTime $ blid b
     lvl <- getLevel $ blid b
@@ -187,8 +187,8 @@ reqMelee source target iid cstore = do
     -- to prevent micromanagement: walking with shield, melee without.
     let noShield =
           bproj sb
-          || (null $ strongestSlot IF.EqpSlotArmorMelee True sallAssocs)
-          || (null $ strongestSlot IF.EqpSlotArmorMelee True tallAssocs)
+          || 0 /= sumSlotNoFilter IF.EqpSlotArmorMelee True sallAssocs
+          || 0 /= sumSlotNoFilter IF.EqpSlotArmorMelee True tallAssocs
         block = braced tb
         hitA = if block && not noShield
                then HitBlock 2

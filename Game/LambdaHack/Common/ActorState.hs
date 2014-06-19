@@ -13,7 +13,7 @@ module Game.LambdaHack.Common.ActorState
   , tryFindHeroK, getLocalTime, isSpawnFaction
   , itemPrice, calmEnough, hpEnough, regenCalmDelta
   , actorShines, actorInAmbient, dispEnemy, radiusBlind
-  , fullAssocs, itemToFull, strongestBodyEqp
+  , fullAssocs, itemToFull
   ) where
 
 import Control.Arrow (second)
@@ -303,8 +303,8 @@ actorShines b s =
   let eqpAssocs = bagAssocsK s $ beqp b
       bodyAssocs = bagAssocsK s $ bbody b
       floorAssocs = bagAssocsK s $ sdungeon s EM.! blid b `atI` bpos b
-  in not $ null (strongestSlot IF.EqpSlotLight True $ map (second itemNoDisco)
-                 $ eqpAssocs ++ bodyAssocs ++ floorAssocs)
+  in 0 /= (sumSlotNoFilter IF.EqpSlotLight True $ map (second itemNoDisco)
+           $ eqpAssocs ++ bodyAssocs ++ floorAssocs)
 
 actorInAmbient :: Actor -> State -> Bool
 actorInAmbient b s =
@@ -351,11 +351,3 @@ itemToFull Kind.COps{coitem=Kind.Ops{okind}}
                                          , itemKind = okind itemKindId
                                          , itemAE = EM.lookup iid discoAE }
   in ItemFull {..}
-
-strongestBodyEqp :: IF.EqpSlot -> [(ItemId, ItemFull)] -> [(ItemId, ItemFull)]
-                 -> Int
-strongestBodyEqp eqpSlot eqpAssocs bodyAssocs =
-  let maxF ass = case strongestSlot eqpSlot True ass of
-        [] -> 0
-        (x, _) : _ -> x
-  in maxF bodyAssocs + maxF eqpAssocs

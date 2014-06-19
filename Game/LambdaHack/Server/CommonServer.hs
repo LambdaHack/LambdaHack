@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, deduceQuits, deduceKilled, electLeader
   , projectFail, actorConts
-  , pickWeaponServer, strongestServer
+  , pickWeaponServer, sumBodyEqpServer
   ) where
 
 import Control.Applicative
@@ -240,7 +240,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
         else do
           mab <- getsState $ posToActor pos lid
           actorBlind <- radiusBlind
-                        <$> strongestServer IF.EqpSlotSightRadius source
+                        <$> sumBodyEqpServer IF.EqpSlotSightRadius source
           if not $ maybe True (bproj . snd . fst) mab
             then if isShrapnel then do
                    -- Hit the blocking actor.
@@ -342,9 +342,9 @@ pickWeaponServer source = do
       let cstore = if isJust (lookup iid bodyAssocs) then CBody else CEqp
       return $ Just (iid, cstore)
 
-strongestServer :: MonadServer m
-                => IF.EqpSlot -> ActorId -> m Int
-strongestServer eqpSlot aid = do
+sumBodyEqpServer :: MonadServer m
+                 => IF.EqpSlot -> ActorId -> m Int
+sumBodyEqpServer eqpSlot aid = do
   eqpAssocs <- fullAssocsServer aid [CEqp]
   bodyAssocs <- fullAssocsServer aid [CBody]
-  return $! strongestBodyEqp eqpSlot eqpAssocs bodyAssocs
+  return $! sumSlotNoFilter eqpSlot True $ eqpAssocs ++ bodyAssocs
