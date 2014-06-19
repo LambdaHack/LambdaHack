@@ -302,7 +302,7 @@ harmful cops body itemFull =
        || isJust (strengthFromEqpSlot IF.EqpSlotArmorMelee itemFull)))
   -- Periodic items that are known and not stricly beneficial
   -- should not be equipped.
-  || (isJust (strengthPeriodic itemFull)
+  || (isJust (strengthFromEqpSlot IF.EqpSlotPeriodic itemFull)
       && maybe False (\u -> u <= 0) (maxUsefulness cops body itemFull))
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy

@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthAspect, strengthEffect, strengthFeature
-  , strengthPeriodic, strengthToThrow, strengthEqpSlot, strengthFromEqpSlot
+  , strengthToThrow, strengthEqpSlot, strengthFromEqpSlot
   , strongestSlotNoFilter, strongestSlot, sumSlotNoFilter
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
@@ -184,11 +184,12 @@ itemTrajectory item path =
 strengthFromEqpSlot :: IF.EqpSlot -> ItemFull -> Maybe Int
 strengthFromEqpSlot eqpSlot =
   case eqpSlot of
+    IF.EqpSlotPeriodic -> strengthPeriodic  -- a very crude approximation
     IF.EqpSlotAddMaxHP -> strengthAddMaxHP
     IF.EqpSlotAddMaxCalm -> strengthAddMaxCalm
     IF.EqpSlotAddSpeed -> strengthAddSpeed
     IF.EqpSlotAbility -> strengthAbility
-    IF.EqpSlotArmorMelee -> strengthArmorMelee
+    IF.EqpSlotArmorMelee -> strengthArmorMelee  -- a very crude approximation
     IF.EqpSlotSightRadius -> strengthSightRadius
     IF.EqpSlotSmellRadius -> strengthSmellRadius
     IF.EqpSlotLight -> strengthLight . itemBase

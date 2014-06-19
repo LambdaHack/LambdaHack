@@ -176,7 +176,8 @@ necklace = ItemKind  -- TODO: when more items, perhaps make all Periodic necklac
   , iweight  = 30
   , iaspects = []
   , ieffects = []
-  , ifeature = [Precious, toVelocity 50]  -- not dense enough
+  , ifeature = [ Precious, EqpSlot EqpSlotPeriodic ""
+               , toVelocity 50 ]  -- not dense enough
   , idesc    = "Tingling, rattling chain of flat encrusted links."
   }
 necklace1 = necklace

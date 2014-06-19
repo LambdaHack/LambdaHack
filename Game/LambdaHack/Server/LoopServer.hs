@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -170,7 +171,7 @@ activatePeriodicLevel lid = do
   let turnN = time `timeFit` timeTurn
       activatePeriodicItem _ (_, ItemFull{itemKisOn=(_, False)}) = return ()
       activatePeriodicItem aid (iid, itemFull) = do
-        case strengthPeriodic itemFull of
+        case strengthFromEqpSlot IF.EqpSlotPeriodic itemFull of
           Nothing -> return ()
           Just n -> when (turnN `mod` (100 `div` n) == 0) $
                       void $ itemEffect aid aid iid itemFull

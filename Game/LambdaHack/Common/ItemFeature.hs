@@ -25,7 +25,8 @@ data Feature =
   deriving (Show, Eq, Ord, Generic)
 
 data EqpSlot =
-    EqpSlotAddMaxHP
+    EqpSlotPeriodic
+  | EqpSlotAddMaxHP
   | EqpSlotAddMaxCalm
   | EqpSlotAddSpeed
   | EqpSlotAbility
