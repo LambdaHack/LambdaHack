@@ -242,18 +242,22 @@ manageEqp aid = do
               | not (harmful cops body itemInv) && vInv > vEqp ->
               returN "wield better"
               $ ReqMoveItem iidInv 1 CInv CEqp
-            (_, (_, (iidEqp, _)) : _) | getK bestEqp > 1
-                                        && rsharedInventory ->
-              -- To share the best items with others.
+            (_, (vEqp, (iidEqp, _)) : _) | getK bestEqp > 1
+                                           && rsharedInventory
+                                           && betterThanInv vEqp bestInv ->
+              -- To share the best items with others, if they care.
               returN "yield rest"
               $ ReqMoveItem iidEqp (getK bestEqp - 1) CEqp CInv
-            (_, _ : (_, (iidEqp, _)) : _) ->
-              -- To make room in limited equipment store or to share.
+            (_, _ : (vEqp, (iidEqp, _)) : _) | rsharedInventory
+                                               && betterThanInv vEqp bestInv ->
+              -- To share the second best items with others, if they care.
               returN "yield worse"
               $ ReqMoveItem iidEqp (getK bestEqp) CEqp CInv
             _ -> reject
         getK [] = 0
         getK ((_, (_, itemFull)) : _) = itemK itemFull
+        betterThanInv _ [] = True
+        betterThanInv vEqp ((vInv, _) : _) = vEqp > vInv
         bestInvEqp = bestByEqpSlot invAssocs eqpAssocs
     case yieldHarmful of
       [] -> return $ msum $ map improve bestInvEqp
