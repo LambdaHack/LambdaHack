@@ -57,7 +57,7 @@ data Aspect a =
   | Periodic !a
   | AddMaxHP !a
   | AddMaxCalm !a
-  | AddSpeed !a
+  | AddSpeed !a     -- ^ speed bonus in m/10s
   | InsertAbility ![Ability.Ability]
   | DeleteAbility ![Ability.Ability]
   | ArmorMelee !a

@@ -12,7 +12,6 @@ import qualified Data.Text as T
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Time
 
 -- TODO: make all but a few fields optional in some way, so that, a.g.,
 -- a game content with no regeneration does not ever need to mention aregen.
@@ -25,7 +24,7 @@ data ActorKind = ActorKind
     -- * Resources
   , amaxHP   :: !Int        -- ^ maximal hp
   , amaxCalm :: !Int        -- ^ maximal calm
-  , aspeed   :: !Speed      -- ^ natural speed in m/Ms
+  , aspeed   :: !Int        -- ^ natural speed in m/10s
   , aAbility :: ![Ability]  -- ^ the set of supported abilities
   , aArmor   :: !Int        -- ^ intrinsic armor class
   , asight   :: !Int        -- ^ sight radius

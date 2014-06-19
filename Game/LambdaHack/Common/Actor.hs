@@ -113,7 +113,7 @@ actorTemplate bkind bsymbol bname bpronoun bcolor bhp bcalm
 bspeed :: Kind.COps -> Actor -> Speed
 bspeed Kind.COps{coactor=Kind.Ops{okind}} b =
   case btrajectory b of
-    Nothing -> aspeed $ okind $ bkind b
+    Nothing -> toSpeed $ aspeed $ okind $ bkind b
     Just (_, speed) -> speed
 
 -- | Add time taken by a single step at the actor's current speed.

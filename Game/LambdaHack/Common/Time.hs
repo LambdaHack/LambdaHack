@@ -5,7 +5,8 @@ module Game.LambdaHack.Common.Time
   , absoluteTimeAdd, absoluteTimeNegate, timeFit, timeFitUp
   , Delta(..), timeShift, timeDeltaToFrom, timeDeltaReverse, timeDeltaScale
   , timeDeltaToDigit, ticksPerMeter
-  , Speed, toSpeed, speedZero, speedNormal, speedScale, speedAdd, speedNegate
+  , Speed, toSpeed, fromSpeed, speedZero, speedNormal
+  , speedScale, speedAdd, speedNegate
   , speedFromWeight, rangeFromSpeed, rangeFromSpeedAndLinger
   ) where
 
@@ -120,15 +121,22 @@ timeDeltaToDigit (Delta (Time maxT)) (Delta (Time t)) =
 -- Actors at normal speed (2 m/s) take one time turn (0.5 s)
 -- to move one tile (1 m by 1 m).
 newtype Speed = Speed Int64
-  deriving (Show, Eq, Ord, Binary)
+  deriving (Eq, Ord, Binary)
+
+instance Show Speed where
+  show s = show $ fromSpeed s
 
 -- | Number of seconds in a mega-second.
 sInMs :: Int64
 sInMs = 1000000
 
 -- | Constructor for content definitions.
-toSpeed :: Double -> Speed
-toSpeed s = Speed $ round $ s * fromIntegral sInMs
+toSpeed :: Int -> Speed
+toSpeed s = Speed $ fromIntegral s * sInMs `div` 10
+
+-- | Pretty-printing of speed in the format used in content definitions.
+fromSpeed :: Speed -> Int
+fromSpeed (Speed s) = fromIntegral $ s * 10 `div` sInMs
 
 -- | No movement possible at that speed.
 speedZero :: Speed
