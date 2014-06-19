@@ -75,16 +75,23 @@ pickActorToMove refreshTarget oldAid = do
                   any (\(_, (_, b)) -> bspeed cops b > bspeed cops body)
                   $ takeWhile ((== 1) . fst) threatDistL
                 condCanFlee = not (null fleeL || condFastThreatAdj)
+                heavilyDistressed =
+                  -- Actor hit by a projectile or similarly distressed.
+                  resCurrentTurn (bcalmDelta body) < -1
+                  || resPreviousTurn (bcalmDelta body) < -1
             return $! if condThreatAdj
                       then condMeleeBad && condCanFlee
-                      else bcalmDelta body < -1  -- hit by a projectile
+                      else heavilyDistressed
                         -- TODO: modify when reaction fire is possible
           actorHearning (_, (TEnemyPos{}, (_, (_, d)))) | d <= 2 =
             return False  -- noise probably due to fleeing target
           actorHearning ((_aid, b), _) = do
             allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
             let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
-            return $! bcalmDelta b == -1  -- hears an enemy
+                mildlyDistressed =
+                  resCurrentTurn (bcalmDelta b) == -1
+                  || resPreviousTurn (bcalmDelta b) == -1
+            return $! mildlyDistressed  -- e.g., actor hears an enemy
                       && null closeFoes  -- the enemy not visible; a trap!
           -- AI has to be prudent and not lightly waste leader for meleeing,
           -- even if his target is distant

@@ -244,10 +244,16 @@ advanceTime aid = do
       execSfx
     else do
       newCalmDelta <- getsState $ regenCalmDelta b
-      unless (newCalmDelta == 0 && bcalmDelta b == 0) $
+      let clearMark = 0
+      unless (newCalmDelta == 0) $
+        -- Update delta for the current player turn.
         execUpdAtomic $ UpdCalmActor aid newCalmDelta
-      unless (bhpDelta b == 0) $  -- clear delta for the next turn
-        execUpdAtomic $ UpdHealActor aid 0
+      unless (bcalmDelta b == ResDelta 0 0) $
+        -- Clear delta for the next player turn.
+        execUpdAtomic $ UpdCalmActor aid clearMark
+      unless (bhpDelta b == ResDelta 0 0) $
+        -- Clear delta for the next player turn.
+        execUpdAtomic $ UpdHealActor aid clearMark
 
 leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelFlip = do

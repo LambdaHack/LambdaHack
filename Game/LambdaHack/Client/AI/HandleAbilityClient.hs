@@ -87,6 +87,9 @@ actionStrategy aid = do
       condFastThreatAdj = any (\(_, (_, b)) -> bspeed cops b > speed1_5)
                           $ takeWhile ((== 1) . fst) threatDistL
       condCanFlee = not (null fleeL || condFastThreatAdj)
+      heavilyDistressed =  -- actor hit by a projectile or similarly distressed
+        resCurrentTurn (bcalmDelta body) < -1
+        || resPreviousTurn (bcalmDelta body) < -1
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
   let stratToFreq :: MonadStateRead m
@@ -167,7 +170,7 @@ actionStrategy aid = do
           , condAnyFoeAdj )
         , ( [AbApply], (toAny :: ToAny AbApply)  -- better to throw than quench
             <$> applyItem aid QuenchLight
-          , condLightBetrays && bcalmDelta body < -1 )  -- hit by a projectile
+          , condLightBetrays && heavilyDistressed )
         , ( [AbMove]
           , chase aid False
           , True )

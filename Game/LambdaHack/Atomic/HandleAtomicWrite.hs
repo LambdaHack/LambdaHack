@@ -214,13 +214,23 @@ updHealActor :: MonadStateWrite m => ActorId -> Int -> m ()
 updHealActor aid n =
   updateActor aid $ \b ->
     b { bhp = bhp b + n
-      , bhpDelta = n }
+      , bhpDelta = let oldD = bhpDelta b
+                   in if n == 0
+                      then ResDelta { resCurrentTurn = 0
+                                    , resPreviousTurn = resCurrentTurn oldD }
+                      else oldD {resCurrentTurn = resCurrentTurn oldD + n}
+      }
 
 updCalmActor :: MonadStateWrite m => ActorId -> Int -> m ()
 updCalmActor aid n =
   updateActor aid $ \b ->
     b { bcalm = max 0 $ bcalm b + n
-      , bcalmDelta = n }  -- records original delta, for "hears something"
+      , bcalmDelta = let oldD = bcalmDelta b
+                     in if n == 0
+                        then ResDelta { resCurrentTurn = 0
+                                      , resPreviousTurn = resCurrentTurn oldD }
+                        else oldD {resCurrentTurn = resCurrentTurn oldD + n}
+      }
 
 updOldFidActor :: MonadStateWrite m => ActorId -> FactionId -> FactionId -> m ()
 updOldFidActor aid fromFid toFid = assert (fromFid /= toFid) $ do

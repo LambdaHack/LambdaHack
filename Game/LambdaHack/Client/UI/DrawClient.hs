@@ -269,18 +269,20 @@ drawLeaderStatus waitT width = do
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
           slashPick = slashes !! (max 0 (waitT - 1) `mod` length slashes)
-          calmAddAttr | calmDelta > 0 = addColor Color.BrGreen
-                      | calmDelta < 0 = addColor Color.BrRed
-                      | otherwise = addAttr
+          checkDelta ResDelta{..} =
+            if resCurrentTurn < 0 || resPreviousTurn < 0
+            then addColor Color.BrRed  -- alarming news have priority
+            else if resCurrentTurn > 0 || resPreviousTurn > 0
+                 then addColor Color.BrGreen
+                 else addAttr  -- only if nothing at all noteworthy
+          calmAddAttr = checkDelta calmDelta
           darkPick | darkL   = "."
                    | otherwise = ":"
           calmHeader = calmAddAttr $ calmHeaderText <> darkPick
           calmText = bcalmS <>  (if darkL then slashPick else "/") <> acalmS
           bracePick | bracedL   = "}"
                     | otherwise = ":"
-          hpAddAttr | hpDelta > 0 = addColor Color.BrGreen
-                    | hpDelta < 0 = addColor Color.BrRed
-                    | otherwise = addAttr
+          hpAddAttr = checkDelta hpDelta
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick
           hpText = bhpS <> (if bracedL then slashPick else "/") <> ahpS
       return $! calmHeader <> addAttr (T.justifyRight 6 ' ' calmText <> " ")

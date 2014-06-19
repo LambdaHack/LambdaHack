@@ -5,7 +5,8 @@ module Game.LambdaHack.Common.Actor
   ( -- * Actor identifiers and related operations
     ActorId, monsterGenChance, partActor, partPronoun
     -- * The@ Acto@r type
-  , Actor(..), bspeed, actorTemplate, timeShiftFromSpeed, braced, waitedLastTurn
+  , Actor(..), ResDelta(..)
+  , bspeed, actorTemplate, timeShiftFromSpeed, braced, waitedLastTurn
   , actorDying, actorNewBorn, hpTooLow, unoccupied, projectileKindId
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
@@ -44,9 +45,9 @@ data Actor = Actor
     -- * Resources
   , btime       :: !Time                 -- ^ absolute time of next action
   , bhp         :: !Int                  -- ^ current hit points
-  , bhpDelta    :: !Int                  -- ^ HP delta this turn
+  , bhpDelta    :: !ResDelta             -- ^ HP delta this turn
   , bcalm       :: !Int                  -- ^ current calm
-  , bcalmDelta  :: !Int                  -- ^ calm delta this turn
+  , bcalmDelta  :: !ResDelta             -- ^ calm delta this turn
     -- * Location
   , bpos        :: !Point                -- ^ current position
   , boldpos     :: !Point                -- ^ previous position
@@ -64,6 +65,12 @@ data Actor = Actor
   , bwait       :: !Bool                 -- ^ is the actor waiting right now?
   , bproj       :: !Bool                 -- ^ is a projectile? (shorthand only,
                                          --   this can be deduced from bkind)
+  }
+  deriving (Show, Eq, Ord)
+
+data ResDelta = ResDelta
+  { resCurrentTurn  :: !Int  -- ^ resource change this player turn
+  , resPreviousTurn :: !Int  -- ^ resource change last player turn
   }
   deriving (Show, Eq, Ord)
 
@@ -106,8 +113,8 @@ actorTemplate bkind bsymbol bname bpronoun bcolor bhp bcalm
       bbody   = EM.empty
       bwait   = False
       boldfid = bfid
-      bhpDelta = 0
-      bcalmDelta = 0
+      bhpDelta = ResDelta 0 0
+      bcalmDelta = ResDelta 0 0
   in Actor{..}
 
 bspeed :: Kind.COps -> Actor -> Speed
@@ -241,3 +248,12 @@ instance Binary Actor where
     boldfid <- get
     bproj <- get
     return $! Actor{..}
+
+instance Binary ResDelta where
+  put ResDelta{..} = do
+    put resCurrentTurn
+    put resPreviousTurn
+  get = do
+    resCurrentTurn <- get
+    resPreviousTurn <- get
+    return $! ResDelta{..}
