@@ -377,8 +377,9 @@ reqApply aid iid cstore = do
   else do
     b <- getsState $ getActorBody aid
     let kind = okind $ bkind b
-    if calmEnough b kind then applyItem aid iid cstore
-    else execFailure aid req ItemNotCalm
+    if calmEnough b kind
+      then applyItem aid iid cstore
+      else execFailure aid req ItemNotCalm
 
 -- * ReqTrigger
 

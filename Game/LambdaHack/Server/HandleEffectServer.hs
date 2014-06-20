@@ -68,15 +68,17 @@ itemEffectAndDestroy source target iid itemFull cstore = do
   let item = itemBase itemFull
       (_, isOn) = itemKisOn itemFull
       durable = IF.Durable `elem` jfeature item
+      periodic = isJust $ strengthFromEqpSlot IF.EqpSlotPeriodic itemFull
       c = CActor source cstore
-  when (not durable) $
-    execUpdAtomic $ UpdLoseItem iid item (1, isOn) c
-  triggered <- itemEffect source target iid itemFull
-  -- If none of the item's effects was performed, we try to recreate the item.
-  -- Regardless, wwe don't rewind the time, because some info is gained
-  -- (that the item does not exhibit any effects in the given context).
-  when (not triggered && not durable) $
-    execUpdAtomic $ UpdSpotItem iid item (1, isOn) c
+  unless (durable && periodic) $ do
+    when (not durable) $
+      execUpdAtomic $ UpdLoseItem iid item (1, isOn) c
+    triggered <- itemEffect source target iid itemFull
+    -- If none of item's effects was performed, we try to recreate the item.
+    -- Regardless, wwe don't rewind the time, because some info is gained
+    -- (that the item does not exhibit any effects in the given context).
+    when (not triggered && not durable) $
+      execUpdAtomic $ UpdSpotItem iid item (1, isOn) c
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effect effect fires up, the item gets identified. This function

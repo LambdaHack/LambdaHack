@@ -79,6 +79,7 @@ data ReqFailure =
   | AlterBlockItem
   | AlterNothing
   | EqpOverfull
+  | DurablePeriodicAbuse
   | ItemNothing
   | ItemNotCalm
   | ProjectAimOnself
@@ -104,6 +105,7 @@ showReqFailure reqFailure = case reqFailure of
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"
   EqpOverfull -> "cannot equip any more items"
+  DurablePeriodicAbuse -> "cannot apply a durable periodic item"
   ItemNothing -> "wasting time on void item manipulation"
   ItemNotCalm -> "you are too alarmed to sort through inventory"
   ProjectAimOnself -> "cannot aim at oneself"
