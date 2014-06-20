@@ -78,7 +78,6 @@ actionStrategy aid = do
   condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
-  condLightBetrays <- condLightBetraysM aid
   fleeL <- fleeList aid
   let condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
@@ -87,9 +86,6 @@ actionStrategy aid = do
       condFastThreatAdj = any (\(_, (_, b)) -> bspeed cops b > speed1_5)
                           $ takeWhile ((== 1) . fst) threatDistL
       condCanFlee = not (null fleeL || condFastThreatAdj)
-      heavilyDistressed =  -- actor hit by a projectile or similarly distressed
-        resCurrentTurn (bcalmDelta body) < -1
-        || resPreviousTurn (bcalmDelta body) < -1
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
   let stratToFreq :: MonadStateRead m
@@ -135,8 +131,8 @@ actionStrategy aid = do
           , displaceBlocker aid  -- fires up only when path blocked
           , not condDesirableFloorItem )
         , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
-            <$> manageEqp aid  -- doesn't take long, very useful if safe
-                               -- only if calm enough, so high priority
+            <$> equipItems aid  -- doesn't take long, very useful if safe
+                                -- only if calm enough, so high priority
           , not condAnyFoeAdj && not condDesirableFloorItem ) ]
       distant :: [([Ability], m (Frequency RequestAnyAbility), Bool)]
       distant =
@@ -168,9 +164,9 @@ actionStrategy aid = do
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeAny aid  -- avoid getting damaged for naught
           , condAnyFoeAdj )
-        , ( [AbApply], (toAny :: ToAny AbApply)  -- better to throw than quench
-            <$> applyItem aid QuenchLight
-          , condLightBetrays && heavilyDistressed )
+        , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
+            <$> unEquipItems aid  -- late, because better to throw than unequip
+          , True )
         , ( [AbMove]
           , chase aid False
           , True )
@@ -215,61 +211,105 @@ pickup aid onlyWeapon = do
       return $! returN "pickup" $ ReqMoveItem iid k CGround CEqp
     [] -> return reject
 
-manageEqp :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMoveItem))
-manageEqp aid = do
+equipItems :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMoveItem))
+equipItems aid = do
+  cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+  let RuleKind{rsharedInventory} = Kind.stdRuleset corule
+  body <- getsState $ getActorBody aid
+  eqpAssocs <- fullAssocsClient aid [CEqp]
+  invAssocs <- fullAssocsClient aid [CInv]
+  shaAssocs <- fullAssocsClient aid [CSha]
+  condLightBetrays <- condLightBetraysM aid
+  let kind = okind $ bkind body
+      improve :: ([(Int, (ItemId, ItemFull))],
+                  [(Int, (ItemId, ItemFull))])
+              -> Strategy (RequestTimed AbMoveItem)
+      improve (bestInv, bestEqp) =
+        case (bestInv, bestEqp) of
+          ((_, (iidInv, itemInv)) : _, [])
+            | True  -- TODO: not eqpFull
+              && not (harmful cops condLightBetrays body itemInv) ->
+            returN "wield any"
+            $ ReqMoveItem iidInv 1 CInv CEqp
+          ((vInv, (iidInv, itemInv)) : _, (vEqp, _) : _)
+            | True  -- TODO: not eqpFull
+              && not (harmful cops condLightBetrays body itemInv)
+              && vInv > vEqp ->
+            returN "wield better"
+            $ ReqMoveItem iidInv 1 CInv CEqp
+          _ -> reject
+      bestThree = bestByEqpSlot invAssocs eqpAssocs shaAssocs
+      bEqpInv = msum $ map improve
+                $ map (\(eqp, inv, _) -> (eqp, inv)) bestThree
+  if nullStrategy bEqpInv
+    then if rsharedInventory && calmEnough body kind
+         then return
+              $! msum $ map improve
+              $ map (\(eqp, _, sha) -> (eqp, sha)) bestThree
+         else return reject
+    else return bEqpInv
+
+-- TODO: if eqpFull, yield the least beneficial item of all eqp items
+-- so that we always have 1 eqp slot free (simple and stateless,
+-- though usually unoptimal, unless suddenly a superb item is found
+-- and using it one turn earlier is a breakthrough).
+unEquipItems :: MonadClient m
+             => ActorId -> m (Strategy (RequestTimed AbMoveItem))
+unEquipItems aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   body <- getsState $ getActorBody aid
   invAssocs <- fullAssocsClient aid [CInv]
   eqpAssocs <- fullAssocsClient aid [CEqp]
+  shaAssocs <- fullAssocsClient aid [CSha]
+  condLightBetrays <- condLightBetraysM aid
   let kind = okind $ bkind body
-  if calmEnough body kind then do
-    let yieldSingleHarmful (iidEqp, itemEqp) =
-          if harmful cops body itemEqp
-          then Just $ ReqMoveItem iidEqp (itemK itemEqp) CEqp CInv
-          else Nothing
-        yieldHarmful = mapMaybe yieldSingleHarmful eqpAssocs
-        improve :: ([(Int, (ItemId, ItemFull))],
-                    [(Int, (ItemId, ItemFull))])
-                -> Strategy (RequestTimed AbMoveItem)
-        improve (bestInv, bestEqp) =
-          case (bestInv, bestEqp) of
-            ((_, (iidInv, itemInv)) : _, [])
-              | not (harmful cops body itemInv) ->
-              returN "wield any"
-              $ ReqMoveItem iidInv 1 CInv CEqp
-            ((vInv, (iidInv, itemInv)) : _, (vEqp, _) : _)
-              | not (harmful cops body itemInv) && vInv > vEqp ->
-              returN "wield better"
-              $ ReqMoveItem iidInv 1 CInv CEqp
-            (_, (vEqp, (iidEqp, _)) : _) | getK bestEqp > 1
-                                           && rsharedInventory
-                                           && betterThanInv vEqp bestInv ->
-              -- To share the best items with others, if they care.
-              returN "yield rest"
-              $ ReqMoveItem iidEqp (getK bestEqp - 1) CEqp CInv
-            (_, _ : (vEqp, (iidEqp, _)) : _) | rsharedInventory
-                                               && betterThanInv vEqp bestInv ->
-              -- To share the second best items with others, if they care.
-              returN "yield worse"
-              $ ReqMoveItem iidEqp (getK bestEqp) CEqp CInv
-            _ -> reject
-        getK [] = 0
-        getK ((_, (_, itemFull)) : _) = itemK itemFull
-        betterThanInv _ [] = True
-        betterThanInv vEqp ((vInv, _) : _) = vEqp > vInv
-        bestInvEqp = bestByEqpSlot invAssocs eqpAssocs
-    case yieldHarmful of
-      [] -> return $ msum $ map improve bestInvEqp
-      _ ->
-        -- Here AI hides from the human player the Ring of Speed And Bleeding,
-        -- which is a bit harsh, but fair. However any subsequent such
-        -- rings will not be picked up at all, so the human player
-        -- doesn't lose much fun. Additionally, if AI learns alchemy later on,
-        -- they can repair the ring, wield it, drop at death and it's
-        -- in play again.
-        return $! liftFrequency $ uniformFreq "yield harmful" yieldHarmful
-  else return reject
+      yieldSingleHarmful (iidEqp, itemEqp) =
+        let cstore = if rsharedInventory && calmEnough body kind
+                     then CSha
+                     else CInv
+        in if harmful cops condLightBetrays body itemEqp
+           then Just $ ReqMoveItem iidEqp (itemK itemEqp) CEqp cstore
+           else Nothing
+      yieldHarmful = mapMaybe yieldSingleHarmful eqpAssocs
+      improve :: ([(Int, (ItemId, ItemFull))],
+                  [(Int, (ItemId, ItemFull))])
+              -> Strategy (RequestTimed AbMoveItem)
+      improve (bestInv, bestEqp) =
+        case (bestInv, bestEqp) of
+          (_, (vEqp, (iidEqp, _)) : _) | getK bestEqp > 1
+                                         && betterThanInv vEqp bestInv ->
+            -- To share the best items with others, if they care.
+            returN "yield rest"
+            $ ReqMoveItem iidEqp (getK bestEqp - 1) CEqp CInv
+          (_, _ : (vEqp, (iidEqp, _)) : _) | betterThanInv vEqp bestInv ->
+            -- To share the second best items with others, if they care.
+            returN "yield worse"
+            $ ReqMoveItem iidEqp (getK bestEqp) CEqp CInv
+          _ -> reject
+      getK [] = 0
+      getK ((_, (_, itemFull)) : _) = itemK itemFull
+      betterThanInv _ [] = True
+      betterThanInv vEqp ((vInv, _) : _) = vEqp > vInv
+      bestThree = bestByEqpSlot invAssocs eqpAssocs shaAssocs
+  case yieldHarmful of
+    [] -> do
+      let bInvSha = msum $ map improve
+                    $ map (\(_, inv, sha) -> (inv, sha)) bestThree
+      if nullStrategy bInvSha
+        then if rsharedInventory && calmEnough body kind
+             then return $! msum $ map improve
+                         $ map (\(eqp, _, sha) -> (eqp, sha)) bestThree
+             else return reject
+        else return $! bInvSha
+    _ ->
+      -- Here AI hides from the human player the Ring of Speed And Bleeding,
+      -- which is a bit harsh, but fair. However any subsequent such
+      -- rings will not be picked up at all, so the human player
+      -- doesn't lose much fun. Additionally, if AI learns alchemy later on,
+      -- they can repair the ring, wield it, drop at death and it's
+      -- in play again.
+      return $! liftFrequency $ uniformFreq "yield harmful" yieldHarmful
 
 groupByEqpSlot :: [(ItemId, ItemFull)]
                -> M.Map (IF.EqpSlot, Text) [(ItemId, ItemFull)]
@@ -280,26 +320,38 @@ groupByEqpSlot is =
       withES = mapMaybe f is
   in M.fromListWith (++) withES
 
-bestByEqpSlot :: [(ItemId, ItemFull)] -> [(ItemId, ItemFull)]
-              -> [([(Int, (ItemId, ItemFull))], [(Int, (ItemId, ItemFull))])]
-bestByEqpSlot invAssocs eqpAssocs =
-  let invMap = M.map (\g -> (g, [])) $ groupByEqpSlot invAssocs
-      eqpMap = M.map (\g -> ([], g)) $ groupByEqpSlot eqpAssocs
-      appendBoth (g1, g2) (h1, h2) = (g1 ++ h1, g2 ++ h2)
-      invEqpMap = M.unionWith appendBoth invMap eqpMap
+bestByEqpSlot :: [(ItemId, ItemFull)]
+              -> [(ItemId, ItemFull)]
+              -> [(ItemId, ItemFull)]
+              -> [( [(Int, (ItemId, ItemFull))]
+                  , [(Int, (ItemId, ItemFull))]
+                  , [(Int, (ItemId, ItemFull))] )]
+bestByEqpSlot invAssocs eqpAssocs shaAssocs =
+  let eqpMap = M.map (\g -> (g, [], [])) $ groupByEqpSlot eqpAssocs
+      invMap = M.map (\g -> ([], g, [])) $ groupByEqpSlot invAssocs
+      shaMap = M.map (\g -> ([], [], g)) $ groupByEqpSlot shaAssocs
+      appendThree (g1, g2, g3) (h1, h2, h3) = (g1 ++ h1, g2 ++ h2, g3 ++ h3)
+      invEqpShaMap = M.unionsWith appendThree [invMap, eqpMap, shaMap]
       -- We don't take OFF into account, because AI can toggle it at will.
       bestSingle eqpSlot g = strongestSlotNoFilter eqpSlot False g
-      bestBoth (eqpSlot, _) (g1, g2) = (bestSingle eqpSlot g1,
-                                        bestSingle eqpSlot g2)
-  in M.elems $ M.mapWithKey bestBoth invEqpMap
+      bestThree (eqpSlot, _) (g1, g2, g3) = (bestSingle eqpSlot g1,
+                                             bestSingle eqpSlot g2,
+                                             bestSingle eqpSlot g3)
+  in M.elems $ M.mapWithKey bestThree invEqpShaMap
 
-harmful :: Kind.COps -> Actor -> ItemFull -> Bool
-harmful cops body itemFull =
+harmful :: Kind.COps -> Bool -> Actor -> ItemFull -> Bool
+harmful cops condLightBetrays body itemFull =
   -- Fast actors want to hide in darkness to ambush opponents and want
   -- to hit hard for the short span they get to survive melee.
   (bspeed cops body > speedNormal
    && (isJust (strengthFromEqpSlot IF.EqpSlotLight itemFull)
        || isJust (strengthFromEqpSlot IF.EqpSlotArmorMelee itemFull)))
+  -- Distressed actors want to hide in the dark.
+  || (let heavilyDistressed =  -- actor hit by a proj or similarly distressed
+            resCurrentTurn (bcalmDelta body) < -1
+            || resPreviousTurn (bcalmDelta body) < -1
+      in condLightBetrays && heavilyDistressed
+         && isJust (strengthFromEqpSlot IF.EqpSlotLight itemFull))
   -- Periodic items that are known and not stricly beneficial
   -- should not be equipped.
   || (isJust (strengthFromEqpSlot IF.EqpSlotPeriodic itemFull)
@@ -359,7 +411,7 @@ meleeAny aid = do
   mels <- mapM (pickWeaponClient aid . fst) adjFoes
       -- TODO: prioritize somehow
   let freq = uniformFreq "melee adjacent" $ concat mels
-  return $ liftFrequency freq
+  return $! liftFrequency freq
 
 -- Fast monsters don't pay enough attention to features.
 trigger :: MonadClient m
@@ -463,7 +515,7 @@ ranged aid = do
         _ -> return reject
     _ -> return reject
 
-data ApplyItemGroup = ApplyAll | ApplyFirstAid | QuenchLight
+data ApplyItemGroup = ApplyAll | ApplyFirstAid
   deriving Eq
 
 applyItem :: MonadClient m
@@ -472,11 +524,9 @@ applyItem aid applyGroup = do
   actorBlind <- radiusBlind <$> sumBodyEqpClient IF.EqpSlotSightRadius aid
   let permitted itemFull@ItemFull{itemBase=item} =
         not (unknownPrecious itemFull)
-        && if applyGroup == QuenchLight
-           then jsymbol item == '('
-           else if jsymbol item == '?' && actorBlind
-                then False
-                else IF.Applicable `elem` jfeature item
+        && if jsymbol item == '?' && actorBlind
+           then False
+           else IF.Applicable `elem` jfeature item
   benList <- benAvailableItems aid permitted
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
@@ -486,15 +536,12 @@ applyItem aid applyGroup = do
             Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
               foldr getP False jeffects
             _ -> False
-        QuenchLight -> if isJust $ strengthFromEqpSlot IF.EqpSlotLight itemFull
-                       then not $ itemIsOn itemFull
-                       else False
         ApplyAll -> True
       coeff CGround = 4
       coeff CBody = 3  -- can't give to others
       coeff CEqp = 1
-      coeff CInv = if applyGroup == QuenchLight then 0 else 1
-      coeff CSha = if applyGroup == QuenchLight then 0 else 2
+      coeff CInv = 1
+      coeff CSha = 2
       fTool ((mben, cstore), (iid, itemFull)) =
         let durableBonus = if IF.Durable `elem` jfeature (itemBase itemFull)
                            then 5  -- we keep it after use
@@ -511,9 +558,7 @@ applyItem aid applyGroup = do
         in if itemLegal itemFull
            then if benR > 0
                 then Just (benR, ReqApply iid cstore)
-                else if applyGroup == QuenchLight
-                     then Just (max 1 (abs benR), ReqApply iid cstore)
-                     else Nothing
+                else Nothing
            else Nothing
       benTool = mapMaybe fTool benList
   return $! liftFrequency $ toFreq "applyItem" benTool
