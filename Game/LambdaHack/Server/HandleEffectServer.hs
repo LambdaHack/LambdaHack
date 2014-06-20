@@ -74,17 +74,15 @@ itemEffectAndDestroy source target iid itemFull cstore = do
   let item = itemBase itemFull
       (_, isOn) = itemKisOn itemFull
       durable = IF.Durable `elem` jfeature item
-  cs <- actorConts iid item 1 source cstore
-  when (not durable) $ do
-    mapM_ (\(_, c) -> execUpdAtomic $ UpdLoseItem iid item (1, isOn) c) cs
+      c = CActor source cstore
+  when (not durable) $
+    execUpdAtomic $ UpdLoseItem iid item (1, isOn) c
   triggered <- itemEffect source target iid itemFull
   -- If none of the item's effects was performed, we try to recreate the item.
   -- Regardless, wwe don't rewind the time, because some info is gained
   -- (that the item does not exhibit any effects in the given context).
-  when (not triggered && not durable) $ do
-    mapM_ (\(_, c) -> do
-              valid <- getsState $ validCont c
-              when valid $ execUpdAtomic $ UpdSpotItem iid item (1, isOn) c) cs
+  when (not triggered && not durable) $
+    execUpdAtomic $ UpdSpotItem iid item (1, isOn) c
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effect effect fires up, the item gets identified. This function

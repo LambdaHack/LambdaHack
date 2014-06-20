@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.ActorState
   , sharedInv, sharedAllOwned, sharedAllOwnedFid
   , getInvBag, getCBag, getActorBag, getActorAssocs
   , nearbyFreePoints, whereTo, getCarriedAssocs
-  , posToActors, posToActor, getItemBody, validCont, memActor, getActorBody
+  , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, isSpawnFaction
   , itemPrice, calmEnough, hpEnough, regenCalmDelta
   , actorShines, actorInAmbient, dispEnemy, radiusBlind
@@ -247,12 +247,6 @@ getActorAssocs aid cstore s = bagAssocs s $ getActorBag aid cstore s
 
 getActorAssocsK :: ActorId -> CStore -> State -> [(ItemId, (Item, KisOn))]
 getActorAssocsK aid cstore s = bagAssocsK s $ getActorBag aid cstore s
-
-validCont :: Container -> State -> Bool
-validCont c s =
-  case c of
-    CFloor{} -> True
-    CActor aid _ -> isJust $ EM.lookup aid $ sactorD s
 
 -- | Checks if the actor is present on the current level.
 -- The order of argument here and in other functions is set to allow

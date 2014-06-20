@@ -3,8 +3,7 @@
 module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, deduceQuits, deduceKilled, electLeader
-  , projectFail, actorConts
-  , pickWeaponServer, sumBodyEqpServer
+  , projectFail, pickWeaponServer, sumBodyEqpServer
   ) where
 
 import Control.Applicative
@@ -271,30 +270,10 @@ projectBla source pos rest iid cstore = do
   item <- getsState $ getItemBody iid
   let lid = blid sb
       time = btime sb
-  cs <- actorConts iid item 1 source cstore
   unless (bproj sb) $ execSfxAtomic $ SfxProject source iid
   addProjectile pos rest iid lid (bfid sb) time
-  mapM_ (\(kIsOn, c) -> execUpdAtomic $ UpdLoseItem iid item kIsOn c) cs
-
-actorConts :: (MonadAtomic m, MonadServer m)
-           => ItemId -> Item -> Int -> ActorId -> CStore
-           -> m [(KisOn, Container)]
-actorConts iid item k aid cstore = case cstore of
-  CInv -> do
-    let cNew = CActor aid CInv
-    -- Hack, in case the other actors and their items never spotted.
-    execUpdAtomic $ UpdSpotItem iid item (1, True) cNew
-    execUpdAtomic $ UpdLoseItem iid item (1, True) cNew
-    invs <- actorInvs iid k aid
-    return $! map (\(kIsOn, aid2) -> (kIsOn, CActor aid2 CInv)) invs
-  _ -> do
-    let c = CActor aid cstore
-    bag <- getsState $ getCBag c
-    let (kBag, isOn) = case EM.lookup iid bag of
-          Nothing -> assert `failure` (iid, item, k, aid, cstore, bag)
-          Just ko -> ko
-    assert (kBag >= k) skip
-    return [((k, isOn), c)]
+  let c = CActor source cstore
+  execUpdAtomic $ UpdLoseItem iid item (1, True) c
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
