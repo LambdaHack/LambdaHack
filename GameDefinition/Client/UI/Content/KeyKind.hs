@@ -108,7 +108,7 @@ standardKeys = KeyKind
       , ("s", ([CmdItem], MoveItem [CEqp, CInv] CSha
                                    "stash" "and share an item" False))
       , ("a", ([CmdItem, CmdMinimal], Apply
-           [ApplyItem { verb = "(de)activate"
+           [ApplyItem { verb = "activate"
                       , object = "applicable item"
                       , symbol = ' ' }]))
       , ("q", ([CmdItem], Apply [ApplyItem { verb = "quaff"
@@ -117,9 +117,6 @@ standardKeys = KeyKind
       , ("r", ([CmdItem], Apply [ApplyItem { verb = "read"
                                            , object = "scroll"
                                            , symbol = '?' }]))
-      , ("CTRL-q", ([CmdItem], Apply [ApplyItem { verb = "(de)activate"
-                                                , object = "tool"
-                                                , symbol = '(' }]))
       , ("f", ([CmdItem, CmdMinimal], Project
            [ApplyItem { verb = "fling"
                       , object = "projectable item"

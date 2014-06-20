@@ -124,8 +124,8 @@ Below are the remaining keys for terrain exploration and alteration.
 Item use related keys are as follows.
 
                 keys           command
-                E              describe personal equipment of the leader
-                I              describe shared inventory of the party
+                E              describe equipment of the leader
+                I              describe inventory of the leader
                 S              describe the shared party stash
                 G              describe items on the ground
                 A              describe all owned items
@@ -134,11 +134,10 @@ Item use related keys are as follows.
                 e              equip an item
                 w              wedge an item into the inventory bag
                 s              stash and share an item
-                a              (de)activate item
+                a              activate applicable item
                 q              quaff potion
                 r              read scroll
-                CTRL-q         (de)activate tool
-                f              fling throwable item
+                f              fling projectable item
                 t              throw missile
                 z              zap wand
 
