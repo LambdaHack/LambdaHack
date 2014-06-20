@@ -74,9 +74,19 @@ insertItemActor relaxed iid k aid cstore isOn = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
     insertItemFloor relaxed iid k (blid b) (bpos b) isOn
+  CBody -> insertItemBody relaxed iid k aid isOn
   CEqp -> insertItemEqp relaxed iid k aid isOn
   CInv -> insertItemInv relaxed iid k aid isOn
-  CBody -> insertItemBody relaxed iid k aid isOn
+  CSha -> do
+    b <- getsState $ getActorBody aid
+    insertItemSha relaxed iid k (bfid b) isOn
+
+insertItemBody :: MonadStateWrite m
+               => Bool -> ItemId -> Int -> ActorId -> Bool -> m ()
+insertItemBody relaxed iid k aid isOn = do
+  let bag = EM.singleton iid (k, isOn)
+      upd = EM.unionWith (addKCheck relaxed) bag
+  updateActor aid $ \b -> b {bbody = upd (bbody b)}
 
 insertItemEqp :: MonadStateWrite m
               => Bool -> ItemId -> Int -> ActorId -> Bool -> m ()
@@ -92,12 +102,12 @@ insertItemInv relaxed iid k aid isOn = do
       upd = EM.unionWith (addKCheck relaxed) bag
   updateActor aid $ \b -> b {binv = upd (binv b)}
 
-insertItemBody :: MonadStateWrite m
-               => Bool -> ItemId -> Int -> ActorId -> Bool -> m ()
-insertItemBody relaxed iid k aid isOn = do
+insertItemSha :: MonadStateWrite m
+               => Bool -> ItemId -> Int -> FactionId -> Bool -> m ()
+insertItemSha relaxed iid k fid isOn = do
   let bag = EM.singleton iid (k, isOn)
       upd = EM.unionWith (addKCheck relaxed) bag
-  updateActor aid $ \b -> b {bbody = upd (bbody b)}
+  updateFaction fid $ \fact -> fact {gsha = upd (gsha fact)}
 
 addKCheck :: Bool -> KisOn -> KisOn -> KisOn
 addKCheck relaxed (k1, kIsOn1) (k2, kIsOn2) =
@@ -125,9 +135,16 @@ deleteItemActor iid k aid cstore isOn = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
     deleteItemFloor iid k (blid b) (bpos b) isOn
+  CBody -> deleteItemBody iid k aid isOn
   CEqp -> deleteItemEqp iid k aid isOn
   CInv -> deleteItemInv iid k aid isOn
-  CBody -> deleteItemBody iid k aid isOn
+  CSha -> do
+    b <- getsState $ getActorBody aid
+    deleteItemSha iid k (bfid b) isOn
+
+deleteItemBody :: MonadStateWrite m => ItemId -> Int -> ActorId -> Bool -> m ()
+deleteItemBody iid k aid isOn = do
+  updateActor aid $ \b -> b {bbody = rmFromBag k iid (bbody b) isOn}
 
 deleteItemEqp :: MonadStateWrite m => ItemId -> Int -> ActorId -> Bool -> m ()
 deleteItemEqp iid k aid isOn = do
@@ -137,9 +154,9 @@ deleteItemInv :: MonadStateWrite m => ItemId -> Int -> ActorId -> Bool -> m ()
 deleteItemInv iid k aid isOn = do
   updateActor aid $ \b -> b {binv = rmFromBag k iid (binv b) isOn}
 
-deleteItemBody :: MonadStateWrite m => ItemId -> Int -> ActorId -> Bool -> m ()
-deleteItemBody iid k aid isOn = do
-  updateActor aid $ \b -> b {bbody = rmFromBag k iid (bbody b) isOn}
+deleteItemSha :: MonadStateWrite m => ItemId -> Int -> FactionId -> Bool -> m ()
+deleteItemSha iid k fid isOn = do
+  updateFaction fid $ \fact -> fact {gsha = rmFromBag k iid (gsha fact) isOn}
 
 rmFromBag :: Int -> ItemId -> ItemBag -> Bool -> ItemBag
 rmFromBag k iid bag isOn =

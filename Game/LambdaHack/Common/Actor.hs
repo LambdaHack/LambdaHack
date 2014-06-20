@@ -58,9 +58,9 @@ data Actor = Actor
   , btrajectory :: !(Maybe ([Vector], Speed))  -- ^ trajectory the actor must
                                                --   travel and his travel speed
     -- * Items
-  , binv        :: !ItemBag              -- ^ personal inventory
-  , beqp        :: !ItemBag              -- ^ personal equipment
   , bbody       :: !ItemBag              -- ^ body parts
+  , beqp        :: !ItemBag              -- ^ personal equipment
+  , binv        :: !ItemBag              -- ^ personal inventory
     -- * Assorted
   , bwait       :: !Bool                 -- ^ is the actor waiting right now?
   , bproj       :: !Bool                 -- ^ is a projectile? (shorthand only,
@@ -188,17 +188,16 @@ mapActorEqp_ f Actor{beqp} = do
   let is = EM.assocs beqp
   mapM_ (uncurry f) is
 
-ppCStore :: Bool -> CStore -> Text
-ppCStore _ CEqp = "in personal equipment"
-ppCStore rsharedInventory CInv = if rsharedInventory
-                                 then "in shared inventory"
-                                 else "in inventory"
-ppCStore _ CGround = "on the ground"
-ppCStore _ CBody = "in the body"
+ppCStore :: CStore -> Text
+ppCStore CGround = "on the ground"
+ppCStore CBody = "in the body"
+ppCStore CEqp = "in equipment"
+ppCStore CInv = "in inventory"
+ppCStore CSha = "in the shared party stash"
 
-ppContainer :: Bool -> Container -> Text
-ppContainer _ CFloor{} = "on the ground nearby"
-ppContainer shared (CActor _ cstore) = ppCStore shared cstore
+ppContainer :: Container -> Text
+ppContainer CFloor{} = "on the ground nearby"
+ppContainer (CActor _ cstore) = ppCStore cstore
 
 instance Binary Actor where
   put Actor{..} = do

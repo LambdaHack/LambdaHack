@@ -14,6 +14,7 @@ import Data.Text (Text)
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ActorKind
@@ -31,6 +32,7 @@ data Faction = Faction
   , gdipl    :: !Dipl                   -- ^ diplomatic mode
   , gquit    :: !(Maybe Status)         -- ^ cause of game end/exit
   , gleader  :: !(Maybe ActorId)        -- ^ the leader of the faction, if any
+  , gsha     :: !ItemBag                -- ^ faction's shared inventory
   , gvictims :: !(EM.EnumMap (Kind.Id ActorKind) Int)  -- ^ members killed
   }
   deriving (Show, Eq)
@@ -135,6 +137,7 @@ instance Binary Faction where
     put gdipl
     put gquit
     put gleader
+    put gsha
     put gvictims
   get = do
     gkind <- get
@@ -144,6 +147,7 @@ instance Binary Faction where
     gdipl <- get
     gquit <- get
     gleader <- get
+    gsha <- get
     gvictims <- get
     return $! Faction{..}
 

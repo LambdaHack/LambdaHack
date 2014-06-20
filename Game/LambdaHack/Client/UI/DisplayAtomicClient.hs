@@ -38,7 +38,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
 -- * RespUpdAtomicUI
@@ -65,11 +64,9 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     side <- getsClient sside
     when (bfid body == side && not (bproj body)) stopPlayBack
   UpdCreateItem iid _ kIsOn c -> do
-    Kind.COps{corule} <- getsState scops
-    let RuleKind{rsharedInventory} = Kind.stdRuleset corule
     updateItemSlot Nothing iid
     itemVerbMU iid kIsOn $ MU.Text
-      $ "appear" <+> ppContainer rsharedInventory c
+      $ "appear" <+> ppContainer c
     stopPlayBack
   UpdDestroyItem iid _ kIsOn _ -> itemVerbMU iid kIsOn "disappear"
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"

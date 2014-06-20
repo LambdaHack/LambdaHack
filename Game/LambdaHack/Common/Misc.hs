@@ -61,9 +61,10 @@ instance Binary Container
 
 data CStore =
     CGround
+  | CBody
   | CEqp
   | CInv
-  | CBody
+  | CSha
   deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary CStore

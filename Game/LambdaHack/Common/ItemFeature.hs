@@ -19,7 +19,7 @@ data Feature =
   | ToThrow !(Effect.ThrowMod Int)  -- ^ parameters modifying a throw
   | Applicable                      -- ^ can't be turned off, is consumed by use
   | Light !Int                      -- ^ item shines with the given radius
-  | EqpSlot !EqpSlot !Text          -- ^ AI and UI hints about item purpose
+  | EqpSlot !EqpSlot !Text          -- ^ the slot, counts towards the eqp limit
   | Identified                      -- ^ any such item starts identified
   | Precious                        -- ^ precious; don't risk identifying by use
   deriving (Show, Eq, Ord, Generic)

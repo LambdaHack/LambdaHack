@@ -236,10 +236,11 @@ getActorBag :: ActorId -> CStore -> State -> ItemBag
 getActorBag aid cstore s =
   let b = getActorBody aid s
   in case cstore of
-    CInv -> getInvBag b s
-    CEqp -> beqp b
     CGround -> sdungeon s EM.! blid b `atI` bpos b
     CBody -> bbody b
+    CEqp -> beqp b
+    CInv -> getInvBag b s
+    CSha -> gsha $ sfactionD s EM.! bfid b
 
 getActorAssocs :: ActorId -> CStore -> State -> [(ItemId, Item)]
 getActorAssocs aid cstore s = bagAssocs s $ getActorBag aid cstore s

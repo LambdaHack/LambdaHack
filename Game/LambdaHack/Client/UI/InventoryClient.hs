@@ -31,13 +31,11 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Content.RuleKind
 
 failMsg :: MonadClientUI m => Msg -> m Slideshow
 failMsg msg = do
@@ -116,8 +114,6 @@ getItem :: MonadClientUI m
         -> ItemDialogState  -- ^ the dialog state to start in
         -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
 getItem p tinvSuit tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
-  Kind.COps{corule} <- getsState scops
-  let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   leader <- getLeaderUI
   getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
   let storeAssocs = EM.assocs . getCStoreBag
@@ -132,7 +128,7 @@ getItem p tinvSuit tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
         mapM_ (updateItemSlot (Just leader)) $ EM.keys $ getCStoreBag CGround
       transition p tinvSuit tsuitable verb cLegal initalState
     _ -> if null rawAssocs then do
-           let tLegal = map (MU.Text . ppCStore rsharedInventory) cLegalRaw
+           let tLegal = map (MU.Text . ppCStore) cLegalRaw
                ppLegal = makePhrase [MU.WWxW "nor" tLegal]
            failWith $ "no items" <+> ppLegal
          else failSer ItemNotCalm
@@ -155,8 +151,7 @@ transition :: forall m. MonadClientUI m
            -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
 transition _ _ _ verb [] iDS = assert `failure` (verb, iDS)
 transition p tinvSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
-  cops@Kind.COps{corule} <- getsState scops
-  let RuleKind{rsharedInventory} = Kind.stdRuleset corule
+  cops <- getsState scops
   (letterSlots, numberSlots) <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -241,7 +236,7 @@ transition p tinvSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
               Just iid -> return $ Right $ getResult iid
             _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
-      ppCur = ppCStore rsharedInventory cCur
+      ppCur = ppCStore cCur
       tsuit = if cCur == CInv then tinvSuit body else tsuitable body
       (labelLetterSlots, overLetterSlots, overNumberSlots, prompt) =
         case itemDialogState of

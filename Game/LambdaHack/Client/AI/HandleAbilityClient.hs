@@ -438,8 +438,9 @@ ranged aid = do
           benList <- benAvailableItems aid permittedRanged
           let coeff CGround = 4
               coeff CBody = 3  -- can't give to others
-              coeff CInv = 2
               coeff CEqp = 1
+              coeff CInv = 1
+              coeff CSha = 2
               fRanged ((mben, cstore), (iid, ItemFull{itemBase})) =
                 let trange = totalRange itemBase
                     bestRange = chessDist bpos fpos + 2  -- margin for fleeing
@@ -491,8 +492,9 @@ applyItem aid applyGroup = do
         ApplyAll -> True
       coeff CGround = 4
       coeff CBody = 3  -- can't give to others
-      coeff CInv = if applyGroup == QuenchLight then 0 else 2
       coeff CEqp = 1
+      coeff CInv = if applyGroup == QuenchLight then 0 else 1
+      coeff CSha = if applyGroup == QuenchLight then 0 else 2
       fTool ((mben, cstore), (iid, itemFull)) =
         let durableBonus = if IF.Durable `elem` jfeature (itemBase itemFull)
                            then 5  -- we keep it after use
