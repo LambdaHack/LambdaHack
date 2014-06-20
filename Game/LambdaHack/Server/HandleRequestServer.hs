@@ -373,11 +373,11 @@ reqApply :: (MonadAtomic m, MonadServer m)
 reqApply aid iid cstore = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   let req = ReqApply iid cstore
-  if cstore /= CInv then applyItem True aid iid cstore
+  if cstore /= CSha then applyItem aid iid cstore
   else do
     b <- getsState $ getActorBody aid
     let kind = okind $ bkind b
-    if calmEnough b kind then applyItem True aid iid cstore
+    if calmEnough b kind then applyItem aid iid cstore
     else execFailure aid req ItemNotCalm
 
 -- * ReqTrigger

@@ -46,20 +46,14 @@ import Game.LambdaHack.Server.State
 -- + Semantics of effects
 
 applyItem :: (MonadAtomic m, MonadServer m)
-          => Bool -> ActorId -> ItemId -> CStore -> m ()
-applyItem turnOff aid iid cstore = do
+          => ActorId -> ItemId -> CStore -> m ()
+applyItem aid iid cstore = do
   itemToF <- itemToFullServer
-  item <- getsState $ getItemBody iid
   bag <- getsState $ getActorBag aid cstore
   let (k, isOn) = bag EM.! iid
       itemFull = itemToF iid (k, isOn)
-      applicable = IF.Applicable `elem` jfeature item
-  if applicable then do
-    execSfxAtomic $ SfxActivate aid iid (1, isOn) isOn
-    itemEffectAndDestroy aid aid iid itemFull cstore
-  else when turnOff $ do
-    execSfxAtomic $ SfxActivate aid iid (1, isOn) (not isOn)
-    execUpdAtomic $ UpdMoveItem iid k aid cstore isOn cstore (not isOn)
+  execSfxAtomic $ SfxActivate aid iid (1, isOn) isOn
+  itemEffectAndDestroy aid aid iid itemFull cstore
 
 itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
                      => ActorId -> ActorId -> ItemId -> ItemFull -> CStore
@@ -707,4 +701,4 @@ effectActivateEqp :: (MonadAtomic m, MonadServer m)
                   => m () -> ActorId -> Char -> m Bool
 effectActivateEqp execSfx target symbol = do
   effectTransformEqp execSfx target symbol $ \iid _ ->
-    applyItem False target iid CEqp
+    applyItem target iid CEqp
