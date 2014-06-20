@@ -135,7 +135,7 @@ cmdDescription cmd = case cmd of
   Record      -> "start recording a macro"
   History     -> "display player diary"
   MarkVision  -> "mark visible area"
-  MarkSmell   -> "mark smell"
+  MarkSmell   -> "mark smell clues"
   MarkSuspect -> "mark suspect terrain"
   Help        -> "display help"
   MainMenu    -> "display the Main Menu"

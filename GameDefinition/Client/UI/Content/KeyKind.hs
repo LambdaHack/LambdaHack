@@ -93,6 +93,7 @@ standardKeys = KeyKind
       -- Item use
       , ("E", ([CmdItem], DescribeItem CEqp))
       , ("I", ([CmdItem], DescribeItem CInv))
+      , ("S", ([CmdItem], DescribeItem CSha))
       , ("G", ([CmdItem], DescribeItem CGround))
       , ("A", ([CmdItem], AllOwned))
       , ("g", ([CmdItem, CmdMinimal],
@@ -157,7 +158,7 @@ standardKeys = KeyKind
       , ("D", ([CmdMeta], History))
       , ("T", ([CmdMeta], MarkSuspect))
       , ("V", ([CmdMeta], MarkVision))
-      , ("S", ([CmdMeta], MarkSmell))
+      , ("C", ([CmdMeta], MarkSmell))
       , ("Tab", ([CmdMeta], MemberCycle))
       , ("ISO_Left_Tab", ([CmdMeta], MemberBack))
       , ("space", ([CmdMeta], Clear))

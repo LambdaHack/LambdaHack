@@ -126,6 +126,7 @@ Item use related keys are as follows.
                 keys           command
                 E              describe personal equipment of the leader
                 I              describe shared inventory of the party
+                S              describe the shared party stash
                 G              describe items on the ground
                 A              describe all owned items
                 g and ,        get an item
