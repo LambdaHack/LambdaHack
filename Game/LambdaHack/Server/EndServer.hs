@@ -27,7 +27,6 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ItemServer
@@ -92,30 +91,23 @@ dieSer aid b hit = do
 dropAllItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> Bool -> m ()
 dropAllItems aid b hit = do
-  stashAllItems aid b
+  equipAllItems aid b
   dropEqpItems aid b hit
 
-stashAllItems :: (MonadAtomic m, MonadServer m)
+equipAllItems :: (MonadAtomic m, MonadServer m)
               => ActorId -> Actor -> m ()
-stashAllItems aid b = do
-  Kind.COps{corule} <- getsState scops
-  let RuleKind{rsharedInventory} = Kind.stdRuleset corule
-      loseInv = do
+equipAllItems aid b = do
+  let moveCStore fromStore = do
         let g iid (k, _) = do
-              mvCmd <- generalMoveItem iid k (CActor aid CInv) (CActor aid CEqp)
+              mvCmd <- generalMoveItem iid k (CActor aid fromStore)
+                                             (CActor aid CEqp)
               mapM_ execUpdAtomic mvCmd
         mapActorInv_ g b
-  if not rsharedInventory then loseInv
-  else do
-    fact <- getsState $ (EM.! bfid b) . sfactionD
-    case gleader fact of
-      Nothing -> loseInv
-      Just leader -> do
-        let g iid (k, _) = do
-              upds <- generalMoveItem iid k (CActor aid CInv)
-                                            (CActor leader CInv)
-              mapM_ execUpdAtomic upds
-        mapActorInv_ g b
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  -- A faction that is defeated, leaderless or with temporarlity no member
+  -- drops all items from the faction stash, too.
+  when (isNothing $ gleader fact) $ moveCStore CSha
+  moveCStore CInv
 
 dropEqpItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> Bool -> m ()
