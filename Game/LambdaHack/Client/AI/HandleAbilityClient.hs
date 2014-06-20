@@ -206,9 +206,11 @@ pickup aid onlyWeapon = do
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
   case filterWeapon benItemL of
-    ((_, k), (iid, _)) : _ -> do  -- pick up the best desirable item, if any
+    ((_, k), (iid, item)) : _ -> do  -- pick up the best desirable item, if any
       updateItemSlot (Just aid) iid
-      return $! returN "pickup" $ ReqMoveItem iid k CGround CEqp
+      b <- getsState $ getActorBody aid
+      let toCStore = if goesIntoInv item || eqpFull b then CInv else CEqp
+      return $! returN "pickup" $ ReqMoveItem iid k CGround toCStore
     [] -> return reject
 
 equipItems :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMoveItem))
@@ -227,12 +229,12 @@ equipItems aid = do
       improve (bestInv, bestEqp) =
         case (bestInv, bestEqp) of
           ((_, (iidInv, itemInv)) : _, [])
-            | True  -- TODO: not eqpFull
+            | not (eqpFull body)
               && not (harmful cops condLightBetrays body itemInv) ->
             returN "wield any"
             $ ReqMoveItem iidInv 1 CInv CEqp
           ((vInv, (iidInv, itemInv)) : _, (vEqp, _) : _)
-            | True  -- TODO: not eqpFull
+            | not (eqpFull body)
               && not (harmful cops condLightBetrays body itemInv)
               && vInv > vEqp ->
             returN "wield better"

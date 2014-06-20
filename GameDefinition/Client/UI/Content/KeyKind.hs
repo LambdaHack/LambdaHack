@@ -97,10 +97,14 @@ standardKeys = KeyKind
       , ("A", ([CmdItem], AllOwned))
       , ("g", ([CmdItem, CmdMinimal],
                MoveItem [CGround] CEqp "get" "an item" True))
-      , ("d", ([CmdItem], MoveItem [CEqp, CInv] CGround "drop" "an item" False))
-      , ("e", ([CmdItem], MoveItem [CInv, CGround] CEqp
+      , ("d", ([CmdItem], MoveItem [CEqp, CInv, CSha] CGround
+                                   "drop" "an item" False))
+      , ("e", ([CmdItem], MoveItem [CInv, CSha] CEqp
                                    "equip" "an item" False))
-      , ("s", ([CmdItem], MoveItem [CEqp] CInv
+      , ("w", ([CmdItem], MoveItem [CEqp, CSha] CInv
+                                   "wedge" "an item into the inventory bag"
+                                   False))
+      , ("s", ([CmdItem], MoveItem [CEqp, CInv] CSha
                                    "stash" "and share an item" False))
       , ("a", ([CmdItem, CmdMinimal], Apply
            [ApplyItem { verb = "(de)activate"

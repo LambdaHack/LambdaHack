@@ -78,7 +78,7 @@ data ReqFailure =
   | AlterBlockActor
   | AlterBlockItem
   | AlterNothing
-  | PickupOverfull
+  | EqpOverfull
   | ItemNothing
   | ItemNotCalm
   | ProjectAimOnself
@@ -103,7 +103,7 @@ showReqFailure reqFailure = case reqFailure of
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"
-  PickupOverfull -> "cannot carry any more"
+  EqpOverfull -> "cannot equip any more items"
   ItemNothing -> "wasting time on void item manipulation"
   ItemNotCalm -> "you are too alarmed to sort through inventory"
   ProjectAimOnself -> "cannot aim at oneself"

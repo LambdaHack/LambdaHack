@@ -13,7 +13,7 @@ module Game.LambdaHack.Common.ActorState
   , tryFindHeroK, getLocalTime, isSpawnFaction
   , itemPrice, calmEnough, hpEnough, regenCalmDelta
   , actorShines, actorInAmbient, dispEnemy, radiusBlind
-  , fullAssocs, itemToFull
+  , fullAssocs, itemToFull, goesIntoInv, eqpFull
   ) where
 
 import Control.Arrow (second)
@@ -346,3 +346,10 @@ itemToFull Kind.COps{coitem=Kind.Ops{okind}}
                                          , itemKind = okind itemKindId
                                          , itemAE = EM.lookup iid discoAE }
   in ItemFull {..}
+
+goesIntoInv :: Item -> Bool
+goesIntoInv item = isNothing $ strengthEqpSlot item
+
+eqpFull :: Actor -> Bool
+eqpFull b = let size = sum $ map fst $ EM.elems $ beqp b
+            in assert (size <= 10) $ size == 10

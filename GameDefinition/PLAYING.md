@@ -131,6 +131,7 @@ Item use related keys are as follows.
                 g and ,        get an item
                 d              drop an item
                 e              equip an item
+                w              wedge an item into the inventory bag
                 s              stash and share an item
                 a              (de)activate item
                 q              quaff potion

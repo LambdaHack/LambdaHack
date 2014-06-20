@@ -200,38 +200,42 @@ waitHuman = do
 moveItemHuman :: MonadClientUI m
               => [CStore] -> CStore -> Text -> Bool
               -> m (SlideOrCmd (RequestTimed AbMoveItem))
-moveItemHuman cLegalRaw toCStore verbRaw auto = do
-  assert (toCStore `notElem` cLegalRaw) skip
+moveItemHuman cLegalRaw destCStore verbRaw auto = do
+  assert (destCStore `notElem` cLegalRaw) skip
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   let kind = okind $ bkind b
       cLegal = if calmEnough b kind
                then cLegalRaw
-               else if toCStore == CInv
+               else if destCStore == CSha
                     then []
-                    else delete CInv cLegalRaw
+                    else delete CSha cLegalRaw
       verb = MU.Text verbRaw
   ggi <- if auto
          then getAnyItem verb cLegalRaw cLegal False False
          else getAnyItem verb cLegalRaw cLegal True True
-  itemToF <- itemToFullClient
   case ggi of
     Right ((iid, itemFull), fromCStore) -> do
-      let (k, isOn) = itemKisOn itemFull
-          msgAndSer = do
+      let (k, _) = itemKisOn itemFull
+          msgAndSer toCStore = do
             subject <- partAidLeader leader
             msgAdd $ makeSentence
-              [ MU.SubjectVerbSg subject verb
-              , partItemWs k (itemToF iid (k, isOn)) ]
+              [ MU.SubjectVerbSg subject verb, partItemWs k itemFull ]
             return $ Right $ ReqMoveItem iid k fromCStore toCStore
-      if fromCStore /= CGround then msgAndSer  -- slot already assigned
-      else do
-        updateItemSlot (Just leader) iid
-        msgAndSer
-        -- TODO:
-        -- if notOverfull then msgAndSer
-        -- else failSer PickupOverfull
+      if fromCStore == CGround
+      then case destCStore of
+        CEqp | goesIntoInv (itemBase itemFull) -> do
+          updateItemSlot (Just leader) iid  -- slot not yet assigned
+          msgAndSer CInv
+        CEqp | eqpFull b -> do
+          msgAdd $ "Warning:" <+> showReqFailure EqpOverfull
+          updateItemSlot (Just leader) iid  -- slot not yet assigned
+          msgAndSer CInv
+        _ -> msgAndSer destCStore
+      else case destCStore of
+        CEqp | eqpFull b -> failSer EqpOverfull
+        _ -> msgAndSer destCStore
     Left slides -> return $ Left slides
 
 -- * Project
@@ -306,7 +310,7 @@ projectEps :: MonadClientUI m
 projectEps ts tpos eps = do
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
-  let cLegal = [CGround, CEqp, CInv]  -- calm enough at this stage
+  let cLegal = [CGround, CInv, CSha, CEqp]  -- calm enough at this stage
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
@@ -338,14 +342,14 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 applyHuman :: MonadClientUI m
            => [Trigger] -> m (SlideOrCmd (RequestTimed AbApply))
 applyHuman ts = do
-  let cLegalRaw = [CGround, CEqp, CInv]
+  let cLegalRaw = [CGround, CInv, CSha, CEqp]
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   let kind = okind $ bkind b
       cLegal = if calmEnough b kind
                then cLegalRaw
-               else delete CInv cLegalRaw
+               else delete CSha cLegalRaw
       (verb1, object1) = case ts of
         [] -> ("activate", "item")
         tr : _ -> (verb tr, object tr)
