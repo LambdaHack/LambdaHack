@@ -223,30 +223,30 @@ equipItems aid = do
   shaAssocs <- fullAssocsClient aid [CSha]
   condLightBetrays <- condLightBetraysM aid
   let kind = okind $ bkind body
-      improve :: ([(Int, (ItemId, ItemFull))],
-                  [(Int, (ItemId, ItemFull))])
+      improve :: CStore -> ([(Int, (ItemId, ItemFull))],
+                            [(Int, (ItemId, ItemFull))])
               -> Strategy (RequestTimed AbMoveItem)
-      improve (bestInv, bestEqp) =
+      improve fromCStore (bestInv, bestEqp) =
         case (bestInv, bestEqp) of
           ((_, (iidInv, itemInv)) : _, [])
             | not (eqpFull body)
               && not (harmful cops condLightBetrays body itemInv) ->
             returN "wield any"
-            $ ReqMoveItem iidInv 1 CInv CEqp
+            $ ReqMoveItem iidInv 1 fromCStore CEqp
           ((vInv, (iidInv, itemInv)) : _, (vEqp, _) : _)
             | not (eqpFull body)
               && not (harmful cops condLightBetrays body itemInv)
               && vInv > vEqp ->
             returN "wield better"
-            $ ReqMoveItem iidInv 1 CInv CEqp
+            $ ReqMoveItem iidInv 1 fromCStore CEqp
           _ -> reject
       bestThree = bestByEqpSlot invAssocs eqpAssocs shaAssocs
-      bEqpInv = msum $ map improve
+      bEqpInv = msum $ map (improve CInv)
                 $ map (\(eqp, inv, _) -> (eqp, inv)) bestThree
   if nullStrategy bEqpInv
     then if rsharedInventory && calmEnough body kind
          then return
-              $! msum $ map improve
+              $! msum $ map (improve CSha)
               $ map (\(eqp, _, sha) -> (eqp, sha)) bestThree
          else return reject
     else return bEqpInv
@@ -274,20 +274,20 @@ unEquipItems aid = do
            then Just $ ReqMoveItem iidEqp (itemK itemEqp) CEqp cstore
            else Nothing
       yieldHarmful = mapMaybe yieldSingleHarmful eqpAssocs
-      improve :: ([(Int, (ItemId, ItemFull))],
-                  [(Int, (ItemId, ItemFull))])
+      improve :: CStore -> ([(Int, (ItemId, ItemFull))],
+                            [(Int, (ItemId, ItemFull))])
               -> Strategy (RequestTimed AbMoveItem)
-      improve (bestInv, bestEqp) =
+      improve fromCStore (bestInv, bestEqp) =
         case (bestInv, bestEqp) of
           (_, (vEqp, (iidEqp, _)) : _) | getK bestEqp > 1
                                          && betterThanInv vEqp bestInv ->
             -- To share the best items with others, if they care.
             returN "yield rest"
-            $ ReqMoveItem iidEqp (getK bestEqp - 1) CEqp CInv
+            $ ReqMoveItem iidEqp (getK bestEqp - 1) fromCStore CSha
           (_, _ : (vEqp, (iidEqp, _)) : _) | betterThanInv vEqp bestInv ->
             -- To share the second best items with others, if they care.
             returN "yield worse"
-            $ ReqMoveItem iidEqp (getK bestEqp) CEqp CInv
+            $ ReqMoveItem iidEqp (getK bestEqp) fromCStore CSha
           _ -> reject
       getK [] = 0
       getK ((_, (_, itemFull)) : _) = itemK itemFull
@@ -296,11 +296,11 @@ unEquipItems aid = do
       bestThree = bestByEqpSlot invAssocs eqpAssocs shaAssocs
   case yieldHarmful of
     [] -> do
-      let bInvSha = msum $ map improve
+      let bInvSha = msum $ map (improve CInv)
                     $ map (\(_, inv, sha) -> (inv, sha)) bestThree
       if nullStrategy bInvSha
         then if rsharedInventory && calmEnough body kind
-             then return $! msum $ map improve
+             then return $! msum $ map (improve CEqp)
                          $ map (\(eqp, _, sha) -> (eqp, sha)) bestThree
              else return reject
         else return $! bInvSha
