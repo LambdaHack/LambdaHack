@@ -162,12 +162,16 @@ benAvailableItems aid permitted = do
         , let benefit = maxUsefulness cops b itemFull
         , benefit /= Just 0
         , permitted itemFull ]
-  floorBag <- getsState $ getActorBag aid CGround
+  groundBag <- getsState $ getActorBag aid CGround
   eqpBag <- getsState $ getActorBag aid CEqp
-  invBag <- if calmEnough b ak
-            then getsState $ getActorBag aid CInv
+  invBag <- getsState $ getActorBag aid CInv
+  shaBag <- if calmEnough b ak
+            then getsState $ getActorBag aid CSha
             else return EM.empty
-  return $ ben CGround floorBag ++ ben CEqp eqpBag ++ ben CInv invBag
+  return $ ben CGround groundBag
+         ++ ben CEqp eqpBag
+         ++ ben CInv invBag
+         ++ ben CSha shaBag
     -- keep it lazy
 
 -- | Require the actor is not calm enough.

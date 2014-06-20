@@ -109,15 +109,15 @@ describeItemHuman cstore = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   itemToF <- itemToFullClient
   let subject body = partActor body
-      verbInv body = if calmEnough body $ okind $ bkind body
+      verbSha body = if calmEnough body $ okind $ bkind body
                      then "notice"
                      else "paw distractedly"
-      invBlurb body = makePhrase
-        [MU.Capitalize $ MU.SubjectVerbSg (subject body) (verbInv body)]
+      shaBlurb body = makePhrase
+        [MU.Capitalize $ MU.SubjectVerbSg (subject body) (verbSha body)]
       stdBlurb body = makePhrase
         [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
       verb = "describe"
-  ggi <- getStoreItem invBlurb stdBlurb verb cstore
+  ggi <- getStoreItem shaBlurb stdBlurb verb cstore
   case ggi of
     Right ((iid, _), _) -> promptToSlideshow $ itemDesc (itemToF iid (1, True))
     Left slides -> return slides

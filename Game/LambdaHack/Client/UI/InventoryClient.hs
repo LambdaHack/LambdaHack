@@ -87,14 +87,14 @@ getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
 -- | Display all items from a store and let the human player choose any
 -- or switch to any other non-empty store.
 getStoreItem :: MonadClientUI m
-             => (Actor -> Text)  -- ^ how to describe suitable items in CInv
+             => (Actor -> Text)  -- ^ how to describe suitable items in CSha
              -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
              -> MU.Part          -- ^ the verb describing the action
              -> CStore           -- ^ initial container
              -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
-getStoreItem invBlurb stdBlurb verb cInitial = do
-  let cLegalRaw = cInitial : delete cInitial [CEqp, CInv, CGround]
-  getItem (\_ _ -> True) invBlurb stdBlurb verb cLegalRaw cLegalRaw
+getStoreItem shaBlurb stdBlurb verb cInitial = do
+  let cLegalRaw = cInitial : delete cInitial [CGround, CEqp, CInv, CSha]
+  getItem (\_ _ -> True) shaBlurb stdBlurb verb cLegalRaw cLegalRaw
           True ISuitable
 
 data ItemDialogState = INone | ISuitable | IAll
@@ -104,7 +104,7 @@ data ItemDialogState = INone | ISuitable | IAll
 -- item from a list of items.
 getItem :: MonadClientUI m
         => (Item -> KisOn -> Bool)   -- ^ which items to consider suitable
-        -> (Actor -> Text)  -- ^ how to describe suitable items in CInv
+        -> (Actor -> Text)  -- ^ how to describe suitable items in CSha
         -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
         -> MU.Part          -- ^ the verb describing the action
         -> [CStore]         -- ^ initial legal containers
@@ -113,7 +113,7 @@ getItem :: MonadClientUI m
                             --   in the starting container is suitable
         -> ItemDialogState  -- ^ the dialog state to start in
         -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
-getItem p tinvSuit tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
+getItem p tshaSuit tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
   leader <- getLeaderUI
   getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
   let storeAssocs = EM.assocs . getCStoreBag
@@ -126,7 +126,7 @@ getItem p tinvSuit tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
     (_ : _, _ : _) -> do
       when (CGround `elem` cLegal) $
         mapM_ (updateItemSlot (Just leader)) $ EM.keys $ getCStoreBag CGround
-      transition p tinvSuit tsuitable verb cLegal initalState
+      transition p tshaSuit tsuitable verb cLegal initalState
     _ -> if null rawAssocs then do
            let tLegal = map (MU.Text . ppCStore) cLegalRaw
                ppLegal = makePhrase [MU.WWxW "nor" tLegal]
@@ -143,14 +143,14 @@ data DefItemKey m = DefItemKey
 transition :: forall m. MonadClientUI m
            => (Item -> KisOn -> Bool)
                                -- ^ which items to consider suitable
-           -> (Actor -> Text)  -- ^ how to describe suitable items in CInv
+           -> (Actor -> Text)  -- ^ how to describe suitable items in CSha
            -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
            -> MU.Part          -- ^ the verb describing the action
            -> [CStore]
            -> ItemDialogState
            -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
 transition _ _ _ verb [] iDS = assert `failure` (verb, iDS)
-transition p tinvSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
+transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
   cops <- getsState scops
   (letterSlots, numberSlots) <- getsClient sslots
   leader <- getLeaderUI
@@ -174,17 +174,17 @@ transition p tinvSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
            , defAction = \_ -> case itemDialogState of
                INone ->
                  if EM.null suitableLetterSlots && IM.null suitableNumberSlots
-                 then transition p tinvSuit tsuitable verb cLegal IAll
-                 else transition p tinvSuit tsuitable verb cLegal ISuitable
+                 then transition p tshaSuit tsuitable verb cLegal IAll
+                 else transition p tshaSuit tsuitable verb cLegal ISuitable
                ISuitable | suitableLetterSlots /= bagLetterSlots
                            || suitableNumberSlots /= bagNumberSlots ->
-                 transition p tinvSuit tsuitable verb cLegal IAll
-               _ -> transition p tinvSuit tsuitable verb cLegal INone
+                 transition p tshaSuit tsuitable verb cLegal IAll
+               _ -> transition p tshaSuit tsuitable verb cLegal INone
            })
         , (K.Char '/', DefItemKey
            { defLabel = "/"
            , defCond = length cLegal > 1
-           , defAction = \_ -> transition p tinvSuit tsuitable verb
+           , defAction = \_ -> transition p tshaSuit tsuitable verb
                                           (cRest ++ [cCur]) itemDialogState
            })
         , (K.Return, DefItemKey
@@ -214,7 +214,7 @@ transition p tinvSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
            , defAction = \_ -> do
                err <- memberCycle False
                assert (err == mempty `blame` err) skip
-               transition p tinvSuit tsuitable verb cLegal itemDialogState
+               transition p tshaSuit tsuitable verb cLegal itemDialogState
            })
         , (K.BackTab, DefItemKey
            { defLabel = "SHIFT-TAB"
@@ -222,7 +222,7 @@ transition p tinvSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
            , defAction = \_ -> do
                err <- memberBack False
                assert (err == mempty `blame` err) skip
-               transition p tinvSuit tsuitable verb cLegal itemDialogState
+               transition p tshaSuit tsuitable verb cLegal itemDialogState
            })
         ]
       lettersDef :: DefItemKey m
@@ -237,7 +237,7 @@ transition p tinvSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
             _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
       ppCur = ppCStore cCur
-      tsuit = if cCur == CInv then tinvSuit body else tsuitable body
+      tsuit = if cCur == CSha then tshaSuit body else tsuitable body
       (labelLetterSlots, overLetterSlots, overNumberSlots, prompt) =
         case itemDialogState of
           INone     -> (suitableLetterSlots,

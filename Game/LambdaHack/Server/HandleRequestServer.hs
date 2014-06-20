@@ -341,7 +341,7 @@ reqMoveItem aid iid k fromCStore toCStore = do
           mapM_ execUpdAtomic upds
       req = ReqMoveItem iid k fromCStore toCStore
   if k < 1 || fromCStore == toCStore then execFailure aid req ItemNothing
-  else if fromCStore /= CInv && toCStore /= CInv then moveItem
+  else if fromCStore /= CSha && toCStore /= CSha then moveItem
   else do
     Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
     let kind = okind $ bkind b
