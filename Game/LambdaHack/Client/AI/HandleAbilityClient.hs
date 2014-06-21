@@ -335,7 +335,7 @@ bestByEqpSlot invAssocs eqpAssocs shaAssocs =
       appendThree (g1, g2, g3) (h1, h2, h3) = (g1 ++ h1, g2 ++ h2, g3 ++ h3)
       invEqpShaMap = M.unionsWith appendThree [invMap, eqpMap, shaMap]
       -- We don't take OFF into account, because AI can toggle it at will.
-      bestSingle eqpSlot g = strongestSlotNoFilter eqpSlot False g
+      bestSingle eqpSlot g = strongestSlotNoFilter eqpSlot g
       bestThree (eqpSlot, _) (g1, g2, g3) = (bestSingle eqpSlot g1,
                                              bestSingle eqpSlot g2,
                                              bestSingle eqpSlot g3)

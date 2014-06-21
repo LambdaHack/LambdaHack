@@ -92,7 +92,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
       verb = MU.Text $ if pos == bpos b
                        then "stand on"
                        else if canSee then "notice" else "remember"
-  let nWs (iid, (k, isOn)) = partItemWs k (itemToF iid (k, isOn))
+  let nWs (iid, k) = partItemWs k (itemToF iid k)
       isd = case detailed of
               _ | EM.size is == 0 -> ""
               _ | EM.size is <= 2 ->
@@ -120,8 +120,8 @@ itemOverlay :: MonadClient m => ItemBag -> ItemSlots -> m Overlay
 itemOverlay bag (letterSlots, numberSlots) = do
   itemToF <- itemToFullClient
   let pr (l, iid) = makePhrase [ slotLabel l
-                               , let (k, isOn) = bag EM.! iid
-                                 in partItemWs k (itemToF iid (k, isOn)) ]
+                               , let k = bag EM.! iid
+                                 in partItemWs k (itemToF iid k) ]
                     <> " "
   return $! toOverlay $ map pr $ map (first Left) (EM.assocs letterSlots)
                                  ++ (map (first Right) (IM.assocs numberSlots))

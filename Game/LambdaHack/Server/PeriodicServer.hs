@@ -163,7 +163,7 @@ addActor ak bfid pos lid bsymbol bname bpronoun bcolor time = do
     (itemFull, seed, k) <-
       rndToAction $ newItem coitem flavour discoRev itemFreq lid ldepth depth
     -- Here the items are inserted into the actor.
-    void $ registerItem itemFull seed (k, True) container False
+    void $ registerItem itemFull seed k container False
   return $! aid
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point

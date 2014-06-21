@@ -122,7 +122,7 @@ condFloorWeaponM aid = do
   -- We do consider OFF weapons, because e.g., enemies might have turned
   -- them off or they can be wrong for other party members, but are OK for us.
   let lootIsWeapon =
-        not $ null $ strongestSlot IF.EqpSlotWeapon False floorAssocs
+        not $ null $ strongestSlot IF.EqpSlotWeapon floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
 -- | Require the actor doesn't stand over a weapon, unless it's deactivated.
@@ -130,7 +130,7 @@ condNoWeaponM :: MonadClient m => ActorId -> m Bool
 condNoWeaponM aid = do
   allAssocs <- fullAssocsClient aid [CEqp]
   -- We do not consider OFF weapons, because they apparently are not good.
-  return $ null $ strongestSlot IF.EqpSlotWeapon True allAssocs
+  return $ null $ strongestSlot IF.EqpSlotWeapon allAssocs
     -- keep it lazy
 
 -- | Require that the actor can project any items.
@@ -200,9 +200,9 @@ benGroundItems aid = do
   let desirableItem item use
         | fightsSpawners = use /= Just 0 || IF.Precious `elem` jfeature item
         | otherwise = use /= Just 0
-      mapDesirable (iid, (k, isOn)) =
+      mapDesirable (iid, k) =
         let item = itemD EM.! iid
-            use = maxUsefulness cops body (itemToF iid  (k, isOn))
+            use = maxUsefulness cops body (itemToF iid k)
             value = fromMaybe 5 use  -- experimenting fun
         in if desirableItem item use
            then Just ((value, k), (iid, item))

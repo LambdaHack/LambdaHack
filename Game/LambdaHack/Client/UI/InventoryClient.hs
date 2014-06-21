@@ -47,8 +47,7 @@ failMsg msg = do
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
 getGroupItem :: MonadClientUI m
-             => (Item -> KisOn -> Bool)
-                          -- ^ which items to consider suitable
+             => (Item -> Bool)  -- ^ which items to consider suitable
              -> MU.Part   -- ^ name of the item group
              -> MU.Part   -- ^ the verb describing the action
              -> [CStore]  -- ^ initial legal containers
@@ -73,7 +72,7 @@ getAnyItem :: MonadClientUI m
            -> Bool      -- ^ whether to ask for the number of items
            -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
 getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
-  soc <- getItem (\_ _ -> True) (const "Items") (const "Items") verb
+  soc <- getItem (const True) (const "Items") (const "Items") verb
                  cLegalRaw cLegalAfterCalm askWhenLone INone
   case soc of
     Left _ -> return soc
@@ -82,10 +81,10 @@ getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
       case socK of
         Left slides -> return $ Left slides
         Right k ->
-          return $ Right ((iid, itemFull{itemKisOn=(k, itemIsOn itemFull)}), c)
+          return $ Right ((iid, itemFull{itemK=k}), c)
 
 -- | Display all items from a store and let the human player choose any
--- or switch to any other non-empty store.
+-- or switch to any other store.
 getStoreItem :: MonadClientUI m
              => (Actor -> Text)  -- ^ how to describe suitable items in CSha
              -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
@@ -93,8 +92,8 @@ getStoreItem :: MonadClientUI m
              -> CStore           -- ^ initial container
              -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
 getStoreItem shaBlurb stdBlurb verb cInitial = do
-  let cLegalRaw = cInitial : delete cInitial [CGround, CEqp, CInv, CSha]
-  getItem (\_ _ -> True) shaBlurb stdBlurb verb cLegalRaw cLegalRaw
+  let cLegalRaw = cInitial : delete cInitial [CEqp, CInv, CSha, CGround]
+  getItem (const True) shaBlurb stdBlurb verb cLegalRaw cLegalRaw
           True ISuitable
 
 data ItemDialogState = INone | ISuitable | IAll
@@ -103,7 +102,7 @@ data ItemDialogState = INone | ISuitable | IAll
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
 getItem :: MonadClientUI m
-        => (Item -> KisOn -> Bool)   -- ^ which items to consider suitable
+        => (Item -> Bool)   -- ^ which items to consider suitable
         -> (Actor -> Text)  -- ^ how to describe suitable items in CSha
         -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
         -> MU.Part          -- ^ the verb describing the action
@@ -141,8 +140,7 @@ data DefItemKey m = DefItemKey
   }
 
 transition :: forall m. MonadClientUI m
-           => (Item -> KisOn -> Bool)
-                               -- ^ which items to consider suitable
+           => (Item -> Bool)   -- ^ which items to consider suitable
            -> (Actor -> Text)  -- ^ how to describe suitable items in CSha
            -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
            -> MU.Part          -- ^ the verb describing the action
@@ -163,7 +161,7 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
       getResult iid = ((iid, itemToF iid (bag EM.! iid)), cCur)
       bagLetterSlots = EM.filter (`EM.member` bag) letterSlots
       bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
-      filterP s iid = p (getItemBody iid s) (bag EM.! iid)
+      filterP s iid = p (getItemBody iid s)
   suitableLetterSlots <- getsState $ \s -> EM.filter (filterP s) bagLetterSlots
   suitableNumberSlots <- getsState $ \s -> IM.filter (filterP s) bagNumberSlots
   let keyDefs :: [(K.Key, DefItemKey m)]

@@ -52,17 +52,17 @@ data UpdAtomic =
   -- Create/destroy actors and items.
     UpdCreateActor !ActorId !Actor ![(ItemId, Item)]
   | UpdDestroyActor !ActorId !Actor ![(ItemId, Item)]
-  | UpdCreateItem !ItemId !Item !KisOn !Container
-  | UpdDestroyItem !ItemId !Item !KisOn !Container
+  | UpdCreateItem !ItemId !Item !Int !Container
+  | UpdDestroyItem !ItemId !Item !Int !Container
   | UpdSpotActor !ActorId !Actor ![(ItemId, Item)]
   | UpdLoseActor !ActorId !Actor ![(ItemId, Item)]
-  | UpdSpotItem !ItemId !Item !KisOn !Container
-  | UpdLoseItem !ItemId !Item !KisOn !Container
+  | UpdSpotItem !ItemId !Item !Int !Container
+  | UpdLoseItem !ItemId !Item !Int !Container
   -- Move actors and items.
   | UpdMoveActor !ActorId !Point !Point
   | UpdWaitActor !ActorId !Bool
   | UpdDisplaceActor !ActorId !ActorId
-  | UpdMoveItem !ItemId !Int !ActorId !CStore !Bool !CStore !Bool
+  | UpdMoveItem !ItemId !Int !ActorId !CStore !CStore
   -- Change actor attributes.
   | UpdAgeActor !ActorId !(Delta Time)
   | UpdHealActor !ActorId !Int
@@ -113,8 +113,8 @@ data SfxAtomic =
   | SfxRecoil !ActorId !ActorId !ItemId !HitAtomic
   | SfxProject !ActorId !ItemId
   | SfxCatch !ActorId !ItemId
-  | SfxActivate !ActorId !ItemId !KisOn !Bool
-  | SfxCheck !ActorId !ItemId !KisOn !Bool
+  | SfxActivate !ActorId !ItemId !Int
+  | SfxCheck !ActorId !ItemId !Int
   | SfxTrigger !ActorId !Point !F.Feature
   | SfxShun !ActorId !Point !F.Feature
   | SfxEffect !FactionId !ActorId !(Effect.Effect Int)
@@ -143,8 +143,7 @@ undoUpdAtomic cmd = case cmd of
   UpdMoveActor aid fromP toP -> Just $ UpdMoveActor aid toP fromP
   UpdWaitActor aid toWait -> Just $ UpdWaitActor aid (not toWait)
   UpdDisplaceActor source target -> Just $ UpdDisplaceActor target source
-  UpdMoveItem iid k aid c1 isOn1 c2 isOn2 ->
-    Just $ UpdMoveItem iid k aid c2 isOn2 c1 isOn1
+  UpdMoveItem iid k aid c1 c2 -> Just $ UpdMoveItem iid k aid c2 c1
   UpdAgeActor aid delta -> Just $ UpdAgeActor aid (timeDeltaReverse delta)
   UpdHealActor aid n -> Just $ UpdHealActor aid (-n)
   UpdCalmActor aid n -> Just $ UpdCalmActor aid (-n)
@@ -190,8 +189,8 @@ undoSfxAtomic cmd = case cmd of
   SfxRecoil source target iid b -> SfxStrike source target iid b
   SfxProject aid iid -> SfxCatch aid iid
   SfxCatch aid iid -> SfxProject aid iid
-  SfxActivate aid iid kIsOn isOn -> SfxCheck aid iid kIsOn isOn
-  SfxCheck aid iid kIsOn isOn -> SfxActivate aid iid kIsOn isOn
+  SfxActivate aid iid k -> SfxCheck aid iid k
+  SfxCheck aid iid k -> SfxActivate aid iid k
   SfxTrigger aid p feat -> SfxShun aid p feat
   SfxShun aid p feat -> SfxTrigger aid p feat
   SfxEffect{} -> cmd  -- not ideal?

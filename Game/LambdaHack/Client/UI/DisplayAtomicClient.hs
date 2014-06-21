@@ -99,8 +99,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdMoveActor aid _ _ -> lookAtMove aid
   UpdWaitActor aid _ -> when verbose $ aVerbMU aid "wait"
   UpdDisplaceActor source target -> displaceActorUI source target
-  UpdMoveItem iid k aid c1 isOn1 c2 isOn2 ->
-    moveItemUI verbose iid k aid c1 isOn1 c2 isOn2
+  UpdMoveItem iid k aid c1 c2 -> moveItemUI verbose iid k aid c1 c2
   -- Change actor attributes.
   UpdAgeActor{} -> skip
   UpdHealActor aid n -> do
@@ -242,21 +241,20 @@ aVerbMU aid verb = do
   b <- getsState $ getActorBody aid
   actorVerbMU aid b verb
 
-itemVerbMU :: MonadClientUI m => ItemId -> KisOn -> MU.Part -> m ()
-itemVerbMU iid (k, isOn) verb = assert (k > 0) $ do
+itemVerbMU :: MonadClientUI m => ItemId -> Int -> MU.Part -> m ()
+itemVerbMU iid k verb = assert (k > 0) $ do
   itemToF <- itemToFullClient
-  let subject = partItemWs k (itemToF iid (k, isOn))
+  let subject = partItemWs k (itemToF iid k)
       msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
 
-aiVerbMU :: MonadClientUI m => ActorId -> MU.Part -> ItemId -> KisOn
-         -> m ()
-aiVerbMU aid verb iid (k, isOn) = do
+aiVerbMU :: MonadClientUI m => ActorId -> MU.Part -> ItemId -> Int -> m ()
+aiVerbMU aid verb iid k = do
   itemToF <- itemToFullClient
   subject <- partAidLeader aid
   let msg = makeSentence [ MU.SubjectVerbSg subject verb
-                         , partItemWs k (itemToF iid (k, isOn)) ]
+                         , partItemWs k (itemToF iid k) ]
   msgAdd msg
 
 msgDuplicateScrap :: MonadClientUI m => m ()
@@ -298,14 +296,13 @@ destroyActorUI aid body verb verboseVerb verbose = do
   else when verbose $ actorVerbMU aid body verboseVerb
 
 moveItemUI :: MonadClientUI m
-           => Bool -> ItemId -> Int -> ActorId
-           -> CStore -> Bool -> CStore -> Bool
+           => Bool -> ItemId -> Int -> ActorId -> CStore -> CStore
            -> m ()
-moveItemUI verbose iid k aid c1 isOn1 c2 isOn2 = do
+moveItemUI verbose iid k aid c1 c2 = do
   side <- getsClient sside
   b <- getsState $ getActorBody aid
   case (c1, c2) of
-    (_, _) | c1 == CGround || isOn1 /= isOn2 -> do
+    (_, _) | c1 == CGround -> do
       when (bfid b == side) $ updateItemSlot (Just aid) iid
       fact <- getsState $ (EM.! bfid b) . sfactionD
       let underAI = playerAI $ gplayer fact
@@ -314,18 +311,18 @@ moveItemUI verbose iid k aid c1 isOn1 c2 isOn2 = do
         itemToF <- itemToFullClient
         (letterSlots, _) <- getsClient sslots
         bag <- getsState $ getCBag $ CActor aid c2
-        let (n, isOn) = bag EM.! iid
+        let n = bag EM.! iid
         case lookup iid $ map swap $ EM.assocs letterSlots of
           Just l -> msgAdd $ makePhrase
                       [ "\n"
                       , slotLabel $ Left l
-                      , partItemWs n (itemToF iid (n, isOn))
+                      , partItemWs n (itemToF iid n)
                       , "\n" ]
           Nothing -> return ()
       else when (c1 == CGround && c1 /= c2) $
-        aiVerbMU aid "get" iid (k, isOn1)
+        aiVerbMU aid "get" iid k
     (_, CGround) | c1 /= c2 -> do
-      when verbose $ aiVerbMU aid "drop" iid (k, isOn1)
+      when verbose $ aiVerbMU aid "drop" iid k
       if bfid b == side
         then updateItemSlot (Just aid) iid
         else updateItemSlot Nothing iid
@@ -431,12 +428,12 @@ discover :: MonadClientUI m => StateClient -> ItemId ->  m ()
 discover oldcli iid = do
   cops <- getsState scops
   itemToF <- itemToFullClient
-  let itemFull = itemToF iid (1, True)
+  let itemFull = itemToF iid 1
       (knownName, knownAEText) = partItem itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
-      itemSecret = itemNoDisco (itemBase itemFull, itemKisOn itemFull)
+      itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
       (secretName, secretAEText) = partItem itemSecret
       msg = makeSentence
         [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
@@ -444,7 +441,7 @@ discover oldcli iid = do
         , MU.AW $ MU.Phrase [knownName, knownAEText] ]
       oldItemFull =
         itemToFull cops (sdisco oldcli) (sdiscoAE oldcli)
-                   iid (itemBase itemFull) (1, True)
+                   iid (itemBase itemFull) 1
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
   when (textAllAE itemFull /= textAllAE oldItemFull) $ msgAdd msg
@@ -459,14 +456,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     spart <- partAidLeader source
     tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
-  SfxProject aid iid -> aiVerbMU aid "aim" iid (1, True)
-  SfxCatch aid iid -> aiVerbMU aid "catch" iid (1, True)
-  SfxActivate aid iid kIsOn@(_, isOn1) isOn2 -> do
-    let verb = if isOn1 /= isOn2 && not isOn2 then "deactivate" else "activate"
-    aiVerbMU aid verb iid kIsOn
-  SfxCheck aid iid kIsOn@(_, isOn1) isOn2 -> do
-    let verb = if isOn1 /= isOn2 && not isOn1 then "deactivate" else "activate"
-    aiVerbMU aid verb iid kIsOn
+  SfxProject aid iid -> aiVerbMU aid "aim" iid 1
+  SfxCatch aid iid -> aiVerbMU aid "catch" iid 1
+  SfxActivate aid iid k -> aiVerbMU aid "activate" iid k
+  SfxCheck aid iid k -> aiVerbMU aid "activate" iid k
   SfxTrigger aid _p _feat ->
     when verbose $ aVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->
@@ -643,7 +636,7 @@ strike source target iid hitStatus = assert (source /= target) $ do
   spart <- partActorLeader source sb
   tpart <- partActorLeader target tb
   spronoun <- partPronounLeader source sb
-  let itemFull = itemToF iid (1, True)
+  let itemFull = itemToF iid 1
       verb | bproj sb = "hit"
            | otherwise = case itemDisco itemFull of
                            Nothing -> "hit"  -- not identified

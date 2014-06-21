@@ -50,9 +50,9 @@ applyItem :: (MonadAtomic m, MonadServer m)
 applyItem aid iid cstore = do
   itemToF <- itemToFullServer
   bag <- getsState $ getActorBag aid cstore
-  let (k, isOn) = bag EM.! iid
-      itemFull = itemToF iid (k, isOn)
-  execSfxAtomic $ SfxActivate aid iid (1, isOn) isOn
+  let k = bag EM.! iid
+      itemFull = itemToF iid k
+  execSfxAtomic $ SfxActivate aid iid 1
   itemEffectAndDestroy aid aid iid itemFull cstore
 
 itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
@@ -66,19 +66,18 @@ itemEffectAndDestroy source target iid itemFull cstore = do
   -- item dictionaries, just an individual copy from the container,
   -- so, e.g., the item can be identified after it's removed.
   let item = itemBase itemFull
-      (_, isOn) = itemKisOn itemFull
       durable = IF.Durable `elem` jfeature item
       periodic = isJust $ strengthFromEqpSlot IF.EqpSlotPeriodic itemFull
       c = CActor source cstore
   unless (durable && periodic) $ do
     when (not durable) $
-      execUpdAtomic $ UpdLoseItem iid item (1, isOn) c
+      execUpdAtomic $ UpdLoseItem iid item 1 c
     triggered <- itemEffect source target iid itemFull
     -- If none of item's effects was performed, we try to recreate the item.
     -- Regardless, wwe don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
     when (not triggered && not durable) $
-      execUpdAtomic $ UpdSpotItem iid item (1, isOn) c
+      execUpdAtomic $ UpdSpotItem iid item 1 c
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effect effect fires up, the item gets identified. This function
@@ -203,10 +202,10 @@ effectHurt nDm power source target = do
   n <- rndToAction $ castDice 0 0 nDm
   let block = braced tb
       -- OFF shield doesn't hinder attacks, so also does not protect.
-      sshieldMult = case sumSlotNoFilter IF.EqpSlotArmorMelee True sallAssocs of
+      sshieldMult = case sumSlotNoFilter IF.EqpSlotArmorMelee sallAssocs of
         _ | bproj sb -> 100
         p -> 100 - p
-      tshieldMult = case sumSlotNoFilter IF.EqpSlotArmorMelee True tallAssocs of
+      tshieldMult = case sumSlotNoFilter IF.EqpSlotArmorMelee tallAssocs of
         _ | bproj sb -> 100
         p -> 100 - p
       mult = sshieldMult * tshieldMult * (if block then 100 else 50)
@@ -553,7 +552,7 @@ effectDropBestWeapon :: (MonadAtomic m, MonadServer m)
                      => m () -> ActorId -> m Bool
 effectDropBestWeapon execSfx target = do
   allAssocs <- fullAssocsServer target [CEqp]
-  case strongestSlotNoFilter IF.EqpSlotWeapon True allAssocs of
+  case strongestSlotNoFilter IF.EqpSlotWeapon allAssocs of
     (_, (iid, _)) : _ -> do
       b <- getsState $ getActorBody target
       let kIsOn = beqp b EM.! iid
@@ -577,7 +576,7 @@ effectDropEqp execSfx hit target symbol = do
 
 effectTransformEqp :: forall m. (MonadAtomic m, MonadServer m)
                    => m () -> ActorId -> Char
-                   -> (ItemId -> KisOn -> m ())
+                   -> (ItemId -> Int -> m ())
                    -> m Bool
 effectTransformEqp execSfx target symbol m = do
   b <- getsState $ getActorBody target

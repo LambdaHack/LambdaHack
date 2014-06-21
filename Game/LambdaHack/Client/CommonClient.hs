@@ -202,7 +202,7 @@ fullAssocsClient aid cstores = do
   discoAE <- getsClient sdiscoAE
   getsState $ fullAssocs cops disco discoAE aid cstores
 
-itemToFullClient :: MonadClient m => m (ItemId -> KisOn -> ItemFull)
+itemToFullClient :: MonadClient m => m (ItemId -> Int -> ItemFull)
 itemToFullClient = do
   cops <- getsState scops
   disco <- getsClient sdisco
@@ -220,7 +220,7 @@ pickWeaponClient source target = do
   bodyAssocs <- fullAssocsClient source [CBody]
   let allAssocs = eqpAssocs ++ bodyAssocs
   case filter (not . unknownPrecious . snd . snd)
-       $ strongestSlotNoFilter IF.EqpSlotWeapon True allAssocs of
+       $ strongestSlotNoFilter IF.EqpSlotWeapon allAssocs of
     [] -> return []
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
@@ -235,4 +235,4 @@ sumBodyEqpClient :: MonadClient m
 sumBodyEqpClient eqpSlot aid = do
   eqpAssocs <- fullAssocsClient aid [CEqp]
   bodyAssocs <- fullAssocsClient aid [CBody]
-  return $! sumSlotNoFilter eqpSlot True $ eqpAssocs ++ bodyAssocs
+  return $! sumSlotNoFilter eqpSlot $ eqpAssocs ++ bodyAssocs

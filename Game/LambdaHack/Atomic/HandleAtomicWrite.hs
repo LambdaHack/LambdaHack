@@ -53,8 +53,7 @@ handleUpdAtomic cmd = case cmd of
   UpdMoveActor aid fromP toP -> updMoveActor aid fromP toP
   UpdWaitActor aid toWait -> updWaitActor aid toWait
   UpdDisplaceActor source target -> updDisplaceActor source target
-  UpdMoveItem iid k aid c1 isOn1 c2 isOn2 ->
-    updMoveItem iid k aid c1 isOn1 c2 isOn2
+  UpdMoveItem iid k aid c1 c2 -> updMoveItem iid k aid c1 c2
   UpdAgeActor aid t -> updAgeActor aid t
   UpdHealActor aid n -> updHealActor aid n
   UpdCalmActor aid n -> updCalmActor aid n
@@ -150,27 +149,27 @@ updDestroyActor aid body ais = do
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
 updCreateItem :: MonadStateWrite m
-              => ItemId -> Item -> KisOn -> Container -> m ()
-updCreateItem iid item (k, isOn) c = assert (k > 0) $ do
+              => ItemId -> Item -> Int -> Container -> m ()
+updCreateItem iid item k c = assert (k > 0) $ do
   -- The item may or may not be already present in @sitemD@,
   -- regardless if it's actually present in the dungeon.
   let f item1 item2 = assert (item1 == item2
                               `blame` "inconsistent created item"
                               `twith` (iid, item, k, c)) item1
   modifyState $ updateItemD $ EM.insertWith f iid item
-  insertItemContainer True iid k c isOn
+  insertItemContainer iid k c
 
 -- | Destroy some copies (possibly not all) of an item.
 updDestroyItem :: MonadStateWrite m
-               => ItemId -> Item -> KisOn -> Container -> m ()
-updDestroyItem iid item (k, isOn) c = assert (k > 0) $ do
+               => ItemId -> Item -> Int -> Container -> m ()
+updDestroyItem iid item k c = assert (k > 0) $ do
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
   -- It's incredibly costly and not noticeable for the player.
   -- However, assert the item is registered in @sitemD@.
   itemD <- getsState sitemD
   assert (iid `EM.lookup` itemD == Just item `blame` "item already removed"
                                              `twith` (iid, item, itemD)) skip
-  deleteItemContainer iid k c isOn
+  deleteItemContainer iid k c
 
 updMoveActor :: MonadStateWrite m => ActorId -> Point -> Point -> m ()
 updMoveActor aid fromP toP = assert (fromP /= toP) $ do
@@ -194,12 +193,11 @@ updDisplaceActor source target = assert (source /= target) $ do
   updateActor target $ \b -> b {bpos = spos, boldpos = tpos}
 
 updMoveItem :: MonadStateWrite m
-            => ItemId -> Int -> ActorId -> CStore -> Bool -> CStore -> Bool
+            => ItemId -> Int -> ActorId -> CStore -> CStore
             -> m ()
-updMoveItem iid k aid c1 isOn1 c2 isOn2 =
-  assert (k > 0 && (c1 /= c2 || isOn1 /= isOn2)) $ do
-    deleteItemActor iid k aid c1 isOn1
-    insertItemActor False iid k aid c2 isOn2
+updMoveItem iid k aid c1 c2 = assert (k > 0 && c1 /= c2) $ do
+  deleteItemActor iid k aid c1
+  insertItemActor iid k aid c2
 
 -- TODO: optimize (a single call to updatePrio is enough)
 updAgeActor :: MonadStateWrite m => ActorId -> Delta Time -> m ()

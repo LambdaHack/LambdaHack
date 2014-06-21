@@ -119,7 +119,7 @@ describeItemHuman cstore = do
       verb = "describe"
   ggi <- getStoreItem shaBlurb stdBlurb verb cstore
   case ggi of
-    Right ((iid, _), _) -> promptToSlideshow $ itemDesc (itemToF iid (1, True))
+    Right ((iid, _), _) -> promptToSlideshow $ itemDesc (itemToF iid 1)
     Left slides -> return slides
 
 -- * AllOwned

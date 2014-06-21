@@ -187,8 +187,8 @@ reqMelee source target iid cstore = do
     -- to prevent micromanagement: walking with shield, melee without.
     let noShield =
           bproj sb
-          || 0 /= sumSlotNoFilter IF.EqpSlotArmorMelee True sallAssocs
-          || 0 /= sumSlotNoFilter IF.EqpSlotArmorMelee True tallAssocs
+          || 0 /= sumSlotNoFilter IF.EqpSlotArmorMelee sallAssocs
+          || 0 /= sumSlotNoFilter IF.EqpSlotArmorMelee tallAssocs
         block = braced tb
         hitA = if block && not noShield
                then HitBlock 2
@@ -205,9 +205,7 @@ reqMelee source target iid cstore = do
         execUpdAtomic
         $ UpdTrajectoryActor source (btrajectory sb) (Just ([], speedZero))
     -- Msgs inside itemEffect describe the target part.
-    itemEffectAndDestroy source target iid
-                         (itemToF iid (1, True))  -- don't spam with OFF
-                         cstore
+    itemEffectAndDestroy source target iid (itemToF iid 1) cstore
     -- The only way to start a war is to slap an enemy. Being hit by
     -- and hitting projectiles count as unintentional friendly fire.
     let friendlyFire = bproj sb || bproj tb

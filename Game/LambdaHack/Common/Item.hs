@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Item
     ItemId, Item(..), seedToAspectsEffects
     -- * Item discovery types
   , ItemKindIx, Discovery, ItemSeed, ItemAspectEffect(..), DiscoAE
-  , KisOn, ItemFull(..), ItemDisco(..), itemK, itemIsOn, itemNoDisco
+  , ItemFull(..), ItemDisco(..), itemNoDisco
     -- * Inventory management types
   , ItemBag, ItemDict, ItemKnown
     -- * Textual description
@@ -66,8 +66,6 @@ instance Hashable ItemAspectEffect
 -- The full map is known by the server.
 type DiscoAE = EM.EnumMap ItemId ItemAspectEffect
 
-type KisOn = (Int, Bool)
-
 data ItemDisco = ItemDisco
   { itemKindId :: Kind.Id ItemKind
   , itemKind   :: ItemKind
@@ -76,21 +74,15 @@ data ItemDisco = ItemDisco
   deriving Show
 
 data ItemFull = ItemFull
-  { itemBase  :: Item
-  , itemKisOn :: KisOn
-  , itemDisco :: Maybe ItemDisco
+  { itemBase  :: !Item
+  , itemK     :: !Int
+  , itemDisco :: !(Maybe ItemDisco)
   }
   deriving Show
 
-itemK :: ItemFull -> Int
-itemK = fst . itemKisOn
-
-itemIsOn :: ItemFull -> Bool
-itemIsOn = snd . itemKisOn
-
-itemNoDisco :: (Item, KisOn) -> ItemFull
-itemNoDisco (itemBase, itemKisOn) =
-  ItemFull {itemBase, itemKisOn, itemDisco=Nothing}
+itemNoDisco :: (Item, Int) -> ItemFull
+itemNoDisco (itemBase, itemK) =
+  ItemFull {itemBase, itemK, itemDisco=Nothing}
 
 -- | Game items in actor possesion or strewn around the dungeon.
 -- The fields @jsymbol@, @jname@ and @jflavour@ make it possible to refer to
@@ -122,7 +114,7 @@ seedToAspectsEffects (ItemSeed itemSeed) kind ln depth =
       (jaspects, jeffects) = St.evalState rollAE (mkStdGen itemSeed)
   in ItemAspectEffect{..}
 
-type ItemBag = EM.EnumMap ItemId KisOn
+type ItemBag = EM.EnumMap ItemId Int
 
 -- | All items in the dungeon (including in actor inventories),
 -- indexed by item identifier.
@@ -134,13 +126,10 @@ type ItemKnown = (Item, ItemAspectEffect)
 partItem :: ItemFull -> (MU.Part, MU.Part)
 partItem itemFull =
   let genericName = jname $ itemBase itemFull
-      turnedOff | itemIsOn itemFull = ""
-                | otherwise = "{OFF}"  -- TODO: mark with colour
   in case itemDisco itemFull of
     Nothing ->
       let flav = flavourToName $ jflavour $ itemBase itemFull
-      in ( MU.Text $ flav <+> genericName
-         , MU.Text turnedOff )
+      in (MU.Text $ flav <+> genericName, "")
     Just _ ->
       let effTs = textAllAE itemFull
           effectFirst = case filter (not . T.null) effTs of
@@ -153,7 +142,7 @@ partItem itemFull =
             [_, effT1, effT2] -> "(" <> effT1 <> "," <+> effT2 <> ")"
             _ -> "(of many effects)"
       in ( MU.Text genericName
-         , MU.Text $ effectFirst <+> effectExtra <+> turnedOff )
+         , MU.Text $ effectFirst <+> effectExtra )
 
 textAllAE :: ItemFull -> [Text]
 textAllAE ItemFull{itemBase, itemDisco} =

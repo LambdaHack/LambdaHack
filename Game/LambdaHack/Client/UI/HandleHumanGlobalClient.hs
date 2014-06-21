@@ -217,7 +217,7 @@ moveItemHuman cLegalRaw destCStore verbRaw auto = do
          else getAnyItem verb cLegalRaw cLegal True True
   case ggi of
     Right ((iid, itemFull), fromCStore) -> do
-      let (k, _) = itemKisOn itemFull
+      let k = itemK itemFull
           msgAndSer toCStore = do
             subject <- partAidLeader leader
             msgAdd $ makeSentence
@@ -315,7 +315,7 @@ projectEps ts tpos eps = do
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      p item (_, isOn) =
+      p item =
         let goodKind = if ' ' `elem` triggerSyms
                        then case strengthEqpSlot item of
                          Just (IF.EqpSlotLight, _) -> True
@@ -324,7 +324,6 @@ projectEps ts tpos eps = do
                        else jsymbol item `elem` triggerSyms
             trange = totalRange item
         in goodKind
-           && isOn
            && trange >= chessDist (bpos sb) tpos
   ggi <- getGroupItem p object1 verb1 cLegal cLegal
   case ggi of
@@ -354,9 +353,9 @@ applyHuman ts = do
         [] -> ("activate", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      p item _ = if ' ' `elem` triggerSyms
-                 then IF.Applicable `elem` jfeature item
-                 else jsymbol item `elem` triggerSyms
+      p item = if ' ' `elem` triggerSyms
+               then IF.Applicable `elem` jfeature item
+               else jsymbol item `elem` triggerSyms
   ggi <- getGroupItem p object1 verb1 cLegalRaw cLegal
   case ggi of
     Right ((iid, itemFull), fromCStore) -> do

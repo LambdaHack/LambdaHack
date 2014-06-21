@@ -195,29 +195,27 @@ strengthFromEqpSlot eqpSlot =
     IF.EqpSlotLight -> strengthLight . itemBase
     IF.EqpSlotWeapon -> strengthMelee
 
-strongestSlotNoFilter :: IF.EqpSlot -> Bool -> [(ItemId, ItemFull)]
+strongestSlotNoFilter :: IF.EqpSlot -> [(ItemId, ItemFull)]
                       -> [(Int, (ItemId, ItemFull))]
-strongestSlotNoFilter eqpSlot onlyOn is =
+strongestSlotNoFilter eqpSlot is =
   let f = strengthFromEqpSlot eqpSlot
       g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> (f itemFull)
-      onlyIs = if onlyOn then filter (itemIsOn . snd) is else is
-  in sortBy (flip $ Ord.comparing fst) $ mapMaybe g onlyIs
+  in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
 
-strongestSlot :: IF.EqpSlot -> Bool -> [(ItemId, ItemFull)]
+strongestSlot :: IF.EqpSlot -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
-strongestSlot eqpSlot onlyOn is =
+strongestSlot eqpSlot is =
   let f (_, itemFull) = case strengthEqpSlot $ itemBase itemFull of
         Just (eqpSlot2, _) | eqpSlot2 == eqpSlot -> True
         _ -> False
       slotIs = filter f is
-  in strongestSlotNoFilter eqpSlot onlyOn slotIs
+  in strongestSlotNoFilter eqpSlot slotIs
 
-sumSlotNoFilter :: IF.EqpSlot -> Bool -> [(ItemId, ItemFull)] -> Int
-sumSlotNoFilter eqpSlot onlyOn is =
+sumSlotNoFilter :: IF.EqpSlot -> [(ItemId, ItemFull)] -> Int
+sumSlotNoFilter eqpSlot is =
   let f = strengthFromEqpSlot eqpSlot
-      g (_, itemFull) = (* fst (itemKisOn itemFull)) <$> f itemFull
-      onlyIs = if onlyOn then filter (itemIsOn . snd) is else is
-  in sum $ mapMaybe g onlyIs
+      g (_, itemFull) = (* itemK itemFull) <$> f itemFull
+  in sum $ mapMaybe g is
 
 unknownPrecious :: ItemFull -> Bool
 unknownPrecious itemFull =

@@ -273,7 +273,7 @@ projectBla source pos rest iid cstore = do
   unless (bproj sb) $ execSfxAtomic $ SfxProject source iid
   addProjectile pos rest iid lid (bfid sb) time
   let c = CActor source cstore
-  execUpdAtomic $ UpdLoseItem iid item (1, True) c
+  execUpdAtomic $ UpdLoseItem iid item 1 c
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
@@ -287,12 +287,12 @@ addProjectile bpos rest iid blid bfid btime = do
       adj | trange < 5 = "falling"
           | otherwise = "flying"
       -- Not much detail about a fast flying item.
-      (object1, object2) = partItem $ itemNoDisco (item, (1, True))
+      (object1, object2) = partItem $ itemNoDisco (item, 1)
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       kind = okind $ projectileKindId coactor
       b = actorTemplate (projectileKindId coactor) (asymbol kind) name "it"
                         (acolor kind) 0 maxBound
-                        bpos blid btime bfid (EM.singleton iid (1, True)) True
+                        bpos blid btime bfid (EM.singleton iid 1) True
       btra = b {btrajectory = Just ts}
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
@@ -311,7 +311,7 @@ pickWeaponServer source = do
       strongest | bproj sb = map (1,) allAssocs
                 | otherwise =
                     filter (not . unknownPrecious . snd . snd)
-                    $ strongestSlotNoFilter IF.EqpSlotWeapon True allAssocs
+                    $ strongestSlotNoFilter IF.EqpSlotWeapon allAssocs
   case strongest of
     [] -> return Nothing
     iis -> do
@@ -326,4 +326,4 @@ sumBodyEqpServer :: MonadServer m
 sumBodyEqpServer eqpSlot aid = do
   eqpAssocs <- fullAssocsServer aid [CEqp]
   bodyAssocs <- fullAssocsServer aid [CBody]
-  return $! sumSlotNoFilter eqpSlot True $ eqpAssocs ++ bodyAssocs
+  return $! sumSlotNoFilter eqpSlot $ eqpAssocs ++ bodyAssocs

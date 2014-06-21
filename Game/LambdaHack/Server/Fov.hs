@@ -62,7 +62,7 @@ levelPerception litHere fovMode fid lid lvl@Level{lxsize, lysize} s ser =
       canSmell aid =
         let allAssocs =
               fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CBody, CEqp] s
-            radius = sumSlotNoFilter IF.EqpSlotSightRadius True allAssocs
+            radius = sumSlotNoFilter IF.EqpSlotSightRadius allAssocs
         in radius > 0
       -- TODO: We assume smell FOV radius is always 1, regardless of vision
       -- radius of the actor (and whether he can see at all).
@@ -110,15 +110,15 @@ reachableFromActor cops@Kind.COps{cotile}
   let allAssocs =
         fullAssocs cops (sdisco ser) (sdiscoAE ser) aid [CBody, CEqp] s
       radius = 1 +  -- all actors feel adjacent positions (for easy exploration)
-               sumSlotNoFilter IF.EqpSlotSightRadius True allAssocs
+               sumSlotNoFilter IF.EqpSlotSightRadius allAssocs
   in PerceptionReachable $ fullscan cotile fovMode radius (bpos body) lvl
 
 litByItems :: FovMode -> Level -> Point -> State
-           -> [(ItemId, (Item, KisOn))]
+           -> [(ItemId, (Item, Int))]
            -> [Point]
 litByItems fovMode lvl p s iis =
   let Kind.COps{cotile} = scops s
-      radius = sumSlotNoFilter IF.EqpSlotLight True
+      radius = sumSlotNoFilter IF.EqpSlotLight
                $ map (second itemNoDisco) iis
       scan = fullscan cotile fovMode radius p lvl
      -- Optimization: filter out positions that already have ambient light.

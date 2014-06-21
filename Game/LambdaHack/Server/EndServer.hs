@@ -98,7 +98,7 @@ equipAllItems :: (MonadAtomic m, MonadServer m)
               => ActorId -> Actor -> m ()
 equipAllItems aid b = do
   let moveCStore fromStore = do
-        let g iid (k, _) = do
+        let g iid k = do
               mvCmd <- generalMoveItem iid k (CActor aid fromStore)
                                              (CActor aid CEqp)
               mapM_ execUpdAtomic mvCmd
@@ -118,15 +118,15 @@ dropEqpItems aid b hit = mapActorEqp_ (dropEqpItem aid b hit) b
 -- (let's say, the multiple explosions interfere with each other or perhaps
 -- larger quantities of explosives tend to be packaged more safely).
 dropEqpItem :: (MonadAtomic m, MonadServer m)
-            => ActorId -> Actor -> Bool -> ItemId -> KisOn -> m ()
-dropEqpItem aid b hit iid kIsOn = do
+            => ActorId -> Actor -> Bool -> ItemId -> Int -> m ()
+dropEqpItem aid b hit iid k = do
   item <- getsState $ getItemBody iid
   itemToF <- itemToFullServer
   let container = CActor aid CEqp
       fragile = IF.Fragile `elem` jfeature item
       durable = IF.Durable `elem` jfeature item
       isDestroyed = hit && not durable || bproj b && fragile
-      itemFull = itemToF iid kIsOn
+      itemFull = itemToF iid k
   if isDestroyed then do
     let expl = groupsExplosive itemFull
     unless (null expl) $ do
@@ -134,11 +134,11 @@ dropEqpItem aid b hit iid kIsOn = do
       seed <- getsServer $ (EM.! iid) . sitemSeedD
       execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik seed
     -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
-    execUpdAtomic $ UpdLoseItem iid item kIsOn container
+    execUpdAtomic $ UpdLoseItem iid item k container
     forM_ expl $ explodeItem aid b
   else do
-    mvCmd <- generalMoveItem iid (fst kIsOn) (CActor aid CEqp)
-                                             (CActor aid CGround)
+    mvCmd <- generalMoveItem iid k (CActor aid CEqp)
+                                   (CActor aid CGround)
     mapM_ execUpdAtomic mvCmd
 
 groupsExplosive :: ItemFull -> [Text]
@@ -159,9 +159,9 @@ explodeItem aid b cgroup = do
   (itemKnown, seed, n1) <-
     rndToAction $ newItem coitem flavour discoRev itemFreq (blid b) ldepth depth
   let container = CActor aid CEqp
-  iid <- registerItem itemKnown seed (n1, True) container False
+  iid <- registerItem itemKnown seed n1 container False
   let Point x y = bpos b
-      projectN k100 (n, _) = when (n > 7) $ do
+      projectN k100 n = when (n > 7) $ do
         -- We pick a point at the border, not inside, to have a uniform
         -- distribution for the points the line goes through at each distance
         -- from the source. Otherwise, e.g., the points on cardinal

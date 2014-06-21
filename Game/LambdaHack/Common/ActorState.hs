@@ -94,7 +94,7 @@ bagAssocs s bag =
   let iidItem iid = (iid, getItemBody iid s)
   in map iidItem $ EM.keys bag
 
-bagAssocsK :: State -> ItemBag -> [(ItemId, (Item, KisOn))]
+bagAssocsK :: State -> ItemBag -> [(ItemId, (Item, Int))]
 bagAssocsK s bag =
   let iidItem (iid, kIsOn) = (iid, (getItemBody iid s, kIsOn))
   in map iidItem $ EM.assocs bag
@@ -134,31 +134,27 @@ nearbyFreePoints f start lid s =
 calculateTotal :: Actor -> State -> (ItemBag, Int)
 calculateTotal body s =
   let bag = sharedAllOwned body s
-      items = map (\(iid, (k, _)) -> (getItemBody iid s, k))
-              $ EM.assocs bag
+      items = map (\(iid, k) -> (getItemBody iid s, k)) $ EM.assocs bag
   in (bag, sum $ map itemPrice items)
-
-addKIsOn :: KisOn -> KisOn -> KisOn
-addKIsOn (k1, _) (k2, _) = ((k1 + k2), True)
 
 sharedInv :: Actor -> State -> ItemBag
 sharedInv body s =
   let bs = fidActorNotProjList (bfid body) s
-  in EM.unionsWith addKIsOn $ map binv $ if null bs then [body] else bs
+  in EM.unionsWith (+) $ map binv $ if null bs then [body] else bs
 
 sharedEqp :: Actor -> State -> ItemBag
 sharedEqp body s =
   let bs = fidActorNotProjList (bfid body) s
-  in EM.unionsWith addKIsOn $ map beqp $ if null bs then [body] else bs
+  in EM.unionsWith (+) $ map beqp $ if null bs then [body] else bs
 
 sharedAllOwned :: Actor -> State -> ItemBag
 sharedAllOwned body s =
-  EM.unionWith addKIsOn (sharedInv body s) (sharedEqp body s)
+  EM.unionWith (+) (sharedInv body s) (sharedEqp body s)
 
 sharedAllOwnedFid :: FactionId -> State -> ItemBag
 sharedAllOwnedFid fid s =
   let bs = fidActorNotProjList fid s
-  in EM.unionsWith addKIsOn $ map binv bs ++ map beqp bs
+  in EM.unionsWith (+) $ map binv bs ++ map beqp bs
 
 -- | Price an item, taking count into consideration.
 itemPrice :: (Item, Int) -> Int
@@ -245,7 +241,7 @@ getActorBag aid cstore s =
 getActorAssocs :: ActorId -> CStore -> State -> [(ItemId, Item)]
 getActorAssocs aid cstore s = bagAssocs s $ getActorBag aid cstore s
 
-getActorAssocsK :: ActorId -> CStore -> State -> [(ItemId, (Item, KisOn))]
+getActorAssocsK :: ActorId -> CStore -> State -> [(ItemId, (Item, Int))]
 getActorAssocsK aid cstore s = bagAssocsK s $ getActorBag aid cstore s
 
 -- | Checks if the actor is present on the current level.
@@ -298,7 +294,7 @@ actorShines b s =
   let eqpAssocs = bagAssocsK s $ beqp b
       bodyAssocs = bagAssocsK s $ bbody b
       floorAssocs = bagAssocsK s $ sdungeon s EM.! blid b `atI` bpos b
-  in 0 /= (sumSlotNoFilter IF.EqpSlotLight True $ map (second itemNoDisco)
+  in 0 /= (sumSlotNoFilter IF.EqpSlotLight $ map (second itemNoDisco)
            $ eqpAssocs ++ bodyAssocs ++ floorAssocs)
 
 actorInAmbient :: Actor -> State -> Bool
@@ -336,10 +332,10 @@ fullAssocs cops disco discoAE aid cstores s =
         (iid, itemToFull cops disco discoAE iid item kIsOn)
   in map iToFull allAssocs
 
-itemToFull :: Kind.COps -> Discovery -> DiscoAE -> ItemId -> Item -> KisOn
+itemToFull :: Kind.COps -> Discovery -> DiscoAE -> ItemId -> Item -> Int
            -> ItemFull
 itemToFull Kind.COps{coitem=Kind.Ops{okind}}
-           disco discoAE iid itemBase itemKisOn =
+           disco discoAE iid itemBase itemK =
   let itemDisco = case EM.lookup (jkindIx itemBase) disco of
         Nothing -> Nothing
         Just itemKindId -> Just ItemDisco{ itemKindId
@@ -351,5 +347,5 @@ goesIntoInv :: Item -> Bool
 goesIntoInv item = isNothing $ strengthEqpSlot item
 
 eqpFull :: Actor -> Bool
-eqpFull b = let size = sum $ map fst $ EM.elems $ beqp b
+eqpFull b = let size = sum $ EM.elems $ beqp b
             in assert (size <= 10) $ size == 10

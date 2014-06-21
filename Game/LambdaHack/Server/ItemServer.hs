@@ -26,15 +26,15 @@ import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
 registerItem :: (MonadAtomic m, MonadServer m)
-             => ItemKnown -> ItemSeed -> KisOn -> Container -> Bool -> m ItemId
-registerItem itemKnown@(item, iae) seed kIsOn container verbose = do
+             => ItemKnown -> ItemSeed -> Int -> Container -> Bool -> m ItemId
+registerItem itemKnown@(item, iae) seed k container verbose = do
   itemRev <- getsServer sitemRev
   let cmd = if verbose then UpdCreateItem else UpdSpotItem
   case HM.lookup itemKnown itemRev of
     Just iid -> do
       -- TODO: try to avoid this case for createItems,
       -- to make items more interesting
-      execUpdAtomic $ cmd iid item kIsOn container
+      execUpdAtomic $ cmd iid item k container
       return iid
     Nothing -> do
       icounter <- getsServer sicounter
@@ -43,7 +43,7 @@ registerItem itemKnown@(item, iae) seed kIsOn container verbose = do
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
             , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
             , sdiscoAE = EM.insert icounter iae (sdiscoAE ser)}
-      execUpdAtomic $ cmd icounter item kIsOn container
+      execUpdAtomic $ cmd icounter item k container
       return $! icounter
 
 createItems :: (MonadAtomic m, MonadServer m)
@@ -58,7 +58,7 @@ createItems n pos lid = do
   replicateM_ n $ do
     (itemKnown, seed, k) <-
       rndToAction $ newItem coitem flavour discoRev litemFreq lid ldepth depth
-    void $ registerItem itemKnown seed (k, True) container True
+    void $ registerItem itemKnown seed k container True
 
 placeItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()
 placeItemsInDungeon = do
@@ -101,7 +101,7 @@ fullAssocsServer aid cstores = do
   discoAE <- getsServer sdiscoAE
   getsState $ fullAssocs cops disco discoAE aid cstores
 
-itemToFullServer :: MonadServer m => m (ItemId -> KisOn -> ItemFull)
+itemToFullServer :: MonadServer m => m (ItemId -> Int -> ItemFull)
 itemToFullServer = do
   cops <- getsState scops
   disco <- getsServer sdisco
