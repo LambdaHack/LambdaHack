@@ -193,7 +193,7 @@ ppCStore CGround = "on the ground"
 ppCStore CBody = "in the body"
 ppCStore CEqp = "in equipment"
 ppCStore CInv = "in inventory"
-ppCStore CSha = "in the shared party stash"
+ppCStore CSha = "in shared stash"
 
 ppContainer :: Container -> Text
 ppContainer CFloor{} = "on the ground nearby"

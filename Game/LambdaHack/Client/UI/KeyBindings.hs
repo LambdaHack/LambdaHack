@@ -91,7 +91,7 @@ keyHelp Binding{bcmdList} =
       , ""
       , "Search, loot, open and attack by bumping into walls, doors and enemies."
       , "The best object to attack with is automatically chosen from among"
-      , "weapons in your personal inventory and your unwounded body parts."
+      , "weapons in your personal equipment and your unwounded body parts."
       , ""
       , "Press SPACE to see command descriptions."
       ]

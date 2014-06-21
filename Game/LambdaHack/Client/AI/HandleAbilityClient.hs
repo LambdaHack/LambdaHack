@@ -216,7 +216,7 @@ pickup aid onlyWeapon = do
 equipItems :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 equipItems aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
-  let RuleKind{rsharedInventory} = Kind.stdRuleset corule
+  let RuleKind{rsharedStash} = Kind.stdRuleset corule
   body <- getsState $ getActorBody aid
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
@@ -244,7 +244,7 @@ equipItems aid = do
       bEqpInv = msum $ map (improve CInv)
                 $ map (\(eqp, inv, _) -> (inv, eqp)) bestThree
   if nullStrategy bEqpInv
-    then if rsharedInventory && calmEnough body kind
+    then if rsharedStash && calmEnough body kind
          then return
               $! msum $ map (improve CSha)
               $ map (\(eqp, _, sha) -> (sha, eqp)) bestThree
@@ -259,7 +259,7 @@ unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 unEquipItems aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
-  let RuleKind{rsharedInventory} = Kind.stdRuleset corule
+  let RuleKind{rsharedStash} = Kind.stdRuleset corule
   body <- getsState $ getActorBody aid
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
@@ -267,7 +267,7 @@ unEquipItems aid = do
   condLightBetrays <- condLightBetraysM aid
   let kind = okind $ bkind body
       yieldSingleHarmful (iidEqp, itemEqp) =
-        let cstore = if rsharedInventory && calmEnough body kind
+        let cstore = if rsharedStash && calmEnough body kind
                      then CSha
                      else CInv
         in if harmful cops condLightBetrays body itemEqp
@@ -299,7 +299,7 @@ unEquipItems aid = do
       let bInvSha = msum $ map (improve CInv)
                     $ map (\(_, inv, sha) -> (sha, inv)) bestThree
       if nullStrategy bInvSha
-        then if rsharedInventory && calmEnough body kind
+        then if rsharedStash && calmEnough body kind
              then return $! msum $ map (improve CEqp)
                          $ map (\(eqp, _, sha) -> (sha, eqp)) bestThree
              else return reject
