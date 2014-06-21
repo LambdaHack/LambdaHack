@@ -125,14 +125,14 @@ Item use related keys are as follows.
 
                 keys           command
                 E              describe equipment of the leader
-                I              describe inventory of the leader
+                P              describe backpack inventory of the leader
                 S              describe the shared party stash
                 G              describe items on the ground
                 A              describe all owned items
                 g and ,        get an item
                 d              drop an item
                 e              equip an item
-                w              wedge an item into the inventory bag
+                p              pack an item into inventory backpack
                 s              stash and share an item
                 a              activate applicable item
                 q              quaff potion
@@ -166,11 +166,11 @@ Commands for automating the actions of one or more members of the team.
                 keys           command
                 =              select (or deselect) a party member
                 _              deselect (or select) all on the level
-                p              play back last keys
-                P              play back last keys 100 times
-                CTRL-p         play back last keys 1000 times
-                CTRL-P         play back last keys 10 times
-                '              start recording a macro
+                v              voice again the recorded commands
+                V              voice the recorded commands 100 times
+                CTRL-v         voice the recorded commands 1000 times
+                CTRL-V         voice the recorded commands 10 times
+                '              start recording commands
                 CTRL-A         automate faction (ESC to retake control)
 
 Assorted remaining keys and commands follow.

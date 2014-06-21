@@ -92,7 +92,7 @@ standardKeys = KeyKind
 
       -- Item use
       , ("E", ([CmdItem], DescribeItem CEqp))
-      , ("I", ([CmdItem], DescribeItem CInv))
+      , ("P", ([CmdItem], DescribeItem CInv))
       , ("S", ([CmdItem], DescribeItem CSha))
       , ("G", ([CmdItem], DescribeItem CGround))
       , ("A", ([CmdItem], AllOwned))
@@ -102,8 +102,8 @@ standardKeys = KeyKind
                                    "drop" "an item" False))
       , ("e", ([CmdItem], MoveItem [CInv, CSha] CEqp
                                    "equip" "an item" False))
-      , ("w", ([CmdItem], MoveItem [CEqp, CSha] CInv
-                                   "wedge" "an item into the inventory bag"
+      , ("p", ([CmdItem], MoveItem [CEqp, CSha] CInv
+                                   "pack" "an item into inventory backpack"
                                    False))
       , ("s", ([CmdItem], MoveItem [CEqp, CInv] CSha
                                    "stash" "and share an item" False))
@@ -143,10 +143,10 @@ standardKeys = KeyKind
       -- Automation
       , ("equal", ([CmdAuto], SelectActor))
       , ("underscore", ([CmdAuto], SelectNone))
-      , ("p", ([CmdAuto], Repeat 1))
-      , ("P", ([CmdAuto], Repeat 100))
-      , ("CTRL-p", ([CmdAuto], Repeat 1000))
-      , ("CTRL-P", ([CmdAuto], Repeat 10))
+      , ("v", ([CmdAuto], Repeat 1))
+      , ("V", ([CmdAuto], Repeat 100))
+      , ("CTRL-v", ([CmdAuto], Repeat 1000))
+      , ("CTRL-V", ([CmdAuto], Repeat 10))
       , ("apostrophe", ([CmdAuto], Record))
       , ("CTRL-A", ([CmdAuto], Automate))
 
