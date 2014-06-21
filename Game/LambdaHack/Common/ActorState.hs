@@ -6,8 +6,8 @@ module Game.LambdaHack.Common.ActorState
   , actorAssocsLvl, actorAssocs, actorList
   , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList
   , bagAssocs, bagAssocsK, calculateTotal
-  , sharedInv, sharedAllOwned, sharedAllOwnedFid
-  , getInvBag, getCBag, getActorBag, getActorAssocs
+  , sharedAllOwned, sharedAllOwnedFid
+  , getCBag, getActorBag, getActorAssocs
   , nearbyFreePoints, whereTo, getCarriedAssocs
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, isSpawnFaction
@@ -37,7 +37,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
 fidActorNotProjAssocs :: FactionId -> State -> [(ActorId, Actor)]
@@ -149,12 +148,14 @@ sharedEqp body s =
 
 sharedAllOwned :: Actor -> State -> ItemBag
 sharedAllOwned body s =
-  EM.unionWith (+) (sharedInv body s) (sharedEqp body s)
+  let shaBag = gsha $ sfactionD s EM.! bfid body
+  in EM.unionsWith (+) [sharedInv body s, sharedEqp body s, shaBag]
 
 sharedAllOwnedFid :: FactionId -> State -> ItemBag
 sharedAllOwnedFid fid s =
-  let bs = fidActorNotProjList fid s
-  in EM.unionsWith (+) $ map binv bs ++ map beqp bs
+  let shaBag = gsha $ sfactionD s EM.! fid
+      bs = fidActorNotProjList fid s
+  in EM.unionsWith (+) $ map binv bs ++ map beqp bs ++ [shaBag]
 
 -- | Price an item, taking count into consideration.
 itemPrice :: (Item, Int) -> Int
@@ -216,13 +217,6 @@ getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =
   bagAssocs s $ EM.unionsWith (const) [binv b, beqp b, bbody b]
 
-getInvBag :: Actor -> State -> ItemBag
-getInvBag b s =
-  let RuleKind{rsharedInventory} = Kind.stdRuleset $ Kind.corule $ scops s
-  in if rsharedInventory
-     then sharedInv b s
-     else binv b
-
 getCBag :: Container -> State -> ItemBag
 getCBag c s = case c of
   CFloor lid p -> sdungeon s EM.! lid `atI` p
@@ -235,7 +229,7 @@ getActorBag aid cstore s =
     CGround -> sdungeon s EM.! blid b `atI` bpos b
     CBody -> bbody b
     CEqp -> beqp b
-    CInv -> getInvBag b s
+    CInv -> binv b
     CSha -> gsha $ sfactionD s EM.! bfid b
 
 getActorAssocs :: ActorId -> CStore -> State -> [(ItemId, Item)]

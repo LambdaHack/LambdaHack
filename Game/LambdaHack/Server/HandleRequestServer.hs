@@ -331,12 +331,12 @@ reqMoveItem :: (MonadAtomic m, MonadServer m)
 reqMoveItem aid iid k fromCStore toCStore = do
   b <- getsState $ getActorBody aid
   let moveItem = do
-        let c = CActor aid fromCStore
         when (fromCStore == CGround) $ do
           seed <- getsServer $ (EM.! iid) . sitemSeedD
           execUpdAtomic $ UpdDiscoverSeed (blid b) (bpos b) iid seed
-          upds <- generalMoveItem iid k c (CActor aid toCStore)
-          mapM_ execUpdAtomic upds
+        upds <- generalMoveItem iid k (CActor aid fromCStore)
+                                      (CActor aid toCStore)
+        mapM_ execUpdAtomic upds
       req = ReqMoveItem iid k fromCStore toCStore
   if k < 1 || fromCStore == toCStore then execFailure aid req ItemNothing
   else if toCStore == CEqp

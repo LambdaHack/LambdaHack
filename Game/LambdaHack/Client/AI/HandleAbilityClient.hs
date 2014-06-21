@@ -242,12 +242,12 @@ equipItems aid = do
           _ -> reject
       bestThree = bestByEqpSlot invAssocs eqpAssocs shaAssocs
       bEqpInv = msum $ map (improve CInv)
-                $ map (\(eqp, inv, _) -> (eqp, inv)) bestThree
+                $ map (\(eqp, inv, _) -> (inv, eqp)) bestThree
   if nullStrategy bEqpInv
     then if rsharedInventory && calmEnough body kind
          then return
               $! msum $ map (improve CSha)
-              $ map (\(eqp, _, sha) -> (eqp, sha)) bestThree
+              $ map (\(eqp, _, sha) -> (sha, eqp)) bestThree
          else return reject
     else return bEqpInv
 
@@ -297,11 +297,11 @@ unEquipItems aid = do
   case yieldHarmful of
     [] -> do
       let bInvSha = msum $ map (improve CInv)
-                    $ map (\(_, inv, sha) -> (inv, sha)) bestThree
+                    $ map (\(_, inv, sha) -> (sha, inv)) bestThree
       if nullStrategy bInvSha
         then if rsharedInventory && calmEnough body kind
              then return $! msum $ map (improve CEqp)
-                         $ map (\(eqp, _, sha) -> (eqp, sha)) bestThree
+                         $ map (\(eqp, _, sha) -> (sha, eqp)) bestThree
              else return reject
         else return $! bInvSha
     _ ->
