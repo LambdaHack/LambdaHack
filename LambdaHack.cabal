@@ -193,7 +193,7 @@ library
                       enummapset-th >= 0.6.0.0 && < 1,
                       filepath   >= 1.2.0.1 && < 2,
                       ghc-prim   >= 0.2,
-                      hashable   >= 1.2.0.9 && < 2,
+                      hashable   >= 1.1.2.5 && < 2,
                       hsini      >= 0.2     && < 2,
                       keys       >= 3       && < 4,
                       miniutter  >= 0.4.1   && < 2,

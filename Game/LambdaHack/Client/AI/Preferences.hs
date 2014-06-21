@@ -3,6 +3,7 @@ module Game.LambdaHack.Client.AI.Preferences
   ( effAspToBenefit, effectToBenefit
   ) where
 
+import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 
 import Game.LambdaHack.Common.Actor
@@ -64,8 +65,7 @@ aspectToBenefit _cops _b asp =
     Effect.AddMaxHP p -> (p * 10, 1)
     Effect.AddMaxCalm p -> (p, 1)
     Effect.AddSpeed p -> (p * 10000, 1)
-    Effect.InsertAbility _ -> (50, 1)
-    Effect.DeleteAbility _ -> (-50, 1)
+    Effect.AddSkills m -> (5 * sum (EM.elems m), 1)
     Effect.ArmorMelee p -> (p `divUp` 10, 1)
     Effect.Explode{} -> (0, 10)
     Effect.SightRadius p -> (p * 20, 1)

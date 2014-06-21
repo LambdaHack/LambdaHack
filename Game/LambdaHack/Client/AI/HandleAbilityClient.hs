@@ -87,7 +87,7 @@ actionStrategy aid = do
                           $ takeWhile ((== 1) . fst) threatDistL
       condCanFlee = not (null fleeL || condFastThreatAdj)
   mleader <- getsClient _sleader
-  actorAbs <- actorAbilities aid mleader
+  actorSk <- actorSkills aid mleader
   let stratToFreq :: MonadStateRead m
                   => Int -> m (Strategy RequestAnyAbility)
                   -> m (Frequency RequestAnyAbility)
@@ -121,7 +121,8 @@ actionStrategy aid = do
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeBlocker aid  -- only melee target or blocker
           , condAnyFoeAdj
-            || AbDisplace `notElem` actorAbs  -- melee friends, not displace
+            || EM.findWithDefault 0 AbDisplace actorSk <= 0
+                 -- melee friends, not displace
                && not (playerLeader $ gplayer fact)  -- not restrained
                && (condTgtEnemyPresent || condTgtEnemyRemembered) )  -- excited
         , ( [AbTrigger], (toAny :: ToAny AbTrigger)
@@ -177,8 +178,9 @@ actionStrategy aid = do
             -- switch him afterwards)
           , True ) ]
       -- TODO: don't msum not to evaluate until needed
+      abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
       checkAction :: ([Ability], m a, Bool) -> Bool
-      checkAction (abts, _, cond) = cond && all (`elem` actorAbs) abts
+      checkAction (abts, _, cond) = cond && all abInSkill abts
       sumS abAction = do
         let as = filter checkAction abAction
         strats <- sequence $ map (\(_, m, _) -> m) as
@@ -373,7 +375,7 @@ meleeBlocker aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   mleader <- getsClient _sleader
-  actorAbs <- actorAbilities aid mleader
+  actorSk <- actorSkills aid mleader
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
     Just (_, Just (_ : q : _, (goal, _))) -> do
@@ -393,9 +395,9 @@ meleeBlocker aid = do
           if not (actorDying body2)  -- already dying
              && (not (bproj body2)  -- displacing saves a move
                  && isAtWar fact (bfid body2)  -- they at war with us
-                 || AbDisplace `notElem` actorAbs  -- melee, not displace
+                 || EM.findWithDefault 0 AbDisplace actorSk <= 0  -- not disp.
                     && not (playerLeader $ gplayer fact)  -- not restrained
-                    && AbMove `elem` actorAbs  -- blocked move
+                    && EM.findWithDefault 0 AbMove actorSk > 0  -- blocked move
                     && bhp body2 < bhp b) then do -- respect power
             mel <- pickWeaponClient aid aid2
             return $! liftFrequency $ uniformFreq "melee in the way" mel

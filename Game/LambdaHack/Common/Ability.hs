@@ -1,10 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | AI strategy abilities.
 module Game.LambdaHack.Common.Ability
-  ( Ability(..)
+  ( Ability(..), Skills, addSkills, unitSkills
   ) where
 
 import Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic)
 
@@ -20,6 +21,15 @@ data Ability =
   | AbApply
   | AbTrigger
   deriving (Read, Eq, Ord, Generic, Enum, Bounded)
+
+-- skill level in particular abilities.
+type Skills = EM.EnumMap Ability Int
+
+addSkills :: Skills -> Skills -> Skills
+addSkills = EM.unionWith (+)
+
+unitSkills :: Skills
+unitSkills = EM.fromDistinctAscList $ zip [minBound..maxBound] [1..]
 
 instance Show Ability where
   show AbMove = "move"

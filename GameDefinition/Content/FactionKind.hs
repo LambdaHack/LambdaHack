@@ -2,6 +2,8 @@
 -- for LambdaHack.
 module Content.FactionKind ( cdefs ) where
 
+import qualified Data.EnumMap.Strict as EM
+
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Content.FactionKind
@@ -21,51 +23,53 @@ hero = FactionKind
   { fsymbol        = '1'
   , fname          = "hero"
   , ffreq          = [("hero", 1)]
-  , fAbilityLeader = allAbilities
-  , fAbilityOther  = meleeAdjacent
+  , fSkillsLeader = allAbilities
+  , fSkillsOther  = meleeAdjacent
   }
 
 civilian = FactionKind
   { fsymbol        = '@'
   , fname          = "civilian"
   , ffreq          = [("civilian", 1)]
-  , fAbilityLeader = allAbilities
-  , fAbilityOther  = allAbilities  -- not coordinated by any leadership
+  , fSkillsLeader = allAbilities
+  , fSkillsOther  = allAbilities  -- not coordinated by any leadership
   }
 
 monster = FactionKind
   { fsymbol        = 'm'
   , fname          = "monster"
   , ffreq          = [("monster", 1), ("summon", 60)]
-  , fAbilityLeader = allAbilities
-  , fAbilityOther  = allAbilities
+  , fSkillsLeader = allAbilities
+  , fSkillsOther  = allAbilities
   }
 
 animal = FactionKind
   { fsymbol        = 'd'
   , fname          = "animal"
   , ffreq          = [("animal", 1), ("summon", 40)]
-  , fAbilityLeader = animalAbility
-  , fAbilityOther  = animalAbility
+  , fSkillsLeader = animalAbility
+  , fSkillsOther  = animalAbility
   }
 
 horror = FactionKind
   { fsymbol        = 'h'
   , fname          = "horror"
   , ffreq          = [("horror", 1), ("summon", 100)]
-  , fAbilityLeader = allAbilities
-  , fAbilityOther  = allAbilities
+  , fSkillsLeader = allAbilities
+  , fSkillsOther  = allAbilities
   }
 
 
-_noAbility, meleeAdjacent, _meleeAndRanged, animalAbility, allAbilities :: [Ability]
+_noAbility, meleeAdjacent, _meleeAndRanged, animalAbility, allAbilities :: Skills
 
-_noAbility = []
+_noAbility = EM.empty
 
-meleeAdjacent = [AbWait, AbMelee]
+meleeAdjacent = EM.fromList $ zip [AbWait, AbMelee] [1..]
 
-_meleeAndRanged = [AbWait, AbMelee, AbProject]  -- melee and reaction fire
+-- Melee and reaction fire.
+_meleeAndRanged = EM.fromList $ zip [AbWait, AbMelee, AbProject] [1..]
 
-animalAbility = [AbMove, AbMelee, AbAlter, AbWait, AbTrigger]
+animalAbility =
+  EM.fromList $ zip [AbMove, AbMelee, AbAlter, AbWait, AbTrigger] [1..]
 
-allAbilities = [minBound..maxBound]
+allAbilities = unitSkills

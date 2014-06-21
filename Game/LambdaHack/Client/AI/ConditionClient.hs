@@ -227,7 +227,7 @@ condMeleeBadM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   mleader <- getsClient _sleader
-  actorAbs <- actorAbilities aid mleader
+  actorSk <- actorSkills aid mleader
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
   let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
@@ -235,7 +235,7 @@ condMeleeBadM aid = do
       closeFriends = filter closeEnough friends
       strongCloseFriends = filter (not . hpTooLow coactor) closeFriends
       noFriendlyHelp = length closeFriends < 3 && null strongCloseFriends
-  return $ Ability.AbMelee `notElem` actorAbs
+  return $ EM.findWithDefault 0 Ability.AbMelee actorSk <= 0
            || noFriendlyHelp  -- still not getting friends' help
     -- no $!; keep it lazy
 

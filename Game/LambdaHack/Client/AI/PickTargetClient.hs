@@ -90,7 +90,7 @@ targetStrategy oldLeader aid = do
   itemD <- getsState sitemD
   -- TODO: we assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
-  actorAbs <- actorAbilities aid (Just aid)
+  actorSk <- actorSkills aid (Just aid)
   condCanProject <- condCanProjectM aid
   condMeleeBad <- condMeleeBadM aid
   condHpTooLow <- condHpTooLowM aid
@@ -154,7 +154,7 @@ targetStrategy oldLeader aid = do
                      else return []
             case smpos of
               [] -> do
-                citems <- if AbMoveItem `elem` actorAbs
+                citems <- if EM.findWithDefault 0 AbMoveItem actorSk > 0
                           then closestItems aid
                           else return []
                 case filter desirable citems of
@@ -188,9 +188,10 @@ targetStrategy oldLeader aid = do
                                     else closestSuspect aid
                         case csuspect of
                           [] -> do
-                            ctriggers <- if AbTrigger `elem` actorAbs
-                                         then closestTriggers Nothing False aid
-                                         else return []
+                            ctriggers <-
+                              if EM.findWithDefault 0 AbTrigger actorSk > 0
+                              then closestTriggers Nothing False aid
+                              else return []
                             case ctriggers of
                               [] -> do
                                 getDistant <-
@@ -259,7 +260,7 @@ targetStrategy oldLeader aid = do
              -- shows up) and not changed all the time mid-route
              -- to equally interesting, but perhaps a bit closer targets,
              -- most probably already targeted by other actors.
-             || (AbMoveItem `notElem` actorAbs  -- closestItems
+             || (EM.findWithDefault 0 AbMoveItem actorSk <= 0  -- closestItems
                  || not (desirableBag (lvl `atI` pos)))
                 && (not canSmell  -- closestSmell
                     || pos == bpos b  -- in case server resends deleted smell
@@ -275,7 +276,7 @@ targetStrategy oldLeader aid = do
                         -- leaving the level or dungeon.
                         not (null allFoes)
                         || -- If all explored, escape/block escapes.
-                           (AbTrigger `notElem` actorAbs
+                           (EM.findWithDefault 0 AbTrigger actorSk <= 0
                             || not (Tile.isEscape cotile t && allExplored))
                            -- The next case is stairs in closestTriggers.
                            -- We don't determine if the stairs are interesting

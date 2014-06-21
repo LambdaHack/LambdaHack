@@ -25,7 +25,7 @@ data ActorKind = ActorKind
   , amaxHP   :: !Int        -- ^ maximal hp
   , amaxCalm :: !Int        -- ^ maximal calm
   , aspeed   :: !Int        -- ^ natural speed in m/10s
-  , aAbility :: ![Ability]  -- ^ the set of supported abilities
+  , askills  :: !Skills     -- ^ skills in particular abilities
   , aArmor   :: !Int        -- ^ intrinsic armor class
   , asight   :: !Int        -- ^ sight radius
   , asmell   :: !Int        -- ^ smell radius
@@ -44,7 +44,7 @@ data ActorKind = ActorKind
 validateActorKind :: [ActorKind] -> [ActorKind]
 validateActorKind l =
   let behaviour ka = ( amaxHP ka, amaxCalm ka, aspeed ka
-                     , sort (aAbility ka), aArmor ka, asight ka, asmell ka
+                     , askills ka, aArmor ka, asight ka, asmell ka
                      , sort (aitems ka) )
       sortedBehaviour = sortBy (Ord.comparing behaviour) l
       nubbedBehaviour = nubBy ((==) `on` behaviour) sortedBehaviour

@@ -16,7 +16,7 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Functor
-import Data.Hashable (Hashable)
+import Data.Hashable
 import qualified Data.HashMap.Strict as HM
 import Data.Key
 import Data.Text (Text)
@@ -84,16 +84,21 @@ newtype ActorId = ActorId Int
 -- Data.Binary
 
 instance (Enum k, Binary k, Binary e) => Binary (EM.EnumMap k e) where
+  {-# INLINEABLE put #-}
   put m = put (EM.size m) >> mapM_ put (EM.toAscList m)
+  {-# INLINEABLE get #-}
   get = liftM EM.fromDistinctAscList get
 
 instance (Enum k, Binary k) => Binary (ES.EnumSet k) where
+  {-# INLINEABLE put #-}
   put m = put (ES.size m) >> mapM_ put (ES.toAscList m)
+  {-# INLINEABLE get #-}
   get = liftM ES.fromDistinctAscList get
 
-instance (Binary k, Binary v, Eq k, Hashable k)
-  => Binary (HM.HashMap k v) where
+instance (Binary k, Binary v, Eq k, Hashable k) => Binary (HM.HashMap k v) where
+  {-# INLINEABLE put #-}
   put ir = put $ HM.toList ir
+  {-# INLINEABLE get #-}
   get = fmap HM.fromList get
 
 -- Data.Key
@@ -124,3 +129,9 @@ instance Enum k => Lookup (EM.EnumMap k) where
 
 instance Enum k => Adjustable (EM.EnumMap k) where
   adjust = EM.adjust
+
+-- Data.Hashable
+
+instance (Enum k, Hashable k, Hashable e) => Hashable (EM.EnumMap k e) where
+  {-# INLINEABLE hashWithSalt #-}
+  hashWithSalt s x = hashWithSalt s (EM.toAscList x)

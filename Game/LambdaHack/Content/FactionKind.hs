@@ -9,11 +9,11 @@ import Game.LambdaHack.Common.Misc
 
 -- | Faction properties that are fixed for a given kind of factions.
 data FactionKind = FactionKind
-  { fsymbol        :: !Char       -- ^ a symbol
-  , fname          :: !Text       -- ^ short description
-  , ffreq          :: !Freqs      -- ^ frequency within groups
-  , fAbilityLeader :: ![Ability]  -- ^ abilities of the picked leader
-  , fAbilityOther  :: ![Ability]  -- ^ abilities of the other actors
+  { fsymbol       :: !Char    -- ^ a symbol
+  , fname         :: !Text    -- ^ short description
+  , ffreq         :: !Freqs   -- ^ frequency within groups
+  , fSkillsLeader :: !Skills  -- ^ skills of the picked leader
+  , fSkillsOther  :: !Skills  -- ^ skills of the other actors
   }
   deriving Show
 

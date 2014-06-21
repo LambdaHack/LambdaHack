@@ -97,10 +97,10 @@ isSummonFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
 isAllMoveFact :: Kind.COps -> Faction -> Bool
 isAllMoveFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
   let kind = okind (gkind fact)
-      abilityLeader = fAbilityLeader kind
-      abilityOther = fAbilityOther kind
-  in Ability.AbMove `elem` abilityLeader
-     && Ability.AbMove `elem` abilityOther
+      skillsLeader = fSkillsLeader kind
+      skillsOther = fSkillsOther kind
+  in EM.findWithDefault 0 Ability.AbMove skillsLeader > 0
+     && EM.findWithDefault 0 Ability.AbMove skillsOther > 0
 
 -- | Tell whether a faction that is still in game, keeps arena.
 -- Keeping arena means if the faction is still in game,

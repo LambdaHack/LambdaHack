@@ -3,14 +3,13 @@
 module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
-  , actorAbilities, updateItemSlot, fullAssocsClient, itemToFullClient
+  , actorSkills, updateItemSlot, fullAssocsClient, itemToFullClient
   , pickWeaponClient, sumBodyEqpClient
   ) where
 
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
-import Data.List
 import Data.Maybe
 import Data.Text (Text)
 import Data.Tuple
@@ -162,16 +161,16 @@ makeLine body fpos epsOld = do
             then Nothing  -- ProjectBlockActor, ProjectAimOnself
             else tryLines epsOld (Nothing, minBound)
 
-actorAbilities :: MonadClient m => ActorId -> Maybe ActorId -> m [Ability]
-actorAbilities aid mleader = do
+actorSkills :: MonadClient m => ActorId -> Maybe ActorId -> m Skills
+actorSkills aid mleader = do
   Kind.COps{ coactor=Kind.Ops{okind}
            , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  let factionAbilities
-        | Just aid == mleader = fAbilityLeader $ fokind $ gkind fact
-        | otherwise = fAbilityOther $ fokind $ gkind fact
-  return $! aAbility (okind $ bkind body) `intersect` factionAbilities
+  let factionSkills
+        | Just aid == mleader = fSkillsLeader $ fokind $ gkind fact
+        | otherwise = fSkillsOther $ fokind $ gkind fact
+  return $! askills (okind $ bkind body) `addSkills` factionSkills
 
 updateItemSlot :: MonadClient m => Maybe ActorId -> ItemId -> m ()
 updateItemSlot maid iid = do

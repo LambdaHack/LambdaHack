@@ -13,6 +13,7 @@ module Game.LambdaHack.Common.ItemStrongest
 import Control.Applicative
 import Control.Exception.Assert.Sugar
 import qualified Control.Monad.State as St
+import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
 import qualified Data.Ord as Ord
@@ -106,15 +107,9 @@ strengthAddSpeed =
 
 strengthAbility :: ItemFull -> Maybe Int
 strengthAbility itemFull =
-  let p (InsertAbility a) = [a]
+  let p (AddSkills a) = [a]
       p _ = []
-      q (DeleteAbility a) = [a]
-      q _ = []
-      pas = fromMaybe [] $ strengthAspectMaybe p itemFull
-      qas = fromMaybe [] $ strengthAspectMaybe q itemFull
-      -- The number of added abilities; a crude approximation of the value.
-      extra = length pas - length qas
-  in if extra == 0 then Nothing else Just extra
+  in sum . EM.elems <$> strengthAspectMaybe p itemFull
 
 strengthArmorMelee :: ItemFull -> Maybe Int
 strengthArmorMelee =
