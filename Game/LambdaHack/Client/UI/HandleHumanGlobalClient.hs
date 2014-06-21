@@ -228,13 +228,13 @@ moveItemHuman cLegalRaw destCStore verbRaw auto = do
         CEqp | goesIntoInv (itemBase itemFull) -> do
           updateItemSlot (Just leader) iid  -- slot not yet assigned
           msgAndSer CInv
-        CEqp | eqpFull b -> do
+        CEqp | eqpOverfull b k -> do
           msgAdd $ "Warning:" <+> showReqFailure EqpOverfull
           updateItemSlot (Just leader) iid  -- slot not yet assigned
           msgAndSer CInv
         _ -> msgAndSer destCStore
       else case destCStore of
-        CEqp | eqpFull b -> failSer EqpOverfull
+        CEqp | eqpOverfull b k -> failSer EqpOverfull
         _ -> msgAndSer destCStore
     Left slides -> return $ Left slides
 

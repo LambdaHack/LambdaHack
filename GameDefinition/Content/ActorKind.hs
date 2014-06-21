@@ -124,9 +124,9 @@ elbow = ActorKind
   , asmell   = 0
   , aitems   = [ ("eye 12", CBody), ("armored skin", CBody)
                , ("speed gland 2", CBody)
-               , ("any scroll", CEqp), ("any scroll", CEqp)
-               , ("any scroll", CEqp)
-               , ("any arrow", CEqp), ("any arrow", CEqp), ("any arrow", CEqp) ]
+               , ("any scroll", CInv), ("any scroll", CInv)
+               , ("any scroll", CInv)
+               , ("any arrow", CInv), ("any arrow", CInv), ("any arrow", CInv) ]
   , afreq    = [("monster", 10), ("horror", 20)]
   }
 

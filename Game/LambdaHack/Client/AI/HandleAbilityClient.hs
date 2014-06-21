@@ -209,7 +209,7 @@ pickup aid onlyWeapon = do
     ((_, k), (iid, item)) : _ -> do  -- pick up the best desirable item, if any
       updateItemSlot (Just aid) iid
       b <- getsState $ getActorBody aid
-      let toCStore = if goesIntoInv item || eqpFull b then CInv else CEqp
+      let toCStore = if goesIntoInv item || eqpOverfull b k then CInv else CEqp
       return $! returN "pickup" $ ReqMoveItem iid k CGround toCStore
     [] -> return reject
 
@@ -229,12 +229,12 @@ equipItems aid = do
       improve fromCStore (bestInv, bestEqp) =
         case (bestInv, bestEqp) of
           ((_, (iidInv, itemInv)) : _, [])
-            | not (eqpFull body)
+            | not (eqpOverfull body 1)
               && not (harmful cops condLightBetrays body itemInv) ->
             returN "wield any"
             $ ReqMoveItem iidInv 1 fromCStore CEqp
           ((vInv, (iidInv, itemInv)) : _, (vEqp, _) : _)
-            | not (eqpFull body)
+            | not (eqpOverfull body 1)
               && not (harmful cops condLightBetrays body itemInv)
               && vInv > vEqp ->
             returN "wield better"
@@ -251,7 +251,7 @@ equipItems aid = do
          else return reject
     else return bEqpInv
 
--- TODO: if eqpFull, yield the least beneficial item of all eqp items
+-- TODO: if eqpOverfull, yield the least beneficial item of all eqp items
 -- so that we always have 1 eqp slot free (simple and stateless,
 -- though usually unoptimal, unless suddenly a superb item is found
 -- and using it one turn earlier is a breakthrough).
@@ -261,8 +261,8 @@ unEquipItems aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   body <- getsState $ getActorBody aid
-  invAssocs <- fullAssocsClient aid [CInv]
   eqpAssocs <- fullAssocsClient aid [CEqp]
+  invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
   condLightBetrays <- condLightBetraysM aid
   let kind = okind $ bkind body
