@@ -555,8 +555,8 @@ effectDropBestWeapon execSfx target = do
   case strongestSlotNoFilter IF.EqpSlotWeapon allAssocs of
     (_, (iid, _)) : _ -> do
       b <- getsState $ getActorBody target
-      let kIsOn = beqp b EM.! iid
-      dropEqpItem target b False iid kIsOn
+      let k = beqp b EM.! iid
+      dropEqpItem target b False iid k
       execSfx
       return True
     [] ->

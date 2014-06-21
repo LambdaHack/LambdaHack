@@ -119,9 +119,9 @@ getItem p tshaSuit tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
       allAssocs = concatMap storeAssocs cLegal
       rawAssocs = concatMap storeAssocs cLegalRaw
   case (cLegal, allAssocs) of
-    ([cStart], [(iid, kIsOn)]) | not askWhenLone -> do
+    ([cStart], [(iid, k)]) | not askWhenLone -> do
       itemToF <- itemToFullClient
-      return $ Right ((iid, itemToF iid kIsOn), cStart)
+      return $ Right ((iid, itemToF iid k), cStart)
     (_ : _, _ : _) -> do
       when (CGround `elem` cLegal) $
         mapM_ (updateItemSlot (Just leader)) $ EM.keys $ getCStoreBag CGround

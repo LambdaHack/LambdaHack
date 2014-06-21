@@ -95,7 +95,7 @@ bagAssocs s bag =
 
 bagAssocsK :: State -> ItemBag -> [(ItemId, (Item, Int))]
 bagAssocsK s bag =
-  let iidItem (iid, kIsOn) = (iid, (getItemBody iid s, kIsOn))
+  let iidItem (iid, k) = (iid, (getItemBody iid s, k))
   in map iidItem $ EM.assocs bag
 
 -- | Finds an actor at a position on the current level.
@@ -322,8 +322,8 @@ fullAssocs :: Kind.COps -> Discovery -> DiscoAE
            -> [(ItemId, ItemFull)]
 fullAssocs cops disco discoAE aid cstores s =
   let allAssocs = concatMap (\cstore -> getActorAssocsK aid cstore s) cstores
-      iToFull (iid, (item, kIsOn)) =
-        (iid, itemToFull cops disco discoAE iid item kIsOn)
+      iToFull (iid, (item, k)) =
+        (iid, itemToFull cops disco discoAE iid item k)
   in map iToFull allAssocs
 
 itemToFull :: Kind.COps -> Discovery -> DiscoAE -> ItemId -> Item -> Int

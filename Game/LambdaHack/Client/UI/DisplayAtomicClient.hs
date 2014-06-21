@@ -63,16 +63,16 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     destroyActorUI aid body "die" "be destroyed" verbose
     side <- getsClient sside
     when (bfid body == side && not (bproj body)) stopPlayBack
-  UpdCreateItem iid _ kIsOn c -> do
+  UpdCreateItem iid _ k c -> do
     updateItemSlot Nothing iid
-    itemVerbMU iid kIsOn $ MU.Text
+    itemVerbMU iid k $ MU.Text
       $ "appear" <+> ppContainer c
     stopPlayBack
-  UpdDestroyItem iid _ kIsOn _ -> itemVerbMU iid kIsOn "disappear"
+  UpdDestroyItem iid _ k _ -> itemVerbMU iid k "disappear"
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
   UpdLoseActor aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
-  UpdSpotItem iid _ kIsOn c -> do
+  UpdSpotItem iid _ k c -> do
     -- We assign slots to all items visible on the floor,
     -- but some of the slots are later on recycled and then
     -- we report spotting the items again.
@@ -91,7 +91,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
               _ -> do
                 (lid, p) <- posOfContainer c
                 modifyClient $ \cli -> cli {scursor = TPoint lid p}
-            itemVerbMU iid kIsOn "be spotted"
+            itemVerbMU iid k "be spotted"
             stopPlayBack
       _ -> return ()  -- seen recently (still has a slot assigned)
   UpdLoseItem{} -> skip

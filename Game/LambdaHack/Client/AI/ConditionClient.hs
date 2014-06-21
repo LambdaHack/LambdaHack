@@ -157,8 +157,8 @@ benAvailableItems aid permitted = do
   let ak = okind $ bkind b
       ben cstore bag =
         [ ((benefit, cstore), (iid, itemFull))
-        | (iid, kIsOn) <- EM.assocs bag
-        , let itemFull = itemToF iid kIsOn
+        | (iid, k) <- EM.assocs bag
+        , let itemFull = itemToF iid k
         , let benefit = maxUsefulness cops b itemFull
         , benefit /= Just 0
         , permitted itemFull ]

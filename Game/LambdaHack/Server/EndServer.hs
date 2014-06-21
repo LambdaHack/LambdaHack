@@ -189,5 +189,5 @@ explodeItem aid b cgroup = do
     maybe skip (projectN k100) mn2
   bag3 <- getsState $ beqp . getActorBody aid
   let mn3 = EM.lookup iid bag3
-  maybe skip (\kIsOn -> execUpdAtomic
-             $ UpdLoseItem iid (fst itemKnown) kIsOn container) mn3
+  maybe skip (\k -> execUpdAtomic
+             $ UpdLoseItem iid (fst itemKnown) k container) mn3

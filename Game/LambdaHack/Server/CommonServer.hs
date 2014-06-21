@@ -94,8 +94,8 @@ revealItems :: (MonadAtomic m, MonadServer m)
 revealItems mfid mbody = do
   itemToF <- itemToFullServer
   dungeon <- getsState sdungeon
-  let discover b iid kIsOn =
-        let itemFull = itemToF iid kIsOn
+  let discover b iid k =
+        let itemFull = itemToF iid k
         in case itemDisco itemFull of
           Just ItemDisco{itemKindId} -> do
             seed <- getsServer $ (EM.! iid) . sitemSeedD

@@ -44,12 +44,12 @@ handleUpdAtomic :: MonadStateWrite m => UpdAtomic -> m ()
 handleUpdAtomic cmd = case cmd of
   UpdCreateActor aid body ais -> updCreateActor aid body ais
   UpdDestroyActor aid body ais -> updDestroyActor aid body ais
-  UpdCreateItem iid item kIsOn c -> updCreateItem iid item kIsOn c
-  UpdDestroyItem iid item kIsOn c -> updDestroyItem iid item kIsOn c
+  UpdCreateItem iid item k c -> updCreateItem iid item k c
+  UpdDestroyItem iid item k c -> updDestroyItem iid item k c
   UpdSpotActor aid body ais -> updCreateActor aid body ais
   UpdLoseActor aid body ais -> updDestroyActor aid body ais
-  UpdSpotItem iid item kIsOn c -> updCreateItem iid item kIsOn c
-  UpdLoseItem iid item kIsOn c -> updDestroyItem iid item kIsOn c
+  UpdSpotItem iid item k c -> updCreateItem iid item k c
+  UpdLoseItem iid item k c -> updDestroyItem iid item k c
   UpdMoveActor aid fromP toP -> updMoveActor aid fromP toP
   UpdWaitActor aid toWait -> updWaitActor aid toWait
   UpdDisplaceActor source target -> updDisplaceActor source target

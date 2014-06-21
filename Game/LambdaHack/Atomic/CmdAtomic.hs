@@ -134,12 +134,12 @@ undoUpdAtomic :: UpdAtomic -> Maybe UpdAtomic
 undoUpdAtomic cmd = case cmd of
   UpdCreateActor aid body ais -> Just $ UpdDestroyActor aid body ais
   UpdDestroyActor aid body ais -> Just $ UpdCreateActor aid body ais
-  UpdCreateItem iid item kIsOn c -> Just $ UpdDestroyItem iid item kIsOn c
-  UpdDestroyItem iid item kIsOn c -> Just $ UpdCreateItem iid item kIsOn c
+  UpdCreateItem iid item k c -> Just $ UpdDestroyItem iid item k c
+  UpdDestroyItem iid item k c -> Just $ UpdCreateItem iid item k c
   UpdSpotActor aid body ais -> Just $ UpdLoseActor aid body ais
   UpdLoseActor aid body ais -> Just $ UpdSpotActor aid body ais
-  UpdSpotItem iid item kIsOn c -> Just $ UpdLoseItem iid item kIsOn c
-  UpdLoseItem iid item kIsOn c -> Just $ UpdSpotItem iid item kIsOn c
+  UpdSpotItem iid item k c -> Just $ UpdLoseItem iid item k c
+  UpdLoseItem iid item k c -> Just $ UpdSpotItem iid item k c
   UpdMoveActor aid fromP toP -> Just $ UpdMoveActor aid toP fromP
   UpdWaitActor aid toWait -> Just $ UpdWaitActor aid (not toWait)
   UpdDisplaceActor source target -> Just $ UpdDisplaceActor target source
