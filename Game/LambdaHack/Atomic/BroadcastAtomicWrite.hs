@@ -50,7 +50,7 @@ handleAndBroadcast :: forall m a. MonadStateWrite m
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
-handleAndBroadcast knowEvents persOld doResetFidPerception dolitInDungeon
+handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
                    doSendUpdateAI doSendUpdateUI atomic = do
   -- Gather data from the old state.
   sOld <- getState
@@ -78,7 +78,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception dolitInDungeon
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
   -- Update lights in the dungeon. This is lazy, may not be needed or partially.
-  persLit <- dolitInDungeon
+  persLit <- doResetLitInDungeon
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI =
         when (playerUI $ gplayer $ factionD EM.! fid) $ doSendUpdateUI fid cmdUI

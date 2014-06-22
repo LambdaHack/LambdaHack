@@ -9,7 +9,6 @@ module Game.LambdaHack.Server.CommonServer
 import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import qualified Data.EnumMap.Lazy as EML
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
@@ -63,22 +62,21 @@ resetFidPerception :: MonadServer m
                    => PersLit -> FactionId -> LevelId
                    -> m Perception
 resetFidPerception persLit fid lid = do
-  lvl <- getLevel lid
+  cops <- getsState scops
   sfovMode <- getsServer $ sfovMode . sdebugSer
-  ser <- getServer
+  lvl <- getLevel lid
   let fovMode = fromMaybe Digital sfovMode
-      lvlPer s = let lit = persLit EML.! lid
-                 in levelPerception lit fovMode fid lid lvl s ser
-  per <- getsState lvlPer
-  let upd = EM.adjust (EM.adjust (const per) lid) fid
-  modifyServer $ \ser2 -> ser2 {sper = upd (sper ser)}
+      per = fidLidPerception cops fovMode persLit fid lid lvl
+      upd = EM.adjust (EM.adjust (const per) lid) fid
+  modifyServer $ \ser2 -> ser2 {sper = upd (sper ser2)}
   return $! per
 
 resetLitInDungeon :: MonadServer m => m PersLit
 resetLitInDungeon = do
   sfovMode <- getsServer $ sfovMode . sdebugSer
+  ser <- getServer
   let fovMode = fromMaybe Digital sfovMode
-  getsState $ litInDungeon fovMode
+  getsState $ \s -> litInDungeon fovMode s ser
 
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
 getPerFid fid lid = do
