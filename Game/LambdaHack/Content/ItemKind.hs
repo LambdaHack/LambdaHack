@@ -1,6 +1,6 @@
--- | The type of kinds of weapons and treasure.
+-- | The type of kinds of weapons, treasure, body parts, shrapnel and actors.
 module Game.LambdaHack.Content.ItemKind
-  ( ItemKind(..), validateItemKind
+  ( ItemKind(..), toVelocity, toLinger, validateItemKind
   ) where
 
 import Data.Text (Text)
@@ -32,6 +32,12 @@ data ItemKind = ItemKind
   , ikit         :: ![(Text, CStore)]  -- ^ accompanying body parts and items
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
+
+toVelocity :: Int -> Effect.Feature
+toVelocity n = Effect.ToThrow $ Effect.ThrowMod n 100
+
+toLinger :: Int -> Effect.Feature
+toLinger n = Effect.ToThrow $ Effect.ThrowMod 100 n
 
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.
 validateItemKind :: [ItemKind] -> [ItemKind]

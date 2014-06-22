@@ -1,14 +1,16 @@
--- | Weapons and treasure for LambdaHack.
+-- | Weapon and treasure definitions.
 module Content.ItemKind ( cdefs ) where
 
 import Data.List
 
+import Content.ItemKindActor
+import Content.ItemKindBodyPart
+import Content.ItemKindShrapnel
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.ItemKind
 
 cdefs :: ContentDef ItemKind
@@ -17,10 +19,14 @@ cdefs = ContentDef
   , getName = iname
   , getFreq = ifreq
   , validate = validateItemKind
-  , content =
-      [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+  , content = items ++ bodyParts ++ shrapnels ++ actors
   }
-bolas,        brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye3, eye6, eye9, eye12, eye15, nostril, thorn, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+
+items :: [ItemKind]
+items =
+  [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch]
+
+bolas,    brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch :: ItemKind
 
 gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 
@@ -421,313 +427,3 @@ woodenTorch = ItemKind
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady fire."
   , ikit     = []
   }
-fist = sword
-  { isymbol  = '%'
-  , iname    = "fist"
-  , ifreq    = [("fist", 100)]
-  , icount   = 2
-  , iverbApply   = "punch"
-  , iverbProject = "ERROR, please report: iverbProject"
-  , ieffects = [Hurt (5 * d 1) 0]
-  , ifeature = [Durable, Identified]
-  , idesc    = ""
-  }
-foot = fist
-  { iname    = "foot"
-  , ifreq    = [("foot", 50)]
-  , icount   = 2
-  , iverbApply   = "kick"
-  , ieffects = [Hurt (5 * d 1) 0]
-  , idesc    = ""
-  }
-tentacle = fist
-  { iname    = "tentacle"
-  , ifreq    = [("tentacle", 50)]
-  , icount   = 4
-  , iverbApply   = "slap"
-  , ieffects = [Hurt (5 * d 1) 0]
-  , idesc    = ""
-  }
-lash = fist
-  { iname    = "lash"
-  , ifreq    = [("lash", 100)]
-  , icount   = 1
-  , iverbApply   = "lash"
-  , ieffects = [Hurt (5 * d 1) 0]
-  , idesc    = ""
-  }
-noseTip = fist
-  { iname    = "nose tip"
-  , ifreq    = [("nose tip", 50)]
-  , icount   = 1
-  , iverbApply   = "poke"
-  , ieffects = [Hurt (2 * d 1) 0]
-  , idesc    = ""
-  }
-lip = fist
-  { iname    = "lip"
-  , ifreq    = [("lip", 10)]
-  , icount   = 2
-  , iverbApply   = "lap"
-  , ieffects = [Hurt (2 * d 1) 0]  -- TODO: decrease Hurt, but use
-  , idesc    = ""
-  }
-claw = fist
-  { iname    = "claw"
-  , ifreq    = [("claw", 50)]
-  , icount   = 2  -- even if more, only the fore claws used for fighting
-  , iverbApply   = "slash"
-  , ieffects = [Hurt (7 * d 1) 0]
-  , idesc    = ""
-  }
-smallClaw = fist
-  { iname    = "small claw"
-  , ifreq    = [("small claw", 50)]
-  , icount   = 2
-  , iverbApply   = "slash"
-  , ieffects = [Hurt (3 * d 1) 0]
-  , idesc    = ""
-  }
-snout = fist
-  { iname    = "snout"
-  , ifreq    = [("snout", 10)]
-  , iverbApply   = "bite"
-  , ieffects = [Hurt (2 * d 1) 0]
-  , idesc    = ""
-  }
-venomTooth = fist
-  { iname    = "venom tooth"
-  , ifreq    = [("venom tooth", 100)]
-  , icount   = 2
-  , iverbApply   = "bite"
-  , ieffects = [Hurt (3 * d 1) 0, Paralyze 3]
-  , idesc    = ""
-  }
-venomFang = fist
-  { iname    = "venom fang"
-  , ifreq    = [("venom fang", 100)]
-  , icount   = 2
-  , iverbApply   = "bite"
-  , ieffects = [Hurt (3 * d 1) 12]
-  , idesc    = ""
-  }
-largeTail = fist
-  { iname    = "large tail"
-  , ifreq    = [("large tail", 50)]
-  , icount   = 1
-  , iverbApply   = "knock"
-  , ieffects = [Hurt (9 * d 1) 0, PushActor (ThrowMod 400 25)]
-  , idesc    = ""
-  }
-jaw = fist
-  { iname    = "jaw"
-  , ifreq    = [("jaw", 20)]
-  , icount   = 1
-  , iverbApply   = "rip"
-  , ieffects = [Hurt (5 * d 1) 0]
-  , idesc    = ""
-  }
-largeJaw = fist
-  { iname    = "large jaw"
-  , ifreq    = [("large jaw", 100)]
-  , icount   = 1
-  , iverbApply   = "crush"
-  , ieffects = [Hurt (15 * d 1) 0]
-  , idesc    = ""
-  }
-pupil = fist
-  { iname    = "pupil"
-  , ifreq    = [("pupil", 100)]
-  , icount   = 1
-  , iverbApply   = "gaze at"
-  , ieffects = [Hurt (5 * d 1) 0, Paralyze 1]  -- TODO: decrease Hurt, but use
-  , idesc    = ""
-  }
-armoredSkin = fist
-  { iname    = "armored skin"
-  , ifreq    = [("armored skin", 100)]
-  , icount   = 1
-  , iverbApply   = "bash"
-  , iaspects = [ArmorMelee 50]
-  , ieffects = []
-  , ifeature = [EqpSlot EqpSlotArmorMelee "", Identified]
-  , idesc    = ""
-  }
-speedGland1 = speedGland 1
-speedGland2 = speedGland 2
-speedGland3 = speedGland 3
-speedGland4 = speedGland 4
-speedGland5 = speedGland 5
-eye3 = eye 3
-eye6 = eye 6
-eye9 = eye 9
-eye12 = eye 12
-eye15 = eye 15
-nostril = fist
-  { iname    = "nostril"
-  , ifreq    = [("nostril", 100)]
-  , icount   = 2
-  , iverbApply   = "sniff"
-  , iaspects = [SmellRadius 2]
-  , ieffects = []
-  , ifeature = [EqpSlot EqpSlotSmellRadius "", Identified]
-  , idesc    = ""
-  }
-thorn = fist
-  { iname    = "thorn"
-  , ifreq    = [("thorn", 100)]
-  , icount   = 7
-  , iverbApply   = "impale"
-  , iaspects = []
-  , ieffects = [Hurt (3 * d 1) 0]
-  , idesc    = ""
-  }
-fragrance = ItemKind
-  { isymbol  = '\''
-  , iname    = "fragrance"
-  , ifreq    = [("fragrance", 1)]
-  , iflavour = zipFancy [BrMagenta]
-  , icount   = 15
-  , iverbApply   = "smell"
-  , iverbProject = "exude"
-  , iweight  = 1
-  , iaspects = []
-  , ieffects = [Impress]
-  , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
-               , Fragile, Identified ]
-  , idesc    = ""
-  , ikit     = []
-  }
-mist_healing = ItemKind
-  { isymbol  = '\''
-  , iname    = "mist"
-  , ifreq    = [("healing mist", 1)]
-  , iflavour = zipFancy [White]
-  , icount   = 11
-  , iverbApply   = "inhale"
-  , iverbProject = "blow"
-  , iweight  = 1
-  , iaspects = [AddLight 1]
-  , ieffects = [Heal 2]
-  , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
-               , Fragile, Identified ]
-  , idesc    = ""
-  , ikit     = []
-  }
-mist_wounding = ItemKind
-  { isymbol  = '\''
-  , iname    = "mist"
-  , ifreq    = [("wounding mist", 1)]
-  , iflavour = zipFancy [White]
-  , icount   = 13
-  , iverbApply   = "inhale"
-  , iverbProject = "blow"
-  , iweight  = 1
-  , iaspects = []
-  , ieffects = [Heal (-2)]
-  , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
-               , Fragile, Identified ]
-  , idesc    = ""
-  , ikit     = []
-  }
-burningOil2 = burningOil 2
-burningOil3 = burningOil 3
-burningOil4 = burningOil 4
-explosionBlast10 = explosionBlast 10
-glass_piece = ItemKind  -- when blowing up windows
-  { isymbol  = '\''
-  , iname    = "glass piece"
-  , ifreq    = [("glass piece", 1)]
-  , iflavour = zipPlain [BrBlue]
-  , icount   = 17
-  , iverbApply   = "grate"
-  , iverbProject = "toss"
-  , iweight  = 10
-  , iaspects = []
-  , ieffects = [Hurt (d 1) 0]
-  , ifeature = [toLinger 20, Fragile, Identified]
-  , idesc    = ""
-  , ikit     = []
-  }
-smoke = ItemKind  -- when stuff burns out
-  { isymbol  = '\''
-  , iname    = "smoke"
-  , ifreq    = [("smoke", 1)]
-  , iflavour = zipPlain [BrBlack]
-  , icount   = 19
-  , iverbApply   = "inhale"
-  , iverbProject = "blow"
-  , iweight  = 1
-  , iaspects = []
-  , ieffects = []
-  , ifeature = [ toVelocity 30
-               , Fragile, Identified ]
-  , idesc    = ""
-  , ikit     = []
-  }
-
-burningOil :: Int -> ItemKind
-burningOil n = ItemKind
-  { isymbol  = '\''
-  , iname    = "burning oil"
-  , ifreq    = [("burning oil" <+> tshow n, 1)]
-  , iflavour = zipFancy [BrYellow]
-  , icount   = intToDice (n * 6)
-  , iverbApply   = "smear"
-  , iverbProject = "spit"
-  , iweight  = 1
-  , iaspects = [AddLight 2]
-  , ieffects = [ Burn 1
-               , Paralyze (intToDice n) ]  -- actors strain not to trip on oil
-  , ifeature = [ toVelocity (min 100 $ n * 7)
-               , Fragile, Identified ]
-  , idesc    = "Sticky oil, burning brightly."
-  , ikit     = []
-  }
-
-explosionBlast :: Int -> ItemKind
-explosionBlast n = ItemKind
-  { isymbol  = '\''
-  , iname    = "explosion blast"
-  , ifreq    = [("explosion blast" <+> tshow n, 1)]
-  , iflavour = zipPlain [BrWhite]
-  , icount   = 12  -- strong, but few, so not always hits target
-  , iverbApply   = "blast"
-  , iverbProject = "give off"
-  , iweight  = 1
-  , iaspects = [AddLight $ intToDice n]
-  , ieffects = [Burn (n `div` 2), DropBestWeapon]
-  , ifeature = [Fragile, toLinger 10, Identified]
-  , idesc    = ""
-  , ikit     = []
-  }
-
-speedGland :: Int -> ItemKind
-speedGland n = fist
-  { iname    = "speed gland"
-  , ifreq    = [("speed gland" <+> tshow n, 100)]
-  , icount   = 1
-  , iverbApply   = "squeeze"
-  , iaspects = [Periodic (intToDice $ 2 * n)]  -- TODO: also speed bonus?
-  , ieffects = [Heal 1]
-  , ifeature = [Identified]
-  , idesc    = ""
-  }
-
-eye :: Int -> ItemKind
-eye n = fist
-  { iname    = "eye"
-  , ifreq    = [("eye" <+> tshow n, 100)]
-  , icount   = 2
-  , iverbApply   = "focus"
-  , iaspects = [SightRadius (intToDice n)]
-  , ieffects = []
-  , ifeature = [EqpSlot EqpSlotSightRadius "", Identified]
-  , idesc    = ""
-  }
-
-toVelocity :: Int -> Feature
-toVelocity n = ToThrow $ ThrowMod n 100
-
-toLinger :: Int -> Feature
-toLinger n = ToThrow $ ThrowMod 100 n
