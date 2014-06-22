@@ -301,7 +301,7 @@ summonFriends bfid ps lid = do
                         $ opick summonName (const True)
     if isHeroFact cops fact
       then addHero bfid p lid [] Nothing time
-      else addMonster mk bfid p lid time
+      else addMonster summonName mk bfid p lid time
   -- No leader election needed, bebause an alive actor of the same faction
   -- causes the effect, so there is already a leader, unless the faction
   -- is leaderless.

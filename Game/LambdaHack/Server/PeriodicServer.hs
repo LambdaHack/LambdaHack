@@ -37,6 +37,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonServer
+import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
@@ -54,7 +55,7 @@ spawnMonsters ps lid time fid = assert (not $ null ps) $ do
   laid <- forM ps $ \ p -> do
     ak <- rndToAction $ fmap (fromMaybe $ assert `failure` spawnName)
                         $ opick spawnName (const True)
-    addMonster ak fid p lid time
+    addMonster spawnName ak fid p lid time
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD  -- just changed
   when (isNothing mleader) $
     execUpdAtomic $ UpdLeadFaction fid Nothing (Just $ head laid)
@@ -90,16 +91,16 @@ generateMonster lid = do
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: (MonadAtomic m, MonadServer m)
-           => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Time
+           => Text -> Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Time
            -> m ActorId
-addMonster ak bfid ppos lid time = do
+addMonster groupName ak bfid ppos lid time = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   let kind = okind ak
   fact <- getsState $ (EM.! bfid) . sfactionD
   pronoun <- if isCivilianFact cops fact
              then rndToAction $ oneOf ["he", "she"]
              else return "it"
-  addActor ak bfid ppos lid (asymbol kind) (aname kind) pronoun
+  addActor groupName ak bfid ppos lid (asymbol kind) (aname kind) pronoun
            (acolor kind) time
 
 -- | Create a new hero on the current level, close to the given position.
@@ -126,16 +127,24 @@ addHero bfid ppos lid heroNames mNumber time = do
            | otherwise =
         let (nameN, pronounN) = nameFromNumber n
         in (playerName gplayer <+> nameN, pronounN)
-  addActor ak bfid ppos lid symbol name pronoun gcolor time
+  addActor fName ak bfid ppos lid symbol name pronoun gcolor time
 
 addActor :: (MonadAtomic m, MonadServer m)
-         => Kind.Id ActorKind -> FactionId -> Point -> LevelId
+         => Text -> Kind.Id ActorKind -> FactionId -> Point -> LevelId
          -> Char -> Text -> Text -> Color.Color -> Time
          -> m ActorId
-addActor ak bfid pos lid bsymbol bname bpronoun bcolor time = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+addActor groupName ak bfid pos lid bsymbol bname bpronoun bcolor time = do
+  cops@Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
+  flavour <- getsServer sflavour
+  discoRev <- getsServer sdiscoRev
+  depth <- getsState sdepth
+  Level{ldepth} <- getLevel lid
+  -- The trunk of the actor's body that contains the constant properties.
+  let trunkFreq = toFreq "create trunk" [(1, groupName)]
+  (itemKnown, seed, k) <-
+    rndToAction $ newItem coitem flavour discoRev trunkFreq lid ldepth depth
   let kind = okind ak
       hp = amaxHP kind `div` 2
       calm = amaxCalm kind
@@ -151,13 +160,12 @@ addActor ak bfid pos lid bsymbol bname bpronoun bcolor time = do
       b = actorTemplate ak bsymbol bname bpronoun bcolor diffHP calm
                         pos lid time bfid EM.empty False
   execUpdAtomic $ UpdCreateActor aid b []
-  -- The trunk of the actor's body that contains the constant properties.
-  let trunk = ("projectile"{-TODO aname kind-}, CBody)
-  -- Create initial actor items.
-  forM_ (trunk : aitems kind) $ \(ikText, cstore) -> do
+  -- Register and insert the trunk.
+  void $ registerItem itemKnown seed k (CActor aid CBody) False
+  -- Create, register and insert all initial actor items.
+  forM_ (aitems kind) $ \(ikText, cstore) -> do
     let container = CActor aid cstore
         itemFreq = toFreq "create aitems" [(1, ikText)]
-    -- Here the items are inserted into the actor.
     void $ rollAndRegisterItem lid itemFreq container False
   return $! aid
 

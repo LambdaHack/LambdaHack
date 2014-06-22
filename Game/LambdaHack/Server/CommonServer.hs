@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -37,6 +38,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Fov
+import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
@@ -275,12 +277,22 @@ projectBla source pos rest iid cstore = do
 
 -- | Create a projectile actor containing the given missile.
 --
--- Projectile has no body parts nor even a trunk.
+-- Projectile has no body parts except for the trunk.
 addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
               -> m ()
 addProjectile bpos rest iid blid bfid btime = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
+  Kind.COps{coactor=coactor@Kind.Ops{okind}, coitem} <- getsState scops
+  aid <- getsServer sacounter
+  modifyServer $ \ser -> ser {sacounter = succ aid}
+  flavour <- getsServer sflavour
+  discoRev <- getsServer sdiscoRev
+  depth <- getsState sdepth
+  Level{ldepth} <- getLevel blid
+  -- The trunk of the actor's body that contains the constant properties.
+  let trunkFreq = toFreq "projectile trunk" [(1, "projectile")]
+  (itemKnown, seed, k) <-
+    rndToAction $ newItem coitem flavour discoRev trunkFreq blid ldepth depth
   item <- getsState $ getItemBody iid
   let ts@(trajectory, _) = itemTrajectory item (bpos : rest)
       trange = length trajectory
@@ -294,9 +306,9 @@ addProjectile bpos rest iid blid bfid btime = do
                         (acolor kind) 0 maxBound
                         bpos blid btime bfid (EM.singleton iid 1) True
       btra = b {btrajectory = Just ts}
-  aid <- getsServer sacounter
-  modifyServer $ \ser -> ser {sacounter = succ aid}
   execUpdAtomic $ UpdCreateActor aid btra [(iid, item)]
+  -- Register and insert the trunk.
+  void $ registerItem itemKnown seed k (CActor aid CBody) False
 
 -- Server has to pick a random weapon or it could leak item discovery
 -- information.
