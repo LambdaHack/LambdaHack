@@ -46,7 +46,7 @@ newtype PerceptionLit = PerceptionLit
     {plit :: ES.EnumSet Point}
   deriving Show
 
-type ActorEqpBody = [((ActorId, Actor), [(ItemId, ItemFull)])]
+type ActorEqpBody = [((ActorId, Actor), [ItemFull])]
 
 type PersLit = EML.EnumMap LevelId ( PerceptionLit
                                    , EM.EnumMap FactionId ActorEqpBody )
@@ -114,22 +114,22 @@ visibleOnLevel Kind.COps{cotile}
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
 reachableFromActor :: Kind.COps -> FovMode -> Level
-                   -> ((ActorId, Actor), [(ItemId, ItemFull)])
+                   -> ((ActorId, Actor), [ItemFull])
                    -> PerceptionReachable
-reachableFromActor Kind.COps{cotile} fovMode lvl ((_, body), allAssocs) =
-  let radius = sumSlotNoFilter Effect.EqpSlotSightRadius allAssocs
+reachableFromActor Kind.COps{cotile} fovMode lvl ((_, body), allItems) =
+  let radius = sumSlotNoFilter Effect.EqpSlotSightRadius allItems
   in PerceptionReachable $ fullscan cotile fovMode radius (bpos body) lvl
 
 -- | Compute all lit positions on a level, whether lit by actors or floor items.
 -- Note that an actor can be blind or a projectile, in which case he doesn't see
 -- his own light (but others, from his or other factions, possibly do).
 litByItems :: Kind.COps -> FovMode -> Level
-           -> [(Point, [(ItemId, ItemFull)])]
+           -> [(Point, [ItemFull])]
            -> PerceptionLit
 litByItems Kind.COps{cotile} fovMode lvl allItems =
-  let litPos :: (Point, [(ItemId, ItemFull)]) -> [Point]
-      litPos (p, iis) =
-        let radius = sumSlotNoFilter Effect.EqpSlotAddLight iis
+  let litPos :: (Point, [ItemFull]) -> [Point]
+      litPos (p, is) =
+        let radius = sumSlotNoFilter Effect.EqpSlotAddLight is
             scan = fullscan cotile fovMode radius p lvl
             -- Optimization: filter out positions already having ambient light.
             opt = filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos) scan
@@ -153,14 +153,14 @@ litInDungeon fovMode s ser =
               let fid = bfid bFid
                   eqpBody (aid, b) =
                     ( (aid, b)
-                    , fullAssocs cops (sdisco ser) (sdiscoAE ser)
-                                 aid [CBody, CEqp] s )
+                    , map snd $ fullAssocs cops (sdisco ser) (sdiscoAE ser)
+                                           aid [CBody, CEqp] s )
               in (fid, map eqpBody asFid)
         in EM.fromDistinctAscList $ map bodyFid asGrouped
-      itemsOnFloor :: Level -> [(Point, [(ItemId, ItemFull)])]
+      itemsOnFloor :: Level -> [(Point, [ItemFull])]
       itemsOnFloor lvl =
         let iToFull (iid, (item, k)) =
-              (iid, itemToFull cops (sdisco ser) (sdiscoAE ser) iid item k)
+              itemToFull cops (sdisco ser) (sdiscoAE ser) iid item k
             processPos (p, bag) =
               (p, map iToFull $ bagAssocsK s bag)
         in map processPos $ EM.assocs $ lfloor lvl

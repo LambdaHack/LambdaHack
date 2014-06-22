@@ -4,6 +4,7 @@ module Game.LambdaHack.Server.HandleEffectServer
   ( applyItem, itemEffect, itemEffectAndDestroy, effectsSem
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -194,17 +195,17 @@ effectHurt :: (MonadAtomic m, MonadServer m)
             => Dice.Dice -> Int -> ActorId -> ActorId
             -> m Bool
 effectHurt nDm power source target = do
-  sallAssocs <- fullAssocsServer source [CEqp, CBody]
-  tallAssocs <- fullAssocsServer target [CEqp, CBody]
+  sallItems <- map snd <$> fullAssocsServer source [CEqp, CBody]
+  tallItems <- map snd <$> fullAssocsServer target [CEqp, CBody]
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   n <- rndToAction $ castDice 0 0 nDm
   let block = braced tb
       -- OFF shield doesn't hinder attacks, so also does not protect.
-      sshieldMult = case sumSlotNoFilter Effect.EqpSlotArmorMelee sallAssocs of
+      sshieldMult = case sumSlotNoFilter Effect.EqpSlotArmorMelee sallItems of
         _ | bproj sb -> 100
         p -> 100 - p
-      tshieldMult = case sumSlotNoFilter Effect.EqpSlotArmorMelee tallAssocs of
+      tshieldMult = case sumSlotNoFilter Effect.EqpSlotArmorMelee tallItems of
         _ | bproj sb -> 100
         p -> 100 - p
       mult = sshieldMult * tshieldMult * (if block then 100 else 50)

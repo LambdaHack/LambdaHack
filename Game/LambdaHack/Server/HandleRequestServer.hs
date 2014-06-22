@@ -12,6 +12,7 @@ module Game.LambdaHack.Server.HandleRequestServer
   ( handleRequestAI, handleRequestUI, reqMove
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -171,8 +172,8 @@ reqMelee :: (MonadAtomic m, MonadServer m)
          => ActorId -> ActorId -> ItemId -> CStore -> m ()
 reqMelee source target iid cstore = do
   itemToF <- itemToFullServer
-  sallAssocs <- fullAssocsServer source [CEqp, CBody]
-  tallAssocs <- fullAssocsServer target [CEqp, CBody]
+  sallItems <- map snd <$> fullAssocsServer source [CEqp, CBody]
+  tallItems <- map snd <$> fullAssocsServer target [CEqp, CBody]
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let adj = checkAdjacent sb tb
@@ -187,8 +188,8 @@ reqMelee source target iid cstore = do
     -- to prevent micromanagement: walking with shield, melee without.
     let noShield =
           bproj sb
-          || 0 /= sumSlotNoFilter Effect.EqpSlotArmorMelee sallAssocs
-          || 0 /= sumSlotNoFilter Effect.EqpSlotArmorMelee tallAssocs
+          || 0 /= sumSlotNoFilter Effect.EqpSlotArmorMelee sallItems
+          || 0 /= sumSlotNoFilter Effect.EqpSlotArmorMelee tallItems
         block = braced tb
         hitA = if block && not noShield
                then HitBlock 2

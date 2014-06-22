@@ -338,4 +338,4 @@ sumBodyEqpServer :: MonadServer m
 sumBodyEqpServer eqpSlot aid = do
   eqpAssocs <- fullAssocsServer aid [CEqp]
   bodyAssocs <- fullAssocsServer aid [CBody]
-  return $! sumSlotNoFilter eqpSlot $ eqpAssocs ++ bodyAssocs
+  return $! sumSlotNoFilter eqpSlot $ map snd $ eqpAssocs ++ bodyAssocs

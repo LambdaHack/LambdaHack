@@ -202,10 +202,10 @@ strongestSlot eqpSlot is =
       slotIs = filter f is
   in strongestSlotNoFilter eqpSlot slotIs
 
-sumSlotNoFilter :: EqpSlot -> [(ItemId, ItemFull)] -> Int
+sumSlotNoFilter :: EqpSlot -> [ItemFull] -> Int
 sumSlotNoFilter eqpSlot is =
   let f = strengthFromEqpSlot eqpSlot
-      g (_, itemFull) = (* itemK itemFull) <$> f itemFull
+      g itemFull = (* itemK itemFull) <$> f itemFull
   in sum $ mapMaybe g is
 
 unknownPrecious :: ItemFull -> Bool

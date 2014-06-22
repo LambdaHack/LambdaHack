@@ -244,8 +244,8 @@ condMeleeBadM aid = do
 condLightBetraysM :: MonadClient m => ActorId -> m Bool
 condLightBetraysM aid = do
   b <- getsState $ getActorBody aid
-  eqpAssocs <- fullAssocsClient aid [CEqp]
-  let actorEqpShines = sumSlotNoFilter Effect.EqpSlotAddLight eqpAssocs > 0
+  eqpItems <- map snd <$> fullAssocsClient aid [CEqp]
+  let actorEqpShines = sumSlotNoFilter Effect.EqpSlotAddLight eqpItems > 0
   aInAmbient<- getsState $ actorInAmbient b
   return $! not aInAmbient     -- tile is dark, so actor could hide
             && actorEqpShines  -- but actor betrayed by his equipped light
