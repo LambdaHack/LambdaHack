@@ -18,21 +18,21 @@ data ItemKind = ItemKind
   , iname        :: !Text          -- ^ generic name
   , ifreq        :: !Freqs         -- ^ frequency within groups
   , iflavour     :: ![Flavour]     -- ^ possible flavours
-  , icount       :: !Dice.Dice     -- ^ created in that quantify
+  , icount       :: !Dice.Dice     -- ^ created in that quantity
   , iverbApply   :: !MU.Part       -- ^ the verb for applying and melee
   , iverbProject :: !MU.Part       -- ^ the verb for projecting
   , iweight      :: !Int           -- ^ weight in grams
   , iaspects     :: ![Effect.Aspect Dice.Dice]
-                                   -- ^ cause the effect when triggered
-  , ieffects     :: ![Effect.Effect Dice.Dice]
                                    -- ^ keep the aspect continuously
+  , ieffects     :: ![Effect.Effect Dice.Dice]
+                                   -- ^ cause the effect when triggered
   , ifeature     :: ![Effect.Feature]
                                    -- ^ public properties
   , idesc        :: !Text          -- ^ description
+  , ikit         :: ![(Text, CStore)]  -- ^ accompanying body parts and items
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
--- | No specific possible problems for the content of this kind, so far,
--- so the validation function always returns the empty list of offending kinds.
+-- | Filter a list of kinds, passing through only the incorrect ones, if any.
 validateItemKind :: [ItemKind] -> [ItemKind]
-validateItemKind l = filter (\ik -> T.length (iname ik) > 25) l
+validateItemKind l = filter (\ik -> T.length (iname ik) > 23) l

@@ -37,6 +37,7 @@ bolas = ItemKind
   , ieffects = [Hurt (2 * d 1) 0, Paralyze (5 + d 5), ActivateEqp '!']
   , ifeature = []
   , idesc    = "Wood balls tied with hemp rope for tripping, entangling and bringing down crashing."
+  , ikit     = []
   }
 brassLantern = ItemKind
   { isymbol  = '('
@@ -52,6 +53,7 @@ brassLantern = ItemKind
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
                , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
   , idesc    = "Very bright and very heavy brass lantern."
+  , ikit     = []
   }
 dart = ItemKind
   { isymbol  = '|'
@@ -66,6 +68,7 @@ dart = ItemKind
   , ieffects = [Hurt (2 * d 1) (d 3 + dl 3)]
   , ifeature = []
   , idesc    = "Little, but sharp and sturdy."
+  , ikit     = []
   }
 dart100 = ItemKind
   { isymbol  = '|'
@@ -80,6 +83,7 @@ dart100 = ItemKind
   , ieffects = [Hurt (d 1) (d 2 + dl 2)]
   , ifeature = [toVelocity 200]
   , idesc    = "Finely balanced for throws of great speed."
+  , ikit     = []
   }
 gem = ItemKind
   { isymbol  = '*'
@@ -95,6 +99,7 @@ gem = ItemKind
   , ifeature = [ Durable  -- prevent destruction by evil monsters
                , Precious ]
   , idesc    = "Precious, though useless. Worth around 100 gold."
+  , ikit     = []
   }
 gem1 = gem
   { icount   = dl 1  -- appears on max depth
@@ -118,6 +123,7 @@ currency = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified, Precious]
   , idesc    = "Reliably valuable in every civilized place."
+  , ikit     = []
   }
 harpoon = ItemKind
   { isymbol  = '|'
@@ -132,6 +138,7 @@ harpoon = ItemKind
   , ieffects = [Hurt (3 * d 1) (d 2 + 2 * dl 2), PullActor (ThrowMod 200 50)]
   , ifeature = []
   , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
+  , ikit     = []
   }
 jumpingPole = ItemKind
   { isymbol  = '-'
@@ -148,6 +155,7 @@ jumpingPole = ItemKind
                                -- taken turn now for a free turn later
   , ifeature = [Applicable, Identified]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
+  , ikit     = []
   }
 monocle = ItemKind
   { isymbol  = '['  -- TODO: a hack, we need a symbol for non-armor gear
@@ -162,6 +170,7 @@ monocle = ItemKind
   , ieffects = []
   , ifeature = [Durable, EqpSlot EqpSlotSightRadius "", Identified]
   , idesc    = "Let's you better focus your weaker eye."
+  , ikit     = []
   }
 necklace = ItemKind  -- TODO: when more items, perhaps make all Periodic necklaces
   { isymbol  = '"'
@@ -177,6 +186,7 @@ necklace = ItemKind  -- TODO: when more items, perhaps make all Periodic necklac
   , ifeature = [ Precious, EqpSlot EqpSlotPeriodic ""
                , toVelocity 50 ]  -- not dense enough
   , idesc    = "Tingling, rattling chain of flat encrusted links."
+  , ikit     = []
   }
 necklace1 = necklace
   { iaspects = [Periodic $ d 2 + dl 2]
@@ -207,6 +217,7 @@ net = ItemKind
                , DropBestWeapon, DropEqp ']' False ]
   , ifeature = []
   , idesc    = "A wide net with weights along the edges. Entangles weapon and armor alike."  -- shield instead of armor if a separate symbol for shields
+  , ikit     = []
   }
 oilLamp = ItemKind
   { isymbol  = '('
@@ -222,6 +233,7 @@ oilLamp = ItemKind
   , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
                , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
+  , ikit     = []
   }
 potion = ItemKind
   { isymbol  = '!'
@@ -237,6 +249,7 @@ potion = ItemKind
   , ifeature = [ toVelocity 50  -- oily, bad grip
                , Applicable, Fragile ]
   , idesc    = "A flask of bubbly, slightly oily liquid of a suspect color."
+  , ikit     = []
   }
 potion1 = potion
   { iaspects = [Explode "fragrance"]
@@ -268,6 +281,7 @@ ring = ItemKind
   , ieffects = []
   , ifeature = [Precious]
   , idesc    = "A sturdy ring with a strangely shining eye."
+  , ikit     = []
   }
 ring1 = ring
   { ifreq    = [("useful", 1)]
@@ -309,6 +323,7 @@ scroll = ItemKind
   , ifeature = [ toVelocity 25  -- bad shape, even rolled up
                , Applicable ]
   , idesc    = "A haphazardly scribbled piece of parchment. May contain directions or a secret call sign."
+  , ikit     = []
   }
 scroll1 = scroll
   { ifreq    = [("useful", 2)]
@@ -350,6 +365,7 @@ shield = ItemKind
   , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotArmorMelee "", Identified ]
   , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
+  , ikit     = []
   }
 sword = ItemKind
   { isymbol  = ')'
@@ -365,6 +381,7 @@ sword = ItemKind
   , ifeature = [ toVelocity 20  -- ensuring it hits with the tip costs speed
                , Durable, EqpSlot EqpSlotWeapon "", Identified ]
   , idesc    = "A standard heavy weapon. Does not penetrate very effectively, but hard to block."
+  , ikit     = []
   }
 wand = ItemKind
   { isymbol  = '/'
@@ -380,6 +397,7 @@ wand = ItemKind
   , ifeature = [ toVelocity 125  -- magic
                , Applicable, Durable ]
   , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."
+  , ikit     = []
   }
 wand1 = wand
   { ieffects = [NoEffect]  -- TODO: emit a cone of sound shrapnel that makes enemy cover his ears and so drop '|' and '{'
@@ -401,6 +419,7 @@ woodenTorch = ItemKind
   , ieffects = [Burn 3]
   , ifeature = [EqpSlot EqpSlotAddLight "", Identified]
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady fire."
+  , ikit     = []
   }
 fist = sword
   { isymbol  = '%'
@@ -577,6 +596,7 @@ fragrance = ItemKind
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
                , Fragile, Identified ]
   , idesc    = ""
+  , ikit     = []
   }
 mist_healing = ItemKind
   { isymbol  = '\''
@@ -592,6 +612,7 @@ mist_healing = ItemKind
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
   , idesc    = ""
+  , ikit     = []
   }
 mist_wounding = ItemKind
   { isymbol  = '\''
@@ -607,6 +628,7 @@ mist_wounding = ItemKind
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
   , idesc    = ""
+  , ikit     = []
   }
 burningOil2 = burningOil 2
 burningOil3 = burningOil 3
@@ -625,6 +647,7 @@ glass_piece = ItemKind  -- when blowing up windows
   , ieffects = [Hurt (d 1) 0]
   , ifeature = [toLinger 20, Fragile, Identified]
   , idesc    = ""
+  , ikit     = []
   }
 smoke = ItemKind  -- when stuff burns out
   { isymbol  = '\''
@@ -640,6 +663,7 @@ smoke = ItemKind  -- when stuff burns out
   , ifeature = [ toVelocity 30
                , Fragile, Identified ]
   , idesc    = ""
+  , ikit     = []
   }
 
 burningOil :: Int -> ItemKind
@@ -658,6 +682,7 @@ burningOil n = ItemKind
   , ifeature = [ toVelocity (min 100 $ n * 7)
                , Fragile, Identified ]
   , idesc    = "Sticky oil, burning brightly."
+  , ikit     = []
   }
 
 explosionBlast :: Int -> ItemKind
@@ -674,6 +699,7 @@ explosionBlast n = ItemKind
   , ieffects = [Burn (n `div` 2), DropBestWeapon]
   , ifeature = [Fragile, toLinger 10, Identified]
   , idesc    = ""
+  , ikit     = []
   }
 
 speedGland :: Int -> ItemKind

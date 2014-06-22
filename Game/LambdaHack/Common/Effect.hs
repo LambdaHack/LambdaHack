@@ -50,15 +50,15 @@ data Effect a =
 data Aspect a =
     NoAspect
   | Periodic !a
-  | AddMaxHP !a
-  | AddMaxCalm !a
-  | AddSpeed !a     -- ^ speed bonus in m/10s
-  | AddSkills !Ability.Skills
-  | ArmorMelee !a
+  | AddMaxHP !a     -- ^ maximal hp
+  | AddMaxCalm !a   -- ^ maximal calm
+  | AddSpeed !a     -- ^ speed in m/10s
+  | AddSkills !Ability.Skills  -- ^ skills in particular abilities
+  | ArmorMelee !a   -- ^ armor class wrt melee
   | SightRadius !a  -- ^ FOV radius, where 1 means a single tile
   | SmellRadius !a  -- ^ smell radius, where 1 means a single tile
   | AddLight !a     -- ^ light radius, where 1 means a single tile
-  | Explode !Text  -- ^ explode, producing this group of shrapnel
+  | Explode !Text   -- ^ explode, producing this group of shrapnel
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
 -- | Parameters modifying a trow.
