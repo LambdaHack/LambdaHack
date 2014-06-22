@@ -19,15 +19,12 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
-import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.CommonServer
-import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
@@ -149,16 +146,10 @@ groupsExplosive =
 explodeItem :: (MonadAtomic m, MonadServer m)
             => ActorId -> Actor -> Text -> m ()
 explodeItem aid b cgroup = do
-  Kind.COps{coitem} <- getsState scops
-  flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoRev
-  Level{ldepth} <- getLevel $ blid b
-  depth <- getsState sdepth
   let itemFreq = toFreq "shrapnel group" [(1, cgroup)]
-  (itemKnown, seed, n1) <-
-    rndToAction $ newItem coitem flavour discoRev itemFreq (blid b) ldepth depth
-  let container = CActor aid CEqp
-  iid <- registerItem itemKnown seed n1 container False
+      container = CActor aid CEqp
+  (iid, (itemKnown, _, n1)) <-
+    rollAndRegisterItem (blid b) itemFreq container False
   let Point x y = bpos b
       projectN k100 n = when (n > 7) $ do
         -- We pick a point at the border, not inside, to have a uniform

@@ -274,6 +274,8 @@ projectBla source pos rest iid cstore = do
   execUpdAtomic $ UpdLoseItem iid item 1 c
 
 -- | Create a projectile actor containing the given missile.
+--
+-- Projectile has no body parts nor even a trunk.
 addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
               -> m ()
@@ -292,9 +294,9 @@ addProjectile bpos rest iid blid bfid btime = do
                         (acolor kind) 0 maxBound
                         bpos blid btime bfid (EM.singleton iid 1) True
       btra = b {btrajectory = Just ts}
-  acounter <- getsServer sacounter
-  modifyServer $ \ser -> ser {sacounter = succ acounter}
-  execUpdAtomic $ UpdCreateActor acounter btra [(iid, item)]
+  aid <- getsServer sacounter
+  modifyServer $ \ser -> ser {sacounter = succ aid}
+  execUpdAtomic $ UpdCreateActor aid btra [(iid, item)]
 
 -- Server has to pick a random weapon or it could leak item discovery
 -- information.

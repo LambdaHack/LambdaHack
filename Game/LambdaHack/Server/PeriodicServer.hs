@@ -37,7 +37,6 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonServer
-import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
@@ -134,7 +133,7 @@ addActor :: (MonadAtomic m, MonadServer m)
          -> Char -> Text -> Text -> Color.Color -> Time
          -> m ActorId
 addActor ak bfid pos lid bsymbol bname bpronoun bcolor time = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
   let kind = okind ak
@@ -152,18 +151,14 @@ addActor ak bfid pos lid bsymbol bname bpronoun bcolor time = do
       b = actorTemplate ak bsymbol bname bpronoun bcolor diffHP calm
                         pos lid time bfid EM.empty False
   execUpdAtomic $ UpdCreateActor aid b []
+  -- The trunk of the actor's body that contains the constant properties.
+  let trunk = ("projectile"{-TODO aname kind-}, CBody)
   -- Create initial actor items.
-  flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoRev
-  Level{ldepth} <- getLevel lid
-  depth <- getsState sdepth
-  forM_ (aitems kind) $ \(ikText, cstore) -> do
+  forM_ (trunk : aitems kind) $ \(ikText, cstore) -> do
     let container = CActor aid cstore
         itemFreq = toFreq "create aitems" [(1, ikText)]
-    (itemFull, seed, k) <-
-      rndToAction $ newItem coitem flavour discoRev itemFreq lid ldepth depth
     -- Here the items are inserted into the actor.
-    void $ registerItem itemFull seed k container False
+    void $ rollAndRegisterItem lid itemFreq container False
   return $! aid
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point

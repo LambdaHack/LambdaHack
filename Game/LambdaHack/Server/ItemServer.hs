@@ -1,6 +1,6 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemServer
-  ( registerItem, createItems, placeItemsInDungeon
+  ( rollAndRegisterItem, createItems, placeItemsInDungeon
   , fullAssocsServer, itemToFullServer
   ) where
 
@@ -8,11 +8,13 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.HashMap.Strict as HM
 import Data.Key (mapWithKeyM_)
+import Data.Text (Text)
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -49,16 +51,23 @@ registerItem itemKnown@(item, iae) seed k container verbose = do
 createItems :: (MonadAtomic m, MonadServer m)
             => Int -> Point -> LevelId -> m ()
 createItems n pos lid = do
+  Level{litemFreq} <- getLevel lid
+  let container = CFloor lid pos
+  replicateM_ n $ void $ rollAndRegisterItem lid litemFreq container True
+
+rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
+                    => LevelId -> Frequency Text -> Container -> Bool
+                    -> m (ItemId, (ItemKnown, ItemSeed, Int))
+rollAndRegisterItem lid itemFreq container verbose = do
   Kind.COps{coitem} <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
-  Level{ldepth, litemFreq} <- getLevel lid
   depth <- getsState sdepth
-  let container = CFloor lid pos
-  replicateM_ n $ do
-    (itemKnown, seed, k) <-
-      rndToAction $ newItem coitem flavour discoRev litemFreq lid ldepth depth
-    void $ registerItem itemKnown seed k container True
+  Level{ldepth} <- getLevel lid
+  (itemKnown, seed, k) <-
+    rndToAction $ newItem coitem flavour discoRev itemFreq lid ldepth depth
+  iid <- registerItem itemKnown seed k container verbose
+  return (iid, (itemKnown, seed, k))
 
 placeItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()
 placeItemsInDungeon = do
