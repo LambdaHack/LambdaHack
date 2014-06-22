@@ -8,11 +8,11 @@ import Data.Binary
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Effect
+import qualified Game.LambdaHack.Common.Effect as Effect
 
 -- | All possible terrain tile features.
 data Feature =
-    Cause !(Effect Int)  -- ^ causes the effect when triggered
+    Cause !(Effect.Effect Int)  -- ^ causes the effect when triggered
   | OpenTo !Text         -- ^ goes from a closed to an open tile when altered
   | CloseTo !Text        -- ^ goes from an open to a closed tile when altered
   | ChangeTo !Text       -- ^ alters tile, but does not change walkability
@@ -23,7 +23,7 @@ data Feature =
   | Clear                -- ^ actors can see through
   | Dark                 -- ^ is not lit with an ambient shine
   | Suspect              -- ^ may not be what it seems (clients only)
-  | Aura !(Effect Int)   -- ^ sustains the effect continuously, TODO
+  | Aura !(Effect.Effect Int)  -- ^ sustains the effect continuously, TODO
   | Impenetrable         -- ^ can never be excavated nor seen through
 
   | OftenItem            -- ^ initial items often generated there

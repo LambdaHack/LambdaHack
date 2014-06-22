@@ -21,12 +21,12 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
@@ -66,7 +66,7 @@ reinitGame = do
   let defLocal | knowMap = s
                | otherwise = localFromGlobal s
   discoS <- getsServer sdisco
-  let sdisco = let f ik = IF.Identified `elem` ifeature (okind ik)
+  let sdisco = let f ik = Effect.Identified `elem` ifeature (okind ik)
                in EM.filter f discoS
   sdebugCli <- getsServer $ sdebugCli . sdebugSer
   modeName <- getsServer $ sgameMode . sdebugSer

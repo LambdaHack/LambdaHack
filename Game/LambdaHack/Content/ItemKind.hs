@@ -10,7 +10,6 @@ import qualified NLP.Miniutter.English as MU
 import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Flavour
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.Misc
 
 -- | Item properties that are fixed for a given kind of items.
@@ -27,7 +26,8 @@ data ItemKind = ItemKind
                                    -- ^ cause the effect when triggered
   , ieffects     :: ![Effect.Effect Dice.Dice]
                                    -- ^ keep the aspect continuously
-  , ifeature     :: ![IF.Feature]  -- ^ other properties
+  , ifeature     :: ![Effect.Feature]
+                                   -- ^ public properties
   , idesc        :: !Text          -- ^ description
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53

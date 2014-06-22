@@ -21,7 +21,6 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -66,8 +65,8 @@ itemEffectAndDestroy source target iid itemFull cstore = do
   -- item dictionaries, just an individual copy from the container,
   -- so, e.g., the item can be identified after it's removed.
   let item = itemBase itemFull
-      durable = IF.Durable `elem` jfeature item
-      periodic = isJust $ strengthFromEqpSlot IF.EqpSlotPeriodic itemFull
+      durable = Effect.Durable `elem` jfeature item
+      periodic = isJust $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
       c = CActor source cstore
   unless (durable && periodic) $ do
     when (not durable) $
@@ -202,10 +201,10 @@ effectHurt nDm power source target = do
   n <- rndToAction $ castDice 0 0 nDm
   let block = braced tb
       -- OFF shield doesn't hinder attacks, so also does not protect.
-      sshieldMult = case sumSlotNoFilter IF.EqpSlotArmorMelee sallAssocs of
+      sshieldMult = case sumSlotNoFilter Effect.EqpSlotArmorMelee sallAssocs of
         _ | bproj sb -> 100
         p -> 100 - p
-      tshieldMult = case sumSlotNoFilter IF.EqpSlotArmorMelee tallAssocs of
+      tshieldMult = case sumSlotNoFilter Effect.EqpSlotArmorMelee tallAssocs of
         _ | bproj sb -> 100
         p -> 100 - p
       mult = sshieldMult * tshieldMult * (if block then 100 else 50)
@@ -552,7 +551,7 @@ effectDropBestWeapon :: (MonadAtomic m, MonadServer m)
                      => m () -> ActorId -> m Bool
 effectDropBestWeapon execSfx target = do
   allAssocs <- fullAssocsServer target [CEqp]
-  case strongestSlotNoFilter IF.EqpSlotWeapon allAssocs of
+  case strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
     (_, (iid, _)) : _ -> do
       b <- getsState $ getActorBody target
       let k = beqp b EM.! iid

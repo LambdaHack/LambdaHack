@@ -17,8 +17,8 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -169,7 +169,7 @@ activatePeriodicLevel lid = do
   time <- getsState $ getLocalTime lid
   let turnN = time `timeFit` timeTurn
       activatePeriodicItem aid (iid, itemFull) = do
-        case strengthFromEqpSlot IF.EqpSlotPeriodic itemFull of
+        case strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull of
           Nothing -> return ()
           Just n -> when (turnN `mod` (100 `div` n) == 0) $
                       void $ itemEffect aid aid iid itemFull

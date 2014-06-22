@@ -35,9 +35,9 @@ import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -122,7 +122,7 @@ condFloorWeaponM aid = do
   -- We do consider OFF weapons, because e.g., enemies might have turned
   -- them off or they can be wrong for other party members, but are OK for us.
   let lootIsWeapon =
-        not $ null $ strongestSlot IF.EqpSlotWeapon floorAssocs
+        not $ null $ strongestSlot Effect.EqpSlotWeapon floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
 -- | Require the actor doesn't stand over a weapon, unless it's deactivated.
@@ -130,7 +130,7 @@ condNoWeaponM :: MonadClient m => ActorId -> m Bool
 condNoWeaponM aid = do
   allAssocs <- fullAssocsClient aid [CEqp]
   -- We do not consider OFF weapons, because they apparently are not good.
-  return $ null $ strongestSlot IF.EqpSlotWeapon allAssocs
+  return $ null $ strongestSlot Effect.EqpSlotWeapon allAssocs
     -- keep it lazy
 
 -- | Require that the actor can project any items.
@@ -139,7 +139,7 @@ condCanProjectM aid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   let ak = okind $ bkind b
-  actorBlind <- radiusBlind <$> sumBodyEqpClient IF.EqpSlotSightRadius aid
+  actorBlind <- radiusBlind <$> sumBodyEqpClient Effect.EqpSlotSightRadius aid
   benList <- benAvailableItems aid permittedRanged
   let missiles = filter (maybe True (< 0) . fst . fst) benList
   return $ not actorBlind && calmEnough b ak && not (null missiles)
@@ -198,7 +198,7 @@ benGroundItems aid = do
   floorItems <- getsState $ getActorBag aid CGround
   fightsSpawners <- fightsAgainstSpawners (bfid body)
   let desirableItem item use
-        | fightsSpawners = use /= Just 0 || IF.Precious `elem` jfeature item
+        | fightsSpawners = use /= Just 0 || Effect.Precious `elem` jfeature item
         | otherwise = use /= Just 0
       mapDesirable (iid, k) =
         let item = itemD EM.! iid
@@ -245,7 +245,7 @@ condLightBetraysM :: MonadClient m => ActorId -> m Bool
 condLightBetraysM aid = do
   b <- getsState $ getActorBody aid
   eqpAssocs <- fullAssocsClient aid [CEqp]
-  let actorEqpShines = sumSlotNoFilter IF.EqpSlotAddLight eqpAssocs > 0
+  let actorEqpShines = sumSlotNoFilter Effect.EqpSlotAddLight eqpAssocs > 0
   aInAmbient<- getsState $ actorInAmbient b
   return $! not aInAmbient     -- tile is dark, so actor could hide
             && actorEqpShines  -- but actor betrayed by his equipped light

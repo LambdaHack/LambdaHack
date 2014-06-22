@@ -17,9 +17,9 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -227,7 +227,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
                       `twith` (spos, tpxy)
     Just (pos : restUnlimited) -> do
       item <- getsState $ getItemBody iid
-      let fragile = IF.Fragile `elem` jfeature item
+      let fragile = Effect.Fragile `elem` jfeature item
           rest = if fragile
                  then take (chessDist spos tpxy - 1) restUnlimited
                  else restUnlimited
@@ -237,7 +237,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
         else do
           mab <- getsState $ posToActor pos lid
           actorBlind <- radiusBlind
-                        <$> sumBodyEqpServer IF.EqpSlotSightRadius source
+                        <$> sumBodyEqpServer Effect.EqpSlotSightRadius source
           if not $ maybe True (bproj . snd . fst) mab
             then if isShrapnel then do
                    -- Hit the blocking actor.
@@ -309,7 +309,7 @@ pickWeaponServer source = do
       strongest | bproj sb = map (1,) allAssocs
                 | otherwise =
                     filter (not . unknownPrecious . snd . snd)
-                    $ strongestSlotNoFilter IF.EqpSlotWeapon allAssocs
+                    $ strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs
   case strongest of
     [] -> return Nothing
     iis -> do
@@ -320,7 +320,7 @@ pickWeaponServer source = do
       return $ Just (iid, cstore)
 
 sumBodyEqpServer :: MonadServer m
-                 => IF.EqpSlot -> ActorId -> m Int
+                 => Effect.EqpSlot -> ActorId -> m Int
 sumBodyEqpServer eqpSlot aid = do
   eqpAssocs <- fullAssocsServer aid [CEqp]
   bodyAssocs <- fullAssocsServer aid [CBody]

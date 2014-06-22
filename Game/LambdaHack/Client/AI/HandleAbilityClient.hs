@@ -35,7 +35,6 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -203,7 +202,7 @@ pickup :: MonadClient m
        => ActorId -> Bool -> m (Strategy (RequestTimed AbMoveItem))
 pickup aid onlyWeapon = do
   benItemL <- benGroundItems aid
-  let isWeapon (_, (_, item)) = maybe False ((== IF.EqpSlotWeapon) . fst)
+  let isWeapon (_, (_, item)) = maybe False ((== Effect.EqpSlotWeapon) . fst)
                                 $ strengthEqpSlot item
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
@@ -316,7 +315,7 @@ unEquipItems aid = do
       return $! liftFrequency $ uniformFreq "yield harmful" yieldHarmful
 
 groupByEqpSlot :: [(ItemId, ItemFull)]
-               -> M.Map (IF.EqpSlot, Text) [(ItemId, ItemFull)]
+               -> M.Map (Effect.EqpSlot, Text) [(ItemId, ItemFull)]
 groupByEqpSlot is =
   let f (iid, itemFull) = case strengthEqpSlot $ itemBase itemFull of
         Nothing -> Nothing
@@ -348,17 +347,17 @@ harmful cops condLightBetrays body itemFull =
   -- Fast actors want to hide in darkness to ambush opponents and want
   -- to hit hard for the short span they get to survive melee.
   (bspeed cops body > speedNormal
-   && (isJust (strengthFromEqpSlot IF.EqpSlotAddLight itemFull)
-       || isJust (strengthFromEqpSlot IF.EqpSlotArmorMelee itemFull)))
+   && (isJust (strengthFromEqpSlot Effect.EqpSlotAddLight itemFull)
+       || isJust (strengthFromEqpSlot Effect.EqpSlotArmorMelee itemFull)))
   -- Distressed actors want to hide in the dark.
   || (let heavilyDistressed =  -- actor hit by a proj or similarly distressed
             resCurrentTurn (bcalmDelta body) < -1
             || resPreviousTurn (bcalmDelta body) < -1
       in condLightBetrays && heavilyDistressed
-         && isJust (strengthFromEqpSlot IF.EqpSlotAddLight itemFull))
+         && isJust (strengthFromEqpSlot Effect.EqpSlotAddLight itemFull))
   -- Periodic items that are known and not stricly beneficial
   -- should not be equipped.
-  || (isJust (strengthFromEqpSlot IF.EqpSlotPeriodic itemFull)
+  || (isJust (strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull)
       && maybe False (\u -> u <= 0) (maxUsefulness cops body itemFull))
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
@@ -484,7 +483,7 @@ ranged aid = do
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
       let mk = okind bkind
-      actorBlind <- radiusBlind <$> sumBodyEqpClient IF.EqpSlotSightRadius aid
+      actorBlind <- radiusBlind <$> sumBodyEqpClient Effect.EqpSlotSightRadius aid
       mnewEps <- makeLine b fpos seps
       case mnewEps of
         Just newEps | not actorBlind  -- ProjectBlind
@@ -502,7 +501,7 @@ ranged aid = do
                     bestRange = chessDist bpos fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
                       10 + max 0 (10 - abs (trange - bestRange))
-                    durableBonus = if IF.Durable `elem` jfeature itemBase
+                    durableBonus = if Effect.Durable `elem` jfeature itemBase
                                    then 2  -- we or foes keep it after the throw
                                    else 1
                     benR = durableBonus
@@ -525,12 +524,12 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
-  actorBlind <- radiusBlind <$> sumBodyEqpClient IF.EqpSlotSightRadius aid
+  actorBlind <- radiusBlind <$> sumBodyEqpClient Effect.EqpSlotSightRadius aid
   let permitted itemFull@ItemFull{itemBase=item} =
         not (unknownPrecious itemFull)
         && if jsymbol item == '?' && actorBlind
            then False
-           else IF.Applicable `elem` jfeature item
+           else Effect.Applicable `elem` jfeature item
   benList <- benAvailableItems aid permitted
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
@@ -547,7 +546,7 @@ applyItem aid applyGroup = do
       coeff CInv = 1
       coeff CSha = 2
       fTool ((mben, cstore), (iid, itemFull)) =
-        let durableBonus = if IF.Durable `elem` jfeature (itemBase itemFull)
+        let durableBonus = if Effect.Durable `elem` jfeature (itemBase itemFull)
                            then 5  -- we keep it after use
                            else 1
             benR = durableBonus

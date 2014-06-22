@@ -8,7 +8,6 @@ import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
-import Game.LambdaHack.Common.ItemFeature
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.ItemKind
 

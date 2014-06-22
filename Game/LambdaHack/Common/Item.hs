@@ -25,8 +25,8 @@ import qualified NLP.Miniutter.English as MU
 import System.Random (mkStdGen)
 
 import Game.LambdaHack.Common.Effect
+import Game.LambdaHack.Common.EffectDescription
 import Game.LambdaHack.Common.Flavour
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
@@ -94,7 +94,7 @@ data Item = Item
   , jsymbol  :: !Char          -- ^ individual map symbol
   , jname    :: !Text          -- ^ individual generic name
   , jflavour :: !Flavour       -- ^ individual flavour
-  , jfeature :: ![IF.Feature]  -- ^ other properties
+  , jfeature :: ![Feature]     -- ^ public properties
   , jweight  :: !Int           -- ^ weight in grams, obvious enough
   }
   deriving (Show, Eq, Ord, Generic)
@@ -152,10 +152,10 @@ textAllAE ItemFull{itemBase, itemDisco} =
       Just ItemAspectEffect{jaspects, jeffects} ->
         map aspectToSuffix jaspects
         ++ map effectToSuffix jeffects
-        ++ map IF.featureToSuff (jfeature itemBase)
+        ++ map featureToSuff (jfeature itemBase)
       Nothing -> map kindAspectToSuffix (iaspects itemKind)
                  ++ map kindEffectToSuffix (ieffects itemKind)
-                 ++ map IF.featureToSuff (jfeature itemBase)
+                 ++ map featureToSuff (jfeature itemBase)
 
 partItemWs :: Int -> ItemFull -> MU.Part
 partItemWs count itemFull =

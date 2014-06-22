@@ -16,9 +16,9 @@ import Data.Ord
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -66,7 +66,7 @@ levelPerception cops litHere actorEqpBody fovMode lvl@Level{lxsize, lysize} =
       nocto = concat $ map fst noctoBodies
       ptotal = visibleOnLevel cops totalReachable litHere nocto lvl
       canSmellAround (_, allAssocs) =
-        let radius = sumSlotNoFilter IF.EqpSlotSmellRadius allAssocs
+        let radius = sumSlotNoFilter Effect.EqpSlotSmellRadius allAssocs
         in radius > 1
       -- TODO: We assume smell FOV radius is always 1, regardless of vision
       -- radius of the actor (and whether he can see at all).
@@ -117,7 +117,7 @@ reachableFromActor :: Kind.COps -> FovMode -> Level
                    -> ((ActorId, Actor), [(ItemId, ItemFull)])
                    -> PerceptionReachable
 reachableFromActor Kind.COps{cotile} fovMode lvl ((_, body), allAssocs) =
-  let radius = sumSlotNoFilter IF.EqpSlotSightRadius allAssocs
+  let radius = sumSlotNoFilter Effect.EqpSlotSightRadius allAssocs
   in PerceptionReachable $ fullscan cotile fovMode radius (bpos body) lvl
 
 -- | Compute all lit positions on a level, whether lit by actors or floor items.
@@ -129,7 +129,7 @@ litByItems :: Kind.COps -> FovMode -> Level
 litByItems Kind.COps{cotile} fovMode lvl allItems =
   let litPos :: (Point, [(ItemId, ItemFull)]) -> [Point]
       litPos (p, iis) =
-        let radius = sumSlotNoFilter IF.EqpSlotAddLight iis
+        let radius = sumSlotNoFilter Effect.EqpSlotAddLight iis
             scan = fullscan cotile fovMode radius p lvl
             -- Optimization: filter out positions already having ambient light.
             opt = filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos) scan

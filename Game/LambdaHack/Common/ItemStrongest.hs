@@ -22,7 +22,6 @@ import Data.Text (Text)
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
@@ -62,12 +61,12 @@ strengthEffect f itemFull =
       in concatMap f $ map trav ieffects
     Nothing -> []
 
-strengthFeature :: (IF.Feature -> [b]) -> Item -> [b]
+strengthFeature :: (Feature -> [b]) -> Item -> [b]
 strengthFeature f item = concatMap f (jfeature item)
 
 strengthMelee :: ItemFull -> Maybe Int
 strengthMelee itemFull =
-  let durable = IF.Durable `elem` jfeature (itemBase itemFull)
+  let durable = Durable `elem` jfeature (itemBase itemFull)
       p (Hurt d k) = [floor (Dice.meanDice d) + k]
       p _ = []
       hasNoEffects = case itemDisco itemFull of
@@ -135,9 +134,9 @@ strengthAddLight =
       p _ = []
   in strengthAspectMaybe p
 
-strengthEqpSlot :: Item -> Maybe (IF.EqpSlot, Text)
+strengthEqpSlot :: Item -> Maybe (EqpSlot, Text)
 strengthEqpSlot item =
-  let p (IF.EqpSlot eqpSlot t) = [(eqpSlot, t)]
+  let p (EqpSlot eqpSlot t) = [(eqpSlot, t)]
       p _ = []
   in case strengthFeature p item of
     [] -> Nothing
@@ -146,7 +145,7 @@ strengthEqpSlot item =
 
 strengthToThrow :: Item -> ThrowMod Int
 strengthToThrow item =
-  let p (IF.ToThrow tmod) = [tmod]
+  let p (ToThrow tmod) = [tmod]
       p _ = []
   in case strengthFeature p item of
     [] -> ThrowMod 100 100
@@ -172,29 +171,29 @@ itemTrajectory item path =
   in computeTrajectory (jweight item) throwVelocity throwLinger path
 
 -- TODO: when all below are apsects, define with
--- (IF.EqpSlotAddMaxHP, AddMaxHP k) -> [k]
-strengthFromEqpSlot :: IF.EqpSlot -> ItemFull -> Maybe Int
+-- (EqpSlotAddMaxHP, AddMaxHP k) -> [k]
+strengthFromEqpSlot :: EqpSlot -> ItemFull -> Maybe Int
 strengthFromEqpSlot eqpSlot =
   case eqpSlot of
-    IF.EqpSlotPeriodic -> strengthPeriodic  -- a very crude approximation
-    IF.EqpSlotAddMaxHP -> strengthAddMaxHP
-    IF.EqpSlotAddMaxCalm -> strengthAddMaxCalm
-    IF.EqpSlotAddSpeed -> strengthAddSpeed
-    IF.EqpSlotAbility -> strengthAbility
-    IF.EqpSlotArmorMelee -> strengthArmorMelee  -- a very crude approximation
-    IF.EqpSlotSightRadius -> strengthSightRadius
-    IF.EqpSlotSmellRadius -> strengthSmellRadius
-    IF.EqpSlotAddLight -> strengthAddLight
-    IF.EqpSlotWeapon -> strengthMelee
+    EqpSlotPeriodic -> strengthPeriodic  -- a very crude approximation
+    EqpSlotAddMaxHP -> strengthAddMaxHP
+    EqpSlotAddMaxCalm -> strengthAddMaxCalm
+    EqpSlotAddSpeed -> strengthAddSpeed
+    EqpSlotAbility -> strengthAbility
+    EqpSlotArmorMelee -> strengthArmorMelee  -- a very crude approximation
+    EqpSlotSightRadius -> strengthSightRadius
+    EqpSlotSmellRadius -> strengthSmellRadius
+    EqpSlotAddLight -> strengthAddLight
+    EqpSlotWeapon -> strengthMelee
 
-strongestSlotNoFilter :: IF.EqpSlot -> [(ItemId, ItemFull)]
+strongestSlotNoFilter :: EqpSlot -> [(ItemId, ItemFull)]
                       -> [(Int, (ItemId, ItemFull))]
 strongestSlotNoFilter eqpSlot is =
   let f = strengthFromEqpSlot eqpSlot
       g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> (f itemFull)
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
 
-strongestSlot :: IF.EqpSlot -> [(ItemId, ItemFull)]
+strongestSlot :: EqpSlot -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
 strongestSlot eqpSlot is =
   let f (_, itemFull) = case strengthEqpSlot $ itemBase itemFull of
@@ -203,7 +202,7 @@ strongestSlot eqpSlot is =
       slotIs = filter f is
   in strongestSlotNoFilter eqpSlot slotIs
 
-sumSlotNoFilter :: IF.EqpSlot -> [(ItemId, ItemFull)] -> Int
+sumSlotNoFilter :: EqpSlot -> [(ItemId, ItemFull)] -> Int
 sumSlotNoFilter eqpSlot is =
   let f = strengthFromEqpSlot eqpSlot
       g (_, itemFull) = (* itemK itemFull) <$> f itemFull
@@ -213,11 +212,11 @@ unknownPrecious :: ItemFull -> Bool
 unknownPrecious itemFull =
   case itemDisco itemFull of
     Just ItemDisco{itemAE=Just _} -> False
-    _ -> IF.Precious `elem` jfeature (itemBase itemFull)
+    _ -> Precious `elem` jfeature (itemBase itemFull)
 
 permittedRanged :: ItemFull -> Bool
 permittedRanged itemFull = not (unknownPrecious itemFull)
                            && case strengthEqpSlot (itemBase itemFull) of
-                                Just (IF.EqpSlotAddLight, _) -> True
+                                Just (EqpSlotAddLight, _) -> True
                                 Just _ -> False
                                 Nothing -> True

@@ -43,7 +43,6 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -296,7 +295,7 @@ projectPos ts tpos = do
             then failSer ProjectBlockTerrain
             else do
               actorBlind <-
-                radiusBlind <$> sumBodyEqpClient IF.EqpSlotSightRadius leader
+                radiusBlind <$> sumBodyEqpClient Effect.EqpSlotSightRadius leader
               mab <- getsState $ posToActor pos lid
               if maybe True (bproj . snd . fst) mab
               then if actorBlind
@@ -318,7 +317,7 @@ projectEps ts tpos eps = do
       p item =
         let goodKind = if ' ' `elem` triggerSyms
                        then case strengthEqpSlot item of
-                         Just (IF.EqpSlotAddLight, _) -> True
+                         Just (Effect.EqpSlotAddLight, _) -> True
                          Just _ -> False
                          Nothing -> True
                        else jsymbol item `elem` triggerSyms
@@ -354,13 +353,13 @@ applyHuman ts = do
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
       p item = if ' ' `elem` triggerSyms
-               then IF.Applicable `elem` jfeature item
+               then Effect.Applicable `elem` jfeature item
                else jsymbol item `elem` triggerSyms
   ggi <- getGroupItem p object1 verb1 cLegalRaw cLegal
   case ggi of
     Right ((iid, itemFull), fromCStore) -> do
-      let durable = IF.Durable `elem` jfeature (itemBase itemFull)
-          periodic = isJust $ strengthFromEqpSlot IF.EqpSlotPeriodic itemFull
+      let durable = Effect.Durable `elem` jfeature (itemBase itemFull)
+          periodic = isJust $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
       if durable && periodic
         then failSer DurablePeriodicAbuse
         else return $ Right $ ReqApply iid fromCStore

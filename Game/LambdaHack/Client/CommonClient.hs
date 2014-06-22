@@ -21,9 +21,9 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -219,7 +219,7 @@ pickWeaponClient source target = do
   bodyAssocs <- fullAssocsClient source [CBody]
   let allAssocs = eqpAssocs ++ bodyAssocs
   case filter (not . unknownPrecious . snd . snd)
-       $ strongestSlotNoFilter IF.EqpSlotWeapon allAssocs of
+       $ strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
     [] -> return []
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
@@ -230,7 +230,7 @@ pickWeaponClient source target = do
       return $! [ReqMelee target iid cstore]
 
 sumBodyEqpClient :: MonadClient m
-                 => IF.EqpSlot -> ActorId -> m Int
+                 => Effect.EqpSlot -> ActorId -> m Int
 sumBodyEqpClient eqpSlot aid = do
   eqpAssocs <- fullAssocsClient aid [CEqp]
   bodyAssocs <- fullAssocsClient aid [CBody]

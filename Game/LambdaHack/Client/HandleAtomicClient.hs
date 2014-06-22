@@ -17,8 +17,8 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -235,7 +235,7 @@ cmdAtomicFilterCli cmd = case cmd of
 deleteSmell :: MonadClient m => ActorId -> Point -> m [UpdAtomic]
 deleteSmell aid pos = do
   b <- getsState $ getActorBody aid
-  smellRadius <- sumBodyEqpClient IF.EqpSlotSmellRadius aid
+  smellRadius <- sumBodyEqpClient Effect.EqpSlotSmellRadius aid
   if smellRadius <= 0 then return []
   else do
     lvl <- getLevel $ blid b

@@ -27,7 +27,6 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -298,7 +297,7 @@ drawLeaderDamage width = do
   stats <- case mleader of
     Just leader -> do
       allAssocs <- fullAssocsClient leader [CEqp, CBody]
-      let damage = case strongestSlotNoFilter IF.EqpSlotWeapon allAssocs of
+      let damage = case strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
             (_, (_, itemFull)) : _->
               let getP :: Effect.Effect a -> Maybe (Dice.Dice, a)
                        -> Maybe (Dice.Dice, a)
