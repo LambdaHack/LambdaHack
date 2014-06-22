@@ -348,14 +348,14 @@ harmful cops condLightBetrays body itemFull =
   -- Fast actors want to hide in darkness to ambush opponents and want
   -- to hit hard for the short span they get to survive melee.
   (bspeed cops body > speedNormal
-   && (isJust (strengthFromEqpSlot IF.EqpSlotLight itemFull)
+   && (isJust (strengthFromEqpSlot IF.EqpSlotAddLight itemFull)
        || isJust (strengthFromEqpSlot IF.EqpSlotArmorMelee itemFull)))
   -- Distressed actors want to hide in the dark.
   || (let heavilyDistressed =  -- actor hit by a proj or similarly distressed
             resCurrentTurn (bcalmDelta body) < -1
             || resPreviousTurn (bcalmDelta body) < -1
       in condLightBetrays && heavilyDistressed
-         && isJust (strengthFromEqpSlot IF.EqpSlotLight itemFull))
+         && isJust (strengthFromEqpSlot IF.EqpSlotAddLight itemFull))
   -- Periodic items that are known and not stricly beneficial
   -- should not be equipped.
   || (isJust (strengthFromEqpSlot IF.EqpSlotPeriodic itemFull)

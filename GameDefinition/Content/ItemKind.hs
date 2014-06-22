@@ -48,10 +48,10 @@ brassLantern = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "heave"
   , iweight  = 2400
-  , iaspects = [SightRadius (-1), Explode "burning oil 3"]
+  , iaspects = [AddLight 3, SightRadius (-1), Explode "burning oil 3"]
   , ieffects = [Burn 3]
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
-               , Light 3, Fragile, EqpSlot EqpSlotLight "", Identified ]
+               , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
   , idesc    = "Very bright and very heavy brass lantern."
   }
 dart = ItemKind
@@ -91,10 +91,9 @@ gem = ItemKind
   , iverbApply   = "crush"
   , iverbProject = "toss"
   , iweight  = 50
-  , iaspects = []
+  , iaspects = [AddLight 0]  -- just reflects strongly
   , ieffects = []
-  , ifeature = [ Light 0  -- just reflects strongly
-               , Durable  -- prevent destruction by evil monsters
+  , ifeature = [ Durable  -- prevent destruction by evil monsters
                , Precious ]
   , idesc    = "Precious, though useless. Worth around 100 gold."
   }
@@ -219,10 +218,10 @@ oilLamp = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "lob"
   , iweight  = 1000
-  , iaspects = [SightRadius (-1), Explode "burning oil 2"]
+  , iaspects = [AddLight 2, SightRadius (-1), Explode "burning oil 2"]
   , ieffects = [Burn 2]
   , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
-               , Light 2, Fragile, EqpSlot EqpSlotLight "", Identified ]
+               , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
   }
 potion = ItemKind
@@ -377,10 +376,10 @@ wand = ItemKind
   , iverbApply   = "snap"
   , iverbProject = "zap"
   , iweight  = 300
-  , iaspects = []
+  , iaspects = [AddLight 1]
   , ieffects = []
   , ifeature = [ toVelocity 125  -- magic
-               , Light 1, Applicable, Durable ]
+               , Applicable, Durable ]
   , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."
   }
 wand1 = wand
@@ -398,9 +397,10 @@ woodenTorch = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "fling"
   , iweight  = 1200
-  , iaspects = [SightRadius (-2)]  -- not only bright, but also sparks
+  , iaspects = [ AddLight 2
+               , SightRadius (-2) ]  -- not only flashes, but also sparks
   , ieffects = [Burn 2]
-  , ifeature = [Light 2, EqpSlot EqpSlotLight "", Identified]
+  , ifeature = [EqpSlot EqpSlotAddLight "", Identified]
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady fire."
   }
 fist = sword
@@ -588,10 +588,9 @@ mist_healing = ItemKind
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
-  , iaspects = []
+  , iaspects = [AddLight 0]
   , ieffects = [Heal 2]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
-               , Light 0
                , Fragile, Identified ]
   , idesc    = ""
   }
@@ -654,11 +653,10 @@ burningOil n = ItemKind
   , iverbApply   = "smear"
   , iverbProject = "spit"
   , iweight  = 1
-  , iaspects = []
+  , iaspects = [AddLight 1]
   , ieffects = [ Burn 1
                , Paralyze (intToDice n) ]  -- actors strain not to trip on oil
   , ifeature = [ toVelocity (min 100 $ n * 7)
-               , Light 1
                , Fragile, Identified ]
   , idesc    = "Sticky oil, burning brightly."
   }
@@ -673,9 +671,9 @@ explosionBlast n = ItemKind
   , iverbApply   = "blast"
   , iverbProject = "give off"
   , iweight  = 1
-  , iaspects = []
+  , iaspects = [AddLight $ intToDice n]
   , ieffects = [Burn (n `div` 2), DropBestWeapon]
-  , ifeature = [Light n, Fragile, toLinger 10, Identified]
+  , ifeature = [Fragile, toLinger 10, Identified]
   , idesc    = ""
   }
 

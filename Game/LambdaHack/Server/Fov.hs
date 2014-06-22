@@ -129,7 +129,7 @@ litByItems :: Kind.COps -> FovMode -> Level
 litByItems Kind.COps{cotile} fovMode lvl allItems =
   let litPos :: (Point, [(ItemId, ItemFull)]) -> [Point]
       litPos (p, iis) =
-        let radius = sumSlotNoFilter IF.EqpSlotLight iis
+        let radius = sumSlotNoFilter IF.EqpSlotAddLight iis
             scan = fullscan cotile fovMode radius p lvl
             -- Optimization: filter out positions already having ambient light.
             opt = filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos) scan

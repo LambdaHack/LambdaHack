@@ -318,7 +318,7 @@ projectEps ts tpos eps = do
       p item =
         let goodKind = if ' ' `elem` triggerSyms
                        then case strengthEqpSlot item of
-                         Just (IF.EqpSlotLight, _) -> True
+                         Just (IF.EqpSlotAddLight, _) -> True
                          Just _ -> False
                          Nothing -> True
                        else jsymbol item `elem` triggerSyms

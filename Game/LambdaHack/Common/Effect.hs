@@ -62,6 +62,7 @@ data Aspect a =
   | ArmorMelee !a
   | SightRadius !a
   | SmellRadius !a
+  | AddLight !a                      -- ^ item shines with the given radius
   | Explode !Text  -- ^ explode, producing this group of shrapnel
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
@@ -155,6 +156,9 @@ aspectTrav (SightRadius a) f = do
 aspectTrav (SmellRadius a) f = do
   b <- f a
   return $! SmellRadius b
+aspectTrav (AddLight a) f = do
+  b <- f a
+  return $! AddLight b
 aspectTrav (Explode t) _ = return $! Explode t
 
 -- | Transform a throwing mod using a stateful function.
@@ -183,7 +187,7 @@ effectToSuff effect f =
     Summon t -> "of summoning" <+> t
     CreateItem p -> "of item creation" <+> affixPower p
     ApplyPerfume -> "of rose water"
-    Burn{} -> ""  -- often accompanies Light, too verbose, too boring
+    Burn{} -> ""  -- often accompanies AddLight, too verbose, too boring
     Blast p -> "of explosion" <+> affixPower p
     Ascend p | p > 0 -> "of ascending" <+> affixPower p
     Ascend 0 -> assert `failure` effect
@@ -241,6 +245,7 @@ aspectToSuff aspect f =
     ArmorMelee t -> "[" <> t <> "]"
     SightRadius t -> "of sight" <+> t
     SmellRadius t -> "of smell" <+> t
+    AddLight t -> "shining" <+> t
     Explode{} -> ""
 
 effectToSuffix :: Effect Int -> Text

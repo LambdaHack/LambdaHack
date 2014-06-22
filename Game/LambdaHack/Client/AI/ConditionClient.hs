@@ -240,14 +240,15 @@ condMeleeBadM aid = do
     -- no $!; keep it lazy
 
 -- | Require that the actor stands in the dark, but is betrayed
--- by his own light,
+-- by his own equipped light,
 condLightBetraysM :: MonadClient m => ActorId -> m Bool
 condLightBetraysM aid = do
   b <- getsState $ getActorBody aid
-  aShines <- getsState $ actorShines b
+  eqpAssocs <- fullAssocsClient aid [CEqp]
+  let actorEqpShines = sumSlotNoFilter IF.EqpSlotAddLight eqpAssocs > 0
   aInAmbient<- getsState $ actorInAmbient b
-  return $! not aInAmbient  -- tile is dark, so actor could hide
-            && aShines      -- but actor betrayed by his light
+  return $! not aInAmbient     -- tile is dark, so actor could hide
+            && actorEqpShines  -- but actor betrayed by his equipped light
 
 -- | Produce a list of acceptable adjacent points to flee to.
 fleeList :: MonadClient m => ActorId -> m [(Int, Point)]

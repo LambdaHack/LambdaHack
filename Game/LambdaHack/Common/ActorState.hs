@@ -12,11 +12,10 @@ module Game.LambdaHack.Common.ActorState
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, isSpawnFaction
   , itemPrice, calmEnough, hpEnough, regenCalmDelta
-  , actorShines, actorInAmbient, dispEnemy, radiusBlind
+  , actorInAmbient, dispEnemy, radiusBlind
   , fullAssocs, itemToFull, goesIntoInv, eqpOverfull
   ) where
 
-import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
@@ -26,7 +25,6 @@ import Data.Maybe
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -282,14 +280,6 @@ regenCalmDelta b s =
   in if null noisyFoes
      then min calmIncr maxDeltaCalm
      else -1  -- even if all calmness spent, keep informing the client
-
-actorShines :: Actor -> State -> Bool
-actorShines b s =
-  let eqpAssocs = bagAssocsK s $ beqp b
-      bodyAssocs = bagAssocsK s $ bbody b
-      floorAssocs = bagAssocsK s $ sdungeon s EM.! blid b `atI` bpos b
-  in 0 /= (sumSlotNoFilter IF.EqpSlotLight $ map (second itemNoDisco)
-           $ eqpAssocs ++ bodyAssocs ++ floorAssocs)
 
 actorInAmbient :: Actor -> State -> Bool
 actorInAmbient b s =

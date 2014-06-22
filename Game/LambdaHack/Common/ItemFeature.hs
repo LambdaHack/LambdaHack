@@ -18,7 +18,6 @@ data Feature =
   | Durable                         -- ^ don't break even hitting or applying
   | ToThrow !(Effect.ThrowMod Int)  -- ^ parameters modifying a throw
   | Applicable                      -- ^ can't be turned off, is consumed by use
-  | Light !Int                      -- ^ item shines with the given radius
   | EqpSlot !EqpSlot !Text          -- ^ the slot, counts towards the eqp limit
   | Identified                      -- ^ any such item starts identified
   | Precious                        -- ^ precious; don't risk identifying by use
@@ -33,7 +32,7 @@ data EqpSlot =
   | EqpSlotArmorMelee
   | EqpSlotSightRadius
   | EqpSlotSmellRadius
-  | EqpSlotLight
+  | EqpSlotAddLight
   | EqpSlotWeapon
   deriving (Show, Eq, Ord, Generic)
 
@@ -53,7 +52,6 @@ featureToSuff feat =
     Durable -> ""
     ToThrow{} -> ""
     Applicable -> ""
-    Light p -> Effect.affixBonus p
     EqpSlot{} -> ""
     Identified -> ""
     Precious -> ""

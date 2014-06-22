@@ -70,6 +70,7 @@ aspectToBenefit _cops _b asp =
     Effect.Explode{} -> (0, 10)
     Effect.SightRadius p -> (p * 20, 1)
     Effect.SmellRadius p -> (p * 2, 1)
+    Effect.AddLight p -> (p * 10, 1)
 
 effAspToBenefit :: Kind.COps -> Actor
                 -> [Effect.Effect Int] -> [Effect.Aspect Int]

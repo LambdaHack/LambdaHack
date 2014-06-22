@@ -129,14 +129,11 @@ strengthSmellRadius =
       p _ = []
   in strengthAspectMaybe p
 
-strengthLight :: Item -> Maybe Int
-strengthLight item =
-  let p (IF.Light k) = [k]
+strengthAddLight :: ItemFull -> Maybe Int
+strengthAddLight =
+  let p (AddLight k) = [k]
       p _ = []
-  in case strengthFeature p item of
-    [] -> Nothing
-    [x] -> Just x
-    xs -> assert `failure` (xs, item)
+  in strengthAspectMaybe p
 
 strengthEqpSlot :: Item -> Maybe (IF.EqpSlot, Text)
 strengthEqpSlot item =
@@ -187,7 +184,7 @@ strengthFromEqpSlot eqpSlot =
     IF.EqpSlotArmorMelee -> strengthArmorMelee  -- a very crude approximation
     IF.EqpSlotSightRadius -> strengthSightRadius
     IF.EqpSlotSmellRadius -> strengthSmellRadius
-    IF.EqpSlotLight -> strengthLight . itemBase
+    IF.EqpSlotAddLight -> strengthAddLight
     IF.EqpSlotWeapon -> strengthMelee
 
 strongestSlotNoFilter :: IF.EqpSlot -> [(ItemId, ItemFull)]
@@ -221,6 +218,6 @@ unknownPrecious itemFull =
 permittedRanged :: ItemFull -> Bool
 permittedRanged itemFull = not (unknownPrecious itemFull)
                            && case strengthEqpSlot (itemBase itemFull) of
-                                Just (IF.EqpSlotLight, _) -> True
+                                Just (IF.EqpSlotAddLight, _) -> True
                                 Just _ -> False
                                 Nothing -> True
