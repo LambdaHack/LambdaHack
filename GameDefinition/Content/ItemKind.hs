@@ -48,8 +48,8 @@ brassLantern = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "heave"
   , iweight  = 2400
-  , iaspects = [AddLight 3, SightRadius (-1), Explode "burning oil 3"]
-  , ieffects = [Burn 3]
+  , iaspects = [AddLight 4, SightRadius (-1), Explode "burning oil 4"]
+  , ieffects = [Burn 4]
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
                , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
   , idesc    = "Very bright and very heavy brass lantern."
@@ -91,7 +91,7 @@ gem = ItemKind
   , iverbApply   = "crush"
   , iverbProject = "toss"
   , iweight  = 50
-  , iaspects = [AddLight 0]  -- just reflects strongly
+  , iaspects = [AddLight 1]  -- just reflects strongly
   , ieffects = []
   , ifeature = [ Durable  -- prevent destruction by evil monsters
                , Precious ]
@@ -218,8 +218,8 @@ oilLamp = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "lob"
   , iweight  = 1000
-  , iaspects = [AddLight 2, SightRadius (-1), Explode "burning oil 2"]
-  , ieffects = [Burn 2]
+  , iaspects = [AddLight 3, SightRadius (-1), Explode "burning oil 3"]
+  , ieffects = [Burn 3]
   , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
                , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
@@ -397,9 +397,9 @@ woodenTorch = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "fling"
   , iweight  = 1200
-  , iaspects = [ AddLight 2
+  , iaspects = [ AddLight 3
                , SightRadius (-2) ]  -- not only flashes, but also sparks
-  , ieffects = [Burn 2]
+  , ieffects = [Burn 3]
   , ifeature = [EqpSlot EqpSlotAddLight "", Identified]
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady fire."
   }
@@ -550,7 +550,7 @@ nostril = fist
   , ifreq    = [("nostril", 100)]
   , icount   = 2
   , iverbApply   = "sniff"
-  , iaspects = [SmellRadius 1]
+  , iaspects = [SmellRadius 2]
   , ieffects = []
   , ifeature = [EqpSlot EqpSlotSmellRadius "", Identified]
   , idesc    = ""
@@ -588,7 +588,7 @@ mist_healing = ItemKind
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
-  , iaspects = [AddLight 0]
+  , iaspects = [AddLight 1]
   , ieffects = [Heal 2]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
@@ -653,7 +653,7 @@ burningOil n = ItemKind
   , iverbApply   = "smear"
   , iverbProject = "spit"
   , iweight  = 1
-  , iaspects = [AddLight 1]
+  , iaspects = [AddLight 2]
   , ieffects = [ Burn 1
                , Paralyze (intToDice n) ]  -- actors strain not to trip on oil
   , ifeature = [ toVelocity (min 100 $ n * 7)

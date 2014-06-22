@@ -12,7 +12,7 @@ import Game.LambdaHack.Server.Fov.Common
 
 -- | Calculates the list of tiles, in @Bump@ coordinates, visible from (0, 0),
 -- within the given sight range.
-scan :: Distance        -- ^ visiblity radius
+scan :: Distance        -- ^ visiblity distance
      -> (Bump -> Bool)  -- ^ clear tile predicate
      -> [Bump]
 scan r isClear = assert (r > 0 `blame` r) $

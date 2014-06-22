@@ -236,7 +236,7 @@ deleteSmell :: MonadClient m => ActorId -> Point -> m [UpdAtomic]
 deleteSmell aid pos = do
   b <- getsState $ getActorBody aid
   smellRadius <- sumBodyEqpClient IF.EqpSlotSmellRadius aid
-  if smellRadius == 0 then return []
+  if smellRadius <= 0 then return []
   else do
     lvl <- getLevel $ blid b
     let msml = EM.lookup pos $ lsmell lvl

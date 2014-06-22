@@ -60,9 +60,9 @@ data Aspect a =
   | AddSpeed !a     -- ^ speed bonus in m/10s
   | AddSkills !Ability.Skills
   | ArmorMelee !a
-  | SightRadius !a
-  | SmellRadius !a
-  | AddLight !a                      -- ^ item shines with the given radius
+  | SightRadius !a  -- ^ FOV radius, where 1 means a single tile
+  | SmellRadius !a  -- ^ smell radius, where 1 means a single tile
+  | AddLight !a     -- ^ light radius, where 1 means a single tile
   | Explode !Text  -- ^ explode, producing this group of shrapnel
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 

@@ -65,15 +65,15 @@ levelPerception cops litHere actorEqpBody fovMode lvl@Level{lxsize, lysize} =
       noctoBodies = map (\aEB@((_, b), _) -> (pAndVicinity (bpos b), aEB)) ours
       nocto = concat $ map fst noctoBodies
       ptotal = visibleOnLevel cops totalReachable litHere nocto lvl
-      canSmell (_, allAssocs) =
+      canSmellAround (_, allAssocs) =
         let radius = sumSlotNoFilter IF.EqpSlotSmellRadius allAssocs
-        in radius > 0
+        in radius > 1
       -- TODO: We assume smell FOV radius is always 1, regardless of vision
       -- radius of the actor (and whether he can see at all).
       -- Instead, use the smell radius.
       -- TODO: filter out tiles that are solid and so can't hold smell.
       psmell = PerceptionVisible $ ES.fromList
-               $ concat $ map fst $ filter (canSmell . snd) noctoBodies
+               $ concat $ map fst $ filter (canSmellAround . snd) noctoBodies
   in Perception ptotal psmell
 
 -- | Calculate faction's perception of a level based on the lit tiles cache..
@@ -189,16 +189,16 @@ fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
          -> Point              -- ^ position of the spectator
          -> Level              -- ^ the map that is scanned
          -> [Point]
-fullscan cotile fovMode r spectatorPos lvl =
-  if r <= 0
-  then []
+fullscan cotile fovMode radius spectatorPos lvl =
+  if radius <= 0 then []
+  else if radius == 1 then [spectatorPos]
   else spectatorPos : case fovMode of
     Shadow ->
       concatMap (\tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
     Permissive ->
       concatMap (\tr -> map tr (Permissive.scan (isCl . tr))) tr4
     Digital ->
-      concatMap (\tr -> map tr (Digital.scan r (isCl . tr))) tr4
+      concatMap (\tr -> map tr (Digital.scan (radius - 1) (isCl . tr))) tr4
  where
   isCl :: Point -> Bool
   isCl = Tile.isClear cotile . (lvl `at`)
