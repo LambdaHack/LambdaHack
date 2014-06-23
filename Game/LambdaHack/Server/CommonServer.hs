@@ -281,7 +281,6 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
               -> m ()
 addProjectile bpos rest iid blid bfid btime = do
-  Kind.COps{coactor} <- getsState scops
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
   -- We bootstrap the actor by first creating the trunk of the actor's body
@@ -297,7 +296,7 @@ addProjectile bpos rest iid blid bfid btime = do
       -- Not much detail about a fast flying item.
       (object1, object2) = partItem $ itemNoDisco (item, 1)
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      b = actorTemplate (projectileKindId coactor) (jsymbol itemBase) name "it"
+      b = actorTemplate trunkId (jsymbol itemBase) name "it"
                         (flavourToColor $ jflavour itemBase) 0 maxBound
                         bpos blid btime bfid True
       btra = b {btrajectory = Just ts}

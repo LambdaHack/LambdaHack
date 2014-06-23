@@ -671,14 +671,13 @@ chase aid doDisplace = do
 moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> Point -> Bool -> m (Strategy Vector)
 moveTowards aid source target goal relaxed = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
+  cops@Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody aid
   assert (source == bpos b && adjacent source target) skip
   lvl <- getLevel $ blid b
   fact <- getsState $ (EM.! bfid b) . sfactionD
   friends <- getsState $ actorList (not . isAtWar fact) $ blid b
-  let _mk = okind $ bkind b
-      noFriends = unoccupied friends
+  let noFriends = unoccupied friends
       accessibleHere = accessible cops lvl source
       bumpableHere p =
         let t = lvl `at` p

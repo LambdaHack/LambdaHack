@@ -17,7 +17,6 @@ import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
 
@@ -33,7 +32,7 @@ data Faction = Faction
   , gquit    :: !(Maybe Status)         -- ^ cause of game end/exit
   , gleader  :: !(Maybe ActorId)        -- ^ the leader of the faction, if any
   , gsha     :: !ItemBag                -- ^ faction's shared inventory
-  , gvictims :: !(EM.EnumMap (Kind.Id ActorKind) Int)  -- ^ members killed
+  , gvictims :: !(EM.EnumMap ItemId Int)  -- ^ members killed
   }
   deriving (Show, Eq)
 

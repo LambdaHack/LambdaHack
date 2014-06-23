@@ -12,16 +12,15 @@ import Data.List
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Game.LambdaHack.Common.Kind as Kind
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 import System.Time
 
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ActorKind
 
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.
@@ -32,8 +31,8 @@ data ScoreRecord = ScoreRecord
   , status       :: !Status     -- ^ reason of the game interruption
   , difficulty   :: !Int        -- ^ difficulty of the game
   , gplayerName  :: !Text       -- ^ name of the faction's gplayer
-  , ourVictims   :: !(EM.EnumMap (Kind.Id ActorKind) Int)  -- ^ allies lost
-  , theirVictims :: !(EM.EnumMap (Kind.Id ActorKind) Int)  -- ^ foes killed
+  , ourVictims   :: !(EM.EnumMap ItemId Int)  -- ^ allies lost
+  , theirVictims :: !(EM.EnumMap ItemId Int)  -- ^ foes killed
   }
   deriving (Eq, Ord, Show, Generic)
 
@@ -108,8 +107,8 @@ register :: ScoreTable  -- ^ old table
          -> ClockTime   -- ^ current date
          -> Int         -- ^ difficulty level
          -> Text        -- ^ name of the faction's gplayer
-         -> EM.EnumMap (Kind.Id ActorKind) Int  -- ^ allies lost
-         -> EM.EnumMap (Kind.Id ActorKind) Int  -- ^ foes killed
+         -> EM.EnumMap ItemId Int  -- ^ allies lost
+         -> EM.EnumMap ItemId Int  -- ^ foes killed
          -> Bool        -- ^ whether the faction fights against spawners
          -> (Bool, (ScoreTable, Int))
 register table total time status@Status{stOutcome} date difficulty gplayerName

@@ -312,7 +312,7 @@ updRecordKill aid k = do
   assert (not (bproj b) `blame` (aid, b)) skip
   let alterKind mn = let n = fromMaybe 0 mn + k
                      in if n == 0 then Nothing else Just n
-      adjFact fact = fact {gvictims = EM.alter alterKind (bkind b)
+      adjFact fact = fact {gvictims = EM.alter alterKind (btrunk b)
                                       $ gvictims fact}
   updateFaction (bfid b) adjFact
 

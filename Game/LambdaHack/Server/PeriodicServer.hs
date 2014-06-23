@@ -36,7 +36,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
@@ -52,13 +51,11 @@ spawnMonsters :: (MonadAtomic m, MonadServer m)
               => [Point] -> LevelId -> Time -> FactionId
               -> m ()
 spawnMonsters ps lid time fid = assert (not $ null ps) $ do
-  Kind.COps{coactor=Kind.Ops{opick}, cofaction=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
   let spawnName = fname $ okind $ gkind fact
   laid <- forM ps $ \ p -> do
-    ak <- rndToAction $ fmap (fromMaybe $ assert `failure` spawnName)
-                        $ opick spawnName (const True)
-    addMonster spawnName ak fid p lid time
+    addMonster spawnName fid p lid time
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD  -- just changed
   when (isNothing mleader) $
     execUpdAtomic $ UpdLeadFaction fid Nothing (Just $ head laid)
@@ -94,15 +91,15 @@ generateMonster lid = do
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: (MonadAtomic m, MonadServer m)
-           => Text -> Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Time
+           => Text -> FactionId -> Point -> LevelId -> Time
            -> m ActorId
-addMonster groupName ak bfid ppos lid time = do
+addMonster groupName bfid ppos lid time = do
   cops <- getsState scops
   fact <- getsState $ (EM.! bfid) . sfactionD
   pronoun <- if isCivilianFact cops fact
              then rndToAction $ oneOf ["he", "she"]
              else return "it"
-  addActor groupName ak bfid ppos lid Nothing Nothing Nothing pronoun
+  addActor groupName bfid ppos lid Nothing Nothing Nothing pronoun
            time
 
 -- | Create a new hero on the current level, close to the given position.
@@ -111,12 +108,9 @@ addHero :: (MonadAtomic m, MonadServer m)
         -> Maybe Int -> Time
         -> m ActorId
 addHero bfid ppos lid heroNames mNumber time = do
-  Kind.COps{ coactor=Kind.Ops{opick}
-           , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
+  Kind.COps{cofaction=Kind.Ops{okind=okind}} <- getsState scops
   Faction{gcolor, gplayer, gkind} <- getsState $ (EM.! bfid) . sfactionD
-  let fName = fname $ fokind gkind
-  ak <- rndToAction $ fmap (fromMaybe $ assert `failure` fName)
-                      $ opick fName (const True)
+  let fName = fname $ okind gkind
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
@@ -129,14 +123,14 @@ addHero bfid ppos lid heroNames mNumber time = do
            | otherwise =
         let (nameN, pronounN) = nameFromNumber n
         in (playerName gplayer <+> nameN, pronounN)
-  addActor fName ak bfid ppos lid (Just symbol) (Just name) (Just gcolor)
+  addActor fName bfid ppos lid (Just symbol) (Just name) (Just gcolor)
            pronoun time
 
 addActor :: (MonadAtomic m, MonadServer m)
-         => Text -> Kind.Id ActorKind -> FactionId -> Point -> LevelId
+         => Text -> FactionId -> Point -> LevelId
          -> Maybe Char -> Maybe Text -> Maybe Color.Color -> Text -> Time
          -> m ActorId
-addActor groupName ak bfid pos lid msymbol mname mcolor bpronoun time = do
+addActor groupName bfid pos lid msymbol mname mcolor bpronoun time = do
   cops <- getsState scops
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
@@ -163,7 +157,7 @@ addActor groupName ak bfid pos lid msymbol mname mcolor bpronoun time = do
       bsymbol = fromMaybe (jsymbol itemBase) msymbol
       bname = fromMaybe (jname itemBase) mname
       bcolor = fromMaybe (flavourToColor $ jflavour itemBase) mcolor
-      b = actorTemplate ak bsymbol bname bpronoun bcolor diffHP calm
+      b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
                         pos lid time bfid False
       -- Insert the trunk as the actor's body part.
       btrunk = b {bbody = EM.singleton trunkId itemK}

@@ -145,7 +145,6 @@ library
                       Game.LambdaHack.Common.Tile,
                       Game.LambdaHack.Common.Time,
                       Game.LambdaHack.Common.Vector,
-                      Game.LambdaHack.Content.ActorKind,
                       Game.LambdaHack.Content.CaveKind,
                       Game.LambdaHack.Content.FactionKind,
                       Game.LambdaHack.Content.ItemKind,
@@ -242,7 +241,6 @@ executable LambdaHack
   hs-source-dirs:     GameDefinition
   main-is:            Main.hs
   other-modules:      Client.UI.Content.KeyKind,
-                      Content.ActorKind,
                       Content.CaveKind,
                       Content.FactionKind,
                       Content.ItemKind,

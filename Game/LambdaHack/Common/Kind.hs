@@ -21,7 +21,6 @@ import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
@@ -124,8 +123,7 @@ createOps ContentDef{getName, getFreq, content, validate} =
 
 -- | Operations for all content types, gathered together.
 data COps = COps
-  { coactor   :: !(Ops ActorKind)
-  , cocave    :: !(Ops CaveKind)     -- server only
+  { cocave    :: !(Ops CaveKind)     -- server only
   , cofaction :: !(Ops FactionKind)
   , coitem    :: !(Ops ItemKind)
   , comode    :: !(Ops ModeKind)     -- server only

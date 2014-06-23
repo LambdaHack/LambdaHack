@@ -4,7 +4,6 @@
 module Main ( main ) where
 
 import qualified Client.UI.Content.KeyKind as Content.KeyKind
-import qualified Content.ActorKind
 import qualified Content.CaveKind
 import qualified Content.FactionKind
 import qualified Content.ItemKind
@@ -24,8 +23,7 @@ main :: IO ()
 main =
   let -- Common content operations, created from content definitions.
       copsServer = Kind.COps
-        { coactor   = Kind.createOps Content.ActorKind.cdefs
-        , cocave    = Kind.createOps Content.CaveKind.cdefs
+        { cocave    = Kind.createOps Content.CaveKind.cdefs
         , cofaction = Kind.createOps Content.FactionKind.cdefs
         , coitem    = Kind.createOps Content.ItemKind.cdefs
         , comode    = Kind.createOps Content.ModeKind.cdefs

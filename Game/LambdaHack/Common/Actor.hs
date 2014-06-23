@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Actor
     -- * The@ Acto@r type
   , Actor(..), ResDelta(..)
   , bspeed, actorTemplate, timeShiftFromSpeed, braced, waitedLastTurn
-  , actorDying, actorNewBorn, hpTooLow, unoccupied, projectileKindId
+  , actorDying, actorNewBorn, hpTooLow, unoccupied
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
   , mapActorItems_, mapActorInv_, mapActorEqp_
@@ -24,21 +24,19 @@ import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ActorKind
 
 -- | Actor properties that are changing throughout the game.
 -- If they are dublets of properties from @ActorKind@,
 -- they are usually modified temporarily, but tend to return
 -- to the original value from @ActorKind@ over time. E.g., HP.
 data Actor = Actor
-  { -- * Link to the constant properties
-    bkind       :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
+  { -- * The trunk of the actor's body (present also in @bbody@)
+    btrunk      :: !ItemId
     -- * Presentation
   , bsymbol     :: !Char                 -- ^ individual map symbol
   , bname       :: !Text                 -- ^ individual name
@@ -102,11 +100,11 @@ partPronoun b = MU.Text $ bpronoun b
 -- Actor operations
 
 -- | A template for a new actor.
-actorTemplate :: Kind.Id ActorKind -> Char -> Text -> Text
+actorTemplate :: ItemId -> Char -> Text -> Text
               -> Color.Color -> Int -> Int
               -> Point -> LevelId -> Time -> FactionId -> Bool
               -> Actor
-actorTemplate bkind bsymbol bname bpronoun bcolor bhp bcalm
+actorTemplate btrunk bsymbol bname bpronoun bcolor bhp bcalm
               bpos blid btime bfid bproj =
   let btrajectory = Nothing
       boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
@@ -162,10 +160,6 @@ hpTooLow b activeItems =
 unoccupied :: [Actor] -> Point -> Bool
 unoccupied actors pos = all (\b -> bpos b /= pos) actors
 
--- | The unique kind of projectiles.
-projectileKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
-projectileKindId Kind.Ops{ouniqGroup} = ouniqGroup "projectile"
-
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: Delta Time
 smellTimeout = timeDeltaScale (Delta timeTurn) 100
@@ -205,7 +199,7 @@ ppContainer CTrunk{} = "as the trunk"
 
 instance Binary Actor where
   put Actor{..} = do
-    put bkind
+    put btrunk
     put bsymbol
     put bname
     put bpronoun
@@ -228,7 +222,7 @@ instance Binary Actor where
     put boldfid
     put bproj
   get = do
-    bkind <- get
+    btrunk <- get
     bsymbol <- get
     bname <- get
     bpronoun <- get
