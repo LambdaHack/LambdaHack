@@ -2,7 +2,7 @@
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
-  , revealItems, deduceQuits, deduceKilled, electLeader
+  , revealItems, deduceQuits, deduceKilled, electLeader, addActor
   , projectFail, pickWeaponServer, sumBodyEqpServer
   ) where
 
@@ -12,6 +12,7 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
+import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
@@ -35,6 +36,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Fov
@@ -281,13 +283,6 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
               -> m ()
 addProjectile bpos rest iid blid bfid btime = do
-  aid <- getsServer sacounter
-  modifyServer $ \ser -> ser {sacounter = succ aid}
-  -- We bootstrap the actor by first creating the trunk of the actor's body
-  -- contains the constant properties.
-  let trunkFreq = toFreq "create trunk" [(1, "projectile")]
-  (trunkId, _trunkFull@ItemFull{..})
-    <- rollAndRegisterItem blid trunkFreq (CTrunk blid bpos) False
   item <- getsState $ getItemBody iid
   let ts@(trajectory, _) = itemTrajectory item (bpos : rest)
       trange = length trajectory
@@ -295,15 +290,59 @@ addProjectile bpos rest iid blid bfid btime = do
           | otherwise = "flying"
       -- Not much detail about a fast flying item.
       (object1, object2) = partItem $ itemNoDisco (item, 1)
-      name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      b = actorTemplate trunkId (jsymbol itemBase) name "it"
-                        (flavourToColor $ jflavour itemBase) 0 maxBound
-                        bpos blid btime bfid True
-      btra = b {btrajectory = Just ts}
-      beqp = btra {beqp = EM.singleton iid 1}
+      bname = makePhrase [MU.AW $ MU.Text adj, object1, object2]
+      tweakBody b = b { bname
+                      , bhp = 0
+                      , bproj = True
+                      , btrajectory = Just ts
+                      , beqp = EM.singleton iid 1 }
+      bpronoun = "it"
+      iis = [(iid, item)]
+  void $ addActor "projectile" bfid bpos blid tweakBody bpronoun btime iis
+
+addActor :: (MonadAtomic m, MonadServer m)
+         => Text -> FactionId -> Point -> LevelId
+         -> (Actor -> Actor) -> Text -> Time -> [(ItemId, Item)]
+         -> m ActorId
+addActor groupName bfid pos lid tweakBody bpronoun time iis = do
+  cops <- getsState scops
+  aid <- getsServer sacounter
+  modifyServer $ \ser -> ser {sacounter = succ aid}
+  -- We bootstrap the actor by first creating the trunk of the actor's body
+  -- contains the constant properties.
+  let trunkFreq = toFreq "create trunk" [(1, groupName)]
+  (trunkId, trunkFull@ItemFull{..})
+    <- rollAndRegisterItem lid trunkFreq (CTrunk lid pos) False
+  let trunkKind = case itemDisco of
+        Just ItemDisco{itemKind} -> itemKind
+        Nothing -> assert `failure` trunkFull
+  -- Initial HP and Calm is based only on trunk and ignores body parts.
+  let hp = sumSlotNoFilter Effect.EqpSlotAddMaxHP [trunkFull] `div` 2
+      calm = sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull]
+  -- Create actor.
+  fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
+  DebugModeSer{sdifficultySer} <- getsServer sdebugSer
+  nU <- nUI
+  -- If no UI factions, the difficulty applies to heroes (for testing).
+  let diffHP | playerUI gplayer || nU == 0 && isHeroFact cops fact =
+        (ceiling :: Double -> Int) $ fromIntegral hp
+                                     * 1.5 ^^ difficultyCoeff sdifficultySer
+             | otherwise = hp
+      bsymbol = jsymbol itemBase
+      bname = jname itemBase
+      bcolor = flavourToColor $ jflavour itemBase
+      b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
+                        pos lid time bfid
       -- Insert the trunk as the actor's body part.
-      btrunk = beqp {bbody = EM.singleton trunkId itemK}
-  execUpdAtomic $ UpdCreateActor aid btrunk [(iid, item), (trunkId, itemBase)]
+      btrunk = b {bbody = EM.singleton trunkId itemK}
+  execUpdAtomic $ UpdCreateActor aid (tweakBody btrunk)
+                                 (iis ++ [(trunkId, itemBase)])
+  -- Create, register and insert all initial actor items.
+  forM_ (ikit trunkKind) $ \(ikText, cstore) -> do
+    let container = CActor aid cstore
+        itemFreq = toFreq "create aitems" [(1, ikText)]
+    void $ rollAndRegisterItem lid itemFreq container False
+  return $! aid
 
 -- Server has to pick a random weapon or it could leak item discovery
 -- information.

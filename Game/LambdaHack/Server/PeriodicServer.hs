@@ -21,13 +21,10 @@ import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
-import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
@@ -37,7 +34,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.ItemServer
@@ -104,7 +100,7 @@ addMonster groupName bfid ppos lid time = do
   pronoun <- if isCivilianFact cops fact
              then rndToAction $ oneOf ["he", "she"]
              else return "it"
-  addActor groupName bfid ppos lid id pronoun time
+  addActor groupName bfid ppos lid id pronoun time []
 
 -- | Create a new hero on the current level, close to the given position.
 addHero :: (MonadAtomic m, MonadServer m)
@@ -128,50 +124,7 @@ addHero bfid ppos lid heroNames mNumber time = do
         let (nameN, pronounN) = nameFromNumber n
         in (playerName gplayer <+> nameN, pronounN)
       tweakBody b = b {bsymbol, bname, bcolor = gcolor}
-  addActor fName bfid ppos lid tweakBody pronoun time
-
-addActor :: (MonadAtomic m, MonadServer m)
-         => Text -> FactionId -> Point -> LevelId
-         -> (Actor -> Actor) -> Text -> Time
-         -> m ActorId
-addActor groupName bfid pos lid tweakBody bpronoun time = do
-  cops <- getsState scops
-  aid <- getsServer sacounter
-  modifyServer $ \ser -> ser {sacounter = succ aid}
-  -- We bootstrap the actor by first creating the trunk of the actor's body
-  -- contains the constant properties.
-  let trunkFreq = toFreq "create trunk" [(1, groupName)]
-  (trunkId, trunkFull@ItemFull{..})
-    <- rollAndRegisterItem lid trunkFreq (CTrunk lid pos) False
-  let trunkKind = case itemDisco of
-        Just ItemDisco{itemKind} -> itemKind
-        Nothing -> assert `failure` trunkFull
-  -- Initial HP and Calm is based only on trunk and ignores body parts.
-  let hp = sumSlotNoFilter Effect.EqpSlotAddMaxHP [trunkFull] `div` 2
-      calm = sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull]
-  -- Create actor.
-  fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
-  DebugModeSer{sdifficultySer} <- getsServer sdebugSer
-  nU <- nUI
-  -- If no UI factions, the difficulty applies to heroes (for testing).
-  let diffHP | playerUI gplayer || nU == 0 && isHeroFact cops fact =
-        (ceiling :: Double -> Int) $ fromIntegral hp
-                                     * 1.5 ^^ difficultyCoeff sdifficultySer
-             | otherwise = hp
-      bsymbol = jsymbol itemBase
-      bname = jname itemBase
-      bcolor = flavourToColor $ jflavour itemBase
-      b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
-                        pos lid time bfid False
-      -- Insert the trunk as the actor's body part.
-      btrunk = b {bbody = EM.singleton trunkId itemK}
-  execUpdAtomic $ UpdCreateActor aid (tweakBody btrunk) [(trunkId, itemBase)]
-  -- Create, register and insert all initial actor items.
-  forM_ (ikit trunkKind) $ \(ikText, cstore) -> do
-    let container = CActor aid cstore
-        itemFreq = toFreq "create aitems" [(1, ikText)]
-    void $ rollAndRegisterItem lid itemFreq container False
-  return $! aid
+  addActor fName bfid ppos lid tweakBody pronoun time []
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
              -> LevelId -> Level -> FactionId -> State
