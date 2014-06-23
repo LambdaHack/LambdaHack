@@ -359,17 +359,17 @@ setTrajectory aid = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
-  let clearTrajectory = do
+  let clearTrajectory speed = do
         -- Lose HP due to bumping into an obstacle.
         execUpdAtomic $ UpdHealActor aid (-1)
         execUpdAtomic $ UpdTrajectoryActor aid
                                            (btrajectory b)
-                                           (Just ([], speedZero))
+                                           (Just ([], speed))
         return $ not $ bproj b  -- projectiles must vanish soon
   case btrajectory b of
     Just ((d : lv), speed) ->
       if not $ accessibleDir cops lvl (bpos b) d
-      then clearTrajectory
+      then clearTrajectory speed
       else do
         when (bproj b && null lv) $ do
           let toColor = Color.BrBlack
