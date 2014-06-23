@@ -39,7 +39,7 @@ data PosAtomic =
                                 -- ^ observers and the faction notice
   | PosSmell !LevelId ![Point]  -- ^ whomever smells all the positions, notices
   | PosFid !FactionId           -- ^ only the faction notices
-  | PosFidAndSer !FactionId     -- ^ faction and server notices
+  | PosFidAndSer !(Maybe LevelId) !FactionId  -- ^ faction and server notices
   | PosSer                      -- ^ only the server notices
   | PosAll                      -- ^ everybody notices
   | PosNone                     -- ^ never broadcasted, but sent manually
@@ -79,6 +79,12 @@ posUpdAtomic cmd = case cmd of
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
     return $! assert (slid == tlid) $ PosSight slid [sp, tp]
+  UpdMoveItem _ _ aid _ CSha -> do  -- shared stash is private
+    b <- getsState $ getActorBody aid
+    return $! PosFidAndSer (Just $ blid b) (bfid b)
+  UpdMoveItem _ _ aid CSha _ -> do  -- shared stash is private
+    b <- getsState $ getActorBody aid
+    return $! PosFidAndSer (Just $ blid b) (bfid b)
   UpdMoveItem _ _ aid _ _ -> singleAid aid
   UpdAgeActor aid _ -> singleAid aid
   UpdHealActor aid _ -> singleAid aid
@@ -90,7 +96,7 @@ posUpdAtomic cmd = case cmd of
   UpdLeadFaction fid _ _ -> do
     fact <- getsState $ (EM.! fid) . sfactionD
     return $! if playerLeader $ gplayer fact
-              then PosFidAndSer fid
+              then PosFidAndSer Nothing fid
               else PosNone
   UpdDiplFaction{} -> return PosAll
   UpdAutoFaction{} -> return PosAll
@@ -172,6 +178,9 @@ singleAid aid = do
   return $! PosSight lid [p]
 
 singleContainer :: MonadStateRead m => Container -> m PosAtomic
+singleContainer (CActor aid CSha) = do  -- shared stash is private
+  b <- getsState $ getActorBody aid
+  return $! PosFidAndSer (Just $ blid b) (bfid b)
 singleContainer c = do
   (lid, p) <- posOfContainer c
   return $! PosSight lid [p]
@@ -230,6 +239,11 @@ breakUpdAtomic cmd = case cmd of
            , UpdLoseActor target tb tais
            , UpdSpotActor target tb {bpos = bpos sb, boldpos = bpos tb} tais
            ]
+  UpdMoveItem iid k aid cstore1 cstore2 | cstore1 == CSha  -- CSha is private
+                                          || cstore2 == CSha -> do
+    item <- getsState $ getItemBody iid
+    return [ UpdLoseItem iid item k (CActor aid cstore1)
+           , UpdSpotItem iid item k (CActor aid cstore2) ]
   -- No need to cover @UpdSearchTile@, because if an actor sees only
   -- one of the positions and so doesn't notice the search results,
   -- he's left with a hidden tile, which doesn't cause any trouble
@@ -259,7 +273,7 @@ seenAtomicCli knowEvents fid per posAtomic =
       fid == fid2 || all (`ES.member` totalVisible per) ps || knowEvents
     PosSmell _ ps -> all (`ES.member` smellVisible per) ps || knowEvents
     PosFid fid2 -> fid == fid2
-    PosFidAndSer fid2 -> fid == fid2
+    PosFidAndSer _ fid2 -> fid == fid2
     PosSer -> False
     PosAll -> True
     PosNone -> assert `failure` "no position possible" `twith` fid

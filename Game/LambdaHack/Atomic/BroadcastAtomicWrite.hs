@@ -72,6 +72,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
   assert (case ps of
             PosSight{} -> True
             PosFidAndSight{} -> True
+            PosFidAndSer (Just _) _ -> True
             _ -> not resets
                  && (null atomicBroken
                      || fmap UpdAtomic atomicBroken == [atomic])) skip
@@ -138,7 +139,8 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
           let perOld = persOld EM.! fid EM.! lid
           anySend fid perOld perOld
         PosFid fid2 -> when (fid == fid2) $ sendUpdate fid atomic
-        PosFidAndSer fid2 -> when (fid == fid2) $ sendUpdate fid atomic
+        PosFidAndSer Nothing fid2 -> when (fid == fid2) $ sendUpdate fid atomic
+        PosFidAndSer (Just lid) _ -> posLevel fid lid
         PosSer -> return ()
         PosAll -> sendUpdate fid atomic
         PosNone -> return ()

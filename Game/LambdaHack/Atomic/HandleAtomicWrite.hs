@@ -135,7 +135,7 @@ updDestroyActor aid body ais = do
                          `twith` (aid, body, ais, itemD)) skip
   -- Remove actor from @sactorD@.
   let f Nothing = assert `failure` "actor already removed" `twith` (aid, body)
-      f (Just b) = assert (b == body `blame` "inconsisted destroyed actor body"
+      f (Just b) = assert (b == body `blame` "inconsistent destroyed actor body"
                                      `twith` (aid, body, b)) Nothing
   modifyState $ updateActorD $ EM.alter f aid
   -- Remove actor from @sprio@.
