@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.ActorState
   , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList
   , bagAssocs, bagAssocsK, calculateTotal
   , sharedAllOwned, sharedAllOwnedFid
-  , getCBag, getActorBag, getActorAssocs
+  , getCBag, getActorBag, getBodyActorBag, getActorAssocs
   , nearbyFreePoints, whereTo, getCarriedAssocs
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, isSpawnFaction
@@ -224,7 +224,11 @@ getCBag c s = case c of
 getActorBag :: ActorId -> CStore -> State -> ItemBag
 getActorBag aid cstore s =
   let b = getActorBody aid s
-  in case cstore of
+  in getBodyActorBag b cstore s
+
+getBodyActorBag :: Actor -> CStore -> State -> ItemBag
+getBodyActorBag b cstore s =
+  case cstore of
     CGround -> sdungeon s EM.! blid b `atI` bpos b
     CBody -> bbody b
     CEqp -> beqp b

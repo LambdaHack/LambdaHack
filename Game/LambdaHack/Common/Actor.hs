@@ -10,8 +10,7 @@ module Game.LambdaHack.Common.Actor
   , actorDying, actorNewBorn, hpTooLow, unoccupied
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
-  , mapActorItems_, mapActorInv_, mapActorEqp_
-  , ppCStore, ppContainer
+  , mapActorItems_, ppCStore, ppContainer
   ) where
 
 import Data.Binary
@@ -174,16 +173,6 @@ checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)
 mapActorItems_ :: Monad m => (ItemId -> Int -> m a) -> Actor -> m ()
 mapActorItems_ f Actor{binv, beqp, bbody} = do
   let is = EM.assocs beqp ++ EM.assocs binv ++ EM.assocs bbody
-  mapM_ (uncurry f) is
-
-mapActorInv_ :: Monad m => (ItemId -> Int -> m a) -> Actor -> m ()
-mapActorInv_ f Actor{binv} = do
-  let is = EM.assocs binv
-  mapM_ (uncurry f) is
-
-mapActorEqp_ :: Monad m => (ItemId -> Int -> m a) -> Actor -> m ()
-mapActorEqp_ f Actor{beqp} = do
-  let is = EM.assocs beqp
   mapM_ (uncurry f) is
 
 ppCStore :: CStore -> Text

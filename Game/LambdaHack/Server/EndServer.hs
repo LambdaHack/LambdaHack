@@ -98,7 +98,7 @@ equipAllItems aid b = do
               mvCmd <- generalMoveItem iid k (CActor aid fromStore)
                                              (CActor aid CEqp)
               mapM_ execUpdAtomic mvCmd
-        mapActorInv_ g b
+        mapActorCStore_ fromStore g b
   fact <- getsState $ (EM.! bfid b) . sfactionD
   -- A faction that is defeated, leaderless or with temporarlity no member
   -- drops all items from the faction stash, too.
@@ -107,7 +107,7 @@ equipAllItems aid b = do
 
 dropEqpItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> Bool -> m ()
-dropEqpItems aid b hit = mapActorEqp_ (dropEqpItem aid b hit) b
+dropEqpItems aid b hit = mapActorCStore_ CEqp (dropEqpItem aid b hit) b
 
 -- | Drop a single actor's item. Note that if there multiple copies,
 -- at most one explodes to avoid excessive carnage and UI clutter

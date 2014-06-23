@@ -158,7 +158,7 @@ deleteItemSha iid k fid = do
 
 rmFromBag :: Int -> ItemId -> ItemBag -> ItemBag
 rmFromBag k iid bag =
-  let rfb Nothing = assert `failure` "rm from empty bag" `twith` (k, iid, bag)
+  let rfb Nothing = assert `failure` "rm from empty slot" `twith` (k, iid, bag)
       rfb (Just n) =
         case compare n k of
           LT -> assert `failure` "rm more than there is"

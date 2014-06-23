@@ -1,7 +1,7 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemServer
   ( rollAndRegisterItem, createItems, placeItemsInDungeon
-  , fullAssocsServer, activeItemsServer, itemToFullServer
+  , fullAssocsServer, activeItemsServer, itemToFullServer, mapActorCStore_
   ) where
 
 import Control.Monad
@@ -123,3 +123,10 @@ itemToFullServer = do
   s <- getState
   let itemToF iid = itemToFull cops disco discoAE iid (getItemBody iid s)
   return itemToF
+
+-- | Mapping over actor's items from a give store.
+mapActorCStore_ :: MonadServer m
+                => CStore -> (ItemId -> Int -> m a) -> Actor ->  m ()
+mapActorCStore_ cstore f b = do
+  bag <- getsState $ getBodyActorBag b cstore
+  mapM_ (uncurry f) $ EM.assocs bag
