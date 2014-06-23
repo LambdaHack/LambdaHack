@@ -27,6 +27,7 @@ import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -35,7 +36,6 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind
@@ -109,9 +109,10 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
                               <+> tshow (abs n) <> "HP"
     mleader <- getsClient _sleader
     when (Just aid == mleader) $ do
-      Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
       b <- getsState $ getActorBody aid
-      when (bhp b == amaxHP (okind $ bkind b)) $ do
+      activeItems <- activeItemsClient aid
+      let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
+      when (bhp b == hpMax) $ do
         actorVerbMU aid b "recover your health fully"
         stopPlayBack
   UpdCalmActor aid calmDelta ->
@@ -594,9 +595,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
   SfxActorStart aid -> do
-    cops <- getsState scops
     arena <- getArenaUI
     b <- getsState $ getActorBody aid
+    activeItems <- activeItemsClient aid
     when (blid b == arena) $ do
       -- If time clip has passed since any actor advanced level time
       -- or if the actor is so fast that he was capable of already moving
@@ -609,7 +610,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
       -- but it's rare and results in a minor UI issue, so we don't care.
       timeCutOff <- getsClient $ EM.findWithDefault timeZero arena . sdisplayed
       when (btime b >= timeShift timeCutOff (Delta timeClip)
-            || btime b >= timeShiftFromSpeed cops b timeCutOff
+            || btime b >= timeShiftFromSpeed b activeItems timeCutOff
             || actorNewBorn b
             || actorDying b) $ do
         let ageDisp displayed = EM.insert arena (btime b) displayed

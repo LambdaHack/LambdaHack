@@ -61,8 +61,8 @@ toAny strat = RequestAnyAbility <$> strat
 actionStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy RequestAnyAbility)
 actionStrategy aid = do
-  cops <- getsState scops
   body <- getsState $ getActorBody aid
+  activeItems <- activeItemsClient aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   condTgtEnemyPresent <- condTgtEnemyPresentM aid
   condTgtEnemyRemembered <- condTgtEnemyRememberedM aid
@@ -81,8 +81,8 @@ actionStrategy aid = do
   let condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= nearby) . fst) threatDistL
-      speed1_5 = speedScale (3%2) (bspeed cops body)
-      condFastThreatAdj = any (\(_, (_, b)) -> bspeed cops b > speed1_5)
+      speed1_5 = speedScale (3%2) (bspeed body activeItems)
+      condFastThreatAdj = any (\(_, (_, b)) -> bspeed b activeItems > speed1_5)
                           $ takeWhile ((== 1) . fst) threatDistL
       condCanFlee = not (null fleeL || condFastThreatAdj)
   mleader <- getsClient _sleader
@@ -216,27 +216,30 @@ pickup aid onlyWeapon = do
 
 equipItems :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 equipItems aid = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+  cops@Kind.COps{corule} <- getsState scops
   let RuleKind{rsharedStash} = Kind.stdRuleset corule
   body <- getsState $ getActorBody aid
+  activeItems <- activeItemsClient aid
+  fact <- getsState $ (EM.! bfid body) . sfactionD
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
   condLightBetrays <- condLightBetraysM aid
-  let kind = okind $ bkind body
-      improve :: CStore -> ([(Int, (ItemId, ItemFull))],
+  let improve :: CStore -> ([(Int, (ItemId, ItemFull))],
                             [(Int, (ItemId, ItemFull))])
               -> Strategy (RequestTimed AbMoveItem)
       improve fromCStore (bestInv, bestEqp) =
         case (bestInv, bestEqp) of
           ((_, (iidInv, itemInv)) : _, [])
             | not (eqpOverfull body 1)
-              && not (harmful cops condLightBetrays body itemInv) ->
+              && not (harmful cops condLightBetrays
+                              body activeItems fact itemInv) ->
             returN "wield any"
             $ ReqMoveItem iidInv 1 fromCStore CEqp
           ((vInv, (iidInv, itemInv)) : _, (vEqp, _) : _)
             | not (eqpOverfull body 1)
-              && not (harmful cops condLightBetrays body itemInv)
+              && not (harmful cops condLightBetrays
+                              body activeItems fact itemInv)
               && vInv > vEqp ->
             returN "wield better"
             $ ReqMoveItem iidInv 1 fromCStore CEqp
@@ -245,7 +248,7 @@ equipItems aid = do
       bEqpInv = msum $ map (improve CInv)
                 $ map (\(eqp, inv, _) -> (inv, eqp)) bestThree
   if nullStrategy bEqpInv
-    then if rsharedStash && calmEnough body kind
+    then if rsharedStash && calmEnough body activeItems
          then return
               $! msum $ map (improve CSha)
               $ map (\(eqp, _, sha) -> (sha, eqp)) bestThree
@@ -259,19 +262,20 @@ equipItems aid = do
 unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 unEquipItems aid = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+  cops@Kind.COps{corule} <- getsState scops
   let RuleKind{rsharedStash} = Kind.stdRuleset corule
   body <- getsState $ getActorBody aid
+  activeItems <- activeItemsClient aid
+  fact <- getsState $ (EM.! bfid body) . sfactionD
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
   condLightBetrays <- condLightBetraysM aid
-  let kind = okind $ bkind body
-      yieldSingleHarmful (iidEqp, itemEqp) =
-        let cstore = if rsharedStash && calmEnough body kind
+  let yieldSingleHarmful (iidEqp, itemEqp) =
+        let cstore = if rsharedStash && calmEnough body activeItems
                      then CSha
                      else CInv
-        in if harmful cops condLightBetrays body itemEqp
+        in if harmful cops condLightBetrays body activeItems fact itemEqp
            then Just $ ReqMoveItem iidEqp (itemK itemEqp) CEqp cstore
            else Nothing
       yieldHarmful = mapMaybe yieldSingleHarmful eqpAssocs
@@ -300,7 +304,7 @@ unEquipItems aid = do
       let bInvSha = msum $ map (improve CInv)
                     $ map (\(_, inv, sha) -> (sha, inv)) bestThree
       if nullStrategy bInvSha
-        then if rsharedStash && calmEnough body kind
+        then if rsharedStash && calmEnough body activeItems
              then return $! msum $ map (improve CEqp)
                          $ map (\(eqp, _, sha) -> (sha, eqp)) bestThree
              else return reject
@@ -342,11 +346,12 @@ bestByEqpSlot invAssocs eqpAssocs shaAssocs =
                                              bestSingle eqpSlot g3)
   in M.elems $ M.mapWithKey bestThree invEqpShaMap
 
-harmful :: Kind.COps -> Bool -> Actor -> ItemFull -> Bool
-harmful cops condLightBetrays body itemFull =
+harmful :: Kind.COps -> Bool -> Actor -> [ItemFull] -> Faction -> ItemFull
+        -> Bool
+harmful cops condLightBetrays body activeItems fact itemFull =
   -- Fast actors want to hide in darkness to ambush opponents and want
   -- to hit hard for the short span they get to survive melee.
-  (bspeed cops body > speedNormal
+  (bspeed body activeItems > speedNormal
    && (isJust (strengthFromEqpSlot Effect.EqpSlotAddLight itemFull)
        || isJust (strengthFromEqpSlot Effect.EqpSlotArmorMelee itemFull)))
   -- Distressed actors want to hide in the dark.
@@ -358,7 +363,8 @@ harmful cops condLightBetrays body itemFull =
   -- Periodic items that are known and not stricly beneficial
   -- should not be equipped.
   || (isJust (strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull)
-      && maybe False (\u -> u <= 0) (maxUsefulness cops body itemFull))
+      && maybe False (\u -> u <= 0)
+           (maxUsefulness cops body activeItems fact itemFull))
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
   -- (friends close, only one enemy close)
@@ -424,6 +430,7 @@ trigger aid fleeViaStairs = do
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
+  activeItems <- activeItemsClient aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   lvl <- getLevel $ blid b
   unexploredD <- unexploredDepth
@@ -464,8 +471,9 @@ trigger aid fleeViaStairs = do
           -- for high score.
           if not (keepArenaFact fact) || not allExplored
           then 0
-          else effectToBenefit cops b ef
-        F.Cause ef | not fleeViaStairs -> effectToBenefit cops b ef
+          else effectToBenefit cops b activeItems fact ef
+        F.Cause ef | not fleeViaStairs ->
+          effectToBenefit cops b activeItems fact ef
         _ -> 0
       benFeat = zip (map ben feats) feats
   return $! liftFrequency $ toFreq "trigger"
@@ -475,19 +483,18 @@ trigger aid fleeViaStairs = do
 
 ranged :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
 ranged aid = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   btarget <- getsClient $ getTarget aid
-  b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
+  b@Actor{bpos, blid} <- getsState $ getActorBody aid
+  activeItems <- activeItemsClient aid
   mfpos <- aidTgtToPos aid blid btarget
   seps <- getsClient seps
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
-      let mk = okind bkind
       actorBlind <- radiusBlind <$> sumBodyEqpClient Effect.EqpSlotSightRadius aid
       mnewEps <- makeLine b fpos seps
       case mnewEps of
         Just newEps | not actorBlind  -- ProjectBlind
-                      && calmEnough b mk -> do  -- ProjectNotCalm
+                      && calmEnough b activeItems -> do  -- ProjectNotCalm
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
           benList <- benAvailableItems aid permittedRanged

@@ -37,12 +37,12 @@ import Game.LambdaHack.Content.ModeKind
 targetStrategy :: forall m. MonadClient m
                => ActorId -> ActorId -> m (Strategy (Target, Maybe PathEtc))
 targetStrategy oldLeader aid = do
-  cops@Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
-                , coactor } <- getsState scops
+  cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   itemToF <- itemToFullClient
   modifyClient $ \cli -> cli { sbfsD = EM.delete aid (sbfsD cli)
                              , seps = seps cli + 773 }  -- randomize paths
   b <- getsState $ getActorBody aid
+  activeItems <- activeItemsClient aid
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   let stepAccesible mtgt@(Just (_, (p : q : _ : _, _))) = -- goal not adjacent
         if accessible cops lvl p q then mtgt else Nothing
@@ -113,14 +113,14 @@ targetStrategy oldLeader aid = do
       targetableRangedOrSpecial body =
         chessDist (bpos body) (bpos b) < rangedNearby
         && (condCanProject
-            || hpTooLow coactor body  -- easy prey
+            || hpTooLow body activeItems  -- easy prey
             || any (adjacent (bpos body) . bpos) friends)  -- attacks friends!
       targetableEnemy body =
         targetableMelee body || targetableRangedOrSpecial body
       nearbyFoes = filter (targetableEnemy . snd) allFoes
       unknownId = ouniqGroup "unknown space"
       itemUsefulness iid k =
-        case maxUsefulness cops b (itemToF iid k) of
+        case maxUsefulness cops b activeItems fact (itemToF iid k) of
           Just v -> v
           Nothing -> 30  -- experimenting is fun
       desirableItem iid item k
@@ -133,7 +133,7 @@ targetStrategy oldLeader aid = do
       desirable (_, (_, Nothing)) = True
       desirable (_, (_, Just bag)) = desirableBag bag
       -- TODO: make more common when weak ranged foes preferred, etc.
-      focused = bspeed cops b < speedNormal || condHpTooLow
+      focused = bspeed b activeItems < speedNormal || condHpTooLow
       setPath :: Target -> m (Strategy (Target, Maybe PathEtc))
       setPath tgt = do
         mpath <- createPath tgt

@@ -11,6 +11,7 @@ import Data.Maybe
 import Data.Ord
 
 import Game.LambdaHack.Client.AI.ConditionClient
+import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
@@ -66,13 +67,15 @@ pickActorToMove refreshTarget oldAid = do
       -- TODO: this also takes melee into account, but not shooting.
       oursTgt <- fmap catMaybes $ mapM (refreshTarget oldAid) ours
       let actorWeak ((aid, body), _) = do
+            activeItems <- activeItemsClient aid
             condMeleeBad <- condMeleeBadM aid
             threatDistL <- threatDistList aid
             fleeL <- fleeList aid
             let condThreatAdj =
                   not $ null $ takeWhile ((== 1) . fst) threatDistL
                 condFastThreatAdj =
-                  any (\(_, (_, b)) -> bspeed cops b > bspeed cops body)
+                  any (\(_, (_, b)) ->
+                         bspeed b activeItems > bspeed body activeItems)
                   $ takeWhile ((== 1) . fst) threatDistL
                 condCanFlee = not (null fleeL || condFastThreatAdj)
                 heavilyDistressed =

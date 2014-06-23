@@ -21,7 +21,9 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
@@ -118,16 +120,16 @@ actorTemplate bkind bsymbol bname bpronoun bcolor bhp bcalm
       bcalmDelta = ResDelta 0 0
   in Actor{..}
 
-bspeed :: Kind.COps -> Actor -> Speed
-bspeed Kind.COps{coactor=Kind.Ops{okind}} b =
+bspeed :: Actor -> [ItemFull] -> Speed
+bspeed b activeItems =
   case btrajectory b of
-    Nothing -> toSpeed $ aspeed $ okind $ bkind b
+    Nothing -> toSpeed $ sumSlotNoFilter Effect.EqpSlotAddSpeed activeItems
     Just (_, speed) -> speed
 
 -- | Add time taken by a single step at the actor's current speed.
-timeShiftFromSpeed :: Kind.COps -> Actor -> Time -> Time
-timeShiftFromSpeed cops b time =
-  let speed = bspeed cops b
+timeShiftFromSpeed :: Actor -> [ItemFull] -> Time -> Time
+timeShiftFromSpeed b activeItems time =
+  let speed = bspeed b activeItems
       delta = ticksPerMeter speed
   in timeShift time delta
 
@@ -150,10 +152,10 @@ actorNewBorn b = boldpos b == Point 0 0
                  && not (waitedLastTurn b)
                  && not (btime b < timeTurn)
 
-hpTooLow :: Kind.Ops ActorKind -> Actor -> Bool
-hpTooLow Kind.Ops{okind} b =
-  let kind = okind $ bkind b
-  in bhp b == 1 || 5 * bhp b < amaxHP kind
+hpTooLow :: Actor -> [ItemFull] -> Bool
+hpTooLow b activeItems =
+  let maxHP = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
+  in bhp b == 1 || 5 * bhp b < maxHP
 
 -- | Checks for the presence of actors in a position.
 -- Does not check if the tile is walkable.

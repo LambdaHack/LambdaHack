@@ -204,15 +204,16 @@ rollSpawnPos Kind.COps{cotile} visible
 dominateFid :: (MonadAtomic m, MonadServer m)
             => FactionId -> ActorId -> m ()
 dominateFid fid target = do
-  Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
+  Kind.COps{cotile} <- getsState scops
   tb <- getsState $ getActorBody target
+  activeItems <- activeItemsServer target
   -- Only record the initial domination as a kill.
   when (boldfid tb == bfid tb) $ execUpdAtomic $ UpdRecordKill target 1
   electLeader (bfid tb) (blid tb) target
   deduceKilled tb
   ais <- getsState $ getCarriedAssocs tb
   execUpdAtomic $ UpdLoseActor target tb ais
-  let calmMax = amaxCalm $ okind $ bkind tb
+  let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
       bNew = tb { bfid = fid
                 , boldfid = bfid tb
                 , bcalm = calmMax `div` 2 }
@@ -239,10 +240,10 @@ dominateFid fid target = do
 -- to be displayed each turn (not every few turns).
 advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 advanceTime aid = do
-  cops <- getsState scops
   b <- getsState $ getActorBody aid
+  activeItems <- activeItemsServer aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let t = ticksPerMeter $ bspeed cops b
+  let t = ticksPerMeter $ bspeed b activeItems
   execUpdAtomic $ UpdAgeActor aid t
   unless (bproj b) $ do
     if bcalm b == 0 && boldfid b /= bfid b
@@ -252,7 +253,7 @@ advanceTime aid = do
       dominateFid (boldfid b) aid
       execSfx
     else do
-      newCalmDelta <- getsState $ regenCalmDelta b
+      newCalmDelta <- getsState $ regenCalmDelta b activeItems
       let clearMark = 0
       unless (newCalmDelta == 0) $
         -- Update delta for the current player turn.

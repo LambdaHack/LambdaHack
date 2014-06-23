@@ -201,11 +201,10 @@ moveItemHuman :: MonadClientUI m
               -> m (SlideOrCmd (RequestTimed AbMoveItem))
 moveItemHuman cLegalRaw destCStore verbRaw auto = do
   assert (destCStore `notElem` cLegalRaw) skip
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  let kind = okind $ bkind b
-      cLegal = if calmEnough b kind
+  activeItems <- activeItemsClient leader
+  let cLegal = if calmEnough b activeItems
                then cLegalRaw
                else if destCStore == CSha
                     then []
@@ -273,15 +272,15 @@ projectHuman ts = do
 projectPos :: MonadClientUI m
            => [Trigger] -> Point -> m (SlideOrCmd (RequestTimed AbProject))
 projectPos ts tpos = do
-  Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
+  Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI
   eps <- getsClient seps
   sb <- getsState $ getActorBody leader
+  activeItems <- activeItemsClient leader
   let lid = blid sb
       spos = bpos sb
-      kind = okind $ bkind sb
   Level{lxsize, lysize} <- getLevel lid
-  if not $ calmEnough sb kind
+  if not $ calmEnough sb activeItems
     then failSer ProjectNotCalm
     else do
       case bla lxsize lysize eps spos tpos of
@@ -341,11 +340,10 @@ applyHuman :: MonadClientUI m
            => [Trigger] -> m (SlideOrCmd (RequestTimed AbApply))
 applyHuman ts = do
   let cLegalRaw = [CGround, CInv, CSha, CEqp]
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  let kind = okind $ bkind b
-      cLegal = if calmEnough b kind
+  activeItems <- activeItemsClient leader
+  let cLegal = if calmEnough b activeItems
                then cLegalRaw
                else delete CSha cLegalRaw
       (verb1, object1) = case ts of

@@ -216,11 +216,10 @@ projectFail :: (MonadAtomic m, MonadServer m)
             -> Bool       -- ^ whether the item is a shrapnel
             -> m (Maybe ReqFailure)
 projectFail source tpxy eps iid cstore isShrapnel = do
-  Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
+  Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
       spos = bpos sb
-      kind = okind $ bkind sb
   lvl@Level{lxsize, lysize} <- getLevel lid
   case bla lxsize lysize eps spos tpxy of
     Nothing -> return $ Just ProjectAimOnself
@@ -239,13 +238,14 @@ projectFail source tpxy eps iid cstore isShrapnel = do
           mab <- getsState $ posToActor pos lid
           actorBlind <- radiusBlind
                         <$> sumBodyEqpServer Effect.EqpSlotSightRadius source
+          activeItems <- activeItemsServer source
           if not $ maybe True (bproj . snd . fst) mab
             then if isShrapnel then do
                    -- Hit the blocking actor.
                    projectBla source spos (pos : rest) iid cstore
                    return Nothing
                  else return $ Just ProjectBlockActor
-            else if not (isShrapnel || calmEnough sb kind) then
+            else if not (isShrapnel || calmEnough sb activeItems) then
                    return $ Just ProjectNotCalm
                  else if actorBlind && not (bproj sb) then
                    return $ Just ProjectBlind

@@ -23,6 +23,7 @@ import Data.List
 import Data.Maybe
 
 import Game.LambdaHack.Common.Actor
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -34,7 +35,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
 
 fidActorNotProjAssocs :: FactionId -> State -> [(ActorId, Actor)]
@@ -245,15 +245,15 @@ memActor :: ActorId -> LevelId -> State -> Bool
 memActor aid lid s =
   maybe False ((== lid) . blid) $ EM.lookup aid $ sactorD s
 
-calmEnough :: Actor -> ActorKind -> Bool
-calmEnough b kind =
-  let calmMax = amaxCalm kind
+calmEnough :: Actor -> [ItemFull] -> Bool
+calmEnough b activeItems =
+  let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
       calmCur = bcalm b
   in 2 * calmMax <= 3 * calmCur
 
-hpEnough :: Actor -> ActorKind -> Bool
-hpEnough b kind =
-  let hpMax = amaxHP kind
+hpEnough :: Actor -> [ItemFull] -> Bool
+hpEnough b activeItems =
+  let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
       hpCur = bhp b
   in 2 * hpMax <= 3 * hpCur
 
@@ -265,12 +265,11 @@ getLocalTime lid s = ltime $ sdungeon s EM.! lid
 isSpawnFaction :: FactionId -> State -> Bool
 isSpawnFaction fid s = isSpawnFact $ sfactionD s EM.! fid
 
-regenCalmDelta :: Actor -> State -> Int
-regenCalmDelta b s =
-  let Kind.COps{coactor=Kind.Ops{okind}} = scops s
-      ak = okind $ bkind b
+regenCalmDelta :: Actor -> [ItemFull] -> State -> Int
+regenCalmDelta b activeItems s =
+  let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
       calmIncr = 1 -- normal rate of calm regen
-      maxDeltaCalm = amaxCalm ak - bcalm b
+      maxDeltaCalm = calmMax - bcalm b
       -- Worry actor by enemies felt (even if not seen)
       -- on the level within 3 tiles.
       fact = (EM.! bfid b) . sfactionD $ s

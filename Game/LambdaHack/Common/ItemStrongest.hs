@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthAspect, strengthEffect, strengthFeature
   , strengthToThrow, strengthEqpSlot, strengthFromEqpSlot
-  , strongestSlotNoFilter, strongestSlot, sumSlotNoFilter
+  , strongestSlotNoFilter, strongestSlot, sumSlotNoFilter, sumSkills
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   , unknownPrecious, permittedRanged
@@ -19,6 +19,7 @@ import Data.Maybe
 import qualified Data.Ord as Ord
 import Data.Text (Text)
 
+import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Item
@@ -104,11 +105,11 @@ strengthAddSpeed =
       p _ = []
   in strengthAspectMaybe p
 
-strengthAbility :: ItemFull -> Maybe Int
+strengthAbility :: ItemFull -> Maybe Ability.Skills
 strengthAbility itemFull =
   let p (AddSkills a) = [a]
       p _ = []
-  in sum . EM.elems <$> strengthAspectMaybe p itemFull
+  in strengthAspectMaybe p itemFull
 
 strengthArmorMelee :: ItemFull -> Maybe Int
 strengthArmorMelee =
@@ -179,7 +180,7 @@ strengthFromEqpSlot eqpSlot =
     EqpSlotAddMaxHP -> strengthAddMaxHP
     EqpSlotAddMaxCalm -> strengthAddMaxCalm
     EqpSlotAddSpeed -> strengthAddSpeed
-    EqpSlotAbility -> strengthAbility
+    EqpSlotAbility -> \itemFull -> sum . EM.elems <$> strengthAbility itemFull
     EqpSlotArmorMelee -> strengthArmorMelee  -- a very crude approximation
     EqpSlotSightRadius -> strengthSightRadius
     EqpSlotSmellRadius -> strengthSmellRadius
@@ -207,6 +208,12 @@ sumSlotNoFilter eqpSlot is =
   let f = strengthFromEqpSlot eqpSlot
       g itemFull = (* itemK itemFull) <$> f itemFull
   in sum $ mapMaybe g is
+
+sumSkills :: [ItemFull] -> Ability.Skills
+sumSkills is =
+  let g itemFull = (Ability.scaleSkills (itemK itemFull))
+                   <$> strengthAbility itemFull
+  in foldr Ability.addSkills Ability.zeroSkills $ mapMaybe g is
 
 unknownPrecious :: ItemFull -> Bool
 unknownPrecious itemFull =

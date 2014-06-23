@@ -3,8 +3,8 @@
 module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
-  , actorSkills, updateItemSlot, fullAssocsClient, itemToFullClient
-  , pickWeaponClient, sumBodyEqpClient
+  , actorSkills, updateItemSlot, fullAssocsClient, activeItemsClient
+  , itemToFullClient, pickWeaponClient, sumBodyEqpClient
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -35,7 +35,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 
 -- | Get the current perception of a client.
@@ -163,14 +162,15 @@ makeLine body fpos epsOld = do
 
 actorSkills :: MonadClient m => ActorId -> Maybe ActorId -> m Skills
 actorSkills aid mleader = do
-  Kind.COps{ coactor=Kind.Ops{okind}
-           , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
+  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let factionSkills
-        | Just aid == mleader = fSkillsLeader $ fokind $ gkind fact
-        | otherwise = fSkillsOther $ fokind $ gkind fact
-  return $! askills (okind $ bkind body) `addSkills` factionSkills
+        | Just aid == mleader = fSkillsLeader $ okind $ gkind fact
+        | otherwise = fSkillsOther $ okind $ gkind fact
+  activeItems <- activeItemsClient aid
+  let itemSkills = sumSkills activeItems
+  return $! itemSkills `addSkills` factionSkills
 
 updateItemSlot :: MonadClient m => Maybe ActorId -> ItemId -> m ()
 updateItemSlot maid iid = do
@@ -200,6 +200,11 @@ fullAssocsClient aid cstores = do
   disco <- getsClient sdisco
   discoAE <- getsClient sdiscoAE
   getsState $ fullAssocs cops disco discoAE aid cstores
+
+activeItemsClient :: MonadClient m => ActorId -> m [ItemFull]
+activeItemsClient aid = do
+  activeAssocs <- fullAssocsClient aid [CEqp, CBody]
+  return $! map snd activeAssocs
 
 itemToFullClient :: MonadClient m => m (ItemId -> Int -> ItemFull)
 itemToFullClient = do
@@ -232,6 +237,5 @@ pickWeaponClient source target = do
 sumBodyEqpClient :: MonadClient m
                  => Effect.EqpSlot -> ActorId -> m Int
 sumBodyEqpClient eqpSlot aid = do
-  eqpAssocs <- fullAssocsClient aid [CEqp]
-  bodyAssocs <- fullAssocsClient aid [CBody]
-  return $! sumSlotNoFilter eqpSlot $ map snd $ eqpAssocs ++ bodyAssocs
+  activeItems <- activeItemsClient aid
+  return $! sumSlotNoFilter eqpSlot activeItems

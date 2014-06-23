@@ -1,7 +1,7 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemServer
   ( rollAndRegisterItem, createItems, placeItemsInDungeon
-  , fullAssocsServer, itemToFullServer
+  , fullAssocsServer, activeItemsServer, itemToFullServer
   ) where
 
 import Control.Monad
@@ -109,6 +109,11 @@ fullAssocsServer aid cstores = do
   disco <- getsServer sdisco
   discoAE <- getsServer sdiscoAE
   getsState $ fullAssocs cops disco discoAE aid cstores
+
+activeItemsServer :: MonadServer m => ActorId -> m [ItemFull]
+activeItemsServer aid = do
+  activeAssocs <- fullAssocsServer aid [CEqp, CBody]
+  return $! map snd activeAssocs
 
 itemToFullServer :: MonadServer m => m (ItemId -> Int -> ItemFull)
 itemToFullServer = do

@@ -4,32 +4,37 @@ module Game.LambdaHack.Client.AI.Preferences
   ) where
 
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe
 
 import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Content.ActorKind
 
 -- TODO: also take other ItemFeatures into account, e.g., splash damage.
 -- | How much AI benefits from applying the effect. Multipllied by item p.
 -- Negative means harm to the enemy when thrown at him. Effects with zero
 -- benefit won't ever be used, neither actively nor passively.
-effectToBenefit :: Kind.COps -> Actor -> Effect.Effect Int -> Int
-effectToBenefit cops@Kind.COps{coactor=Kind.Ops{okind}} b eff =
-  let kind = okind $ bkind b
-      isHorror = isJust $ lookup "horror" $ afreq kind  -- a bit of a hack
+effectToBenefit :: Kind.COps -> Actor -> [ItemFull] -> Faction
+                -> Effect.Effect Int -> Int
+effectToBenefit cops b activeItems fact eff =
+  let isHorror = isHorrorFact cops fact
   in case eff of
     Effect.NoEffect -> 0
-    Effect.Heal p -> if p > 0
-                     then 10 * min p (amaxHP kind - bhp b)
-                     else max (-99) (10 * p)
+    Effect.Heal p ->
+      let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
+      in if p > 0
+         then 10 * min p (hpMax - bhp b)
+         else max (-99) (10 * p)
     Effect.Hurt d p -> -(min 99 $ 10 * p + round (10 * Dice.meanDice d))
-    Effect.Calm p -> if p > 0
-                     then min p (amaxCalm kind - bcalm b)
-                     else max (-20) p
+    Effect.Calm p ->
+      let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
+      in if p > 0
+         then min p (calmMax - bcalm b)
+         else max (-20) p
     Effect.Dominate -> -200
     Effect.Impress -> -10
     Effect.CallFriend p -> 20 * p
@@ -72,11 +77,11 @@ aspectToBenefit _cops _b asp =
     Effect.SmellRadius p -> (p * 2, 1)
     Effect.AddLight p -> (p * 10, 1)
 
-effAspToBenefit :: Kind.COps -> Actor
+effAspToBenefit :: Kind.COps -> Actor -> [ItemFull] -> Faction
                 -> [Effect.Effect Int] -> [Effect.Aspect Int]
                 -> Int
-effAspToBenefit cops b effects aspects =
-  let eBens = map (effectToBenefit cops b) effects
+effAspToBenefit cops b activeItems fact effects aspects =
+  let eBens = map (effectToBenefit cops b activeItems fact) effects
       (addBens, multBens) = unzip $ map (aspectToBenefit cops b) aspects
       addBen = sum addBens
       multBen = product multBens

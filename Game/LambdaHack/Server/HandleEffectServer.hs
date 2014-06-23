@@ -34,7 +34,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.EndServer
@@ -161,12 +160,13 @@ effectSem effect source target = do
 
 -- ** Heal
 
-effectHeal :: MonadAtomic m => m () -> Int -> ActorId -> ActorId -> m Bool
+effectHeal :: (MonadAtomic m, MonadServer m)
+           => m () -> Int -> ActorId -> ActorId -> m Bool
 effectHeal execSfx power source target = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
-  let bhpMax = amaxHP $ okind $ bkind tb
-      deltaHP = min power (max 0 $ bhpMax - bhp tb)
+  activeItems <- activeItemsServer target
+  let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
+      deltaHP = min power (max 0 $ hpMax - bhp tb)
   if deltaHP == 0
     then return False
     else do
@@ -175,12 +175,13 @@ effectHeal execSfx power source target = do
       execSfx
       return True
 
-halveCalm :: MonadAtomic m => ActorId -> m ()
+halveCalm :: (MonadAtomic m, MonadServer m)
+          => ActorId -> m ()
 halveCalm target = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
-  let calmMax = amaxCalm $ okind $ bkind tb
-      calmUpperBound = if hpTooLow coactor tb
+  activeItems <- activeItemsServer target
+  let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
+      calmUpperBound = if hpTooLow tb activeItems
                        then 0  -- to trigger domination, etc.
                        else calmMax `div` 2
       deltaCalm = min (-2) (calmUpperBound - bcalm tb)
@@ -221,11 +222,12 @@ effectHurt nDm power source target = do
 
 -- ** Calm
 
-effectCalm :: MonadAtomic m => m () -> Int -> ActorId -> m Bool
+effectCalm ::  (MonadAtomic m, MonadServer m)
+           => m () -> Int -> ActorId -> m Bool
 effectCalm execSfx power target = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
-  let calmMax = amaxCalm $ okind $ bkind tb
+  activeItems <- activeItemsServer target
+  let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
       deltaCalm = min power (max 0 $ calmMax - bcalm tb)
   if deltaCalm == 0
     then return False
@@ -272,14 +274,15 @@ effectCallFriend :: (MonadAtomic m, MonadServer m)
                    -> m Bool
 effectCallFriend power source target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
-  Kind.COps{cotile, coactor=Kind.Ops{okind}} <- getsState scops
-  sb <- getsState (getActorBody source)
+  Kind.COps{cotile} <- getsState scops
+  sb <- getsState $ getActorBody source
+  activeItems <- activeItemsServer source
   let legal = source == target
-              && hpEnough sb (okind $ bkind sb)
+              && hpEnough sb activeItems
               && bhp sb >= 10  -- prevent spam from regenerating wimps
   if not legal then return False
   else do
-    let hpMax = amaxHP $ okind $ bkind sb
+    let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
         deltaHP = hpMax `div` 3
     execUpdAtomic $ UpdHealActor source deltaHP
     let validTile t = not $ Tile.hasFeature cotile F.NoActor t
@@ -313,21 +316,22 @@ effectSummon :: (MonadAtomic m, MonadServer m)
              => Int -> ActorId -> ActorId -> m Bool
 effectSummon power source target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
-  cops@Kind.COps{cotile, coactor=Kind.Ops{okind}} <- getsState scops
-  sb <- getsState (getActorBody source)
+  Kind.COps{cotile} <- getsState scops
+  sb <- getsState $ getActorBody source
+  activeItems <- activeItemsServer source
   let legal = source == target
-              && calmEnough sb (okind $ bkind sb)
+              && calmEnough sb activeItems
               && bcalm sb >= 10
   if not legal then return False
   else do
-    let calmMax = amaxCalm $ okind $ bkind sb
+    let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
         deltaCalm = calmMax `div` 3
     execUpdAtomic $ UpdCalmActor source deltaCalm
     let validTile t = not $ Tile.hasFeature cotile F.NoActor t
     ps <- getsState $ nearbyFreePoints validTile (bpos sb) (blid sb)
     localTime <- getsState $ getLocalTime (blid sb)
     -- Make sure summoned actors start acting after the summoner.
-    let sourceTime = timeShift localTime $ ticksPerMeter $ bspeed cops sb
+    let sourceTime = timeShift localTime $ ticksPerMeter $ bspeed sb activeItems
         afterTime = timeShift sourceTime $ Delta timeClip
     mfid <- pickFaction "summon" (const True)
     case mfid of
@@ -537,9 +541,9 @@ effectParalyze execSfx p target = assert (p > 0) $ do
 effectInsertMove :: (MonadAtomic m, MonadServer m)
                  => m () -> Int -> ActorId -> m Bool
 effectInsertMove execSfx p target = assert (p > 0) $ do
-  cops <- getsState scops
   b <- getsState $ getActorBody target
-  let tpm = ticksPerMeter $ bspeed cops b
+  activeItems <- activeItemsServer target
+  let tpm = ticksPerMeter $ bspeed b activeItems
       t = timeDeltaScale tpm (-p)
   execUpdAtomic $ UpdAgeActor target t
   execSfx

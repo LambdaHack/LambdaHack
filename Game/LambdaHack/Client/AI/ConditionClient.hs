@@ -24,6 +24,7 @@ module Game.LambdaHack.Client.AI.ConditionClient
 import Control.Applicative
 import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
+import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
@@ -76,9 +77,9 @@ condAnyFoeAdjM aid = do
 -- | Require the actor's HP is low enough.
 condHpTooLowM :: MonadClient m => ActorId -> m Bool
 condHpTooLowM aid = do
-  Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
-  return $! hpTooLow coactor b
+  activeItems <- activeItemsClient aid
+  return $! hpTooLow b activeItems
 
 -- | Require the actor stands over a triggerable tile.
 condOnTriggerableM :: MonadStateRead m => ActorId -> m Bool
@@ -93,13 +94,15 @@ condOnTriggerableM aid = do
 -- We don't consider path-distance, because we are interested in how soon
 -- the foe can hit us, which can diverge greately from path distance
 -- for short distances.
-threatDistList :: MonadStateRead m => ActorId -> m [(Int, (ActorId, Actor))]
+threatDistList :: MonadClient m => ActorId -> m [(Int, (ActorId, Actor))]
 threatDistList aid = do
-  Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  allThreats <- getsState $ filter (not . hpTooLow coactor . snd)
-                          . actorRegularAssocs (isAtWar fact) (blid b)
+  allAtWar <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
+  let strongActor (aid2, b2) = do
+        activeItems <- activeItemsClient aid2
+        return $! not $ hpTooLow b2 activeItems
+  allThreats <- filterM strongActor allAtWar
   let addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
   return $ sort $ map addDist allThreats
 
@@ -136,13 +139,12 @@ condNoWeaponM aid = do
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
-  let ak = okind $ bkind b
+  activeItems <- activeItemsClient aid
   actorBlind <- radiusBlind <$> sumBodyEqpClient Effect.EqpSlotSightRadius aid
   benList <- benAvailableItems aid permittedRanged
   let missiles = filter (maybe True (< 0) . fst . fst) benList
-  return $ not actorBlind && calmEnough b ak && not (null missiles)
+  return $ not actorBlind && calmEnough b activeItems && not (null missiles)
     -- keep it lazy
 
 -- | Produce the benefit-sorted list of items with a given symbol
@@ -151,21 +153,22 @@ benAvailableItems :: MonadClient m
                   => ActorId -> (ItemFull -> Bool)
                   -> m [((Maybe Int, CStore), (ItemId, ItemFull))]
 benAvailableItems aid permitted = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  cops <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
-  let ak = okind $ bkind b
-      ben cstore bag =
+  activeItems <- activeItemsClient aid
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let ben cstore bag =
         [ ((benefit, cstore), (iid, itemFull))
         | (iid, k) <- EM.assocs bag
         , let itemFull = itemToF iid k
-        , let benefit = maxUsefulness cops b itemFull
+        , let benefit = maxUsefulness cops b activeItems fact itemFull
         , benefit /= Just 0
         , permitted itemFull ]
   groundBag <- getsState $ getActorBag aid CGround
   eqpBag <- getsState $ getActorBag aid CEqp
   invBag <- getsState $ getActorBag aid CInv
-  shaBag <- if calmEnough b ak
+  shaBag <- if calmEnough b activeItems
             then getsState $ getActorBag aid CSha
             else return EM.empty
   return $ ben CGround groundBag
@@ -177,10 +180,9 @@ benAvailableItems aid permitted = do
 -- | Require the actor is not calm enough.
 condNotCalmEnoughM :: MonadClient m => ActorId -> m Bool
 condNotCalmEnoughM aid = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
-  let ak = okind $ bkind b
-  return $! not (calmEnough b ak)
+  activeItems <- activeItemsClient aid
+  return $! not (calmEnough b activeItems)
 
 -- | Require that the actor stands over a desirable item.
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
@@ -194,6 +196,8 @@ benGroundItems aid = do
   cops <- getsState scops
   itemToF <- itemToFullClient
   body <- getsState $ getActorBody aid
+  activeItems <- activeItemsClient aid
+  fact <- getsState $ (EM.! bfid body) . sfactionD
   itemD <- getsState sitemD
   floorItems <- getsState $ getActorBag aid CGround
   fightsSpawners <- fightsAgainstSpawners (bfid body)
@@ -202,7 +206,7 @@ benGroundItems aid = do
         | otherwise = use /= Just 0
       mapDesirable (iid, k) =
         let item = itemD EM.! iid
-            use = maxUsefulness cops body (itemToF iid k)
+            use = maxUsefulness cops body activeItems fact (itemToF iid k)
             value = fromMaybe 5 use  -- experimenting fun
         in if desirableItem item use
            then Just ((value, k), (iid, item))
@@ -211,11 +215,12 @@ benGroundItems aid = do
     -- keep it lazy
 
 -- | Determine the maximum absolute benefit from an item.
-maxUsefulness :: Kind.COps -> Actor -> ItemFull -> Maybe Int
-maxUsefulness cops body itemFull = do
+maxUsefulness :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull
+              -> Maybe Int
+maxUsefulness cops body activeItems fact itemFull = do
   case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
-      Just $ effAspToBenefit cops body jeffects jaspects
+      Just $ effAspToBenefit cops body activeItems fact jeffects jaspects
     _ -> Nothing
 
 -- | Require the actor is in a bad position to melee.
@@ -223,18 +228,20 @@ maxUsefulness cops body itemFull = do
 -- no innate weapon is rare.
 condMeleeBadM :: MonadClient m => ActorId -> m Bool
 condMeleeBadM aid = do
-  Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   mleader <- getsClient _sleader
   actorSk <- actorSkills aid mleader
   let friendlyFid fid = fid == bfid b || isAllied fact fid
-  friends <- getsState $ actorRegularList friendlyFid (blid b)
+  friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
   let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
                        in dist < 3 && dist > 0
-      closeFriends = filter closeEnough friends
-      strongCloseFriends = filter (not . hpTooLow coactor) closeFriends
-      noFriendlyHelp = length closeFriends < 3 && null strongCloseFriends
+      closeFriends = filter (closeEnough . snd) friends
+      strongActor (aid2, b2) = do
+        activeItems <- activeItemsClient aid2
+        return $! not $ hpTooLow b2 activeItems
+  strongCloseFriends <- filterM strongActor closeFriends
+  let noFriendlyHelp = length closeFriends < 3 && null strongCloseFriends
   return $ EM.findWithDefault 0 Ability.AbMelee actorSk <= 0
            || noFriendlyHelp  -- still not getting friends' help
     -- no $!; keep it lazy

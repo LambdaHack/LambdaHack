@@ -59,7 +59,7 @@ getGroupItem p itemsName verb cLegalRaw cLegalAfterCalm = do
   let cNotEmpty = not . EM.null . getCStoreBag
       cLegal = filter cNotEmpty cLegalAfterCalm  -- don't display empty stores
       tsuitable = const $ makePhrase [MU.Capitalize (MU.Ws itemsName)]
-  getItem p tsuitable tsuitable verb cLegalRaw cLegal True INone
+  getItem p (\b _ -> tsuitable b) tsuitable verb cLegalRaw cLegal True INone
 
 -- | Let the human player choose any item from a list of items
 -- and let him specify the number of items.
@@ -72,7 +72,7 @@ getAnyItem :: MonadClientUI m
            -> Bool      -- ^ whether to ask for the number of items
            -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
 getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
-  soc <- getItem (const True) (const "Items") (const "Items") verb
+  soc <- getItem (const True) (\_ _ -> "Items") (const "Items") verb
                  cLegalRaw cLegalAfterCalm askWhenLone INone
   case soc of
     Left _ -> return soc
@@ -86,7 +86,8 @@ getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
 -- | Display all items from a store and let the human player choose any
 -- or switch to any other store.
 getStoreItem :: MonadClientUI m
-             => (Actor -> Text)  -- ^ how to describe suitable items in CSha
+             => (Actor -> [ItemFull] -> Text)
+                                 -- ^ how to describe suitable items in CSha
              -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
              -> MU.Part          -- ^ the verb describing the action
              -> CStore           -- ^ initial container
@@ -103,7 +104,8 @@ data ItemDialogState = INone | ISuitable | IAll
 -- item from a list of items.
 getItem :: MonadClientUI m
         => (Item -> Bool)   -- ^ which items to consider suitable
-        -> (Actor -> Text)  -- ^ how to describe suitable items in CSha
+        -> (Actor -> [ItemFull] -> Text)
+                            -- ^ how to describe suitable items in CSha
         -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
         -> MU.Part          -- ^ the verb describing the action
         -> [CStore]         -- ^ initial legal containers
@@ -141,7 +143,8 @@ data DefItemKey m = DefItemKey
 
 transition :: forall m. MonadClientUI m
            => (Item -> Bool)   -- ^ which items to consider suitable
-           -> (Actor -> Text)  -- ^ how to describe suitable items in CSha
+           -> (Actor -> [ItemFull] -> Text)
+                               -- ^ how to describe suitable items in CSha
            -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
            -> MU.Part          -- ^ the verb describing the action
            -> [CStore]
@@ -153,6 +156,7 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
   (letterSlots, numberSlots) <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
+  activeItems <- activeItemsClient leader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
   bag <- getsState $ getCBag (CActor leader cCur)
@@ -235,7 +239,7 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
             _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
       ppCur = ppCStore cCur
-      tsuit = if cCur == CSha then tshaSuit body else tsuitable body
+      tsuit = if cCur == CSha then tshaSuit body activeItems else tsuitable body
       (labelLetterSlots, overLetterSlots, overNumberSlots, prompt) =
         case itemDialogState of
           INone     -> (suitableLetterSlots,

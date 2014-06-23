@@ -42,16 +42,16 @@ import Game.LambdaHack.Client.UI.Frontend as Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind
 
 -- | The information that is constant across a client playing session,
@@ -295,11 +295,10 @@ targetDesc target = do
   mleader <- getsClient _sleader
   case target of
     Just (TEnemy aid _) -> do
-      Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
       side <- getsClient sside
       b <- getsState $ getActorBody aid
-      let ak = okind $ bkind b
-          maxHP = amaxHP ak
+      activeItems <- activeItemsClient aid
+      let maxHP = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
           percentage = 100 * bhp b `div` max 5 maxHP
           stars | percentage < 20  = "[_____]"
                 | percentage < 40  = "[*____]"

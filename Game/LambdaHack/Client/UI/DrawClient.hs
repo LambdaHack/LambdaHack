@@ -40,7 +40,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind
@@ -243,7 +242,6 @@ drawArenaStatus explored Level{ldepth, ldesc, lseen, lclear} width =
 
 drawLeaderStatus :: MonadClient m => Int -> Int -> m [Color.AttrChar]
 drawLeaderStatus waitT width = do
-  cops <- getsState scops
   mleader <- getsClient _sleader
   s <- getState
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
@@ -255,11 +253,12 @@ drawLeaderStatus waitT width = do
                                        else ("Calm", "HP")
   case mleader of
     Just leader -> do
-      let Kind.COps{coactor=Kind.Ops{okind}} = cops
-          (darkL, bracedL, hpDelta, calmDelta,
+      activeItems <- activeItemsClient leader
+      let (darkL, bracedL, hpDelta, calmDelta,
            ahpS, bhpS, acalmS, bcalmS) =
-            let b@Actor{bkind, bhp, bcalm} = getActorBody leader s
-                ActorKind{amaxHP, amaxCalm} = okind bkind
+            let b@Actor{bhp, bcalm} = getActorBody leader s
+                amaxHP = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
+                amaxCalm = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
             in ( not (actorInAmbient b s)
                , braced b, bhpDelta b, bcalmDelta b
                , tshow amaxHP, tshow bhp

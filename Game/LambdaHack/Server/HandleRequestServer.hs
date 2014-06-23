@@ -331,6 +331,7 @@ reqMoveItem :: (MonadAtomic m, MonadServer m)
             => ActorId -> ItemId -> Int -> CStore -> CStore -> m ()
 reqMoveItem aid iid k fromCStore toCStore = do
   b <- getsState $ getActorBody aid
+  activeItems <- activeItemsServer aid
   let moveItem = do
         when (fromCStore == CGround) $ do
           seed <- getsServer $ (EM.! iid) . sitemSeedD
@@ -344,9 +345,7 @@ reqMoveItem aid iid k fromCStore toCStore = do
           && eqpOverfull b k then execFailure aid req EqpOverfull
   else if fromCStore /= CSha && toCStore /= CSha then moveItem
   else do
-    Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-    let kind = okind $ bkind b
-    if calmEnough b kind then moveItem
+    if calmEnough b activeItems then moveItem
     else execFailure aid req ItemNotCalm
 
 -- * ReqProject
@@ -372,13 +371,12 @@ reqApply :: (MonadAtomic m, MonadServer m)
          -> CStore   -- ^ the location of the item
          -> m ()
 reqApply aid iid cstore = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   let req = ReqApply iid cstore
   if cstore /= CSha then applyItem aid iid cstore
   else do
     b <- getsState $ getActorBody aid
-    let kind = okind $ bkind b
-    if calmEnough b kind
+    activeItems <- activeItemsServer aid
+    if calmEnough b activeItems
       then applyItem aid iid cstore
       else execFailure aid req ItemNotCalm
 
