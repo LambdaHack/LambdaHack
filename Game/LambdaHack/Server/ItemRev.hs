@@ -70,11 +70,11 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
 -- | Generate an item based on level.
 newItem :: Kind.Ops ItemKind -> FlavourMap -> DiscoRev
         -> Frequency Text -> LevelId -> Int -> Int
-        -> Rnd (ItemKnown, ItemSeed, Int)
+        -> Rnd (ItemKnown, ItemFull, ItemSeed, Int)
 newItem coitem@Kind.Ops{opick, okind}
         flavour discoRev itemFreq jlid ln depth = do
   itemGroup <- frequency itemFreq
-  let castItem :: Int -> Rnd (ItemKnown, ItemSeed, Int)
+  let castItem :: Int -> Rnd (ItemKnown, ItemFull, ItemSeed, Int)
       castItem 0 = do
         let zeroedFreq = setFreq itemFreq itemGroup 0
             newFreq = if nullFreq zeroedFreq
@@ -82,18 +82,22 @@ newItem coitem@Kind.Ops{opick, okind}
                       else zeroedFreq
         newItem coitem flavour discoRev newFreq jlid ln depth
       castItem count = do
-        ikChosen <- fmap (fromMaybe $ assert `failure` itemGroup)
-                    $ opick itemGroup (const True)
-        let kind = okind ikChosen
-        jcount <- castDice ln depth (icount kind)
-        if jcount == 0 then
+        itemKindId <- fmap (fromMaybe $ assert `failure` itemGroup)
+                      $ opick itemGroup (const True)
+        let itemKind = okind itemKindId
+        itemK <- castDice ln depth (icount itemKind)
+        if itemK == 0 then
           castItem $ count - 1
         else do
           seed <- fmap toEnum random
-          return ( ( buildItem flavour discoRev ikChosen kind jlid
-                   , seedToAspectsEffects seed kind ln depth )
+          let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
+              iae = seedToAspectsEffects seed itemKind ln depth
+              itemFull = ItemFull {itemBase, itemK, itemDisco = Just itemDisco}
+              itemDisco = ItemDisco {itemKindId, itemKind, itemAE = Just iae}
+          return ( (itemBase, iae)
+                 , itemFull
                  , seed
-                 , jcount )
+                 , itemK )
   castItem 10
 
 -- | Flavours assigned by the server to item kinds, in this particular game.

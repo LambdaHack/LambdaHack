@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -34,11 +35,9 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
@@ -282,17 +281,14 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
               -> m ()
 addProjectile bpos rest iid blid bfid btime = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}, coitem} <- getsState scops
+  Kind.COps{coactor} <- getsState scops
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
-  flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoRev
-  depth <- getsState sdepth
-  Level{ldepth} <- getLevel blid
-  -- The trunk of the actor's body that contains the constant properties.
-  let trunkFreq = toFreq "projectile trunk" [(1, "projectile")]
-  (itemKnown, seed, k) <-
-    rndToAction $ newItem coitem flavour discoRev trunkFreq blid ldepth depth
+  -- We bootstrap the actor by first creating the trunk of the actor's body
+  -- contains the constant properties.
+  let trunkFreq = toFreq "create trunk" [(1, "projectile")]
+  (trunkId, _trunkFull@ItemFull{..})
+    <- rollAndRegisterItem blid trunkFreq (CTrunk blid bpos) False
   item <- getsState $ getItemBody iid
   let ts@(trajectory, _) = itemTrajectory item (bpos : rest)
       trange = length trajectory
@@ -301,14 +297,14 @@ addProjectile bpos rest iid blid bfid btime = do
       -- Not much detail about a fast flying item.
       (object1, object2) = partItem $ itemNoDisco (item, 1)
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      kind = okind $ projectileKindId coactor
-      b = actorTemplate (projectileKindId coactor) (asymbol kind) name "it"
-                        (acolor kind) 0 maxBound
-                        bpos blid btime bfid (EM.singleton iid 1) True
+      b = actorTemplate (projectileKindId coactor) (jsymbol itemBase) name "it"
+                        (flavourToColor $ jflavour itemBase) 0 maxBound
+                        bpos blid btime bfid True
       btra = b {btrajectory = Just ts}
-  execUpdAtomic $ UpdCreateActor aid btra [(iid, item)]
-  -- Register and insert the trunk.
-  void $ registerItem itemKnown seed k (CActor aid CBody) False
+      beqp = btra {beqp = EM.singleton iid 1}
+      -- Insert the trunk as the actor's body part.
+      btrunk = beqp {bbody = EM.singleton trunkId itemK}
+  execUpdAtomic $ UpdCreateActor aid btrunk [(iid, item), (trunkId, itemBase)]
 
 -- Server has to pick a random weapon or it could leak item discovery
 -- information.

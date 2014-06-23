@@ -55,6 +55,7 @@ breturn False _ = mzero
 data Container =
     CFloor !LevelId !Point
   | CActor !ActorId !CStore
+  | CTrunk !LevelId !Point   -- ^ for bootstrapping actor bodies
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Container

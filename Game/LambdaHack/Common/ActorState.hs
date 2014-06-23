@@ -219,6 +219,7 @@ getCBag :: Container -> State -> ItemBag
 getCBag c s = case c of
   CFloor lid p -> sdungeon s EM.! lid `atI` p
   CActor aid cstore -> getActorBag aid cstore s
+  CTrunk{} -> EM.empty
 
 getActorBag :: ActorId -> CStore -> State -> ItemBag
 getActorBag aid cstore s =

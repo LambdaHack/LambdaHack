@@ -93,6 +93,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
                 modifyClient $ \cli -> cli {scursor = TPoint lid p}
             itemVerbMU iid k "be spotted"
             stopPlayBack
+          CTrunk{} -> return ()
       _ -> return ()  -- seen recently (still has a slot assigned)
   UpdLoseItem{} -> skip
   -- Move actors and items.

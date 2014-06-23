@@ -1,6 +1,6 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemServer
-  ( registerItem, rollAndRegisterItem, createItems, placeItemsInDungeon
+  ( rollAndRegisterItem, createItems, placeItemsInDungeon
   , fullAssocsServer, itemToFullServer
   ) where
 
@@ -57,17 +57,17 @@ createItems n pos lid = do
 
 rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
                     => LevelId -> Frequency Text -> Container -> Bool
-                    -> m (ItemId, (ItemKnown, ItemSeed, Int))
+                    -> m (ItemId, ItemFull)
 rollAndRegisterItem lid itemFreq container verbose = do
   Kind.COps{coitem} <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
   depth <- getsState sdepth
   Level{ldepth} <- getLevel lid
-  (itemKnown, seed, k) <-
+  (itemKnown, itemFull, seed, k) <-
     rndToAction $ newItem coitem flavour discoRev itemFreq lid ldepth depth
   iid <- registerItem itemKnown seed k container verbose
-  return (iid, (itemKnown, seed, k))
+  return (iid, itemFull)
 
 placeItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()
 placeItemsInDungeon = do

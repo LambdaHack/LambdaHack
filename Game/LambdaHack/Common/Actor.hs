@@ -102,13 +102,14 @@ partPronoun b = MU.Text $ bpronoun b
 -- | A template for a new actor.
 actorTemplate :: Kind.Id ActorKind -> Char -> Text -> Text
               -> Color.Color -> Int -> Int
-              -> Point -> LevelId -> Time -> FactionId -> ItemBag -> Bool
+              -> Point -> LevelId -> Time -> FactionId -> Bool
               -> Actor
 actorTemplate bkind bsymbol bname bpronoun bcolor bhp bcalm
-              bpos blid btime bfid beqp bproj =
+              bpos blid btime bfid bproj =
   let btrajectory = Nothing
       boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
       boldlid = blid
+      beqp    = EM.empty
       binv    = EM.empty
       bbody   = EM.empty
       bwait   = False
@@ -198,6 +199,7 @@ ppCStore CSha = "in shared stash"
 ppContainer :: Container -> Text
 ppContainer CFloor{} = "on the ground nearby"
 ppContainer (CActor _ cstore) = ppCStore cstore
+ppContainer CTrunk{} = "as the trunk"
 
 instance Binary Actor where
   put Actor{..} = do

@@ -148,7 +148,7 @@ explodeItem :: (MonadAtomic m, MonadServer m)
 explodeItem aid b cgroup = do
   let itemFreq = toFreq "shrapnel group" [(1, cgroup)]
       container = CActor aid CEqp
-  (iid, (itemKnown, _, n1)) <-
+  (iid, ItemFull{..}) <-
     rollAndRegisterItem (blid b) itemFreq container False
   let Point x y = bpos b
       projectN k100 n = when (n > 7) $ do
@@ -156,7 +156,7 @@ explodeItem aid b cgroup = do
         -- distribution for the points the line goes through at each distance
         -- from the source. Otherwise, e.g., the points on cardinal
         -- and diagonal lines from the source would be more common.
-        let fuzz = 1 + (k100 `xor` (n1 * n)) `mod` 11
+        let fuzz = 1 + (k100 `xor` (itemK * n)) `mod` 11
         forM_ [ Point (x - 12) $ y + fuzz
               , Point (x - 12) $ y - fuzz
               , Point (x + 12) $ y + fuzz
@@ -180,4 +180,4 @@ explodeItem aid b cgroup = do
   bag3 <- getsState $ beqp . getActorBody aid
   let mn3 = EM.lookup iid bag3
   maybe skip (\k -> execUpdAtomic
-             $ UpdLoseItem iid (fst itemKnown) k container) mn3
+             $ UpdLoseItem iid itemBase k container) mn3

@@ -60,6 +60,7 @@ insertItemContainer :: MonadStateWrite m
 insertItemContainer iid k c = case c of
   CFloor lid pos -> insertItemFloor iid k lid pos
   CActor aid store -> insertItemActor iid k aid store
+  CTrunk{} -> return ()
 
 insertItemFloor :: MonadStateWrite m
                 => ItemId -> Int -> LevelId -> Point -> m ()
@@ -112,8 +113,9 @@ insertItemSha iid k fid = do
 deleteItemContainer :: MonadStateWrite m
                     => ItemId -> Int -> Container -> m ()
 deleteItemContainer iid k c = case c of
-    CFloor lid pos -> deleteItemFloor iid k lid pos
-    CActor aid store -> deleteItemActor iid k aid store
+  CFloor lid pos -> deleteItemFloor iid k lid pos
+  CActor aid store -> deleteItemActor iid k aid store
+  CTrunk{} -> return ()
 
 deleteItemFloor :: MonadStateWrite m
                 => ItemId -> Int -> LevelId -> Point -> m ()

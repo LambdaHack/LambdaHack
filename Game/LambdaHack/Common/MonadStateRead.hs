@@ -36,6 +36,7 @@ posOfAid aid = do
 posOfContainer :: MonadStateRead m => Container -> m (LevelId, Point)
 posOfContainer (CFloor lid p) = return (lid, p)
 posOfContainer (CActor aid _) = posOfAid aid
+posOfContainer (CTrunk lid p) = return (lid, p)
 
 -- TODO: make a field of Faction?
 fightsAgainstSpawners :: MonadStateRead m => FactionId -> m Bool

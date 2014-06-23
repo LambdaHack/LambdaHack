@@ -21,7 +21,10 @@ import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Frequency
+import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -35,9 +38,9 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonServer
-import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
@@ -94,14 +97,13 @@ addMonster :: (MonadAtomic m, MonadServer m)
            => Text -> Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Time
            -> m ActorId
 addMonster groupName ak bfid ppos lid time = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  let kind = okind ak
+  cops <- getsState scops
   fact <- getsState $ (EM.! bfid) . sfactionD
   pronoun <- if isCivilianFact cops fact
              then rndToAction $ oneOf ["he", "she"]
              else return "it"
-  addActor groupName ak bfid ppos lid (asymbol kind) (aname kind) pronoun
-           (acolor kind) time
+  addActor groupName ak bfid ppos lid Nothing Nothing Nothing pronoun
+           time
 
 -- | Create a new hero on the current level, close to the given position.
 addHero :: (MonadAtomic m, MonadServer m)
@@ -127,27 +129,28 @@ addHero bfid ppos lid heroNames mNumber time = do
            | otherwise =
         let (nameN, pronounN) = nameFromNumber n
         in (playerName gplayer <+> nameN, pronounN)
-  addActor fName ak bfid ppos lid symbol name pronoun gcolor time
+  addActor fName ak bfid ppos lid (Just symbol) (Just name) (Just gcolor)
+           pronoun time
 
 addActor :: (MonadAtomic m, MonadServer m)
          => Text -> Kind.Id ActorKind -> FactionId -> Point -> LevelId
-         -> Char -> Text -> Text -> Color.Color -> Time
+         -> Maybe Char -> Maybe Text -> Maybe Color.Color -> Text -> Time
          -> m ActorId
-addActor groupName ak bfid pos lid bsymbol bname bpronoun bcolor time = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
+addActor groupName ak bfid pos lid msymbol mname mcolor bpronoun time = do
+  cops <- getsState scops
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
-  flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoRev
-  depth <- getsState sdepth
-  Level{ldepth} <- getLevel lid
-  -- The trunk of the actor's body that contains the constant properties.
+  -- We bootstrap the actor by first creating the trunk of the actor's body
+  -- contains the constant properties.
   let trunkFreq = toFreq "create trunk" [(1, groupName)]
-  (itemKnown, seed, k) <-
-    rndToAction $ newItem coitem flavour discoRev trunkFreq lid ldepth depth
-  let kind = okind ak
-      hp = amaxHP kind `div` 2
-      calm = amaxCalm kind
+  (trunkId, trunkFull@ItemFull{..})
+    <- rollAndRegisterItem lid trunkFreq (CTrunk lid pos) False
+  let trunkKind = case itemDisco of
+        Just ItemDisco{itemKind} -> itemKind
+        Nothing -> assert `failure` trunkFull
+  -- Initial HP and Calm is based only on trunk and ignores body parts.
+  let hp = sumSlotNoFilter Effect.EqpSlotAddMaxHP [trunkFull] `div` 2
+      calm = sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull]
   -- Create actor.
   fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
@@ -157,13 +160,16 @@ addActor groupName ak bfid pos lid bsymbol bname bpronoun bcolor time = do
         (ceiling :: Double -> Int) $ fromIntegral hp
                                      * 1.5 ^^ difficultyCoeff sdifficultySer
              | otherwise = hp
+      bsymbol = fromMaybe (jsymbol itemBase) msymbol
+      bname = fromMaybe (jname itemBase) mname
+      bcolor = fromMaybe (flavourToColor $ jflavour itemBase) mcolor
       b = actorTemplate ak bsymbol bname bpronoun bcolor diffHP calm
-                        pos lid time bfid EM.empty False
-  execUpdAtomic $ UpdCreateActor aid b []
-  -- Register and insert the trunk.
-  void $ registerItem itemKnown seed k (CActor aid CBody) False
+                        pos lid time bfid False
+      -- Insert the trunk as the actor's body part.
+      btrunk = b {bbody = EM.singleton trunkId itemK}
+  execUpdAtomic $ UpdCreateActor aid btrunk [(trunkId, itemBase)]
   -- Create, register and insert all initial actor items.
-  forM_ (aitems kind) $ \(ikText, cstore) -> do
+  forM_ (ikit trunkKind) $ \(ikText, cstore) -> do
     let container = CActor aid cstore
         itemFreq = toFreq "create aitems" [(1, ikText)]
     void $ rollAndRegisterItem lid itemFreq container False
