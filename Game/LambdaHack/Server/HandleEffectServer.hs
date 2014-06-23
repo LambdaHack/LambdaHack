@@ -286,25 +286,11 @@ effectCallFriend power source target = assert (power > 0) $ do
         deltaHP = hpMax `div` 3
     execUpdAtomic $ UpdHealActor source deltaHP
     let validTile t = not $ Tile.hasFeature cotile F.NoActor t
-    ps <- getsState $ nearbyFreePoints validTile (bpos sb) (blid sb)
-    summonFriends (bfid sb) (take power ps) (blid sb)
+        lid = blid sb
+    ps <- getsState $ nearbyFreePoints validTile (bpos sb) lid
+    time <- getsState $ getLocalTime lid
+    spawnMonsters (take power ps) lid time (bfid sb)
     return True
-
-summonFriends :: (MonadAtomic m, MonadServer m)
-              => FactionId -> [Point] -> LevelId
-              -> m ()
-summonFriends bfid ps lid = do
-  cops@Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
-  time <- getsState $ getLocalTime lid
-  fact <- getsState $ (EM.! bfid) . sfactionD
-  let fkind = okind $ gkind fact
-  forM_ ps $ \p ->
-    if isHeroFact cops fact
-    then addHero bfid p lid [] Nothing time
-    else addMonster (fname fkind) bfid p lid time
-  -- No leader election needed, bebause an alive actor of the same faction
-  -- causes the effect, so there is already a leader, unless the faction
-  -- is leaderless.
 
 -- ** Summon
 

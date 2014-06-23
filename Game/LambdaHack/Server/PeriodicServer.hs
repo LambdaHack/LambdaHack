@@ -1,7 +1,7 @@
 -- | Server operations performed periodically in the game loop
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicServer
-  ( spawnMonsters, generateMonster, addMonster, addHero, dominateFid
+  ( spawnMonsters, generateMonster, addHero, dominateFid
   , advanceTime, leadLevelFlip
   ) where
 
@@ -51,14 +51,19 @@ spawnMonsters :: (MonadAtomic m, MonadServer m)
               => [Point] -> LevelId -> Time -> FactionId
               -> m ()
 spawnMonsters ps lid time fid = assert (not $ null ps) $ do
-  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
+  cops@Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
   let spawnName = fname $ okind $ gkind fact
-  laid <- forM ps $ \ p -> do
-    addMonster spawnName fid p lid time
-  mleader <- getsState $ gleader . (EM.! fid) . sfactionD  -- just changed
-  when (isNothing mleader) $
-    execUpdAtomic $ UpdLeadFaction fid Nothing (Just $ head laid)
+  laid <- forM ps $ \ p ->
+    if isHeroFact cops fact
+    then addHero fid p lid [] Nothing time
+    else addMonster spawnName fid p lid time
+  case laid of
+    [] -> return ()
+    aid : _ -> do
+      mleader <- getsState $ gleader . (EM.! fid) . sfactionD  -- just changed
+      when (isNothing mleader) $
+        execUpdAtomic $ UpdLeadFaction fid Nothing (Just aid)
 
 -- | Generate a monster, possibly.
 generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
@@ -99,8 +104,7 @@ addMonster groupName bfid ppos lid time = do
   pronoun <- if isCivilianFact cops fact
              then rndToAction $ oneOf ["he", "she"]
              else return "it"
-  addActor groupName bfid ppos lid Nothing Nothing Nothing pronoun
-           time
+  addActor groupName bfid ppos lid id pronoun time
 
 -- | Create a new hero on the current level, close to the given position.
 addHero :: (MonadAtomic m, MonadServer m)
@@ -114,23 +118,23 @@ addHero bfid ppos lid heroNames mNumber time = do
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
-      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
+      bsymbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       nameFromNumber 0 = ("Captain", "he")
       nameFromNumber k | k `mod` 7 == 0 = ("Heroine" <+> tshow k, "she")
       nameFromNumber k = ("Hero" <+> tshow k, "he")
-      (name, pronoun) | gcolor == Color.BrWhite =
+      (bname, pronoun) | gcolor == Color.BrWhite =
         fromMaybe (nameFromNumber n) $ lookup n heroNames
-           | otherwise =
+                      | otherwise =
         let (nameN, pronounN) = nameFromNumber n
         in (playerName gplayer <+> nameN, pronounN)
-  addActor fName bfid ppos lid (Just symbol) (Just name) (Just gcolor)
-           pronoun time
+      tweakBody b = b {bsymbol, bname, bcolor = gcolor}
+  addActor fName bfid ppos lid tweakBody pronoun time
 
 addActor :: (MonadAtomic m, MonadServer m)
          => Text -> FactionId -> Point -> LevelId
-         -> Maybe Char -> Maybe Text -> Maybe Color.Color -> Text -> Time
+         -> (Actor -> Actor) -> Text -> Time
          -> m ActorId
-addActor groupName bfid pos lid msymbol mname mcolor bpronoun time = do
+addActor groupName bfid pos lid tweakBody bpronoun time = do
   cops <- getsState scops
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
@@ -154,14 +158,14 @@ addActor groupName bfid pos lid msymbol mname mcolor bpronoun time = do
         (ceiling :: Double -> Int) $ fromIntegral hp
                                      * 1.5 ^^ difficultyCoeff sdifficultySer
              | otherwise = hp
-      bsymbol = fromMaybe (jsymbol itemBase) msymbol
-      bname = fromMaybe (jname itemBase) mname
-      bcolor = fromMaybe (flavourToColor $ jflavour itemBase) mcolor
+      bsymbol = jsymbol itemBase
+      bname = jname itemBase
+      bcolor = flavourToColor $ jflavour itemBase
       b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
                         pos lid time bfid False
       -- Insert the trunk as the actor's body part.
       btrunk = b {bbody = EM.singleton trunkId itemK}
-  execUpdAtomic $ UpdCreateActor aid btrunk [(trunkId, itemBase)]
+  execUpdAtomic $ UpdCreateActor aid (tweakBody btrunk) [(trunkId, itemBase)]
   -- Create, register and insert all initial actor items.
   forM_ (ikit trunkKind) $ \(ikText, cstore) -> do
     let container = CActor aid cstore
