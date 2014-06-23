@@ -67,10 +67,8 @@ levelPerception cops litHere actorEqpBody fovMode lvl@Level{lxsize, lysize} =
       ptotal = visibleOnLevel cops totalReachable litHere nocto lvl
       canSmellAround (_, allAssocs) =
         let radius = sumSlotNoFilter Effect.EqpSlotSmellRadius allAssocs
-        in radius > 1
-      -- TODO: We assume smell FOV radius is always 1, regardless of vision
-      -- radius of the actor (and whether he can see at all).
-      -- Instead, use the smell radius.
+        in radius >= 2
+      -- TODO: handle smell radius 2, that is only under the actor
       -- TODO: filter out tiles that are solid and so can't hold smell.
       psmell = PerceptionVisible $ ES.fromList
                $ concat $ map fst $ filter (canSmellAround . snd) noctoBodies

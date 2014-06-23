@@ -205,11 +205,11 @@ effectHurt nDm power source target = do
       -- OFF shield doesn't hinder attacks, so also does not protect.
       sshieldMult = case sumSlotNoFilter Effect.EqpSlotArmorMelee sallItems of
         _ | bproj sb -> 100
-        p -> 100 - p
+        p -> 100 - min 50 p
       tshieldMult = case sumSlotNoFilter Effect.EqpSlotArmorMelee tallItems of
         _ | bproj sb -> 100
-        p -> 100 - p
-      mult = sshieldMult * tshieldMult * (if block then 100 else 50)
+        p -> 100 - min 50 p
+      mult = sshieldMult * tshieldMult * (if block then 50 else 100)
       deltaHP = - max 1 (mult * (n + power) `divUp` (100 * 100 * 100))
   -- Damage the target.
   execUpdAtomic $ UpdHealActor target deltaHP
