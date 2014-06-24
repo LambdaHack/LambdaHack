@@ -168,13 +168,9 @@ benAvailableItems aid permitted = do
   groundBag <- getsState $ getActorBag aid CGround
   eqpBag <- getsState $ getActorBag aid CEqp
   invBag <- getsState $ getActorBag aid CInv
-  shaBag <- if calmEnough b activeItems
-            then getsState $ getActorBag aid CSha
-            else return EM.empty
   return $ ben CGround groundBag
          ++ ben CEqp eqpBag
          ++ ben CInv invBag
-         ++ ben CSha shaBag
     -- keep it lazy
 
 -- | Require the actor is not calm enough.

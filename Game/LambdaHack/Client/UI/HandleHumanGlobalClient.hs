@@ -308,7 +308,7 @@ projectEps :: MonadClientUI m
 projectEps ts tpos eps = do
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
-  let cLegal = [CGround, CInv, CSha, CEqp]  -- calm enough at this stage
+  let cLegal = [CGround, CInv, CEqp]
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
@@ -339,13 +339,7 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 applyHuman :: MonadClientUI m
            => [Trigger] -> m (SlideOrCmd (RequestTimed AbApply))
 applyHuman ts = do
-  let cLegalRaw = [CGround, CInv, CSha, CEqp]
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  activeItems <- activeItemsClient leader
-  let cLegal = if calmEnough b activeItems
-               then cLegalRaw
-               else delete CSha cLegalRaw
+  let cLegal = [CGround, CInv, CEqp]
       (verb1, object1) = case ts of
         [] -> ("activate", "item")
         tr : _ -> (verb tr, object tr)
@@ -353,7 +347,7 @@ applyHuman ts = do
       p item = if ' ' `elem` triggerSyms
                then Effect.Applicable `elem` jfeature item
                else jsymbol item `elem` triggerSyms
-  ggi <- getGroupItem p object1 verb1 cLegalRaw cLegal
+  ggi <- getGroupItem p object1 verb1 cLegal cLegal
   case ggi of
     Right ((iid, itemFull), fromCStore) -> do
       let durable = Effect.Durable `elem` jfeature (itemBase itemFull)

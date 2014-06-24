@@ -498,11 +498,11 @@ ranged aid = do
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
           benList <- benAvailableItems aid permittedRanged
-          let coeff CGround = 3
-              coeff CBody = 4  -- can't give to others
+          let coeff CGround = 2
+              coeff CBody = 3  -- can't give to others
               coeff CEqp = 1
               coeff CInv = 1
-              coeff CSha = 2
+              coeff CSha = undefined  -- banned
               fRanged ((mben, cstore), (iid, ItemFull{itemBase})) =
                 let trange = totalRange itemBase
                     bestRange = chessDist bpos fpos + 2  -- margin for fleeing
@@ -547,11 +547,11 @@ applyItem aid applyGroup = do
               foldr getP False jeffects
             _ -> False
         ApplyAll -> True
-      coeff CGround = 3
-      coeff CBody = 4  -- can't give to others
+      coeff CGround = 2
+      coeff CBody = 3  -- can't give to others
       coeff CEqp = 1
       coeff CInv = 1
-      coeff CSha = 2
+      coeff CSha = undefined  -- banned
       fTool ((mben, cstore), (iid, itemFull)) =
         let durableBonus = if Effect.Durable `elem` jfeature (itemBase itemFull)
                            then 5  -- we keep it after use

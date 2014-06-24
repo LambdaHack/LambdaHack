@@ -359,7 +359,7 @@ reqProject :: (MonadAtomic m, MonadServer m)
            -> ItemId     -- ^ the item to be projected
            -> CStore     -- ^ whether the items comes from floor or inventory
            -> m ()
-reqProject source tpxy eps iid cstore = do
+reqProject source tpxy eps iid cstore = assert (cstore /= CSha) $ do
   mfail <- projectFail source tpxy eps iid cstore False
   let req = ReqProject tpxy eps iid cstore
   maybe skip (execFailure source req) mfail
@@ -372,15 +372,8 @@ reqApply :: (MonadAtomic m, MonadServer m)
          -> ItemId   -- ^ the item to be applied
          -> CStore   -- ^ the location of the item
          -> m ()
-reqApply aid iid cstore = do
-  let req = ReqApply iid cstore
-  if cstore /= CSha then applyItem aid iid cstore
-  else do
-    b <- getsState $ getActorBody aid
-    activeItems <- activeItemsServer aid
-    if calmEnough b activeItems
-      then applyItem aid iid cstore
-      else execFailure aid req ItemNotCalm
+reqApply aid iid cstore = assert (cstore /= CSha) $ do
+  applyItem aid iid cstore
 
 -- * ReqTrigger
 
