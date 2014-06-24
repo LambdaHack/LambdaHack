@@ -22,6 +22,7 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
+import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -159,7 +160,10 @@ dominateFid fid target = do
   tb <- getsState $ getActorBody target
   activeItems <- activeItemsServer target
   -- Only record the initial domination as a kill.
-  when (boldfid tb == bfid tb) $ execUpdAtomic $ UpdRecordKill target 1
+  disco <- getsServer sdisco
+  trunk <- getsState $ getItemBody $ btrunk tb
+  let ikind = disco EM.! jkindIx trunk
+  when (boldfid tb == bfid tb) $ execUpdAtomic $ UpdRecordKill target ikind 1
   electLeader (bfid tb) (blid tb) target
   deduceKilled tb
   ais <- getsState $ getCarriedAssocs tb

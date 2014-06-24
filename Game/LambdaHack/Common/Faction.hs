@@ -18,6 +18,7 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 
 -- | All factions in the game, indexed by faction identifier.
@@ -32,7 +33,7 @@ data Faction = Faction
   , gquit    :: !(Maybe Status)         -- ^ cause of game end/exit
   , gleader  :: !(Maybe ActorId)        -- ^ the leader of the faction, if any
   , gsha     :: !ItemBag                -- ^ faction's shared inventory
-  , gvictims :: !(EM.EnumMap ItemId Int)  -- ^ members killed
+  , gvictims :: !(EM.EnumMap (Kind.Id ItemKind) Int)  -- ^ members killed
   }
   deriving (Show, Eq)
 

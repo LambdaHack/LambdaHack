@@ -77,7 +77,7 @@ data UpdAtomic =
   | UpdLeadFaction !FactionId !(Maybe ActorId) !(Maybe ActorId)
   | UpdDiplFaction !FactionId !FactionId !Diplomacy !Diplomacy
   | UpdAutoFaction !FactionId !Bool
-  | UpdRecordKill !ActorId !Int
+  | UpdRecordKill !ActorId !(Kind.Id ItemKind) !Int
   -- Alter map.
   | UpdAlterTile !LevelId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
   | UpdAlterClear !LevelId !Int
@@ -155,7 +155,7 @@ undoUpdAtomic cmd = case cmd of
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     Just $ UpdDiplFaction fid1 fid2 toDipl fromDipl
   UpdAutoFaction fid st -> Just $ UpdAutoFaction fid (not st)
-  UpdRecordKill aid k -> Just $ UpdRecordKill aid (-k)
+  UpdRecordKill aid ikind k -> Just $ UpdRecordKill aid ikind (-k)
   UpdAlterTile lid p fromTile toTile ->
     Just $ UpdAlterTile lid p toTile fromTile
   UpdAlterClear lid delta -> Just $ UpdAlterClear lid (-delta)

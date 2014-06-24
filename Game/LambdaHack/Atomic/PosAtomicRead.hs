@@ -100,7 +100,7 @@ posUpdAtomic cmd = case cmd of
               else PosNone
   UpdDiplFaction{} -> return PosAll
   UpdAutoFaction{} -> return PosAll
-  UpdRecordKill aid _ -> singleFidAndAid aid
+  UpdRecordKill aid _ _ -> singleFidAndAid aid
   UpdAlterTile lid p _ _ -> return $! PosSight lid [p]
   UpdAlterClear{} -> return PosAll
   UpdSearchTile aid p _ _ -> do

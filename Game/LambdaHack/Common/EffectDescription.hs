@@ -91,7 +91,7 @@ aspectToSuff aspect f =
     ArmorMelee t -> "[" <> t <> "]"
     SightRadius t -> "of sight" <+> t
     SmellRadius t -> "of smell" <+> t
-    AddLight t -> "shining" <+> t
+    AddLight t -> "of light" <+> t
     Explode{} -> ""
 
 featureToSuff :: Feature -> Text

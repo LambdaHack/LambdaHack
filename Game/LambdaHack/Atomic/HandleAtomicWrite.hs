@@ -30,6 +30,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind as ModeKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
@@ -65,7 +66,7 @@ handleUpdAtomic cmd = case cmd of
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     updDiplFaction fid1 fid2 fromDipl toDipl
   UpdAutoFaction fid st -> updAutoFaction fid st
-  UpdRecordKill aid k -> updRecordKill aid k
+  UpdRecordKill aid ikind k -> updRecordKill aid ikind k
   UpdAlterTile lid p fromTile toTile -> updAlterTile lid p fromTile toTile
   UpdAlterClear lid delta -> updAlterClear lid delta
   UpdSearchTile _ _ fromTile toTile ->
@@ -306,13 +307,13 @@ updAutoFaction fid st = do
 
 -- | Record a given number (usually just 1, or -1 for undo) of actor kills
 -- for score calculation.
-updRecordKill :: MonadStateWrite m => ActorId -> Int -> m ()
-updRecordKill aid k = do
+updRecordKill :: MonadStateWrite m => ActorId -> Kind.Id ItemKind -> Int -> m ()
+updRecordKill aid ikind k = do
   b <- getsState $ getActorBody aid
   assert (not (bproj b) `blame` (aid, b)) skip
   let alterKind mn = let n = fromMaybe 0 mn + k
                      in if n == 0 then Nothing else Just n
-      adjFact fact = fact {gvictims = EM.alter alterKind (btrunk b)
+      adjFact fact = fact {gvictims = EM.alter alterKind ikind
                                       $ gvictims fact}
   updateFaction (bfid b) adjFact
 
