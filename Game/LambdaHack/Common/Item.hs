@@ -131,18 +131,9 @@ partItem itemFull =
       let flav = flavourToName $ jflavour $ itemBase itemFull
       in (MU.Text $ flav <+> genericName, "")
     Just _ ->
-      let effTs = textAllAE itemFull
-          effectFirst = case filter (not . T.null) effTs of
-            [] -> ""
-            effT : _ -> effT
-          effectExtra = case filter (not . T.null) effTs of
-            [] -> ""
-            [_] -> ""
-            [_, effT] -> "(" <> effT <> ")"
-            [_, effT1, effT2] -> "(" <> effT1 <> "," <+> effT2 <> ")"
-            _ -> "(of many effects)"
-      in ( MU.Text genericName
-         , MU.Text $ effectFirst <+> effectExtra )
+      let effTs = filter (not . T.null) $ textAllAE itemFull
+          ts = take 5 effTs ++ if length effTs > 5 then ["(...)"] else []
+      in (MU.Text genericName, MU.Phrase $ map MU.Text ts)
 
 textAllAE :: ItemFull -> [Text]
 textAllAE ItemFull{itemBase, itemDisco} =
@@ -150,11 +141,11 @@ textAllAE ItemFull{itemBase, itemDisco} =
     Nothing -> [""]
     Just ItemDisco{itemKind, itemAE} -> case itemAE of
       Just ItemAspectEffect{jaspects, jeffects} ->
-        map aspectToSuffix jaspects
-        ++ map effectToSuffix jeffects
+        map effectToSuffix jeffects
+        ++ map aspectToSuffix jaspects
         ++ map featureToSuff (jfeature itemBase)
-      Nothing -> map kindAspectToSuffix (iaspects itemKind)
-                 ++ map kindEffectToSuffix (ieffects itemKind)
+      Nothing -> map kindEffectToSuffix (ieffects itemKind)
+                 ++ map kindAspectToSuffix (iaspects itemKind)
                  ++ map featureToSuff (jfeature itemBase)
 
 partItemWs :: Int -> ItemFull -> MU.Part

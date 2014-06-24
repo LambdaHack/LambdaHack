@@ -3,11 +3,11 @@
 module Game.LambdaHack.Common.EffectDescription
   ( effectToSuffix, aspectToSuffix, featureToSuff
   , kindEffectToSuffix, kindAspectToSuffix
-  , affixPower, affixBonus
   ) where
 
 import Control.Exception.Assert.Sugar
 import qualified Control.Monad.State as St
+import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -20,34 +20,36 @@ effectToSuff :: (Show a, Ord a, Num a) => Effect a -> (a -> Text) -> Text
 effectToSuff effect f =
   case St.evalState (effectTrav effect $ return . f) () of
     NoEffect -> ""
-    Heal p | p > 0 -> "of healing" <+> affixBonus p
+    Heal p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
     Heal 0 -> assert `failure` effect
-    Heal p -> "of wounding" <+> affixBonus p
-    Hurt dice t -> "(" <> tshow dice <> ")" <+> t
-    Calm p | p > 0 -> "of soothing" <+> affixBonus p
+    Heal p -> "of wounding" <+> wrapInParens (affixBonus p)
+    Hurt dice t -> wrapInParens (tshow dice) <+> t
+    Calm p | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
     Calm 0 -> assert `failure` effect
-    Calm p -> "of alarming" <+> affixBonus p
+    Calm p -> "of dismaying" <+> wrapInParens (affixBonus p)
     Dominate -> "of domination"
     Impress -> "of impression"
-    CallFriend p -> "of aid calling" <+> affixPower p
-    Summon t -> "of summoning" <+> t
-    CreateItem p -> "of item creation" <+> affixPower p
+    CallFriend 1 -> "of aid calling"
+    CallFriend p -> "of aid calling" <+> wrapInParens (affixBonus p)
+    Summon t -> "of summoning" <+> wrapInParens t
+    CreateItem 1 -> "of uncovering"
+    CreateItem p -> "of uncovering" <+> wrapInParens (affixBonus p)
     ApplyPerfume -> "of rose water"
     Burn{} -> ""  -- often accompanies AddLight, too verbose, too boring
-    Blast p -> "of explosion" <+> affixPower p
-    Ascend p | p > 0 -> "of ascending" <+> affixPower p
+    Blast p -> "of explosion" <+> wrapInParens (affixBonus p)
+    Ascend 1 -> "of ascending"
+    Ascend p | p > 0 -> "of ascending" <+> wrapInParens (affixBonus p)
     Ascend 0 -> assert `failure` effect
-    Ascend p -> "of descending" <+> affixPower (- p)
+    Ascend (-1) -> "of descending"
+    Ascend p -> "of descending" <+> wrapInParens (affixBonus (- p))
     Escape{} -> "of escaping"
-    Paralyze t -> "of paralysis" <+> t
-    InsertMove t -> "of speed burst" <+> t
+    Paralyze t -> "of paralysis" <+> wrapInParens t
+    InsertMove t -> "of speed surge" <+> wrapInParens t
     DropBestWeapon -> "of disarming"
     DropEqp ' ' False -> "of equipment dropping"
-    DropEqp symbol False ->
-      "of equipment '" <> T.singleton symbol <> "' dropping"
+    DropEqp symbol False -> "of '" <> T.singleton symbol <> "' dropping"
     DropEqp ' ' True -> "of equipment smashing"
-    DropEqp symbol True ->
-      "of equipment '" <> T.singleton symbol <> "' smashing"
+    DropEqp symbol True -> "of '" <> T.singleton symbol <> "' smashing"
     SendFlying ThrowMod{..} ->
       case effect of
         SendFlying tmod -> "of impact" <+> tmodToSuff tmod
@@ -62,12 +64,11 @@ effectToSuff effect f =
         _ -> assert `failure` effect
     Teleport t ->
       case effect of
-        Teleport p | p > 9 -> "of teleport" <+> t
-        Teleport _ -> "of blinking" <+> t
+        Teleport p | p > 9 -> "of teleport" <+> wrapInParens t
+        Teleport _ -> "of blinking" <+> wrapInParens t
         _ -> assert `failure` effect
-    ActivateEqp ' ' -> "of spontaneous activation"
-    ActivateEqp symbol ->
-      "of spontaneous '" <> T.singleton symbol <> "' activation"
+    ActivateEqp ' ' -> "of equipment burst"
+    ActivateEqp symbol -> "of '" <> T.singleton symbol <> "' burst"
     TimedAspect _ _ ->
       case effect of
         TimedAspect _ aspect -> aspectToSuff aspect f
@@ -82,16 +83,16 @@ aspectToSuff aspect f =
     NoAspect -> ""
     Periodic _ ->
       case aspect of
-        Periodic n -> "(" <> tshow n <+> "in 100)"
+        Periodic n -> wrapInParens $ tshow n <+> "in 100"
         _ -> assert `failure` aspect
-    AddMaxHP t -> "(" <> t <+> "HP)"
-    AddMaxCalm t -> "(" <> t <+> "Calm)"
-    AddSpeed t -> "of speed" <+> t
-    AddSkills t -> "of" <+> tshow t  -- TODO
+    AddMaxHP t -> wrapInParens $ t <+> "HP"
+    AddMaxCalm t -> wrapInParens $ t <+> "Calm"
+    AddSpeed t -> wrapInParens $ t <+> "speed"
+    AddSkills p -> wrapInParens $ "+" <+> tshow (EM.toList p)
     ArmorMelee t -> "[" <> t <> "]"
-    SightRadius t -> "of sight" <+> t
-    SmellRadius t -> "of smell" <+> t
-    AddLight t -> "of light" <+> t
+    SightRadius t -> wrapInParens $ t <+> "sight"
+    SmellRadius t -> wrapInParens $ t <+> "smell"
+    AddLight t -> wrapInParens $ t <+> "light"
     Explode{} -> ""
 
 featureToSuff :: Feature -> Text
@@ -112,17 +113,15 @@ effectToSuffix effect = effectToSuff effect affixBonus
 aspectToSuffix :: Aspect Int -> Text
 aspectToSuffix aspect = aspectToSuff aspect affixBonus
 
-affixPower :: Int -> Text
-affixPower p = case compare p 1 of
-  EQ -> ""
-  LT -> assert `failure` "power less than 1" `twith` p
-  GT -> "(+" <> tshow p <> ")"
-
 affixBonus :: Int -> Text
 affixBonus p = case compare p 0 of
   EQ -> ""
-  LT -> "(" <> tshow p <> ")"
-  GT -> "(+" <> tshow p <> ")"
+  LT -> tshow p
+  GT -> "+" <> tshow p
+
+wrapInParens :: Text -> Text
+wrapInParens "" = ""
+wrapInParens t = "(" <> t <> ")"
 
 affixDice :: Dice.Dice -> Text
 affixDice d = if Dice.minDice d == Dice.maxDice d
