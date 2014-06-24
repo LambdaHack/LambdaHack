@@ -36,7 +36,7 @@ effectToSuff effect f =
     CreateItem p -> "of uncovering" <+> wrapInParens (affixBonus p)
     ApplyPerfume -> "of rose water"
     Burn{} -> ""  -- often accompanies AddLight, too verbose, too boring
-    Blast p -> "of explosion" <+> wrapInParens (affixBonus p)
+    Blast p -> "of blasting" <+> wrapInParens (affixBonus p)
     Ascend 1 -> "of ascending"
     Ascend p | p > 0 -> "of ascending" <+> wrapInParens (affixBonus p)
     Ascend 0 -> assert `failure` effect
@@ -69,9 +69,11 @@ effectToSuff effect f =
         _ -> assert `failure` effect
     ActivateEqp ' ' -> "of equipment burst"
     ActivateEqp symbol -> "of '" <> T.singleton symbol <> "' burst"
+    ExplodeEffect _ -> "of explosion"
+    OnSmash _ -> ""  -- conditional effect, TMI
     TimedAspect _ _ ->
       case effect of
-        TimedAspect _ aspect -> aspectToSuff aspect f
+        TimedAspect _ aspect -> "keep <" <> aspectToSuff aspect f <> ">"
         _ -> assert `failure` effect
 
 tmodToSuff :: Show a => ThrowMod a -> Text

@@ -59,6 +59,8 @@ effectToBenefit cops b activeItems fact eff =
     Effect.Teleport p -> -5 * p  -- but useful on self sometimes
     Effect.ActivateEqp ' ' -> -100
     Effect.ActivateEqp _ -> -50
+    Effect.ExplodeEffect _ -> -10
+    Effect.OnSmash _ -> -10
     Effect.TimedAspect k asp -> k * fst (aspectToBenefit cops b asp) `div` 50
 
 -- | Return the value to add to effect value and another to multiply it.

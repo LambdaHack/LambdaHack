@@ -42,6 +42,8 @@ data Effect a =
   | PullActor !(ThrowMod a)
   | Teleport !a
   | ActivateEqp !Char  -- ^ symbol @' '@ means all
+  | ExplodeEffect !Text   -- ^ explode, producing this group of shrapnel
+  | OnSmash !(Effect a)  -- ^ trigger when item smashed (not applied nor meleed)
   | TimedAspect !Int !(Aspect a)  -- enable the aspect for k clips
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
@@ -70,14 +72,14 @@ data ThrowMod a = ThrowMod
 
 -- | All possible item features.
 data Feature =
-    ChangeTo !Text                  -- ^ change to this group when altered
-  | Fragile                         -- ^ break even when not hitting an enemy
-  | Durable                         -- ^ don't break even hitting or applying
+    ChangeTo !Text           -- ^ change to this group when altered
+  | Fragile                  -- ^ break even when not hitting an enemy
+  | Durable                  -- ^ don't break even hitting or applying
   | ToThrow !(ThrowMod Int)  -- ^ parameters modifying a throw
-  | Applicable                      -- ^ can't be turned off, is consumed by use
-  | EqpSlot !EqpSlot !Text          -- ^ the slot, counts towards the eqp limit
-  | Identified                      -- ^ any such item starts identified
-  | Precious                        -- ^ precious; don't risk identifying by use
+  | Applicable               -- ^ can't be turned off, is consumed by use
+  | EqpSlot !EqpSlot !Text   -- ^ the slot, counts towards the eqp limit
+  | Identified               -- ^ any such item starts identified
+  | Precious                 -- ^ precious; don't risk identifying by use
   deriving (Show, Eq, Ord, Generic)
 
 data EqpSlot =
@@ -155,6 +157,10 @@ effectTrav (Teleport a) f = do
   b <- f a
   return $! Teleport b
 effectTrav (ActivateEqp symbol) _ = return $! ActivateEqp symbol
+effectTrav (OnSmash effa) f = do
+  effb <- effectTrav effa f
+  return $! OnSmash effb
+effectTrav (ExplodeEffect t) _ = return $! ExplodeEffect t
 effectTrav (TimedAspect k asp) f = do
   asp2 <- aspectTrav asp f
   return $! TimedAspect k asp2
