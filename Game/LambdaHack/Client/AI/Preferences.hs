@@ -73,7 +73,7 @@ aspectToBenefit _cops _b asp =
     Effect.AddSkills m -> (5 * sum (EM.elems m), 1)
     Effect.ArmorMelee p -> (p `divUp` 10, 1)
     Effect.Explode{} -> (0, 10)
-    Effect.SightRadius p -> (p * 20, 1)
+    Effect.SightRadius p -> (p * 10, 1)
     Effect.SmellRadius p -> (p * 2, 1)
     Effect.AddLight p -> (p * 10, 1)
 
