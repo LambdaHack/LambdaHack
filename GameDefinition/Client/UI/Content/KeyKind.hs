@@ -55,24 +55,24 @@ standardKeys = KeyKind
                             , feature = F.Cause (Effect.Ascend (-10)) } ]))
       , ("semicolon", ([CmdMove], StepToTarget))
       , ("colon", ([CmdMove], Macro "go to target for 100 steps"
-                                  ["semicolon", "P"]))
+                                    ["semicolon", "V"]))
       , ("CTRL-colon", ([CmdMove], Macro "go to target for 10 steps"
-                                       ["semicolon", "CTRL-P"]))
+                                         ["semicolon", "CTRL-V"]))
       , ("x", ([CmdMove], Macro "explore the closest unknown spot"
-                              [ "BackSpace"
-                              , "CTRL-question", "semicolon", "P" ]))
+                                [ "BackSpace"
+                                , "CTRL-question", "semicolon", "V" ]))
       , ("X", ([CmdMove], Macro "autoexplore 100 times"
-                              [ "BackSpace"
-                              , "'", "CTRL-question", "semicolon", "'"
-                              , "P" ]))
+                                [ "BackSpace"
+                                , "'", "CTRL-question", "semicolon", "'"
+                                , "V" ]))
       , ("CTRL-X", ([CmdMove], Macro "autoexplore 10 times"
-                                   [ "BackSpace"
-                                   , "'", "CTRL-question", "semicolon", "'"
-                                   , "CTRL-P" ]))
+                                      [ "BackSpace"
+                                      , "'", "CTRL-question", "semicolon", "'"
+                                      , "CTRL-V" ]))
       , ("R", ([CmdMove], Macro "rest (wait 100 times)"
-                              ["KP_Begin", "P"]))
+                                ["KP_Begin", "V"]))
       , ("CTRL-R", ([CmdMove], Macro "rest (wait 10 times)"
-                                   ["KP_Begin", "CTRL-P"]))
+                                     ["KP_Begin", "CTRL-V"]))
       , ("c", ([CmdMove], AlterDir
            [ AlterFeature { verb = "close"
                           , object = "door"
@@ -154,7 +154,7 @@ standardKeys = KeyKind
       , ("question", ([CmdMeta], Help))
       , ("D", ([CmdMeta], History))
       , ("T", ([CmdMeta], MarkSuspect))
-      , ("V", ([CmdMeta], MarkVision))
+      , ("Z", ([CmdMeta], MarkVision))
       , ("C", ([CmdMeta], MarkSmell))
       , ("Tab", ([CmdMeta], MemberCycle))
       , ("ISO_Left_Tab", ([CmdMeta], MemberBack))

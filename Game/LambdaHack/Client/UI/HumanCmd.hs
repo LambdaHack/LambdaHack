@@ -134,7 +134,7 @@ cmdDescription cmd = case cmd of
   Repeat n    -> "voice the recorded commands" <+> tshow n <+> "times"
   Record      -> "start recording commands"
   History     -> "display player diary"
-  MarkVision  -> "mark visible area"
+  MarkVision  -> "mark visible zone"
   MarkSmell   -> "mark smell clues"
   MarkSuspect -> "mark suspect terrain"
   Help        -> "display help"
