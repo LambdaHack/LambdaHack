@@ -132,9 +132,9 @@ effectSem effect source target = do
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
   case effect of
     Effect.NoEffect -> return False
-    Effect.Heal p -> effectHeal execSfx p source target
+    Effect.RefillHP p -> effectRefillHP execSfx p source target
     Effect.Hurt nDm p -> effectHurt nDm p source target
-    Effect.Calm p -> effectCalm execSfx p target
+    Effect.RefillCalm p -> effectRefillCalm execSfx p target
     Effect.Dominate -> effectDominate execSfx source target
     Effect.Impress -> effectImpress execSfx source target
     Effect.CallFriend p -> effectCallFriend p source target
@@ -162,11 +162,11 @@ effectSem effect source target = do
 
 -- + Individual semantic functions for effects
 
--- ** Heal
+-- ** RefillHP
 
-effectHeal :: (MonadAtomic m, MonadServer m)
+effectRefillHP :: (MonadAtomic m, MonadServer m)
            => m () -> Int -> ActorId -> ActorId -> m Bool
-effectHeal execSfx power source target = do
+effectRefillHP execSfx power source target = do
   tb <- getsState $ getActorBody target
   activeItems <- activeItemsServer target
   let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
@@ -174,7 +174,7 @@ effectHeal execSfx power source target = do
   if deltaHP == 0
     then return False
     else do
-      execUpdAtomic $ UpdHealActor target deltaHP
+      execUpdAtomic $ UpdRefillHP target deltaHP
       when (deltaHP < 0 && source /= target) $ halveCalm target
       execSfx
       return True
@@ -192,7 +192,7 @@ halveCalm target = do
   -- HP loss decreases Calm by at least 2, to overcome Calm regen,
   -- when far from shooting foe and to avoid "hears something",
   -- which is emitted for decrease -1.
-  execUpdAtomic $ UpdCalmActor target deltaCalm
+  execUpdAtomic $ UpdRefillCalm target deltaCalm
 
 -- ** Hurt
 
@@ -216,19 +216,19 @@ effectHurt nDm power source target = do
       mult = sshieldMult * tshieldMult * (if block then 50 else 100)
       deltaHP = - max 1 (mult * (n + power) `divUp` (100 * 100 * 100))
   -- Damage the target.
-  execUpdAtomic $ UpdHealActor target deltaHP
+  execUpdAtomic $ UpdRefillHP target deltaHP
   when (source /= target) $ halveCalm target
   execSfxAtomic $ SfxEffect (bfid sb) target $
     if source == target
-    then Effect.Heal deltaHP
+    then Effect.RefillHP deltaHP
     else Effect.Hurt nDm deltaHP{-hack-}
   return True
 
--- ** Calm
+-- ** RefillCalm
 
-effectCalm ::  (MonadAtomic m, MonadServer m)
+effectRefillCalm ::  (MonadAtomic m, MonadServer m)
            => m () -> Int -> ActorId -> m Bool
-effectCalm execSfx power target = do
+effectRefillCalm execSfx power target = do
   tb <- getsState $ getActorBody target
   activeItems <- activeItemsServer target
   let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
@@ -236,7 +236,7 @@ effectCalm execSfx power target = do
   if deltaCalm == 0
     then return False
     else do
-      execUpdAtomic $ UpdCalmActor target deltaCalm
+      execUpdAtomic $ UpdRefillCalm target deltaCalm
       execSfx
       return True
 
@@ -288,7 +288,7 @@ effectCallFriend power source target = assert (power > 0) $ do
   else do
     let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
         deltaHP = hpMax `div` 3
-    execUpdAtomic $ UpdHealActor source deltaHP
+    execUpdAtomic $ UpdRefillHP source deltaHP
     let validTile t = not $ Tile.hasFeature cotile F.NoActor t
         lid = blid sb
     ps <- getsState $ nearbyFreePoints validTile (bpos sb) lid
@@ -312,7 +312,7 @@ effectSummon power source target = assert (power > 0) $ do
   else do
     let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
         deltaCalm = calmMax `div` 3
-    execUpdAtomic $ UpdCalmActor source deltaCalm
+    execUpdAtomic $ UpdRefillCalm source deltaCalm
     let validTile t = not $ Tile.hasFeature cotile F.NoActor t
     ps <- getsState $ nearbyFreePoints validTile (bpos sb) (blid sb)
     localTime <- getsState $ getLocalTime (blid sb)
@@ -627,7 +627,7 @@ effectSendFlying execSfx Effect.ThrowMod{..} source target modePush = do
               path = bpos tb : pos : rest
               ts = computeTrajectory weight throwVelocity throwLinger path
           unless (btrajectory tb == Just ts) $
-            execUpdAtomic $ UpdTrajectoryActor target (btrajectory tb)
+            execUpdAtomic $ UpdTrajectory target (btrajectory tb)
                                                       (Just ts)
           execSfx
           return True

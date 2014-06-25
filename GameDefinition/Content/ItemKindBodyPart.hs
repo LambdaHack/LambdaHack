@@ -186,7 +186,7 @@ speedGland n = fist
   , icount   = 1
   , iverbApply   = "squeeze"
   , iaspects = [AddSpeed 2, Periodic (intToDice $ 2 * n)]
-  , ieffects = [Heal 1]
+  , ieffects = [RefillHP 1]
   , ifeature = [Identified]
   , idesc    = ""
   }

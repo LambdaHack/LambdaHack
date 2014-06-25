@@ -87,10 +87,10 @@ posUpdAtomic cmd = case cmd of
     return $! PosFidAndSer (Just $ blid b) (bfid b)
   UpdMoveItem _ _ aid _ _ -> singleAid aid
   UpdAgeActor aid _ -> singleAid aid
-  UpdHealActor aid _ -> singleAid aid
-  UpdCalmActor aid _ -> singleAid aid
+  UpdRefillHP aid _ -> singleAid aid
+  UpdRefillCalm aid _ -> singleAid aid
   UpdOldFidActor aid _ _ -> singleAid aid
-  UpdTrajectoryActor aid _ _ -> singleAid aid
+  UpdTrajectory aid _ _ -> singleAid aid
   UpdColorActor aid _ _ -> singleAid aid
   UpdQuitFaction{} -> return PosAll
   UpdLeadFaction fid _ _ -> do

@@ -24,13 +24,13 @@ effectToBenefit cops b activeItems fact eff =
   let isHorror = isHorrorFact cops fact
   in case eff of
     Effect.NoEffect -> 0
-    Effect.Heal p ->
+    Effect.RefillHP p ->
       let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
       in if p > 0
          then 10 * min p (hpMax - bhp b)
          else max (-99) (10 * p)
     Effect.Hurt d p -> -(min 99 $ 10 * p + round (10 * Dice.meanDice d))
-    Effect.Calm p ->
+    Effect.RefillCalm p ->
       let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
       in if p > 0
          then min p (calmMax - bcalm b)

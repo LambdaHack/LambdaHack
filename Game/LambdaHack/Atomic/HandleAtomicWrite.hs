@@ -56,10 +56,10 @@ handleUpdAtomic cmd = case cmd of
   UpdDisplaceActor source target -> updDisplaceActor source target
   UpdMoveItem iid k aid c1 c2 -> updMoveItem iid k aid c1 c2
   UpdAgeActor aid t -> updAgeActor aid t
-  UpdHealActor aid n -> updHealActor aid n
-  UpdCalmActor aid n -> updCalmActor aid n
+  UpdRefillHP aid n -> updRefillHP aid n
+  UpdRefillCalm aid n -> updRefillCalm aid n
   UpdOldFidActor aid fromFid toFid -> updOldFidActor aid fromFid toFid
-  UpdTrajectoryActor aid fromT toT -> updTrajectoryActor aid fromT toT
+  UpdTrajectory aid fromT toT -> updTrajectory aid fromT toT
   UpdColorActor aid fromCol toCol -> updColorActor aid fromCol toCol
   UpdQuitFaction fid mbody fromSt toSt -> updQuitFaction fid mbody fromSt toSt
   UpdLeadFaction fid source target -> updLeadFaction fid source target
@@ -209,8 +209,8 @@ updAgeActor aid delta = assert (delta /= Delta timeZero) $ do
   let newBody = body {btime = timeShift (btime body) delta}
   updCreateActor aid newBody ais
 
-updHealActor :: MonadStateWrite m => ActorId -> Int -> m ()
-updHealActor aid n =
+updRefillHP :: MonadStateWrite m => ActorId -> Int -> m ()
+updRefillHP aid n =
   updateActor aid $ \b ->
     b { bhp = bhp b + n
       , bhpDelta = let oldD = bhpDelta b
@@ -220,8 +220,8 @@ updHealActor aid n =
                       else oldD {resCurrentTurn = resCurrentTurn oldD + n}
       }
 
-updCalmActor :: MonadStateWrite m => ActorId -> Int -> m ()
-updCalmActor aid n =
+updRefillCalm :: MonadStateWrite m => ActorId -> Int -> m ()
+updRefillCalm aid n =
   updateActor aid $ \b ->
     b { bcalm = max 0 $ bcalm b + n
       , bcalmDelta = let oldD = bcalmDelta b
@@ -237,12 +237,12 @@ updOldFidActor aid fromFid toFid = assert (fromFid /= toFid) $ do
     assert (boldfid b == fromFid `blame` (aid, fromFid, toFid, b))
     $ b {boldfid = toFid}
 
-updTrajectoryActor :: MonadStateWrite m
-                   => ActorId
-                   -> Maybe ([Vector], Speed)
-                   -> Maybe ([Vector], Speed)
-                   -> m ()
-updTrajectoryActor aid fromT toT = assert (fromT /= toT) $ do
+updTrajectory :: MonadStateWrite m
+              => ActorId
+              -> Maybe ([Vector], Speed)
+              -> Maybe ([Vector], Speed)
+              -> m ()
+updTrajectory aid fromT toT = assert (fromT /= toT) $ do
   body <- getsState $ getActorBody aid
   assert (fromT == btrajectory body `blame` "unexpected actor trajectory"
                                     `twith` (aid, fromT, toT, body)) skip

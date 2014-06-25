@@ -20,13 +20,13 @@ effectToSuff :: (Show a, Ord a, Num a) => Effect a -> (a -> Text) -> Text
 effectToSuff effect f =
   case St.evalState (effectTrav effect $ return . f) () of
     NoEffect -> ""
-    Heal p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
-    Heal 0 -> assert `failure` effect
-    Heal p -> "of wounding" <+> wrapInParens (affixBonus p)
+    RefillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
+    RefillHP 0 -> assert `failure` effect
+    RefillHP p -> "of wounding" <+> wrapInParens (affixBonus p)
     Hurt dice t -> wrapInParens (tshow dice) <+> t
-    Calm p | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
-    Calm 0 -> assert `failure` effect
-    Calm p -> "of dismaying" <+> wrapInParens (affixBonus p)
+    RefillCalm p | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
+    RefillCalm 0 -> assert `failure` effect
+    RefillCalm p -> "of dismaying" <+> wrapInParens (affixBonus p)
     Dominate -> "of domination"
     Impress -> "of impression"
     CallFriend 1 -> "of aid calling"

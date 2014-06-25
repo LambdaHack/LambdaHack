@@ -540,7 +540,7 @@ applyItem aid applyGroup = do
   benList <- benAvailableItems aid permitted
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
-          let getP (Effect.Heal p) _ | p > 0 = True
+          let getP (Effect.RefillHP p) _ | p > 0 = True
               getP _ acc = acc
           in case itemDisco itemFull of
             Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->

@@ -40,7 +40,7 @@ mist_healing = ItemKind
   , iverbProject = "blow"
   , iweight  = 1
   , iaspects = [AddLight 1]
-  , ieffects = [Heal 2]
+  , ieffects = [RefillHP 2]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
   , idesc    = ""
@@ -56,7 +56,7 @@ mist_wounding = ItemKind
   , iverbProject = "blow"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [Heal (-2)]
+  , ieffects = [RefillHP (-2)]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
   , idesc    = ""

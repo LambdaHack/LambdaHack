@@ -20,9 +20,9 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 -- either as a random formula dependent on level, or as a final rolled value.
 data Effect a =
     NoEffect
-  | Heal !Int
+  | RefillHP !Int
   | Hurt !Dice.Dice !a
-  | Calm !Int
+  | RefillCalm !Int
   | Dominate
   | Impress
   | CallFriend !Int
@@ -31,7 +31,7 @@ data Effect a =
   | ApplyPerfume
   | Burn !Int
   | Ascend !Int
-  | Escape !Int  -- ^ the argument marks if can be placed on last level, etc.
+  | Escape !Int          -- ^ the arg tells if can be placed on last level, etc.
   | Paralyze !a
   | InsertMove !a
   | DropBestWeapon
@@ -40,24 +40,24 @@ data Effect a =
   | PushActor !(ThrowMod a)
   | PullActor !(ThrowMod a)
   | Teleport !a
-  | ActivateEqp !Char  -- ^ symbol @' '@ means all
-  | Explode !Text   -- ^ explode, producing this group of shrapnel
+  | ActivateEqp !Char    -- ^ symbol @' '@ means all
+  | Explode !Text        -- ^ explode, producing this group of shrapnel
   | OnSmash !(Effect a)  -- ^ trigger when item smashed (not applied nor meleed)
-  | TimedAspect !Int !(Aspect a)  -- enable the aspect for k clips
+  | TimedAspect !Int !(Aspect a)  -- ^ enable the aspect for k clips
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
 -- | Aspects of items, tiles, etc. The type argument represents power.
 -- either as a random formula dependent on level, or as a final rolled value.
 data Aspect a =
-    Periodic !a     -- ^ is activated this many times in 100
-  | AddMaxHP !a     -- ^ maximal hp
-  | AddMaxCalm !a   -- ^ maximal calm
-  | AddSpeed !a     -- ^ speed in m/10s
+    Periodic !a       -- ^ is activated this many times in 100
+  | AddMaxHP !a       -- ^ maximal hp
+  | AddMaxCalm !a     -- ^ maximal calm
+  | AddSpeed !a       -- ^ speed in m/10s
   | AddSkills !Ability.Skills  -- ^ skills in particular abilities
-  | AddArmorMelee !a   -- ^ armor class wrt melee
-  | AddSight !a  -- ^ FOV radius, where 1 means a single tile
-  | AddSmell !a  -- ^ smell radius, where 1 means a single tile
-  | AddLight !a     -- ^ light radius, where 1 means a single tile
+  | AddArmorMelee !a  -- ^ armor class wrt melee
+  | AddSight !a       -- ^ FOV radius, where 1 means a single tile
+  | AddSmell !a       -- ^ smell radius, where 1 means a single tile
+  | AddLight !a       -- ^ light radius, where 1 means a single tile
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
 -- | Parameters modifying a trow.
@@ -116,11 +116,11 @@ instance Binary EqpSlot
 -- | Transform an effect using a stateful function.
 effectTrav :: Effect a -> (a -> St.State s b) -> St.State s (Effect b)
 effectTrav NoEffect _ = return NoEffect
-effectTrav (Heal p) _ = return $! Heal p
+effectTrav (RefillHP p) _ = return $! RefillHP p
 effectTrav (Hurt dice a) f = do
   b <- f a
   return $! Hurt dice b
-effectTrav (Calm p) _ = return $! Calm p
+effectTrav (RefillCalm p) _ = return $! RefillCalm p
 effectTrav Dominate _ = return Dominate
 effectTrav Impress _ = return Impress
 effectTrav (CallFriend p) _ = return $! CallFriend p

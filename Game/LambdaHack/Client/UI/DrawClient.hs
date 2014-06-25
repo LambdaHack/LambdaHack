@@ -247,7 +247,7 @@ drawLeaderStatus waitT width = do
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       addColor c t = map (Color.AttrChar $ Color.Attr c Color.defBG)
                          (T.unpack t)
-      maxLeaderStatusWidth = 23  -- covers 3-digit HP and 2-digit Calmness
+      maxLeaderStatusWidth = 23  -- covers 3-digit HP and 2-digit Calm
       (calmHeaderText, hpHeaderText) = if width < maxLeaderStatusWidth
                                        then ("C", "H")
                                        else ("Calm", "HP")

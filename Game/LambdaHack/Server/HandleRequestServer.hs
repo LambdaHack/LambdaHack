@@ -202,11 +202,11 @@ reqMelee source target iid cstore = do
     case btrajectory sb of
       Nothing -> return ()
       Just (tra, speed) -> do
-        execUpdAtomic $ UpdHealActor source (-1)
+        execUpdAtomic $ UpdRefillHP source (-1)
         unless (bproj sb || null tra) $
           -- Non-projectiles can't pierce, so terminate their flight.
           execUpdAtomic
-          $ UpdTrajectoryActor source (btrajectory sb) (Just ([], speed))
+          $ UpdTrajectory source (btrajectory sb) (Just ([], speed))
     -- Msgs inside itemEffect describe the target part.
     itemEffectAndDestroy source target iid (itemToF iid 1) cstore
     -- The only way to start a war is to slap an enemy. Being hit by

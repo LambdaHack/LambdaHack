@@ -103,7 +103,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdMoveItem iid k aid c1 c2 -> moveItemUI verbose iid k aid c1 c2
   -- Change actor attributes.
   UpdAgeActor{} -> skip
-  UpdHealActor aid n -> do
+  UpdRefillHP aid n -> do
     when verbose $
       aVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
                               <+> tshow (abs n) <> "HP"
@@ -115,7 +115,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
       when (bhp b == hpMax) $ do
         actorVerbMU aid b "recover your health fully"
         stopPlayBack
-  UpdCalmActor aid calmDelta ->
+  UpdRefillCalm aid calmDelta ->
     when (calmDelta == -1) $ do  -- lower deltas come from hits and are obvious
       side <- getsClient sside
       b <- getsState $ getActorBody aid
@@ -127,7 +127,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
           aVerbMU aid "hear something"
           msgDuplicateScrap
   UpdOldFidActor{} -> skip
-  UpdTrajectoryActor{} -> skip
+  UpdTrajectory{} -> skip
   UpdColorActor{} -> skip
   -- Change faction attributes.
   UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt
@@ -487,7 +487,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           (deadBefore, verbDie) =
             case effect of
               Effect.Hurt _ p | deadPreviousTurn p -> (True, hurtExtra)
-              Effect.Heal p | deadPreviousTurn p -> (True, hurtExtra)
+              Effect.RefillHP p | deadPreviousTurn p -> (True, hurtExtra)
               _ -> (False, firstFall)
           msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
       msgAdd msgDie
@@ -499,8 +499,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         displayActorStart b animDie
     else case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."
-        Effect.Heal p | p == 1 -> skip  -- no spam from regen items
-        Effect.Heal p | p > 0 -> do
+        Effect.RefillHP p | p == 1 -> skip  -- no spam from regen items
+        Effect.RefillHP p | p > 0 -> do
           if fid == side then
             actorVerbMU aid b "feel healthier"
           else
@@ -508,7 +508,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
           displayActorStart b animFrs
-        Effect.Heal _ -> do
+        Effect.RefillHP _ -> do
           if fid == side then
             actorVerbMU aid b "feel wounded"
           else
@@ -517,8 +517,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs
         Effect.Hurt{} -> skip
-        Effect.Calm p | p == 1 -> skip  -- no spam from regen items
-        Effect.Calm p | p > 0 -> do
+        Effect.RefillCalm p | p == 1 -> skip  -- no spam from regen items
+        Effect.RefillCalm p | p > 0 -> do
           if fid == side then
             actorVerbMU aid b "feel calmer"
           else
@@ -526,7 +526,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
           displayActorStart b animFrs
-        Effect.Calm _ -> do
+        Effect.RefillCalm _ -> do
           if fid == side then
             actorVerbMU aid b "feel distressed"
           else

@@ -361,10 +361,10 @@ setTrajectory aid = do
   lvl <- getLevel $ blid b
   let clearTrajectory speed = do
         -- Lose HP due to bumping into an obstacle.
-        execUpdAtomic $ UpdHealActor aid (-1)
-        execUpdAtomic $ UpdTrajectoryActor aid
-                                           (btrajectory b)
-                                           (Just ([], speed))
+        execUpdAtomic $ UpdRefillHP aid (-1)
+        execUpdAtomic $ UpdTrajectory aid
+                                      (btrajectory b)
+                                      (Just ([], speed))
         return $ not $ bproj b  -- projectiles must vanish soon
   case btrajectory b of
     Just ((d : lv), speed) ->
@@ -380,12 +380,12 @@ setTrajectory aid = do
         if actorDying b2 then return $ not $ bproj b  -- don't clear trajectory
         else do
           unless (maybe False (null . fst) (btrajectory b2)) $
-            execUpdAtomic $ UpdTrajectoryActor aid
-                                               (btrajectory b2)
-                                               (Just (lv, speed))
+            execUpdAtomic $ UpdTrajectory aid
+                                          (btrajectory b2)
+                                          (Just (lv, speed))
           return True
     Just ([], _) -> do  -- non-projectile actor stops flying
       assert (not $ bproj b) skip
-      execUpdAtomic $ UpdTrajectoryActor aid (btrajectory b) Nothing
+      execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
       return False
     _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)

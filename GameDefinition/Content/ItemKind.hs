@@ -196,7 +196,7 @@ necklace = ItemKind  -- TODO: when more items, perhaps make all Periodic necklac
   }
 necklace1 = necklace
   { iaspects = [Periodic $ d 2 + dl 2]
-  , ieffects = [Heal 1]
+  , ieffects = [RefillHP 1]
   , idesc    = "A cord of dried herbs and healing berries."
   }
 necklace2 = necklace
@@ -207,7 +207,7 @@ necklace2 = necklace
 necklace3 = necklace
   { ifreq    = [("useful", 1)]
   , iaspects = [Periodic $ d 4 + dl 2]
-  , ieffects = [Paralyze $ 5 + d 5 + dl 5, Calm 50]
+  , ieffects = [Paralyze $ 5 + d 5 + dl 5, RefillCalm 50]
   }
 net = ItemKind
   { isymbol  = '|'
@@ -261,11 +261,11 @@ potion1 = potion
   { ieffects = [ApplyPerfume, Impress, OnSmash (Explode "fragrance")]
   }
 potion2 = potion
-  { ieffects = [Heal 5, OnSmash (Explode "healing mist")]
+  { ieffects = [RefillHP 5, OnSmash (Explode "healing mist")]
   }
 potion3 = potion  -- TODO: a bit boring
   { ifreq    = [("useful", 5)]
-  , ieffects = [Heal (-5), OnSmash (Explode "wounding mist")]
+  , ieffects = [RefillHP (-5), OnSmash (Explode "wounding mist")]
   }
 potion4 = potion
   { ieffects = [ PushActor (ThrowMod 200 75)
@@ -290,7 +290,7 @@ ring = ItemKind
 ring1 = ring
   { ifreq    = [("useful", 1)]
   , iaspects = [Periodic $ d 4 + dl 2]
-  , ieffects = [Calm 1]
+  , ieffects = [RefillCalm 1]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with letters that meant a lot to somebody."
   }
 ring2 = ring
@@ -308,7 +308,7 @@ ring4 = ring
 ring5 = ring
   { ifreq    = [("useful", 1)]
   , iaspects = [Periodic $ 2 * d 10 + dl 20]
-  , ieffects = [InsertMove 1, Heal (-1)]  -- TODO: allow fractions for smooth?
+  , ieffects = [InsertMove 1, RefillHP (-1)]  -- TODO: allow fractions for smooth?
   , ifeature = [Durable]  -- evil players would throw before death, to destroy
       -- TODO: teach AI to wear only for fight; prevent players from meleeing
       -- allies with that (Durable, perhaps require Hurt for melee)

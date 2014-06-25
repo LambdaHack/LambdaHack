@@ -65,10 +65,10 @@ data UpdAtomic =
   | UpdMoveItem !ItemId !Int !ActorId !CStore !CStore
   -- Change actor attributes.
   | UpdAgeActor !ActorId !(Delta Time)
-  | UpdHealActor !ActorId !Int
-  | UpdCalmActor !ActorId !Int
+  | UpdRefillHP !ActorId !Int
+  | UpdRefillCalm !ActorId !Int
   | UpdOldFidActor !ActorId !FactionId !FactionId
-  | UpdTrajectoryActor !ActorId
+  | UpdTrajectory !ActorId
                        !(Maybe ([Vector], Speed))
                        !(Maybe ([Vector], Speed))
   | UpdColorActor !ActorId !Color.Color !Color.Color
@@ -145,10 +145,10 @@ undoUpdAtomic cmd = case cmd of
   UpdDisplaceActor source target -> Just $ UpdDisplaceActor target source
   UpdMoveItem iid k aid c1 c2 -> Just $ UpdMoveItem iid k aid c2 c1
   UpdAgeActor aid delta -> Just $ UpdAgeActor aid (timeDeltaReverse delta)
-  UpdHealActor aid n -> Just $ UpdHealActor aid (-n)
-  UpdCalmActor aid n -> Just $ UpdCalmActor aid (-n)
+  UpdRefillHP aid n -> Just $ UpdRefillHP aid (-n)
+  UpdRefillCalm aid n -> Just $ UpdRefillCalm aid (-n)
   UpdOldFidActor aid fromFid toFid -> Just $ UpdOldFidActor aid toFid fromFid
-  UpdTrajectoryActor aid fromT toT -> Just $ UpdTrajectoryActor aid toT fromT
+  UpdTrajectory aid fromT toT -> Just $ UpdTrajectory aid toT fromT
   UpdColorActor aid fromCol toCol -> Just $ UpdColorActor aid toCol fromCol
   UpdQuitFaction fid mb fromSt toSt -> Just $ UpdQuitFaction fid mb toSt fromSt
   UpdLeadFaction fid source target -> Just $ UpdLeadFaction fid target source

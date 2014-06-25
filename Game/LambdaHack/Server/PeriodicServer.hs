@@ -212,13 +212,13 @@ advanceTime aid = do
       let clearMark = 0
       unless (newCalmDelta == 0) $
         -- Update delta for the current player turn.
-        execUpdAtomic $ UpdCalmActor aid newCalmDelta
+        execUpdAtomic $ UpdRefillCalm aid newCalmDelta
       unless (bcalmDelta b == ResDelta 0 0) $
         -- Clear delta for the next player turn.
-        execUpdAtomic $ UpdCalmActor aid clearMark
+        execUpdAtomic $ UpdRefillCalm aid clearMark
       unless (bhpDelta b == ResDelta 0 0) $
         -- Clear delta for the next player turn.
-        execUpdAtomic $ UpdHealActor aid clearMark
+        execUpdAtomic $ UpdRefillHP aid clearMark
 
 leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelFlip = do
