@@ -157,7 +157,7 @@ effectSem effect source target = do
       effectSendFlying execSfx tmod source target (Just False)
     Effect.Teleport p -> effectTeleport execSfx p target
     Effect.ActivateEqp symbol -> effectActivateEqp execSfx target symbol
-    Effect.ExplodeEffect t -> effectExplode execSfx t target
+    Effect.Explode t -> effectExplode execSfx t target
     Effect.OnSmash _ -> return False  -- ignored under normal circumstances
     Effect.TimedAspect{} -> return False  -- TODO
 

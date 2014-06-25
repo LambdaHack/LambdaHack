@@ -54,8 +54,8 @@ brassLantern = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "heave"
   , iweight  = 2400
-  , iaspects = [AddLight 4, SightRadius (-1), Explode "burning oil 4"]
-  , ieffects = [Burn 4]
+  , iaspects = [AddLight 4, SightRadius (-1)]
+  , ieffects = [Burn 4, OnSmash (Explode "burning oil 4")]
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
                , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
   , idesc    = "Very bright and very heavy brass lantern."
@@ -234,8 +234,8 @@ oilLamp = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "lob"
   , iweight  = 1000
-  , iaspects = [AddLight 3, SightRadius (-1), Explode "burning oil 3"]
-  , ieffects = [Burn 3]
+  , iaspects = [AddLight 3, SightRadius (-1)]
+  , ieffects = [Burn 3, OnSmash (Explode "burning oil 3")]
   , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
                , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
@@ -258,21 +258,18 @@ potion = ItemKind
   , ikit     = []
   }
 potion1 = potion
-  { iaspects = [Explode "fragrance"]
-  , ieffects = [ApplyPerfume, Impress]
+  { ieffects = [ApplyPerfume, Impress, OnSmash (Explode "fragrance")]
   }
 potion2 = potion
-  { iaspects = [Explode "healing mist"]
-  , ieffects = [Heal 5]
+  { ieffects = [Heal 5, OnSmash (Explode "healing mist")]
   }
 potion3 = potion  -- TODO: a bit boring
   { ifreq    = [("useful", 5)]
-  , iaspects = [Explode "wounding mist"]
-  , ieffects = [Heal (-5)]
+  , ieffects = [Heal (-5), OnSmash (Explode "wounding mist")]
   }
 potion4 = potion
-  { iaspects = [Explode "explosion blast 10"]
-  , ieffects = [Blast 10, PushActor (ThrowMod 200 75)]
+  { ieffects = [ Blast 10, PushActor (ThrowMod 200 75)
+               , OnSmash (Explode "explosion blast 10") ]
   }
 ring = ItemKind
   { isymbol  = '='

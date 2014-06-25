@@ -42,7 +42,7 @@ data Effect a =
   | PullActor !(ThrowMod a)
   | Teleport !a
   | ActivateEqp !Char  -- ^ symbol @' '@ means all
-  | ExplodeEffect !Text   -- ^ explode, producing this group of shrapnel
+  | Explode !Text   -- ^ explode, producing this group of shrapnel
   | OnSmash !(Effect a)  -- ^ trigger when item smashed (not applied nor meleed)
   | TimedAspect !Int !(Aspect a)  -- enable the aspect for k clips
   deriving (Show, Read, Eq, Ord, Generic, Functor)
@@ -50,8 +50,7 @@ data Effect a =
 -- | Aspects of items, tiles, etc. The type argument represents power.
 -- either as a random formula dependent on level, or as a final rolled value.
 data Aspect a =
-    NoAspect
-  | Periodic !a
+    Periodic !a     -- ^ is activated this many times in 100
   | AddMaxHP !a     -- ^ maximal hp
   | AddMaxCalm !a   -- ^ maximal calm
   | AddSpeed !a     -- ^ speed in m/10s
@@ -60,7 +59,6 @@ data Aspect a =
   | SightRadius !a  -- ^ FOV radius, where 1 means a single tile
   | SmellRadius !a  -- ^ smell radius, where 1 means a single tile
   | AddLight !a     -- ^ light radius, where 1 means a single tile
-  | Explode !Text   -- ^ explode, producing this group of shrapnel
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
 -- | Parameters modifying a trow.
@@ -160,14 +158,13 @@ effectTrav (ActivateEqp symbol) _ = return $! ActivateEqp symbol
 effectTrav (OnSmash effa) f = do
   effb <- effectTrav effa f
   return $! OnSmash effb
-effectTrav (ExplodeEffect t) _ = return $! ExplodeEffect t
+effectTrav (Explode t) _ = return $! Explode t
 effectTrav (TimedAspect k asp) f = do
   asp2 <- aspectTrav asp f
   return $! TimedAspect k asp2
 
 -- | Transform an aspect using a stateful function.
 aspectTrav :: Aspect a -> (a -> St.State s b) -> St.State s (Aspect b)
-aspectTrav NoAspect _ = return NoAspect
 aspectTrav (Periodic a) f = do
   b <- f a
   return $! Periodic b
@@ -193,7 +190,6 @@ aspectTrav (SmellRadius a) f = do
 aspectTrav (AddLight a) f = do
   b <- f a
   return $! AddLight b
-aspectTrav (Explode t) _ = return $! Explode t
 
 -- | Transform a throwing mod using a stateful function.
 modTrav :: ThrowMod a -> (a -> St.State s b) -> St.State s (ThrowMod b)

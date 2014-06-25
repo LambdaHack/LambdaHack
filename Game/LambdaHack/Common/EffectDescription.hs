@@ -69,7 +69,7 @@ effectToSuff effect f =
         _ -> assert `failure` effect
     ActivateEqp ' ' -> "of equipment burst"
     ActivateEqp symbol -> "of '" <> T.singleton symbol <> "' burst"
-    ExplodeEffect _ -> "of explosion"
+    Explode _ -> "of explosion"
     OnSmash _ -> ""  -- conditional effect, TMI
     TimedAspect _ _ ->
       case effect of
@@ -82,7 +82,6 @@ tmodToSuff ThrowMod{..} = tshow throwVelocity <+> tshow throwLinger
 aspectToSuff :: Show a => Aspect a -> (a -> Text) -> Text
 aspectToSuff aspect f =
   case St.evalState (aspectTrav aspect $ return . f) () of
-    NoAspect -> ""
     Periodic _ ->
       case aspect of
         Periodic n -> wrapInParens $ tshow n <+> "in 100"
@@ -95,7 +94,6 @@ aspectToSuff aspect f =
     SightRadius t -> wrapInParens $ t <+> "sight"
     SmellRadius t -> wrapInParens $ t <+> "smell"
     AddLight t -> wrapInParens $ t <+> "light"
-    Explode{} -> ""
 
 featureToSuff :: Feature -> Text
 featureToSuff feat =

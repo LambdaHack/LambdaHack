@@ -59,7 +59,7 @@ effectToBenefit cops b activeItems fact eff =
     Effect.Teleport p -> -5 * p  -- but useful on self sometimes
     Effect.ActivateEqp ' ' -> -100
     Effect.ActivateEqp _ -> -50
-    Effect.ExplodeEffect _ -> -10
+    Effect.Explode _ -> -10
     Effect.OnSmash _ -> -10
     Effect.TimedAspect k asp -> k * fst (aspectToBenefit cops b asp) `div` 50
 
@@ -67,14 +67,12 @@ effectToBenefit cops b activeItems fact eff =
 aspectToBenefit :: Kind.COps -> Actor -> Effect.Aspect Int -> (Int, Int)
 aspectToBenefit _cops _b asp =
   case asp of
-    Effect.NoAspect -> (0, 1)
     Effect.Periodic n -> (0, n)
     Effect.AddMaxHP p -> (p * 10, 1)
     Effect.AddMaxCalm p -> (p, 1)
     Effect.AddSpeed p -> (p * 10000, 1)
     Effect.AddSkills m -> (5 * sum (EM.elems m), 1)
     Effect.ArmorMelee p -> (p `divUp` 10, 1)
-    Effect.Explode{} -> (0, 10)
     Effect.SightRadius p -> (p * 10, 1)
     Effect.SmellRadius p -> (p * 2, 1)
     Effect.AddLight p -> (p * 10, 1)
