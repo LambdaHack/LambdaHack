@@ -353,7 +353,10 @@ harmful cops condLightBetrays body activeItems fact itemFull =
   -- to hit hard for the short span they get to survive melee.
   (bspeed body activeItems > speedNormal
    && (isJust (strengthFromEqpSlot Effect.EqpSlotAddLight itemFull)
-       || isJust (strengthFromEqpSlot Effect.EqpSlotAddArmorMelee itemFull)))
+       || 0 > fromMaybe 0 (strengthFromEqpSlot Effect.EqpSlotAddHurtMelee
+                                               itemFull)
+       || 0 > fromMaybe 0 (strengthFromEqpSlot Effect.EqpSlotAddHurtRanged
+                                               itemFull)))
   -- Distressed actors want to hide in the dark.
   || (let heavilyDistressed =  -- actor hit by a proj or similarly distressed
             resCurrentTurn (bcalmDelta body) < -1

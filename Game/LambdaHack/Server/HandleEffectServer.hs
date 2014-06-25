@@ -206,14 +206,19 @@ effectHurt nDm power source target = do
   tb <- getsState $ getActorBody target
   n <- rndToAction $ castDice 0 0 nDm
   let block = braced tb
-      -- OFF shield doesn't hinder attacks, so also does not protect.
-      sshieldMult = case sumSlotNoFilter Effect.EqpSlotAddArmorMelee sallItems of
-        _ | bproj sb -> 100
-        p -> 100 - min 50 p
-      tshieldMult = case sumSlotNoFilter Effect.EqpSlotAddArmorMelee tallItems of
-        _ | bproj sb -> 100
-        p -> 100 - min 50 p
-      mult = sshieldMult * tshieldMult * (if block then 50 else 100)
+      shurtMult =
+        if bproj sb
+        then let p = sumSlotNoFilter Effect.EqpSlotAddHurtRanged sallItems
+             in 100 + max (-40) (min 40 p)
+        else let p = sumSlotNoFilter Effect.EqpSlotAddHurtMelee sallItems
+             in 100 + max (-40) (min 40 p)
+      tshieldMult =
+        if bproj sb
+        then let p = sumSlotNoFilter Effect.EqpSlotAddArmorRanged tallItems
+             in 100 + max (-50) (min 50 p)
+        else let p = sumSlotNoFilter Effect.EqpSlotAddArmorMelee tallItems
+             in 100 + max (-50) (min 50 p)
+      mult = shurtMult * tshieldMult * (if block then 50 else 100)
       deltaHP = - max 1 (mult * (n + power) `divUp` (100 * 100 * 100))
   -- Damage the target.
   execUpdAtomic $ UpdRefillHP target deltaHP

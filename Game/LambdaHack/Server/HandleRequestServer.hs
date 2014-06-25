@@ -186,14 +186,16 @@ reqMelee source target iid cstore = do
     sfact <- getsState $ (EM.! sfid) . sfactionD
     -- If the attacker is a projectile, we don't take any shield into account,
     -- to prevent micromanagement: walking with shield, melee without.
-    let hasShield =
-          not (bproj sb)
-          && (sumSlotNoFilter Effect.EqpSlotAddArmorMelee sallItems > 0
-              || sumSlotNoFilter Effect.EqpSlotAddArmorMelee tallItems > 0)
+    let isFightImpaired =
+          if bproj sb
+          then sumSlotNoFilter Effect.EqpSlotAddHurtRanged sallItems < 0
+               || sumSlotNoFilter Effect.EqpSlotAddArmorRanged tallItems > 0
+          else sumSlotNoFilter Effect.EqpSlotAddHurtMelee sallItems < 0
+               || sumSlotNoFilter Effect.EqpSlotAddArmorMelee tallItems > 0
         block = braced tb
-        hitA = if block && hasShield
+        hitA = if block && isFightImpaired
                then HitBlock 2
-               else if block || hasShield
+               else if block || isFightImpaired
                     then HitBlock 1
                     else HitClear
     execSfxAtomic $ SfxStrike source target iid hitA
