@@ -189,15 +189,19 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
            , defAction = \_ -> transition p tshaSuit tsuitable verb
                                           (cRest ++ [cCur]) itemDialogState
            })
-        , (K.Return, DefItemKey
-           { defLabel = case EM.maxViewWithKey suitableLetterSlots of
+        , (K.Return,
+           let enterSlots = if itemDialogState == IAll
+                            then bagLetterSlots
+                            else suitableLetterSlots
+           in DefItemKey
+           { defLabel = case EM.maxViewWithKey enterSlots of
                Nothing -> assert `failure` "no suitable items"
-                                 `twith` suitableLetterSlots
+                                 `twith` enterSlots
                Just ((l, _), _) -> "RET(" <> T.singleton (slotChar l) <> ")"
-           , defCond = not $ EM.null suitableLetterSlots
-           , defAction = \_ -> case EM.maxView suitableLetterSlots of
+           , defCond = not $ EM.null enterSlots
+           , defAction = \_ -> case EM.maxView enterSlots of
                Nothing -> assert `failure` "no suitable items"
-                                 `twith` suitableLetterSlots
+                                 `twith` enterSlots
                Just (iid, _) -> return $ Right $ getResult iid
            })
         , (K.Char '0', DefItemKey  -- TODO: accept any number and pick the item

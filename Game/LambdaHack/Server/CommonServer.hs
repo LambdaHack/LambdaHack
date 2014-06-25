@@ -370,6 +370,5 @@ pickWeaponServer source = do
 sumBodyEqpServer :: MonadServer m
                  => Effect.EqpSlot -> ActorId -> m Int
 sumBodyEqpServer eqpSlot aid = do
-  eqpAssocs <- fullAssocsServer aid [CEqp]
-  bodyAssocs <- fullAssocsServer aid [CBody]
-  return $! sumSlotNoFilter eqpSlot $ map snd $ eqpAssocs ++ bodyAssocs
+  activeAssocs <- activeItemsServer aid
+  return $! sumSlotNoFilter eqpSlot activeAssocs
