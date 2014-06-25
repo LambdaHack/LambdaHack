@@ -1,30 +1,23 @@
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
 module Game.LambdaHack.Server.EndServer
-  ( endOrLoop, dieSer, dropEqpItem, dropEqpItems
+  ( endOrLoop, dieSer, dropEqpItems
   ) where
 
-import Control.Exception.Assert.Sugar
 import Control.Monad
-import Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
-import Data.Text (Text)
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.CommonServer
+import Game.LambdaHack.Server.HandleEffectServer
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
@@ -111,76 +104,3 @@ equipAllItems aid b = do
 dropEqpItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> Bool -> m ()
 dropEqpItems aid b hit = mapActorCStore_ CEqp (dropEqpItem aid b hit) b
-
--- | Drop a single actor's item. Note that if there multiple copies,
--- at most one explodes to avoid excessive carnage and UI clutter
--- (let's say, the multiple explosions interfere with each other or perhaps
--- larger quantities of explosives tend to be packaged more safely).
-dropEqpItem :: (MonadAtomic m, MonadServer m)
-            => ActorId -> Actor -> Bool -> ItemId -> Int -> m ()
-dropEqpItem aid b hit iid k = do
-  item <- getsState $ getItemBody iid
-  itemToF <- itemToFullServer
-  let container = CActor aid CEqp
-      fragile = Effect.Fragile `elem` jfeature item
-      durable = Effect.Durable `elem` jfeature item
-      isDestroyed = hit && not durable || bproj b && fragile
-      itemFull = itemToF iid k
-  if isDestroyed then do
-    let expl = groupsExplosive itemFull
-    unless (null expl) $ do
-      let ik = itemKindId $ fromJust $ itemDisco itemFull
-      seed <- getsServer $ (EM.! iid) . sitemSeedD
-      execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik seed
-    -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
-    execUpdAtomic $ UpdLoseItem iid item k container
-    forM_ expl $ explodeItem aid b
-  else do
-    mvCmd <- generalMoveItem iid k (CActor aid CEqp)
-                                   (CActor aid CGround)
-    mapM_ execUpdAtomic mvCmd
-
-groupsExplosive :: ItemFull -> [Text]
-groupsExplosive =
-  let p (Effect.Explode cgroup) = [cgroup]
-      p _ = []
-  in strengthAspect p
-
-explodeItem :: (MonadAtomic m, MonadServer m)
-            => ActorId -> Actor -> Text -> m ()
-explodeItem aid b cgroup = do
-  let itemFreq = toFreq "shrapnel group" [(1, cgroup)]
-      container = CActor aid CEqp
-  (iid, ItemFull{..}) <-
-    rollAndRegisterItem (blid b) itemFreq container False
-  let Point x y = bpos b
-      projectN k100 n = when (n > 7) $ do
-        -- We pick a point at the border, not inside, to have a uniform
-        -- distribution for the points the line goes through at each distance
-        -- from the source. Otherwise, e.g., the points on cardinal
-        -- and diagonal lines from the source would be more common.
-        let fuzz = 1 + (k100 `xor` (itemK * n)) `mod` 11
-        forM_ [ Point (x - 12) $ y + fuzz
-              , Point (x - 12) $ y - fuzz
-              , Point (x + 12) $ y + fuzz
-              , Point (x + 12) $ y - fuzz
-              , flip Point (y - 12) $ x + fuzz
-              , flip Point (y - 12) $ x - fuzz
-              , flip Point (y + 12) $ x + fuzz
-              , flip Point (y + 12) $ x - fuzz
-              ] $ \tpxy -> do
-          let req = ReqProject tpxy k100 iid CEqp
-          mfail <- projectFail aid tpxy k100 iid CEqp True
-          case mfail of
-            Nothing -> return ()
-            Just ProjectBlockTerrain -> return ()
-            Just failMsg -> execFailure aid req failMsg
-  -- All shrapnels bounce off obstacles many times before they destruct.
-  forM_ [101..201] $ \k100 -> do
-    bag2 <- getsState $ beqp . getActorBody aid
-    let mn2 = EM.lookup iid bag2
-    maybe skip (projectN k100) mn2
-  bag3 <- getsState $ beqp . getActorBody aid
-  let mn3 = EM.lookup iid bag3
-  maybe skip (\k -> execUpdAtomic
-             $ UpdLoseItem iid itemBase k container) mn3

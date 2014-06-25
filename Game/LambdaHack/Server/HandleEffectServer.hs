@@ -1,12 +1,13 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
-  ( applyItem, itemEffect, itemEffectAndDestroy, effectsSem
+  ( applyItem, itemEffect, itemEffectAndDestroy, effectsSem, dropEqpItem
   ) where
 
 import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
+import Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM_)
 import Data.Maybe
@@ -30,13 +31,13 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Server.CommonServer
-import Game.LambdaHack.Server.EndServer
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicServer
@@ -71,9 +72,9 @@ itemEffectAndDestroy source target iid itemFull cstore = do
   unless (durable && periodic) $ do
     when (not durable) $
       execUpdAtomic $ UpdLoseItem iid item 1 c
-    triggered <- itemEffect source target iid itemFull
+    triggered <- itemEffect source target iid itemFull False
     -- If none of item's effects was performed, we try to recreate the item.
-    -- Regardless, wwe don't rewind the time, because some info is gained
+    -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
     when (not triggered && not durable) $
       execUpdAtomic $ UpdSpotItem iid item 1 c
@@ -83,12 +84,14 @@ itemEffectAndDestroy source target iid itemFull cstore = do
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
 itemEffect :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> ItemId -> ItemFull
+           => ActorId -> ActorId -> ItemId -> ItemFull -> Bool
            -> m Bool
-itemEffect source target iid itemFull = do
+itemEffect source target iid itemFull onSmash = do
   case itemDisco itemFull of
     Just ItemDisco{itemKindId, itemAE=Just ItemAspectEffect{jeffects}} -> do
-      triggered <- effectsSem jeffects source target
+      let effs | onSmash = strengthOnSmash itemFull
+               | otherwise = jeffects
+      triggered <- effectsSem effs source target
       -- The effect fires up, so the item gets identified, if seen
       -- (the item was at the source actor's position, so his old position
       -- is given, since the actor and/or the item may be moved by the effect;
@@ -154,7 +157,7 @@ effectSem effect source target = do
       effectSendFlying execSfx tmod source target (Just False)
     Effect.Teleport p -> effectTeleport execSfx p target
     Effect.ActivateEqp symbol -> effectActivateEqp execSfx target symbol
-    Effect.ExplodeEffect _ -> undefined
+    Effect.ExplodeEffect t -> effectExplode execSfx t target
     Effect.OnSmash _ -> return False  -- ignored under normal circumstances
     Effect.TimedAspect{} -> return False  -- TODO
 
@@ -550,6 +553,29 @@ effectDropBestWeapon execSfx target = do
     [] ->
       return False
 
+-- | Drop a single actor's item. Note that if there multiple copies,
+-- at most one explodes to avoid excessive carnage and UI clutter
+-- (let's say, the multiple explosions interfere with each other or perhaps
+-- larger quantities of explosives tend to be packaged more safely).
+dropEqpItem :: (MonadAtomic m, MonadServer m)
+            => ActorId -> Actor -> Bool -> ItemId -> Int -> m ()
+dropEqpItem aid b hit iid k = do
+  item <- getsState $ getItemBody iid
+  itemToF <- itemToFullServer
+  let container = CActor aid CEqp
+      fragile = Effect.Fragile `elem` jfeature item
+      durable = Effect.Durable `elem` jfeature item
+      isDestroyed = hit && not durable || bproj b && fragile
+      itemFull = itemToF iid k
+  if isDestroyed then do
+    -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
+    execUpdAtomic $ UpdLoseItem iid item k container
+    void $ itemEffect aid aid iid itemFull True
+  else do
+    mvCmd <- generalMoveItem iid k (CActor aid CEqp)
+                                   (CActor aid CGround)
+    mapM_ execUpdAtomic mvCmd
+
 -- ** DropEqp
 
 -- | Make the target actor drop all items in his equiment with the given symbol
@@ -691,3 +717,47 @@ effectActivateEqp :: (MonadAtomic m, MonadServer m)
 effectActivateEqp execSfx target symbol = do
   effectTransformEqp execSfx target symbol $ \iid _ ->
     applyItem target iid CEqp
+
+-- ** Explode
+
+effectExplode :: (MonadAtomic m, MonadServer m)
+              => m () -> Text -> ActorId -> m Bool
+effectExplode execSfx cgroup target = do
+  tb <- getsState $ getActorBody target
+  let itemFreq = toFreq "shrapnel group" [(1, cgroup)]
+      container = CActor target CEqp
+  (iid, ItemFull{..}) <-
+    rollAndRegisterItem (blid tb) itemFreq container False
+  let Point x y = bpos tb
+      projectN k100 n = when (n > 7) $ do
+        -- We pick a point at the border, not inside, to have a uniform
+        -- distribution for the points the line goes through at each distance
+        -- from the source. Otherwise, e.g., the points on cardinal
+        -- and diagonal lines from the source would be more common.
+        let fuzz = 1 + (k100 `xor` (itemK * n)) `mod` 11
+        forM_ [ Point (x - 12) $ y + fuzz
+              , Point (x - 12) $ y - fuzz
+              , Point (x + 12) $ y + fuzz
+              , Point (x + 12) $ y - fuzz
+              , flip Point (y - 12) $ x + fuzz
+              , flip Point (y - 12) $ x - fuzz
+              , flip Point (y + 12) $ x + fuzz
+              , flip Point (y + 12) $ x - fuzz
+              ] $ \tpxy -> do
+          let req = ReqProject tpxy k100 iid CEqp
+          mfail <- projectFail target tpxy k100 iid CEqp True
+          case mfail of
+            Nothing -> return ()
+            Just ProjectBlockTerrain -> return ()
+            Just failMsg -> execFailure target req failMsg
+  -- All shrapnels bounce off obstacles many times before they destruct.
+  forM_ [101..201] $ \k100 -> do
+    bag2 <- getsState $ beqp . getActorBody target
+    let mn2 = EM.lookup iid bag2
+    maybe skip (projectN k100) mn2
+  bag3 <- getsState $ beqp . getActorBody target
+  let mn3 = EM.lookup iid bag3
+  maybe skip (\k -> execUpdAtomic
+                    $ UpdLoseItem iid itemBase k container) mn3
+  execSfx
+  return True  -- we avoid verifying that at least one projectile got off

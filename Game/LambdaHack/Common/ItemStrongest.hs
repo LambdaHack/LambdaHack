@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthAspect, strengthEffect, strengthFeature
-  , strengthToThrow, strengthEqpSlot, strengthFromEqpSlot
+  , strengthOnSmash, strengthToThrow, strengthEqpSlot, strengthFromEqpSlot
   , strongestSlotNoFilter, strongestSlot, sumSlotNoFilter, sumSkills
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
@@ -80,6 +80,12 @@ strengthMelee itemFull =
      then Nothing
      else Just $ sum (strengthEffect p itemFull)
                  + if durable then 1000000 else 0
+
+strengthOnSmash :: ItemFull -> [Effect Int]
+strengthOnSmash =
+  let p (OnSmash eff) = [eff]
+      p _ = []
+  in strengthEffect p
 
 strengthPeriodic :: ItemFull -> Maybe Int
 strengthPeriodic =
