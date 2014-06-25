@@ -142,7 +142,6 @@ effectSem effect source target = do
     Effect.CreateItem p -> effectCreateItem p target
     Effect.ApplyPerfume -> effectApplyPerfume execSfx source target
     Effect.Burn p -> effectBurn execSfx p source target
-    Effect.Blast p -> effectBlast execSfx p source target
     Effect.Ascend p -> effectAscend execSfx p source target
     Effect.Escape{} -> effectEscape target
     Effect.Paralyze p -> effectParalyze execSfx p target
@@ -377,17 +376,6 @@ effectBurn :: (MonadAtomic m, MonadServer m)
 effectBurn execSfx power source target = do
   -- Damage from both impact and fire.
   void $ effectHurt 0 (2 * power) source target
-  execSfx
-  return True
-
--- ** Blast
-
-effectBlast :: (MonadAtomic m, MonadServer m)
-            => m () -> Int -> ActorId -> ActorId -> m Bool
-effectBlast execSfx _power _source _target = do
-  -- TODO: make target deaf: prevents Calm decrease through proximity,
-  -- or makes it random or also doubles calm decrease through hits
-  -- or calm can't get above half --- all depends if it's temporary or not
   execSfx
   return True
 

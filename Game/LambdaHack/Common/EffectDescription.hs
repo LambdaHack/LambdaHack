@@ -36,7 +36,6 @@ effectToSuff effect f =
     CreateItem p -> "of uncovering" <+> wrapInParens (affixBonus p)
     ApplyPerfume -> "of rose water"
     Burn{} -> ""  -- often accompanies AddLight, too verbose, too boring
-    Blast p -> "of blasting" <+> wrapInParens (affixBonus p)
     Ascend 1 -> "of ascending"
     Ascend p | p > 0 -> "of ascending" <+> wrapInParens (affixBonus p)
     Ascend 0 -> assert `failure` effect
@@ -126,7 +125,7 @@ wrapInParens t = "(" <> t <> ")"
 affixDice :: Dice.Dice -> Text
 affixDice d = if Dice.minDice d == Dice.maxDice d
                then affixBonus (Dice.minDice d)
-               else "(?)"
+               else "+?"
 
 kindEffectToSuffix :: Effect Dice.Dice -> Text
 kindEffectToSuffix effect = effectToSuff effect affixDice

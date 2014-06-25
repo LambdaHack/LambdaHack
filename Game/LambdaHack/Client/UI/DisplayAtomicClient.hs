@@ -571,11 +571,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             actorVerbMU aid b "feel burned"
           else
             actorVerbMU aid b "look burned"
-        Effect.Blast{} ->
-          if fid == side then
-            actorVerbMU aid b "become deaf and disoriented"
-          else
-            actorVerbMU aid b "look bewildered"
         Effect.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"
         Effect.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
         Effect.Ascend{} -> assert `failure` sfx

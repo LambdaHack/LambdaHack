@@ -30,7 +30,6 @@ data Effect a =
   | CreateItem !Int
   | ApplyPerfume
   | Burn !Int
-  | Blast !Int  -- ^ sound blast
   | Ascend !Int
   | Escape !Int  -- ^ the argument marks if can be placed on last level, etc.
   | Paralyze !a
@@ -131,7 +130,6 @@ effectTrav (Summon a) f = do
 effectTrav (CreateItem p) _ = return $! CreateItem p
 effectTrav ApplyPerfume _ = return ApplyPerfume
 effectTrav (Burn p) _ = return $! Burn p
-effectTrav (Blast p) _ = return $! Blast p
 effectTrav (Ascend p) _ = return $! Ascend p
 effectTrav (Escape p) _ = return $! Escape p
 effectTrav (Paralyze a) f = do

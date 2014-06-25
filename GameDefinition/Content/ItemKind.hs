@@ -55,7 +55,7 @@ brassLantern = ItemKind
   , iverbProject = "heave"
   , iweight  = 2400
   , iaspects = [AddLight 4, AddSight (-1)]
-  , ieffects = [Burn 4, OnSmash (Explode "burning oil 4")]
+  , ieffects = [Burn 4, Paralyze 4, OnSmash (Explode "burning oil 4")]
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
                , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
   , idesc    = "Very bright and very heavy brass lantern."
@@ -235,7 +235,7 @@ oilLamp = ItemKind
   , iverbProject = "lob"
   , iweight  = 1000
   , iaspects = [AddLight 3, AddSight (-1)]
-  , ieffects = [Burn 3, OnSmash (Explode "burning oil 3")]
+  , ieffects = [Burn 3, Paralyze 3, OnSmash (Explode "burning oil 3")]
   , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
                , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
@@ -268,7 +268,8 @@ potion3 = potion  -- TODO: a bit boring
   , ieffects = [Heal (-5), OnSmash (Explode "wounding mist")]
   }
 potion4 = potion
-  { ieffects = [ Blast 10, PushActor (ThrowMod 200 75)
+  { ieffects = [ PushActor (ThrowMod 200 75)
+               , Explode "explosion blast 10"
                , OnSmash (Explode "explosion blast 10") ]
   }
 ring = ItemKind

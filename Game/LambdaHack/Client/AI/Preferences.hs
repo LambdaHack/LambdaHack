@@ -43,7 +43,6 @@ effectToBenefit cops b activeItems fact eff =
     Effect.CreateItem p -> 20 * p
     Effect.ApplyPerfume -> -10
     Effect.Burn p -> -15 * p           -- usually splash damage, etc.
-    Effect.Blast p -> -5 * p           -- unreliable
     Effect.Ascend{} -> 1               -- change levels sensibly, in teams
     Effect.Escape{} -> 10000           -- AI wants to win; spawners to guard
     Effect.Paralyze p -> -20 * p
