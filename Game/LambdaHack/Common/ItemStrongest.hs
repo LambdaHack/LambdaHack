@@ -117,9 +117,27 @@ strengthAbility itemFull =
       p _ = []
   in strengthAspectMaybe p itemFull
 
+strengthAddHurtMelee :: ItemFull -> Maybe Int
+strengthAddHurtMelee =
+  let p (AddHurtMelee k) = [k]
+      p _ = []
+  in strengthAspectMaybe p
+
+strengthAddHurtRanged :: ItemFull -> Maybe Int
+strengthAddHurtRanged =
+  let p (AddHurtRanged k) = [k]
+      p _ = []
+  in strengthAspectMaybe p
+
 strengthAddArmorMelee :: ItemFull -> Maybe Int
 strengthAddArmorMelee =
   let p (AddArmorMelee k) = [k]
+      p _ = []
+  in strengthAspectMaybe p
+
+strengthAddArmorRanged :: ItemFull -> Maybe Int
+strengthAddArmorRanged =
+  let p (AddArmorRanged k) = [k]
       p _ = []
   in strengthAspectMaybe p
 
@@ -187,7 +205,10 @@ strengthFromEqpSlot eqpSlot =
     EqpSlotAddMaxCalm -> strengthAddMaxCalm
     EqpSlotAddSpeed -> strengthAddSpeed
     EqpSlotAbility -> \itemFull -> sum . EM.elems <$> strengthAbility itemFull
-    EqpSlotAddArmorMelee -> strengthAddArmorMelee  -- a very crude approximation
+    EqpSlotAddHurtMelee -> strengthAddHurtMelee
+    EqpSlotAddHurtRanged -> strengthAddHurtRanged
+    EqpSlotAddArmorMelee -> strengthAddArmorMelee
+    EqpSlotAddArmorRanged -> strengthAddArmorRanged
     EqpSlotAddSight -> strengthAddSight
     EqpSlotAddSmell -> strengthAddSmell
     EqpSlotAddLight -> strengthAddLight

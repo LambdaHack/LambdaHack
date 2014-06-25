@@ -89,7 +89,10 @@ aspectToSuff aspect f =
     AddMaxCalm t -> wrapInParens $ t <+> "Calm"
     AddSpeed t -> wrapInParens $ t <+> "speed"
     AddSkills p -> wrapInParens $ "+" <+> tshow (EM.toList p)
-    AddArmorMelee t -> "[" <> t <> "]"
+    AddHurtMelee t -> wrapInParens $ t <> "% melee"
+    AddHurtRanged  t -> wrapInParens $ t <> "% ranged"
+    AddArmorMelee t -> "[" <> t <> "%]"
+    AddArmorRanged t -> "{" <> t <> "%}"
     AddSight t -> wrapInParens $ t <+> "sight"
     AddSmell t -> wrapInParens $ t <+> "smell"
     AddLight t -> wrapInParens $ t <+> "light"

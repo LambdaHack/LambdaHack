@@ -16,8 +16,9 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 
 -- TODO: document each constructor
--- | Effects of items, tiles, etc. The type argument represents power.
--- either as a random formula dependent on level, or as a final rolled value.
+-- | Effects of items. Can be invoked by the item wielder to affect
+-- another actor or the wielder himself. Many occurences in the same item
+-- are possible.
 data Effect a =
     NoEffect
   | RefillHP !Int
@@ -46,28 +47,33 @@ data Effect a =
   | TimedAspect !Int !(Aspect a)  -- ^ enable the aspect for k clips
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
--- | Aspects of items, tiles, etc. The type argument represents power.
--- either as a random formula dependent on level, or as a final rolled value.
+-- | Aspects of items. Additive (starting at 0) for all items wielded
+-- by an actor and affect the actor (except @Periodic@ that only affect
+-- the item and so is not additive).
 data Aspect a =
-    Periodic !a       -- ^ is activated this many times in 100
-  | AddMaxHP !a       -- ^ maximal hp
-  | AddMaxCalm !a     -- ^ maximal calm
-  | AddSpeed !a       -- ^ speed in m/10s
+    Periodic !a        -- ^ is activated this many times in 100
+  | AddMaxHP !a        -- ^ maximal hp
+  | AddMaxCalm !a      -- ^ maximal calm
+  | AddSpeed !a        -- ^ speed in m/10s
   | AddSkills !Ability.Skills  -- ^ skills in particular abilities
-  | AddArmorMelee !a  -- ^ armor class wrt melee
-  | AddSight !a       -- ^ FOV radius, where 1 means a single tile
-  | AddSmell !a       -- ^ smell radius, where 1 means a single tile
-  | AddLight !a       -- ^ light radius, where 1 means a single tile
+  | AddHurtMelee !a    -- ^ percentage damage bonus against melee
+  | AddHurtRanged !a   -- ^ percentage damage bonus against ranged
+  | AddArmorMelee !a   -- ^ percentage armor bonus against melee
+  | AddArmorRanged !a  -- ^ percentage armor bonus against ranged
+  | AddSight !a        -- ^ FOV radius, where 1 means a single tile
+  | AddSmell !a        -- ^ smell radius, where 1 means a single tile
+  | AddLight !a        -- ^ light radius, where 1 means a single tile
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
--- | Parameters modifying a trow.
+-- | Parameters modifying a throw. Not additive and don't start at 0.
 data ThrowMod a = ThrowMod
   { throwVelocity :: !a  -- ^ fly with this percentage of base throw speed
   , throwLinger   :: !a  -- ^ fly for this percentage of 2 turns
   }
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
--- | All possible item features.
+-- | Features of item. Affect only the item in question, not the actor,
+-- and so not additive in any sense.
 data Feature =
     ChangeTo !Text           -- ^ change to this group when altered
   | Fragile                  -- ^ break even when not hitting an enemy
@@ -85,7 +91,10 @@ data EqpSlot =
   | EqpSlotAddMaxCalm
   | EqpSlotAddSpeed
   | EqpSlotAbility
+  | EqpSlotAddHurtMelee
+  | EqpSlotAddHurtRanged
   | EqpSlotAddArmorMelee
+  | EqpSlotAddArmorRanged
   | EqpSlotAddSight
   | EqpSlotAddSmell
   | EqpSlotAddLight
@@ -176,9 +185,18 @@ aspectTrav (AddSpeed a) f = do
   b <- f a
   return $! AddSpeed b
 aspectTrav (AddSkills as) _ = return $! AddSkills as
+aspectTrav (AddHurtMelee a) f = do
+  b <- f a
+  return $! AddHurtMelee b
+aspectTrav (AddHurtRanged a) f = do
+  b <- f a
+  return $! AddHurtRanged b
 aspectTrav (AddArmorMelee a) f = do
   b <- f a
   return $! AddArmorMelee b
+aspectTrav (AddArmorRanged a) f = do
+  b <- f a
+  return $! AddArmorRanged b
 aspectTrav (AddSight a) f = do
   b <- f a
   return $! AddSight b

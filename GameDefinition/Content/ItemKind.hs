@@ -364,11 +364,11 @@ shield = ItemKind
   , iverbApply   = "bash"
   , iverbProject = "push"
   , iweight  = 3000
-  , iaspects = [AddArmorMelee 50]
+  , iaspects = [AddArmorMelee 50, AddHurtMelee (-40)]
   , ieffects = []
   , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
-  , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
+  , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with. WIP (only one per actor taken into account)"
   , ikit     = []
   }
 sword = ItemKind
