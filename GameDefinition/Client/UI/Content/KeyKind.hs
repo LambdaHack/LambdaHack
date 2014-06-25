@@ -108,9 +108,16 @@ standardKeys = KeyKind
       , ("s", ([CmdItem], MoveItem [CEqp, CInv] CSha
                                    "stash" "and share an item" False))
       , ("a", ([CmdItem, CmdMinimal], Apply
-           [ApplyItem { verb = "activate"
-                      , object = "applicable item"
-                      , symbol = ' ' }]))
+           [ ApplyItem { verb = "activate"
+                       , object = "applicable item"
+                       , symbol = ' ' }
+           , ApplyItem { verb = "quaff"
+                       , object = "potion"
+                       , symbol = '!' }
+           , ApplyItem { verb = "read"
+                       , object = "scroll"
+                       , symbol = '?' }
+           ]))
       , ("q", ([CmdItem], Apply [ApplyItem { verb = "quaff"
                                            , object = "potion"
                                            , symbol = '!' }]))

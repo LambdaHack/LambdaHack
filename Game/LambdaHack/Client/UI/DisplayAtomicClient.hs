@@ -636,10 +636,9 @@ strike source target iid hitStatus = assert (source /= target) $ do
   tpart <- partActorLeader target tb
   spronoun <- partPronounLeader source sb
   let itemFull = itemToF iid 1
-      verb | bproj sb = "hit"
-           | otherwise = case itemDisco itemFull of
-                           Nothing -> "hit"  -- not identified
-                           Just ItemDisco{itemKind} -> iverbApply itemKind
+      verb = case itemDisco itemFull of
+        Nothing -> "hit"  -- not identified
+        Just ItemDisco{itemKind} -> iverbHit itemKind
       isBodyPart = iid `EM.member` bbody sb
       partItemChoice = if isBodyPart
                        then partItemWownW spronoun
