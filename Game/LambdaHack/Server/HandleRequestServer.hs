@@ -12,7 +12,6 @@ module Game.LambdaHack.Server.HandleRequestServer
   ( handleRequestAI, handleRequestUI, reqMove
   ) where
 
-import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -27,7 +26,6 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -172,8 +170,6 @@ reqMelee :: (MonadAtomic m, MonadServer m)
          => ActorId -> ActorId -> ItemId -> CStore -> m ()
 reqMelee source target iid cstore = do
   itemToF <- itemToFullServer
-  sallItems <- map snd <$> fullAssocsServer source [CEqp, CBody]
-  tallItems <- map snd <$> fullAssocsServer target [CEqp, CBody]
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let adj = checkAdjacent sb tb
@@ -184,14 +180,8 @@ reqMelee source target iid cstore = do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
-    -- If the attacker is a projectile, we don't take any shield into account,
-    -- to prevent micromanagement: walking with shield, melee without.
-    let isFightImpaired =
-          if bproj sb
-          then sumSlotNoFilter Effect.EqpSlotAddHurtRanged sallItems < 0
-               || sumSlotNoFilter Effect.EqpSlotAddArmorRanged tallItems > 0
-          else sumSlotNoFilter Effect.EqpSlotAddHurtMelee sallItems < 0
-               || sumSlotNoFilter Effect.EqpSlotAddArmorMelee tallItems > 0
+    hurtBonus <- armorHurtBonus source target
+    let isFightImpaired = hurtBonus < 0
         block = braced tb
         hitA = if block && isFightImpaired
                then HitBlock 2

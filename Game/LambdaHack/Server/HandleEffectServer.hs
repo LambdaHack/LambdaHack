@@ -1,7 +1,8 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
-  ( applyItem, itemEffect, itemEffectAndDestroy, effectsSem, dropEqpItem
+  ( applyItem, itemEffect, itemEffectAndDestroy, effectsSem
+  , dropEqpItem, armorHurtBonus
   ) where
 
 import Control.Applicative
@@ -197,29 +198,17 @@ halveCalm target = do
 -- ** Hurt
 
 effectHurt :: (MonadAtomic m, MonadServer m)
-            => Dice.Dice -> Int -> ActorId -> ActorId
-            -> m Bool
+           => Dice.Dice -> Int -> ActorId -> ActorId
+           -> m Bool
 effectHurt nDm power source target = do
-  sallItems <- map snd <$> fullAssocsServer source [CEqp, CBody]
-  tallItems <- map snd <$> fullAssocsServer target [CEqp, CBody]
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   n <- rndToAction $ castDice 0 0 nDm
+  hurtBonus <- armorHurtBonus source target
   let block = braced tb
-      shurtMult =
-        if bproj sb
-        then let p = sumSlotNoFilter Effect.EqpSlotAddHurtRanged sallItems
-             in 100 + max (-40) (min 40 p)
-        else let p = sumSlotNoFilter Effect.EqpSlotAddHurtMelee sallItems
-             in 100 + max (-40) (min 40 p)
-      tshieldMult =
-        if bproj sb
-        then let p = sumSlotNoFilter Effect.EqpSlotAddArmorRanged tallItems
-             in 100 + max (-50) (min 50 p)
-        else let p = sumSlotNoFilter Effect.EqpSlotAddArmorMelee tallItems
-             in 100 + max (-50) (min 50 p)
-      mult = shurtMult * tshieldMult * (if block then 50 else 100)
-      deltaHP = - max 1 (mult * (n + power) `divUp` (100 * 100 * 100))
+      mult = (100 + hurtBonus) * (if block then 50 else 100)
+      deltaHP = min (-1)  -- at least 1 HP taken
+                    (mult * (n + power) `divUp` (100 * 100))
   -- Damage the target.
   execUpdAtomic $ UpdRefillHP target deltaHP
   when (source /= target) $ halveCalm target
@@ -228,6 +217,20 @@ effectHurt nDm power source target = do
     then Effect.RefillHP deltaHP
     else Effect.Hurt nDm deltaHP{-hack-}
   return True
+
+armorHurtBonus :: (MonadAtomic m, MonadServer m)
+               => ActorId -> ActorId
+               -> m Int
+armorHurtBonus source target = do
+  sallItems <- map snd <$> fullAssocsServer source [CEqp, CBody]
+  tallItems <- map snd <$> fullAssocsServer target [CEqp, CBody]
+  sb <- getsState $ getActorBody source
+  let raw = if bproj sb
+            then sumSlotNoFilter Effect.EqpSlotAddHurtRanged sallItems
+                 - sumSlotNoFilter Effect.EqpSlotAddArmorRanged tallItems
+            else sumSlotNoFilter Effect.EqpSlotAddHurtMelee sallItems
+                 - sumSlotNoFilter Effect.EqpSlotAddArmorMelee tallItems
+  return $! max (-75) (min 75 raw)
 
 -- ** RefillCalm
 

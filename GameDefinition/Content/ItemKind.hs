@@ -355,6 +355,8 @@ scroll7 = scroll
   { ifreq    = [("useful", 1)]
   , ieffects = [InsertMove (d 2 + dl 2)]
   }
+-- Shield doesn't protect against ranged attacks to prevent
+-- micromanagement: walking with shield, melee without.
 shield = ItemKind
   { isymbol  = ']'
   , iname    = "shield"
@@ -368,7 +370,7 @@ shield = ItemKind
   , ieffects = []
   , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
-  , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with. WIP (only one per actor taken into account)"
+  , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with. WIP (absolute value of total bonus capped at 75%)"
   , ikit     = []
   }
 sword = ItemKind
