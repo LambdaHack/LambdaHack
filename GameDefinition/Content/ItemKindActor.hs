@@ -30,14 +30,14 @@ warrior = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("fist", CBody), ("foot", CBody), ("eye 9", CBody)]
+  , ikit     = [("fist", CBody), ("foot", CBody), ("eye 4", CBody)]
   }
 adventurer = warrior
   { iname    = "adventurer" }
 blacksmith = warrior
-  { iname    = "blacksmith"  }
+  { iname    = "blacksmith" }
 forester = warrior
-  { iname    = "forester"  }
+  { iname    = "forester" }
 
 clerk = warrior
   { iname    = "clerk"
@@ -77,7 +77,7 @@ eye = ItemKind
   , iverbProject = "ERROR, please report: iverbProject"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 25, AddMaxCalm 50, AddSpeed 20
-               , AddSight 12 ]
+               , AddSight 4 ]  -- can shoot for as long as lives
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -92,8 +92,8 @@ fastEye = ItemKind
   , iverbApply   = "ERROR, please report: iverbApply"
   , iverbProject = "ERROR, please report: iverbProject"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 6, AddMaxCalm 50, AddSpeed 40
-               , AddSight 12 ]
+  , iaspects = [ AddMaxHP 6, AddMaxCalm 50, AddSpeed 30
+               , AddSight 4 ]  -- can shoot for as long as lives
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -125,14 +125,13 @@ elbow = ItemKind
   , iverbApply   = "ERROR, please report: iverbApply"
   , iverbProject = "ERROR, please report: iverbProject"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 50, AddSpeed 15
+  , iaspects = [ AddMaxHP 30, AddMaxCalm 50, AddSpeed 10
                , AddSkills $ EM.singleton AbMelee (-1)
-               , AddSight 4 ]  -- can always shoot
+               , AddSight 15 ]  -- can shoot for as long as lives
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("eye 12", CBody), ("armored skin", CBody)
-               , ("speed gland 2", CBody)
+  , ikit     = [ ("armored skin", CBody), ("speed gland 2", CBody)
                , ("any scroll", CInv), ("any scroll", CInv)
                , ("any scroll", CInv)
                , ("any arrow", CInv), ("any arrow", CInv), ("any arrow", CInv) ]
@@ -172,8 +171,7 @@ gilaMonster = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("venom tooth", CBody), ("small claw", CBody)
-               , ("speed gland 1", CBody)
-               , ("eye 9", CBody), ("nostril", CBody) ]
+               , ("eye 4", CBody), ("nostril", CBody) ]
   }
 komodoDragon = ItemKind  -- bad hearing
   { isymbol  = 'd'
@@ -184,14 +182,14 @@ komodoDragon = ItemKind  -- bad hearing
   , iverbApply   = "ERROR, please report: iverbApply"
   , iverbProject = "ERROR, please report: iverbProject"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 40, AddMaxCalm 50, AddSpeed 25
+  , iaspects = [ AddMaxHP 40, AddMaxCalm 50, AddSpeed 20
                , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("large tail", CBody), ("jaw", CBody), ("small claw", CBody)
                , ("speed gland 2", CBody), ("armored skin", CBody)
-               , ("eye 3", CBody), ("nostril", CBody) ]
+               , ("eye 2", CBody), ("nostril", CBody) ]
   }
 hyena = ItemKind
   { isymbol  = 'h'
@@ -207,7 +205,7 @@ hyena = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("jaw", CBody), ("eye 9", CBody), ("nostril", CBody)]
+  , ikit     = [("jaw", CBody), ("eye 4", CBody), ("nostril", CBody)]
   }
 alligator = ItemKind
   { isymbol  = 'a'
@@ -225,7 +223,7 @@ alligator = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("large jaw", CBody), ("large tail", CBody), ("claw", CBody)
-               , ("armored skin", CBody), ("eye 9", CBody) ]
+               , ("armored skin", CBody), ("eye 4", CBody) ]
   }
 thornbush = ItemKind
   { isymbol  = 't'

@@ -10,9 +10,9 @@ import Game.LambdaHack.Content.ItemKind
 
 bodyParts :: [ItemKind]
 bodyParts =
-  [fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye3, eye6, eye9, eye12, eye15, nostril, thorn]
+  [fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn]
 
-fist,    foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye3, eye6, eye9, eye12, eye15, nostril, thorn :: ItemKind
+fist,    foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn :: ItemKind
 
 fist = ItemKind
   { isymbol  = '%'
@@ -137,6 +137,7 @@ pupil = fist
   , ifreq    = [("pupil", 100)]
   , icount   = 1
   , iverbApply   = "gaze at"
+  , iaspects = [AddSight 7]
   , ieffects = [Hurt (5 * d 1) 0, Paralyze 1]  -- TODO: decrease Hurt, but use
   , idesc    = ""
   }
@@ -147,7 +148,7 @@ armoredSkin = fist
   , iverbApply   = "bash"
   , iaspects = [AddArmorMelee 50]
   , ieffects = []
-  , ifeature = [EqpSlot EqpSlotAddArmorMelee "", Identified]
+  , ifeature = [Identified]
   , idesc    = ""
   }
 speedGland1 = speedGland 1
@@ -155,19 +156,18 @@ speedGland2 = speedGland 2
 speedGland3 = speedGland 3
 speedGland4 = speedGland 4
 speedGland5 = speedGland 5
+eye2 = eye 2
 eye3 = eye 3
-eye6 = eye 6
-eye9 = eye 9
-eye12 = eye 12
-eye15 = eye 15
+eye4 = eye 4
+eye5 = eye 5
 nostril = fist
   { iname    = "nostril"
   , ifreq    = [("nostril", 100)]
   , icount   = 2
   , iverbApply   = "sniff"
-  , iaspects = [AddSmell 2]
+  , iaspects = [AddSmell 1]
   , ieffects = []
-  , ifeature = [EqpSlot EqpSlotAddSmell "", Identified]
+  , ifeature = [Identified]
   , idesc    = ""
   }
 thorn = fist
@@ -175,7 +175,6 @@ thorn = fist
   , ifreq    = [("thorn", 100)]
   , icount   = 7
   , iverbApply   = "impale"
-  , iaspects = []
   , ieffects = [Hurt (3 * d 1) 0]
   , idesc    = ""
   }
@@ -186,7 +185,7 @@ speedGland n = fist
   , ifreq    = [("speed gland" <+> tshow n, 100)]
   , icount   = 1
   , iverbApply   = "squeeze"
-  , iaspects = [Periodic (intToDice $ 2 * n)]  -- TODO: also speed bonus?
+  , iaspects = [AddSpeed 2, Periodic (intToDice $ 2 * n)]
   , ieffects = [Heal 1]
   , ifeature = [Identified]
   , idesc    = ""
@@ -200,6 +199,6 @@ eye n = fist
   , iverbApply   = "focus"
   , iaspects = [AddSight (intToDice n)]
   , ieffects = []
-  , ifeature = [EqpSlot EqpSlotAddSight "", Identified]
+  , ifeature = [Identified]
   , idesc    = ""
   }
