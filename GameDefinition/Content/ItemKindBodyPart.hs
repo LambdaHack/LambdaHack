@@ -145,9 +145,9 @@ armoredSkin = fist
   , ifreq    = [("armored skin", 100)]
   , icount   = 1
   , iverbApply   = "bash"
-  , iaspects = [ArmorMelee 50]
+  , iaspects = [AddArmorMelee 50]
   , ieffects = []
-  , ifeature = [EqpSlot EqpSlotArmorMelee "", Identified]
+  , ifeature = [EqpSlot EqpSlotAddArmorMelee "", Identified]
   , idesc    = ""
   }
 speedGland1 = speedGland 1
@@ -165,9 +165,9 @@ nostril = fist
   , ifreq    = [("nostril", 100)]
   , icount   = 2
   , iverbApply   = "sniff"
-  , iaspects = [SmellRadius 2]
+  , iaspects = [AddSmell 2]
   , ieffects = []
-  , ifeature = [EqpSlot EqpSlotSmellRadius "", Identified]
+  , ifeature = [EqpSlot EqpSlotAddSmell "", Identified]
   , idesc    = ""
   }
 thorn = fist
@@ -198,8 +198,8 @@ eye n = fist
   , ifreq    = [("eye" <+> tshow n, 100)]
   , icount   = 2
   , iverbApply   = "focus"
-  , iaspects = [SightRadius (intToDice n)]
+  , iaspects = [AddSight (intToDice n)]
   , ieffects = []
-  , ifeature = [EqpSlot EqpSlotSightRadius "", Identified]
+  , ifeature = [EqpSlot EqpSlotAddSight "", Identified]
   , idesc    = ""
   }

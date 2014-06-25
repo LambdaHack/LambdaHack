@@ -54,7 +54,7 @@ brassLantern = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "heave"
   , iweight  = 2400
-  , iaspects = [AddLight 4, SightRadius (-1)]
+  , iaspects = [AddLight 4, AddSight (-1)]
   , ieffects = [Burn 4, OnSmash (Explode "burning oil 4")]
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
                , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
@@ -172,9 +172,9 @@ monocle = ItemKind
   , iverbApply   = "focus"
   , iverbProject = "toss"
   , iweight  = 50
-  , iaspects = [SightRadius $ 1 + dl 3]
+  , iaspects = [AddSight $ 1 + dl 3]
   , ieffects = []
-  , ifeature = [Durable, EqpSlot EqpSlotSightRadius "", Identified]
+  , ifeature = [Durable, EqpSlot EqpSlotAddSight "", Identified]
   , idesc    = "Let's you better focus your weaker eye."
   , ikit     = []
   }
@@ -234,7 +234,7 @@ oilLamp = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "lob"
   , iweight  = 1000
-  , iaspects = [AddLight 3, SightRadius (-1)]
+  , iaspects = [AddLight 3, AddSight (-1)]
   , ieffects = [Burn 3, OnSmash (Explode "burning oil 3")]
   , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
                , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
@@ -363,10 +363,10 @@ shield = ItemKind
   , iverbApply   = "bash"
   , iverbProject = "push"
   , iweight  = 3000
-  , iaspects = [ArmorMelee 50]
+  , iaspects = [AddArmorMelee 50]
   , ieffects = []
   , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
-               , Durable, EqpSlot EqpSlotArmorMelee "", Identified ]
+               , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
   , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   , ikit     = []
   }
@@ -418,7 +418,7 @@ woodenTorch = ItemKind
   , iverbProject = "fling"
   , iweight  = 1200
   , iaspects = [ AddLight 3
-               , SightRadius (-2) ]  -- not only flashes, but also sparks
+               , AddSight (-2) ]  -- not only flashes, but also sparks
   , ieffects = [Burn 3]
   , ifeature = [EqpSlot EqpSlotAddLight "", Identified]
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady fire."

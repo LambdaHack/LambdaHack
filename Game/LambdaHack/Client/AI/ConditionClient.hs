@@ -141,7 +141,7 @@ condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
-  actorBlind <- radiusBlind <$> sumBodyEqpClient Effect.EqpSlotSightRadius aid
+  actorBlind <- radiusBlind <$> sumBodyEqpClient Effect.EqpSlotAddSight aid
   benList <- benAvailableItems aid permittedRanged
   let missiles = filter (maybe True (< 0) . fst . fst) benList
   return $ not actorBlind && calmEnough b activeItems && not (null missiles)

@@ -55,9 +55,9 @@ data Aspect a =
   | AddMaxCalm !a   -- ^ maximal calm
   | AddSpeed !a     -- ^ speed in m/10s
   | AddSkills !Ability.Skills  -- ^ skills in particular abilities
-  | ArmorMelee !a   -- ^ armor class wrt melee
-  | SightRadius !a  -- ^ FOV radius, where 1 means a single tile
-  | SmellRadius !a  -- ^ smell radius, where 1 means a single tile
+  | AddArmorMelee !a   -- ^ armor class wrt melee
+  | AddSight !a  -- ^ FOV radius, where 1 means a single tile
+  | AddSmell !a  -- ^ smell radius, where 1 means a single tile
   | AddLight !a     -- ^ light radius, where 1 means a single tile
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
@@ -86,9 +86,9 @@ data EqpSlot =
   | EqpSlotAddMaxCalm
   | EqpSlotAddSpeed
   | EqpSlotAbility
-  | EqpSlotArmorMelee
-  | EqpSlotSightRadius
-  | EqpSlotSmellRadius
+  | EqpSlotAddArmorMelee
+  | EqpSlotAddSight
+  | EqpSlotAddSmell
   | EqpSlotAddLight
   | EqpSlotWeapon
   deriving (Show, Eq, Ord, Generic)
@@ -178,15 +178,15 @@ aspectTrav (AddSpeed a) f = do
   b <- f a
   return $! AddSpeed b
 aspectTrav (AddSkills as) _ = return $! AddSkills as
-aspectTrav (ArmorMelee a) f = do
+aspectTrav (AddArmorMelee a) f = do
   b <- f a
-  return $! ArmorMelee b
-aspectTrav (SightRadius a) f = do
+  return $! AddArmorMelee b
+aspectTrav (AddSight a) f = do
   b <- f a
-  return $! SightRadius b
-aspectTrav (SmellRadius a) f = do
+  return $! AddSight b
+aspectTrav (AddSmell a) f = do
   b <- f a
-  return $! SmellRadius b
+  return $! AddSmell b
 aspectTrav (AddLight a) f = do
   b <- f a
   return $! AddLight b

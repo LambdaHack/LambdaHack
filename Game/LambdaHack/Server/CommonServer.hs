@@ -239,7 +239,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
         else do
           mab <- getsState $ posToActor pos lid
           actorBlind <- radiusBlind
-                        <$> sumBodyEqpServer Effect.EqpSlotSightRadius source
+                        <$> sumBodyEqpServer Effect.EqpSlotAddSight source
           activeItems <- activeItemsServer source
           if not $ maybe True (bproj . snd . fst) mab
             then if isShrapnel then do

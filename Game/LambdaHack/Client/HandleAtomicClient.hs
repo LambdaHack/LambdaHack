@@ -235,7 +235,7 @@ cmdAtomicFilterCli cmd = case cmd of
 deleteSmell :: MonadClient m => ActorId -> Point -> m [UpdAtomic]
 deleteSmell aid pos = do
   b <- getsState $ getActorBody aid
-  smellRadius <- sumBodyEqpClient Effect.EqpSlotSmellRadius aid
+  smellRadius <- sumBodyEqpClient Effect.EqpSlotAddSmell aid
   if smellRadius <= 0 then return []
   else do
     lvl <- getLevel $ blid b

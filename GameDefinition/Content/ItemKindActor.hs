@@ -26,7 +26,7 @@ warrior = ItemKind
   , iverbProject = "ERROR, please report: iverbProject"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 50, AddMaxCalm 50, AddSpeed 20
-               , SightRadius 3 ]  -- no via eyes, but feel, hearing, etc.
+               , AddSight 3 ]  -- no via eyes, but feel, hearing, etc.
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -77,7 +77,7 @@ eye = ItemKind
   , iverbProject = "ERROR, please report: iverbProject"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 25, AddMaxCalm 50, AddSpeed 20
-               , SightRadius 12 ]
+               , AddSight 12 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -93,7 +93,7 @@ fastEye = ItemKind
   , iverbProject = "ERROR, please report: iverbProject"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 6, AddMaxCalm 50, AddSpeed 40
-               , SightRadius 12 ]
+               , AddSight 12 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -110,7 +110,7 @@ nose = ItemKind
   , iverbProject = "ERROR, please report: iverbProject"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 35, AddMaxCalm 50, AddSpeed 18
-               , SightRadius 0, SmellRadius 3 ]  -- depends solely on smell
+               , AddSight 0, AddSmell 3 ]  -- depends solely on smell
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -127,7 +127,7 @@ elbow = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 50, AddSpeed 15
                , AddSkills $ EM.singleton AbMelee (-1)
-               , SightRadius 4 ]  -- can always shoot
+               , AddSight 4 ]  -- can always shoot
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -149,7 +149,7 @@ armadillo = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 50, AddSpeed 18
                , AddSkills $ EM.singleton AbTrigger (-1)
-               , SightRadius 3 ]
+               , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -167,7 +167,7 @@ gilaMonster = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 15, AddMaxCalm 50, AddSpeed 15
                , AddSkills $ EM.singleton AbTrigger (-1)
-               , SightRadius 3 ]
+               , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -185,7 +185,7 @@ komodoDragon = ItemKind  -- bad hearing
   , iverbProject = "ERROR, please report: iverbProject"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 40, AddMaxCalm 50, AddSpeed 25
-               , SightRadius 3 ]
+               , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -203,7 +203,7 @@ hyena = ItemKind
   , iverbProject = "ERROR, please report: iverbProject"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 50, AddSpeed 35
-               , SightRadius 3 ]
+               , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -220,7 +220,7 @@ alligator = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 50, AddMaxCalm 50, AddSpeed 17
                -- TODO: add innate armor, when it's not a drawback
-               , SightRadius 3 ]
+               , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -240,7 +240,7 @@ thornbush = ItemKind
                , AddSkills
                  $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1..])
                    `addSkills` EM.fromList (zip [AbWait, AbMelee] [1..])
-               , ArmorMelee 50 ]
+               , AddArmorMelee 50 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""

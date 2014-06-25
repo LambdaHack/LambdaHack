@@ -208,10 +208,10 @@ effectHurt nDm power source target = do
   n <- rndToAction $ castDice 0 0 nDm
   let block = braced tb
       -- OFF shield doesn't hinder attacks, so also does not protect.
-      sshieldMult = case sumSlotNoFilter Effect.EqpSlotArmorMelee sallItems of
+      sshieldMult = case sumSlotNoFilter Effect.EqpSlotAddArmorMelee sallItems of
         _ | bproj sb -> 100
         p -> 100 - min 50 p
-      tshieldMult = case sumSlotNoFilter Effect.EqpSlotArmorMelee tallItems of
+      tshieldMult = case sumSlotNoFilter Effect.EqpSlotAddArmorMelee tallItems of
         _ | bproj sb -> 100
         p -> 100 - min 50 p
       mult = sshieldMult * tshieldMult * (if block then 50 else 100)

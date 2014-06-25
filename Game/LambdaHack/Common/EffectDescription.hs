@@ -90,9 +90,9 @@ aspectToSuff aspect f =
     AddMaxCalm t -> wrapInParens $ t <+> "Calm"
     AddSpeed t -> wrapInParens $ t <+> "speed"
     AddSkills p -> wrapInParens $ "+" <+> tshow (EM.toList p)
-    ArmorMelee t -> "[" <> t <> "]"
-    SightRadius t -> wrapInParens $ t <+> "sight"
-    SmellRadius t -> wrapInParens $ t <+> "smell"
+    AddArmorMelee t -> "[" <> t <> "]"
+    AddSight t -> wrapInParens $ t <+> "sight"
+    AddSmell t -> wrapInParens $ t <+> "smell"
     AddLight t -> wrapInParens $ t <+> "light"
 
 featureToSuff :: Feature -> Text

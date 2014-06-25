@@ -72,9 +72,9 @@ aspectToBenefit _cops _b asp =
     Effect.AddMaxCalm p -> (p, 1)
     Effect.AddSpeed p -> (p * 10000, 1)
     Effect.AddSkills m -> (5 * sum (EM.elems m), 1)
-    Effect.ArmorMelee p -> (p `divUp` 10, 1)
-    Effect.SightRadius p -> (p * 10, 1)
-    Effect.SmellRadius p -> (p * 2, 1)
+    Effect.AddArmorMelee p -> (p `divUp` 10, 1)
+    Effect.AddSight p -> (p * 10, 1)
+    Effect.AddSmell p -> (p * 2, 1)
     Effect.AddLight p -> (p * 10, 1)
 
 effAspToBenefit :: Kind.COps -> Actor -> [ItemFull] -> Faction
