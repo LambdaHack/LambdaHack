@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.UI.HumanCmd
 
 import Control.Exception.Assert.Sugar
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Feature as F
@@ -112,7 +113,7 @@ cmdDescription cmd = case cmd of
   TriggerTile ts -> triggerDescription ts
   StepToTarget -> "make one step towards the target"
 
-  GameRestart t -> "new" <+> t <+> "game"
+  GameRestart t -> "new" <+> T.toTitle t <+> "game"
   GameExit    -> "save and exit"
   GameSave    -> "save game"
   Automate    -> "automate faction (ESC to retake control)"

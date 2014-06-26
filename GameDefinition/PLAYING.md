@@ -191,15 +191,17 @@ Assorted remaining keys and commands follow.
 Commands for saving and exiting the current game, starting a new game, etc.,
 are listed in the Main Menu, brought up by the `ESC` key.
 Game difficulty setting affects hitpoints at birth for any actors
-of any UI-using faction.
+of any UI-using faction. For a person new to roguelikes, the Duel game mode
+offers a gentle introduction. The subsequent game modes gradually introduce
+squad combat, stealth, assymetric battles and more game elements.
 
                 keys           command
                 CTRL-x         save and exit
-                CTRL-u         new duel game
-                CTRL-k         new skirmish game
-                CTRL-m         new ambush game
-                CTRL-b         new battle game
-                CTRL-a         new campaign game
+                CTRL-u         new Duel game
+                CTRL-k         new Skirmish game
+                CTRL-m         new Ambush game
+                CTRL-b         new Battle game
+                CTRL-a         new Campaign game
                 CTRL-d         cycle next game difficulty
 
 There are also some debug, testing and cheat options and game modes
