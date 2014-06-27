@@ -62,10 +62,12 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
         let resets = resetsFovCmdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
-        return (ps, resets, atomicBroken, psBroken)
+        return (ps, resets, map UpdAtomic atomicBroken, psBroken)
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
-        return (ps, False, [], [])
+        atomicBroken <- breakSfxAtomic sfx
+        psBroken <- mapM posSfxAtomic atomicBroken
+        return (ps, False, map SfxAtomic atomicBroken, psBroken)
   let atomicPsBroken = zip atomicBroken psBroken
   -- TODO: assert also that the sum of psBroken is equal to ps
   -- TODO: with deep equality these assertions can be expensive. Optimize.
@@ -75,7 +77,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
             PosFidAndSer (Just _) _ -> True
             _ -> not resets
                  && (null atomicBroken
-                     || fmap UpdAtomic atomicBroken == [atomic])) skip
+                     || atomicBroken == [atomic])) skip
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
   -- Update lights in the dungeon. This is lazy, may not be needed or partially.
@@ -92,14 +94,16 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
       breakSend fid perNew = do
         let send2 (atomic2, ps2) =
               if seenAtomicCli knowEvents fid perNew ps2
-                then sendUpdate fid $ UpdAtomic atomic2
+                then sendUpdate fid atomic2
                 else do
                   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-                  when (isJust mleader) $ do
-                    loud <- loudUpdAtomic fid atomic2
-                    case loud of
-                      Nothing -> return ()
-                      Just msg -> sendUpdate fid $ SfxAtomic $ SfxMsgAll msg
+                  case atomic2 of
+                    UpdAtomic cmd | isJust mleader -> do
+                      loud <- loudUpdAtomic fid cmd
+                      case loud of
+                        Nothing -> return ()
+                        Just msg -> sendUpdate fid $ SfxAtomic $ SfxMsgAll msg
+                    _ -> return ()
         mapM_ send2 atomicPsBroken
       anySend fid perOld perNew = do
         let startSeen = seenAtomicCli knowEvents fid perOld ps

@@ -528,9 +528,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           displayActorStart b animFrs
         Effect.RefillCalm _ -> do
           if fid == side then
-            actorVerbMU aid b "feel distressed"
+            actorVerbMU aid b "feel agitated"
           else
-            actorVerbMU aid b "look distressed"
+            actorVerbMU aid b "look agitated"
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs

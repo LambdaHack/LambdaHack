@@ -108,6 +108,7 @@ data UpdAtomic =
 
 instance Binary UpdAtomic
 
+-- | Abstract syntax of atomic special effects.
 data SfxAtomic =
     SfxStrike !ActorId !ActorId !ItemId !HitAtomic
   | SfxRecoil !ActorId !ActorId !ItemId !HitAtomic

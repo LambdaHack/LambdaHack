@@ -3,7 +3,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
-  , resetsFovCmdAtomic, breakUpdAtomic, loudUpdAtomic
+  , resetsFovCmdAtomic, breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, lidOfPosAtomic
   , generalMoveItem
   ) where
@@ -15,6 +15,7 @@ import qualified Data.EnumSet as ES
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -45,7 +46,7 @@ data PosAtomic =
   | PosNone                     -- ^ never broadcasted, but sent manually
   deriving (Show, Eq)
 
--- | Produces the positions where the action takes place. If a faction
+-- | Produce the positions where the action takes place. If a faction
 -- is returned, the action is visible only for that faction, if Nothing
 -- is returned, it's never visible. Empty list of positions implies
 -- the action is visible always.
@@ -136,6 +137,7 @@ posUpdAtomic cmd = case cmd of
   UpdMsgAll{} -> return PosAll
   UpdRecordHistory fid -> return $! PosFid fid
 
+-- | Produce the positions where the atomic special effect takes place.
 posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic
 posSfxAtomic cmd = case cmd of
   SfxStrike source target _ _ -> do
@@ -249,6 +251,15 @@ breakUpdAtomic cmd = case cmd of
   -- he's left with a hidden tile, which doesn't cause any trouble
   -- (because the commands doesn't change @State@ and the client-side
   -- processing of the command is lenient).
+  _ -> return [cmd]
+
+-- | Decompose an atomic special effect.
+breakSfxAtomic :: MonadStateRead m => SfxAtomic -> m [SfxAtomic]
+breakSfxAtomic cmd = case cmd of
+  SfxStrike source target _ _ -> do
+    b <- getsState $ getActorBody source
+    return [ SfxEffect (bfid b) source (Effect.RefillCalm (-1))
+           , SfxEffect (bfid b) target (Effect.RefillHP (-1)) ]
   _ -> return [cmd]
 
 -- | Messages for some unseen game object creation/destruction/alteration.
