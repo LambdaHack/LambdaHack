@@ -168,7 +168,7 @@ strengthEqpSlot item =
     [x] -> Just x
     xs -> assert `failure` (xs, item)
 
-strengthToThrow :: Item -> ThrowMod Int
+strengthToThrow :: Item -> ThrowMod
 strengthToThrow item =
   let p (ToThrow tmod) = [tmod]
       p _ = []

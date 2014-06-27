@@ -446,7 +446,7 @@ discover oldcli iid = do
                    iid (itemBase itemFull) 1
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
-  when (textAllAE itemFull /= textAllAE oldItemFull) $ msgAdd msg
+  when (textAllAE True itemFull /= textAllAE True oldItemFull) $ msgAdd msg
 
 -- * RespSfxAtomicUI
 

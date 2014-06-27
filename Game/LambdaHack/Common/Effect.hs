@@ -37,9 +37,9 @@ data Effect a =
   | InsertMove !a
   | DropBestWeapon
   | DropEqp !Char !Bool  -- ^ symbol @' '@ means all, @True@ means hit on drop
-  | SendFlying !(ThrowMod a)
-  | PushActor !(ThrowMod a)
-  | PullActor !(ThrowMod a)
+  | SendFlying !ThrowMod
+  | PushActor !ThrowMod
+  | PullActor !ThrowMod
   | Teleport !a
   | ActivateEqp !Char    -- ^ symbol @' '@ means all
   | Explode !Text        -- ^ explode, producing this group of shrapnel
@@ -66,11 +66,11 @@ data Aspect a =
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
 -- | Parameters modifying a throw. Not additive and don't start at 0.
-data ThrowMod a = ThrowMod
-  { throwVelocity :: !a  -- ^ fly with this percentage of base throw speed
-  , throwLinger   :: !a  -- ^ fly for this percentage of 2 turns
+data ThrowMod = ThrowMod
+  { throwVelocity :: !Int  -- ^ fly with this percentage of base throw speed
+  , throwLinger   :: !Int  -- ^ fly for this percentage of 2 turns
   }
-  deriving (Show, Read, Eq, Ord, Generic, Functor)
+  deriving (Show, Read, Eq, Ord, Generic)
 
 -- | Features of item. Affect only the item in question, not the actor,
 -- and so not additive in any sense.
@@ -78,7 +78,7 @@ data Feature =
     ChangeTo !Text           -- ^ change to this group when altered
   | Fragile                  -- ^ break even when not hitting an enemy
   | Durable                  -- ^ don't break even hitting or applying
-  | ToThrow !(ThrowMod Int)  -- ^ parameters modifying a throw
+  | ToThrow !ThrowMod        -- ^ parameters modifying a throw
   | Applicable               -- ^ can't be turned off, is consumed by use
   | EqpSlot !EqpSlot !Text   -- ^ the slot, counts towards the eqp limit
   | Identified               -- ^ any such item starts identified
@@ -105,7 +105,7 @@ instance Hashable a => Hashable (Effect a)
 
 instance Hashable a => Hashable (Aspect a)
 
-instance Hashable a => Hashable (ThrowMod a)
+instance Hashable ThrowMod
 
 instance Hashable Feature
 
@@ -115,7 +115,7 @@ instance Binary a => Binary (Effect a)
 
 instance Binary a => Binary (Aspect a)
 
-instance Binary a => Binary (ThrowMod a)
+instance Binary ThrowMod
 
 instance Binary Feature
 
@@ -149,15 +149,9 @@ effectTrav (InsertMove a) f = do
   return $! InsertMove b
 effectTrav DropBestWeapon _ = return DropBestWeapon
 effectTrav (DropEqp symbol hit) _ = return $! DropEqp symbol hit
-effectTrav (SendFlying tmod) f = do
-  tmod2 <- modTrav tmod f
-  return $! SendFlying tmod2
-effectTrav (PushActor tmod) f = do
-  tmod2 <- modTrav tmod f
-  return $! PushActor tmod2
-effectTrav (PullActor tmod) f = do
-  tmod2 <- modTrav tmod f
-  return $! PullActor tmod2
+effectTrav (SendFlying tmod) _ = return $! SendFlying tmod
+effectTrav (PushActor tmod) _ = return $! PushActor tmod
+effectTrav (PullActor tmod) _ = return $! PullActor tmod
 effectTrav (Teleport a) f = do
   b <- f a
   return $! Teleport b
@@ -206,11 +200,3 @@ aspectTrav (AddSmell a) f = do
 aspectTrav (AddLight a) f = do
   b <- f a
   return $! AddLight b
-
--- | Transform a throwing mod using a stateful function.
-modTrav :: ThrowMod a -> (a -> St.State s b) -> St.State s (ThrowMod b)
-modTrav ThrowMod{..} f = do
-  throwVelocityNew <- f throwVelocity
-  throwLingerNew <- f throwLinger
-  return $! ThrowMod{ throwVelocity = throwVelocityNew
-                    , throwLinger = throwLingerNew }

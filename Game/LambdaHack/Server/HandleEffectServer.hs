@@ -610,7 +610,7 @@ effectTransformEqp execSfx target symbol m = do
 -- boldpos is used, if it can't, a random outward vector of length 10
 -- is picked.
 effectSendFlying :: (MonadAtomic m, MonadServer m)
-                 => m () -> Effect.ThrowMod Int
+                 => m () -> Effect.ThrowMod
                  -> ActorId -> ActorId -> Maybe Bool
                  -> m Bool
 effectSendFlying execSfx Effect.ThrowMod{..} source target modePush = do

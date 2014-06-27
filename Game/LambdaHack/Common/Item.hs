@@ -10,7 +10,8 @@ module Game.LambdaHack.Common.Item
     -- * Inventory management types
   , ItemBag, ItemDict, ItemKnown
     -- * Textual description
-  , partItem, partItemWs, partItemAW, partItemWownW, itemDesc, textAllAE
+  , partItemN, partItem, partItemWs, partItemAW, partItemWownW
+  , itemDesc, textAllAE
   ) where
 
 import qualified Control.Monad.State as St
@@ -122,31 +123,38 @@ type ItemDict = EM.EnumMap ItemId Item
 
 type ItemKnown = (Item, ItemAspectEffect)
 
--- | The part of speech describing the item.
-partItem :: ItemFull -> (MU.Part, MU.Part)
-partItem itemFull =
+-- | The part of speech describing the item parameterized by the number
+-- of effects/aspects to show..
+partItemN :: Bool -> Int -> ItemFull -> (MU.Part, MU.Part)
+partItemN includeFeat n itemFull =
   let genericName = jname $ itemBase itemFull
   in case itemDisco itemFull of
     Nothing ->
       let flav = flavourToName $ jflavour $ itemBase itemFull
       in (MU.Text $ flav <+> genericName, "")
     Just _ ->
-      let effTs = filter (not . T.null) $ textAllAE itemFull
-          ts = take 5 effTs ++ if length effTs > 5 then ["(...)"] else []
+      let effTs = filter (not . T.null) $ textAllAE includeFeat itemFull
+          ts = take n effTs ++ if length effTs > n then ["(...)"] else []
       in (MU.Text genericName, MU.Phrase $ map MU.Text ts)
 
-textAllAE :: ItemFull -> [Text]
-textAllAE ItemFull{itemBase, itemDisco} =
-  case itemDisco of
+-- | The part of speech describing the item.
+partItem :: ItemFull -> (MU.Part, MU.Part)
+partItem = partItemN False 3
+
+textAllAE :: Bool -> ItemFull -> [Text]
+textAllAE includeFeat ItemFull{itemBase, itemDisco} =
+  let feat | includeFeat = jfeature itemBase
+           | otherwise = []
+  in case itemDisco of
     Nothing -> [""]
     Just ItemDisco{itemKind, itemAE} -> case itemAE of
       Just ItemAspectEffect{jaspects, jeffects} ->
         map effectToSuffix jeffects
         ++ map aspectToSuffix jaspects
-        ++ map featureToSuff (jfeature itemBase)
+        ++ map featureToSuff feat
       Nothing -> map kindEffectToSuffix (ieffects itemKind)
                  ++ map kindAspectToSuffix (iaspects itemKind)
-                 ++ map featureToSuff (jfeature itemBase)
+                 ++ map featureToSuff feat
 
 partItemWs :: Int -> ItemFull -> MU.Part
 partItemWs count itemFull =
@@ -166,7 +174,7 @@ partItemWownW partA itemFull =
 -- TODO: also print some data from kind and from item
 itemDesc :: ItemFull -> Text
 itemDesc itemFull =
-  let (name, stats) = partItem itemFull
+  let (name, stats) = partItemN True 99 itemFull
       nstats = makePhrase [name, stats MU.:> ":"]
   in case itemDisco itemFull of
     Nothing -> nstats <+> "This item is as unremarkable as can be."
