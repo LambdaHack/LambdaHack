@@ -43,6 +43,7 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -219,7 +220,7 @@ moveItemHuman cLegalRaw destCStore verbRaw auto = do
           msgAndSer toCStore = do
             subject <- partAidLeader leader
             msgAdd $ makeSentence
-              [ MU.SubjectVerbSg subject verb, partItemWs k itemFull ]
+              [ MU.SubjectVerbSg subject verb, partItemWs k toCStore itemFull ]
             return $ Right $ ReqMoveItem iid k fromCStore toCStore
       if fromCStore == CGround
       then case destCStore of

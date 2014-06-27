@@ -255,7 +255,7 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
           IAll      -> (bagLetterSlots,
                         bagLetterSlots, bagNumberSlots,
                         "Items" <+> ppCur <> ":")
-  io <- itemOverlay bag (overLetterSlots, overNumberSlots)
+  io <- itemOverlay cCur bag (overLetterSlots, overNumberSlots)
   runDefItemKey keyDefs lettersDef io labelLetterSlots prompt
 
 runDefItemKey :: MonadClientUI m

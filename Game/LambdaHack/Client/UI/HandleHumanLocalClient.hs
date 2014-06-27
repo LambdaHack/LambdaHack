@@ -50,7 +50,7 @@ import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
-import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemDescription
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -119,7 +119,7 @@ describeItemHuman cstore = do
       verb = "describe"
   ggi <- getStoreItem shaBlurb stdBlurb verb cstore
   case ggi of
-    Right ((iid, _), _) -> promptToSlideshow $ itemDesc (itemToF iid 1)
+    Right ((iid, _), _) -> promptToSlideshow $ itemDesc cstore (itemToF iid 1)
     Left slides -> return slides
 
 -- * AllOwned
@@ -143,7 +143,7 @@ allOwnedHuman = do
             [MU.Capitalize $ MU.SubjectVerbSg subject "own:"]
           sl = EM.filter (`EM.member` bag) letterSlots
           slN = IM.filter (`EM.member` bag) numberSlots
-      io <- itemOverlay bag (sl, slN)
+      io <- itemOverlay CGround bag (sl, slN)  -- TODO
       overlayToSlideshow blurb io
 
 -- * SelectActor

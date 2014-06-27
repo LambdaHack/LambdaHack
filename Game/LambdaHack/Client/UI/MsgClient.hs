@@ -26,7 +26,9 @@ import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
@@ -92,7 +94,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
       verb = MU.Text $ if pos == bpos b
                        then "stand on"
                        else if canSee then "notice" else "remember"
-  let nWs (iid, k) = partItemWs k (itemToF iid k)
+  let nWs (iid, k) = partItemWs k CGround (itemToF iid k)
       isd = case detailed of
               _ | EM.size is == 0 -> ""
               _ | EM.size is <= 2 ->
@@ -116,12 +118,12 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   else return $! msg <+> isd
 
 -- | Create a list of item names.
-itemOverlay :: MonadClient m => ItemBag -> ItemSlots -> m Overlay
-itemOverlay bag (letterSlots, numberSlots) = do
+itemOverlay :: MonadClient m => CStore -> ItemBag -> ItemSlots -> m Overlay
+itemOverlay cstore bag (letterSlots, numberSlots) = do
   itemToF <- itemToFullClient
   let pr (l, iid) = makePhrase [ slotLabel l
                                , let k = bag EM.! iid
-                                 in partItemWs k (itemToF iid k) ]
+                                 in partItemWs k cstore (itemToF iid k) ]
                     <> " "
   return $! toOverlay $ map pr $ map (first Left) (EM.assocs letterSlots)
                                  ++ (map (first Right) (IM.assocs numberSlots))
@@ -133,4 +135,4 @@ floorItemOverlay bag = do
       iids = EM.keys bag
       letterSlots = EM.fromAscList $ zip allSlots iids
       numberSlots = IM.fromAscList $ zip [0..] (drop len iids)
-  itemOverlay bag (letterSlots, numberSlots)
+  itemOverlay CGround bag (letterSlots, numberSlots)

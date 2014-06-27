@@ -13,7 +13,7 @@ module Game.LambdaHack.Common.ActorState
   , tryFindHeroK, getLocalTime, isSpawnFaction
   , itemPrice, calmEnough, hpEnough, regenCalmDelta
   , actorInAmbient, dispEnemy, radiusBlind
-  , fullAssocs, itemToFull, goesIntoInv, eqpOverfull
+  , fullAssocs, itemToFull, goesIntoInv, eqpOverfull, storeFromC
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -147,7 +147,7 @@ sharedEqp body s =
 sharedAllOwned :: Actor -> State -> ItemBag
 sharedAllOwned body s =
   let shaBag = gsha $ sfactionD s EM.! bfid body
-  in EM.unionsWith (+) [sharedInv body s, sharedEqp body s, shaBag]
+  in EM.unionsWith (+) [sharedEqp body s, sharedInv body s, shaBag]
 
 sharedAllOwnedFid :: FactionId -> State -> ItemBag
 sharedAllOwnedFid fid s =
@@ -338,3 +338,9 @@ eqpOverfull :: Actor -> Int -> Bool
 eqpOverfull b n = let size = sum $ EM.elems $ beqp b
                   in assert (size <= 10 `blame` (b, n, size))
                      $ size + n > 10
+
+storeFromC :: Container -> CStore
+storeFromC c = case c of
+  CFloor{} -> CGround
+  CActor _ cstore -> cstore
+  CTrunk{} -> CBody

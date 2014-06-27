@@ -23,6 +23,7 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -289,7 +290,7 @@ addProjectile bpos rest iid blid bfid btime = do
       adj | trange < 5 = "falling"
           | otherwise = "flying"
       -- Not much detail about a fast flying item.
-      (object1, object2) = partItem $ itemNoDisco (item, 1)
+      (object1, object2) = partItem CInv $ itemNoDisco (item, 1)
       bname = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       tweakBody b = b { bname
                       , bhp = 0

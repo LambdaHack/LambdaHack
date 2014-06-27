@@ -27,6 +27,7 @@ import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -65,10 +66,9 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     when (bfid body == side && not (bproj body)) stopPlayBack
   UpdCreateItem iid _ k c -> do
     updateItemSlot Nothing iid
-    itemVerbMU iid k $ MU.Text
-      $ "appear" <+> ppContainer c
+    itemVerbMU iid k (MU.Text $ "appear" <+> ppContainer c) (storeFromC c)
     stopPlayBack
-  UpdDestroyItem iid _ k _ -> itemVerbMU iid k "disappear"
+  UpdDestroyItem iid _ k c -> itemVerbMU iid k "disappear" (storeFromC c)
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
   UpdLoseActor aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
@@ -91,7 +91,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
               _ -> do
                 (lid, p) <- posOfContainer c
                 modifyClient $ \cli -> cli {scursor = TPoint lid p}
-            itemVerbMU iid k "be spotted"
+            itemVerbMU iid k "be spotted" CGround
             stopPlayBack
           CTrunk{} -> return ()
       _ -> return ()  -- seen recently (still has a slot assigned)
@@ -243,20 +243,22 @@ aVerbMU aid verb = do
   b <- getsState $ getActorBody aid
   actorVerbMU aid b verb
 
-itemVerbMU :: MonadClientUI m => ItemId -> Int -> MU.Part -> m ()
-itemVerbMU iid k verb = assert (k > 0) $ do
+itemVerbMU :: MonadClientUI m
+           => ItemId -> Int -> MU.Part -> CStore -> m ()
+itemVerbMU iid k verb cstore = assert (k > 0) $ do
   itemToF <- itemToFullClient
-  let subject = partItemWs k (itemToF iid k)
+  let subject = partItemWs k cstore (itemToF iid k)
       msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
 
-aiVerbMU :: MonadClientUI m => ActorId -> MU.Part -> ItemId -> Int -> m ()
-aiVerbMU aid verb iid k = do
+aiVerbMU :: MonadClientUI m
+         => ActorId -> MU.Part -> ItemId -> Int -> CStore -> m ()
+aiVerbMU aid verb iid k cstore = do
   itemToF <- itemToFullClient
   subject <- partAidLeader aid
   let msg = makeSentence [ MU.SubjectVerbSg subject verb
-                         , partItemWs k (itemToF iid k) ]
+                         , partItemWs k cstore (itemToF iid k) ]
   msgAdd msg
 
 msgDuplicateScrap :: MonadClientUI m => m ()
@@ -318,13 +320,13 @@ moveItemUI verbose iid k aid c1 c2 = do
           Just l -> msgAdd $ makePhrase
                       [ "\n"
                       , slotLabel $ Left l
-                      , partItemWs n (itemToF iid n)
+                      , partItemWs n c2 (itemToF iid n)
                       , "\n" ]
           Nothing -> return ()
       else when (c1 == CGround && c1 /= c2) $
-        aiVerbMU aid "get" iid k
+        aiVerbMU aid "get" iid k c2
     (_, CGround) | c1 /= c2 -> do
-      when verbose $ aiVerbMU aid "drop" iid k
+      when verbose $ aiVerbMU aid "drop" iid k c1
       if bfid b == side
         then updateItemSlot (Just aid) iid
         else updateItemSlot Nothing iid
@@ -408,7 +410,7 @@ quitFactionUI fid mbody toSt = do
           (letterSlots, numberSlots) <- getsClient sslots
           let sl = EM.filter (`EM.member` bag) letterSlots
               slN = IM.filter (`EM.member` bag) numberSlots
-          io <- itemOverlay bag (sl, slN)
+          io <- itemOverlay CGround bag (sl, slN)
           overlayToSlideshow itemMsg io
       -- Show score for any UI client, even though it is saved only
       -- for human UI clients.
@@ -431,12 +433,12 @@ discover oldcli iid = do
   cops <- getsState scops
   itemToF <- itemToFullClient
   let itemFull = itemToF iid 1
-      (knownName, knownAEText) = partItem itemFull
+      (knownName, knownAEText) = partItem CGround itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
       itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
-      (secretName, secretAEText) = partItem itemSecret
+      (secretName, secretAEText) = partItem CGround itemSecret
       msg = makeSentence
         [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
                                   "turn out to be"
@@ -446,7 +448,8 @@ discover oldcli iid = do
                    iid (itemBase itemFull) 1
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
-  when (textAllAE True itemFull /= textAllAE True oldItemFull) $ msgAdd msg
+  when (textAllAE True CEqp itemFull /= textAllAE True CEqp oldItemFull) $
+    msgAdd msg
 
 -- * RespSfxAtomicUI
 
@@ -458,10 +461,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     spart <- partAidLeader source
     tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
-  SfxProject aid iid -> aiVerbMU aid "aim" iid 1
-  SfxCatch aid iid -> aiVerbMU aid "catch" iid 1
-  SfxActivate aid iid k -> aiVerbMU aid "activate" iid k
-  SfxCheck aid iid k -> aiVerbMU aid "activate" iid k
+  SfxProject aid iid -> aiVerbMU aid "aim" iid 1 CInv
+  SfxCatch aid iid -> aiVerbMU aid "catch" iid 1 CInv
+  SfxActivate aid iid k -> aiVerbMU aid "activate" iid k CInv
+  SfxCheck aid iid k -> aiVerbMU aid "deactivate" iid k CInv
   SfxTrigger aid _p _feat ->
     when verbose $ aVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->
@@ -641,8 +644,8 @@ strike source target iid hitStatus = assert (source /= target) $ do
         Just ItemDisco{itemKind} -> iverbHit itemKind
       isBodyPart = iid `EM.member` bbody sb
       partItemChoice = if isBodyPart
-                       then partItemWownW spronoun
-                       else partItemAW
+                       then partItemWownW spronoun CBody
+                       else partItemAW CEqp
       msg HitClear = makeSentence $
         [MU.SubjectVerbSg spart verb, tpart]
         ++ if bproj sb

@@ -45,9 +45,10 @@ import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
-import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
@@ -322,7 +323,7 @@ targetDesc target = do
             [] -> return $! "exact spot" <+> (T.pack . show) p
             [(iid, k)] -> do
               itemToF <- itemToFullClient
-              let (name, stats) = partItem (itemToF iid k)
+              let (name, stats) = partItem CGround (itemToF iid k)
               return $! makePhrase $ if k == 1
                                      then [name, stats]  -- "a sword" too wordy
                                      else [MU.CarWs k name, stats]
