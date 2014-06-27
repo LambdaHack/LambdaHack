@@ -313,7 +313,7 @@ addActor groupName bfid pos lid tweakBody bpronoun time iis = do
   -- contains the constant properties.
   let trunkFreq = toFreq "create trunk" [(1, groupName)]
   (trunkId, trunkFull@ItemFull{..})
-    <- rollAndRegisterItem lid trunkFreq (CTrunk lid pos) False
+    <- rollAndRegisterItem lid trunkFreq (CTrunk bfid lid pos) False
   let trunkKind = case itemDisco of
         Just ItemDisco{itemKind} -> itemKind
         Nothing -> assert `failure` trunkFull

@@ -83,14 +83,12 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
         updateItemSlot Nothing iid
         case c of
           CActor{} -> return ()  -- not actionable at this time
-          CFloor{} -> do
+          CFloor lid p -> do
             scursorOld <- getsClient scursor
             case scursorOld of
               TEnemy{} -> return ()  -- probably too important to overwrite
               TEnemyPos{} -> return ()
-              _ -> do
-                (lid, p) <- posOfContainer c
-                modifyClient $ \cli -> cli {scursor = TPoint lid p}
+              _ -> modifyClient $ \cli -> cli {scursor = TPoint lid p}
             itemVerbMU iid k "be spotted" CGround
             stopPlayBack
           CTrunk{} -> return ()

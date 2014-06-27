@@ -180,12 +180,14 @@ singleAid aid = do
   return $! PosSight lid [p]
 
 singleContainer :: MonadStateRead m => Container -> m PosAtomic
+singleContainer (CFloor lid p) = return $! PosSight lid [p]
 singleContainer (CActor aid CSha) = do  -- shared stash is private
   b <- getsState $ getActorBody aid
   return $! PosFidAndSer (Just $ blid b) (bfid b)
-singleContainer c = do
-  (lid, p) <- posOfContainer c
+singleContainer (CActor aid _) = do
+  (lid, p) <- posOfAid aid
   return $! PosSight lid [p]
+singleContainer (CTrunk fid lid p) = return $! PosFidAndSight fid lid [p]
 
 -- | Determines if a command resets FOV.
 --

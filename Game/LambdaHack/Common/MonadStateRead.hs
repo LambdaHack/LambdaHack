@@ -2,7 +2,7 @@
 -- player actions. Has no access to the the main action type.
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
-  , getLevel, nUI, posOfContainer, posOfAid, fightsAgainstSpawners
+  , getLevel, nUI, posOfAid, fightsAgainstSpawners
   ) where
 
 import qualified Data.EnumMap.Strict as EM
@@ -32,11 +32,6 @@ posOfAid :: MonadStateRead m => ActorId -> m (LevelId, Point)
 posOfAid aid = do
   b <- getsState $ getActorBody aid
   return (blid b, bpos b)
-
-posOfContainer :: MonadStateRead m => Container -> m (LevelId, Point)
-posOfContainer (CFloor lid p) = return (lid, p)
-posOfContainer (CActor aid _) = posOfAid aid
-posOfContainer (CTrunk lid p) = return (lid, p)
 
 -- TODO: make a field of Faction?
 fightsAgainstSpawners :: MonadStateRead m => FactionId -> m Bool
