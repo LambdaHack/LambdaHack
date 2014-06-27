@@ -22,7 +22,6 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntMap.Strict as IM
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -106,7 +105,11 @@ memberBackHuman = memberBack True
 -- | Display items from a given container store and describe the chosen one.
 describeItemHuman :: MonadClientUI m => CStore -> m Slideshow
 describeItemHuman cstore = do
-  itemToF <- itemToFullClient
+  leader <- getLeaderUI
+  describeItemC $ CActor leader cstore
+
+describeItemC :: MonadClientUI m => Container -> m Slideshow
+describeItemC c = do
   let subject body = partActor body
       verbSha body activeItems = if calmEnough body activeItems
                                  then "notice"
@@ -116,35 +119,22 @@ describeItemHuman cstore = do
          $ MU.SubjectVerbSg (subject body) (verbSha body activeItems)]
       stdBlurb body = makePhrase
         [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
-      verb = "describe"
-  ggi <- getStoreItem shaBlurb stdBlurb verb cstore
+  itemToF <- itemToFullClient
+  let verb = "describe"
+  ggi <- getStoreItem shaBlurb stdBlurb verb c
   case ggi of
-    Right ((iid, _), _) -> promptToSlideshow $ itemDesc cstore (itemToF iid 1)
+    Right ((iid, _), _) ->
+      promptToSlideshow $ itemDesc (storeFromC c) (itemToF iid 1)
     Left slides -> return slides
 
 -- * AllOwned
 
--- TODO: express with getStoreItem somehow
 -- | Display the sum of equipments and inventory of the whole party.
 allOwnedHuman :: MonadClientUI m => m Slideshow
 allOwnedHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let subject = MU.Text $ gname fact
-  bag <- getsState $ sharedAllOwned b
-  (letterSlots, numberSlots) <- getsClient sslots
-  if EM.null bag
-    then promptToSlideshow $ makeSentence
-      [ MU.SubjectVerbSg subject "have"
-      , "nothing in possesion" ]
-    else do
-      let blurb = makePhrase
-            [MU.Capitalize $ MU.SubjectVerbSg subject "own:"]
-          sl = EM.filter (`EM.member` bag) letterSlots
-          slN = IM.filter (`EM.member` bag) numberSlots
-      io <- itemOverlay CGround bag (sl, slN)  -- TODO
-      overlayToSlideshow blurb io
+  describeItemC $ CTrunk (bfid b) (blid b) (bpos b)
 
 -- * SelectActor
 
@@ -399,8 +389,12 @@ doLook = do
       if EM.size is <= 2 then
         promptToSlideshow lookMsg
       else do
-        io <- floorItemOverlay is
-        overlayToSlideshow lookMsg io
+        msgAdd lookMsg  -- TODO: do not add to history
+        floorItemOverlay lidV p
+
+-- | Create a list of item names.
+floorItemOverlay :: MonadClientUI m => LevelId -> Point -> m Slideshow
+floorItemOverlay lid p = describeItemC (CFloor lid p)
 
 -- * TgtFloor
 

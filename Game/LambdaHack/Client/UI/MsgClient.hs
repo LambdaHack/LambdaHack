@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.MsgClient
   ( msgAdd, msgReset, recordHistory
   , SlideOrCmd, failWith, failSlides, failSer
-  , lookAt, itemOverlay, floorItemOverlay
+  , lookAt, itemOverlay
   ) where
 
 import Control.Arrow (first)
@@ -100,7 +100,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
               _ | EM.size is <= 2 ->
                 makeSentence [ MU.SubjectVerbSg subject verb
                              , MU.WWandW $ map nWs $ EM.assocs is]
-              True -> "Items:"
+              True -> "\n"
               _ -> "Items here."
       tile = lvl `at` pos
       obscured | tile /= hideTile cotile lvl pos = "partially obscured"
@@ -127,12 +127,3 @@ itemOverlay cstore bag (letterSlots, numberSlots) = do
                     <> " "
   return $! toOverlay $ map pr $ map (first Left) (EM.assocs letterSlots)
                                  ++ (map (first Right) (IM.assocs numberSlots))
-
--- | Create a list of item names.
-floorItemOverlay :: MonadClient m => ItemBag -> m Overlay
-floorItemOverlay bag = do
-  let len = length allSlots
-      iids = EM.keys bag
-      letterSlots = EM.fromAscList $ zip allSlots iids
-      numberSlots = IM.fromAscList $ zip [0..] (drop len iids)
-  itemOverlay CGround bag (letterSlots, numberSlots)

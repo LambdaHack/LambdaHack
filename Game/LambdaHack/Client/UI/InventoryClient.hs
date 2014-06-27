@@ -52,14 +52,17 @@ getGroupItem :: MonadClientUI m
              -> MU.Part   -- ^ the verb describing the action
              -> [CStore]  -- ^ initial legal containers
              -> [CStore]  -- ^ legal containers after Calm taken into account
-             -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
+             -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 getGroupItem p itemsName verb cLegalRaw cLegalAfterCalm = do
   leader <- getLeaderUI
   getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
   let cNotEmpty = not . EM.null . getCStoreBag
       cLegal = filter cNotEmpty cLegalAfterCalm  -- don't display empty stores
       tsuitable = const $ makePhrase [MU.Capitalize (MU.Ws itemsName)]
-  getItem p (\b _ -> tsuitable b) tsuitable verb cLegalRaw cLegal True INone
+  getItem p (\b _ -> tsuitable b) tsuitable verb
+          (map (CActor leader) cLegalRaw)
+          (map (CActor leader) cLegal)
+          True INone
 
 -- | Let the human player choose any item from a list of items
 -- and let him specify the number of items.
@@ -70,10 +73,13 @@ getAnyItem :: MonadClientUI m
            -> Bool      -- ^ whether to ask, when the only item
                         --   in the starting container is suitable
            -> Bool      -- ^ whether to ask for the number of items
-           -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
+           -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
+  leader <- getLeaderUI
   soc <- getItem (const True) (\_ _ -> "Items") (const "Items") verb
-                 cLegalRaw cLegalAfterCalm askWhenLone INone
+                 (map (CActor leader) cLegalRaw)
+                 (map (CActor leader) cLegalAfterCalm)
+                 askWhenLone INone
   case soc of
     Left _ -> return soc
     Right ((iid, itemFull), c) -> do
@@ -90,10 +96,12 @@ getStoreItem :: MonadClientUI m
                                  -- ^ how to describe suitable items in CSha
              -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
              -> MU.Part          -- ^ the verb describing the action
-             -> CStore           -- ^ initial container
-             -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
+             -> Container        -- ^ initial container
+             -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 getStoreItem shaBlurb stdBlurb verb cInitial = do
-  let cLegalRaw = cInitial : delete cInitial [CEqp, CInv, CSha, CGround]
+  leader <- getLeaderUI
+  let allStores = map (CActor leader) [CEqp, CInv, CSha, CGround]
+      cLegalRaw = cInitial : delete cInitial allStores
   getItem (const True) shaBlurb stdBlurb verb cLegalRaw cLegalRaw
           True ISuitable
 
@@ -108,16 +116,16 @@ getItem :: MonadClientUI m
                             -- ^ how to describe suitable items in CSha
         -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
         -> MU.Part          -- ^ the verb describing the action
-        -> [CStore]         -- ^ initial legal containers
-        -> [CStore]         -- ^ legal containers with Calm taken into account
+        -> [Container]      -- ^ initial legal containers
+        -> [Container]      -- ^ legal containers with Calm taken into account
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting container is suitable
         -> ItemDialogState  -- ^ the dialog state to start in
-        -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
+        -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 getItem p tshaSuit tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
   leader <- getLeaderUI
-  getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
-  let storeAssocs = EM.assocs . getCStoreBag
+  accessCBag <- getsState $ flip getCBag
+  let storeAssocs = EM.assocs . accessCBag
       allAssocs = concatMap storeAssocs cLegal
       rawAssocs = concatMap storeAssocs cLegalRaw
   case (cLegal, allAssocs) of
@@ -125,11 +133,12 @@ getItem p tshaSuit tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
       itemToF <- itemToFullClient
       return $ Right ((iid, itemToF iid k), cStart)
     (_ : _, _ : _) -> do
-      when (CGround `elem` cLegal) $
-        mapM_ (updateItemSlot (Just leader)) $ EM.keys $ getCStoreBag CGround
+      let groundCs = filter ((== CGround) . storeFromC) cLegal
+      mapM_ (updateItemSlot (Just leader)) $
+        concatMap (EM.keys . accessCBag) groundCs
       transition p tshaSuit tsuitable verb cLegal initalState
     _ -> if null rawAssocs then do
-           let tLegal = map (MU.Text . ppCStore) cLegalRaw
+           let tLegal = map (MU.Text . ppContainer) cLegalRaw
                ppLegal = makePhrase [MU.WWxW "nor" tLegal]
            failWith $ "no items" <+> ppLegal
          else failSer ItemNotCalm
@@ -138,7 +147,7 @@ getItem p tshaSuit tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
 data DefItemKey m = DefItemKey
   { defLabel  :: Text
   , defCond   :: Bool
-  , defAction :: K.Key -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
+  , defAction :: K.Key -> m (SlideOrCmd ((ItemId, ItemFull), Container))
   }
 
 transition :: forall m. MonadClientUI m
@@ -147,9 +156,9 @@ transition :: forall m. MonadClientUI m
                                -- ^ how to describe suitable items in CSha
            -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
            -> MU.Part          -- ^ the verb describing the action
-           -> [CStore]
+           -> [Container]
            -> ItemDialogState
-           -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
+           -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 transition _ _ _ verb [] iDS = assert `failure` (verb, iDS)
 transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
   cops <- getsState scops
@@ -159,9 +168,9 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
   activeItems <- activeItemsClient leader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
-  bag <- getsState $ getCBag (CActor leader cCur)
+  bag <- getsState $ getCBag cCur
   itemToF <- itemToFullClient
-  let getResult :: ItemId -> ((ItemId, ItemFull), CStore)
+  let getResult :: ItemId -> ((ItemId, ItemFull), Container)
       getResult iid = ((iid, itemToF iid (bag EM.! iid)), cCur)
       bagLetterSlots = EM.filter (`EM.member` bag) letterSlots
       bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
@@ -220,7 +229,12 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
            , defAction = \_ -> do
                err <- memberCycle False
                assert (err == mempty `blame` err) skip
-               transition p tshaSuit tsuitable verb cLegal itemDialogState
+               newLeader <- getLeaderUI
+               let newC c = case c of
+                     CActor _ cstore -> CActor newLeader cstore
+                     _ -> c
+                   newLegal = map newC cLegal
+               transition p tshaSuit tsuitable verb newLegal itemDialogState
            })
         , (K.BackTab, DefItemKey
            { defLabel = "SHIFT-TAB"
@@ -228,7 +242,12 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
            , defAction = \_ -> do
                err <- memberBack False
                assert (err == mempty `blame` err) skip
-               transition p tshaSuit tsuitable verb cLegal itemDialogState
+               newLeader <- getLeaderUI
+               let newC c = case c of
+                     CActor _ cstore -> CActor newLeader cstore
+                     _ -> c
+                   newLegal = map newC cLegal
+               transition p tshaSuit tsuitable verb newLegal itemDialogState
            })
         ]
       lettersDef :: DefItemKey m
@@ -242,8 +261,10 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
               Just iid -> return $ Right $ getResult iid
             _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
-      ppCur = ppCStore cCur
-      tsuit = if cCur == CSha then tshaSuit body activeItems else tsuitable body
+      ppCur = ppContainer cCur
+      tsuit = if storeFromC cCur == CSha
+              then tshaSuit body activeItems
+              else tsuitable body
       (labelLetterSlots, overLetterSlots, overNumberSlots, prompt) =
         case itemDialogState of
           INone     -> (suitableLetterSlots,
@@ -255,7 +276,7 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
           IAll      -> (bagLetterSlots,
                         bagLetterSlots, bagNumberSlots,
                         "Items" <+> ppCur <> ":")
-  io <- itemOverlay cCur bag (overLetterSlots, overNumberSlots)
+  io <- itemOverlay (storeFromC cCur) bag (overLetterSlots, overNumberSlots)
   runDefItemKey keyDefs lettersDef io labelLetterSlots prompt
 
 runDefItemKey :: MonadClientUI m
@@ -264,7 +285,7 @@ runDefItemKey :: MonadClientUI m
               -> Overlay
               -> EM.EnumMap SlotChar ItemId
               -> Text
-              -> m (SlideOrCmd ((ItemId, ItemFull), CStore))
+              -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 runDefItemKey keyDefs lettersDef io labelLetterSlots prompt = do
   let itemKeys =
         let slotKeys = map (K.Char . slotChar) (EM.keys labelLetterSlots)

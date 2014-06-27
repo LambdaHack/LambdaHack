@@ -215,7 +215,7 @@ moveItemHuman cLegalRaw destCStore verbRaw auto = do
          then getAnyItem verb cLegalRaw cLegal False False
          else getAnyItem verb cLegalRaw cLegal True True
   case ggi of
-    Right ((iid, itemFull), fromCStore) -> do
+    Right ((iid, itemFull), CActor _ fromCStore) -> do
       let k = itemK itemFull
           msgAndSer toCStore = do
             subject <- partAidLeader leader
@@ -236,6 +236,7 @@ moveItemHuman cLegalRaw destCStore verbRaw auto = do
         CEqp | eqpOverfull b k -> failSer EqpOverfull
         _ -> msgAndSer destCStore
     Left slides -> return $ Left slides
+    _ -> assert `failure` ggi
 
 -- * Project
 
@@ -326,9 +327,10 @@ projectEps ts tpos eps = do
            && trange >= chessDist (bpos sb) tpos
   ggi <- getGroupItem p object1 verb1 cLegal cLegal
   case ggi of
-    Right ((iid, _), fromCStore) -> do
+    Right ((iid, _), CActor _ fromCStore) -> do
       return $ Right $ ReqProject tpos eps iid fromCStore
     Left slides -> return $ Left slides
+    _ -> assert `failure` ggi
 
 triggerSymbols :: [Trigger] -> [Char]
 triggerSymbols [] = []
@@ -350,13 +352,14 @@ applyHuman ts = do
                else jsymbol item `elem` triggerSyms
   ggi <- getGroupItem p object1 verb1 cLegal cLegal
   case ggi of
-    Right ((iid, itemFull), fromCStore) -> do
+    Right ((iid, itemFull), CActor _ fromCStore) -> do
       let durable = Effect.Durable `elem` jfeature (itemBase itemFull)
           periodic = isJust $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
       if durable && periodic
         then failSer DurablePeriodicAbuse
         else return $ Right $ ReqApply iid fromCStore
     Left slides -> return $ Left slides
+    _ -> assert `failure` ggi
 
 -- * AlterDir
 

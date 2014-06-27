@@ -219,7 +219,7 @@ getCBag :: Container -> State -> ItemBag
 getCBag c s = case c of
   CFloor lid p -> sdungeon s EM.! lid `atI` p
   CActor aid cstore -> getActorBag aid cstore s
-  CTrunk{} -> EM.empty
+  CTrunk fid _ _ -> sharedAllOwnedFid fid s
 
 getActorBag :: ActorId -> CStore -> State -> ItemBag
 getActorBag aid cstore s =
@@ -343,4 +343,4 @@ storeFromC :: Container -> CStore
 storeFromC c = case c of
   CFloor{} -> CGround
   CActor _ cstore -> cstore
-  CTrunk{} -> CBody
+  CTrunk{} -> CGround
