@@ -232,14 +232,14 @@ equipItems aid = do
         case (bestInv, bestEqp) of
           ((_, (iidInv, itemInv)) : _, [])
             | not (eqpOverfull body 1)
-              && not (harmful cops condLightBetrays
-                              body activeItems fact itemInv) ->
+              && not (unneeded cops condLightBetrays
+                               body activeItems fact itemInv) ->
             returN "wield any"
             $ ReqMoveItem iidInv 1 fromCStore CEqp
           ((vInv, (iidInv, itemInv)) : _, (vEqp, _) : _)
             | not (eqpOverfull body 1)
-              && not (harmful cops condLightBetrays
-                              body activeItems fact itemInv)
+              && not (unneeded cops condLightBetrays
+                               body activeItems fact itemInv)
               && vInv > vEqp ->
             returN "wield better"
             $ ReqMoveItem iidInv 1 fromCStore CEqp
@@ -271,14 +271,16 @@ unEquipItems aid = do
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
   condLightBetrays <- condLightBetraysM aid
-  let yieldSingleHarmful (iidEqp, itemEqp) =
-        let cstore = if rsharedStash && calmEnough body activeItems
-                     then CSha
-                     else CInv
-        in if harmful cops condLightBetrays body activeItems fact itemEqp
-           then Just $ ReqMoveItem iidEqp (itemK itemEqp) CEqp cstore
+  let yieldSingleUnneeded (iidEqp, itemEqp) =
+        let csha = if rsharedStash && calmEnough body activeItems
+                   then CSha
+                   else CInv
+        in if harmful cops body activeItems fact itemEqp
+           then Just $ ReqMoveItem iidEqp (itemK itemEqp) CEqp CInv  -- throw
+           else if hinders condLightBetrays body activeItems itemEqp
+           then Just $ ReqMoveItem iidEqp (itemK itemEqp) CEqp csha  -- share
            else Nothing
-      yieldHarmful = mapMaybe yieldSingleHarmful eqpAssocs
+      yieldUnneeded = mapMaybe yieldSingleUnneeded eqpAssocs
       improve :: CStore -> ([(Int, (ItemId, ItemFull))],
                             [(Int, (ItemId, ItemFull))])
               -> Strategy (RequestTimed AbMoveItem)
@@ -299,7 +301,7 @@ unEquipItems aid = do
       betterThanInv _ [] = True
       betterThanInv vEqp ((vInv, _) : _) = vEqp > vInv
       bestThree = bestByEqpSlot invAssocs eqpAssocs shaAssocs
-  case yieldHarmful of
+  case yieldUnneeded of
     [] -> do
       let bInvSha = msum $ map (improve CInv)
                     $ map (\(_, inv, sha) -> (sha, inv)) bestThree
@@ -316,7 +318,7 @@ unEquipItems aid = do
       -- doesn't lose much fun. Additionally, if AI learns alchemy later on,
       -- they can repair the ring, wield it, drop at death and it's
       -- in play again.
-      return $! liftFrequency $ uniformFreq "yield harmful" yieldHarmful
+      return $! liftFrequency $ uniformFreq "yield unneeded" yieldUnneeded
 
 groupByEqpSlot :: [(ItemId, ItemFull)]
                -> M.Map (Effect.EqpSlot, Text) [(ItemId, ItemFull)]
@@ -346,9 +348,8 @@ bestByEqpSlot invAssocs eqpAssocs shaAssocs =
                                              bestSingle eqpSlot g3)
   in M.elems $ M.mapWithKey bestThree invEqpShaMap
 
-harmful :: Kind.COps -> Bool -> Actor -> [ItemFull] -> Faction -> ItemFull
-        -> Bool
-harmful cops condLightBetrays body activeItems fact itemFull =
+hinders :: Bool -> Actor -> [ItemFull] -> ItemFull -> Bool
+hinders condLightBetrays body activeItems itemFull =
   -- Fast actors want to hide in darkness to ambush opponents and want
   -- to hit hard for the short span they get to survive melee.
   (bspeed body activeItems > speedNormal
@@ -363,11 +364,6 @@ harmful cops condLightBetrays body activeItems fact itemFull =
             || resPreviousTurn (bcalmDelta body) < -1
       in condLightBetrays && heavilyDistressed
          && isJust (strengthFromEqpSlot Effect.EqpSlotAddLight itemFull))
-  -- Periodic items that are known and not stricly beneficial
-  -- should not be equipped.
-  || (isJust (strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull)
-      && maybe False (\u -> u <= 0)
-           (maxUsefulness cops body activeItems fact itemFull))
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
   -- (friends close, only one enemy close)
@@ -375,7 +371,19 @@ harmful cops condLightBetrays body activeItems fact itemFull =
   -- so shields are preferable by default;
   -- also, turning on when no friends and enemies close is too late,
   -- AI should flee or fire at such times, not muck around with eqp)
-  -- Return the degree of harmfulness.
+
+harmful :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull -> Bool
+harmful cops body activeItems fact itemFull =
+  -- items that are known and their effects are not stricly beneficial
+  -- should not be equipped (either they are harmful or they waste eqp space).
+  maybe False (\u -> u <= 0)
+    (maxUsefulness cops body activeItems fact itemFull)
+
+unneeded :: Kind.COps -> Bool -> Actor -> [ItemFull] -> Faction -> ItemFull
+         -> Bool
+unneeded cops condLightBetrays body activeItems fact itemFull =
+  harmful cops body activeItems fact itemFull
+  || hinders condLightBetrays body activeItems itemFull
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))
