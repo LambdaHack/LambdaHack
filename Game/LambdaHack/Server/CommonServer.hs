@@ -347,7 +347,9 @@ addActor groupName bfid pos lid tweakBody bpronoun time iis = do
   return $! aid
 
 -- Server has to pick a random weapon or it could leak item discovery
--- information.
+-- information. In case of non-projectiles, it only picks items
+-- with some effects, though, so it leaks properties of completely
+-- unidentified items.
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
 pickWeaponServer source = do
   sb <- getsState $ getActorBody source
@@ -356,10 +358,9 @@ pickWeaponServer source = do
   -- For projectiles we need to accept even items without any effect,
   -- so that the projectile dissapears and NoEffect feedback is produced.
   let allAssocs = eqpAssocs ++ bodyAssocs
-      strongest | bproj sb = map (1,) allAssocs
+      strongest | bproj sb = map (1,) $ filter ((/= btrunk sb) . fst) allAssocs
                 | otherwise =
-                    filter (not . unknownPrecious . snd . snd)
-                    $ strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs
+                    strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs
   case strongest of
     [] -> return Nothing
     iis -> do

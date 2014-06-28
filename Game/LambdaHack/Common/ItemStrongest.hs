@@ -244,7 +244,8 @@ sumSkills is =
 
 unknownPrecious :: ItemFull -> Bool
 unknownPrecious itemFull =
-  case itemDisco itemFull of
+  Durable `notElem` jfeature (itemBase itemFull)  -- if durable, no risk
+  && case itemDisco itemFull of
     Just ItemDisco{itemAE=Just _} -> False
     _ -> Precious `elem` jfeature (itemBase itemFull)
 
