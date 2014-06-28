@@ -214,8 +214,8 @@ effectHurt nDm power source target = do
   when (source /= target) $ halveCalm target
   execSfxAtomic $ SfxEffect (bfid sb) target $
     if source == target
-    then Effect.RefillHP deltaHP
-    else Effect.Hurt nDm deltaHP{-hack-}
+    then Effect.RefillHP deltaHP  -- no SfxStrike, so treat as any heal/wound
+    else Effect.Hurt (Dice.intToDice deltaHP) 0  -- avoid spam; SfxStrike sent
   return True
 
 armorHurtBonus :: (MonadAtomic m, MonadServer m)

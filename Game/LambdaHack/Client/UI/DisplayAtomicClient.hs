@@ -24,6 +24,7 @@ import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
@@ -484,7 +485,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                                    || bhp b < p)
           (deadBefore, verbDie) =
             case effect of
-              Effect.Hurt _ p | deadPreviousTurn (xM p) -> (True, hurtExtra)
+              Effect.Hurt p _ | deadPreviousTurn (xM $ Dice.maxDice p) ->
+                (True, hurtExtra)
               Effect.RefillHP p | deadPreviousTurn (xM p) -> (True, hurtExtra)
               _ -> (False, firstFall)
           msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
@@ -514,7 +516,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs
-        Effect.Hurt{} -> skip
+        Effect.Hurt{} -> skip  -- avoid spam; SfxStrike just sent
         Effect.RefillCalm p | p == 1 -> skip  -- no spam from regen items
         Effect.RefillCalm p | p > 0 -> do
           if fid == side then
