@@ -4,16 +4,14 @@ module Game.LambdaHack.Server.Commandline
   ) where
 
 import qualified Data.Text as T
-import System.Environment (getArgs)
 
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Server.State
 
 -- TODO: make more maintainable
 
-debugArgs :: IO DebugModeSer
-debugArgs = do
-  args <- getArgs
+debugArgs :: [String] -> IO DebugModeSer
+debugArgs args = do
   let usage =
         [ "Configure debug options here, gameplay options in config.rules.ini."
         , "  --knowMap  reveal map for all clients in the next game"

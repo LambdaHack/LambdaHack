@@ -252,6 +252,7 @@ executable LambdaHack
                       Content.PlaceKind,
                       Content.RuleKind,
                       Content.TileKind,
+                      TieKnot,
                       Paths_LambdaHack
   build-depends:      LambdaHack,
                       template-haskell >= 2.6 && < 3,

@@ -29,7 +29,8 @@ import Game.LambdaHack.Server.State
 -- is different. Which of the frontends is run depends on the flags supplied
 -- when compiling the engine library.
 mainSer :: (MonadAtomic m, MonadServerReadRequest m)
-        => Kind.COps
+        => [String]
+        -> Kind.COps
         -> (m () -> IO ())
         -> (Kind.COps -> DebugModeCli
             -> ((FactionId -> ChanServer ResponseUI RequestUI
@@ -39,9 +40,11 @@ mainSer :: (MonadAtomic m, MonadServerReadRequest m)
                 -> IO ())
             -> IO ())
         -> IO ()
-mainSer !copsSlow  -- evaluate fully to discover errors ASAP and free memory
-        exeSer exeFront = do
-  sdebugNxt <- debugArgs
+mainSer args
+        !copsSlow  -- evaluate fully to discover errors ASAP and free memory
+        exeSer
+        exeFront = do
+  sdebugNxt <- debugArgs args
   let cops = speedupCOps False copsSlow
       exeServer executorUI executorAI = do
         -- Wait for clients to exit even in case of server crash
