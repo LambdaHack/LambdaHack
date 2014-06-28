@@ -19,6 +19,7 @@ module Game.LambdaHack.Common.ActorState
 import Control.Exception.Assert.Sugar
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
+import Data.Int (Int64)
 import Data.List
 import Data.Maybe
 
@@ -252,14 +253,12 @@ memActor aid lid s =
 calmEnough :: Actor -> [ItemFull] -> Bool
 calmEnough b activeItems =
   let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
-      calmCur = bcalm b
-  in 2 * calmMax <= 3 * calmCur
+  in 2 * xM calmMax <= 3 * bcalm b
 
 hpEnough :: Actor -> [ItemFull] -> Bool
 hpEnough b activeItems =
   let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
-      hpCur = bhp b
-  in 2 * hpMax <= 3 * hpCur
+  in 2 * xM hpMax <= 3 * bhp b
 
 -- | Get current time from the dungeon data.
 getLocalTime :: LevelId -> State -> Time
@@ -269,11 +268,11 @@ getLocalTime lid s = ltime $ sdungeon s EM.! lid
 isSpawnFaction :: FactionId -> State -> Bool
 isSpawnFaction fid s = isSpawnFact $ sfactionD s EM.! fid
 
-regenCalmDelta :: Actor -> [ItemFull] -> State -> Int
+regenCalmDelta :: Actor -> [ItemFull] -> State -> Int64
 regenCalmDelta b activeItems s =
   let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
-      calmIncr = 1 -- normal rate of calm regen
-      maxDeltaCalm = calmMax - bcalm b
+      calmIncr = oneM  -- normal rate of calm regen
+      maxDeltaCalm = xM calmMax - bcalm b
       -- Worry actor by enemies felt (even if not seen)
       -- on the level within 3 tiles.
       fact = (EM.! bfid b) . sfactionD $ s
@@ -283,7 +282,7 @@ regenCalmDelta b activeItems s =
       noisyFoes = filter isHeard allFoes
   in if null noisyFoes
      then min calmIncr maxDeltaCalm
-     else -1  -- even if all calmness spent, keep informing the client
+     else minusM  -- even if all calmness spent, keep informing the client
 
 actorInAmbient :: Actor -> State -> Bool
 actorInAmbient b s =

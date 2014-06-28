@@ -300,7 +300,7 @@ targetDesc target = do
       b <- getsState $ getActorBody aid
       activeItems <- activeItemsClient aid
       let maxHP = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
-          percentage = 100 * bhp b `div` max 5 maxHP
+          percentage = 100 * bhp b `div` xM (max 5 maxHP)
           stars | percentage < 20  = "[_____]"
                 | percentage < 40  = "[*____]"
                 | percentage < 60  = "[**___]"

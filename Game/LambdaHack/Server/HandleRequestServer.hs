@@ -194,7 +194,7 @@ reqMelee source target iid cstore = do
     case btrajectory sb of
       Nothing -> return ()
       Just (tra, speed) -> do
-        execUpdAtomic $ UpdRefillHP source (-1)
+        execUpdAtomic $ UpdRefillHP source minusM
         unless (bproj sb || null tra) $
           -- Non-projectiles can't pierce, so terminate their flight.
           execUpdAtomic

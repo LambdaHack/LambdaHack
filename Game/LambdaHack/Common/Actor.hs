@@ -6,6 +6,7 @@ module Game.LambdaHack.Common.Actor
     ActorId, monsterGenChance, partActor, partPronoun
     -- * The@ Acto@r type
   , Actor(..), ResDelta(..)
+  , deltaSerious, deltaMild, xM, minusM, minusTwoM, oneM
   , bspeed, actorTemplate, timeShiftFromSpeed, braced, waitedLastTurn
   , actorDying, actorNewBorn, hpTooLow, unoccupied
     -- * Assorted
@@ -15,6 +16,7 @@ module Game.LambdaHack.Common.Actor
 
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import Data.Int (Int64)
 import Data.Ratio
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
@@ -43,10 +45,10 @@ data Actor = Actor
   , bcolor      :: !Color.Color          -- ^ individual map color
     -- * Resources
   , btime       :: !Time                 -- ^ absolute time of next action
-  , bhp         :: !Int                  -- ^ current hit points
-  , bhpDelta    :: !ResDelta             -- ^ HP delta this turn
-  , bcalm       :: !Int                  -- ^ current calm
-  , bcalmDelta  :: !ResDelta             -- ^ calm delta this turn
+  , bhp         :: !Int64                -- ^ current hit points * 1M
+  , bhpDelta    :: !ResDelta             -- ^ HP delta this turn * 1M
+  , bcalm       :: !Int64                -- ^ current calm * 1M
+  , bcalmDelta  :: !ResDelta             -- ^ calm delta this turn * 1M
     -- * Location
   , bpos        :: !Point                -- ^ current position
   , boldpos     :: !Point                -- ^ previous position
@@ -68,10 +70,24 @@ data Actor = Actor
   deriving (Show, Eq, Ord)
 
 data ResDelta = ResDelta
-  { resCurrentTurn  :: !Int  -- ^ resource change this player turn
-  , resPreviousTurn :: !Int  -- ^ resource change last player turn
+  { resCurrentTurn  :: !Int64  -- ^ resource change this player turn
+  , resPreviousTurn :: !Int64  -- ^ resource change last player turn
   }
   deriving (Show, Eq, Ord)
+
+deltaSerious :: ResDelta -> Bool
+deltaSerious ResDelta{..} = resCurrentTurn < minusM || resPreviousTurn < minusM
+
+deltaMild :: ResDelta -> Bool
+deltaMild ResDelta{..} = resCurrentTurn == minusM || resPreviousTurn == minusM
+
+xM :: Int -> Int64
+xM k = fromIntegral k * 1000000
+
+minusM, minusTwoM, oneM :: Int64
+minusM = xM (-1)
+minusTwoM = xM (-2)
+oneM = xM 1
 
 -- | Chance that a new monster is generated. Currently depends on the
 -- number of monsters already present, and on the level. In the future,
@@ -100,7 +116,7 @@ partPronoun b = MU.Text $ bpronoun b
 
 -- | A template for a new actor.
 actorTemplate :: ItemId -> Char -> Text -> Text
-              -> Color.Color -> Int -> Int
+              -> Color.Color -> Int64 -> Int64
               -> Point -> LevelId -> Time -> FactionId
               -> Actor
 actorTemplate btrunk bsymbol bname bpronoun bcolor bhp bcalm
@@ -153,7 +169,7 @@ actorNewBorn b = boldpos b == Point 0 0
 hpTooLow :: Actor -> [ItemFull] -> Bool
 hpTooLow b activeItems =
   let maxHP = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
-  in bhp b == 1 || 5 * bhp b < maxHP
+  in bhp b == oneM || 5 * bhp b < xM maxHP
 
 -- | Checks for the presence of actors in a position.
 -- Does not check if the tile is walkable.

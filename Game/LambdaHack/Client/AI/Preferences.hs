@@ -27,13 +27,13 @@ effectToBenefit cops b activeItems fact eff =
     Effect.RefillHP p ->
       let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
       in if p > 0
-         then 10 * min p (hpMax - bhp b)
+         then 10 * min p (fromIntegral $ (xM hpMax - bhp b) `div` 1000000)
          else max (-99) (10 * p)
     Effect.Hurt d p -> -(min 99 $ 10 * p + round (10 * Dice.meanDice d))
     Effect.RefillCalm p ->
       let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
       in if p > 0
-         then min p (calmMax - bcalm b)
+         then min p (fromIntegral $ (xM calmMax - bcalm b) `div` 1000000)
          else max (-20) p
     Effect.Dominate -> -200
     Effect.Impress -> -10

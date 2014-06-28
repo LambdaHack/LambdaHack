@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveFunctor, GeneralizedNewtypeDeriving #-}
 -- | Game time and speed.
 module Game.LambdaHack.Common.Time
   ( Time, timeZero, timeClip, timeTurn, timeEpsilon
@@ -25,10 +25,7 @@ newtype Time = Time Int64
 -- | One-dimentional vectors. Introduced to tell apart the 2 uses of Time:
 -- as an absolute game time and as an increment.
 newtype Delta a = Delta a
-  deriving (Show, Eq, Ord, Enum, Bounded, Binary)
-
-instance Functor Delta where
-  fmap f (Delta a) = Delta (f a)
+  deriving (Show, Eq, Ord, Enum, Bounded, Binary, Functor)
 
 -- | Start of the game time, or zero lenght time interval.
 timeZero :: Time

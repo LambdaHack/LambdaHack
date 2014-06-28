@@ -10,6 +10,7 @@ import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import Data.Int (Int64)
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
@@ -319,16 +320,16 @@ addActor groupName bfid pos lid tweakBody bpronoun time iis = do
         Just ItemDisco{itemKind} -> itemKind
         Nothing -> assert `failure` trunkFull
   -- Initial HP and Calm is based only on trunk and ignores organs.
-  let hp = sumSlotNoFilter Effect.EqpSlotAddMaxHP [trunkFull] `div` 2
-      calm = sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull]
+  let hp = xM (sumSlotNoFilter Effect.EqpSlotAddMaxHP [trunkFull]) `div` 2
+      calm = xM (sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull])
   -- Create actor.
   fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   nU <- nUI
   -- If no UI factions, the difficulty applies to heroes (for testing).
   let diffHP | playerUI gplayer || nU == 0 && isHeroFact cops fact =
-        (ceiling :: Double -> Int) $ fromIntegral hp
-                                     * 1.5 ^^ difficultyCoeff sdifficultySer
+        (ceiling :: Double -> Int64) $ fromIntegral hp
+                                       * 1.5 ^^ difficultyCoeff sdifficultySer
              | otherwise = hp
       bsymbol = jsymbol itemBase
       bname = jname itemBase

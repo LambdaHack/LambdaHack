@@ -360,8 +360,7 @@ hinders condLightBetrays body activeItems itemFull =
                                                itemFull)))
   -- Distressed actors want to hide in the dark.
   || (let heavilyDistressed =  -- actor hit by a proj or similarly distressed
-            resCurrentTurn (bcalmDelta body) < -1
-            || resPreviousTurn (bcalmDelta body) < -1
+            deltaSerious (bcalmDelta body)
       in condLightBetrays && heavilyDistressed
          && isJust (strengthFromEqpSlot Effect.EqpSlotAddLight itemFull))
   -- TODO:
@@ -414,10 +413,11 @@ meleeBlocker aid = do
                  || EM.findWithDefault 0 AbDisplace actorSk <= 0  -- not disp.
                     && not (playerLeader $ gplayer fact)  -- not restrained
                     && EM.findWithDefault 0 AbMove actorSk > 0  -- blocked move
-                    && bhp body2 < bhp b) then do -- respect power
-            mel <- pickWeaponClient aid aid2
-            return $! liftFrequency $ uniformFreq "melee in the way" mel
-          else return reject
+                    && bhp body2 < bhp b)  -- respect power
+            then do
+              mel <- pickWeaponClient aid aid2
+              return $! liftFrequency $ uniformFreq "melee in the way" mel
+            else return reject
         Nothing -> return reject
     _ -> return reject  -- probably no path to the enemy, if any
 

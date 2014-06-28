@@ -168,7 +168,7 @@ dominateFid fid target = do
   deduceKilled tb
   ais <- getsState $ getCarriedAssocs tb
   execUpdAtomic $ UpdLoseActor target tb ais
-  let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
+  let calmMax = xM $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
       bNew = tb { bfid = fid
                 , boldfid = bfid tb
                 , bcalm = calmMax `div` 2 }

@@ -9,6 +9,7 @@ import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import Data.Int (Int64)
 import Data.List
 import Data.Maybe
 
@@ -209,7 +210,7 @@ updAgeActor aid delta = assert (delta /= Delta timeZero) $ do
   let newBody = body {btime = timeShift (btime body) delta}
   updCreateActor aid newBody ais
 
-updRefillHP :: MonadStateWrite m => ActorId -> Int -> m ()
+updRefillHP :: MonadStateWrite m => ActorId -> Int64 -> m ()
 updRefillHP aid n =
   updateActor aid $ \b ->
     b { bhp = bhp b + n
@@ -220,7 +221,7 @@ updRefillHP aid n =
                       else oldD {resCurrentTurn = resCurrentTurn oldD + n}
       }
 
-updRefillCalm :: MonadStateWrite m => ActorId -> Int -> m ()
+updRefillCalm :: MonadStateWrite m => ActorId -> Int64 -> m ()
 updRefillCalm aid n =
   updateActor aid $ \b ->
     b { bcalm = max 0 $ bcalm b + n

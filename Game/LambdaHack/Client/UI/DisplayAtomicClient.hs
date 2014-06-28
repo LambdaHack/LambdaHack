@@ -110,11 +110,11 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
       b <- getsState $ getActorBody aid
       activeItems <- activeItemsClient aid
       let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
-      when (bhp b == hpMax) $ do
+      when (bhp b == xM hpMax) $ do
         actorVerbMU aid b "recover your health fully"
         stopPlayBack
   UpdRefillCalm aid calmDelta ->
-    when (calmDelta == -1) $ do  -- lower deltas come from hits and are obvious
+    when (calmDelta == minusM) $ do  -- lower deltas come from hits; obvious
       side <- getsClient sside
       b <- getsState $ getActorBody aid
       when (bfid b == side) $ do
@@ -484,8 +484,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                                    || bhp b < p)
           (deadBefore, verbDie) =
             case effect of
-              Effect.Hurt _ p | deadPreviousTurn p -> (True, hurtExtra)
-              Effect.RefillHP p | deadPreviousTurn p -> (True, hurtExtra)
+              Effect.Hurt _ p | deadPreviousTurn (xM p) -> (True, hurtExtra)
+              Effect.RefillHP p | deadPreviousTurn (xM p) -> (True, hurtExtra)
               _ -> (False, firstFall)
           msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
       msgAdd msgDie

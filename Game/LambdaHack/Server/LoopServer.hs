@@ -361,7 +361,7 @@ setTrajectory aid = do
   lvl <- getLevel $ blid b
   let clearTrajectory speed = do
         -- Lose HP due to bumping into an obstacle.
-        execUpdAtomic $ UpdRefillHP aid (-1)
+        execUpdAtomic $ UpdRefillHP aid minusM
         execUpdAtomic $ UpdTrajectory aid
                                       (btrajectory b)
                                       (Just ([], speed))

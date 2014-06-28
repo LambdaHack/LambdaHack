@@ -18,6 +18,7 @@ module Game.LambdaHack.Atomic.CmdAtomic
   ) where
 
 import Data.Binary
+import Data.Int (Int64)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
@@ -65,8 +66,8 @@ data UpdAtomic =
   | UpdMoveItem !ItemId !Int !ActorId !CStore !CStore
   -- Change actor attributes.
   | UpdAgeActor !ActorId !(Delta Time)
-  | UpdRefillHP !ActorId !Int
-  | UpdRefillCalm !ActorId !Int
+  | UpdRefillHP !ActorId !Int64
+  | UpdRefillCalm !ActorId !Int64
   | UpdOldFidActor !ActorId !FactionId !FactionId
   | UpdTrajectory !ActorId
                        !(Maybe ([Vector], Speed))

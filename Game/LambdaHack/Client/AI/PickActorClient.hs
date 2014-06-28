@@ -80,8 +80,7 @@ pickActorToMove refreshTarget oldAid = do
                 condCanFlee = not (null fleeL || condFastThreatAdj)
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
-                  resCurrentTurn (bcalmDelta body) < -1
-                  || resPreviousTurn (bcalmDelta body) < -1
+                  deltaSerious (bcalmDelta body)
             return $! if condThreatAdj
                       then condMeleeBad && condCanFlee
                       else heavilyDistressed
@@ -91,9 +90,7 @@ pickActorToMove refreshTarget oldAid = do
           actorHearning ((_aid, b), _) = do
             allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
             let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
-                mildlyDistressed =
-                  resCurrentTurn (bcalmDelta b) == -1
-                  || resPreviousTurn (bcalmDelta b) == -1
+                mildlyDistressed = deltaMild (bcalmDelta b)
             return $! mildlyDistressed  -- e.g., actor hears an enemy
                       && null closeFoes  -- the enemy not visible; a trap!
           -- AI has to be prudent and not lightly waste leader for meleeing,
@@ -130,7 +127,7 @@ pickActorToMove refreshTarget oldAid = do
             if targetTEnemy our then
               -- TODO: take weapon, walk and fight speed, etc. into account
               ( d + if targetBlocked our then 2 else 0  -- possible delay, hacky
-              , - 10 * (bhp b `div` 10)
+              , - 10 * (fromIntegral $ bhp b `div` (10 * 1000000))
               , aid /= oldAid )
             else
               -- Keep proper formation, not too dense, not to sparse.

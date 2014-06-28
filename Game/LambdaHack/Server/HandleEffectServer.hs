@@ -171,7 +171,7 @@ effectRefillHP execSfx power source target = do
   tb <- getsState $ getActorBody target
   activeItems <- activeItemsServer target
   let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
-      deltaHP = min power (max 0 $ hpMax - bhp tb)
+      deltaHP = min (xM power) (max 0 $ xM hpMax - bhp tb)
   if deltaHP == 0
     then return False
     else do
@@ -189,10 +189,10 @@ halveCalm target = do
       calmUpperBound = if hpTooLow tb activeItems
                        then 0  -- to trigger domination, etc.
                        else calmMax `div` 2
-      deltaCalm = min (-2) (calmUpperBound - bcalm tb)
-  -- HP loss decreases Calm by at least 2, to overcome Calm regen,
+      deltaCalm = min minusTwoM (xM calmUpperBound - bcalm tb)
+  -- HP loss decreases Calm by at least minusTwoM, to overcome Calm regen,
   -- when far from shooting foe and to avoid "hears something",
-  -- which is emitted for decrease -1.
+  -- which is emitted for decrease minusM.
   execUpdAtomic $ UpdRefillCalm target deltaCalm
 
 -- ** Hurt
@@ -210,7 +210,7 @@ effectHurt nDm power source target = do
       deltaHP = min (-1)  -- at least 1 HP taken
                     (mult * (n + power) `divUp` (100 * 100))
   -- Damage the target.
-  execUpdAtomic $ UpdRefillHP target deltaHP
+  execUpdAtomic $ UpdRefillHP target (xM deltaHP)
   when (source /= target) $ halveCalm target
   execSfxAtomic $ SfxEffect (bfid sb) target $
     if source == target
@@ -240,7 +240,7 @@ effectRefillCalm execSfx power target = do
   tb <- getsState $ getActorBody target
   activeItems <- activeItemsServer target
   let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
-      deltaCalm = min power (max 0 $ calmMax - bcalm tb)
+      deltaCalm = min (xM power) (max 0 $ xM calmMax - bcalm tb)
   if deltaCalm == 0
     then return False
     else do
@@ -291,11 +291,11 @@ effectCallFriend power source target = assert (power > 0) $ do
   activeItems <- activeItemsServer source
   let legal = source == target
               && hpEnough sb activeItems
-              && bhp sb >= 10  -- prevent spam from regenerating wimps
+              && bhp sb >= xM 10  -- prevent spam from regenerating wimps
   if not legal then return False
   else do
     let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
-        deltaHP = hpMax `div` 3
+        deltaHP = xM $ hpMax `div` 3
     execUpdAtomic $ UpdRefillHP source deltaHP
     let validTile t = not $ Tile.hasFeature cotile F.NoActor t
         lid = blid sb
@@ -315,11 +315,11 @@ effectSummon power source target = assert (power > 0) $ do
   activeItems <- activeItemsServer source
   let legal = source == target
               && calmEnough sb activeItems
-              && bcalm sb >= 10
+              && bcalm sb >= xM 10
   if not legal then return False
   else do
     let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
-        deltaCalm = calmMax `div` 3
+        deltaCalm = xM $ calmMax `div` 3
     execUpdAtomic $ UpdRefillCalm source deltaCalm
     let validTile t = not $ Tile.hasFeature cotile F.NoActor t
     ps <- getsState $ nearbyFreePoints validTile (bpos sb) (blid sb)
