@@ -493,7 +493,7 @@ ranged aid = do
   seps <- getsClient seps
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
-      actorBlind <- radiusBlind <$> sumBodyEqpClient Effect.EqpSlotAddSight aid
+      actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
       mnewEps <- makeLine b fpos seps
       case mnewEps of
         Just newEps | not actorBlind  -- ProjectBlind
@@ -502,7 +502,7 @@ ranged aid = do
           -- and no actors or obstracles along the path.
           benList <- benAvailableItems aid permittedRanged
           let coeff CGround = 2
-              coeff CBody = 3  -- can't give to others
+              coeff COrgan = 3  -- can't give to others
               coeff CEqp = 1
               coeff CInv = 1
               coeff CSha = undefined  -- banned
@@ -534,7 +534,7 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
-  actorBlind <- radiusBlind <$> sumBodyEqpClient Effect.EqpSlotAddSight aid
+  actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
   let permitted itemFull@ItemFull{itemBase=item} =
         not (unknownPrecious itemFull)
         && if jsymbol item == '?' && actorBlind
@@ -551,7 +551,7 @@ applyItem aid applyGroup = do
             _ -> False
         ApplyAll -> True
       coeff CGround = 2
-      coeff CBody = 3  -- can't give to others
+      coeff COrgan = 3  -- can't give to others
       coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = undefined  -- banned

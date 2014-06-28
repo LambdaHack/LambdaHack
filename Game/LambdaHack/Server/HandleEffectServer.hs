@@ -222,8 +222,8 @@ armorHurtBonus :: (MonadAtomic m, MonadServer m)
                => ActorId -> ActorId
                -> m Int
 armorHurtBonus source target = do
-  sallItems <- map snd <$> fullAssocsServer source [CEqp, CBody]
-  tallItems <- map snd <$> fullAssocsServer target [CEqp, CBody]
+  sallItems <- map snd <$> fullAssocsServer source [CEqp, COrgan]
+  tallItems <- map snd <$> fullAssocsServer target [CEqp, COrgan]
   sb <- getsState $ getActorBody source
   let raw = if bproj sb
             then sumSlotNoFilter Effect.EqpSlotAddHurtRanged sallItems
@@ -630,7 +630,7 @@ effectSendFlying execSfx Effect.ThrowMod{..} source target modePush = do
         then return False  -- supported by a wall
         else do
           let -- TODO: add weight field to actor, unless we just
-              -- sum weigths of all body parts
+              -- sum weigths of all organs
               weight = 70000  -- 70 kg
               path = bpos tb : pos : rest
               ts = computeTrajectory weight throwVelocity throwLinger path

@@ -34,7 +34,7 @@ import Game.LambdaHack.Common.Vector
 -- they are usually modified temporarily, but tend to return
 -- to the original value from @ActorKind@ over time. E.g., HP.
 data Actor = Actor
-  { -- * The trunk of the actor's body (present also in @bbody@)
+  { -- * The trunk of the actor's body (present also in @borgan@)
     btrunk      :: !ItemId
     -- * Presentation
   , bsymbol     :: !Char                 -- ^ individual map symbol
@@ -57,7 +57,7 @@ data Actor = Actor
   , btrajectory :: !(Maybe ([Vector], Speed))  -- ^ trajectory the actor must
                                                --   travel and his travel speed
     -- * Items
-  , bbody       :: !ItemBag              -- ^ body parts
+  , borgan      :: !ItemBag              -- ^ organs
   , beqp        :: !ItemBag              -- ^ personal equipment
   , binv        :: !ItemBag              -- ^ personal inventory
     -- * Assorted
@@ -110,7 +110,7 @@ actorTemplate btrunk bsymbol bname bpronoun bcolor bhp bcalm
       boldlid = blid
       beqp    = EM.empty
       binv    = EM.empty
-      bbody   = EM.empty
+      borgan  = EM.empty
       bwait   = False
       boldfid = bfid
       bhpDelta = ResDelta 0 0
@@ -171,13 +171,13 @@ checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)
 
 mapActorItems_ :: Monad m => (ItemId -> Int -> m a) -> Actor -> m ()
-mapActorItems_ f Actor{binv, beqp, bbody} = do
-  let is = EM.assocs beqp ++ EM.assocs binv ++ EM.assocs bbody
+mapActorItems_ f Actor{binv, beqp, borgan} = do
+  let is = EM.assocs beqp ++ EM.assocs binv ++ EM.assocs borgan
   mapM_ (uncurry f) is
 
 ppCStore :: CStore -> Text
 ppCStore CGround = "on the ground"
-ppCStore CBody = "in the body"
+ppCStore COrgan = "among organs"
 ppCStore CEqp = "in equipment"
 ppCStore CInv = "in inventory"
 ppCStore CSha = "in shared stash"
@@ -205,7 +205,7 @@ instance Binary Actor where
     put boldlid
     put binv
     put beqp
-    put bbody
+    put borgan
     put btime
     put bwait
     put bfid
@@ -228,7 +228,7 @@ instance Binary Actor where
     boldlid <- get
     binv <- get
     beqp <- get
-    bbody <- get
+    borgan <- get
     btime <- get
     bwait <- get
     bfid <- get

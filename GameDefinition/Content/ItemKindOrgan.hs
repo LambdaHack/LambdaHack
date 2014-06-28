@@ -1,5 +1,5 @@
--- | Body part definitions.
-module Content.ItemKindBodyPart ( bodyParts ) where
+-- | Organ definitions.
+module Content.ItemKindOrgan ( organs ) where
 
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Dice
@@ -8,8 +8,8 @@ import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.ItemKind
 
-bodyParts :: [ItemKind]
-bodyParts =
+organs :: [ItemKind]
+organs =
   [fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn]
 
 fist,    foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn :: ItemKind

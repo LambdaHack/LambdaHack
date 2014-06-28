@@ -246,7 +246,7 @@ executable LambdaHack
                       Content.FactionKind,
                       Content.ItemKind,
                       Content.ItemKindActor,
-                      Content.ItemKindBodyPart,
+                      Content.ItemKindOrgan,
                       Content.ItemKindShrapnel,
                       Content.ModeKind,
                       Content.PlaceKind,

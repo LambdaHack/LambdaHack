@@ -49,7 +49,7 @@ textAllAE fullInfo cstore itemFull@ItemFull{itemBase, itemDisco} =
               , map effectToSuffix jeffects )
             Nothing -> ( map kindAspectToSuffix $ iaspects itemKind
                        , map kindEffectToSuffix $ ieffects itemKind )
-          active = cstore `elem` [CEqp, CBody]
+          active = cstore `elem` [CEqp, COrgan]
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
           periodic = isJust
                      $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull

@@ -4,7 +4,7 @@ module Content.ItemKind ( cdefs ) where
 import Data.List
 
 import Content.ItemKindActor
-import Content.ItemKindBodyPart
+import Content.ItemKindOrgan
 import Content.ItemKindShrapnel
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
@@ -19,7 +19,7 @@ cdefs = ContentDef
   , getName = iname
   , getFreq = ifreq
   , validate = validateItemKind
-  , content = items ++ bodyParts ++ shrapnels ++ actors
+  , content = items ++ organs ++ shrapnels ++ actors
   }
 
 items :: [ItemKind]

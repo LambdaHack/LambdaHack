@@ -29,7 +29,7 @@ warrior = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("fist", CBody), ("foot", CBody), ("eye 4", CBody)]
+  , ikit     = [("fist", COrgan), ("foot", COrgan), ("eye 4", COrgan)]
   }
 adventurer = warrior
   { iname    = "adventurer" }
@@ -78,7 +78,7 @@ eye = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("lash", CBody), ("pupil", CBody)]
+  , ikit     = [("lash", COrgan), ("pupil", COrgan)]
   }
 fastEye = ItemKind
   { isymbol  = 'e'
@@ -93,8 +93,8 @@ fastEye = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("lash", CBody), ("tentacle", CBody), ("tentacle", CBody)
-               , ("speed gland 5", CBody), ("pupil", CBody) ]
+  , ikit     = [ ("lash", COrgan), ("tentacle", COrgan), ("tentacle", COrgan)
+               , ("speed gland 5", COrgan), ("pupil", COrgan) ]
   }
 nose = ItemKind
   { isymbol  = 'n'
@@ -109,7 +109,7 @@ nose = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("nose tip", CBody), ("lip", CBody)]
+  , ikit     = [("nose tip", COrgan), ("lip", COrgan)]
   }
 elbow = ItemKind
   { isymbol  = 'e'
@@ -125,7 +125,7 @@ elbow = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("armored skin", CBody), ("speed gland 2", CBody)
+  , ikit     = [ ("armored skin", COrgan), ("speed gland 2", COrgan)
                , ("any scroll", CInv), ("any scroll", CInv)
                , ("any scroll", CInv)
                , ("any arrow", CInv), ("any arrow", CInv), ("any arrow", CInv) ]
@@ -145,8 +145,8 @@ armadillo = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("claw", CBody), ("snout", CBody), ("armored skin", CBody)
-               , ("nostril", CBody) ]
+  , ikit     = [ ("claw", COrgan), ("snout", COrgan), ("armored skin", COrgan)
+               , ("nostril", COrgan) ]
   }
 gilaMonster = ItemKind
   { isymbol  = 'g'
@@ -162,8 +162,8 @@ gilaMonster = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("venom tooth", CBody), ("small claw", CBody)
-               , ("eye 4", CBody), ("nostril", CBody) ]
+  , ikit     = [ ("venom tooth", COrgan), ("small claw", COrgan)
+               , ("eye 4", COrgan), ("nostril", COrgan) ]
   }
 komodoDragon = ItemKind  -- bad hearing
   { isymbol  = 'd'
@@ -178,9 +178,9 @@ komodoDragon = ItemKind  -- bad hearing
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("large tail", CBody), ("jaw", CBody), ("small claw", CBody)
-               , ("speed gland 2", CBody), ("armored skin", CBody)
-               , ("eye 2", CBody), ("nostril", CBody) ]
+  , ikit     = [ ("large tail", COrgan), ("jaw", COrgan), ("small claw", COrgan)
+               , ("speed gland 2", COrgan), ("armored skin", COrgan)
+               , ("eye 2", COrgan), ("nostril", COrgan) ]
   }
 hyena = ItemKind
   { isymbol  = 'h'
@@ -195,7 +195,7 @@ hyena = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("jaw", CBody), ("eye 4", CBody), ("nostril", CBody)]
+  , ikit     = [("jaw", COrgan), ("eye 4", COrgan), ("nostril", COrgan)]
   }
 alligator = ItemKind
   { isymbol  = 'a'
@@ -211,8 +211,8 @@ alligator = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [ ("large jaw", CBody), ("large tail", CBody), ("claw", CBody)
-               , ("armored skin", CBody), ("eye 4", CBody) ]
+  , ikit     = [ ("large jaw", COrgan), ("large tail", COrgan), ("claw", COrgan)
+               , ("armored skin", COrgan), ("eye 4", COrgan) ]
   }
 thornbush = ItemKind
   { isymbol  = 't'
@@ -230,5 +230,5 @@ thornbush = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("thorn", CBody)]
+  , ikit     = [("thorn", COrgan)]
   }

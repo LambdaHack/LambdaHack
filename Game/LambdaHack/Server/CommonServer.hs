@@ -3,7 +3,7 @@
 module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, deduceQuits, deduceKilled, electLeader, addActor
-  , projectFail, pickWeaponServer, sumBodyEqpServer
+  , projectFail, pickWeaponServer, sumOrganEqpServer
   ) where
 
 import Control.Applicative
@@ -240,7 +240,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
         else do
           mab <- getsState $ posToActor pos lid
           actorBlind <- radiusBlind
-                        <$> sumBodyEqpServer Effect.EqpSlotAddSight source
+                        <$> sumOrganEqpServer Effect.EqpSlotAddSight source
           activeItems <- activeItemsServer source
           if not $ maybe True (bproj . snd . fst) mab
             then if isShrapnel && bproj sb then do
@@ -280,7 +280,7 @@ projectBla source pos rest iid cstore isShrapnel = do
 
 -- | Create a projectile actor containing the given missile.
 --
--- Projectile has no body parts except for the trunk.
+-- Projectile has no organs except for the trunk.
 addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
               -> m ()
@@ -318,7 +318,7 @@ addActor groupName bfid pos lid tweakBody bpronoun time iis = do
   let trunkKind = case itemDisco of
         Just ItemDisco{itemKind} -> itemKind
         Nothing -> assert `failure` trunkFull
-  -- Initial HP and Calm is based only on trunk and ignores body parts.
+  -- Initial HP and Calm is based only on trunk and ignores organs.
   let hp = sumSlotNoFilter Effect.EqpSlotAddMaxHP [trunkFull] `div` 2
       calm = sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull]
   -- Create actor.
@@ -335,8 +335,8 @@ addActor groupName bfid pos lid tweakBody bpronoun time iis = do
       bcolor = flavourToColor $ jflavour itemBase
       b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
                         pos lid time bfid
-      -- Insert the trunk as the actor's body part.
-      btrunk = b {bbody = EM.singleton trunkId itemK}
+      -- Insert the trunk as the actor's organ.
+      btrunk = b {borgan = EM.singleton trunkId itemK}
   execUpdAtomic $ UpdCreateActor aid (tweakBody btrunk)
                                  (iis ++ [(trunkId, itemBase)])
   -- Create, register and insert all initial actor items.
@@ -354,7 +354,7 @@ pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
 pickWeaponServer source = do
   sb <- getsState $ getActorBody source
   eqpAssocs <- fullAssocsServer source [CEqp]
-  bodyAssocs <- fullAssocsServer source [CBody]
+  bodyAssocs <- fullAssocsServer source [COrgan]
   -- For projectiles we need to accept even items without any effect,
   -- so that the projectile dissapears and NoEffect feedback is produced.
   let allAssocs = eqpAssocs ++ bodyAssocs
@@ -367,11 +367,11 @@ pickWeaponServer source = do
       let is = map snd iis
       -- TODO: pick the item according to the frequency of its kind.
       (iid, _) <- rndToAction $ oneOf is
-      let cstore = if isJust (lookup iid bodyAssocs) then CBody else CEqp
+      let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $ Just (iid, cstore)
 
-sumBodyEqpServer :: MonadServer m
+sumOrganEqpServer :: MonadServer m
                  => Effect.EqpSlot -> ActorId -> m Int
-sumBodyEqpServer eqpSlot aid = do
+sumOrganEqpServer eqpSlot aid = do
   activeAssocs <- activeItemsServer aid
   return $! sumSlotNoFilter eqpSlot activeAssocs

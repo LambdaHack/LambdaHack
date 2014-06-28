@@ -175,7 +175,7 @@ activatePeriodicLevel lid = do
                       void $ itemEffect aid aid iid itemFull False
             -- periodic activation doesn't destroy items, even non-Durable
       activatePeriodicActor aid = do
-        allItems <- fullAssocsServer aid [CBody, CEqp]
+        allItems <- fullAssocsServer aid [COrgan, CEqp]
         mapM_ (activatePeriodicItem aid) allItems
   allActors <- getsState $ actorRegularAssocs (const True) lid
   mapM_ (\(aid, _) -> activatePeriodicActor aid) allActors

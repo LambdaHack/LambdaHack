@@ -295,7 +295,7 @@ drawLeaderDamage width = do
                    (T.unpack t)
   stats <- case mleader of
     Just leader -> do
-      allAssocs <- fullAssocsClient leader [CEqp, CBody]
+      allAssocs <- fullAssocsClient leader [CEqp, COrgan]
       let damage = case strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
             (_, (_, itemFull)) : _->
               let getP :: Effect.Effect a -> Maybe (Dice.Dice, a)

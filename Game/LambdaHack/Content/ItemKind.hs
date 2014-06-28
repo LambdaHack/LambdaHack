@@ -1,4 +1,4 @@
--- | The type of kinds of weapons, treasure, body parts, shrapnel and actors.
+-- | The type of kinds of weapons, treasure, organs, shrapnel and actors.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), toVelocity, toLinger, validateItemKind
   ) where
@@ -27,7 +27,7 @@ data ItemKind = ItemKind
                                    -- ^ cause the effect when triggered
   , ifeature :: ![Effect.Feature]  -- ^ public properties
   , idesc    :: !Text              -- ^ description
-  , ikit     :: ![(Text, CStore)]  -- ^ accompanying body parts and items
+  , ikit     :: ![(Text, CStore)]  -- ^ accompanying organs and items
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

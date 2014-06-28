@@ -115,7 +115,7 @@ addSmell aid = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  smellRadius <- sumBodyEqpServer Effect.EqpSlotAddSmell aid
+  smellRadius <- sumOrganEqpServer Effect.EqpSlotAddSmell aid
   unless (bproj b || not (isHeroFact cops fact) || smellRadius > 0) $ do
     time <- getsState $ getLocalTime $ blid b
     lvl <- getLevel $ blid b

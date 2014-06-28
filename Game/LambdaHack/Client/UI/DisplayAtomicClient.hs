@@ -637,9 +637,9 @@ strike source target iid hitStatus = assert (source /= target) $ do
       verb = case itemDisco itemFull of
         Nothing -> "hit"  -- not identified
         Just ItemDisco{itemKind} -> iverbHit itemKind
-      isBodyPart = iid `EM.member` bbody sb
-      partItemChoice = if isBodyPart
-                       then partItemWownW spronoun CBody
+      isOrgan = iid `EM.member` borgan sb
+      partItemChoice = if isOrgan
+                       then partItemWownW spronoun COrgan
                        else partItemAW CEqp
       msg HitClear = makeSentence $
         [MU.SubjectVerbSg spart verb, tpart]

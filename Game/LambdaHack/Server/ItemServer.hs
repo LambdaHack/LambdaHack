@@ -112,7 +112,7 @@ fullAssocsServer aid cstores = do
 
 activeItemsServer :: MonadServer m => ActorId -> m [ItemFull]
 activeItemsServer aid = do
-  activeAssocs <- fullAssocsServer aid [CEqp, CBody]
+  activeAssocs <- fullAssocsServer aid [CEqp, COrgan]
   return $! map snd activeAssocs
 
 itemToFullServer :: MonadServer m => m (ItemId -> Int -> ItemFull)

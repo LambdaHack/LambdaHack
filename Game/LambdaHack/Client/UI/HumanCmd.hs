@@ -123,7 +123,7 @@ cmdDescription cmd = case cmd of
   MemberCycle -> "cycle among party members on the level"
   MemberBack  -> "cycle among party members in the dungeon"
   DescribeItem CGround -> "describe items on the ground"
-  DescribeItem CBody -> "describe body parts"
+  DescribeItem COrgan -> "describe organs"
   DescribeItem CEqp -> "describe equipment of the leader"
   DescribeItem CInv -> "describe backpack inventory of the leader"
   DescribeItem CSha -> "describe the shared party stash"

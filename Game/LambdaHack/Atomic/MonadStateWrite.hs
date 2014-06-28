@@ -75,7 +75,7 @@ insertItemActor iid k aid cstore = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
     insertItemFloor iid k (blid b) (bpos b)
-  CBody -> insertItemBody iid k aid
+  COrgan -> insertItemBody iid k aid
   CEqp -> insertItemEqp iid k aid
   CInv -> insertItemInv iid k aid
   CSha -> do
@@ -87,7 +87,7 @@ insertItemBody :: MonadStateWrite m
 insertItemBody iid k aid = do
   let bag = EM.singleton iid k
       upd = EM.unionWith (+) bag
-  updateActor aid $ \b -> b {bbody = upd (bbody b)}
+  updateActor aid $ \b -> b {borgan = upd (borgan b)}
 
 insertItemEqp :: MonadStateWrite m
               => ItemId -> Int -> ActorId -> m ()
@@ -133,7 +133,7 @@ deleteItemActor iid k aid cstore = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
     deleteItemFloor iid k (blid b) (bpos b)
-  CBody -> deleteItemBody iid k aid
+  COrgan -> deleteItemBody iid k aid
   CEqp -> deleteItemEqp iid k aid
   CInv -> deleteItemInv iid k aid
   CSha -> do
@@ -142,7 +142,7 @@ deleteItemActor iid k aid cstore = case cstore of
 
 deleteItemBody :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
 deleteItemBody iid k aid = do
-  updateActor aid $ \b -> b {bbody = rmFromBag k iid (bbody b) }
+  updateActor aid $ \b -> b {borgan = rmFromBag k iid (borgan b) }
 
 deleteItemEqp :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
 deleteItemEqp iid k aid = do

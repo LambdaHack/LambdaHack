@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
   , actorSkills, updateItemSlot, fullAssocsClient, activeItemsClient
-  , itemToFullClient, pickWeaponClient, sumBodyEqpClient
+  , itemToFullClient, pickWeaponClient, sumOrganEqpClient
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -203,7 +203,7 @@ fullAssocsClient aid cstores = do
 
 activeItemsClient :: MonadClient m => ActorId -> m [ItemFull]
 activeItemsClient aid = do
-  activeAssocs <- fullAssocsClient aid [CEqp, CBody]
+  activeAssocs <- fullAssocsClient aid [CEqp, COrgan]
   return $! map snd activeAssocs
 
 itemToFullClient :: MonadClient m => m (ItemId -> Int -> ItemFull)
@@ -221,7 +221,7 @@ pickWeaponClient :: MonadClient m
                  => ActorId -> ActorId -> m [RequestTimed AbMelee]
 pickWeaponClient source target = do
   eqpAssocs <- fullAssocsClient source [CEqp]
-  bodyAssocs <- fullAssocsClient source [CBody]
+  bodyAssocs <- fullAssocsClient source [COrgan]
   let allAssocs = eqpAssocs ++ bodyAssocs
   case filter (not . unknownPrecious . snd . snd)
        $ strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
@@ -230,12 +230,12 @@ pickWeaponClient source target = do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
       -- TODO: pick the item according to the frequency of its kind.
       (iid, _) <- rndToAction $ oneOf maxIis
-      -- Prefer CBody, to hint the player to trash the equivalent CEqp item.
-      let cstore = if isJust (lookup iid bodyAssocs) then CBody else CEqp
+      -- Prefer COrgan, to hint the player to trash the equivalent CEqp item.
+      let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $! [ReqMelee target iid cstore]
 
-sumBodyEqpClient :: MonadClient m
+sumOrganEqpClient :: MonadClient m
                  => Effect.EqpSlot -> ActorId -> m Int
-sumBodyEqpClient eqpSlot aid = do
+sumOrganEqpClient eqpSlot aid = do
   activeItems <- activeItemsClient aid
   return $! sumSlotNoFilter eqpSlot activeItems

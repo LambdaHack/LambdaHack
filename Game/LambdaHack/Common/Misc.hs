@@ -62,7 +62,7 @@ instance Binary Container
 
 data CStore =
     CGround
-  | CBody
+  | COrgan
   | CEqp
   | CInv
   | CSha

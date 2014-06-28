@@ -109,7 +109,7 @@ posToActors pos lid s =
       g (aid, b) = ( (aid, b)
                    , bagAssocs s (binv b)
                      ++ bagAssocs s (beqp b)
-                     ++ bagAssocs s (bbody b) )
+                     ++ bagAssocs s (borgan b) )
       l = map g aps
   in assert (length l <= 1 || all (bproj . snd . fst) l
              `blame` "many actors at the same position" `twith` l)
@@ -213,7 +213,7 @@ getActorBody aid s =
 
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =
-  bagAssocs s $ EM.unionsWith (const) [binv b, beqp b, bbody b]
+  bagAssocs s $ EM.unionsWith (const) [binv b, beqp b, borgan b]
 
 getCBag :: Container -> State -> ItemBag
 getCBag c s = case c of
@@ -230,7 +230,7 @@ getBodyActorBag :: Actor -> CStore -> State -> ItemBag
 getBodyActorBag b cstore s =
   case cstore of
     CGround -> sdungeon s EM.! blid b `atI` bpos b
-    CBody -> bbody b
+    COrgan -> borgan b
     CEqp -> beqp b
     CInv -> binv b
     CSha -> gsha $ sfactionD s EM.! bfid b

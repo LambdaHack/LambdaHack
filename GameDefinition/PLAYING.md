@@ -226,7 +226,7 @@ sometimes brutally colliding by accident.
 
 When the hero bumps into a monster or a monster attacks the hero,
 melee combat occurs. The best weapon equipped by each opponent
-is taken into account, as well as their body parts, for calculating damage.
+is taken into account, as well as their organs, for calculating damage.
 The damage the current hero can potentially inflict is displayed
 at the bottom of the screen. The damage potential of a monster may change
 as it finds and picks up new weapons, if it's capable of that.
