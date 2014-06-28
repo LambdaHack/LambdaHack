@@ -255,8 +255,8 @@ potion3 = potion  -- TODO: a bit boring
   , ieffects = [RefillHP (-5), OnSmash (Explode "wounding mist")]
   }
 potion4 = potion
-  { ieffects = [ PushActor (ThrowMod 200 75)
-               , Explode "explosion blast 10"
+  { ieffects = [ Explode "explosion blast 10"
+               , PushActor (ThrowMod 200 75)
                , OnSmash (Explode "explosion blast 10") ]
   }
 ring = ItemKind

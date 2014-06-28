@@ -745,6 +745,7 @@ effectExplode execSfx cgroup target = do
           case mfail of
             Nothing -> return ()
             Just ProjectBlockTerrain -> return ()
+            Just ProjectBlockActor | not $ bproj tb -> return ()
             Just failMsg -> execFailure target req failMsg
   -- All shrapnels bounce off obstacles many times before they destruct.
   forM_ [101..201] $ \k100 -> do

@@ -243,9 +243,9 @@ projectFail source tpxy eps iid cstore isShrapnel = do
                         <$> sumBodyEqpServer Effect.EqpSlotAddSight source
           activeItems <- activeItemsServer source
           if not $ maybe True (bproj . snd . fst) mab
-            then if isShrapnel then do
+            then if isShrapnel && bproj sb then do
                    -- Hit the blocking actor.
-                   projectBla source spos (pos : rest) iid cstore
+                   projectBla source spos (pos:rest) iid cstore isShrapnel
                    return Nothing
                  else return $ Just ProjectBlockActor
             else if not (isShrapnel || calmEnough sb activeItems) then
@@ -253,11 +253,11 @@ projectFail source tpxy eps iid cstore isShrapnel = do
                  else if actorBlind && not (bproj sb) then
                    return $ Just ProjectBlind
                  else do
-                   if isShrapnel && eps `mod` 2 == 0 then
+                   if isShrapnel && bproj sb && eps `mod` 2 == 0 then
                      -- Make the explosion a bit less regular.
-                     projectBla source spos (pos:rest) iid cstore
+                     projectBla source spos (pos:rest) iid cstore isShrapnel
                    else
-                     projectBla source pos rest iid cstore
+                     projectBla source pos rest iid cstore isShrapnel
                    return Nothing
 
 projectBla :: (MonadAtomic m, MonadServer m)
@@ -266,13 +266,14 @@ projectBla :: (MonadAtomic m, MonadServer m)
            -> [Point]    -- ^ rest of the trajectory of the projectile
            -> ItemId     -- ^ the item to be projected
            -> CStore     -- ^ whether the items comes from floor or inventory
+           -> Bool       -- ^ whether the item is a shrapnel
            -> m ()
-projectBla source pos rest iid cstore = do
+projectBla source pos rest iid cstore isShrapnel = do
   sb <- getsState $ getActorBody source
   item <- getsState $ getItemBody iid
   let lid = blid sb
       time = btime sb
-  unless (bproj sb) $ execSfxAtomic $ SfxProject source iid
+  unless isShrapnel $ execSfxAtomic $ SfxProject source iid
   addProjectile pos rest iid lid (bfid sb) time
   let c = CActor source cstore
   execUpdAtomic $ UpdLoseItem iid item 1 c
