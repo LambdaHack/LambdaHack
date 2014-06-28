@@ -160,7 +160,8 @@ transition :: forall m. MonadClientUI m
            -> ItemDialogState
            -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 transition _ _ _ verb [] iDS = assert `failure` (verb, iDS)
-transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
+transition psuit tshaSuit tsuitable verb
+           cLegal@(cCur:cRest) itemDialogState = do
   cops <- getsState scops
   (letterSlots, numberSlots) <- getsClient sslots
   leader <- getLeaderUI
@@ -172,30 +173,29 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
   itemToF <- itemToFullClient
   let getResult :: ItemId -> ((ItemId, ItemFull), Container)
       getResult iid = ((iid, itemToF iid (bag EM.! iid)), cCur)
-      bagLetterSlots = EM.filter (`EM.member` bag) letterSlots
+      filterP s iid _ = psuit (getItemBody iid s)
+  bagSuit <- getsState $ \s -> EM.filterWithKey (filterP s) bag
+  let bagLetterSlots = EM.filter (`EM.member` bag) letterSlots
       bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
-      filterP s iid = p (getItemBody iid s)
-  suitableLetterSlots <- getsState $ \s -> EM.filter (filterP s) bagLetterSlots
-  suitableNumberSlots <- getsState $ \s -> IM.filter (filterP s) bagNumberSlots
-  let keyDefs :: [(K.Key, DefItemKey m)]
+      suitableLetterSlots = EM.filter (`EM.member` bagSuit) letterSlots
+      keyDefs :: [(K.Key, DefItemKey m)]
       keyDefs = filter (defCond . snd)
         [ (K.Char '?', DefItemKey
            { defLabel = "?"
            , defCond = True
            , defAction = \_ -> case itemDialogState of
                INone ->
-                 if EM.null suitableLetterSlots && IM.null suitableNumberSlots
-                 then transition p tshaSuit tsuitable verb cLegal IAll
-                 else transition p tshaSuit tsuitable verb cLegal ISuitable
-               ISuitable | suitableLetterSlots /= bagLetterSlots
-                           || suitableNumberSlots /= bagNumberSlots ->
-                 transition p tshaSuit tsuitable verb cLegal IAll
-               _ -> transition p tshaSuit tsuitable verb cLegal INone
+                 if EM.null bagSuit
+                 then transition psuit tshaSuit tsuitable verb cLegal IAll
+                 else transition psuit tshaSuit tsuitable verb cLegal ISuitable
+               ISuitable | bag /= bagSuit ->
+                 transition psuit tshaSuit tsuitable verb cLegal IAll
+               _ -> transition psuit tshaSuit tsuitable verb cLegal INone
            })
         , (K.Char '/', DefItemKey
            { defLabel = "/"
            , defCond = length cLegal > 1
-           , defAction = \_ -> transition p tshaSuit tsuitable verb
+           , defAction = \_ -> transition psuit tshaSuit tsuitable verb
                                           (cRest ++ [cCur]) itemDialogState
            })
         , (K.Return,
@@ -234,7 +234,7 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
                      CActor _ cstore -> CActor newLeader cstore
                      _ -> c
                    newLegal = map newC cLegal
-               transition p tshaSuit tsuitable verb newLegal itemDialogState
+               transition psuit tshaSuit tsuitable verb newLegal itemDialogState
            })
         , (K.BackTab, DefItemKey
            { defLabel = "SHIFT-TAB"
@@ -247,7 +247,7 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
                      CActor _ cstore -> CActor newLeader cstore
                      _ -> c
                    newLegal = map newC cLegal
-               transition p tshaSuit tsuitable verb newLegal itemDialogState
+               transition psuit tshaSuit tsuitable verb newLegal itemDialogState
            })
         ]
       lettersDef :: DefItemKey m
@@ -265,18 +265,18 @@ transition p tshaSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
       tsuit = if storeFromC cCur == CSha
               then tshaSuit body activeItems
               else tsuitable body
-      (labelLetterSlots, overLetterSlots, overNumberSlots, prompt) =
+      (labelLetterSlots, bagFiltered, prompt) =
         case itemDialogState of
           INone     -> (suitableLetterSlots,
-                        EM.empty, IM.empty,
+                        EM.empty,
                         makePhrase ["What to", verb] <+> ppCur <> "?")
           ISuitable -> (suitableLetterSlots,
-                        suitableLetterSlots, suitableNumberSlots,
+                        bagSuit,
                         tsuit <+> ppCur <> ":")
           IAll      -> (bagLetterSlots,
-                        bagLetterSlots, bagNumberSlots,
+                        bag,
                         "Items" <+> ppCur <> ":")
-  io <- itemOverlay (storeFromC cCur) bag (overLetterSlots, overNumberSlots)
+  io <- itemOverlay (storeFromC cCur) bagFiltered
   runDefItemKey keyDefs lettersDef io labelLetterSlots prompt
 
 runDefItemKey :: MonadClientUI m

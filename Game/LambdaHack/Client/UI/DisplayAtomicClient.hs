@@ -405,10 +405,7 @@ quitFactionUI fid mbody toSt = do
       itemSlides <-
         if EM.null bag then return mempty
         else do
-          (letterSlots, numberSlots) <- getsClient sslots
-          let sl = EM.filter (`EM.member` bag) letterSlots
-              slN = IM.filter (`EM.member` bag) numberSlots
-          io <- itemOverlay CGround bag (sl, slN)
+          io <- itemOverlay CGround bag
           overlayToSlideshow itemMsg io
       -- Show score for any UI client, even though it is saved only
       -- for human UI clients.

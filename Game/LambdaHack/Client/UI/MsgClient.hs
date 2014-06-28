@@ -10,6 +10,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
+import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -118,12 +119,16 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   else return $! msg <+> isd
 
 -- | Create a list of item names.
-itemOverlay :: MonadClient m => CStore -> ItemBag -> ItemSlots -> m Overlay
-itemOverlay cstore bag (letterSlots, numberSlots) = do
+itemOverlay :: MonadClient m => CStore -> ItemBag -> m Overlay
+itemOverlay cstore bag = do
   itemToF <- itemToFullClient
-  let pr (l, iid) = makePhrase [ slotLabel l
-                               , let k = bag EM.! iid
-                                 in partItemWs k cstore (itemToF iid k) ]
-                    <> " "
-  return $! toOverlay $ map pr $ map (first Left) (EM.assocs letterSlots)
-                                 ++ (map (first Right) (IM.assocs numberSlots))
+  (letterSlots, numberSlots) <- getsClient sslots
+  let pr (l, iid) =
+        case EM.lookup iid bag of
+          Nothing -> Nothing
+          Just k -> Just $ makePhrase [ slotLabel l
+                                      , partItemWs k cstore (itemToF iid k) ]
+                           <> " "
+  return $! toOverlay $ mapMaybe pr
+    $ map (first Left) (EM.assocs letterSlots)
+      ++ (map (first Right) (IM.assocs numberSlots))
