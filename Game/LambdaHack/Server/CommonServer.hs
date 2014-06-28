@@ -250,7 +250,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
                  else return $ Just ProjectBlockActor
             else if not (isShrapnel || calmEnough sb activeItems) then
                    return $ Just ProjectNotCalm
-                 else if actorBlind && not (bproj sb) then
+                 else if actorBlind && not (isShrapnel || bproj sb) then
                    return $ Just ProjectBlind
                  else do
                    if isShrapnel && bproj sb && eps `mod` 2 == 0 then
