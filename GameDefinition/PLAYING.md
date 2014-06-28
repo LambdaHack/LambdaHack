@@ -32,7 +32,8 @@ which in its most complex form may look as follows.
 
 The line starts with the list of party members (unless only one member
 resides on the currently displayed level) and the shortened name of the team.
-Then comes the damage of the leader's weapon, after 'Calm' his current
+Then comes the damage of the leader's weapon (but regardless of the figures,
+each attack inflicts at least 1 damage), after 'Calm' his current
 and maximum calm (composure, focus) and after 'HP' his current and maximum
 hit points (health). At the end, the personal target of the leader
 is described, in this case a monster, with hit points drawn as a bar.

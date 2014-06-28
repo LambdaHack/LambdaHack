@@ -23,7 +23,7 @@ fist = ItemKind
   , iverbHit = "punch"
   , iweight  = 2000
   , iaspects = []
-  , ieffects = [Hurt (5 * d 1) 0]
+  , ieffects = [Hurt (4 * d 1)]
   , ifeature = [Durable, EqpSlot EqpSlotWeapon "", Identified]
   , idesc    = ""
   , ikit     = []
@@ -33,7 +33,7 @@ foot = fist
   , ifreq    = [("foot", 50)]
   , icount   = 2
   , iverbHit = "kick"
-  , ieffects = [Hurt (5 * d 1) 0]
+  , ieffects = [Hurt (4 * d 1)]
   , idesc    = ""
   }
 tentacle = fist
@@ -41,7 +41,7 @@ tentacle = fist
   , ifreq    = [("tentacle", 50)]
   , icount   = 4
   , iverbHit = "slap"
-  , ieffects = [Hurt (5 * d 1) 0]
+  , ieffects = [Hurt (4 * d 1)]
   , idesc    = ""
   }
 lash = fist
@@ -49,7 +49,7 @@ lash = fist
   , ifreq    = [("lash", 100)]
   , icount   = 1
   , iverbHit = "lash"
-  , ieffects = [Hurt (5 * d 1) 0]
+  , ieffects = [Hurt (4 * d 1)]
   , idesc    = ""
   }
 noseTip = fist
@@ -57,7 +57,7 @@ noseTip = fist
   , ifreq    = [("nose tip", 50)]
   , icount   = 1
   , iverbHit = "poke"
-  , ieffects = [Hurt (2 * d 1) 0]
+  , ieffects = [Hurt (2 * d 1)]
   , idesc    = ""
   }
 lip = fist
@@ -65,7 +65,7 @@ lip = fist
   , ifreq    = [("lip", 10)]
   , icount   = 2
   , iverbHit = "lap"
-  , ieffects = [Hurt (2 * d 1) 0]  -- TODO: decrease Hurt, but use
+  , ieffects = [Hurt (2 * d 1)]  -- TODO: decrease Hurt, but use
   , idesc    = ""
   }
 claw = fist
@@ -73,7 +73,7 @@ claw = fist
   , ifreq    = [("claw", 50)]
   , icount   = 2  -- even if more, only the fore claws used for fighting
   , iverbHit = "slash"
-  , ieffects = [Hurt (7 * d 1) 0]
+  , ieffects = [Hurt (7 * d 1)]
   , idesc    = ""
   }
 smallClaw = fist
@@ -81,14 +81,14 @@ smallClaw = fist
   , ifreq    = [("small claw", 50)]
   , icount   = 2
   , iverbHit = "slash"
-  , ieffects = [Hurt (3 * d 1) 0]
+  , ieffects = [Hurt (3 * d 1)]
   , idesc    = ""
   }
 snout = fist
   { iname    = "snout"
   , ifreq    = [("snout", 10)]
   , iverbHit = "bite"
-  , ieffects = [Hurt (2 * d 1) 0]
+  , ieffects = [Hurt (2 * d 1)]
   , idesc    = ""
   }
 venomTooth = fist
@@ -96,7 +96,7 @@ venomTooth = fist
   , ifreq    = [("venom tooth", 100)]
   , icount   = 2
   , iverbHit = "bite"
-  , ieffects = [Hurt (3 * d 1) 0, Paralyze 3]
+  , ieffects = [Hurt (3 * d 1), Paralyze 3]
   , idesc    = ""
   }
 venomFang = fist
@@ -104,7 +104,7 @@ venomFang = fist
   , ifreq    = [("venom fang", 100)]
   , icount   = 2
   , iverbHit = "bite"
-  , ieffects = [Hurt (3 * d 1) 12]
+  , ieffects = [Hurt (3 * d 1)]  -- TODO: +12 damage or poison effect
   , idesc    = ""
   }
 largeTail = fist
@@ -112,7 +112,7 @@ largeTail = fist
   , ifreq    = [("large tail", 50)]
   , icount   = 1
   , iverbHit = "knock"
-  , ieffects = [Hurt (9 * d 1) 0, PushActor (ThrowMod 400 25)]
+  , ieffects = [Hurt (9 * d 1), PushActor (ThrowMod 400 25)]
   , idesc    = ""
   }
 jaw = fist
@@ -120,7 +120,7 @@ jaw = fist
   , ifreq    = [("jaw", 20)]
   , icount   = 1
   , iverbHit = "rip"
-  , ieffects = [Hurt (5 * d 1) 0]
+  , ieffects = [Hurt (5 * d 1)]
   , idesc    = ""
   }
 largeJaw = fist
@@ -128,7 +128,7 @@ largeJaw = fist
   , ifreq    = [("large jaw", 100)]
   , icount   = 1
   , iverbHit = "crush"
-  , ieffects = [Hurt (15 * d 1) 0]
+  , ieffects = [Hurt (15 * d 1)]
   , idesc    = ""
   }
 pupil = fist
@@ -137,7 +137,7 @@ pupil = fist
   , icount   = 1
   , iverbHit = "gaze at"
   , iaspects = [AddSight 7]
-  , ieffects = [Hurt (5 * d 1) 0, Paralyze 1]  -- TODO: decrease Hurt, but use
+  , ieffects = [Hurt (4 * d 1), Paralyze 1]  -- TODO: decrease Hurt, but use
   , idesc    = ""
   }
 armoredSkin = fist
@@ -174,7 +174,7 @@ thorn = fist
   , ifreq    = [("thorn", 100)]
   , icount   = 7
   , iverbHit = "impale"
-  , ieffects = [Hurt (3 * d 1) 0]
+  , ieffects = [Hurt (4 * d 1)]
   , idesc    = ""
   }
 

@@ -485,7 +485,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                                    || bhp b < p)
           (deadBefore, verbDie) =
             case effect of
-              Effect.Hurt p _ | deadPreviousTurn (xM $ Dice.maxDice p) ->
+              Effect.Hurt p | deadPreviousTurn (xM $ Dice.maxDice p) ->
                 (True, hurtExtra)
               Effect.RefillHP p | deadPreviousTurn (xM p) -> (True, hurtExtra)
               _ -> (False, firstFall)

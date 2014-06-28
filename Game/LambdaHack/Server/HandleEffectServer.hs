@@ -5,7 +5,6 @@ module Game.LambdaHack.Server.HandleEffectServer
   , dropEqpItem, armorHurtBonus
   ) where
 
-import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Bits (xor)
@@ -134,7 +133,7 @@ effectSem effect source target = do
   case effect of
     Effect.NoEffect -> return False
     Effect.RefillHP p -> effectRefillHP execSfx p source target
-    Effect.Hurt nDm p -> effectHurt nDm p source target
+    Effect.Hurt nDm -> effectHurt nDm source target
     Effect.RefillCalm p -> effectRefillCalm execSfx p target
     Effect.Dominate -> effectDominate execSfx source target
     Effect.Impress -> effectImpress execSfx source target
@@ -198,9 +197,9 @@ halveCalm target = do
 -- ** Hurt
 
 effectHurt :: (MonadAtomic m, MonadServer m)
-           => Dice.Dice -> Int -> ActorId -> ActorId
+           => Dice.Dice -> ActorId -> ActorId
            -> m Bool
-effectHurt nDm power source target = do
+effectHurt nDm source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   n <- rndToAction $ castDice 0 0 nDm
@@ -208,29 +207,28 @@ effectHurt nDm power source target = do
   let block = braced tb
       mult = (100 + hurtBonus) * (if block then 50 else 100)
       deltaHP = min (-1)  -- at least 1 HP taken
-                    (mult * (n + power) `divUp` (100 * 100))
+                    (mult * n `divUp` (100 * 100))
   -- Damage the target.
   execUpdAtomic $ UpdRefillHP target (xM deltaHP)
   when (source /= target) $ halveCalm target
   execSfxAtomic $ SfxEffect (bfid sb) target $
     if source == target
     then Effect.RefillHP deltaHP  -- no SfxStrike, so treat as any heal/wound
-    else Effect.Hurt (Dice.intToDice deltaHP) 0  -- avoid spam; SfxStrike sent
+    else Effect.Hurt (Dice.intToDice deltaHP)  -- avoid spam; SfxStrike sent
   return True
 
 armorHurtBonus :: (MonadAtomic m, MonadServer m)
                => ActorId -> ActorId
                -> m Int
 armorHurtBonus source target = do
-  sallItems <- map snd <$> fullAssocsServer source [CEqp, COrgan]
-  tallItems <- map snd <$> fullAssocsServer target [CEqp, COrgan]
+  sactiveItems <- activeItemsServer source
+  tactiveItems <- activeItemsServer target
   sb <- getsState $ getActorBody source
-  let raw = if bproj sb
-            then sumSlotNoFilter Effect.EqpSlotAddHurtRanged sallItems
-                 - sumSlotNoFilter Effect.EqpSlotAddArmorRanged tallItems
-            else sumSlotNoFilter Effect.EqpSlotAddHurtMelee sallItems
-                 - sumSlotNoFilter Effect.EqpSlotAddArmorMelee tallItems
-  return $! max (-75) (min 75 raw)
+  return $! if bproj sb
+            then sumSlotNoFilter Effect.EqpSlotAddHurtRanged sactiveItems
+                 - sumSlotNoFilter Effect.EqpSlotAddArmorRanged tactiveItems
+            else sumSlotNoFilter Effect.EqpSlotAddHurtMelee sactiveItems
+                 - sumSlotNoFilter Effect.EqpSlotAddArmorMelee tactiveItems
 
 -- ** RefillCalm
 
@@ -383,7 +381,7 @@ effectBurn :: (MonadAtomic m, MonadServer m)
            -> m Bool
 effectBurn execSfx power source target = do
   -- Damage from both impact and fire.
-  void $ effectHurt 0 (2 * power) source target
+  void $ effectHurt (Dice.intToDice $ 2 * power) source target
   execSfx
   return True
 

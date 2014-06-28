@@ -296,35 +296,33 @@ drawLeaderDamage width = do
   stats <- case mleader of
     Just leader -> do
       allAssocs <- fullAssocsClient leader [CEqp, COrgan]
-      let damage = case strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
+      let activeItems = map snd allAssocs
+          damage = case strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
             (_, (_, itemFull)) : _->
-              let getP :: Effect.Effect a -> Maybe (Dice.Dice, a)
-                       -> Maybe (Dice.Dice, a)
-                  getP (Effect.Hurt dice p) _ = Just (dice, p)
-                  getP _ acc = acc
-                  (mdice, mbonus) = case itemDisco itemFull of
+              let getD :: Effect.Effect a -> Maybe Dice.Dice
+                       -> Maybe Dice.Dice
+                  getD (Effect.Hurt dice) _ = Just dice
+                  getD _ acc = acc
+                  mdice = case itemDisco itemFull of
                     Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
-                      case foldr getP Nothing jeffects of
-                          Just (dice, p) -> (Just dice, Just p)
-                          Nothing -> (Nothing, Nothing)
+                      foldr getD Nothing jeffects
                     Just ItemDisco{itemKind} ->
-                      case foldr getP Nothing (ieffects itemKind) of
-                        Just (dice, d) ->
-                          let p = if Dice.minDice d == Dice.maxDice d
-                                  then Just $ Dice.minDice d
-                                  else Nothing
-                          in (Just dice, p)
-                        Nothing -> (Nothing, Nothing)
-                    Nothing -> (Nothing, Nothing)
-              in case mdice of
-                Nothing -> "???"
-                Just dice ->
-                  let bonusText = case mbonus of
-                        Nothing -> "+?"
-                        Just p -> if p == 0
-                                  then ""
-                                  else "+" <> tshow p
-                  in tshow dice <> bonusText
+                      foldr getD Nothing (ieffects itemKind)
+                    Nothing -> Nothing
+                  tdice = case mdice of
+                    Nothing -> "???"
+                    Just dice -> tshow dice
+                  bonus = sumSlotNoFilter Effect.EqpSlotAddHurtMelee
+                                           activeItems
+                           - sumSlotNoFilter Effect.EqpSlotAddArmorMelee
+                                             activeItems
+                  unknownBonus = unknownMelee activeItems
+                  tbonus = if bonus == 0
+                           then if unknownBonus then "+?" else ""
+                           else if bonus > 0 then "+" else ""
+                                <> tshow bonus
+                                <> if unknownBonus then "?" else ""
+             in tdice <> tbonus
             [] -> "0"
       return $! damage
     Nothing -> return ""

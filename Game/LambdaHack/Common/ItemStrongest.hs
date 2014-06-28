@@ -2,12 +2,11 @@
 -- No operation in this module involves the state or any of our custom monads.
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
-    strengthAspect, strengthEffect, strengthFeature
-  , strengthOnSmash, strengthToThrow, strengthEqpSlot, strengthFromEqpSlot
+    strengthOnSmash, strengthToThrow, strengthEqpSlot, strengthFromEqpSlot
   , strongestSlotNoFilter, strongestSlot, sumSlotNoFilter, sumSkills
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
-  , unknownPrecious, permittedRanged
+  , unknownPrecious, permittedRanged, unknownMelee
   ) where
 
 import Control.Applicative
@@ -39,8 +38,10 @@ strengthAspect f itemFull =
     Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects}} ->
       concatMap f jaspects
     Just ItemDisco{itemKind=ItemKind{iaspects}} ->
-      -- Default for unknown power is 999 to encourage experimenting.
-      let trav x = St.evalState (aspectTrav x (return . dice999)) ()
+      -- Approximation. For some effects lower values are better,
+      -- so we can't put 999 here (and for summation, this is wrong).
+      let trav x = St.evalState (aspectTrav x (return . round . Dice.meanDice))
+                                ()
       in concatMap f $ map trav iaspects
     Nothing -> []
 
@@ -51,8 +52,8 @@ strengthAspectMaybe f itemFull =
     [x] -> Just x
     xs -> assert `failure` (xs, itemFull)
 
-strengthEffect :: (Effect Int -> [b]) -> ItemFull -> [b]
-strengthEffect f itemFull =
+strengthEffect999 :: (Effect Int -> [b]) -> ItemFull -> [b]
+strengthEffect999 f itemFull =
   case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
       concatMap f jeffects
@@ -68,7 +69,7 @@ strengthFeature f item = concatMap f (jfeature item)
 strengthMelee :: ItemFull -> Maybe Int
 strengthMelee itemFull =
   let durable = Durable `elem` jfeature (itemBase itemFull)
-      p (Hurt d k) = [floor (Dice.meanDice d) + k]
+      p (Hurt d) = [floor (Dice.meanDice d)]
       p _ = []
       hasNoEffects = case itemDisco itemFull of
         Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
@@ -78,14 +79,15 @@ strengthMelee itemFull =
         Nothing -> True
   in if hasNoEffects
      then Nothing
-     else Just $ sum (strengthEffect p itemFull)
-                 + if durable then 1000000 else 0
+     else Just $ sum (strengthEffect999 p itemFull)
+                 + if durable then 100 else 0
 
+-- Called only by the server, so 999 is OK.
 strengthOnSmash :: ItemFull -> [Effect Int]
 strengthOnSmash =
   let p (OnSmash eff) = [eff]
       p _ = []
-  in strengthEffect p
+  in strengthEffect999 p
 
 strengthPeriodic :: ItemFull -> Maybe Int
 strengthPeriodic =
@@ -231,7 +233,7 @@ strongestSlot eqpSlot is =
   in strongestSlotNoFilter eqpSlot slotIs
 
 sumSlotNoFilter :: EqpSlot -> [ItemFull] -> Int
-sumSlotNoFilter eqpSlot is =
+sumSlotNoFilter eqpSlot is = assert (eqpSlot /= EqpSlotWeapon) $  -- no 999
   let f = strengthFromEqpSlot eqpSlot
       g itemFull = (* itemK itemFull) <$> f itemFull
   in sum $ mapMaybe g is
@@ -255,3 +257,20 @@ permittedRanged itemFull = not (unknownPrecious itemFull)
                                 Just (EqpSlotAddLight, _) -> True
                                 Just _ -> False
                                 Nothing -> True
+
+unknownAspect :: (Aspect Int -> [b]) -> ItemFull -> Bool
+unknownAspect f itemFull =
+  case itemDisco itemFull of
+    Just ItemDisco{itemAE=Nothing, itemKind=ItemKind{iaspects}} ->
+      let trav x = St.evalState (aspectTrav x (return . const 0)) ()
+      in not $ null $ concatMap f $ map trav iaspects
+    _ -> False
+
+unknownMelee :: [ItemFull] -> Bool
+unknownMelee =
+  let p (AddHurtMelee k) = [k]
+      p _ = []
+      q (AddArmorMelee k) = [k]
+      q _ = []
+      f itemFull b = b || unknownAspect p itemFull || unknownAspect q itemFull
+  in foldr f False

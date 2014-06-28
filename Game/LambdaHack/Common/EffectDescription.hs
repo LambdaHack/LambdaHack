@@ -23,7 +23,7 @@ effectToSuff effect f =
     RefillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
     RefillHP 0 -> assert `failure` effect
     RefillHP p -> "of wounding" <+> wrapInParens (affixBonus p)
-    Hurt dice t -> wrapInParens (tshow dice) <+> t
+    Hurt dice -> wrapInParens (tshow dice)
     RefillCalm p | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
     RefillCalm 0 -> assert `failure` effect
     RefillCalm p -> "of dismaying" <+> wrapInParens (affixBonus p)

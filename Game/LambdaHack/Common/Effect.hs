@@ -22,7 +22,7 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 data Effect a =
     NoEffect
   | RefillHP !Int
-  | Hurt !Dice.Dice !a
+  | Hurt !Dice.Dice
   | RefillCalm !Int
   | Dominate
   | Impress
@@ -126,9 +126,7 @@ instance Binary EqpSlot
 effectTrav :: Effect a -> (a -> St.State s b) -> St.State s (Effect b)
 effectTrav NoEffect _ = return NoEffect
 effectTrav (RefillHP p) _ = return $! RefillHP p
-effectTrav (Hurt dice a) f = do
-  b <- f a
-  return $! Hurt dice b
+effectTrav (Hurt dice) _ = return $! Hurt dice
 effectTrav (RefillCalm p) _ = return $! RefillCalm p
 effectTrav Dominate _ = return Dominate
 effectTrav Impress _ = return Impress
