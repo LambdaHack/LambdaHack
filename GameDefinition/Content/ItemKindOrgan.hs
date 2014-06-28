@@ -24,7 +24,7 @@ fist = ItemKind
   , iweight  = 2000
   , iaspects = []
   , ieffects = [Hurt (5 * d 1) 0]
-  , ifeature = [Durable, Identified]
+  , ifeature = [Durable, EqpSlot EqpSlotWeapon "", Identified]
   , idesc    = ""
   , ikit     = []
   }

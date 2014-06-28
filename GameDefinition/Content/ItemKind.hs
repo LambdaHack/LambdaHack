@@ -32,7 +32,7 @@ gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 
 bolas = ItemKind
   { isymbol  = '|'
-  , iname    = "set of bolas"
+  , iname    = "bolas set"
   , ifreq    = [("useful", 5)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1 + dl 3
@@ -208,7 +208,7 @@ net = ItemKind
   , iverbHit = "entangle"
   , iweight  = 1000
   , iaspects = []
-  , ieffects = [ Hurt (1 * d 1) 0, Paralyze (5 + d 5)
+  , ieffects = [ Paralyze (5 + d 5)
                , DropBestWeapon, DropEqp ']' False ]
   , ifeature = []
   , idesc    = "A wide net with weights along the edges. Entangles weapon and armor alike."  -- shield instead of armor if a separate symbol for shields

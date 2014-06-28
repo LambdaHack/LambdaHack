@@ -45,10 +45,10 @@ effectToSuff effect f =
     Paralyze t -> "of paralysis" <+> wrapInParens t
     InsertMove t -> "of speed surge" <+> wrapInParens t
     DropBestWeapon -> "of disarming"
-    DropEqp ' ' False -> "of equipment dropping"
-    DropEqp symbol False -> "of '" <> T.singleton symbol <> "' dropping"
-    DropEqp ' ' True -> "of equipment smashing"
-    DropEqp symbol True -> "of '" <> T.singleton symbol <> "' smashing"
+    DropEqp ' ' False -> "of equipment drop"
+    DropEqp symbol False -> "of drop '" <> T.singleton symbol <> "'"
+    DropEqp ' ' True -> "of equipment smash"
+    DropEqp symbol True -> "of smash '" <> T.singleton symbol <> "'"
     SendFlying ThrowMod{..} ->
       case effect of
         SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
@@ -67,7 +67,7 @@ effectToSuff effect f =
         Teleport _ -> "of blinking" <+> wrapInParens t
         _ -> assert `failure` effect
     ActivateEqp ' ' -> "of equipment burst"
-    ActivateEqp symbol -> "of '" <> T.singleton symbol <> "' burst"
+    ActivateEqp symbol -> "of burst '" <> T.singleton symbol <> "'"
     Explode _ -> "of explosion"
     OnSmash _ -> ""  -- conditional effect, TMI
     TimedAspect _ _ ->
