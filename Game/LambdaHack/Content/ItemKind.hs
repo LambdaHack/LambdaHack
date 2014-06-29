@@ -19,6 +19,7 @@ data ItemKind = ItemKind
   , ifreq    :: !Freqs             -- ^ frequency within groups
   , iflavour :: ![Flavour]         -- ^ possible flavours
   , icount   :: !Dice.Dice         -- ^ created in that quantity
+  , irarity  :: ![(Int, Int)]      -- ^ rarity on given depths
   , iverbHit :: !MU.Part           -- ^ the verb for applying and melee
   , iweight  :: !Int               -- ^ weight in grams
   , iaspects :: ![Effect.Aspect Dice.Dice]

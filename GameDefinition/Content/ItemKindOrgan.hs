@@ -20,6 +20,7 @@ fist = ItemKind
   , ifreq    = [("fist", 100)]
   , iflavour = zipPlain [BrCyan]
   , icount   = 2
+  , irarity  = []
   , iverbHit = "punch"
   , iweight  = 2000
   , iaspects = []
