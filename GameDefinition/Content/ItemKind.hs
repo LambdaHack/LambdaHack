@@ -24,9 +24,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch]
+  [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch]
 
-bolas,    brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, sword, wand1, wand2, woodenTorch :: ItemKind
+bolas,    brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch :: ItemKind
 
 gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 
@@ -354,22 +354,67 @@ shield = ItemKind
   , ieffects = []
   , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
-  , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
+  , idesc    = "Large and unwieldy. Absorbs a precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
+  , ikit     = []
+  }
+dagger = ItemKind
+  { isymbol  = ')'
+  , iname    = "dagger"
+  , ifreq    = [("useful", 20)]
+  , iflavour = zipPlain [BrCyan]
+  , icount   = 1
+  , iverbHit = "stab"
+  , iweight  = 1000
+  , iaspects = [AddHurtMelee $ 2 * (d 2 + 2 * dl 5), AddArmorMelee $ d 4 + dl 4]
+  , ieffects = [Hurt (4 * d 1)]
+  , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
+               , Durable, EqpSlot EqpSlotWeapon "", Identified ]
+  , idesc    = "A short dagger for thrusting and parrying blows. Does not penetrate deeply, but is hard to block. Especially useful in conjunction with a larger weapon."
+  , ikit     = []
+  }
+hammer = ItemKind
+  { isymbol  = ')'
+  , iname    = "war hammer"
+  , ifreq    = [("useful", 10)]
+  , iflavour = zipPlain [BrMagenta]
+  , icount   = 1
+  , iverbHit = "club"
+  , iweight  = 1500
+  , iaspects = [AddHurtMelee $ d 2 + 2 * dl 5]
+  , ieffects = [Hurt (6 * d 1)]
+  , ifeature = [ toVelocity 20  -- ensuring it hits with the sharp tip costs
+               , Durable, EqpSlot EqpSlotWeapon "", Identified ]
+  , idesc    = "It may not cause grave wounds, but neither does it glance off nor ricochet. Great sidearm for opportinistic blows against armored foes."
   , ikit     = []
   }
 sword = ItemKind
   { isymbol  = ')'
   , iname    = "sword"
-  , ifreq    = [("useful", 40)]
-  , iflavour = zipPlain [BrCyan]
+  , ifreq    = [("useful", 20)]
+  , iflavour = zipPlain [BrBlue]
   , icount   = 1
-  , iverbHit = "stab"
+  , iverbHit = "slash"
   , iweight  = 2000
-  , iaspects = [AddHurtMelee ((d 2 + 2 * dl 5) * 2)]
-  , ieffects = [Hurt (5 * d 1)]
+  , iaspects = []
+  , ieffects = [Hurt (9 * d 1)]
   , ifeature = [ toVelocity 20  -- ensuring it hits with the tip costs speed
                , Durable, EqpSlot EqpSlotWeapon "", Identified ]
-  , idesc    = "A standard heavy weapon. Does not penetrate very effectively, but hard to block."
+  , idesc    = "Hard to master, but chops limbs when used effectively."
+  , ikit     = []
+  }
+halberd = ItemKind
+  { isymbol  = ')'
+  , iname    = "halberd"
+  , ifreq    = [("useful", 10)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = dl 2  -- appears halfway
+  , iverbHit = "impale"
+  , iweight  = 3000
+  , iaspects = [AddArmorMelee $ 2 * (d 4 + dl 4)]
+  , ieffects = [Hurt (12 * d 1)]
+  , ifeature = [ toVelocity 20  -- not balanced
+               , Durable, EqpSlot EqpSlotWeapon "", Identified ]
+  , idesc    = "Versatile, with great reach and leverage. Foes are held at a distance."
   , ikit     = []
   }
 wand = ItemKind
