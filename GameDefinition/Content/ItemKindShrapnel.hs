@@ -14,6 +14,49 @@ shrapnels =
 
 fragrance,    mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
+-- * Parameterized shrapnel
+
+burningOil :: Int -> ItemKind
+burningOil n = ItemKind
+  { isymbol  = '\''
+  , iname    = "burning oil"
+  , ifreq    = [("burning oil" <+> tshow n, 1)]
+  , iflavour = zipFancy [BrYellow]
+  , icount   = intToDice (n * 6)
+  , irarity  = []
+  , iverbHit = "burn"
+  , iweight  = 1
+  , iaspects = [AddLight 2]
+  , ieffects = [ Burn 1
+               , Paralyze (intToDice n) ]  -- actors strain not to trip on oil
+  , ifeature = [ toVelocity (min 100 $ n * 7)
+               , Fragile, Identified ]
+  , idesc    = "Sticky oil, burning brightly."
+  , ikit     = []
+  }
+burningOil2 = burningOil 2
+burningOil3 = burningOil 3
+burningOil4 = burningOil 4
+explosionBlast :: Int -> ItemKind
+explosionBlast n = ItemKind
+  { isymbol  = '\''
+  , iname    = "explosion blast"
+  , ifreq    = [("explosion blast" <+> tshow n, 1)]
+  , iflavour = zipPlain [BrWhite]
+  , icount   = 12  -- strong, but few, so not always hits target
+  , irarity  = []
+  , iverbHit = "tear apart"
+  , iweight  = 1
+  , iaspects = [AddLight $ intToDice n]
+  , ieffects = [Burn (n `div` 2), DropBestWeapon]
+  , ifeature = [Fragile, toLinger 10, Identified]
+  , idesc    = ""
+  , ikit     = []
+  }
+explosionBlast10 = explosionBlast 10
+
+-- * Assorted
+
 fragrance = ItemKind
   { isymbol  = '\''
   , iname    = "fragrance"
@@ -62,10 +105,6 @@ mist_wounding = ItemKind
   , idesc    = ""
   , ikit     = []
   }
-burningOil2 = burningOil 2
-burningOil3 = burningOil 3
-burningOil4 = burningOil 4
-explosionBlast10 = explosionBlast 10
 glass_piece = ItemKind  -- when blowing up windows
   { isymbol  = '\''
   , iname    = "glass piece"
@@ -94,42 +133,6 @@ smoke = ItemKind  -- when stuff burns out
   , ieffects = []
   , ifeature = [ toVelocity 30
                , Fragile, Identified ]
-  , idesc    = ""
-  , ikit     = []
-  }
-
-burningOil :: Int -> ItemKind
-burningOil n = ItemKind
-  { isymbol  = '\''
-  , iname    = "burning oil"
-  , ifreq    = [("burning oil" <+> tshow n, 1)]
-  , iflavour = zipFancy [BrYellow]
-  , icount   = intToDice (n * 6)
-  , irarity  = []
-  , iverbHit = "burn"
-  , iweight  = 1
-  , iaspects = [AddLight 2]
-  , ieffects = [ Burn 1
-               , Paralyze (intToDice n) ]  -- actors strain not to trip on oil
-  , ifeature = [ toVelocity (min 100 $ n * 7)
-               , Fragile, Identified ]
-  , idesc    = "Sticky oil, burning brightly."
-  , ikit     = []
-  }
-
-explosionBlast :: Int -> ItemKind
-explosionBlast n = ItemKind
-  { isymbol  = '\''
-  , iname    = "explosion blast"
-  , ifreq    = [("explosion blast" <+> tshow n, 1)]
-  , iflavour = zipPlain [BrWhite]
-  , icount   = 12  -- strong, but few, so not always hits target
-  , irarity  = []
-  , iverbHit = "tear apart"
-  , iweight  = 1
-  , iaspects = [AddLight $ intToDice n]
-  , ieffects = [Burn (n `div` 2), DropBestWeapon]
-  , ifeature = [Fragile, toLinger 10, Identified]
   , idesc    = ""
   , ikit     = []
   }

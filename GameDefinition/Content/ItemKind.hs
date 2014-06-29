@@ -30,37 +30,8 @@ bolas,    brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jump
 
 gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 
-bolas = ItemKind
-  { isymbol  = '|'
-  , iname    = "bolas set"
-  , ifreq    = [("useful", 5)]
-  , iflavour = zipPlain [BrYellow]
-  , icount   = dl 4
-  , irarity  = [(5, 5), (10, 5)]
-  , iverbHit = "entangle"
-  , iweight  = 500
-  , iaspects = []
-  , ieffects = [Hurt (2 * d 1), Paralyze (5 + d 5), ActivateEqp '!']
-  , ifeature = []
-  , idesc    = "Wood balls tied with hemp rope for tripping, entangling and bringing down crashing."
-  , ikit     = []
-  }
-brassLantern = ItemKind
-  { isymbol  = '('
-  , iname    = "brass lantern"
-  , ifreq    = [("useful", 2)]
-  , iflavour = zipPlain [BrWhite]
-  , icount   = 1
-  , irarity  = [(10, 3)]
-  , iverbHit = "burn"
-  , iweight  = 2400
-  , iaspects = [AddLight 4, AddSight (-1)]
-  , ieffects = [Burn 4, Paralyze 4, OnSmash (Explode "burning oil 4")]
-  , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
-               , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
-  , idesc    = "Very bright and very heavy brass lantern."
-  , ikit     = []
-  }
+-- * Thrown weapons
+
 dart = ItemKind
   { isymbol  = '|'
   , iname    = "dart"
@@ -91,6 +62,109 @@ dart100 = ItemKind
   , idesc    = "Finely balanced for throws of great speed."
   , ikit     = []
   }
+
+-- * Exotic thrown weapons
+
+bolas = ItemKind
+  { isymbol  = '|'
+  , iname    = "bolas set"
+  , ifreq    = [("useful", 5)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = dl 4
+  , irarity  = [(5, 5), (10, 5)]
+  , iverbHit = "entangle"
+  , iweight  = 500
+  , iaspects = []
+  , ieffects = [Hurt (2 * d 1), Paralyze (5 + d 5), ActivateEqp '!']
+  , ifeature = []
+  , idesc    = "Wood balls tied with hemp rope for tripping, entangling and bringing down crashing."
+  , ikit     = []
+  }
+harpoon = ItemKind
+  { isymbol  = '|'
+  , iname    = "harpoon"
+  , ifreq    = [("useful", 15)]
+  , iflavour = zipPlain [Brown]
+  , icount   = dl 5
+  , irarity  = [(5, 5), (10, 20)]
+  , iverbHit = "hook"
+  , iweight  = 4000
+  , iaspects = [AddHurtRanged ((d 2 + 2 * dl 5) * 10)]
+  , ieffects = [Hurt (4 * d 1), PullActor (ThrowMod 200 50)]
+  , ifeature = []
+  , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
+  , ikit     = []
+  }
+net = ItemKind
+  { isymbol  = '|'
+  , iname    = "net"
+  , ifreq    = [("useful", 5)]
+  , iflavour = zipPlain [White]
+  , icount   = dl 3
+  , irarity  = [(3, 5), (10, 4)]
+  , iverbHit = "entangle"
+  , iweight  = 1000
+  , iaspects = []
+  , ieffects = [ Paralyze (5 + d 5)
+               , DropBestWeapon, DropEqp ']' False ]
+  , ifeature = []
+  , idesc    = "A wide net with weights along the edges. Entangles weapon and armor alike."  -- TODO: shield instead of armor if a separate symbol for shields
+  , ikit     = []
+  }
+
+-- * Lights
+
+woodenTorch = ItemKind
+  { isymbol  = '('
+  , iname    = "wooden torch"
+  , ifreq    = [("useful", 8)]
+  , iflavour = zipPlain [Brown]
+  , icount   = 1
+  , irarity  = [(1, 10)]
+  , iverbHit = "scorch"
+  , iweight  = 1200
+  , iaspects = [ AddLight 3
+               , AddSight (-2) ]  -- not only flashes, but also sparks
+  , ieffects = [Burn 3]
+  , ifeature = [EqpSlot EqpSlotAddLight "", Identified]
+  , idesc    = "A smoking, heavy wooden torch, burning in an unsteady fire."
+  , ikit     = []
+  }
+oilLamp = ItemKind
+  { isymbol  = '('
+  , iname    = "oil lamp"
+  , ifreq    = [("useful", 4)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = 1
+  , irarity  = [(5, 4), (10, 4)]
+  , iverbHit = "burn"
+  , iweight  = 1000
+  , iaspects = [AddLight 3, AddSight (-1)]
+  , ieffects = [Burn 3, Paralyze 3, OnSmash (Explode "burning oil 3")]
+  , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
+               , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
+  , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
+  , ikit     = []
+  }
+brassLantern = ItemKind
+  { isymbol  = '('
+  , iname    = "brass lantern"
+  , ifreq    = [("useful", 2)]
+  , iflavour = zipPlain [BrWhite]
+  , icount   = 1
+  , irarity  = [(10, 3)]
+  , iverbHit = "burn"
+  , iweight  = 2400
+  , iaspects = [AddLight 4, AddSight (-1)]
+  , ieffects = [Burn 4, Paralyze 4, OnSmash (Explode "burning oil 4")]
+  , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
+               , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
+  , idesc    = "Very bright and very heavy brass lantern."
+  , ikit     = []
+  }
+
+-- * Treasure
+
 gem = ItemKind
   { isymbol  = '*'
   , iname    = "gem"
@@ -131,21 +205,7 @@ currency = ItemKind
   , idesc    = "Reliably valuable in every civilized place."
   , ikit     = []
   }
-harpoon = ItemKind
-  { isymbol  = '|'
-  , iname    = "harpoon"
-  , ifreq    = [("useful", 15)]
-  , iflavour = zipPlain [Brown]
-  , icount   = dl 5
-  , irarity  = [(5, 5), (10, 20)]
-  , iverbHit = "hook"
-  , iweight  = 4000
-  , iaspects = [AddHurtRanged ((d 2 + 2 * dl 5) * 10)]
-  , ieffects = [Hurt (4 * d 1), PullActor (ThrowMod 200 50)]
-  , ifeature = []
-  , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
-  , ikit     = []
-  }
+
 jumpingPole = ItemKind
   { isymbol  = '-'
   , iname    = "jumping pole"
@@ -163,21 +223,9 @@ jumpingPole = ItemKind
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
   , ikit     = []
   }
-monocle = ItemKind
-  { isymbol  = '='
-  , iname    = "monocle"
-  , ifreq    = [("useful", 1)]
-  , iflavour = zipPlain [White]
-  , icount   = 1
-  , irarity  = [(6, 0), (10, 1)]
-  , iverbHit = "rap"
-  , iweight  = 50
-  , iaspects = [AddSight $ dl 3]
-  , ieffects = []
-  , ifeature = [Durable, EqpSlot EqpSlotAddSight "", Identified]
-  , idesc    = "Let's you better focus your weaker eye."
-  , ikit     = []
-  }
+
+-- * Periodic jewelry
+
 necklace = ItemKind  -- TODO: when more items, perhaps make all Periodic necklaces
   { isymbol  = '"'
   , iname    = "necklace"
@@ -208,68 +256,23 @@ necklace3 = necklace
   { iaspects = [Periodic $ d 4 + dl 2]
   , ieffects = [Paralyze $ 5 + d 5 + dl 5, RefillCalm 50]
   }
-net = ItemKind
-  { isymbol  = '|'
-  , iname    = "net"
-  , ifreq    = [("useful", 5)]
+
+-- * Non-periodic jewelry
+
+monocle = ItemKind
+  { isymbol  = '='
+  , iname    = "monocle"
+  , ifreq    = [("useful", 1)]
   , iflavour = zipPlain [White]
-  , icount   = dl 3
-  , irarity  = [(3, 5), (10, 4)]
-  , iverbHit = "entangle"
-  , iweight  = 1000
-  , iaspects = []
-  , ieffects = [ Paralyze (5 + d 5)
-               , DropBestWeapon, DropEqp ']' False ]
-  , ifeature = []
-  , idesc    = "A wide net with weights along the edges. Entangles weapon and armor alike."  -- TODO: shield instead of armor if a separate symbol for shields
-  , ikit     = []
-  }
-oilLamp = ItemKind
-  { isymbol  = '('
-  , iname    = "oil lamp"
-  , ifreq    = [("useful", 4)]
-  , iflavour = zipPlain [BrYellow]
   , icount   = 1
-  , irarity  = [(5, 4), (10, 4)]
-  , iverbHit = "burn"
-  , iweight  = 1000
-  , iaspects = [AddLight 3, AddSight (-1)]
-  , ieffects = [Burn 3, Paralyze 3, OnSmash (Explode "burning oil 3")]
-  , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
-               , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
-  , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
-  , ikit     = []
-  }
-potion = ItemKind
-  { isymbol  = '!'
-  , iname    = "potion"
-  , ifreq    = [("useful", 10)]
-  , iflavour = zipPlain stdCol ++ zipFancy brightCol
-  , icount   = 1
-  , irarity  = [(1, 10), (10, 8)]
-  , iverbHit = "splash"
-  , iweight  = 200
-  , iaspects = []
+  , irarity  = [(6, 0), (10, 1)]
+  , iverbHit = "rap"
+  , iweight  = 50
+  , iaspects = [AddSight $ dl 3]
   , ieffects = []
-  , ifeature = [ toVelocity 50  -- oily, bad grip
-               , Applicable, Fragile ]
-  , idesc    = "A flask of bubbly, slightly oily liquid of a suspect color."
+  , ifeature = [Durable, EqpSlot EqpSlotAddSight "", Identified]
+  , idesc    = "Let's you better focus your weaker eye."
   , ikit     = []
-  }
-potion1 = potion
-  { ieffects = [ApplyPerfume, Impress, OnSmash (Explode "fragrance")]
-  }
-potion2 = potion
-  { ieffects = [RefillHP 5, OnSmash (Explode "healing mist")]
-  }
-potion3 = potion  -- TODO: a bit boring
-  { irarity  = [(1, 5), (10, 1)]
-  , ieffects = [RefillHP (-5), OnSmash (Explode "wounding mist")]
-  }
-potion4 = potion
-  { ieffects = [ Explode "explosion blast 10"
-               , PushActor (ThrowMod 200 75)
-               , OnSmash (Explode "explosion blast 10") ]
   }
 ring = ItemKind
   { isymbol  = '='
@@ -312,6 +315,43 @@ ring5 = ring
       -- TODO: teach AI to wear only for fight; prevent players from meleeing
       -- allies with that (Durable)
   }
+
+-- * Exploding consumables
+
+potion = ItemKind
+  { isymbol  = '!'
+  , iname    = "potion"
+  , ifreq    = [("useful", 10)]
+  , iflavour = zipPlain stdCol ++ zipFancy brightCol
+  , icount   = 1
+  , irarity  = [(1, 10), (10, 8)]
+  , iverbHit = "splash"
+  , iweight  = 200
+  , iaspects = []
+  , ieffects = []
+  , ifeature = [ toVelocity 50  -- oily, bad grip
+               , Applicable, Fragile ]
+  , idesc    = "A flask of bubbly, slightly oily liquid of a suspect color."
+  , ikit     = []
+  }
+potion1 = potion
+  { ieffects = [ApplyPerfume, Impress, OnSmash (Explode "fragrance")]
+  }
+potion2 = potion
+  { ieffects = [RefillHP 5, OnSmash (Explode "healing mist")]
+  }
+potion3 = potion  -- TODO: a bit boring
+  { irarity  = [(1, 5), (10, 1)]
+  , ieffects = [RefillHP (-5), OnSmash (Explode "wounding mist")]
+  }
+potion4 = potion
+  { ieffects = [ Explode "explosion blast 10"
+               , PushActor (ThrowMod 200 75)
+               , OnSmash (Explode "explosion blast 10") ]
+  }
+
+-- * Non-exploding consumables
+
 scroll = ItemKind
   { isymbol  = '?'
   , iname    = "scroll"
@@ -353,6 +393,9 @@ scroll7 = scroll
   { irarity  = [(10, 1)]
   , ieffects = [InsertMove (d 2 + dl 2)]
   }
+
+-- * Armor
+
 -- Shield doesn't protect against ranged attacks to prevent
 -- micromanagement: walking with shield, melee without.
 shield = ItemKind
@@ -371,6 +414,9 @@ shield = ItemKind
   , idesc    = "Large and unwieldy. Absorbs a precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   , ikit     = []
   }
+
+-- * Weapons
+
 dagger = ItemKind
   { isymbol  = ')'
   , iname    = "dagger"
@@ -435,6 +481,9 @@ halberd = ItemKind
   , idesc    = "Versatile, with great reach and leverage. Foes are held at a distance."
   , ikit     = []
   }
+
+-- * Wands
+
 wand = ItemKind
   { isymbol  = '/'
   , iname    = "wand"
@@ -456,20 +505,4 @@ wand1 = wand
   }
 wand2 = wand
   { ieffects = [NoEffect]
-  }
-woodenTorch = ItemKind
-  { isymbol  = '('
-  , iname    = "wooden torch"
-  , ifreq    = [("useful", 8)]
-  , iflavour = zipPlain [Brown]
-  , icount   = 1
-  , irarity  = [(1, 10)]
-  , iverbHit = "scorch"
-  , iweight  = 1200
-  , iaspects = [ AddLight 3
-               , AddSight (-2) ]  -- not only flashes, but also sparks
-  , ieffects = [Burn 3]
-  , ifeature = [EqpSlot EqpSlotAddLight "", Identified]
-  , idesc    = "A smoking, heavy wooden torch, burning in an unsteady fire."
-  , ikit     = []
   }

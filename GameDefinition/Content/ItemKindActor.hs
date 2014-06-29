@@ -16,6 +16,8 @@ actors =
 
 warrior,    adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, thornbush :: ItemKind
 
+-- * Hunams
+
 warrior = ItemKind
   { isymbol  = '@'
   , iname    = "warrior"  -- modified if in hero faction
@@ -51,6 +53,8 @@ peddler = clerk
 taxCollector = clerk
   { iname    = "tax collector" }
 
+-- * Projectiles
+
 projectile = ItemKind  -- includes homing missiles
   { isymbol  = '*'
   , iname    = "projectile"
@@ -66,6 +70,8 @@ projectile = ItemKind  -- includes homing missiles
   , idesc    = ""
   , ikit     = []
   }
+
+-- * Monsters
 
 eye = ItemKind
   { isymbol  = 'e'
@@ -136,6 +142,8 @@ elbow = ItemKind
                , ("any scroll", CInv)
                , ("any arrow", CInv), ("any arrow", CInv), ("any arrow", CInv) ]
   }
+
+-- * Animals
 
 armadillo = ItemKind
   { isymbol  = 'a'
@@ -225,6 +233,9 @@ alligator = ItemKind
   , ikit     = [ ("large jaw", COrgan), ("large tail", COrgan), ("claw", COrgan)
                , ("armored skin", COrgan), ("eye 4", COrgan) ]
   }
+
+-- * Non-animal animals
+
 thornbush = ItemKind
   { isymbol  = 't'
   , iname    = "thornbush"
