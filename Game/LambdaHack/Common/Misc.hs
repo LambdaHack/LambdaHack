@@ -3,7 +3,7 @@
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Common.Misc
   ( -- * Game object identifiers
-    FactionId, LevelId, ActorId
+    FactionId, LevelId, AbsDepth(..), ActorId
     -- * Item containers
   , Container(..), CStore(..)
     -- * Assorted
@@ -77,6 +77,13 @@ newtype FactionId = FactionId Int
 -- | Abstract level identifiers.
 newtype LevelId = LevelId Int
   deriving (Show, Eq, Ord, Enum, Hashable, Binary)
+
+-- | Absolute depth in the dungeon. When used for the maximum depth
+-- of the whole dungeon, this can be different than dungeon size,
+-- e.g., when the dungeon is branched, and it can even be different
+-- than the length of the longest branch, if levels at some depths are missing.
+newtype AbsDepth = AbsDepth Int
+  deriving (Show, Eq, Ord, Hashable, Binary)
 
 -- | A unique identifier of an actor in the dungeon.
 newtype ActorId = ActorId Int

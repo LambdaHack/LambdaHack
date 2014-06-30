@@ -69,37 +69,39 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
 
 -- | Generate an item based on level.
 newItem :: Kind.COps -> FlavourMap -> DiscoRev
-        -> Frequency Text -> LevelId -> Int -> Int
+        -> Frequency Text -> LevelId -> AbsDepth -> AbsDepth
         -> Rnd (Maybe (ItemKnown, ItemFull, ItemSeed, Int))
 newItem _ _ _ itemFreq _ _ _ | nullFreq itemFreq = return Nothing
 newItem cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
-        flavour discoRev itemFreq jlid ln depth = do
+        flavour discoRev itemFreq jlid
+        ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) = do
   itemGroup <- frequency itemFreq
   let findInterval _ x1y1 [] = (x1y1, (depth + 1, 0))
       findInterval point x1y1 ((x, y) : rest) =
-        if point <= x
-        then (x1y1, (x, y))
-        else findInterval point (x, y) rest
+        assert (0 < x && x < depth + 1 `blame` (itemGroup, x, depth + 1))
+        $ if point <= x
+          then (x1y1, (x, y))
+          else findInterval point (x, y) rest
       linearInterpolation point dataset =
         -- We assume @dataset@ is sorted and between 0 and @depth + 1@.
         let ((x1, y1), (x2, y2)) = findInterval point (0, 0) dataset
         in y1 + (y2 - y1) * (point - x1) `divUp` (x2 - x1)
       f p ik kind acc =
-        let rarity = linearInterpolation (abs ln) (irarity kind)
+        let rarity = linearInterpolation ld (irarity kind)
         in (p * rarity, (ik, kind)) : acc
       freqDepth = ofoldrGroup itemGroup f []
       freq = toFreq ("newItem ('" <> itemGroup <> "',"
-                               <+> tshow ln <> ")") freqDepth
+                               <+> tshow ld <> ")") freqDepth
   if nullFreq freq then
     let zeroedFreq = setFreq itemFreq itemGroup 0
-    in newItem cops flavour discoRev zeroedFreq jlid ln depth
+    in newItem cops flavour discoRev zeroedFreq jlid ldepth totalDepth
   else do
     (itemKindId, itemKind) <- frequency freq
-    itemN <- castDice ln depth (icount itemKind)
+    itemN <- castDice ldepth totalDepth (icount itemKind)
     seed <- fmap toEnum random
     let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
         itemK = max 1 itemN
-        iae = seedToAspectsEffects seed itemKind ln depth
+        iae = seedToAspectsEffects seed itemKind ldepth totalDepth
         itemFull = ItemFull {itemBase, itemK, itemDisco = Just itemDisco}
         itemDisco = ItemDisco {itemKindId, itemKind, itemAE = Just iae}
     return $ Just ( (itemBase, iae)

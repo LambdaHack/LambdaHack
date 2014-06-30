@@ -14,6 +14,7 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -85,16 +86,16 @@ buildPlace :: Kind.COps         -- ^ the game content
            -> Bool              -- ^ whether the cave is dark
            -> Kind.Id TileKind  -- ^ dark fence tile, if fence hollow
            -> Kind.Id TileKind  -- ^ lit fence tile, if fence hollow
-           -> Int               -- ^ current level depth
-           -> Int               -- ^ maximum depth
+           -> AbsDepth          -- ^ current level depth
+           -> AbsDepth          -- ^ absolute depth
            -> Area              -- ^ whole area of the place, fence included
            -> Rnd (TileMapEM, Place)
 buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
                     , coplace=Kind.Ops{okind=pokind, opick=popick} }
-           CaveKind{..} dnight darkCorTile litCorTile ln depth r = do
+           CaveKind{..} dnight darkCorTile litCorTile ldepth totalDepth r = do
   qsolidFence <- fmap (fromMaybe $ assert `failure` cfillerTile)
                  $ opick cfillerTile (const True)
-  dark <- chanceDice ln depth cdarkChance
+  dark <- chanceDice ldepth totalDepth cdarkChance
   placeGroup <- frequency $ toFreq "cplaceFreq" cplaceFreq
   qkind <- fmap (fromMaybe $ assert `failure` (placeGroup, r))
            $ popick placeGroup (placeCheck r)

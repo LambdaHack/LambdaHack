@@ -2,7 +2,7 @@
 -- as the game progresses.
 module Game.LambdaHack.Common.Level
   ( -- * Dungeon
-    LevelId, Dungeon, ascendInBranch
+    LevelId, AbsDepth, Dungeon, ascendInBranch
     -- * The @Level@ type and its components
   , Level(..), ActorPrio, ItemFloor, TileMap, SmellMap
     -- * Level query
@@ -65,7 +65,7 @@ type SmellMap = EM.EnumMap Point SmellTime
 -- | A view on single, inhabited dungeon level. "Remembered" fields
 -- carry a subset of the info in the client copies of levels.
 data Level = Level
-  { ldepth    :: !Int        -- ^ depth of the level
+  { ldepth    :: !AbsDepth   -- ^ absolute depth of the level
   , lprio     :: !ActorPrio  -- ^ remembered actor times on the level
   , lfloor    :: !ItemFloor  -- ^ remembered items lying on the floor
   , ltile     :: !TileMap    -- ^ remembered level map

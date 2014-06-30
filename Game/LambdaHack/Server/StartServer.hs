@@ -162,7 +162,8 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
         return (faction, sflavour, sdisco, sdiscoRev, freshDng)
   let (faction, sflavour, sdisco, sdiscoRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
-      defState = defStateGlobal freshDungeon freshDepth faction cops scoreTable
+      defState = defStateGlobal freshDungeon freshTotalDepth
+                                faction cops scoreTable
       defSer = emptyStateServer { sstart, sallTime, sheroNames, srandom
                                 , srngs = RNGs (Just dungeonSeed)
                                                (Just srandom) }
@@ -226,7 +227,7 @@ populateDungeon = do
                     execUpdAtomic $ UpdLeadFaction fid3 Nothing (Just aid)
                   return True
           unless go $ assert `failure` "can't spawn initial actors"
-                             `twith` (lid, ((fid3, fact3), ppos))
+                             `twith` (lid, (fid3, fact3))
   mapM_ initialActors arenas
 
 -- | Find starting postions for all factions. Try to make them distant

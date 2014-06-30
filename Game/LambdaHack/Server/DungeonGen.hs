@@ -18,6 +18,7 @@ import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
@@ -99,11 +100,13 @@ placeStairs cotile cmap CaveKind{..} ps = do
     ]
 
 -- | Create a level from a cave.
-buildLevel :: Kind.COps -> Cave -> Int -> Int -> Int -> Int -> Int -> Maybe Bool
+buildLevel :: Kind.COps -> Cave
+           -> AbsDepth -> LevelId -> LevelId -> LevelId -> AbsDepth
+           -> Int -> Maybe Bool
            -> Rnd Level
 buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                          , cocave=Kind.Ops{okind=cokind} }
-           Cave{..} ldepth minD maxD totalDepth nstairUp escapeFeature = do
+           Cave{..} ldepth ln minD maxD totalDepth nstairUp escapeFeature = do
   let kc@CaveKind{..} = cokind dkind
       fitArea pos = inside pos . fromArea . qarea
       findLegend pos = maybe clegendLitTile qlegend
@@ -157,17 +160,17 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                      (True, True)  -> (up, down, st : upDown)
                      (False, False) -> assert `failure` st
   (stairsUp1, stairsDown1, stairsUpDown1) <-
-    makeStairs False (ldepth == maxD) (ldepth == minD) ([], [], [])
+    makeStairs False (ln == maxD) (ln == minD) ([], [], [])
   assert (null stairsUp1) skip
   let nstairUpLeft = nstairUp - length stairsUpDown1
   (stairsUp2, stairsDown2, stairsUpDown2) <-
-    foldM (\sts _ -> makeStairs True (ldepth == maxD) (ldepth == minD) sts)
+    foldM (\sts _ -> makeStairs True (ln == maxD) (ln == minD) sts)
           (stairsUp1, stairsDown1, stairsUpDown1)
           [1 .. nstairUpLeft]
   -- If only a single tile of up-and-down stairs, add one more stairs down.
   (stairsUp, stairsDown, stairsUpDown) <-
     if length (stairsUp2 ++ stairsDown2) == 0
-    then (makeStairs False True (ldepth == minD)
+    then (makeStairs False True (ln == minD)
              (stairsUp2, stairsDown2, stairsUpDown2))
     else return (stairsUp2, stairsDown2, stairsUpDown2)
   let stairsUpAndUpDown = stairsUp ++ stairsUpDown
@@ -192,7 +195,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
       -- We reverse the order in down stairs, to minimize long stair chains.
       lstair = ( map fst $ stairsUp ++ stairsUpDown
                , map fst $ stairsUpDown ++ stairsDown )
-  -- traceShow (ldepth, nstairUp, (stairsUp, stairsDown, stairsUpDown)) skip
+  -- traceShow (ln, nstairUp, (stairsUp, stairsDown, stairsUpDown)) skip
   litemNum <- castDice ldepth totalDepth citemNum
   let itemFreq = toFreq cname citemFreq
   assert (not $ nullFreq itemFreq) skip
@@ -202,7 +205,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
 
 -- | Build rudimentary level from a cave kind.
 levelFromCaveKind :: Kind.COps
-                  -> CaveKind -> Int -> TileMap -> ([Point], [Point])
+                  -> CaveKind -> AbsDepth -> TileMap -> ([Point], [Point])
                   -> Int -> Frequency Text -> Int -> Bool
                   -> Level
 levelFromCaveKind Kind.COps{cotile}
@@ -233,22 +236,23 @@ levelFromCaveKind Kind.COps{cotile}
   in lvl {lclear}
 
 findGenerator :: Kind.COps -> Caves
-              -> Int -> Int -> Int -> Int -> Int
+              -> LevelId -> LevelId -> LevelId -> AbsDepth -> Int
               -> Rnd Level
-findGenerator cops caves ldepth minD maxD totalDepth nstairUp = do
+findGenerator cops caves ln minD maxD totalDepth nstairUp = do
   let Kind.COps{cocave=Kind.Ops{opick}} = cops
       (genName, escapeFeature) =
-        fromMaybe ("dng", Nothing) $ EM.lookup ldepth caves
+        fromMaybe ("dng", Nothing) $ EM.lookup (fromEnum ln) caves
   ci <- fmap (fromMaybe $ assert `failure` genName)
         $ opick genName (const True)
+  -- A simple rule for now: level at level @ln@ has depth (difficulty) @abs ln@.
+  let ldepth = AbsDepth $ abs $ fromEnum ln
   cave <- buildCave cops ldepth totalDepth ci
-  buildLevel cops cave ldepth minD maxD totalDepth nstairUp escapeFeature
+  buildLevel cops cave ldepth ln minD maxD totalDepth nstairUp escapeFeature
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
-  { freshDungeon :: !Dungeon  -- ^ maps for all levels
-  , freshDepth   :: !Int      -- ^ absolute dungeon depth
-                              --   (can be different than size)
+  { freshDungeon    :: !Dungeon   -- ^ maps for all levels
+  , freshTotalDepth :: !AbsDepth  -- ^ absolute dungeon depth
   }
 
 -- | Generate the dungeon for a new game.
@@ -258,19 +262,20 @@ dungeonGen cops caves = do
         case (EM.minViewWithKey caves, EM.maxViewWithKey caves) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` "no caves" `twith` caves
-      totalDepth = assert (signum minD == signum maxD)
-                   $ if abs minD /= 1 && abs maxD /= 1
-                     then signum minD * max 10 (max (abs minD) (abs maxD))
-                     else signum minD * (abs (maxD - minD) + 1)
-  let gen :: (Int, [(LevelId, Level)]) -> Int
+      (minId, maxId) = (toEnum minD, toEnum maxD)
+      freshTotalDepth = assert (signum minD == signum maxD)
+                        $ AbsDepth
+                        $ if abs minD /= 1 && abs maxD /= 1
+                          then max 10 (max (abs minD) (abs maxD))
+                          else (abs (abs maxD - minD) + 1)
+  let gen :: (Int, [(LevelId, Level)]) -> LevelId
           -> Rnd (Int, [(LevelId, Level)])
-      gen (nstairUp, l) ldepth = do
-        lvl <- findGenerator cops caves ldepth minD maxD totalDepth nstairUp
+      gen (nstairUp, l) ln = do
+        lvl <- findGenerator cops caves ln minId maxId freshTotalDepth nstairUp
         -- nstairUp for the next level is nstairDown for the current level
         let nstairDown = length $ snd $ lstair lvl
-        return $ (nstairDown, (toEnum ldepth, lvl) : l)
-  (nstairUpLast, levels) <- foldM gen (0, []) $ reverse [minD..maxD]
+        return $ (nstairDown, (ln, lvl) : l)
+  (nstairUpLast, levels) <- foldM gen (0, []) $ reverse [minId..maxId]
   assert (nstairUpLast == 0) skip
   let freshDungeon = EM.fromList levels
-      freshDepth = totalDepth
   return $! FreshDungeon{..}

@@ -3,7 +3,7 @@ module Game.LambdaHack.Common.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, sdepth, sactorD, sitemD, sfactionD, stime, scops, shigh
+  , sdungeon, stotalDepth, sactorD, sitemD, sfactionD, stime, scops, shigh
     -- * State operations
   , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD
@@ -16,34 +16,35 @@ import Data.Text (Text)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Common.Frequency
 
 -- | View on game state. "Remembered" fields carry a subset of the info
 -- in the client copies of the state. Clients never directly change
 -- their @State@, but apply atomic actions sent by the server to do so.
 data State = State
-  { _sdungeon  :: !Dungeon      -- ^ remembered dungeon
-  , _sdepth    :: !Int          -- ^ dungeon \'depth\' for items creation, etc.
-  , _sactorD   :: !ActorDict    -- ^ remembered actors in the dungeon
-  , _sitemD    :: !ItemDict     -- ^ remembered items in the dungeon
-  , _sfactionD :: !FactionDict  -- ^ remembered sides still in game
-  , _stime     :: !Time         -- ^ global game time
-  , _scops     :: Kind.COps     -- ^ remembered content
-  , _shigh     :: !HighScore.ScoreTable  -- ^ high score table
+  { _sdungeon    :: !Dungeon      -- ^ remembered dungeon
+  , _stotalDepth :: !AbsDepth     -- ^ absolute dungeon depth, for item creation
+  , _sactorD     :: !ActorDict    -- ^ remembered actors in the dungeon
+  , _sitemD      :: !ItemDict     -- ^ remembered items in the dungeon
+  , _sfactionD   :: !FactionDict  -- ^ remembered sides still in game
+  , _stime       :: !Time         -- ^ global game time
+  , _scops       :: Kind.COps     -- ^ remembered content
+  , _shigh       :: !HighScore.ScoreTable  -- ^ high score table
   }
   deriving (Show, Eq)
 
 -- TODO: add a flag 'fresh' and when saving levels, don't save
 -- and when loading regenerate this level.
-unknownLevel :: Kind.Ops TileKind -> Int -> X -> Y
+unknownLevel :: Kind.Ops TileKind -> AbsDepth -> X -> Y
              -> Text -> ([Point], [Point]) -> Int -> Int -> Int -> Bool
              -> Level
 unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
@@ -80,10 +81,10 @@ unknownTileMap unknownId outerId lxsize lysize =
   in unknownMap PointArray.// outerUpdate
 
 -- | Initial complete global game state.
-defStateGlobal :: Dungeon -> Int
+defStateGlobal :: Dungeon -> AbsDepth
                -> FactionDict -> Kind.COps -> HighScore.ScoreTable
                -> State
-defStateGlobal _sdungeon _sdepth _sfactionD _scops _shigh =
+defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh =
   State
     { _sactorD = EM.empty
     , _sitemD = EM.empty
@@ -96,7 +97,7 @@ emptyState :: State
 emptyState =
   State
     { _sdungeon = EM.empty
-    , _sdepth = 0
+    , _stotalDepth = AbsDepth 0
     , _sactorD = EM.empty
     , _sitemD = EM.empty
     , _sfactionD = EM.empty
@@ -126,8 +127,8 @@ updateDungeon :: (Dungeon -> Dungeon) -> State -> State
 updateDungeon f s = s {_sdungeon = f (_sdungeon s)}
 
 -- | Update dungeon depth.
-updateDepth :: (Int -> Int) -> State -> State
-updateDepth f s = s {_sdepth = f (_sdepth s)}
+updateDepth :: (AbsDepth -> AbsDepth) -> State -> State
+updateDepth f s = s {_stotalDepth = f (_stotalDepth s)}
 
 -- | Update the actor dictionary.
 updateActorD :: (ActorDict -> ActorDict) -> State -> State
@@ -152,8 +153,8 @@ updateCOps f s = s {_scops = f (_scops s)}
 sdungeon :: State -> Dungeon
 sdungeon = _sdungeon
 
-sdepth :: State -> Int
-sdepth = _sdepth
+stotalDepth :: State -> AbsDepth
+stotalDepth = _stotalDepth
 
 sactorD :: State -> ActorDict
 sactorD = _sactorD
@@ -176,7 +177,7 @@ shigh = _shigh
 instance Binary State where
   put State{..} = do
     put _sdungeon
-    put _sdepth
+    put _stotalDepth
     put _sactorD
     put _sitemD
     put _sfactionD
@@ -184,7 +185,7 @@ instance Binary State where
     put _shigh
   get = do
     _sdungeon <- get
-    _sdepth <- get
+    _stotalDepth <- get
     _sactorD <- get
     _sitemD <- get
     _sfactionD <- get

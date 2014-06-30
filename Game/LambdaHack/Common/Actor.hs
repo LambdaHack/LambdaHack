@@ -14,6 +14,7 @@ module Game.LambdaHack.Common.Actor
   , mapActorItems_, ppCStore, ppContainer
   ) where
 
+import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
@@ -95,14 +96,12 @@ oneM = xM 1
 -- could further influence the chance, and the chance could also affect
 -- which monster is generated. How many and which monsters are generated
 -- will also depend on the cave kind used to build the level.
-monsterGenChance :: Int -> Int -> Int -> Rnd Bool
-monsterGenChance n' depth' numMonsters =
-  -- Mimics @castDice@.
-  let n = abs n'
-      depth = max 1 $ abs depth'
-      -- On level 1, First 2 monsters appear fast.
-      scaledDepth = 5 * n `div` depth
-  in chance $ 1%(fromIntegral (100 * (numMonsters - scaledDepth)) `max` 10)
+monsterGenChance :: AbsDepth -> AbsDepth -> Int -> Rnd Bool
+monsterGenChance (AbsDepth n) (AbsDepth depth) numMonsters =
+  assert (depth > 0)
+  -- Mimics @castDice@. On level 1, First 2 monsters appear fast.
+  $ let scaledDepth = 5 * n `div` depth
+    in chance $ 1%(fromIntegral (100 * (numMonsters - scaledDepth)) `max` 10)
 
 -- | The part of speech describing the actor.
 partActor :: Actor -> MU.Part

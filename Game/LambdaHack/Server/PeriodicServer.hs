@@ -68,9 +68,9 @@ generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 generateMonster lid = do
   f <- getsState $ flip isSpawnFaction
   spawns <- getsState $ actorRegularList f lid
-  depth <- getsState sdepth
+  totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
-  rc <- rndToAction $ monsterGenChance ldepth depth (length spawns)
+  rc <- rndToAction $ monsterGenChance ldepth totalDepth (length spawns)
   when rc $ do
     factionD <- getsState sfactionD
     let actorFreq = toFreq "spawn"

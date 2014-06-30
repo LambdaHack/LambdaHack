@@ -202,7 +202,7 @@ effectHurt :: (MonadAtomic m, MonadServer m)
 effectHurt nDm source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  n <- rndToAction $ castDice 0 0 nDm
+  n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   hurtBonus <- armorHurtBonus source target
   let block = braced tb
       mult = (100 + hurtBonus) * (if block then 50 else 100)

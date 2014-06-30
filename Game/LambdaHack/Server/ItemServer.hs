@@ -62,9 +62,10 @@ rollAndRegisterItem lid itemFreq container verbose = do
   cops <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
-  depth <- getsState sdepth
+  totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
-  m4 <- rndToAction $ newItem cops flavour discoRev itemFreq lid ldepth depth
+  m4 <- rndToAction
+        $ newItem cops flavour discoRev itemFreq lid ldepth totalDepth
   case m4 of
     Nothing -> return Nothing
     Just (itemKnown, itemFull, seed, k) -> do

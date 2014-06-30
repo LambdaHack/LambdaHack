@@ -97,10 +97,10 @@ instance Hashable Item
 
 instance Binary Item
 
-seedToAspectsEffects :: ItemSeed -> ItemKind -> Int -> Int
+seedToAspectsEffects :: ItemSeed -> ItemKind -> AbsDepth -> AbsDepth
                      -> ItemAspectEffect
-seedToAspectsEffects (ItemSeed itemSeed) kind ln depth =
-  let castD = castDice ln depth
+seedToAspectsEffects (ItemSeed itemSeed) kind ldepth totalDepth =
+  let castD = castDice ldepth totalDepth
       rollAE = do
         aspects <- mapM (flip aspectTrav castD) (iaspects kind)
         effects <- mapM (flip effectTrav castD) (ieffects kind)

@@ -357,13 +357,13 @@ discoverSeed lid p iid seed = do
   disco <- getsClient sdisco
   item <- getsState $ getItemBody iid
   Level{ldepth} <- getLevel (jlid item)
-  depth <- getsState sdepth
+  totalDepth <- getsState stotalDepth
   case EM.lookup (jkindIx item) disco of
     Nothing -> assert `failure` "kind not known"
                       `twith` (lid, p, iid, seed)
     Just ik -> do
       let kind = okind ik
-          f Nothing = Just $ seedToAspectsEffects seed kind ldepth depth
+          f Nothing = Just $ seedToAspectsEffects seed kind ldepth totalDepth
           f Just{} = assert `failure` "already discovered"
                             `twith` (lid, p, iid, seed)
       modifyClient $ \cli -> cli {sdiscoAE = EM.alter f iid (sdiscoAE cli)}

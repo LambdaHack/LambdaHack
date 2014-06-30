@@ -18,6 +18,7 @@ import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Frequency
+import Game.LambdaHack.Common.Misc
 
 -- | The monad of computations with random generator state.
 -- The lazy state monad is OK here: the state is small and regularly forced.
@@ -74,26 +75,24 @@ chance r = do
 
 -- | Cast dice scaled with current level depth.
 -- Note that at the first level, the scaled dice are always ignored.
-castDice :: Int -> Int -> Dice.Dice -> Rnd Int
-castDice n' maxDepth' dice = do
-  let n = abs n'
-      maxDepth = abs maxDepth'
-  assert (n >= 0 && n <= maxDepth `blame` "invalid depth for dice rolls"
-                                  `twith` (n', maxDepth')) skip
+castDice :: AbsDepth -> AbsDepth -> Dice.Dice -> Rnd Int
+castDice (AbsDepth n) (AbsDepth depth) dice = do
+  assert (n >= 0 && n <= depth `blame` "invalid depth for dice rolls"
+                               `twith` (n, depth)) skip
   dc <- frequency $ Dice.diceConst dice
   dl <- frequency $ Dice.diceLevel dice
-  return $! dc + (dl * max 0 (n - 1)) `div` max 1 (maxDepth - 1)
+  return $! dc + (dl * max 0 (n - 1)) `div` max 1 (depth - 1)
 
 -- | Cast dice scaled with current level depth and return @True@
 -- if the results if greater than 50.
-chanceDice :: Int -> Int -> Dice.Dice -> Rnd Bool
-chanceDice n' maxDepth' dice = do
-  c <- castDice n' maxDepth' dice
+chanceDice :: AbsDepth -> AbsDepth -> Dice.Dice -> Rnd Bool
+chanceDice ldepth totalDepth dice = do
+  c <- castDice ldepth totalDepth dice
   return $! c > 50
 
 -- | Cast dice, scaled with current level depth, for coordinates.
-castDiceXY :: Int -> Int -> Dice.DiceXY -> Rnd (Int, Int)
-castDiceXY n' maxDepth' (Dice.DiceXY dx dy) = do
-  x <- castDice n' maxDepth' dx
-  y <- castDice n' maxDepth' dy
+castDiceXY :: AbsDepth -> AbsDepth -> Dice.DiceXY -> Rnd (Int, Int)
+castDiceXY ldepth totalDepth (Dice.DiceXY dx dy) = do
+  x <- castDice ldepth totalDepth dx
+  y <- castDice ldepth totalDepth dy
   return (x, y)

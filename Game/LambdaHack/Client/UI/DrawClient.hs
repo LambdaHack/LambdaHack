@@ -230,12 +230,12 @@ inverseVideo = Color.Attr { Color.fg = Color.bg Color.defAttr
 -- Comfortably accomodates 3-digit level numbers and 25-character
 -- level descriptions (currently enforced max).
 drawArenaStatus :: Bool -> Level -> Int -> [Color.AttrChar]
-drawArenaStatus explored Level{ldepth, ldesc, lseen, lclear} width =
+drawArenaStatus explored Level{ldepth=AbsDepth ld, ldesc, lseen, lclear} width =
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       seenN = 100 * lseen `div` max 1 lclear
       seenTxt | explored || seenN >= 100 = "all"
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
-      lvlN = T.justifyLeft 2 ' ' (tshow $ abs ldepth)
+      lvlN = T.justifyLeft 2 ' ' (tshow ld)
       seenStatus = "[" <> seenTxt <+> "seen] "
   in addAttr $ T.justifyLeft width ' '
              $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus

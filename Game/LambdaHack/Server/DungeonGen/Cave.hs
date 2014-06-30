@@ -13,6 +13,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -58,16 +59,16 @@ as follows:
 -- TODO: fix identifier naming and split, after the code grows some more
 -- | Cave generation by an algorithm inspired by the original Rogue,
 buildCave :: Kind.COps         -- ^ content definitions
-          -> Int               -- ^ depth of the level to generate
-          -> Int               -- ^ maximum depth of the dungeon
+          -> AbsDepth          -- ^ depth of the level to generate
+          -> AbsDepth          -- ^ absolute depth
           -> Kind.Id CaveKind  -- ^ cave kind to use for generation
           -> Rnd Cave
 buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         , cocave=Kind.Ops{okind}
                         , coplace=Kind.Ops{okind=pokind} }
-          ln depth dkind = do
+          ldepth totalDepth dkind = do
   let kc@CaveKind{..} = okind dkind
-  lgrid@(gx, gy) <- castDiceXY ln depth cgrid
+  lgrid@(gx, gy) <- castDiceXY ldepth totalDepth cgrid
   -- Make sure that in caves not filled with rock, there is a passage
   -- across the cave, even if a single room blocks most of the cave.
   -- Also, ensure fancy outer fences are not obstructed by room walls.
@@ -90,8 +91,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
        voidPl <- replicateM voidNum $ xyInArea gridArea  -- repetitions are OK
        return (addedC, voidPl)
     else return ([], [])
-  minPlaceSize <- castDiceXY ln depth cminPlaceSize
-  maxPlaceSize <- castDiceXY ln depth cmaxPlaceSize
+  minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
+  maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
   places0 <- mapM (\ (i, r) -> do
                      -- Reserved for corridors and the global fence.
                      let innerArea = fromMaybe (assert `failure` (i, r))
@@ -102,7 +103,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                                                     maxPlaceSize innerArea
                      return (i, r')) gs
   fence <- buildFenceRnd cops couterFenceTile subFullArea
-  dnight <- chanceDice ln depth cnightChance
+  dnight <- chanceDice ldepth totalDepth cnightChance
   darkCorTile <- fmap (fromMaybe $ assert `failure` cdarkCorTile)
                  $ opick cdarkCorTile (const True)
   litCorTile <- fmap (fromMaybe $ assert `failure` clitCorTile)
@@ -111,7 +112,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
       addPl (m, pls, qls) (i, Left r) = return (m, pls, (i, Left r) : qls)
       addPl (m, pls, qls) (i, Right r) = do
         (tmap, place) <-
-          buildPlace cops kc dnight darkCorTile litCorTile ln depth r
+          buildPlace cops kc dnight darkCorTile litCorTile ldepth totalDepth r
         return (EM.union tmap m, place : pls, (i, Right (r, place)) : qls)
   (lplaces, dplaces, qplaces0) <- foldM addPl (fence, [], []) places0
   connects <- connectGrid lgrid
