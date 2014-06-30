@@ -312,16 +312,13 @@ drawLeaderDamage width = do
                   tdice = case mdice of
                     Nothing -> "???"
                     Just dice -> tshow dice
-                  bonus = sumSlotNoFilter Effect.EqpSlotAddHurtMelee
-                                           activeItems
-                           - sumSlotNoFilter Effect.EqpSlotAddArmorMelee
-                                             activeItems
+                  bonus = sumSlotNoFilter Effect.EqpSlotAddHurtMelee activeItems
                   unknownBonus = unknownMelee activeItems
                   tbonus = if bonus == 0
                            then if unknownBonus then "+?" else ""
-                           else if bonus > 0 then "+" else ""
+                           else (if bonus > 0 then "+" else "")
                                 <> tshow bonus
-                                <> if unknownBonus then "?" else ""
+                                <> if unknownBonus then "%?" else "%"
              in tdice <> tbonus
             [] -> "0"
       return $! damage
