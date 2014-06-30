@@ -48,4 +48,8 @@ validateItemKind l =
                || let sortedRarity = sortBy (comparing fst) (irarity ik)
                   in sortedRarity /= irarity ik
                      || nubBy ((==) `on` fst) sortedRarity /= sortedRarity
+                     || case (sortedRarity, reverse sortedRarity) of
+                       ((lowest, _) : _, (highest, _) : _) ->
+                         lowest < 1 || highest > 10
+                       _ -> False
   in filter bad l

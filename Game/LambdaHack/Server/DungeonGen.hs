@@ -265,9 +265,9 @@ dungeonGen cops caves = do
       (minId, maxId) = (toEnum minD, toEnum maxD)
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ AbsDepth
-                        $ if abs minD /= 1 && abs maxD /= 1
-                          then max 10 (max (abs minD) (abs maxD))
-                          else (abs (abs maxD - minD) + 1)
+                        $ if abs minD == 1 || abs maxD == 1
+                          then abs (maxD - minD) + 1
+                          else max 10 $ max (abs minD) (abs maxD)
   let gen :: (Int, [(LevelId, Level)]) -> LevelId
           -> Rnd (Int, [(LevelId, Level)])
       gen (nstairUp, l) ln = do

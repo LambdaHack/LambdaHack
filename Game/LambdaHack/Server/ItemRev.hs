@@ -76,18 +76,18 @@ newItem cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         flavour discoRev itemFreq jlid
         ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) = do
   itemGroup <- frequency itemFreq
-  let findInterval _ x1y1 [] = (x1y1, (depth + 1, 0))
-      findInterval point x1y1 ((x, y) : rest) =
-        assert (0 < x && x < depth + 1 `blame` (itemGroup, x, depth + 1))
-        $ if point <= x
-          then (x1y1, (x, y))
-          else findInterval point (x, y) rest
-      linearInterpolation point dataset =
-        -- We assume @dataset@ is sorted and between 0 and @depth + 1@.
-        let ((x1, y1), (x2, y2)) = findInterval point (0, 0) dataset
-        in y1 + (y2 - y1) * (point - x1) `divUp` (x2 - x1)
+  let findInterval x1y1 [] = (x1y1, (11, 0))
+      findInterval x1y1 ((x, y) : rest) =
+        if ld * 10 <= x * depth
+        then (x1y1, (x, y))
+        else findInterval (x, y) rest
+      linearInterpolation dataset =
+        -- We assume @dataset@ is sorted and between 1 and 10 inclusive.
+        let ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
+        in y1 + (y2 - y1) * (ld * 10 - x1 * depth)
+                `divUp` ((x2 - x1) * depth)
       f p ik kind acc =
-        let rarity = linearInterpolation ld (irarity kind)
+        let rarity = linearInterpolation (irarity kind)
         in (p * rarity, (ik, kind)) : acc
       freqDepth = ofoldrGroup itemGroup f []
       freq = toFreq ("newItem ('" <> itemGroup <> "',"
