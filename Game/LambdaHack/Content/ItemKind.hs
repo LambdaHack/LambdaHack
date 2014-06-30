@@ -3,6 +3,9 @@ module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), toVelocity, toLinger, validateItemKind
   ) where
 
+import Data.Function
+import Data.List
+import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -40,4 +43,9 @@ toLinger n = Effect.ToThrow $ Effect.ThrowMod 100 n
 
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.
 validateItemKind :: [ItemKind] -> [ItemKind]
-validateItemKind l = filter (\ik -> T.length (iname ik) > 23) l
+validateItemKind l =
+  let bad ik = T.length (iname ik) > 23
+               || let sortedRarity = sortBy (comparing fst) (irarity ik)
+                  in sortedRarity /= irarity ik
+                     || nubBy ((==) `on` fst) sortedRarity /= sortedRarity
+  in filter bad l
