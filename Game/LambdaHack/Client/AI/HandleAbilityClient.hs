@@ -302,15 +302,16 @@ unEquipItems aid = do
       betterThanInv vEqp ((vInv, _) : _) = vEqp > vInv
       bestThree = bestByEqpSlot invAssocs eqpAssocs shaAssocs
   case yieldUnneeded of
-    [] -> do
-      let bInvSha = msum $ map (improve CInv)
-                    $ map (\(_, inv, sha) -> (sha, inv)) bestThree
-      if nullStrategy bInvSha
-        then if rsharedStash && calmEnough body activeItems
-             then return $! msum $ map (improve CEqp)
+    [] ->
+      if rsharedStash && calmEnough body activeItems
+      then do
+        let bInvSha = msum $ map (improve CInv)
+                      $ map (\(_, inv, sha) -> (sha, inv)) bestThree
+        if nullStrategy bInvSha
+          then return $! msum $ map (improve CEqp)
                          $ map (\(eqp, _, sha) -> (sha, eqp)) bestThree
-             else return reject
-        else return $! bInvSha
+          else return $! bInvSha
+        else return reject
     _ ->
       -- Here AI hides from the human player the Ring of Speed And Bleeding,
       -- which is a bit harsh, but fair. However any subsequent such
@@ -377,6 +378,8 @@ harmful cops body activeItems fact itemFull =
   -- should not be equipped (either they are harmful or they waste eqp space).
   maybe False (\u -> u <= 0)
     (maxUsefulness cops body activeItems fact itemFull)
+  && (maybe True ((/= Effect.EqpSlotWeapon) . fst)
+      $ strengthEqpSlot $ itemBase itemFull)
 
 unneeded :: Kind.COps -> Bool -> Actor -> [ItemFull] -> Faction -> ItemFull
          -> Bool
