@@ -187,7 +187,7 @@ populateDungeon = do
       needInitialCrew = filter ((> 0 ) . playerInitial . gplayer . snd)
                         $ EM.assocs factionD
       getEntryLevel (_, fact) =
-        max minD $ min maxD $ playerEntry $ gplayer fact
+        max minD $ min maxD $ toEnum $ playerEntry $ gplayer fact
       arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
       initialActors lid = do
         lvl <- getLevel lid

@@ -282,7 +282,7 @@ getArenaUI = do
                 case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
                   (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
                   _ -> assert `failure` "empty dungeon" `twith` dungeon
-          return $! max minD $ min maxD $ playerEntry $ gplayer fact
+          return $! max minD $ min maxD $ toEnum $ playerEntry $ gplayer fact
 
 viewedLevel :: MonadClientUI m => m LevelId
 viewedLevel = do

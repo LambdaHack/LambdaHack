@@ -129,21 +129,21 @@ playersBattle = Players
 playersSafari = Players
   { playersList = [ playerMonster { playerName = "Monster Tourist Office"
                                   , playerSpawn = 0
-                                  , playerEntry = toEnum (-8)
+                                  , playerEntry = -8
                                   , playerInitial = 10
                                   , playerAI = False
                                   , playerUI = True }
                   , playerCivilian { playerName = "Hunam Convict Pack"
-                                   , playerEntry = toEnum (-8) }
+                                   , playerEntry = -8 }
                   , playerAnimal { playerName =
                                      "Animal Magnificent Specimen Variety"
                                  , playerSpawn = 0
-                                 , playerEntry = toEnum (-9)
+                                 , playerEntry = -9
                                  , playerInitial = 7 }
                   , playerAnimal { playerName =
                                      "Animal Exquisite Herds and Packs"
                                  , playerSpawn = 0
-                                 , playerEntry = toEnum (-10)
+                                 , playerEntry = -10
                                  , playerInitial = 20 } ]
   , playersEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
                    , ("Monster Tourist Office",
@@ -206,7 +206,7 @@ playerHero = Player
   { playerName = "Adventurer Party"
   , playerFaction = "hero"
   , playerSpawn = 0
-  , playerEntry = toEnum (-1)
+  , playerEntry = -1
   , playerInitial = 3
   , playerLeader = True
   , playerAI = False
@@ -222,7 +222,7 @@ playerCivilian = Player
   { playerName = "Civilian Crowd"
   , playerFaction = "civilian"
   , playerSpawn = 0
-  , playerEntry = toEnum (-1)
+  , playerEntry = -1
   , playerInitial = 3
   , playerLeader = False  -- unorganized
   , playerAI = True
@@ -233,7 +233,7 @@ playerMonster = Player
   { playerName = "Monster Hive"
   , playerFaction = "monster"
   , playerSpawn = 66
-  , playerEntry = toEnum (-3)
+  , playerEntry = -3
   , playerInitial = 5
   , playerLeader = True
   , playerAI = True
@@ -244,7 +244,7 @@ playerAnimal = Player
   { playerName = "Animal Kingdom"
   , playerFaction = "animal"
   , playerSpawn = 33
-  , playerEntry = toEnum (-2)
+  , playerEntry = -2
   , playerInitial = 3
   , playerLeader = False
   , playerAI = True
@@ -255,7 +255,7 @@ playerHorror = Player
   { playerName = "Horror Den"
   , playerFaction = "horror"
   , playerSpawn = 0
-  , playerEntry = toEnum (-1)
+  , playerEntry = -1
   , playerInitial = 0
   , playerLeader = False
   , playerAI = True
@@ -265,17 +265,17 @@ playerHorror = Player
 
 cavesCampaign, cavesSkirmish, cavesAmbush, cavesBattle, cavesSafari :: Caves
 
-cavesCampaign = EM.fromList [ (toEnum (-1), ("caveRogue", Just True))
-                            , (toEnum (-2), ("caveRogue", Nothing))
-                            , (toEnum (-3), ("caveEmpty", Nothing))
-                            , (toEnum (-10), ("caveNoise", Nothing))]
+cavesCampaign = EM.fromList [ (-1, ("caveRogue", Just True))
+                            , (-2, ("caveRogue", Nothing))
+                            , (-3, ("caveEmpty", Nothing))
+                            , (-10, ("caveNoise", Nothing))]
 
-cavesSkirmish = EM.fromList [(toEnum (-3), ("caveSkirmish", Nothing))]
+cavesSkirmish = EM.fromList [(-3, ("caveSkirmish", Nothing))]
 
-cavesAmbush = EM.fromList [(toEnum (-5), ("caveAmbush", Nothing))]
+cavesAmbush = EM.fromList [(-5, ("caveAmbush", Nothing))]
 
-cavesBattle = EM.fromList [(toEnum (-3), ("caveBattle", Nothing))]
+cavesBattle = EM.fromList [(-3, ("caveBattle", Nothing))]
 
-cavesSafari = EM.fromList [ (toEnum (-8), ("caveAmbush", Nothing))
-                          , (toEnum (-9), ("caveBattle", Nothing))
-                          , (toEnum (-10), ("caveSkirmish", Just False)) ]
+cavesSafari = EM.fromList [ (-8, ("caveAmbush", Nothing))
+                          , (-9, ("caveBattle", Nothing))
+                          , (-10, ("caveSkirmish", Just False)) ]

@@ -8,7 +8,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU ()
 
-import Game.LambdaHack.Common.Misc (Freqs, LevelId)
+import Game.LambdaHack.Common.Misc (Freqs)
 
 -- | Game mode specification.
 data ModeKind = ModeKind
@@ -25,7 +25,7 @@ data ModeKind = ModeKind
 -- that can randomly appear. The second component of the pair
 -- is the @Escape@ feature on the level. @True@ means it's represented
 -- by @<@, @False@, by @>@.
-type Caves = EM.EnumMap LevelId (Text, Maybe Bool)
+type Caves = EM.EnumMap Int (Text, Maybe Bool)
 
 -- | The specification of players for the game mode.
 data Players = Players
@@ -40,7 +40,7 @@ data Player = Player
   { playerName    :: !Text     -- ^ name of the player
   , playerFaction :: !Text     -- ^ name of faction(s) the player can control
   , playerSpawn   :: !Int      -- ^ spawning frequency
-  , playerEntry   :: !LevelId  -- ^ level where the initial members start
+  , playerEntry   :: !Int      -- ^ level where the initial members start
   , playerInitial :: !Int      -- ^ number of initial members
   , playerLeader  :: !Bool     -- ^ leaderless factions can't be controlled
                                --   by a human or a user-supplied AI client
