@@ -127,7 +127,7 @@ pickActorToMove refreshTarget oldAid = do
             if targetTEnemy our then
               -- TODO: take weapon, walk and fight speed, etc. into account
               ( d + if targetBlocked our then 2 else 0  -- possible delay, hacky
-              , - 10 * (fromIntegral $ bhp b `div` (10 * 1000000))
+              , - 10 * (fromIntegral $ bhp b `div` (10 * oneM))
               , aid /= oldAid )
             else
               -- Keep proper formation, not too dense, not to sparse.

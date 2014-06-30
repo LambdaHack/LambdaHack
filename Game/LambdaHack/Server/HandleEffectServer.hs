@@ -187,8 +187,8 @@ halveCalm target = do
   let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
       calmUpperBound = if hpTooLow tb activeItems
                        then 0  -- to trigger domination, etc.
-                       else calmMax `div` 2
-      deltaCalm = min minusTwoM (xM calmUpperBound - bcalm tb)
+                       else xM calmMax `div` 2
+      deltaCalm = min minusTwoM (calmUpperBound - bcalm tb)
   -- HP loss decreases Calm by at least minusTwoM, to overcome Calm regen,
   -- when far from shooting foe and to avoid "hears something",
   -- which is emitted for decrease minusM.
@@ -293,7 +293,7 @@ effectCallFriend power source target = assert (power > 0) $ do
   if not legal then return False
   else do
     let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
-        deltaHP = xM $ hpMax `div` 3
+        deltaHP = xM hpMax `div` 3
     execUpdAtomic $ UpdRefillHP source deltaHP
     let validTile t = not $ Tile.hasFeature cotile F.NoActor t
         lid = blid sb
@@ -317,7 +317,7 @@ effectSummon power source target = assert (power > 0) $ do
   if not legal then return False
   else do
     let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
-        deltaCalm = xM $ calmMax `div` 3
+        deltaCalm = xM calmMax `div` 3
     execUpdAtomic $ UpdRefillCalm source deltaCalm
     let validTile t = not $ Tile.hasFeature cotile F.NoActor t
     ps <- getsState $ nearbyFreePoints validTile (bpos sb) (blid sb)
