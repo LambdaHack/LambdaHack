@@ -257,12 +257,13 @@ dungeonGen :: Kind.COps -> Caves -> Rnd FreshDungeon
 dungeonGen cops caves = do
   let (minD, maxD) =
         case (EM.minViewWithKey caves, EM.maxViewWithKey caves) of
-          (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
+          (Just ((s, _), _), Just ((e, _), _)) ->(s, e)
           _ -> assert `failure` "no caves" `twith` caves
-      totalDepth = if abs (fromEnum minD) /= 1 && abs (fromEnum maxD) /= 1
-                   then signum (fromEnum minD) * 10
-                   else signum (fromEnum minD)
-                        * (abs (fromEnum maxD - fromEnum minD) + 1)
+      (minI, maxI) = (fromEnum minD, fromEnum maxD)
+      totalDepth = assert (signum minI == signum maxI)
+                   $ if abs minI /= 1 && abs maxI /= 1
+                     then signum minI * max 10 (max (abs minI) (abs maxI))
+                     else signum minI * (abs (maxI - minI) + 1)
   let gen :: (Int, [(LevelId, Level)]) -> LevelId
           -> Rnd (Int, [(LevelId, Level)])
       gen (nstairUp, l) ldepth = do

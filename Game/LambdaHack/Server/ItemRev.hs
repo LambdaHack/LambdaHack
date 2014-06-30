@@ -71,34 +71,23 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
 newItem :: Kind.Ops ItemKind -> FlavourMap -> DiscoRev
         -> Frequency Text -> LevelId -> Int -> Int
         -> Rnd (ItemKnown, ItemFull, ItemSeed, Int)
-newItem coitem@Kind.Ops{opick, okind}
+newItem Kind.Ops{opick, okind}
         flavour discoRev itemFreq jlid ln depth = do
   itemGroup <- frequency itemFreq
-  let castItem :: Int -> Rnd (ItemKnown, ItemFull, ItemSeed, Int)
-      castItem 0 = do
-        let zeroedFreq = setFreq itemFreq itemGroup 0
-            newFreq = if nullFreq zeroedFreq
-                      then toFreq "fallback item" [(1, "fallback item")]
-                      else zeroedFreq
-        newItem coitem flavour discoRev newFreq jlid ln depth
-      castItem count = do
-        itemKindId <- fmap (fromMaybe $ assert `failure` itemGroup)
-                      $ opick itemGroup (const True)
-        let itemKind = okind itemKindId
-        itemK <- castDice ln depth (icount itemKind)
-        if itemK == 0 then
-          castItem $ count - 1
-        else do
-          seed <- fmap toEnum random
-          let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
-              iae = seedToAspectsEffects seed itemKind ln depth
-              itemFull = ItemFull {itemBase, itemK, itemDisco = Just itemDisco}
-              itemDisco = ItemDisco {itemKindId, itemKind, itemAE = Just iae}
-          return ( (itemBase, iae)
-                 , itemFull
-                 , seed
-                 , itemK )
-  castItem 10
+  itemKindId <- fmap (fromMaybe $ assert `failure` itemGroup)
+                $ opick itemGroup (const True)
+  let itemKind = okind itemKindId
+  itemN <- castDice ln depth (icount itemKind)
+  seed <- fmap toEnum random
+  let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
+      itemK = max 1 itemN
+      iae = seedToAspectsEffects seed itemKind ln depth
+      itemFull = ItemFull {itemBase, itemK, itemDisco = Just itemDisco}
+      itemDisco = ItemDisco {itemKindId, itemKind, itemAE = Just iae}
+  return ( (itemBase, iae)
+         , itemFull
+         , seed
+         , itemK )
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
 newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)

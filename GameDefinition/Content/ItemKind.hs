@@ -35,7 +35,7 @@ gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 dart = ItemKind
   { isymbol  = '|'
   , iname    = "dart"
-  , ifreq    = [("useful", 20), ("any arrow", 100), ("fallback item", 1)]
+  , ifreq    = [("useful", 20), ("any arrow", 100)]
   , iflavour = zipPlain [Cyan]
   , icount   = 3 * d 3
   , irarity  = [(1, 20)]
