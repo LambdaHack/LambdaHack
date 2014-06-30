@@ -46,7 +46,7 @@ import Game.LambdaHack.Server.State
 -- of monsters and for the summon effect.
 spawnMonsters :: (MonadAtomic m, MonadServer m)
               => [Point] -> LevelId -> Time -> FactionId
-              -> m ()
+              -> m Bool
 spawnMonsters ps lid time fid = assert (not $ null ps) $ do
   cops@Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
@@ -55,45 +55,53 @@ spawnMonsters ps lid time fid = assert (not $ null ps) $ do
     if isHeroFact cops fact
     then addHero fid p lid [] Nothing time
     else addMonster spawnName fid p lid time
-  case laid of
-    [] -> return ()
+  case catMaybes laid of
+    [] -> return False
     aid : _ -> do
       mleader <- getsState $ gleader . (EM.! fid) . sfactionD  -- just changed
       when (isNothing mleader) $
         execUpdAtomic $ UpdLeadFaction fid Nothing (Just aid)
+      return True
 
 -- | Generate a monster, possibly.
 generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 generateMonster lid = do
-  cops <- getsState scops
   f <- getsState $ flip isSpawnFaction
   spawns <- getsState $ actorRegularList f lid
   depth <- getsState sdepth
-  lvl@Level{ldepth} <- getLevel lid
+  Level{ldepth} <- getLevel lid
   rc <- rndToAction $ monsterGenChance ldepth depth (length spawns)
   when rc $ do
     factionD <- getsState sfactionD
-    let freq = toFreq "spawn"
-               $ map (\(fid, fact) -> (playerSpawn $ gplayer fact, fid))
-               $ EM.assocs factionD
-    mfid <- if nullFreq freq then return Nothing
-            else fmap Just $ rndToAction $ frequency freq
-    case mfid of
-      Nothing -> return ()  -- no faction spawns
-      Just fid -> do
-        pers <- getsServer sper
-        let allPers = ES.unions $ map (totalVisible . (EM.! lid))
-                      $ EM.elems $ EM.delete fid pers  -- expensive :(
-        rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fid
-        pos <- rndToAction rollPos
-        time <- getsState $ getLocalTime lid
-        spawnMonsters [pos] lid time fid
+    let actorFreq = toFreq "spawn"
+                    $ map (\(fid, fact) -> (playerSpawn $ gplayer fact, fid))
+                    $ EM.assocs factionD
+    loopGenerateMonster lid actorFreq
+
+loopGenerateMonster :: (MonadServer m, MonadAtomic m)
+                    => LevelId -> Frequency FactionId -> m ()
+loopGenerateMonster lid actorFreq = do
+  cops <- getsState scops
+  if nullFreq actorFreq then return ()  -- no faction spawns on this level
+  else do
+    fid <- rndToAction $ frequency actorFreq
+    pers <- getsServer sper
+    lvl <- getLevel lid
+    let allPers = ES.unions $ map (totalVisible . (EM.! lid))
+                  $ EM.elems $ EM.delete fid pers  -- expensive :(
+    rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fid
+    pos <- rndToAction rollPos
+    time <- getsState $ getLocalTime lid
+    go <- spawnMonsters [pos] lid time fid
+    unless go $
+      let zeroedFreq = setFreq actorFreq fid 0
+      in loopGenerateMonster lid zeroedFreq
 
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: (MonadAtomic m, MonadServer m)
            => Text -> FactionId -> Point -> LevelId -> Time
-           -> m ActorId
+           -> m (Maybe ActorId)
 addMonster groupName bfid ppos lid time = do
   cops <- getsState scops
   fact <- getsState $ (EM.! bfid) . sfactionD
@@ -106,7 +114,7 @@ addMonster groupName bfid ppos lid time = do
 addHero :: (MonadAtomic m, MonadServer m)
         => FactionId -> Point -> LevelId -> [(Int, (Text, Text))]
         -> Maybe Int -> Time
-        -> m ActorId
+        -> m (Maybe ActorId)
 addHero bfid ppos lid heroNames mNumber time = do
   Kind.COps{cofaction=Kind.Ops{okind=okind}} <- getsState scops
   Faction{gcolor, gplayer, gkind} <- getsState $ (EM.! bfid) . sfactionD

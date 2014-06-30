@@ -57,17 +57,19 @@ createItems n pos lid = do
 
 rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
                     => LevelId -> Frequency Text -> Container -> Bool
-                    -> m (ItemId, ItemFull)
+                    -> m (Maybe (ItemId, ItemFull))
 rollAndRegisterItem lid itemFreq container verbose = do
   cops <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
   depth <- getsState sdepth
   Level{ldepth} <- getLevel lid
-  (itemKnown, itemFull, seed, k) <-
-    rndToAction $ newItem cops flavour discoRev itemFreq lid ldepth depth
-  iid <- registerItem itemKnown seed k container verbose
-  return (iid, itemFull)
+  m4 <- rndToAction $ newItem cops flavour discoRev itemFreq lid ldepth depth
+  case m4 of
+    Nothing -> return Nothing
+    Just (itemKnown, itemFull, seed, k) -> do
+      iid <- registerItem itemKnown seed k container verbose
+      return $ Just (iid, itemFull)
 
 placeItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()
 placeItemsInDungeon = do

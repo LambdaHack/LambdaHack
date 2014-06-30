@@ -70,7 +70,8 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
 -- | Generate an item based on level.
 newItem :: Kind.COps -> FlavourMap -> DiscoRev
         -> Frequency Text -> LevelId -> Int -> Int
-        -> Rnd (ItemKnown, ItemFull, ItemSeed, Int)
+        -> Rnd (Maybe (ItemKnown, ItemFull, ItemSeed, Int))
+newItem _ _ _ itemFreq _ _ _ | nullFreq itemFreq = return Nothing
 newItem cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         flavour discoRev itemFreq jlid ln depth = do
   itemGroup <- frequency itemFreq
@@ -101,10 +102,10 @@ newItem cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         iae = seedToAspectsEffects seed itemKind ln depth
         itemFull = ItemFull {itemBase, itemK, itemDisco = Just itemDisco}
         itemDisco = ItemDisco {itemKindId, itemKind, itemAE = Just iae}
-    return ( (itemBase, iae)
-           , itemFull
-           , seed
-           , itemK )
+    return $ Just ( (itemBase, iae)
+                  , itemFull
+                  , seed
+                  , itemK )
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
 newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)

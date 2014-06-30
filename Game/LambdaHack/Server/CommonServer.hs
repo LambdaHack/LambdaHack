@@ -306,7 +306,7 @@ addProjectile bpos rest iid blid bfid btime = do
 addActor :: (MonadAtomic m, MonadServer m)
          => Text -> FactionId -> Point -> LevelId
          -> (Actor -> Actor) -> Text -> Time -> [(ItemId, Item)]
-         -> m ActorId
+         -> m (Maybe ActorId)
 addActor groupName bfid pos lid tweakBody bpronoun time iis = do
   cops <- getsState scops
   aid <- getsServer sacounter
@@ -314,38 +314,41 @@ addActor groupName bfid pos lid tweakBody bpronoun time iis = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- contains the constant properties.
   let trunkFreq = toFreq "create trunk" [(1, groupName)]
-  (trunkId, trunkFull@ItemFull{..})
-    <- rollAndRegisterItem lid trunkFreq (CTrunk bfid lid pos) False
-  let trunkKind = case itemDisco of
-        Just ItemDisco{itemKind} -> itemKind
-        Nothing -> assert `failure` trunkFull
-  -- Initial HP and Calm is based only on trunk and ignores organs.
-  let hp = xM (sumSlotNoFilter Effect.EqpSlotAddMaxHP [trunkFull]) `div` 2
-      calm = xM (sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull])
-  -- Create actor.
-  fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
-  DebugModeSer{sdifficultySer} <- getsServer sdebugSer
-  nU <- nUI
-  -- If no UI factions, the difficulty applies to heroes (for testing).
-  let diffHP | playerUI gplayer || nU == 0 && isHeroFact cops fact =
-        (ceiling :: Double -> Int64) $ fromIntegral hp
-                                       * 1.5 ^^ difficultyCoeff sdifficultySer
-             | otherwise = hp
-      bsymbol = jsymbol itemBase
-      bname = jname itemBase
-      bcolor = flavourToColor $ jflavour itemBase
-      b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
-                        pos lid time bfid
-      -- Insert the trunk as the actor's organ.
-      btrunk = b {borgan = EM.singleton trunkId itemK}
-  execUpdAtomic $ UpdCreateActor aid (tweakBody btrunk)
-                                 (iis ++ [(trunkId, itemBase)])
-  -- Create, register and insert all initial actor items.
-  forM_ (ikit trunkKind) $ \(ikText, cstore) -> do
-    let container = CActor aid cstore
-        itemFreq = toFreq "create aitems" [(1, ikText)]
-    void $ rollAndRegisterItem lid itemFreq container False
-  return $! aid
+  m2 <- rollAndRegisterItem lid trunkFreq (CTrunk bfid lid pos) False
+  case m2 of
+    Nothing -> return Nothing
+    Just (trunkId, trunkFull@ItemFull{..}) -> do
+      let trunkKind = case itemDisco of
+            Just ItemDisco{itemKind} -> itemKind
+            Nothing -> assert `failure` trunkFull
+      -- Initial HP and Calm is based only on trunk and ignores organs.
+      let hp = xM (sumSlotNoFilter Effect.EqpSlotAddMaxHP [trunkFull]) `div` 2
+          calm = xM (sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull])
+      -- Create actor.
+      fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
+      DebugModeSer{sdifficultySer} <- getsServer sdebugSer
+      nU <- nUI
+      -- If no UI factions, the difficulty applies to heroes (for testing).
+      let diffHP | playerUI gplayer || nU == 0 && isHeroFact cops fact =
+            (ceiling :: Double -> Int64)
+            $ fromIntegral hp
+              * 1.5 ^^ difficultyCoeff sdifficultySer
+                 | otherwise = hp
+          bsymbol = jsymbol itemBase
+          bname = jname itemBase
+          bcolor = flavourToColor $ jflavour itemBase
+          b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
+                            pos lid time bfid
+          -- Insert the trunk as the actor's organ.
+          btrunk = b {borgan = EM.singleton trunkId itemK}
+      execUpdAtomic $ UpdCreateActor aid (tweakBody btrunk)
+                                     (iis ++ [(trunkId, itemBase)])
+      -- Create, register and insert all initial actor items.
+      forM_ (ikit trunkKind) $ \(ikText, cstore) -> do
+        let container = CActor aid cstore
+            itemFreq = toFreq "create aitems" [(1, ikText)]
+        void $ rollAndRegisterItem lid itemFreq container False
+      return $ Just aid
 
 -- Server has to pick a random weapon or it could leak item discovery
 -- information. In case of non-projectiles, it only picks items

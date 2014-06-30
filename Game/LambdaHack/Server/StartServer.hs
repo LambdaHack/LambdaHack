@@ -211,16 +211,22 @@ populateDungeon = do
             validTile t = not $ Tile.hasFeature cotile F.NoActor t
         psFree <- getsState $ nearbyFreePoints validTile ppos lid
         let ps = take (playerInitial $ gplayer fact3) $ zip [0..] psFree
-        forM_ ps $ \ (n, p) ->
-          if not $ isHeroFact cops fact3
-          then spawnMonsters [p] lid ntime fid3
-          else do
-            let hNames = fromMaybe [] $ EM.lookup fid3 sheroNames
-            aid <- addHero fid3 p lid hNames (Just n) ntime
-            mleader <- getsState
-                       $ gleader . (EM.! fid3) . sfactionD  -- just changed
-            when (isNothing mleader) $
-              execUpdAtomic $ UpdLeadFaction fid3 Nothing (Just aid)
+        forM_ ps $ \ (n, p) -> do
+          go <-
+            if not $ isHeroFact cops fact3
+            then spawnMonsters [p] lid ntime fid3
+            else do
+              let hNames = fromMaybe [] $ EM.lookup fid3 sheroNames
+              maid <- addHero fid3 p lid hNames (Just n) ntime
+              case maid of
+                Nothing -> return False
+                Just aid -> do
+                  mleader <- getsState $ gleader . (EM.! fid3) . sfactionD
+                  when (isNothing mleader) $
+                    execUpdAtomic $ UpdLeadFaction fid3 Nothing (Just aid)
+                  return True
+          unless go $ assert `failure` "can't spawn initial actors"
+                             `twith` (lid, ((fid3, fact3), ppos))
   mapM_ initialActors arenas
 
 -- | Find starting postions for all factions. Try to make them distant

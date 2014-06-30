@@ -300,7 +300,6 @@ effectCallFriend power source target = assert (power > 0) $ do
     ps <- getsState $ nearbyFreePoints validTile (bpos sb) lid
     time <- getsState $ getLocalTime lid
     spawnMonsters (take power ps) lid time (bfid sb)
-    return True
 
 -- ** Summon
 
@@ -330,9 +329,7 @@ effectSummon power source target = assert (power > 0) $ do
       Nothing ->
         -- Don't make this item useless.
         effectSem (Effect.CallFriend power) source target
-      Just fid -> do
-        spawnMonsters (take power ps) (blid sb) afterTime fid
-        return True
+      Just fid -> spawnMonsters (take power ps) (blid sb) afterTime fid
 
 -- | Roll a faction based on faction kind frequency key.
 pickFaction :: MonadServer m
@@ -720,9 +717,9 @@ effectExplode execSfx cgroup target = do
   tb <- getsState $ getActorBody target
   let itemFreq = toFreq "shrapnel group" [(1, cgroup)]
       container = CActor target CEqp
-  (iid, ItemFull{..}) <-
-    rollAndRegisterItem (blid tb) itemFreq container False
-  let Point x y = bpos tb
+  m2 <- rollAndRegisterItem (blid tb) itemFreq container False
+  let (iid, ItemFull{..}) = fromMaybe (assert `failure` cgroup) m2
+      Point x y = bpos tb
       projectN k100 n = when (n > 7) $ do
         -- We pick a point at the border, not inside, to have a uniform
         -- distribution for the points the line goes through at each distance
