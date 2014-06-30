@@ -69,6 +69,8 @@ data Ops a = Ops
                                     --   and satisfying a predicate
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
                                     -- ^ fold over all content elements of @a@
+  , ofoldrGroup   :: forall b. Text -> (Int -> Id a -> a -> b -> b) -> b -> b
+                                    -- ^ fold over the given group only
   , obounds       :: !(Id a, Id a)  -- ^ bounds of identifiers of content @a@
   , ospeedup      :: !(Maybe (Speedup a))  -- ^ auxiliary speedup components
   }
@@ -80,15 +82,13 @@ createOps ContentDef{getName, getFreq, content, validate} =
   assert (length content <= fromEnum (maxBound :: Id a)) $
   let kindMap :: EM.EnumMap (Id a) a
       !kindMap = EM.fromDistinctAscList $ zip [Id 0..] content
-      kindFreq :: M.Map Text (Frequency (Id a, a))
+      kindFreq :: M.Map Text [(Int, (Id a, a))]
       kindFreq =
         let tuples = [ (cgroup, (n, (i, k)))
                      | (i, k) <- EM.assocs kindMap
                      , (cgroup, n) <- getFreq k, n > 0 ]
             f m (cgroup, nik) = M.insertWith (++) cgroup [nik] m
-            lists = foldl' f M.empty tuples
-            nameFreq cgroup = toFreq $ "opick ('" <> cgroup <> "')"
-        in M.mapWithKey nameFreq lists
+        in foldl' f M.empty tuples
       okind i = fromMaybe (assert `failure` "no kind" `twith` (i, kindMap))
                 $ EM.lookup i kindMap
       correct a = not (T.null (getName a)) && all ((> 0) . snd) (getFreq a)
@@ -102,20 +102,28 @@ createOps ContentDef{getName, getFreq, content, validate} =
            let freq = fromMaybe (assert `failure` "no unique group"
                                         `twith` (cgroup, kindFreq))
                       $ M.lookup cgroup kindFreq
-           in case runFrequency freq of
+           in case freq of
              [(n, (i, _))] | n > 0 -> i
              l -> assert `failure` "not unique" `twith` (l, cgroup, kindFreq)
        , opick = \cgroup p ->
            case M.lookup cgroup kindFreq of
-             Just freq | not $ nullFreq freq -> fmap Just $ frequency $ do
-               (i, k) <- freq
-               breturn (p k) i
-               {- with MonadComprehensions:
-               frequency [ i | (i, k) <- kindFreq M.! cgroup, p k ]
-               -}
+             Just freqRaw ->
+               let freq = toFreq ("opick ('" <> cgroup <> "')") freqRaw
+               in if nullFreq freq
+                  then return Nothing
+                  else fmap Just $ frequency $ do
+                    (i, k) <- freq
+                    breturn (p k) i
+                    {- with MonadComprehensions:
+                    frequency [ i | (i, k) <- kindFreq M.! cgroup, p k ]
+                    -}
              _ -> return Nothing
        , ofoldrWithKey = \f z -> foldr (\(i, a) -> f i a) z
                                  $ EM.assocs kindMap
+       , ofoldrGroup = \cgroup f z ->
+           case M.lookup cgroup kindFreq of
+             Just freq -> foldr (\(p, (i, a)) -> f p i a) z freq
+             _ -> z
        , obounds = ( fst $ EM.findMin kindMap
                    , fst $ EM.findMax kindMap )
        , ospeedup = Nothing  -- define elsewhere
