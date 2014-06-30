@@ -201,7 +201,7 @@ ppCStore CSha = "in shared stash"
 ppContainer :: Container -> Text
 ppContainer CFloor{} = "nearby"
 ppContainer (CActor _ cstore) = ppCStore cstore
-ppContainer CTrunk{} = "all ours"
+ppContainer CTrunk{} = "in our possession"
 
 instance Binary Actor where
   put Actor{..} = do

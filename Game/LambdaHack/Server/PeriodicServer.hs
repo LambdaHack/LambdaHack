@@ -66,28 +66,27 @@ spawnMonsters ps lid time fid = assert (not $ null ps) $ do
 generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 generateMonster lid = do
   cops <- getsState scops
-  pers <- getsServer sper
-  lvl@Level{ldepth} <- getLevel lid
-  s <- getState
-  let f fid = isSpawnFaction fid s
-      spawns = actorRegularList f lid s
+  f <- getsState $ flip isSpawnFaction
+  spawns <- getsState $ actorRegularList f lid
   depth <- getsState sdepth
+  lvl@Level{ldepth} <- getLevel lid
   rc <- rndToAction $ monsterGenChance ldepth depth (length spawns)
-  factionD <- getsState sfactionD
   when rc $ do
-    time <- getsState $ getLocalTime lid
+    factionD <- getsState sfactionD
     let freq = toFreq "spawn"
                $ map (\(fid, fact) -> (playerSpawn $ gplayer fact, fid))
                $ EM.assocs factionD
-    mfid <- if nullFreq freq then
-              return Nothing
+    mfid <- if nullFreq freq then return Nothing
             else fmap Just $ rndToAction $ frequency freq
     case mfid of
       Nothing -> return ()  -- no faction spawns
       Just fid -> do
+        pers <- getsServer sper
         let allPers = ES.unions $ map (totalVisible . (EM.! lid))
                       $ EM.elems $ EM.delete fid pers  -- expensive :(
-        pos <- rndToAction $ rollSpawnPos cops allPers lid lvl fid s
+        rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fid
+        pos <- rndToAction rollPos
+        time <- getsState $ getLocalTime lid
         spawnMonsters [pos] lid time fid
 
 -- | Create a new monster on the level, at a given position
