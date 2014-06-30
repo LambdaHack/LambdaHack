@@ -21,28 +21,28 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 -- are possible.
 data Effect a =
     NoEffect
-  | RefillHP !Int
   | Hurt !Dice.Dice
+  | Burn !Int
+  | Explode !Text        -- ^ explode, producing this group of shrapnel
+  | RefillHP !Int
   | RefillCalm !Int
   | Dominate
   | Impress
   | CallFriend !Int
   | Summon !a
   | CreateItem !Int
-  | ApplyPerfume
-  | Burn !Int
   | Ascend !Int
   | Escape !Int          -- ^ the arg tells if can be placed on last level, etc.
   | Paralyze !a
   | InsertMove !a
-  | DropBestWeapon
-  | DropEqp !Char !Bool  -- ^ symbol @' '@ means all, @True@ means hit on drop
+  | Teleport !a
   | SendFlying !ThrowMod
   | PushActor !ThrowMod
   | PullActor !ThrowMod
-  | Teleport !a
+  | DropBestWeapon
+  | DropEqp !Char !Bool  -- ^ symbol @' '@ means all, @True@ means hit on drop
   | ActivateEqp !Char    -- ^ symbol @' '@ means all
-  | Explode !Text        -- ^ explode, producing this group of shrapnel
+  | ApplyPerfume
   | OnSmash !(Effect a)  -- ^ trigger when item smashed (not applied nor meleed)
   | TimedAspect !Int !(Aspect a)  -- ^ enable the aspect for k clips
   deriving (Show, Read, Eq, Ord, Generic, Functor)
@@ -52,14 +52,14 @@ data Effect a =
 -- the item and so is not additive).
 data Aspect a =
     Periodic !a        -- ^ is activated this many times in 100
+  | AddHurtMelee !a    -- ^ percentage damage bonus against melee
+  | AddArmorMelee !a   -- ^ percentage armor bonus against melee
+  | AddHurtRanged !a   -- ^ percentage damage bonus against ranged
+  | AddArmorRanged !a  -- ^ percentage armor bonus against ranged
   | AddMaxHP !a        -- ^ maximal hp
   | AddMaxCalm !a      -- ^ maximal calm
   | AddSpeed !a        -- ^ speed in m/10s
   | AddSkills !Ability.Skills  -- ^ skills in particular abilities
-  | AddHurtMelee !a    -- ^ percentage damage bonus against melee
-  | AddHurtRanged !a   -- ^ percentage damage bonus against ranged
-  | AddArmorMelee !a   -- ^ percentage armor bonus against melee
-  | AddArmorRanged !a  -- ^ percentage armor bonus against ranged
   | AddSight !a        -- ^ FOV radius, where 1 means a single tile
   | AddSmell !a        -- ^ smell radius, where 1 means a single tile
   | AddLight !a        -- ^ light radius, where 1 means a single tile

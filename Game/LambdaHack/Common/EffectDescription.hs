@@ -137,8 +137,8 @@ wrapInChevrons t = "<" <> t <> ">"
 
 affixDice :: Dice.Dice -> Text
 affixDice d = if Dice.minDice d == Dice.maxDice d
-               then affixBonus (Dice.minDice d)
-               else "+?"
+              then affixBonus (Dice.minDice d)
+              else "+?"
 
 kindEffectToSuffix :: Effect Dice.Dice -> Text
 kindEffectToSuffix effect = effectToSuff effect affixDice

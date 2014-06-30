@@ -4,6 +4,7 @@ module Game.LambdaHack.Common.ItemDescription
   , itemDesc, textAllAE
   ) where
 
+import Data.List
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -37,28 +38,38 @@ partItem :: CStore -> ItemFull -> (MU.Part, MU.Part)
 partItem = partItemN False 3
 
 textAllAE :: Bool -> CStore -> ItemFull -> [Text]
-textAllAE fullInfo cstore itemFull@ItemFull{itemBase, itemDisco} =
+textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
   let features | fullInfo = map featureToSuff $ jfeature itemBase
                | otherwise = []
   in case itemDisco of
     Nothing -> features
     Just ItemDisco{itemKind, itemAE} ->
-      let (aspects, effects) =  case itemAE of
-            Just ItemAspectEffect{jaspects, jeffects} ->
-              ( map aspectToSuffix jaspects
-              , map effectToSuffix jeffects )
-            Nothing -> ( map kindAspectToSuffix $ iaspects itemKind
-                       , map kindEffectToSuffix $ ieffects itemKind )
+      let periodicAspect :: Effect.Aspect a -> Bool
+          periodicAspect (Effect.Periodic _) = True
+          periodicAspect _ = False
+          hurtEffect :: Effect.Effect a -> Bool
+          hurtEffect (Effect.Hurt _) = True
+          hurtEffect _ = False
           active = cstore `elem` [CEqp, COrgan]
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
-          periodic = isJust
-                     $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
-          weapon = maybe False ((== Effect.EqpSlotWeapon) . fst)
-                   $ strengthEqpSlot itemBase
-      in if weapon || not active
-         then effects ++ if fullInfo || active then aspects else []
-         else aspects ++ if fullInfo || periodic then effects else []
-         ++ features
+          splitAE :: Ord a
+                  => [Effect.Aspect a] -> (Effect.Aspect a -> Text)
+                  -> [Effect.Effect a] -> (Effect.Effect a -> Text) -> [Text]
+          splitAE aspects ppA effects ppE =
+            let (periodicAs, restAs) = partition periodicAspect $ sort aspects
+                (hurtEs, restEs) = partition hurtEffect $ sort effects
+            in map ppA periodicAs ++ map ppE hurtEs
+               ++ if active
+                  then map ppA restAs ++ map ppE restEs
+                  else map ppE restEs ++ map ppA restAs
+          aets = case itemAE of
+            Just ItemAspectEffect{jaspects, jeffects} ->
+              splitAE jaspects aspectToSuffix
+                      jeffects effectToSuffix
+            Nothing ->
+              splitAE (iaspects itemKind) kindAspectToSuffix
+                      (ieffects itemKind) kindEffectToSuffix
+      in aets ++ features
 
 partItemWs :: Int -> CStore -> ItemFull -> MU.Part
 partItemWs count cstore itemFull =
@@ -75,7 +86,6 @@ partItemWownW partA cstore itemFull =
   let (name, stats) = partItem cstore itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
--- TODO: also print some data from kind and from item
 itemDesc :: CStore -> ItemFull -> Text
 itemDesc cstore itemFull =
   let (name, stats) = partItemN True 99 cstore itemFull
