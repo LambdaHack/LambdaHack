@@ -249,7 +249,8 @@ findGenerator cops caves ldepth minD maxD totalDepth nstairUp = do
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
   { freshDungeon :: !Dungeon  -- ^ maps for all levels
-  , freshDepth   :: !Int      -- ^ dungeon depth (can be different than size)
+  , freshDepth   :: !Int      -- ^ absolute dungeon depth
+                              --   (can be different than size)
   }
 
 -- | Generate the dungeon for a new game.

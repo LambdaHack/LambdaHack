@@ -59,13 +59,13 @@ rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
                     => LevelId -> Frequency Text -> Container -> Bool
                     -> m (ItemId, ItemFull)
 rollAndRegisterItem lid itemFreq container verbose = do
-  Kind.COps{coitem} <- getsState scops
+  cops <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
   depth <- getsState sdepth
   Level{ldepth} <- getLevel lid
   (itemKnown, itemFull, seed, k) <-
-    rndToAction $ newItem coitem flavour discoRev itemFreq lid ldepth depth
+    rndToAction $ newItem cops flavour discoRev itemFreq lid ldepth depth
   iid <- registerItem itemKnown seed k container verbose
   return (iid, itemFull)
 

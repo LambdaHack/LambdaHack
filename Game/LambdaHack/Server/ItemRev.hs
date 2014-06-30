@@ -16,7 +16,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Ix as Ix
 import Data.List
-import Data.Maybe
 import qualified Data.Set as S
 import Data.Text (Text)
 
@@ -25,6 +24,7 @@ import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.ItemKind
 
@@ -68,26 +68,43 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
   in Item{..}
 
 -- | Generate an item based on level.
-newItem :: Kind.Ops ItemKind -> FlavourMap -> DiscoRev
+newItem :: Kind.COps -> FlavourMap -> DiscoRev
         -> Frequency Text -> LevelId -> Int -> Int
         -> Rnd (ItemKnown, ItemFull, ItemSeed, Int)
-newItem Kind.Ops{opick, okind}
+newItem cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         flavour discoRev itemFreq jlid ln depth = do
   itemGroup <- frequency itemFreq
-  itemKindId <- fmap (fromMaybe $ assert `failure` itemGroup)
-                $ opick itemGroup (const True)
-  let itemKind = okind itemKindId
-  itemN <- castDice ln depth (icount itemKind)
-  seed <- fmap toEnum random
-  let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
-      itemK = max 1 itemN
-      iae = seedToAspectsEffects seed itemKind ln depth
-      itemFull = ItemFull {itemBase, itemK, itemDisco = Just itemDisco}
-      itemDisco = ItemDisco {itemKindId, itemKind, itemAE = Just iae}
-  return ( (itemBase, iae)
-         , itemFull
-         , seed
-         , itemK )
+  let findInterval _ x1y1 [] = (x1y1, (depth + 1, 0))
+      findInterval point x1y1 ((x, y) : rest) =
+        if point <= x
+        then (x1y1, (x, y))
+        else findInterval point (x, y) rest
+      linearInterpolation point dataset =
+        -- We assume @dataset@ is sorted and between 0 and @depth + 1@.
+        let ((x1, y1), (x2, y2)) = findInterval point (0, 0) dataset
+        in y1 + (y2 - y1) * (point - x1) `divUp` (x2 - x1)
+      f p ik kind acc =
+        let rarity = linearInterpolation (abs ln) (irarity kind)
+        in (p * rarity, (ik, kind)) : acc
+      freqDepth = ofoldrGroup itemGroup f []
+      freq = toFreq ("newItem ('" <> itemGroup <> "',"
+                               <+> tshow ln <> ")") freqDepth
+  if nullFreq freq then
+    let zeroedFreq = setFreq itemFreq itemGroup 0
+    in newItem cops flavour discoRev zeroedFreq jlid ln depth
+  else do
+    (itemKindId, itemKind) <- frequency freq
+    itemN <- castDice ln depth (icount itemKind)
+    seed <- fmap toEnum random
+    let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
+        itemK = max 1 itemN
+        iae = seedToAspectsEffects seed itemKind ln depth
+        itemFull = ItemFull {itemBase, itemK, itemDisco = Just itemDisco}
+        itemDisco = ItemDisco {itemKindId, itemKind, itemAE = Just iae}
+    return ( (itemBase, iae)
+           , itemFull
+           , seed
+           , itemK )
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
 newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)
