@@ -110,9 +110,9 @@ featureToSuff feat =
     Fragile -> wrapInChevrons $ "fragile"
     Durable -> wrapInChevrons $ "durable"
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
+    Identified -> ""
     Applicable -> ""
     EqpSlot{} -> ""
-    Identified -> ""
     Precious -> ""
 
 effectToSuffix :: Effect Int -> Text

@@ -39,7 +39,7 @@ partItem = partItemN False 3
 
 textAllAE :: Bool -> CStore -> ItemFull -> [Text]
 textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
-  let features | fullInfo = map featureToSuff $ jfeature itemBase
+  let features | fullInfo = map featureToSuff $ sort $ jfeature itemBase
                | otherwise = []
   in case itemDisco of
     Nothing -> features

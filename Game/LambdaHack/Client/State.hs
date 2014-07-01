@@ -42,9 +42,10 @@ import Game.LambdaHack.Common.Vector
 -- from game to game, even across playing sessions.
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
-  { stgtMode     :: !(Maybe TgtMode)  -- ^ targeting mode
-  , scursor      :: !Target           -- ^ the common, cursor target
-  , seps         :: !Int              -- ^ a parameter of the tgt digital line
+  { stgtMode     :: !(Maybe TgtMode)
+                                   -- ^ targeting mode
+  , scursor      :: !Target        -- ^ the common, cursor target
+  , seps         :: !Int           -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId (Target, Maybe PathEtc))
                                    -- ^ targets of our actors in the dungeon
   , sexplored    :: !(ES.EnumSet LevelId)

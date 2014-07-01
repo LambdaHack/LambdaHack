@@ -23,7 +23,7 @@ data Effect a =
     NoEffect
   | Hurt !Dice.Dice
   | Burn !Int
-  | Explode !Text        -- ^ explode, producing this group of shrapnel
+  | Explode !Text         -- ^ explode, producing this group of shrapnel
   | RefillHP !Int
   | RefillCalm !Int
   | Dominate
@@ -32,7 +32,7 @@ data Effect a =
   | Summon !a
   | CreateItem !Int
   | Ascend !Int
-  | Escape !Int          -- ^ the arg tells if can be placed on last level, etc.
+  | Escape !Int           -- ^ the Int says if can be placed on last level, etc.
   | Paralyze !a
   | InsertMove !a
   | Teleport !a
@@ -40,11 +40,12 @@ data Effect a =
   | PushActor !ThrowMod
   | PullActor !ThrowMod
   | DropBestWeapon
-  | DropEqp !Char !Bool  -- ^ symbol @' '@ means all, @True@ means hit on drop
-  | ActivateEqp !Char    -- ^ symbol @' '@ means all
+  | DropEqp !Char !Bool   -- ^ symbol @' '@ means all, @True@ means hit on drop
+  | ActivateEqp !Char     -- ^ symbol @' '@ means all
   | ApplyPerfume
-  | OnSmash !(Effect a)  -- ^ trigger when item smashed (not applied nor meleed)
-  | TimedAspect !Int !(Aspect a)  -- ^ enable the aspect for k clips
+  | OnSmash !(Effect a)   -- ^ trigger if item smashed (not applied nor meleed)
+  | TimedAspect !Int !(Aspect a)
+                          -- ^ enable the aspect for k clips
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
 -- | Aspects of items. Additive (starting at 0) for all items wielded
@@ -79,10 +80,11 @@ data Feature =
   | Fragile                  -- ^ break even when not hitting an enemy
   | Durable                  -- ^ don't break even hitting or applying
   | ToThrow !ThrowMod        -- ^ parameters modifying a throw
-  | Applicable               -- ^ can't be turned off, is consumed by use
-  | EqpSlot !EqpSlot !Text   -- ^ the slot, counts towards the eqp limit
-  | Identified               -- ^ any such item starts identified
-  | Precious                 -- ^ precious; don't risk identifying by use
+  | Identified               -- ^ the item starts identified
+  | Applicable               -- ^ AI and uI flag: consider applying
+  | EqpSlot !EqpSlot !Text   -- ^ AI and uI flag: goes to inventory
+  | Precious                 -- ^ AI and UI flag: careful, can be precious;
+                             --   don't risk identifying by use
   deriving (Show, Eq, Ord, Generic)
 
 data EqpSlot =
