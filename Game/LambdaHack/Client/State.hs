@@ -150,7 +150,7 @@ defStateClient shistory sreport _sside sisAI =
     , squit = False
     , sisAI
     , smarkVision = False
-    , smarkSmell = False
+    , smarkSmell = True
     , smarkSuspect = False
     , scurDifficulty = difficultyDefault
     , sslots = (EM.empty, IM.empty)
