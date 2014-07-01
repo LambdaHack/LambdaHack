@@ -102,12 +102,11 @@ isChangeable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isChangeableTab}} =
   \k -> Kind.accessTab isChangeableTab k
 isChangeable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
--- | Whether a tile can be explored, possibly yielding a treasure.
--- Note that non-walkable tiles can hold treasure, e.g., caches,
--- so they should be set changeable to make them explorable.
+-- | Whether one can explore a tile, possibly finding a treasure or a clue.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isExplorable #-}
-isExplorable cotile t = isWalkable cotile t || isDoor cotile t
+isExplorable cotile t =
+  isWalkable cotile t || isClear cotile t || isDoor cotile t
 
 -- | The player can't tell one tile from the other.
 lookSimilar :: TileKind -> TileKind -> Bool

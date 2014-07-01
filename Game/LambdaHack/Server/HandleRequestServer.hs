@@ -276,12 +276,11 @@ reqAlter source tpos mfeat = do
                                   $ opick tgroup (const True)
           unless (toTile == serverTile) $ do
             execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
-            unless (isSecretPos lvl tpos) $
-              case (Tile.isExplorable cotile serverTile,
-                    Tile.isExplorable cotile toTile) of
-                (False, True) -> execUpdAtomic $ UpdAlterClear lid 1
-                (True, False) -> execUpdAtomic $ UpdAlterClear lid (-1)
-                _ -> return ()
+            case (Tile.isExplorable cotile serverTile,
+                  Tile.isExplorable cotile toTile) of
+              (False, True) -> execUpdAtomic $ UpdAlterClear lid 1
+              (True, False) -> execUpdAtomic $ UpdAlterClear lid (-1)
+              _ -> return ()
         feats = case mfeat of
           Nothing -> TileKind.tfeature $ okind serverTile
           Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
