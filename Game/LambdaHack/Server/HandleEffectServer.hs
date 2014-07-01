@@ -115,7 +115,7 @@ effectsSem effects source target = do
   -- Announce no effect, which is rare and wastes time, so noteworthy.
   unless (triggered       -- some effect triggered, if any present
           || bproj sb) $  -- don't spam, projectiles can be very numerous
-    execSfxAtomic $ SfxEffect (bfid sb) target Effect.NoEffect
+    execSfxAtomic $ SfxEffect (bfid sb) target $ Effect.NoEffect ""
   return triggered
 
 -- | The source actor affects the target actor, with a given effect and power.
@@ -131,7 +131,7 @@ effectSem effect source target = do
   -- and we are likely to introduce more variety.
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
   case effect of
-    Effect.NoEffect -> return False
+    Effect.NoEffect _ -> return False
     Effect.RefillHP p -> effectRefillHP execSfx p source target
     Effect.Hurt nDm -> effectHurt nDm source target
     Effect.RefillCalm p -> effectRefillCalm execSfx p target
@@ -140,7 +140,7 @@ effectSem effect source target = do
     Effect.CallFriend p -> effectCallFriend p source target
     Effect.Summon p -> effectSummon p source target
     Effect.CreateItem p -> effectCreateItem p target
-    Effect.ApplyPerfume -> effectApplyPerfume execSfx source target
+    Effect.ApplyPerfume -> effectApplyPerfume execSfx target
     Effect.Burn p -> effectBurn execSfx p source target
     Effect.Ascend p -> effectAscend execSfx p source target
     Effect.Escape{} -> effectEscape target
@@ -359,17 +359,15 @@ effectCreateItem power target = assert (power > 0) $ do
 -- ** ApplyPerfume
 
 effectApplyPerfume :: (MonadAtomic m, MonadServer m)
-                   => m () -> ActorId -> ActorId -> m Bool
-effectApplyPerfume execSfx source target =
-  if source == target then return False
-  else do
-    tb <- getsState $ getActorBody target
-    Level{lsmell} <- getLevel $ blid tb
-    let f p fromSm =
-          execUpdAtomic $ UpdAlterSmell (blid tb) p (Just fromSm) Nothing
-    mapWithKeyM_ f lsmell
-    execSfx
-    return True
+                   => m () -> ActorId -> m Bool
+effectApplyPerfume execSfx target = do
+  tb <- getsState $ getActorBody target
+  Level{lsmell} <- getLevel $ blid tb
+  let f p fromSm =
+        execUpdAtomic $ UpdAlterSmell (blid tb) p (Just fromSm) Nothing
+  mapWithKeyM_ f lsmell
+  execSfx
+  return True
 
 -- ** Burn
 

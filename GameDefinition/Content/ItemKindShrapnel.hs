@@ -10,9 +10,9 @@ import Game.LambdaHack.Content.ItemKind
 
 shrapnels :: [ItemKind]
 shrapnels =
-  [fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+  [fragrance, pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mist_healing, mist_wounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
 
-fragrance,    mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+fragrance,    pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mist_healing, mist_wounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
 -- * Parameterized shrapnel
 
@@ -27,8 +27,8 @@ burningOil n = ItemKind
   , iverbHit = "burn"
   , iweight  = 1
   , iaspects = [AddLight 2]
-  , ieffects = [ Burn 1
-               , Paralyze (intToDice n) ]  -- actors strain not to trip on oil
+  , ieffects = [ Burn (n `div` 2)
+               , Paralyze (intToDice $ n `div` 2) ]  -- tripping on oil
   , ifeature = [ toVelocity (min 100 $ n * 7)
                , Fragile, Identified ]
   , idesc    = "Sticky oil, burning brightly."
@@ -48,12 +48,35 @@ explosionBlast n = ItemKind
   , iverbHit = "tear apart"
   , iweight  = 1
   , iaspects = [AddLight $ intToDice n]
-  , ieffects = [Burn (n `div` 2), DropBestWeapon]
+  , ieffects = [RefillHP (- n `div` 2), DropBestWeapon]
   , ifeature = [Fragile, toLinger 10, Identified]
   , idesc    = ""
   , ikit     = []
   }
 explosionBlast10 = explosionBlast 10
+firecracker :: Int -> ItemKind
+firecracker n = ItemKind
+  { isymbol  = '\''
+  , iname    = "firecracker"
+  , ifreq    = [("firecracker" <+> tshow n, 1)]
+  , iflavour = zipPlain [BrWhite]
+  , icount   = intToDice $ 2 * n
+  , irarity  = [(1, 1)]
+  , iverbHit = "crack"
+  , iweight  = 1
+  , iaspects = [AddLight $ intToDice $ n `div` 2]
+  , ieffects = [Burn 1, Explode $ "firecracker" <+> tshow (n - 1)]
+  , ifeature = [ ToThrow $ ThrowMod (n * 10) 20
+               , Fragile, Identified ]
+  , idesc    = ""
+  , ikit     = []
+  }
+firecracker7 = firecracker 7
+firecracker6 = firecracker 6
+firecracker5 = firecracker 5
+firecracker4 = firecracker 4
+firecracker3 = firecracker 3
+firecracker2 = firecracker 2
 
 -- * Assorted
 
@@ -61,13 +84,29 @@ fragrance = ItemKind
   { isymbol  = '\''
   , iname    = "fragrance"
   , ifreq    = [("fragrance", 1)]
-  , iflavour = zipFancy [BrMagenta]
+  , iflavour = zipFancy [Magenta]
   , icount   = 15
   , irarity  = [(1, 1)]
   , iverbHit = "engulf"
   , iweight  = 1
   , iaspects = []
   , ieffects = [Impress]
+  , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
+               , Fragile, Identified ]
+  , idesc    = ""
+  , ikit     = []
+  }
+pheromone = ItemKind
+  { isymbol  = '\''
+  , iname    = "musky whiff"
+  , ifreq    = [("pheromone", 1)]
+  , iflavour = zipFancy [BrMagenta]
+  , icount   = 6
+  , irarity  = [(1, 1)]
+  , iverbHit = "tempt"
+  , iweight  = 1
+  , iaspects = []
+  , ieffects = [Dominate]
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
                , Fragile, Identified ]
   , idesc    = ""
@@ -105,6 +144,38 @@ mist_wounding = ItemKind
   , idesc    = ""
   , ikit     = []
   }
+distortion = ItemKind
+  { isymbol  = '\''
+  , iname    = "vortex"
+  , ifreq    = [("distortion", 1)]
+  , iflavour = zipFancy [White]
+  , icount   = 4
+  , irarity  = [(1, 1)]
+  , iverbHit = "engulf"
+  , iweight  = 1
+  , iaspects = []
+  , ieffects = [Teleport $ 15 + d 10]
+  , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
+               , Fragile, Identified ]
+  , idesc    = ""
+  , ikit     = []
+  }
+waste = ItemKind
+  { isymbol  = '\''
+  , iname    = "waste"
+  , ifreq    = [("waste", 1)]
+  , iflavour = zipPlain [Brown]
+  , icount   = 10
+  , irarity  = [(1, 1)]
+  , iverbHit = "splosh"
+  , iweight  = 10
+  , iaspects = []
+  , ieffects = [RefillHP (-1)]
+  , ifeature = [ ToThrow $ ThrowMod 28 50
+               , Fragile, Identified ]
+  , idesc    = ""
+  , ikit     = []
+  }
 glass_piece = ItemKind  -- when blowing up windows
   { isymbol  = '\''
   , iname    = "glass piece"
@@ -123,7 +194,7 @@ glass_piece = ItemKind  -- when blowing up windows
 smoke = ItemKind  -- when stuff burns out
   { isymbol  = '\''
   , iname    = "smoke"
-  , ifreq    = [("smoke", 1)]
+  , ifreq    = [("smoke", 1), ("firecracker 1", 1)]
   , iflavour = zipPlain [BrBlack]
   , icount   = 19
   , irarity  = [(1, 1)]
@@ -131,7 +202,7 @@ smoke = ItemKind  -- when stuff burns out
   , iweight  = 1
   , iaspects = []
   , ieffects = []
-  , ifeature = [ toVelocity 30
+  , ifeature = [ toVelocity 21
                , Fragile, Identified ]
   , idesc    = ""
   , ikit     = []

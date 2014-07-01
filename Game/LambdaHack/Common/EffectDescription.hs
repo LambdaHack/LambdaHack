@@ -19,7 +19,7 @@ import Game.LambdaHack.Common.Msg
 effectToSuff :: (Show a, Ord a, Num a) => Effect a -> (a -> Text) -> Text
 effectToSuff effect f =
   case St.evalState (effectTrav effect $ return . f) () of
-    NoEffect -> ""
+    NoEffect t -> t
     RefillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
     RefillHP 0 -> assert `failure` effect
     RefillHP p -> "of wounding" <+> wrapInParens (affixBonus p)
@@ -34,7 +34,7 @@ effectToSuff effect f =
     Summon t -> "of summoning" <+> wrapInParens t
     CreateItem 1 -> "of uncovering"
     CreateItem p -> "of uncovering" <+> wrapInParens (affixBonus p)
-    ApplyPerfume -> "of rose water"
+    ApplyPerfume -> "of smell removal"
     Burn p -> "of burning" <+> wrapInParens (affixBonus p)
     Ascend 1 -> "of ascending"
     Ascend p | p > 0 -> "of ascending" <+> wrapInParens (affixBonus p)

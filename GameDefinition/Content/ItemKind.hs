@@ -24,9 +24,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch]
+  [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch]
 
-bolas,    brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch :: ItemKind
+bolas,    brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch :: ItemKind
 
 gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 
@@ -232,7 +232,7 @@ necklace1 = necklace
 necklace2 = necklace
   { irarity  = [(2, 0), (10, 1)]
   , iaspects = [Periodic $ d 4 + dl 2]
-  , ieffects = [Summon $ 1 + dl 2]  -- TODO: + explosion
+  , ieffects = [Summon $ 1 + dl 2, Explode "waste"]
   }
 necklace3 = necklace
   { iaspects = [Periodic $ d 4 + dl 2]
@@ -298,7 +298,7 @@ ring5 = ring
       -- allies with that (Durable)
   }
 
--- * Exploding consumables
+-- * Exploding consumables, often intended to be thrown
 
 potion = ItemKind
   { isymbol  = '!'
@@ -317,22 +317,37 @@ potion = ItemKind
   , ikit     = []
   }
 potion1 = potion
-  { ieffects = [ApplyPerfume, Impress, OnSmash (Explode "fragrance")]
+  { ieffects = [ NoEffect "rose water", Impress
+               , OnSmash (ApplyPerfume), OnSmash (Explode "fragrance") ]
   }
 potion2 = potion
+  { irarity  = [(10, 2)]
+  , ieffects = [ NoEffect "musky concoction", DropBestWeapon
+               , OnSmash (Explode "pheromone")]
+  }
+potion3 = potion
   { ieffects = [RefillHP 5, OnSmash (Explode "healing mist")]
   }
-potion3 = potion  -- TODO: a bit boring
-  { irarity  = [(1, 5), (10, 1)]
+potion4 = potion  -- TODO: a bit boring
+  { irarity  = [(1, 5)]
   , ieffects = [RefillHP (-5), OnSmash (Explode "wounding mist")]
   }
-potion4 = potion
+potion5 = potion
   { ieffects = [ Explode "explosion blast 10"
                , PushActor (ThrowMod 200 75)
                , OnSmash (Explode "explosion blast 10") ]
   }
+potion6 = potion
+  { irarity  = [(10, 2)]
+  , ieffects = [ NoEffect "distortion"
+               , OnSmash (Explode "distortion")]
+  }
+potion7 = potion
+  { ieffects = [ NoEffect "bait cocktail"
+               , OnSmash (Summon $ 1 + dl 2), OnSmash (Explode "waste") ]
+  }
 
--- * Non-exploding consumables
+-- * Non-exploding consumables, not specifically designed for throwing
 
 scroll = ItemKind
   { isymbol  = '?'
@@ -355,24 +370,26 @@ scroll1 = scroll
   , ieffects = [CallFriend 1]
   }
 scroll2 = scroll
-  { ieffects = [Summon $ 1 + dl 2]
+  { irarity  = [(1, 5), (10, 3)]
+  , ieffects = [NoEffect "of fireworks", Explode "firecracker 7"]
   }
 scroll3 = scroll
-  { ieffects = [Ascend (-1)]
+  { irarity  = [(1, 4), (10, 2)]
+  , ieffects = [Ascend (-1)]
   }
 scroll4 = scroll
-  { irarity  = [(10, 1)]
-  , ieffects = [Dominate]
+  { irarity  = []
+  , ieffects = []
   }
 scroll5 = scroll
   { ieffects = [Teleport $ 2 + d 5]
   }
 scroll6 = scroll
-  { irarity  = [(10, 2)]
-  , ieffects = [DropBestWeapon, Teleport $ 15 + d 10]
+  { irarity  = []
+  , ieffects = []
   }
 scroll7 = scroll
-  { irarity  = [(10, 1)]
+  { irarity  = [(10, 2)]
   , ieffects = [InsertMove (d 2 + dl 2)]
   }
 
@@ -500,8 +517,8 @@ wand = ItemKind
   , ikit     = []
   }
 wand1 = wand
-  { ieffects = [NoEffect]  -- TODO: emit a cone of sound shrapnel that makes enemy cover his ears and so drop '|' and '{'
+  { ieffects = []  -- TODO: emit a cone of sound shrapnel that makes enemy cover his ears and so drop '|' and '{'
   }
 wand2 = wand
-  { ieffects = [NoEffect]
+  { ieffects = []
   }

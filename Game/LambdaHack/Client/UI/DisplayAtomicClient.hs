@@ -498,7 +498,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                    else animate (blid b) $ deathBody $ bpos b
         displayActorStart b animDie
     else case effect of
-        Effect.NoEffect -> msgAdd "Nothing happens."
+        Effect.NoEffect t -> msgAdd $ "Nothing happens." <+> t
         Effect.RefillHP p | p == 1 -> skip  -- no spam from regen items
         Effect.RefillHP p | p > 0 -> do
           if fid == side then

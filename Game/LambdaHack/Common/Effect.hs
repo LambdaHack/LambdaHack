@@ -20,7 +20,7 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 -- another actor or the wielder himself. Many occurences in the same item
 -- are possible.
 data Effect a =
-    NoEffect
+    NoEffect !Text
   | Hurt !Dice.Dice
   | Burn !Int
   | Explode !Text         -- ^ explode, producing this group of shrapnel
@@ -126,7 +126,7 @@ instance Binary EqpSlot
 -- TODO: Traversable?
 -- | Transform an effect using a stateful function.
 effectTrav :: Effect a -> (a -> St.State s b) -> St.State s (Effect b)
-effectTrav NoEffect _ = return NoEffect
+effectTrav (NoEffect t) _ = return $! NoEffect t
 effectTrav (RefillHP p) _ = return $! RefillHP p
 effectTrav (Hurt dice) _ = return $! Hurt dice
 effectTrav (RefillCalm p) _ = return $! RefillCalm p

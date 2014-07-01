@@ -23,7 +23,7 @@ effectToBenefit :: Kind.COps -> Actor -> [ItemFull] -> Faction
 effectToBenefit cops b activeItems fact eff =
   let isHorror = isHorrorFact cops fact
   in case eff of
-    Effect.NoEffect -> 0
+    Effect.NoEffect _ -> 0
     Effect.RefillHP p ->
       let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
       in if p > 0
