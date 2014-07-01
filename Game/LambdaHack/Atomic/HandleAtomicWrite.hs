@@ -326,14 +326,13 @@ updAlterTile :: MonadStateWrite m
 updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
   Kind.COps{cotile} <- getsState scops
   lvl <- getLevel lid
-  let freshClientTile = hideTile cotile lvl p
   -- The second alternative can happen if, e.g., a client remembers,
   -- but does not see the tile (so does not notice the SearchTile action),
   -- and it suddenly changes into another tile,
   -- which at the same time becomes visible (e.g., an open door).
   -- See 'AtomicSemCli' for how this is reported to the client.
   let adj ts = assert (ts PointArray.! p == fromTile
-                       || ts PointArray.! p == freshClientTile
+                       || ts PointArray.! p == Tile.hideAs cotile fromTile
                        `blame` "unexpected altered tile kind"
                        `twith` (lid, p, fromTile, toTile, ts PointArray.! p))
                $ ts PointArray.// [(p, toTile)]
@@ -357,7 +356,7 @@ updSpotTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 updSpotTile lid ts = assert (not $ null ts) $ do
   Kind.COps{cotile} <- getsState scops
-  lvl1@Level{ltile} <- getLevel lid
+  Level{ltile} <- getLevel lid
   let adj tileMap = tileMap PointArray.// ts
   updateLevel lid $ updateTile adj
   let f (p, t2) = do
@@ -374,7 +373,6 @@ updLoseTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 updLoseTile lid ts = assert (not $ null ts) $ do
   Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
-  lvl1 <- getLevel lid
   let unknownId = ouniqGroup "unknown space"
       matches _ [] = True
       matches tileMap ((p, ov) : rest) =
@@ -382,7 +380,7 @@ updLoseTile lid ts = assert (not $ null ts) $ do
       tu = map (second (const unknownId)) ts
       adj tileMap = assert (matches tileMap ts) $ tileMap PointArray.// tu
   updateLevel lid $ updateTile adj
-  let f (p, t1) =
+  let f (_, t1) =
         when (Tile.isExplorable cotile t1) $
           updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
   mapM_ f ts

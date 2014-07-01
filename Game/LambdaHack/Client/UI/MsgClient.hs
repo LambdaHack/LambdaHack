@@ -104,7 +104,8 @@ lookAt detailed tilePrefix canSee pos aid msg = do
               True -> "\n"
               _ -> "Items here."
       tile = lvl `at` pos
-      obscured | tile /= hideTile cotile lvl pos = "partially obscured"
+      obscured | knownLsecret lvl
+                 && tile /= hideTile cotile lvl pos = "partially obscured"
                | otherwise = ""
       tileText = obscured <+> tname (okind tile)
       tilePart | T.null tilePrefix = MU.Text tileText

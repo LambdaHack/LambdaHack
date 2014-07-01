@@ -230,9 +230,9 @@ levelFromCaveKind Kind.COps{cotile}
         , lhidden = chidden
         , lescape
         }
-      f n p t | Tile.isExplorable cotile t = n + 1
-              | otherwise = n
-      lclear = PointArray.ifoldlA f 0 ltile
+      f n t | Tile.isExplorable cotile t = n + 1
+            | otherwise = n
+      lclear = PointArray.foldlA f 0 ltile
   in lvl {lclear}
 
 findGenerator :: Kind.COps -> Caves

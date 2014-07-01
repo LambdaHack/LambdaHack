@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Level
     -- * Level query
   , at, atI, checkAccess, checkDoorAccess
   , accessible, accessibleUnknown, accessibleDir
-  , isSecretPos, hideTile
+  , knownLsecret, isSecretPos, hideTile
   , findPos, findPosTry, mapLevelActors_, mapDungeonActors_
  ) where
 
@@ -148,6 +148,9 @@ accessibleUnknown cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} lvl =
 -- using the formula from the standard ruleset.
 accessibleDir :: Kind.COps -> Level -> Point -> Vector -> Bool
 accessibleDir cops lvl spos dir = accessible cops lvl spos $ spos `shift` dir
+
+knownLsecret :: Level -> Bool
+knownLsecret lvl = lsecret lvl /= 0
 
 isSecretPos :: Level -> Point -> Bool
 isSecretPos lvl (Point x y) =
