@@ -271,7 +271,7 @@ reqAlter source tpos mfeat = do
     let serverTile = lvl `at` tpos
         freshClientTile = hideTile cotile lvl tpos
         changeTo tgroup = do
-          -- No AlterD, because the effect is obvious (e.g., opened door).
+          -- No @SfxAlter@, because the effect is obvious (e.g., opened door).
           toTile <- rndToAction $ fmap (fromMaybe $ assert `failure` tgroup)
                                   $ opick tgroup (const True)
           unless (toTile == serverTile) $ do

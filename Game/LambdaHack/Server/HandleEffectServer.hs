@@ -452,7 +452,7 @@ switchLevels1 ((aid, bOld), ais) = do
     else return Nothing
   -- Remove the actor from the old level.
   -- Onlookers see somebody disappear suddenly.
-  -- @DestroyActorA@ is too loud, so use @LoseActorA@ instead.
+  -- @UpdDestroyActor@ is too loud, so use @UpdLoseActor@ instead.
   execUpdAtomic $ UpdLoseActor aid bOld ais
   return mlead
 

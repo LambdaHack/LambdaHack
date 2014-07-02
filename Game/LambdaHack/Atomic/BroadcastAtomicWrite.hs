@@ -152,12 +152,12 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 atomicRemember lid inPer s =
-  -- No @LoseItemA@ is sent for items that became out of sight.
+  -- No @UpdLoseItem@ is sent for items that became out of sight.
   -- The client will create these atomic actions based on @outPer@,
   -- if required. Any client that remembers out of sight items, OTOH,
   -- will create atomic actions that forget remembered items
-  -- that are revealed not to be there any more (no @SpotItemA@ for them).
-  -- Similarly no @LoseActorA@, @LoseTileA@ nor @LoseSmellA@.
+  -- that are revealed not to be there any more (no @UpdSpotItem@ for them).
+  -- Similarly no @UpdLoseActor@, @UpdLoseTile@ nor @UpdLoseSmell@.
   let inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
       -- Actors.

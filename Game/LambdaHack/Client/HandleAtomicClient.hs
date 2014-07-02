@@ -54,11 +54,11 @@ cmdAtomicFilterCli cmd = case cmd of
     if t == fromTile
       then return [cmd]
       else do
-        -- From alterTileA@ we know @t == freshClientTile@,
+        -- From @UpdAlterTile@ we know @t == freshClientTile@,
         -- which is uncanny, so we produce a message.
         -- It happens when a client thinks the tile is @t@,
-        -- but it's @fromTile@, and @AlterTileA@ changes it
-        -- to @toTile@. See @alterTileA@.
+        -- but it's @fromTile@, and @UpdAlterTile@ changes it
+        -- to @toTile@. See @updAlterTile@.
         let subject = ""  -- a hack, we we don't handle adverbs well
             verb = "turn into"
             msg = makeSentence [ "the", MU.Text $ tname $ okind t
@@ -204,7 +204,7 @@ cmdAtomicFilterCli cmd = case cmd of
           -- TODO: instead of bproj, check that actor sees himself.
           if not (bproj b) && bfid b == fid
           then Nothing  -- optimization: the actor is soon lost anyway,
-                        -- e.g., via DominateActorA, so don't bother
+                        -- e.g., via domination, so don't bother
           else Just $ UpdLoseActor aid b ais
         outActor = mapMaybe fActor outPrio
     -- Wipe out remembered items on tiles that now came into view.
@@ -216,7 +216,7 @@ cmdAtomicFilterCli cmd = case cmd of
         fItem p (iid, k) = UpdLoseItem iid (getItemBody iid s) k (CFloor lid p)
         fBag (p, bag) = map (fItem p) $ EM.assocs bag
         inItem = concatMap fBag inFloor
-    -- Remembered map tiles not wiped out, due to optimization in @spotTileA@.
+    -- Remembered map tiles not wiped out, due to optimization in @updSpotTile@.
     -- Wipe out remembered smell on tiles that now came into smell Fov.
     let inSmellFov = smellVisible perNew ES.\\ smellVisible perOld
         inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p lsmell)

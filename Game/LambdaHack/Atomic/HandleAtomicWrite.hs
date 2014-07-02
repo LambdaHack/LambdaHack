@@ -320,18 +320,17 @@ updRecordKill aid ikind k = do
   updateFaction (bfid b) adjFact
 
 -- | Alter an attribute (actually, the only, the defining attribute)
--- of a visible tile. This is similar to e.g., @TrajectoryActorA@.
+-- of a visible tile. This is similar to e.g., @UpdTrajectory@.
 updAlterTile :: MonadStateWrite m
              => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
              -> m ()
 updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
   Kind.COps{cotile} <- getsState scops
   lvl <- getLevel lid
-  -- The second alternative can happen if, e.g., a client remembers,
+  -- The second alternative below can happen if, e.g., a client remembers,
   -- but does not see the tile (so does not notice the SearchTile action),
   -- and it suddenly changes into another tile,
   -- which at the same time becomes visible (e.g., an open door).
-  -- See 'AtomicSemCli' for how this is reported to the client.
   let adj ts = assert (ts PointArray.! p == fromTile
                        || ts PointArray.! p == Tile.hideAs cotile fromTile
                        `blame` "unexpected altered tile kind"
@@ -355,7 +354,7 @@ updLearnSecrets aid fromS toS = assert (fromS /= toS) $ do
   updateLevel (blid b) $ \lvl -> assert (lsecret lvl == fromS)
                                  $ lvl {lsecret = toS}
 
--- Notice previously invisible tiles. This is similar to @SpotActorA@,
+-- Notice previously invisible tiles. This is similar to @UpdSpotActor@,
 -- but done in bulk, because it often involves dozens of tiles pers move.
 -- We don't check that the tiles at the positions in question are unknown
 -- to save computation, especially for clients that remember tiles
@@ -376,7 +375,7 @@ updSpotTile lid ts = assert (not $ null ts) $ do
           _ -> return ()
   mapM_ f ts
 
--- Stop noticing previously visible tiles. Unlike @spotTileA@, it verifies
+-- Stop noticing previously visible tiles. Unlike @updSpotActor@, it verifies
 -- the state of the tiles before changing them.
 updLoseTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()

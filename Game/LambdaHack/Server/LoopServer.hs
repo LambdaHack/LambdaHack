@@ -221,15 +221,12 @@ handleActors lid = do
       -- effect identifies an item, the hit is not wasted, so this makes sense.
       startActor aid
       dieSer aid b True
-      -- The attack animation for the projectile hit subsumes @DisplayPushD@,
-      -- so not sending an extra @DisplayPushD@ here.
       handleActors lid
     Just (aid, b) | bhp b <= 0 && not (bproj b) -> do
       -- An actor dies. Items drop to the ground
       -- and possibly a new leader is elected.
       startActor aid
       dieSer aid b False
-      -- The death animation subsumes @DisplayPushD@, so not sending it here.
       handleActors lid
     Just (aid, body) -> do
       startActor aid

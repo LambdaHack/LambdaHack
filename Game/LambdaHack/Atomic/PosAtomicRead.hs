@@ -53,14 +53,14 @@ data PosAtomic =
 --
 -- The goal of the mechanics: client should not get significantly
 -- more information by looking at the atomic commands he is able to see
--- than by looking at the state changes they enact. E.g., @DisplaceActorA@
+-- than by looking at the state changes they enact. E.g., @UpdDisplaceActor@
 -- in a black room, with one actor carrying a 0-radius light would not be
--- distinguishable by looking at the state (or the screen) from @MoveActorA@
--- of the illuminated actor, hence such @DisplaceActorA@ should not be
--- observable, but @MoveActorA@ should be (or the former should be perceived
+-- distinguishable by looking at the state (or the screen) from @UpdMoveActor@
+-- of the illuminated actor, hence such @UpdDisplaceActor@ should not be
+-- observable, but @UpdMoveActor@ should be (or the former should be perceived
 -- as the latter). However, to simplify, we assing as strict visibility
--- requirements to @MoveActorA@ as to @DisplaceActorA@ and fall back
--- to @SpotActorA@ (which provides minimal information that does not
+-- requirements to @UpdMoveActor@ as to @UpdDisplaceActor@ and fall back
+-- to @UpdSpotActor@ (which provides minimal information that does not
 -- contradict state) if the visibility is lower.
 posUpdAtomic :: MonadStateRead m => UpdAtomic -> m PosAtomic
 posUpdAtomic cmd = case cmd of
@@ -224,7 +224,7 @@ resetsFovCmdAtomic cmd = case cmd of
 -- information that still modifies client's state to match the server state
 -- wrt the current FOV and the subset of @posUpdAtomic@ that is visible.
 -- The original actions give more information not only due to spanning
--- potentially more positions than those visible. E.g., @MoveActorA@
+-- potentially more positions than those visible. E.g., @UpdMoveActor@
 -- informs about the continued existence of the actor between
 -- moves, v.s., popping out of existence and then back in.
 breakUpdAtomic :: MonadStateRead m => UpdAtomic -> m [UpdAtomic]

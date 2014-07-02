@@ -81,7 +81,7 @@ targetStrategy oldLeader aid = do
     Just (tgt@TEnemyPos{}, Nothing) ->
       -- special case, TEnemyPos would be lost otherwise
       createPath tgt
-    Just (_, Nothing) -> return Nothing  -- path invalidated, e.g. SpotActorA
+    Just (_, Nothing) -> return Nothing  -- path invalidated, e.g. UpdSpotActor
     Nothing -> return Nothing  -- no target assigned yet
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   fact <- getsState $ (EM.! bfid b) . sfactionD
