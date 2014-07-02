@@ -37,6 +37,7 @@ data Effect a =
   | Paralyze !a
   | InsertMove !a
   | Teleport !a
+  | PolyItem !CStore
   | Identify !CStore
   | SendFlying !ThrowMod
   | PushActor !ThrowMod
@@ -160,6 +161,7 @@ effectTrav (PullActor tmod) _ = return $! PullActor tmod
 effectTrav (Teleport a) f = do
   b <- f a
   return $! Teleport b
+effectTrav (PolyItem cstore) _ = return $! PolyItem cstore
 effectTrav (Identify cstore) _ = return $! Identify cstore
 effectTrav (ActivateEqp symbol) _ = return $! ActivateEqp symbol
 effectTrav (OneOf la) f = do

@@ -37,6 +37,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
@@ -155,6 +156,7 @@ effectSem effect source target = do
     Effect.PullActor tmod ->
       effectSendFlying execSfx tmod source target (Just False)
     Effect.Teleport p -> effectTeleport execSfx p target
+    Effect.PolyItem p -> effectPolyItem p target
     Effect.Identify p -> effectIdentify p target
     Effect.ActivateEqp symbol -> effectActivateEqp execSfx target symbol
     Effect.Explode t -> effectExplode execSfx t target
@@ -697,15 +699,39 @@ effectTeleport execSfx range target = do
     execSfx
     return True
 
+-- ** PolyItem
+
+effectPolyItem :: (MonadAtomic m, MonadServer m)
+               => CStore -> ActorId -> m Bool
+effectPolyItem cstore target = do
+  allAssocs <- fullAssocsServer target [cstore]
+  case allAssocs of
+    [] -> return False
+    (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
+      Just ItemDisco{itemKind} -> do
+        let maxCount = Dice.maxDice $ icount itemKind
+        if itemK >= maxCount
+        then do
+          let c = CActor target cstore
+          execUpdAtomic $ UpdDestroyItem iid itemBase maxCount c
+          effectCreateItem 1 target
+        else do
+          tb <- getsState $ getActorBody target
+          execSfxAtomic $ SfxMsgFid (bfid tb) $
+            "The purpose is served by" <+> tshow maxCount
+            <+> "pieces of this item, not by" <+> tshow itemK <> "."
+          return False
+      _ -> assert `failure` (cstore, target, iid, itemFull)
+
 -- ** Identify
 
 effectIdentify :: (MonadAtomic m, MonadServer m)
                => CStore -> ActorId -> m Bool
 effectIdentify cstore target = do
   allAssocs <- fullAssocsServer target [cstore]
-  case  allAssocs of
+  case allAssocs of
     [] -> return False
-    (iid, itemFull) : _ -> case itemDisco itemFull of
+    (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
       Just ItemDisco{itemKindId} -> do
         tb <- getsState $ getActorBody target
         seed <- getsServer $ (EM.! iid) . sitemSeedD

@@ -406,7 +406,8 @@ scroll5 = scroll
   { irarity  = [(1, 4), (10, 6)]
   , ieffects = [ NoEffect "of greater wonder"
                , OneOf [ CallFriend 1, Summon $ d 2, Ascend (-1), Ascend 1
-                       , RefillCalm 30, RefillCalm (-30), CreateItem $ d 2 ] ]
+                       , RefillCalm 30, RefillCalm (-30), CreateItem $ d 2 ]
+                       , PolyItem CGround ]
                -- TODO: ask player: Escape 1
   }
 scroll6 = scroll
@@ -420,8 +421,8 @@ scroll8 = scroll
   { ieffects = [Identify CGround]  -- TODO: ask player: AskPlayer cstore eff?
   }
 scroll9 = scroll
-  { irarity  = []
-  , ieffects = []
+  { irarity  = [(1, 4), (10, 6)]
+  , ieffects = [PolyItem CGround]
   }
 
 -- * Armor
