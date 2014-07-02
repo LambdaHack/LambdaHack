@@ -25,9 +25,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch]
+  [bolas, brassLantern, dart, dart200, gem1, gem2, gem3, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch]
 
-bolas,    brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, ring1, potion8, potion9, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch :: ItemKind
+bolas,    brassLantern, dart, dart200, gem1, gem2, gem3, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, ring1, potion8, potion9, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch :: ItemKind
 
 gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 
@@ -48,7 +48,7 @@ dart = ItemKind
   , idesc    = "Little, but sharp and sturdy."
   , ikit     = []
   }
-dart100 = ItemKind
+dart200 = ItemKind
   { isymbol  = '|'
   , iname    = "fine dart"
   , ifreq    = [("useful", 100), ("any arrow", 50)]  -- TODO: until arrows added
@@ -209,7 +209,23 @@ currency = ItemKind
 
 -- * Periodic jewelry
 
-necklace = ItemKind  -- TODO: when more items, perhaps make all Periodic necklaces
+gorget = ItemKind
+  { isymbol  = '"'
+  , iname    = "gorget"
+  , ifreq    = [("useful", 100)]
+  , iflavour = zipFancy [BrCyan]
+  , irarity  = [(4, 1), (10, 2)]
+  , icount   = 1
+  , iverbHit = "whip"
+  , iweight  = 30
+  , iaspects = [Periodic $ d 4 + dl 2, AddArmorMelee $ dl 3]
+  , ieffects = [RefillCalm 1]
+  , ifeature = [ Precious, EqpSlot EqpSlotPeriodic ""
+               , toVelocity 50 ]  -- not dense enough
+  , idesc    = "Highly ornamental, cold, large, steel mediallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
+  , ikit     = []
+  }
+necklace = ItemKind
   { isymbol  = '"'
   , iname    = "necklace"
   , ifreq    = [("useful", 100)]
@@ -238,6 +254,32 @@ necklace2 = necklace
 necklace3 = necklace
   { iaspects = [Periodic $ d 4 + dl 2]
   , ieffects = [Paralyze $ 5 + d 5 + dl 5, RefillCalm 50]
+  }
+necklace4 = necklace
+  { irarity  = []
+  , iaspects = []
+  , ieffects = []
+  , idesc    = ""
+  }
+necklace5 = necklace
+  { iaspects = [Periodic $ 2 * d 10 + dl 10]
+  , ieffects = [Teleport $ 2 + d 3]
+  }
+necklace6 = necklace
+  { iaspects = [Periodic $ d 4 + dl 2]
+  , ieffects = [Teleport $ 10 + d 10]
+  }
+necklace7 = necklace
+  { iaspects = [Periodic $ 2 * d 5 + dl 5]
+  , ieffects = [PushActor (ThrowMod 100 50)]
+  }
+necklace8 = necklace
+  { irarity  = [(4, 0), (10, 2)]
+  , iaspects = [Periodic $ 2 * d 10 + dl 20]
+  , ieffects = [InsertMove 1, RefillHP (-1)]
+  , ifeature = [Durable]  -- evil players would throw before death, to destroy
+      -- TODO: teach AI to wear only for fight; prevent players from meleeing
+      -- allies with that (Durable)
   }
 
 -- * Non-periodic jewelry
@@ -273,30 +315,25 @@ ring = ItemKind
   , ikit     = []
   }
 ring1 = ring
-  { irarity  = [(4, 1), (10, 2)]
-  , iaspects = [Periodic $ d 4 + dl 2]
-  , ieffects = [RefillCalm 1]
+  { iaspects = []
+  , ieffects = []
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with letters that meant a lot to somebody."
   }
 ring2 = ring
-  { iaspects = [Periodic $ 2 * d 10 + dl 10]
-  , ieffects = [Teleport $ 2 + d 3]
+  { iaspects = []
+  , ieffects = []
   }
 ring3 = ring
-  { iaspects = [Periodic $ d 4 + dl 2]
-  , ieffects = [Teleport $ 10 + d 10]
+  { iaspects = []
+  , ieffects = []
   }
 ring4 = ring
-  { iaspects = [Periodic $ 2 * d 5 + dl 5]
-  , ieffects = [PushActor (ThrowMod 100 50)]
+  { iaspects = []
+  , ieffects = []
   }
 ring5 = ring
-  {  irarity  = [(4, 0), (10, 2)]
-  , iaspects = [Periodic $ 2 * d 10 + dl 20]
-  , ieffects = [InsertMove 1, RefillHP (-1)]
-  , ifeature = [Durable]  -- evil players would throw before death, to destroy
-      -- TODO: teach AI to wear only for fight; prevent players from meleeing
-      -- allies with that (Durable)
+  { iaspects = []
+  , ieffects = []
   }
 
 -- * Exploding consumables, often intended to be thrown
@@ -418,10 +455,11 @@ scroll7 = scroll
   , ieffects = [InsertMove $ d 2 + dl 2]
   }
 scroll8 = scroll
-  { ieffects = [Identify CGround]  -- TODO: ask player: AskPlayer cstore eff?
+  { irarity  = [(3, 6), (10, 3)]
+  , ieffects = [Identify CGround]  -- TODO: ask player: AskPlayer cstore eff?
   }
 scroll9 = scroll
-  { irarity  = [(1, 4), (10, 6)]
+  { irarity  = [(3, 3), (10, 9)]
   , ieffects = [PolyItem CGround]
   }
 
@@ -513,7 +551,7 @@ halberd = ItemKind
   , ikit     = []
   }
 
--- * Wands
+-- * Wands and rods
 
 jumpingPole = ItemKind
   { isymbol  = '-'
