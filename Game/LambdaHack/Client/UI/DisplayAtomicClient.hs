@@ -185,6 +185,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
                            , "a hidden"
                            , MU.Text $ tname $ okind toTile ]
     msgAdd msg
+  UpdLearnSecrets{} -> skip
   UpdSpotTile{} -> skip
   UpdLoseTile{} -> skip
   UpdAlterSmell{} -> skip

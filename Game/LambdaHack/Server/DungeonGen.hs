@@ -199,7 +199,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
   litemNum <- castDice ldepth totalDepth citemNum
   let itemFreq = toFreq cname citemFreq
   assert (not $ nullFreq itemFreq) skip
-  lsecret <- random
+  lsecret <- randomR (1, maxBound)  -- 0 means unknown
   return $! levelFromCaveKind cops kc ldepth ltile lstair
                               litemNum itemFreq lsecret (isJust escapeFeature)
 

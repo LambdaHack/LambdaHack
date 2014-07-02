@@ -107,6 +107,7 @@ posUpdAtomic cmd = case cmd of
   UpdSearchTile aid p _ _ -> do
     (lid, pos) <- posOfAid aid
     return $! PosSight lid [pos, p]
+  UpdLearnSecrets aid _ _ -> singleAid aid
   UpdSpotTile lid ts -> do
     let ps = map fst ts
     return $! PosSight lid ps

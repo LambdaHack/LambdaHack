@@ -83,6 +83,7 @@ data UpdAtomic =
   | UpdAlterTile !LevelId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
   | UpdAlterClear !LevelId !Int
   | UpdSearchTile !ActorId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
+  | UpdLearnSecrets !ActorId !Int !Int
   | UpdSpotTile !LevelId ![(Point, Kind.Id TileKind)]
   | UpdLoseTile !LevelId ![(Point, Kind.Id TileKind)]
   | UpdAlterSmell !LevelId !Point !(Maybe Time) !(Maybe Time)
@@ -163,6 +164,7 @@ undoUpdAtomic cmd = case cmd of
   UpdAlterClear lid delta -> Just $ UpdAlterClear lid (-delta)
   UpdSearchTile aid p fromTile toTile ->
     Just $ UpdSearchTile aid p toTile fromTile
+  UpdLearnSecrets aid fromS toS -> Just $ UpdLearnSecrets aid toS fromS
   UpdSpotTile lid ts -> Just $ UpdLoseTile lid ts
   UpdLoseTile lid ts -> Just $ UpdSpotTile lid ts
   UpdAlterSmell lid p fromSm toSm -> Just $ UpdAlterSmell lid p toSm fromSm

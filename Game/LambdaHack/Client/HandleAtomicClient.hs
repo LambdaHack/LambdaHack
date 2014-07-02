@@ -84,6 +84,12 @@ cmdAtomicFilterCli cmd = case cmd of
            else -- Misguided.
                 assert `failure` "LoseTile fails to reset memory"
                        `twith` (aid, p, fromTile, toTile, b, t, cmd)
+  UpdLearnSecrets aid fromS _toS -> do
+    b <- getsState $ getActorBody aid
+    lvl <- getLevel $ blid b
+    return $! if lsecret lvl == fromS
+              then [cmd]  -- secrets revealed now
+              else []  -- secrets already revealed previously
   UpdSpotTile lid ts -> do
     Kind.COps{cotile} <- getsState scops
     lvl <- getLevel lid
@@ -93,7 +99,7 @@ cmdAtomicFilterCli cmd = case cmd of
     -- we can still verify by searching, and the UI warns us "obscured".
     let notKnown (p, t) = let tClient = lvl `at` p
                           in t /= tClient
-                             && (not (isSecretPos lvl p)
+                             && (not (knownLsecret lvl && isSecretPos lvl p)
                                  || t /= Tile.hideAs cotile tClient)
         newTs = filter notKnown ts
     return $! if null newTs then [] else [UpdSpotTile lid newTs]

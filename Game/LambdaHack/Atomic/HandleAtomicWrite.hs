@@ -72,6 +72,7 @@ handleUpdAtomic cmd = case cmd of
   UpdAlterClear lid delta -> updAlterClear lid delta
   UpdSearchTile _ _ fromTile toTile ->
     assert (fromTile /= toTile) $ return ()  -- only for clients
+  UpdLearnSecrets aid fromS toS -> updLearnSecrets aid fromS toS
   UpdSpotTile lid ts -> updSpotTile lid ts
   UpdLoseTile lid ts -> updLoseTile lid ts
   UpdAlterSmell lid p fromSm toSm -> updAlterSmell lid p fromSm toSm
@@ -345,6 +346,14 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
 updAlterClear :: MonadStateWrite m => LevelId -> Int -> m ()
 updAlterClear lid delta = assert (delta /= 0) $
   updateLevel lid $ \lvl -> lvl {lclear = lclear lvl + delta}
+
+-- TODO: use instead of revealing all secret positions initially, at once
+-- in Common/State.hs.
+updLearnSecrets :: MonadStateWrite m => ActorId -> Int -> Int -> m ()
+updLearnSecrets aid fromS toS = assert (fromS /= toS) $ do
+  b <- getsState $ getActorBody aid
+  updateLevel (blid b) $ \lvl -> assert (lsecret lvl == fromS)
+                                 $ lvl {lsecret = toS}
 
 -- Notice previously invisible tiles. This is similar to @SpotActorA@,
 -- but done in bulk, because it often involves dozens of tiles pers move.
