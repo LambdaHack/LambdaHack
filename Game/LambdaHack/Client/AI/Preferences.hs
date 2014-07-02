@@ -59,6 +59,7 @@ effectToBenefit cops b activeItems fact eff =
     Effect.ActivateEqp ' ' -> -100
     Effect.ActivateEqp _ -> -50
     Effect.Explode _ -> -10
+    Effect.OneOf _ -> 0  -- usually a mixed blessing
     Effect.OnSmash _ -> -10
     Effect.TimedAspect k asp -> k * fst (aspectToBenefit cops b asp) `div` 50
 

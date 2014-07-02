@@ -32,8 +32,11 @@ effectToSuff effect f =
     CallFriend 1 -> "of aid calling"
     CallFriend p -> "of aid calling" <+> wrapInParens (affixBonus p)
     Summon t -> "of summoning" <+> wrapInParens t
-    CreateItem 1 -> "of uncovering"
-    CreateItem p -> "of uncovering" <+> wrapInParens (affixBonus p)
+    CreateItem t -> "of uncovering"
+                    <+> case effect of
+                      CreateItem 1 -> ""
+                      CreateItem _ -> wrapInParens t
+                      _ -> assert `failure` effect
     ApplyPerfume -> "of smell removal"
     Burn p -> "of burning" <+> wrapInParens (affixBonus p)
     Ascend 1 -> "of ascending"
@@ -69,6 +72,7 @@ effectToSuff effect f =
     ActivateEqp ' ' -> "of equipment burst"
     ActivateEqp symbol -> "of burst '" <> T.singleton symbol <> "'"
     Explode _ -> "of explosion"
+    OneOf _ -> "of wonder"
     OnSmash _ -> ""  -- conditional effect, TMI
     TimedAspect _ _ ->
       case effect of

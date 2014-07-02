@@ -30,7 +30,7 @@ data Effect a =
   | Impress
   | CallFriend !Int
   | Summon !a
-  | CreateItem !Int
+  | CreateItem !a
   | Ascend !Int
   | Escape !Int           -- ^ the Int says if can be placed on last level, etc.
   | Paralyze !a
@@ -43,6 +43,7 @@ data Effect a =
   | DropEqp !Char !Bool   -- ^ symbol @' '@ means all, @True@ means hit on drop
   | ActivateEqp !Char     -- ^ symbol @' '@ means all
   | ApplyPerfume
+  | OneOf ![Effect a]
   | OnSmash !(Effect a)   -- ^ trigger if item smashed (not applied nor meleed)
   | TimedAspect !Int !(Aspect a)
                           -- ^ enable the aspect for k clips
@@ -136,7 +137,9 @@ effectTrav (CallFriend p) _ = return $! CallFriend p
 effectTrav (Summon a) f = do
   b <- f a
   return $! Summon b
-effectTrav (CreateItem p) _ = return $! CreateItem p
+effectTrav (CreateItem a) f = do
+  b <- f a
+  return $! CreateItem b
 effectTrav ApplyPerfume _ = return ApplyPerfume
 effectTrav (Burn p) _ = return $! Burn p
 effectTrav (Ascend p) _ = return $! Ascend p
@@ -156,6 +159,9 @@ effectTrav (Teleport a) f = do
   b <- f a
   return $! Teleport b
 effectTrav (ActivateEqp symbol) _ = return $! ActivateEqp symbol
+effectTrav (OneOf la) f = do
+  lb <- mapM (\a -> effectTrav a f) la
+  return $! OneOf lb
 effectTrav (OnSmash effa) f = do
   effb <- effectTrav effa f
   return $! OnSmash effb

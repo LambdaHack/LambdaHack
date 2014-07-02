@@ -157,6 +157,7 @@ effectSem effect source target = do
     Effect.Teleport p -> effectTeleport execSfx p target
     Effect.ActivateEqp symbol -> effectActivateEqp execSfx target symbol
     Effect.Explode t -> effectExplode execSfx t target
+    Effect.OneOf l -> effectOneOf l source target
     Effect.OnSmash _ -> return False  -- ignored under normal circumstances
     Effect.TimedAspect{} -> return False  -- TODO
 
@@ -751,3 +752,11 @@ effectExplode execSfx cgroup target = do
                     $ UpdLoseItem iid itemBase k container) mn3
   execSfx
   return True  -- we avoid verifying that at least one projectile got off
+
+-- * OneOf
+
+effectOneOf :: (MonadAtomic m, MonadServer m)
+            => [Effect.Effect Int] -> ActorId -> ActorId -> m Bool
+effectOneOf l source target = do
+  ef <-  rndToAction $ oneOf l
+  effectSem ef source target

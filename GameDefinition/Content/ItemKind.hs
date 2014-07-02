@@ -24,9 +24,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch]
+  [bolas, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch]
 
-bolas,    brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch :: ItemKind
+bolas,    brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, ring1, potion8, potion9, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch :: ItemKind
 
 gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 
@@ -346,6 +346,24 @@ potion7 = potion
   { ieffects = [ NoEffect "bait cocktail"
                , OnSmash (Summon $ 1 + dl 2), OnSmash (Explode "waste") ]
   }
+potion8 = scroll
+  { ieffects = [ NoEffect "of marvel"
+               , OneOf [Impress, DropBestWeapon, RefillHP 5, Burn 3]
+               , OnSmash (OneOf [ Explode "healing mist"
+                                , Explode "wounding mist"
+                                , Explode "fragrance"
+                                , Explode "explosion blast 10" ]) ]
+  }
+
+potion9 = scroll
+  { irarity  = [(1, 4), (10, 6)]
+  , ieffects = [ NoEffect "of greater marvel"
+               , OneOf [Dominate, DropBestWeapon, RefillHP 15, Burn 9]
+               , OnSmash (OneOf [ Explode "healing mist"  -- TODO: make stronger
+                                , Explode "pheromone"
+                                , Explode "distortion"
+                                , Explode "explosion blast 20" ]) ]
+  }
 
 -- * Non-exploding consumables, not specifically designed for throwing
 
@@ -355,7 +373,7 @@ scroll = ItemKind
   , ifreq    = [("useful", 100), ("any scroll", 100)]
   , iflavour = zipFancy stdCol ++ zipPlain darkCol  -- arcane and old
   , icount   = 1
-  , irarity  = [(1, 10), (10, 8)]
+  , irarity  = [(1, 10), (10, 7)]
   , iverbHit = "thump"
   , iweight  = 50
   , iaspects = []
@@ -378,15 +396,20 @@ scroll3 = scroll
   , ieffects = [Ascend (-1)]
   }
 scroll4 = scroll
-  { irarity  = []
-  , ieffects = []
+  { ieffects = [ NoEffect "of wonder"  -- move at least some of that to a wand
+               , OneOf [ Teleport $ 2 + d 5, RefillCalm 10, RefillCalm (-10)
+                       , InsertMove (d 2 + dl 2), Paralyze ((d 2 + dl 2) * 5)
+                       ] ]
   }
 scroll5 = scroll
-  { ieffects = [Teleport $ 2 + d 5]
+  { irarity  = [(1, 4), (10, 6)]
+  , ieffects = [ NoEffect "of greater wonder"
+               , OneOf [ CallFriend 1, Summon $ d 2, Ascend (-1), Ascend 1
+                       , RefillCalm 30, RefillCalm (-30), CreateItem $ d 2 ] ]
+               -- TODO: ask player: Escape 1
   }
 scroll6 = scroll
-  { irarity  = []
-  , ieffects = []
+  { ieffects = [Teleport $ 2 + d 5]
   }
 scroll7 = scroll
   { irarity  = [(10, 2)]

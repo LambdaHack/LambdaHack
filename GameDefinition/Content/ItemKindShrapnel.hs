@@ -10,9 +10,9 @@ import Game.LambdaHack.Content.ItemKind
 
 shrapnels :: [ItemKind]
 shrapnels =
-  [fragrance, pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mist_healing, mist_wounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+  [fragrance, pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mist_healing, mist_wounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glass_piece, smoke]
 
-fragrance,    pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mist_healing, mist_wounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+fragrance,    pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mist_healing, mist_wounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glass_piece, smoke :: ItemKind
 
 -- * Parameterized shrapnel
 
@@ -54,6 +54,7 @@ explosionBlast n = ItemKind
   , ikit     = []
   }
 explosionBlast10 = explosionBlast 10
+explosionBlast20 = explosionBlast 20
 firecracker :: Int -> ItemKind
 firecracker n = ItemKind
   { isymbol  = '\''
