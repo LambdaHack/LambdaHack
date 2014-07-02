@@ -14,6 +14,7 @@ import GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
+import Game.LambdaHack.Common.Misc (CStore)
 
 -- TODO: document each constructor
 -- | Effects of items. Can be invoked by the item wielder to affect
@@ -36,6 +37,7 @@ data Effect a =
   | Paralyze !a
   | InsertMove !a
   | Teleport !a
+  | Identify !CStore
   | SendFlying !ThrowMod
   | PushActor !ThrowMod
   | PullActor !ThrowMod
@@ -158,6 +160,7 @@ effectTrav (PullActor tmod) _ = return $! PullActor tmod
 effectTrav (Teleport a) f = do
   b <- f a
   return $! Teleport b
+effectTrav (Identify cstore) _ = return $! Identify cstore
 effectTrav (ActivateEqp symbol) _ = return $! ActivateEqp symbol
 effectTrav (OneOf la) f = do
   lb <- mapM (\a -> effectTrav a f) la

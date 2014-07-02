@@ -11,6 +11,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
 import qualified Data.Text as T
 
+import Game.LambdaHack.Common.Actor (ppCStore)
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Msg
@@ -69,6 +70,7 @@ effectToSuff effect f =
         Teleport p | p > 9 -> "of teleport" <+> wrapInParens t
         Teleport _ -> "of blinking" <+> wrapInParens t
         _ -> assert `failure` effect
+    Identify cstore -> "of identify" <+> ppCStore cstore
     ActivateEqp ' ' -> "of equipment burst"
     ActivateEqp symbol -> "of burst '" <> T.singleton symbol <> "'"
     Explode _ -> "of explosion"

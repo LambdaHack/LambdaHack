@@ -70,6 +70,8 @@ data CStore =
 
 instance Binary CStore
 
+instance Hashable CStore
+
 -- | A unique identifier of a faction in a game.
 newtype FactionId = FactionId Int
   deriving (Show, Eq, Ord, Enum, Binary)

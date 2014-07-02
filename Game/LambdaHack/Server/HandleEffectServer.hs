@@ -155,6 +155,7 @@ effectSem effect source target = do
     Effect.PullActor tmod ->
       effectSendFlying execSfx tmod source target (Just False)
     Effect.Teleport p -> effectTeleport execSfx p target
+    Effect.Identify p -> effectIdentify p target
     Effect.ActivateEqp symbol -> effectActivateEqp execSfx target symbol
     Effect.Explode t -> effectExplode execSfx t target
     Effect.OneOf l -> effectOneOf l source target
@@ -696,6 +697,22 @@ effectTeleport execSfx range target = do
     execSfx
     return True
 
+-- ** Identify
+
+effectIdentify :: (MonadAtomic m, MonadServer m)
+               => CStore -> ActorId -> m Bool
+effectIdentify cstore target = do
+  allAssocs <- fullAssocsServer target [cstore]
+  case  allAssocs of
+    [] -> return False
+    (iid, itemFull) : _ -> case itemDisco itemFull of
+      Just ItemDisco{itemKindId} -> do
+        tb <- getsState $ getActorBody target
+        seed <- getsServer $ (EM.! iid) . sitemSeedD
+        execUpdAtomic $ UpdDiscover (blid tb) (bpos tb) iid itemKindId seed
+        return True
+      _ -> assert `failure` (cstore, target, iid, itemFull)
+
 -- ** ActivateEqp
 
 -- | Activate all activable items with the given symbol
@@ -753,7 +770,7 @@ effectExplode execSfx cgroup target = do
   execSfx
   return True  -- we avoid verifying that at least one projectile got off
 
--- * OneOf
+-- ** OneOf
 
 effectOneOf :: (MonadAtomic m, MonadServer m)
             => [Effect.Effect Int] -> ActorId -> ActorId -> m Bool
