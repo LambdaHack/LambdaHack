@@ -18,7 +18,7 @@ fragrance,    pheromone, firecracker2, firecracker3, firecracker4, firecracker5,
 
 burningOil :: Int -> ItemKind
 burningOil n = ItemKind
-  { isymbol  = '\''
+  { isymbol  = '*'
   , iname    = "burning oil"
   , ifreq    = [("burning oil" <+> tshow n, 1)]
   , iflavour = zipFancy [BrYellow]
@@ -39,10 +39,10 @@ burningOil3 = burningOil 3
 burningOil4 = burningOil 4
 explosionBlast :: Int -> ItemKind
 explosionBlast n = ItemKind
-  { isymbol  = '\''
+  { isymbol  = '*'
   , iname    = "explosion blast"
   , ifreq    = [("explosion blast" <+> tshow n, 1)]
-  , iflavour = zipPlain [BrWhite]
+  , iflavour = zipPlain [BrRed]
   , icount   = 12  -- strong, but few, so not always hits target
   , irarity  = [(1, 1)]
   , iverbHit = "tear apart"
@@ -57,10 +57,10 @@ explosionBlast10 = explosionBlast 10
 explosionBlast20 = explosionBlast 20
 firecracker :: Int -> ItemKind
 firecracker n = ItemKind
-  { isymbol  = '\''
+  { isymbol  = '*'
   , iname    = "firecracker"
   , ifreq    = [("firecracker" <+> tshow n, 1)]
-  , iflavour = zipPlain [BrWhite]
+  , iflavour = zipPlain [stdCol !! (n `mod` length stdCol)]
   , icount   = intToDice $ 2 * n
   , irarity  = [(1, 1)]
   , iverbHit = "crack"
@@ -146,7 +146,7 @@ mist_wounding = ItemKind
   , ikit     = []
   }
 distortion = ItemKind
-  { isymbol  = '\''
+  { isymbol  = 'v'
   , iname    = "vortex"
   , ifreq    = [("distortion", 1)]
   , iflavour = zipFancy [White]
@@ -162,14 +162,14 @@ distortion = ItemKind
   , ikit     = []
   }
 waste = ItemKind
-  { isymbol  = '\''
+  { isymbol  = '*'
   , iname    = "waste"
   , ifreq    = [("waste", 1)]
   , iflavour = zipPlain [Brown]
   , icount   = 10
   , irarity  = [(1, 1)]
   , iverbHit = "splosh"
-  , iweight  = 10
+  , iweight  = 50
   , iaspects = []
   , ieffects = [RefillHP (-1)]
   , ifeature = [ ToThrow $ ThrowMod 28 50
@@ -178,7 +178,7 @@ waste = ItemKind
   , ikit     = []
   }
 glass_piece = ItemKind  -- when blowing up windows
-  { isymbol  = '\''
+  { isymbol  = '*'
   , iname    = "glass piece"
   , ifreq    = [("glass piece", 1)]
   , iflavour = zipPlain [BrBlue]

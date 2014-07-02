@@ -275,7 +275,7 @@ projectBla source pos rest iid cstore isShrapnel = do
   let lid = blid sb
       time = btime sb
   unless isShrapnel $ execSfxAtomic $ SfxProject source iid
-  addProjectile pos rest iid lid (bfid sb) time
+  addProjectile pos rest iid lid (bfid sb) time isShrapnel
   let c = CActor source cstore
   execUpdAtomic $ UpdLoseItem iid item 1 c
 
@@ -283,9 +283,10 @@ projectBla source pos rest iid cstore isShrapnel = do
 --
 -- Projectile has no organs except for the trunk.
 addProjectile :: (MonadAtomic m, MonadServer m)
-              => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
+              => Point -> [Point] -> ItemId -> LevelId -> FactionId
+              -> Time -> Bool
               -> m ()
-addProjectile bpos rest iid blid bfid btime = do
+addProjectile bpos rest iid blid bfid btime isShrapnel = do
   item <- getsState $ getItemBody iid
   let ts@(trajectory, _) = itemTrajectory item (bpos : rest)
       trange = length trajectory
@@ -294,7 +295,11 @@ addProjectile bpos rest iid blid bfid btime = do
       -- Not much detail about a fast flying item.
       (object1, object2) = partItem CInv $ itemNoDisco (item, 1)
       bname = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      tweakBody b = b { bname
+      tweakBody b = b { bsymbol = if isShrapnel then jsymbol item else bsymbol b
+                      , bcolor = if isShrapnel
+                                 then flavourToColor $ jflavour item
+                                 else bcolor b
+                      , bname
                       , bhp = 0
                       , bproj = True
                       , btrajectory = Just ts
