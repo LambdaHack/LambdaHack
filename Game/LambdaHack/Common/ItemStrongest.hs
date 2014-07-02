@@ -206,7 +206,7 @@ strengthFromEqpSlot eqpSlot =
     EqpSlotAddMaxHP -> strengthAddMaxHP
     EqpSlotAddMaxCalm -> strengthAddMaxCalm
     EqpSlotAddSpeed -> strengthAddSpeed
-    EqpSlotAbility -> \itemFull -> sum . EM.elems <$> strengthAbility itemFull
+    EqpSlotAddSkills -> \itemFull -> sum . EM.elems <$> strengthAbility itemFull
     EqpSlotAddHurtMelee -> strengthAddHurtMelee
     EqpSlotAddHurtRanged -> strengthAddHurtRanged
     EqpSlotAddArmorMelee -> strengthAddArmorMelee

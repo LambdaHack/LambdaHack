@@ -57,9 +57,9 @@ data Effect a =
 -- the item and so is not additive).
 data Aspect a =
     Periodic !a        -- ^ is activated this many times in 100
-  | AddHurtMelee !a    -- ^ percentage damage bonus against melee
+  | AddHurtMelee !a    -- ^ percentage damage bonus in melee
   | AddArmorMelee !a   -- ^ percentage armor bonus against melee
-  | AddHurtRanged !a   -- ^ percentage damage bonus against ranged
+  | AddHurtRanged !a   -- ^ percentage damage bonus in ranged
   | AddArmorRanged !a  -- ^ percentage armor bonus against ranged
   | AddMaxHP !a        -- ^ maximal hp
   | AddMaxCalm !a      -- ^ maximal calm
@@ -93,14 +93,14 @@ data Feature =
 
 data EqpSlot =
     EqpSlotPeriodic
+  | EqpSlotAddHurtMelee
+  | EqpSlotAddArmorMelee
+  | EqpSlotAddHurtRanged
+  | EqpSlotAddArmorRanged
   | EqpSlotAddMaxHP
   | EqpSlotAddMaxCalm
   | EqpSlotAddSpeed
-  | EqpSlotAbility
-  | EqpSlotAddHurtMelee
-  | EqpSlotAddHurtRanged
-  | EqpSlotAddArmorMelee
-  | EqpSlotAddArmorRanged
+  | EqpSlotAddSkills
   | EqpSlotAddSight
   | EqpSlotAddSmell
   | EqpSlotAddLight

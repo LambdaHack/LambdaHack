@@ -25,9 +25,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [bolas, brassLantern, dart, dart200, gem1, gem2, gem3, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch]
+  [bolas, brassLantern, buckler, dart, dart200, gem1, gem2, gem3, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch]
 
-bolas,    brassLantern, dart, dart200, gem1, gem2, gem3, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, ring1, potion8, potion9, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch :: ItemKind
+bolas,    brassLantern, buckler, dart, dart200, gem1, gem2, gem3, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, ring1, potion8, potion9, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch :: ItemKind
 
 gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 
@@ -175,7 +175,7 @@ gem = ItemKind
   , irarity  = []
   , iverbHit = "tap"
   , iweight  = 50
-  , iaspects = [AddLight 1]  -- just reflects strongly
+  , iaspects = [AddLight 1, AddSpeed (-1)]  -- reflects strongly, distracts
   , ieffects = []
   , ifeature = [ Durable  -- prevent destruction by evil monsters
                , Precious ]
@@ -218,7 +218,7 @@ gorget = ItemKind
   , icount   = 1
   , iverbHit = "whip"
   , iweight  = 30
-  , iaspects = [Periodic $ d 4 + dl 2, AddArmorMelee $ dl 3]
+  , iaspects = [Periodic $ d 4 + dl 2, AddArmorMelee 1, AddArmorRanged 1]
   , ieffects = [RefillCalm 1]
   , ifeature = [ Precious, EqpSlot EqpSlotPeriodic ""
                , toVelocity 50 ]  -- not dense enough
@@ -230,7 +230,7 @@ necklace = ItemKind
   , iname    = "necklace"
   , ifreq    = [("useful", 100)]
   , iflavour = zipFancy stdCol ++ zipPlain brightCol
-  , irarity  = [(4, 1), (10, 3)]
+  , irarity  = [(4, 2), (10, 5)]
   , icount   = 1
   , iverbHit = "whip"
   , iweight  = 30
@@ -256,28 +256,23 @@ necklace3 = necklace
   , ieffects = [Paralyze $ 5 + d 5 + dl 5, RefillCalm 50]
   }
 necklace4 = necklace
-  { irarity  = []
-  , iaspects = []
-  , ieffects = []
-  , idesc    = ""
-  }
-necklace5 = necklace
   { iaspects = [Periodic $ 2 * d 10 + dl 10]
   , ieffects = [Teleport $ 2 + d 3]
   }
-necklace6 = necklace
+necklace5 = necklace
   { iaspects = [Periodic $ d 4 + dl 2]
   , ieffects = [Teleport $ 10 + d 10]
   }
-necklace7 = necklace
+necklace6 = necklace
   { iaspects = [Periodic $ 2 * d 5 + dl 5]
   , ieffects = [PushActor (ThrowMod 100 50)]
   }
-necklace8 = necklace
+necklace7 = necklace
   { irarity  = [(4, 0), (10, 2)]
   , iaspects = [Periodic $ 2 * d 10 + dl 20]
   , ieffects = [InsertMove 1, RefillHP (-1)]
-  , ifeature = [Durable]  -- evil players would throw before death, to destroy
+  , ifeature = ifeature necklace ++ [Durable]
+                 -- evil players would throw before death, to destroy
       -- TODO: teach AI to wear only for fight; prevent players from meleeing
       -- allies with that (Durable)
   }
@@ -293,10 +288,10 @@ monocle = ItemKind
   , irarity  = [(6, 0), (10, 1)]
   , iverbHit = "rap"
   , iweight  = 50
-  , iaspects = [AddSight $ dl 3]
+  , iaspects = [AddSight $ dl 3, AddMaxCalm $ dl 3 - 5 - d 3]
   , ieffects = []
-  , ifeature = [Durable, EqpSlot EqpSlotAddSight "", Identified]
-  , idesc    = "Let's you better focus your weaker eye."
+  , ifeature = [Precious, Identified, Durable, EqpSlot EqpSlotAddSight ""]
+  , idesc    = "Let's you better focus your weaker eye. Until is starts sliding off."
   , ikit     = []
   }
 ring = ItemKind
@@ -305,35 +300,37 @@ ring = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain stdCol ++ zipFancy darkCol
   , icount   = 1
-  , irarity  = [(6, 1), (10, 3)]
+  , irarity  = [(6, 2), (10, 5)]
   , iverbHit = "knock"
   , iweight  = 15
   , iaspects = []
   , ieffects = []
-  , ifeature = [Precious]
+  , ifeature = [Precious, Identified]
   , idesc    = "A sturdy ring with a strangely shining eye."
   , ikit     = []
   }
 ring1 = ring
-  { iaspects = []
-  , ieffects = []
-  , idesc    = "Cold, solid to the touch, perfectly round, engraved with letters that meant a lot to somebody."
+  { irarity  = [(2, 0), (10, 2)]
+  , iaspects = [AddSpeed 1, AddMaxHP $ dl 3 - 5 - d 3]
+  , ifeature = ifeature ring ++ [Durable, EqpSlot EqpSlotAddSpeed ""]
   }
 ring2 = ring
-  { iaspects = []
-  , ieffects = []
+  { iaspects = [AddMaxHP $ 3 + dl 5, AddMaxCalm $ dl 6 - 15 - d 6]
+  , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddMaxHP ""]
   }
 ring3 = ring
-  { iaspects = []
-  , ieffects = []
+  { iaspects = [AddMaxCalm $ 10 + dl 10]
+  , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddMaxCalm ""]
+  , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, though mostly worn out words."
   }
-ring4 = ring
-  { iaspects = []
-  , ieffects = []
+ring4 = ring  -- TODO: move to level-ups and to timed effects
+  { irarity  = [(3, 8), (10, 12)]
+  , iaspects = [AddHurtMelee $ d 5 + dl 9, AddMaxHP $ dl 3 - 4 - d 2]
+  , ifeature = ifeature ring ++ [Durable, EqpSlot EqpSlotAddHurtMelee ""]
   }
-ring5 = ring
-  { iaspects = []
-  , ieffects = []
+ring5 = ring  -- by the time it's found, probably no space in eqp
+  { irarity  = [(5, 0), (10, 1)]
+  , iaspects = [AddLight 1]
   }
 
 -- * Exploding consumables, often intended to be thrown
@@ -467,21 +464,30 @@ scroll9 = scroll
 
 -- Shield doesn't protect against ranged attacks to prevent
 -- micromanagement: walking with shield, melee without.
-shield = ItemKind
+buckler = ItemKind
   { isymbol  = ']'
-  , iname    = "shield"
+  , iname    = "buckler"
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
-  , irarity  = [(7, 7)]
+  , irarity  = [(4, 7)]
   , iverbHit = "bash"
-  , iweight  = 3000
-  , iaspects = [AddArmorMelee 50, AddHurtMelee (-40)]
+  , iweight  = 2000
+  , iaspects = [AddArmorMelee 40, AddHurtMelee (-30)]
   , ieffects = []
+  , ifeature = [ toVelocity 30  -- unwieldy to throw and blunt
+               , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
+  , idesc    = "Heavy and unwieldy. Absorbs a precentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
+  , ikit     = []
+  }
+shield = buckler
+  { iname    = "shield"
+  , irarity  = [(7, 7)]
+  , iweight  = 3000
+  , iaspects = [AddArmorMelee 80, AddHurtMelee (-70)]
   , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
   , idesc    = "Large and unwieldy. Absorbs a precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
-  , ikit     = []
   }
 
 -- * Weapons
@@ -508,7 +514,7 @@ hammer = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [BrMagenta]
   , icount   = 1
-  , irarity  = [(4, 8), (10, 2)]
+  , irarity  = [(4, 12), (10, 2)]
   , iverbHit = "club"
   , iweight  = 1500
   , iaspects = [AddHurtMelee $ d 2 + 2 * dl 5]
@@ -551,10 +557,35 @@ halberd = ItemKind
   , ikit     = []
   }
 
--- * Wands and rods
+-- * Wands
+
+wand = ItemKind
+  { isymbol  = '/'
+  , iname    = "wand"
+  , ifreq    = [("useful", 100)]
+  , iflavour = zipFancy brightCol
+  , icount   = 1
+  , irarity  = []  -- TODO: add charges, etc.
+  , iverbHit = "club"
+  , iweight  = 300
+  , iaspects = [AddLight 1, AddSpeed (-1)]  -- pulsing with power, distracts
+  , ieffects = []
+  , ifeature = [ toVelocity 125  -- magic
+               , Applicable, Durable ]
+  , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."
+  , ikit     = []
+  }
+wand1 = wand
+  { ieffects = []  -- TODO: emit a cone of sound shrapnel that makes enemy cover his ears and so drop '|' and '{'
+  }
+wand2 = wand
+  { ieffects = []
+  }
+
+-- * Assorted tools
 
 jumpingPole = ItemKind
-  { isymbol  = '-'
+  { isymbol  = '('
   , iname    = "jumping pole"
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [White]
@@ -569,26 +600,4 @@ jumpingPole = ItemKind
   , ifeature = [Applicable, Identified]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
   , ikit     = []
-  }
-wand = ItemKind
-  { isymbol  = '/'
-  , iname    = "wand"
-  , ifreq    = [("useful", 100)]
-  , iflavour = zipFancy brightCol
-  , icount   = 1
-  , irarity  = []  -- TODO: add charges, etc.
-  , iverbHit = "club"
-  , iweight  = 300
-  , iaspects = [AddLight 1]
-  , ieffects = []
-  , ifeature = [ toVelocity 125  -- magic
-               , Applicable, Durable ]
-  , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."
-  , ikit     = []
-  }
-wand1 = wand
-  { ieffects = []  -- TODO: emit a cone of sound shrapnel that makes enemy cover his ears and so drop '|' and '{'
-  }
-wand2 = wand
-  { ieffects = []
   }

@@ -74,7 +74,7 @@ aspectToBenefit _cops _b asp =
     Effect.AddMaxCalm p -> (p, 1)
     Effect.AddSpeed p -> (p * 10000, 1)
     Effect.AddSkills m -> (5 * sum (EM.elems m), 1)
-    Effect.AddHurtMelee p -> (p `divUp` 4, 1)  -- TODO: AI would reject shield
+    Effect.AddHurtMelee p -> (p `divUp` 3, 1)
     Effect.AddHurtRanged p -> (p `divUp` 5, 1)
     Effect.AddArmorMelee p -> (p `divUp` 5, 1)
     Effect.AddArmorRanged p -> (p `divUp` 10, 1)
