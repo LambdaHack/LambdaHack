@@ -194,15 +194,21 @@ targetStrategy oldLeader aid = do
                               else return []
                             case ctriggers of
                               [] -> do
-                                getDistant <-
-                                  rndToAction $ oneOf
-                                  $ [fmap (: []) . furthestKnown]
-                                    ++ [ closestTriggers Nothing True
-                                       | EM.size dungeon > 1 ]
-                                kpos <- getDistant aid
-                                case kpos of
-                                  [] -> return reject
-                                  p : _ -> setPath $ TPoint (blid b) p
+                                -- All stones turned, time to win or die.
+                                afoes <- closestFoes allFoes aid
+                                case afoes of
+                                  (_, (aid2, _)) : _ ->
+                                    setPath $ TEnemy aid2 False
+                                  [] -> do
+                                    getDistant <-
+                                      rndToAction $ oneOf
+                                      $ [fmap (: []) . furthestKnown]
+                                        ++ [ closestTriggers Nothing True
+                                           | EM.size dungeon > 1 ]
+                                    kpos <- getDistant aid
+                                    case kpos of
+                                      [] -> return reject
+                                      p : _ -> setPath $ TPoint (blid b) p
                               p : _ -> setPath $ TPoint (blid b) p
                           p : _ -> setPath $ TPoint (blid b) p
                       Just p -> setPath $ TPoint (blid b) p
