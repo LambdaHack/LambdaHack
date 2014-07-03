@@ -376,7 +376,7 @@ harmful cops body activeItems fact itemFull =
   -- items that are known and their effects are not stricly beneficial
   -- should not be equipped (either they are harmful or they waste eqp space).
   maybe False (\u -> u <= 0)
-    (maxUsefulness cops body activeItems fact itemFull)
+    (totalUsefulness cops body activeItems fact itemFull)
   && (maybe True ((/= Effect.EqpSlotWeapon) . fst)
       $ strengthEqpSlot $ itemBase itemFull)
 

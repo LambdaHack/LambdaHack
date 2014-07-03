@@ -90,7 +90,7 @@ effAspToBenefit cops b activeItems fact effects aspects =
       (addBens, multBens) = unzip $ map (aspectToBenefit cops b) aspects
       addBen = sum addBens
       multBen = product multBens
-      scaledBen = map (* multBen) $ addBen : eBens
+      scaledBen = addBen : map (* multBen) eBens
   in if minimum scaledBen < -10 && maximum scaledBen > 10
-     then 0  -- this is big deal mixed blessing, AI too stupid to decide
+     then 0  -- this is a big deal mixed blessing, AI too stupid to decide
      else sum scaledBen

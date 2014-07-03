@@ -14,7 +14,7 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , condDesirableFloorItemM
   , condMeleeBadM
   , condLightBetraysM
-  , maxUsefulness
+  , totalUsefulness
   , benAvailableItems
   , benGroundItems
   , threatDistList
@@ -162,7 +162,7 @@ benAvailableItems aid permitted = do
         [ ((benefit, cstore), (iid, itemFull))
         | (iid, k) <- EM.assocs bag
         , let itemFull = itemToF iid k
-        , let benefit = maxUsefulness cops b activeItems fact itemFull
+        , let benefit = totalUsefulness cops b activeItems fact itemFull
         , benefit /= Just 0
         , permitted itemFull ]
   groundBag <- getsState $ getActorBag aid CGround
@@ -202,7 +202,7 @@ benGroundItems aid = do
         | otherwise = use /= Just 0
       mapDesirable (iid, k) =
         let item = itemD EM.! iid
-            use = maxUsefulness cops body activeItems fact (itemToF iid k)
+            use = totalUsefulness cops body activeItems fact (itemToF iid k)
             value = fromMaybe 5 use  -- experimenting fun
         in if desirableItem item use
            then Just ((value, k), (iid, item))
@@ -210,10 +210,10 @@ benGroundItems aid = do
   return $ reverse $ sort $ mapMaybe mapDesirable $ EM.assocs floorItems
     -- keep it lazy
 
--- | Determine the maximum absolute benefit from an item.
-maxUsefulness :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull
+-- | Determine the total benefit from an item.
+totalUsefulness :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull
               -> Maybe Int
-maxUsefulness cops body activeItems fact itemFull = do
+totalUsefulness cops body activeItems fact itemFull = do
   case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
       Just $ effAspToBenefit cops body activeItems fact jeffects jaspects

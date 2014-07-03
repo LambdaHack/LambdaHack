@@ -120,7 +120,7 @@ targetStrategy oldLeader aid = do
       nearbyFoes = filter (targetableEnemy . snd) allFoes
       unknownId = ouniqGroup "unknown space"
       itemUsefulness iid k =
-        case maxUsefulness cops b activeItems fact (itemToF iid k) of
+        case totalUsefulness cops b activeItems fact (itemToF iid k) of
           Just v -> v
           Nothing -> 30  -- experimenting is fun
       desirableItem iid item k

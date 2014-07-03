@@ -252,11 +252,17 @@ unknownPrecious itemFull =
     _ -> Precious `elem` jfeature (itemBase itemFull)
 
 permittedRanged :: ItemFull -> Bool
-permittedRanged itemFull = not (unknownPrecious itemFull)
-                           && case strengthEqpSlot (itemBase itemFull) of
-                                Just (EqpSlotAddLight, _) -> True
-                                Just _ -> False
-                                Nothing -> True
+permittedRanged itemFull =
+  let hasEffects = case itemDisco itemFull of
+        Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects=[]}} -> False
+        Just ItemDisco{itemAE=Nothing, itemKind=ItemKind{ieffects=[]}} -> False
+        _ -> True
+  in hasEffects
+     && not (unknownPrecious itemFull)
+     && case strengthEqpSlot (itemBase itemFull) of
+          Just (EqpSlotAddLight, _) -> True
+          Just _ -> False
+          Nothing -> True
 
 unknownAspect :: (Aspect Int -> [b]) -> ItemFull -> Bool
 unknownAspect f itemFull =
