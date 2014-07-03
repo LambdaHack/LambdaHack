@@ -23,7 +23,6 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
@@ -165,7 +164,6 @@ dominateFid :: (MonadAtomic m, MonadServer m)
 dominateFid fid target = do
   Kind.COps{cotile} <- getsState scops
   tb <- getsState $ getActorBody target
-  activeItems <- activeItemsServer target
   -- Only record the initial domination as a kill.
   disco <- getsServer sdisco
   trunk <- getsState $ getItemBody $ btrunk tb
@@ -175,10 +173,10 @@ dominateFid fid target = do
   deduceKilled tb
   ais <- getsState $ getCarriedAssocs tb
   execUpdAtomic $ UpdLoseActor target tb ais
-  let calmMax = xM $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
-      bNew = tb { bfid = fid
+  calmMax <- sumOrganEqpServer Effect.EqpSlotAddMaxCalm target
+  let bNew = tb { bfid = fid
                 , boldfid = bfid tb
-                , bcalm = calmMax `div` 2 }
+                , bcalm = max 0 $ xM calmMax `div` 2 }
   execUpdAtomic $ UpdSpotActor target bNew ais
   mleaderOld <- getsState $ gleader . (EM.! fid) . sfactionD
   -- Keep the leader if he is on stairs. We don't want to clog stairs.
@@ -217,7 +215,7 @@ advanceTime aid = do
     else do
       newCalmDelta <- getsState $ regenCalmDelta b activeItems
       let clearMark = 0
-      unless (newCalmDelta == 0) $
+      unless (newCalmDelta <= 0) $
         -- Update delta for the current player turn.
         execUpdAtomic $ UpdRefillCalm aid newCalmDelta
       unless (bcalmDelta b == ResDelta 0 0) $

@@ -172,9 +172,8 @@ effectRefillHP :: (MonadAtomic m, MonadServer m)
            => m () -> Int -> ActorId -> ActorId -> m Bool
 effectRefillHP execSfx power source target = do
   tb <- getsState $ getActorBody target
-  activeItems <- activeItemsServer target
-  let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
-      deltaHP = min (xM power) (max 0 $ xM hpMax - bhp tb)
+  hpMax <- sumOrganEqpServer Effect.EqpSlotAddMaxHP target
+  let deltaHP = min (xM power) (max 0 $ xM hpMax - bhp tb)
   if deltaHP == 0
     then return False
     else do
@@ -210,15 +209,16 @@ effectHurt nDm source target = do
   hurtBonus <- armorHurtBonus source target
   let block = braced tb
       mult = (100 + hurtBonus) * (if block then 50 else 100)
-      deltaHP = min (-1)  -- at least 1 HP taken
-                    (mult * n `divUp` (100 * 100))
+      deltaHP = - (max oneM  -- at least 1 HP taken
+                   $ fromIntegral mult * xM n `divUp` (100 * 100))
+      deltaDiv = fromIntegral $ deltaHP `div` oneM
   -- Damage the target.
-  execUpdAtomic $ UpdRefillHP target (xM deltaHP)
+  execUpdAtomic $ UpdRefillHP target deltaHP
   when (source /= target) $ halveCalm target
   execSfxAtomic $ SfxEffect (bfid sb) target $
     if source == target
-    then Effect.RefillHP deltaHP  -- no SfxStrike, so treat as any heal/wound
-    else Effect.Hurt (Dice.intToDice deltaHP)  -- avoid spam; SfxStrike sent
+    then Effect.RefillHP deltaDiv  -- no SfxStrike, so treat as any heal/wound
+    else Effect.Hurt (Dice.intToDice deltaDiv)  -- avoid spam; SfxStrike sent
   return True
 
 armorHurtBonus :: (MonadAtomic m, MonadServer m)
@@ -240,9 +240,8 @@ effectRefillCalm ::  (MonadAtomic m, MonadServer m)
            => m () -> Int -> ActorId -> m Bool
 effectRefillCalm execSfx power target = do
   tb <- getsState $ getActorBody target
-  activeItems <- activeItemsServer target
-  let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
-      deltaCalm = min (xM power) (max 0 $ xM calmMax - bcalm tb)
+  calmMax <- sumOrganEqpServer Effect.EqpSlotAddMaxCalm target
+  let deltaCalm = min (xM power) (max 0 $ xM calmMax - bcalm tb)
   if deltaCalm == 0
     then return False
     else do
@@ -296,8 +295,8 @@ effectCallFriend power source target = assert (power > 0) $ do
               && bhp sb >= xM 10  -- prevent spam from regenerating wimps
   if not legal then return False
   else do
-    let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
-        deltaHP = xM hpMax `div` 3
+    let hpMax = max 1 $ sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
+        deltaHP = - xM hpMax `div` 3
     execUpdAtomic $ UpdRefillHP source deltaHP
     let validTile t = not $ Tile.hasFeature cotile F.NoActor t
         lid = blid sb
@@ -319,8 +318,8 @@ effectSummon power source target = assert (power > 0) $ do
               && bcalm sb >= xM 10
   if not legal then return False
   else do
-    let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
-        deltaCalm = xM calmMax `div` 3
+    let calmMax = max 1 $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
+        deltaCalm = - xM calmMax `div` 3
     execUpdAtomic $ UpdRefillCalm source deltaCalm
     let validTile t = not $ Tile.hasFeature cotile F.NoActor t
     ps <- getsState $ nearbyFreePoints validTile (bpos sb) (blid sb)

@@ -46,7 +46,6 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.ItemDescription
-import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -298,9 +297,8 @@ targetDesc target = do
     Just (TEnemy aid _) -> do
       side <- getsClient sside
       b <- getsState $ getActorBody aid
-      activeItems <- activeItemsClient aid
-      let maxHP = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
-          percentage = 100 * bhp b `div` xM (max 5 maxHP)
+      maxHP <- sumOrganEqpClient Effect.EqpSlotAddMaxHP aid
+      let percentage = 100 * bhp b `div` xM (max 5 maxHP)
           stars | percentage < 20  = "[_____]"
                 | percentage < 40  = "[*____]"
                 | percentage < 60  = "[**___]"

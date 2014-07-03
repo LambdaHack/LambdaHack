@@ -331,6 +331,7 @@ ring4 = ring  -- TODO: move to level-ups and to timed effects
 ring5 = ring  -- by the time it's found, probably no space in eqp
   { irarity  = [(5, 0), (10, 1)]
   , iaspects = [AddLight 1]
+  , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddLight ""]
   }
 
 -- * Exploding consumables, often intended to be thrown

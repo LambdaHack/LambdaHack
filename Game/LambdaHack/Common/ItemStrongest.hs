@@ -197,7 +197,7 @@ itemTrajectory item path =
   let ThrowMod{..} = strengthToThrow item
   in computeTrajectory (jweight item) throwVelocity throwLinger path
 
--- TODO: when all below are apsects, define with
+-- TODO: when all below are aspects, define with
 -- (EqpSlotAddMaxHP, AddMaxHP k) -> [k]
 strengthFromEqpSlot :: EqpSlot -> ItemFull -> Maybe Int
 strengthFromEqpSlot eqpSlot =

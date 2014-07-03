@@ -327,8 +327,10 @@ addActor groupName bfid pos lid tweakBody bpronoun time iis = do
             Just ItemDisco{itemKind} -> itemKind
             Nothing -> assert `failure` trunkFull
       -- Initial HP and Calm is based only on trunk and ignores organs.
-      let hp = xM (sumSlotNoFilter Effect.EqpSlotAddMaxHP [trunkFull]) `div` 2
-          calm = xM (sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull])
+      let hp = xM (max 2 $ sumSlotNoFilter Effect.EqpSlotAddMaxHP [trunkFull])
+               `div` 2
+          calm = xM $ max 1
+                 $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull]
       -- Create actor.
       fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
       DebugModeSer{sdifficultySer} <- getsServer sdebugSer

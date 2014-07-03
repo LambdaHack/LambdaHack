@@ -29,7 +29,6 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
-import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -109,9 +108,8 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     mleader <- getsClient _sleader
     when (Just aid == mleader) $ do
       b <- getsState $ getActorBody aid
-      activeItems <- activeItemsClient aid
-      let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
-      when (bhp b == xM hpMax) $ do
+      hpMax <- sumOrganEqpClient Effect.EqpSlotAddMaxHP aid
+      when (bhp b == xM hpMax && hpMax > 0) $ do
         actorVerbMU aid b "recover your health fully"
         stopPlayBack
   UpdRefillCalm aid calmDelta ->

@@ -252,12 +252,12 @@ memActor aid lid s =
 
 calmEnough :: Actor -> [ItemFull] -> Bool
 calmEnough b activeItems =
-  let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
+  let calmMax = max 1 $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
   in 2 * xM calmMax <= 3 * bcalm b
 
 hpEnough :: Actor -> [ItemFull] -> Bool
 hpEnough b activeItems =
-  let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
+  let hpMax = max 1 $ sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
   in 2 * xM hpMax <= 3 * bhp b
 
 -- | Get current time from the dungeon data.

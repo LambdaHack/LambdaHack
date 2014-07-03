@@ -136,7 +136,8 @@ actorTemplate btrunk bsymbol bname bpronoun bcolor bhp bcalm
 bspeed :: Actor -> [ItemFull] -> Speed
 bspeed b activeItems =
   case btrajectory b of
-    Nothing -> toSpeed $ sumSlotNoFilter Effect.EqpSlotAddSpeed activeItems
+    Nothing -> toSpeed $ max 1  -- avoid infinite wait
+               $ sumSlotNoFilter Effect.EqpSlotAddSpeed activeItems
     Just (_, speed) -> speed
 
 -- | Add time taken by a single step at the actor's current speed.
@@ -168,7 +169,7 @@ actorNewBorn b = boldpos b == Point 0 0
 hpTooLow :: Actor -> [ItemFull] -> Bool
 hpTooLow b activeItems =
   let maxHP = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
-  in bhp b == oneM || 5 * bhp b < xM maxHP
+  in bhp b <= oneM || 5 * bhp b < xM maxHP
 
 -- | Checks for the presence of actors in a position.
 -- Does not check if the tile is walkable.
