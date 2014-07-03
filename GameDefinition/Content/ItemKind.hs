@@ -25,9 +25,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [bolas, brassLantern, buckler, dart, dart200, gem1, gem2, gem3, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch]
+  [bolas, brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch, armorLeather, armorMail]
 
-bolas,    brassLantern, buckler, dart, dart200, gem1, gem2, gem3, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, ring1, potion8, potion9, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch :: ItemKind
+bolas,    brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, ring1, potion8, potion9, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch, armorLeather, armorMail :: ItemKind
 
 gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 
@@ -463,13 +463,78 @@ scroll9 = scroll
 
 -- * Armor
 
+armorLeather = ItemKind
+  { isymbol  = '['
+  , iname    = "leather armor"
+  , ifreq    = [("useful", 100)]
+  , iflavour = zipPlain [Brown]
+  , icount   = 1
+  , irarity  = [(4, 9)]
+  , iverbHit = "thud"
+  , iweight  = 7000
+  , iaspects = [ AddHurtMelee (-3)
+               , AddArmorMelee $ (1 + dl 3) * 5
+               , AddArmorRanged $ (1 + dl 3) * 5 ]
+  , ieffects = []
+  , ifeature = [ toVelocity 30  -- unwieldy to throw and blunt
+               , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
+  , idesc    = "A stiff jacket formed from leather boiled in bee wax. Smells much better than the rest of your garment."
+  , ikit     = []
+  }
+armorMail = armorLeather
+  { isymbol  = '['
+  , iname    = "mail armor"
+  , iflavour = zipPlain [Cyan]
+  , irarity  = [(7, 9)]
+  , iweight  = 12000
+  , iaspects = [ AddHurtMelee (-3)
+               , AddArmorMelee $ (2 + dl 3) * 5
+               , AddArmorRanged $ (2 + dl 3) * 5 ]
+  , idesc    = "A long shirt woven from iron rings. Discourages foes from attacking your torso, which makes it harder for them to land a blow."
+  }
+gloveFencing = ItemKind
+  { isymbol  = '['
+  , iname    = "leather gauntlet"
+  , ifreq    = [("useful", 100)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = 1
+  , irarity  = [(4, 6), (10, 12)]
+  , iverbHit = "flap"
+  , iweight  = 100
+  , iaspects = [ AddHurtMelee $ 2 * (d 2 + 2 * dl 5)
+               , AddArmorRanged $ d 2 + dl 2 ]
+  , ieffects = []
+  , ifeature = [ toVelocity 30  -- flaps and flutters
+               , Durable, EqpSlot EqpSlotAddArmorRanged "", Identified ]
+  , idesc    = "A fencing glove from rough leather ensuring a good grip. Quite effective for deflecting or even catching slow projectiles."
+  , ikit     = []
+  }
+gloveGauntlet = gloveFencing
+  { iname    = "steel gauntlet"
+  , irarity  = [(6, 12)]
+  , iflavour = zipPlain [BrCyan]
+  , iweight  = 300
+  , iaspects = [ AddArmorMelee $ 2 * (d 2 + dl 2)
+               , AddArmorRanged $ 2 * (d 2 + dl 2) ]
+  , idesc    = "Long leather gauntlet covered in overlapping steel plates."
+  }
+gloveJousting = gloveFencing
+  { iname    = "jousting gauntlet"
+  , irarity  = [(6, 12)]
+  , iflavour = zipFancy [BrRed]
+  , iweight  = 500
+  , iaspects = [ AddHurtMelee $ - 10 - d 5 + dl 5
+               , AddArmorMelee $ 2 * (d 2 + dl 3)
+               , AddArmorRanged $ 2 * (d 2 + dl 3) ]
+  , idesc    = "Rigid, steel jousting handgear. If only you had a lance. And a horse."
+  }
 -- Shield doesn't protect against ranged attacks to prevent
 -- micromanagement: walking with shield, melee without.
 buckler = ItemKind
-  { isymbol  = ']'
+  { isymbol  = '['
   , iname    = "buckler"
   , ifreq    = [("useful", 100)]
-  , iflavour = zipPlain [Brown]
+  , iflavour = zipPlain [Blue]
   , icount   = 1
   , irarity  = [(4, 7)]
   , iverbHit = "bash"
@@ -484,6 +549,7 @@ buckler = ItemKind
 shield = buckler
   { iname    = "shield"
   , irarity  = [(7, 7)]
+  , iflavour = zipPlain [Green]
   , iweight  = 3000
   , iaspects = [AddArmorMelee 80, AddHurtMelee (-70)]
   , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
