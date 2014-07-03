@@ -230,21 +230,22 @@ equipItems aid = do
               -> Strategy (RequestTimed AbMoveItem)
       improve fromCStore (bestInv, bestEqp) =
         case (bestInv, bestEqp) of
-          ((_, (iidInv, itemInv)) : _, [])
-            | not (eqpOverfull body 1)
-              && not (unneeded cops condLightBetrays
-                               body activeItems fact itemInv) ->
+          ((_, (iidInv, _)) : _, []) | not (eqpOverfull body 1) ->
             returN "wield any"
             $ ReqMoveItem iidInv 1 fromCStore CEqp
-          ((vInv, (iidInv, itemInv)) : _, (vEqp, _) : _)
-            | not (eqpOverfull body 1)
-              && not (unneeded cops condLightBetrays
-                               body activeItems fact itemInv)
-              && vInv > vEqp ->
+          ((vInv, (iidInv, _)) : _, (vEqp, _) : _) | not (eqpOverfull body 1)
+                                                     && vInv > vEqp ->
             returN "wield better"
             $ ReqMoveItem iidInv 1 fromCStore CEqp
           _ -> reject
-      bestThree = bestByEqpSlot invAssocs eqpAssocs shaAssocs
+      -- We filter out unneeded items. In particular, we ignore them in eqp
+      -- when comparing to items we may want to equip. Anyway, the unneeded
+      -- items should be removed in yieldUnneeded earlier or soon after.
+      filterNeeded (_, itemFull) =
+        not $ unneeded cops condLightBetrays body activeItems fact itemFull
+      bestThree = bestByEqpSlot (filter filterNeeded invAssocs)
+                                (filter filterNeeded eqpAssocs)
+                                (filter filterNeeded shaAssocs)
       bEqpInv = msum $ map (improve CInv)
                 $ map (\(eqp, inv, _) -> (inv, eqp)) bestThree
   if nullStrategy bEqpInv
