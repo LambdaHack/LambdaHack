@@ -181,7 +181,7 @@ reqMelee source target iid cstore = do
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
     hurtBonus <- armorHurtBonus source target
-    let isFightImpaired = hurtBonus < 0
+    let isFightImpaired = hurtBonus <= -10
         block = braced tb
         hitA = if block && isFightImpaired
                then HitBlock 2
