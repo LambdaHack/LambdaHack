@@ -172,8 +172,8 @@ dominateFid fid target = do
   electLeader (bfid tb) (blid tb) target
   deduceKilled tb
   ais <- getsState $ getCarriedAssocs tb
-  execUpdAtomic $ UpdLoseActor target tb ais
   calmMax <- sumOrganEqpServer Effect.EqpSlotAddMaxCalm target
+  execUpdAtomic $ UpdLoseActor target tb ais
   let bNew = tb { bfid = fid
                 , boldfid = bfid tb
                 , bcalm = max 0 $ xM calmMax `div` 2 }
