@@ -247,12 +247,12 @@ equipItems aid = do
                                 (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded shaAssocs)
       bEqpInv = msum $ map (improve CInv)
-                $ map (\(eqp, inv, _) -> (inv, eqp)) bestThree
+                $ map (\(_, (eqp, inv, _)) -> (inv, eqp)) bestThree
   if nullStrategy bEqpInv
     then if rsharedStash && calmEnough body activeItems
          then return
               $! msum $ map (improve CSha)
-              $ map (\(eqp, _, sha) -> (sha, eqp)) bestThree
+              $ map (\(_, (eqp, _, sha)) -> (sha, eqp)) bestThree
          else return reject
     else return bEqpInv
 
@@ -282,11 +282,17 @@ unEquipItems aid = do
            then Just $ ReqMoveItem iidEqp (itemK itemEqp) CEqp csha  -- share
            else Nothing
       yieldUnneeded = mapMaybe yieldSingleUnneeded eqpAssocs
-      improve :: CStore -> ([(Int, (ItemId, ItemFull))],
-                            [(Int, (ItemId, ItemFull))])
+      improve :: CStore -> ( Effect.EqpSlot
+                           , ( [(Int, (ItemId, ItemFull))]
+                             , [(Int, (ItemId, ItemFull))] ) )
               -> Strategy (RequestTimed AbMoveItem)
-      improve fromCStore (bestInv, bestEqp) =
+      improve fromCStore (slot, (bestInv, bestEqp)) =
         case (bestInv, bestEqp) of
+          _ | slot == Effect.EqpSlotPeriodic
+              && fromCStore == CEqp
+              && not (eqpOverfull body 0) ->
+            -- Don't get rid of periodic items from eqp unless eqp full.
+            reject
           (_, (vEqp, (iidEqp, _)) : _) | getK bestEqp > 1
                                          && betterThanInv vEqp bestInv ->
             -- To share the best items with others, if they care.
@@ -307,10 +313,12 @@ unEquipItems aid = do
       if rsharedStash && calmEnough body activeItems
       then do
         let bInvSha = msum $ map (improve CInv)
-                      $ map (\(_, inv, sha) -> (sha, inv)) bestThree
+                      $ map (\((slot, _), (_, inv, sha)) ->
+                               (slot, (sha, inv))) bestThree
         if nullStrategy bInvSha
           then return $! msum $ map (improve CEqp)
-                         $ map (\(eqp, _, sha) -> (sha, eqp)) bestThree
+                         $ map (\((slot, _), (eqp, _, sha)) ->
+                                 (slot, (sha, eqp))) bestThree
           else return $! bInvSha
         else return reject
     _ ->
@@ -334,9 +342,10 @@ groupByEqpSlot is =
 bestByEqpSlot :: [(ItemId, ItemFull)]
               -> [(ItemId, ItemFull)]
               -> [(ItemId, ItemFull)]
-              -> [( [(Int, (ItemId, ItemFull))]
-                  , [(Int, (ItemId, ItemFull))]
-                  , [(Int, (ItemId, ItemFull))] )]
+              -> [((Effect.EqpSlot, Text)
+                  , ( [(Int, (ItemId, ItemFull))]
+                    , [(Int, (ItemId, ItemFull))]
+                    , [(Int, (ItemId, ItemFull))] ) )]
 bestByEqpSlot invAssocs eqpAssocs shaAssocs =
   let eqpMap = M.map (\g -> (g, [], [])) $ groupByEqpSlot eqpAssocs
       invMap = M.map (\g -> ([], g, [])) $ groupByEqpSlot invAssocs
@@ -347,7 +356,7 @@ bestByEqpSlot invAssocs eqpAssocs shaAssocs =
       bestThree (eqpSlot, _) (g1, g2, g3) = (bestSingle eqpSlot g1,
                                              bestSingle eqpSlot g2,
                                              bestSingle eqpSlot g3)
-  in M.elems $ M.mapWithKey bestThree invEqpShaMap
+  in M.assocs $ M.mapWithKey bestThree invEqpShaMap
 
 hinders :: Bool -> Actor -> [ItemFull] -> ItemFull -> Bool
 hinders condLightBetrays body activeItems itemFull =
