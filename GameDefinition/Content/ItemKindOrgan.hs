@@ -10,9 +10,9 @@ import Game.LambdaHack.Content.ItemKind
 
 organs :: [ItemKind]
 organs =
-  [fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn]
+  [fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn, vent, fissure]
 
-fist,    foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn :: ItemKind
+fist,    foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn, vent, fissure :: ItemKind
 
 -- * Parameterized organs
 
@@ -161,6 +161,14 @@ thorn = fist
   , ieffects = [Hurt (4 * d 1)]
   , idesc    = ""
   }
+fissure = fist
+  { iname    = "fissure"
+  , ifreq    = [("fissure", 100)]
+  , icount   = 2
+  , iverbHit = "hiss at"
+  , ieffects = [Burn 1]
+  , idesc    = ""
+  }
 venomTooth = fist
   { iname    = "venom tooth"
   , ifreq    = [("venom tooth", 100)]
@@ -218,5 +226,17 @@ nostril = fist
   , iaspects = [AddSmell 1]
   , ieffects = []
   , ifeature = [Identified]
+  , idesc    = ""
+  }
+
+-- * Assorted
+
+vent = fist
+  { iname    = "vent"
+  , ifreq    = [("vent", 100)]
+  , icount   = 1
+  , iverbHit = "menace"
+  , iaspects = [Periodic $ 1 + d 2]
+  , ieffects = [Explode "boiling water"]
   , idesc    = ""
   }

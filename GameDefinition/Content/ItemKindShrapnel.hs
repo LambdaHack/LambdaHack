@@ -10,9 +10,9 @@ import Game.LambdaHack.Content.ItemKind
 
 shrapnels :: [ItemKind]
 shrapnels =
-  [fragrance, pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mist_healing, mist_wounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glass_piece, smoke]
+  [fragrance, pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glassPiece, smoke, bolingWater]
 
-fragrance,    pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mist_healing, mist_wounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glass_piece, smoke :: ItemKind
+fragrance,    pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glassPiece, smoke, bolingWater :: ItemKind
 
 -- * Parameterized shrapnel
 
@@ -113,7 +113,7 @@ pheromone = ItemKind
   , idesc    = ""
   , ikit     = []
   }
-mist_healing = ItemKind
+mistHealing = ItemKind
   { isymbol  = '\''
   , iname    = "mist"
   , ifreq    = [("healing mist", 1)]
@@ -129,7 +129,7 @@ mist_healing = ItemKind
   , idesc    = ""
   , ikit     = []
   }
-mist_wounding = ItemKind
+mistWounding = ItemKind
   { isymbol  = '\''
   , iname    = "mist"
   , ifreq    = [("wounding mist", 1)]
@@ -177,7 +177,7 @@ waste = ItemKind
   , idesc    = ""
   , ikit     = []
   }
-glass_piece = ItemKind  -- when blowing up windows
+glassPiece = ItemKind  -- when blowing up windows
   { isymbol  = '*'
   , iname    = "glass piece"
   , ifreq    = [("glass piece", 1)]
@@ -203,8 +203,22 @@ smoke = ItemKind  -- when stuff burns out
   , iweight  = 1
   , iaspects = []
   , ieffects = []
-  , ifeature = [ toVelocity 21
-               , Fragile, Identified ]
+  , ifeature = [ toVelocity 21, Fragile, Identified ]
+  , idesc    = ""
+  , ikit     = []
+  }
+bolingWater = ItemKind
+  { isymbol  = '*'
+  , iname    = "boiling water"
+  , ifreq    = [("boiling water", 1)]
+  , iflavour = zipPlain [BrWhite]
+  , icount   = 9
+  , irarity  = [(1, 1)]
+  , iverbHit = "boil"
+  , iweight  = 5
+  , iaspects = []
+  , ieffects = [Burn 1]
+  , ifeature = [toVelocity 50, Fragile, Identified]
   , idesc    = ""
   , ikit     = []
   }

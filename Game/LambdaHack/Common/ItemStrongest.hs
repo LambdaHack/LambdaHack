@@ -70,6 +70,7 @@ strengthMelee :: ItemFull -> Maybe Int
 strengthMelee itemFull =
   let durable = Durable `elem` jfeature (itemBase itemFull)
       p (Hurt d) = [floor (Dice.meanDice d)]
+      p (Burn k) = [k]
       p _ = []
       hasNoEffects = case itemDisco itemFull of
         Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->

@@ -12,9 +12,9 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, thornbush]
+  [warrior, adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, thornbush, geyser]
 
-warrior,    adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, thornbush :: ItemKind
+warrior,    adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, thornbush, geyser :: ItemKind
 
 -- * Hunams
 
@@ -167,7 +167,7 @@ gilaMonster = ItemKind
   { isymbol  = 'g'
   , iname    = "Gila monster"
   , ifreq    = [("animal", 10), ("horror", 10)]
-  , iflavour = zipPlain [BrYellow]
+  , iflavour = zipPlain [BrMagenta]
   , icount   = 1
   , irarity  = [(2, 5), (10, 3)]
   , iverbHit = "thud"
@@ -239,7 +239,7 @@ alligator = ItemKind
 thornbush = ItemKind
   { isymbol  = 't'
   , iname    = "thornbush"
-  , ifreq    = [("animal", 10), ("horror", 10)]
+  , ifreq    = [("animal", 10)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
   , irarity  = [(3, 3), (10, 2)]
@@ -254,4 +254,22 @@ thornbush = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [("thorn", COrgan)]
+  }
+geyser = ItemKind
+  { isymbol  = 'g'
+  , iname    = "geyser"
+  , ifreq    = [("animal", 10)]
+  , iflavour = zipPlain [White]
+  , icount   = 1
+  , irarity  = [(5, 2), (10, 1)]
+  , iverbHit = "thud"
+  , iweight  = 80000
+  , iaspects = [ AddMaxHP 100, AddMaxCalm 5000, AddSpeed 5
+               , AddSkills
+                 $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1..])
+                   `addSkills` EM.fromList (zip [AbWait, AbMelee] [1..]) ]
+  , ieffects = []
+  , ifeature = [Durable, Identified]
+  , idesc    = ""
+  , ikit     = [("vent", COrgan), ("fissure", COrgan)]
   }
