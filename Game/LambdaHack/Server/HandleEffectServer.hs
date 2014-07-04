@@ -762,13 +762,16 @@ effectExplode execSfx cgroup target = do
   m2 <- rollAndRegisterItem (blid tb) itemFreq container False
   let (iid, ItemFull{..}) = fromMaybe (assert `failure` cgroup) m2
       Point x y = bpos tb
-      projectN k100 n = when (n > 7) $ do
+      projectN k100 n = do
         -- We pick a point at the border, not inside, to have a uniform
         -- distribution for the points the line goes through at each distance
         -- from the source. Otherwise, e.g., the points on cardinal
         -- and diagonal lines from the source would be more common.
-        let fuzz = 1 + (k100 `xor` (itemK * n)) `mod` 11
-        forM_ [ Point (x - 12) $ y + fuzz
+        let fuzz = 2 + (k100 `xor` (itemK * n)) `mod` 9
+            k = if itemK >= 8 && n < 8 then 0
+                else if n < 8 && n >= 4 then 4 else n
+            ps = take k $
+              [ Point (x - 12) $ y + fuzz
               , Point (x - 12) $ y - fuzz
               , Point (x + 12) $ y + fuzz
               , Point (x + 12) $ y - fuzz
@@ -776,7 +779,8 @@ effectExplode execSfx cgroup target = do
               , flip Point (y - 12) $ x - fuzz
               , flip Point (y + 12) $ x + fuzz
               , flip Point (y + 12) $ x - fuzz
-              ] $ \tpxy -> do
+              ]
+        forM_ ps $ \tpxy -> do
           let req = ReqProject tpxy k100 iid CEqp
           mfail <- projectFail target tpxy k100 iid CEqp True
           case mfail of
