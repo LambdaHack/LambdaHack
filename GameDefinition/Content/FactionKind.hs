@@ -23,7 +23,7 @@ hero = FactionKind
   { fsymbol        = '1'
   , fname          = "hero"
   , ffreq          = [("hero", 1)]
-  , fSkillsLeader = allAbilities
+  , fSkillsLeader = allSkills
   , fSkillsOther  = meleeAdjacent
   }
 
@@ -31,45 +31,43 @@ civilian = FactionKind
   { fsymbol        = '@'
   , fname          = "civilian"
   , ffreq          = [("civilian", 1)]
-  , fSkillsLeader = allAbilities
-  , fSkillsOther  = allAbilities  -- not coordinated by any leadership
+  , fSkillsLeader = allSkills
+  , fSkillsOther  = allSkills  -- not coordinated by any leadership
   }
 
 monster = FactionKind
   { fsymbol        = 'm'
   , fname          = "monster"
   , ffreq          = [("monster", 1), ("summon", 60)]
-  , fSkillsLeader = allAbilities
-  , fSkillsOther  = allAbilities
+  , fSkillsLeader = allSkills
+  , fSkillsOther  = allSkills
   }
 
 animal = FactionKind
   { fsymbol        = 'd'
   , fname          = "animal"
   , ffreq          = [("animal", 1), ("summon", 40)]
-  , fSkillsLeader = animalAbility
-  , fSkillsOther  = animalAbility
+  , fSkillsLeader = animalSkills
+  , fSkillsOther  = animalSkills
   }
 
 horror = FactionKind
   { fsymbol        = 'h'
   , fname          = "horror"
   , ffreq          = [("horror", 1), ("summon", 100)]
-  , fSkillsLeader = allAbilities
-  , fSkillsOther  = allAbilities
+  , fSkillsLeader = allSkills
+  , fSkillsOther  = allSkills
   }
 
 
-_noAbility, meleeAdjacent, _meleeAndRanged, animalAbility, allAbilities :: Skills
-
-_noAbility = EM.empty
+meleeAdjacent, _meleeAndRanged, animalSkills, allSkills :: Skills
 
 meleeAdjacent = EM.fromList $ zip [AbWait, AbMelee] [1..]
 
 -- Melee and reaction fire.
 _meleeAndRanged = EM.fromList $ zip [AbWait, AbMelee, AbProject] [1..]
 
-animalAbility =
+animalSkills =
   EM.fromList $ zip [AbMove, AbMelee, AbAlter, AbWait, AbTrigger] [1..]
 
-allAbilities = unitSkills
+allSkills = unitSkills
