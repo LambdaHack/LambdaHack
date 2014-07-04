@@ -12,9 +12,9 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, thornbush, geyser]
+  [warrior, adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, thornbush, geyser]
 
-warrior,    adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, thornbush, geyser :: ItemKind
+warrior,    adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, thornbush, geyser :: ItemKind
 
 -- * Hunams
 
@@ -52,24 +52,6 @@ peddler = clerk
   { iname    = "peddler" }
 taxCollector = clerk
   { iname    = "tax collector" }
-
--- * Projectiles
-
-projectile = ItemKind  -- includes homing missiles
-  { isymbol  = '*'
-  , iname    = "projectile"
-  , ifreq    = [("projectile", 1)]  -- Does not appear randomly in the dungeon
-  , iflavour = zipPlain [BrWhite]
-  , icount   = 1
-  , irarity  = [(1, 5)]
-  , iverbHit = "thud"
-  , iweight  = 0
-  , iaspects = []
-  , ieffects = []
-  , ifeature = [Durable, Identified]
-  , idesc    = ""
-  , ikit     = []
-  }
 
 -- * Monsters
 

@@ -37,7 +37,7 @@ import Game.LambdaHack.Common.Vector
 -- they are usually modified temporarily, but tend to return
 -- to the original value from @ActorKind@ over time. E.g., HP.
 data Actor = Actor
-  { -- * The trunk of the actor's body (present also in @borgan@)
+  { -- * The trunk of the actor's body (present also in @borgan@ or @beqp@)
     btrunk      :: !ItemId
     -- * Presentation
   , bsymbol     :: !Char                 -- ^ individual map symbol

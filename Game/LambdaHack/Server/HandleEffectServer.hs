@@ -629,10 +629,11 @@ effectSendFlying execSfx Effect.ThrowMod{..} source target modePush = do
               -- sum weigths of all organs
               weight = 70000  -- 70 kg
               path = bpos tb : pos : rest
-              ts = computeTrajectory weight throwVelocity throwLinger path
-          unless (btrajectory tb == Just ts) $
-            execUpdAtomic $ UpdTrajectory target (btrajectory tb)
-                                                      (Just ts)
+              (trajectory, (speed, _)) =
+                computeTrajectory weight throwVelocity throwLinger path
+              ts = Just (trajectory, speed)
+          unless (btrajectory tb == ts) $
+            execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
           execSfx
           return True
 

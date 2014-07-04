@@ -180,23 +180,20 @@ strengthToThrow item =
     [x] -> x
     xs -> assert `failure` (xs, item)
 
-totalRange :: Item -> Int
-totalRange item =
-  let ThrowMod{..} = strengthToThrow item
-      speed = speedFromWeight (jweight item) throwVelocity
-  in rangeFromSpeedAndLinger speed throwLinger
-
-computeTrajectory :: Int -> Int -> Int -> [Point] -> ([Vector], Speed)
+computeTrajectory :: Int -> Int -> Int -> [Point] -> ([Vector], (Speed, Int))
 computeTrajectory weight throwVelocity throwLinger path =
   let speed = speedFromWeight weight throwVelocity
       trange = rangeFromSpeedAndLinger speed throwLinger
       btrajectory = take trange $ pathToTrajectory path
-  in (btrajectory, speed)
+  in (btrajectory, (speed, trange))
 
-itemTrajectory :: Item -> [Point] -> ([Vector], Speed)
+itemTrajectory :: Item -> [Point] -> ([Vector], (Speed, Int))
 itemTrajectory item path =
   let ThrowMod{..} = strengthToThrow item
   in computeTrajectory (jweight item) throwVelocity throwLinger path
+
+totalRange :: Item -> Int
+totalRange item = snd $ snd $ itemTrajectory item []
 
 -- TODO: when all below are aspects, define with
 -- (EqpSlotAddMaxHP, AddMaxHP k) -> [k]

@@ -19,6 +19,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
@@ -273,7 +274,8 @@ projectBla source pos rest iid cstore isShrapnel = do
   sb <- getsState $ getActorBody source
   item <- getsState $ getItemBody iid
   let lid = blid sb
-      time = btime sb
+  localTime <- getsState $ getLocalTime lid
+  let time = min (btime sb) (timeShift localTime $ Delta timeTurn)
   unless isShrapnel $ execSfxAtomic $ SfxProject source iid
   addProjectile pos rest iid lid (bfid sb) time isShrapnel
   let c = CActor source cstore
@@ -287,75 +289,83 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               -> Time -> Bool
               -> m ()
 addProjectile bpos rest iid blid bfid btime isShrapnel = do
-  item <- getsState $ getItemBody iid
-  let ts@(trajectory, _) = itemTrajectory item (bpos : rest)
-      trange = length trajectory
+  itemToF <- itemToFullServer
+  let itemFull@ItemFull{itemBase} = itemToF iid 1
+      (trajectory, (speed, trange)) = itemTrajectory itemBase (bpos : rest)
       adj | trange < 5 = "falling"
           | otherwise = "flying"
       -- Not much detail about a fast flying item.
-      (object1, object2) = partItem CInv $ itemNoDisco (item, 1)
+      (object1, object2) = partItem CInv $ itemNoDisco (itemBase, 1)
       bname = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      tweakBody b = b { bsymbol = if isShrapnel then jsymbol item else bsymbol b
-                      , bcolor = if isShrapnel
-                                 then flavourToColor $ jflavour item
-                                 else bcolor b
+      tweakBody b = b { bsymbol = if isShrapnel then bsymbol b else '*'
+                      , bcolor = if isShrapnel then bcolor b else Color.BrWhite
                       , bname
                       , bhp = 0
                       , bproj = True
-                      , btrajectory = Just ts
-                      , beqp = EM.singleton iid 1 }
+                      , btrajectory = Just (trajectory, speed)
+                      , beqp = EM.singleton iid 1
+                      , borgan = EM.empty}
       bpronoun = "it"
-      iis = [(iid, item)]
-  void $ addActor "projectile" bfid bpos blid tweakBody bpronoun btime iis
+  void $ addActorIid iid itemFull
+                     bfid bpos blid tweakBody bpronoun btime
 
 addActor :: (MonadAtomic m, MonadServer m)
          => Text -> FactionId -> Point -> LevelId
-         -> (Actor -> Actor) -> Text -> Time -> [(ItemId, Item)]
+         -> (Actor -> Actor) -> Text -> Time
          -> m (Maybe ActorId)
-addActor groupName bfid pos lid tweakBody bpronoun time iis = do
-  cops <- getsState scops
-  aid <- getsServer sacounter
-  modifyServer $ \ser -> ser {sacounter = succ aid}
+addActor groupName
+         bfid pos lid tweakBody bpronoun time = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- contains the constant properties.
   let trunkFreq = toFreq "create trunk" [(1, groupName)]
   m2 <- rollAndRegisterItem lid trunkFreq (CTrunk bfid lid pos) False
   case m2 of
     Nothing -> return Nothing
-    Just (trunkId, trunkFull@ItemFull{..}) -> do
-      let trunkKind = case itemDisco of
-            Just ItemDisco{itemKind} -> itemKind
-            Nothing -> assert `failure` trunkFull
-      -- Initial HP and Calm is based only on trunk and ignores organs.
-      let hp = xM (max 2 $ sumSlotNoFilter Effect.EqpSlotAddMaxHP [trunkFull])
-               `div` 2
-          calm = xM $ max 1
-                 $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull]
-      -- Create actor.
-      fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
-      DebugModeSer{sdifficultySer} <- getsServer sdebugSer
-      nU <- nUI
-      -- If no UI factions, the difficulty applies to heroes (for testing).
-      let diffHP | playerUI gplayer || nU == 0 && isHeroFact cops fact =
-            (ceiling :: Double -> Int64)
-            $ fromIntegral hp
-              * 1.5 ^^ difficultyCoeff sdifficultySer
-                 | otherwise = hp
-          bsymbol = jsymbol itemBase
-          bname = jname itemBase
-          bcolor = flavourToColor $ jflavour itemBase
-          b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
-                            pos lid time bfid
-          -- Insert the trunk as the actor's organ.
-          btrunk = b {borgan = EM.singleton trunkId itemK}
-      execUpdAtomic $ UpdCreateActor aid (tweakBody btrunk)
-                                     (iis ++ [(trunkId, itemBase)])
-      -- Create, register and insert all initial actor items.
-      forM_ (ikit trunkKind) $ \(ikText, cstore) -> do
-        let container = CActor aid cstore
-            itemFreq = toFreq "create aitems" [(1, ikText)]
-        void $ rollAndRegisterItem lid itemFreq container False
-      return $ Just aid
+    Just (trunkId, trunkFull) ->
+      addActorIid trunkId trunkFull
+                  bfid pos lid tweakBody bpronoun time
+
+addActorIid :: (MonadAtomic m, MonadServer m)
+            => ItemId -> ItemFull -> FactionId -> Point -> LevelId
+            -> (Actor -> Actor) -> Text -> Time
+            -> m (Maybe ActorId)
+addActorIid trunkId trunkFull@ItemFull{..}
+            bfid pos lid tweakBody bpronoun time = do
+  cops <- getsState scops
+  let trunkKind = case itemDisco of
+        Just ItemDisco{itemKind} -> itemKind
+        Nothing -> assert `failure` trunkFull
+  -- Initial HP and Calm is based only on trunk and ignores organs.
+  let hp = xM (max 2 $ sumSlotNoFilter Effect.EqpSlotAddMaxHP [trunkFull])
+           `div` 2
+      calm = xM $ max 1
+             $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull]
+  -- Create actor.
+  fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
+  DebugModeSer{sdifficultySer} <- getsServer sdebugSer
+  nU <- nUI
+  -- If no UI factions, the difficulty applies to heroes (for testing).
+  let diffHP | playerUI gplayer || nU == 0 && isHeroFact cops fact =
+        (ceiling :: Double -> Int64)
+        $ fromIntegral hp
+          * 1.5 ^^ difficultyCoeff sdifficultySer
+             | otherwise = hp
+      bsymbol = jsymbol itemBase
+      bname = jname itemBase
+      bcolor = flavourToColor $ jflavour itemBase
+      b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
+                        pos lid time bfid
+      -- Insert the trunk as the actor's organ.
+      withTrunk = b {borgan = EM.singleton trunkId itemK}
+  aid <- getsServer sacounter
+  modifyServer $ \ser -> ser {sacounter = succ aid}
+  execUpdAtomic $ UpdCreateActor aid (tweakBody withTrunk) [(trunkId, itemBase)]
+  -- Create, register and insert all initial actor items.
+  forM_ (ikit trunkKind) $ \(ikText, cstore) -> do
+    let container = CActor aid cstore
+        itemFreq = toFreq "create aitems" [(1, ikText)]
+    void $ rollAndRegisterItem lid itemFreq container False
+  return $ Just aid
 
 -- Server has to pick a random weapon or it could leak item discovery
 -- information. In case of non-projectiles, it only picks items
@@ -369,7 +379,7 @@ pickWeaponServer source = do
   -- For projectiles we need to accept even items without any effect,
   -- so that the projectile dissapears and NoEffect feedback is produced.
   let allAssocs = eqpAssocs ++ bodyAssocs
-      strongest | bproj sb = map (1,) $ filter ((/= btrunk sb) . fst) allAssocs
+      strongest | bproj sb = map (1,) eqpAssocs
                 | otherwise =
                     strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs
   case strongest of

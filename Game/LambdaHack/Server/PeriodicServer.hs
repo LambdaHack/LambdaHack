@@ -107,7 +107,7 @@ addMonster groupName bfid ppos lid time = do
   pronoun <- if isCivilianFact cops fact
              then rndToAction $ oneOf ["he", "she"]
              else return "it"
-  addActor groupName bfid ppos lid id pronoun time []
+  addActor groupName bfid ppos lid id pronoun time
 
 -- | Create a new hero on the current level, close to the given position.
 addHero :: (MonadAtomic m, MonadServer m)
@@ -131,7 +131,7 @@ addHero bfid ppos lid heroNames mNumber time = do
         let (nameN, pronounN) = nameFromNumber n
         in (playerName gplayer <+> nameN, pronounN)
       tweakBody b = b {bsymbol, bname, bcolor = gcolor}
-  addActor fName bfid ppos lid tweakBody pronoun time []
+  addActor fName bfid ppos lid tweakBody pronoun time
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
              -> LevelId -> Level -> FactionId -> State
