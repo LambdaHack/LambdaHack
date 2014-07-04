@@ -276,7 +276,7 @@ loudUpdAtomic fid cmd = case cmd of
     Kind.COps{cotile} <- getsState scops
     if Tile.isDoor cotile fromTile
       then return $ Just "You hear a creaking sound."
-      else return Nothing
+      else return $ Just "You hear a rumble."
   _ -> return Nothing
 
 seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool

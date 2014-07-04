@@ -103,7 +103,8 @@ isChangeable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isChangeableTab}} =
 isChangeable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether one can easily explore a tile, possibly finding a treasure
--- or a clue.
+-- or a clue. Doors need to be explorable regarless if open or not
+-- so that a foe opening a door doesn't force us to backtrack to explore it.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isExplorable #-}
 isExplorable cotile t =

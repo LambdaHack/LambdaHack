@@ -275,9 +275,8 @@ projectBla source pos rest iid cstore isShrapnel = do
   item <- getsState $ getItemBody iid
   let lid = blid sb
   localTime <- getsState $ getLocalTime lid
-  let time = min (btime sb) (timeShift localTime $ Delta timeTurn)
   unless isShrapnel $ execSfxAtomic $ SfxProject source iid
-  addProjectile pos rest iid lid (bfid sb) time isShrapnel
+  addProjectile pos rest iid lid (bfid sb) localTime isShrapnel
   let c = CActor source cstore
   execUpdAtomic $ UpdLoseItem iid item 1 c
 
