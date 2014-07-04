@@ -220,7 +220,7 @@ gorget = ItemKind
   , iweight  = 30
   , iaspects = [Periodic $ d 4 + dl 2, AddArmorMelee 1, AddArmorRanged 1]
   , ieffects = [RefillCalm 1]
-  , ifeature = [ Precious, EqpSlot EqpSlotPeriodic ""
+  , ifeature = [ Precious, EqpSlot EqpSlotPeriodic "", Identified
                , toVelocity 50 ]  -- not dense enough
   , idesc    = "Highly ornamental, cold, large, steel mediallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
   , ikit     = []

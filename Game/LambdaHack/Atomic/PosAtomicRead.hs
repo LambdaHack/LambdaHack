@@ -8,9 +8,11 @@ module Game.LambdaHack.Atomic.PosAtomicRead
   , generalMoveItem
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Common.Actor
@@ -266,18 +268,25 @@ breakSfxAtomic cmd = case cmd of
   _ -> return [cmd]
 
 -- | Messages for some unseen game object creation/destruction/alteration.
-loudUpdAtomic :: MonadStateRead m => FactionId -> UpdAtomic -> m (Maybe Msg)
-loudUpdAtomic fid cmd = case cmd of
-  UpdDestroyActor _ body _
-    -- Death of a party member does not need to be heard, because it's seen.
-    | not $ fid == bfid body || bproj body -> return $ Just "You hear a shriek."
-  UpdCreateItem{} -> return $ Just "You hear a clatter."
-  UpdAlterTile _ _ fromTile _ -> do
-    Kind.COps{cotile} <- getsState scops
-    if Tile.isDoor cotile fromTile
-      then return $ Just "You hear a creaking sound."
-      else return $ Just "You hear a rumble."
-  _ -> return Nothing
+loudUpdAtomic :: MonadStateRead m
+              => Bool -> FactionId -> UpdAtomic -> m (Maybe Msg)
+loudUpdAtomic local fid cmd = do
+  msound <- case cmd of
+    UpdDestroyActor _ body _
+      -- Death of a party member does not need to be heard,
+      -- because it's seen.
+      | not $ fid == bfid body || bproj body -> return $ Just "shriek"
+    UpdCreateItem{} -> return $ Just "clatter"
+    UpdAlterTile _ _ fromTile _ -> do
+      Kind.COps{cotile} <- getsState scops
+      if Tile.isDoor cotile fromTile
+        then return $ Just "creaking sound"
+        else return $ Just "rumble"
+    _ -> return Nothing
+  let distant = if local then [] else ["distant"]
+      hear sound = makeSentence [ "you hear"
+                                , MU.AW $ MU.Phrase $ distant ++ [sound] ]
+  return $! hear <$> msound
 
 seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
 seenAtomicCli knowEvents fid per posAtomic =

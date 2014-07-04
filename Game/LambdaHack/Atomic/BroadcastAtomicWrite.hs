@@ -16,6 +16,7 @@ import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.HandleAtomicWrite
 import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Atomic.PosAtomicRead
+import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -91,26 +92,27 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
         sendAI fid $ RespUpdAtomicAI cmd
       sendUpdate fid (UpdAtomic cmd) = sendA fid cmd
       sendUpdate fid (SfxAtomic sfx) = sendUI fid $ RespSfxAtomicUI sfx
-      breakSend fid perNew = do
+      breakSend lid fid perNew = do
         let send2 (atomic2, ps2) =
               if seenAtomicCli knowEvents fid perNew ps2
                 then sendUpdate fid atomic2
                 else do
                   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-                  case atomic2 of
-                    UpdAtomic cmd | isJust mleader -> do
-                      loud <- loudUpdAtomic fid cmd
+                  case (atomic2, mleader) of
+                    (UpdAtomic cmd, Just leader) -> do
+                      body <- getsState $ getActorBody leader
+                      loud <- loudUpdAtomic (blid body == lid) fid cmd
                       case loud of
                         Nothing -> return ()
                         Just msg -> sendUpdate fid $ SfxAtomic $ SfxMsgAll msg
                     _ -> return ()
         mapM_ send2 atomicPsBroken
-      anySend fid perOld perNew = do
+      anySend lid fid perOld perNew = do
         let startSeen = seenAtomicCli knowEvents fid perOld ps
             endSeen = seenAtomicCli knowEvents fid perNew ps
         if startSeen && endSeen
           then sendUpdate fid atomic
-          else breakSend fid perNew
+          else breakSend lid fid perNew
       posLevel fid lid = do
         let perOld = persOld EM.! fid EM.! lid
         if resets then do
@@ -118,7 +120,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
           if nullPer outPer && nullPer inPer
-            then anySend fid perOld perOld
+            then anySend lid fid perOld perOld
             else do
               unless knowEvents $ do  -- inconsistencies would quickly manifest
                 sendA fid $ UpdPerception lid outPer inPer
@@ -132,8 +134,8 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
                 -- Verify that we remember only new things.
                 assert (allB (not . seenOld) psRem) skip
                 mapM_ (sendA fid) remember
-              anySend fid perOld perNew
-        else anySend fid perOld perOld
+              anySend lid fid perOld perNew
+        else anySend lid fid perOld perOld
       send fid = case ps of
         PosSight lid _ -> posLevel fid lid
         PosFidAndSight _ lid _ -> posLevel fid lid
@@ -141,7 +143,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
         -- @resets@ is false here and broken atomic has the same ps.
         PosSmell lid _ -> do
           let perOld = persOld EM.! fid EM.! lid
-          anySend fid perOld perOld
+          anySend lid fid perOld perOld
         PosFid fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosFidAndSer Nothing fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosFidAndSer (Just lid) _ -> posLevel fid lid
