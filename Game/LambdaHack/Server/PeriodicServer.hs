@@ -127,7 +127,7 @@ addHero bfid ppos lid heroNames mNumber time = do
       nameFromNumber k = ("Hero" <+> tshow k, "he")
       (bname, pronoun) | gcolor == Color.BrWhite =
         fromMaybe (nameFromNumber n) $ lookup n heroNames
-                      | otherwise =
+                       | otherwise =
         let (nameN, pronounN) = nameFromNumber n
         in (playerName gplayer <+> nameN, pronounN)
       tweakBody b = b {bsymbol, bname, bcolor = gcolor}
