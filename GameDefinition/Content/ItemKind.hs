@@ -383,8 +383,7 @@ potion7 = potion
                , OnSmash (Summon $ 1 + dl 2), OnSmash (Explode "waste") ]
   }
 potion8 = scroll
-  { ieffects = [ NoEffect "of marvel"
-               , OneOf [Impress, DropBestWeapon, RefillHP 5, Burn 3]
+  { ieffects = [ OneOf [Impress, DropBestWeapon, RefillHP 5, Burn 3]
                , OnSmash (OneOf [ Explode "healing mist"
                                 , Explode "wounding mist"
                                 , Explode "fragrance"
@@ -393,8 +392,8 @@ potion8 = scroll
 
 potion9 = scroll
   { irarity  = [(1, 4), (10, 6)]
-  , ieffects = [ NoEffect "of greater marvel"
-               , OneOf [Dominate, DropBestWeapon, RefillHP 15, Burn 9]
+  , ieffects = [ OneOf [ Dominate, DropBestWeapon, RefillHP 15, Burn 9
+                       , InsertMove 2]
                , OnSmash (OneOf [ Explode "healing mist"  -- TODO: make stronger
                                 , Explode "pheromone"
                                 , Explode "distortion"
@@ -432,15 +431,12 @@ scroll3 = scroll
   , ieffects = [Ascend (-1)]
   }
 scroll4 = scroll
-  { ieffects = [ NoEffect "of wonder"
-               , OneOf [ Teleport $ 2 + d 5, RefillCalm 10, RefillCalm (-10)
-                       , InsertMove $ d 2 + dl 2, Paralyze $ (d 2 + dl 2) * 5
-                       , Identify CGround ] ]
+  { ieffects = [ OneOf [ Teleport $ 2 + d 5, RefillCalm 10, RefillCalm (-10)
+                       , InsertMove 4, Paralyze 10, Identify CGround ] ]
   }
 scroll5 = scroll
   { irarity  = [(1, 4), (10, 6)]
-  , ieffects = [ NoEffect "of greater wonder"
-               , OneOf [ CallFriend 1, Summon $ d 2, Ascend (-1), Ascend 1
+  , ieffects = [ OneOf [ CallFriend 1, Summon $ d 2, Ascend (-1), Ascend 1
                        , RefillCalm 30, RefillCalm (-30), CreateItem $ d 2 ]
                        , PolyItem CGround ]
                -- TODO: ask player: Escape 1

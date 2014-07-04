@@ -10,6 +10,7 @@ import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
 
 -- import Game.LambdaHack.Common.Actor (ppCStore)
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -75,7 +76,9 @@ effectToSuff effect f =
     ActivateEqp ' ' -> "of equipment burst"
     ActivateEqp symbol -> "of burst '" <> T.singleton symbol <> "'"
     Explode _ -> "of explosion"
-    OneOf _ -> "of wonder"
+    OneOf l ->
+      let subject = if length l <= 5 then "marvel" else "wonder"
+      in makePhrase ["of", MU.CardinalWs (length l) subject]
     OnSmash _ -> ""  -- conditional effect, TMI
     TimedAspect _ _ ->
       case effect of
