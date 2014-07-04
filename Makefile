@@ -9,7 +9,7 @@ configure-debug:
 
 
 xcplay:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --dumpInitRngs
 
 xcfrontendCampaign:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --noMore --maxFps 60 --dumpInitRngs --automateAll --gameMode campaign --difficulty 1
@@ -130,7 +130,7 @@ xctest-short-load:
 
 
 play:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --dumpInitRngs
 
 frontendCampaign:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --noMore --maxFps 60 --dumpInitRngs --automateAll --gameMode campaign --difficulty 1
