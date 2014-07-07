@@ -25,6 +25,7 @@ import Control.Applicative
 import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
 import Control.Monad
+import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
@@ -36,6 +37,7 @@ import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
@@ -48,6 +50,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ItemKind
 
 -- | Require that the target enemy is visible by the party.
 condTgtEnemyPresentM :: MonadClient m => ActorId -> m Bool
@@ -217,6 +220,16 @@ totalUsefulness cops body activeItems fact itemFull = do
   case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
       Just $ effAspToBenefit cops body activeItems fact jeffects jaspects
+    Just ItemDisco{itemKind=ItemKind{iaspects, ieffects}} ->
+      let travA x =
+            St.evalState (Effect.aspectTrav x (return . round . Dice.meanDice))
+                         ()
+          jaspects = map travA iaspects
+          travE x =
+            St.evalState (Effect.effectTrav x (return . round . Dice.meanDice))
+                         ()
+          jeffects = map travE ieffects
+      in Just $ effAspToBenefit cops body activeItems fact jeffects jaspects
     _ -> Nothing
 
 -- | Require the actor is in a bad position to melee.
