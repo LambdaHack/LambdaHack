@@ -9,6 +9,7 @@ import qualified Data.EnumSet as ES
 import Data.Maybe
 
 import Game.LambdaHack.Client.AI.ConditionClient
+import Game.LambdaHack.Client.AI.Preferences
 import Game.LambdaHack.Client.AI.Strategy
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsClient

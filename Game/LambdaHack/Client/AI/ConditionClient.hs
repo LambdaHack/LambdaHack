@@ -14,7 +14,6 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , condDesirableFloorItemM
   , condMeleeBadM
   , condLightBetraysM
-  , totalUsefulness
   , benAvailableItems
   , benGroundItems
   , threatDistList
@@ -25,7 +24,6 @@ import Control.Applicative
 import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
@@ -37,7 +35,6 @@ import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
@@ -50,7 +47,6 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ItemKind
 
 -- | Require that the target enemy is visible by the party.
 condTgtEnemyPresentM :: MonadClient m => ActorId -> m Bool
@@ -148,7 +144,7 @@ condCanProjectM aid = do
   return $ not actorBlind && not (null missiles)
     -- keep it lazy
 
--- | Produce the benefit-sorted list of items with a given symbol
+-- | Produce the benefit-sorted list of items with a given property
 -- available to the actor.
 benAvailableItems :: MonadClient m
                   => ActorId -> (ItemFull -> Bool)
@@ -187,6 +183,7 @@ condDesirableFloorItemM aid = do
   benItemL <- benGroundItems aid
   return $ not $ null benItemL  -- keep it lazy
 
+-- TODO: merge with benAvailableItems.
 -- | Produce the benefit-sorted list of items on the ground beneath the actor.
 benGroundItems :: MonadClient m => ActorId -> m [((Int, Int), (ItemId, Item))]
 benGroundItems aid = do
@@ -199,7 +196,8 @@ benGroundItems aid = do
   floorItems <- getsState $ getActorBag aid CGround
   fightsSpawners <- fightsAgainstSpawners (bfid body)
   let desirableItem item use
-        | fightsSpawners = use /= Just 0 || Effect.Precious `elem` jfeature item
+        | fightsSpawners = use /= Just 0
+                           || Effect.Precious `elem` jfeature item
         | otherwise = use /= Just 0
       mapDesirable (iid, k) =
         let item = itemD EM.! iid
@@ -210,25 +208,6 @@ benGroundItems aid = do
            else Nothing
   return $ reverse $ sort $ mapMaybe mapDesirable $ EM.assocs floorItems
     -- keep it lazy
-
--- | Determine the total benefit from an item.
-totalUsefulness :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull
-              -> Maybe Int
-totalUsefulness cops body activeItems fact itemFull = do
-  case itemDisco itemFull of
-    Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
-      Just $ effAspToBenefit cops body activeItems fact jeffects jaspects
-    Just ItemDisco{itemKind=ItemKind{iaspects, ieffects}} ->
-      let travA x =
-            St.evalState (Effect.aspectTrav x (return . round . Dice.meanDice))
-                         ()
-          jaspects = map travA iaspects
-          travE x =
-            St.evalState (Effect.effectTrav x (return . round . Dice.meanDice))
-                         ()
-          jeffects = map travE ieffects
-      in Just $ effAspToBenefit cops body activeItems fact jeffects jaspects
-    _ -> Nothing
 
 -- | Require the actor is in a bad position to melee.
 -- We do not check if the actor has a weapon, because having

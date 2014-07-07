@@ -1,11 +1,13 @@
 -- | Actor preferences for targets and actions based on actor attributes.
 module Game.LambdaHack.Client.AI.Preferences
-  ( effAspToBenefit, effectToBenefit
+  ( totalUsefulness, effectToBenefit
   ) where
 
+import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
@@ -13,6 +15,7 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Content.ItemKind
 
 -- TODO: also take other ItemFeatures into account, e.g., splash damage.
 -- | How much AI benefits from applying the effect. Multipllied by item p.
@@ -27,13 +30,13 @@ effectToBenefit cops b activeItems fact eff =
     Effect.RefillHP p ->
       let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
       in if p > 0
-         then 10 * min p (fromIntegral $ (xM hpMax - bhp b) `div` oneM)
+         then 1 + 10 * min p (fromIntegral $ (xM hpMax - bhp b) `div` oneM)
          else max (-99) (10 * p)
     Effect.Hurt d -> -(min 99 $ round (10 * Dice.meanDice d))
     Effect.RefillCalm p ->
       let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
       in if p > 0
-         then min p (fromIntegral $ (xM calmMax - bcalm b) `div` oneM)
+         then 1 + min p (fromIntegral $ (xM calmMax - bcalm b) `div` oneM)
          else max (-20) p
     Effect.Dominate -> -200
     Effect.Impress -> -10
@@ -61,36 +64,59 @@ effectToBenefit cops b activeItems fact eff =
     Effect.ActivateEqp ' ' -> -100
     Effect.ActivateEqp _ -> -50
     Effect.Explode _ -> -10
-    Effect.OneOf _ -> 0  -- usually a mixed blessing
+    Effect.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
     Effect.OnSmash _ -> -10
-    Effect.TimedAspect k asp -> k * fst (aspectToBenefit cops b asp) `div` 50
+    Effect.TimedAspect k asp -> k * (aspectToBenefit cops b asp) `div` 50
 
 -- | Return the value to add to effect value and another to multiply it.
-aspectToBenefit :: Kind.COps -> Actor -> Effect.Aspect Int -> (Int, Int)
+aspectToBenefit :: Kind.COps -> Actor -> Effect.Aspect Int -> Int
 aspectToBenefit _cops _b asp =
   case asp of
-    Effect.Periodic n -> (0, n)
-    Effect.AddMaxHP p -> (p * 10, 1)
-    Effect.AddMaxCalm p -> (p, 1)
-    Effect.AddSpeed p -> (p * 10000, 1)
-    Effect.AddSkills m -> (5 * sum (EM.elems m), 1)
-    Effect.AddHurtMelee p -> (p `divUp` 3, 1)
-    Effect.AddHurtRanged p -> (p `divUp` 5, 1)
-    Effect.AddArmorMelee p -> (p `divUp` 5, 1)
-    Effect.AddArmorRanged p -> (p `divUp` 10, 1)
-    Effect.AddSight p -> (p * 10, 1)
-    Effect.AddSmell p -> (p * 2, 1)
-    Effect.AddLight p -> (p * 10, 1)
+    Effect.Periodic{} -> 0
+    Effect.AddMaxHP p -> p * 10
+    Effect.AddMaxCalm p -> p
+    Effect.AddSpeed p -> p * 10000
+    Effect.AddSkills m -> 5 * sum (EM.elems m)
+    Effect.AddHurtMelee p -> p `divUp` 3
+    Effect.AddHurtRanged p -> p `divUp` 5
+    Effect.AddArmorMelee p -> p `divUp` 5
+    Effect.AddArmorRanged p -> p `divUp` 10
+    Effect.AddSight p -> p * 10
+    Effect.AddSmell p -> p * 2
+    Effect.AddLight p -> p * 10
 
-effAspToBenefit :: Kind.COps -> Actor -> [ItemFull] -> Faction
-                -> [Effect.Effect Int] -> [Effect.Aspect Int]
-                -> Int
-effAspToBenefit cops b activeItems fact effects aspects =
-  let eBens = map (effectToBenefit cops b activeItems fact) effects
-      (addBens, multBens) = unzip $ map (aspectToBenefit cops b) aspects
-      addBen = sum addBens
-      multBen = product multBens
-      scaledBen = addBen : map (* multBen) eBens
-  in if minimum scaledBen < -10 && maximum scaledBen > 10
-     then 0  -- this is a big deal mixed blessing, AI too stupid to decide
-     else sum scaledBen
+-- TODO: return 2 values, for inv and eqp; perhaps refactor Hurt
+-- | Determine the total benefit from an item.
+totalUsefulness :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull
+                -> Maybe Int
+totalUsefulness cops b activeItems fact itemFull =
+  let toInv = goesIntoInv $ itemBase itemFull
+      ben effects aspects =
+        let effBens = map (effectToBenefit cops b activeItems fact) effects
+            aspBens = map (aspectToBenefit cops b) aspects
+            periodicEffBens =
+              case strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull of
+                Nothing -> []
+                Just in100 -> map (\eff -> eff * in100 `div` 50) effBens
+            selfBens = aspBens ++ periodicEffBens
+        in if toInv
+           then sum effBens  -- for throwing or applying
+           else if not (null selfBens) && minimum selfBens < -10
+                                       && maximum selfBens > 10
+                then 0  -- a significant mixed blessing out of AI control
+                else sum selfBens  -- for effects on self from wearing
+                     + sum effBens  -- for melee (or throwing or applying)
+  in case itemDisco itemFull of
+    Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
+      Just $ ben jeffects jaspects
+    Just ItemDisco{itemKind=ItemKind{iaspects, ieffects}} ->
+      let travA x =
+            St.evalState (Effect.aspectTrav x (return . round . Dice.meanDice))
+                         ()
+          jaspects = map travA iaspects
+          travE x =
+            St.evalState (Effect.effectTrav x (return . round . Dice.meanDice))
+                         ()
+          jeffects = map travE ieffects
+      in Just $ ben jeffects jaspects
+    _ -> Nothing
