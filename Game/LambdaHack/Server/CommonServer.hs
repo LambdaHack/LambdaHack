@@ -243,16 +243,13 @@ projectFail source tpxy eps iid cstore isShrapnel = do
           mab <- getsState $ posToActor pos lid
           actorBlind <- radiusBlind
                         <$> sumOrganEqpServer Effect.EqpSlotAddSight source
-          activeItems <- activeItemsServer source
           if not $ maybe True (bproj . snd . fst) mab
             then if isShrapnel && bproj sb then do
                    -- Hit the blocking actor.
                    projectBla source spos (pos:rest) iid cstore isShrapnel
                    return Nothing
                  else return $ Just ProjectBlockActor
-            else if not (isShrapnel || calmEnough sb activeItems) then
-                   return $ Just ProjectNotCalm
-                 else if actorBlind && not (isShrapnel || bproj sb) then
+            else if actorBlind && not (isShrapnel || bproj sb) then
                    return $ Just ProjectBlind
                  else do
                    if isShrapnel && bproj sb && eps `mod` 2 == 0 then

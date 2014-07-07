@@ -86,7 +86,6 @@ data ReqFailure =
   | ProjectBlockTerrain
   | ProjectBlockActor
   | ProjectBlind
-  | ProjectNotCalm
   | TriggerNothing
 
 showReqFailure :: ReqFailure -> Msg
@@ -112,5 +111,4 @@ showReqFailure reqFailure = case reqFailure of
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
   ProjectBlind -> "blind actors cannot aim"
-  ProjectNotCalm -> "your hands are shaking too much to aim"
   TriggerNothing -> "wasting time on triggering nothing"

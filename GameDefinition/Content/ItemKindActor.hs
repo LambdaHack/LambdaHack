@@ -27,7 +27,7 @@ warrior = ItemKind
   , irarity  = [(1, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 50, AddMaxCalm 50, AddSpeed 20
+  , iaspects = [ AddMaxHP 50, AddMaxCalm 60, AddSpeed 20
                , AddSight 3 ]  -- no via eyes, but feel, hearing, etc.
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -64,7 +64,7 @@ eye = ItemKind
   , irarity  = [(1, 10), (10, 6)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 25, AddMaxCalm 50, AddSpeed 20
+  , iaspects = [ AddMaxHP 25, AddMaxCalm 60, AddSpeed 20
                , AddSight 4 ]  -- can shoot for as long as lives
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -80,7 +80,7 @@ fastEye = ItemKind
   , irarity  = [(10, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 6, AddMaxCalm 50, AddSpeed 30
+  , iaspects = [ AddMaxHP 6, AddMaxCalm 60, AddSpeed 30
                , AddSight 4 ]  -- can shoot for as long as lives
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -97,8 +97,8 @@ nose = ItemKind
   , irarity  = [(1, 6), (10, 4)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 35, AddMaxCalm 50, AddSpeed 18
-               , AddSight 0, AddSmell 3 ]  -- depends solely on smell
+  , iaspects = [ AddMaxHP 35, AddMaxCalm 30, AddSpeed 18
+               , {-AddSight 0,-} AddSmell 3 ]  -- depends solely on smell
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -113,7 +113,7 @@ elbow = ItemKind
   , irarity  = [(3, 5), (10, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 50, AddSpeed 10
+  , iaspects = [ AddMaxHP 30, AddMaxCalm 80, AddSpeed 10
                , AddSkills $ EM.singleton AbMelee (-1)
                , AddSight 15 ]  -- can shoot for as long as lives
   , ieffects = []
@@ -137,7 +137,7 @@ armadillo = ItemKind
   , irarity  = [(1, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 50, AddSpeed 18
+  , iaspects = [ AddMaxHP 30, AddMaxCalm 30, AddSpeed 18
                , AddSkills $ EM.singleton AbTrigger (-1)
                , AddSight 3 ]
   , ieffects = []
@@ -155,7 +155,7 @@ gilaMonster = ItemKind
   , irarity  = [(2, 5), (10, 3)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 15, AddMaxCalm 50, AddSpeed 15
+  , iaspects = [ AddMaxHP 15, AddMaxCalm 60, AddSpeed 15
                , AddSkills $ EM.singleton AbTrigger (-1)
                , AddSight 3 ]
   , ieffects = []
@@ -173,7 +173,7 @@ komodoDragon = ItemKind  -- bad hearing
   , irarity  = [(5, 5), (10, 7)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 40, AddMaxCalm 50, AddSpeed 20
+  , iaspects = [ AddMaxHP 40, AddMaxCalm 60, AddSpeed 20
                , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -191,7 +191,7 @@ hyena = ItemKind
   , irarity  = [(4, 6), (10, 6)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 50, AddSpeed 35
+  , iaspects = [ AddMaxHP 30, AddMaxCalm 60, AddSpeed 35
                , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -207,7 +207,7 @@ alligator = ItemKind
   , irarity  = [(10, 8)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 50, AddMaxCalm 50, AddSpeed 17
+  , iaspects = [ AddMaxHP 50, AddMaxCalm 60, AddSpeed 17
                -- TODO: add innate armor, when it's not a drawback
                , AddSight 3 ]
   , ieffects = []
@@ -228,7 +228,7 @@ thornbush = ItemKind
   , irarity  = [(3, 3), (10, 2)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 50, AddSpeed 20
+  , iaspects = [ AddMaxHP 30, AddMaxCalm 6000, AddSpeed 20
                , AddSkills
                  $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1..])
                    `addSkills` EM.fromList (zip [AbWait, AbMelee] [1..])
@@ -247,7 +247,7 @@ geyser = ItemKind
   , irarity  = [(5, 2), (10, 1)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 100, AddMaxCalm 5000, AddSpeed 5
+  , iaspects = [ AddMaxHP 100, AddMaxCalm 6000, AddSpeed 5
                , AddSkills
                  $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1..])
                    `addSkills` EM.fromList (zip [AbWait, AbMelee] [1..]) ]

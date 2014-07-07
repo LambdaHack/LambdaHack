@@ -508,7 +508,6 @@ ranged :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
 ranged aid = do
   btarget <- getsClient $ getTarget aid
   b@Actor{bpos, blid} <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
   mfpos <- aidTgtToPos aid blid btarget
   seps <- getsClient seps
   case (btarget, mfpos) of
@@ -516,8 +515,7 @@ ranged aid = do
       actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
       mnewEps <- makeLine b fpos seps
       case mnewEps of
-        Just newEps | not actorBlind  -- ProjectBlind
-                      && calmEnough b activeItems -> do  -- ProjectNotCalm
+        Just newEps | not actorBlind -> do  -- ProjectBlind
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
           benList <- benAvailableItems aid permittedRanged

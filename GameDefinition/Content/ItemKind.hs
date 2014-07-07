@@ -218,7 +218,7 @@ gorget = ItemKind
   , icount   = 1
   , iverbHit = "whip"
   , iweight  = 30
-  , iaspects = [Periodic $ d 4 + dl 2, AddArmorMelee 1, AddArmorRanged 1]
+  , iaspects = [Periodic $ d 4 + dl 4, AddArmorMelee 1, AddArmorRanged 1]
   , ieffects = [RefillCalm 1]
   , ifeature = [ Precious, EqpSlot EqpSlotPeriodic "", Identified
                , toVelocity 50 ]  -- not dense enough
@@ -288,10 +288,10 @@ monocle = ItemKind
   , irarity  = [(6, 0), (10, 1)]
   , iverbHit = "rap"
   , iweight  = 50
-  , iaspects = [AddSight $ dl 3, AddMaxCalm $ dl 3 - 5 - d 3]
+  , iaspects = [AddSight $ dl 3]
   , ieffects = []
   , ifeature = [Precious, Identified, Durable, EqpSlot EqpSlotAddSight ""]
-  , idesc    = "Let's you better focus your weaker eye. Until is starts sliding off."
+  , idesc    = "Let's you better focus your weaker eye."
   , ikit     = []
   }
 ring = ItemKind

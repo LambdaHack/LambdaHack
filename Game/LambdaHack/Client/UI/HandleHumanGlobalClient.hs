@@ -278,13 +278,10 @@ projectPos ts tpos = do
   leader <- getLeaderUI
   eps <- getsClient seps
   sb <- getsState $ getActorBody leader
-  activeItems <- activeItemsClient leader
   let lid = blid sb
       spos = bpos sb
   Level{lxsize, lysize} <- getLevel lid
-  if not $ calmEnough sb activeItems
-    then failSer ProjectNotCalm
-    else do
+  do
       case bla lxsize lysize eps spos tpos of
         Nothing -> failSer ProjectAimOnself
         Just [] -> assert `failure` "project from the edge of level"

@@ -142,12 +142,10 @@ condNoWeaponM aid = do
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
-  b <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
   actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
   benList <- benAvailableItems aid permittedRanged
   let missiles = filter (maybe True (< 0) . fst . fst) benList
-  return $ not actorBlind && calmEnough b activeItems && not (null missiles)
+  return $ not actorBlind && not (null missiles)
     -- keep it lazy
 
 -- | Produce the benefit-sorted list of items with a given symbol
