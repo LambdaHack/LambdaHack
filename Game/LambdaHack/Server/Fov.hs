@@ -68,7 +68,7 @@ levelPerception cops litHere actorEqpBody fovMode lvl@Level{lxsize, lysize} =
       canSmellAround (_, allAssocs) =
         let radius = sumSlotNoFilter Effect.EqpSlotAddSmell allAssocs
         in radius >= 2
-      -- TODO: handle smell radius 2, that is only under the actor
+      -- TODO: handle smell radius < 2, that is only under the actor
       -- TODO: filter out tiles that are solid and so can't hold smell.
       psmell = PerceptionVisible $ ES.fromList
                $ concat $ map fst $ filter (canSmellAround . snd) noctoBodies
@@ -115,7 +115,8 @@ reachableFromActor :: Kind.COps -> FovMode -> Level
                    -> ((ActorId, Actor), [ItemFull])
                    -> PerceptionReachable
 reachableFromActor Kind.COps{cotile} fovMode lvl ((_, body), allItems) =
-  let radius = sumSlotNoFilter Effect.EqpSlotAddSight allItems
+  let sumSight = sumSlotNoFilter Effect.EqpSlotAddSight allItems
+      radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) sumSight
   in PerceptionReachable $ fullscan cotile fovMode radius (bpos body) lvl
 
 -- | Compute all lit positions on a level, whether lit by actors or floor items.

@@ -234,11 +234,7 @@ sumSlotNoFilter :: EqpSlot -> [ItemFull] -> Int
 sumSlotNoFilter eqpSlot is = assert (eqpSlot /= EqpSlotWeapon) $  -- no 999
   let f = strengthFromEqpSlot eqpSlot
       g itemFull = (* itemK itemFull) <$> f itemFull
-      cap x | eqpSlot == EqpSlotAddSight =
-        let sumCalm = sumSlotNoFilter EqpSlotAddMaxCalm is
-        in min (sumCalm `div` 5) x
-            | otherwise = x
-  in cap $ sum $ mapMaybe g is
+  in sum $ mapMaybe g is
 
 sumSkills :: [ItemFull] -> Ability.Skills
 sumSkills is =

@@ -212,7 +212,8 @@ resetsFovCmdAtomic cmd = case cmd of
   -- Move actors and items.
   UpdMoveActor{} -> True
   UpdDisplaceActor{} -> True
-  UpdMoveItem{} -> True  -- light sources in inventory are doused
+  UpdMoveItem{} -> True  -- light sources, sight radius bonuses
+  UpdRefillCalm{} -> True  -- Calm caps sight radius
   -- Alter map.
   UpdAlterTile{} -> True  -- even if pos not visible initially
   UpdSpotTile{} -> True

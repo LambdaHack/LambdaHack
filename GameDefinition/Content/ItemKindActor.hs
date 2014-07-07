@@ -98,7 +98,7 @@ nose = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 35, AddMaxCalm 30, AddSpeed 18
-               , {-AddSight 0,-} AddSmell 3 ]  -- depends solely on smell
+               , AddSmell 3 ]  -- depends solely on smell
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
