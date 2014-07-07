@@ -26,21 +26,20 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.State
 
 newtype SlotChar = SlotChar {slotChar :: Char}
-  deriving (Show, Eq, Enum, Binary)
+  deriving (Show, Eq, Binary)
 
 instance Ord SlotChar where
-  compare (SlotChar x) (SlotChar y) =
-    compare (isUpper x, toLower x) (isUpper y, toLower y)
+  compare x y = compare (fromEnum x) (fromEnum y)
+
+instance Enum SlotChar where
+  fromEnum (SlotChar x) = fromEnum x + if isUpper x then 1000 else 0
+  toEnum e = SlotChar $ toEnum $ e - (if e > 1000 then 1000 else 0)
 
 type ItemSlots = (EM.EnumMap SlotChar ItemId, IM.IntMap ItemId)
 
-cmpSlot :: SlotChar -> SlotChar -> Ordering
-cmpSlot (SlotChar x) (SlotChar y) =
-  compare (isUpper x, toLower x) (isUpper y, toLower y)
-
 slotRange :: [SlotChar] -> Text
 slotRange ls =
-  sectionBy (sortBy cmpSlot ls) Nothing
+  sectionBy (sort ls) Nothing
  where
   succSlot c d = ord (slotChar d) - ord (slotChar c) == 1
 

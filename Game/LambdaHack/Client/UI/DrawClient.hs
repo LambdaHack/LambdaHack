@@ -310,7 +310,7 @@ drawLeaderDamage width = do
                       foldr getD Nothing (ieffects itemKind)
                     Nothing -> Nothing
                   tdice = case mdice of
-                    Nothing -> "???"
+                    Nothing -> "0"
                     Just dice -> tshow dice
                   bonus = sumSlotNoFilter Effect.EqpSlotAddHurtMelee activeItems
                   unknownBonus = unknownMelee activeItems
