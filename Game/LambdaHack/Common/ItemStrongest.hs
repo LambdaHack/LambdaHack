@@ -115,10 +115,10 @@ strengthAddSpeed =
   in strengthAspectMaybe p
 
 strengthAddSkills :: ItemFull -> Maybe Ability.Skills
-strengthAddSkills itemFull =
+strengthAddSkills =
   let p (AddSkills a) = [a]
       p _ = []
-  in strengthAspectMaybe p itemFull
+  in strengthAspectMaybe p
 
 strengthAddHurtMelee :: ItemFull -> Maybe Int
 strengthAddHurtMelee =
@@ -262,19 +262,17 @@ permittedRanged itemFull =
           Just _ -> False
           Nothing -> True
 
-unknownAspect :: (Aspect Int -> [b]) -> ItemFull -> Bool
+unknownAspect :: (Aspect Dice.Dice -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =
   case itemDisco itemFull of
     Just ItemDisco{itemAE=Nothing, itemKind=ItemKind{iaspects}} ->
-      let trav x = St.evalState (aspectTrav x (return . const 0)) ()
-      in not $ null $ concatMap f $ map trav iaspects
+      let unknown x = Dice.minDice x /= Dice.maxDice x
+      in or $ concatMap (map unknown . f) iaspects
     _ -> False
 
 unknownMelee :: [ItemFull] -> Bool
 unknownMelee =
   let p (AddHurtMelee k) = [k]
       p _ = []
-      q (AddArmorMelee k) = [k]
-      q _ = []
-      f itemFull b = b || unknownAspect p itemFull || unknownAspect q itemFull
+      f itemFull b = b || unknownAspect p itemFull
   in foldr f False

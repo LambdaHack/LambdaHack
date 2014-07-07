@@ -122,7 +122,8 @@ elbow = ItemKind
   , ikit     = [ ("armored skin", COrgan), ("speed gland 2", COrgan)
                , ("any scroll", CInv), ("any scroll", CInv)
                , ("any scroll", CInv)
-               , ("any arrow", CInv), ("any arrow", CInv), ("any arrow", CInv) ]
+               , ("any arrow", CInv), ("any arrow", CInv)
+               , ("any arrow", CInv) ]
   }
 
 -- * Animals

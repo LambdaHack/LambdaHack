@@ -486,7 +486,7 @@ armorMail = armorLeather
   , iaspects = [ AddHurtMelee (-3)
                , AddArmorMelee $ (2 + dl 3) * 5
                , AddArmorRanged $ (2 + dl 3) * 5 ]
-  , idesc    = "A long shirt woven from iron rings. Discourages foes from attacking your torso, which makes it harder for them to land a blow."
+  , idesc    = "A long shirt woven from iron rings. Discourages foes from attacking your torso, making it harder for them to land a blow."
   }
 gloveFencing = ItemKind
   { isymbol  = '['
@@ -502,7 +502,7 @@ gloveFencing = ItemKind
   , ieffects = []
   , ifeature = [ toVelocity 30  -- flaps and flutters
                , Durable, EqpSlot EqpSlotAddArmorRanged "", Identified ]
-  , idesc    = "A fencing glove from rough leather ensuring a good grip. Quite effective for deflecting or even catching slow projectiles."
+  , idesc    = "A fencing glove from rough leather ensuring a good grip. Also, quite effective in deflecting or even catching slow projectiles."
   , ikit     = []
   }
 gloveGauntlet = gloveFencing
