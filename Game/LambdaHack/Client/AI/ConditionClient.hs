@@ -140,7 +140,7 @@ condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
   actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
   benList <- benAvailableItems aid permittedRanged
-  let missiles = filter (maybe True (< 0) . fst . fst) benList
+  let missiles = filter (maybe True ((< 0) . snd . snd) . fst . fst) benList
   return $ not actorBlind && not (null missiles)
     -- keep it lazy
 
@@ -148,7 +148,7 @@ condCanProjectM aid = do
 -- available to the actor.
 benAvailableItems :: MonadClient m
                   => ActorId -> (ItemFull -> Bool)
-                  -> m [((Maybe Int, CStore), (ItemId, ItemFull))]
+                  -> m [((Maybe (Int, (Int, Int)), CStore), (ItemId, ItemFull))]
 benAvailableItems aid permitted = do
   cops <- getsState scops
   itemToF <- itemToFullClient
@@ -160,7 +160,7 @@ benAvailableItems aid permitted = do
         | (iid, k) <- EM.assocs bag
         , let itemFull = itemToF iid k
         , let benefit = totalUsefulness cops b activeItems fact itemFull
-        , benefit /= Just 0
+        , fmap fst benefit /= Just 0
         , permitted itemFull ]
   groundBag <- getsState $ getActorBag aid CGround
   eqpBag <- getsState $ getActorBag aid CEqp
@@ -201,7 +201,8 @@ benGroundItems aid = do
         | otherwise = use /= Just 0
       mapDesirable (iid, k) =
         let item = itemD EM.! iid
-            use = totalUsefulness cops body activeItems fact (itemToF iid k)
+            use = fmap fst
+                  $ totalUsefulness cops body activeItems fact (itemToF iid k)
             value = fromMaybe 5 use  -- experimenting fun
         in if desirableItem item use
            then Just ((value, k), (iid, item))

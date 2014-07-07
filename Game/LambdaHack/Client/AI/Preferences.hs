@@ -5,6 +5,7 @@ module Game.LambdaHack.Client.AI.Preferences
 
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
+import Data.Maybe
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -85,27 +86,33 @@ aspectToBenefit _cops _b asp =
     Effect.AddSmell p -> p * 2
     Effect.AddLight p -> p * 10
 
--- TODO: return 2 values, for inv and eqp; perhaps refactor Hurt
--- | Determine the total benefit from an item.
+-- | Determine the total benefit from having an item in eqp or inv,
+-- according to item type, and also the benefit confered by equipping the item
+-- and from meleeing with it or applying it or throwing it.
 totalUsefulness :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull
-                -> Maybe Int
+                -> Maybe (Int, (Int, Int))
 totalUsefulness cops b activeItems fact itemFull =
-  let toInv = goesIntoInv $ itemBase itemFull
-      ben effects aspects =
+  let ben effects aspects =
         let effBens = map (effectToBenefit cops b activeItems fact) effects
             aspBens = map (aspectToBenefit cops b) aspects
             periodicEffBens =
               case strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull of
                 Nothing -> []
-                Just in100 -> map (\eff -> eff * in100 `div` 50) effBens
+                Just in100 -> map (\eff -> eff * in100 `div` 5) effBens
             selfBens = aspBens ++ periodicEffBens
-        in if toInv
-           then sum effBens  -- for throwing or applying
-           else if not (null selfBens) && minimum selfBens < -10
-                                       && maximum selfBens > 10
-                then 0  -- a significant mixed blessing out of AI control
-                else sum selfBens  -- for effects on self from wearing
-                     + sum effBens  -- for melee (or throwing or applying)
+            eqpSum = if not (null selfBens) && minimum selfBens < -10
+                                            && maximum selfBens > 10
+                     then 0  -- significant mixed blessings out of AI control
+                     else sum selfBens
+            effSum = sum effBens
+            isWeapon =
+              isJust (strengthFromEqpSlot Effect.EqpSlotWeapon itemFull)
+            totalSum = if goesIntoInv $ itemBase itemFull
+                       then effSum
+                       else if isWeapon
+                            then effSum + eqpSum
+                            else eqpSum
+        in (totalSum, (eqpSum, effSum))
   in case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
       Just $ ben jeffects jaspects

@@ -385,7 +385,7 @@ harmful :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull -> Bool
 harmful cops body activeItems fact itemFull =
   -- items that are known and their effects are not stricly beneficial
   -- should not be equipped (either they are harmful or they waste eqp space).
-  maybe False (\u -> u <= 0)
+  maybe False (\(u, _) -> u <= 0)
     (totalUsefulness cops body activeItems fact itemFull)
   && (maybe True ((/= Effect.EqpSlotWeapon) . fst)
       $ strengthEqpSlot $ itemBase itemFull)
@@ -536,7 +536,7 @@ ranged aid = do
                            * coeff cstore
                            * case mben of
                                Nothing -> -20  -- experimenting is fun
-                               Just ben -> ben
+                               Just (_, (_, ben)) -> ben
                 in if benR < 0 && trange >= chessDist bpos fpos
                    then Just ( -benR * rangeMult `div` 10
                              , ReqProject fpos newEps iid cstore )
@@ -585,7 +585,7 @@ applyItem aid applyGroup = do
                          -- foes' skin than ours -- TODO: when {activated}
                          -- is implemented, enable this for items too heavy,
                          -- etc. for throwing
-                       Just ben -> ben
+                       Just (_, (_, ben)) -> ben
         in if itemLegal itemFull
            then if benR > 0
                 then Just (benR, ReqApply iid cstore)

@@ -122,7 +122,7 @@ targetStrategy oldLeader aid = do
       unknownId = ouniqGroup "unknown space"
       itemUsefulness iid k =
         case totalUsefulness cops b activeItems fact (itemToF iid k) of
-          Just v -> v
+          Just (v, _) -> v
           Nothing -> 30  -- experimenting is fun
       desirableItem iid item k
         | fightsSpawners = itemUsefulness iid k /= 0
