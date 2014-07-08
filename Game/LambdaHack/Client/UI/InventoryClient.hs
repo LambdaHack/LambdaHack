@@ -39,7 +39,6 @@ import Game.LambdaHack.Common.State
 
 failMsg :: MonadClientUI m => Msg -> m Slideshow
 failMsg msg = do
-  modifyClient $ \cli -> cli {slastKey = Nothing}
   stopPlayBack
   assert (not $ T.null msg) $ promptToSlideshow msg
 

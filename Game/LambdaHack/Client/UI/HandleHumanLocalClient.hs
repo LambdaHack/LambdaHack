@@ -200,7 +200,6 @@ maxK = 100
 
 recordHuman :: MonadClientUI m => m Slideshow
 recordHuman = do
-  modifyClient $ \cli -> cli {slastKey = Nothing}
   (_seqCurrent, seqPrevious, k) <- getsClient slastRecord
   case k of
     0 -> do
@@ -383,7 +382,6 @@ doLook = do
               | otherwise = "you see"
       -- Show general info about current position.
       lookMsg <- lookAt True vis canSee p leader enemyMsg
-      modifyClient $ \cli -> cli {slastKey = Nothing}
       -- Check if there's something lying around at current position.
       let is = lvl `atI` p
       if EM.size is <= 2 then

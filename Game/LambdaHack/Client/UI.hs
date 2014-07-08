@@ -96,7 +96,6 @@ humanCommand msgRunStop = do
         (lastBlank, over) <- case mover of
           Nothing -> do
             -- Display current state if no slideshow or if interrupted.
-            modifyClient $ \cli -> cli {slastKey = Nothing}
             sli <- promptToSlideshow ""
             return (False, head . snd $! slideshow sli)
           Just bLast ->
@@ -119,29 +118,22 @@ humanCommand msgRunStop = do
           case M.lookup km bcmdMap of
             Just (_, _, cmd) -> do
               -- Query and clear the last command key.
-              lastKey <- getsClient slastKey
               stgtMode <- getsClient stgtMode
               modifyClient $ \cli -> cli
                 {swaitTimes = if swaitTimes cli > 0
                               then - swaitTimes cli
                               else 0}
-              if Just km == lastKey
-                 || km == K.escKM && isNothing stgtMode && isJust mover
-                then do
-                  modifyClient $ \cli -> cli {slastKey = Nothing}
-                  cmdHumanSem Clear
-                else do
-                  modifyClient $ \cli -> cli {slastKey = Just km}
-                  cmdHumanSem cmd
+              if km == K.escKM && isNothing stgtMode && isJust mover
+                then cmdHumanSem Clear
+                else cmdHumanSem cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in fmap Left $ promptToSlideshow msgKey
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
         case abortOrCmd of
-          Right cmdS -> do
+          Right cmdS ->
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
-            modifyClient $ \cli -> cli {slastKey = Nothing}
             return cmdS
           Left slides -> do
             -- If no time taken, rinse and repeat.

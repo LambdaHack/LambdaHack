@@ -68,7 +68,6 @@ data StateClient = StateClient
   , sdiscoAE     :: !DiscoAE       -- ^ remembered aspects and effects of items
   , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom      :: !R.StdGen      -- ^ current random generator
-  , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
   , slastRecord  :: !LastRecord    -- ^ state of key sequence recording
   , slastPlay    :: ![K.KM]        -- ^ state of key sequence playback
   , swaitTimes   :: !Int           -- ^ player just waited this many times
@@ -141,7 +140,6 @@ defStateClient shistory sreport _sside sisAI =
     , sdiscoAE = EM.empty
     , sfper = EM.empty
     , srandom = R.mkStdGen 42  -- will be set later
-    , slastKey = Nothing
     , slastRecord = ([], [], 0)
     , slastPlay = []
     , swaitTimes = 0
@@ -254,7 +252,6 @@ instance Binary StateClient where
     let sbfsD = EM.empty
         sfper = EM.empty
         srandom = read g
-        slastKey = Nothing
         slastRecord = ([], [], 0)
         slastPlay = []
         swaitTimes = 0
