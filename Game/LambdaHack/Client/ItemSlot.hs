@@ -85,5 +85,5 @@ assignSlot item fid mbody (letterSlots, numberSlots) lastSlot s =
   freeNumbers = filter g [0..]
 
 slotLabel :: Either SlotChar Int -> MU.Part
-slotLabel (Left c) = MU.Text $ T.pack $ slotChar c : " -"
-slotLabel Right{} = "0 -"
+slotLabel (Left c) = MU.String [slotChar c]
+slotLabel Right{} = "0"

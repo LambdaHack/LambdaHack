@@ -125,8 +125,13 @@ itemOverlay cstore bag = do
   let pr (l, iid) =
         case EM.lookup iid bag of
           Nothing -> Nothing
-          Just k -> Just $ makePhrase [ slotLabel l
-                                      , partItemWs k cstore (itemToF iid k) ]
+          Just k ->
+            let itemFull = itemToF iid k
+                -- TODO: add color item symbols as soon as we have a menu
+                -- with all items visible on the floor or known to player
+                -- symbol = jsymbol $ itemBase itemFull
+            in Just $ makePhrase [ slotLabel l, "-"  -- MU.String [symbol]
+                                 , partItemWs k cstore itemFull ]
                            <> " "
   return $! toOverlay $ mapMaybe pr
     $ map (first Left) (EM.assocs letterSlots)
