@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , condOnTriggerableM
   , condBlocksFriendsM
   , condFloorWeaponM
-  , condNoWeaponM
+  , condNoEqpWeaponM
   , condCanProjectM
   , condNotCalmEnoughM
   , condDesirableFloorItemM
@@ -32,7 +32,6 @@ import Game.LambdaHack.Client.AI.Preferences
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
@@ -127,9 +126,9 @@ condFloorWeaponM aid = do
         not $ null $ strongestSlot Effect.EqpSlotWeapon floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
--- | Require the actor doesn't stand over a weapon, unless it's deactivated.
-condNoWeaponM :: MonadClient m => ActorId -> m Bool
-condNoWeaponM aid = do
+-- | Check whether the actor has no weapon in equipment.
+condNoEqpWeaponM :: MonadClient m => ActorId -> m Bool
+condNoEqpWeaponM aid = do
   allAssocs <- fullAssocsClient aid [CEqp]
   -- We do not consider OFF weapons, because they apparently are not good.
   return $ null $ strongestSlot Effect.EqpSlotWeapon allAssocs
@@ -217,8 +216,7 @@ condMeleeBadM :: MonadClient m => ActorId -> m Bool
 condMeleeBadM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  mleader <- getsClient _sleader
-  actorSk <- actorSkills aid mleader
+  condNoUsableWeapon <- null <$> pickWeaponClient aid aid
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
   let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
@@ -229,7 +227,7 @@ condMeleeBadM aid = do
         return $! not $ hpTooLow b2 activeItems
   strongCloseFriends <- filterM strongActor closeFriends
   let noFriendlyHelp = length closeFriends < 3 && null strongCloseFriends
-  return $ EM.findWithDefault 0 Ability.AbMelee actorSk <= 0
+  return $ condNoUsableWeapon
            || noFriendlyHelp  -- still not getting friends' help
     -- no $!; keep it lazy
 
@@ -245,8 +243,8 @@ condLightBetraysM aid = do
             && actorEqpShines  -- but actor betrayed by his equipped light
 
 -- | Produce a list of acceptable adjacent points to flee to.
-fleeList :: MonadClient m => ActorId -> m [(Int, Point)]
-fleeList aid = do
+fleeList :: MonadClient m => Bool -> ActorId -> m [(Int, Point)]
+fleeList panic aid = do
   cops <- getsState scops
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   let tgtPath = case mtgtMPath of  -- prefer fleeing along the path to target
@@ -271,6 +269,7 @@ fleeList aid = do
         if p `elem` tgtPath then Just (9 * d, p)
         else if any (\q -> chessDist p q == 1) tgtPath then Just (d, p)
         else Nothing
-      pathVic = mapMaybe rewardPath gtVic
+      goodVic = mapMaybe rewardPath gtVic
                 ++ filter ((`elem` tgtPath) . snd) eqVic
+      pathVic = goodVic ++ if panic then accVic \\ goodVic else []
   return pathVic  -- keep it lazy, until other conditions verify danger

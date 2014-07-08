@@ -269,7 +269,7 @@ necklace6 = necklace
   }
 necklace7 = necklace
   { irarity  = [(4, 0), (10, 2)]
-  , iaspects = [Periodic $ 2 * d 10 + dl 20]
+  , iaspects = [Periodic $ 2 * d 5 + dl 15]
   , ieffects = [InsertMove 1, RefillHP (-1)]
   , ifeature = ifeature necklace ++ [Durable]
                  -- evil players would throw before death, to destroy

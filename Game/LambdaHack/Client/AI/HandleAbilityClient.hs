@@ -71,13 +71,15 @@ actionStrategy aid = do
   condHpTooLow <- condHpTooLowM aid
   condOnTriggerable <- condOnTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
-  condNoWeapon <- condNoWeaponM aid
+  condNoEqpWeapon <- condNoEqpWeaponM aid
+  condNoUsableWeapon <- null <$> pickWeaponClient aid aid
   condFloorWeapon <- condFloorWeaponM aid
   condCanProject <- condCanProjectM aid
   condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
-  fleeL <- fleeList aid
+  fleeL <- fleeList False aid
+  panicFleeL <- fleeList True aid
   let condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= nearby) . fst) threatDistL
@@ -116,7 +118,7 @@ actionStrategy aid = do
             && not condOnTriggerable && not condDesirableFloorItem )
         , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> pickup aid True
-          , condNoWeapon && condFloorWeapon && not condHpTooLow )
+          , condNoEqpWeapon && condFloorWeapon && not condHpTooLow )
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeBlocker aid  -- only melee target or blocker
           , condAnyFoeAdj
@@ -167,6 +169,11 @@ actionStrategy aid = do
         , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> unEquipItems aid  -- late, because better to throw than unequip
           , True )
+        , ( [AbMove]
+          , flee aid panicFleeL  -- panic mode; chasing would be pointless
+          , condMeleeBad && condThreatNearby && (condNotCalmEnough
+                                                 || condThreatAtHand
+                                                 || condNoUsableWeapon) )
         , ( [AbMove]
           , chase aid False
           , True )
@@ -433,7 +440,8 @@ meleeBlocker aid = do
         Nothing -> return reject
     _ -> return reject  -- probably no path to the enemy, if any
 
--- Everybody melees in a pinch, even though some prefer ranged attacks.
+-- Everybody melees in a pinch, skills and weapons allowing,
+-- even though some prefer ranged attacks.
 meleeAny :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))
 meleeAny aid = do
   b <- getsState $ getActorBody aid

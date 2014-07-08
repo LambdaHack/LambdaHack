@@ -120,10 +120,8 @@ elbow = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("armored skin", COrgan), ("speed gland 2", COrgan)
-               , ("any scroll", CInv), ("any scroll", CInv)
-               , ("any scroll", CInv)
                , ("any arrow", CInv), ("any arrow", CInv)
-               , ("any arrow", CInv) ]
+               , ("any arrow", CInv), ("any arrow", CInv) ]
   }
 
 -- * Animals
@@ -228,7 +226,7 @@ thornbush = ItemKind
   , irarity  = [(3, 3), (10, 2)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 6000, AddSpeed 20
+  , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20
                , AddSkills
                  $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1..])
                    `addSkills` EM.fromList (zip [AbWait, AbMelee] [1..])
@@ -247,7 +245,7 @@ geyser = ItemKind
   , irarity  = [(5, 2), (10, 1)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 100, AddMaxCalm 6000, AddSpeed 5
+  , iaspects = [ AddMaxHP 100, AddMaxCalm 999, AddSpeed 5
                , AddSkills
                  $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1..])
                    `addSkills` EM.fromList (zip [AbWait, AbMelee] [1..]) ]

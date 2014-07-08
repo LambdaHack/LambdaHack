@@ -18,7 +18,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.Ability
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
@@ -160,7 +160,7 @@ makeLine body fpos epsOld = do
             then Nothing  -- ProjectBlockActor, ProjectAimOnself
             else tryLines epsOld (Nothing, minBound)
 
-actorSkills :: MonadClient m => ActorId -> Maybe ActorId -> m Skills
+actorSkills :: MonadClient m => ActorId -> Maybe ActorId -> m Ability.Skills
 actorSkills aid mleader = do
   Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   body <- getsState $ getActorBody aid
@@ -170,7 +170,7 @@ actorSkills aid mleader = do
         | otherwise = fSkillsOther $ okind $ gkind fact
   activeItems <- activeItemsClient aid
   let itemSkills = sumSkills activeItems
-  return $! itemSkills `addSkills` factionSkills
+  return $! itemSkills `Ability.addSkills` factionSkills
 
 updateItemSlot :: MonadClient m => Maybe ActorId -> ItemId -> m ()
 updateItemSlot maid iid = do
@@ -218,19 +218,22 @@ itemToFullClient = do
 -- Client has to choose the weapon based on its partial knowledge,
 -- because if server chose it, it would leak item discovery information.
 pickWeaponClient :: MonadClient m
-                 => ActorId -> ActorId -> m [RequestTimed AbMelee]
+                 => ActorId -> ActorId -> m [RequestTimed Ability.AbMelee]
 pickWeaponClient source target = do
   eqpAssocs <- fullAssocsClient source [CEqp]
   bodyAssocs <- fullAssocsClient source [COrgan]
+  mleader <- getsClient _sleader
+  actorSk <- actorSkills source mleader
   let allAssocs = eqpAssocs ++ bodyAssocs
   case filter (not . unknownPrecious . snd . snd)
        $ strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
+    _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> return []
     [] -> return []
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
       -- TODO: pick the item according to the frequency of its kind.
       (iid, _) <- rndToAction $ oneOf maxIis
-      -- Prefer COrgan, to hint the player to trash the equivalent CEqp item.
+      -- Prefer COrgan, to hint to the player to trash the equivalent CEqp item.
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $! [ReqMelee target iid cstore]
 
