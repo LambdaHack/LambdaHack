@@ -18,7 +18,6 @@ import Data.Maybe
 import Data.Ord
 import Data.Ratio
 import Data.Text (Text)
-import qualified Data.Traversable as Traversable
 
 import Game.LambdaHack.Client.AI.ConditionClient
 import Game.LambdaHack.Client.AI.Preferences
@@ -153,7 +152,8 @@ actionStrategy aid = do
                          else 100)
             $ chase aid True
           , (condTgtEnemyPresent || condTgtEnemyRemembered)
-            && not condDesirableFloorItem ) ]
+            && not condDesirableFloorItem
+            && not condNoUsableWeapon ) ]
       suffix =
         [ ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> pickup aid False
@@ -613,7 +613,7 @@ flee aid fleeL = do
   b <- getsState $ getActorBody aid
   let vVic = map (second (`vectorToFrom` bpos b)) fleeL
       str = liftFrequency $ toFreq "flee" vVic
-  Traversable.mapM (moveOrRunAid True aid) str
+  mapStrategyM (moveOrRunAid True aid) str
 
 displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
 displaceFoe aid = do
@@ -638,7 +638,7 @@ displaceFoe aid = do
               , let nFr = nFriends body
               , nFr < nFrHere ]
       str = liftFrequency $ toFreq "displaceFoe" vFoes
-  Traversable.mapM (moveOrRunAid True aid) str
+  mapStrategyM (moveOrRunAid True aid) str
 
 displaceBlocker :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
 displaceBlocker aid = do
@@ -646,7 +646,7 @@ displaceBlocker aid = do
   str <- case mtgtMPath of
     Just (_, Just (p : q : _, _)) -> displaceTowards aid p q
     _ -> return reject  -- goal reached
-  Traversable.mapM (moveOrRunAid True aid) str
+  mapStrategyM (moveOrRunAid True aid) str
 
 -- TODO: perhaps modify target when actually moving, not when
 -- producing the strategy, even if it's a unique choice in this case.
@@ -695,7 +695,7 @@ chase aid doDisplace = do
   -- We'd normally melee the target earlier on via @AbMelee@, but for
   -- actors that don't have this ability (and so melee only when forced to),
   -- this is meaningul.
-  Traversable.mapM (moveOrRunAid doDisplace aid) str
+  mapStrategyM (moveOrRunAid doDisplace aid) str
 
 moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> Point -> Bool -> m (Strategy Vector)
@@ -731,7 +731,7 @@ moveTowards aid source target goal relaxed = do
 -- This function is very general, even though it's often used in contexts
 -- when only one or two of the many cases can possibly occur.
 moveOrRunAid :: MonadClient m
-             => Bool -> ActorId -> Vector -> m RequestAnyAbility
+             => Bool -> ActorId -> Vector -> m (Maybe RequestAnyAbility)
 moveOrRunAid run source dir = do
   cops@Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -754,25 +754,25 @@ moveOrRunAid run source dir = do
          && (not (isAtWar tfact (bfid sb))
              || dEnemy)  -- DisplaceDying, DisplaceSupported
       then
-        return $! RequestAnyAbility $ ReqDisplace target
+        return $! Just $ RequestAnyAbility $ ReqDisplace target
       else do
         -- If cannot displace, hit. TODO: unless melee or wait not permitted.
         wps <- pickWeaponClient source target
         case wps of
-          [] -> return $! RequestAnyAbility ReqWait
-          wp : _ -> return $! RequestAnyAbility wp
+          [] -> return Nothing
+          wp : _ -> return $! Just $ RequestAnyAbility wp
     ((target, _), _) : _ -> do  -- can be a foe, as well as friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
       -- Attacking does not require full access, adjacency is enough.
       wps <- pickWeaponClient source target
       case wps of
-        [] -> return $! RequestAnyAbility ReqWait
-        wp : _ -> return $! RequestAnyAbility wp
+        [] -> return Nothing
+        wp : _ -> return $! Just $ RequestAnyAbility wp
     [] -> do  -- move or search or alter
       if accessible cops lvl spos tpos then
         -- Movement requires full access.
-        return $! RequestAnyAbility $ ReqMove dir
+        return $! Just $ RequestAnyAbility $ ReqMove dir
         -- The potential invisible actor is hit.
       else if not $ EM.null $ lvl `atI` tpos then
         -- This is, e.g., inaccessible open door with an item in it.
@@ -783,7 +783,7 @@ moveOrRunAid run source dir = do
                   || Tile.isClosable cotile t
                   || Tile.isChangeable cotile t) then
         -- No access, so search and/or alter the tile.
-        return $! RequestAnyAbility $ ReqAlter tpos Nothing
+        return $! Just $ RequestAnyAbility $ ReqAlter tpos Nothing
       else
         -- Boring tile, no point bumping into it, do WaitSer if really idle.
         assert `failure` "AI causes MoveNothing or AlterNothing"
