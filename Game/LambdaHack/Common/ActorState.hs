@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.ActorState
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, isSpawnFaction
   , itemPrice, calmEnough, hpEnough, regenCalmDelta
-  , actorInAmbient, dispEnemy, radiusBlind
+  , actorInAmbient, actorSkills, dispEnemy, radiusBlind
   , fullAssocs, itemToFull, goesIntoInv, eqpOverfull, storeFromC
   ) where
 
@@ -23,6 +23,7 @@ import Data.Int (Int64)
 import Data.List
 import Data.Maybe
 
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
@@ -36,6 +37,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.TileKind
 
 fidActorNotProjAssocs :: FactionId -> State -> [(ActorId, Actor)]
@@ -290,17 +292,33 @@ actorInAmbient b s =
       lvl = (EM.! blid b) . sdungeon $ s
   in Tile.isLit cotile (lvl `at` bpos b)
 
+actorSkills :: ActorId -> Maybe ActorId -> [ItemFull] -> State -> Ability.Skills
+actorSkills aid mleader activeItems s =
+  let Kind.COps{cofaction=Kind.Ops{okind}} = scops s
+      body = getActorBody aid s
+      fact = (EM.! bfid body) . sfactionD $ s
+      factionSkills
+        | Just aid == mleader = fSkillsLeader $ okind $ gkind fact
+        | otherwise = fSkillsOther $ okind $ gkind fact
+      itemSkills = sumSkills activeItems
+  in itemSkills `Ability.addSkills` factionSkills
+
 -- Check whether an actor can displace an enemy. We assume they are adjacent.
-dispEnemy :: Actor -> Actor -> State -> Bool
-dispEnemy sb tb s =
+dispEnemy :: ActorId -> ActorId -> [ItemFull] -> State -> Bool
+dispEnemy source target activeItems s =
   let hasSupport b =
         let fact = (EM.! bfid b) . sfactionD $ s
             friendlyFid fid = fid == bfid b || isAllied fact fid
             sup = actorRegularList friendlyFid (blid b) s
         in any (adjacent (bpos b) . bpos) sup
+      actorSk = actorSkills target (Just target) activeItems s
+      sb = getActorBody source s
+      tb = getActorBody target s
   in bproj tb
      || not (actorDying tb
              || braced tb
+             || EM.findWithDefault 0 Ability.AbDisplace actorSk <= 0
+                && EM.findWithDefault 0 Ability.AbMove actorSk <= 0
              || hasSupport sb && hasSupport tb)  -- solo actors are flexible
 
 -- | Determine if the sight radius is high enough to deem the actor capable

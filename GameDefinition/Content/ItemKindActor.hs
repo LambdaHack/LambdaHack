@@ -64,7 +64,7 @@ eye = ItemKind
   , irarity  = [(1, 10), (10, 6)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 25, AddMaxCalm 60, AddSpeed 20
+  , iaspects = [ AddMaxHP 20, AddMaxCalm 60, AddSpeed 20
                , AddSight 4 ]  -- can shoot for as long as lives
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -97,7 +97,7 @@ nose = ItemKind
   , irarity  = [(1, 6), (10, 4)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 35, AddMaxCalm 30, AddSpeed 18
+  , iaspects = [ AddMaxHP 40, AddMaxCalm 30, AddSpeed 18
                , AddSmell 3 ]  -- depends solely on smell
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -223,7 +223,7 @@ thornbush = ItemKind
   , ifreq    = [("animal", 100)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
-  , irarity  = [(3, 3), (10, 2)]
+  , irarity  = [(3, 2), (10, 1)]
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20

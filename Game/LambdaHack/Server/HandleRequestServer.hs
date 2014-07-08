@@ -225,7 +225,8 @@ reqDisplace source target = do
       adj = checkAdjacent sb tb
       atWar = isAtWar tfact (bfid sb)
       req = ReqDisplace target
-  dEnemy <- getsState $ dispEnemy sb tb
+  activeItems <- activeItemsServer target
+  dEnemy <- getsState $ dispEnemy source target activeItems
   if not adj then execFailure source req DisplaceDistant
   else if atWar && not dEnemy
   then do

@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
-  , actorSkills, updateItemSlot, fullAssocsClient, activeItemsClient
+  , actorSkillsClient, updateItemSlot, fullAssocsClient, activeItemsClient
   , itemToFullClient, pickWeaponClient, sumOrganEqpClient
   ) where
 
@@ -22,7 +22,6 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
-import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -35,7 +34,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.FactionKind
 
 -- | Get the current perception of a client.
 getPerFid :: MonadClient m => LevelId -> m Perception
@@ -160,17 +158,11 @@ makeLine body fpos epsOld = do
             then Nothing  -- ProjectBlockActor, ProjectAimOnself
             else tryLines epsOld (Nothing, minBound)
 
-actorSkills :: MonadClient m => ActorId -> Maybe ActorId -> m Ability.Skills
-actorSkills aid mleader = do
-  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
-  body <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid body) . sfactionD
-  let factionSkills
-        | Just aid == mleader = fSkillsLeader $ okind $ gkind fact
-        | otherwise = fSkillsOther $ okind $ gkind fact
+actorSkillsClient :: MonadClient m
+                  => ActorId -> Maybe ActorId -> m Ability.Skills
+actorSkillsClient aid mleader = do
   activeItems <- activeItemsClient aid
-  let itemSkills = sumSkills activeItems
-  return $! itemSkills `Ability.addSkills` factionSkills
+  getsState $ actorSkills aid mleader activeItems
 
 updateItemSlot :: MonadClient m => Maybe ActorId -> ItemId -> m ()
 updateItemSlot maid iid = do
@@ -223,7 +215,7 @@ pickWeaponClient source target = do
   eqpAssocs <- fullAssocsClient source [CEqp]
   bodyAssocs <- fullAssocsClient source [COrgan]
   mleader <- getsClient _sleader
-  actorSk <- actorSkills source mleader
+  actorSk <- actorSkillsClient source mleader
   let allAssocs = eqpAssocs ++ bodyAssocs
   case filter (not . unknownPrecious . snd . snd)
        $ strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of

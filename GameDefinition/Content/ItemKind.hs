@@ -321,7 +321,7 @@ ring2 = ring
 ring3 = ring
   { iaspects = [AddMaxCalm $ 10 + dl 10]
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddMaxCalm ""]
-  , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, though mostly worn out words."
+  , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
 ring4 = ring  -- TODO: move to level-ups and to timed effects
   { irarity  = [(3, 8), (10, 12)]
@@ -330,7 +330,7 @@ ring4 = ring  -- TODO: move to level-ups and to timed effects
   }
 ring5 = ring  -- by the time it's found, probably no space in eqp
   { irarity  = [(5, 0), (10, 1)]
-  , iaspects = [AddLight 1]
+  , iaspects = [AddLight $ d 2]
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddLight ""]
   }
 
@@ -382,7 +382,7 @@ potion7 = potion
   { ieffects = [ NoEffect "bait cocktail"
                , OnSmash (Summon $ 1 + dl 2), OnSmash (Explode "waste") ]
   }
-potion8 = scroll
+potion8 = potion
   { ieffects = [ OneOf [Impress, DropBestWeapon, RefillHP 5, Burn 3]
                , OnSmash (OneOf [ Explode "healing mist"
                                 , Explode "wounding mist"
@@ -390,7 +390,7 @@ potion8 = scroll
                                 , Explode "explosion blast 10" ]) ]
   }
 
-potion9 = scroll
+potion9 = potion
   { irarity  = [(1, 4), (10, 6)]
   , ieffects = [ OneOf [ Dominate, DropBestWeapon, RefillHP 15, Burn 9
                        , InsertMove 2]
@@ -516,7 +516,7 @@ gloveGauntlet = gloveFencing
   }
 gloveJousting = gloveFencing
   { iname    = "jousting gauntlet"
-  , irarity  = [(6, 12)]
+  , irarity  = [(6, 6)]
   , iflavour = zipFancy [BrRed]
   , iweight  = 500
   , iaspects = [ AddHurtMelee $ - 10 - d 5 + dl 5

@@ -87,7 +87,7 @@ actionStrategy aid = do
                           $ takeWhile ((== 1) . fst) threatDistL
       condCanFlee = not (null fleeL || condFastThreatAdj)
   mleader <- getsClient _sleader
-  actorSk <- actorSkills aid mleader
+  actorSk <- actorSkillsClient aid mleader
   let stratToFreq :: MonadStateRead m
                   => Int -> m (Strategy RequestAnyAbility)
                   -> m (Frequency RequestAnyAbility)
@@ -409,7 +409,7 @@ meleeBlocker aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   mleader <- getsClient _sleader
-  actorSk <- actorSkills aid mleader
+  actorSk <- actorSkillsClient aid mleader
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
     Just (_, Just (_ : q : _, (goal, _))) -> do
@@ -623,21 +623,22 @@ displaceFoe aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
-  allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
-  dEnemy <- getsState $ flip $ dispEnemy b
+  allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let accessibleHere = accessible cops lvl $ bpos b  -- DisplaceAccess
       displaceable body =  -- DisplaceAccess, DisplaceDying, DisplaceSupported
         accessibleHere (bpos body)
         && adjacent (bpos body) (bpos b)
-        && dEnemy body
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrHere = nFriends b + 1
-      vFoes = [ (nFr * nFr, bpos body `vectorToFrom` bpos b)
-              | body <- allFoes
-              , displaceable body
-              , let nFr = nFriends body
-              , nFr < nFrHere ]
-      str = liftFrequency $ toFreq "displaceFoe" vFoes
+      qualifyActor (aid2, body2) = do
+        activeItems <- activeItemsClient aid2
+        dEnemy <- getsState $ dispEnemy aid aid2 activeItems
+        let nFr = nFriends body2
+        return $! if displaceable body2 && dEnemy && nFr < nFrHere
+          then Just (nFr * nFr, bpos body2 `vectorToFrom` bpos b)
+          else Nothing
+  vFoes <- mapM qualifyActor allFoes
+  let str = liftFrequency $ toFreq "displaceFoe" $ catMaybes vFoes
   mapStrategyM (moveOrRunAid True aid) str
 
 displaceBlocker :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
@@ -674,7 +675,8 @@ displaceTowards aid source target = do
           Just _ -> return reject
           Nothing -> do
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
-            dEnemy <- getsState $ dispEnemy b b2
+            activeItems <- activeItemsClient aid2
+            dEnemy <- getsState $ dispEnemy aid aid2 activeItems
             if not (isAtWar tfact (bfid b)) || dEnemy then
               return $! returN "displace other" $ target `vectorToFrom` source
             else return reject  -- DisplaceDying, DisplaceSupported
@@ -748,7 +750,8 @@ moveOrRunAid run source dir = do
   case tgts of
     [((target, b2), _)] | run ->  do -- can be a foe, as well as a friend
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
-      dEnemy <- getsState $ dispEnemy sb b2
+      activeItems <- activeItemsClient target
+      dEnemy <- getsState $ dispEnemy source target activeItems
       if boldpos sb /= tpos -- avoid trivial Displace loops
          && accessible cops lvl spos tpos -- DisplaceAccess
          && (not (isAtWar tfact (bfid sb))

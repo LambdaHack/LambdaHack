@@ -91,7 +91,7 @@ targetStrategy oldLeader aid = do
   itemD <- getsState sitemD
   -- TODO: we assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
-  actorSk <- actorSkills aid (Just aid)
+  actorSk <- actorSkillsClient aid (Just aid)
   condCanProject <- condCanProjectM aid
   condMeleeBad <- condMeleeBadM aid
   condHpTooLow <- condHpTooLowM aid
