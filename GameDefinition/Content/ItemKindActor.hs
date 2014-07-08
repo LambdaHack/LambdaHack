@@ -228,8 +228,8 @@ thornbush = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20
                , AddSkills
-                 $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1..])
-                   `addSkills` EM.fromList (zip [AbWait, AbMelee] [1..])
+                 $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1, -1..])
+                   `addSkills` EM.fromList (zip [AbWait, AbMelee] [1, 1..])
                , AddArmorMelee 50 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -247,8 +247,8 @@ geyser = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 100, AddMaxCalm 999, AddSpeed 5
                , AddSkills
-                 $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1..])
-                   `addSkills` EM.fromList (zip [AbWait, AbMelee] [1..]) ]
+                 $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1, -1..])
+                   `addSkills` EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""

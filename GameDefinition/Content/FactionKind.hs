@@ -62,12 +62,12 @@ horror = FactionKind
 
 meleeAdjacent, _meleeAndRanged, animalSkills, allSkills :: Skills
 
-meleeAdjacent = EM.fromList $ zip [AbWait, AbMelee] [1..]
+meleeAdjacent = EM.fromList $ zip [AbWait, AbMelee] [1, 1..]
 
 -- Melee and reaction fire.
-_meleeAndRanged = EM.fromList $ zip [AbWait, AbMelee, AbProject] [1..]
+_meleeAndRanged = EM.fromList $ zip [AbWait, AbMelee, AbProject] [1, 1..]
 
 animalSkills =
-  EM.fromList $ zip [AbMove, AbMelee, AbAlter, AbWait, AbTrigger] [1..]
+  EM.fromList $ zip [AbMove, AbMelee, AbAlter, AbWait, AbTrigger] [1, 1..]
 
 allSkills = unitSkills
