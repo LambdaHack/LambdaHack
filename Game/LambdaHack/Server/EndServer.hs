@@ -61,7 +61,7 @@ dieSer aid b hit = do
   -- TODO: clients don't see the death of their last standing actor;
   --       modify Draw.hs and Client.hs to handle that
   if bproj b then do
-    dropAllItems aid b hit
+    dropEqpItems aid b hit
     b2 <- getsState $ getActorBody aid
     execUpdAtomic $ UpdDestroyActor aid b2 []
   else do
@@ -70,21 +70,11 @@ dieSer aid b hit = do
     let ikind = disco EM.! jkindIx trunk
     execUpdAtomic $ UpdRecordKill aid ikind 1
     electLeader (bfid b) (blid b) aid
-    dropAllItems aid b False
+    equipAllItems aid b
+    dropEqpItems aid b False
     b2 <- getsState $ getActorBody aid
     execUpdAtomic $ UpdDestroyActor aid b2 []
     deduceKilled b
-
--- | Drop all actor's items. If the actor hits another actor and this
--- collision results in all item being dropped, all items are destroyed.
--- If the actor does not hit, but dies, only fragile items are destroyed
--- and only if the actor was a projectile (and so died by dropping
--- to the ground due to exceeded range or bumping off an obstacle).
-dropAllItems :: (MonadAtomic m, MonadServer m)
-             => ActorId -> Actor -> Bool -> m ()
-dropAllItems aid b hit = do
-  equipAllItems aid b
-  dropEqpItems aid b hit
 
 equipAllItems :: (MonadAtomic m, MonadServer m)
               => ActorId -> Actor -> m ()
@@ -101,6 +91,11 @@ equipAllItems aid b = do
   when (isNothing $ gleader fact) $ moveCStore CSha
   moveCStore CInv
 
+-- | Drop all actor's items. If the actor hits another actor and this
+-- collision results in all item being dropped, all items are destroyed.
+-- If the actor does not hit, but dies, only fragile items are destroyed
+-- and only if the actor was a projectile (and so died by dropping
+-- to the ground due to exceeded range or bumping off an obstacle).
 dropEqpItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> Bool -> m ()
 dropEqpItems aid b hit = mapActorCStore_ CEqp (dropEqpItem aid b hit) b
