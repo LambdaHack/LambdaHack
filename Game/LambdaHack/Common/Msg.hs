@@ -8,20 +8,26 @@ module Game.LambdaHack.Common.Msg
   , History, emptyHistory, lengthHistory, singletonHistory, mergeHistory
   , addReport, renderHistory, takeHistory, lastReportOfHistory
   , Overlay(overlay), emptyOverlay, truncateToOverlay, toOverlay
-  , Slideshow(slideshow), splitOverlay, toSlideshow)
+  , Slideshow(slideshow), splitOverlay, toSlideshow
+  , encodeLine, encodeOverlay, ScreenLine, toScreenLine
+  )
   where
 
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.ByteString.Char8 as BS
+import Data.Int (Int32)
 import Data.List
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Unboxed as U
 import qualified NLP.Miniutter.English as MU
 import qualified Text.Show.Pretty as Show.Pretty
 
+import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 
@@ -98,7 +104,7 @@ addMsg (Report xns) y = Report $ (encodeUtf8 y, 1) : xns
 -- | Split a messages into chunks that fit in one line.
 -- We assume the width of the messages line is the same as of level map.
 splitReport :: X -> Report -> Overlay
-splitReport w r = Overlay $ splitReportList w r
+splitReport w r = toOverlay $ splitReportList w r
 
 splitReportList :: X -> Report -> [Text]
 splitReportList w r = splitText w $ renderReport r
@@ -164,7 +170,7 @@ mergeHistory l =
 renderHistory :: History -> Overlay
 renderHistory (History h) =
   let w = fst normalLevelBound + 1
-  in Overlay $ concatMap (splitReportList w) h
+  in toOverlay $ concatMap (splitReportList w) h
 
 -- | Add a report to history, handling repetitions.
 addReport :: Report -> History -> History
@@ -186,20 +192,33 @@ lastReportOfHistory (History hist) = case hist of
   [] -> Nothing
   rep : _ -> Just rep
 
+type ScreenLine = U.Vector Int32
+
+toScreenLine :: Text -> ScreenLine
+toScreenLine t = let f c = AttrChar defAttr c
+                 in encodeLine $ map f $ T.unpack t
+
+encodeLine :: [AttrChar] -> ScreenLine
+encodeLine l = G.fromList $ map (fromIntegral . fromEnum) l
+
+encodeOverlay :: [[AttrChar]] -> Overlay
+encodeOverlay = Overlay . map encodeLine
+
 -- | A series of screen lines that may or may not fit the width nor height
 -- of the screen. An overlay may be transformed by adding the first line
 -- and/or by splitting into a slideshow of smaller overlays.
-newtype Overlay = Overlay {overlay :: [Text]}
+newtype Overlay = Overlay {overlay :: [ScreenLine]}
   deriving (Show, Eq, Binary)
 
 emptyOverlay :: Overlay
 emptyOverlay = Overlay []
 
 truncateToOverlay :: X -> Text -> Overlay
-truncateToOverlay lxsize msg = Overlay [truncateMsg lxsize msg]
+truncateToOverlay lxsize msg = toOverlay [truncateMsg lxsize msg]
 
 toOverlay :: [Text] -> Overlay
-toOverlay = Overlay
+toOverlay = let lxsize = fst normalLevelBound + 1  -- TODO
+            in Overlay . map toScreenLine . map (truncateMsg lxsize)
 
 -- | Split an overlay into a slideshow in which each overlay,
 -- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,
@@ -209,13 +228,14 @@ splitOverlay onBlank yspace (Overlay msg) (Overlay ls) =
   let len = length msg
   in if len >= yspace
      then  -- no space left for @ls@
-       Slideshow (onBlank, [Overlay $ take (yspace - 1) msg ++ [moreMsg]])
+       Slideshow (onBlank, [Overlay $ take (yspace - 1) msg
+                                      ++ [toScreenLine moreMsg]])
      else let splitO over =
                 let (pre, post) = splitAt (yspace - 1) $ msg ++ over
                 in if null (drop 1 post)  -- (don't call @length@ on @ls@)
                    then [Overlay $ msg ++ over]  -- all fits on one screen
                    else let rest = splitO post
-                        in Overlay (pre ++ [moreMsg]) : rest
+                        in Overlay (pre ++ [toScreenLine moreMsg]) : rest
           in Slideshow (onBlank, splitO ls)
 
 -- | A few overlays, displayed one by one upon keypress.
@@ -236,4 +256,4 @@ instance Monoid Slideshow where
 -- or contained in the overlays and if any vertical or horizontal
 -- trimming of the overlays happens, this is intended.
 toSlideshow :: Bool -> [[Text]] -> Slideshow
-toSlideshow onBlank l = Slideshow (onBlank, map Overlay l)
+toSlideshow onBlank l = Slideshow (onBlank, map toOverlay l)

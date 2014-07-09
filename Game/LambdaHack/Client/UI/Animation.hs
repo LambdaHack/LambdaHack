@@ -12,13 +12,10 @@ import Data.Binary
 import Data.Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Int (Int32)
 import Data.List
 import Data.Maybe
 import Data.Monoid
-import qualified Data.Text as T
 import qualified Data.Vector.Generic as G
-import qualified Data.Vector.Unboxed as U
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
@@ -28,13 +25,8 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
-type ScreenLine = U.Vector Int32
-
 decodeLine :: ScreenLine -> [AttrChar]
 decodeLine v = map (toEnum . fromIntegral) $ G.toList v
-
-encodeLine :: [AttrChar] -> ScreenLine
-encodeLine l = G.fromList $ map (fromIntegral . fromEnum) l
 
 -- | The data sufficent to draw a single game screen frame.
 data SingleFrame = SingleFrame
@@ -60,15 +52,13 @@ overlayOverlay SingleFrame{..} =
       canvasLength = if sfBlank then lysize + 3 else lysize + 1
       canvas | sfBlank = replicate canvasLength emptyLine
              | otherwise = emptyLine : sfLevel
-      topTrunc = map (truncateMsg lxsize) $ overlay sfTop
+      topTrunc = overlay sfTop
       topLayer = if length topTrunc <= canvasLength
                  then topTrunc
                  else take (canvasLength - 1) topTrunc
-                      ++ ["--a portion of the text trimmed--"]
-      addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
-      f layerLine canvasLine = encodeLine
-        $ addAttr layerLine
-          ++ drop (T.length layerLine) (decodeLine canvasLine)
+                      ++ [toScreenLine "--a portion of the text trimmed--"]
+      f layerLine canvasLine =
+        layerLine G.++ G.drop (G.length layerLine) canvasLine
       picture = zipWith f topLayer canvas
       bottomLines = if sfBlank then [] else sfBottom
       newLevel = picture ++ drop (length picture) canvas ++ bottomLines
