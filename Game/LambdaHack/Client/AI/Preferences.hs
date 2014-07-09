@@ -75,7 +75,7 @@ aspectToBenefit _cops _b asp =
   case asp of
     Effect.Periodic{} -> 0
     Effect.AddMaxHP p -> p * 10
-    Effect.AddMaxCalm p -> p
+    Effect.AddMaxCalm p -> p `divUp` 2
     Effect.AddSpeed p -> p * 10000
     Effect.AddSkills m -> 5 * sum (EM.elems m)
     Effect.AddHurtMelee p -> p `divUp` 3
