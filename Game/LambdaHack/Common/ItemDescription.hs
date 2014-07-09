@@ -90,6 +90,16 @@ itemDesc :: CStore -> ItemFull -> Text
 itemDesc cstore itemFull =
   let (name, stats) = partItemN True 99 cstore itemFull
       nstats = makePhrase [name, stats MU.:> ":"]
-  in case itemDisco itemFull of
-    Nothing -> nstats <+> "This item is as unremarkable as can be."
-    Just ItemDisco{itemKind} -> nstats <+> idesc itemKind
+      desc = case itemDisco itemFull of
+        Nothing -> "This item is as unremarkable as can be."
+        Just ItemDisco{itemKind} -> idesc itemKind
+      weight = jweight (itemBase itemFull)
+      (scaledWeight, unitWeight) = if weight > 1000
+                                   then (fromIntegral weight / 1000, "kg")
+                                   else (fromIntegral weight :: Double, "g")
+      ln = abs $ fromEnum $ jlid (itemBase itemFull)
+  in T.singleton (jsymbol (itemBase itemFull))  -- TODO: color
+     <+> nstats
+     <+> desc
+     <+> makeSentence ["Weighs", MU.Text $ tshow scaledWeight, unitWeight]
+     <+> makeSentence ["Found on level", MU.Text $ tshow ln]
