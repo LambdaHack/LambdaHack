@@ -2,7 +2,7 @@
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
-  , revealItems, deduceQuits, deduceKilled, electLeader, addActor
+  , revealItems, moveStores, deduceQuits, deduceKilled, electLeader, addActor
   , projectFail, pickWeaponServer, sumOrganEqpServer
   ) where
 
@@ -111,6 +111,13 @@ revealItems mfid mbody = do
         when (ourSide && Just b /= mbody) $ mapActorItems_ (discover b) b
   mapDungeonActors_ f dungeon
   maybe skip (\b -> mapActorItems_ (discover b) b) mbody
+
+moveStores :: (MonadAtomic m, MonadServer m)
+           => ActorId -> CStore -> CStore -> m ()
+moveStores aid fromStore toStore = do
+  b <- getsState $ getActorBody aid
+  let g iid k = execUpdAtomic $ UpdMoveItem iid k aid fromStore toStore
+  mapActorCStore_ fromStore g b
 
 quitF :: (MonadAtomic m, MonadServer m)
       => Maybe Actor -> Status -> FactionId -> m ()

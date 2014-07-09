@@ -25,6 +25,7 @@ import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
@@ -170,6 +171,9 @@ dominateFid fid target = do
   let ikind = disco EM.! jkindIx trunk
   when (boldfid tb == bfid tb) $ execUpdAtomic $ UpdRecordKill target ikind 1
   electLeader (bfid tb) (blid tb) target
+  fact <- getsState $ (EM.! bfid tb) . sfactionD
+  -- Prevent the faction's stash from being lost in case they are not spawners.
+  when (isNothing $ gleader fact) $ moveStores target CSha CInv
   deduceKilled tb
   ais <- getsState $ getCarriedAssocs tb
   calmMax <- sumOrganEqpServer Effect.EqpSlotAddMaxCalm target

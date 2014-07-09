@@ -79,17 +79,11 @@ dieSer aid b hit = do
 equipAllItems :: (MonadAtomic m, MonadServer m)
               => ActorId -> Actor -> m ()
 equipAllItems aid b = do
-  let moveCStore fromStore = do
-        let g iid k = do
-              mvCmd <- generalMoveItem iid k (CActor aid fromStore)
-                                             (CActor aid CEqp)
-              mapM_ execUpdAtomic mvCmd
-        mapActorCStore_ fromStore g b
   fact <- getsState $ (EM.! bfid b) . sfactionD
   -- A faction that is defeated, leaderless or with temporarlity no member
   -- drops all items from the faction stash, too.
-  when (isNothing $ gleader fact) $ moveCStore CSha
-  moveCStore CInv
+  when (isNothing $ gleader fact) $ moveStores aid CSha CEqp
+  moveStores aid CInv CEqp
 
 -- | Drop all actor's items. If the actor hits another actor and this
 -- collision results in all item being dropped, all items are destroyed.
