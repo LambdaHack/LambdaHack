@@ -318,6 +318,7 @@ moveItemUI verbose iid k aid c1 c2 = do
           Just l -> msgAdd $ makePhrase
                       [ "\n"
                       , slotLabel $ Left l
+                      , "-"
                       , partItemWs n c2 (itemToF iid n)
                       , "\n" ]
           Nothing -> return ()

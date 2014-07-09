@@ -1,7 +1,7 @@
 -- | Descripitons of items.
 module Game.LambdaHack.Common.ItemDescription
   ( partItemN, partItem, partItemWs, partItemAW, partItemWownW
-  , itemDesc, textAllAE
+  , itemDesc, textAllAE, viewItem
   ) where
 
 import Data.List
@@ -10,6 +10,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
+import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.EffectDescription
 import Game.LambdaHack.Common.Flavour
@@ -86,7 +87,7 @@ partItemWownW partA cstore itemFull =
   let (name, stats) = partItem cstore itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
-itemDesc :: CStore -> ItemFull -> Text
+itemDesc :: CStore -> ItemFull -> Overlay
 itemDesc cstore itemFull =
   let (name, stats) = partItemN True 99 cstore itemFull
       nstats = makePhrase [name, stats MU.:> ":"]
@@ -94,12 +95,24 @@ itemDesc cstore itemFull =
         Nothing -> "This item is as unremarkable as can be."
         Just ItemDisco{itemKind} -> idesc itemKind
       weight = jweight (itemBase itemFull)
-      (scaledWeight, unitWeight) = if weight > 1000
-                                   then (fromIntegral weight / 1000, "kg")
-                                   else (fromIntegral weight :: Double, "g")
+      (scaledWeight, unitWeight) =
+        if weight > 1000
+        then (tshow $ fromIntegral weight / (1000 :: Double), "kg")
+        else (tshow weight, "g")
       ln = abs $ fromEnum $ jlid (itemBase itemFull)
-  in T.singleton (jsymbol (itemBase itemFull))  -- TODO: color
-     <+> nstats
-     <+> desc
-     <+> makeSentence ["Weighs", MU.Text $ tshow scaledWeight, unitWeight]
-     <+> makeSentence ["Found on level", MU.Text $ tshow ln]
+      colorSymbol = uncurry (flip Color.AttrChar) (viewItem $ itemBase itemFull)
+      f c = Color.AttrChar Color.defAttr c
+      lxsize = fst normalLevelBound + 1  -- TODO
+      blurb =
+        "D"  -- dummy
+        <+> nstats
+        <+> desc
+        <+> makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
+        <+> makeSentence ["Found on level", MU.Text $ tshow ln]
+      splitBlurb = splitText lxsize blurb
+      attrBlurb = map (map f . T.unpack) splitBlurb
+  in encodeOverlay $ (colorSymbol : tail (head attrBlurb)) : tail attrBlurb
+
+viewItem :: Item -> (Char, Color.Attr)
+viewItem item = ( jsymbol item
+                , Color.defAttr {Color.fg = flavourToColor $ jflavour item} )

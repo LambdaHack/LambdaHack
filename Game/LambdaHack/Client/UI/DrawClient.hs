@@ -25,8 +25,8 @@ import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -117,9 +117,6 @@ draw sfBlank dm drawnLevelId cursorPos tgtPos bfsmpathRaw
               | smarkSuspect && Tile.isSuspect cotile tile = Color.BrCyan
               | vis = tcolor tk
               | otherwise = tcolor2 tk
-            viewItem i =
-              ( jsymbol i
-              , Color.defAttr {Color.fg = flavourToColor $ jflavour i} )
             fgOnPathOrLine = case (vis, Tile.isWalkable cotile tile) of
               _ | tile == unknownId -> Color.BrBlack
               _ | Tile.isSuspect cotile tile -> Color.BrCyan

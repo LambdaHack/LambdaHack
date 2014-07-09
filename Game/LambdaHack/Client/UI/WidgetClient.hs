@@ -137,7 +137,7 @@ animate arena anim = do
   tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
   cursorDesc <- targetDescCursor
   let over = renderReport sreport
-      topLineOnly = truncateToOverlay lxsize over
+      topLineOnly = truncateToOverlay over
   basicFrame <-
     draw False ColorFull arena cursorPos tgtPos
          bfsmpath cursorDesc tgtDesc topLineOnly

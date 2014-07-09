@@ -124,7 +124,7 @@ describeItemC c = do
   ggi <- getStoreItem shaBlurb stdBlurb verb c
   case ggi of
     Right ((iid, _), _) ->
-      promptToSlideshow $ itemDesc (storeFromC c) (itemToF iid 1)
+      overlayToSlideshow "" $ itemDesc (storeFromC c) (itemToF iid 1)
     Left slides -> return slides
 
 -- * AllOwned

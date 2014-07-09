@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Msg
   , addReport, renderHistory, takeHistory, lastReportOfHistory
   , Overlay(overlay), emptyOverlay, truncateToOverlay, toOverlay
   , Slideshow(slideshow), splitOverlay, toSlideshow
-  , encodeLine, encodeOverlay, ScreenLine, toScreenLine
+  , encodeLine, encodeOverlay, ScreenLine, toScreenLine, splitText
   )
   where
 
@@ -213,8 +213,8 @@ newtype Overlay = Overlay {overlay :: [ScreenLine]}
 emptyOverlay :: Overlay
 emptyOverlay = Overlay []
 
-truncateToOverlay :: X -> Text -> Overlay
-truncateToOverlay lxsize msg = toOverlay [truncateMsg lxsize msg]
+truncateToOverlay :: Text -> Overlay
+truncateToOverlay msg = toOverlay [msg]
 
 toOverlay :: [Text] -> Overlay
 toOverlay = let lxsize = fst normalLevelBound + 1  -- TODO
