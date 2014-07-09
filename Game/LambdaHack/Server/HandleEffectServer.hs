@@ -73,7 +73,7 @@ itemEffectAndDestroy source target iid itemFull cstore = do
   unless (durable && periodic) $ do
     when (not durable) $
       execUpdAtomic $ UpdLoseItem iid item 1 c
-    triggered <- itemEffect source target iid itemFull False
+    triggered <- itemEffect source target iid itemFull False False
     -- If none of item's effects was performed, we try to recreate the item.
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
@@ -85,14 +85,14 @@ itemEffectAndDestroy source target iid itemFull cstore = do
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
 itemEffect :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> ItemId -> ItemFull -> Bool
+           => ActorId -> ActorId -> ItemId -> ItemFull -> Bool -> Bool
            -> m Bool
-itemEffect source target iid itemFull onSmash = do
+itemEffect source target iid itemFull onSmash periodic = do
   case itemDisco itemFull of
     Just ItemDisco{itemKindId, itemAE=Just ItemAspectEffect{jeffects}} -> do
       let effs | onSmash = strengthOnSmash itemFull
                | otherwise = jeffects
-      triggered <- effectsSem effs source target
+      triggered <- effectsSem effs source target periodic
       -- The effect fires up, so the item gets identified, if seen
       -- (the item was at the source actor's position, so his old position
       -- is given, since the actor and/or the item may be moved by the effect;
@@ -107,14 +107,16 @@ itemEffect source target iid itemFull onSmash = do
     _ -> assert `failure` (source, target, iid, itemFull)
 
 effectsSem :: (MonadAtomic m, MonadServer m)
-           => [Effect.Effect Int] -> ActorId -> ActorId
+           => [Effect.Effect Int] -> ActorId -> ActorId -> Bool
            -> m Bool
-effectsSem effects source target = do
+effectsSem effects source target periodic = do
   trs <- mapM (\ef -> effectSem ef source target) effects
   let triggered = or trs
   sb <- getsState $ getActorBody source
   -- Announce no effect, which is rare and wastes time, so noteworthy.
-  unless (triggered       -- some effect triggered, if any present
+  unless (triggered  -- some effect triggered, so feedback comes from them
+          || null effects  -- no effects present, no feedback needed
+          || periodic  -- don't spam from fizzled periodic effects
           || bproj sb) $  -- don't spam, projectiles can be very numerous
     execSfxAtomic $ SfxEffect (bfid sb) target $ Effect.NoEffect ""
   return triggered
@@ -562,7 +564,7 @@ dropEqpItem aid b hit iid k = do
   if isDestroyed then do
     -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
     execUpdAtomic $ UpdLoseItem iid item k container
-    void $ itemEffect aid aid iid itemFull True
+    void $ itemEffect aid aid iid itemFull True False
   else do
     mvCmd <- generalMoveItem iid k (CActor aid CEqp)
                                    (CActor aid CGround)
