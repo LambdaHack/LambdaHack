@@ -73,8 +73,8 @@ effectToSuff effect f =
         _ -> assert `failure` effect
     PolyItem _cstore -> "of repurpose"  -- <+> ppCStore cstore
     Identify _cstore -> "of identify"  -- <+> ppCStore cstore
-    ActivateEqp ' ' -> "of equipment burst"
-    ActivateEqp symbol -> "of burst '" <> T.singleton symbol <> "'"
+    ActivateInv ' ' -> "of inventory burst"
+    ActivateInv symbol -> "of burst '" <> T.singleton symbol <> "'"
     Explode _ -> "of explosion"
     OneOf l ->
       let subject = if length l <= 5 then "marvel" else "wonder"

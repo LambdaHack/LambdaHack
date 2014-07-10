@@ -587,7 +587,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         Effect.Teleport{} -> actorVerbMU aid b "blink"
         Effect.PolyItem{} -> skip
         Effect.Identify{} -> skip
-        Effect.ActivateEqp{} -> skip
+        Effect.ActivateInv{} -> skip
         Effect.Explode{} -> skip  -- lots of visual feedback
         Effect.OneOf{} -> skip
         Effect.OnSmash{} -> assert `failure` sfx

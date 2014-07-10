@@ -44,7 +44,7 @@ data Effect a =
   | PullActor !ThrowMod
   | DropBestWeapon
   | DropEqp !Char !Bool   -- ^ symbol @' '@ means all, @True@ means hit on drop
-  | ActivateEqp !Char     -- ^ symbol @' '@ means all
+  | ActivateInv !Char     -- ^ symbol @' '@ means all
   | ApplyPerfume
   | OneOf ![Effect a]
   | OnSmash !(Effect a)   -- ^ trigger if item smashed (not applied nor meleed)
@@ -163,7 +163,7 @@ effectTrav (Teleport a) f = do
   return $! Teleport b
 effectTrav (PolyItem cstore) _ = return $! PolyItem cstore
 effectTrav (Identify cstore) _ = return $! Identify cstore
-effectTrav (ActivateEqp symbol) _ = return $! ActivateEqp symbol
+effectTrav (ActivateInv symbol) _ = return $! ActivateInv symbol
 effectTrav (OneOf la) f = do
   lb <- mapM (\a -> effectTrav a f) la
   return $! OneOf lb

@@ -160,7 +160,7 @@ effectSem effect source target = do
     Effect.Teleport p -> effectTeleport execSfx p target
     Effect.PolyItem p -> effectPolyItem p target
     Effect.Identify p -> effectIdentify p target
-    Effect.ActivateEqp symbol -> effectActivateEqp execSfx target symbol
+    Effect.ActivateInv symbol -> effectActivateInv execSfx target symbol
     Effect.Explode t -> effectExplode execSfx t target
     Effect.OneOf l -> effectOneOf l source target
     Effect.OnSmash _ -> return False  -- ignored under normal circumstances
@@ -579,20 +579,21 @@ effectDropEqp :: (MonadAtomic m, MonadServer m)
               => m () -> Bool -> ActorId -> Char -> m Bool
 effectDropEqp execSfx hit target symbol = do
   b <- getsState $ getActorBody target
-  effectTransformEqp execSfx target symbol $
+  effectTransformEqp execSfx target symbol CEqp $
     dropEqpItem target b hit
 
 effectTransformEqp :: forall m. (MonadAtomic m, MonadServer m)
-                   => m () -> ActorId -> Char
+                   => m () -> ActorId -> Char -> CStore
                    -> (ItemId -> Int -> m ())
                    -> m Bool
-effectTransformEqp execSfx target symbol m = do
-  b <- getsState $ getActorBody target
+effectTransformEqp execSfx target symbol cstore m = do
   let hasSymbol (iid, _) = do
         item <- getsState $ getItemBody iid
         return $! jsymbol item == symbol
-      eqp = EM.assocs $ beqp b
-  is <- if symbol == ' ' then return eqp else filterM hasSymbol eqp
+  assocsCStore <- getsState $ EM.assocs . getActorBag target cstore
+  is <- if symbol == ' '
+        then return assocsCStore
+        else filterM hasSymbol assocsCStore
   if null is
     then return False
     else do
@@ -740,17 +741,17 @@ effectIdentify cstore target = do
         return True
       _ -> assert `failure` (cstore, target, iid, itemFull)
 
--- ** ActivateEqp
+-- ** ActivateInv
 
 -- | Activate all activable items with the given symbol
 -- in the target actor's equipment (there's no variant that activates
 -- a random one, to avoid the incentive for carrying garbage).
 -- Only one item of each stack is activated (and possibly consumed).
-effectActivateEqp :: (MonadAtomic m, MonadServer m)
+effectActivateInv :: (MonadAtomic m, MonadServer m)
                   => m () -> ActorId -> Char -> m Bool
-effectActivateEqp execSfx target symbol = do
-  effectTransformEqp execSfx target symbol $ \iid _ ->
-    applyItem target iid CEqp
+effectActivateInv execSfx target symbol = do
+  effectTransformEqp execSfx target symbol CInv $ \iid _ ->
+    applyItem target iid CInv
 
 -- ** Explode
 

@@ -61,8 +61,8 @@ effectToBenefit cops b activeItems fact eff =
     Effect.Teleport p -> -5 * p  -- but useful on self sometimes
     Effect.PolyItem _ -> 0  -- AI would loop
     Effect.Identify _ -> 0  -- AI would loop
-    Effect.ActivateEqp ' ' -> -100
-    Effect.ActivateEqp _ -> -50
+    Effect.ActivateInv ' ' -> -100
+    Effect.ActivateInv _ -> -50
     Effect.Explode _ -> -10
     Effect.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
     Effect.OnSmash _ -> -10
