@@ -138,35 +138,34 @@ condNoEqpWeaponM aid = do
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
   actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
-  benList <- benAvailableItems aid permittedRanged
+  benList <- benAvailableItems aid permittedRanged [CEqp, CInv, CGround]
   let missiles = filter (maybe True ((< 0) . snd . snd) . fst . fst) benList
   return $ not actorBlind && not (null missiles)
     -- keep it lazy
 
--- | Produce the benefit-sorted list of items with a given property
--- available to the actor.
+-- | Produce the list of items with a given property available to the actor
+-- and the items' values.
 benAvailableItems :: MonadClient m
-                  => ActorId -> (ItemFull -> Bool)
-                  -> m [((Maybe (Int, (Int, Int)), CStore), (ItemId, ItemFull))]
-benAvailableItems aid permitted = do
+                  => ActorId -> (ItemFull -> Maybe Int -> Bool) -> [CStore]
+                  -> m [( (Maybe (Int, (Int, Int)), (Int, CStore))
+                        , (ItemId, ItemFull) )]
+benAvailableItems aid permitted cstores = do
   cops <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let ben cstore bag =
-        [ ((benefit, cstore), (iid, itemFull))
+        [ ((benefit, (k, cstore)), (iid, itemFull))
         | (iid, k) <- EM.assocs bag
         , let itemFull = itemToF iid k
         , let benefit = totalUsefulness cops b activeItems fact itemFull
-        , fmap fst benefit /= Just 0
-        , permitted itemFull ]
-  groundBag <- getsState $ getActorBag aid CGround
-  eqpBag <- getsState $ getActorBag aid CEqp
-  invBag <- getsState $ getActorBag aid CInv
-  return $ ben CGround groundBag
-         ++ ben CEqp eqpBag
-         ++ ben CInv invBag
+        , permitted itemFull (fst <$> benefit)]
+      benCStore cs = do
+        bag <- getsState $ getActorBag aid cs
+        return $! ben cs bag
+  perBag <- mapM benCStore cstores
+  return $ concat perBag
     -- keep it lazy
 
 -- | Require the actor is not calm enough.
@@ -182,32 +181,19 @@ condDesirableFloorItemM aid = do
   benItemL <- benGroundItems aid
   return $ not $ null benItemL  -- keep it lazy
 
--- TODO: merge with benAvailableItems.
--- | Produce the benefit-sorted list of items on the ground beneath the actor.
-benGroundItems :: MonadClient m => ActorId -> m [((Int, Int), (ItemId, Item))]
+-- | Produce the list of items on the ground beneath the actor.
+benGroundItems :: MonadClient m
+               => ActorId
+               -> m [( (Maybe (Int, (Int, Int))
+                     , (Int, CStore)), (ItemId, ItemFull) )]
 benGroundItems aid = do
-  cops <- getsState scops
-  itemToF <- itemToFullClient
-  body <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
-  fact <- getsState $ (EM.! bfid body) . sfactionD
-  itemD <- getsState sitemD
-  floorItems <- getsState $ getActorBag aid CGround
-  fightsSpawners <- fightsAgainstSpawners (bfid body)
-  let desirableItem item use
+  b <- getsState $ getActorBody aid
+  fightsSpawners <- fightsAgainstSpawners (bfid b)
+  let desirableItem ItemFull{itemBase} use
         | fightsSpawners = use /= Just 0
-                           || Effect.Precious `elem` jfeature item
+                           || Effect.Precious `elem` jfeature itemBase
         | otherwise = use /= Just 0
-      mapDesirable (iid, k) =
-        let item = itemD EM.! iid
-            use = fmap fst
-                  $ totalUsefulness cops body activeItems fact (itemToF iid k)
-            value = fromMaybe 5 use  -- experimenting fun
-        in if desirableItem item use
-           then Just ((value, k), (iid, item))
-           else Nothing
-  return $ reverse $ sort $ mapMaybe mapDesirable $ EM.assocs floorItems
-    -- keep it lazy
+  benAvailableItems aid desirableItem [CGround]
 
 -- | Require the actor is in a bad position to melee.
 -- We do not check if the actor has a weapon, because having

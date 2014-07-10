@@ -249,8 +249,8 @@ unknownPrecious itemFull =
     Just ItemDisco{itemAE=Just _} -> False
     _ -> Precious `elem` jfeature (itemBase itemFull)
 
-permittedRanged :: ItemFull -> Bool
-permittedRanged itemFull =
+permittedRanged :: ItemFull -> Maybe Int -> Bool
+permittedRanged itemFull _ =
   let hasEffects = case itemDisco itemFull of
         Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects=[]}} -> False
         Just ItemDisco{itemAE=Nothing, itemKind=ItemKind{ieffects=[]}} -> False

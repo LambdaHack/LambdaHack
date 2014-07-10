@@ -209,15 +209,22 @@ pickup :: MonadClient m
        => ActorId -> Bool -> m (Strategy (RequestTimed AbMoveItem))
 pickup aid onlyWeapon = do
   benItemL <- benGroundItems aid
-  let isWeapon (_, (_, item)) = maybe False ((== Effect.EqpSlotWeapon) . fst)
-                                $ strengthEqpSlot item
+  let isWeapon (_, (_, itemFull)) =
+        maybe False ((== Effect.EqpSlotWeapon) . fst)
+        $ strengthEqpSlot $ itemBase itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
-  case filterWeapon benItemL of
-    ((_, k), (iid, item)) : _ -> do  -- pick up the best desirable item, if any
+      cmp ((Nothing, _), _) = 5  -- experimenting is fun
+      cmp ((Just (n, _), _), _) = abs n
+  -- Pick up the best desirable item, if any.
+  case reverse $ sortBy (comparing cmp) $ filterWeapon benItemL of
+    ((_, (k, _)), (iid, itemFull)) : _ -> do
       updateItemSlot (Just aid) iid
       b <- getsState $ getActorBody aid
-      let toCStore = if goesIntoInv item || eqpOverfull b k then CInv else CEqp
+      let toCStore = if goesIntoInv (itemBase itemFull)
+                        || eqpOverfull b k
+                     then CInv
+                     else CEqp
       return $! returN "pickup" $ ReqMoveItem iid k CGround toCStore
     [] -> return reject
 
@@ -522,13 +529,13 @@ ranged aid = do
         Just newEps | not actorBlind -> do  -- ProjectBlind
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
-          benList <- benAvailableItems aid permittedRanged
+          benList <- benAvailableItems aid permittedRanged [CEqp, CInv, CGround]
           let coeff CGround = 2
               coeff COrgan = 3  -- can't give to others
               coeff CEqp = 1
               coeff CInv = 1
               coeff CSha = undefined  -- banned
-              fRanged ((mben, cstore), (iid, ItemFull{itemBase})) =
+              fRanged ((mben, (_, cstore)), (iid, ItemFull{itemBase})) =
                 let trange = totalRange itemBase
                     bestRange = chessDist bpos fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
@@ -557,12 +564,12 @@ applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
   actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
-  let permitted itemFull@ItemFull{itemBase=item} =
+  let permitted itemFull@ItemFull{itemBase=item} _ =
         not (unknownPrecious itemFull)
         && if jsymbol item == '?' && actorBlind
            then False
            else Effect.Applicable `elem` jfeature item
-  benList <- benAvailableItems aid permitted
+  benList <- benAvailableItems aid permitted [CEqp, CInv, CGround]
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
           let getP (Effect.RefillHP p) _ | p > 0 = True
@@ -577,7 +584,7 @@ applyItem aid applyGroup = do
       coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = undefined  -- banned
-      fTool ((mben, cstore), (iid, itemFull)) =
+      fTool ((mben, (_, cstore)), (iid, itemFull)) =
         let durableBonus = if Effect.Durable `elem` jfeature (itemBase itemFull)
                            then 5  -- we keep it after use
                            else 1
