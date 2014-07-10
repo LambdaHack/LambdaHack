@@ -464,7 +464,6 @@ verifyTrigger leader feat = case feat of
       if not go then failWith "Game resumed."
       else do
         (_, total) <- getsState $ calculateTotal b
-        -- TODO: check the sum of loot in the whole dungeon before complaining.
         if total == 0 then do
           -- The player can back off at each of these steps.
           go1 <- displayMore ColorBW

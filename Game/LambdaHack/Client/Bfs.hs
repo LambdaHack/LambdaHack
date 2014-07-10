@@ -37,7 +37,6 @@ minKnownBfs = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
 apartBfs :: BfsDistance
 apartBfs = pred minKnownBfs
 
--- TODO: Move somewhere; in particular, only clients need to know that.
 -- | Fill out the given BFS array.
 fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
         -> (Point -> Point -> Bool)       -- ^ is a move from unknown legal

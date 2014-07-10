@@ -263,10 +263,6 @@ equipItems aid = do
          else return reject
     else return bEqpInv
 
--- TODO: if eqpOverfull, yield the least beneficial item of all eqp items
--- so that we always have 1 eqp slot free (simple and stateless,
--- though usually unoptimal, unless suddenly a superb item is found
--- and using it one turn earlier is a breakthrough).
 unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 unEquipItems aid = do

@@ -205,8 +205,8 @@ alligator = ItemKind
   , irarity  = [(10, 8)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 50, AddMaxCalm 60, AddSpeed 17
-               -- TODO: add innate armor, when it's not a drawback
+  , iaspects = [ AddMaxHP 30, AddMaxCalm 60, AddSpeed 17
+               , AddArmorMelee 30, AddArmorRanged 30
                , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -230,7 +230,7 @@ thornbush = ItemKind
                , AddSkills
                  $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1, -1..])
                    `addSkills` EM.fromList (zip [AbWait, AbMelee] [1, 1..])
-               , AddArmorMelee 50 ]
+               , AddArmorMelee 50, AddArmorRanged 50 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""

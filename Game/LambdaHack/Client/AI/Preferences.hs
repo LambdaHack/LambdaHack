@@ -18,7 +18,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ItemKind
 
--- TODO: also take other ItemFeatures into account, e.g., splash damage.
 -- | How much AI benefits from applying the effect. Multipllied by item p.
 -- Negative means harm to the enemy when thrown at him. Effects with zero
 -- benefit won't ever be used, neither actively nor passively.
