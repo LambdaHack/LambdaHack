@@ -202,7 +202,7 @@ closestSuspect aid = do
       -- here finally mark it explored, to enable transition to other levels.
       -- We should generally avoid such levels, because digging and/or trying
       -- to find other stairs leading to disconnected areas is not KISS
-      -- so we don't do this, so AI is at a disadvantage.
+      -- so we don't do this in AI, so AI is at a disadvantage.
       modifyClient $ \cli ->
         cli {sexplored = ES.insert (blid body) (sexplored cli)}
       return []

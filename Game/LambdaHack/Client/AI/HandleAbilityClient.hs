@@ -715,7 +715,9 @@ moveTowards aid source target goal relaxed = do
       accessibleHere = accessible cops lvl source
       bumpableHere p =
         let t = lvl `at` p
-        in Tile.isOpenable cotile t || Tile.isSuspect cotile t
+        in Tile.isOpenable cotile t
+           || Tile.isSuspect cotile t
+           || Tile.isChangeable cotile t
       enterableHere p = accessibleHere p || bumpableHere p
   if noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ target `vectorToFrom` source

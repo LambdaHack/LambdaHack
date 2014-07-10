@@ -149,6 +149,7 @@ isPassableKind :: TileKind -> Bool
 isPassableKind tk =
   let getTo F.Walkable = True
       getTo F.OpenTo{} = True
+      getTo F.ChangeTo{} = True  -- can change to passable and may have loot
       getTo F.Suspect = True
       getTo _ = False
   in any getTo $ tfeature tk

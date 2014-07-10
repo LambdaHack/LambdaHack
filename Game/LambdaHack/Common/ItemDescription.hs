@@ -36,7 +36,7 @@ partItemN fullInfo n cstore itemFull =
 
 -- | The part of speech describing the item.
 partItem :: CStore -> ItemFull -> (MU.Part, MU.Part)
-partItem = partItemN False 3
+partItem = partItemN False 4
 
 textAllAE :: Bool -> CStore -> ItemFull -> [Text]
 textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
