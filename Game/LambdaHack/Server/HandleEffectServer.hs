@@ -627,9 +627,8 @@ effectSendFlying execSfx Effect.ThrowMod{..} source target modePush = do
       if not $ Tile.isWalkable cotile t
         then return False  -- supported by a wall
         else do
-          let -- TODO: add weight field to actor, unless we just
-              -- sum weigths of all organs
-              weight = 70000  -- 70 kg
+          weightAssocs <- fullAssocsServer target [CInv, CEqp, COrgan]
+          let weight = sum $ map (jweight . itemBase . snd) weightAssocs
               path = bpos tb : pos : rest
               (trajectory, (speed, _)) =
                 computeTrajectory weight throwVelocity throwLinger path
