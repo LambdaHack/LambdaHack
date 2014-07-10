@@ -4,8 +4,7 @@
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
   , resetsFovCmdAtomic, breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
-  , seenAtomicCli, seenAtomicSer, lidOfPosAtomic
-  , generalMoveItem
+  , seenAtomicCli, seenAtomicSer, generalMoveItem
   ) where
 
 import Control.Applicative
@@ -308,13 +307,6 @@ seenAtomicSer posAtomic =
     PosFid _ -> False
     PosNone -> False
     _ -> True
-
-lidOfPosAtomic :: PosAtomic -> Maybe LevelId
-lidOfPosAtomic pos = case pos of
-  PosSight lid _ -> Just lid
-  PosFidAndSight _ lid _ -> Just lid
-  PosSmell lid _ -> Just lid
-  _ -> Nothing
 
 generalMoveItem :: MonadStateRead m
                 => ItemId -> Int -> Container -> Container

@@ -129,21 +129,3 @@ _olorToRGB BrWhite   = "#FFFFFF"
 instance Binary Color where
   put = putWord8 . toEnum . fromEnum
   get = fmap (toEnum . fromEnum) getWord8
-
-instance Binary Attr where
-  put Attr{..} = do
-    put fg
-    put bg
-  get = do
-    fg <- get
-    bg <- get
-    return $! Attr{..}
-
-instance Binary AttrChar where
-  put AttrChar{..} = do
-    put acAttr
-    put acChar
-  get = do
-    acAttr <- get
-    acChar <- get
-    return $! AttrChar{..}

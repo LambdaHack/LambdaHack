@@ -83,13 +83,15 @@ and the server. Some options in the config file may turn out useful too,
 though they mostly overlap with commandline options (and will be totally
 merged at some point).
 
-You can use HPC with the game as follows
+You can use HPC with the game as follows (a quick manual playing session
+after the automated tests would be in order, too, since our tests don't
+touch the topmost UI layer).
 
     cabal clean
     cabal install --enable-library-coverage
     make test
-    hpc report --hpcdir=dist/hpc/mix/LambdaHack-0.2.10.6/ LambdaHack
-    hpc markup --hpcdir=dist/hpc/mix/LambdaHack-0.2.10.6/ LambdaHack
+    hpc report --hpcdir=dist/hpc/mix/LambdaHack-0.2.14/ LambdaHack
+    hpc markup --hpcdir=dist/hpc/mix/LambdaHack-0.2.14/ LambdaHack
 
 The debug option `--stopAfter` is required for any screensaver mode
 game invocations that gather HPC info, because HPC needs a clean exit

@@ -87,7 +87,7 @@ handleUpdAtomic cmd = case cmd of
   UpdCoverSeed{} -> return ()
   UpdPerception _ outPer inPer ->
     assert (not (nullPer outPer && nullPer inPer)) skip
-  UpdRestart fid sdisco sfper s _ _ -> updRestart fid sdisco sfper s
+  UpdRestart _ _ _ s _ _ -> updRestart s
   UpdRestartServer s -> updRestartServer s
   UpdResume{} -> return ()
   UpdResumeServer s -> updResumeServer s
@@ -435,8 +435,8 @@ ageLevel delta lid =
   updateLevel lid $ \lvl -> lvl {ltime = timeShift (ltime lvl) delta}
 
 updRestart :: MonadStateWrite m
-           => FactionId -> Discovery -> FactionPers -> State -> m ()
-updRestart _ _ _ = putState
+           => State -> m ()
+updRestart = putState
 
 updRestartServer :: MonadStateWrite m => State -> m ()
 updRestartServer = putState
