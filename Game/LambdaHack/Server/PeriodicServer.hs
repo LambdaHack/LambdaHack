@@ -164,16 +164,17 @@ dominateFid :: (MonadAtomic m, MonadServer m)
             => FactionId -> ActorId -> m ()
 dominateFid fid target = do
   Kind.COps{cotile} <- getsState scops
-  tb <- getsState $ getActorBody target
+  tb0 <- getsState $ getActorBody target
   -- Only record the initial domination as a kill.
   disco <- getsServer sdisco
-  trunk <- getsState $ getItemBody $ btrunk tb
+  trunk <- getsState $ getItemBody $ btrunk tb0
   let ikind = disco EM.! jkindIx trunk
-  when (boldfid tb == bfid tb) $ execUpdAtomic $ UpdRecordKill target ikind 1
-  electLeader (bfid tb) (blid tb) target
-  fact <- getsState $ (EM.! bfid tb) . sfactionD
+  when (boldfid tb0 == bfid tb0) $ execUpdAtomic $ UpdRecordKill target ikind 1
+  electLeader (bfid tb0) (blid tb0) target
+  fact <- getsState $ (EM.! bfid tb0) . sfactionD
   -- Prevent the faction's stash from being lost in case they are not spawners.
   when (isNothing $ gleader fact) $ moveStores target CSha CInv
+  tb <- getsState $ getActorBody target
   deduceKilled tb
   ais <- getsState $ getCarriedAssocs tb
   calmMax <- sumOrganEqpServer Effect.EqpSlotAddMaxCalm target
