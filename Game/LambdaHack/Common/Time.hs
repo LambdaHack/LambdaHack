@@ -168,8 +168,10 @@ speedFromWeight weight velocityPercent =
       vp = fromIntegral velocityPercent
       mpMs | w <= 500 = sInMs * 16
            | w > 500 && w <= 2000 = sInMs * 16 * 1500 `div` (w + 1000)
-           | w < 8000 = sInMs * (10000 - w) `div` 1000
-           | otherwise = sInMs * 2  -- one step per turn is the minimum
+           | w < 16000 = sInMs * (18000 - w) `div` 1000
+           | w < 200000 = sInMs  -- half a step per turn is the minimum
+           | otherwise = 0  -- unless _very_ heavy
+               -- TODO: such high weight should also affect moving
       v = mpMs * vp `div` 100
       -- We round down to the nearest multiple of 2M (unless the speed
       -- is very low), to ensure both turns of flight cover the same distance
@@ -177,7 +179,8 @@ speedFromWeight weight velocityPercent =
       multiple2M = sInMs * if v > 2 * sInMs
                            then 2 * (v `div` (2 * sInMs))
                            else v `div` sInMs
-  in Speed $ max 1 multiple2M
+      minimumSpeed = if mpMs == 0 then 0 else sInMs
+  in Speed $ max minimumSpeed multiple2M
 
 -- | Calculate maximum range in meters of a projectile from its speed.
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Item-statistics>.
