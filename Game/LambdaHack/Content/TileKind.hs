@@ -4,9 +4,10 @@ module Game.LambdaHack.Content.TileKind
   ) where
 
 import Control.Exception.Assert.Sugar
+import Data.Hashable (hash)
+import qualified Data.IntSet as IS
 import qualified Data.Map.Strict as M
 import Data.Maybe
-import qualified Data.Set as S
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Color
@@ -38,19 +39,20 @@ data TileKind = TileKind
 -- differ wrt dungeon generation, AI preferences, etc.
 validateTileKind :: [TileKind] -> [TileKind]
 validateTileKind lt =
-  let listFov f = map (\kt -> ( ( tsymbol kt
+  let listVis f = map (\kt -> ( ( tsymbol kt
                                   , F.Suspect `elem` tfeature kt
                                   , f kt
                                   )
                                 , [kt] )) lt
-      mapFov :: (TileKind -> Color) -> M.Map (Char, Bool, Color) [TileKind]
-      mapFov f = M.fromListWith (++) $ listFov f
+      mapVis :: (TileKind -> Color) -> M.Map (Char, Bool, Color) [TileKind]
+      mapVis f = M.fromListWith (++) $ listVis f
       namesUnequal [] = assert `failure` "no TileKind content" `twith` lt
       namesUnequal (hd : tl) =
         -- Catch if at least one is different.
         any (/= tname hd) (map tname tl)
+        -- TODO: calculate actionFeatures only once for each tile kind
         || any (/= actionFeatures True hd) (map (actionFeatures True) tl)
-      confusions f = filter namesUnequal $ M.elems $ mapFov f
+      confusions f = filter namesUnequal $ M.elems $ mapVis f
   in case confusions tcolor ++ confusions tcolor2 of
     [] -> []
     l : _ -> l
@@ -60,8 +62,9 @@ validateTileKind lt =
 -- can tell such tile apart, and only looking at the map, not tile name.
 -- So if running uses this function, it won't stop at places that the player
 -- can't himself tell from other places, and so running does not confer
--- any advantages, except UI convenience.
-actionFeatures :: Bool -> TileKind -> S.Set F.Feature
+-- any advantages, except UI convenience. Hashes are accurate enough
+-- for our purpose, given that we use arbitrary heuristics anyway.
+actionFeatures :: Bool -> TileKind -> IS.IntSet
 actionFeatures markSuspect t =
   let f feat = case feat of
         F.Cause{} -> Just feat
@@ -81,4 +84,4 @@ actionFeatures markSuspect t =
         F.OftenActor -> Nothing
         F.NoItem -> Nothing
         F.NoActor -> Nothing
-  in S.fromList $ mapMaybe f $ tfeature t
+  in IS.fromList $ map hash $ mapMaybe f $ tfeature t

@@ -27,6 +27,7 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
+import Data.Ord
 
 import Game.LambdaHack.Client.AI.Preferences
 import Game.LambdaHack.Client.CommonClient
@@ -102,7 +103,7 @@ threatDistList aid = do
         return $! not $ hpTooLow b2 activeItems
   allThreats <- filterM strongActor allAtWar
   let addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
-  return $ sort $ map addDist allThreats
+  return $ sortBy (comparing fst) $ map addDist allThreats
 
 -- | Require the actor blocks the paths of any of his party members.
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool

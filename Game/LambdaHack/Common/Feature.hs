@@ -5,6 +5,7 @@ module Game.LambdaHack.Common.Feature
   ) where
 
 import Data.Binary
+import Data.Hashable (Hashable)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
@@ -34,3 +35,5 @@ data Feature =
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance Binary Feature
+
+instance Hashable Feature

@@ -50,7 +50,7 @@ data ItemAspectEffect = ItemAspectEffect
   { jaspects :: ![Aspect Int]  -- ^ the aspects of the item
   , jeffects :: ![Effect Int]  -- ^ the effects when activated
   }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance Binary ItemAspectEffect
 
@@ -91,7 +91,7 @@ data Item = Item
   , jfeature :: ![Feature]     -- ^ public properties
   , jweight  :: !Int           -- ^ weight in grams, obvious enough
   }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance Hashable Item
 

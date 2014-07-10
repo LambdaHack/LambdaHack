@@ -68,13 +68,13 @@ data Actor = Actor
   , bproj       :: !Bool                 -- ^ is a projectile? (shorthand only,
                                          --   this can be deduced from bkind)
   }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq)
 
 data ResDelta = ResDelta
   { resCurrentTurn  :: !Int64  -- ^ resource change this player turn
   , resPreviousTurn :: !Int64  -- ^ resource change last player turn
   }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq)
 
 deltaSerious :: ResDelta -> Bool
 deltaSerious ResDelta{..} = resCurrentTurn < minusM || resPreviousTurn < minusM
