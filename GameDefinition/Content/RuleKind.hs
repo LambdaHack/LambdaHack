@@ -28,9 +28,9 @@ standard = RuleKind
   , rname          = "standard LambdaHack ruleset"
   , rfreq          = [("standard", 100)]
   -- Check whether one position is accessible from another.
-  -- Precondition: the two positions are next to each other.
-  -- Apart of checking the target tile, we forbid diagonal movement
-  -- to and from doors.
+  -- Precondition: the two positions are next to each other
+  -- and the target tile is walkable. For LambdaHack we forbid
+  -- diagonal movement to and from doors.
   , raccessible    = Nothing
   , raccessibleDoor =
       Just $ \spos tpos -> not $ isDiagonal $ spos `vectorToFrom` tpos

@@ -54,7 +54,7 @@ use Cabal flags, e.g,
 Compatibility notes
 -------------------
 
-The current code was tested with GHC 7.6.3 and 7.8.1,
+The current code was tested with GHC 7.6 and 7.8,
 but should also work with other GHC versions.
 
 If you are using the terminal frontends, numerical keypad may not work

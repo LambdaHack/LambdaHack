@@ -1,4 +1,4 @@
--- | Here the knot of engine code pieces and the LambdaHack-specific
+-- | Here the knot of engine code pieces and the game-specific
 -- content definitions is tied, resulting in an executable game.
 module TieKnot ( tieKnot ) where
 

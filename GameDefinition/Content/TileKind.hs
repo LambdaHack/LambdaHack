@@ -210,7 +210,7 @@ escapeUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause (Effect.Escape 1)]
+  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ Effect.Escape 1]
   }
 escapeDownLit = TileKind
   { tsymbol  = '>'
@@ -218,7 +218,7 @@ escapeDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause (Effect.Escape (-1))]
+  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ Effect.Escape (-1)]
   }
 unknown = TileKind
   { tsymbol  = ' '

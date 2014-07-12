@@ -49,7 +49,7 @@ data CaveKind = CaveKind
 -- Catch caves with not enough space for all the places. Check the size
 -- of the cave descriptions to make sure they fit on screen.
 validateCaveKind :: [CaveKind] -> [CaveKind]
-validateCaveKind = filter (\ CaveKind{..} ->
+validateCaveKind = filter (\CaveKind{..} ->
   let (maxGridX, maxGridY) = Dice.maxDiceXY cgrid
       (minMinSizeX, minMinSizeY) = Dice.minDiceXY cminPlaceSize
       (maxMinSizeX, maxMinSizeY) = Dice.maxDiceXY cminPlaceSize

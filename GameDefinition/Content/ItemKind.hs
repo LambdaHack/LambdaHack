@@ -389,7 +389,6 @@ potion8 = potion
                                 , Explode "fragrance"
                                 , Explode "explosion blast 10" ]) ]
   }
-
 potion9 = potion
   { irarity  = [(1, 4), (10, 6)]
   , ieffects = [ OneOf [ Dominate, DropBestWeapon, RefillHP 15, Burn 9
@@ -478,8 +477,7 @@ armorLeather = ItemKind
   , ikit     = []
   }
 armorMail = armorLeather
-  { isymbol  = '['
-  , iname    = "mail armor"
+  { iname    = "mail armor"
   , iflavour = zipPlain [Cyan]
   , irarity  = [(7, 9)]
   , iweight  = 12000

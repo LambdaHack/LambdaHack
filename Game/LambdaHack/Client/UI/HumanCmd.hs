@@ -120,7 +120,7 @@ cmdDescription cmd = case cmd of
   GameDifficultyCycle -> "cycle difficulty of the next game"
   PickLeader{} -> "pick leader"
   MemberCycle -> "cycle among party members on the level"
-  MemberBack  -> "cycle among party members in the dungeon"
+  MemberBack  -> "cycle among all party members"
   DescribeItem CGround -> "describe items on the ground"
   DescribeItem COrgan -> "describe organs"
   DescribeItem CEqp -> "describe equipment of the leader"

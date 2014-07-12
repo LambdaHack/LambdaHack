@@ -20,41 +20,41 @@ cdefs = ContentDef
 hero,        civilian, monster, animal, horror :: FactionKind
 
 hero = FactionKind
-  { fsymbol        = '1'
-  , fname          = "hero"
-  , ffreq          = [("hero", 1)]
+  { fsymbol       = '1'
+  , fname         = "hero"
+  , ffreq         = [("hero", 1)]
   , fSkillsLeader = allSkills
   , fSkillsOther  = meleeAdjacent
   }
 
 civilian = FactionKind
-  { fsymbol        = '@'
-  , fname          = "civilian"
-  , ffreq          = [("civilian", 1)]
+  { fsymbol       = '@'
+  , fname         = "civilian"
+  , ffreq         = [("civilian", 1)]
   , fSkillsLeader = allSkills
   , fSkillsOther  = allSkills  -- not coordinated by any leadership
   }
 
 monster = FactionKind
-  { fsymbol        = 'm'
-  , fname          = "monster"
-  , ffreq          = [("monster", 1), ("summon", 60)]
+  { fsymbol       = 'm'
+  , fname         = "monster"
+  , ffreq         = [("monster", 1), ("summon", 60)]
   , fSkillsLeader = allSkills
   , fSkillsOther  = allSkills
   }
 
 animal = FactionKind
-  { fsymbol        = 'd'
-  , fname          = "animal"
-  , ffreq          = [("animal", 1), ("summon", 40)]
+  { fsymbol       = 'd'
+  , fname         = "animal"
+  , ffreq         = [("animal", 1), ("summon", 40)]
   , fSkillsLeader = animalSkills
   , fSkillsOther  = animalSkills
   }
 
 horror = FactionKind
-  { fsymbol        = 'h'
-  , fname          = "horror"
-  , ffreq          = [("horror", 1), ("summon", 100)]
+  { fsymbol       = 'h'
+  , fname         = "horror"
+  , ffreq         = [("horror", 1), ("summon", 100)]
   , fSkillsLeader = allSkills
   , fSkillsOther  = allSkills
   }
