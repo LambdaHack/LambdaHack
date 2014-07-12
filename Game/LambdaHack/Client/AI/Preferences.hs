@@ -58,7 +58,9 @@ effectToBenefit cops b activeItems fact eff =
     Effect.SendFlying _ -> -10  -- but useful on self sometimes, too
     Effect.PushActor _ -> -10  -- but useful on self sometimes, too
     Effect.PullActor _ -> -10
-    Effect.Teleport p -> -5 * p  -- but useful on self sometimes
+    Effect.Teleport p | p < 5 -> 5 * p  -- blink to shoot at foe
+    Effect.Teleport p | p < 10 -> 1  -- neither escape nor repositioning
+    Effect.Teleport p -> -5 * p  -- get rid of the foe
     Effect.PolyItem _ -> 0  -- AI would loop
     Effect.Identify _ -> 0  -- AI would loop
     Effect.ActivateInv ' ' -> -100
