@@ -311,7 +311,11 @@ destroyActor aid b destroy = do
           -- Don't consider @destroy@, because even if actor dead, it makes
           -- sense to go to last known location to loot or find others.
         _ -> tgt
-      affect3 (tgt, mpath) = (affect tgt, mpath)  -- old path always good
+      affect3 (tgt, mpath) =
+        let newMPath = case mpath of
+              Just (_, (goal, _)) | goal /= bpos b -> Nothing
+              _ -> mpath  -- foe slow enough, so old path good
+        in (affect tgt, newMPath)
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
 
