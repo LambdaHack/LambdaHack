@@ -25,9 +25,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [bolas, brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch, armorLeather, armorMail]
+  [bolas, brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone]
 
-bolas,    brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, ring1, potion8, potion9, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch, armorLeather, armorMail :: ItemKind
+bolas,    brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, ring1, potion8, potion9, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, hammer, sword, halberd, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone :: ItemKind
 
 gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 
@@ -222,7 +222,7 @@ gorget = ItemKind
   , ieffects = [RefillCalm 1]
   , ifeature = [ Precious, EqpSlot EqpSlotPeriodic "", Identified
                , toVelocity 50 ]  -- not dense enough
-  , idesc    = "Highly ornamental, cold, large, steel mediallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
+  , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
   , ikit     = []
   }
 necklace = ItemKind
@@ -598,7 +598,7 @@ sword = ItemKind
   , ieffects = [Hurt (9 * d 1)]
   , ifeature = [ toVelocity 20  -- ensuring it hits with the tip costs speed
                , Durable, EqpSlot EqpSlotWeapon "", Identified ]
-  , idesc    = "Hard to master, but chops limbs when used effectively."
+  , idesc    = "Difficult to master; deadly when used effectively. The steel is particularly hard and keen, but rusts quickly without regular maintenance."
   , ikit     = []
   }
 halberd = ItemKind
@@ -660,5 +660,21 @@ jumpingPole = ItemKind
                                -- taken turn now for a free turn later
   , ifeature = [Applicable, Identified]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
+  , ikit     = []
+  }
+
+whetstone = ItemKind
+  { isymbol  = '~'
+  , iname    = "whetstone"
+  , ifreq    = [("useful", 100)]
+  , iflavour = zipPlain [Blue]
+  , icount   = 1
+  , irarity  = [(5, 5)]
+  , iverbHit = "smack"
+  , iweight  = 400
+  , iaspects = [AddHurtMelee $ d 2 + 2 * dl 5]
+  , ieffects = []
+  , ifeature = [EqpSlot EqpSlotAddHurtMelee "", Identified]
+  , idesc    = "A portable sharpening stone that lets you fix your weapons between or even during fights, without the need to set up camp, fish out tools and assemble a proper sharpening workshop."
   , ikit     = []
   }
