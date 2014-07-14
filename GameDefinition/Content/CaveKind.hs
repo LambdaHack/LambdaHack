@@ -15,9 +15,9 @@ cdefs = ContentDef
   , getFreq = cfreq
   , validate = validateCaveKind
   , content =
-      [rogue, arena, empty, noise, battle, skirmish, ambush]
+      [rogue, arena, empty, noise, battle, skirmish, ambush, safari1, safari2, safari3]
   }
-rogue,        arena, empty, noise, battle, skirmish, ambush :: CaveKind
+rogue,        arena, empty, noise, battle, skirmish, ambush, safari1, safari2, safari3 :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -36,6 +36,7 @@ rogue = CaveKind
   , cdoorChance   = 1%2
   , copenChance   = 1%10
   , chidden       = 8
+  , cactorFreq    = [(50, "monster"), (50, "animal")]
   , citemNum      = 8 * d 2
   , citemFreq     = [(70, "useful"), (30, "treasure")]
   , cplaceFreq    = [(100, "rogue")]
@@ -58,6 +59,7 @@ arena = rogue
   , cnightChance  = 0
   , cmaxVoid      = 1%3
   , chidden       = 1000
+  , cactorFreq    = [(70, "monster"), (30, "animal")]
   , citemNum      = 6 * d 2  -- few rooms
   , cpassable     = True
   , cdefTile      = "arenaSet"
@@ -76,6 +78,7 @@ empty = rogue
   , cmaxVoid      = 1%2
   , cminStairDist = 50
   , chidden       = 1000
+  , cactorFreq    = [(10, "monster"), (90, "animal")]
   , citemNum      = 4 * d 2  -- few rooms
   , cpassable     = True
   , cdefTile      = "emptySet"
@@ -92,6 +95,7 @@ noise = rogue
   , cauxConnects  = 0
   , cmaxVoid      = 0
   , chidden       = 1000
+  , cactorFreq    = [(80, "monster"), (20, "animal")]
   , citemNum      = 10 * d 2  -- an incentive to explore the labyrinth
   , cpassable     = True
   , cplaceFreq    = [(50, "noise"), (50, "rogue")]
@@ -111,6 +115,7 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , cdoorChance   = 2%10
   , copenChance   = 9%10
   , chidden       = 1000
+  , cactorFreq    = []
   , citemNum      = 12 * d 2
   , citemFreq     = [(100, "useful")]
   , cplaceFreq    = [(50, "battle"), (50, "rogue")]
@@ -131,6 +136,7 @@ skirmish = rogue  -- many random solid tiles, to break LOS, since it's a day
   , cdoorChance   = 1
   , copenChance   = 0
   , chidden       = 1000
+  , cactorFreq    = []
   , citemNum      = 12 * d 2
   , citemFreq     = [(100, "useful")]
   , cplaceFreq    = [(60, "skirmish"), (40, "rogue")]
@@ -152,6 +158,7 @@ ambush = rogue  -- lots of lights, to give a chance to snipe
   , cdoorChance   = 1%10
   , copenChance   = 9%10
   , chidden       = 1000
+  , cactorFreq    = []
   , citemNum      = 12 * d 2
   , citemFreq     = [(100, "useful")]
   , cplaceFreq    = [(100, "ambush")]
@@ -160,3 +167,6 @@ ambush = rogue  -- lots of lights, to give a chance to snipe
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
   }
+safari1 = ambush {cfreq = [("caveSafari1", 1)]}
+safari2 = battle {cfreq = [("caveSafari2", 1)]}
+safari3 = skirmish {cfreq = [("caveSafari3", 1)]}

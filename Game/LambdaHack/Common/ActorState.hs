@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.ActorState
   , getCBag, getActorBag, getBodyActorBag, getActorAssocs
   , nearbyFreePoints, whereTo, getCarriedAssocs
   , posToActors, posToActor, getItemBody, memActor, getActorBody
-  , tryFindHeroK, getLocalTime, isSpawnFaction
+  , tryFindHeroK, getLocalTime
   , itemPrice, calmEnough, hpEnough, regenCalmDelta
   , actorInAmbient, actorSkills, dispEnemy, radiusBlind
   , fullAssocs, itemToFull, goesIntoInv, eqpOverfull, storeFromC
@@ -265,10 +265,6 @@ hpEnough b activeItems =
 -- | Get current time from the dungeon data.
 getLocalTime :: LevelId -> State -> Time
 getLocalTime lid s = ltime $ sdungeon s EM.! lid
-
--- | Tell whether the faction can spawn actors.
-isSpawnFaction :: FactionId -> State -> Bool
-isSpawnFaction fid s = isSpawnFact $ sfactionD s EM.! fid
 
 regenCalmDelta :: Actor -> [ItemFull] -> State -> Int64
 regenCalmDelta b activeItems s =

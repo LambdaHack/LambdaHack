@@ -119,16 +119,16 @@ playersSkirmish = playersDuel
 playersBattle = Players
   { playersList = [ playerHero {playerInitial = 5}
                   , playerMonster { playerInitial = 20
-                                  , playerSpawn = 0 }
+                                  , playerIsSpawn = False }
                   , playerAnimal { playerInitial = 10
-                                 , playerSpawn = 0 } ]
+                                 , playerIsSpawn = False } ]
   , playersEnemy = [ ("Adventurer Party", "Monster Hive")
                    , ("Adventurer Party", "Animal Kingdom") ]
   , playersAlly = [("Monster Hive", "Animal Kingdom")] }
 
 playersSafari = Players
   { playersList = [ playerMonster { playerName = "Monster Tourist Office"
-                                  , playerSpawn = 0
+                                  , playerIsSpawn = False
                                   , playerEntry = -8
                                   , playerInitial = 10
                                   , playerAI = False
@@ -137,12 +137,12 @@ playersSafari = Players
                                    , playerEntry = -8 }
                   , playerAnimal { playerName =
                                      "Animal Magnificent Specimen Variety"
-                                 , playerSpawn = 0
+                                 , playerIsSpawn = False
                                  , playerEntry = -9
                                  , playerInitial = 7 }
                   , playerAnimal { playerName =
                                      "Animal Exquisite Herds and Packs"
-                                 , playerSpawn = 0
+                                 , playerIsSpawn = False
                                  , playerEntry = -10
                                  , playerInitial = 20 } ]
   , playersEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
@@ -205,7 +205,8 @@ playerHero, playerAntiHero, playerCivilian, playerMonster, playerAnimal, playerH
 playerHero = Player
   { playerName = "Adventurer Party"
   , playerFaction = "hero"
-  , playerSpawn = 0
+  , playerIsSpawn = False
+  , playerIsHero = True
   , playerEntry = -1
   , playerInitial = 3
   , playerLeader = True
@@ -221,7 +222,8 @@ playerAntiHero = playerHero
 playerCivilian = Player
   { playerName = "Civilian Crowd"
   , playerFaction = "civilian"
-  , playerSpawn = 0
+  , playerIsSpawn = False
+  , playerIsHero = False
   , playerEntry = -1
   , playerInitial = 3
   , playerLeader = False  -- unorganized
@@ -232,7 +234,8 @@ playerCivilian = Player
 playerMonster = Player
   { playerName = "Monster Hive"
   , playerFaction = "monster"
-  , playerSpawn = 66
+  , playerIsSpawn = True
+  , playerIsHero = False
   , playerEntry = -3
   , playerInitial = 5
   , playerLeader = True
@@ -243,7 +246,8 @@ playerMonster = Player
 playerAnimal = Player
   { playerName = "Animal Kingdom"
   , playerFaction = "animal"
-  , playerSpawn = 33
+  , playerIsSpawn = True
+  , playerIsHero = False
   , playerEntry = -2
   , playerInitial = 3
   , playerLeader = False
@@ -254,7 +258,8 @@ playerAnimal = Player
 playerHorror = Player
   { playerName = "Horror Den"
   , playerFaction = "horror"
-  , playerSpawn = 0
+  , playerIsSpawn = True  -- doesn't spawn, but a dungeon dweller, summoned, etc
+  , playerIsHero = False
   , playerEntry = -1
   , playerInitial = 0
   , playerLeader = False
@@ -276,6 +281,6 @@ cavesAmbush = EM.fromList [(-5, ("caveAmbush", Nothing))]
 
 cavesBattle = EM.fromList [(-3, ("caveBattle", Nothing))]
 
-cavesSafari = EM.fromList [ (-8, ("caveAmbush", Nothing))
-                          , (-9, ("caveBattle", Nothing))
-                          , (-10, ("caveSkirmish", Just False)) ]
+cavesSafari = EM.fromList [ (-8, ("caveSafari1", Nothing))
+                          , (-9, ("caveSafari2", Nothing))
+                          , (-10, ("caveSafari3", Just False)) ]

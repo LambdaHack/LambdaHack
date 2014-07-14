@@ -107,16 +107,16 @@ switchLeader fid aidNew = do
 
 -- * ReqMove
 
--- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
+-- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour
+-- and then remove the efficiency hack below that only heroes leave smell
 -- | Add a smell trace for the actor to the level. For now, only heroes
 -- leave smell.
 addSmell :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 addSmell aid = do
-  cops <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   smellRadius <- sumOrganEqpServer Effect.EqpSlotAddSmell aid
-  unless (bproj b || not (isHeroFact cops fact) || smellRadius > 0) $ do
+  unless (bproj b || not (isHeroFact fact) || smellRadius > 0) $ do
     time <- getsState $ getLocalTime $ blid b
     lvl <- getLevel $ blid b
     let oldS = EM.lookup (bpos b) . lsmell $ lvl

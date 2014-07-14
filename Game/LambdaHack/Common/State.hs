@@ -63,6 +63,7 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
            , lseen = 0
            , lclear
            , ltime = timeZero
+           , lactorFreq = toFreq "client actor freq" []
            , litemNum = 0
            , litemFreq = toFreq "client item freq" []
            , lsecret

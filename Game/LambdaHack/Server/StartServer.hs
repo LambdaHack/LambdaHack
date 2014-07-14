@@ -214,7 +214,7 @@ populateDungeon = do
         let ps = take (playerInitial $ gplayer fact3) $ zip [0..] psFree
         forM_ ps $ \ (n, p) -> do
           go <-
-            if not $ isHeroFact cops fact3
+            if not $ isHeroFact fact3
             then spawnMonsters [p] lid ntime fid3
             else do
               let hNames = fromMaybe [] $ EM.lookup fid3 sheroNames

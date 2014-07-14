@@ -334,7 +334,6 @@ addActorIid :: (MonadAtomic m, MonadServer m)
             -> m (Maybe ActorId)
 addActorIid trunkId trunkFull@ItemFull{..}
             bfid pos lid tweakBody bpronoun time = do
-  cops <- getsState scops
   let trunkKind = case itemDisco of
         Just ItemDisco{itemKind} -> itemKind
         Nothing -> assert `failure` trunkFull
@@ -348,7 +347,7 @@ addActorIid trunkId trunkFull@ItemFull{..}
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   nU <- nUI
   -- If no UI factions, the difficulty applies to heroes (for testing).
-  let diffHP | playerUI gplayer || nU == 0 && isHeroFact cops fact =
+  let diffHP | playerUI gplayer || nU == 0 && isHeroFact fact =
         (ceiling :: Double -> Int64)
         $ fromIntegral hp
           * 1.5 ^^ difficultyCoeff sdifficultySer

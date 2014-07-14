@@ -66,10 +66,8 @@ data Status = Status
   deriving (Show, Eq, Ord)
 
 -- | Tell whether the faction consists of heroes.
-isHeroFact :: Kind.COps -> Faction -> Bool
-isHeroFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
-  let kind = okind (gkind fact)
-  in maybe False (> 0) $ lookup "hero" $ ffreq kind
+isHeroFact :: Faction -> Bool
+isHeroFact fact = playerIsHero (gplayer fact)
 
 -- | Tell whether the faction consists of human civilians.
 isCivilianFact :: Kind.COps -> Faction -> Bool
@@ -83,9 +81,10 @@ isHorrorFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
   let kind = okind (gkind fact)
   in maybe False (> 0) $ lookup "horror" $ ffreq kind
 
--- | Tell whether the faction can spawn actors.
+-- | Tell whether the faction is considered permanent dungeon dwellers
+-- (normally these are just spawning factions, but there are exceptions).
 isSpawnFact :: Faction -> Bool
-isSpawnFact fact = playerSpawn (gplayer fact) > 0
+isSpawnFact fact = playerIsSpawn (gplayer fact)
 
 -- | Tell whether actors of the faction can be summoned by items, etc.
 isSummonFact :: Kind.COps -> Faction -> Bool
@@ -102,11 +101,12 @@ isAllMoveFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
   in EM.findWithDefault 0 Ability.AbMove skillsLeader > 0
      && EM.findWithDefault 0 Ability.AbMove skillsOther > 0
 
--- | Tell whether a faction that is still in game, keeps arena.
--- Keeping arena means if the faction is still in game,
--- it always has to have a leader in the dungeon somewhere.
--- So, leaderless factions and spawner factions do not keep an arena.
+-- | Tell whether a faction that we know is still in game, keeps arena.
 -- Such factions win if they can escape the dungeon.
+-- Keeping arena means, if the faction is still in game,
+-- it always has a leader in the dungeon somewhere.
+-- So, leaderless factions and spawner factions do not keep an arena,
+-- even though the latter usually has a leader for most of the game.
 keepArenaFact :: Faction -> Bool
 keepArenaFact fact = playerLeader (gplayer fact) && not (isSpawnFact fact)
 

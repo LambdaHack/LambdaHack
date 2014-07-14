@@ -39,7 +39,8 @@ data Players = Players
 data Player = Player
   { playerName    :: !Text     -- ^ name of the player
   , playerFaction :: !Text     -- ^ name of faction(s) the player can control
-  , playerSpawn   :: !Int      -- ^ spawning frequency
+  , playerIsSpawn :: !Bool     -- ^ whether the player is a spawn (score, AI)
+  , playerIsHero  :: !Bool     -- ^ whether the player is a hero (score, AI, UI)
   , playerEntry   :: !Int      -- ^ level where the initial members start
   , playerInitial :: !Int      -- ^ number of initial members
   , playerLeader  :: !Bool     -- ^ leaderless factions can't be controlled
@@ -62,7 +63,8 @@ instance Binary Player where
   put Player{..} = do
     put playerName
     put playerFaction
-    put playerSpawn
+    put playerIsSpawn
+    put playerIsHero
     put playerEntry
     put playerInitial
     put playerLeader
@@ -71,7 +73,8 @@ instance Binary Player where
   get = do
     playerName <- get
     playerFaction <- get
-    playerSpawn <- get
+    playerIsSpawn <- get
+    playerIsHero <- get
     playerEntry <- get
     playerInitial <- get
     playerLeader <- get

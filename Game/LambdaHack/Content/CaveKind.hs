@@ -29,6 +29,7 @@ data CaveKind = CaveKind
   , cdoorChance     :: !Chance       -- ^ the chance of a door in an opening
   , copenChance     :: !Chance       -- ^ if there's a door, is it open?
   , chidden         :: !Int          -- ^ if not open, hidden one in n times
+  , cactorFreq      :: ![(Int, Text)]  -- ^ actor groups to consider
   , citemNum        :: !Dice.Dice    -- ^ the number of items in the cave
   , citemFreq       :: ![(Int, Text)]  -- ^ item groups to consider
   , cplaceFreq      :: ![(Int, Text)]  -- ^ place groups to consider

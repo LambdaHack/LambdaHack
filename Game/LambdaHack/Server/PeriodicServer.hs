@@ -48,11 +48,11 @@ spawnMonsters :: (MonadAtomic m, MonadServer m)
               => [Point] -> LevelId -> Time -> FactionId
               -> m Bool
 spawnMonsters ps lid time fid = assert (not $ null ps) $ do
-  cops@Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
   let spawnName = fname $ okind $ gkind fact
   laid <- forM ps $ \ p ->
-    if isHeroFact cops fact
+    if isHeroFact fact
     then addHero fid p lid [] Nothing time
     else addMonster spawnName fid p lid time
   case catMaybes laid of
@@ -66,25 +66,26 @@ spawnMonsters ps lid time fid = assert (not $ null ps) $ do
 -- | Generate a monster, possibly.
 generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 generateMonster lid = do
-  f <- getsState $ flip isSpawnFaction
+  -- We check the number of current dungeon dwellers (whether spawned or not)
+  -- to decide if more should be spawned.
+  f <- getsState $ \s fid -> isSpawnFact $ sfactionD s EM.! fid
   spawns <- getsState $ actorRegularList f lid
   totalDepth <- getsState stotalDepth
-  Level{ldepth} <- getLevel lid
+  -- We do not check @playerSpawn@ of any faction, but just take @lactorFreq@.
+  Level{ldepth, lactorFreq} <- getLevel lid
   rc <- rndToAction $ monsterGenChance ldepth totalDepth (length spawns)
-  when rc $ do
-    factionD <- getsState sfactionD
-    let actorFreq = toFreq "spawn"
-                    $ map (\(fid, fact) -> (playerSpawn $ gplayer fact, fid))
-                    $ EM.assocs factionD
-    loopGenerateMonster lid actorFreq
+  when rc $ loopGenerateMonster lid lactorFreq
 
 loopGenerateMonster :: (MonadServer m, MonadAtomic m)
-                    => LevelId -> Frequency FactionId -> m ()
+                    => LevelId -> Frequency Text -> m ()
 loopGenerateMonster lid actorFreq = do
   cops <- getsState scops
   if nullFreq actorFreq then return ()  -- no faction spawns on this level
   else do
-    fid <- rndToAction $ frequency actorFreq
+    fidName <- rndToAction $ frequency actorFreq
+    let f (_, fact) = playerFaction (gplayer fact) == fidName
+    factionD <- getsState sfactionD
+    fid <- rndToAction $ oneOf $ map fst $ filter f $ EM.assocs factionD
     pers <- getsServer sper
     lvl <- getLevel lid
     let allPers = ES.unions $ map (totalVisible . (EM.! lid))
@@ -94,7 +95,7 @@ loopGenerateMonster lid actorFreq = do
     time <- getsState $ getLocalTime lid
     go <- spawnMonsters [pos] lid time fid
     unless go $
-      let zeroedFreq = setFreq actorFreq fid 0
+      let zeroedFreq = setFreq actorFreq fidName 0
       in loopGenerateMonster lid zeroedFreq
 
 -- | Create a new monster on the level, at a given position

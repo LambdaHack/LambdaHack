@@ -197,20 +197,23 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                , map fst $ stairsUpDown ++ stairsDown )
   -- traceShow (ln, nstairUp, (stairsUp, stairsDown, stairsUpDown)) skip
   litemNum <- castDice ldepth totalDepth citemNum
-  let itemFreq = toFreq cname citemFreq
+  let actorFreq = toFreq cname cactorFreq
+      itemFreq = toFreq cname citemFreq
   assert (not $ nullFreq itemFreq) skip
   lsecret <- randomR (1, maxBound)  -- 0 means unknown
   return $! levelFromCaveKind cops kc ldepth ltile lstair
-                              litemNum itemFreq lsecret (isJust escapeFeature)
+                              actorFreq litemNum itemFreq
+                              lsecret (isJust escapeFeature)
 
 -- | Build rudimentary level from a cave kind.
 levelFromCaveKind :: Kind.COps
                   -> CaveKind -> AbsDepth -> TileMap -> ([Point], [Point])
-                  -> Int -> Frequency Text -> Int -> Bool
+                  -> Frequency Text -> Int -> Frequency Text -> Int -> Bool
                   -> Level
 levelFromCaveKind Kind.COps{cotile}
                   CaveKind{..}
-                  ldepth ltile lstair litemNum litemFreq lsecret lescape =
+                  ldepth ltile lstair lactorFreq litemNum litemFreq
+                  lsecret lescape =
   let lvl = Level
         { ldepth
         , lprio = EM.empty
@@ -224,6 +227,7 @@ levelFromCaveKind Kind.COps{cotile}
         , lseen = 0
         , lclear = 0  -- calculated below
         , ltime = timeZero
+        , lactorFreq
         , litemNum
         , litemFreq
         , lsecret
