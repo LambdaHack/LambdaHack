@@ -63,6 +63,7 @@ arena = rogue
   , citemNum      = 6 * d 2  -- few rooms
   , cpassable     = True
   , cdefTile      = "arenaSet"
+  , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
   }
 empty = rogue
@@ -82,6 +83,7 @@ empty = rogue
   , citemNum      = 4 * d 2  -- few rooms
   , cpassable     = True
   , cdefTile      = "emptySet"
+  , cdarkCorTile  = "floorArenaDark"
   , clitCorTile   = "floorArenaLit"
   }
 noise = rogue
