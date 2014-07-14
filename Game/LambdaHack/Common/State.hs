@@ -16,7 +16,6 @@ import Data.Text (Text)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -63,9 +62,9 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
            , lseen = 0
            , lclear
            , ltime = timeZero
-           , lactorFreq = toFreq "client actor freq" []
+           , lactorFreq = []
            , litemNum = 0
-           , litemFreq = toFreq "client item freq" []
+           , litemFreq = []
            , lsecret
            , lhidden
            , lescape

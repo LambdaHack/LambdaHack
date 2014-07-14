@@ -11,11 +11,9 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
-import Data.Text (Text)
 
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
-import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -197,18 +195,15 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                , map fst $ stairsUpDown ++ stairsDown )
   -- traceShow (ln, nstairUp, (stairsUp, stairsDown, stairsUpDown)) skip
   litemNum <- castDice ldepth totalDepth citemNum
-  let actorFreq = toFreq cname cactorFreq
-      itemFreq = toFreq cname citemFreq
-  assert (not $ nullFreq itemFreq) skip
   lsecret <- randomR (1, maxBound)  -- 0 means unknown
   return $! levelFromCaveKind cops kc ldepth ltile lstair
-                              actorFreq litemNum itemFreq
+                              cactorFreq litemNum citemFreq
                               lsecret (isJust escapeFeature)
 
 -- | Build rudimentary level from a cave kind.
 levelFromCaveKind :: Kind.COps
                   -> CaveKind -> AbsDepth -> TileMap -> ([Point], [Point])
-                  -> Frequency Text -> Int -> Frequency Text -> Int -> Bool
+                  -> Freqs -> Int -> Freqs -> Int -> Bool
                   -> Level
 levelFromCaveKind Kind.COps{cotile}
                   CaveKind{..}

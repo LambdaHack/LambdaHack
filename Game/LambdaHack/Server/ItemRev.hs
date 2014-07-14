@@ -69,13 +69,11 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
 
 -- | Generate an item based on level.
 newItem :: Kind.COps -> FlavourMap -> DiscoRev
-        -> Frequency Text -> LevelId -> AbsDepth -> AbsDepth
-        -> Rnd (Maybe (ItemKnown, ItemFull, ItemSeed, Int))
-newItem _ _ _ itemFreq _ _ _ | nullFreq itemFreq = return Nothing
-newItem cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
+        -> Freqs -> LevelId -> AbsDepth -> AbsDepth
+        -> Rnd (Maybe (ItemKnown, ItemFull, ItemSeed, Int, Text))
+newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         flavour discoRev itemFreq jlid
         ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) = do
-  itemGroup <- frequency itemFreq
   let findInterval x1y1 [] = (x1y1, (11, 0))
       findInterval x1y1 ((x, y) : rest) =
         if ld * 10 <= x * depth
@@ -86,17 +84,15 @@ newItem cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         let ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
         in y1 + (y2 - y1) * (ld * 10 - x1 * depth)
                 `divUp` ((x2 - x1) * depth)
-      f p ik kind acc =
+      f itemGroup q p ik kind acc =
         let rarity = linearInterpolation (irarity kind)
-        in (p * rarity, (ik, kind)) : acc
-      freqDepth = ofoldrGroup itemGroup f []
-      freq = toFreq ("newItem ('" <> itemGroup <> "',"
-                               <+> tshow ld <> ")") freqDepth
-  if nullFreq freq then
-    let zeroedFreq = setFreq itemFreq itemGroup 0
-    in newItem cops flavour discoRev zeroedFreq jlid ldepth totalDepth
+        in (q * p * rarity, ((ik, kind), itemGroup)) : acc
+      g (itemGroup, q) = ofoldrGroup itemGroup (f itemGroup q) []
+      freqDepth = concatMap g itemFreq
+      freq = toFreq ("newItem ('" <> tshow ld <> ")") freqDepth
+  if nullFreq freq then return Nothing
   else do
-    (itemKindId, itemKind) <- frequency freq
+    ((itemKindId, itemKind), itemGroup) <- frequency freq
     itemN <- castDice ldepth totalDepth (icount itemKind)
     seed <- fmap toEnum random
     let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
@@ -107,7 +103,8 @@ newItem cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
     return $ Just ( (itemBase, iae)
                   , itemFull
                   , seed
-                  , itemK )
+                  , itemK
+                  , itemGroup )
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
 newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)

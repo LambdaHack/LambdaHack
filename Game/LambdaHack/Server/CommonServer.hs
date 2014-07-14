@@ -23,7 +23,6 @@ import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
-import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
@@ -320,11 +319,11 @@ addActor groupName
          bfid pos lid tweakBody bpronoun time = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- contains the constant properties.
-  let trunkFreq = toFreq "create trunk" [(1, groupName)]
+  let trunkFreq = [(groupName, 1)]
   m2 <- rollAndRegisterItem lid trunkFreq (CTrunk bfid lid pos) False
   case m2 of
     Nothing -> return Nothing
-    Just (trunkId, trunkFull) ->
+    Just (trunkId, (trunkFull, _)) ->
       addActorIid trunkId trunkFull
                   bfid pos lid tweakBody bpronoun time
 
@@ -365,7 +364,7 @@ addActorIid trunkId trunkFull@ItemFull{..}
   -- Create, register and insert all initial actor items.
   forM_ (ikit trunkKind) $ \(ikText, cstore) -> do
     let container = CActor aid cstore
-        itemFreq = toFreq "create aitems" [(1, ikText)]
+        itemFreq = [(ikText, 1)]
     void $ rollAndRegisterItem lid itemFreq container False
   return $ Just aid
 

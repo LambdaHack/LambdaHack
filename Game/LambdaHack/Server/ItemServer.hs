@@ -14,7 +14,6 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Feature as F
-import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -56,8 +55,8 @@ createItems n pos lid = do
   replicateM_ n $ void $ rollAndRegisterItem lid litemFreq container True
 
 rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
-                    => LevelId -> Frequency Text -> Container -> Bool
-                    -> m (Maybe (ItemId, ItemFull))
+                    => LevelId -> Freqs -> Container -> Bool
+                    -> m (Maybe (ItemId, (ItemFull, Text)))
 rollAndRegisterItem lid itemFreq container verbose = do
   cops <- getsState scops
   flavour <- getsServer sflavour
@@ -68,9 +67,9 @@ rollAndRegisterItem lid itemFreq container verbose = do
         $ newItem cops flavour discoRev itemFreq lid ldepth totalDepth
   case m4 of
     Nothing -> return Nothing
-    Just (itemKnown, itemFull, seed, k) -> do
+    Just (itemKnown, itemFull, seed, k, itemGroup) -> do
       iid <- registerItem itemKnown seed k container verbose
-      return $ Just (iid, itemFull)
+      return $ Just (iid, (itemFull, itemGroup))
 
 placeItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()
 placeItemsInDungeon = do

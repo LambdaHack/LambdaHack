@@ -13,6 +13,7 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
+import Data.Tuple
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
@@ -77,26 +78,21 @@ generateMonster lid = do
   when rc $ loopGenerateMonster lid lactorFreq
 
 loopGenerateMonster :: (MonadServer m, MonadAtomic m)
-                    => LevelId -> Frequency Text -> m ()
+                    => LevelId -> Freqs -> m ()
 loopGenerateMonster lid actorFreq = do
   cops <- getsState scops
-  if nullFreq actorFreq then return ()  -- no faction spawns on this level
-  else do
-    fidName <- rndToAction $ frequency actorFreq
-    let f (_, fact) = playerFaction (gplayer fact) == fidName
-    factionD <- getsState sfactionD
-    fid <- rndToAction $ oneOf $ map fst $ filter f $ EM.assocs factionD
-    pers <- getsServer sper
-    lvl <- getLevel lid
-    let allPers = ES.unions $ map (totalVisible . (EM.! lid))
-                  $ EM.elems $ EM.delete fid pers  -- expensive :(
-    rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fid
-    pos <- rndToAction rollPos
-    time <- getsState $ getLocalTime lid
-    go <- spawnMonsters [pos] lid time fid
-    unless go $
-      let zeroedFreq = setFreq actorFreq fidName 0
-      in loopGenerateMonster lid zeroedFreq
+  fidName <- rndToAction $ frequency $ toFreq "cplaceFreq" $ map swap actorFreq
+  let f (_, fact) = playerFaction (gplayer fact) == fidName
+  factionD <- getsState sfactionD
+  fid <- rndToAction $ oneOf $ map fst $ filter f $ EM.assocs factionD
+  pers <- getsServer sper
+  lvl <- getLevel lid
+  let allPers = ES.unions $ map (totalVisible . (EM.! lid))
+                $ EM.elems $ EM.delete fid pers  -- expensive :(
+  rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fid
+  pos <- rndToAction rollPos
+  time <- getsState $ getLocalTime lid
+  void $ spawnMonsters [pos] lid time fid
 
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.

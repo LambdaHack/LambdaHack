@@ -11,6 +11,7 @@ import qualified Data.EnumSet as ES
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Tuple
 
 import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -96,7 +97,7 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
   qsolidFence <- fmap (fromMaybe $ assert `failure` cfillerTile)
                  $ opick cfillerTile (const True)
   dark <- chanceDice ldepth totalDepth cdarkChance
-  placeGroup <- frequency $ toFreq "cplaceFreq" cplaceFreq
+  placeGroup <- frequency $ toFreq "cplaceFreq" $ map swap cplaceFreq
   qkind <- fmap (fromMaybe $ assert `failure` (placeGroup, r))
            $ popick placeGroup (placeCheck r)
   let qhollowFence = if dark then darkCorTile else litCorTile

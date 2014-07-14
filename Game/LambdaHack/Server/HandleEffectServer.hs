@@ -759,10 +759,10 @@ effectExplode :: (MonadAtomic m, MonadServer m)
               => m () -> Text -> ActorId -> m Bool
 effectExplode execSfx cgroup target = do
   tb <- getsState $ getActorBody target
-  let itemFreq = toFreq "shrapnel group" [(1, cgroup)]
+  let itemFreq = [(cgroup, 1)]
       container = CActor target CEqp
   m2 <- rollAndRegisterItem (blid tb) itemFreq container False
-  let (iid, ItemFull{..}) = fromMaybe (assert `failure` cgroup) m2
+  let (iid, (ItemFull{..}, _)) = fromMaybe (assert `failure` cgroup) m2
       Point x y = bpos tb
       projectN k100 n = do
         -- We pick a point at the border, not inside, to have a uniform

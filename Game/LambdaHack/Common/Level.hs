@@ -20,7 +20,6 @@ import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
@@ -78,11 +77,9 @@ data Level = Level
   , lseen      :: !Int        -- ^ currently remembered clear tiles
   , lclear     :: !Int        -- ^ total number of initially clear tiles
   , ltime      :: !Time       -- ^ date of the last activity on the level
-  , lactorFreq :: !(Frequency Text)  -- ^ frequency of spawned actors
-                                     --   [] for clients
+  , lactorFreq :: !Freqs      -- ^ frequency of spawned actors; [] for clients
   , litemNum   :: !Int        -- ^ number of initial items, 0 for clients
-  , litemFreq  :: !(Frequency Text)  -- ^ frequency of initial items,
-                                     --   [] for clients
+  , litemFreq  :: !Freqs      -- ^ frequency of initial items; [] for clients
   , lsecret    :: !Int        -- ^ secret tile seed
   , lhidden    :: !Int        -- ^ secret tile density
   , lescape    :: !Bool       -- ^ has an Effect.Escape tile
