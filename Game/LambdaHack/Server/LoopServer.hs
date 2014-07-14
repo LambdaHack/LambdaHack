@@ -148,7 +148,7 @@ endClip arenas = do
   if clipMod == 1 then do
     arena <- rndToAction $ oneOf arenas
     activatePeriodicLevel arena
-    generateMonster arena
+    spawnMonster arena
     stopAfter <- getsServer $ sstopAfter . sdebugSer
     case stopAfter of
       Nothing -> return True

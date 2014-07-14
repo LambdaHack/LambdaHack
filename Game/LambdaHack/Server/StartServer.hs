@@ -1,6 +1,6 @@
 -- | Operations for starting and restarting the game.
 module Game.LambdaHack.Server.StartServer
-  ( gameReset, reinitGame, initPer, applyDebug, initDebug
+  ( gameReset, reinitGame, initPer, recruitActors, applyDebug, initDebug
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -18,6 +18,7 @@ import Data.Tuple (swap)
 import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
+import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
@@ -36,15 +37,16 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Server.CommonServer
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.PeriodicServer
 import Game.LambdaHack.Server.State
 
 initPer :: MonadServer m => m ()
@@ -215,7 +217,7 @@ populateDungeon = do
         forM_ ps $ \ (n, p) -> do
           go <-
             if not $ isHeroFact fact3
-            then spawnMonsters [p] lid ntime fid3
+            then recruitActors [p] lid ntime fid3
             else do
               let hNames = fromMaybe [] $ EM.lookup fid3 sheroNames
               maid <- addHero fid3 p lid hNames (Just n) ntime
@@ -229,6 +231,64 @@ populateDungeon = do
           unless go $ assert `failure` "can't spawn initial actors"
                              `twith` (lid, (fid3, fact3))
   mapM_ initialActors arenas
+
+-- | Spawn actors of any specified faction, friendly or not.
+-- To be used for initial dungeon population and for the summon effect.
+recruitActors :: (MonadAtomic m, MonadServer m)
+              => [Point] -> LevelId -> Time -> FactionId
+              -> m Bool
+recruitActors ps lid time fid = assert (not $ null ps) $ do
+  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
+  fact <- getsState $ (EM.! fid) . sfactionD
+  let spawnName = fname $ okind $ gkind fact
+  laid <- forM ps $ \ p ->
+    if isHeroFact fact
+    then addHero fid p lid [] Nothing time
+    else addMonster spawnName fid p lid time
+  case catMaybes laid of
+    [] -> return False
+    aid : _ -> do
+      mleader <- getsState $ gleader . (EM.! fid) . sfactionD  -- just changed
+      when (isNothing mleader) $
+        execUpdAtomic $ UpdLeadFaction fid Nothing (Just aid)
+      return True
+
+-- | Create a new monster on the level, at a given position
+-- and with a given actor kind and HP.
+addMonster :: (MonadAtomic m, MonadServer m)
+           => Text -> FactionId -> Point -> LevelId -> Time
+           -> m (Maybe ActorId)
+addMonster groupName bfid ppos lid time = do
+  cops <- getsState scops
+  fact <- getsState $ (EM.! bfid) . sfactionD
+  pronoun <- if isCivilianFact cops fact
+             then rndToAction $ oneOf ["he", "she"]
+             else return "it"
+  addActor groupName bfid ppos lid id pronoun time
+
+-- | Create a new hero on the current level, close to the given position.
+addHero :: (MonadAtomic m, MonadServer m)
+        => FactionId -> Point -> LevelId -> [(Int, (Text, Text))]
+        -> Maybe Int -> Time
+        -> m (Maybe ActorId)
+addHero bfid ppos lid heroNames mNumber time = do
+  Kind.COps{cofaction=Kind.Ops{okind=okind}} <- getsState scops
+  Faction{gcolor, gplayer, gkind} <- getsState $ (EM.! bfid) . sfactionD
+  let fName = fname $ okind gkind
+  mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
+  let freeHeroK = elemIndex Nothing mhs
+      n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
+      bsymbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
+      nameFromNumber 0 = ("Captain", "he")
+      nameFromNumber k | k `mod` 7 == 0 = ("Heroine" <+> tshow k, "she")
+      nameFromNumber k = ("Hero" <+> tshow k, "he")
+      (bname, pronoun) | gcolor == Color.BrWhite =
+        fromMaybe (nameFromNumber n) $ lookup n heroNames
+                       | otherwise =
+        let (nameN, pronounN) = nameFromNumber n
+        in (playerName gplayer <+> nameN, pronounN)
+      tweakBody b = b {bsymbol, bname, bcolor = gcolor}
+  addActor fName bfid ppos lid tweakBody pronoun time
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. If only one faction, also move it away from any stairs.

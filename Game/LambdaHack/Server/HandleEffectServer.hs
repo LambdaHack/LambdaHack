@@ -42,6 +42,7 @@ import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicServer
+import Game.LambdaHack.Server.StartServer
 import Game.LambdaHack.Server.State
 
 -- + Semantics of effects
@@ -304,7 +305,7 @@ effectCallFriend power source target = assert (power > 0) $ do
         lid = blid sb
     ps <- getsState $ nearbyFreePoints validTile (bpos sb) lid
     time <- getsState $ getLocalTime lid
-    spawnMonsters (take power ps) lid time (bfid sb)
+    recruitActors (take power ps) lid time (bfid sb)
 
 -- ** Summon
 
@@ -334,7 +335,7 @@ effectSummon power source target = assert (power > 0) $ do
       Nothing ->
         -- Don't make this item useless.
         effectSem (Effect.CallFriend power) source target
-      Just fid -> spawnMonsters (take power ps) (blid sb) afterTime fid
+      Just fid -> recruitActors (take power ps) (blid sb) afterTime fid
 
 -- | Roll a faction based on faction kind frequency key.
 pickFaction :: MonadServer m
