@@ -2,8 +2,8 @@
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
-  , revealItems, moveStores, deduceQuits, deduceKilled, electLeader, addActor
-  , projectFail, pickWeaponServer, sumOrganEqpServer
+  , revealItems, moveStores, deduceQuits, deduceKilled, electLeader
+  , addActor, addActorIid, projectFail, pickWeaponServer, sumOrganEqpServer
   ) where
 
 import Control.Applicative
@@ -315,17 +315,15 @@ addActor :: (MonadAtomic m, MonadServer m)
          => Text -> FactionId -> Point -> LevelId
          -> (Actor -> Actor) -> Text -> Time
          -> m (Maybe ActorId)
-addActor groupName
-         bfid pos lid tweakBody bpronoun time = do
+addActor actorGroup bfid pos lid tweakBody bpronoun time = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- contains the constant properties.
-  let trunkFreq = [(groupName, 1)]
+  let trunkFreq = [(actorGroup, 1)]
   m2 <- rollAndRegisterItem lid trunkFreq (CTrunk bfid lid pos) False
   case m2 of
     Nothing -> return Nothing
     Just (trunkId, (trunkFull, _)) ->
-      addActorIid trunkId trunkFull
-                  bfid pos lid tweakBody bpronoun time
+      addActorIid trunkId trunkFull bfid pos lid tweakBody bpronoun time
 
 addActorIid :: (MonadAtomic m, MonadServer m)
             => ItemId -> ItemFull -> FactionId -> Point -> LevelId

@@ -1,6 +1,6 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemServer
-  ( rollAndRegisterItem, createItems, placeItemsInDungeon
+  ( rollAndRegisterItem, registerItem, createItems, placeItemsInDungeon
   , fullAssocsServer, activeItemsServer, itemToFullServer, mapActorCStore_
   ) where
 

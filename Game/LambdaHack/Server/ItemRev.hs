@@ -83,7 +83,7 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         -- We assume @dataset@ is sorted and between 1 and 10 inclusive.
         let ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
         in y1 + (y2 - y1) * (ld * 10 - x1 * depth)
-                `divUp` ((x2 - x1) * depth)
+           `divUp` ((x2 - x1) * depth)
       f itemGroup q p ik kind acc =
         let rarity = linearInterpolation (irarity kind)
         in (q * p * rarity, ((ik, kind), itemGroup)) : acc

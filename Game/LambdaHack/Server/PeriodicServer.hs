@@ -13,7 +13,6 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
-import Data.Tuple
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
@@ -38,6 +37,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonServer
+import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
@@ -64,7 +64,8 @@ spawnMonsters ps lid time fid = assert (not $ null ps) $ do
         execUpdAtomic $ UpdLeadFaction fid Nothing (Just aid)
       return True
 
--- | Generate a monster, possibly.
+-- TODO: civilians would have 'it' pronoun
+-- | Generate a monster, possibly. We assume heroes don't spawn.
 generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 generateMonster lid = do
   -- We check the number of current dungeon dwellers (whether spawned or not)
@@ -75,24 +76,46 @@ generateMonster lid = do
   -- We do not check @playerSpawn@ of any faction, but just take @lactorFreq@.
   Level{ldepth, lactorFreq} <- getLevel lid
   rc <- rndToAction $ monsterGenChance ldepth totalDepth (length spawns)
-  when rc $ loopGenerateMonster lid lactorFreq
+  when rc $ do
+    time <- getsState $ getLocalTime lid
+    maid <- addAnyActor lactorFreq lid time
+    case maid of
+      Nothing -> return ()
+      Just aid -> do
+        b <- getsState $ getActorBody aid
+        mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
+        when (isNothing mleader) $
+          execUpdAtomic $ UpdLeadFaction (bfid b) Nothing (Just aid)
 
-loopGenerateMonster :: (MonadServer m, MonadAtomic m)
-                    => LevelId -> Freqs -> m ()
-loopGenerateMonster lid actorFreq = do
+addAnyActor :: (MonadAtomic m, MonadServer m)
+            => Freqs -> LevelId -> Time
+            -> m (Maybe ActorId)
+addAnyActor actorFreq lid time = do
+  -- We bootstrap the actor by first creating the trunk of the actor's body
+  -- contains the constant properties.
   cops <- getsState scops
-  fidName <- rndToAction $ frequency $ toFreq "cplaceFreq" $ map swap actorFreq
-  let f (_, fact) = playerFaction (gplayer fact) == fidName
-  factionD <- getsState sfactionD
-  fid <- rndToAction $ oneOf $ map fst $ filter f $ EM.assocs factionD
-  pers <- getsServer sper
-  lvl <- getLevel lid
-  let allPers = ES.unions $ map (totalVisible . (EM.! lid))
-                $ EM.elems $ EM.delete fid pers  -- expensive :(
-  rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fid
-  pos <- rndToAction rollPos
-  time <- getsState $ getLocalTime lid
-  void $ spawnMonsters [pos] lid time fid
+  flavour <- getsServer sflavour
+  discoRev <- getsServer sdiscoRev
+  totalDepth <- getsState stotalDepth
+  lvl@Level{ldepth} <- getLevel lid
+  m4 <- rndToAction
+        $ newItem cops flavour discoRev actorFreq lid ldepth totalDepth
+  case m4 of
+    Nothing -> return Nothing
+    Just (itemKnown, trunkFull, seed, k, actorGroup) -> do
+      let f (_, fact) = playerFaction (gplayer fact) == actorGroup
+      factionD <- getsState sfactionD
+      let actorFids = map fst $ filter f $ EM.assocs factionD
+      assert (not (null actorFids) `blame` (actorFreq, actorGroup)) skip
+      fid <- rndToAction $ oneOf actorFids
+      pers <- getsServer sper
+      let allPers = ES.unions $ map (totalVisible . (EM.! lid))
+                    $ EM.elems $ EM.delete fid pers  -- expensive :(
+      rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fid
+      pos <- rndToAction rollPos
+      let container = (CTrunk fid lid pos)
+      trunkId <- registerItem itemKnown seed k container False
+      addActorIid trunkId trunkFull fid pos lid id "it" time
 
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.
