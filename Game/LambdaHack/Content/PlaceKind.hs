@@ -13,6 +13,7 @@ data PlaceKind = PlaceKind
   { psymbol   :: !Char      -- ^ a symbol
   , pname     :: !Text      -- ^ short description
   , pfreq     :: !Freqs     -- ^ frequency within groups
+  , prarity   :: ![(Int, Int)]  -- ^ rarity on given depths
   , pcover    :: !Cover     -- ^ how to fill whole place based on the corner
   , pfence    :: !Fence     -- ^ whether to fence the place with solid border
   , ptopLeft  :: ![Text]    -- ^ plan of the top-left corner of the place

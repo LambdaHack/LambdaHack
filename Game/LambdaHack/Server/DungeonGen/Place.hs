@@ -11,12 +11,12 @@ import qualified Data.EnumSet as ES
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Tuple
 
 import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.CaveKind
@@ -92,16 +92,33 @@ buildPlace :: Kind.COps         -- ^ the game content
            -> Area              -- ^ whole area of the place, fence included
            -> Rnd (TileMapEM, Place)
 buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
-                    , coplace=Kind.Ops{okind=pokind, opick=popick} }
-           CaveKind{..} dnight darkCorTile litCorTile ldepth totalDepth r = do
+                    , coplace=Kind.Ops{ofoldrGroup} }
+           CaveKind{..} dnight darkCorTile litCorTile
+           ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) r = do
   qsolidFence <- fmap (fromMaybe $ assert `failure` cfillerTile)
                  $ opick cfillerTile (const True)
   dark <- chanceDice ldepth totalDepth cdarkChance
-  placeGroup <- frequency $ toFreq "cplaceFreq" $ map swap cplaceFreq
-  qkind <- fmap (fromMaybe $ assert `failure` (placeGroup, r))
-           $ popick placeGroup (placeCheck r)
+  -- TODO: factor out from here and newItem:
+  let findInterval x1y1 [] = (x1y1, (11, 0))
+      findInterval x1y1 ((x, y) : rest) =
+        if ld * 10 <= x * depth
+        then (x1y1, (x, y))
+        else findInterval (x, y) rest
+      linearInterpolation dataset =
+        -- We assume @dataset@ is sorted and between 1 and 10 inclusive.
+        let ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
+        in y1 + (y2 - y1) * (ld * 10 - x1 * depth)
+           `divUp` ((x2 - x1) * depth)
+  let f placeGroup q p pk kind acc =
+        let rarity = linearInterpolation (prarity kind)
+        in (q * p * rarity, ((pk, kind), placeGroup)) : acc
+      g (placeGroup, q) = ofoldrGroup placeGroup (f placeGroup q) []
+      placeFreq = concatMap g cplaceFreq
+      checkedFreq = filter (\(_, ((_, kind), _)) -> placeCheck r kind) placeFreq
+      freq = toFreq ("buildPlace ('" <> tshow ld <> ")") checkedFreq
+  assert (not (nullFreq freq) `blame` (placeFreq, checkedFreq, r)) skip
+  ((qkind, kr), _) <- frequency freq
   let qhollowFence = if dark then darkCorTile else litCorTile
-      kr = pokind qkind
       qlegend = if dark then clegendDarkTile else clegendLitTile
       qseen = False
       qarea = fromMaybe (assert `failure` (kr, r)) $ interiorArea (pfence kr) r
