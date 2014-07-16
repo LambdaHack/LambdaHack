@@ -33,7 +33,7 @@ effectToSuff effect f =
     Impress -> "of impression"
     CallFriend 1 -> "of aid calling"
     CallFriend p -> "of aid calling" <+> wrapInParens (affixBonus p)
-    Summon t -> "of summoning" <+> wrapInParens t
+    Summon _freqs t -> "of summoning" <+> wrapInParens t
     CreateItem t -> "of uncovering"
                     <+> case effect of
                       CreateItem 1 -> ""

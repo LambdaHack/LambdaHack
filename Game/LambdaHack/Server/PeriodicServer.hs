@@ -1,7 +1,7 @@
 -- | Server operations performed periodically in the game loop
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicServer
-  ( spawnMonster, dominateFid, advanceTime, leadLevelFlip
+  ( spawnMonster, addAnyActor, dominateFid, advanceTime, leadLevelFlip
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -50,7 +50,7 @@ spawnMonster lid = do
   rc <- rndToAction $ monsterGenChance ldepth totalDepth (length spawns)
   when rc $ do
     time <- getsState $ getLocalTime lid
-    maid <- addAnyActor lactorFreq lid time
+    maid <- addAnyActor lactorFreq lid time Nothing
     case maid of
       Nothing -> return ()
       Just aid -> do
@@ -60,9 +60,9 @@ spawnMonster lid = do
           execUpdAtomic $ UpdLeadFaction (bfid b) Nothing (Just aid)
 
 addAnyActor :: (MonadAtomic m, MonadServer m)
-            => Freqs -> LevelId -> Time
+            => Freqs -> LevelId -> Time -> Maybe Point
             -> m (Maybe ActorId)
-addAnyActor actorFreq lid time = do
+addAnyActor actorFreq lid time mpos = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- contains the constant properties.
   cops <- getsState scops
@@ -70,21 +70,27 @@ addAnyActor actorFreq lid time = do
   discoRev <- getsServer sdiscoRev
   totalDepth <- getsState stotalDepth
   lvl@Level{ldepth} <- getLevel lid
+  factionD <- getsState sfactionD
+  let factGroups = map (playerFaction . gplayer) $ EM.elems factionD
+      factPresent (aGroup, _) = aGroup `elem` factGroups
+      actorFreqPruned = filter factPresent actorFreq
   m4 <- rndToAction
-        $ newItem cops flavour discoRev actorFreq lid ldepth totalDepth
+        $ newItem cops flavour discoRev actorFreqPruned lid ldepth totalDepth
   case m4 of
     Nothing -> return Nothing
     Just (itemKnown, trunkFull, seed, k, actorGroup) -> do
       let f (_, fact) = playerFaction (gplayer fact) == actorGroup
-      factionD <- getsState sfactionD
       let actorFids = map fst $ filter f $ EM.assocs factionD
       assert (not (null actorFids) `blame` (actorFreq, actorGroup)) skip
       fid <- rndToAction $ oneOf actorFids
       pers <- getsServer sper
       let allPers = ES.unions $ map (totalVisible . (EM.! lid))
                     $ EM.elems $ EM.delete fid pers  -- expensive :(
-      rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fid
-      pos <- rndToAction rollPos
+      pos <- case mpos of
+        Just pos -> return pos
+        Nothing -> do
+          rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fid
+          rndToAction rollPos
       let container = (CTrunk fid lid pos)
       trunkId <- registerItem itemKnown seed k container False
       addActorIid trunkId trunkFull fid pos lid id "it" time

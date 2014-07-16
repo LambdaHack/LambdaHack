@@ -11,7 +11,7 @@ import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
-import Game.LambdaHack.Common.Misc (CStore (..))
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ItemKind
 
 cdefs :: ContentDef ItemKind
@@ -249,7 +249,7 @@ necklace1 = necklace
 necklace2 = necklace
   { irarity  = [(2, 0), (10, 1)]
   , iaspects = [Periodic $ d 4 + dl 2]
-  , ieffects = [Summon $ 1 + dl 2, Explode "waste"]
+  , ieffects = [Summon [("summonable animal", 1)] $ 1 + dl 2, Explode "waste"]
   }
 necklace3 = necklace
   { iaspects = [Periodic $ d 4 + dl 2]
@@ -380,7 +380,8 @@ potion6 = potion
   }
 potion7 = potion
   { ieffects = [ NoEffect "bait cocktail"
-               , OnSmash (Summon $ 1 + dl 2), OnSmash (Explode "waste") ]
+               , OnSmash (Summon [("summonable animal", 1)] $ 1 + dl 2)
+               , OnSmash (Explode "waste") ]
   }
 potion8 = potion
   { ieffects = [ OneOf [Impress, DropBestWeapon, RefillHP 5, Burn 3]
@@ -442,7 +443,8 @@ scroll4 = scroll
   }
 scroll5 = scroll
   { irarity  = [(1, 4), (10, 6)]
-  , ieffects = [ OneOf [ CallFriend 1, Summon $ d 2, Ascend (-1), Ascend 1
+  , ieffects = [ OneOf [ Summon standardSummon $ d 2
+                       , CallFriend 1, Ascend (-1), Ascend 1
                        , RefillCalm 30, RefillCalm (-30), CreateItem $ d 2 ]
                        , PolyItem CGround ]
                -- TODO: ask player: Escape 1
@@ -462,6 +464,9 @@ scroll9 = scroll
   { irarity  = [(3, 3), (10, 9)]
   , ieffects = [PolyItem CGround]
   }
+
+standardSummon :: Freqs
+standardSummon = [("monster", 30), ("summonable animal", 70), ("horror", 100)]
 
 -- * Armor
 

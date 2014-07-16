@@ -21,7 +21,6 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
-import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -36,7 +35,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.ItemServer
@@ -142,7 +140,7 @@ effectSem effect source target = do
     Effect.Dominate -> effectDominate execSfx source target
     Effect.Impress -> effectImpress execSfx source target
     Effect.CallFriend p -> effectCallFriend p source target
-    Effect.Summon p -> effectSummon p source target
+    Effect.Summon freqs p -> effectSummon freqs p source target
     Effect.CreateItem p -> effectCreateItem p target
     Effect.ApplyPerfume -> effectApplyPerfume execSfx target
     Effect.Burn p -> effectBurn execSfx p source target
@@ -310,8 +308,8 @@ effectCallFriend power source target = assert (power > 0) $ do
 -- ** Summon
 
 effectSummon :: (MonadAtomic m, MonadServer m)
-             => Int -> ActorId -> ActorId -> m Bool
-effectSummon power source target = assert (power > 0) $ do
+             => Freqs -> Int -> ActorId -> ActorId -> m Bool
+effectSummon actorFreq power source target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -330,27 +328,19 @@ effectSummon power source target = assert (power > 0) $ do
     -- Make sure summoned actors start acting after the summoner.
     let sourceTime = timeShift localTime $ ticksPerMeter $ bspeed sb activeItems
         afterTime = timeShift sourceTime $ Delta timeClip
-    mfid <- pickFaction "summon" (const True)
-    case mfid of
-      Nothing ->
-        -- Don't make this item useless.
-        effectSem (Effect.CallFriend power) source target
-      Just fid -> recruitActors (take power ps) (blid sb) afterTime fid
-
--- | Roll a faction based on faction kind frequency key.
-pickFaction :: MonadServer m
-            => Text -> ((FactionId, Faction) -> Bool)
-            -> m (Maybe FactionId)
-pickFaction freqChoice ffilter = do
-  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
-  factionD <- getsState sfactionD
-  let f (fid, fact) = let kind = okind (gkind fact)
-                          g n = (n, fid)
-                      in fmap g $ lookup freqChoice $ ffreq kind
-      flist = mapMaybe f $ filter ffilter $ EM.assocs factionD
-      freq = toFreq ("pickFaction" <+> freqChoice) flist
-  if nullFreq freq then return Nothing
-  else fmap Just $ rndToAction $ frequency freq
+    bs <- forM (take power ps) $ \p -> do
+      maid <- addAnyActor actorFreq (blid sb) afterTime (Just p)
+      case maid of
+        Nothing ->
+          -- Don't make this item useless.
+          effectSem (Effect.CallFriend 1) source target
+        Just aid -> do
+          b <- getsState $ getActorBody aid
+          mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
+          when (isNothing mleader) $
+            execUpdAtomic $ UpdLeadFaction (bfid b) Nothing (Just aid)
+          return True
+    return $! or bs
 
 -- ** CreateItem
 

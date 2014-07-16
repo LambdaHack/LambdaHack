@@ -14,7 +14,7 @@ import GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Misc (CStore)
+import Game.LambdaHack.Common.Misc
 
 -- TODO: document each constructor
 -- | Effects of items. Can be invoked by the item wielder to affect
@@ -30,7 +30,7 @@ data Effect a =
   | Dominate
   | Impress
   | CallFriend !Int
-  | Summon !a
+  | Summon !Freqs !a
   | CreateItem !a
   | Ascend !Int
   | Escape !Int           -- ^ the Int says if can be placed on last level, etc.
@@ -137,9 +137,9 @@ effectTrav (RefillCalm p) _ = return $! RefillCalm p
 effectTrav Dominate _ = return Dominate
 effectTrav Impress _ = return Impress
 effectTrav (CallFriend p) _ = return $! CallFriend p
-effectTrav (Summon a) f = do
+effectTrav (Summon freqs a) f = do
   b <- f a
-  return $! Summon b
+  return $! Summon freqs b
 effectTrav (CreateItem a) f = do
   b <- f a
   return $! CreateItem b
