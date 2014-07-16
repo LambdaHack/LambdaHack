@@ -281,6 +281,6 @@ cavesAmbush = EM.fromList [(-5, ("caveAmbush", Nothing))]
 
 cavesBattle = EM.fromList [(-3, ("caveBattle", Nothing))]
 
-cavesSafari = EM.fromList [ (-8, ("caveSafari1", Nothing))
-                          , (-9, ("caveSafari2", Nothing))
+cavesSafari = EM.fromList [ (-4, ("caveSafari1", Nothing))
+                          , (-7, ("caveSafari2", Nothing))
                           , (-10, ("caveSafari3", Just False)) ]

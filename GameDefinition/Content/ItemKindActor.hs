@@ -12,9 +12,9 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, thornbush, geyser]
+  [warrior, adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser]
 
-warrior,    adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, thornbush, geyser :: ItemKind
+warrior,    adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser :: ItemKind
 
 -- * Hunams
 
@@ -92,7 +92,7 @@ nose = ItemKind
   { isymbol  = 'n'
   , iname    = "point-free nose"
   , ifreq    = [("monster", 100), ("horror", 100)]
-  , iflavour = zipPlain [Green]
+  , iflavour = zipPlain [BrGreen]
   , icount   = 1
   , irarity  = [(1, 6), (10, 4)]
   , iverbHit = "thud"
@@ -108,7 +108,7 @@ elbow = ItemKind
   { isymbol  = 'e'
   , iname    = "ground elbow"
   , ifreq    = [("monster", 100), ("horror", 100)]
-  , iflavour = zipPlain [Magenta]
+  , iflavour = zipPlain [BrMagenta]
   , icount   = 1
   , irarity  = [(3, 5), (10, 5)]
   , iverbHit = "thud"
@@ -136,7 +136,7 @@ armadillo = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 30, AddSpeed 18
-               , AddSkills $ EM.singleton AbTrigger (-1)
+               , AddSkills $ EM.singleton AbAlter (-1)
                , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -148,13 +148,13 @@ gilaMonster = ItemKind
   { isymbol  = 'g'
   , iname    = "Gila monster"
   , ifreq    = [("animal", 100), ("horror", 100)]
-  , iflavour = zipPlain [BrMagenta]
+  , iflavour = zipPlain [Magenta]
   , icount   = 1
   , irarity  = [(2, 5), (10, 3)]
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 15, AddMaxCalm 60, AddSpeed 15
-               , AddSkills $ EM.singleton AbTrigger (-1)
+               , AddSkills $ EM.singleton AbAlter (-1)
                , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -163,7 +163,7 @@ gilaMonster = ItemKind
                , ("eye 4", COrgan), ("nostril", COrgan) ]
   }
 komodoDragon = ItemKind  -- bad hearing
-  { isymbol  = 'd'
+  { isymbol  = 'k'
   , iname    = "Komodo dragon"
   , ifreq    = [("animal", 100), ("horror", 100)]
   , iflavour = zipPlain [Blue]
@@ -217,8 +217,25 @@ alligator = ItemKind
 
 -- * Non-animal animals
 
+hornetSwarm = ItemKind
+  { isymbol  = 'h'
+  , iname    = "hornet swarm"
+  , ifreq    = [("animal", 100), ("horror", 100)]
+  , iflavour = zipPlain [Magenta]
+  , icount   = 1
+  , irarity  = [(5, 1), (10, 5)]
+  , iverbHit = "thud"
+  , iweight  = 1000
+  , iaspects = [ AddMaxHP 5, AddMaxCalm 60, AddSpeed 30, AddSight 2
+               , AddSkills $ EM.singleton AbAlter (-1)
+               , AddArmorMelee 90, AddArmorRanged 90 ]
+  , ieffects = []
+  , ifeature = [Durable, Identified]
+  , idesc    = ""
+  , ikit     = [("sting", COrgan)]
+  }
 thornbush = ItemKind
-  { isymbol  = 't'
+  { isymbol  = 'b'
   , iname    = "thornbush"
   , ifreq    = [("animal", 100)]
   , iflavour = zipPlain [Brown]

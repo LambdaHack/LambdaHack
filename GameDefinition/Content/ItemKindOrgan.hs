@@ -10,9 +10,9 @@ import Game.LambdaHack.Content.ItemKind
 
 organs :: [ItemKind]
 organs =
-  [fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn, vent, fissure]
+  [fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, sting, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn, vent, fissure]
 
-fist,    foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn, vent, fissure :: ItemKind
+fist,    foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, sting, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn, vent, fissure :: ItemKind
 
 -- * Parameterized organs
 
@@ -81,7 +81,7 @@ claw = fist
   , ifreq    = [("claw", 50)]
   , icount   = 2  -- even if more, only the fore claws used for fighting
   , iverbHit = "slash"
-  , ieffects = [Hurt (7 * d 1)]
+  , ieffects = [Hurt (6 * d 1)]
   , idesc    = ""
   }
 smallClaw = fist
@@ -112,7 +112,7 @@ largeJaw = fist
   , ifreq    = [("large jaw", 100)]
   , icount   = 1
   , iverbHit = "crush"
-  , ieffects = [Hurt (15 * d 1)]
+  , ieffects = [Hurt (12 * d 1)]
   , idesc    = ""
   }
 
@@ -158,7 +158,7 @@ thorn = fist
   , ifreq    = [("thorn", 100)]
   , icount   = 7
   , iverbHit = "impale"
-  , ieffects = [Hurt (4 * d 1)]
+  , ieffects = [Hurt (2 * d 1)]
   , idesc    = ""
   }
 fissure = fist
@@ -167,6 +167,14 @@ fissure = fist
   , icount   = 2
   , iverbHit = "hiss at"
   , ieffects = [Burn 1]
+  , idesc    = ""
+  }
+sting = fist
+  { iname    = "sting"
+  , ifreq    = [("sting", 100)]
+  , icount   = 1
+  , iverbHit = "sting"
+  , ieffects = [Burn 1, Paralyze 2]
   , idesc    = ""
   }
 venomTooth = fist
@@ -190,7 +198,7 @@ largeTail = fist
   , ifreq    = [("large tail", 50)]
   , icount   = 1
   , iverbHit = "knock"
-  , ieffects = [Hurt (9 * d 1), PushActor (ThrowMod 400 25)]
+  , ieffects = [Hurt (8 * d 1), PushActor (ThrowMod 400 25)]
   , idesc    = ""
   }
 pupil = fist
@@ -210,7 +218,7 @@ armoredSkin = fist
   , ifreq    = [("armored skin", 100)]
   , icount   = 1
   , iverbHit = "bash"
-  , iaspects = [AddArmorMelee 40, AddArmorRanged 40]
+  , iaspects = [AddArmorMelee 33, AddArmorRanged 33]
   , ieffects = []
   , ifeature = [Identified]
   , idesc    = ""
