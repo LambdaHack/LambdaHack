@@ -10,9 +10,9 @@ import Game.LambdaHack.Content.ItemKind
 
 organs :: [ItemKind]
 organs =
-  [fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, sting, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn, vent, fissure]
+  [fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, sting, venomTooth, venomFang, largeTail, jaw, largeJaw, tooth, pupil, armoredSkin, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, eye2, eye3, eye4, eye5, nostril, thorn, vent, fissure]
 
-fist,    foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, sting, venomTooth, venomFang, largeTail, jaw, largeJaw, pupil, armoredSkin, speedGland1, speedGland2, speedGland3, speedGland4, speedGland5, eye2, eye3, eye4, eye5, nostril, thorn, vent, fissure :: ItemKind
+fist,    foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, sting, venomTooth, venomFang, largeTail, jaw, largeJaw, tooth, pupil, armoredSkin, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, eye2, eye3, eye4, eye5, nostril, thorn, vent, fissure :: ItemKind
 
 -- * Parameterized organs
 
@@ -22,7 +22,7 @@ speedGland n = fist
   , ifreq    = [("speed gland" <+> tshow n, 100)]
   , icount   = 1
   , iverbHit = "spit at"
-  , iaspects = [AddSpeed 2, Periodic (intToDice $ 2 * n)]
+  , iaspects = [AddSpeed $ intToDice n, Periodic $ intToDice n]
   , ieffects = [RefillHP 1]
   , ifeature = [Identified]
   , idesc    = ""
@@ -115,6 +115,14 @@ largeJaw = fist
   , ieffects = [Hurt (12 * d 1)]
   , idesc    = ""
   }
+tooth = fist
+  { iname    = "tooth"
+  , ifreq    = [("tooth", 20)]
+  , icount   = 3
+  , iverbHit = "nail"
+  , ieffects = [Hurt (3 * d 1)]
+  , idesc    = ""
+  }
 
 -- * Monster weapon organs
 
@@ -135,7 +143,7 @@ lash = fist
   , idesc    = ""
   }
 noseTip = fist
-  { iname    = "nose tip"
+  { iname    = "tip"
   , ifreq    = [("nose tip", 50)]
   , icount   = 1
   , iverbHit = "poke"

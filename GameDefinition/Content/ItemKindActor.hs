@@ -12,9 +12,9 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser]
+  [warrior, adventurer, blacksmith, forester, scientist, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser]
 
-warrior,    adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser :: ItemKind
+warrior,    adventurer, blacksmith, forester, scientist, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser :: ItemKind
 
 -- * Hunams
 
@@ -40,6 +40,8 @@ blacksmith = warrior
   { iname    = "blacksmith" }
 forester = warrior
   { iname    = "forester" }
+scientist = warrior
+  { iname    = "scientist" }
 
 clerk = warrior
   { iname    = "clerk"
@@ -68,12 +70,12 @@ eye = ItemKind
                , AddSight 4 ]  -- can shoot for as long as lives
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "Under your stare, reduces to the bits that define its essence. Under introspection, the bits slow down and solidify into an arbitrary form again. It must be huge inside, for holographic principle to manifest so overtly."  -- holographic principle is an anachronism for XIX or most of XX century, but "the cosmological scale effects" is too weak
   , ikit     = [("lash", COrgan), ("pupil", COrgan)]
   }
 fastEye = ItemKind
-  { isymbol  = 'e'
-  , iname    = "super-fast eye"
+  { isymbol  = 'j'
+  , iname    = "injective jaw"
   , ifreq    = [("monster", 100), ("horror", 100)]
   , iflavour = zipPlain [BrBlue]
   , icount   = 1
@@ -81,12 +83,12 @@ fastEye = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 6, AddMaxCalm 60, AddSpeed 30
-               , AddSight 4 ]  -- can shoot for as long as lives
+               , AddSight 7 ]  -- can shoot for as long as lives
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
-  , ikit     = [ ("lash", COrgan), ("tentacle", COrgan), ("tentacle", COrgan)
-               , ("speed gland 5", COrgan), ("pupil", COrgan) ]
+  , idesc    = "Hungers but never eats. Bites but never swallows. Burrows its own image through, but never carries anything back."  -- rather weak: not about injective objects, but puny, concrete, injective functions  --- where's the madness in that?
+  , ikit     = [ ("tooth", COrgan), ("speed gland 10", COrgan)
+               , ("lip", COrgan), ("lip", COrgan) ]
   }
 nose = ItemKind
   { isymbol  = 'n'
@@ -101,28 +103,32 @@ nose = ItemKind
                , AddSmell 3 ]  -- depends solely on smell
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
+  , idesc    = "No mouth, yet it devours everything around, constantly sniffing itself inward; pure movement structure, no constant point to focus one's maddened gaze on."
   , ikit     = [("nose tip", COrgan), ("lip", COrgan)]
   }
 elbow = ItemKind
   { isymbol  = 'e'
-  , iname    = "ground elbow"
+  , iname    = "commutative elbow"
   , ifreq    = [("monster", 100), ("horror", 100)]
   , iflavour = zipPlain [BrMagenta]
   , icount   = 1
-  , irarity  = [(3, 5), (10, 5)]
+  , irarity  = [(6, 1), (10, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 80, AddSpeed 10
+  , iaspects = [ AddMaxHP 10, AddMaxCalm 80, AddSpeed 26
                , AddSkills $ EM.singleton AbMelee (-1)
                , AddSight 15 ]  -- can shoot for as long as lives
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = ""
-  , ikit     = [ ("armored skin", COrgan), ("speed gland 2", COrgan)
+  , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
+  , ikit     = [ ("speed gland 4", COrgan), ("armored skin", COrgan)
                , ("any arrow", CInv), ("any arrow", CInv)
                , ("any arrow", CInv), ("any arrow", CInv) ]
   }
+-- "ground x" --- for immovable monster that can only tele or prob travel
+-- forgetful
+-- pullback
+-- skeletal
 
 -- * Animals
 
@@ -171,13 +177,13 @@ komodoDragon = ItemKind  -- bad hearing
   , irarity  = [(5, 5), (10, 7)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 40, AddMaxCalm 60, AddSpeed 20
+  , iaspects = [ AddMaxHP 40, AddMaxCalm 60, AddSpeed 18
                , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("large tail", COrgan), ("jaw", COrgan), ("small claw", COrgan)
-               , ("speed gland 2", COrgan), ("armored skin", COrgan)
+               , ("speed gland 4", COrgan), ("armored skin", COrgan)
                , ("eye 2", COrgan), ("nostril", COrgan) ]
   }
 hyena = ItemKind
