@@ -70,7 +70,7 @@ eye = ItemKind
                , AddSight 4 ]  -- can shoot for as long as lives
   , ieffects = []
   , ifeature = [Durable, Identified]
-  , idesc    = "Under your stare, reduces to the bits that define its essence. Under introspection, the bits slow down and solidify into an arbitrary form again. It must be huge inside, for holographic principle to manifest so overtly."  -- holographic principle is an anachronism for XIX or most of XX century, but "the cosmological scale effects" is too weak
+  , idesc    = "Under your stare, it reduces to the bits that define its essence. Under introspection, the bits slow down and solidify into an arbitrary form again. It must be huge inside, for holographic principle to manifest so overtly."  -- holographic principle is an anachronism for XIX or most of XX century, but "the cosmological scale effects" is too weak
   , ikit     = [("lash", COrgan), ("pupil", COrgan)]
   }
 fastEye = ItemKind

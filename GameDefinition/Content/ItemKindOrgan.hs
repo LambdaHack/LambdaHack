@@ -27,11 +27,11 @@ speedGland n = fist
   , ifeature = [Identified]
   , idesc    = ""
   }
-speedGland1 = speedGland 1
 speedGland2 = speedGland 2
-speedGland3 = speedGland 3
 speedGland4 = speedGland 4
-speedGland5 = speedGland 5
+speedGland6 = speedGland 6
+speedGland8 = speedGland 8
+speedGland10 = speedGland 10
 eye :: Int -> ItemKind
 eye n = fist
   { iname    = "eye"

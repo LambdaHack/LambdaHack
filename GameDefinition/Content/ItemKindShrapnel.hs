@@ -224,7 +224,7 @@ boilingWater = ItemKind
   }
 glue = ItemKind
   { isymbol  = '*'
-  , iname    = "glue"
+  , iname    = "hoof glue"
   , ifreq    = [("glue", 1)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 14
