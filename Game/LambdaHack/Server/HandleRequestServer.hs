@@ -12,6 +12,7 @@ module Game.LambdaHack.Server.HandleRequestServer
   ( handleRequestAI, handleRequestUI, reqMove
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -358,14 +359,24 @@ reqProject source tpxy eps iid cstore = assert (cstore /= CSha) $ do
 
 -- * ReqApply
 
--- TODO: check actor has access to the item
 reqApply :: (MonadAtomic m, MonadServer m)
          => ActorId  -- ^ actor applying the item (is on current level)
          -> ItemId   -- ^ the item to be applied
          -> CStore   -- ^ the location of the item
          -> m ()
 reqApply aid iid cstore = assert (cstore /= CSha) $ do
-  applyItem aid iid cstore
+  bag <- getsState $ getActorBag aid cstore
+  let req = ReqApply iid cstore
+  if EM.notMember iid bag
+    then execFailure aid req ApplyOutOfReach
+    else do
+      actorBlind <- radiusBlind
+                    <$> sumOrganEqpServer Effect.EqpSlotAddSight aid
+      item <- getsState $ getItemBody iid
+      let blindScroll = jsymbol item == '?' && actorBlind
+      if blindScroll
+        then execFailure aid req ApplyBlind
+        else applyItem aid iid cstore
 
 -- * ReqTrigger
 

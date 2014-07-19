@@ -80,6 +80,8 @@ data ReqFailure =
   | AlterNothing
   | EqpOverfull
   | DurablePeriodicAbuse
+  | ApplyBlind
+  | ApplyOutOfReach
   | ItemNothing
   | ItemNotCalm
   | ProjectAimOnself
@@ -105,6 +107,8 @@ showReqFailure reqFailure = case reqFailure of
   AlterNothing -> "wasting time on altering nothing"
   EqpOverfull -> "cannot equip any more items"
   DurablePeriodicAbuse -> "cannot apply a durable periodic item"
+  ApplyBlind -> "blind actors cannot read"
+  ApplyOutOfReach -> "cannot apply an item out of reach"
   ItemNothing -> "wasting time on void item manipulation"
   ItemNotCalm -> "you are too alarmed to sort through the shared stash"
   ProjectAimOnself -> "cannot aim at oneself"

@@ -340,22 +340,29 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 applyHuman :: MonadClientUI m
            => [Trigger] -> m (SlideOrCmd (RequestTimed AbApply))
 applyHuman ts = do
+  leader <- getLeaderUI
+  actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight leader
   let cLegal = [CGround, CInv, CEqp]
       (verb1, object1) = case ts of
         [] -> ("activate", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      p item = if ' ' `elem` triggerSyms
-               then Effect.Applicable `elem` jfeature item
-               else jsymbol item `elem` triggerSyms
+      blindScroll item = jsymbol item == '?' && actorBlind
+      p item = not (blindScroll item)
+               && if ' ' `elem` triggerSyms
+                  then Effect.Applicable `elem` jfeature item
+                  else jsymbol item `elem` triggerSyms
   ggi <- getGroupItem p object1 verb1 cLegal cLegal
   case ggi of
     Right ((iid, itemFull), CActor _ fromCStore) -> do
       let durable = Effect.Durable `elem` jfeature (itemBase itemFull)
-          periodic = isJust $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
+          periodic = isJust
+                     $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
       if durable && periodic
         then failSer DurablePeriodicAbuse
-        else return $ Right $ ReqApply iid fromCStore
+        else if (blindScroll $ itemBase itemFull)
+             then failSer ApplyBlind
+             else return $ Right $ ReqApply iid fromCStore
     Left slides -> return $ Left slides
     _ -> assert `failure` ggi
 
