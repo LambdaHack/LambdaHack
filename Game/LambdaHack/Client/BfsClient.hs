@@ -16,8 +16,10 @@ import Data.Maybe
 import Data.Ord
 
 import Game.LambdaHack.Client.Bfs
+import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
@@ -95,14 +97,17 @@ computeAnythingBFS :: MonadClient m
 computeAnythingBFS fAnything aid = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   b <- getsState $ getActorBody aid
+  mleader <- getsClient _sleader
+  actorSk <- actorSkillsClient aid mleader  -- TODO: reset BFS at leader change?
   lvl <- getLevel $ blid b
   -- We treat doors as an open tile and don't add an extra step for opening
   -- the doors, because other actors open and use them, too,
   -- so it's amortized. We treat unknown tiles specially.
   let unknownId = ouniqGroup "unknown space"
       chAccess = checkAccess cops lvl
-      chDoorAccess = checkDoorAccess cops lvl
-      conditions = catMaybes [chAccess, chDoorAccess]
+      canOpenDoors = EM.findWithDefault 0 Ability.AbAlter actorSk > 0
+      chDoorAccess = if canOpenDoors then [checkDoorAccess cops lvl] else []
+      conditions = catMaybes $ chAccess : chDoorAccess
       -- Legality of move from a known tile, assuming doors freely openable.
       isEnterable :: Point -> Point -> MoveLegal
       isEnterable spos tpos =
