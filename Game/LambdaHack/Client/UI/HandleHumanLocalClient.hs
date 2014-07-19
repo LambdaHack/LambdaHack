@@ -49,6 +49,7 @@ import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -61,6 +62,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
@@ -368,14 +370,22 @@ doLook = do
                      else return []
       seps <- getsClient seps
       mnewEps <- makeLine b p seps
+      itemToF <- itemToFullClient
       let aims = isJust mnewEps
           enemyMsg = case inhabitants of
             [] -> ""
-            _ -> -- Even if it's the leader, give his proper name, not 'you'.
+            ((_, body), _) : rest ->
+                 -- Even if it's the leader, give his proper name, not 'you'.
                  let subjects = map (partActor . snd . fst) inhabitants
                      subject = MU.WWandW subjects
                      verb = "be here"
-                 in makeSentence [MU.SubjectVerbSg subject verb]
+                     desc = if not (null rest)  -- many actors
+                            then ""
+                            else case itemDisco $ itemToF (btrunk body) 1 of
+                              Nothing -> ""
+                              Just ItemDisco{itemKind} -> idesc itemKind
+                     pdesc = if desc == "" then "" else "(" <> desc <> ")"
+                 in makeSentence [MU.SubjectVerbSg subject verb] <+> pdesc
           vis | lvl `at` p == unknownId = "that is"
               | not canSee = "you remember"
               | not aims = "you are aware of"
