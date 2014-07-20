@@ -38,5 +38,4 @@ fightsAgainstSpawners fid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   dungeon <- getsState sdungeon
   let escape = any lescape $ EM.elems dungeon
-      isSpawner = isSpawnFact fact
-  return $! escape && not isSpawner
+  return $! escape && keepArenaFact fact
