@@ -17,6 +17,7 @@ data ModeKind = ModeKind
   , mfreq    :: !Freqs    -- ^ frequency within groups
   , mplayers :: !Players  -- ^ players taking part in the game
   , mcaves   :: !Caves    -- ^ arena of the game
+  , mdesc    :: !Text     -- ^ description
   }
   deriving Show
 

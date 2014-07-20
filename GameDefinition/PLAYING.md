@@ -2,19 +2,19 @@ Playing LambdaHack
 ==================
 
 LambdaHack is a small dungeon crawler illustrating the roguelike game engine
-library also called LambdaHack. Playing the game involves walking around
-the dungeon, alone or in a party of fearless adventurers, setting up ambushes,
-hiding in shadow, covering tracks, breaking through to deeper caves,
-bumping into monsters, doors and walls, gathering magical treasure
-and making creative use of it. The bloodthirsty monsters do the same,
-intelligence allowing, while tirelessly chasing the elusive heroes
-by smell and sight.
+of the same name. Playing the game involves exploring spooky dungeons,
+alone or in a party of fearless adventurers, setting up ambushes
+for unwary creatures, hiding in shadows, bumping into unspeakable horrors,
+hidden passages and gorgeous magical treasure and making creative use
+of it all. The madness-inspiring abominations that multiply in the depths
+perform the same feats, due to their aberrant, abstract hyper-intelligence,
+while tirelessly chasing the elusive heroes by sight, sound and smell.
 
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
 and literary imagination. To be honest, a lot of imagination is required
 for this rudimentary game, but it's playable and winnable.
-Contributions welcome.
+Contributions are welcome.
 
 
 Heroes
@@ -72,7 +72,7 @@ consists of a large number of tiles. The basic tile kinds are as follows.
                bedrock                            blank
 
 The game world is persistent, i.e., every time the player visits a level
-during a single game, the level layout is the same.
+during a single game, its layout is the same.
 
 
 Commands
@@ -220,11 +220,11 @@ but most of the debug options have no corresponding commands.
 Monsters
 --------
 
-Heroes are not alone in the dungeon. Monsters, natural and unnatural,
-roam the dark caves and crawl from damp holes day and night. While heroes
-pay attention to all other party members and take care to move one at a time,
-monsters don't care about each other and all move at once,
-sometimes brutally colliding by accident.
+Heroes are not alone in the dungeon. Monstrosities, natural
+and out of this world, roam the dark caves and crawl from damp holes
+day and night. While heroes pay attention to all other party members
+and take care to move one at a time, monsters don't care about each other
+and all move at once, sometimes brutally colliding by accident.
 
 When the hero bumps into a monster or a monster attacks the hero,
 melee combat occurs. The best weapon equipped by each opponent
@@ -247,13 +247,13 @@ When the last hero dies, the game ends.
 On Winning and Dying
 --------------------
 
-You win the game if you escape the dungeon alive or eliminate all opposition.
-If you escape the dungeon, your score is based on the gold and precious gems
-you've plundered, plus a bonus based on the number of heroes you lost.
-If the game mode offers you no escape and so your goal is to eliminate
-your foes completely, your score is based on the number of turns
-you spent and, as a bonus, the number of enemies you killed.
+You win the game if you escape the dungeon alive or eliminate all opposition,
+if there is no way out. In the former case, your score is based on the gold
+and precious gems you've plundered, plus a bonus based on the number
+of heroes you lost. In the latter case, your score is based on the number
+of turns you spent overcoming your foes and, as a bonus, the number
+of enemies you've beaten.
 
-If all heroes die, you don't get any bonus. You are free to start again
+If all heroes fall, you don't get any bonus. You are free to start again
 from a different entrance to the dungeon, but all your previous wealth
 is gone and fresh, undaunted enemies bar your way.

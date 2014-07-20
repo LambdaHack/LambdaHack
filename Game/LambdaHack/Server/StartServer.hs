@@ -92,7 +92,7 @@ createFactions Kind.COps{cofaction=Kind.Ops{opick}} players = do
   let rawCreate gplayer@Player{..} = do
         let cmap = mapFromFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
-            nameoc = lowercase playerName
+            nameoc = lowercase $ head $ T.words playerName
             prefix | playerAI = "Autonomous"
                    | otherwise = "Controlled"
             (gcolor, gname) = case M.lookup nameoc cmap of

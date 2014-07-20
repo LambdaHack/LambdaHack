@@ -23,6 +23,7 @@ campaign = ModeKind
   , mfreq    = [("campaign", 1)]
   , mplayers = playersCampaign
   , mcaves   = cavesCampaign
+  , mdesc    = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there for too long!"
   }
 
 duel = ModeKind
@@ -31,6 +32,7 @@ duel = ModeKind
   , mfreq    = [("duel", 1)]
   , mplayers = playersDuel
   , mcaves   = cavesSkirmish
+  , mdesc    = "You disagreed about the premises of a relative completeness theorem and there is only one way to settle it."
   }
 
 skirmish = ModeKind
@@ -39,14 +41,16 @@ skirmish = ModeKind
   , mfreq    = [("skirmish", 1)]
   , mplayers = playersSkirmish
   , mcaves   = cavesSkirmish
+  , mdesc    = "When the scoring system of a programming contest fails to determine the winning team, participants take matters into their own hands."
   }
 
 ambush = ModeKind
   { msymbol  = 'm'
   , mname    = "ambush"
   , mfreq    = [("ambush", 1)]
-  , mplayers = playersSkirmish
+  , mplayers = playersAmbush
   , mcaves   = cavesAmbush
+  , mdesc    = "Striking ideas and fast execution are what makes or breaks a creative team."
   }
 
 battle = ModeKind
@@ -55,6 +59,7 @@ battle = ModeKind
   , mfreq    = [("battle", 1)]
   , mplayers = playersBattle
   , mcaves   = cavesBattle
+  , mdesc    = "Odds are stacked against those that unleash the horrors of abstraction."
   }
 
 safari = ModeKind
@@ -63,6 +68,7 @@ safari = ModeKind
   , mfreq    = [("safari", 1)]
   , mplayers = playersSafari
   , mcaves   = cavesSafari
+  , mdesc    = "In this simulation you'll discover the joys of hunting the most exquisite of Earth's fauna, both animal and semi-intelligent (exit at the opposite level)."
   }
 
 pvp = ModeKind
@@ -71,6 +77,7 @@ pvp = ModeKind
   , mfreq    = [("PvP", 1)]
   , mplayers = playersPvP
   , mcaves   = cavesSkirmish
+  , mdesc    = "(Not usable right now.) This is a fight to the death between two human-controlled teams."
   }
 
 coop = ModeKind
@@ -79,6 +86,7 @@ coop = ModeKind
   , mfreq    = [("Coop", 1)]
   , mplayers = playersCoop
   , mcaves   = cavesCampaign
+  , mdesc    = "(This mode is intended solely for automated testing.)"
   }
 
 defense = ModeKind
@@ -87,10 +95,11 @@ defense = ModeKind
   , mfreq    = [("defense", 1)]
   , mplayers = playersDefense
   , mcaves   = cavesCampaign
+  , mdesc    = "Don't let the puny humans steal you secrets and flee, like dirty scoundrels that they are, to the exit!"
   }
 
 
-playersCampaign, playersDuel, playersSkirmish, playersBattle, playersSafari, playersPvP, playersCoop, playersDefense :: Players
+playersCampaign, playersDuel, playersSkirmish, playersAmbush, playersBattle, playersSafari, playersPvP, playersCoop, playersDefense :: Players
 
 playersCampaign = Players
   { playersList = [ playerHero
@@ -101,20 +110,31 @@ playersCampaign = Players
   , playersAlly = [("Monster Hive", "Animal Kingdom")] }
 
 playersDuel = Players
-  { playersList = [ playerHero { playerName = "White"
+  { playersList = [ playerHero { playerName = "White Recursive"
                                , playerInitial = 1 }
-                  , playerAntiHero { playerName = "Purple"
+                  , playerAntiHero { playerName = "Red Iterative"
                                    , playerInitial = 1 }
                   , playerHorror ]
-  , playersEnemy = [ ("White", "Purple")
-                   , ("White", "Horror Den")
-                   , ("Purple", "Horror Den") ]
+  , playersEnemy = [ ("White Recursive", "Red Iterative")
+                   , ("White Recursive", "Horror Den")
+                   , ("Red Iterative", "Horror Den") ]
   , playersAlly = [] }
 
 playersSkirmish = playersDuel
-  { playersList = [ playerHero {playerName = "White"}
-                  , playerAntiHero {playerName = "Purple"}
-                  , playerHorror ] }
+  { playersList = [ playerHero {playerName = "White Haskell"}
+                  , playerAntiHero {playerName = "Purple Agda"}
+                  , playerHorror ]
+  , playersEnemy = [ ("White Haskell", "Purple Agda")
+                   , ("White Haskell", "Horror Den")
+                   , ("Purple Agda", "Horror Den") ] }
+
+playersAmbush = playersDuel
+  { playersList = [ playerHero {playerName = "Yellow Idris"}
+                  , playerAntiHero {playerName = "Blue Epigram"}
+                  , playerHorror ]
+  , playersEnemy = [ ("Yellow Idris", "Blue Epigram")
+                   , ("Yellow Idris", "Horror Den")
+                   , ("Blue Epigram", "Horror Den") ] }
 
 playersBattle = Players
   { playersList = [ playerHero {playerInitial = 5}
