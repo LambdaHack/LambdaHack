@@ -262,9 +262,11 @@ breakUpdAtomic cmd = case cmd of
 breakSfxAtomic :: MonadStateRead m => SfxAtomic -> m [SfxAtomic]
 breakSfxAtomic cmd = case cmd of
   SfxStrike source target _ _ -> do
-    b <- getsState $ getActorBody source
-    return [ SfxEffect (bfid b) source (Effect.RefillCalm (-1))
-           , SfxEffect (bfid b) target (Effect.RefillHP (-1)) ]
+    -- Hack: make a fight detectable even if one of combatants not visible.
+    sb <- getsState $ getActorBody source
+    return $! [ SfxEffect (bfid sb) source (Effect.RefillCalm (-1))
+              | not $ bproj sb ]
+              ++ [SfxEffect (bfid sb) target (Effect.RefillHP (-1))]
   _ -> return [cmd]
 
 -- | Messages for some unseen game object creation/destruction/alteration.

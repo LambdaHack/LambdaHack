@@ -358,7 +358,7 @@ potion1 = potion
                , OnSmash (ApplyPerfume), OnSmash (Explode "fragrance") ]
   }
 potion2 = potion
-  { irarity  = [(10, 2)]
+  { irarity  = [(10, 1)]
   , ieffects = [ NoEffect "of musky concoction", DropBestWeapon
                , OnSmash (Explode "pheromone")]
   }
@@ -392,7 +392,7 @@ potion8 = potion
                                 , Explode "explosion blast 10" ]) ]
   }
 potion9 = potion
-  { irarity  = [(1, 4), (10, 6)]
+  { irarity  = [(4, 1), (10, 2)]
   , ieffects = [ OneOf [ Dominate, DropBestWeapon, RefillHP 15, Burn 9
                        , InsertMove 2]
                , OnSmash (OneOf [ Explode "healing mist"  -- TODO: make stronger

@@ -179,7 +179,8 @@ effectRefillHP execSfx power source target = do
     then return False
     else do
       execUpdAtomic $ UpdRefillHP target deltaHP
-      when (deltaHP < 0 && source /= target) $ halveCalm target
+      when (deltaHP < 0 && source /= target && not (bproj tb)) $
+        halveCalm target
       execSfx
       return True
 
@@ -215,7 +216,7 @@ effectHurt nDm source target = do
       deltaDiv = fromIntegral $ deltaHP `div` oneM
   -- Damage the target.
   execUpdAtomic $ UpdRefillHP target deltaHP
-  when (source /= target) $ halveCalm target
+  when (source /= target && not (bproj tb)) $ halveCalm target
   execSfxAtomic $ SfxEffect (bfid sb) target $
     if source == target
     then Effect.RefillHP deltaDiv  -- no SfxStrike, so treat as any heal/wound
