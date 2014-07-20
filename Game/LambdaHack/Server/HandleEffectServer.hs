@@ -316,13 +316,14 @@ effectSummon actorFreq power source target = assert (power > 0) $ do
   sb <- getsState $ getActorBody source
   activeItems <- activeItemsServer source
   let legal = source == target
-              && calmEnough sb activeItems
-              && bcalm sb >= xM 10
+              && (bproj sb
+                  || calmEnough sb activeItems
+                     && bcalm sb >= xM 10)
   if not legal then return False
   else do
     let calmMax = max 1 $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
         deltaCalm = - xM calmMax `div` 3
-    execUpdAtomic $ UpdRefillCalm source deltaCalm
+    unless (bproj sb) $ execUpdAtomic $ UpdRefillCalm source deltaCalm
     let validTile t = not $ Tile.hasFeature cotile F.NoActor t
     ps <- getsState $ nearbyFreePoints validTile (bpos sb) (blid sb)
     localTime <- getsState $ getLocalTime (blid sb)

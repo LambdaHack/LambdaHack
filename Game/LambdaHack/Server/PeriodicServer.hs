@@ -8,6 +8,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.List
 import Data.Maybe
 
 import Game.LambdaHack.Atomic
@@ -28,6 +29,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.ItemRev
@@ -71,18 +73,21 @@ addAnyActor actorFreq lid time mpos = do
   totalDepth <- getsState stotalDepth
   lvl@Level{ldepth} <- getLevel lid
   factionD <- getsState sfactionD
-  let factGroups = map (playerFaction . gplayer) $ EM.elems factionD
-      factPresent (aGroup, _) = aGroup `elem` factGroups
-      actorFreqPruned = filter factPresent actorFreq
   m4 <- rndToAction
-        $ newItem cops flavour discoRev actorFreqPruned lid ldepth totalDepth
+        $ newItem cops flavour discoRev actorFreq lid ldepth totalDepth
   case m4 of
     Nothing -> return Nothing
-    Just (itemKnown, trunkFull, seed, k, actorGroup) -> do
-      let f (_, fact) = playerFaction (gplayer fact) == actorGroup
-      let actorFids = map fst $ filter f $ EM.assocs factionD
-      assert (not (null actorFids) `blame` (actorFreq, actorGroup)) skip
-      fid <- rndToAction $ oneOf actorFids
+    Just (itemKnown, trunkFull, seed, k, _) -> do
+      let ik = maybe (assert `failure` trunkFull) itemKind $ itemDisco trunkFull
+          freqNames = map fst $ ifreq ik
+          f fact = playerFaction (gplayer fact)
+          factNames = map f $ EM.elems factionD
+          fidName = case freqNames `intersect` factNames of
+            [] -> head factNames  -- fall back to an arbitrary faction
+            fName : _ -> fName
+          g (_, fact) = playerFaction (gplayer fact) == fidName
+          mfid = find g $ EM.assocs factionD
+          fid = fst $ fromMaybe (assert `failure` (factionD, fidName)) mfid
       pers <- getsServer sper
       let allPers = ES.unions $ map (totalVisible . (EM.! lid))
                     $ EM.elems $ EM.delete fid pers  -- expensive :(

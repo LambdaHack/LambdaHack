@@ -467,7 +467,7 @@ scroll9 = scroll
   }
 
 standardSummon :: Freqs
-standardSummon = [("monster", 30), ("summonable animal", 70), ("horror", 100)]
+standardSummon = [("monster", 30), ("summonable animal", 70)]
 
 -- * Armor
 
