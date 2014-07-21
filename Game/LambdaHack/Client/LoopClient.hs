@@ -38,7 +38,11 @@ initCli sdebugCli putSt = do
       putSt sCops
       putClient cli {sdebugCli}
       return True
-    _ ->  -- First visit ever, use the initial state.
+    _ -> do  -- First visit ever, use the initial state.
+      -- But preserve the previous history, if any (--newGame).
+      case restored of
+        Just (_, cliR) -> modifyClient $ \cli -> cli {shistory = shistory cliR}
+        Nothing -> return ()
       return False
 
 loopAI :: ( MonadAtomic m
