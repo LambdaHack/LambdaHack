@@ -42,7 +42,7 @@ dart = ItemKind
   , irarity  = [(1, 20)]
   , iverbHit = "prick"
   , iweight  = 50
-  , iaspects = [AddHurtRanged ((d 6 + dl 6) * 10)]
+  , iaspects = [AddHurtRanged ((d 6 + dl 6) |*| 10)]
   , ieffects = [Hurt (3 * d 1)]
   , ifeature = []
   , idesc    = "Little, but sharp and sturdy."  -- "Much inferior to arrows though, especially given the contravariance problems."  --- funny, but destroy the suspension of disbelief; this is supposed to be a Lovecraftian horror and any hilarity must ensue from the failures in making it so and not from actively trying to be funny; also, mundane objects are not supposed to be scary or transcendental; the scare is in horrors from the abstract dimension visiting our ordinary reality; without the contrast there's no horror and no wonder, so also the magical items must be contrasted with ordinary XIX century and antique items
@@ -57,7 +57,7 @@ dart200 = ItemKind
   , irarity  = [(4, 20)]
   , iverbHit = "prick"
   , iweight  = 50
-  , iaspects = [AddHurtRanged ((d 6 + dl 6) * 10)]
+  , iaspects = [AddHurtRanged ((d 6 + dl 6) |*| 10)]
   , ieffects = [Hurt (2 * d 1)]
   , ifeature = [toVelocity 200]
   , idesc    = "Finely balanced for throws of great speed."
@@ -90,7 +90,7 @@ harpoon = ItemKind
   , irarity  = [(5, 5), (10, 20)]
   , iverbHit = "hook"
   , iweight  = 4000
-  , iaspects = [AddHurtRanged ((d 2 + 2 * dl 5) * 10)]
+  , iaspects = [AddHurtRanged ((d 2 + 2 * dl 5) |*| 10)]
   , ieffects = [Hurt (4 * d 1), PullActor (ThrowMod 200 50)]
   , ifeature = []
   , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
@@ -481,8 +481,8 @@ armorLeather = ItemKind
   , iverbHit = "thud"
   , iweight  = 7000
   , iaspects = [ AddHurtMelee (-3)
-               , AddArmorMelee $ (1 + dl 3) * 5
-               , AddArmorRanged $ (1 + dl 3) * 5 ]
+               , AddArmorMelee $ (1 + dl 3) |*| 5
+               , AddArmorRanged $ (1 + dl 3) |*| 5 ]
   , ieffects = []
   , ifeature = [ toVelocity 30  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
@@ -495,8 +495,8 @@ armorMail = armorLeather
   , irarity  = [(7, 9)]
   , iweight  = 12000
   , iaspects = [ AddHurtMelee (-3)
-               , AddArmorMelee $ (2 + dl 3) * 5
-               , AddArmorRanged $ (2 + dl 3) * 5 ]
+               , AddArmorMelee $ (2 + dl 3) |*| 5
+               , AddArmorRanged $ (2 + dl 3) |*| 5 ]
   , idesc    = "A long shirt woven from iron rings. Discourages foes from attacking your torso, making it harder for them to land a blow."
   }
 gloveFencing = ItemKind

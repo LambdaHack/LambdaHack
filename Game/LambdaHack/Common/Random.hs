@@ -81,10 +81,11 @@ castDice (AbsDepth n) (AbsDepth depth) dice = do
                                `twith` (n, depth)) skip
   dc <- frequency $ Dice.diceConst dice
   dl <- frequency $ Dice.diceLevel dice
-  return $! dc + (dl * max 0 (n - 1)) `div` max 1 (depth - 1)
+  return $! (dc + (dl * max 0 (n - 1)) `div` max 1 (depth - 1))
+            * Dice.diceScale dice
 
 -- | Cast dice scaled with current level depth and return @True@
--- if the results if greater than 50.
+-- if the results is greater than 50.
 chanceDice :: AbsDepth -> AbsDepth -> Dice.Dice -> Rnd Bool
 chanceDice ldepth totalDepth dice = do
   c <- castDice ldepth totalDepth dice
