@@ -9,8 +9,10 @@ module Game.LambdaHack.Server.DungeonGen
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.IntMap.Strict as IM
 import Data.List
 import Data.Maybe
+import Data.Text (Text)
 
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
@@ -234,13 +236,12 @@ levelFromCaveKind Kind.COps{cotile}
       lclear = PointArray.foldlA f 0 ltile
   in lvl {lclear}
 
-findGenerator :: Kind.COps -> Caves
-              -> LevelId -> LevelId -> LevelId -> AbsDepth -> Int
+findGenerator :: Kind.COps -> LevelId -> LevelId -> LevelId -> AbsDepth -> Int
+              -> (Text, Maybe Bool)
               -> Rnd Level
-findGenerator cops caves ln minD maxD totalDepth nstairUp = do
+findGenerator cops ln minD maxD totalDepth nstairUp
+              (genName, escapeFeature) = do
   let Kind.COps{cocave=Kind.Ops{opick}} = cops
-      (genName, escapeFeature) =
-        fromMaybe ("dng", Nothing) $ EM.lookup (fromEnum ln) caves
   ci <- fmap (fromMaybe $ assert `failure` genName)
         $ opick genName (const True)
   -- A simple rule for now: level at level @ln@ has depth (difficulty) @abs ln@.
@@ -258,23 +259,22 @@ data FreshDungeon = FreshDungeon
 dungeonGen :: Kind.COps -> Caves -> Rnd FreshDungeon
 dungeonGen cops caves = do
   let (minD, maxD) =
-        case (EM.minViewWithKey caves, EM.maxViewWithKey caves) of
+        case (IM.minViewWithKey caves, IM.maxViewWithKey caves) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` "no caves" `twith` caves
       (minId, maxId) = (toEnum minD, toEnum maxD)
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ AbsDepth
-                        $ if abs minD == 1 || abs maxD == 1
-                          then abs (maxD - minD) + 1
-                          else max 10 $ max (abs minD) (abs maxD)
-  let gen :: (Int, [(LevelId, Level)]) -> LevelId
+                        $ max 10 $ max (abs minD) (abs maxD)
+  let gen :: (Int, [(LevelId, Level)]) -> (Int, (Text, Maybe Bool))
           -> Rnd (Int, [(LevelId, Level)])
-      gen (nstairUp, l) ln = do
-        lvl <- findGenerator cops caves ln minId maxId freshTotalDepth nstairUp
+      gen (nstairUp, l) (n, caveTB) = do
+        let ln = toEnum n
+        lvl <- findGenerator cops ln minId maxId freshTotalDepth nstairUp caveTB
         -- nstairUp for the next level is nstairDown for the current level
         let nstairDown = length $ snd $ lstair lvl
         return $ (nstairDown, (ln, lvl) : l)
-  (nstairUpLast, levels) <- foldM gen (0, []) $ reverse [minId..maxId]
+  (nstairUpLast, levels) <- foldM gen (0, []) $ reverse $ IM.assocs caves
   assert (nstairUpLast == 0) skip
   let freshDungeon = EM.fromList levels
   return $! FreshDungeon{..}

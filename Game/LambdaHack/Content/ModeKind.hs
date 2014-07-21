@@ -4,7 +4,7 @@ module Game.LambdaHack.Content.ModeKind
   ) where
 
 import Data.Binary
-import qualified Data.EnumMap.Strict as EM
+import qualified Data.IntMap.Strict as IM
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU ()
 
@@ -26,7 +26,7 @@ data ModeKind = ModeKind
 -- that can randomly appear. The second component of the pair
 -- is the @Escape@ feature on the level. @True@ means it's represented
 -- by @<@, @False@, by @>@.
-type Caves = EM.EnumMap Int (Text, Maybe Bool)
+type Caves = IM.IntMap (Text, Maybe Bool)
 
 -- | The specification of players for the game mode.
 data Players = Players

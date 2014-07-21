@@ -47,7 +47,8 @@ ascendInBranch dungeon k lid =
       ln = max minD $ min maxD $ toEnum $ fromEnum lid + k
   in case EM.lookup ln dungeon of
     Just _ | ln /= lid -> [ln]
-    _ -> []
+    _ | ln == lid -> []
+    _ -> ascendInBranch dungeon k ln  -- jump over gaps
 
 -- | Actor time priority queue.
 type ActorPrio = EM.EnumMap Time [ActorId]

@@ -1,7 +1,7 @@
 -- | The type of kinds of game modes for LambdaHack.
 module Content.ModeKind ( cdefs ) where
 
-import qualified Data.EnumMap.Strict as EM
+import qualified Data.IntMap.Strict as IM
 
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Content.ModeKind
@@ -149,16 +149,16 @@ playersBattle = Players
 playersSafari = Players
   { playersList = [ playerMonster { playerName = "Monster Tourist Office"
                                   , playerIsSpawn = False
-                                  , playerEntry = -8
+                                  , playerEntry = -4
                                   , playerInitial = 10
                                   , playerAI = False
                                   , playerUI = True }
                   , playerCivilian { playerName = "Hunam Convict Pack"
-                                   , playerEntry = -8 }
+                                   , playerEntry = -4 }
                   , playerAnimal { playerName =
                                      "Animal Magnificent Specimen Variety"
                                  , playerIsSpawn = False
-                                 , playerEntry = -9
+                                 , playerEntry = -7
                                  , playerInitial = 7 }
                   , playerAnimal { playerName =
                                      "Animal Exquisite Herds and Packs"
@@ -290,17 +290,18 @@ playerHorror = Player
 
 cavesCampaign, cavesSkirmish, cavesAmbush, cavesBattle, cavesSafari :: Caves
 
-cavesCampaign = EM.fromList [ (-1, ("caveRogue", Just True))
-                            , (-2, ("caveRogue", Nothing))
-                            , (-3, ("caveEmpty", Nothing))
-                            , (-10, ("caveNoise", Nothing))]
+cavesCampaign = IM.fromList $ [ (-1, ("caveRogue", Just True))
+                              , (-2, ("caveRogue", Nothing))
+                              , (-3, ("caveEmpty", Nothing)) ]
+                              ++ zip [-4, -5..(-9)] (repeat ("dng", Nothing))
+                              ++ [(-10, ("caveNoise", Nothing))]
 
-cavesSkirmish = EM.fromList [(-3, ("caveSkirmish", Nothing))]
+cavesSkirmish = IM.fromList [(-3, ("caveSkirmish", Nothing))]
 
-cavesAmbush = EM.fromList [(-5, ("caveAmbush", Nothing))]
+cavesAmbush = IM.fromList [(-5, ("caveAmbush", Nothing))]
 
-cavesBattle = EM.fromList [(-3, ("caveBattle", Nothing))]
+cavesBattle = IM.fromList [(-3, ("caveBattle", Nothing))]
 
-cavesSafari = EM.fromList [ (-4, ("caveSafari1", Nothing))
+cavesSafari = IM.fromList [ (-4, ("caveSafari1", Nothing))
                           , (-7, ("caveSafari2", Nothing))
                           , (-10, ("caveSafari3", Just False)) ]
