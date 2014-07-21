@@ -28,26 +28,24 @@ The currently chosen party leader is highlighted on the screen
 and his attributes are displayed at the bottommost status line,
 which in its most complex form may look as follows.
 
-    *@12 Adventurer  5d1+1 Calm: 20/50 HP: 33/50 Target: basilisk  [**___]
+    *@12 Adventurer  5d1+1 Calm: 20/60 HP: 33/50 Target: basilisk  [**___]
 
 The line starts with the list of party members (unless only one member
 resides on the currently displayed level) and the shortened name of the team.
 Then comes the damage of the leader's weapon (but regardless of the figures,
 each attack inflicts at least 1 damage), after 'Calm' his current
 and maximum calm (composure, focus, attentiveness) and after 'HP'
-his current and maximum hit points (health). At the end, the personal t
-arget of the leader is described, in this case a monster, with hit points
-drawn as a bar.
+his current and maximum hit points (health). At the end, the personal
+target of the leader is described, in this case a basilisk monster,
+with hit points drawn as a bar.
 
- and the length of the shortest path to the target.
+The other status line relates to the location and to the whole party.
 
-The other status line relates to the dungeon and to the whole party.
+    5  Tall cavern   [33% seen] Cursor: exact spot (71,12)  p15 l10
 
-    5  Tall cavern   [33% seen] Cursor: exact spot (71,12)  p15 l15
-
-First comes the depth of the current level and its description.
+First comes the depth of the current level and the level's description.
 Then the approximate percentage of its explorable tiles already
-seen by the heroes. The cursor is the common target of the whole party,
+seen by the heroes. The 'cursor' is the common target of the whole party,
 directly manipulated with movement keys in the targeting mode.
 The line ends with the length of the shortest path from the leader
 to the cursor position and the straight-line distance between the points.
@@ -95,16 +93,17 @@ In targeting mode the same keys move the targeting cursor.
 direction, until anything of interest is spotted.
 The '5', 'i' and '.' keys consume a turn and make you brace for combat,
 which reduces any damage taken for a turn and makes it impossible
-for foes to displace you.
+for foes to displace you. You displace enemies or friends by bumping
+into them with SHIFT (or CTRL).
 
 Melee, searching for secret doors, looting and opening closed doors
 can be done by bumping into a monster, a wall and a door, respectively.
 Few commands other than movement, 'g'etting an item from the floor,
-'a'pplying an item and 'f'linging an item, are necessary for casual play.
+'a'pplying an item and 'f'linging an item are necessary for casual play.
 Some are provided only as specialized versions of more general commands
 or as building blocks for more complex convenience commands,
 e.g., the autoexplore command (key `X`) could be defined
-by the player as a macro using `BACKSPACE`, `CTRL-?`, `;` and `P`.
+by the player as a macro using `BACKSPACE`, `CTRL-?`, `;` and `V`.
 
 Below are the remaining keys for terrain exploration and alteration.
 
@@ -163,7 +162,8 @@ All targeting keys are listed below.
                 CTRL-{         target the closest stairs up
                 CTRL-}         target the closest stairs down
 
-Commands for automating the actions of one or more members of the team.
+Here are the commands for automating the actions of one or more members
+of the team.
 
                 keys           command
                 =              select (or deselect) a party member
@@ -181,12 +181,12 @@ Assorted remaining keys and commands follow.
                 ?              display help
                 D              display player diary
                 T              mark suspect terrain
-                V              mark visible area
-                S              mark smell
+                Z              mark visible zone
+                C              mark smell clues
                 TAB            cycle among party members on the level
-                SHIFT-TAB      cycle among party members in the dungeon
+                SHIFT-TAB      cycle among all party members
                 SPACE          clear messages
-                ESC            cancel action
+                ESC            cancel action, open Main Menu
                 RET            accept choice
                 0--6           pick a new hero leader anywhere in the dungeon
 
@@ -195,7 +195,7 @@ are listed in the Main Menu, brought up by the `ESC` key.
 Game difficulty setting affects hitpoints at birth for any actors
 of any UI-using faction. For a person new to roguelikes, the Duel game mode
 offers a gentle introduction. The subsequent game modes gradually introduce
-squad combat, stealth, assymetric battles and more game elements.
+squad combat, stealth, asymmetric battles and more game elements.
 
                 keys           command
                 CTRL-x         save and exit
@@ -211,9 +211,9 @@ that can be specified on the command line when starting the game server.
 Use at your own peril! :) Of these, you may find the screensaver game modes
 the least spoilery and the most fun, e.g.:
 
-    LambdaHack --newGame --noMore --maxFps 45 --savePrefix test --automateAll --gameMode campaign --difficulty 1
+    LambdaHack --savePrefix test --newGame --noMore --maxFps 60 --automateAll --gameMode campaign --difficulty 1
 
-The `--automateAll` option stricly corresponds to the `CTRL-A` command,
+The `--automateAll` option strictly corresponds to the `CTRL-A` command,
 but most of the debug options have no corresponding commands.
 
 
@@ -227,19 +227,19 @@ and take care to move one at a time, monsters don't care about each other
 and all move at once, sometimes brutally colliding by accident.
 
 When the hero bumps into a monster or a monster attacks the hero,
-melee combat occurs. The best weapon equipped by each opponent
-is taken into account, as well as their organs, for calculating damage.
+melee combat occurs. The best equipped weapon or the best fighting organ
+of each opponent is taken into account for calculating damage.
 The damage the current hero can potentially inflict is displayed
-at the bottom of the screen. The damage potential of a monster may change
-as it finds and picks up new weapons, if it's capable of that.
-Heroes and monsters running into one another (with the `SHIFT` key)
-do not inflict damage, but change places. This gives the opponent a free blow,
-but can improve the tactical situation or aid escape.
+at the bottom of the screen, but the actual damage depends also on the
+armor the monster is wearing. Heroes and monsters running into one another
+(with the `SHIFT` key) do not inflict damage, but change places.
+This gives the opponent a free blow, but can improve the tactical situation
+or aid escape.
 
-Slinging missiles at targets wounds them, consuming the weapon in the process.
-You may propel any item in your possession (press `?` to choose
-an item and press it again for a non-standard choice) or on the ground
-(press `-`). Only items of a few kinds inflict any damage.
+Slinging a missile at a target wounds it, consuming the weapon in the process.
+You may propel any item in your equipment, inventory and on the ground
+(press `?` to choose an item and press it again for a non-standard choice).
+Only items of a few kinds inflict any damage, but some have other effects.
 Whenever the monster's or hero's hit points reach zero, the combatant dies.
 When the last hero dies, the game ends.
 
@@ -247,13 +247,13 @@ When the last hero dies, the game ends.
 On Winning and Dying
 --------------------
 
-You win the game if you escape the dungeon alive or eliminate all opposition,
-if there is no way out. In the former case, your score is based on the gold
-and precious gems you've plundered, plus a bonus based on the number
-of heroes you lost. In the latter case, your score is based on the number
-of turns you spent overcoming your foes and, as a bonus, the number
-of enemies you've beaten.
+You win the game if you escape the dungeon alive or if you eliminate
+all opposition, if there is no way out. In the former case, your score
+is based on the gold and precious gems you've plundered, plus a bonus
+based on the number of heroes you lost. In the latter case, your score
+is based on the number of turns you spent overcoming your foes and,
+as a bonus, the number of enemies you've beaten.
 
-If all heroes fall, you don't get any bonus. You are free to start again
+If all your heroes fall, you don't get any bonus. You are free to start again
 from a different entrance to the dungeon, but all your previous wealth
 is gone and fresh, undaunted enemies bar your way.
