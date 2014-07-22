@@ -1,3 +1,34 @@
+## [v0.2.14](https://github.com/LambdaHack/LambdaHack/compare/v0.2.12...v0.2.14)
+
+- add a simple cabal test in addition to make-test and travis-test
+- generate items and actors according to their rarities at various depths
+- redo weapon choice, combat bonuses and introduce armor
+- introduce skill levels for abilities (boolean for now, WIP)
+- remove regeneration, re-add through periodically activating items
+- ensure passable areas of randomly filled caves are well connected
+- make secondary factions leaderless
+- auto-tweak digital line epsilon to let projectiles evade obstacles
+- add shrapnel (explosions) and organs (body parts)
+- express actor kinds as item kinds (their trunk)
+- add dynamic lights through items, actors, projectiles
+- fix and improve item kind and item stats identification
+- tons of new content, content fields, effects, aspects and descriptions
+- make aspects additive from all equipment and organs items
+- split item effects into aspects, effects and item features
+- rework AI and structure it according to the Ability type
+- define Num instance and more for Dice to use in contents
+- remove the shared screen multiplayer mode and all support code, for now
+- rename all modules and nearly all other code entities
+- check and consume HP when calling friends and Calm when summoning
+- determine sight radius from items and cap at current Calm/5
+- introduce Calm; use to hear nearby enemies and limit item abuse before death
+- let AI actors manage items and share them with party members
+- completely revamp item manipulation UI
+- add a command to cede control to AI
+- separate actor inventory, 10-item actor equipment and shared party stash
+- vi movement keys (hjklyubn) are now disabled by default
+- new movement keys set: laptop movement keys (uk8o79jl)
+
 ## [v0.2.12](https://github.com/LambdaHack/LambdaHack/compare/v0.2.10...v0.2.12)
 
 - improve and simplify dungeon generation
