@@ -158,8 +158,8 @@ effectSem effect source target = do
     Effect.PullActor tmod ->
       effectSendFlying execSfx tmod source target (Just False)
     Effect.Teleport p -> effectTeleport execSfx p target
-    Effect.PolyItem p -> effectPolyItem p target
-    Effect.Identify p -> effectIdentify p target
+    Effect.PolyItem cstore -> effectPolyItem execSfx cstore target
+    Effect.Identify cstore -> effectIdentify execSfx cstore target
     Effect.ActivateInv symbol -> effectActivateInv execSfx target symbol
     Effect.Explode t -> effectExplode execSfx t target
     Effect.OneOf l -> effectOneOf l source target
@@ -698,8 +698,8 @@ effectTeleport execSfx range target = do
 -- ** PolyItem
 
 effectPolyItem :: (MonadAtomic m, MonadServer m)
-               => CStore -> ActorId -> m Bool
-effectPolyItem cstore target = do
+               => m () -> CStore -> ActorId -> m Bool
+effectPolyItem execSfx cstore target = do
   allAssocs <- fullAssocsServer target [cstore]
   case allAssocs of
     [] -> return False
@@ -710,6 +710,7 @@ effectPolyItem cstore target = do
         then do
           let c = CActor target cstore
           execUpdAtomic $ UpdDestroyItem iid itemBase maxCount c
+          execSfx
           effectCreateItem 1 target
         else do
           tb <- getsState $ getActorBody target
@@ -722,8 +723,8 @@ effectPolyItem cstore target = do
 -- ** Identify
 
 effectIdentify :: (MonadAtomic m, MonadServer m)
-               => CStore -> ActorId -> m Bool
-effectIdentify cstore target = do
+               => m () -> CStore -> ActorId -> m Bool
+effectIdentify execSfx cstore target = do
   allAssocs <- fullAssocsServer target [cstore]
   case allAssocs of
     [] -> return False
@@ -738,6 +739,7 @@ effectIdentify cstore target = do
         if ided && statsObvious
           then return False
           else do
+            execSfx
             tb <- getsState $ getActorBody target
             seed <- getsServer $ (EM.! iid) . sitemSeedD
             execUpdAtomic $ UpdDiscover (blid tb) (bpos tb) iid itemKindId seed
