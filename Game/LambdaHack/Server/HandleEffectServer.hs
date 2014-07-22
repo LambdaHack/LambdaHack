@@ -22,6 +22,7 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -727,11 +728,20 @@ effectIdentify cstore target = do
   case allAssocs of
     [] -> return False
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
-      Just ItemDisco{itemKindId} -> do
-        tb <- getsState $ getActorBody target
-        seed <- getsServer $ (EM.! iid) . sitemSeedD
-        execUpdAtomic $ UpdDiscover (blid tb) (bpos tb) iid itemKindId seed
-        return True
+      Just ItemDisco{..} -> do
+        -- TODO: use this (but faster, via traversing effects with 999)
+        -- also to prevent sending any other UpdDiscover.
+        let ided = Effect.Identified `elem` ifeature itemKind
+            itemSecret = itemNoAE itemFull
+            statsObvious = textAllAE False cstore itemFull
+                           == textAllAE False cstore itemSecret
+        if ided && statsObvious
+          then return False
+          else do
+            tb <- getsState $ getActorBody target
+            seed <- getsServer $ (EM.! iid) . sitemSeedD
+            execUpdAtomic $ UpdDiscover (blid tb) (bpos tb) iid itemKindId seed
+            return True
       _ -> assert `failure` (cstore, target, iid, itemFull)
 
 -- ** ActivateInv

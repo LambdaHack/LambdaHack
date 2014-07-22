@@ -358,7 +358,8 @@ potion1 = potion
                , OnSmash (ApplyPerfume), OnSmash (Explode "fragrance") ]
   }
 potion2 = potion
-  { irarity  = [(10, 1)]
+  { ifreq    = [("useful", 1)]  -- extremely rare
+  , irarity  = [(10, 1)]
   , ieffects = [ NoEffect "of musky concoction", DropBestWeapon
                , OnSmash (Explode "pheromone")]
   }

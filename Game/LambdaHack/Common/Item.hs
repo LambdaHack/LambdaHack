@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Item
     ItemId, Item(..), seedToAspectsEffects
     -- * Item discovery types
   , ItemKindIx, Discovery, ItemSeed, ItemAspectEffect(..), DiscoAE
-  , ItemFull(..), ItemDisco(..), itemNoDisco
+  , ItemFull(..), ItemDisco(..), itemNoDisco, itemNoAE
     -- * Inventory management types
   , ItemBag, ItemDict, ItemKnown
   ) where
@@ -77,6 +77,12 @@ data ItemFull = ItemFull
 itemNoDisco :: (Item, Int) -> ItemFull
 itemNoDisco (itemBase, itemK) =
   ItemFull {itemBase, itemK, itemDisco=Nothing}
+
+itemNoAE :: ItemFull -> ItemFull
+itemNoAE itemFull@ItemFull{..} =
+  let f idisco = idisco {itemAE = Nothing}
+      newDisco = fmap f itemDisco
+  in itemFull {itemDisco = newDisco}
 
 -- | Game items in actor possesion or strewn around the dungeon.
 -- The fields @jsymbol@, @jname@ and @jflavour@ make it possible to refer to
