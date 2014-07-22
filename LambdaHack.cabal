@@ -295,10 +295,10 @@ executable LambdaHack
   ghc-options:        -threaded -with-rtsopts=-C0.005 -rtsopts
 -- ghc-options:       -with-rtsopts=-N  -- eats all cores
 
-test-suite testLH
+test-suite test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     GameDefinition, test
-  main-is:            testLH.hs
+  main-is:            test.hs
   build-depends:      LambdaHack,
                       template-haskell >= 2.6 && < 3,
 
