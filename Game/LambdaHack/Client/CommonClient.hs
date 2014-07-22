@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
   , actorSkillsClient, updateItemSlot, fullAssocsClient, activeItemsClient
-  , itemToFullClient, pickWeaponClient, sumOrganEqpClient
+  , itemToFullClient, pickWeaponClient, sumOrganEqpClient, getModeClient
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -34,6 +34,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ModeKind
 
 -- | Get the current perception of a client.
 getPerFid :: MonadClient m => LevelId -> m Perception
@@ -230,7 +231,13 @@ pickWeaponClient source target = do
       return $! [ReqMelee target iid cstore]
 
 sumOrganEqpClient :: MonadClient m
-                 => Effect.EqpSlot -> ActorId -> m Int
+                  => Effect.EqpSlot -> ActorId -> m Int
 sumOrganEqpClient eqpSlot aid = do
   activeItems <- activeItemsClient aid
   return $! sumSlotNoFilter eqpSlot activeItems
+
+getModeClient :: MonadClient m => m ModeKind
+getModeClient = do
+  Kind.COps{comode=Kind.Ops{okind, ouniqGroup}} <- getsState scops
+  t <- getsClient sgameMode
+  return $! okind $ ouniqGroup t

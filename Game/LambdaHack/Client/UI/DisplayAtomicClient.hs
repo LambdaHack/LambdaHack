@@ -198,9 +198,8 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdDiscoverSeed _ _ iid _ -> discover oldStateClient iid
   UpdCoverSeed{} -> skip  -- don't spam when doing undo
   UpdPerception{} -> skip
-  UpdRestart _ _ _ _ _ t -> do
-    Kind.COps{comode=Kind.Ops{okind, ouniqGroup}} <- getsState scops
-    let mode = okind $ ouniqGroup t
+  UpdRestart _ _ _ _ _ _ -> do
+    mode <- getModeClient
     msgAdd $ "New game started in" <+> mname mode <+> "mode." <+> mdesc mode
     -- TODO: use a vertical animation instead, e.g., roll down,
     -- and reveal the first frame of a new game, not blank screen.
