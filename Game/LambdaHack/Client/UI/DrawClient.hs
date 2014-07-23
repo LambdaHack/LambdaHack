@@ -101,6 +101,7 @@ draw sfBlank dm drawnLevelId cursorPos tgtPos bfsmpathRaw
             bagNumberSlots = IM.filter (`EM.member` floorBag) numberSlots
             floorIids = reverse (EM.elems bagLetterSlots)
                         ++ IM.elems bagNumberSlots
+                        ++ EM.keys floorBag
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeDeltaToFrom` ltime
             viewActor aid Actor{bsymbol, bcolor, bhp, bproj}

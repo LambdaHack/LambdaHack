@@ -65,6 +65,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     side <- getsClient sside
     when (bfid body == side && not (bproj body)) stopPlayBack
   UpdCreateItem iid _ k c -> do
+    -- TODO: probably not Nothing if container not CGround
     updateItemSlot Nothing iid
     itemVerbMU iid k (MU.Text $ "appear" <+> ppContainer c) (storeFromC c)
     stopPlayBack

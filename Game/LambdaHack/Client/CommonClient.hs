@@ -184,7 +184,7 @@ updateItemSlot maid iid = do
         Right l ->
           modifyClient $ \cli ->
             cli { sslots = (letterSlots, IM.insert l iid numberSlots) }
-    _ -> return ()  -- slot already assigned a letter or a number
+    _ -> return ()  -- slot already assigned; a letter or a number
 
 fullAssocsClient :: MonadClient m
                  => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
