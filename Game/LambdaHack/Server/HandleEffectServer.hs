@@ -214,7 +214,7 @@ effectHurt nDm source target = do
       mult = (100 + hurtBonus) * (if block then 50 else 100)
       deltaHP = - (max oneM  -- at least 1 HP taken
                    $ fromIntegral mult * xM n `divUp` (100 * 100))
-      deltaDiv = fromIntegral $ deltaHP `div` oneM
+      deltaDiv = fromIntegral $ deltaHP `divUp` oneM
   -- Damage the target.
   execUpdAtomic $ UpdRefillHP target deltaHP
   when (source /= target && not (bproj tb)) $ halveCalm target

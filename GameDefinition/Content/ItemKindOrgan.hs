@@ -24,7 +24,7 @@ speedGland n = fist
   , iverbHit = "spit at"
   , iaspects = [AddSpeed $ intToDice n, Periodic $ intToDice n]
   , ieffects = [RefillHP 1]
-  , ifeature = [Identified]
+  , ifeature = [Durable, Identified]
   , idesc    = ""
   }
 speedGland2 = speedGland 2
@@ -40,7 +40,7 @@ eye n = fist
   , iverbHit = "glare at"
   , iaspects = [AddSight (intToDice n)]
   , ieffects = []
-  , ifeature = [Identified]
+  , ifeature = [Durable, Identified]
   , idesc    = ""
   }
 eye2 = eye 2
@@ -228,7 +228,7 @@ armoredSkin = fist
   , iverbHit = "bash"
   , iaspects = [AddArmorMelee 33, AddArmorRanged 33]
   , ieffects = []
-  , ifeature = [Identified]
+  , ifeature = [Durable, Identified]
   , idesc    = ""
   }
 
@@ -241,7 +241,7 @@ nostril = fist
   , iverbHit = "snuff"
   , iaspects = [AddSmell 1]
   , ieffects = []
-  , ifeature = [Identified]
+  , ifeature = [Durable, Identified]
   , idesc    = ""
   }
 
@@ -254,5 +254,6 @@ vent = fist
   , iverbHit = "menace"
   , iaspects = [Periodic $ 1 + d 2]
   , ieffects = [Explode "boiling water"]
+  , ifeature = [Durable, Identified]
   , idesc    = ""
   }

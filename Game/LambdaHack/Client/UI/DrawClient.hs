@@ -258,8 +258,8 @@ drawLeaderStatus waitT width = do
                 amaxCalm = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
             in ( not (actorInAmbient b s)
                , braced b, bhpDelta b, bcalmDelta b
-               , tshow $ max 0 amaxHP, tshow (bhp `div` oneM)
-               , tshow $ max 0 amaxCalm, tshow (bcalm `div` oneM))
+               , tshow $ max 0 amaxHP, tshow (bhp `divUp` oneM)
+               , tshow $ max 0 amaxCalm, tshow (bcalm `divUp` oneM))
           -- This is a valuable feedback for the otherwise hard to observe
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]

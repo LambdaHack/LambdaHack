@@ -82,7 +82,7 @@ xctestBattle-long:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --noMore --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 400 --dumpInitRngs --automateAll --gameMode battle --difficulty 1 > /tmp/stdtest.log
 
 xctestBattle-medium:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --noMore --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 250 --dumpInitRngs --automateAll --gameMode battle --difficulty 1 > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --noMore --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 150 --dumpInitRngs --automateAll --gameMode battle --difficulty 1 > /tmp/stdtest.log
 
 xctestSafari-long:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --noMore --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 400 --dumpInitRngs --automateAll --gameMode safari --difficulty 1 > /tmp/stdtest.log
@@ -203,7 +203,7 @@ testBattle-long:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --noMore --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 400 --dumpInitRngs --automateAll --gameMode battle --difficulty 1 > /tmp/stdtest.log
 
 testBattle-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --noMore --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 250 --dumpInitRngs --automateAll --gameMode battle --difficulty 1 > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --noMore --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 150 --dumpInitRngs --automateAll --gameMode battle --difficulty 1 > /tmp/stdtest.log
 
 testSafari-long:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --noMore --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 400 --dumpInitRngs --automateAll --gameMode safari --difficulty 1 > /tmp/stdtest.log
