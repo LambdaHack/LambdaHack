@@ -234,8 +234,14 @@ breakUpdAtomic cmd = case cmd of
   UpdMoveActor aid _ toP -> do
     b <- getsState $ getActorBody aid
     ais <- getsState $ getCarriedAssocs b
-    return [ UpdLoseActor aid b ais
-           , UpdSpotActor aid b {bpos = toP, boldpos = bpos b} ais ]
+    let loseSpot = [ UpdLoseActor aid b ais
+                   , UpdSpotActor aid b {bpos = toP, boldpos = bpos b} ais ]
+    fact <- getsState $ (EM.! bfid b) . sfactionD
+    if gleader fact == Just aid
+      then return $ [UpdLeadFaction (bfid b) (Just aid) Nothing]
+                    ++ loseSpot
+                    ++ [UpdLeadFaction (bfid b) Nothing (Just aid)]
+      else return loseSpot
   UpdDisplaceActor source target -> do
     sb <- getsState $ getActorBody source
     sais <- getsState $ getCarriedAssocs sb
