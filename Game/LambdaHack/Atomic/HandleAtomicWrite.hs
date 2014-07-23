@@ -272,7 +272,7 @@ updQuitFaction fid mbody fromSt toSt = do
 
 -- The previous leader is assumed to be alive.
 updLeadFaction :: MonadStateWrite m
-             => FactionId -> Maybe ActorId -> Maybe ActorId -> m ()
+               => FactionId -> Maybe ActorId -> Maybe ActorId -> m ()
 updLeadFaction fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
   assert (playerLeader $ gplayer fact) skip  -- @PosNone@ ensure this
@@ -286,7 +286,7 @@ updLeadFaction fid source target = assert (source /= target) $ do
   updateFaction fid adj
 
 updDiplFaction :: MonadStateWrite m
-             => FactionId -> FactionId -> Diplomacy -> Diplomacy -> m ()
+               => FactionId -> FactionId -> Diplomacy -> Diplomacy -> m ()
 updDiplFaction fid1 fid2 fromDipl toDipl =
   assert (fid1 /= fid2 && fromDipl /= toDipl) $ do
     fact1 <- getsState $ (EM.! fid1) . sfactionD

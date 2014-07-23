@@ -16,8 +16,8 @@ import System.FilePath
 import System.IO
 import qualified System.Random as R
 
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.File
+import Game.LambdaHack.Common.Msg
 
 type ChanSave a = MVar (Maybe a)
 
@@ -65,7 +65,8 @@ wrapInSaves saveFile exe = do
         -- Wait until the last save (if any) starts
         -- and tell the save thread to end.
         putMVar toSave Nothing
-        -- Wait until the save thread ends.
+        -- Wait 0.5s to flush debug and then until the save thread ends.
+        threadDelay 500000
         wait a
   exe toSave `Ex.finally` fin
   -- The creation of, e.g., the initial client state, is outside the 'finally'
