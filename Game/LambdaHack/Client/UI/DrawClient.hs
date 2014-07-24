@@ -372,8 +372,12 @@ drawPlayerName width = do
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  let nameN n t = let firstWord = head $ T.words t
-                  in if T.length firstWord > n then "" else firstWord
+  let nameN n t =
+        let fitWords [] = []
+            fitWords l@(_ : rest) = if sum (map T.length l) + length l - 1 > n
+                                    then fitWords rest
+                                    else l
+        in T.unwords $ reverse $ fitWords $ reverse $ T.words t
       ourName = nameN (width - 1) $ playerName $ gplayer fact
   return $! if T.null ourName || T.length ourName >= width
             then []

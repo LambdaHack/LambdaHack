@@ -57,7 +57,7 @@ keyHelp Binding{bcmdList} =
   let
     minimalBlurb =
       [ "Move throughout a level with numerical keypad or, optionally, other keys."
-      , "Run ahead, until anything disturbs you, with SHIFT (or CTRL) and a key."
+      , "Run ahead (until anything disturbs you) with SHIFT (or CTRL) and a key."
       , ""
       , "               7 8 9          7 8 9          y k u"
       , "                \\|/            \\|/            \\|/"
@@ -90,7 +90,7 @@ keyHelp Binding{bcmdList} =
       , "You displace enemies or friends by bumping into them with SHIFT (or CTRL)."
       , ""
       , "Search, loot, open and attack by bumping into walls, doors and enemies."
-      , "The best object to attack with is automatically chosen from among"
+      , "The best item to attack with is automatically chosen from among"
       , "weapons in your personal equipment and your unwounded organs."
       , ""
       , "Press SPACE to see command descriptions."
