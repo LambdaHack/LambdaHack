@@ -16,9 +16,10 @@ support for multiplayer tactical squad combat, in-game content creation,
 auto-balancing and persistent content modification based on player behaviour.
 
 The engine comes with a sample code for a little dungeon crawler,
-called LambdaHack and described in `PLAYING.md`. The engine and the example
-game are bundled together in a single [Hackage] [3] package.
-You are welcome to create your own games by modifying the sample game
+called LambdaHack and described in [PLAYING.md](GameDefinition/PLAYING.md).
+The engine and the example game are bundled together
+in a single [Hackage] [3] package. You are welcome
+to create your own games by modifying the sample game
 and the engine code, but please consider eventually splitting your changes
 into a separate Hackage package that depends on the upstream library,
 to help us exchange ideas and share improvements to the common code.
@@ -70,11 +71,12 @@ should work everywhere regardless. GTK works fine, too.
 Testing and debugging
 ---------------------
 
-The `Makefile` contains many sample test commands. All commands that use
-the screensaver game modes (AI vs. AI) and the dumb `stdout` frontend
-are gathered in `make test`. Of these, travis runs `test-travis-*`
-on each push to the repo. Test commands with prefix `frontend` start
-AI vs. AI games with the standard, user-friendly frontend.
+The [Makefile](Makefile) contains many sample test commands.
+All commands that use the screensaver game modes (AI vs. AI)
+ and the dumb `stdout` frontend are gathered in `make test`.
+Of these, travis runs `test-travis-*` on each push to the repo.
+Test commands with prefix `frontend` start AI vs. AI games
+with the standard, user-friendly frontend.
 
 Run `LambdaHack --help` to see a brief description of all debug options.
 Of these, `--sniffIn` and `--sniffOut` are very useful (though verbose
@@ -102,7 +104,8 @@ Further information
 -------------------
 
 For more information, visit the [wiki] [4]
-and see `GameDefinition/PLAYING.md`, `CREDITS` and `LICENSE`.
+and see [PLAYING.md](GameDefinition/PLAYING.md), [CREDITS](CREDITS)
+and [LICENSE](LICENSE).
 
 Have fun!
 

@@ -38,16 +38,16 @@ Calm (composure, focus, attentiveness), then his current and maximum
 HP (hit points, health). At the end, the personal target of the leader
 is described, in this case a basilisk monster, with hit points drawn as a bar.
 
-The other status line describes the current location.
+The other status line describes the current location in relation to the party.
 
-    5  Tall cavern   [33% seen] Cursor: exact spot (71,12)  p15 l10
+    5  Lofty hall   [33% seen] Cursor: exact spot (71,12)  p15 l10
 
 First comes the depth of the current level and its name.
 Then the percentage of its explorable tiles already seen by the heroes.
 The 'cursor' is the common target of the whole party,
 directly manipulated with movement keys in the targeting mode.
 At the end comes the length of the shortest path from the leader
-to the cursor position and the straight-line distance between the points.
+to the cursor position and the straight-line distance between the two points.
 
 
 Dungeon
@@ -240,21 +240,21 @@ You may propel any item in your equipment, inventory and on the ground
 (press `?` to choose an item and press it again for a non-standard choice).
 Only items of a few kinds inflict any damage, but some have other effects.
 Whenever the monster's or hero's hit points reach zero, the combatant dies.
-When the last hero dies, the game ends.
+When the last hero dies, the game ends in defeat.
 
 
 On Winning and Dying
 --------------------
 
-You win the game if you escape the dungeon alive or, if there is no easy
-way out, if you eliminate all opposition. In the former case, your score
-is based on the gold and precious gems you've plundered, plus a bonus
-based on the number of heroes you lost. In the latter case, your score
-is based on the number of turns you spent overcoming your foes and,
-as a bonus, the number of enemies you've subdued.
+You win the game if you escape the dungeon alive or, in game modes with
+no exit opportunity, if you eliminate all opposition. In the former case,
+your score is based on the gold and precious gems you've plundered,
+plus a bonus based on the number of heroes you lost. In the latter case,
+your score is based on the number of turns you spent overcoming your foes
+and, as a bonus, the number of enemies you've subdued.
 
 If all your heroes fall, you are awarded a score for your valiant deeds,
 but no winning bonus. When, invariably, a new overconfident party
-of adventurers storms the dungeon, they start from a different entrance,
-with no experience and no equipment, and fresh, undaunted enemies
+of adventurers storms the dungeon, they start from a new entrance,
+with no experience and no equipment, and new, undaunted enemies
 bar their way.
