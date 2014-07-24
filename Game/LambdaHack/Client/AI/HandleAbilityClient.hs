@@ -491,11 +491,13 @@ trigger aid fleeViaStairs = do
                 else 2  -- no escape anywhere, switch levels occasionally
               (lid2, pos2) = whereTo (blid b) (bpos b) k dungeon
               actorsThere = posToActors pos2 lid2 s
+              leaderless = not $ playerLeader $ gplayer fact
           in if boldpos b == bpos b   -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction
              then 0  -- avoid trivial loops (pushing, being pushed, etc.)
              else let eben = case actorsThere of
                         [] | canSee -> expBenefit
+                        _ | leaderless -> 0  -- leaderless clog stairs easily
                         _ -> min 1 expBenefit  -- risk pushing
                   in if fleeViaStairs
                      then 1000 * eben + 1  -- strongly prefer correct direction
