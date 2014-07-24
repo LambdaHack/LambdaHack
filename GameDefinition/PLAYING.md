@@ -28,26 +28,25 @@ The currently chosen party leader is highlighted on the screen
 and his attributes are displayed at the bottommost status line,
 which in its most complex form may look as follows.
 
-    *@12 Adventurer  5d1+1 Calm: 20/60 HP: 33/50 Target: basilisk  [**___]
+    *@12 Adventurer  4d1+5% Calm: 20/60 HP: 33/50 Target: basilisk  [**___]
 
 The line starts with the list of party members (unless only one member
 resides on the currently displayed level) and the shortened name of the team.
 Then comes the damage of the leader's weapon (but regardless of the figures,
-each attack inflicts at least 1 damage), after 'Calm' his current
-and maximum calm (composure, focus, attentiveness) and after 'HP'
-his current and maximum hit points (health). At the end, the personal
-target of the leader is described, in this case a basilisk monster,
-with hit points drawn as a bar.
+each attack inflicts at least 1 damage), then his current and maximum
+Calm (composure, focus, attentiveness), then his current and maximum
+HP (hit points, health). At the end, the personal target of the leader
+is described, in this case a basilisk monster, with hit points drawn as a bar.
 
-The other status line relates to the location and to the whole party.
+The other status line describes the current location.
 
     5  Tall cavern   [33% seen] Cursor: exact spot (71,12)  p15 l10
 
-First comes the depth of the current level and the level's description.
-Then the approximate percentage of its explorable tiles already
-seen by the heroes. The 'cursor' is the common target of the whole party,
+First comes the depth of the current level and its name.
+Then the percentage of its explorable tiles already seen by the heroes.
+The 'cursor' is the common target of the whole party,
 directly manipulated with movement keys in the targeting mode.
-The line ends with the length of the shortest path from the leader
+At the end comes the length of the shortest path from the leader
 to the cursor position and the straight-line distance between the points.
 
 
@@ -87,7 +86,7 @@ in config.ui.ini).
                  /|\            /|\            /|\
                 1 2 3          j k l          b j n
 
-In targeting mode the same keys move the targeting cursor.
+In targeting mode the keys above move the targeting cursor. In normal mode,
 `SHIFT` (or `CTRL`) and a movement key make the current party leader
 (and currently selected party members, if any) run in the indicated
 direction, until anything of interest is spotted.
@@ -122,7 +121,7 @@ Below are the remaining keys for terrain exploration and alteration.
                 CTRL-R         rest (wait 10 times)
                 c              close door
 
-Item use related keys are as follows.
+Item-use related keys are as follows.
 
                 keys           command
                 E              describe equipment of the leader
@@ -230,8 +229,8 @@ When the hero bumps into a monster or a monster attacks the hero,
 melee combat occurs. The best equipped weapon or the best fighting organ
 of each opponent is taken into account for calculating damage.
 The damage the current hero can potentially inflict is displayed
-at the bottom of the screen, but the actual damage depends also on the
-armor the monster is wearing. Heroes and monsters running into one another
+at the bottom of the screen, but the actual damage depends also
+on the monster's armor. Heroes and monsters running into one another
 (with the `SHIFT` key) do not inflict damage, but change places.
 This gives the opponent a free blow, but can improve the tactical situation
 or aid escape.
@@ -247,13 +246,15 @@ When the last hero dies, the game ends.
 On Winning and Dying
 --------------------
 
-You win the game if you escape the dungeon alive or if you eliminate
-all opposition, if there is no way out. In the former case, your score
+You win the game if you escape the dungeon alive or, if there is no easy
+way out, if you eliminate all opposition. In the former case, your score
 is based on the gold and precious gems you've plundered, plus a bonus
 based on the number of heroes you lost. In the latter case, your score
 is based on the number of turns you spent overcoming your foes and,
-as a bonus, the number of enemies you've beaten.
+as a bonus, the number of enemies you've subdued.
 
-If all your heroes fall, you don't get any bonus. You are free to start again
-from a different entrance to the dungeon, but all your previous wealth
-is gone and fresh, undaunted enemies bar your way.
+If all your heroes fall, you are awarded a score for your valiant deeds,
+but no winning bonus. When, invariably, a new overconfident party
+of adventurers storms the dungeon, they start from a different entrance,
+with no experience and no equipment, and fresh, undaunted enemies
+bar their way.

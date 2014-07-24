@@ -23,7 +23,7 @@ campaign = ModeKind
   , mfreq    = [("campaign", 1)]
   , mplayers = playersCampaign
   , mcaves   = cavesCampaign
-  , mdesc    = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there for too long!"
+  , mdesc    = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there in the darkness for too long!"
   }
 
 duel = ModeKind
@@ -32,7 +32,7 @@ duel = ModeKind
   , mfreq    = [("duel", 1)]
   , mplayers = playersDuel
   , mcaves   = cavesSkirmish
-  , mdesc    = "You disagreed about the premises of a relative completeness theorem and there is only one way to settle it."
+  , mdesc    = "You disagreed about the premises of a relative completeness theorem and there's only one way to settle that."
   }
 
 skirmish = ModeKind
@@ -41,7 +41,7 @@ skirmish = ModeKind
   , mfreq    = [("skirmish", 1)]
   , mplayers = playersSkirmish
   , mcaves   = cavesSkirmish
-  , mdesc    = "When the scoring system of a programming contest fails to determine the winning team, participants take matters into their own hands."
+  , mdesc    = "The scoring system of a programming contest fails to determine the winning team and participants take matters into their own hands."
   }
 
 ambush = ModeKind
@@ -50,7 +50,7 @@ ambush = ModeKind
   , mfreq    = [("ambush", 1)]
   , mplayers = playersAmbush
   , mcaves   = cavesAmbush
-  , mdesc    = "Striking ideas and fast execution are what makes or breaks a creative team."
+  , mdesc    = "Surprising, striking ideas and fast execution are what makes or breaks a creative team!"
   }
 
 battle = ModeKind
@@ -68,7 +68,7 @@ safari = ModeKind
   , mfreq    = [("safari", 1)]
   , mplayers = playersSafari
   , mcaves   = cavesSafari
-  , mdesc    = "In this simulation you'll discover the joys of hunting the most exquisite of Earth's fauna, both animal and semi-intelligent (exit at the opposite level)."
+  , mdesc    = "In this simulation you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent (exit at the bottommost level)."
   }
 
 pvp = ModeKind
@@ -95,7 +95,7 @@ defense = ModeKind
   , mfreq    = [("defense", 1)]
   , mplayers = playersDefense
   , mcaves   = cavesCampaign
-  , mdesc    = "Don't let the puny humans steal you secrets and flee, like dirty scoundrels that they are, to the exit!"
+  , mdesc    = "Don't let the humans defile your abstract secrets and flee, like the vulgar, literal, base scoundrels that they are!"
   }
 
 

@@ -306,7 +306,7 @@ ring = ItemKind
   , iaspects = []
   , ieffects = []
   , ifeature = [Precious, Identified]
-  , idesc    = "It looks like an ordinary object, but it's in fact a generator of exceptional effects: adding to some of your natural abilities and subtracting from others. You'd profit enormously if you could find a way to multiply such generators..."  -- TODO: merge rings: do not add effects though, because it would make the ring too powerful (only one eqp slot taken); define correct, but not overpowered mutlipliation, if possible
+  , idesc    = "It looks like an ordinary object, but it's in fact a generator of exceptional effects: adding to some of your natural abilities and subtracting from others. You'd profit enormously if you could find a way to multiply such generators..."  -- TODO: merge rings: do not add effects though, because it would make the ring too powerful (only one eqp slot taken); define correct, but not overpowered multiplication, if possible
   , ikit     = []
   }
 ring1 = ring
@@ -350,7 +350,7 @@ potion = ItemKind
   , ieffects = []
   , ifeature = [ toVelocity 50  -- oily, bad grip
                , Applicable, Fragile ]
-  , idesc    = "A flask of bubbly, slightly oily liquid of a suspect color."  -- purelay natural; no maths, no magic  -- TODO: move distortion to a special flask item or when some precious magical item is destroyed (jewlery?)?
+  , idesc    = "A flask of bubbly, slightly oily liquid of a suspect color."  -- purely natural; no maths, no magic  -- TODO: move distortion to a special flask item or when some precious magical item is destroyed (jewelry?)?
   , ikit     = []
   }
 potion1 = potion
@@ -425,7 +425,7 @@ scroll = ItemKind
   , ieffects = []
   , ifeature = [ toVelocity 25  -- bad shape, even rolled up
                , Applicable ]
-  , idesc    = "Scraps of haphazardly scribbled mysteries from beyond. Is this equation an alchemical recipe? Is this diagram an extradimentional map? Is this formula a secret call sign?"
+  , idesc    = "Scraps of haphazardly scribbled mysteries from beyond. Is this equation an alchemical recipe? Is this diagram an extradimensional map? Is this formula a secret call sign?"
   , ikit     = []
   }
 scroll1 = scroll
@@ -552,7 +552,7 @@ buckler = ItemKind
   , ieffects = []
   , ifeature = [ toVelocity 30  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
-  , idesc    = "Heavy and unwieldy. Absorbs a precentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
+  , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
   , ikit     = []
   }
 shield = buckler
@@ -563,7 +563,7 @@ shield = buckler
   , iaspects = [AddArmorMelee 80, AddHurtMelee (-70)]
   , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
-  , idesc    = "Large and unwieldy. Absorbs a precentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
+  , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
 
 -- * Weapons
@@ -597,7 +597,7 @@ hammer = ItemKind
   , ieffects = [Hurt (6 * d 1)]
   , ifeature = [ toVelocity 20  -- ensuring it hits with the sharp tip costs
                , Durable, EqpSlot EqpSlotWeapon "", Identified ]
-  , idesc    = "It may not cause grave wounds, but neither does it glance off nor ricochet. Great sidearm for opportinistic blows against armored foes."
+  , idesc    = "It may not cause grave wounds, but neither does it glance off nor ricochet. Great sidearm for opportunistic blows against armored foes."
   , ikit     = []
   }
 sword = ItemKind

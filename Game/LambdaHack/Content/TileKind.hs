@@ -58,7 +58,7 @@ validateTileKind lt =
     l : _ -> l
 
 -- | Features of tiles that differentiate them substantially from one another.
--- By tile contents validation condition, this means the player
+-- By tile content validation condition, this means the player
 -- can tell such tile apart, and only looking at the map, not tile name.
 -- So if running uses this function, it won't stop at places that the player
 -- can't himself tell from other places, and so running does not confer

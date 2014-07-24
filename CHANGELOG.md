@@ -1,5 +1,6 @@
-## [v0.2.14](https://github.com/LambdaHack/LambdaHack/compare/v0.2.12...v0.2.14)
+## [v0.2.14, aka 'Out of balance'](https://github.com/LambdaHack/LambdaHack/compare/v0.2.12...v0.2.14)
 
+- tons of new (unbalanced) content, content fields, effects and descriptions
 - add a simple cabal test in addition to make-test and travis-test
 - generate items and actors according to their rarities at various depths
 - redo weapon choice, combat bonuses and introduce armor
@@ -12,22 +13,21 @@
 - express actor kinds as item kinds (their trunk)
 - add dynamic lights through items, actors, projectiles
 - fix and improve item kind and item stats identification
-- tons of new content, content fields, effects, aspects and descriptions
-- make aspects additive from all equipment and organs items
+- make aspects additive from all equipment and organ items
 - split item effects into aspects, effects and item features
 - rework AI and structure it according to the Ability type
-- define Num instance and more for Dice to use in contents
+- define Num instance for Dice to make writing it in content easier
 - remove the shared screen multiplayer mode and all support code, for now
 - rename all modules and nearly all other code entities
 - check and consume HP when calling friends and Calm when summoning
-- determine sight radius from items and cap at current Calm/5
+- determine sight radius from items and cap it at current Calm/5
 - introduce Calm; use to hear nearby enemies and limit item abuse before death
 - let AI actors manage items and share them with party members
 - completely revamp item manipulation UI
 - add a command to cede control to AI
 - separate actor inventory, 10-item actor equipment and shared party stash
 - vi movement keys (hjklyubn) are now disabled by default
-- new movement keys set: laptop movement keys (uk8o79jl)
+- new movement keyset: laptop movement keys (uk8o79jl)
 
 ## [v0.2.12](https://github.com/LambdaHack/LambdaHack/compare/v0.2.10...v0.2.12)
 
