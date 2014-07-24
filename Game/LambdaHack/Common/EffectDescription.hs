@@ -16,74 +16,77 @@ import qualified NLP.Miniutter.English as MU
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Time
 
 -- | Suffix to append to a basic content name if the content causes the effect.
-effectToSuff :: (Show a, Ord a, Num a) => Effect a -> (a -> Text) -> Text
-effectToSuff effect f =
-  case St.evalState (effectTrav effect $ return . f) () of
-    NoEffect t -> t
-    RefillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
-    RefillHP 0 -> assert `failure` effect
-    RefillHP p -> "of wounding" <+> wrapInParens (affixBonus p)
-    Hurt dice -> wrapInParens (tshow dice)
-    RefillCalm p | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
-    RefillCalm 0 -> assert `failure` effect
-    RefillCalm p -> "of dismaying" <+> wrapInParens (affixBonus p)
-    Dominate -> "of domination"
-    Impress -> "of impression"
-    CallFriend 1 -> "of aid calling"
-    CallFriend p -> "of aid calling" <+> wrapInParens (affixBonus p)
-    Summon _freqs t -> "of summoning" <+> wrapInParens t
-    CreateItem t -> "of uncovering"
-                    <+> case effect of
-                      CreateItem 1 -> ""
-                      CreateItem _ -> wrapInParens t
-                      _ -> assert `failure` effect
-    ApplyPerfume -> "of smell removal"
-    Burn p -> "of burning" <+> wrapInParens (affixBonus p)
-    Ascend 1 -> "of ascending"
-    Ascend p | p > 0 -> "of ascending" <+> wrapInParens (affixBonus p)
-    Ascend 0 -> assert `failure` effect
-    Ascend (-1) -> "of descending"
-    Ascend p -> "of descending" <+> wrapInParens (affixBonus (- p))
-    Escape{} -> "of escaping"
-    Paralyze t -> "of paralysis" <+> wrapInParens t
-    InsertMove t -> "of speed surge" <+> wrapInParens t
-    DropBestWeapon -> "of disarming"
-    DropEqp ' ' False -> "of equipment drop"
-    DropEqp symbol False -> "of drop '" <> T.singleton symbol <> "'"
-    DropEqp ' ' True -> "of equipment smash"
-    DropEqp symbol True -> "of smash '" <> T.singleton symbol <> "'"
-    SendFlying ThrowMod{..} ->
-      case effect of
-        SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
-        _ -> assert `failure` effect
-    PushActor ThrowMod{..} ->
-      case effect of
-        PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
-        _ -> assert `failure` effect
-    PullActor ThrowMod{..} ->
-      case effect of
-        PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod
-        _ -> assert `failure` effect
-    Teleport t ->
-      case effect of
-        Teleport p | p > 9 -> "of teleport" <+> wrapInParens t
-        Teleport _ -> "of blinking" <+> wrapInParens t
-        _ -> assert `failure` effect
-    PolyItem _cstore -> "of repurpose"  -- <+> ppCStore cstore
-    Identify _cstore -> "of identify"  -- <+> ppCStore cstore
-    ActivateInv ' ' -> "of inventory burst"
-    ActivateInv symbol -> "of burst '" <> T.singleton symbol <> "'"
-    Explode _ -> "of explosion"
-    OneOf l ->
+effectToSuff :: (Show a, Ord a, Num a)
+             => Effect a -> (a -> Text) -> (a -> Maybe Int) -> Text
+effectToSuff effect f g =
+  case ( St.evalState (effectTrav effect $ return . f) ()
+       , St.evalState (effectTrav effect $ return . g) () ) of
+    (NoEffect t, _) -> t
+    (RefillHP p, _) | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
+    (RefillHP 0, _) -> assert `failure` effect
+    (RefillHP p, _) -> "of wounding" <+> wrapInParens (affixBonus p)
+    (Hurt dice, _) -> wrapInParens (tshow dice)
+    (RefillCalm p, _) | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
+    (RefillCalm 0, _) -> assert `failure` effect
+    (RefillCalm p, _) -> "of dismaying" <+> wrapInParens (affixBonus p)
+    (Dominate, _) -> "of domination"
+    (Impress, _) -> "of impression"
+    (_, CallFriend (Just 1)) -> "of aid calling"
+    (CallFriend t, _) -> "of aid calling"
+                         <+> wrapInParens (dropPlus t <+> "friends")
+    (_, Summon _freqs (Just 1)) -> "of summoning"  -- TODO
+    (Summon _freqs t, _) -> "of summoning"
+                            <+> wrapInParens (dropPlus t <+> "actors")
+    (_, CreateItem (Just 1)) -> "of uncovering"
+    (CreateItem t, _) -> "of uncovering"
+                         <+> wrapInParens (dropPlus t <+> "items")
+    (ApplyPerfume, _) -> "of smell removal"
+    (Burn p, _) | p <= 0 -> assert `failure` effect
+    (Burn p, _) -> wrapInParens (makePhrase [MU.CarWs p "burn"])
+    (Ascend 1, _) -> "of ascending"
+    (Ascend p, _) | p > 0 ->
+      "of ascending" <+> wrapInParens (tshow p <+> "levels")
+    (Ascend 0, _) -> assert `failure` effect
+    (Ascend (-1), _) -> "of descending"
+    (Ascend p, _) ->
+      "of descending" <+> wrapInParens (tshow (-p) <+> "levels")
+    (Escape{}, _) -> "of escaping"
+    (_, Paralyze Nothing) -> "of paralysis (? clips)"
+    (_, Paralyze (Just p)) ->
+      let clipInTurn = timeTurn `timeFit` timeClip
+          seconds = 0.5 * fromIntegral p / fromIntegral clipInTurn :: Double
+      in "of paralysis" <+> wrapInParens (tshow seconds <> "s")
+    (_, InsertMove Nothing) ->
+      "of speed surge (? moves)"
+    (_, InsertMove (Just p)) ->
+      "of speed surge" <+> wrapInParens (makePhrase [MU.CarWs p "move"])
+    (DropBestWeapon, _) -> "of disarming"
+    (DropEqp ' ' False, _) -> "of equipment drop"
+    (DropEqp symbol False, _) -> "of drop '" <> T.singleton symbol <> "'"
+    (DropEqp ' ' True, _) -> "of equipment smash"
+    (DropEqp symbol True, _) -> "of smash '" <> T.singleton symbol <> "'"
+    (SendFlying tmod, _) -> "of impact" <+> tmodToSuff "" tmod
+    (PushActor tmod, _) -> "of pushing" <+> tmodToSuff "" tmod
+    (PullActor tmod, _) -> "of pulling" <+> tmodToSuff "" tmod
+    (_, Teleport (Just p)) | p <= 1  -> assert `failure` effect
+    (Teleport t, Teleport (Just p)) | p <= 9  ->
+      "of blinking" <+> wrapInParens (dropPlus t <+> "steps")
+    (Teleport t, _)->
+      "of teleport" <+> wrapInParens (dropPlus t <+> "steps")
+    (PolyItem _cstore, _) -> "of repurpose"  -- <+> ppCStore cstore
+    (Identify _cstore, _) -> "of identify"  -- <+> ppCStore cstore
+    (ActivateInv ' ', _) -> "of inventory burst"
+    (ActivateInv symbol, _) -> "of burst '" <> T.singleton symbol <> "'"
+    (Explode _, _) -> "of explosion"
+    (OneOf l, _) ->
       let subject = if length l <= 5 then "marvel" else "wonder"
       in makePhrase ["of", MU.CardinalWs (length l) subject]
-    OnSmash _ -> ""  -- conditional effect, TMI
-    TimedAspect _ _ ->
-      case effect of
-        TimedAspect _ aspect -> "keep {" <> aspectToSuff aspect f <> "}"
-        _ -> assert `failure` effect
+    (OnSmash _, _) -> ""  -- conditional effect, TMI
+    (TimedAspect _ aspect, _) -> "keep (" <> rawAspectToSuff aspect <> ")"
+    (effectF, effectG) -> assert `failure` (effect, effectF, effectG)
 
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =
@@ -96,11 +99,12 @@ tmodToSuff verb ThrowMod{..} =
 
 aspectToSuff :: Show a => Aspect a -> (a -> Text) -> Text
 aspectToSuff aspect f =
-  case St.evalState (aspectTrav aspect $ return . f) () of
-    Periodic _ ->
-      case aspect of
-        Periodic n -> wrapInParens $ tshow n <+> "in 100"
-        _ -> assert `failure` aspect
+  rawAspectToSuff $ St.evalState (aspectTrav aspect $ return . f) ()
+
+rawAspectToSuff :: Aspect Text -> Text
+rawAspectToSuff aspect =
+  case aspect of
+    Periodic t -> wrapInParens $ dropPlus t <+> "in 100"
     AddMaxHP t -> wrapInParens $ t <+> "HP"
     AddMaxCalm t -> wrapInParens $ t <+> "Calm"
     AddSpeed t -> wrapInParens $ t <+> "speed"
@@ -125,8 +129,11 @@ featureToSuff feat =
     EqpSlot{} -> ""
     Precious -> ""
 
+dropPlus :: Text -> Text
+dropPlus = T.dropWhile (`elem` ['+', '-'])
+
 effectToSuffix :: Effect Int -> Text
-effectToSuffix effect = effectToSuff effect affixBonus
+effectToSuffix effect = effectToSuff effect affixBonus Just
 
 aspectToSuffix :: Aspect Int -> Text
 aspectToSuffix aspect = aspectToSuff aspect affixBonus
@@ -146,12 +153,10 @@ wrapInChevrons "" = ""
 wrapInChevrons t = "<" <> t <> ">"
 
 affixDice :: Dice.Dice -> Text
-affixDice d = if Dice.minDice d == Dice.maxDice d
-              then affixBonus (Dice.minDice d)
-              else "+?"
+affixDice d = maybe "+?" affixBonus $ Dice.reduceDice d
 
 kindEffectToSuffix :: Effect Dice.Dice -> Text
-kindEffectToSuffix effect = effectToSuff effect affixDice
+kindEffectToSuffix effect = effectToSuff effect affixDice Dice.reduceDice
 
 kindAspectToSuffix :: Aspect Dice.Dice -> Text
 kindAspectToSuffix aspect = aspectToSuff aspect affixDice

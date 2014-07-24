@@ -29,7 +29,7 @@ data Effect a =
   | RefillCalm !Int
   | Dominate
   | Impress
-  | CallFriend !Int
+  | CallFriend !a
   | Summon !Freqs !a
   | CreateItem !a
   | Ascend !Int
@@ -136,7 +136,9 @@ effectTrav (Hurt dice) _ = return $! Hurt dice
 effectTrav (RefillCalm p) _ = return $! RefillCalm p
 effectTrav Dominate _ = return Dominate
 effectTrav Impress _ = return Impress
-effectTrav (CallFriend p) _ = return $! CallFriend p
+effectTrav (CallFriend a) f = do
+  b <- f a
+  return $! CallFriend b
 effectTrav (Summon freqs a) f = do
   b <- f a
   return $! Summon freqs b

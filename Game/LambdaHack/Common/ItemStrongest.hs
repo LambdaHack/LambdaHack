@@ -28,9 +28,7 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
 
 dice999 :: Dice.Dice -> Int
-dice999 d = if Dice.minDice d == Dice.maxDice d
-            then Dice.minDice d
-            else 999
+dice999 d = fromMaybe 999 $ Dice.reduceDice d
 
 strengthAspect :: (Aspect Int -> [b]) -> ItemFull -> [b]
 strengthAspect f itemFull =

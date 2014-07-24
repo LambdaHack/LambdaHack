@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
     Dice, diceConst, diceLevel, diceScale, (|*|)
   , d, z, dl, zl, intToDice
-  , maxDice, minDice, meanDice
+  , maxDice, minDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
   , DiceXY(..), maxDiceXY, minDiceXY, meanDiceXY
   ) where
@@ -169,6 +169,9 @@ minDice Dice{..} = minFreq diceConst * diceScale
 meanDice :: Dice -> Rational
 meanDice Dice{..} = meanFreq diceConst * fromIntegral diceScale
                     + meanFreq diceLevel * fromIntegral diceScale * (1%2)
+
+reduceDice :: Dice -> Maybe Int
+reduceDice de = if minDice de == maxDice de then Just (minDice de) else Nothing
 
 -- | Dice for rolling a pair of integer parameters pertaining to,
 -- respectively, the X and Y cartesian 2D coordinates.
