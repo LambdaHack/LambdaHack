@@ -80,7 +80,7 @@ effectToSuff effect f g =
     (Identify _cstore, _) -> "of identify"  -- <+> ppCStore cstore
     (ActivateInv ' ', _) -> "of inventory burst"
     (ActivateInv symbol, _) -> "of burst '" <> T.singleton symbol <> "'"
-    (Explode _, _) -> "of explosion"
+    (Explode _, _) -> "of explosion"  -- TODO: first word + explosion? nothing?
     (OneOf l, _) ->
       let subject = if length l <= 5 then "marvel" else "wonder"
       in makePhrase ["of", MU.CardinalWs (length l) subject]

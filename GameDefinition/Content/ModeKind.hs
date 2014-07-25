@@ -138,7 +138,7 @@ playersAmbush = playersDuel
 
 playersBattle = Players
   { playersList = [ playerHero {playerInitial = 5}
-                  , playerMonster { playerInitial = 20
+                  , playerMonster { playerInitial = 15
                                   , playerIsSpawn = False }
                   , playerAnimal { playerInitial = 10
                                  , playerIsSpawn = False } ]
