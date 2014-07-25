@@ -4,6 +4,7 @@ module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, moveStores, deduceQuits, deduceKilled, electLeader
   , addActor, addActorIid, projectFail, pickWeaponServer, sumOrganEqpServer
+  , actorSkillsServer
   ) where
 
 import Control.Applicative
@@ -17,6 +18,7 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
@@ -395,3 +397,9 @@ sumOrganEqpServer :: MonadServer m
 sumOrganEqpServer eqpSlot aid = do
   activeAssocs <- activeItemsServer aid
   return $! sumSlotNoFilter eqpSlot activeAssocs
+
+actorSkillsServer :: MonadServer m
+                  => ActorId -> Maybe ActorId -> m Ability.Skills
+actorSkillsServer aid mleader = do
+  activeItems <- activeItemsServer aid
+  getsState $ actorSkills aid mleader activeItems

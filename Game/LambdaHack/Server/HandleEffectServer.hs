@@ -138,7 +138,7 @@ effectSem effect source target = do
     Effect.RefillHP p -> effectRefillHP execSfx p source target
     Effect.Hurt nDm -> effectHurt nDm source target
     Effect.RefillCalm p -> effectRefillCalm execSfx p target
-    Effect.Dominate -> effectDominate execSfx source target
+    Effect.Dominate -> effectDominate source target
     Effect.Impress -> effectImpress execSfx source target
     Effect.CallFriend p -> effectCallFriend p source target
     Effect.Summon freqs p -> effectSummon freqs p source target
@@ -255,19 +255,16 @@ effectRefillCalm execSfx power target = do
 -- ** Dominate
 
 effectDominate :: (MonadAtomic m, MonadServer m)
-               => m () -> ActorId -> ActorId -> m Bool
-effectDominate execSfx source target = do
+               => ActorId -> ActorId -> m Bool
+effectDominate source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if bproj tb then
     return False
   else if bfid tb == bfid sb then
     effectSem Effect.Impress source target
-  else do
-    execSfx
-    dominateFid (bfid sb) target
-    execSfx
-    return True
+  else
+    dominateFidSfx (bfid sb) target
 
 -- ** Impress
 

@@ -1,7 +1,7 @@
 -- | Server operations performed periodically in the game loop
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicServer
-  ( spawnMonster, addAnyActor, dominateFid, advanceTime, leadLevelFlip
+  ( spawnMonster, addAnyActor, dominateFidSfx, advanceTime, leadLevelFlip
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -12,6 +12,7 @@ import Data.List
 import Data.Maybe
 
 import Game.LambdaHack.Atomic
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
@@ -125,6 +126,22 @@ rollSpawnPos Kind.COps{cotile} visible
     , \p _ -> not $ p `ES.member` visible
     , distantAtLeast 3  -- otherwise a fast actor can walk and hit in one turn
     ]
+dominateFidSfx :: (MonadAtomic m, MonadServer m)
+               => FactionId -> ActorId -> m Bool
+dominateFidSfx fid target = do
+  actorSk <- actorSkillsServer target (Just target)
+  let canMove = EM.findWithDefault 0 Ability.AbMove actorSk > 0
+  if canMove
+    then do
+      tb <- getsState $ getActorBody target
+      let execSfx = execSfxAtomic
+                    $ SfxEffect (boldfid tb) target Effect.Dominate
+      execSfx
+      dominateFid fid target
+      execSfx
+      return True
+    else
+      return False
 
 dominateFid :: (MonadAtomic m, MonadServer m)
             => FactionId -> ActorId -> m ()
@@ -177,13 +194,13 @@ advanceTime aid = do
   let t = ticksPerMeter $ bspeed b activeItems
   execUpdAtomic $ UpdAgeActor aid t
   unless (bproj b) $ do
-    if bcalm b == 0 && boldfid b /= bfid b
-       && playerLeader (gplayer fact) then do  -- animals never dominated
-      let execSfx = execSfxAtomic $ SfxEffect (boldfid b) aid Effect.Dominate
-      execSfx
-      dominateFid (boldfid b) aid
-      execSfx
-    else do
+    dominated <-
+      if bcalm b == 0
+         && boldfid b /= bfid b
+         && playerLeader (gplayer fact)  -- animals never Calm-dominated
+      then dominateFidSfx (boldfid b) aid
+      else return False
+    unless dominated $ do
       newCalmDelta <- getsState $ regenCalmDelta b activeItems
       let clearMark = 0
       unless (newCalmDelta <= 0) $
