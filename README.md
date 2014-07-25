@@ -17,6 +17,9 @@ auto-balancing and persistent content modification based on player behaviour.
 
 The engine comes with a sample code for a little dungeon crawler,
 called LambdaHack and described in [PLAYING.md](GameDefinition/PLAYING.md).
+
+![gameplay screenshot](GameDefinition/screenshot.png?raw=true)
+
 The engine and the example game are bundled together
 in a single [Hackage] [3] package. You are welcome
 to create your own games by modifying the sample game
