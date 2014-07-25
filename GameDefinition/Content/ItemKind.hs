@@ -253,7 +253,7 @@ necklace2 = necklace
   }
 necklace3 = necklace
   { iaspects = [Periodic $ d 4 + dl 2]
-  , ieffects = [Paralyze $ 5 + d 5 + dl 5, RefillCalm 50]
+  , ieffects = [Paralyze $ 5 + d 5 + dl 5, RefillCalm 999]
   }
 necklace4 = necklace
   { iaspects = [Periodic $ 2 * d 10 + dl 10]
@@ -325,7 +325,7 @@ ring3 = ring
   }
 ring4 = ring  -- TODO: move to level-ups and to timed effects
   { irarity  = [(3, 8), (10, 12)]
-  , iaspects = [AddHurtMelee $ d 5 + dl 9, AddMaxHP $ dl 3 - 4 - d 2]
+  , iaspects = [AddHurtMelee $ 3 * d 4 + dl 15, AddMaxHP $ dl 3 - 4 - d 2]
   , ifeature = ifeature ring ++ [Durable, EqpSlot EqpSlotAddHurtMelee ""]
   }
 ring5 = ring  -- by the time it's found, probably no space in eqp
@@ -510,7 +510,7 @@ gloveFencing = ItemKind
   , irarity  = [(4, 6), (10, 12)]
   , iverbHit = "flap"
   , iweight  = 100
-  , iaspects = [ AddHurtMelee $ 2 * (d 2 + 2 * dl 5)
+  , iaspects = [ AddHurtMelee $ 2 * (d 3 + 2 * dl 5)
                , AddArmorRanged $ d 2 + dl 2 ]
   , ieffects = []
   , ifeature = [ toVelocity 30  -- flaps and flutters
@@ -577,7 +577,7 @@ dagger = ItemKind
   , irarity  = [(1, 20), (10, 4)]
   , iverbHit = "stab"
   , iweight  = 1000
-  , iaspects = [AddHurtMelee $ 2 * (d 2 + 2 * dl 5), AddArmorMelee $ d 4 + dl 4]
+  , iaspects = [AddHurtMelee $ 2 * (d 3 + 2 * dl 5), AddArmorMelee $ d 4 + dl 4]
   , ieffects = [Hurt (4 * d 1)]
   , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
                , Durable, EqpSlot EqpSlotWeapon "", Identified ]
@@ -593,7 +593,7 @@ hammer = ItemKind
   , irarity  = [(4, 12), (10, 2)]
   , iverbHit = "club"
   , iweight  = 1500
-  , iaspects = [AddHurtMelee $ d 2 + 2 * dl 5]
+  , iaspects = [AddHurtMelee $ d 3 + 2 * dl 5]
   , ieffects = [Hurt (6 * d 1)]
   , ifeature = [ toVelocity 20  -- ensuring it hits with the sharp tip costs
                , Durable, EqpSlot EqpSlotWeapon "", Identified ]
@@ -686,7 +686,7 @@ whetstone = ItemKind
   , irarity  = [(5, 5)]
   , iverbHit = "smack"
   , iweight  = 400
-  , iaspects = [AddHurtMelee $ d 2 + 2 * dl 5]
+  , iaspects = [AddHurtMelee $ 2 * (d 3 + 2 * dl 5)]
   , ieffects = []
   , ifeature = [EqpSlot EqpSlotAddHurtMelee "", Identified]
   , idesc    = "A portable sharpening stone that lets you fix your weapons between or even during fights, without the need to set up camp, fish out tools and assemble a proper sharpening workshop."

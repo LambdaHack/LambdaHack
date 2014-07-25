@@ -76,7 +76,7 @@ placeItemsInDungeon = do
   Kind.COps{cotile} <- getsState scops
   let initialItems lid (Level{ltile, litemNum, lxsize, lysize}) = do
         let factionDist = max lxsize lysize - 5
-        replicateM litemNum $ do
+        replicateM (3 * litemNum `div` 2) $ do
           Level{lfloor} <- getLevel lid
           let dist p = minimum $ maxBound : map (chessDist p) (EM.keys lfloor)
           pos <- rndToAction $ findPosTry 100 ltile
