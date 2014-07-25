@@ -170,6 +170,8 @@ actionStrategy aid = do
             <$> unEquipItems aid  -- late, because better to throw than unequip
           , True )
         , ( [AbMove]
+            -- TODO: forget old target (e.g., tile), to start shooting,
+            -- unless can't shoot, etc.
           , flee aid panicFleeL  -- panic mode; chasing would be pointless
           , condMeleeBad && condThreatNearby && (condNotCalmEnough
                                                  || condThreatAtHand
@@ -221,6 +223,7 @@ pickup aid onlyWeapon = do
     ((_, (k, _)), (iid, itemFull)) : _ -> do
       updateItemSlot (Just aid) iid
       b <- getsState $ getActorBody aid
+      -- TODO: instead of pickup to eqp and then move to inv, pickup to inv
       let toCStore = if goesIntoInv (itemBase itemFull)
                         || eqpOverfull b k
                      then CInv
