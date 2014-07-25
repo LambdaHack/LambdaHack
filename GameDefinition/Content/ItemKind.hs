@@ -249,7 +249,8 @@ necklace1 = necklace
 necklace2 = necklace
   { irarity  = [(2, 0), (10, 1)]
   , iaspects = [Periodic $ d 4 + dl 2]
-  , ieffects = [Summon [("summonable animal", 1)] $ 1 + dl 2, Explode "waste"]
+  , ieffects = [ Impress
+               , Summon [("summonable animal", 1)] $ 1 + dl 2, Explode "waste" ]
   }
 necklace3 = necklace
   { iaspects = [Periodic $ d 4 + dl 2]
@@ -360,7 +361,7 @@ potion1 = potion
 potion2 = potion
   { ifreq    = [("useful", 1)]  -- extremely rare
   , irarity  = [(10, 1)]
-  , ieffects = [ NoEffect "of musky concoction", DropBestWeapon
+  , ieffects = [ NoEffect "of musky concoction", Impress, DropBestWeapon
                , OnSmash (Explode "pheromone")]
   }
 potion3 = potion
@@ -371,7 +372,7 @@ potion4 = potion  -- TODO: a bit boring
   , ieffects = [RefillHP (-5), OnSmash (Explode "wounding mist")]
   }
 potion5 = potion
-  { ieffects = [ Explode "explosion blast 10"
+  { ieffects = [ Explode "explosion blast 10", Impress
                , PushActor (ThrowMod 200 75)
                , OnSmash (Explode "explosion blast 10") ]
   }
@@ -381,7 +382,7 @@ potion6 = potion
                , OnSmash (Explode "distortion")]
   }
 potion7 = potion
-  { ieffects = [ NoEffect "of bait cocktail"
+  { ieffects = [ NoEffect "of bait cocktail", Impress
                , OnSmash (Summon [("summonable animal", 1)] $ 1 + dl 2)
                , OnSmash (Explode "waste") ]
   }
