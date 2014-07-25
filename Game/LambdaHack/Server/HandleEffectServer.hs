@@ -502,10 +502,14 @@ effectEscape target = do
 effectParalyze :: (MonadAtomic m, MonadServer m)
                => m () -> Int -> ActorId -> m Bool
 effectParalyze execSfx p target = assert (p > 0) $ do
-  let t = timeDeltaScale (Delta timeClip) p
-  execUpdAtomic $ UpdAgeActor target t
-  execSfx
-  return True
+  b <- getsState $ getActorBody target
+  if bproj b || bhp b <= 0
+    then return False
+    else do
+      let t = timeDeltaScale (Delta timeClip) p
+      execUpdAtomic $ UpdAgeActor target t
+      execSfx
+      return True
 
 -- ** InsertMove
 
