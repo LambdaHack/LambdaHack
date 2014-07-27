@@ -20,12 +20,20 @@ called LambdaHack and described in [PLAYING.md](GameDefinition/PLAYING.md).
 
 ![gameplay screenshot](GameDefinition/screenshot.png?raw=true)
 
-The engine and the example game are bundled together
-in a single [Hackage] [3] package. You are welcome
-to create your own games by modifying the sample game
-and the engine code, but please consider eventually splitting your changes
-into a separate Hackage package that depends on the upstream library,
-to help us exchange ideas and share improvements to the common code.
+The engine and the example game are bundled together in a single [Hackage] [3]
+package released under the permissive `BSD3` license. You are welcome
+to create your own games by forking and modifying the single package,
+but please consider eventually splitting your changes into a separate
+content-only package that depends on the upstream engine library. This will
+help us exchange ideas and share improvements to the common codebase.
+Alternatively, you can already start the development in separation
+by cloning and rewriting [Allure of the Stars] [10] or any other pure
+game content package and mix and merge with the example LambdaHack game
+rules at will. Note that the LambdaHack sample game derives from the
+[Hack/Nethack visual and narrative tradition] [9], while Allure of the Stars
+uses the more free form Moria/Angband style (it also uses the `AGPL` license,
+and `BSD3 + AGPL = AGPL`, so make sure you want to liberate your code
+and content to such an extent).
 
 Games known to use the LambdaHack library:
 
@@ -122,3 +130,5 @@ Have fun!
 [6]: http://allureofthestars.com
 [7]: http://www.haskell.org/platform
 [8]: https://github.com/tuturto/space-privateers
+[9]: https://github.com/LambdaHack/LambdaHack/wiki/Sample-dungeon-crawler
+[10]: https://github.com/AllureOfTheStars/Allure
