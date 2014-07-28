@@ -49,7 +49,8 @@ endOrLoop loop restart gameExit gameSave = do
     modifyServer $ \ser -> ser {sbkpSave = False}
     gameSave
   case (quitters, campers) of
-    (sgameMode : _, _) -> do
+    (newGameName : _, _) -> do
+      let sgameMode = toGroupName newGameName
       modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {sgameMode}}
       restart
     _ | gameOver -> restart

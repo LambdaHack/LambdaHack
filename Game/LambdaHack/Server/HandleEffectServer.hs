@@ -11,7 +11,6 @@ import Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM_)
 import Data.Maybe
-import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
@@ -762,7 +761,7 @@ effectActivateInv execSfx target symbol = do
 -- ** Explode
 
 effectExplode :: (MonadAtomic m, MonadServer m)
-              => m () -> Text -> ActorId -> m Bool
+              => m () -> GroupName -> ActorId -> m Bool
 effectExplode execSfx cgroup target = do
   tb <- getsState $ getActorBody target
   let itemFreq = [(cgroup, 1)]

@@ -29,6 +29,7 @@ import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
@@ -82,7 +83,7 @@ data StateClient = StateClient
   , scurDifficulty :: !Int         -- ^ current game difficulty level
   , sslots       :: !ItemSlots     -- ^ map from slots to items
   , slastSlot    :: !SlotChar      -- ^ last used slot
-  , sgameMode    :: !Text          -- ^ current game mode
+  , sgameMode    :: !GroupName     -- ^ current game mode
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving Show

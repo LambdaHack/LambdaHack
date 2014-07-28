@@ -13,7 +13,6 @@ import qualified Data.Ix as Ix
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
-import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.ContentDef
@@ -62,14 +61,15 @@ accessTab (Tab tab) ki = tab A.! ki
 -- | Content operations for the content of type @a@.
 data Ops a = Ops
   { okind         :: Id a -> a      -- ^ the content element at given id
-  , ouniqGroup    :: Text -> Id a   -- ^ the id of the unique member of
-                                    --   a singleton content group
-  , opick         :: Text -> (a -> Bool) -> Rnd (Maybe (Id a))
+  , ouniqGroup    :: GroupName -> Id a  -- ^ the id of the unique member of
+                                        --   a singleton content group
+  , opick         :: GroupName -> (a -> Bool) -> Rnd (Maybe (Id a))
                                     -- ^ pick a random id belonging to a group
                                     --   and satisfying a predicate
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
                                     -- ^ fold over all content elements of @a@
-  , ofoldrGroup   :: forall b. Text -> (Int -> Id a -> a -> b -> b) -> b -> b
+  , ofoldrGroup   :: forall b.
+                     GroupName -> (Int -> Id a -> a -> b -> b) -> b -> b
                                     -- ^ fold over the given group only
   , obounds       :: !(Id a, Id a)  -- ^ bounds of identifiers of content @a@
   , ospeedup      :: !(Maybe (Speedup a))  -- ^ auxiliary speedup components
@@ -82,7 +82,7 @@ createOps ContentDef{getName, getFreq, content, validate} =
   assert (length content <= fromEnum (maxBound :: Id a)) $
   let kindMap :: EM.EnumMap (Id a) a
       !kindMap = EM.fromDistinctAscList $ zip [Id 0..] content
-      kindFreq :: M.Map Text [(Int, (Id a, a))]
+      kindFreq :: M.Map GroupName [(Int, (Id a, a))]
       kindFreq =
         let tuples = [ (cgroup, (n, (i, k)))
                      | (i, k) <- EM.assocs kindMap
@@ -108,7 +108,7 @@ createOps ContentDef{getName, getFreq, content, validate} =
        , opick = \cgroup p ->
            case M.lookup cgroup kindFreq of
              Just freqRaw ->
-               let freq = toFreq ("opick ('" <> cgroup <> "')") freqRaw
+               let freq = toFreq ("opick ('" <> tshow cgroup <> "')") freqRaw
                in if nullFreq freq
                   then return Nothing
                   else fmap Just $ frequency $ do

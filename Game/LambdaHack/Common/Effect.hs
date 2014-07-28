@@ -24,7 +24,7 @@ data Effect a =
     NoEffect !Text
   | Hurt !Dice.Dice
   | Burn !Int
-  | Explode !Text         -- ^ explode, producing this group of shrapnel
+  | Explode !GroupName    -- ^ explode, producing this group of shrapnel
   | RefillHP !Int
   | RefillCalm !Int
   | Dominate
@@ -80,7 +80,7 @@ data ThrowMod = ThrowMod
 -- | Features of item. Affect only the item in question, not the actor,
 -- and so not additive in any sense.
 data Feature =
-    ChangeTo !Text           -- ^ change to this group when altered
+    ChangeTo !GroupName           -- ^ change to this group when altered
   | Fragile                  -- ^ break even when not hitting an enemy
   | Durable                  -- ^ don't break even hitting or applying
   | ToThrow !ThrowMod        -- ^ parameters modifying a throw

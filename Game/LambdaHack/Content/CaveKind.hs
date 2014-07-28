@@ -34,13 +34,13 @@ data CaveKind = CaveKind
   , citemFreq       :: !Freqs        -- ^ item groups to consider
   , cplaceFreq      :: !Freqs        -- ^ place groups to consider
   , cpassable       :: !Bool         -- ^ are passable default tiles permitted
-  , cdefTile        :: !Text         -- ^ the default cave tile group name
-  , cdarkCorTile    :: !Text         -- ^ the dark cave corridor tile group name
-  , clitCorTile     :: !Text         -- ^ the lit cave corridor tile group name
-  , cfillerTile     :: !Text         -- ^ the filler wall group name
-  , couterFenceTile :: !Text         -- ^ the outer fence wall group name
-  , clegendDarkTile :: !Text         -- ^ the dark place plan legend group name
-  , clegendLitTile  :: !Text         -- ^ the lit place plan legend group name
+  , cdefTile        :: !GroupName    -- ^ the default cave tile
+  , cdarkCorTile    :: !GroupName    -- ^ the dark cave corridor tile
+  , clitCorTile     :: !GroupName    -- ^ the lit cave corridor tile
+  , cfillerTile     :: !GroupName    -- ^ the filler wall
+  , couterFenceTile :: !GroupName    -- ^ the outer fence wall
+  , clegendDarkTile :: !GroupName    -- ^ the dark place plan legend
+  , clegendLitTile  :: !GroupName    -- ^ the lit place plan legend
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

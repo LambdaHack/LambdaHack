@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.RuleKind
@@ -59,7 +60,7 @@ data DebugModeSer = DebugModeSer
   , sniffIn        :: !Bool
   , sniffOut       :: !Bool
   , sallClear      :: !Bool
-  , sgameMode      :: !Text
+  , sgameMode      :: !GroupName
   , sautomateAll   :: !Bool
   , sstopAfter     :: !(Maybe Int)
   , sbenchmark     :: !Bool

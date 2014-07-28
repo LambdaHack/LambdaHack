@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Misc
     -- * Item containers
   , Container(..), CStore(..)
     -- * Assorted
-  , normalLevelBound, divUp, Freqs, breturn
+  , normalLevelBound, divUp, GroupName, toGroupName, Freqs, breturn
   , serverSaveName, nearby
   ) where
 
@@ -19,9 +19,12 @@ import Data.Functor
 import Data.Hashable
 import qualified Data.HashMap.Strict as HM
 import Data.Key
+import Data.String (IsString (..))
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Traversable (traverse)
 import GHC.Generics (Generic)
+import NLP.Miniutter.English ()
 
 import Game.LambdaHack.Common.Point
 
@@ -41,10 +44,22 @@ infixl 7 `divUp`
 divUp :: Integral a => a -> a -> a
 divUp n k = (n + k - 1) `div` k
 
--- | For each group that the kind belongs to, denoted by a @Text@ name
+-- If ever needed, we can use a symbol table here, since content
+-- is never serialized. But we'd need to cover the few cases
+-- (e.g., @litemFreq@) where @GroupName@ goes into savegame.
+newtype GroupName = GroupName Text
+  deriving (Show, Eq, Ord, Read, Hashable, Binary)
+
+instance IsString GroupName where
+  fromString = GroupName . T.pack
+
+toGroupName :: Text -> GroupName
+toGroupName = GroupName
+
+-- | For each group that the kind belongs to, denoted by a @GroupName@
 -- in the first component of a pair, the second component of a pair shows
 -- how common the kind is within the group.
-type Freqs = [(Text, Int)]
+type Freqs = [(GroupName, Int)]
 
 -- | @breturn b a = [a | b]@
 breturn :: MonadPlus m => Bool -> a -> m a

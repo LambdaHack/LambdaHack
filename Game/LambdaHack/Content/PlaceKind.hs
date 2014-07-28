@@ -17,7 +17,7 @@ data PlaceKind = PlaceKind
   , pcover    :: !Cover     -- ^ how to fill whole place based on the corner
   , pfence    :: !Fence     -- ^ whether to fence the place with solid border
   , ptopLeft  :: ![Text]    -- ^ plan of the top-left corner of the place
-  , poverride :: ![(Char, Text)]  -- ^ legend override, ignoring tile symbol
+  , poverride :: ![(Char, GroupName)]  -- ^ legend override
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

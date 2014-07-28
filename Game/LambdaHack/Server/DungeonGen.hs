@@ -12,7 +12,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
 import Data.List
 import Data.Maybe
-import Data.Text (Text)
 
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
@@ -237,7 +236,7 @@ levelFromCaveKind Kind.COps{cotile}
   in lvl {lclear}
 
 findGenerator :: Kind.COps -> LevelId -> LevelId -> LevelId -> AbsDepth -> Int
-              -> (Text, Maybe Bool)
+              -> (GroupName, Maybe Bool)
               -> Rnd Level
 findGenerator cops ln minD maxD totalDepth nstairUp
               (genName, escapeFeature) = do
@@ -266,7 +265,7 @@ dungeonGen cops caves = do
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
-  let gen :: (Int, [(LevelId, Level)]) -> (Int, (Text, Maybe Bool))
+  let gen :: (Int, [(LevelId, Level)]) -> (Int, (GroupName, Maybe Bool))
           -> Rnd (Int, [(LevelId, Level)])
       gen (nstairUp, l) (n, caveTB) = do
         let ln = toEnum n

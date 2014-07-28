@@ -31,7 +31,7 @@ data ItemKind = ItemKind
                                    -- ^ cause the effect when triggered
   , ifeature :: ![Effect.Feature]  -- ^ public properties
   , idesc    :: !Text              -- ^ description
-  , ikit     :: ![(Text, CStore)]  -- ^ accompanying organs and items
+  , ikit     :: ![(GroupName, CStore)]  -- ^ accompanying organs and items
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

@@ -19,7 +19,6 @@ module Game.LambdaHack.Atomic.CmdAtomic
 
 import Data.Binary
 import Data.Int (Int64)
-import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
@@ -98,7 +97,8 @@ data UpdAtomic =
   | UpdDiscoverSeed !LevelId !Point !ItemId !ItemSeed
   | UpdCoverSeed !LevelId !Point !ItemId !ItemSeed
   | UpdPerception !LevelId !Perception !Perception
-  | UpdRestart !FactionId !Discovery !FactionPers !State !DebugModeCli !Text
+  | UpdRestart
+      !FactionId !Discovery !FactionPers !State !DebugModeCli !GroupName
   | UpdRestartServer !State
   | UpdResume !FactionId !FactionPers
   | UpdResumeServer !State

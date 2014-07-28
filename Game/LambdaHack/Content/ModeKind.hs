@@ -8,7 +8,7 @@ import qualified Data.IntMap.Strict as IM
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU ()
 
-import Game.LambdaHack.Common.Misc (Freqs)
+import Game.LambdaHack.Common.Misc
 
 -- | Game mode specification.
 data ModeKind = ModeKind
@@ -21,12 +21,10 @@ data ModeKind = ModeKind
   }
   deriving Show
 
--- | Requested cave groups for particular levels. The default is
--- the "dng" group, which means a random choice from all caves
--- that can randomly appear. The second component of the pair
+-- | Requested cave groups for particular levels. The second component
 -- is the @Escape@ feature on the level. @True@ means it's represented
 -- by @<@, @False@, by @>@.
-type Caves = IM.IntMap (Text, Maybe Bool)
+type Caves = IM.IntMap (GroupName, Maybe Bool)
 
 -- | The specification of players for the game mode.
 data Players = Players
@@ -39,7 +37,7 @@ data Players = Players
 -- | Properties of a particular player.
 data Player = Player
   { playerName    :: !Text     -- ^ name of the player
-  , playerFaction :: !Text     -- ^ name of faction(s) the player can control
+  , playerFaction :: !GroupName  -- ^ name of faction(s) the player can control
   , playerIsSpawn :: !Bool     -- ^ whether the player is a spawn (score, AI)
   , playerIsHero  :: !Bool     -- ^ whether the player is a hero (score, AI, UI)
   , playerEntry   :: !Int      -- ^ level where the initial members start

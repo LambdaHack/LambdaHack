@@ -5,6 +5,7 @@ import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.ItemKind
 
@@ -20,7 +21,7 @@ burningOil :: Int -> ItemKind
 burningOil n = ItemKind
   { isymbol  = '*'
   , iname    = "burning oil"
-  , ifreq    = [("burning oil" <+> tshow n, 1)]
+  , ifreq    = [(toGroupName $ "burning oil" <+> tshow n, 1)]
   , iflavour = zipFancy [BrYellow]
   , icount   = intToDice (n * 4)
   , irarity  = [(1, 1)]
@@ -41,7 +42,7 @@ explosionBlast :: Int -> ItemKind
 explosionBlast n = ItemKind
   { isymbol  = '*'
   , iname    = "explosion blast"
-  , ifreq    = [("explosion blast" <+> tshow n, 1)]
+  , ifreq    = [(toGroupName $ "explosion blast" <+> tshow n, 1)]
   , iflavour = zipPlain [BrRed]
   , icount   = 12  -- strong, but few, so not always hits target
   , irarity  = [(1, 1)]
@@ -59,14 +60,14 @@ firecracker :: Int -> ItemKind
 firecracker n = ItemKind
   { isymbol  = '*'
   , iname    = "firecracker"
-  , ifreq    = [("firecracker" <+> tshow n, 1)]
+  , ifreq    = [(toGroupName $ "firecracker" <+> tshow n, 1)]
   , iflavour = zipPlain [stdCol !! (n `mod` length stdCol)]
   , icount   = intToDice $ 2 * n
   , irarity  = [(1, 1)]
   , iverbHit = "crack"
   , iweight  = 1
   , iaspects = [AddLight $ intToDice $ n `div` 2]
-  , ieffects = [Burn 1, Explode $ "firecracker" <+> tshow (n - 1)]
+  , ieffects = [Burn 1, Explode $ toGroupName $ "firecracker" <+> tshow (n - 1)]
   , ifeature = [ ToThrow $ ThrowMod (n * 10) 20
                , Fragile, Identified ]
   , idesc    = ""

@@ -6,6 +6,7 @@ module Game.LambdaHack.Server.Commandline
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Server.State
 
 -- TODO: make more maintainable
@@ -56,7 +57,7 @@ debugArgs args = do
       parseArgs ("--allClear" : rest) =
         (parseArgs rest) {sallClear = True}
       parseArgs ("--gameMode" : s : rest) =
-        (parseArgs rest) {sgameMode = T.pack s}
+        (parseArgs rest) {sgameMode = toGroupName (T.pack s)}
       parseArgs ("--automateAll" : rest) =
         (parseArgs rest) {sautomateAll = True}
       parseArgs ("--newGame" : rest) =

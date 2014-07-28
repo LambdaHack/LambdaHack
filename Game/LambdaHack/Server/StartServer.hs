@@ -30,6 +30,7 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
@@ -240,7 +241,7 @@ recruitActors :: (MonadAtomic m, MonadServer m)
 recruitActors ps lid time fid = assert (not $ null ps) $ do
   Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
-  let spawnName = fname $ okind $ gkind fact
+  let spawnName = toGroupName $ fname $ okind $ gkind fact
   laid <- forM ps $ \ p ->
     if isHeroFact fact
     then addHero fid p lid [] Nothing time
@@ -256,7 +257,7 @@ recruitActors ps lid time fid = assert (not $ null ps) $ do
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: (MonadAtomic m, MonadServer m)
-           => Text -> FactionId -> Point -> LevelId -> Time
+           => GroupName -> FactionId -> Point -> LevelId -> Time
            -> m (Maybe ActorId)
 addMonster groupName bfid ppos lid time = do
   cops <- getsState scops
@@ -274,7 +275,7 @@ addHero :: (MonadAtomic m, MonadServer m)
 addHero bfid ppos lid heroNames mNumber time = do
   Kind.COps{cofaction=Kind.Ops{okind=okind}} <- getsState scops
   Faction{gcolor, gplayer, gkind} <- getsState $ (EM.! bfid) . sfactionD
-  let fName = fname $ okind gkind
+  let fName = toGroupName $ fname $ okind gkind
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber

@@ -3,13 +3,13 @@ module Content.TileKind ( cdefs ) where
 
 import Control.Arrow (first)
 import Data.Maybe
-import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Feature
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.TileKind
 
@@ -289,8 +289,9 @@ floorBrownLit = floorRedLit
   }
 
 makeDark :: TileKind -> TileKind
-makeDark k = let darkText :: Text -> Text
-                 darkText t = maybe t (<> "Dark") $ T.stripSuffix "Lit" t
+makeDark k = let darkText :: GroupName -> GroupName
+                 darkText t = maybe t (toGroupName . (<> "Dark"))
+                              $ T.stripSuffix "Lit" $ tshow t
                  darkFrequency = map (first darkText) $ tfreq k
                  darkFeat (OpenTo t) = Just $ OpenTo $ darkText t
                  darkFeat (CloseTo t) = Just $ CloseTo $ darkText t

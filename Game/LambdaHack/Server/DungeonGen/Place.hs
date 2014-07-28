@@ -9,7 +9,6 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
-import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Frequency
@@ -31,7 +30,7 @@ data Place = Place
   { qkind        :: !(Kind.Id PlaceKind)
   , qarea        :: !Area
   , qseen        :: !Bool
-  , qlegend      :: !Text
+  , qlegend      :: !GroupName
   , qsolidFence  :: !(Kind.Id TileKind)
   , qhollowFence :: !(Kind.Id TileKind)
   }
@@ -146,7 +145,7 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
   return (tmap, place)
 
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
-olegend :: Kind.Ops TileKind -> Text
+olegend :: Kind.Ops TileKind -> GroupName
         -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
 olegend Kind.Ops{ofoldrWithKey, opick} cgroup =
   let getSymbols _ tk acc =
@@ -161,7 +160,7 @@ olegend Kind.Ops{ofoldrWithKey, opick} cgroup =
       legend = ES.foldr getLegend (return EM.empty) symbols
   in legend
 
-ooverride :: Kind.Ops TileKind -> [(Char, Text)]
+ooverride :: Kind.Ops TileKind -> [(Char, GroupName)]
           -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
 ooverride Kind.Ops{opick} poverride =
   let getLegend (s, cgroup) acc = do
@@ -182,7 +181,7 @@ buildFence fenceId area =
                    | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct a fence around an area, with the given tile group.
-buildFenceRnd :: Kind.COps -> Text -> Area -> Rnd TileMapEM
+buildFenceRnd :: Kind.COps -> GroupName -> Area -> Rnd TileMapEM
 buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
   let (x0, y0, x1, y1) = fromArea area
       fenceIdRnd (xf, yf) = do

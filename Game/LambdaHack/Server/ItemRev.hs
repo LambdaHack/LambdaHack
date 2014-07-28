@@ -17,7 +17,6 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Ix as Ix
 import Data.List
 import qualified Data.Set as S
-import Data.Text (Text)
 
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Frequency
@@ -70,7 +69,7 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
 -- | Generate an item based on level.
 newItem :: Kind.COps -> FlavourMap -> DiscoRev
         -> Freqs -> LevelId -> AbsDepth -> AbsDepth
-        -> Rnd (Maybe (ItemKnown, ItemFull, ItemSeed, Int, Text))
+        -> Rnd (Maybe (ItemKnown, ItemFull, ItemSeed, Int, GroupName))
 newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         flavour discoRev itemFreq jlid
         ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) = do

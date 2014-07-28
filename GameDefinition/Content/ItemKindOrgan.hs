@@ -5,6 +5,7 @@ import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.ItemKind
 
@@ -19,7 +20,7 @@ fist,    foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, sting, veno
 speedGland :: Int -> ItemKind
 speedGland n = fist
   { iname    = "speed gland"
-  , ifreq    = [("speed gland" <+> tshow n, 100)]
+  , ifreq    = [(toGroupName $ "speed gland" <+> tshow n, 100)]
   , icount   = 1
   , iverbHit = "spit at"
   , iaspects = [AddSpeed $ intToDice n, Periodic $ intToDice n]
@@ -35,7 +36,7 @@ speedGland10 = speedGland 10
 eye :: Int -> ItemKind
 eye n = fist
   { iname    = "eye"
-  , ifreq    = [("eye" <+> tshow n, 100)]
+  , ifreq    = [(toGroupName $ "eye" <+> tshow n, 100)]
   , icount   = 2
   , iverbHit = "glare at"
   , iaspects = [AddSight (intToDice n)]

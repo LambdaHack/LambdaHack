@@ -314,7 +314,7 @@ addProjectile bpos rest iid blid bfid btime isShrapnel = do
                      bfid bpos blid tweakBody bpronoun btime
 
 addActor :: (MonadAtomic m, MonadServer m)
-         => Text -> FactionId -> Point -> LevelId
+         => GroupName -> FactionId -> Point -> LevelId
          -> (Actor -> Actor) -> Text -> Time
          -> m (Maybe ActorId)
 addActor actorGroup bfid pos lid tweakBody bpronoun time = do

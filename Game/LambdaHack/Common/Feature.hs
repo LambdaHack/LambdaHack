@@ -6,19 +6,19 @@ module Game.LambdaHack.Common.Feature
 
 import Data.Binary
 import Data.Hashable (Hashable)
-import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.Effect as Effect
+import Game.LambdaHack.Common.Misc
 
 -- | All possible terrain tile features.
 data Feature =
     Cause !(Effect.Effect Int)  -- ^ causes the effect when triggered
-  | OpenTo !Text         -- ^ goes from a closed to an open tile when altered
-  | CloseTo !Text        -- ^ goes from an open to a closed tile when altered
-  | ChangeTo !Text       -- ^ alters tile, but does not change walkability
-  | HideAs !Text         -- ^ when hidden, looks as a tile of the group
-  | RevealAs !Text       -- ^ if secret, can be revealed to belong to the group
+  | OpenTo !GroupName    -- ^ goes from a closed to an open tile when altered
+  | CloseTo !GroupName   -- ^ goes from an open to a closed tile when altered
+  | ChangeTo !GroupName  -- ^ alters tile, but does not change walkability
+  | HideAs !GroupName    -- ^ when hidden, looks as a tile of the group
+  | RevealAs !GroupName  -- ^ if secret, can be revealed to belong to the group
 
   | Walkable             -- ^ actors can walk through
   | Clear                -- ^ actors can see through

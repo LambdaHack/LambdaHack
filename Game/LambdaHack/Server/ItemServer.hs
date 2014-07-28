@@ -8,7 +8,6 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.HashMap.Strict as HM
 import Data.Key (mapWithKeyM_)
-import Data.Text (Text)
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
@@ -56,7 +55,7 @@ createItems n pos lid = do
 
 rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
                     => LevelId -> Freqs -> Container -> Bool
-                    -> m (Maybe (ItemId, (ItemFull, Text)))
+                    -> m (Maybe (ItemId, (ItemFull, GroupName)))
 rollAndRegisterItem lid itemFreq container verbose = do
   cops <- getsState scops
   flavour <- getsServer sflavour
