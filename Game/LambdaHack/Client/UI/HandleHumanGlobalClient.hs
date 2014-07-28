@@ -199,9 +199,9 @@ waitHuman = do
 -- * MoveItem
 
 moveItemHuman :: MonadClientUI m
-              => [CStore] -> CStore -> Text -> Bool
+              => [CStore] -> CStore -> MU.Part -> Bool
               -> m (SlideOrCmd (RequestTimed AbMoveItem))
-moveItemHuman cLegalRaw destCStore verbRaw auto = do
+moveItemHuman cLegalRaw destCStore verb auto = do
   assert (destCStore `notElem` cLegalRaw) skip
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -211,7 +211,6 @@ moveItemHuman cLegalRaw destCStore verbRaw auto = do
                else if destCStore == CSha
                     then []
                     else delete CSha cLegalRaw
-      verb = MU.Text verbRaw
   ggi <- if auto
          then getAnyItem verb cLegalRaw cLegal False False
          else getAnyItem verb cLegalRaw cLegal True True

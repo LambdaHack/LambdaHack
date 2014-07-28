@@ -35,7 +35,7 @@ data HumanCmd =
     Move !Vector
   | Run !Vector
   | Wait
-  | MoveItem ![CStore] !CStore !Text !Text !Bool
+  | MoveItem ![CStore] !CStore !MU.Part !MU.Part !Bool
   | Project     ![Trigger]
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]
@@ -105,7 +105,7 @@ cmdDescription cmd = case cmd of
   Move v      -> "move" <+> compassText v
   Run v       -> "run" <+> compassText v
   Wait        -> "wait"
-  MoveItem _ _ verb object _ -> verb <+> object
+  MoveItem _ _ verb object _ -> makePhrase [verb, object]
   Project ts  -> triggerDescription ts
   Apply ts    -> triggerDescription ts
   AlterDir ts -> triggerDescription ts
