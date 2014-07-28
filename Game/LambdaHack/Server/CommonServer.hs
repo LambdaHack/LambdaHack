@@ -196,7 +196,7 @@ deduceKilled body = do
   unless (isSpawnFact fact) $ do  -- spawners never die off
     actorsAlive <- anyActorsAlive fid
     when (not actorsAlive || firstDeathEnds) $
-      deduceQuits body $ Status Killed (fromEnum $ blid body) ""
+      deduceQuits body $ Status Killed (fromEnum $ blid body) Nothing
 
 anyActorsAlive :: MonadServer m => FactionId -> m Bool
 anyActorsAlive fid = do

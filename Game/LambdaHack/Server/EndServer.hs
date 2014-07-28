@@ -33,7 +33,7 @@ endOrLoop loop restart gameExit gameSave = do
         _ -> False
       gameOver = not $ any inGame $ EM.elems factionD
   let getQuitter fact = case gquit fact of
-        Just Status{stOutcome=Restart, stInfo} -> Just stInfo
+        Just Status{stOutcome=Restart, stNewGame} -> stNewGame
         _ -> Nothing
       quitters = mapMaybe getQuitter $ EM.elems factionD
   let isCamper fact = case gquit fact of
@@ -49,8 +49,7 @@ endOrLoop loop restart gameExit gameSave = do
     modifyServer $ \ser -> ser {sbkpSave = False}
     gameSave
   case (quitters, campers) of
-    (newGameName : _, _) -> do
-      let sgameMode = toGroupName newGameName
+    (sgameMode : _, _) -> do
       modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {sgameMode}}
       restart
     _ | gameOver -> restart

@@ -420,8 +420,8 @@ triggerEffect aid feats = do
 -- so that they are available in the first game too,
 -- not only in subsequent, restarted, games.
 reqGameRestart :: (MonadAtomic m, MonadServer m)
-               => ActorId -> Text -> Int -> [(Int, (Text, Text))] -> m ()
-reqGameRestart aid stInfo d configHeroNames = do
+               => ActorId -> GroupName -> Int -> [(Int, (Text, Text))] -> m ()
+reqGameRestart aid groupName d configHeroNames = do
   modifyServer $ \ser ->
     ser {sdebugNxt = (sdebugNxt ser) { sdifficultySer = d
                                      , sdebugCli = (sdebugCli (sdebugNxt ser))
@@ -435,7 +435,7 @@ reqGameRestart aid stInfo d configHeroNames = do
         , sheroNames = EM.insert fid configHeroNames $ sheroNames ser }
   revealItems Nothing Nothing
   execUpdAtomic $ UpdQuitFaction fid (Just b) oldSt
-                $ Just $ Status Restart (fromEnum $ blid b) stInfo
+                $ Just $ Status Restart (fromEnum $ blid b) (Just groupName)
 
 -- * ReqGameExit
 
@@ -452,7 +452,7 @@ reqGameExit aid d = do
   modifyServer $ \ser -> ser {sbkpSave = True}
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
   execUpdAtomic $ UpdQuitFaction fid (Just b) oldSt
-                $ Just $ Status Camping (fromEnum $ blid b) ""
+                $ Just $ Status Camping (fromEnum $ blid b) Nothing
 
 -- * ReqGameSave
 

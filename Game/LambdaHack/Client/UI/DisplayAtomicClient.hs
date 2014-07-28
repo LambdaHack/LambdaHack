@@ -378,11 +378,13 @@ quitFactionUI fid mbody toSt = do
         Just Status{stOutcome=Escape} ->
           ( Just "achieve victory"
           , msgIfSide "Can it be done better, though?" )
-        Just Status{stOutcome=Restart, stInfo} ->
-          ( Just $ MU.Text $ "order mission restart in" <+> stInfo <+> "mode"
+        Just Status{stOutcome=Restart, stNewGame=Just gn} ->
+          ( Just $ MU.Text $ "order mission restart in" <+> tshow gn <+> "mode"
           , Just $ if fid == side
                    then "This time for real."
                    else "Somebody couldn't stand the heat." )
+        Just Status{stOutcome=Restart, stNewGame=Nothing} ->
+          assert `failure` (fid, mbody, toSt)
         Nothing ->
           (Nothing, Nothing)  -- Wipe out the quit flag for the savegame files.
   case startingPart of

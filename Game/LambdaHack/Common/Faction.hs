@@ -59,9 +59,9 @@ data Outcome =
 
 -- | Current game status.
 data Status = Status
-  { stOutcome :: !Outcome  -- ^ current game outcome
-  , stDepth   :: !Int      -- ^ depth of the final encounter
-  , stInfo    :: !Text     -- ^ extra information
+  { stOutcome :: !Outcome            -- ^ current game outcome
+  , stDepth   :: !Int                -- ^ depth of the final encounter
+  , stNewGame :: !(Maybe GroupName)  -- ^ new game group to start, if any
   }
   deriving (Show, Eq, Ord)
 
@@ -163,9 +163,9 @@ instance Binary Status where
   put Status{..} = do
     put stOutcome
     put stDepth
-    put stInfo
+    put stNewGame
   get = do
     stOutcome <- get
     stDepth <- get
-    stInfo <- get
+    stNewGame <- get
     return $! Status{..}

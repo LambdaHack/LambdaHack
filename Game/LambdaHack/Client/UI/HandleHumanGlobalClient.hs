@@ -19,7 +19,6 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import Data.Monoid
-import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
@@ -525,9 +524,9 @@ stepToTargetHuman = do
 
 -- * GameRestart; does not take time
 
-gameRestartHuman :: MonadClientUI m => Text -> m (SlideOrCmd RequestUI)
+gameRestartHuman :: MonadClientUI m => GroupName -> m (SlideOrCmd RequestUI)
 gameRestartHuman t = do
-  let msg = "You just requested a new" <+> t <+> "game."
+  let msg = "You just requested a new" <+> tshow t <+> "game."
   b1 <- displayMore ColorFull msg
   if not b1 then failWith "never mind"
   else do

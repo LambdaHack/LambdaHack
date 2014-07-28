@@ -42,7 +42,7 @@ data HumanCmd =
   | TriggerTile ![Trigger]
   | StepToTarget
     -- Below this line, commands do not take time.
-  | GameRestart !Text
+  | GameRestart !GroupName
   | GameExit
   | GameSave
   | Automate
@@ -112,7 +112,7 @@ cmdDescription cmd = case cmd of
   TriggerTile ts -> triggerDescription ts
   StepToTarget -> "make one step towards the target"
 
-  GameRestart t -> makePhrase ["new", MU.Capitalize $ MU.Text t, "game"]
+  GameRestart t -> makePhrase ["new", MU.Capitalize $ MU.Text $ tshow t, "game"]
   GameExit    -> "save and exit"
   GameSave    -> "save game"
   Automate    -> "automate faction (ESC to retake control)"
