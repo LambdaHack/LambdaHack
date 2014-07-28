@@ -34,8 +34,8 @@ type DiscoRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
 -- The full map is known by the server.
 type ItemSeedDict = EM.EnumMap ItemId ItemSeed
 
-serverDiscos :: Kind.Ops ItemKind -> Rnd (Discovery, DiscoRev)
-serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
+serverDiscos :: Kind.COps -> Rnd (Discovery, DiscoRev)
+serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldrWithKey}} = do
   let ixs = map toEnum $ take (Ix.rangeSize obounds) [0..]
       shuffle :: Eq a => [a] -> Rnd [a]
       shuffle [] = return []
@@ -136,8 +136,8 @@ rollFlavourMap fullFlavSet key ik rnd =
                 , EM.insert (isymbol ik) availableReduced availableMap)
 
 -- | Randomly chooses flavour for all item kinds for this game.
-dungeonFlavourMap :: Kind.Ops ItemKind -> Rnd FlavourMap
-dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
+dungeonFlavourMap :: Kind.COps -> Rnd FlavourMap
+dungeonFlavourMap Kind.COps{coitem=Kind.Ops{ofoldrWithKey}} =
   liftM (FlavourMap . fst) $
     ofoldrWithKey (rollFlavourMap (S.fromList stdFlav))
                   (return (EM.empty, EM.empty))

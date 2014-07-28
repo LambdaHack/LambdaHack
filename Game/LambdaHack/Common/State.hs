@@ -43,10 +43,11 @@ data State = State
 
 -- TODO: add a flag 'fresh' and when saving levels, don't save
 -- and when loading regenerate this level.
-unknownLevel :: Kind.Ops TileKind -> AbsDepth -> X -> Y
+unknownLevel :: Kind.COps -> AbsDepth -> X -> Y
              -> Text -> ([Point], [Point]) -> Int -> Int -> Int -> Bool
              -> Level
-unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
+unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
+             ldepth lxsize lysize ldesc lstair lclear
              lsecret lhidden lescape =
   let unknownId = ouniqGroup "unknown space"
       outerId = ouniqGroup "basic outer fence"
@@ -112,11 +113,11 @@ emptyState =
 -- | Local state created by removing secret information from global
 -- state components.
 localFromGlobal :: State -> State
-localFromGlobal State{_scops=_scops@Kind.COps{cotile}, .. } =
+localFromGlobal State{..} =
   State
     { _sdungeon =
       EM.map (\Level{..} ->
-              unknownLevel cotile ldepth lxsize lysize ldesc lstair lclear
+              unknownLevel _scops ldepth lxsize lysize ldesc lstair lclear
                            lsecret lhidden lescape)
             _sdungeon
     , ..

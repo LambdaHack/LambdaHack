@@ -29,7 +29,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.Fov.Common
 import qualified Game.LambdaHack.Server.Fov.Digital as Digital
 import qualified Game.LambdaHack.Server.Fov.Permissive as Permissive
@@ -114,10 +113,10 @@ visibleOnLevel Kind.COps{cotile}
 reachableFromActor :: Kind.COps -> FovMode -> Level
                    -> ((ActorId, Actor), [ItemFull])
                    -> PerceptionReachable
-reachableFromActor Kind.COps{cotile} fovMode lvl ((_, body), allItems) =
+reachableFromActor cops fovMode lvl ((_, body), allItems) =
   let sumSight = sumSlotNoFilter Effect.EqpSlotAddSight allItems
       radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) sumSight
-  in PerceptionReachable $ fullscan cotile fovMode radius (bpos body) lvl
+  in PerceptionReachable $ fullscan cops fovMode radius (bpos body) lvl
 
 -- | Compute all lit positions on a level, whether lit by actors or floor items.
 -- Note that an actor can be blind or a projectile, in which case he doesn't see
@@ -125,11 +124,11 @@ reachableFromActor Kind.COps{cotile} fovMode lvl ((_, body), allItems) =
 litByItems :: Kind.COps -> FovMode -> Level
            -> [(Point, [ItemFull])]
            -> PerceptionLit
-litByItems Kind.COps{cotile} fovMode lvl allItems =
+litByItems cops@Kind.COps{cotile} fovMode lvl allItems =
   let litPos :: (Point, [ItemFull]) -> [Point]
       litPos (p, is) =
         let radius = sumSlotNoFilter Effect.EqpSlotAddLight is
-            scan = fullscan cotile fovMode radius p lvl
+            scan = fullscan cops fovMode radius p lvl
             -- Optimization: filter out positions already having ambient light.
             opt = filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos) scan
         in opt
@@ -182,13 +181,13 @@ litInDungeon fovMode s ser =
 -- that are currently in the field of view. The Field of View
 -- algorithm to use is passed in the second argument.
 -- The actor's own position is considred reachable by him.
-fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
-         -> FovMode            -- ^ scanning mode
-         -> Int                -- ^ scanning radius
-         -> Point              -- ^ position of the spectator
-         -> Level              -- ^ the map that is scanned
+fullscan :: Kind.COps  -- ^ tile content, determines clear tiles
+         -> FovMode    -- ^ scanning mode
+         -> Int        -- ^ scanning radius
+         -> Point      -- ^ position of the spectator
+         -> Level      -- ^ the map that is scanned
          -> [Point]
-fullscan cotile fovMode radius spectatorPos lvl =
+fullscan Kind.COps{cotile} fovMode radius spectatorPos lvl =
   if radius <= 0 then []
   else if radius == 1 then [spectatorPos]
   else spectatorPos : case fovMode of

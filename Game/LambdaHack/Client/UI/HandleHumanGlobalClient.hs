@@ -387,7 +387,7 @@ alterDirHuman ts = do
 alterTile :: MonadClientUI m
           => Vector -> [Trigger] -> m (SlideOrCmd (RequestTimed AbAlter))
 alterTile dir ts = do
-  Kind.COps{cotile} <- getsState scops
+  cops@Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
@@ -395,7 +395,7 @@ alterTile dir ts = do
       t = lvl `at` tpos
       alterFeats = alterFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
-    [] -> failWith $ guessAlter cotile alterFeats t
+    [] -> failWith $ guessAlter cops alterFeats t
     feat : _ -> return $ Right $ ReqAlter tpos $ Just feat
 
 alterFeatures :: [Trigger] -> [F.Feature]
@@ -404,11 +404,11 @@ alterFeatures (AlterFeature{feature} : ts) = feature : alterFeatures ts
 alterFeatures (_ : ts) = alterFeatures ts
 
 -- | Guess and report why the bump command failed.
-guessAlter :: Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> Msg
-guessAlter cotile (F.OpenTo _ : _) t
+guessAlter :: Kind.COps -> [F.Feature] -> Kind.Id TileKind -> Msg
+guessAlter Kind.COps{cotile} (F.OpenTo _ : _) t
   | Tile.isClosable cotile t = "already open"
 guessAlter _ (F.OpenTo _ : _) _ = "cannot be opened"
-guessAlter cotile (F.CloseTo _ : _) t
+guessAlter Kind.COps{cotile} (F.CloseTo _ : _) t
   | Tile.isOpenable cotile t = "already closed"
 guessAlter _ (F.CloseTo _ : _) _ = "cannot be closed"
 guessAlter _ _ _ = "never mind"
@@ -435,14 +435,14 @@ triggerTileHuman ts = do
 triggerTile :: MonadClientUI m
             => [Trigger] -> m (SlideOrCmd (RequestTimed AbTrigger))
 triggerTile ts = do
-  Kind.COps{cotile} <- getsState scops
+  cops@Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
   let t = lvl `at` bpos b
       triggerFeats = triggerFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) triggerFeats of
-    [] -> failWith $ guessTrigger cotile triggerFeats t
+    [] -> failWith $ guessTrigger cops triggerFeats t
     feat : _ -> do
       go <- verifyTrigger leader feat
       case go of
@@ -483,8 +483,8 @@ verifyTrigger leader feat = case feat of
   _ -> return $ Right ()
 
 -- | Guess and report why the bump command failed.
-guessTrigger :: Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> Msg
-guessTrigger cotile fs@(F.Cause (Effect.Ascend k) : _) t
+guessTrigger :: Kind.COps -> [F.Feature] -> Kind.Id TileKind -> Msg
+guessTrigger Kind.COps{cotile} fs@(F.Cause (Effect.Ascend k) : _) t
   | Tile.hasFeature cotile (F.Cause (Effect.Ascend (-k))) t =
     if k > 0 then "the way goes down, not up"
     else if k < 0 then "the way goes up, not down"

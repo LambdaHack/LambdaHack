@@ -84,8 +84,8 @@ parseConfig cfg =
   in Config{..}
 
 -- | Read and parse UI config file.
-mkConfig :: Kind.Ops RuleKind -> IO Config
-mkConfig corule = do
+mkConfig :: Kind.COps -> IO Config
+mkConfig Kind.COps{corule} = do
   let stdRuleset = Kind.stdRuleset corule
       cfgUIName = rcfgUIName stdRuleset
       commentsUIDefault = init $ map (drop 2) $ lines $ rcfgUIDefault stdRuleset  -- TODO: init is a hack until Ini accepts empty files
@@ -105,9 +105,9 @@ mkConfig corule = do
   -- Catch syntax errors in complex expressions ASAP,
   return $! deepseq conf conf
 
-applyConfigToDebug :: Config -> DebugModeCli -> Kind.Ops RuleKind
+applyConfigToDebug :: Config -> DebugModeCli -> Kind.COps
                    -> DebugModeCli
-applyConfigToDebug sconfig sdebugCli corule =
+applyConfigToDebug sconfig sdebugCli Kind.COps{corule} =
   let stdRuleset = Kind.stdRuleset corule
   in (\dbg -> dbg {sfont =
         sfont dbg `mplus` Just (configFont sconfig)}) .

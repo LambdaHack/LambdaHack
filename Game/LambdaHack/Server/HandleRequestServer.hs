@@ -262,7 +262,7 @@ reqDisplace source target = do
 reqAlter :: (MonadAtomic m, MonadServer m)
          => ActorId -> Point -> Maybe F.Feature -> m ()
 reqAlter source tpos mfeat = do
-  Kind.COps{cotile=cotile@Kind.Ops{okind, opick}} <- getsState scops
+  cops@Kind.COps{cotile=cotile@Kind.Ops{okind, opick}} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
       spos = bpos sb
@@ -271,7 +271,7 @@ reqAlter source tpos mfeat = do
   else do
     lvl <- getLevel lid
     let serverTile = lvl `at` tpos
-        freshClientTile = hideTile cotile lvl tpos
+        freshClientTile = hideTile cops lvl tpos
         changeTo tgroup = do
           -- No @SfxAlter@, because the effect is obvious (e.g., opened door).
           toTile <- rndToAction $ fmap (fromMaybe $ assert `failure` tgroup)

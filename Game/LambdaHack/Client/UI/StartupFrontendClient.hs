@@ -35,11 +35,11 @@ srtFrontend :: (DebugModeCli -> SessionUI -> State -> StateClient
                -> IO ())
             -> IO ()
 srtFrontend executorUI executorAI
-            copsClient cops@Kind.COps{corule} sdebugCli exeServer = do
+            copsClient cops sdebugCli exeServer = do
   -- UI config reloaded at each client start.
-  sconfig <- mkConfig corule
+  sconfig <- mkConfig cops
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
-      sdebugMode = applyConfigToDebug sconfig sdebugCli corule
+      sdebugMode = applyConfigToDebug sconfig sdebugCli cops
   defaultHist <- defaultHistory
   let cli = defStateClient defaultHist emptyReport
       s = updateCOps (const cops) emptyState

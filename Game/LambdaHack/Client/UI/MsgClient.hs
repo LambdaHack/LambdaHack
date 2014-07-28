@@ -83,7 +83,7 @@ lookAt :: MonadClientUI m
        -> Text       -- ^ an extra sentence to print
        -> m Text
 lookAt detailed tilePrefix canSee pos aid msg = do
-  Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
+  cops@Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   itemToF <- itemToFullClient
   lidV <- viewedLevel
   lvl <- getLevel lidV
@@ -103,7 +103,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
               _ -> "Items here."
       tile = lvl `at` pos
       obscured | knownLsecret lvl
-                 && tile /= hideTile cotile lvl pos = "partially obscured"
+                 && tile /= hideTile cops lvl pos = "partially obscured"
                | otherwise = ""
       tileText = obscured <+> tname (okind tile)
       tilePart | T.null tilePrefix = MU.Text tileText

@@ -135,7 +135,7 @@ createFactions Kind.COps{cofaction=Kind.Ops{opick}} players = do
 
 gameReset :: MonadServer m
           => Kind.COps -> DebugModeSer -> Maybe R.StdGen -> m State
-gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
+gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
           sdebug mrandom = do
   dungeonSeed <- getSetGen $ sdungeonRng sdebug `mplus` mrandom
   srandom <- getSetGen $ smainRng sdebug `mplus` mrandom
@@ -159,8 +159,8 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
                       then automatePS $ mplayers mode
                       else mplayers mode
         faction <- createFactions cops players
-        sflavour <- dungeonFlavourMap coitem
-        (sdisco, sdiscoRev) <- serverDiscos coitem
+        sflavour <- dungeonFlavourMap cops
+        (sdisco, sdiscoRev) <- serverDiscos cops
         freshDng <- DungeonGen.dungeonGen cops $ mcaves mode
         return (faction, sflavour, sdisco, sdiscoRev, freshDng)
   let (faction, sflavour, sdisco, sdiscoRev, DungeonGen.FreshDungeon{..}) =

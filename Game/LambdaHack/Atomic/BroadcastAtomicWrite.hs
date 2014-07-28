@@ -19,7 +19,6 @@ import Game.LambdaHack.Atomic.PosAtomicRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -173,8 +172,7 @@ atomicRemember lid inPer s =
       fBag (p, bag) = map (fItem p) $ EM.assocs bag
       inItem = concatMap fBag inFloor
       -- Tiles.
-      cotile = Kind.cotile (scops s)
-      inTileMap = map (\p -> (p, hideTile cotile lvl p)) inFov
+      inTileMap = map (\p -> (p, hideTile (scops s) lvl p)) inFov
       atomicTile = if null inTileMap then [] else [UpdSpotTile lid inTileMap]
       -- Smells.
       inSmellFov = ES.elems $ smellVisible inPer

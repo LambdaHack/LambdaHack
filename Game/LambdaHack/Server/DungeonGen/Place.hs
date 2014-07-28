@@ -90,8 +90,8 @@ buildPlace :: Kind.COps         -- ^ the game content
            -> AbsDepth          -- ^ absolute depth
            -> Area              -- ^ whole area of the place, fence included
            -> Rnd (TileMapEM, Place)
-buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
-                    , coplace=Kind.Ops{ofoldrGroup} }
+buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
+                         , coplace=Kind.Ops{ofoldrGroup} }
            CaveKind{..} dnight darkCorTile litCorTile
            ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) r = do
   qsolidFence <- fmap (fromMaybe $ assert `failure` cfillerTile)
@@ -122,9 +122,9 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
       qseen = False
       qarea = fromMaybe (assert `failure` (kr, r)) $ interiorArea (pfence kr) r
       place = Place {..}
-  override <- ooverride cotile (poverride kr)
-  legend <- olegend cotile qlegend
-  legendLit <- olegend cotile clegendLitTile
+  override <- ooverride cops (poverride kr)
+  legend <- olegend cops qlegend
+  legendLit <- olegend cops clegendLitTile
   let xlegend = EM.union override legend
       xlegendLit = EM.union override legendLit
       cmap = tilePlace qarea kr
@@ -145,9 +145,9 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
   return (tmap, place)
 
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
-olegend :: Kind.Ops TileKind -> GroupName
+olegend :: Kind.COps -> GroupName
         -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
-olegend Kind.Ops{ofoldrWithKey, opick} cgroup =
+olegend Kind.COps{cotile=Kind.Ops{ofoldrWithKey, opick}} cgroup =
   let getSymbols _ tk acc =
         maybe acc (const $ ES.insert (tsymbol tk) acc)
           (lookup cgroup $ tfreq tk)
@@ -160,9 +160,9 @@ olegend Kind.Ops{ofoldrWithKey, opick} cgroup =
       legend = ES.foldr getLegend (return EM.empty) symbols
   in legend
 
-ooverride :: Kind.Ops TileKind -> [(Char, GroupName)]
+ooverride :: Kind.COps -> [(Char, GroupName)]
           -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
-ooverride Kind.Ops{opick} poverride =
+ooverride Kind.COps{cotile=Kind.Ops{opick}} poverride =
   let getLegend (s, cgroup) acc = do
         m <- acc
         tk <- fmap (fromMaybe $ assert `failure` (cgroup, s))

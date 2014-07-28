@@ -32,11 +32,12 @@ import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Server.DungeonGen.Cave
 import Game.LambdaHack.Server.DungeonGen.Place
 
-convertTileMaps :: Kind.Ops TileKind
+convertTileMaps :: Kind.COps
                 -> Rnd (Kind.Id TileKind) -> Maybe (Rnd (Kind.Id TileKind))
                 -> Int -> Int -> TileMapEM
                 -> Rnd TileMap
-convertTileMaps cotile cdefTile mcdefTileWalkable cxsize cysize ltile = do
+convertTileMaps Kind.COps{cotile}
+                cdefTile mcdefTileWalkable cxsize cysize ltile = do
   let f :: Point -> Rnd (Kind.Id TileKind)
       f p = case EM.lookup p ltile of
         Just t -> return t
@@ -85,9 +86,9 @@ convertTileMaps cotile cdefTile mcdefTileWalkable cxsize cysize ltile = do
             connect (not . yeven) blocksVertical walkable5 converted4
       return converted5
 
-placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Point]
+placeStairs :: Kind.COps -> TileMap -> CaveKind -> [Point]
             -> Rnd Point
-placeStairs cotile cmap CaveKind{..} ps = do
+placeStairs Kind.COps{cotile} cmap CaveKind{..} ps = do
   let dist cmin l _ = all (\pos -> chessDist l pos > cmin) ps
   findPosTry 1000 cmap
     (\p t -> Tile.isWalkable cotile t
@@ -105,7 +106,7 @@ buildLevel :: Kind.COps -> Cave
            -> AbsDepth -> LevelId -> LevelId -> LevelId -> AbsDepth
            -> Int -> Maybe Bool
            -> Rnd Level
-buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
+buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
                          , cocave=Kind.Ops{okind=cokind} }
            Cave{..} ldepth ln minD maxD totalDepth nstairUp escapeFeature = do
   let kc@CaveKind{..} = cokind dkind
@@ -130,7 +131,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
         then Just $ fmap (fromMaybe $ assert `failure` cdefTile)
                   $ opick cdefTile wcond
         else Nothing
-  cmap <- convertTileMaps cotile pickDefTile mpickWalkable cxsize cysize dmap
+  cmap <- convertTileMaps cops pickDefTile mpickWalkable cxsize cysize dmap
   -- We keep two-way stairs separately, in the last component.
   let makeStairs :: Bool -> Bool -> Bool
                  -> ( [(Point, Kind.Id TileKind)]
@@ -148,7 +149,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                         && (if noDesc then not (descendable tk) else True)
               stairsCur = up ++ down ++ upDown
               posCur = nub $ sort $ map fst stairsCur
-          spos <- placeStairs cotile cmap kc posCur
+          spos <- placeStairs cops cmap kc posCur
           let legend = findLegend spos
           stairId <- fmap (fromMaybe $ assert `failure` legend)
                      $ opick legend cond
@@ -178,7 +179,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
   assert (length stairsUpAndUpDown == nstairUp) skip
   let stairsTotal = stairsUpAndUpDown ++ stairsDown
       posTotal = nub $ sort $ map fst stairsTotal
-  epos <- placeStairs cotile cmap kc posTotal
+  epos <- placeStairs cops cmap kc posTotal
   escape <- case escapeFeature of
               Nothing -> return []
               Just True -> do
