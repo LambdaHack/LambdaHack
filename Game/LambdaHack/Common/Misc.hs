@@ -48,10 +48,13 @@ divUp n k = (n + k - 1) `div` k
 -- is never serialized. But we'd need to cover the few cases
 -- (e.g., @litemFreq@) where @GroupName@ goes into savegame.
 newtype GroupName = GroupName Text
-  deriving (Show, Eq, Ord, Read, Hashable, Binary)
+  deriving (Eq, Ord, Read, Hashable, Binary)
 
 instance IsString GroupName where
   fromString = GroupName . T.pack
+
+instance Show GroupName where
+  show (GroupName gn) = T.unpack gn
 
 toGroupName :: Text -> GroupName
 toGroupName = GroupName
