@@ -1,10 +1,12 @@
+{-# LANGUAGE CPP #-}
 -- | Ways for the client to use AI to produce server requests, based on
 -- the client's view of the game state.
 module Game.LambdaHack.Client.AI
   ( -- * Public API
     queryAI, pongAI
-    -- * Internal functions
+#ifdef EXPOSE_INTERNAL
   , refreshTarget, pickAction
+#endif
   ) where
 
 import Control.Exception.Assert.Sugar

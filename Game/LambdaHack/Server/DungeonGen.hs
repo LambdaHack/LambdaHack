@@ -1,9 +1,11 @@
+{-# LANGUAGE CPP #-}
 -- | The unpopulated dungeon generation routine.
 module Game.LambdaHack.Server.DungeonGen
   ( -- * Public API
     FreshDungeon(..), dungeonGen
-    -- * Internal functions
+#ifdef EXPOSE_INTERNAL
   , convertTileMaps, placeStairs, buildLevel, levelFromCaveKind, findGenerator
+#endif
   ) where
 
 import Control.Exception.Assert.Sugar

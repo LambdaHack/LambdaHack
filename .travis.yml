@@ -61,13 +61,13 @@ install:
 # - cabal-1.18 install -f-vty -fcurses --only-dependencies
 # - cabal-1.18 configure -f-vty -fcurses
 # - cabal-1.18 build
- - cabal-1.18 install -fvty -f-curses --only-dependencies
- - cabal-1.18 configure -fvty -f-curses --enable-tests
+ - cabal-1.18 install -fvty -f-curses -fexpose_internal --only-dependencies
+ - cabal-1.18 configure -fvty -f-curses -fexpose_internal --enable-tests
  - cabal-1.18 build
  - cabal-1.18 test
  - cabal-1.18 install gtk2hs-buildtools
- - cabal-1.18 install -f-vty -f-curses --only-dependencies
- - cabal-1.18 install -f-vty -f-curses --enable-tests
+ - cabal-1.18 install -f-vty -f-curses -f-expose_internal --only-dependencies
+ - cabal-1.18 install -f-vty -f-curses -f-expose_internal --enable-tests
 
 # Here starts the actual work to be performed for the package under
 # test; any command which exits with a non-zero exit code causes the

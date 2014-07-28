@@ -67,6 +67,10 @@ flag curses
   description:        switch to the curses frontend (not fully supported)
   default:            False
 
+flag expose_internal
+  description:        expose internal functions and types (True for release, False for development)
+  default:            False
+
 library
   exposed-modules:    Game.LambdaHack.Atomic
                       Game.LambdaHack.Atomic.CmdAtomic,
@@ -241,6 +245,10 @@ library
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
     build-depends:    gtk >= 0.12.1 && < 0.13
   } }
+
+  if flag(expose_internal) {
+    cpp-options:      -DEXPOSE_INTERNAL
+  }
 
 executable LambdaHack
   hs-source-dirs:     GameDefinition
