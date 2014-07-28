@@ -27,29 +27,29 @@ import Game.LambdaHack.Server.ItemRev
 
 -- | Global, server state.
 data StateServer = StateServer
-  { sdisco     :: !Discovery     -- ^ full item discoveries data
-  , sdiscoRev  :: !DiscoRev      -- ^ reverse disco map, used for item creation
-  , sdiscoAE   :: !DiscoAE       -- ^ full item aspect and effect data
-  , sitemSeedD :: !ItemSeedDict  -- ^ map from item ids to item seeds
-  , sitemRev   :: !ItemRev       -- ^ reverse id map, used for item creation
-  , sflavour   :: !FlavourMap    -- ^ association of flavour to items
-  , sacounter  :: !ActorId       -- ^ stores next actor index
-  , sicounter  :: !ItemId        -- ^ stores next item index
-  , sprocessed :: !(EM.EnumMap LevelId Time)
-                                 -- ^ actors are processed up to this time
-  , sundo      :: ![CmdAtomic]   -- ^ atomic commands performed to date
-  , sper       :: !Pers          -- ^ perception of all factions
-  , srandom    :: !R.StdGen      -- ^ current random generator
-  , srngs      :: !RNGs          -- ^ initial random generators
-  , squit      :: !Bool          -- ^ exit the game loop
-  , sbkpSave   :: !Bool          -- ^ make backup savefile now
-  , sstart     :: !ClockTime     -- ^ this session start time
-  , sgstart    :: !ClockTime     -- ^ this game start time
-  , sallTime   :: !Time          -- ^ clips since the start of the session
-  , sheroNames :: !(EM.EnumMap FactionId [(Int, (Text, Text))])
-                                 -- ^ hero names sent by clients
-  , sdebugSer  :: !DebugModeSer  -- ^ current debugging mode
-  , sdebugNxt  :: !DebugModeSer  -- ^ debugging mode for the next game
+  { sdiscoKind    :: !DiscoveryKind     -- ^ full item kind discoveries data
+  , sdiscoKindRev :: !DiscoveryKindRev  -- ^ reverse map, used for item creation
+  , sdiscoEffect  :: !DiscoveryEffect   -- ^ full item effect&Co data
+  , sitemSeedD    :: !ItemSeedDict  -- ^ map from item ids to item seeds
+  , sitemRev      :: !ItemRev       -- ^ reverse id map, used for item creation
+  , sflavour      :: !FlavourMap    -- ^ association of flavour to items
+  , sacounter     :: !ActorId       -- ^ stores next actor index
+  , sicounter     :: !ItemId        -- ^ stores next item index
+  , sprocessed    :: !(EM.EnumMap LevelId Time)
+                                    -- ^ actors are processed up to this time
+  , sundo         :: ![CmdAtomic]   -- ^ atomic commands performed to date
+  , sper          :: !Pers          -- ^ perception of all factions
+  , srandom       :: !R.StdGen      -- ^ current random generator
+  , srngs         :: !RNGs          -- ^ initial random generators
+  , squit         :: !Bool          -- ^ exit the game loop
+  , sbkpSave      :: !Bool          -- ^ make backup savefile now
+  , sstart        :: !ClockTime     -- ^ this session start time
+  , sgstart       :: !ClockTime     -- ^ this game start time
+  , sallTime      :: !Time          -- ^ clips since the start of the session
+  , sheroNames    :: !(EM.EnumMap FactionId [(Int, (Text, Text))])
+                                    -- ^ hero names sent by clients
+  , sdebugSer     :: !DebugModeSer  -- ^ current debugging mode
+  , sdebugNxt     :: !DebugModeSer  -- ^ debugging mode for the next game
   }
   deriving (Show)
 
@@ -93,9 +93,9 @@ instance Show RNGs where
 emptyStateServer :: StateServer
 emptyStateServer =
   StateServer
-    { sdisco = EM.empty
-    , sdiscoRev = EM.empty
-    , sdiscoAE = EM.empty
+    { sdiscoKind = EM.empty
+    , sdiscoKindRev = EM.empty
+    , sdiscoEffect = EM.empty
     , sitemSeedD = EM.empty
     , sitemRev = HM.empty
     , sflavour = emptyFlavourMap
@@ -140,9 +140,9 @@ defDebugModeSer = DebugModeSer { sknowMap = False
 
 instance Binary StateServer where
   put StateServer{..} = do
-    put sdisco
-    put sdiscoRev
-    put sdiscoAE
+    put sdiscoKind
+    put sdiscoKindRev
+    put sdiscoEffect
     put sitemSeedD
     put sitemRev
     put sflavour
@@ -155,9 +155,9 @@ instance Binary StateServer where
     put sheroNames
     put sdebugSer
   get = do
-    sdisco <- get
-    sdiscoRev <- get
-    sdiscoAE <- get
+    sdiscoKind <- get
+    sdiscoKindRev <- get
+    sdiscoEffect <- get
     sitemSeedD <- get
     sitemRev <- get
     sflavour <- get

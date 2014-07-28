@@ -68,13 +68,13 @@ reinitGame = do
   s <- getState
   let defLocal | knowMap = s
                | otherwise = localFromGlobal s
-  discoS <- getsServer sdisco
-  let sdisco = let f ik = Effect.Identified `elem` ifeature (okind ik)
+  discoS <- getsServer sdiscoKind
+  let sdiscoKind = let f ik = Effect.Identified `elem` ifeature (okind ik)
                in EM.filter f discoS
   sdebugCli <- getsServer $ sdebugCli . sdebugSer
   modeName <- getsServer $ sgameMode . sdebugSer
   broadcastUpdAtomic
-    $ \fid -> UpdRestart fid sdisco (pers EM.! fid) defLocal sdebugCli modeName
+    $ \fid -> UpdRestart fid sdiscoKind (pers EM.! fid) defLocal sdebugCli modeName
   populateDungeon
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
@@ -147,7 +147,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
   sallTime <- getsServer sallTime  -- copy over from previous game
   sheroNames <- getsServer sheroNames  -- copy over from previous game
   let smode = sgameMode sdebug
-      rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
+      rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
                   DungeonGen.FreshDungeon)
       rnd = do
         modeKind <- fmap (fromMaybe $ assert `failure` smode)
@@ -160,10 +160,10 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
                       else mplayers mode
         faction <- createFactions cops players
         sflavour <- dungeonFlavourMap cops
-        (sdisco, sdiscoRev) <- serverDiscos cops
+        (sdiscoKind, sdiscoKindRev) <- serverDiscos cops
         freshDng <- DungeonGen.dungeonGen cops $ mcaves mode
-        return (faction, sflavour, sdisco, sdiscoRev, freshDng)
-  let (faction, sflavour, sdisco, sdiscoRev, DungeonGen.FreshDungeon{..}) =
+        return (faction, sflavour, sdiscoKind, sdiscoKindRev, freshDng)
+  let (faction, sflavour, sdiscoKind, sdiscoKindRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshTotalDepth
                                 faction cops scoreTable
@@ -172,7 +172,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
                                                (Just srandom) }
   putServer defSer
   when (sbenchmark sdebug) resetGameStart
-  modifyServer $ \ser -> ser {sdisco, sdiscoRev, sflavour}
+  modifyServer $ \ser -> ser {sdiscoKind, sdiscoKindRev, sflavour}
   when (sdumpInitRngs sdebug) $ dumpRngs
   return $! defState
 

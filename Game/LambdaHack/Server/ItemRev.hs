@@ -4,7 +4,7 @@
 module Game.LambdaHack.Server.ItemRev
   ( ItemRev, buildItem, newItem
     -- * Item discovery types
-  , DiscoRev, serverDiscos, ItemSeedDict
+  , DiscoveryKindRev, serverDiscos, ItemSeedDict
     -- * The @FlavourMap@ type
   , FlavourMap, emptyFlavourMap, dungeonFlavourMap
   ) where
@@ -27,14 +27,13 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.ItemKind
 
--- | The reverse map to @Discovery@, needed for item creation.
-type DiscoRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
+-- | The reverse map to @DiscoveryKind@, needed for item creation.
+type DiscoveryKindRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
 
--- | The map of item ids to item seeds.
--- The full map is known by the server.
+-- | The map of item ids to item seeds, needed for item creation.
 type ItemSeedDict = EM.EnumMap ItemId ItemSeed
 
-serverDiscos :: Kind.COps -> Rnd (Discovery, DiscoRev)
+serverDiscos :: Kind.COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
 serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldrWithKey}} = do
   let ixs = map toEnum $ take (Ix.rangeSize obounds) [0..]
       shuffle :: Eq a => [a] -> Rnd [a]
@@ -52,7 +51,7 @@ serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldrWithKey}} = do
   return (discoS, discoRev)
 
 -- | Build an item with the given stats.
-buildItem :: FlavourMap -> DiscoRev -> Kind.Id ItemKind -> ItemKind -> LevelId
+buildItem :: FlavourMap -> DiscoveryKindRev -> Kind.Id ItemKind -> ItemKind -> LevelId
           -> Item
 buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
   let jkindIx  = discoRev EM.! ikChosen
@@ -67,7 +66,7 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
   in Item{..}
 
 -- | Generate an item based on level.
-newItem :: Kind.COps -> FlavourMap -> DiscoRev
+newItem :: Kind.COps -> FlavourMap -> DiscoveryKindRev
         -> Freqs -> LevelId -> AbsDepth -> AbsDepth
         -> Rnd (Maybe (ItemKnown, ItemFull, ItemSeed, Int, GroupName))
 newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}

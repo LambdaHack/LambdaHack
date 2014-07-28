@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Item
   ( -- * The @Item@ type
     ItemId, Item(..), seedToAspectsEffects
     -- * Item discovery types
-  , ItemKindIx, Discovery, ItemSeed, ItemAspectEffect(..), DiscoAE
+  , ItemKindIx, DiscoveryKind, ItemSeed, ItemAspectEffect(..), DiscoveryEffect
   , ItemFull(..), ItemDisco(..), itemNoDisco, itemNoAE
     -- * Inventory management types
   , ItemBag, ItemDict, ItemKnown
@@ -38,7 +38,7 @@ newtype ItemKindIx = ItemKindIx Int
 
 -- | The map of item kind indexes to item kind ids.
 -- The full map, as known by the server, is a bijection.
-type Discovery = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
+type DiscoveryKind = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
 
 -- | A seed for rolling aspects and effects of an item
 -- Clients have partial knowledge of how item ids map to the seeds.
@@ -58,7 +58,7 @@ instance Hashable ItemAspectEffect
 
 -- | The map of item ids to item aspects and effects.
 -- The full map is known by the server.
-type DiscoAE = EM.EnumMap ItemId ItemAspectEffect
+type DiscoveryEffect = EM.EnumMap ItemId ItemAspectEffect
 
 data ItemDisco = ItemDisco
   { itemKindId :: Kind.Id ItemKind

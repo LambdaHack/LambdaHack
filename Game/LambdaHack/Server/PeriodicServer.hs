@@ -70,7 +70,7 @@ addAnyActor actorFreq lid time mpos = do
   -- contains the constant properties.
   cops <- getsState scops
   flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoRev
+  discoRev <- getsServer sdiscoKindRev
   totalDepth <- getsState stotalDepth
   lvl@Level{ldepth} <- getLevel lid
   factionD <- getsState sfactionD
@@ -149,9 +149,9 @@ dominateFid fid target = do
   Kind.COps{cotile} <- getsState scops
   tb0 <- getsState $ getActorBody target
   -- Only record the initial domination as a kill.
-  disco <- getsServer sdisco
+  discoKind <- getsServer sdiscoKind
   trunk <- getsState $ getItemBody $ btrunk tb0
-  let ikind = disco EM.! jkindIx trunk
+  let ikind = discoKind EM.! jkindIx trunk
   when (boldfid tb0 == bfid tb0) $ execUpdAtomic $ UpdRecordKill target ikind 1
   electLeader (bfid tb0) (blid tb0) target
   fact <- getsState $ (EM.! bfid tb0) . sfactionD

@@ -151,14 +151,14 @@ litInDungeon fovMode s ser =
               let fid = bfid bFid
                   eqpBody (aid, b) =
                     ( (aid, b)
-                    , map snd $ fullAssocs cops (sdisco ser) (sdiscoAE ser)
+                    , map snd $ fullAssocs cops (sdiscoKind ser) (sdiscoEffect ser)
                                            aid [COrgan, CEqp] s )
               in (fid, map eqpBody asFid)
         in EM.fromDistinctAscList $ map bodyFid asGrouped
       itemsOnFloor :: Level -> [(Point, [ItemFull])]
       itemsOnFloor lvl =
         let iToFull (iid, (item, k)) =
-              itemToFull cops (sdisco ser) (sdiscoAE ser) iid item k
+              itemToFull cops (sdiscoKind ser) (sdiscoEffect ser) iid item k
             processPos (p, bag) =
               (p, map iToFull $ bagAssocsK s bag)
         in map processPos $ EM.assocs $ lfloor lvl

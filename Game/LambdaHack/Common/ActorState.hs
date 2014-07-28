@@ -324,24 +324,24 @@ dispEnemy source target activeItems s =
 radiusBlind :: Int -> Bool
 radiusBlind radius = radius < 4
 
-fullAssocs :: Kind.COps -> Discovery -> DiscoAE
+fullAssocs :: Kind.COps -> DiscoveryKind -> DiscoveryEffect
            -> ActorId -> [CStore] -> State
            -> [(ItemId, ItemFull)]
-fullAssocs cops disco discoAE aid cstores s =
+fullAssocs cops disco discoEffect aid cstores s =
   let allAssocs = concatMap (\cstore -> getActorAssocsK aid cstore s) cstores
       iToFull (iid, (item, k)) =
-        (iid, itemToFull cops disco discoAE iid item k)
+        (iid, itemToFull cops disco discoEffect iid item k)
   in map iToFull allAssocs
 
-itemToFull :: Kind.COps -> Discovery -> DiscoAE -> ItemId -> Item -> Int
+itemToFull :: Kind.COps -> DiscoveryKind -> DiscoveryEffect -> ItemId -> Item -> Int
            -> ItemFull
 itemToFull Kind.COps{coitem=Kind.Ops{okind}}
-           disco discoAE iid itemBase itemK =
+           disco discoEffect iid itemBase itemK =
   let itemDisco = case EM.lookup (jkindIx itemBase) disco of
         Nothing -> Nothing
         Just itemKindId -> Just ItemDisco{ itemKindId
                                          , itemKind = okind itemKindId
-                                         , itemAE = EM.lookup iid discoAE }
+                                         , itemAE = EM.lookup iid discoEffect }
   in ItemFull {..}
 
 goesIntoInv :: Item -> Bool

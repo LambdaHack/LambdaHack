@@ -65,8 +65,8 @@ data StateClient = StateClient
   , sdisplayed   :: !(EM.EnumMap LevelId Time)
                                    -- ^ moves are displayed up to this time
   , sundo        :: ![CmdAtomic]   -- ^ atomic commands performed to date
-  , sdisco       :: !Discovery     -- ^ remembered item discoveries
-  , sdiscoAE     :: !DiscoAE       -- ^ remembered aspects and effects of items
+  , sdiscoKind   :: !DiscoveryKind    -- ^ remembered item discoveries
+  , sdiscoEffect :: !DiscoveryEffect  -- ^ remembered effects&Co of items
   , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom      :: !R.StdGen      -- ^ current random generator
   , slastRecord  :: !LastRecord    -- ^ state of key sequence recording
@@ -138,8 +138,8 @@ defStateClient shistory sreport _sside sisAI =
     , shistory
     , sdisplayed = EM.empty
     , sundo = []
-    , sdisco = EM.empty
-    , sdiscoAE = EM.empty
+    , sdiscoKind = EM.empty
+    , sdiscoEffect = EM.empty
     , sfper = EM.empty
     , srandom = R.mkStdGen 42  -- will be set later
     , slastRecord = ([], [], 0)
@@ -214,8 +214,8 @@ instance Binary StateClient where
     put shistory
     put sundo
     put sdisplayed
-    put sdisco
-    put sdiscoAE
+    put sdiscoKind
+    put sdiscoEffect
     put (show srandom)
     put _sleader
     put _sside
@@ -240,8 +240,8 @@ instance Binary StateClient where
     shistory <- get
     sundo <- get
     sdisplayed <- get
-    sdisco <- get
-    sdiscoAE <- get
+    sdiscoKind <- get
+    sdiscoEffect <- get
     g <- get
     _sleader <- get
     _sside <- get

@@ -118,11 +118,11 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just item -> do
-        disco <- getsClient sdisco
-        if jkindIx item `EM.member` disco
+        discoKind <- getsClient sdiscoKind
+        if jkindIx item `EM.member` discoKind
           then do
-            discoAE <- getsClient sdiscoAE
-            if iid `EM.member` discoAE
+            discoEffect <- getsClient sdiscoEffect
+            if iid `EM.member` discoEffect
               then return []
               else return [UpdDiscoverSeed lid p iid seed]
           else return [cmd]
@@ -131,12 +131,12 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just item -> do
-        disco <- getsClient sdisco
-        if jkindIx item `EM.notMember` disco
+        discoKind <- getsClient sdiscoKind
+        if jkindIx item `EM.notMember` discoKind
           then return []
           else do
-            discoAE <- getsClient sdiscoAE
-            if iid `EM.notMember` discoAE
+            discoEffect <- getsClient sdiscoEffect
+            if iid `EM.notMember` discoEffect
               then return [cmd]
               else return [UpdCoverKind lid p iid ik]
   UpdDiscoverKind _ _ iid _ -> do
@@ -144,8 +144,8 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just item -> do
-        disco <- getsClient sdisco
-        if jkindIx item `EM.notMember` disco
+        discoKind <- getsClient sdiscoKind
+        if jkindIx item `EM.notMember` discoKind
         then return []
         else return [cmd]
   UpdCoverKind _ _ iid _ -> do
@@ -153,8 +153,8 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just item -> do
-        disco <- getsClient sdisco
-        if jkindIx item `EM.notMember` disco
+        discoKind <- getsClient sdiscoKind
+        if jkindIx item `EM.notMember` discoKind
         then return []
         else return [cmd]
   UpdDiscoverSeed _ _ iid _ -> do
@@ -162,12 +162,12 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just item -> do
-        disco <- getsClient sdisco
-        if jkindIx item `EM.notMember` disco
+        discoKind <- getsClient sdiscoKind
+        if jkindIx item `EM.notMember` discoKind
         then return []
         else do
-          discoAE <- getsClient sdiscoAE
-          if iid `EM.member` discoAE
+          discoEffect <- getsClient sdiscoEffect
+          if iid `EM.member` discoEffect
             then return []
             else return [cmd]
   UpdCoverSeed _ _ iid _ -> do
@@ -175,12 +175,12 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just item -> do
-        disco <- getsClient sdisco
-        if jkindIx item `EM.notMember` disco
+        discoKind <- getsClient sdiscoKind
+        if jkindIx item `EM.notMember` discoKind
         then return []
         else do
-          discoAE <- getsClient sdiscoAE
-          if iid `EM.notMember` discoAE
+          discoEffect <- getsClient sdiscoEffect
+          if iid `EM.notMember` discoEffect
             then return []
             else return [cmd]
   UpdPerception lid outPer inPer -> do
@@ -276,12 +276,12 @@ cmdAtomicSemCli cmd = case cmd of
   UpdDiscoverSeed lid p iid seed -> discoverSeed lid p iid seed
   UpdCoverSeed lid p iid seed -> coverSeed lid p iid seed
   UpdPerception lid outPer inPer -> perception lid outPer inPer
-  UpdRestart side sdisco sfper _ sdebugCli sgameMode -> do
+  UpdRestart side sdiscoKind sfper _ sdebugCli sgameMode -> do
     shistory <- getsClient shistory
     sreport <- getsClient sreport
     isAI <- getsClient sisAI
     let cli = defStateClient shistory sreport side isAI
-    putClient cli { sdisco
+    putClient cli { sdiscoKind
                   , sfper
                   -- , sundo = [UpdAtomic cmd]
                   , scurDifficulty = sdifficultyCli sdebugCli
@@ -350,7 +350,7 @@ discoverKind lid p iid ik = do
   let f Nothing = Just ik
       f Just{} = assert `failure` "already discovered"
                         `twith` (lid, p, iid, ik)
-  modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
+  modifyClient $ \cli -> cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
 
 coverKind :: MonadClient m
           => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
@@ -359,17 +359,17 @@ coverKind lid p iid ik = do
   let f Nothing = assert `failure` "already covered" `twith` (lid, p, iid, ik)
       f (Just ik2) = assert (ik == ik2 `blame` "unexpected covered item kind"
                                        `twith` (ik, ik2)) Nothing
-  modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
+  modifyClient $ \cli -> cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
 
 discoverSeed :: MonadClient m
              => LevelId -> Point -> ItemId -> ItemSeed -> m ()
 discoverSeed lid p iid seed = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-  disco <- getsClient sdisco
+  discoKind <- getsClient sdiscoKind
   item <- getsState $ getItemBody iid
   Level{ldepth} <- getLevel (jlid item)
   totalDepth <- getsState stotalDepth
-  case EM.lookup (jkindIx item) disco of
+  case EM.lookup (jkindIx item) discoKind of
     Nothing -> assert `failure` "kind not known"
                       `twith` (lid, p, iid, seed)
     Just ik -> do
@@ -377,14 +377,14 @@ discoverSeed lid p iid seed = do
           f Nothing = Just $ seedToAspectsEffects seed kind ldepth totalDepth
           f Just{} = assert `failure` "already discovered"
                             `twith` (lid, p, iid, seed)
-      modifyClient $ \cli -> cli {sdiscoAE = EM.alter f iid (sdiscoAE cli)}
+      modifyClient $ \cli -> cli {sdiscoEffect = EM.alter f iid (sdiscoEffect cli)}
 
 coverSeed :: MonadClient m
           => LevelId -> Point -> ItemId -> ItemSeed -> m ()
 coverSeed lid p iid ik = do
   let f Nothing = assert `failure` "already covered" `twith` (lid, p, iid, ik)
       f Just{} = Nothing  -- checking that old and new agree is too much work
-  modifyClient $ \cli -> cli {sdiscoAE = EM.alter f iid (sdiscoAE cli)}
+  modifyClient $ \cli -> cli {sdiscoEffect = EM.alter f iid (sdiscoEffect cli)}
 
 killExit :: MonadClient m => m ()
 killExit = modifyClient $ \cli -> cli {squit = True}

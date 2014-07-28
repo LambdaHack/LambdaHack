@@ -42,7 +42,7 @@ registerItem itemKnown@(item, iae) seed k container verbose = do
         ser { sicounter = succ icounter
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
             , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
-            , sdiscoAE = EM.insert icounter iae (sdiscoAE ser)}
+            , sdiscoEffect = EM.insert icounter iae (sdiscoEffect ser)}
       execUpdAtomic $ cmd icounter item k container
       return $! icounter
 
@@ -59,7 +59,7 @@ rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
 rollAndRegisterItem lid itemFreq container verbose = do
   cops <- getsState scops
   flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoRev
+  discoRev <- getsServer sdiscoKindRev
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
   m4 <- rndToAction
@@ -107,9 +107,9 @@ fullAssocsServer :: MonadServer m
                  => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
 fullAssocsServer aid cstores = do
   cops <- getsState scops
-  disco <- getsServer sdisco
-  discoAE <- getsServer sdiscoAE
-  getsState $ fullAssocs cops disco discoAE aid cstores
+  discoKind <- getsServer sdiscoKind
+  discoEffect <- getsServer sdiscoEffect
+  getsState $ fullAssocs cops discoKind discoEffect aid cstores
 
 activeItemsServer :: MonadServer m => ActorId -> m [ItemFull]
 activeItemsServer aid = do
@@ -119,10 +119,10 @@ activeItemsServer aid = do
 itemToFullServer :: MonadServer m => m (ItemId -> Int -> ItemFull)
 itemToFullServer = do
   cops <- getsState scops
-  disco <- getsServer sdisco
-  discoAE <- getsServer sdiscoAE
+  discoKind <- getsServer sdiscoKind
+  discoEffect <- getsServer sdiscoEffect
   s <- getState
-  let itemToF iid = itemToFull cops disco discoAE iid (getItemBody iid s)
+  let itemToF iid = itemToFull cops discoKind discoEffect iid (getItemBody iid s)
   return itemToF
 
 -- | Mapping over actor's items from a give store.

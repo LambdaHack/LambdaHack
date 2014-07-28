@@ -190,9 +190,9 @@ fullAssocsClient :: MonadClient m
                  => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
 fullAssocsClient aid cstores = do
   cops <- getsState scops
-  disco <- getsClient sdisco
-  discoAE <- getsClient sdiscoAE
-  getsState $ fullAssocs cops disco discoAE aid cstores
+  discoKind <- getsClient sdiscoKind
+  discoEffect <- getsClient sdiscoEffect
+  getsState $ fullAssocs cops discoKind discoEffect aid cstores
 
 activeItemsClient :: MonadClient m => ActorId -> m [ItemFull]
 activeItemsClient aid = do
@@ -202,10 +202,11 @@ activeItemsClient aid = do
 itemToFullClient :: MonadClient m => m (ItemId -> Int -> ItemFull)
 itemToFullClient = do
   cops <- getsState scops
-  disco <- getsClient sdisco
-  discoAE <- getsClient sdiscoAE
+  discoKind <- getsClient sdiscoKind
+  discoEffect <- getsClient sdiscoEffect
   s <- getState
-  let itemToF iid = itemToFull cops disco discoAE iid (getItemBody iid s)
+  let itemToF iid = itemToFull cops discoKind discoEffect iid
+                               (getItemBody iid s)
   return itemToF
 
 -- Client has to choose the weapon based on its partial knowledge,

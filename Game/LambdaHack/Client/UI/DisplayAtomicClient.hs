@@ -444,7 +444,7 @@ discover oldcli iid = do
                                   "turn out to be"
         , MU.AW $ MU.Phrase [knownName, knownAEText] ]
       oldItemFull =
-        itemToFull cops (sdisco oldcli) (sdiscoAE oldcli)
+        itemToFull cops (sdiscoKind oldcli) (sdiscoEffect oldcli)
                    iid (itemBase itemFull) 1
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.

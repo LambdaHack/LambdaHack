@@ -65,9 +65,9 @@ dieSer aid b hit = do
     b2 <- getsState $ getActorBody aid
     execUpdAtomic $ UpdDestroyActor aid b2 []
   else do
-    disco <- getsServer sdisco
+    discoKind <- getsServer sdiscoKind
     trunk <- getsState $ getItemBody $ btrunk b
-    let ikind = disco EM.! jkindIx trunk
+    let ikind = discoKind EM.! jkindIx trunk
     execUpdAtomic $ UpdRecordKill aid ikind 1
     electLeader (bfid b) (blid b) aid
     equipAllItems aid b
