@@ -43,7 +43,7 @@ validateTileKind lt =
                                   , F.Suspect `elem` tfeature kt
                                   , f kt
                                   )
-                                , [kt] )) lt
+                                , [kt] ) ) lt
       mapVis :: (TileKind -> Color) -> M.Map (Char, Bool, Color) [TileKind]
       mapVis f = M.fromListWith (++) $ listVis f
       namesUnequal [] = assert `failure` "no TileKind content" `twith` lt

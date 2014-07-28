@@ -25,7 +25,7 @@ import Game.LambdaHack.Common.Point
 -- and then @RuleKind@ will become just a starting template, analogously
 -- as for the other content.
 --
--- The @raccessible@ field hold extra conditions that have to be met
+-- The @raccessible@ field holds extra conditions that have to be met
 -- for a tile to be accessible, on top of being an open tile
 -- (or openable, in some contexts). The @raccessibleDoor@ field
 -- contains yet additional conditions concerning tiles that are doors,
@@ -36,17 +36,17 @@ data RuleKind = RuleKind
   { rsymbol         :: !Char      -- ^ a symbol
   , rname           :: !Text      -- ^ short description
   , rfreq           :: !Freqs     -- ^ frequency within groups
-  , raccessible     :: !(Maybe (Point -> Point -> Bool))
-  , raccessibleDoor :: !(Maybe (Point -> Point -> Bool))
+  , raccessible     :: !(Maybe (Point -> Point -> Bool))  -- ^ see above
+  , raccessibleDoor :: !(Maybe (Point -> Point -> Bool))  -- ^ see above
   , rtitle          :: !Text      -- ^ the title of the game
   , rpathsDataFile  :: FilePath -> IO FilePath
-                                   -- ^ the path to data files
+                                  -- ^ the path to data files
   , rpathsVersion   :: !Version   -- ^ the version of the game
   , rcfgUIName      :: !FilePath  -- ^ base name of the UI config file
   , rcfgUIDefault   :: !String    -- ^ the default UI settings config file
   , rmainMenuArt    :: !Text      -- ^ the ASCII art for the Main Menu
   , rfirstDeathEnds :: !Bool      -- ^ whether first non-spawner actor death
-                                   --   ends the game
+                                  --   ends the game
   , rfovMode        :: !FovMode   -- ^ FOV calculation mode
   , rsaveBkpClips   :: !Int       -- ^ game backup is saved that often
   , rleadLevelClips :: !Int       -- ^ flip AI/spawn leader level that often
@@ -57,7 +57,7 @@ data RuleKind = RuleKind
 
 -- | Field Of View scanning mode.
 data FovMode =
-    Shadow      -- ^ restrictive shadow casting
+    Shadow      -- ^ restrictive shadow casting (not symmetric!)
   | Permissive  -- ^ permissive FOV
   | Digital     -- ^ digital FOV
   deriving (Show, Read)

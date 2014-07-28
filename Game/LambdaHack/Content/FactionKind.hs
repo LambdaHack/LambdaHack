@@ -12,12 +12,13 @@ data FactionKind = FactionKind
   { fsymbol       :: !Char    -- ^ a symbol
   , fname         :: !Text    -- ^ short description
   , ffreq         :: !Freqs   -- ^ frequency within groups
-  , fSkillsLeader :: !Skills  -- ^ skills of the picked leader
+  , fSkillsLeader :: !Skills  -- ^ skills of the currently selected leader
   , fSkillsOther  :: !Skills  -- ^ skills of the other actors
   }
   deriving Show
 
 -- | No specific possible problems for the content of this kind, so far,
 -- so the validation function always returns the empty list of offending kinds.
+-- In particular, @fSkillsOther@ needn't be a subset of @fSkillsLeader@.
 validateFactionKind :: [FactionKind] -> [FactionKind]
 validateFactionKind _ = []

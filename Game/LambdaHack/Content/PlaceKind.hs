@@ -10,24 +10,24 @@ import Game.LambdaHack.Common.Misc
 
 -- | Parameters for the generation of small areas within a dungeon level.
 data PlaceKind = PlaceKind
-  { psymbol   :: !Char      -- ^ a symbol
-  , pname     :: !Text      -- ^ short description
-  , pfreq     :: !Freqs     -- ^ frequency within groups
+  { psymbol   :: !Char          -- ^ a symbol
+  , pname     :: !Text          -- ^ short description
+  , pfreq     :: !Freqs         -- ^ frequency within groups
   , prarity   :: ![(Int, Int)]  -- ^ rarity on given depths
-  , pcover    :: !Cover     -- ^ how to fill whole place based on the corner
-  , pfence    :: !Fence     -- ^ whether to fence the place with solid border
-  , ptopLeft  :: ![Text]    -- ^ plan of the top-left corner of the place
+  , pcover    :: !Cover         -- ^ how to fill whole place based on the corner
+  , pfence    :: !Fence         -- ^ whether to fence place with solid border
+  , ptopLeft  :: ![Text]        -- ^ plan of the top-left corner of the place
   , poverride :: ![(Char, GroupName)]  -- ^ legend override
   }
-  deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
+  deriving Show  -- No Eq and Ord to make extending it logically sound
 
 -- | A method of filling the whole area (except for CVerbatim, which is just
--- placed in the middle of the area), by transforming a given corner.
+-- placed in the middle of the area) by transforming a given corner.
 data Cover =
-    CAlternate   -- ^ reflect every other corner, overlapping 1 row and column
-  | CStretch     -- ^ fill symmetrically 4 corners and stretch their borders
-  | CReflect     -- ^ tile separately and symmetrically quarters of the place
-  | CVerbatim    -- ^ just build the given interior, without filling the area
+    CAlternate  -- ^ reflect every other corner, overlapping 1 row and column
+  | CStretch    -- ^ fill symmetrically 4 corners and stretch their borders
+  | CReflect    -- ^ tile separately and symmetrically quarters of the place
+  | CVerbatim   -- ^ just build the given interior, without filling the area
   deriving (Show, Eq)
 
 -- | The choice of a fence type for the place.
