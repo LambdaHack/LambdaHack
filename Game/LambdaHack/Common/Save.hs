@@ -78,7 +78,7 @@ wrapInSaves saveFile exe = do
   -- to spread the cost, to avoid a long pause at game exit.
 
 -- | Restore a saved game, if it exists. Initialize directory structure
--- and cope over data files, if needed.
+-- and copy over data files, if needed.
 restoreGame :: Binary a
             => String -> [(FilePath, FilePath)] -> (FilePath -> IO FilePath)
             -> IO (Maybe a)

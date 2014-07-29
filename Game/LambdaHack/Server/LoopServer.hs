@@ -16,6 +16,7 @@ import qualified Data.Ord as Ord
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
@@ -333,7 +334,7 @@ restartGame updConn loop = do
 -- which greatly reduced the chance of saves being out of sync.
 saveBkpAll :: (MonadAtomic m, MonadServerReadRequest m) => Bool -> m ()
 saveBkpAll unconditional = do
-  bench <- getsServer $ sbenchmark . sdebugSer
+  bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   when (unconditional || not bench) $ do
     factionD <- getsState sfactionD
     let ping fid _ = do

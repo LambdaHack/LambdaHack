@@ -33,6 +33,7 @@ import System.Time
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
@@ -69,10 +70,12 @@ debugPrint t = do
 
 saveServer :: MonadServer m => m ()
 saveServer = do
-  s <- getState
-  ser <- getServer
-  toSave <- saveChanServer
-  liftIO $ Save.saveToChan toSave (s, ser)
+  bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
+  unless bench $ do
+    s <- getState
+    ser <- getServer
+    toSave <- saveChanServer
+    liftIO $ Save.saveToChan toSave (s, ser)
 
 saveName :: String
 saveName = serverSaveName
@@ -179,7 +182,7 @@ elapsedSessionTimeGT stopAfter = do
 
 tellAllClipPS :: MonadServer m => m ()
 tellAllClipPS = do
-  bench <- getsServer $ sbenchmark . sdebugSer
+  bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   when bench $ do
     TOD s p <- getsServer sstart
     TOD sCur pCur <- liftIO getClockTime
@@ -194,7 +197,7 @@ tellAllClipPS = do
 
 tellGameClipPS :: MonadServer m => m ()
 tellGameClipPS = do
-  bench <- getsServer $ sbenchmark . sdebugSer
+  bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   when bench $ do
     TOD s p <- getsServer sgstart
     unless (s == 0) $ do  -- loaded game, don't report anything
@@ -209,14 +212,17 @@ tellGameClipPS = do
 tryRestore :: MonadServer m
            => Kind.COps -> DebugModeSer -> m (Maybe (State, StateServer))
 tryRestore Kind.COps{corule} sdebugSer = do
-  let stdRuleset = Kind.stdRuleset corule
-      scoresFile = rscoresFile stdRuleset
-      pathsDataFile = rpathsDataFile stdRuleset
-      prefix = ssavePrefixSer sdebugSer
-  let copies = [( "GameDefinition" </> scoresFile
-                , scoresFile )]
-      name = fromMaybe "save" prefix <.> saveName
-  liftIO $ Save.restoreGame name copies pathsDataFile
+  let bench = sbenchmark $ sdebugCli sdebugSer
+  if bench then return Nothing
+  else do
+    let stdRuleset = Kind.stdRuleset corule
+        scoresFile = rscoresFile stdRuleset
+        pathsDataFile = rpathsDataFile stdRuleset
+        prefix = ssavePrefixSer sdebugSer
+    let copies = [( "GameDefinition" </> scoresFile
+                  , scoresFile )]
+        name = fromMaybe "save" prefix <.> saveName
+    liftIO $ Save.restoreGame name copies pathsDataFile
 
 -- | Compute and insert auxiliary optimized components into game content,
 -- to be used in time-critical sections of the code.

@@ -63,7 +63,6 @@ data DebugModeSer = DebugModeSer
   , sgameMode      :: !GroupName
   , sautomateAll   :: !Bool
   , sstopAfter     :: !(Maybe Int)
-  , sbenchmark     :: !Bool
   , sdungeonRng    :: !(Maybe R.StdGen)
   , smainRng       :: !(Maybe R.StdGen)
   , sfovMode       :: !(Maybe FovMode)
@@ -126,7 +125,6 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sgameMode = "campaign"
                                , sautomateAll = False
                                , sstopAfter = Nothing
-                               , sbenchmark = False
                                , sdungeonRng = Nothing
                                , smainRng = Nothing
                                , sfovMode = Nothing
@@ -207,7 +205,6 @@ instance Binary DebugModeSer where
     sdbgMsgSer <- get
     sdebugCli <- get
     let sstopAfter = Nothing
-        sbenchmark = False
         sdungeonRng = Nothing
         smainRng = Nothing
         snewGameSer = False

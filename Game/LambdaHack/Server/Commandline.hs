@@ -72,7 +72,8 @@ debugArgs args = do
       parseArgs ("--stopAfter" : s : rest) =
         (parseArgs rest) {sstopAfter = Just $ read s}
       parseArgs ("--benchmark" : rest) =
-        (parseArgs rest) {sbenchmark = True}
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {sbenchmark = True}}
       parseArgs ("--setDungeonRng" : s : rest) =
         (parseArgs rest) {sdungeonRng = Just $ read s}
       parseArgs ("--setMainRng" : s : rest) =

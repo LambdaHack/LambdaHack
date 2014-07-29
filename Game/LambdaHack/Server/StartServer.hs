@@ -168,7 +168,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
                                 , srngs = RNGs (Just dungeonSeed)
                                                (Just srandom) }
   putServer defSer
-  when (sbenchmark sdebug) resetGameStart
+  when (sbenchmark $ sdebugCli sdebug) resetGameStart
   modifyServer $ \ser -> ser {sdiscoKind, sdiscoKindRev, sflavour}
   when (sdumpInitRngs sdebug) $ dumpRngs
   return $! defState

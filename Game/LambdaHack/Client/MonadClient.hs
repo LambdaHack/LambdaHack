@@ -45,10 +45,12 @@ debugPrint t = do
 
 saveClient :: MonadClient m => m ()
 saveClient = do
-  s <- getState
-  cli <- getClient
-  toSave <- saveChanClient
-  liftIO $ Save.saveToChan toSave (s, cli)
+  bench <- getsClient $ sbenchmark . sdebugCli
+  unless bench $ do
+    s <- getState
+    cli <- getClient
+    toSave <- saveChanClient
+    liftIO $ Save.saveToChan toSave (s, cli)
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI =
@@ -60,17 +62,20 @@ saveName side isAI =
 
 restoreGame :: MonadClient m => m (Maybe (State, StateClient))
 restoreGame = do
-  Kind.COps{corule} <- getsState scops
-  let stdRuleset = Kind.stdRuleset corule
-      pathsDataFile = rpathsDataFile stdRuleset
-      cfgUIName = rcfgUIName stdRuleset
-  side <- getsClient sside
-  isAI <- getsClient sisAI
-  prefix <- getsClient $ ssavePrefixCli . sdebugCli
-  let copies = [( "GameDefinition" </> cfgUIName <.> "default"
-                , cfgUIName <.> "ini" )]
-      name = fromMaybe "save" prefix <.> saveName side isAI
-  liftIO $ Save.restoreGame name copies pathsDataFile
+  bench <- getsClient $ sbenchmark . sdebugCli
+  if bench then return Nothing
+  else do
+    Kind.COps{corule} <- getsState scops
+    let stdRuleset = Kind.stdRuleset corule
+        pathsDataFile = rpathsDataFile stdRuleset
+        cfgUIName = rcfgUIName stdRuleset
+    side <- getsClient sside
+    isAI <- getsClient sisAI
+    prefix <- getsClient $ ssavePrefixCli . sdebugCli
+    let copies = [( "GameDefinition" </> cfgUIName <.> "default"
+                  , cfgUIName <.> "ini" )]
+        name = fromMaybe "save" prefix <.> saveName side isAI
+    liftIO $ Save.restoreGame name copies pathsDataFile
 
 -- | Assuming the client runs on the same machine and for the same
 -- user as the server, move the server savegame out of the way.

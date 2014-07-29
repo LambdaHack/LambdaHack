@@ -27,6 +27,8 @@ data DebugModeCli = DebugModeCli
       -- ^ Don't show any animations.
   , snewGameCli    :: !Bool
       -- ^ Start a new game, overwriting the save file.
+  , sbenchmark     :: !Bool
+      -- ^ Don't create directories and files and show time stats.
   , sdifficultyCli :: !Int
       -- ^ The difficulty level for all UI clients.
   , ssavePrefixCli :: !(Maybe String)
@@ -50,6 +52,7 @@ defDebugModeCli = DebugModeCli
   , snoMore = False
   , snoAnim = Nothing
   , snewGameCli = False
+  , sbenchmark = False
   , sdifficultyCli = difficultyDefault
   , ssavePrefixCli = Nothing
   , sfrontendStd = False
