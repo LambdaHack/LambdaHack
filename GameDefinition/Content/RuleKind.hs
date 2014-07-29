@@ -72,4 +72,5 @@ standard = RuleKind
   , rscoresFile = "scores"
   , rsavePrefix = "save"
   , rsharedStash = True
+  , rnearby = 10
   }

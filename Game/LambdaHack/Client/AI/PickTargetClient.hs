@@ -24,7 +24,6 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -33,12 +32,15 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.RuleKind
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m
                => ActorId -> ActorId -> m (Strategy (Target, Maybe PathEtc))
 targetStrategy oldLeader aid = do
-  cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
+  cops@Kind.COps{corule, cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
+  let stdRuleset = Kind.stdRuleset corule
+      nearby = rnearby stdRuleset
   itemToF <- itemToFullClient
   modifyClient $ \cli -> cli { sbfsD = EM.delete aid (sbfsD cli)
                              , seps = seps cli + 773 }  -- randomize paths

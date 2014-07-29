@@ -60,6 +60,9 @@ toAny strat = RequestAnyAbility <$> strat
 actionStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy RequestAnyAbility)
 actionStrategy aid = do
+  Kind.COps{corule} <- getsState scops
+  let stdRuleset = Kind.stdRuleset corule
+      nearby = rnearby stdRuleset
   body <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
