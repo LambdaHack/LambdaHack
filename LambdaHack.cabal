@@ -1,12 +1,12 @@
 name:          LambdaHack
 version:       0.2.15
-synopsis:      A roguelike game engine in early development
+synopsis:      A game engine library for roguelike dungeon crawlers
 description:   This is an alpha release of LambdaHack,
                a game engine library for roguelike games
                of arbitrary theme, size and complexity,
                packaged together with a small example dungeon crawler.
                .
-               <<GameDefinition/screenshot.png>>
+               <<https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/skirmish1.png>>
                .
                When completed, the engine will let you specify content
                to be procedurally generated, define the AI behaviour
