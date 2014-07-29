@@ -17,7 +17,6 @@ import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 
@@ -25,8 +24,7 @@ import Game.LambdaHack.Content.ModeKind
 type FactionDict = EM.EnumMap FactionId Faction
 
 data Faction = Faction
-  { gkind    :: !(Kind.Id FactionKind)  -- ^ the kind of the faction
-  , gname    :: !Text                   -- ^ individual name
+  { gname    :: !Text                   -- ^ individual name
   , gcolor   :: !Color.Color            -- ^ color of actors or their frames
   , gplayer  :: !Player                 -- ^ the player spec for this faction
   , gdipl    :: !Dipl                   -- ^ diplomatic mode
@@ -67,19 +65,17 @@ data Status = Status
 
 -- | Tell whether the faction consists of heroes.
 isHeroFact :: Faction -> Bool
-isHeroFact fact = playerIsHero (gplayer fact)
+isHeroFact fact = playerIsHero $ gplayer fact
 
 -- | Tell whether the faction consists of human civilians.
-isCivilianFact :: Kind.COps -> Faction -> Bool
-isCivilianFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
-  let kind = okind (gkind fact)
-  in maybe False (> 0) $ lookup "civilian" $ ffreq kind
+isCivilianFact :: Faction -> Bool
+isCivilianFact fact =
+  maybe False (> 0) $ lookup "civilian" $ ffreq $ gplayer fact
 
 -- | Tell whether the faction consists of summoned horrors only.
-isHorrorFact :: Kind.COps -> Faction -> Bool
-isHorrorFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
-  let kind = okind (gkind fact)
-  in maybe False (> 0) $ lookup "horror" $ ffreq kind
+isHorrorFact :: Faction -> Bool
+isHorrorFact fact =
+  maybe False (> 0) $ lookup "horror" $ ffreq $ gplayer fact
 
 -- | Tell whether the faction is considered permanent dungeon dwellers
 -- (normally these are just spawning factions, but there are exceptions).
@@ -87,17 +83,15 @@ isSpawnFact :: Faction -> Bool
 isSpawnFact fact = playerIsSpawn (gplayer fact)
 
 -- | Tell whether actors of the faction can be summoned by items, etc.
-isSummonFact :: Kind.COps -> Faction -> Bool
-isSummonFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
-  let kind = okind (gkind fact)
-  in maybe False (> 0) $ lookup "summon" $ ffreq kind
+isSummonFact :: Faction -> Bool
+isSummonFact fact =
+  maybe False (> 0) $ lookup "summon" $ ffreq $ gplayer fact
 
 -- | Tell whether all moving actors of the factions can move at once.
-isAllMoveFact :: Kind.COps -> Faction -> Bool
-isAllMoveFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
-  let kind = okind (gkind fact)
-      skillsLeader = fSkillsLeader kind
-      skillsOther = fSkillsOther kind
+isAllMoveFact :: Faction -> Bool
+isAllMoveFact fact =
+  let skillsLeader = fSkillsLeader $ gplayer fact
+      skillsOther = fSkillsOther $ gplayer fact
   in EM.findWithDefault 0 Ability.AbMove skillsLeader > 0
      && EM.findWithDefault 0 Ability.AbMove skillsOther > 0
 
@@ -130,7 +124,6 @@ difficultyCoeff n = difficultyDefault - n
 
 instance Binary Faction where
   put Faction{..} = do
-    put gkind
     put gname
     put gcolor
     put gplayer
@@ -140,7 +133,6 @@ instance Binary Faction where
     put gsha
     put gvictims
   get = do
-    gkind <- get
     gname <- get
     gcolor <- get
     gplayer <- get

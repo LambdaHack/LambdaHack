@@ -130,14 +130,13 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   -- Change faction attributes.
   UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt
   UpdLeadFaction fid (Just source) (Just target) -> do
-    cops <- getsState scops
     side <- getsClient sside
     when (fid == side) $ do
       fact <- getsState $ (EM.! side) . sfactionD
       -- All-movers can't run with multiple actors, so the following is not
       -- a leader change while running, but rather server changing
       -- their leader, which the player should be alerted to.
-      when (isAllMoveFact cops fact) stopPlayBack
+      when (isAllMoveFact fact) stopPlayBack
       actorD <- getsState sactorD
       case EM.lookup source actorD of
         Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do
@@ -351,10 +350,10 @@ displaceActorUI source target = do
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Actor -> Maybe Status -> m ()
 quitFactionUI fid mbody toSt = do
-  cops@Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
+  Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact
-      horror = isHorrorFact cops fact
+      horror = isHorrorFact fact
   side <- getsClient sside
   let msgIfSide _ | fid /= side = Nothing
       msgIfSide s = Just s

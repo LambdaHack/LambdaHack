@@ -194,12 +194,11 @@ stopRunning = do
     Nothing -> return ()
     Just RunParams{runLeader} -> do
       -- Switch to the original leader, from before the run start, unless dead.
-      cops <- getsState scops
       side <- getsClient sside
       fact <- getsState $ (EM.! side) . sfactionD
       arena <- getArenaUI
       s <- getState
-      when (memActor runLeader arena s && not (isAllMoveFact cops fact)) $
+      when (memActor runLeader arena s && not (isAllMoveFact fact)) $
         modifyClient $ updateLeader runLeader s
       modifyClient (\cli -> cli { srunning = Nothing })
 
@@ -229,7 +228,6 @@ tryTakeMVarSescMVar = do
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
-  cops <- getsState scops
   fid <- getsClient sside
   fact <- getsState $ (EM.! fid) . sfactionD
   -- TODO: Re-read the table in case it's changed by a concurrent game.
@@ -246,7 +244,7 @@ scoreToSlideshow total status = do
       diff | not $ playerUI $ gplayer fact = difficultyDefault
            | otherwise = scurDifficulty
       theirVic (fi, fa) | isAtWar fact fi
-                          && not (isHorrorFact cops fa) = Just $ gvictims fa
+                          && not (isHorrorFact fa) = Just $ gvictims fa
                         | otherwise = Nothing
       theirVictims = EM.unionsWith (+) $ mapMaybe theirVic $ EM.assocs factionD
       ourVic (fi, fa) | isAllied fact fi || fi == fid = Just $ gvictims fa

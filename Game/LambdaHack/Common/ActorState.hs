@@ -37,7 +37,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind
 
 fidActorNotProjAssocs :: FactionId -> State -> [(ActorId, Actor)]
@@ -290,12 +290,11 @@ actorInAmbient b s =
 
 actorSkills :: ActorId -> Maybe ActorId -> [ItemFull] -> State -> Ability.Skills
 actorSkills aid mleader activeItems s =
-  let Kind.COps{cofaction=Kind.Ops{okind}} = scops s
-      body = getActorBody aid s
+  let body = getActorBody aid s
       fact = (EM.! bfid body) . sfactionD $ s
       factionSkills
-        | Just aid == mleader = fSkillsLeader $ okind $ gkind fact
-        | otherwise = fSkillsOther $ okind $ gkind fact
+        | Just aid == mleader = fSkillsLeader $ gplayer fact
+        | otherwise = fSkillsOther $ gplayer fact
       itemSkills = sumSkills activeItems
   in itemSkills `Ability.addSkills` factionSkills
 

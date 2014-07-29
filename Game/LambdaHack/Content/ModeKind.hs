@@ -8,6 +8,7 @@ import qualified Data.IntMap.Strict as IM
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU ()
 
+import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Misc
 
 -- | Game mode specification.
@@ -38,6 +39,9 @@ data Players = Players
 data Player = Player
   { playerName    :: !Text     -- ^ name of the player
   , playerFaction :: !GroupName  -- ^ name of faction(s) the player can control
+  , ffreq         :: !Freqs    -- ^ frequency within groups
+  , fSkillsLeader :: !Skills   -- ^ skills of the currently selected leader
+  , fSkillsOther  :: !Skills   -- ^ skills of the other actors
   , playerIsSpawn :: !Bool     -- ^ whether the player is a spawn (score, AI)
   , playerIsHero  :: !Bool     -- ^ whether the player is a hero (score, AI, UI)
   , playerEntry   :: !Int      -- ^ level where the initial members start
@@ -55,6 +59,8 @@ data Player = Player
 -- assert that playersEnemy and playersAlly mention only factions in play.
 -- | No specific possible problems for the content of this kind, so far,
 -- so the validation function always returns the empty list of offending kinds.
+-- In particular, for the @Player@, @fSkillsOther@ needn't be a subset
+-- of @fSkillsLeader@.
 validateModeKind :: [ModeKind] -> [ModeKind]
 validateModeKind _ = []
 
@@ -62,6 +68,9 @@ instance Binary Player where
   put Player{..} = do
     put playerName
     put playerFaction
+    put ffreq
+    put fSkillsLeader
+    put fSkillsOther
     put playerIsSpawn
     put playerIsHero
     put playerEntry
@@ -72,6 +81,9 @@ instance Binary Player where
   get = do
     playerName <- get
     playerFaction <- get
+    ffreq <- get
+    fSkillsLeader <- get
+    fSkillsOther <- get
     playerIsSpawn <- get
     playerIsHero <- get
     playerEntry <- get

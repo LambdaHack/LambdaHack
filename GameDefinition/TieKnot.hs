@@ -4,7 +4,6 @@ module TieKnot ( tieKnot ) where
 
 import qualified Client.UI.Content.KeyKind as Content.KeyKind
 import qualified Content.CaveKind
-import qualified Content.FactionKind
 import qualified Content.ItemKind
 import qualified Content.ModeKind
 import qualified Content.PlaceKind
@@ -23,7 +22,6 @@ tieKnot args =
   let -- Common content operations, created from content definitions.
       copsServer = Kind.COps
         { cocave    = Kind.createOps Content.CaveKind.cdefs
-        , cofaction = Kind.createOps Content.FactionKind.cdefs
         , coitem    = Kind.createOps Content.ItemKind.cdefs
         , comode    = Kind.createOps Content.ModeKind.cdefs
         , coplace   = Kind.createOps Content.PlaceKind.cdefs

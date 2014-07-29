@@ -48,7 +48,6 @@ import Game.LambdaHack.Content.ModeKind
 -- | Handle the move of a UI player.
 queryUI :: MonadClientUI m => m RequestUI
 queryUI = do
-  cops <- getsState scops
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let leader = fromMaybe (assert `failure` fact) $ gleader fact
@@ -58,7 +57,7 @@ queryUI = do
   req <- case srunning of
     Nothing -> humanCommand Nothing
     Just RunParams{runMembers}
-      | isAllMoveFact cops fact && runMembers /= [leader] -> do
+      | isAllMoveFact fact && runMembers /= [leader] -> do
       stopRunning
       Config{configRunStopMsgs} <- askConfig
       let msg = if configRunStopMsgs

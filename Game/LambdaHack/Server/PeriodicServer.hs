@@ -215,10 +215,10 @@ advanceTime aid = do
 
 leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelFlip = do
-  cops@Kind.COps{cotile} <- getsState scops
+  Kind.COps{cotile} <- getsState scops
   let canFlip fact =
         -- We don't have to check @playerLeader@: @gleader@ would be @Nothing@.
-        playerAI (gplayer fact) || isAllMoveFact cops fact
+        playerAI (gplayer fact) || isAllMoveFact fact
       flipFaction fact | not $ canFlip fact = return ()
       flipFaction fact = do
         case gleader fact of

@@ -33,7 +33,7 @@ pickActorToMove :: MonadClient m
                 -> ActorId
                 -> m (ActorId, Actor)
 pickActorToMove refreshTarget oldAid = do
-  cops@Kind.COps{cotile} <- getsState scops
+  Kind.COps{cotile} <- getsState scops
   oldBody <- getsState $ getActorBody oldAid
   let side = bfid oldBody
       arena = blid oldBody
@@ -51,7 +51,7 @@ pickActorToMove refreshTarget oldAid = do
         mleader /= Just oldAid
         -- Keep the leader: all can move. TODO: check not accurate,
         -- instead define 'movesThisTurn' and use elsehwere.
-        || isAllMoveFact cops fact
+        || isAllMoveFact fact
         -- Keep the leader: he is on stairs and not stuck
         -- and we don't want to clog stairs or get pushed to another level.
         || not leaderStuck && Tile.isStair cotile t

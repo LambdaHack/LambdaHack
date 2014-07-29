@@ -161,7 +161,6 @@ transition :: forall m. MonadClientUI m
 transition _ _ _ verb [] iDS = assert `failure` (verb, iDS)
 transition psuit tshaSuit tsuitable verb
            cLegal@(cCur:cRest) itemDialogState = do
-  cops <- getsState scops
   (letterSlots, numberSlots) <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -222,7 +221,7 @@ transition psuit tshaSuit tsuitable verb
            })
         , (K.Tab, DefItemKey
            { defLabel = "TAB"
-           , defCond = not (isAllMoveFact cops fact
+           , defCond = not (isAllMoveFact fact
                             || null (filter (\(_, b) ->
                                                blid b == blid body) hs))
            , defAction = \_ -> do
@@ -237,7 +236,7 @@ transition psuit tshaSuit tsuitable verb
            })
         , (K.BackTab, DefItemKey
            { defLabel = "SHIFT-TAB"
-           , defCond = not (isAllMoveFact cops fact || null hs)
+           , defCond = not (isAllMoveFact fact || null hs)
            , defAction = \_ -> do
                err <- memberBack False
                assert (err == mempty `blame` err) skip
@@ -328,14 +327,13 @@ pickNumber askNumber kAll = do
 -- | Switches current member to the next on the level, if any, wrapping.
 memberCycle :: MonadClientUI m => Bool -> m Slideshow
 memberCycle verbose = do
-  cops <- getsState scops
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
   case filter (\(_, b) -> blid b == blid body) hs of
-    _ | isAllMoveFact cops fact -> failMsg msgCannotChangeLeader
+    _ | isAllMoveFact fact -> failMsg msgCannotChangeLeader
     [] -> failMsg "Cannot pick any other member on this level."
     (np, b) : _ -> do
       success <- pickLeader verbose np
@@ -345,13 +343,12 @@ memberCycle verbose = do
 -- | Switches current member to the previous in the whole dungeon, wrapping.
 memberBack :: MonadClientUI m => Bool -> m Slideshow
 memberBack verbose = do
-  cops <- getsState scops
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
   case reverse hs of
-    _ | isAllMoveFact cops fact -> failMsg msgCannotChangeLeader
+    _ | isAllMoveFact fact -> failMsg msgCannotChangeLeader
     [] -> failMsg "No other member in the party."
     (np, b) : _ -> do
       success <- pickLeader verbose np

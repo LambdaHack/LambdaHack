@@ -86,9 +86,8 @@ moveRunHuman run dir = do
         case runStopOrCmd of
           Left stopMsg -> failWith stopMsg
           Right runCmd -> do
-            cops <- getsState scops
             sel <- getsClient sselected
-            let runMembers = if isAllMoveFact cops fact
+            let runMembers = if isAllMoveFact fact
                              then [leader]  -- TODO: warn?
                              else ES.toList (ES.delete leader sel) ++ [leader]
                 runParams = RunParams { runLeader = leader
@@ -114,8 +113,7 @@ moveRunHuman run dir = do
         -- attack the first one.
         -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do
-          cops <- getsState scops
-          if isAllMoveFact cops fact then failWith msgCannotChangeLeader
+          if isAllMoveFact fact then failWith msgCannotChangeLeader
           else do
             -- Select adjacent actor by bumping into him. Takes no time.
             success <- pickLeader True target

@@ -79,12 +79,11 @@ gameDifficultyCycle = do
 
 pickLeaderHuman :: MonadClientUI m => Int -> m Slideshow
 pickLeaderHuman k = do
-  cops <- getsState scops
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   s <- getState
   case tryFindHeroK s side k of
-    _ | isAllMoveFact cops fact -> failMsg msgCannotChangeLeader
+    _ | isAllMoveFact fact -> failMsg msgCannotChangeLeader
     Nothing -> failMsg "No such member of the party."
     Just (aid, _) -> do
       void $ pickLeader True aid

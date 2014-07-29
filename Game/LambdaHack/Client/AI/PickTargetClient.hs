@@ -296,7 +296,7 @@ targetStrategy oldLeader aid = do
                            && let isStuck =
                                     waitedLastTurn b
                                     && (oldLeader == aid
-                                        || isAllMoveFact cops fact)
+                                        || isAllMoveFact fact)
                               in not (pos /= bpos b
                                       && not isStuck
                                       && allExplored)

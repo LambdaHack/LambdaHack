@@ -21,7 +21,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.CaveKind
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.PlaceKind
@@ -131,13 +130,12 @@ createOps ContentDef{getName, getFreq, content, validate} =
 
 -- | Operations for all content types, gathered together.
 data COps = COps
-  { cocave    :: !(Ops CaveKind)     -- server only
-  , cofaction :: !(Ops FactionKind)
-  , coitem    :: !(Ops ItemKind)
-  , comode    :: !(Ops ModeKind)     -- server only
-  , coplace   :: !(Ops PlaceKind)    -- server only, so far
-  , corule    :: !(Ops RuleKind)
-  , cotile    :: !(Ops TileKind)
+  { cocave  :: !(Ops CaveKind)     -- server only
+  , coitem  :: !(Ops ItemKind)
+  , comode  :: !(Ops ModeKind)     -- server only
+  , coplace :: !(Ops PlaceKind)    -- server only, so far
+  , corule  :: !(Ops RuleKind)
+  , cotile  :: !(Ops TileKind)
   }
 
 -- | The standard ruleset used for level operations.

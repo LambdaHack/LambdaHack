@@ -145,7 +145,7 @@ registerScore status mbody fid = do
       diff | not $ playerUI $ gplayer fact = difficultyDefault
            | otherwise = sdifficultySer
       theirVic (fi, fa) | isAtWar fact fi
-                          && not (isHorrorFact cops fa) = Just $ gvictims fa
+                          && not (isHorrorFact fa) = Just $ gvictims fa
                         | otherwise = Nothing
       theirVictims = EM.unionsWith (+) $ mapMaybe theirVic $ EM.assocs factionD
       ourVic (fi, fa) | isAllied fact fi || fi == fid = Just $ gvictims fa

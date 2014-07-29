@@ -24,7 +24,7 @@ import Game.LambdaHack.Content.ItemKind
 effectToBenefit :: Kind.COps -> Actor -> [ItemFull] -> Faction
                 -> Effect.Effect Int -> Int
 effectToBenefit cops b activeItems fact eff =
-  let isHorror = isHorrorFact cops fact
+  let isHorror = isHorrorFact fact
   in case eff of
     Effect.NoEffect _ -> 0
     Effect.RefillHP p ->

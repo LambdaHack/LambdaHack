@@ -3,6 +3,7 @@ module Content.ModeKind ( cdefs ) where
 
 import qualified Data.IntMap.Strict as IM
 
+import Content.ModeKindPlayer
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Content.ModeKind
 
@@ -211,73 +212,6 @@ playersDefense = Players
   , playersEnemy = [ ("Yellow", "Monster Hive")
                    , ("Yellow", "Animal Kingdom") ]
   , playersAlly = [("Monster Hive", "Animal Kingdom")] }
-
-playerHero, playerAntiHero, playerCivilian, playerMonster, playerAnimal, playerHorror :: Player
-
-playerHero = Player
-  { playerName = "Adventurer Party"
-  , playerFaction = "hero"
-  , playerIsSpawn = False
-  , playerIsHero = True
-  , playerEntry = -1
-  , playerInitial = 3
-  , playerLeader = True
-  , playerAI = False
-  , playerUI = True
-  }
-
-playerAntiHero = playerHero
-  { playerAI = True
-  , playerUI = False
-  }
-
-playerCivilian = Player
-  { playerName = "Civilian Crowd"
-  , playerFaction = "civilian"
-  , playerIsSpawn = False
-  , playerIsHero = False
-  , playerEntry = -1
-  , playerInitial = 3
-  , playerLeader = False  -- unorganized
-  , playerAI = True
-  , playerUI = False
-  }
-
-playerMonster = Player
-  { playerName = "Monster Hive"
-  , playerFaction = "monster"
-  , playerIsSpawn = True
-  , playerIsHero = False
-  , playerEntry = -3
-  , playerInitial = 5
-  , playerLeader = True
-  , playerAI = True
-  , playerUI = False
-  }
-
-playerAnimal = Player
-  { playerName = "Animal Kingdom"
-  , playerFaction = "animal"
-  , playerIsSpawn = True
-  , playerIsHero = False
-  , playerEntry = -2
-  , playerInitial = 3
-  , playerLeader = False
-  , playerAI = True
-  , playerUI = False
-  }
-
-playerHorror = Player
-  { playerName = "Horror Den"
-  , playerFaction = "horror"
-  , playerIsSpawn = False
-  , playerIsHero = False
-  , playerEntry = -1
-  , playerInitial = 0
-  , playerLeader = False
-  , playerAI = True
-  , playerUI = False
-  }
 
 
 cavesCampaign, cavesSkirmish, cavesAmbush, cavesBattle, cavesSafari :: Caves

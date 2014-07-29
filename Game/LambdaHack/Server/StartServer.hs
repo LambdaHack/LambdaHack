@@ -38,7 +38,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
@@ -88,8 +87,8 @@ mapFromFuns =
 lowercase :: Text -> Text
 lowercase = T.pack . map Char.toLower . T.unpack
 
-createFactions :: Kind.COps -> Players -> Rnd FactionDict
-createFactions Kind.COps{cofaction=Kind.Ops{opick}} players = do
+createFactions :: Players -> Rnd FactionDict
+createFactions players = do
   let rawCreate gplayer@Player{..} = do
         let cmap = mapFromFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
@@ -99,8 +98,6 @@ createFactions Kind.COps{cofaction=Kind.Ops{opick}} players = do
             (gcolor, gname) = case M.lookup nameoc cmap of
               Nothing -> (Color.BrWhite, prefix <+> playerName)
               Just c -> (c, prefix <+> playerName <+> "Team")
-        gkind <- fmap (fromMaybe $ assert `failure` playerFaction)
-                 $ opick playerFaction (const True)
         let gdipl = EM.empty  -- fixed below
             gquit = Nothing
             gleader = Nothing
@@ -158,7 +155,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
             players = if sautomateAll sdebug
                       then automatePS $ mplayers mode
                       else mplayers mode
-        faction <- createFactions cops players
+        faction <- createFactions players
         sflavour <- dungeonFlavourMap cops
         (sdiscoKind, sdiscoKindRev) <- serverDiscos cops
         freshDng <- DungeonGen.dungeonGen cops $ mcaves mode
@@ -239,9 +236,8 @@ recruitActors :: (MonadAtomic m, MonadServer m)
               => [Point] -> LevelId -> Time -> FactionId
               -> m Bool
 recruitActors ps lid time fid = assert (not $ null ps) $ do
-  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
-  let spawnName = toGroupName $ fname $ okind $ gkind fact
+  let spawnName = playerFaction $ gplayer fact
   laid <- forM ps $ \ p ->
     if isHeroFact fact
     then addHero fid p lid [] Nothing time
@@ -260,9 +256,8 @@ addMonster :: (MonadAtomic m, MonadServer m)
            => GroupName -> FactionId -> Point -> LevelId -> Time
            -> m (Maybe ActorId)
 addMonster groupName bfid ppos lid time = do
-  cops <- getsState scops
   fact <- getsState $ (EM.! bfid) . sfactionD
-  pronoun <- if isCivilianFact cops fact
+  pronoun <- if isCivilianFact fact
              then rndToAction $ oneOf ["he", "she"]
              else return "it"
   addActor groupName bfid ppos lid id pronoun time
@@ -273,9 +268,8 @@ addHero :: (MonadAtomic m, MonadServer m)
         -> Maybe Int -> Time
         -> m (Maybe ActorId)
 addHero bfid ppos lid heroNames mNumber time = do
-  Kind.COps{cofaction=Kind.Ops{okind=okind}} <- getsState scops
-  Faction{gcolor, gplayer, gkind} <- getsState $ (EM.! bfid) . sfactionD
-  let fName = toGroupName $ fname $ okind gkind
+  Faction{gcolor, gplayer} <- getsState $ (EM.! bfid) . sfactionD
+  let fName = playerFaction gplayer
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
