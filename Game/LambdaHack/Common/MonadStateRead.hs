@@ -32,10 +32,9 @@ posOfAid aid = do
   b <- getsState $ getActorBody aid
   return (blid b, bpos b)
 
--- TODO: make a field of Faction?
 fightsAgainstSpawners :: MonadStateRead m => FactionId -> m Bool
 fightsAgainstSpawners fid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   dungeon <- getsState sdungeon
   let escape = any lescape $ EM.elems dungeon
-  return $! escape && keepArenaFact fact
+  return $! escape && fcanEscape (gplayer fact)

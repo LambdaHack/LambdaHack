@@ -45,7 +45,7 @@ spawnMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 spawnMonster lid = do
   -- We check the number of current dungeon dwellers (whether spawned or not)
   -- to decide if more should be spawned.
-  f <- getsState $ \s fid -> isSpawnFact $ sfactionD s EM.! fid
+  f <- getsState $ \s fid -> not $ fcanEscape $ gplayer $ sfactionD s EM.! fid
   spawns <- getsState $ actorRegularList f lid
   totalDepth <- getsState stotalDepth
   -- We do not check @playerSpawn@ of any faction, but just take @lactorFreq@.

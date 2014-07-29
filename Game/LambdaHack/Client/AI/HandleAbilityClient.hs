@@ -511,7 +511,7 @@ trigger aid fleeViaStairs = do
         F.Cause ef@Effect.Escape{} -> do  -- flee via this way, too
           -- Only some factions try to escape but they first explore all
           -- for high score.
-          if not (keepArenaFact fact) || not allExplored
+          if not (fcanEscape $ gplayer fact) || not allExplored
           then 0
           else effectToBenefit cops b activeItems fact ef
         F.Cause ef | not fleeViaStairs ->

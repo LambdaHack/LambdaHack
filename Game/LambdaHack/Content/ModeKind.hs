@@ -41,11 +41,13 @@ data Player = Player
   , fgroup         :: !GroupName  -- ^ name of the monster group to control
   , fskillsLeader  :: !Skills   -- ^ skills of the currently selected leader
   , fskillsOther   :: !Skills   -- ^ skills of the other actors
-  , fisSpawn       :: !Bool     -- ^ whether the player is a spawn (score, AI)
-  , fisHero        :: !Bool     -- ^ whether player is a hero (score, AI, UI)
+  , fcanEscape     :: !Bool     -- ^ the player can escape the dungeon
+  , fneverEmpty    :: !Bool     -- ^ the faction declared killed if no actors
+  , fhasNumbers    :: !Bool     -- ^ whether actors have numbers, not symbols
+  , fhasGender     :: !Bool     -- ^ whether actors have gender
   , fentryLevel    :: !Int      -- ^ level where the initial members start
   , finitialActors :: !Int      -- ^ number of initial members
-  , fhasLeader     :: !Bool     -- ^ whether the faction can have leader actors
+  , fhasLeader     :: !Bool     -- ^ if not empty, the faction has a leader
   , fisAI          :: !Bool     -- ^ is the faction under AI control?
   , fhasUI         :: !Bool     -- ^ does the faction have a UI client
                                 --   (for control or passive observation)
@@ -68,8 +70,10 @@ instance Binary Player where
     put fgroup
     put fskillsLeader
     put fskillsOther
-    put fisSpawn
-    put fisHero
+    put fcanEscape
+    put fneverEmpty
+    put fhasNumbers
+    put fhasGender
     put fentryLevel
     put finitialActors
     put fhasLeader
@@ -80,8 +84,10 @@ instance Binary Player where
     fgroup <- get
     fskillsLeader <- get
     fskillsOther <- get
-    fisSpawn <- get
-    fisHero <- get
+    fcanEscape <- get
+    fneverEmpty <- get
+    fhasNumbers <- get
+    fhasGender <- get
     fentryLevel <- get
     finitialActors <- get
     fhasLeader <- get

@@ -36,6 +36,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
@@ -485,7 +486,7 @@ effectEscape target = do
   b <- getsState $ getActorBody target
   let fid = bfid b
   fact <- getsState $ (EM.! fid) . sfactionD
-  if not (keepArenaFact fact) || bproj b then
+  if not (fcanEscape $ gplayer fact) || bproj b then
     return False
   else do
     deduceQuits b $ Status Escape (fromEnum $ blid b) Nothing

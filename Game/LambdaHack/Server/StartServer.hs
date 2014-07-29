@@ -214,7 +214,7 @@ populateDungeon = do
         let ps = take (finitialActors $ gplayer fact3) $ zip [0..] psFree
         forM_ ps $ \ (n, p) -> do
           go <-
-            if not $ isHeroFact fact3
+            if not $ fhasNumbers $ gplayer fact3
             then recruitActors [p] lid ntime fid3
             else do
               let hNames = fromMaybe [] $ EM.lookup fid3 sheroNames
@@ -239,7 +239,7 @@ recruitActors ps lid time fid = assert (not $ null ps) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
   let spawnName = fgroup $ gplayer fact
   laid <- forM ps $ \ p ->
-    if isHeroFact fact
+    if fhasNumbers $ gplayer fact
     then addHero fid p lid [] Nothing time
     else addMonster spawnName fid p lid time
   case catMaybes laid of
@@ -257,7 +257,7 @@ addMonster :: (MonadAtomic m, MonadServer m)
            -> m (Maybe ActorId)
 addMonster groupName bfid ppos lid time = do
   fact <- getsState $ (EM.! bfid) . sfactionD
-  pronoun <- if isCivilianFact fact
+  pronoun <- if fhasGender $ gplayer fact
              then rndToAction $ oneOf ["he", "she"]
              else return "it"
   addActor groupName bfid ppos lid id pronoun time

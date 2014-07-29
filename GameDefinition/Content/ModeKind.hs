@@ -140,16 +140,17 @@ rosterAmbush = rosterDuel
 rosterBattle = Roster
   { rosterList = [ playerHero {finitialActors = 5}
                  , playerMonster { finitialActors = 15
-                                 , fisSpawn = False }
+                                 , fneverEmpty = True }
                  , playerAnimal { finitialActors = 10
-                                , fisSpawn = False } ]
+                                , fneverEmpty = True } ]
   , rosterEnemy = [ ("Adventurer Party", "Monster Hive")
                   , ("Adventurer Party", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 rosterSafari = Roster
   { rosterList = [ playerMonster { fname = "Monster Tourist Office"
-                                 , fisSpawn = False
+                                 , fcanEscape = True
+                                 , fneverEmpty = True
                                  , fentryLevel = -4
                                  , finitialActors = 10
                                  , fisAI = False
@@ -158,12 +159,12 @@ rosterSafari = Roster
                                   , fentryLevel = -4 }
                  , playerAnimal { fname =
                                     "Animal Magnificent Specimen Variety"
-                                , fisSpawn = False
+                                , fneverEmpty = True
                                 , fentryLevel = -7
                                 , finitialActors = 7 }
                  , playerAnimal { fname =
                                     "Animal Exquisite Herds and Packs"
-                                , fisSpawn = False
+                                , fneverEmpty = True
                                 , fentryLevel = -10
                                 , finitialActors = 20 } ]
   , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")

@@ -17,6 +17,7 @@ import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ModeKind
 
 -- | How much AI benefits from applying the effect. Multipllied by item p.
 -- Negative means harm to the enemy when thrown at him. Effects with zero
@@ -24,7 +25,7 @@ import Game.LambdaHack.Content.ItemKind
 effectToBenefit :: Kind.COps -> Actor -> [ItemFull] -> Faction
                 -> Effect.Effect Int -> Int
 effectToBenefit cops b activeItems fact eff =
-  let isHorror = isHorrorFact fact
+  let dungeonDweller = not $ fcanEscape $ gplayer fact
   in case eff of
     Effect.NoEffect _ -> 0
     Effect.RefillHP p ->
@@ -41,8 +42,8 @@ effectToBenefit cops b activeItems fact eff =
     Effect.Dominate -> -200
     Effect.Impress -> -10
     Effect.CallFriend p -> 20 * p
-    Effect.Summon{} | isHorror -> 1    -- probably generates friends or crazies
-    Effect.Summon{} -> 0               -- probably generates enemies
+    Effect.Summon{} | dungeonDweller -> 1 -- probably summons friends or crazies
+    Effect.Summon{} -> 0                  -- probably generates enemies
     Effect.CreateItem p -> 20 * p
     Effect.ApplyPerfume -> -10
     Effect.Burn p -> -15 * p           -- usually splash damage, etc.

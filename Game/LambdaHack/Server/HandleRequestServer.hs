@@ -37,6 +37,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.HandleEffectServer
@@ -116,7 +117,7 @@ addSmell aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   smellRadius <- sumOrganEqpServer Effect.EqpSlotAddSmell aid
-  unless (bproj b || not (isHeroFact fact) || smellRadius > 0) $ do
+  unless (bproj b || not (fcanEscape $ gplayer fact) || smellRadius > 0) $ do
     time <- getsState $ getLocalTime $ blid b
     lvl <- getLevel $ blid b
     let oldS = EM.lookup (bpos b) . lsmell $ lvl

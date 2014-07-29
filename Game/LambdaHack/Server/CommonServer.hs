@@ -173,7 +173,7 @@ deduceQuits body status = do
     [] ->
       -- Only leaderless and spawners remain (the latter may sometimes
       -- have no leader, just as the former), so they win,
-      -- or we could end up in a state with no active arena.
+      -- or we could get stuck in a state with no active arena and so no spawns.
       mapQuitF status{stOutcome=Conquer} keysInGame
     _ | worldPeace ->
       -- Nobody is at war any more, so all win (e.g., horrors, but never mind).
@@ -187,13 +187,21 @@ deduceQuits body status = do
       mapQuitF status{stOutcome=Defeated} $ map fst losers
     _ -> return ()
 
+-- | Tell whether a faction that we know is still in game, keeps arena.
+-- Keeping arena means, if the faction is still in game,
+-- it always has a leader in the dungeon somewhere.
+-- So, leaderless factions and spawner factions do not keep an arena,
+-- even though the latter usually has a leader for most of the game.
+keepArenaFact :: Faction -> Bool
+keepArenaFact fact = fhasLeader (gplayer fact) && fneverEmpty (gplayer fact)
+
 deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> m ()
 deduceKilled body = do
   Kind.COps{corule} <- getsState scops
   let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
       fid = bfid body
   fact <- getsState $ (EM.! fid) . sfactionD
-  unless (isSpawnFact fact) $ do  -- spawners never die off
+  when (fneverEmpty $ gplayer fact) $ do
     actorsAlive <- anyActorsAlive fid
     when (not actorsAlive || firstDeathEnds) $
       deduceQuits body $ Status Killed (fromEnum $ blid body) Nothing
@@ -342,11 +350,11 @@ addActorIid trunkId trunkFull@ItemFull{..}
       calm = xM $ max 1
              $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull]
   -- Create actor.
-  fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
+  Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   nU <- nUI
-  -- If no UI factions, the difficulty applies to heroes (for testing).
-  let diffHP | fhasUI gplayer || nU == 0 && isHeroFact fact =
+  -- If no UI factions, the difficulty applies to the escapees (for testing).
+  let diffHP | fhasUI gplayer || nU == 0 && fcanEscape gplayer =
         (ceiling :: Double -> Int64)
         $ fromIntegral hp
           * 1.5 ^^ difficultyCoeff sdifficultySer

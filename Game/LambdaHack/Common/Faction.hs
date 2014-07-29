@@ -2,8 +2,8 @@
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
-  , isHeroFact, isCivilianFact, isHorrorFact, isSpawnFact
-  , isAllMoveFact, keepArenaFact, isAtWar, isAllied
+  , isHorrorFact
+  , isAllMoveFact, isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff
   ) where
 
@@ -63,22 +63,9 @@ data Status = Status
   }
   deriving (Show, Eq, Ord)
 
--- | Tell whether the faction consists of heroes.
-isHeroFact :: Faction -> Bool
-isHeroFact fact = fisHero $ gplayer fact
-
--- | Tell whether the faction consists of human civilians.
-isCivilianFact :: Faction -> Bool
-isCivilianFact fact = fgroup (gplayer fact) == "civilian"
-
 -- | Tell whether the faction consists of summoned horrors only.
 isHorrorFact :: Faction -> Bool
 isHorrorFact fact = fgroup (gplayer fact) == "horror"
-
--- | Tell whether the faction is considered permanent dungeon dwellers
--- (normally these are just spawning factions, but there are exceptions).
-isSpawnFact :: Faction -> Bool
-isSpawnFact fact = fisSpawn (gplayer fact)
 
 -- | Tell whether all moving actors of the factions can move at once.
 isAllMoveFact :: Faction -> Bool
@@ -87,15 +74,6 @@ isAllMoveFact fact =
       skillsOther = fskillsOther $ gplayer fact
   in EM.findWithDefault 0 Ability.AbMove skillsLeader > 0
      && EM.findWithDefault 0 Ability.AbMove skillsOther > 0
-
--- | Tell whether a faction that we know is still in game, keeps arena.
--- Such factions win if they can escape the dungeon.
--- Keeping arena means, if the faction is still in game,
--- it always has a leader in the dungeon somewhere.
--- So, leaderless factions and spawner factions do not keep an arena,
--- even though the latter usually has a leader for most of the game.
-keepArenaFact :: Faction -> Bool
-keepArenaFact fact = fhasLeader (gplayer fact) && not (isSpawnFact fact)
 
 -- | Check if factions are at war. Assumes symmetry.
 isAtWar :: Faction -> FactionId -> Bool

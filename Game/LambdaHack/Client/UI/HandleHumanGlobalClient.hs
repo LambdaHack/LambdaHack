@@ -55,6 +55,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind
 
 -- * Move and Run
@@ -460,7 +461,7 @@ verifyTrigger leader feat = case feat of
     b <- getsState $ getActorBody leader
     side <- getsClient sside
     fact <- getsState $ (EM.! side) . sfactionD
-    if isSpawnFact fact then failWith
+    if not (fcanEscape $ gplayer fact) then failWith
       "This is the way out, but where would you go in this alien world?"
     else do
       go <- displayYesNo ColorFull "This is the way out. Really leave now?"
