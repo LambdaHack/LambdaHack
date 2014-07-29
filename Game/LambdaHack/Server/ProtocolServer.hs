@@ -193,7 +193,7 @@ updateConn executorUI executorAI = do
       addConn :: FactionId -> Faction -> IO ConnServerFaction
       addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
-        Nothing | fisUI $ gplayer fact -> do
+        Nothing | fhasUI $ gplayer fact -> do
           connS <- mkChanServer
           connAI <- mkChanServer
           return (Just connS, connAI)

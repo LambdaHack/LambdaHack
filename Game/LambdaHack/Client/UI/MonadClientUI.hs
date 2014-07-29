@@ -241,7 +241,7 @@ scoreToSlideshow total status = do
   factionD <- getsState sfactionD
   fightsSpawners <- fightsAgainstSpawners fid
   let showScore (ntable, pos) = HighScore.highSlideshow ntable pos
-      diff | not $ fisUI $ gplayer fact = difficultyDefault
+      diff | not $ fhasUI $ gplayer fact = difficultyDefault
            | otherwise = scurDifficulty
       theirVic (fi, fa) | isAtWar fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa
@@ -279,7 +279,7 @@ getArenaUI = do
                 case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
                   (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
                   _ -> assert `failure` "empty dungeon" `twith` dungeon
-          return $! max minD $ min maxD $ toEnum $ fentry $ gplayer fact
+          return $! max minD $ min maxD $ toEnum $ fentryLevel $ gplayer fact
 
 viewedLevel :: MonadClientUI m => m LevelId
 viewedLevel = do

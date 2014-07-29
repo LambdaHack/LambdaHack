@@ -37,19 +37,18 @@ data Roster = Roster
 
 -- | Properties of a particular player.
 data Player = Player
-  { fname         :: !Text     -- ^ name of the player
-  , fgroup        :: !GroupName  -- ^ name of the monster group to control
-  , fskillsLeader :: !Skills   -- ^ skills of the currently selected leader
-  , fskillsOther  :: !Skills   -- ^ skills of the other actors
-  , fisSpawn      :: !Bool     -- ^ whether the player is a spawn (score, AI)
-  , fisHero       :: !Bool     -- ^ whether the player is a hero (score, AI, UI)
-  , fentry        :: !Int      -- ^ level where the initial members start
-  , finitial      :: !Int      -- ^ number of initial members
-  , fleader       :: !Bool     -- ^ leaderless factions can't be controlled
-                               --   by a human or a user-supplied AI client
-  , fisAI         :: !Bool     -- ^ is the faction under AI control?
-  , fisUI         :: !Bool     -- ^ does the faction have a UI client
-                               --   (for control or passive observation)
+  { fname          :: !Text     -- ^ name of the player
+  , fgroup         :: !GroupName  -- ^ name of the monster group to control
+  , fskillsLeader  :: !Skills   -- ^ skills of the currently selected leader
+  , fskillsOther   :: !Skills   -- ^ skills of the other actors
+  , fisSpawn       :: !Bool     -- ^ whether the player is a spawn (score, AI)
+  , fisHero        :: !Bool     -- ^ whether player is a hero (score, AI, UI)
+  , fentryLevel    :: !Int      -- ^ level where the initial members start
+  , finitialActors :: !Int      -- ^ number of initial members
+  , fhasLeader     :: !Bool     -- ^ whether the faction can have leader actors
+  , fisAI          :: !Bool     -- ^ is the faction under AI control?
+  , fhasUI         :: !Bool     -- ^ does the faction have a UI client
+                                --   (for control or passive observation)
   }
   deriving (Show, Eq)
 
@@ -71,11 +70,11 @@ instance Binary Player where
     put fskillsOther
     put fisSpawn
     put fisHero
-    put fentry
-    put finitial
-    put fleader
+    put fentryLevel
+    put finitialActors
+    put fhasLeader
     put fisAI
-    put fisUI
+    put fhasUI
   get = do
     fname <- get
     fgroup <- get
@@ -83,9 +82,9 @@ instance Binary Player where
     fskillsOther <- get
     fisSpawn <- get
     fisHero <- get
-    fentry <- get
-    finitial <- get
-    fleader <- get
+    fentryLevel <- get
+    finitialActors <- get
+    fhasLeader <- get
     fisAI <- get
-    fisUI <- get
+    fhasUI <- get
     return $! Player{..}

@@ -142,7 +142,7 @@ registerScore status mbody fid = do
         else
           debugPrint $ T.intercalate "\n"
           $ HighScore.showScore (pos, HighScore.getRecord pos ntable)
-      diff | not $ fisUI $ gplayer fact = difficultyDefault
+      diff | not $ fhasUI $ gplayer fact = difficultyDefault
            | otherwise = sdifficultySer
       theirVic (fi, fa) | isAtWar fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa

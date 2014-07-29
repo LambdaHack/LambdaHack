@@ -95,7 +95,7 @@ isAllMoveFact fact =
 -- So, leaderless factions and spawner factions do not keep an arena,
 -- even though the latter usually has a leader for most of the game.
 keepArenaFact :: Faction -> Bool
-keepArenaFact fact = fleader (gplayer fact) && not (isSpawnFact fact)
+keepArenaFact fact = fhasLeader (gplayer fact) && not (isSpawnFact fact)
 
 -- | Check if factions are at war. Assumes symmetry.
 isAtWar :: Faction -> FactionId -> Bool

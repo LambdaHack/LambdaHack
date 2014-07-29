@@ -18,16 +18,16 @@ playerHero = Player
   , fskillsOther  = meleeAdjacent
   , fisSpawn = False
   , fisHero = True
-  , fentry = -1
-  , finitial = 3
-  , fleader = True
+  , fentryLevel = -1
+  , finitialActors = 3
+  , fhasLeader = True
   , fisAI = False
-  , fisUI = True
+  , fhasUI = True
   }
 
 playerAntiHero = playerHero
   { fisAI = True
-  , fisUI = False
+  , fhasUI = False
   }
 
 playerCivilian = Player
@@ -37,11 +37,11 @@ playerCivilian = Player
   , fskillsOther  = allSkills  -- not coordinated by any leadership
   , fisSpawn = False
   , fisHero = False
-  , fentry = -1
-  , finitial = 3
-  , fleader = False  -- unorganized
+  , fentryLevel = -1
+  , finitialActors = 3
+  , fhasLeader = False  -- unorganized
   , fisAI = True
-  , fisUI = False
+  , fhasUI = False
   }
 
 playerMonster = Player
@@ -51,11 +51,11 @@ playerMonster = Player
   , fskillsOther  = allSkills
   , fisSpawn = True
   , fisHero = False
-  , fentry = -3
-  , finitial = 5
-  , fleader = True
+  , fentryLevel = -3
+  , finitialActors = 5
+  , fhasLeader = True
   , fisAI = True
-  , fisUI = False
+  , fhasUI = False
   }
 
 playerAnimal = Player
@@ -65,11 +65,11 @@ playerAnimal = Player
   , fskillsOther  = animalSkills
   , fisSpawn = True
   , fisHero = False
-  , fentry = -2
-  , finitial = 3
-  , fleader = False
+  , fentryLevel = -2
+  , finitialActors = 3
+  , fhasLeader = False
   , fisAI = True
-  , fisUI = False
+  , fhasUI = False
   }
 
 playerHorror = Player
@@ -79,11 +79,11 @@ playerHorror = Player
   , fskillsOther  = allSkills
   , fisSpawn = False
   , fisHero = False
-  , fentry = -1
-  , finitial = 0
-  , fleader = False
+  , fentryLevel = -1
+  , finitialActors = 0
+  , fhasLeader = False
   , fisAI = True
-  , fisUI = False
+  , fhasUI = False
   }
 
 meleeAdjacent, _meleeAndRanged, animalSkills, allSkills :: Skills

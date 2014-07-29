@@ -112,9 +112,9 @@ rosterCampaign = Roster
 
 rosterDuel = Roster
   { rosterList = [ playerHero { fname = "White Recursive"
-                              , finitial = 1 }
+                              , finitialActors = 1 }
                  , playerAntiHero { fname = "Red Iterative"
-                                  , finitial = 1 }
+                                  , finitialActors = 1 }
                  , playerHorror ]
   , rosterEnemy = [ ("White Recursive", "Red Iterative")
                   , ("White Recursive", "Horror Den")
@@ -138,10 +138,10 @@ rosterAmbush = rosterDuel
                   , ("Blue Epigram", "Horror Den") ] }
 
 rosterBattle = Roster
-  { rosterList = [ playerHero {finitial = 5}
-                 , playerMonster { finitial = 15
+  { rosterList = [ playerHero {finitialActors = 5}
+                 , playerMonster { finitialActors = 15
                                  , fisSpawn = False }
-                 , playerAnimal { finitial = 10
+                 , playerAnimal { finitialActors = 10
                                 , fisSpawn = False } ]
   , rosterEnemy = [ ("Adventurer Party", "Monster Hive")
                   , ("Adventurer Party", "Animal Kingdom") ]
@@ -150,22 +150,22 @@ rosterBattle = Roster
 rosterSafari = Roster
   { rosterList = [ playerMonster { fname = "Monster Tourist Office"
                                  , fisSpawn = False
-                                 , fentry = -4
-                                 , finitial = 10
+                                 , fentryLevel = -4
+                                 , finitialActors = 10
                                  , fisAI = False
-                                 , fisUI = True }
+                                 , fhasUI = True }
                  , playerCivilian { fname = "Hunam Convict Pack"
-                                  , fentry = -4 }
+                                  , fentryLevel = -4 }
                  , playerAnimal { fname =
                                     "Animal Magnificent Specimen Variety"
                                 , fisSpawn = False
-                                , fentry = -7
-                                , finitial = 7 }
+                                , fentryLevel = -7
+                                , finitialActors = 7 }
                  , playerAnimal { fname =
                                     "Animal Exquisite Herds and Packs"
                                 , fisSpawn = False
-                                , fentry = -10
-                                , finitial = 20 } ]
+                                , fentryLevel = -10
+                                , finitialActors = 20 } ]
   , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
                   , ("Monster Tourist Office",
                      "Animal Magnificent Specimen Variety")
@@ -186,12 +186,12 @@ rosterPvP = Roster
 rosterCoop = Roster
   { rosterList = [ playerAntiHero { fname = "Coral" }
                  , playerAntiHero { fname = "Amber"
-                                  , fleader = False }
+                                  , fhasLeader = False }
                  , playerAntiHero { fname = "Green" }
-                 , playerAnimal { fisUI = True }
+                 , playerAnimal { fhasUI = True }
                  , playerMonster
                  , playerMonster { fname = "Leaderless Monster Hive"
-                                 , fleader = False } ]
+                                 , fhasLeader = False } ]
   , rosterEnemy = [ ("Coral", "Monster Hive")
                   , ("Amber", "Monster Hive")
                   , ("Animal Kingdom", "Leaderless Monster Hive") ]
@@ -203,11 +203,11 @@ rosterCoop = Roster
                  , ("Green", "Leaderless Monster Hive") ] }
 
 rosterDefense = Roster
-  { rosterList = [ playerMonster { finitial = 1
+  { rosterList = [ playerMonster { finitialActors = 1
                                  , fisAI = False
-                                 , fisUI = True }
+                                 , fhasUI = True }
                  , playerAntiHero { fname = "Yellow"
-                                  , finitial = 10 }
+                                  , finitialActors = 10 }
                  , playerAnimal ]
   , rosterEnemy = [ ("Yellow", "Monster Hive")
                   , ("Yellow", "Animal Kingdom") ]

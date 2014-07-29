@@ -104,8 +104,8 @@ createFactions players = do
             gvictims = EM.empty
             gsha = EM.empty
         return $! Faction{..}
-  lUI <- mapM rawCreate $ filter fisUI $ rosterList players
-  lnoUI <- mapM rawCreate $ filter (not . fisUI) $ rosterList players
+  lUI <- mapM rawCreate $ filter fhasUI $ rosterList players
+  lnoUI <- mapM rawCreate $ filter (not . fhasUI) $ rosterList players
   let lFs = reverse (zip [toEnum (-1), toEnum (-2)..] lnoUI)  -- sorted
             ++ zip [toEnum 1..] lUI
       swapIx l =
@@ -185,10 +185,10 @@ populateDungeon = do
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` "empty dungeon" `twith` dungeon
-      needInitialCrew = filter ((> 0 ) . finitial . gplayer . snd)
+      needInitialCrew = filter ((> 0 ) . finitialActors . gplayer . snd)
                         $ EM.assocs factionD
       getEntryLevel (_, fact) =
-        max minD $ min maxD $ toEnum $ fentry $ gplayer fact
+        max minD $ min maxD $ toEnum $ fentryLevel $ gplayer fact
       arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
       initialActors lid = do
         lvl <- getLevel lid
@@ -211,7 +211,7 @@ populateDungeon = do
             ntime = timeShift time (timeDeltaScale (Delta timeClip) nmult)
             validTile t = not $ Tile.hasFeature cotile F.NoActor t
         psFree <- getsState $ nearbyFreePoints validTile ppos lid
-        let ps = take (finitial $ gplayer fact3) $ zip [0..] psFree
+        let ps = take (finitialActors $ gplayer fact3) $ zip [0..] psFree
         forM_ ps $ \ (n, p) -> do
           go <-
             if not $ isHeroFact fact3

@@ -132,7 +132,7 @@ quitF mbody status fid = do
     Just Conquer -> return ()
     Just Escape -> return ()
     _ -> do
-      when (fisUI $ gplayer fact) $ do
+      when (fhasUI $ gplayer fact) $ do
         revealItems (Just fid) mbody
         registerScore status mbody fid
       execUpdAtomic $ UpdQuitFaction fid mbody oldSt $ Just status
@@ -161,7 +161,7 @@ deduceQuits body status = do
   let assocsInGameOutcome = filter inGameOutcome $ EM.assocs factionD
       keysInGame = map fst assocsInGameOutcome
       assocsKeepArena = filter (keepArenaFact . snd) assocsInGame
-      assocsUI = filter (fisUI . gplayer . snd) assocsInGame
+      assocsUI = filter (fhasUI . gplayer . snd) assocsInGame
       worldPeace =
         all (\(fid1, _) -> all (\(_, fact2) -> not $ isAtWar fact2 fid1)
                            assocsInGame)
@@ -201,7 +201,7 @@ deduceKilled body = do
 anyActorsAlive :: MonadServer m => FactionId -> m Bool
 anyActorsAlive fid = do
   fact <- getsState $ (EM.! fid) . sfactionD
-  if fleader (gplayer fact)
+  if fhasLeader (gplayer fact)
     then return $! isJust $ gleader fact
     else do
       as <- getsState $ fidActorNotProjList fid
@@ -346,7 +346,7 @@ addActorIid trunkId trunkFull@ItemFull{..}
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   nU <- nUI
   -- If no UI factions, the difficulty applies to heroes (for testing).
-  let diffHP | fisUI gplayer || nU == 0 && isHeroFact fact =
+  let diffHP | fhasUI gplayer || nU == 0 && isHeroFact fact =
         (ceiling :: Double -> Int64)
         $ fromIntegral hp
           * 1.5 ^^ difficultyCoeff sdifficultySer

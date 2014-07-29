@@ -84,7 +84,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
   persLit <- doResetLitInDungeon
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI =
-        when (fisUI $ gplayer $ factionD EM.! fid) $ doSendUpdateUI fid cmdUI
+        when (fhasUI $ gplayer $ factionD EM.! fid) $ doSendUpdateUI fid cmdUI
       sendAI fid cmdAI = doSendUpdateAI fid cmdAI
       sendA fid cmd = do
         sendUI fid $ RespUpdAtomicUI cmd
