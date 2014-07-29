@@ -2,7 +2,7 @@
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
-  , isHeroFact, isCivilianFact, isHorrorFact, isSpawnFact, isSummonFact
+  , isHeroFact, isCivilianFact, isHorrorFact, isSpawnFact
   , isAllMoveFact, keepArenaFact, isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff
   ) where
@@ -69,23 +69,16 @@ isHeroFact fact = fisHero $ gplayer fact
 
 -- | Tell whether the faction consists of human civilians.
 isCivilianFact :: Faction -> Bool
-isCivilianFact fact =
-  maybe False (> 0) $ lookup "civilian" $ ffreq $ gplayer fact
+isCivilianFact fact = fgroup (gplayer fact) == "civilian"
 
 -- | Tell whether the faction consists of summoned horrors only.
 isHorrorFact :: Faction -> Bool
-isHorrorFact fact =
-  maybe False (> 0) $ lookup "horror" $ ffreq $ gplayer fact
+isHorrorFact fact = fgroup (gplayer fact) == "horror"
 
 -- | Tell whether the faction is considered permanent dungeon dwellers
 -- (normally these are just spawning factions, but there are exceptions).
 isSpawnFact :: Faction -> Bool
 isSpawnFact fact = fisSpawn (gplayer fact)
-
--- | Tell whether actors of the faction can be summoned by items, etc.
-isSummonFact :: Faction -> Bool
-isSummonFact fact =
-  maybe False (> 0) $ lookup "summon" $ ffreq $ gplayer fact
 
 -- | Tell whether all moving actors of the factions can move at once.
 isAllMoveFact :: Faction -> Bool

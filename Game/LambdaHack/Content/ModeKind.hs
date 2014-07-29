@@ -39,7 +39,6 @@ data Roster = Roster
 data Player = Player
   { fname         :: !Text     -- ^ name of the player
   , fgroup        :: !GroupName  -- ^ name of the monster group to control
-  , ffreq         :: !Freqs    -- ^ frequency within groups
   , fskillsLeader :: !Skills   -- ^ skills of the currently selected leader
   , fskillsOther  :: !Skills   -- ^ skills of the other actors
   , fisSpawn      :: !Bool     -- ^ whether the player is a spawn (score, AI)
@@ -68,7 +67,6 @@ instance Binary Player where
   put Player{..} = do
     put fname
     put fgroup
-    put ffreq
     put fskillsLeader
     put fskillsOther
     put fisSpawn
@@ -81,7 +79,6 @@ instance Binary Player where
   get = do
     fname <- get
     fgroup <- get
-    ffreq <- get
     fskillsLeader <- get
     fskillsOther <- get
     fisSpawn <- get
