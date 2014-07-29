@@ -1,6 +1,6 @@
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
-  ( Caves, Players(..), Player(..), ModeKind(..), validateModeKind
+  ( Caves, Roster(..), Player(..), ModeKind(..), validateModeKind
   ) where
 
 import Data.Binary
@@ -13,12 +13,12 @@ import Game.LambdaHack.Common.Misc
 
 -- | Game mode specification.
 data ModeKind = ModeKind
-  { msymbol  :: !Char     -- ^ a symbol (matches the keypress, if any)
-  , mname    :: !Text     -- ^ short description
-  , mfreq    :: !Freqs    -- ^ frequency within groups
-  , mplayers :: !Players  -- ^ players taking part in the game
-  , mcaves   :: !Caves    -- ^ arena of the game
-  , mdesc    :: !Text     -- ^ description
+  { msymbol :: !Char    -- ^ a symbol (matches the keypress, if any)
+  , mname   :: !Text    -- ^ short description
+  , mfreq   :: !Freqs   -- ^ frequency within groups
+  , mroster :: !Roster  -- ^ players taking part in the game
+  , mcaves  :: !Caves   -- ^ arena of the game
+  , mdesc   :: !Text    -- ^ description
   }
   deriving Show
 
@@ -28,35 +28,35 @@ data ModeKind = ModeKind
 type Caves = IM.IntMap (GroupName, Maybe Bool)
 
 -- | The specification of players for the game mode.
-data Players = Players
-  { playersList  :: ![Player]        -- ^ players, both human and computer
-  , playersEnemy :: ![(Text, Text)]  -- ^ the initial enmity matrix
-  , playersAlly  :: ![(Text, Text)]  -- ^ the initial aliance matrix
+data Roster = Roster
+  { rosterList  :: ![Player]        -- ^ players in the particular team
+  , rosterEnemy :: ![(Text, Text)]  -- ^ the initial enmity matrix
+  , rosterAlly  :: ![(Text, Text)]  -- ^ the initial aliance matrix
   }
   deriving (Show, Eq)
 
 -- | Properties of a particular player.
 data Player = Player
-  { playerName    :: !Text     -- ^ name of the player
-  , playerFaction :: !GroupName  -- ^ name of faction(s) the player can control
+  { fname         :: !Text     -- ^ name of the player
+  , fgroup        :: !GroupName  -- ^ name of the monster group to control
   , ffreq         :: !Freqs    -- ^ frequency within groups
-  , fSkillsLeader :: !Skills   -- ^ skills of the currently selected leader
-  , fSkillsOther  :: !Skills   -- ^ skills of the other actors
-  , playerIsSpawn :: !Bool     -- ^ whether the player is a spawn (score, AI)
-  , playerIsHero  :: !Bool     -- ^ whether the player is a hero (score, AI, UI)
-  , playerEntry   :: !Int      -- ^ level where the initial members start
-  , playerInitial :: !Int      -- ^ number of initial members
-  , playerLeader  :: !Bool     -- ^ leaderless factions can't be controlled
+  , fskillsLeader :: !Skills   -- ^ skills of the currently selected leader
+  , fskillsOther  :: !Skills   -- ^ skills of the other actors
+  , fisSpawn      :: !Bool     -- ^ whether the player is a spawn (score, AI)
+  , fisHero       :: !Bool     -- ^ whether the player is a hero (score, AI, UI)
+  , fentry        :: !Int      -- ^ level where the initial members start
+  , finitial      :: !Int      -- ^ number of initial members
+  , fleader       :: !Bool     -- ^ leaderless factions can't be controlled
                                --   by a human or a user-supplied AI client
-  , playerAI      :: !Bool     -- ^ is the faction under AI control?
-  , playerUI      :: !Bool     -- ^ does the faction have a UI client
+  , fisAI         :: !Bool     -- ^ is the faction under AI control?
+  , fisUI         :: !Bool     -- ^ does the faction have a UI client
                                --   (for control or passive observation)
   }
   deriving (Show, Eq)
 
 -- TODO: assert every Player's playerName's first word's length <= 15
 -- TODO: assert if no UI, both Ai are on and there are some non-spawners;
--- assert that playersEnemy and playersAlly mention only factions in play.
+-- assert that rosterEnemy and rosterAlly mention only factions in play.
 -- | No specific possible problems for the content of this kind, so far,
 -- so the validation function always returns the empty list of offending kinds.
 -- In particular, for the @Player@, @fSkillsOther@ needn't be a subset
@@ -66,29 +66,29 @@ validateModeKind _ = []
 
 instance Binary Player where
   put Player{..} = do
-    put playerName
-    put playerFaction
+    put fname
+    put fgroup
     put ffreq
-    put fSkillsLeader
-    put fSkillsOther
-    put playerIsSpawn
-    put playerIsHero
-    put playerEntry
-    put playerInitial
-    put playerLeader
-    put playerAI
-    put playerUI
+    put fskillsLeader
+    put fskillsOther
+    put fisSpawn
+    put fisHero
+    put fentry
+    put finitial
+    put fleader
+    put fisAI
+    put fisUI
   get = do
-    playerName <- get
-    playerFaction <- get
+    fname <- get
+    fgroup <- get
     ffreq <- get
-    fSkillsLeader <- get
-    fSkillsOther <- get
-    playerIsSpawn <- get
-    playerIsHero <- get
-    playerEntry <- get
-    playerInitial <- get
-    playerLeader <- get
-    playerAI <- get
-    playerUI <- get
+    fskillsLeader <- get
+    fskillsOther <- get
+    fisSpawn <- get
+    fisHero <- get
+    fentry <- get
+    finitial <- get
+    fleader <- get
+    fisAI <- get
+    fisUI <- get
     return $! Player{..}

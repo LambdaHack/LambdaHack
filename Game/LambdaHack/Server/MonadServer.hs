@@ -135,14 +135,14 @@ registerScore status mbody fid = do
   let path = dataDir </> scoresFile
       outputScore (worthMentioning, (ntable, pos)) =
         -- If not human, probably debugging, so dump instead of registering.
-        if not $ playerAI $ gplayer fact then
+        if not $ fisAI $ gplayer fact then
           if worthMentioning then
             liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
           else return ()
         else
           debugPrint $ T.intercalate "\n"
           $ HighScore.showScore (pos, HighScore.getRecord pos ntable)
-      diff | not $ playerUI $ gplayer fact = difficultyDefault
+      diff | not $ fisUI $ gplayer fact = difficultyDefault
            | otherwise = sdifficultySer
       theirVic (fi, fa) | isAtWar fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa
@@ -153,7 +153,7 @@ registerScore status mbody fid = do
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
       registeredScore =
         HighScore.register table total time status date diff
-                           (playerName $ gplayer fact)
+                           (fname $ gplayer fact)
                            ourVictims theirVictims fightsSpawners
   outputScore registeredScore
 

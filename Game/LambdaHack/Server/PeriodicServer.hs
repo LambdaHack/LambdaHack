@@ -81,12 +81,12 @@ addAnyActor actorFreq lid time mpos = do
     Just (itemKnown, trunkFull, seed, k, _) -> do
       let ik = maybe (assert `failure` trunkFull) itemKind $ itemDisco trunkFull
           freqNames = map fst $ ifreq ik
-          f fact = playerFaction (gplayer fact)
+          f fact = fgroup (gplayer fact)
           factNames = map f $ EM.elems factionD
           fidName = case freqNames `intersect` factNames of
             [] -> head factNames  -- fall back to an arbitrary faction
             fName : _ -> fName
-          g (_, fact) = playerFaction (gplayer fact) == fidName
+          g (_, fact) = fgroup (gplayer fact) == fidName
           mfid = find g $ EM.assocs factionD
           fid = fst $ fromMaybe (assert `failure` (factionD, fidName)) mfid
       pers <- getsServer sper
@@ -197,7 +197,7 @@ advanceTime aid = do
     dominated <-
       if bcalm b == 0
          && boldfid b /= bfid b
-         && playerLeader (gplayer fact)  -- animals never Calm-dominated
+         && fleader (gplayer fact)  -- animals never Calm-dominated
       then dominateFidSfx (boldfid b) aid
       else return False
     unless dominated $ do
@@ -218,7 +218,7 @@ leadLevelFlip = do
   Kind.COps{cotile} <- getsState scops
   let canFlip fact =
         -- We don't have to check @playerLeader@: @gleader@ would be @Nothing@.
-        playerAI (gplayer fact) || isAllMoveFact fact
+        fisAI (gplayer fact) || isAllMoveFact fact
       flipFaction fact | not $ canFlip fact = return ()
       flipFaction fact = do
         case gleader fact of

@@ -85,7 +85,7 @@ displayPush = do
   fact <- getsState $ (EM.! side) . sfactionD
   sls <- promptToSlideshow ""
   let slide = head . snd $ slideshow sls
-      underAI = playerAI $ gplayer fact
+      underAI = fisAI $ gplayer fact
   frame <- drawOverlay False ColorFull slide
   -- Visually speed up (by remving all empty frames) the show of the sequence
   -- of the move frames if the player is running.

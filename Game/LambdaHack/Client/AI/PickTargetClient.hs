@@ -159,7 +159,7 @@ targetStrategy oldLeader aid = do
                           then closestItems aid
                           else return []
                 case filter desirable citems of
-                  [] | not (playerLeader (gplayer fact)) -> do
+                  [] | not (fleader (gplayer fact)) -> do
                     mtgtPrev <- getsClient $ getTarget aid
                     let vOld = bpos b `vectorToFrom` boldpos b
                         v = case (mtgtPrev, isUnit vOld) of

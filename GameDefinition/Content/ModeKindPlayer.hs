@@ -12,83 +12,83 @@ import Game.LambdaHack.Content.ModeKind
 playerHero, playerAntiHero, playerCivilian, playerMonster, playerAnimal, playerHorror :: Player
 
 playerHero = Player
-  { playerName = "Adventurer Party"
-  , playerFaction = "hero"
-  , ffreq         = [("hero", 1)]
-  , fSkillsLeader = allSkills
-  , fSkillsOther  = meleeAdjacent
-  , playerIsSpawn = False
-  , playerIsHero = True
-  , playerEntry = -1
-  , playerInitial = 3
-  , playerLeader = True
-  , playerAI = False
-  , playerUI = True
+  { fname = "Adventurer Party"
+  , fgroup = "hero"
+  , ffreq = [("hero", 1)]
+  , fskillsLeader = allSkills
+  , fskillsOther  = meleeAdjacent
+  , fisSpawn = False
+  , fisHero = True
+  , fentry = -1
+  , finitial = 3
+  , fleader = True
+  , fisAI = False
+  , fisUI = True
   }
 
 playerAntiHero = playerHero
-  { playerAI = True
-  , playerUI = False
+  { fisAI = True
+  , fisUI = False
   }
 
 playerCivilian = Player
-  { playerName = "Civilian Crowd"
-  , playerFaction = "civilian"
-  , ffreq         = [("civilian", 1)]
-  , fSkillsLeader = allSkills
-  , fSkillsOther  = allSkills  -- not coordinated by any leadership
-  , playerIsSpawn = False
-  , playerIsHero = False
-  , playerEntry = -1
-  , playerInitial = 3
-  , playerLeader = False  -- unorganized
-  , playerAI = True
-  , playerUI = False
+  { fname = "Civilian Crowd"
+  , fgroup = "civilian"
+  , ffreq = [("civilian", 1)]
+  , fskillsLeader = allSkills
+  , fskillsOther  = allSkills  -- not coordinated by any leadership
+  , fisSpawn = False
+  , fisHero = False
+  , fentry = -1
+  , finitial = 3
+  , fleader = False  -- unorganized
+  , fisAI = True
+  , fisUI = False
   }
 
 playerMonster = Player
-  { playerName = "Monster Hive"
-  , playerFaction = "monster"
-  , ffreq         = [("monster", 1)]
-  , fSkillsLeader = allSkills
-  , fSkillsOther  = allSkills
-  , playerIsSpawn = True
-  , playerIsHero = False
-  , playerEntry = -3
-  , playerInitial = 5
-  , playerLeader = True
-  , playerAI = True
-  , playerUI = False
+  { fname = "Monster Hive"
+  , fgroup = "monster"
+  , ffreq = [("monster", 1)]
+  , fskillsLeader = allSkills
+  , fskillsOther  = allSkills
+  , fisSpawn = True
+  , fisHero = False
+  , fentry = -3
+  , finitial = 5
+  , fleader = True
+  , fisAI = True
+  , fisUI = False
   }
 
 playerAnimal = Player
-  { playerName = "Animal Kingdom"
-  , playerFaction = "animal"
-  , ffreq         = [("animal", 1)]
-  , fSkillsLeader = animalSkills
-  , fSkillsOther  = animalSkills
-  , playerIsSpawn = True
-  , playerIsHero = False
-  , playerEntry = -2
-  , playerInitial = 3
-  , playerLeader = False
-  , playerAI = True
-  , playerUI = False
+  { fname = "Animal Kingdom"
+  , fgroup = "animal"
+  , ffreq = [("animal", 1)]
+  , fskillsLeader = animalSkills
+  , fskillsOther  = animalSkills
+  , fisSpawn = True
+  , fisHero = False
+  , fentry = -2
+  , finitial = 3
+  , fleader = False
+  , fisAI = True
+  , fisUI = False
   }
 
 playerHorror = Player
-  { playerName = "Horror Den"
-  , playerFaction = "horror"
-  , ffreq         = [("horror", 1)]
-  , fSkillsLeader = allSkills
-  , fSkillsOther  = allSkills
-  , playerIsSpawn = False
-  , playerIsHero = False
-  , playerEntry = -1
-  , playerInitial = 0
-  , playerLeader = False
-  , playerAI = True
-  , playerUI = False
+  { fname = "Horror Den"
+  , fgroup = "horror"
+  , ffreq = [("horror", 1)]
+  , fskillsLeader = allSkills
+  , fskillsOther  = allSkills
+  , fisSpawn = False
+  , fisHero = False
+  , fentry = -1
+  , finitial = 0
+  , fleader = False
+  , fisAI = True
+  , fisUI = False
   }
 
 meleeAdjacent, _meleeAndRanged, animalSkills, allSkills :: Skills

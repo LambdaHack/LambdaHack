@@ -19,199 +19,199 @@ cdefs = ContentDef
 campaign,        duel, skirmish, ambush, battle, safari, pvp, coop, defense :: ModeKind
 
 campaign = ModeKind
-  { msymbol  = 'a'
-  , mname    = "campaign"
-  , mfreq    = [("campaign", 1)]
-  , mplayers = playersCampaign
-  , mcaves   = cavesCampaign
-  , mdesc    = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there in the darkness for too long!"
+  { msymbol = 'a'
+  , mname   = "campaign"
+  , mfreq   = [("campaign", 1)]
+  , mroster = rosterCampaign
+  , mcaves  = cavesCampaign
+  , mdesc   = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there in the darkness for too long!"
   }
 
 duel = ModeKind
-  { msymbol  = 'u'
-  , mname    = "duel"
-  , mfreq    = [("duel", 1)]
-  , mplayers = playersDuel
-  , mcaves   = cavesSkirmish
-  , mdesc    = "You disagreed about the premises of a relative completeness theorem and there's only one way to settle that."
+  { msymbol = 'u'
+  , mname   = "duel"
+  , mfreq   = [("duel", 1)]
+  , mroster = rosterDuel
+  , mcaves  = cavesSkirmish
+  , mdesc   = "You disagreed about the premises of a relative completeness theorem and there's only one way to settle that."
   }
 
 skirmish = ModeKind
-  { msymbol  = 'k'
-  , mname    = "skirmish"
-  , mfreq    = [("skirmish", 1)]
-  , mplayers = playersSkirmish
-  , mcaves   = cavesSkirmish
-  , mdesc    = "The scoring system of a programming contest fails to determine the winning team and participants take matters into their own hands."
+  { msymbol = 'k'
+  , mname   = "skirmish"
+  , mfreq   = [("skirmish", 1)]
+  , mroster = rosterSkirmish
+  , mcaves  = cavesSkirmish
+  , mdesc   = "The scoring system of a programming contest fails to determine the winning team and participants take matters into their own hands."
   }
 
 ambush = ModeKind
-  { msymbol  = 'm'
-  , mname    = "ambush"
-  , mfreq    = [("ambush", 1)]
-  , mplayers = playersAmbush
-  , mcaves   = cavesAmbush
-  , mdesc    = "Surprising, striking ideas and fast execution are what makes or breaks a creative team!"
+  { msymbol = 'm'
+  , mname   = "ambush"
+  , mfreq   = [("ambush", 1)]
+  , mroster = rosterAmbush
+  , mcaves  = cavesAmbush
+  , mdesc   = "Surprising, striking ideas and fast execution are what makes or breaks a creative team!"
   }
 
 battle = ModeKind
-  { msymbol  = 'b'
-  , mname    = "battle"
-  , mfreq    = [("battle", 1)]
-  , mplayers = playersBattle
-  , mcaves   = cavesBattle
-  , mdesc    = "Odds are stacked against those that unleash the horrors of abstraction."
+  { msymbol = 'b'
+  , mname   = "battle"
+  , mfreq   = [("battle", 1)]
+  , mroster = rosterBattle
+  , mcaves  = cavesBattle
+  , mdesc   = "Odds are stacked against those that unleash the horrors of abstraction."
   }
 
 safari = ModeKind
-  { msymbol  = 'f'
-  , mname    = "safari"
-  , mfreq    = [("safari", 1)]
-  , mplayers = playersSafari
-  , mcaves   = cavesSafari
-  , mdesc    = "In this simulation you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent (exit at the bottommost level)."
+  { msymbol = 'f'
+  , mname   = "safari"
+  , mfreq   = [("safari", 1)]
+  , mroster = rosterSafari
+  , mcaves  = cavesSafari
+  , mdesc   = "In this simulation you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent (exit at the bottommost level)."
   }
 
 pvp = ModeKind
-  { msymbol  = 'v'
-  , mname    = "PvP"
-  , mfreq    = [("PvP", 1)]
-  , mplayers = playersPvP
-  , mcaves   = cavesSkirmish
-  , mdesc    = "(Not usable right now.) This is a fight to the death between two human-controlled teams."
+  { msymbol = 'v'
+  , mname   = "PvP"
+  , mfreq   = [("PvP", 1)]
+  , mroster = rosterPvP
+  , mcaves  = cavesSkirmish
+  , mdesc   = "(Not usable right now.) This is a fight to the death between two human-controlled teams."
   }
 
 coop = ModeKind
-  { msymbol  = 'o'
-  , mname    = "Coop"
-  , mfreq    = [("Coop", 1)]
-  , mplayers = playersCoop
-  , mcaves   = cavesCampaign
-  , mdesc    = "(This mode is intended solely for automated testing.)"
+  { msymbol = 'o'
+  , mname   = "Coop"
+  , mfreq   = [("Coop", 1)]
+  , mroster = rosterCoop
+  , mcaves  = cavesCampaign
+  , mdesc   = "(This mode is intended solely for automated testing.)"
   }
 
 defense = ModeKind
-  { msymbol  = 'e'
-  , mname    = "defense"
-  , mfreq    = [("defense", 1)]
-  , mplayers = playersDefense
-  , mcaves   = cavesCampaign
-  , mdesc    = "Don't let the humans defile your abstract secrets and flee, like the vulgar, literal, base scoundrels that they are!"
+  { msymbol = 'e'
+  , mname   = "defense"
+  , mfreq   = [("defense", 1)]
+  , mroster = rosterDefense
+  , mcaves  = cavesCampaign
+  , mdesc   = "Don't let the humans defile your abstract secrets and flee, like the vulgar, literal, base scoundrels that they are!"
   }
 
 
-playersCampaign, playersDuel, playersSkirmish, playersAmbush, playersBattle, playersSafari, playersPvP, playersCoop, playersDefense :: Players
+rosterCampaign, rosterDuel, rosterSkirmish, rosterAmbush, rosterBattle, rosterSafari, rosterPvP, rosterCoop, rosterDefense :: Roster
 
-playersCampaign = Players
-  { playersList = [ playerHero
-                  , playerMonster
-                  , playerAnimal ]
-  , playersEnemy = [ ("Adventurer Party", "Monster Hive")
-                   , ("Adventurer Party", "Animal Kingdom") ]
-  , playersAlly = [("Monster Hive", "Animal Kingdom")] }
+rosterCampaign = Roster
+  { rosterList = [ playerHero
+                 , playerMonster
+                 , playerAnimal ]
+  , rosterEnemy = [ ("Adventurer Party", "Monster Hive")
+                  , ("Adventurer Party", "Animal Kingdom") ]
+  , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
-playersDuel = Players
-  { playersList = [ playerHero { playerName = "White Recursive"
-                               , playerInitial = 1 }
-                  , playerAntiHero { playerName = "Red Iterative"
-                                   , playerInitial = 1 }
-                  , playerHorror ]
-  , playersEnemy = [ ("White Recursive", "Red Iterative")
-                   , ("White Recursive", "Horror Den")
-                   , ("Red Iterative", "Horror Den") ]
-  , playersAlly = [] }
+rosterDuel = Roster
+  { rosterList = [ playerHero { fname = "White Recursive"
+                              , finitial = 1 }
+                 , playerAntiHero { fname = "Red Iterative"
+                                  , finitial = 1 }
+                 , playerHorror ]
+  , rosterEnemy = [ ("White Recursive", "Red Iterative")
+                  , ("White Recursive", "Horror Den")
+                  , ("Red Iterative", "Horror Den") ]
+  , rosterAlly = [] }
 
-playersSkirmish = playersDuel
-  { playersList = [ playerHero {playerName = "White Haskell"}
-                  , playerAntiHero {playerName = "Purple Agda"}
-                  , playerHorror ]
-  , playersEnemy = [ ("White Haskell", "Purple Agda")
-                   , ("White Haskell", "Horror Den")
-                   , ("Purple Agda", "Horror Den") ] }
+rosterSkirmish = rosterDuel
+  { rosterList = [ playerHero {fname = "White Haskell"}
+                 , playerAntiHero {fname = "Purple Agda"}
+                 , playerHorror ]
+  , rosterEnemy = [ ("White Haskell", "Purple Agda")
+                  , ("White Haskell", "Horror Den")
+                  , ("Purple Agda", "Horror Den") ] }
 
-playersAmbush = playersDuel
-  { playersList = [ playerHero {playerName = "Yellow Idris"}
-                  , playerAntiHero {playerName = "Blue Epigram"}
-                  , playerHorror ]
-  , playersEnemy = [ ("Yellow Idris", "Blue Epigram")
-                   , ("Yellow Idris", "Horror Den")
-                   , ("Blue Epigram", "Horror Den") ] }
+rosterAmbush = rosterDuel
+  { rosterList = [ playerHero {fname = "Yellow Idris"}
+                 , playerAntiHero {fname = "Blue Epigram"}
+                 , playerHorror ]
+  , rosterEnemy = [ ("Yellow Idris", "Blue Epigram")
+                  , ("Yellow Idris", "Horror Den")
+                  , ("Blue Epigram", "Horror Den") ] }
 
-playersBattle = Players
-  { playersList = [ playerHero {playerInitial = 5}
-                  , playerMonster { playerInitial = 15
-                                  , playerIsSpawn = False }
-                  , playerAnimal { playerInitial = 10
-                                 , playerIsSpawn = False } ]
-  , playersEnemy = [ ("Adventurer Party", "Monster Hive")
-                   , ("Adventurer Party", "Animal Kingdom") ]
-  , playersAlly = [("Monster Hive", "Animal Kingdom")] }
+rosterBattle = Roster
+  { rosterList = [ playerHero {finitial = 5}
+                 , playerMonster { finitial = 15
+                                 , fisSpawn = False }
+                 , playerAnimal { finitial = 10
+                                , fisSpawn = False } ]
+  , rosterEnemy = [ ("Adventurer Party", "Monster Hive")
+                  , ("Adventurer Party", "Animal Kingdom") ]
+  , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
-playersSafari = Players
-  { playersList = [ playerMonster { playerName = "Monster Tourist Office"
-                                  , playerIsSpawn = False
-                                  , playerEntry = -4
-                                  , playerInitial = 10
-                                  , playerAI = False
-                                  , playerUI = True }
-                  , playerCivilian { playerName = "Hunam Convict Pack"
-                                   , playerEntry = -4 }
-                  , playerAnimal { playerName =
-                                     "Animal Magnificent Specimen Variety"
-                                 , playerIsSpawn = False
-                                 , playerEntry = -7
-                                 , playerInitial = 7 }
-                  , playerAnimal { playerName =
-                                     "Animal Exquisite Herds and Packs"
-                                 , playerIsSpawn = False
-                                 , playerEntry = -10
-                                 , playerInitial = 20 } ]
-  , playersEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
-                   , ("Monster Tourist Office",
-                      "Animal Magnificent Specimen Variety")
-                   , ("Monster Tourist Office",
-                      "Animal Exquisite Herds and Packs") ]
-  , playersAlly = [( "Animal Magnificent Specimen Variety"
-                   , "Animal Exquisite Herds and Packs" )] }
+rosterSafari = Roster
+  { rosterList = [ playerMonster { fname = "Monster Tourist Office"
+                                 , fisSpawn = False
+                                 , fentry = -4
+                                 , finitial = 10
+                                 , fisAI = False
+                                 , fisUI = True }
+                 , playerCivilian { fname = "Hunam Convict Pack"
+                                  , fentry = -4 }
+                 , playerAnimal { fname =
+                                    "Animal Magnificent Specimen Variety"
+                                , fisSpawn = False
+                                , fentry = -7
+                                , finitial = 7 }
+                 , playerAnimal { fname =
+                                    "Animal Exquisite Herds and Packs"
+                                , fisSpawn = False
+                                , fentry = -10
+                                , finitial = 20 } ]
+  , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
+                  , ("Monster Tourist Office",
+                     "Animal Magnificent Specimen Variety")
+                  , ("Monster Tourist Office",
+                     "Animal Exquisite Herds and Packs") ]
+  , rosterAlly = [( "Animal Magnificent Specimen Variety"
+                  , "Animal Exquisite Herds and Packs" )] }
 
-playersPvP = Players
-  { playersList = [ playerHero {playerName = "Red"}
-                  , playerHero {playerName = "Blue"}
-                  , playerHorror ]
-  , playersEnemy = [ ("Red", "Blue")
-                   , ("Red", "Horror Den")
-                   , ("Blue", "Horror Den") ]
-  , playersAlly = [] }
+rosterPvP = Roster
+  { rosterList = [ playerHero {fname = "Red"}
+                 , playerHero {fname = "Blue"}
+                 , playerHorror ]
+  , rosterEnemy = [ ("Red", "Blue")
+                  , ("Red", "Horror Den")
+                  , ("Blue", "Horror Den") ]
+  , rosterAlly = [] }
 
-playersCoop = Players
-  { playersList = [ playerAntiHero { playerName = "Coral" }
-                  , playerAntiHero { playerName = "Amber"
-                                   , playerLeader = False }
-                  , playerAntiHero { playerName = "Green" }
-                  , playerAnimal { playerUI = True }
-                  , playerMonster
-                  , playerMonster { playerName = "Leaderless Monster Hive"
-                                  , playerLeader = False } ]
-  , playersEnemy = [ ("Coral", "Monster Hive")
-                   , ("Amber", "Monster Hive")
-                   , ("Animal Kingdom", "Leaderless Monster Hive") ]
-  , playersAlly = [ ("Coral", "Amber")
-                  , ("Coral", "Green")
-                  , ("Amber", "Green")
-                  , ("Green", "Animal Kingdom")
-                  , ("Green", "Monster Hive")
-                  , ("Green", "Leaderless Monster Hive") ] }
+rosterCoop = Roster
+  { rosterList = [ playerAntiHero { fname = "Coral" }
+                 , playerAntiHero { fname = "Amber"
+                                  , fleader = False }
+                 , playerAntiHero { fname = "Green" }
+                 , playerAnimal { fisUI = True }
+                 , playerMonster
+                 , playerMonster { fname = "Leaderless Monster Hive"
+                                 , fleader = False } ]
+  , rosterEnemy = [ ("Coral", "Monster Hive")
+                  , ("Amber", "Monster Hive")
+                  , ("Animal Kingdom", "Leaderless Monster Hive") ]
+  , rosterAlly = [ ("Coral", "Amber")
+                 , ("Coral", "Green")
+                 , ("Amber", "Green")
+                 , ("Green", "Animal Kingdom")
+                 , ("Green", "Monster Hive")
+                 , ("Green", "Leaderless Monster Hive") ] }
 
-playersDefense = Players
-  { playersList = [ playerMonster { playerInitial = 1
-                                  , playerAI = False
-                                  , playerUI = True }
-                  , playerAntiHero { playerName = "Yellow"
-                                   , playerInitial = 10 }
-                  , playerAnimal ]
-  , playersEnemy = [ ("Yellow", "Monster Hive")
-                   , ("Yellow", "Animal Kingdom") ]
-  , playersAlly = [("Monster Hive", "Animal Kingdom")] }
+rosterDefense = Roster
+  { rosterList = [ playerMonster { finitial = 1
+                                 , fisAI = False
+                                 , fisUI = True }
+                 , playerAntiHero { fname = "Yellow"
+                                  , finitial = 10 }
+                 , playerAnimal ]
+  , rosterEnemy = [ ("Yellow", "Monster Hive")
+                  , ("Yellow", "Animal Kingdom") ]
+  , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 
 cavesCampaign, cavesSkirmish, cavesAmbush, cavesBattle, cavesSafari :: Caves

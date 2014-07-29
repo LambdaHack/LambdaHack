@@ -87,29 +87,29 @@ mapFromFuns =
 lowercase :: Text -> Text
 lowercase = T.pack . map Char.toLower . T.unpack
 
-createFactions :: Players -> Rnd FactionDict
+createFactions :: Roster -> Rnd FactionDict
 createFactions players = do
   let rawCreate gplayer@Player{..} = do
         let cmap = mapFromFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
-            nameoc = lowercase $ head $ T.words playerName
-            prefix | playerAI = "Autonomous"
+            nameoc = lowercase $ head $ T.words fname
+            prefix | fisAI = "Autonomous"
                    | otherwise = "Controlled"
             (gcolor, gname) = case M.lookup nameoc cmap of
-              Nothing -> (Color.BrWhite, prefix <+> playerName)
-              Just c -> (c, prefix <+> playerName <+> "Team")
+              Nothing -> (Color.BrWhite, prefix <+> fname)
+              Just c -> (c, prefix <+> fname <+> "Team")
         let gdipl = EM.empty  -- fixed below
             gquit = Nothing
             gleader = Nothing
             gvictims = EM.empty
             gsha = EM.empty
         return $! Faction{..}
-  lUI <- mapM rawCreate $ filter playerUI $ playersList players
-  lnoUI <- mapM rawCreate $ filter (not . playerUI) $ playersList players
+  lUI <- mapM rawCreate $ filter fisUI $ rosterList players
+  lnoUI <- mapM rawCreate $ filter (not . fisUI) $ rosterList players
   let lFs = reverse (zip [toEnum (-1), toEnum (-2)..] lnoUI)  -- sorted
             ++ zip [toEnum 1..] lUI
       swapIx l =
-        let findPlayerName name = find ((name ==) . playerName . gplayer . snd)
+        let findPlayerName name = find ((name ==) . fname . gplayer . snd)
             f (name1, name2) =
               case (findPlayerName name1 lFs, findPlayerName name2 lFs) of
                 (Just (ix1, _), Just (ix2, _)) -> (ix1, ix2)
@@ -126,8 +126,8 @@ createFactions players = do
         in foldr f
       rawFs = EM.fromDistinctAscList lFs
       -- War overrides alliance, so 'warFs' second.
-      allianceFs = mkDipl Alliance rawFs (swapIx (playersAlly players))
-      warFs = mkDipl War allianceFs (swapIx (playersEnemy players))
+      allianceFs = mkDipl Alliance rawFs (swapIx (rosterAlly players))
+      warFs = mkDipl War allianceFs (swapIx (rosterEnemy players))
   return $! warFs
 
 gameReset :: MonadServer m
@@ -150,11 +150,11 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
         modeKind <- fmap (fromMaybe $ assert `failure` smode)
                     $ opick smode (const True)
         let mode = okind modeKind
-            automate p = p {playerAI = True}
-            automatePS ps = ps {playersList = map automate $ playersList ps}
+            automate p = p {fisAI = True}
+            automatePS ps = ps {rosterList = map automate $ rosterList ps}
             players = if sautomateAll sdebug
-                      then automatePS $ mplayers mode
-                      else mplayers mode
+                      then automatePS $ mroster mode
+                      else mroster mode
         faction <- createFactions players
         sflavour <- dungeonFlavourMap cops
         (sdiscoKind, sdiscoKindRev) <- serverDiscos cops
@@ -185,10 +185,10 @@ populateDungeon = do
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` "empty dungeon" `twith` dungeon
-      needInitialCrew = filter ((> 0 ) . playerInitial . gplayer . snd)
+      needInitialCrew = filter ((> 0 ) . finitial . gplayer . snd)
                         $ EM.assocs factionD
       getEntryLevel (_, fact) =
-        max minD $ min maxD $ toEnum $ playerEntry $ gplayer fact
+        max minD $ min maxD $ toEnum $ fentry $ gplayer fact
       arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
       initialActors lid = do
         lvl <- getLevel lid
@@ -211,7 +211,7 @@ populateDungeon = do
             ntime = timeShift time (timeDeltaScale (Delta timeClip) nmult)
             validTile t = not $ Tile.hasFeature cotile F.NoActor t
         psFree <- getsState $ nearbyFreePoints validTile ppos lid
-        let ps = take (playerInitial $ gplayer fact3) $ zip [0..] psFree
+        let ps = take (finitial $ gplayer fact3) $ zip [0..] psFree
         forM_ ps $ \ (n, p) -> do
           go <-
             if not $ isHeroFact fact3
@@ -237,7 +237,7 @@ recruitActors :: (MonadAtomic m, MonadServer m)
               -> m Bool
 recruitActors ps lid time fid = assert (not $ null ps) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
-  let spawnName = playerFaction $ gplayer fact
+  let spawnName = fgroup $ gplayer fact
   laid <- forM ps $ \ p ->
     if isHeroFact fact
     then addHero fid p lid [] Nothing time
@@ -269,7 +269,7 @@ addHero :: (MonadAtomic m, MonadServer m)
         -> m (Maybe ActorId)
 addHero bfid ppos lid heroNames mNumber time = do
   Faction{gcolor, gplayer} <- getsState $ (EM.! bfid) . sfactionD
-  let fName = playerFaction gplayer
+  let groupName = fgroup gplayer
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
@@ -281,9 +281,9 @@ addHero bfid ppos lid heroNames mNumber time = do
         fromMaybe (nameFromNumber n) $ lookup n heroNames
                        | otherwise =
         let (nameN, pronounN) = nameFromNumber n
-        in (playerName gplayer <+> nameN, pronounN)
+        in (fname gplayer <+> nameN, pronounN)
       tweakBody b = b {bsymbol, bname, bcolor = gcolor}
-  addActor fName bfid ppos lid tweakBody pronoun time
+  addActor groupName bfid ppos lid tweakBody pronoun time
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. If only one faction, also move it away from any stairs.

@@ -65,7 +65,7 @@ data Status = Status
 
 -- | Tell whether the faction consists of heroes.
 isHeroFact :: Faction -> Bool
-isHeroFact fact = playerIsHero $ gplayer fact
+isHeroFact fact = fisHero $ gplayer fact
 
 -- | Tell whether the faction consists of human civilians.
 isCivilianFact :: Faction -> Bool
@@ -80,7 +80,7 @@ isHorrorFact fact =
 -- | Tell whether the faction is considered permanent dungeon dwellers
 -- (normally these are just spawning factions, but there are exceptions).
 isSpawnFact :: Faction -> Bool
-isSpawnFact fact = playerIsSpawn (gplayer fact)
+isSpawnFact fact = fisSpawn (gplayer fact)
 
 -- | Tell whether actors of the faction can be summoned by items, etc.
 isSummonFact :: Faction -> Bool
@@ -90,8 +90,8 @@ isSummonFact fact =
 -- | Tell whether all moving actors of the factions can move at once.
 isAllMoveFact :: Faction -> Bool
 isAllMoveFact fact =
-  let skillsLeader = fSkillsLeader $ gplayer fact
-      skillsOther = fSkillsOther $ gplayer fact
+  let skillsLeader = fskillsLeader $ gplayer fact
+      skillsOther = fskillsOther $ gplayer fact
   in EM.findWithDefault 0 Ability.AbMove skillsLeader > 0
      && EM.findWithDefault 0 Ability.AbMove skillsOther > 0
 
@@ -102,7 +102,7 @@ isAllMoveFact fact =
 -- So, leaderless factions and spawner factions do not keep an arena,
 -- even though the latter usually has a leader for most of the game.
 keepArenaFact :: Faction -> Bool
-keepArenaFact fact = playerLeader (gplayer fact) && not (isSpawnFact fact)
+keepArenaFact fact = fleader (gplayer fact) && not (isSpawnFact fact)
 
 -- | Check if factions are at war. Assumes symmetry.
 isAtWar :: Faction -> FactionId -> Bool

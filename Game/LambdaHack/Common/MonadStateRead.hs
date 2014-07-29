@@ -25,7 +25,7 @@ getLevel lid = getsState $ (EM.! lid) . sdungeon
 nUI :: MonadStateRead m => m Int
 nUI = do
   factionD <- getsState sfactionD
-  return $! length $ filter (playerUI . gplayer) $ EM.elems factionD
+  return $! length $ filter (fisUI . gplayer) $ EM.elems factionD
 
 posOfAid :: MonadStateRead m => ActorId -> m (LevelId, Point)
 posOfAid aid = do

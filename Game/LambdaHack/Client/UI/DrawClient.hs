@@ -378,7 +378,7 @@ drawPlayerName width = do
                                     then fitWords rest
                                     else l
         in T.unwords $ reverse $ fitWords $ reverse $ T.words t
-      ourName = nameN (width - 1) $ playerName $ gplayer fact
+      ourName = nameN (width - 1) $ fname $ gplayer fact
   return $! if T.null ourName || T.length ourName >= width
             then []
             else addAttr $ ourName <> " "
