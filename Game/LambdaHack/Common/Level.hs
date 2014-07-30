@@ -65,25 +65,26 @@ type SmellMap = EM.EnumMap Point SmellTime
 -- | A view on single, inhabited dungeon level. "Remembered" fields
 -- carry a subset of the info in the client copies of levels.
 data Level = Level
-  { ldepth     :: !AbsDepth   -- ^ absolute depth of the level
-  , lprio      :: !ActorPrio  -- ^ remembered actor times on the level
-  , lfloor     :: !ItemFloor  -- ^ remembered items lying on the floor
-  , ltile      :: !TileMap    -- ^ remembered level map
-  , lxsize     :: !X          -- ^ width of the level
-  , lysize     :: !Y          -- ^ height of the level
-  , lsmell     :: !SmellMap   -- ^ remembered smells on the level
-  , ldesc      :: !Text       -- ^ level description
-  , lstair     :: !([Point], [Point])
-                              -- ^ destinations of (up, down) stairs
-  , lseen      :: !Int        -- ^ currently remembered clear tiles
-  , lclear     :: !Int        -- ^ total number of initially clear tiles
-  , ltime      :: !Time       -- ^ date of the last activity on the level
-  , lactorFreq :: !Freqs      -- ^ frequency of spawned actors; [] for clients
-  , litemNum   :: !Int        -- ^ number of initial items, 0 for clients
-  , litemFreq  :: !Freqs      -- ^ frequency of initial items; [] for clients
-  , lsecret    :: !Int        -- ^ secret tile seed
-  , lhidden    :: !Int        -- ^ secret tile density
-  , lescape    :: !Bool       -- ^ has an Effect.Escape tile
+  { ldepth      :: !AbsDepth   -- ^ absolute depth of the level
+  , lprio       :: !ActorPrio  -- ^ remembered actor times on the level
+  , lfloor      :: !ItemFloor  -- ^ remembered items lying on the floor
+  , ltile       :: !TileMap    -- ^ remembered level map
+  , lxsize      :: !X          -- ^ width of the level
+  , lysize      :: !Y          -- ^ height of the level
+  , lsmell      :: !SmellMap   -- ^ remembered smells on the level
+  , ldesc       :: !Text       -- ^ level description
+  , lstair      :: !([Point], [Point])
+                               -- ^ destinations of (up, down) stairs
+  , lseen       :: !Int        -- ^ currently remembered clear tiles
+  , lclear      :: !Int        -- ^ total number of initially clear tiles
+  , ltime       :: !Time       -- ^ date of the last activity on the level
+  , lactorCoeff :: !Int        -- ^ the lower, the more monsters spawn
+  , lactorFreq  :: !Freqs      -- ^ frequency of spawned actors; [] for clients
+  , litemNum    :: !Int        -- ^ number of initial items, 0 for clients
+  , litemFreq   :: !Freqs      -- ^ frequency of initial items; [] for clients
+  , lsecret     :: !Int        -- ^ secret tile seed
+  , lhidden     :: !Int        -- ^ secret tile density
+  , lescape     :: !Bool       -- ^ has an Effect.Escape tile
   }
   deriving (Show, Eq)
 
@@ -225,6 +226,7 @@ instance Binary Level where
     put lseen
     put lclear
     put ltime
+    put lactorCoeff
     put lactorFreq
     put litemNum
     put litemFreq
@@ -244,6 +246,7 @@ instance Binary Level where
     lseen <- get
     lclear <- get
     ltime <- get
+    lactorCoeff <- get
     lactorFreq <- get
     litemNum <- get
     litemFreq <- get

@@ -29,6 +29,7 @@ data CaveKind = CaveKind
   , cdoorChance     :: !Chance       -- ^ the chance of a door in an opening
   , copenChance     :: !Chance       -- ^ if there's a door, is it open?
   , chidden         :: !Int          -- ^ if not open, hidden one in n times
+  , cactorCoeff     :: !Int          -- ^ the lower, the more monsters spawn
   , cactorFreq      :: !Freqs        -- ^ actor groups to consider
   , citemNum        :: !Dice.Dice    -- ^ the number of items in the cave
   , citemFreq       :: !Freqs        -- ^ item groups to consider

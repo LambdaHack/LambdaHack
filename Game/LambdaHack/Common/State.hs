@@ -63,6 +63,7 @@ unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
            , lseen = 0
            , lclear
            , ltime = timeZero
+           , lactorCoeff = 0
            , lactorFreq = []
            , litemNum = 0
            , litemFreq = []

@@ -49,8 +49,9 @@ spawnMonster lid = do
   spawns <- getsState $ actorRegularList f lid
   totalDepth <- getsState stotalDepth
   -- We do not check @playerSpawn@ of any faction, but just take @lactorFreq@.
-  Level{ldepth, lactorFreq} <- getLevel lid
-  rc <- rndToAction $ monsterGenChance ldepth totalDepth (length spawns)
+  Level{ldepth, lactorCoeff, lactorFreq} <- getLevel lid
+  rc <- rndToAction
+        $ monsterGenChance ldepth totalDepth (length spawns) lactorCoeff
   when rc $ do
     time <- getsState $ getLocalTime lid
     maid <- addAnyActor lactorFreq lid time Nothing
