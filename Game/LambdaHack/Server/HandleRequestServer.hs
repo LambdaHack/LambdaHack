@@ -129,7 +129,11 @@ addSmell aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   smellRadius <- sumOrganEqpServer Effect.EqpSlotAddSmell aid
-  unless (bproj b || not (fcanEscape $ gplayer fact) || smellRadius > 0) $ do
+  -- TODO: right now only humans leave smell and content should not
+  -- give humans the ability to smell (dominated monsters are rare enough).
+  -- In the future smells should be marked by the faction that left them
+  -- and actors shold only follow enemy smells.
+  unless (bproj b || not (fhasGender $ gplayer fact) || smellRadius > 0) $ do
     time <- getsState $ getLocalTime $ blid b
     lvl <- getLevel $ blid b
     let oldS = EM.lookup (bpos b) . lsmell $ lvl
