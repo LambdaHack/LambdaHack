@@ -90,20 +90,33 @@ handleRequestTimed aid cmd = case cmd of
   ReqApply iid cstore -> reqApply aid iid cstore
   ReqTrigger mfeat -> reqTrigger aid mfeat
 
-switchLeader :: MonadAtomic m
+switchLeader :: (MonadAtomic m, MonadServer m)
              => FactionId -> ActorId -> m ()
 switchLeader fid aidNew = do
   fact <- getsState $ (EM.! fid) . sfactionD
   bPre <- getsState $ getActorBody aidNew
   let mleader = gleader fact
-      leadAtoms = [UpdLeadFaction fid mleader (Just aidNew)]
-  mapM_ execUpdAtomic leadAtoms
   assert (Just aidNew /= mleader
           && not (bproj bPre)
-         `blame` (aidNew, bPre, fid, fact)) skip
+          `blame` (aidNew, bPre, fid, fact)) skip
   assert (bfid bPre == fid
           `blame` "client tries to move other faction actors"
           `twith` (aidNew, bPre, fid, fact)) skip
+  let (autoDun, autoLvl) = case fhasLeader (gplayer fact) of
+                             LeaderMode{..} -> (autoDungeon, autoLevel)
+                             LeaderNull -> (False, False)
+  arena <- case mleader of
+    Nothing -> return $! blid bPre
+    Just leader -> do
+      b <- getsState $ getActorBody leader
+      return $! blid b
+  if blid bPre == arena && autoLvl
+  then execFailure aidNew ReqWait{-hack-} NoChangeLvlLeader
+  else if autoDun
+  then execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
+  else do
+    let leadAtoms = [UpdLeadFaction fid mleader (Just aidNew)]
+    mapM_ execUpdAtomic leadAtoms
 
 -- * ReqMove
 

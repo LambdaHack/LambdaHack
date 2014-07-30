@@ -340,7 +340,7 @@ memberCycle verbose = do
                   LeaderMode{autoLevel} -> autoLevel
                   LeaderNull -> False
   case filter (\(_, b) -> blid b == blid body) hs of
-    _ | autoLvl -> failMsg msgNoChangeLvlLeader
+    _ | autoLvl -> failMsg $ showReqFailure NoChangeLvlLeader
     [] -> failMsg "Cannot pick any other member on this level."
     (np, b) : _ -> do
       success <- pickLeader verbose np
@@ -358,7 +358,7 @@ memberBack verbose = do
                   LeaderMode{autoDungeon} -> autoDungeon
                   LeaderNull -> False
   case reverse hs of
-    _ | autoDun -> failMsg msgNoChangeDunLeader
+    _ | autoDun -> failMsg $ showReqFailure NoChangeDunLeader
     [] -> failMsg "No other member in the party."
     (np, b) : _ -> do
       success <- pickLeader verbose np

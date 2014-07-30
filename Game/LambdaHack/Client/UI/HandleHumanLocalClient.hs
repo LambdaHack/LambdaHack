@@ -58,6 +58,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -91,9 +92,9 @@ pickLeaderHuman k = do
     Nothing -> failMsg "No such member of the party."
     Just (aid, b) ->
       if blid b == arena && autoLvl
-      then failMsg msgNoChangeLvlLeader
+      then failMsg $ showReqFailure NoChangeLvlLeader
       else if autoDun
-      then failMsg msgNoChangeDunLeader
+      then failMsg $ showReqFailure NoChangeDunLeader
       else do
         void $ pickLeader True aid
         return mempty

@@ -89,6 +89,8 @@ data ReqFailure =
   | ProjectBlockActor
   | ProjectBlind
   | TriggerNothing
+  | NoChangeDunLeader
+  | NoChangeLvlLeader
 
 showReqFailure :: ReqFailure -> Msg
 showReqFailure reqFailure = case reqFailure of
@@ -116,3 +118,5 @@ showReqFailure reqFailure = case reqFailure of
   ProjectBlockActor -> "aiming blocked by an actor"
   ProjectBlind -> "blind actors cannot aim"
   TriggerNothing -> "wasting time on triggering nothing"
+  NoChangeDunLeader -> "no manual level change for your team"
+  NoChangeLvlLeader -> "no manual leader change for your team"
