@@ -216,11 +216,12 @@ rosterDefense = Roster
 
 cavesCampaign, cavesSkirmish, cavesAmbush, cavesBattle, cavesSafari :: Caves
 
-cavesCampaign = IM.fromList $ [ (-1, ("caveRogue", Just True))
-                              , (-2, ("caveRogue", Nothing))
-                              , (-3, ("caveEmpty", Nothing)) ]
-                              ++ zip [-4, -5..(-9)] (repeat ("dng", Nothing))
-                              ++ [(-10, ("caveNoise", Nothing))]
+cavesCampaign = IM.fromList
+                $ [ (-1, ("caveRogue", Just True))
+                  , (-2, ("caveRogue", Nothing))
+                  , (-3, ("caveEmpty", Nothing)) ]
+                  ++ zip [-4, -5..(-9)] (repeat ("campaign random", Nothing))
+                  ++ [(-10, ("caveNoise", Nothing))]
 
 cavesSkirmish = IM.fromList [(-3, ("caveSkirmish", Nothing))]
 
