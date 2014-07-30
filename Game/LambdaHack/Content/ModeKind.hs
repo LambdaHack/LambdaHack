@@ -48,6 +48,8 @@ data Player = Player
   , fneverEmpty    :: !Bool     -- ^ the faction declared killed if no actors
   , fhasNumbers    :: !Bool     -- ^ whether actors have numbers, not symbols
   , fhasGender     :: !Bool     -- ^ whether actors have gender
+  , foverrideAI    :: !(Maybe (){-TODO: only the follow-leader AI for now-})
+                                -- ^ override all member AIs with this one
   , fentryLevel    :: !Int      -- ^ level where the initial members start
   , finitialActors :: !Int      -- ^ number of initial members
   , fhasLeader     :: !LeaderMode  -- ^ the mode of switching the leader

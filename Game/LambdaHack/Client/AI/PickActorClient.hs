@@ -11,6 +11,7 @@ import Data.Maybe
 import Data.Ord
 
 import Game.LambdaHack.Client.AI.ConditionClient
+import Game.LambdaHack.Client.AI.PickTargetClient
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -26,6 +27,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ModeKind
 
 pickActorToMove :: MonadClient m
                 => (ActorId -> (ActorId, Actor)
@@ -44,14 +46,38 @@ pickActorToMove refreshTarget oldAid = do
   mleader <- getsClient _sleader
   ours <- getsState $ actorRegularAssocs (== side) arena
   let pickOld = do
-        void $ refreshTarget oldAid (oldAid, oldBody)
+        case foverrideAI $ gplayer fact of
+          Just () | mleader /= Just oldAid ->
+            -- AI for non-leaders is overriden with follow-the-leader AI.
+            case mleader of
+              Nothing -> return ()
+              Just leader -> do
+                -- Copy over the leader's target, if any, or follow his bpos.
+                tgtLeader <- do
+                  mtgt <- getsClient $ (EM.lookup leader) . stargetD
+                  case mtgt of
+                    Nothing -> do
+                      b <- getsState $ getActorBody leader
+                      return $! TPoint (blid b) (bpos b)
+                    Just (tgtLeader, _) -> return tgtLeader
+                modifyClient $ \cli ->
+                  cli { sbfsD = EM.delete oldAid (sbfsD cli)
+                      , seps = seps cli + 773 }  -- randomize paths
+                mpath <- createPath oldAid tgtLeader
+                let tgtMPath = maybe (tgtLeader, Nothing)
+                                     (\(tgt, p) -> (tgt, Just p)) mpath
+                modifyClient $ \cli ->
+                  cli {stargetD = EM.alter (const $ Just tgtMPath)
+                                               oldAid (stargetD cli)}
+          _ -> void $ refreshTarget oldAid (oldAid, oldBody)
         return (oldAid, oldBody)
   case ours of
     _ | -- Keep the leader: only a leader is allowed to pick another leader.
         mleader /= Just oldAid
-        -- Keep the leader: all can move. TODO: check not accurate,
+        -- Keep the leader: all can move and none follow the leader.
+        -- TODO: check not accurate,
         -- instead define 'movesThisTurn' and use elsehwere.
-        || isAllMoveFact fact
+        || isAllMoveFact fact && isNothing (foverrideAI $ gplayer fact)
         -- Keep the leader: he is on stairs and not stuck
         -- and we don't want to clog stairs or get pushed to another level.
         || not leaderStuck && Tile.isStair cotile t

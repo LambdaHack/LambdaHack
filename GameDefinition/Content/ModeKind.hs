@@ -151,8 +151,10 @@ rosterSafari = Roster
   { rosterList = [ playerAntiMonster { fname = "Monster Tourist Office"
                                      , fcanEscape = True
                                      , fneverEmpty = True
+                                     -- Follow-the-leader, as tourists do.
+                                     , foverrideAI = Just ()
                                      , fentryLevel = -4
-                                     , finitialActors = 10
+                                     , finitialActors = 15
                                      , fhasLeader = LeaderMode False False }
                  , playerCivilian { fname = "Hunam Convict Pack"
                                   , fentryLevel = -4 }

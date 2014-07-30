@@ -1,6 +1,6 @@
 -- | Let AI pick the best target for an actor.
 module Game.LambdaHack.Client.AI.PickTargetClient
-  ( targetStrategy
+  ( targetStrategy, createPath
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -50,18 +50,6 @@ targetStrategy oldLeader aid = do
   let stepAccesible mtgt@(Just (_, (p : q : _ : _, _))) = -- goal not adjacent
         if accessible cops lvl p q then mtgt else Nothing
       stepAccesible mtgt = mtgt  -- goal can be inaccessible, e.g., suspect
-      createPath :: Target -> m (Maybe (Target, PathEtc))
-      createPath tgt = do
-        mpos <- aidTgtToPos aid (blid b) (Just tgt)
-        case mpos of
-          Nothing -> return Nothing
-          Just p -> do
-            (bfs, mpath) <- getCacheBfsAndPath aid p
-            return $! case mpath of
-              Nothing -> Nothing
-              Just path -> Just (tgt, ( bpos b : path
-                                      , (p, fromMaybe (assert `failure` mpath)
-                                            $ accessBfs bfs p) ))
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
     Just (tgt, Just path) -> do
@@ -83,7 +71,7 @@ targetStrategy oldLeader aid = do
         ([], _) -> assert `failure` (aid, b, mtgtMPath)
     Just (tgt@TEnemyPos{}, Nothing) ->
       -- special case, TEnemyPos would be lost otherwise
-      createPath tgt
+      createPath aid tgt
     Just (_, Nothing) -> return Nothing  -- path invalidated, e.g. UpdSpotActor
     Nothing -> return Nothing  -- no target assigned yet
   assert (not $ bproj b) skip  -- would work, but is probably a bug
@@ -139,7 +127,7 @@ targetStrategy oldLeader aid = do
       focused = bspeed b activeItems < speedNormal || condHpTooLow
       setPath :: Target -> m (Strategy (Target, Maybe PathEtc))
       setPath tgt = do
-        mpath <- createPath tgt
+        mpath <- createPath aid tgt
         return $! returN "pickNewTarget"
                $ maybe (tgt, Nothing) (\(t, p) -> (t, Just p)) mpath
       pickNewTarget :: m (Strategy (Target, Maybe PathEtc))
@@ -310,3 +298,18 @@ targetStrategy oldLeader aid = do
   case oldTgtUpdatedPath of
     Just (oldTgt, updatedPath) -> updateTgt oldTgt updatedPath
     Nothing -> pickNewTarget
+
+createPath :: MonadClient m
+           => ActorId -> Target -> m (Maybe (Target, PathEtc))
+createPath aid tgt = do
+  b <- getsState $ getActorBody aid
+  mpos <- aidTgtToPos aid (blid b) (Just tgt)
+  case mpos of
+    Nothing -> return Nothing
+    Just p -> do
+      (bfs, mpath) <- getCacheBfsAndPath aid p
+      return $! case mpath of
+        Nothing -> Nothing
+        Just path -> Just (tgt, ( bpos b : path
+                                , (p, fromMaybe (assert `failure` mpath)
+                                      $ accessBfs bfs p) ))
