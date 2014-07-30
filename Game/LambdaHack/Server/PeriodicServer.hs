@@ -197,7 +197,8 @@ advanceTime aid = do
     dominated <-
       if bcalm b == 0
          && boldfid b /= bfid b
-         && fhasLeader (gplayer fact)  -- animals never Calm-dominated
+         && fhasLeader (gplayer fact) /= LeaderNull
+              -- animals never Calm-dominated
       then dominateFidSfx (boldfid b) aid
       else return False
     unless dominated $ do

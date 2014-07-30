@@ -275,7 +275,7 @@ updLeadFaction :: MonadStateWrite m
                => FactionId -> Maybe ActorId -> Maybe ActorId -> m ()
 updLeadFaction fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
-  assert (fhasLeader $ gplayer fact) skip  -- @PosNone@ ensure this
+  assert (fhasLeader (gplayer fact) /= LeaderNull) skip  -- @PosNone@ ensure this
   mtb <- getsState $ \s -> fmap (flip getActorBody s) target
   assert (maybe True (not . bproj) mtb
           `blame` (fid, source, target, mtb, fact)) skip

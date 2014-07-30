@@ -1,6 +1,6 @@
 -- | Definition of basic players for LambdaHack.
 module Content.ModeKindPlayer
-  ( playerHero, playerAntiHero, playerCivilian, playerMonster, playerAnimal
+  ( playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal
   , playerHorror
   ) where
 
@@ -9,7 +9,7 @@ import qualified Data.EnumMap.Strict as EM
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Content.ModeKind
 
-playerHero, playerAntiHero, playerCivilian, playerMonster, playerAnimal, playerHorror :: Player
+playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror :: Player
 
 playerHero = Player
   { fname = "Adventurer Party"
@@ -22,7 +22,7 @@ playerHero = Player
   , fhasGender = True
   , fentryLevel = -1
   , finitialActors = 3
-  , fhasLeader = True
+  , fhasLeader = LeaderMode False False
   , fisAI = False
   , fhasUI = True
   }
@@ -43,7 +43,7 @@ playerCivilian = Player
   , fhasGender = True
   , fentryLevel = -1
   , finitialActors = 3
-  , fhasLeader = False  -- unorganized
+  , fhasLeader = LeaderNull  -- unorganized
   , fisAI = True
   , fhasUI = False
   }
@@ -59,9 +59,14 @@ playerMonster = Player
   , fhasGender = False
   , fentryLevel = -3
   , finitialActors = 5
-  , fhasLeader = True
+  , fhasLeader = LeaderMode True True
   , fisAI = True
   , fhasUI = False
+  }
+
+playerAntiMonster = playerMonster
+  { fisAI = False
+  , fhasUI = True
   }
 
 playerAnimal = Player
@@ -75,7 +80,7 @@ playerAnimal = Player
   , fhasGender = False
   , fentryLevel = -2
   , finitialActors = 3
-  , fhasLeader = False
+  , fhasLeader = LeaderNull
   , fisAI = True
   , fhasUI = False
   }
@@ -91,7 +96,7 @@ playerHorror = Player
   , fhasGender = False
   , fentryLevel = -1
   , finitialActors = 0
-  , fhasLeader = False
+  , fhasLeader = LeaderNull
   , fisAI = True
   , fhasUI = False
   }

@@ -1,11 +1,14 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
-  ( Caves, Roster(..), Player(..), ModeKind(..), validateModeKind
+  ( Caves, Roster(..), Player(..), ModeKind(..), LeaderMode(..)
+  , validateModeKind
   ) where
 
 import Data.Binary
 import qualified Data.IntMap.Strict as IM
 import Data.Text (Text)
+import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU ()
 
 import Game.LambdaHack.Common.Ability
@@ -47,12 +50,25 @@ data Player = Player
   , fhasGender     :: !Bool     -- ^ whether actors have gender
   , fentryLevel    :: !Int      -- ^ level where the initial members start
   , finitialActors :: !Int      -- ^ number of initial members
-  , fhasLeader     :: !Bool     -- ^ if not empty, the faction has a leader
+  , fhasLeader     :: !LeaderMode  -- ^ the mode of switching the leader
   , fisAI          :: !Bool     -- ^ is the faction under AI control?
   , fhasUI         :: !Bool     -- ^ does the faction have a UI client
                                 --   (for control or passive observation)
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Binary Player
+
+data LeaderMode =
+    LeaderNull  -- ^ faction has no leader
+  | LeaderMode  -- ^ whenever faction has any actor, it has a leader
+    { autoDungeon :: !Bool  -- ^ leader change between levels only automatic
+    , autoLevel   :: !Bool  -- ^ leader change within a level only automatic
+                            --   (currently no change at all in this case)
+    }
+  deriving (Show, Eq, Generic)
+
+instance Binary LeaderMode
 
 -- TODO: assert every Player's playerName's first word's length <= 15
 -- TODO: assert if no UI, both Ai are on and there are some non-spawners;
@@ -63,34 +79,3 @@ data Player = Player
 -- of @fSkillsLeader@.
 validateModeKind :: [ModeKind] -> [ModeKind]
 validateModeKind _ = []
-
-instance Binary Player where
-  put Player{..} = do
-    put fname
-    put fgroup
-    put fskillsLeader
-    put fskillsOther
-    put fcanEscape
-    put fneverEmpty
-    put fhasNumbers
-    put fhasGender
-    put fentryLevel
-    put finitialActors
-    put fhasLeader
-    put fisAI
-    put fhasUI
-  get = do
-    fname <- get
-    fgroup <- get
-    fskillsLeader <- get
-    fskillsOther <- get
-    fcanEscape <- get
-    fneverEmpty <- get
-    fhasNumbers <- get
-    fhasGender <- get
-    fentryLevel <- get
-    finitialActors <- get
-    fhasLeader <- get
-    fisAI <- get
-    fhasUI <- get
-    return $! Player{..}

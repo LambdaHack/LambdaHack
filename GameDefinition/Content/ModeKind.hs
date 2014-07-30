@@ -148,13 +148,12 @@ rosterBattle = Roster
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 rosterSafari = Roster
-  { rosterList = [ playerMonster { fname = "Monster Tourist Office"
-                                 , fcanEscape = True
-                                 , fneverEmpty = True
-                                 , fentryLevel = -4
-                                 , finitialActors = 10
-                                 , fisAI = False
-                                 , fhasUI = True }
+  { rosterList = [ playerAntiMonster { fname = "Monster Tourist Office"
+                                     , fcanEscape = True
+                                     , fneverEmpty = True
+                                     , fentryLevel = -4
+                                     , finitialActors = 10
+                                     , fhasLeader = LeaderMode False False }
                  , playerCivilian { fname = "Hunam Convict Pack"
                                   , fentryLevel = -4 }
                  , playerAnimal { fname =
@@ -187,12 +186,12 @@ rosterPvP = Roster
 rosterCoop = Roster
   { rosterList = [ playerAntiHero { fname = "Coral" }
                  , playerAntiHero { fname = "Amber"
-                                  , fhasLeader = False }
+                                  , fhasLeader = LeaderNull }
                  , playerAntiHero { fname = "Green" }
                  , playerAnimal { fhasUI = True }
                  , playerMonster
                  , playerMonster { fname = "Leaderless Monster Hive"
-                                 , fhasLeader = False } ]
+                                 , fhasLeader = LeaderNull } ]
   , rosterEnemy = [ ("Coral", "Monster Hive")
                   , ("Amber", "Monster Hive")
                   , ("Animal Kingdom", "Leaderless Monster Hive") ]
@@ -204,9 +203,8 @@ rosterCoop = Roster
                  , ("Green", "Leaderless Monster Hive") ] }
 
 rosterDefense = Roster
-  { rosterList = [ playerMonster { finitialActors = 1
-                                 , fisAI = False
-                                 , fhasUI = True }
+  { rosterList = [ playerAntiMonster { finitialActors = 1
+                                     , fhasLeader = LeaderMode True False }
                  , playerAntiHero { fname = "Yellow"
                                   , finitialActors = 10 }
                  , playerAnimal ]

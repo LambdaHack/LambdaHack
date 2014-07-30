@@ -126,7 +126,7 @@ actionStrategy aid = do
           , condAnyFoeAdj
             || EM.findWithDefault 0 AbDisplace actorSk <= 0
                  -- melee friends, not displace
-               && not (fhasLeader $ gplayer fact)  -- not restrained
+               && fhasLeader (gplayer fact) == LeaderNull  -- not restrained
                && (condTgtEnemyPresent || condTgtEnemyRemembered) )  -- excited
         , ( [AbTrigger], (toAny :: ToAny AbTrigger)
             <$> trigger aid False
@@ -439,7 +439,7 @@ meleeBlocker aid = do
              && (not (bproj body2)  -- displacing saves a move
                  && isAtWar fact (bfid body2)  -- they at war with us
                  || EM.findWithDefault 0 AbDisplace actorSk <= 0  -- not disp.
-                    && not (fhasLeader $ gplayer fact)  -- not restrained
+                    && fhasLeader (gplayer fact) == LeaderNull  -- no restrain
                     && EM.findWithDefault 0 AbMove actorSk > 0  -- blocked move
                     && bhp body2 < bhp b)  -- respect power
             then do
@@ -483,8 +483,9 @@ trigger aid fleeViaStairs = do
       feats = TileKind.tfeature $ okind t
       ben feat = case feat of
         F.Cause (Effect.Ascend k) ->  -- change levels sensibly, in teams
-          let expBenefit =
-                if not (fhasLeader (gplayer fact))
+          let leaderless = fhasLeader (gplayer fact) == LeaderNull
+              expBenefit =
+                if leaderless
                 then 100  -- not-exploring faction, switch at will
                 else if unexploredCurrent
                 then 0  -- don't leave the level until explored
@@ -497,7 +498,6 @@ trigger aid fleeViaStairs = do
                 else 2  -- no escape anywhere, switch levels occasionally
               (lid2, pos2) = whereTo (blid b) (bpos b) k dungeon
               actorsThere = posToActors pos2 lid2 s
-              leaderless = not $ fhasLeader $ gplayer fact
           in if boldpos b == bpos b   -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction
              then 0  -- avoid trivial loops (pushing, being pushed, etc.)
@@ -702,7 +702,7 @@ chase aid doDisplace = do
   str <- case mtgtMPath of
     Just (_, Just (p : q : _, (goal, _))) ->
       -- With no leader, the goal is vague, so permit arbitrary detours.
-      moveTowards aid p q goal (not $ fhasLeader (gplayer fact))
+      moveTowards aid p q goal (fhasLeader (gplayer fact) == LeaderNull)
     _ -> return reject  -- goal reached
   -- If @doDisplace@: don't pick fights, assuming the target is more important.
   -- We'd normally melee the target earlier on via @AbMelee@, but for

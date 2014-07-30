@@ -235,9 +235,11 @@ handleActors lid = do
           fact = factionD EM.! side
           mleader = gleader fact
           aidIsLeader = mleader == Just aid
+          mainUIactor = fhasUI (gplayer fact)
+                        && (aidIsLeader
+                            || fhasLeader (gplayer fact) == LeaderNull)
       queryUI <-
-        if fhasUI (gplayer fact)
-           && (aidIsLeader || not (fhasLeader (gplayer fact))) then do
+        if mainUIactor then do
           let underAI = fisAI $ gplayer fact
           if underAI then do
             -- If UI client for the faction completely under AI control,
@@ -280,8 +282,6 @@ handleActors lid = do
         -- computer-controlled) or if faction is leaderless.
         -- We could record history more often, to avoid long reports,
         -- but we'd have to add -more- prompts.
-        let mainUIactor = fhasUI (gplayer fact)
-                          && (aidIsLeader || not (fhasLeader (gplayer fact)))
         when mainUIactor $ execUpdAtomic $ UpdRecordHistory side
         cmdS <- sendQueryAI side aid
         aidNew <- handleRequestAI side aid cmdS

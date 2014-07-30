@@ -193,7 +193,8 @@ deduceQuits body status = do
 -- So, leaderless factions and spawner factions do not keep an arena,
 -- even though the latter usually has a leader for most of the game.
 keepArenaFact :: Faction -> Bool
-keepArenaFact fact = fhasLeader (gplayer fact) && fneverEmpty (gplayer fact)
+keepArenaFact fact = fhasLeader (gplayer fact) /= LeaderNull
+                     && fneverEmpty (gplayer fact)
 
 deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> m ()
 deduceKilled body = do
@@ -209,7 +210,7 @@ deduceKilled body = do
 anyActorsAlive :: MonadServer m => FactionId -> m Bool
 anyActorsAlive fid = do
   fact <- getsState $ (EM.! fid) . sfactionD
-  if fhasLeader (gplayer fact)
+  if fhasLeader (gplayer fact) /= LeaderNull
     then return $! isJust $ gleader fact
     else do
       as <- getsState $ fidActorNotProjList fid
