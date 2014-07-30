@@ -1,7 +1,7 @@
 -- | Inventory management and party cycling.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( failMsg, msgCannotChangeLeader
+  ( failMsg, msgNoChangeDunLeader, msgNoChangeLvlLeader
   , getGroupItem, getAnyItem, getStoreItem
   , memberCycle, memberBack, pickLeader
   ) where
@@ -36,6 +36,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.ModeKind
 
 failMsg :: MonadClientUI m => Msg -> m Slideshow
 failMsg msg = do
@@ -176,6 +177,9 @@ transition psuit tshaSuit tsuitable verb
   let bagLetterSlots = EM.filter (`EM.member` bag) letterSlots
       bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
       suitableLetterSlots = EM.filter (`EM.member` bagSuit) letterSlots
+      (autoDun, autoLvl) = case fhasLeader (gplayer fact) of
+                             LeaderMode{..} -> (autoDungeon, autoLevel)
+                             LeaderNull -> (False, False)
       keyDefs :: [(K.Key, DefItemKey m)]
       keyDefs = filter (defCond . snd)
         [ (K.Char '?', DefItemKey
@@ -221,7 +225,7 @@ transition psuit tshaSuit tsuitable verb
            })
         , (K.Tab, DefItemKey
            { defLabel = "TAB"
-           , defCond = not (isAllMoveFact fact
+           , defCond = not (autoLvl
                             || null (filter (\(_, b) ->
                                                blid b == blid body) hs))
            , defAction = \_ -> do
@@ -236,7 +240,7 @@ transition psuit tshaSuit tsuitable verb
            })
         , (K.BackTab, DefItemKey
            { defLabel = "SHIFT-TAB"
-           , defCond = not (isAllMoveFact fact || null hs)
+           , defCond = not (autoDun || null hs)
            , defAction = \_ -> do
                err <- memberBack False
                assert (err == mempty `blame` err) skip
@@ -332,8 +336,11 @@ memberCycle verbose = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
+  let autoLvl = case fhasLeader (gplayer fact) of
+                  LeaderMode{autoLevel} -> autoLevel
+                  LeaderNull -> False
   case filter (\(_, b) -> blid b == blid body) hs of
-    _ | isAllMoveFact fact -> failMsg msgCannotChangeLeader
+    _ | autoLvl -> failMsg msgNoChangeLvlLeader
     [] -> failMsg "Cannot pick any other member on this level."
     (np, b) : _ -> do
       success <- pickLeader verbose np
@@ -347,16 +354,22 @@ memberBack verbose = do
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
+  let autoDun = case fhasLeader (gplayer fact) of
+                  LeaderMode{autoDungeon} -> autoDungeon
+                  LeaderNull -> False
   case reverse hs of
-    _ | isAllMoveFact fact -> failMsg msgCannotChangeLeader
+    _ | autoDun -> failMsg msgNoChangeDunLeader
     [] -> failMsg "No other member in the party."
     (np, b) : _ -> do
       success <- pickLeader verbose np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
       return mempty
 
-msgCannotChangeLeader :: Msg
-msgCannotChangeLeader = "leader change is automatic for your team"
+msgNoChangeDunLeader :: Msg
+msgNoChangeDunLeader = "level change is automatic for your team"
+
+msgNoChangeLvlLeader :: Msg
+msgNoChangeLvlLeader = "leader change is automatic for your team"
 
 partyAfterLeader :: MonadStateRead m => ActorId -> m [(ActorId, Actor)]
 partyAfterLeader leader = do

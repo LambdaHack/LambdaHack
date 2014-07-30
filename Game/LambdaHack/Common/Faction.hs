@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
   , isHorrorFact
-  , isAllMoveFact, isAtWar, isAllied
+  , isAllMoveFact, noRunWithMulti, isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff
   ) where
 
@@ -74,6 +74,15 @@ isAllMoveFact fact =
       skillsOther = fskillsOther $ gplayer fact
   in EM.findWithDefault 0 Ability.AbMove skillsLeader > 0
      && EM.findWithDefault 0 Ability.AbMove skillsOther > 0
+
+-- A faction where all actors move or where some of leader change
+-- is automatic can't run with multiple actors at once. That would be
+-- overpowered or too complex to keep correct.
+noRunWithMulti :: Faction -> Bool
+noRunWithMulti fact = isAllMoveFact fact
+                      || case fhasLeader (gplayer fact) of
+                           LeaderMode{..} -> autoDungeon || autoLevel
+                           LeaderNull -> False
 
 -- | Check if factions are at war. Assumes symmetry.
 isAtWar :: Faction -> FactionId -> Bool

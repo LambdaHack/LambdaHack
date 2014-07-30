@@ -203,8 +203,7 @@ rosterCoop = Roster
                  , ("Green", "Leaderless Monster Hive") ] }
 
 rosterDefense = Roster
-  { rosterList = [ playerAntiMonster { finitialActors = 1
-                                     , fhasLeader = LeaderMode True False }
+  { rosterList = [ playerAntiMonster { finitialActors = 1 }
                  , playerAntiHero { fname = "Yellow"
                                   , finitialActors = 10 }
                  , playerAnimal ]

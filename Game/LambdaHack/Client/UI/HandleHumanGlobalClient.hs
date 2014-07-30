@@ -88,7 +88,7 @@ moveRunHuman run dir = do
           Left stopMsg -> failWith stopMsg
           Right runCmd -> do
             sel <- getsClient sselected
-            let runMembers = if isAllMoveFact fact
+            let runMembers = if noRunWithMulti fact
                              then [leader]  -- TODO: warn?
                              else ES.toList (ES.delete leader sel) ++ [leader]
                 runParams = RunParams { runLeader = leader
@@ -114,7 +114,10 @@ moveRunHuman run dir = do
         -- attack the first one.
         -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do
-          if isAllMoveFact fact then failWith msgCannotChangeLeader
+          let autoLvl = case fhasLeader (gplayer fact) of
+                          LeaderMode{autoLevel} -> autoLevel
+                          LeaderNull -> False
+          if autoLvl then failWith msgNoChangeLvlLeader
           else do
             -- Select adjacent actor by bumping into him. Takes no time.
             success <- pickLeader True target

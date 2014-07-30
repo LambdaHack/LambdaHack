@@ -59,7 +59,7 @@ playerMonster = Player
   , fhasGender = False
   , fentryLevel = -3
   , finitialActors = 5
-  , fhasLeader = LeaderMode True True
+  , fhasLeader = LeaderMode True False
   , fisAI = True
   , fhasUI = False
   }

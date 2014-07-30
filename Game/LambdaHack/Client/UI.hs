@@ -57,11 +57,11 @@ queryUI = do
   req <- case srunning of
     Nothing -> humanCommand Nothing
     Just RunParams{runMembers}
-      | isAllMoveFact fact && runMembers /= [leader] -> do
+      | noRunWithMulti fact && runMembers /= [leader] -> do
       stopRunning
       Config{configRunStopMsgs} <- askConfig
       let msg = if configRunStopMsgs
-                then Just $ "Run stop: all-mover leader change"
+                then Just $ "Run stop: automatic leader change"
                 else Nothing
       humanCommand msg
     Just runParams -> do

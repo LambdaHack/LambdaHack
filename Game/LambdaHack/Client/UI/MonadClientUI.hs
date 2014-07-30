@@ -193,12 +193,14 @@ stopRunning = do
   case srunning of
     Nothing -> return ()
     Just RunParams{runLeader} -> do
-      -- Switch to the original leader, from before the run start, unless dead.
+      -- Switch to the original leader, from before the run start,
+      -- unless dead or unless the faction never runs with multiple
+      -- (but could have the leader changed automatically meanwhile).
       side <- getsClient sside
       fact <- getsState $ (EM.! side) . sfactionD
       arena <- getArenaUI
       s <- getState
-      when (memActor runLeader arena s && not (isAllMoveFact fact)) $
+      when (memActor runLeader arena s && not (noRunWithMulti fact)) $
         modifyClient $ updateLeader runLeader s
       modifyClient (\cli -> cli { srunning = Nothing })
 

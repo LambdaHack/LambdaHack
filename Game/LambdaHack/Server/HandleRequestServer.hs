@@ -100,7 +100,6 @@ switchLeader fid aidNew = do
   mapM_ execUpdAtomic leadAtoms
   assert (Just aidNew /= mleader
           && not (bproj bPre)
-          && not (isAllMoveFact fact)
          `blame` (aidNew, bPre, fid, fact)) skip
   assert (bfid bPre == fid
           `blame` "client tries to move other faction actors"

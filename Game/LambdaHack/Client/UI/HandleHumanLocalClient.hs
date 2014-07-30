@@ -63,6 +63,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
@@ -81,13 +82,21 @@ pickLeaderHuman :: MonadClientUI m => Int -> m Slideshow
 pickLeaderHuman k = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
+  arena <- getArenaUI
+  let (autoDun, autoLvl) = case fhasLeader (gplayer fact) of
+                             LeaderMode{..} -> (autoDungeon, autoLevel)
+                             LeaderNull -> (False, False)
   s <- getState
   case tryFindHeroK s side k of
-    _ | isAllMoveFact fact -> failMsg msgCannotChangeLeader
     Nothing -> failMsg "No such member of the party."
-    Just (aid, _) -> do
-      void $ pickLeader True aid
-      return mempty
+    Just (aid, b) ->
+      if blid b == arena && autoLvl
+      then failMsg msgNoChangeLvlLeader
+      else if autoDun
+      then failMsg msgNoChangeDunLeader
+      else do
+        void $ pickLeader True aid
+        return mempty
 
 -- * MemberCycle
 

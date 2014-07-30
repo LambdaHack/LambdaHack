@@ -133,10 +133,10 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     side <- getsClient sside
     when (fid == side) $ do
       fact <- getsState $ (EM.! side) . sfactionD
-      -- All-movers can't run with multiple actors, so the following is not
+      -- This faction can't run with multiple actors, so this is not
       -- a leader change while running, but rather server changing
       -- their leader, which the player should be alerted to.
-      when (isAllMoveFact fact) stopPlayBack
+      when (noRunWithMulti fact) stopPlayBack
       actorD <- getsState sactorD
       case EM.lookup source actorD of
         Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do

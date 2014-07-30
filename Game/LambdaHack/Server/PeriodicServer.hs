@@ -218,8 +218,9 @@ leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelFlip = do
   Kind.COps{cotile} <- getsState scops
   let canFlip fact =
-        -- We don't have to check @playerLeader@: @gleader@ would be @Nothing@.
-        fisAI (gplayer fact) || isAllMoveFact fact
+        fisAI (gplayer fact) || case fhasLeader (gplayer fact) of
+                                  LeaderMode{autoDungeon} -> autoDungeon
+                                  LeaderNull -> False
       flipFaction fact | not $ canFlip fact = return ()
       flipFaction fact = do
         case gleader fact of
