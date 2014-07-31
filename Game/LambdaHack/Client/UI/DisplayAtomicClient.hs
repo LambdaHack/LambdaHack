@@ -209,7 +209,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdResume{} -> skip
   UpdResumeServer{} -> skip
   UpdKillExit{} -> skip
-  UpdSaveBkp -> when verbose $ msgAdd "Saving backup."
+  UpdWriteSave -> when verbose $ msgAdd "Saving backup."
   UpdMsgAll msg -> msgAdd msg
   UpdRecordHistory _ -> recordHistory
 

@@ -67,7 +67,7 @@ standard = RuleKind
       lift x)
   , rfirstDeathEnds = False
   , rfovMode = Digital
-  , rsaveBkpClips = 500
+  , rwriteSaveClips = 500
   , rleadLevelClips = 100
   , rscoresFile = "scores"
   , rsavePrefix = "save"

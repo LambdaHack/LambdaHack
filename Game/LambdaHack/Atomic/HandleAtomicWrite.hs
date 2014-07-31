@@ -92,7 +92,7 @@ handleUpdAtomic cmd = case cmd of
   UpdResume{} -> return ()
   UpdResumeServer s -> updResumeServer s
   UpdKillExit{} -> return ()
-  UpdSaveBkp -> return ()
+  UpdWriteSave -> return ()
   UpdMsgAll{} -> return ()
   UpdRecordHistory{} -> return ()
 

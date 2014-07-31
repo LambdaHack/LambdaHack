@@ -42,7 +42,7 @@ data StateServer = StateServer
   , srandom       :: !R.StdGen      -- ^ current random generator
   , srngs         :: !RNGs          -- ^ initial random generators
   , squit         :: !Bool          -- ^ exit the game loop
-  , sbkpSave      :: !Bool          -- ^ make backup savefile now
+  , swriteSave    :: !Bool          -- ^ write savegame to a file now
   , sstart        :: !ClockTime     -- ^ this session start time
   , sgstart       :: !ClockTime     -- ^ this game start time
   , sallTime      :: !Time          -- ^ clips since the start of the session
@@ -107,7 +107,7 @@ emptyStateServer =
     , srngs = RNGs { dungeonRandomGenerator = Nothing
                    , startingRandomGenerator = Nothing }
     , squit = False
-    , sbkpSave = False
+    , swriteSave = False
     , sstart = TOD 0 0
     , sgstart = TOD 0 0
     , sallTime = timeZero
@@ -170,7 +170,7 @@ instance Binary StateServer where
     let srandom = read g
         sper = EM.empty
         squit = False
-        sbkpSave = False
+        swriteSave = False
         sstart = TOD 0 0
         sgstart = TOD 0 0
         sallTime = timeZero

@@ -44,9 +44,9 @@ endOrLoop loop restart gameExit gameSave = do
   mapM_ (\(fid, fact) ->
             execUpdAtomic
             $ UpdQuitFaction fid Nothing (gquit fact) Nothing) campers
-  bkpSave <- getsServer sbkpSave
+  bkpSave <- getsServer swriteSave
   when bkpSave $ do
-    modifyServer $ \ser -> ser {sbkpSave = False}
+    modifyServer $ \ser -> ser {swriteSave = False}
     gameSave
   case (quitters, campers) of
     (sgameMode : _, _) -> do

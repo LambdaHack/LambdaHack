@@ -89,7 +89,7 @@ loopSer sdebug executorUI executorAI !cops = do
       updConn
       initPer
       reinitGame
-      saveBkpAll False
+      writeSaveAll False
   resetSessionStart
   -- Start a clip (a part of a turn for which one or more frames
   -- will be generated). Do whatever has to be done
@@ -115,7 +115,7 @@ loopSer sdebug executorUI executorAI !cops = do
           -- In case of game save+exit or restart, don't age levels (endClip)
           -- since possibly not all actors have moved yet.
           modifyServer $ \ser -> ser {squit = False}
-          endOrLoop loop (restartGame updConn loop) gameExit (saveBkpAll True)
+          endOrLoop loop (restartGame updConn loop) gameExit (writeSaveAll True)
         else do
           continue <- endClip arenas
           when continue loop
@@ -126,7 +126,7 @@ endClip :: (MonadAtomic m, MonadServer m, MonadServerReadRequest m)
 endClip arenas = do
   Kind.COps{corule} <- getsState scops
   let stdRuleset = Kind.stdRuleset corule
-      saveBkpClips = rsaveBkpClips stdRuleset
+      writeSaveClips = rwriteSaveClips stdRuleset
       leadLevelClips = rleadLevelClips stdRuleset
       ageProcessed lid processed =
         EM.insertWith absoluteTimeAdd lid timeClip processed
@@ -139,9 +139,9 @@ endClip arenas = do
       clipInTurn = let r = timeTurn `timeFit` timeClip
                    in assert (r > 2) r
       clipMod = clipN `mod` clipInTurn
-  when (clipN `mod` saveBkpClips == 0) $ do
-    modifyServer $ \ser -> ser {sbkpSave = False}
-    saveBkpAll False
+  when (clipN `mod` writeSaveClips == 0) $ do
+    modifyServer $ \ser -> ser {swriteSave = False}
+    writeSaveAll False
   when (clipN `mod` leadLevelClips == 0) leadLevelFlip
   -- Add monsters each turn, not each clip.
   -- Do this on only one of the arenas to prevent micromanagement,
@@ -323,7 +323,7 @@ restartGame updConn loop = do
   updConn
   initPer
   reinitGame
-  saveBkpAll False
+  writeSaveAll False
   loop
 
 -- TODO: This can be improved by adding a timeout
@@ -332,8 +332,8 @@ restartGame updConn loop = do
 -- and when all report back, asking them to commit the save.
 -- | Save game on server and all clients. Clients are pinged first,
 -- which greatly reduced the chance of saves being out of sync.
-saveBkpAll :: (MonadAtomic m, MonadServerReadRequest m) => Bool -> m ()
-saveBkpAll uiRequested = do
+writeSaveAll :: (MonadAtomic m, MonadServerReadRequest m) => Bool -> m ()
+writeSaveAll uiRequested = do
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   when (uiRequested || not bench) $ do
     factionD <- getsState sfactionD
@@ -341,7 +341,7 @@ saveBkpAll uiRequested = do
           sendPingAI fid
           when (fhasUI $ gplayer $ factionD EM.! fid) $ sendPingUI fid
     mapWithKeyM_ ping factionD
-    execUpdAtomic UpdSaveBkp
+    execUpdAtomic UpdWriteSave
     saveServer
 
 -- TODO: move somewhere?

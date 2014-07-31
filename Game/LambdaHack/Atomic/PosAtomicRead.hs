@@ -135,7 +135,7 @@ posUpdAtomic cmd = case cmd of
   UpdResume fid _ -> return $! PosFid fid
   UpdResumeServer _ -> return PosSer
   UpdKillExit fid -> return $! PosFid fid
-  UpdSaveBkp -> return PosAll
+  UpdWriteSave -> return PosAll
   UpdMsgAll{} -> return PosAll
   UpdRecordHistory fid -> return $! PosFid fid
 

@@ -48,7 +48,7 @@ data RuleKind = RuleKind
   , rfirstDeathEnds :: !Bool      -- ^ whether first non-spawner actor death
                                   --   ends the game
   , rfovMode        :: !FovMode   -- ^ FOV calculation mode
-  , rsaveBkpClips   :: !Int       -- ^ game backup is saved that often
+  , rwriteSaveClips :: !Int       -- ^ game is saved that often
   , rleadLevelClips :: !Int       -- ^ flip AI/spawn leader level that often
   , rscoresFile     :: !FilePath  -- ^ name of the scores file
   , rsavePrefix     :: !String    -- ^ name of the savefile prefix

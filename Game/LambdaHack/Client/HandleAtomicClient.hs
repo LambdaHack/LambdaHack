@@ -289,7 +289,7 @@ cmdAtomicSemCli cmd = case cmd of
                   , sdebugCli }
   UpdResume _fid sfper -> modifyClient $ \cli -> cli {sfper}
   UpdKillExit _fid -> killExit
-  UpdSaveBkp -> saveClient
+  UpdWriteSave -> saveClient
   _ -> return ()
 
 createActor :: MonadClient m => ActorId -> Actor -> m ()
