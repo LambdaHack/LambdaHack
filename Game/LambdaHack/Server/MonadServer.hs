@@ -70,12 +70,10 @@ debugPrint t = do
 
 saveServer :: MonadServer m => m ()
 saveServer = do
-  bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
-  unless bench $ do
-    s <- getState
-    ser <- getServer
-    toSave <- saveChanServer
-    liftIO $ Save.saveToChan toSave (s, ser)
+  s <- getState
+  ser <- getServer
+  toSave <- saveChanServer
+  liftIO $ Save.saveToChan toSave (s, ser)
 
 saveName :: String
 saveName = serverSaveName

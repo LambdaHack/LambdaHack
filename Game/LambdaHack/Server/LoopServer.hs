@@ -333,9 +333,9 @@ restartGame updConn loop = do
 -- | Save game on server and all clients. Clients are pinged first,
 -- which greatly reduced the chance of saves being out of sync.
 saveBkpAll :: (MonadAtomic m, MonadServerReadRequest m) => Bool -> m ()
-saveBkpAll unconditional = do
+saveBkpAll uiRequested = do
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
-  when (unconditional || not bench) $ do
+  when (uiRequested || not bench) $ do
     factionD <- getsState sfactionD
     let ping fid _ = do
           sendPingAI fid

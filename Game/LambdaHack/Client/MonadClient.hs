@@ -45,12 +45,10 @@ debugPrint t = do
 
 saveClient :: MonadClient m => m ()
 saveClient = do
-  bench <- getsClient $ sbenchmark . sdebugCli
-  unless bench $ do
-    s <- getState
-    cli <- getClient
-    toSave <- saveChanClient
-    liftIO $ Save.saveToChan toSave (s, cli)
+  s <- getState
+  cli <- getClient
+  toSave <- saveChanClient
+  liftIO $ Save.saveToChan toSave (s, cli)
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI =
