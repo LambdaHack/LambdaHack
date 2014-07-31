@@ -135,16 +135,17 @@ registerScore status mbody fid = do
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   factionD <- getsState sfactionD
   fightsSpawners <- fightsAgainstSpawners fid
+  bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   let path = dataDir </> scoresFile
       outputScore (worthMentioning, (ntable, pos)) =
         -- If not human, probably debugging, so dump instead of registering.
-        if not $ fisAI $ gplayer fact then
+        if bench || fisAI (gplayer fact) then
+          debugPrint $ T.intercalate "\n"
+          $ HighScore.showScore (pos, HighScore.getRecord pos ntable)
+        else
           if worthMentioning then
             liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
           else return ()
-        else
-          debugPrint $ T.intercalate "\n"
-          $ HighScore.showScore (pos, HighScore.getRecord pos ntable)
       diff | not $ fhasUI $ gplayer fact = difficultyDefault
            | otherwise = sdifficultySer
       theirVic (fi, fa) | isAtWar fact fi
