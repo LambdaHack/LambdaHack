@@ -265,9 +265,8 @@ targetStrategy oldLeader aid = do
                  || not (desirableBag (lvl `atI` pos)))
                 && (not canSmell  -- closestSmell
                     || pos == bpos b  -- in case server resends deleted smell
-                    || let sml =
-                             EM.findWithDefault timeZero pos (lsmell lvl)
-                       in sml `timeDeltaToFrom` ltime lvl <= Delta timeZero)
+                    || let sml = EM.findWithDefault timeZero pos (lsmell lvl)
+                       in sml <= ltime lvl)
                 && let t = lvl `at` pos
                    in if ES.notMember lid explored
                       then t /= unknownId  -- closestUnknown

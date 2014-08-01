@@ -182,8 +182,8 @@ closestUnknown aid = do
 closestSmell :: MonadClient m => ActorId -> m [(Int, (Point, Tile.SmellTime))]
 closestSmell aid = do
   body <- getsState $ getActorBody aid
-  Level{lsmell} <- getLevel $ blid body
-  let smells = EM.assocs lsmell
+  Level{lsmell, ltime} <- getLevel $ blid body
+  let smells = filter ((> ltime) . snd) $ EM.assocs lsmell
   case smells of
     [] -> return []
     _ -> do

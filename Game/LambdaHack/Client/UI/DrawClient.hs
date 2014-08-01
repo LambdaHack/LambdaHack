@@ -137,7 +137,7 @@ draw sfBlank dm drawnLevelId cursorPos tgtPos bfsmpathRaw
                     && (maybe False (elem pos0) mpath) ->
                   (';', Color.defAttr {Color.fg = fgOnPathOrLine})
                 Just (aid, m) -> viewActor aid m
-                _ | smarkSmell && smlt > Delta timeZero ->
+                _ | smarkSmell && sml > ltime ->
                   (timeDeltaToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
                   case floorIids of
