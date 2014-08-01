@@ -189,10 +189,10 @@ benGroundItems :: MonadClient m
                      , (Int, CStore)), (ItemId, ItemFull) )]
 benGroundItems aid = do
   b <- getsState $ getActorBody aid
-  fightsSpawners <- fightsAgainstSpawners (bfid b)
+  canEscape <- factionCanEscape (bfid b)
   let desirableItem ItemFull{itemBase} use
-        | fightsSpawners = use /= Just 0
-                           || Effect.Precious `elem` jfeature itemBase
+        | canEscape = use /= Just 0
+                      || Effect.Precious `elem` jfeature itemBase
         | otherwise = use /= Just 0
   benAvailableItems aid desirableItem [CGround]
 

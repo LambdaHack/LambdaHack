@@ -132,7 +132,7 @@ registerScore status mbody fid = do
   date <- liftIO getClockTime
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   factionD <- getsState sfactionD
-  fightsSpawners <- fightsAgainstSpawners fid
+  loots <- factionLoots fid
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   let path = dataDir </> scoresFile
       outputScore (worthMentioning, (ntable, pos)) =
@@ -156,7 +156,7 @@ registerScore status mbody fid = do
       registeredScore =
         HighScore.register table total time status date diff
                            (fname $ gplayer fact)
-                           ourVictims theirVictims fightsSpawners
+                           ourVictims theirVictims loots
   outputScore registeredScore
 
 resetSessionStart :: MonadServer m => m ()

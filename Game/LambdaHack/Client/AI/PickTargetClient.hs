@@ -93,11 +93,11 @@ targetStrategy oldLeader aid = do
   -- (then we have to target, but keep the distance, we can do similarly for
   -- wounded or alone actors, perhaps only until they are shot first time,
   -- and only if they can shoot at the moment)
-  fightsSpawners <- fightsAgainstSpawners (bfid b)
+  canEscape <- factionCanEscape (bfid b)
   explored <- getsClient sexplored
   smellRadius <- sumOrganEqpClient Effect.EqpSlotAddSmell aid
   let canSmell = smellRadius > 0
-      meleeNearby | fightsSpawners = nearby `div` 2  -- not aggresive
+      meleeNearby | canEscape = nearby `div` 2  -- not aggresive
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
       targetableMelee body =
@@ -117,7 +117,7 @@ targetStrategy oldLeader aid = do
           Just (v, _) -> v
           Nothing -> 30  -- experimenting is fun
       desirableItem iid item k
-        | fightsSpawners = itemUsefulness iid k /= 0
+        | canEscape = itemUsefulness iid k /= 0
                            || Effect.Precious `elem` jfeature item
         | otherwise = itemUsefulness iid k /= 0
       desirableBag bag = any (\(iid, k) ->
