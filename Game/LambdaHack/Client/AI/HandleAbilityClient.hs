@@ -671,10 +671,11 @@ displaceTowards aid source target = do
   lvl <- getLevel $ blid b
   if boldpos b /= target -- avoid trivial loops
      && accessible cops lvl source target then do  -- DisplaceAccess
+    mleader <- getsClient _sleader
     mBlocker <- getsState $ posToActors target (blid b)
     case mBlocker of
       [] -> return reject
-      [((aid2, b2), _)] -> do
+      [((aid2, b2), _)] | Just aid2 /= mleader -> do
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
         case mtgtMPath of
           Just (tgt, Just (p : q : rest, (goal, len)))
@@ -691,7 +692,7 @@ displaceTowards aid source target = do
             if not (isAtWar tfact (bfid b)) || dEnemy then
               return $! returN "displace other" $ target `vectorToFrom` source
             else return reject  -- DisplaceDying, DisplaceSupported
-      _ -> return reject  -- DisplaceProjectiles
+      _ -> return reject  -- DisplaceProjectiles or trying to displace leader
   else return reject
 
 chase :: MonadClient m => ActorId -> Bool -> m (Strategy RequestAnyAbility)
@@ -761,7 +762,8 @@ moveOrRunAid run source dir = do
   -- (tiles can't be invisible).
   tgts <- getsState $ posToActors tpos lid
   case tgts of
-    [((target, b2), _)] | run ->  do -- can be a foe, as well as a friend
+    [((target, b2), _)] | run -> do
+      -- @target@ can be a foe, as well as a friend.
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
       activeItems <- activeItemsClient target
       dEnemy <- getsState $ dispEnemy source target activeItems
