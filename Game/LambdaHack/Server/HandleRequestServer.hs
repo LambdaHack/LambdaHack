@@ -111,10 +111,10 @@ switchLeader fid aidNew mtgtNew = do
     Just (leader, _) -> do
       b <- getsState $ getActorBody leader
       return $! blid b
-  if actorChanged && blid bPre == arena && autoLvl
-  then execFailure aidNew ReqWait{-hack-} NoChangeLvlLeader
-  else if actorChanged && autoDun
+  if actorChanged && blid bPre /= arena && autoDun
   then execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
+  else if actorChanged && autoLvl
+  then execFailure aidNew ReqWait{-hack-} NoChangeLvlLeader
   else execUpdAtomic $ UpdLeadFaction fid mleader (Just (aidNew, mtgtNew))
 
 -- * ReqMove
