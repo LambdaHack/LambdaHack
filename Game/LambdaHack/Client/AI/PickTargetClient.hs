@@ -216,12 +216,13 @@ targetStrategy oldLeader aid = do
       updateTgt :: Target -> PathEtc
                 -> m (Strategy (Target, Maybe PathEtc))
       updateTgt oldTgt updatedPath@(_, (_, len)) = case oldTgt of
-        TEnemy a _ -> do
+        TEnemy a permit -> do
           body <- getsState $ getActorBody a
           if not focused  -- prefers closer foes
              && a `notElem` map fst nearbyFoes  -- old one not close enough
              || blid body /= blid b  -- wrong level
              || actorDying body  -- foe already dying
+             || permit  -- never follow a friend more than 1 step
           then pickNewTarget
           else if bpos body == fst (snd updatedPath)
                then return $! returN "TEnemy" (oldTgt, Just updatedPath)
@@ -239,11 +240,12 @@ targetStrategy oldLeader aid = do
                         (oldTgt, Just ( bpos b : path
                                       , (p, fromMaybe (assert `failure` mpath)
                                             $ accessBfs bfs p) ))
-        TEnemyPos _ lid p _ ->
+        TEnemyPos _ lid p permit ->
           -- Chase last position even if foe hides or dies,
           -- to find his companions, loot, etc.
           if lid /= blid b  -- wrong level
              || chessDist (bpos b) p >= nearby  -- too far and not visible
+             || permit  -- never follow a friend more than 1 step
           then pickNewTarget
           else if p == bpos b
                then tellOthersNothingHere p

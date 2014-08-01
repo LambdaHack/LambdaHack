@@ -56,9 +56,7 @@ pickActorToMove refreshTarget oldAid = do
                 tgtLeader <- do
                   mtgt <- getsClient $ (EM.lookup leader) . stargetD
                   case mtgt of
-                    Nothing -> do
-                      b <- getsState $ getActorBody leader
-                      return $! TPoint (blid b) (bpos b)
+                    Nothing -> return $! TEnemy leader True
                     Just (tgtLeader, _) -> return tgtLeader
                 modifyClient $ \cli ->
                   cli { sbfsD = EM.delete oldAid (sbfsD cli)
@@ -68,7 +66,7 @@ pickActorToMove refreshTarget oldAid = do
                                      (\(tgt, p) -> (tgt, Just p)) mpath
                 modifyClient $ \cli ->
                   cli {stargetD = EM.alter (const $ Just tgtMPath)
-                                               oldAid (stargetD cli)}
+                                           oldAid (stargetD cli)}
           _ -> void $ refreshTarget oldAid (oldAid, oldBody)
         return (oldAid, oldBody)
   case ours of

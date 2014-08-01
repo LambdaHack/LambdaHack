@@ -53,7 +53,7 @@ condTgtEnemyPresentM :: MonadClient m => ActorId -> m Bool
 condTgtEnemyPresentM aid = do
   btarget <- getsClient $ getTarget aid
   return $! case btarget of
-    Just TEnemy{} -> True
+    Just (TEnemy _ permit) -> not permit
     _ -> False
 
 -- | Require that the target enemy is remembered on the actor's level.
@@ -62,7 +62,7 @@ condTgtEnemyRememberedM aid = do
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
   return $! case btarget of
-    Just (TEnemyPos _ lid _ _) | lid == blid b -> True
+    Just (TEnemyPos _ lid _ permit) | lid == blid b -> not permit
     _ -> False
 
 -- | Require that any non-dying foe is adjacent.
