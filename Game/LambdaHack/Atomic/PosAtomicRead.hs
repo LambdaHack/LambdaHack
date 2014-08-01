@@ -237,10 +237,10 @@ breakUpdAtomic cmd = case cmd of
     let loseSpot = [ UpdLoseActor aid b ais
                    , UpdSpotActor aid b {bpos = toP, boldpos = bpos b} ais ]
     fact <- getsState $ (EM.! bfid b) . sfactionD
-    if gleader fact == Just aid
-      then return $ [UpdLeadFaction (bfid b) (Just aid) Nothing]
+    if fmap fst (gleader fact) == Just aid
+      then return $ [UpdLeadFaction (bfid b) (gleader fact) Nothing]
                     ++ loseSpot
-                    ++ [UpdLeadFaction (bfid b) Nothing (Just aid)]
+                    ++ [UpdLeadFaction (bfid b) Nothing (gleader fact)]
       else return loseSpot
   UpdDisplaceActor source target -> do
     sb <- getsState $ getActorBody source

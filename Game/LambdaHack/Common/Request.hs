@@ -18,6 +18,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Common.Ability
+import Game.LambdaHack.Common.Faction
 
 -- TODO: make remove second arg from ReqLeader; this requires a separate
 -- channel for Ping, probably, and then client sends as many commands
@@ -25,7 +26,7 @@ import Game.LambdaHack.Common.Ability
 -- | Cclient-server requests sent by AI clients.
 data RequestAI =
     forall a. ReqAITimed !(RequestTimed a)
-  | ReqAILeader !ActorId !RequestAI
+  | ReqAILeader !ActorId !(Maybe Target) !RequestAI
   | ReqAIPong
 
 deriving instance Show RequestAI
@@ -33,7 +34,7 @@ deriving instance Show RequestAI
 -- | Client-server requests sent by UI clients.
 data RequestUI =
     forall a. ReqUITimed !(RequestTimed a)
-  | ReqUILeader !ActorId !RequestUI
+  | ReqUILeader !ActorId !(Maybe Target) !RequestUI
   | ReqUIGameRestart !ActorId !GroupName !Int ![(Int, (Text, Text))]
   | ReqUIGameExit !ActorId !Int
   | ReqUIGameSave

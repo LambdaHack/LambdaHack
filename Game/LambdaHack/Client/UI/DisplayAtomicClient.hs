@@ -129,7 +129,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdColorActor{} -> skip
   -- Change faction attributes.
   UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt
-  UpdLeadFaction fid (Just source) (Just target) -> do
+  UpdLeadFaction fid (Just (source, _)) (Just (target, _)) -> do
     side <- getsClient sside
     when (fid == side) $ do
       fact <- getsState $ (EM.! side) . sfactionD
@@ -397,7 +397,7 @@ quitFactionUI fid mbody toSt = do
         Just body | fid == side -> getsState $ calculateTotal body
         _ -> case gleader fact of
           Nothing -> return (EM.empty, 0)
-          Just aid -> do
+          Just (aid, _) -> do
             b <- getsState $ getActorBody aid
             getsState $ calculateTotal b
       let currencyName = MU.Text $ iname $ okind $ ouniqGroup "currency"

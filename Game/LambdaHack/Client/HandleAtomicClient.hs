@@ -1,8 +1,10 @@
+{-# LANGUAGE TupleSections #-}
 -- | Handle atomic commands received by the client.
 module Game.LambdaHack.Client.HandleAtomicClient
   ( cmdAtomicSemCli, cmdAtomicFilterCli
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -18,6 +20,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Effect as Effect
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -261,10 +264,16 @@ cmdAtomicSemCli cmd = case cmd of
     side <- getsClient sside
     when (side == fid) $ do
       mleader <- getsClient _sleader
-      assert (mleader == source     -- somebody changed the leader for us
-              || mleader == target  -- we changed the leader originally
+      assert (mleader == fmap fst source  -- somebody changed the leader for us
+              || mleader == fmap fst target  -- we changed the leader ourselves
               `blame` "unexpected leader" `twith` (cmd, mleader)) skip
-      modifyClient $ \cli -> cli {_sleader = target}
+      modifyClient $ \cli -> cli {_sleader = fmap fst target}
+      case target of
+        Nothing -> return ()
+        Just (aid, mtgt) ->
+          modifyClient $ \cli ->
+            cli {stargetD = EM.alter (const $ (,Nothing) <$> mtgt)
+                                     aid (stargetD cli)}
   UpdDiscover lid p iid ik seed -> do
     discoverKind lid p iid ik
     discoverSeed lid p iid seed

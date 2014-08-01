@@ -338,7 +338,8 @@ effectSummon actorFreq power source target = assert (power > 0) $ do
           b <- getsState $ getActorBody aid
           mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
           when (isNothing mleader) $
-            execUpdAtomic $ UpdLeadFaction (bfid b) Nothing (Just aid)
+            execUpdAtomic
+            $ UpdLeadFaction (bfid b) Nothing (Just (aid, Nothing))
           return True
     return $! or bs
 
@@ -394,9 +395,9 @@ effectAscend execSfx k source aid = do
   else do
     let switch1 = void $ switchLevels1 ((aid, b1), ais1)
         switch2 = do
-          -- Make the intiator of the stair move the leader,
-          -- to let him clear the stairs for other to follow.
-          let mlead = Just aid
+          -- Make the initiator of the stair move the leader,
+          -- to let him clear the stairs for others to follow.
+          let mlead = Just (aid, Nothing)
           -- Move the actor to where the inhabitants were, if any.
           switchLevels2 lid2 pos2 ((aid, b1), ais1) mlead
           -- Verify only one non-projectile actor on every tile.
@@ -435,7 +436,8 @@ effectAscend execSfx k source aid = do
     return True
 
 switchLevels1 :: MonadAtomic m
-              => ((ActorId, Actor), [(ItemId, Item)]) -> m (Maybe ActorId)
+              => ((ActorId, Actor), [(ItemId, Item)])
+              -> m (Maybe (ActorId, Maybe Target))
 switchLevels1 ((aid, bOld), ais) = do
   let side = bfid bOld
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
@@ -453,7 +455,8 @@ switchLevels1 ((aid, bOld), ais) = do
 
 switchLevels2 :: MonadAtomic m
               => LevelId -> Point
-              -> ((ActorId, Actor), [(ItemId, Item)]) -> Maybe ActorId
+              -> ((ActorId, Actor), [(ItemId, Item)])
+              -> Maybe (ActorId, Maybe Target)
               -> m ()
 switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
   let lidOld = blid bOld

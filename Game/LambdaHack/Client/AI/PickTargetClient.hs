@@ -52,6 +52,12 @@ targetStrategy oldLeader aid = do
       stepAccesible mtgt = mtgt  -- goal can be inaccessible, e.g., suspect
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
+    Just (tgt, Nothing) ->
+      -- This case is especially for TEnemyPos that would be lost otherwise.
+      -- This is also triggered by @UpdLeadFaction@. The recreated path can be
+      -- different than on the other client (AI or UI), but we don't care
+      -- as long as the target stays the same at least for a moment.
+      createPath aid tgt
     Just (tgt, Just path) -> do
       mvalidPos <- aidTgtToPos aid (blid b) (Just tgt)
       if isNothing mvalidPos then return Nothing  -- wrong level
@@ -69,10 +75,6 @@ targetStrategy oldLeader aid = do
           else
             Nothing  -- somebody pushed us off the goal; let's target again
         ([], _) -> assert `failure` (aid, b, mtgtMPath)
-    Just (tgt@TEnemyPos{}, Nothing) ->
-      -- special case, TEnemyPos would be lost otherwise
-      createPath aid tgt
-    Just (_, Nothing) -> return Nothing  -- path invalidated, e.g. UpdSpotActor
     Nothing -> return Nothing  -- no target assigned yet
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   fact <- getsState $ (EM.! bfid b) . sfactionD

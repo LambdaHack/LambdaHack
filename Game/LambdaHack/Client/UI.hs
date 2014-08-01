@@ -50,7 +50,7 @@ queryUI :: MonadClientUI m => m RequestUI
 queryUI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  let leader = fromMaybe (assert `failure` fact) $ gleader fact
+  let (leader, mtgt) = fromMaybe (assert `failure` fact) $ gleader fact
   srunning <- getsClient srunning
   -- When running, stop if disturbed. If not running, let the human
   -- player issue commands, until any command takes time.
@@ -79,8 +79,9 @@ queryUI = do
           displayPush
           return $! anyToUI $ runCmd
   leader2 <- getLeaderUI
-  if leader2 /= leader
-    then return $! ReqUILeader leader2 req
+  mtgt2 <- getsClient $ fmap fst . EM.lookup leader2 . stargetD
+  if (leader2, mtgt2) /= (leader, mtgt)
+    then return $! ReqUILeader leader2 mtgt2 req
     else return $! req
 
 -- | Determine and process the next human player command. The argument is

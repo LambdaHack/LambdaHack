@@ -219,13 +219,14 @@ anyActorsAlive fid = do
 electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
 electLeader fid lid aidDead = do
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-  when (isNothing mleader || mleader == Just aidDead) $ do
+  when (isNothing mleader || fmap fst mleader == Just aidDead) $ do
     actorD <- getsState sactorD
     let ours (_, b) = bfid b == fid && not (bproj b)
         party = filter ours $ EM.assocs actorD
     onLevel <- getsState $ actorRegularAssocs (== fid) lid
-    let mleaderNew = listToMaybe $ filter (/= aidDead)
-                     $ map fst $ onLevel ++ party
+    let mleaderNew = case filter (/= aidDead) $ map fst $ onLevel ++ party of
+          [] -> Nothing
+          aid : _ -> Just (aid, Nothing)
     unless (mleader == mleaderNew) $
       execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 

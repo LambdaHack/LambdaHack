@@ -51,8 +51,8 @@ handleRequestAI :: (MonadAtomic m, MonadServer m)
                 => FactionId -> ActorId -> RequestAI -> m ActorId
 handleRequestAI fid aid cmd = case cmd of
   ReqAITimed cmdT -> handleRequestTimed aid cmdT >> return aid
-  ReqAILeader aidNew cmd2 -> do
-    switchLeader fid aidNew
+  ReqAILeader aidNew mtgtNew cmd2 -> do
+    switchLeader fid aidNew mtgtNew
     handleRequestAI fid aidNew cmd2
   ReqAIPong -> return aid
 
@@ -64,10 +64,10 @@ handleRequestUI :: (MonadAtomic m, MonadServer m)
 handleRequestUI fid cmd = case cmd of
   ReqUITimed cmdT -> do
     fact <- getsState $ (EM.! fid) . sfactionD
-    let aid = fromMaybe (assert `failure` fact) $ gleader fact
+    let (aid, _) = fromMaybe (assert `failure` fact) $ gleader fact
     handleRequestTimed aid cmdT >> return (Just aid)
-  ReqUILeader aidNew cmd2 -> do
-    switchLeader fid aidNew
+  ReqUILeader aidNew mtgtNew cmd2 -> do
+    switchLeader fid aidNew mtgtNew
     handleRequestUI fid cmd2
   ReqUIGameRestart aid t d names ->
     reqGameRestart aid t d names >> return Nothing
@@ -91,31 +91,32 @@ handleRequestTimed aid cmd = case cmd of
   ReqTrigger mfeat -> reqTrigger aid mfeat
 
 switchLeader :: (MonadAtomic m, MonadServer m)
-             => FactionId -> ActorId -> m ()
-switchLeader fid aidNew = do
+             => FactionId -> ActorId -> Maybe Target -> m ()
+switchLeader fid aidNew mtgtNew = do
   fact <- getsState $ (EM.! fid) . sfactionD
   bPre <- getsState $ getActorBody aidNew
   let mleader = gleader fact
-  assert (Just aidNew /= mleader
+      actorChanged = fmap fst mleader /= Just aidNew
+  assert (Just (aidNew, mtgtNew) /= mleader
           && not (bproj bPre)
-          `blame` (aidNew, bPre, fid, fact)) skip
+          `blame` (aidNew, mtgtNew, bPre, fid, fact)) skip
   assert (bfid bPre == fid
           `blame` "client tries to move other faction actors"
-          `twith` (aidNew, bPre, fid, fact)) skip
+          `twith` (aidNew, mtgtNew, bPre, fid, fact)) skip
   let (autoDun, autoLvl) = case fhasLeader (gplayer fact) of
                              LeaderMode{..} -> (autoDungeon, autoLevel)
                              LeaderNull -> (False, False)
   arena <- case mleader of
     Nothing -> return $! blid bPre
-    Just leader -> do
+    Just (leader, _) -> do
       b <- getsState $ getActorBody leader
       return $! blid b
-  if blid bPre == arena && autoLvl
+  if actorChanged && blid bPre == arena && autoLvl
   then execFailure aidNew ReqWait{-hack-} NoChangeLvlLeader
-  else if autoDun
+  else if actorChanged && autoDun
   then execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
   else do
-    let leadAtoms = [UpdLeadFaction fid mleader (Just aidNew)]
+    let leadAtoms = [UpdLeadFaction fid mleader (Just (aidNew, mtgtNew))]
     mapM_ execUpdAtomic leadAtoms
 
 -- * ReqMove

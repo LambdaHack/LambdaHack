@@ -98,7 +98,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
                 else do
                   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
                   case (atomic2, mleader) of
-                    (UpdAtomic cmd, Just leader) -> do
+                    (UpdAtomic cmd, Just (leader, _)) -> do
                       body <- getsState $ getActorBody leader
                       loud <- loudUpdAtomic (blid body == lid) fid cmd
                       case loud of

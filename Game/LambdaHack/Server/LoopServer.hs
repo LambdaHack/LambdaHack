@@ -101,7 +101,7 @@ loopSer sdebug executorUI executorAI !cops = do
               case gleader fact of
                -- Even spawners and horrors need an active arena
                -- for their leader, or they start clogging stairs.
-               Just leader -> do
+               Just (leader, _) -> do
                   b <- getsState $ getActorBody leader
                   return $ Just $ blid b
                Nothing -> return Nothing
@@ -195,7 +195,7 @@ handleActors lid = do
   s <- getState
   let -- Actors of the same faction move together.
       -- TODO: insert wrt the order, instead of sorting
-      isLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
+      isLeader (aid, b) = Just aid /= fmap fst (gleader (factionD EM.! bfid b))
       order = Ord.comparing $
         ((>= 0) . bhp . snd) &&& bfid . snd &&& isLeader &&& bsymbol . snd
       (atime, as) = EM.findMin lprio
@@ -234,7 +234,7 @@ handleActors lid = do
       let side = bfid body
           fact = factionD EM.! side
           mleader = gleader fact
-          aidIsLeader = mleader == Just aid
+          aidIsLeader = fmap fst mleader == Just aid
           mainUIactor = fhasUI (gplayer fact)
                         && (aidIsLeader
                             || fhasLeader (gplayer fact) == LeaderNull)
@@ -264,7 +264,7 @@ handleActors lid = do
         -- but do not crash (currently server asserts things and crashes)
         aidNew <- handleRequestUI side cmdS
         let hasWait (ReqUITimed ReqWait{}) = True
-            hasWait (ReqUILeader _ cmd) = hasWait cmd
+            hasWait (ReqUILeader _ _ cmd) = hasWait cmd
             hasWait _ = False
         maybe skip (setBWait (hasWait cmdS)) aidNew
         -- Advance time once, after the leader switched perhaps many times.
@@ -286,7 +286,7 @@ handleActors lid = do
         cmdS <- sendQueryAI side aid
         aidNew <- handleRequestAI side aid cmdS
         let hasWait (ReqAITimed ReqWait{}) = True
-            hasWait (ReqAILeader _ cmd) = hasWait cmd
+            hasWait (ReqAILeader _ _ cmd) = hasWait cmd
             hasWait _ = False
         setBWait (hasWait cmdS) aidNew
         -- AI always takes time and so doesn't loop.

@@ -2,11 +2,13 @@
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
+  , Target(..)
   , isHorrorFact
   , isAllMoveFact, noRunWithMulti, isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff
   ) where
 
+import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
@@ -17,6 +19,8 @@ import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 
@@ -24,13 +28,14 @@ import Game.LambdaHack.Content.ModeKind
 type FactionDict = EM.EnumMap FactionId Faction
 
 data Faction = Faction
-  { gname    :: !Text                   -- ^ individual name
-  , gcolor   :: !Color.Color            -- ^ color of actors or their frames
-  , gplayer  :: !Player                 -- ^ the player spec for this faction
-  , gdipl    :: !Dipl                   -- ^ diplomatic mode
-  , gquit    :: !(Maybe Status)         -- ^ cause of game end/exit
-  , gleader  :: !(Maybe ActorId)        -- ^ the leader of the faction, if any
-  , gsha     :: !ItemBag                -- ^ faction's shared inventory
+  { gname    :: !Text            -- ^ individual name
+  , gcolor   :: !Color.Color     -- ^ color of actors or their frames
+  , gplayer  :: !Player          -- ^ the player spec for this faction
+  , gdipl    :: !Dipl            -- ^ diplomatic mode
+  , gquit    :: !(Maybe Status)  -- ^ cause of game end/exit
+  , gleader  :: !(Maybe (ActorId, Maybe Target))
+                                 -- ^ the leader of the faction and his target
+  , gsha     :: !ItemBag         -- ^ faction's shared inventory
   , gvictims :: !(EM.EnumMap (Kind.Id ItemKind) Int)  -- ^ members killed
   }
   deriving (Show, Eq)
@@ -62,6 +67,16 @@ data Status = Status
   , stNewGame :: !(Maybe GroupName)  -- ^ new game group to start, if any
   }
   deriving (Show, Eq, Ord)
+
+-- | The type of na actor target.
+data Target =
+    TEnemy !ActorId !Bool
+    -- ^ target an actor; cycle only trough seen foes, unless the flag is set
+  | TEnemyPos !ActorId !LevelId !Point !Bool
+    -- ^ last seen position of the targeted actor
+  | TPoint !LevelId !Point  -- ^ target a concrete spot
+  | TVector !Vector         -- ^ target position relative to actor
+  deriving (Show, Eq)
 
 -- | Tell whether the faction consists of summoned horrors only.
 isHorrorFact :: Faction -> Bool
@@ -141,3 +156,18 @@ instance Binary Status where
     stDepth <- get
     stNewGame <- get
     return $! Status{..}
+
+instance Binary Target where
+  put (TEnemy a permit) = putWord8 0 >> put a >> put permit
+  put (TEnemyPos a lid p permit) =
+    putWord8 1 >> put a >> put lid >> put p >> put permit
+  put (TPoint lid p) = putWord8 2 >> put lid >> put p
+  put (TVector v) = putWord8 3 >> put v
+  get = do
+    tag <- getWord8
+    case tag of
+      0 -> liftM2 TEnemy get get
+      1 -> liftM4 TEnemyPos get get get get
+      2 -> liftM2 TPoint get get
+      3 -> liftM TVector get
+      _ -> fail "no parse (Target)"

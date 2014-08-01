@@ -3,12 +3,11 @@
 module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defaultHistory
   , updateTarget, getTarget, updateLeader, sside
-  , PathEtc, TgtMode(..), Target(..), RunParams(..), LastRecord
+  , PathEtc, TgtMode(..), RunParams(..), LastRecord
   , toggleMarkVision, toggleMarkSmell, toggleMarkSuspect
   ) where
 
 import Control.Exception.Assert.Sugar
-import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -93,16 +92,6 @@ type PathEtc = ([Point], (Point, Int))
 -- | Current targeting mode of a client.
 newtype TgtMode = TgtMode { tgtLevelId :: LevelId }
   deriving (Show, Eq, Binary)
-
--- | The type of na actor target.
-data Target =
-    TEnemy !ActorId !Bool
-    -- ^ target an actor; cycle only trough seen foes, unless the flag is set
-  | TEnemyPos !ActorId !LevelId !Point !Bool
-    -- ^ last seen position of the targeted actor
-  | TPoint !LevelId !Point              -- ^ target a concrete spot
-  | TVector !Vector                     -- ^ target position relative to actor
-  deriving (Show, Eq)
 
 -- | Parameters of the current run.
 data RunParams = RunParams
@@ -277,18 +266,3 @@ instance Binary RunParams where
     runStopMsg <- get
     runInitDir <- get
     return $! RunParams{..}
-
-instance Binary Target where
-  put (TEnemy a permit) = putWord8 0 >> put a >> put permit
-  put (TEnemyPos a lid p permit) =
-    putWord8 1 >> put a >> put lid >> put p >> put permit
-  put (TPoint lid p) = putWord8 2 >> put lid >> put p
-  put (TVector v) = putWord8 3 >> put v
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> liftM2 TEnemy get get
-      1 -> liftM4 TEnemyPos get get get get
-      2 -> liftM2 TPoint get get
-      3 -> liftM TVector get
-      _ -> fail "no parse (Target)"

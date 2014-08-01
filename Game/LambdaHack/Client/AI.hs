@@ -20,18 +20,25 @@ import Game.LambdaHack.Client.AI.Strategy
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
+import Game.LambdaHack.Common.State
 
 -- | Handle the move of an AI player.
 queryAI :: MonadClient m => ActorId -> m RequestAI
 queryAI oldAid = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  let mleader = gleader fact
   (aidToMove, bToMove) <- pickActorToMove refreshTarget oldAid
   RequestAnyAbility reqAny <- pickAction (aidToMove, bToMove)
   let req = ReqAITimed reqAny
-  if aidToMove /= oldAid
-    then return $! ReqAILeader aidToMove req
+  mtgt2 <- getsClient $ fmap fst . EM.lookup aidToMove . stargetD
+  if fmap fst mleader == Just oldAid && mleader /= Just (aidToMove, mtgt2)
+    then return $! ReqAILeader aidToMove mtgt2 req
     else return $! req
 
 -- | Client signals to the server that it's still online.

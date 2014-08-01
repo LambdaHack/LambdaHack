@@ -61,7 +61,7 @@ spawnMonster lid = do
         b <- getsState $ getActorBody aid
         mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
         when (isNothing mleader) $
-          execUpdAtomic $ UpdLeadFaction (bfid b) Nothing (Just aid)
+          execUpdAtomic $ UpdLeadFaction (bfid b) Nothing (Just (aid, Nothing))
 
 addAnyActor :: (MonadAtomic m, MonadServer m)
             => Freqs -> LevelId -> Time -> Maybe Point
@@ -171,13 +171,13 @@ dominateFid fid target = do
   -- Keep the leader if he is on stairs. We don't want to clog stairs.
   keepLeader <- case mleaderOld of
     Nothing -> return False
-    Just leaderOld -> do
+    Just (leaderOld, _) -> do
       body <- getsState $ getActorBody leaderOld
       lvl <- getLevel $ blid body
       return $! Tile.isStair cotile $ lvl `at` bpos body
   unless keepLeader $
     -- Focus on the dominated actor, by making him a leader.
-    execUpdAtomic $ UpdLeadFaction fid mleaderOld (Just target)
+    execUpdAtomic $ UpdLeadFaction fid mleaderOld (Just (target, Nothing))
 
 -- | Advance the move time for the given actor, check if he's dominated
 -- and update his calm. We don't update calm once per game turn
@@ -226,7 +226,7 @@ leadLevelFlip = do
       flipFaction fact = do
         case gleader fact of
           Nothing -> return ()
-          Just leader -> do
+          Just (leader, _) -> do
             body <- getsState $ getActorBody leader
             lvl2 <- getLevel $ blid body
             let leaderStuck = waitedLastTurn body
@@ -258,6 +258,7 @@ leadLevelFlip = do
                                         $ toFreq "leadLevel" freqList
                 unless (lid == blid body) $  -- flip levels rather than actors
                   execUpdAtomic
-                  $ UpdLeadFaction (bfid body) (Just leader) (Just a)
+                  $ UpdLeadFaction (bfid body) (gleader fact)
+                                               (Just (a, Nothing))
   factionD <- getsState sfactionD
   mapM_ flipFaction $ EM.elems factionD

@@ -5,6 +5,7 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
   ( handleCmdAtomic
   ) where
 
+import Control.Applicative
 import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import Control.Monad
@@ -272,12 +273,15 @@ updQuitFaction fid mbody fromSt toSt = do
 
 -- The previous leader is assumed to be alive.
 updLeadFaction :: MonadStateWrite m
-               => FactionId -> Maybe ActorId -> Maybe ActorId -> m ()
+               => FactionId
+               -> Maybe (ActorId, Maybe Target)
+               -> Maybe (ActorId, Maybe Target)
+               -> m ()
 updLeadFaction fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
   assert (fhasLeader (gplayer fact) /= LeaderNull) skip
     -- @PosNone@ ensures this
-  mtb <- getsState $ \s -> fmap (flip getActorBody s) target
+  mtb <- getsState $ \s -> flip getActorBody s . fst <$> target
   assert (maybe True (not . bproj) mtb
           `blame` (fid, source, target, mtb, fact)) skip
   assert (source == gleader fact
