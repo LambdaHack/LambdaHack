@@ -318,7 +318,7 @@ destroyActor aid b destroy = do
   modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}  -- gc
   let affect tgt = case tgt of
         TEnemy a permit | a == aid -> TEnemyPos a (blid b) (bpos b) permit
-          -- Don't consider @destroy@, because even if actor dead, it makes
+          -- Don't heed @destroy@, because even if actor dead, it makes
           -- sense to go to last known location to loot or find others.
         _ -> tgt
       affect3 (tgt, mpath) =

@@ -115,9 +115,7 @@ switchLeader fid aidNew mtgtNew = do
   then execFailure aidNew ReqWait{-hack-} NoChangeLvlLeader
   else if actorChanged && autoDun
   then execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
-  else do
-    let leadAtoms = [UpdLeadFaction fid mleader (Just (aidNew, mtgtNew))]
-    mapM_ execUpdAtomic leadAtoms
+  else execUpdAtomic $ UpdLeadFaction fid mleader (Just (aidNew, mtgtNew))
 
 -- * ReqMove
 

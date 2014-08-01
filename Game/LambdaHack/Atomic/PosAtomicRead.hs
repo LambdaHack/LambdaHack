@@ -37,7 +37,7 @@ import Game.LambdaHack.Content.ModeKind as ModeKind
 -- based on the position of the action, etc.
 data PosAtomic =
     PosSight !LevelId ![Point]  -- ^ whomever sees all the positions, notices
-  | PosFidAndSight !FactionId !LevelId ![Point]
+  | PosFidAndSight ![FactionId] !LevelId ![Point]
                                 -- ^ observers and the faction notice
   | PosSmell !LevelId ![Point]  -- ^ whomever smells all the positions, notices
   | PosFid !FactionId           -- ^ only the faction notices
@@ -47,11 +47,7 @@ data PosAtomic =
   | PosNone                     -- ^ never broadcasted, but sent manually
   deriving (Show, Eq)
 
--- | Produce the positions where the action takes place. If a faction
--- is returned, the action is visible only for that faction, if Nothing
--- is returned, it's never visible. Empty list of positions implies
--- the action is visible always.
---
+-- | Produce the positions where the action takes place.
 -- The goal of the mechanics: client should not get significantly
 -- more information by looking at the atomic commands he is able to see
 -- than by looking at the state changes they enact. E.g., @UpdDisplaceActor@
@@ -74,13 +70,25 @@ posUpdAtomic cmd = case cmd of
   UpdSpotItem _ _ _ c -> singleContainer c
   UpdLoseItem _ _ _ c -> singleContainer c
   UpdMoveActor aid fromP toP -> do
-    (lid, _) <- posOfAid aid
-    return $! PosSight lid [fromP, toP]
+    b <- getsState $ getActorBody aid
+    -- Non-projectile actors are never totally isolated from envirnoment;
+    -- they hear, feel air movement, etc.
+    return $! if bproj b
+              then PosSight (blid b) [fromP, toP]
+              else PosFidAndSight [bfid b] (blid b) [fromP, toP]
   UpdWaitActor aid _ -> singleAid aid
   UpdDisplaceActor source target -> do
-    (slid, sp) <- posOfAid source
-    (tlid, tp) <- posOfAid target
-    return $! assert (slid == tlid) $ PosSight slid [sp, tp]
+    sb <- getsState $ getActorBody source
+    tb <- getsState $ getActorBody target
+    let ps = [bpos sb, bpos tb]
+        lid = assert (blid sb == blid tb) $ blid sb
+    return $! if bproj sb && bproj tb
+              then PosSight lid ps
+              else if bproj sb
+              then PosFidAndSight [bfid tb] lid ps
+              else if bproj tb
+              then PosFidAndSight [bfid sb] lid ps
+              else PosFidAndSight [bfid sb, bfid tb] lid ps
   UpdMoveItem _ _ aid _ CSha -> do  -- shared stash is private
     b <- getsState $ getActorBody aid
     return $! PosFidAndSer (Just $ blid b) (bfid b)
@@ -169,12 +177,12 @@ posProjBody :: Monad m => Actor -> m PosAtomic
 posProjBody body = return $!
   if bproj body
   then PosSight (blid body) [bpos body]
-  else PosFidAndSight (bfid body) (blid body) [bpos body]
+  else PosFidAndSight [bfid body] (blid body) [bpos body]
 
 singleFidAndAid :: MonadStateRead m => ActorId -> m PosAtomic
 singleFidAndAid aid = do
   body <- getsState $ getActorBody aid
-  return $! PosFidAndSight (bfid body) (blid body) [bpos body]
+  return $! PosFidAndSight [bfid body] (blid body) [bpos body]
 
 singleAid :: MonadStateRead m => ActorId -> m PosAtomic
 singleAid aid = do
@@ -189,7 +197,7 @@ singleContainer (CActor aid CSha) = do  -- shared stash is private
 singleContainer (CActor aid _) = do
   (lid, p) <- posOfAid aid
   return $! PosSight lid [p]
-singleContainer (CTrunk fid lid p) = return $! PosFidAndSight fid lid [p]
+singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 
 -- | Determines if a command resets FOV.
 --
@@ -232,16 +240,13 @@ resetsFovCmdAtomic cmd = case cmd of
 breakUpdAtomic :: MonadStateRead m => UpdAtomic -> m [UpdAtomic]
 breakUpdAtomic cmd = case cmd of
   UpdMoveActor aid _ toP -> do
+    -- We assume other factions don't see leaders and we know the actor's
+    -- faction always sees the atomic command, so the leader doesn't
+    -- need to be updated (or the actor is a projectile, hence not a leader).
     b <- getsState $ getActorBody aid
     ais <- getsState $ getCarriedAssocs b
-    let loseSpot = [ UpdLoseActor aid b ais
-                   , UpdSpotActor aid b {bpos = toP, boldpos = bpos b} ais ]
-    fact <- getsState $ (EM.! bfid b) . sfactionD
-    if fmap fst (gleader fact) == Just aid
-      then return $ [UpdLeadFaction (bfid b) (gleader fact) Nothing]
-                    ++ loseSpot
-                    ++ [UpdLeadFaction (bfid b) Nothing (gleader fact)]
-      else return loseSpot
+    return [ UpdLoseActor aid b ais
+           , UpdSpotActor aid b {bpos = toP, boldpos = bpos b} ais ]
   UpdDisplaceActor source target -> do
     sb <- getsState $ getActorBody source
     sais <- getsState $ getCarriedAssocs sb
@@ -300,8 +305,8 @@ seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
 seenAtomicCli knowEvents fid per posAtomic =
   case posAtomic of
     PosSight _ ps -> all (`ES.member` totalVisible per) ps || knowEvents
-    PosFidAndSight fid2 _ ps ->
-      fid == fid2 || all (`ES.member` totalVisible per) ps || knowEvents
+    PosFidAndSight fids _ ps ->
+      fid `elem` fids || all (`ES.member` totalVisible per) ps || knowEvents
     PosSmell _ ps -> all (`ES.member` smellVisible per) ps || knowEvents
     PosFid fid2 -> fid == fid2
     PosFidAndSer _ fid2 -> fid == fid2

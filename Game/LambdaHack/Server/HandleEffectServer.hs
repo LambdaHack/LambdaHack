@@ -5,6 +5,7 @@ module Game.LambdaHack.Server.HandleEffectServer
   , dropEqpItem, armorHurtBonus
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Bits (xor)
@@ -397,7 +398,7 @@ effectAscend execSfx k source aid = do
         switch2 = do
           -- Make the initiator of the stair move the leader,
           -- to let him clear the stairs for others to follow.
-          let mlead = Just (aid, Nothing)
+          let mlead = Just aid
           -- Move the actor to where the inhabitants were, if any.
           switchLevels2 lid2 pos2 ((aid, b1), ais1) mlead
           -- Verify only one non-projectile actor on every tile.
@@ -437,7 +438,7 @@ effectAscend execSfx k source aid = do
 
 switchLevels1 :: MonadAtomic m
               => ((ActorId, Actor), [(ItemId, Item)])
-              -> m (Maybe (ActorId, Maybe Target))
+              -> m (Maybe ActorId)
 switchLevels1 ((aid, bOld), ais) = do
   let side = bfid bOld
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
@@ -445,7 +446,8 @@ switchLevels1 ((aid, bOld), ais) = do
   mlead <-
     if not (bproj bOld) && isJust mleader then do
       execUpdAtomic $ UpdLeadFaction side mleader Nothing
-      return mleader
+      return $ fst <$> mleader
+        -- outside of a client we don't know the real tgt of aid, hence fst
     else return Nothing
   -- Remove the actor from the old level.
   -- Onlookers see somebody disappear suddenly.
@@ -455,8 +457,7 @@ switchLevels1 ((aid, bOld), ais) = do
 
 switchLevels2 :: MonadAtomic m
               => LevelId -> Point
-              -> ((ActorId, Actor), [(ItemId, Item)])
-              -> Maybe (ActorId, Maybe Target)
+              -> ((ActorId, Actor), [(ItemId, Item)]) -> Maybe ActorId
               -> m ()
 switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
   let lidOld = blid bOld
@@ -478,7 +479,10 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
   execUpdAtomic $ UpdCreateActor aid bNew ais
-  when (isJust mlead) $ execUpdAtomic $ UpdLeadFaction side Nothing mlead
+  case mlead of
+    Nothing -> return ()
+    Just leader ->
+      execUpdAtomic $ UpdLeadFaction side Nothing (Just (leader, Nothing))
 
 -- ** Escape
 
