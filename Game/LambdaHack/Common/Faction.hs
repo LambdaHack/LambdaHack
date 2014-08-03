@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
   , Target(..)
   , isHorrorFact
-  , isAllMoveFact, noRunWithMulti, isAtWar, isAllied
+  , canMoveFact, otherMoveFact, noRunWithMulti, isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff
   ) where
 
@@ -82,22 +82,37 @@ data Target =
 isHorrorFact :: Faction -> Bool
 isHorrorFact fact = fgroup (gplayer fact) == "horror"
 
--- | Tell whether all moving actors of the factions can move at once.
-isAllMoveFact :: Faction -> Bool
-isAllMoveFact fact =
+canMoveFact :: Faction -> Bool -> Bool
+canMoveFact fact isLeader =
   let skillsLeader = fskillsLeader $ gplayer fact
       skillsOther = fskillsOther $ gplayer fact
-  in EM.findWithDefault 0 Ability.AbMove skillsLeader > 0
-     && EM.findWithDefault 0 Ability.AbMove skillsOther > 0
+  in if isLeader
+     then EM.findWithDefault 0 Ability.AbMove skillsLeader > 0
+     else EM.findWithDefault 0 Ability.AbMove skillsOther > 0
 
--- A faction where all actors move or where some of leader change
+otherMoveFact :: Faction -> Bool
+otherMoveFact fact =
+  let skillsOther = fskillsOther $ gplayer fact
+  in EM.findWithDefault 0 Ability.AbMove skillsOther > 0
+
+-- A faction where leader doesn't move (but, e.g., only fires)
+-- or other actors move at once or where some of leader change
 -- is automatic can't run with multiple actors at once. That would be
 -- overpowered or too complex to keep correct.
+--
+-- Note that this doesn't take into account individual actor skills,
+-- so this is overly restrictive and, OTOH, sometimes running will fail
+-- or behave wierdly regardless. But it's simple and easy to understand
+-- by the UI user.
 noRunWithMulti :: Faction -> Bool
-noRunWithMulti fact = isAllMoveFact fact
-                      || case fhasLeader (gplayer fact) of
-                           LeaderMode{..} -> autoDungeon || autoLevel
-                           LeaderNull -> False
+noRunWithMulti fact =
+  let skillsLeader = fskillsLeader $ gplayer fact
+      skillsOther = fskillsOther $ gplayer fact
+  in EM.findWithDefault 0 Ability.AbMove skillsLeader <= 0
+     || EM.findWithDefault 0 Ability.AbMove skillsOther > 0
+     || case fhasLeader (gplayer fact) of
+          LeaderMode{..} -> autoDungeon || autoLevel
+          LeaderNull -> False
 
 -- | Check if factions are at war. Assumes symmetry.
 isAtWar :: Faction -> FactionId -> Bool

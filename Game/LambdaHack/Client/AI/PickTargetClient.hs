@@ -276,23 +276,27 @@ targetStrategy oldLeader aid = do
                         -- leaving the level or dungeon.
                         not (null allFoes)
                         || -- If all explored, escape/block escapes.
-                           (EM.findWithDefault 0 AbTrigger actorSk <= 0
-                            || not (Tile.isEscape cotile t && allExplored))
+                           (not (Tile.isEscape cotile t)
+                            || not allExplored)
                            -- The next case is stairs in closestTriggers.
                            -- We don't determine if the stairs are interesting
                            -- (this changes with time), but allow the actor
-                           -- to reach them and then retarget.
-                           && not (pos /= bpos b && Tile.isStair cotile t)
+                           -- to reach them and then retarget, unless he can't
+                           -- trigger them in the first place.
+                           && (EM.findWithDefault 0 AbTrigger actorSk <= 0
+                               || pos == bpos b
+                               || not (Tile.isStair cotile t))
                            -- The remaining case is furthestKnown. This is
                            -- always an unimportant target, so we forget it
-                           -- if the actor is stuck (could move, but waits).
+                           -- if the actor is stuck (waits, though could move;
+                           -- or has zeroed individual moving skill,
+                           -- but then should change targets often anyway).
                            && let isStuck =
                                     waitedLastTurn b
-                                    && (oldLeader == aid
-                                        || isAllMoveFact fact)
-                              in not (pos /= bpos b
-                                      && not isStuck
-                                      && allExplored)
+                                    && canMoveFact fact (oldLeader == aid)
+                              in pos == bpos b
+                                 || isStuck
+                                 || not allExplored
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, Just updatedPath)
         TVector{} | len > 1 ->

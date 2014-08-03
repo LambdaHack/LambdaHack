@@ -72,10 +72,9 @@ pickActorToMove refreshTarget oldAid = do
   case ours of
     _ | -- Keep the leader: only a leader is allowed to pick another leader.
         mleader /= Just oldAid
-        -- Keep the leader: all can move and none follow the leader.
-        -- TODO: check not accurate,
-        -- instead define 'movesThisTurn' and use elsehwere.
-        || isAllMoveFact fact && isNothing (foverrideAI $ gplayer fact)
+        -- Keep the leader: others can potentially move
+        -- and they are not forced to follow the leader's target.
+        || otherMoveFact fact && isNothing (foverrideAI $ gplayer fact)
         -- Keep the leader: he is on stairs and not stuck
         -- and we don't want to clog stairs or get pushed to another level.
         || not leaderStuck && Tile.isStair cotile t
