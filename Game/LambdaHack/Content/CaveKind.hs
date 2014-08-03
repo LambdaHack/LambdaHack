@@ -1,6 +1,6 @@
 -- | The type of cave layout kinds.
 module Game.LambdaHack.Content.CaveKind
-  ( CaveKind(..), validateCaveKind
+  ( CaveKind(..), validateSingleCaveKind, validateAllCaveKind
   ) where
 
 import Data.Text (Text)
@@ -46,12 +46,10 @@ data CaveKind = CaveKind
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
 -- TODO: check many things, e.g., if all items and actors fit in the dungeon.
--- | Filter a list of kinds, passing through only the incorrect ones, if any.
---
--- Catch caves with not enough space for all the places. Check the size
--- of the cave descriptions to make sure they fit on screen.
-validateCaveKind :: [CaveKind] -> [CaveKind]
-validateCaveKind = filter (\CaveKind{..} ->
+-- | Catch caves with not enough space for all the places. Check the size
+-- of the cave descriptions to make sure they fit on screen. Etc.
+validateSingleCaveKind :: CaveKind -> [Text]
+validateSingleCaveKind CaveKind{..} =
   let (maxGridX, maxGridY) = Dice.maxDiceXY cgrid
       (minMinSizeX, minMinSizeY) = Dice.minDiceXY cminPlaceSize
       (maxMinSizeX, maxMinSizeY) = Dice.maxDiceXY cminPlaceSize
@@ -65,12 +63,19 @@ validateCaveKind = filter (\CaveKind{..} ->
       yborder = if maxGridY == 1 || couterFenceTile /= "basic outer fence"
                 then 2
                 else 0
-  in T.length cname > 25
-     || cxsize < 7
-     || cysize < 7
-     || minMinSizeX < 1
-     || minMinSizeY < 1
-     || minMaxSizeX < maxMinSizeX
-     || minMaxSizeY < maxMinSizeY
-     || maxGridX * (maxMinSizeX + 1) + xborder >= cxsize
-     || maxGridY * (maxMinSizeY + 1) + yborder >= cysize)
+  in [ "cname longer than 25" | T.length cname > 25 ]
+     ++ [ "cxsize < 7" | cxsize < 7 ]
+     ++ [ "cysize < 7" | cysize < 7 ]
+     ++ [ "minMinSizeX < 1" | minMinSizeX < 1 ]
+     ++ [ "minMinSizeY < 1" | minMinSizeY < 1 ]
+     ++ [ "minMaxSizeX < maxMinSizeX" | minMaxSizeX < maxMinSizeX ]
+     ++ [ "minMaxSizeY < maxMinSizeY" | minMaxSizeY < maxMinSizeY ]
+     ++ [ "cxsize too small"
+        | maxGridX * (maxMinSizeX + 1) + xborder >= cxsize ]
+     ++ [ "cysize too small"
+        | maxGridY * (maxMinSizeY + 1) + yborder >= cysize ]
+
+-- TODO: check that names unique.
+-- | Validate all cave kinds.
+validateAllCaveKind :: [CaveKind] -> [Text]
+validateAllCaveKind _ = []

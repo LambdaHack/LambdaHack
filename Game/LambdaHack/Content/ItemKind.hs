@@ -1,6 +1,7 @@
 -- | The type of kinds of weapons, treasure, organs, shrapnel and actors.
 module Game.LambdaHack.Content.ItemKind
-  ( ItemKind(..), toVelocity, toLinger, validateItemKind
+  ( ItemKind(..), toVelocity, toLinger
+  , validateSingleItemKind, validateAllItemKind
   ) where
 
 import Data.Function
@@ -41,15 +42,20 @@ toVelocity n = Effect.ToThrow $ Effect.ThrowMod n 100
 toLinger :: Int -> Effect.Feature
 toLinger n = Effect.ToThrow $ Effect.ThrowMod 100 n
 
--- | Filter a list of kinds, passing through only the incorrect ones, if any.
-validateItemKind :: [ItemKind] -> [ItemKind]
-validateItemKind l =
-  let bad ik = T.length (iname ik) > 23
-               || let sortedRarity = sortBy (comparing fst) (irarity ik)
-                  in sortedRarity /= irarity ik
-                     || nubBy ((==) `on` fst) sortedRarity /= sortedRarity
-                     || case (sortedRarity, reverse sortedRarity) of
-                       ((lowest, _) : _, (highest, _) : _) ->
-                         lowest < 1 || highest > 10
-                       _ -> False
-  in filter bad l
+-- | Catch invalid item kind definitions.
+validateSingleItemKind :: ItemKind -> [Text]
+validateSingleItemKind ik =
+  let sortedRarity = sortBy (comparing fst) (irarity ik)
+  in [ "iname longer than 23" | T.length (iname ik) > 23 ]
+     ++ [ "irarity not sorted" | sortedRarity /= irarity ik ]
+     ++ [ "irarity depth thresholds not unique"
+        | nubBy ((==) `on` fst) sortedRarity /= sortedRarity ]
+     ++ [ "irarity depth not between 1 and 10"
+        | case (sortedRarity, reverse sortedRarity) of
+            ((lowest, _) : _, (highest, _) : _) ->
+              lowest < 1 || highest > 10
+            _ -> False ]
+
+-- | Validate all item kinds.
+validateAllItemKind :: [ItemKind] -> [Text]
+validateAllItemKind _ = []

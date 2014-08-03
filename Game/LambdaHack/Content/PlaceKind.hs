@@ -1,6 +1,7 @@
 -- | The type of kinds of rooms, halls and passages.
 module Game.LambdaHack.Content.PlaceKind
-  ( PlaceKind(..), Cover(..), Fence(..), validatePlaceKind
+  ( PlaceKind(..), Cover(..), Fence(..)
+  , validateSinglePlaceKind, validateAllPlaceKind
   ) where
 
 import Data.Text (Text)
@@ -43,12 +44,17 @@ data Fence =
 -- at the outer tiles of the place).
 -- TODO: Check that all symbols in place plans are present in the legend.
 -- TODO: Add a field with tile group to be used as the legend.
--- | Filter a list of kinds, passing through only the incorrect ones, if any.
---
--- Verify that the top-left corner map is rectangular and not empty.
-validatePlaceKind :: [PlaceKind] -> [PlaceKind]
-validatePlaceKind = filter (\ PlaceKind{..} ->
+-- |  Catch invalid place  kind definitions. In particular, verify that
+-- the top-left corner map is rectangular and not empty.
+validateSinglePlaceKind :: PlaceKind -> [Text]
+validateSinglePlaceKind PlaceKind{..} =
   let dxcorner = case ptopLeft of
         [] -> 0
         l : _ -> T.length l
-  in dxcorner /= 0 && any (/= dxcorner) (map T.length ptopLeft))
+  in [ "top-left corner empty" | dxcorner == 0 ]
+     ++ [ "top-left corner not rectangular"
+        | any (/= dxcorner) (map T.length ptopLeft) ]
+
+-- | Validate all place kinds.
+validateAllPlaceKind :: [PlaceKind] -> [Text]
+validateAllPlaceKind _ = []

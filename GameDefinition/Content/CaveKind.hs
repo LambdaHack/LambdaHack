@@ -13,7 +13,8 @@ cdefs = ContentDef
   { getSymbol = csymbol
   , getName = cname
   , getFreq = cfreq
-  , validate = validateCaveKind
+  , validateSingle = validateSingleCaveKind
+  , validateAll = validateAllCaveKind
   , content =
       [rogue, arena, empty, noise, battle, skirmish, ambush, safari1, safari2, safari3]
   }

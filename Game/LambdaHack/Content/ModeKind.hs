@@ -2,7 +2,7 @@
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
   ( Caves, Roster(..), Player(..), ModeKind(..), LeaderMode(..)
-  , validateModeKind
+  , validateSingleModeKind, validateAllModeKind
   ) where
 
 import Data.Binary
@@ -75,9 +75,12 @@ instance Binary LeaderMode
 -- TODO: assert every Player's playerName's first word's length <= 15
 -- TODO: assert if no UI, both Ai are on and there are some non-spawners;
 -- assert that rosterEnemy and rosterAlly mention only factions in play.
--- | No specific possible problems for the content of this kind, so far,
--- so the validation function always returns the empty list of offending kinds.
--- In particular, for the @Player@, @fSkillsOther@ needn't be a subset
+-- | Catch invalid game mode kind definitions.
+-- Note that for the @Player@, @fSkillsOther@ needn't be a subset
 -- of @fSkillsLeader@.
-validateModeKind :: [ModeKind] -> [ModeKind]
-validateModeKind _ = []
+validateSingleModeKind :: ModeKind -> [Text]
+validateSingleModeKind _ = []
+
+-- | Validate all game mode kinds.
+validateAllModeKind :: [ModeKind] -> [Text]
+validateAllModeKind _ = []

@@ -1,6 +1,6 @@
 -- | The type of game rule sets and assorted game data.
 module Game.LambdaHack.Content.RuleKind
-  ( RuleKind(..), validateRuleKind, FovMode(..)
+  ( RuleKind(..), FovMode(..), validateSingleRuleKind, validateAllRuleKind
   ) where
 
 import Data.Binary
@@ -69,9 +69,14 @@ data FovMode =
 instance Show RuleKind where
   show _ = "The game ruleset specification."
 
--- | Validates the ASCII art format (TODO).
-validateRuleKind :: [RuleKind] -> [RuleKind]
-validateRuleKind _ = []
+-- | Catch invalid rule kind definitions.
+-- In particular, this validates the ASCII art format (TODO).
+validateSingleRuleKind :: RuleKind -> [Text]
+validateSingleRuleKind _ = []
+
+-- | Since we have only one rule kind, the set of rule kinds is always valid.
+validateAllRuleKind :: [RuleKind] -> [Text]
+validateAllRuleKind _ = []
 
 instance Binary FovMode where
   put Shadow      = putWord8 0

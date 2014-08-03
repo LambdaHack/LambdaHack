@@ -77,7 +77,7 @@ data Ops a = Ops
 -- | Create content operations for type @a@ from definition of content
 -- of type @a@.
 createOps :: forall a. Show a => ContentDef a -> Ops a
-createOps ContentDef{getName, getFreq, content, validate} =
+createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
   assert (length content <= fromEnum (maxBound :: Id a)) $
   let kindMap :: EM.EnumMap (Id a) a
       !kindMap = EM.fromDistinctAscList $ zip [Id 0..] content
@@ -91,9 +91,16 @@ createOps ContentDef{getName, getFreq, content, validate} =
       okind i = fromMaybe (assert `failure` "no kind" `twith` (i, kindMap))
                 $ EM.lookup i kindMap
       correct a = not (T.null (getName a)) && all ((> 0) . snd) (getFreq a)
-      offenders = validate content
+      singleOffenders = [ (offences, a)
+                        | a <- content,
+                          let offences = validateSingle a
+                          , not (null offences) ]
+      allOffences = validateAll content
   in assert (allB correct content) $
-     assert (null offenders `blame` "content not valid" `twith` offenders)
+     assert (null singleOffenders `blame` "some content items not valid"
+                                  `twith` singleOffenders) $
+     assert (null allOffences `blame` "the content set not valid"
+                              `twith` (allOffences, content)) $
      -- By this point 'content' can be GCd.
      Ops
        { okind

@@ -12,7 +12,8 @@ cdefs = ContentDef
   { getSymbol = msymbol
   , getName = mname
   , getFreq = mfreq
-  , validate = validateModeKind
+  , validateSingle = validateSingleModeKind
+  , validateAll = validateAllModeKind
   , content =
       [campaign, duel, skirmish, ambush, battle, safari, pvp, coop, defense]
   }
