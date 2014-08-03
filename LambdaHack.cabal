@@ -243,6 +243,7 @@ library
   } else {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
     build-depends:    gtk >= 0.12.1 && < 0.13
+    pkgconfig-depends: gtk+-2.0, x11
   } }
 
   if flag(expose_internal) {
