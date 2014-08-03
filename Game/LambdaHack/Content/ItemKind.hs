@@ -34,7 +34,7 @@ data ItemKind = ItemKind
   , idesc    :: !Text              -- ^ description
   , ikit     :: ![(GroupName, CStore)]  -- ^ accompanying organs and items
   }
-  deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
+  deriving Show  -- No Eq and Ord to make extending it logically sound
 
 toVelocity :: Int -> Effect.Feature
 toVelocity n = Effect.ToThrow $ Effect.ThrowMod n 100
@@ -44,10 +44,10 @@ toLinger n = Effect.ToThrow $ Effect.ThrowMod 100 n
 
 -- | Catch invalid item kind definitions.
 validateSingleItemKind :: ItemKind -> [Text]
-validateSingleItemKind ik =
-  let sortedRarity = sortBy (comparing fst) (irarity ik)
-  in [ "iname longer than 23" | T.length (iname ik) > 23 ]
-     ++ [ "irarity not sorted" | sortedRarity /= irarity ik ]
+validateSingleItemKind ItemKind{..} =
+  let sortedRarity = sortBy (comparing fst) irarity
+  in [ "iname longer than 23" | T.length iname > 23 ]
+     ++ [ "irarity not sorted" | sortedRarity /= irarity ]
      ++ [ "irarity depth thresholds not unique"
         | nubBy ((==) `on` fst) sortedRarity /= sortedRarity ]
      ++ [ "irarity depth not between 1 and 10"
@@ -56,6 +56,10 @@ validateSingleItemKind ik =
               lowest < 1 || highest > 10
             _ -> False ]
 
+-- TODO: if "treasure" stays wired-in, assure there are some treasure items
+-- TODO: check that there is at least one item in each ifreq group
+-- for each level (thought more precisely we'd need to lookup caves and modes
+-- and only check at the levels the caves can appear at).
 -- | Validate all item kinds.
 validateAllItemKind :: [ItemKind] -> [Text]
 validateAllItemKind _ = []

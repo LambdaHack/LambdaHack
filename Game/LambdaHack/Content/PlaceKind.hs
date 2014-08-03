@@ -55,6 +55,6 @@ validateSinglePlaceKind PlaceKind{..} =
      ++ [ "top-left corner not rectangular"
         | any (/= dxcorner) (map T.length ptopLeft) ]
 
--- | Validate all place kinds.
+-- | Validate all place kinds. Currently always valid.
 validateAllPlaceKind :: [PlaceKind] -> [Text]
 validateAllPlaceKind _ = []

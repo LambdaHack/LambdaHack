@@ -112,7 +112,9 @@ cmdDescription cmd = case cmd of
   TriggerTile ts -> triggerDescription ts
   StepToTarget -> "make one step towards the target"
 
-  GameRestart t -> makePhrase ["new", MU.Capitalize $ MU.Text $ tshow t, "game"]
+  GameRestart t ->
+    -- TODO: use mname for the game mode instead of t
+    makePhrase ["new", MU.Capitalize $ MU.Text $ tshow t, "game"]
   GameExit    -> "save and exit"
   GameSave    -> "save game"
   Automate    -> "automate faction (ESC to retake control)"

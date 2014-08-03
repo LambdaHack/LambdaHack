@@ -43,9 +43,8 @@ data CaveKind = CaveKind
   , clegendDarkTile :: !GroupName    -- ^ the dark place plan legend
   , clegendLitTile  :: !GroupName    -- ^ the lit place plan legend
   }
-  deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
+  deriving Show  -- No Eq and Ord to make extending it logically sound
 
--- TODO: check many things, e.g., if all items and actors fit in the dungeon.
 -- | Catch caves with not enough space for all the places. Check the size
 -- of the cave descriptions to make sure they fit on screen. Etc.
 validateSingleCaveKind :: CaveKind -> [Text]
@@ -75,7 +74,11 @@ validateSingleCaveKind CaveKind{..} =
      ++ [ "cysize too small"
         | maxGridY * (maxMinSizeY + 1) + yborder >= cysize ]
 
--- TODO: check that names unique.
 -- | Validate all cave kinds.
+-- Note that names don't have to be unique: we can have several variants
+-- of a cave with a given name.
 validateAllCaveKind :: [CaveKind] -> [Text]
-validateAllCaveKind _ = []
+validateAllCaveKind lk =
+  if any (\k -> maybe False (> 0) $ lookup "campaign random" $ cfreq k) lk
+  then []
+  else ["no cave defined for \"campaign random\""]

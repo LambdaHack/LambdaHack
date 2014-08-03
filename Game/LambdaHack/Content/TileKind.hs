@@ -25,9 +25,9 @@ data TileKind = TileKind
   , tcolor2  :: !Color        -- ^ map color when not in FOV
   , tfeature :: ![F.Feature]  -- ^ properties
   }
-  deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
+  deriving Show  -- No Eq and Ord to make extending it logically sound
 
--- | Validate a single tile kind.
+-- | Validate a single tile kind. Currently always valid.
 validateSingleTileKind :: TileKind -> [Text]
 validateSingleTileKind _ = []
 

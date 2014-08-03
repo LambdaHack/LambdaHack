@@ -8,11 +8,13 @@ module Game.LambdaHack.Content.ModeKind
 import Data.Binary
 import qualified Data.IntMap.Strict as IM
 import Data.Text (Text)
+import qualified Data.Text as T
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU ()
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
 
 -- | Game mode specification.
 data ModeKind = ModeKind
@@ -72,15 +74,39 @@ data LeaderMode =
 
 instance Binary LeaderMode
 
--- TODO: assert every Player's playerName's first word's length <= 15
--- TODO: assert if no UI, both Ai are on and there are some non-spawners;
--- assert that rosterEnemy and rosterAlly mention only factions in play.
+-- TODO: check that fentryLevel matches caves
 -- | Catch invalid game mode kind definitions.
--- Note that for the @Player@, @fSkillsOther@ needn't be a subset
--- of @fSkillsLeader@.
 validateSingleModeKind :: ModeKind -> [Text]
-validateSingleModeKind _ = []
+validateSingleModeKind ModeKind{..} =
+  [ "mname longer than 20" | T.length mname > 20 ]
+  ++ validateSingleRoster mroster
 
--- | Validate all game mode kinds.
+-- TODO: if the diplomacy system stays in, check no teams are at once
+-- in war and alliance, taking into account symmetry (but not transitvity)
+-- | Checks, in particular, that there is at least one faction with fneverEmpty
+-- or the game could get stuck when the dungeon is devoid of actors
+validateSingleRoster :: Roster -> [Text]
+validateSingleRoster Roster{..} =
+  [ "no player keeps the dungeon alive" | all (not . fneverEmpty) rosterList ]
+  ++ concatMap validateSinglePlayer rosterList
+  ++ let checkPl field pl =
+           [ pl <+> "is not a player name in" <+> field
+           | all ((/= pl) . fname) rosterList ]
+         checkDipl field (pl1, pl2) =
+           [ "self-diplomacy in" <+> field | pl1 == pl2 ]
+           ++ checkPl field pl1
+           ++ checkPl field pl2
+     in concatMap (checkDipl "rosterEnemy") rosterEnemy
+        ++ concatMap (checkDipl "rosterAlly") rosterAlly
+
+-- Note that @fSkillsOther@ needn't be a subset of @fSkillsLeader@.
+validateSinglePlayer :: Player -> [Text]
+validateSinglePlayer Player{..} =
+  [ "fname empty:" <+> fname | T.null fname ]
+  ++ [ "first word of fname longer than 15:" <+> fname
+     | T.length (head $ T.words fname) > 15 ]
+  ++ [ "neither AI nor UI:" <+> fname | not fisAI && not fhasUI ]
+
+-- | Validate all game mode kinds. Currently always valid.
 validateAllModeKind :: [ModeKind] -> [Text]
 validateAllModeKind _ = []
