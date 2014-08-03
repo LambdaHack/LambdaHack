@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.File
   ) where
 
 import qualified Codec.Compression.Zlib as Z
-import qualified Control.Exception as Ex hiding (handle)
+import qualified Control.Exception as Ex
 import Control.Monad
 import Data.Binary
 import qualified Data.ByteString.Lazy as LBS
@@ -56,14 +56,17 @@ strictDecodeEOF f = do
     then return $! a
     else error $ "Fatal error: corrupted file " ++ f
 
--- | Try to create a directory, if it doesn't exist. Terminate the program
--- with an exception if the directory does not exist, but can't be created.
+-- | Try to create a directory, if it doesn't exist. We catch exceptions
+-- in case many clients try to do the same thing at the same time.
 tryCreateDir :: FilePath -> IO ()
 tryCreateDir dir = do
   dirExists <- doesDirectoryExist dir
-  unless dirExists $ createDirectory dir
+  unless dirExists $
+    Ex.handle (\(_ :: Ex.IOException) -> return ())
+              (createDirectory dir)
 
--- | Try to copy over data files, if not already there.
+-- | Try to copy over data files, if not already there. We catch exceptions
+-- in case many clients try to do the same thing at the same time.
 tryCopyDataFiles :: FilePath
                  -> (FilePath -> IO FilePath)
                  -> [(FilePath, FilePath)]
@@ -74,7 +77,9 @@ tryCopyDataFiles dataDir pathsDataFile files =
         bIn <- doesFileExist pathsDataIn
         let pathsDataOut = dataDir </> fout
         bOut <- doesFileExist pathsDataOut
-        when (not bOut && bIn) $ copyFile pathsDataIn pathsDataOut
+        when (not bOut && bIn) $
+          Ex.handle (\(_ :: Ex.IOException) -> return ())
+                    (copyFile pathsDataIn pathsDataOut)
   in mapM_ cpFile files
 
 -- | Personal data directory for the game. Depends on the OS and the game,
