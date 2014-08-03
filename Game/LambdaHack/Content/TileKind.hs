@@ -13,6 +13,7 @@ import Data.Text (Text)
 import Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
 
 -- | The type of kinds of terrain tiles. See @Tile.hs@ for explanation
 -- of the absence of a corresponding type @Tile@ that would hold
@@ -27,12 +28,14 @@ data TileKind = TileKind
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
 
--- | Validate a single tile kind. Currently always valid.
+-- TODO: (spans multiple contents) check that all posible solid place
+-- fences have hidden counterparts.
+-- | Validate a single tile kind.
 validateSingleTileKind :: TileKind -> [Text]
-validateSingleTileKind _ = []
+validateSingleTileKind TileKind{..} =
+  [ "suspect tile is walkable" | F.Walkable `elem` tfeature
+                                 && F.Suspect `elem` tfeature ]
 
--- TODO: Make sure only solid tiles have Suspect.
--- TODO: check that all posible solid place fences have hidden counterparts.
 -- TODO: verify that OpenTo, CloseTo and ChangeTo are assigned as specified.
 -- | Validate all tile kinds.
 --
@@ -59,7 +62,7 @@ validateAllTileKind lt =
       confusions f = filter namesUnequal $ M.elems $ mapVis f
   in case confusions tcolor ++ confusions tcolor2 of
     [] -> []
-    _ : _ -> ["tile confusions detected"]  -- TODO; details
+    cfs -> ["tile confusions detected:" <+> tshow cfs]
 
 -- | Features of tiles that differentiate them substantially from one another.
 -- By tile content validation condition, this means the player

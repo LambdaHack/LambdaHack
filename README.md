@@ -1,4 +1,4 @@
-LambdaHack [![Build Status](https://secure.travis-ci.org/LambdaHack/LambdaHack.png)](http://travis-ci.org/LambdaHack/LambdaHack)[![Build Status](https://drone.io/github.com/LambdaHack/LambdaHack/status.png)](https://drone.io/github.com/LambdaHack/LambdaHack/latest)
+LambdaHack [![Build Status](https://travis-ci.org/LambdaHack/LambdaHack.svg?branch=master)](https://travis-ci.org/LambdaHack/LambdaHack)[![Build Status](https://drone.io/github.com/LambdaHack/LambdaHack/status.png)](https://drone.io/github.com/LambdaHack/LambdaHack/latest)
 ==========
 
 This is an alpha release of LambdaHack, a [Haskell] [1] game engine

@@ -8,17 +8,20 @@ module Game.LambdaHack.Common.Misc
   , Container(..), CStore(..)
     -- * Assorted
   , normalLevelBound, divUp, GroupName, toGroupName, Freqs, breturn
-  , serverSaveName
+  , serverSaveName, Rarity, validateRarity
   ) where
 
 import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Function
 import Data.Functor
 import Data.Hashable
 import qualified Data.HashMap.Strict as HM
 import Data.Key
+import Data.List
+import Data.Ord
 import Data.String (IsString (..))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -59,6 +62,21 @@ toGroupName = GroupName
 -- in the first component of a pair, the second component of a pair shows
 -- how common the kind is within the group.
 type Freqs = [(GroupName, Int)]
+
+-- | Rarity on given depths.
+type Rarity = [(Int, Int)]
+
+validateRarity :: Rarity -> [Text]
+validateRarity rarity =
+  let sortedRarity = sortBy (comparing fst) rarity
+  in [ "rarity not sorted" | sortedRarity /= rarity ]
+     ++ [ "rarity depth thresholds not unique"
+        | nubBy ((==) `on` fst) sortedRarity /= sortedRarity ]
+     ++ [ "rarity depth not between 1 and 10"
+        | case (sortedRarity, reverse sortedRarity) of
+            ((lowest, _) : _, (highest, _) : _) ->
+              lowest < 1 || highest > 10
+            _ -> False ]
 
 -- | @breturn b a = [a | b]@
 breturn :: MonadPlus m => Bool -> a -> m a

@@ -74,21 +74,21 @@ data LeaderMode =
 
 instance Binary LeaderMode
 
--- TODO: check that fentryLevel matches caves
+-- TODO: (spans multiple contents) Check that caves with the given groups exist.
 -- | Catch invalid game mode kind definitions.
 validateSingleModeKind :: ModeKind -> [Text]
 validateSingleModeKind ModeKind{..} =
   [ "mname longer than 20" | T.length mname > 20 ]
-  ++ validateSingleRoster mroster
+  ++ validateSingleRoster mcaves mroster
 
 -- TODO: if the diplomacy system stays in, check no teams are at once
 -- in war and alliance, taking into account symmetry (but not transitvity)
 -- | Checks, in particular, that there is at least one faction with fneverEmpty
 -- or the game could get stuck when the dungeon is devoid of actors
-validateSingleRoster :: Roster -> [Text]
-validateSingleRoster Roster{..} =
+validateSingleRoster :: Caves -> Roster -> [Text]
+validateSingleRoster caves Roster{..} =
   [ "no player keeps the dungeon alive" | all (not . fneverEmpty) rosterList ]
-  ++ concatMap validateSinglePlayer rosterList
+  ++ concatMap (validateSinglePlayer caves) rosterList
   ++ let checkPl field pl =
            [ pl <+> "is not a player name in" <+> field
            | all ((/= pl) . fname) rosterList ]
@@ -100,12 +100,14 @@ validateSingleRoster Roster{..} =
         ++ concatMap (checkDipl "rosterAlly") rosterAlly
 
 -- Note that @fSkillsOther@ needn't be a subset of @fSkillsLeader@.
-validateSinglePlayer :: Player -> [Text]
-validateSinglePlayer Player{..} =
+validateSinglePlayer :: Caves -> Player -> [Text]
+validateSinglePlayer caves Player{..} =
   [ "fname empty:" <+> fname | T.null fname ]
   ++ [ "first word of fname longer than 15:" <+> fname
      | T.length (head $ T.words fname) > 15 ]
   ++ [ "neither AI nor UI:" <+> fname | not fisAI && not fhasUI ]
+  ++ [ "fentryLevel not among caves:" <+> fname
+     | fentryLevel `notElem` IM.keys caves ]
 
 -- | Validate all game mode kinds. Currently always valid.
 validateAllModeKind :: [ModeKind] -> [Text]

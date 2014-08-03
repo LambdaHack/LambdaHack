@@ -4,9 +4,6 @@ module Game.LambdaHack.Content.ItemKind
   , validateSingleItemKind, validateAllItemKind
   ) where
 
-import Data.Function
-import Data.List
-import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -23,7 +20,7 @@ data ItemKind = ItemKind
   , ifreq    :: !Freqs             -- ^ frequency within groups
   , iflavour :: ![Flavour]         -- ^ possible flavours
   , icount   :: !Dice.Dice         -- ^ created in that quantity
-  , irarity  :: ![(Int, Int)]      -- ^ rarity on given depths
+  , irarity  :: !Rarity            -- ^ rarity on given depths
   , iverbHit :: !MU.Part           -- ^ the verb for applying and melee
   , iweight  :: !Int               -- ^ weight in grams
   , iaspects :: ![Effect.Aspect Dice.Dice]
@@ -45,21 +42,14 @@ toLinger n = Effect.ToThrow $ Effect.ThrowMod 100 n
 -- | Catch invalid item kind definitions.
 validateSingleItemKind :: ItemKind -> [Text]
 validateSingleItemKind ItemKind{..} =
-  let sortedRarity = sortBy (comparing fst) irarity
-  in [ "iname longer than 23" | T.length iname > 23 ]
-     ++ [ "irarity not sorted" | sortedRarity /= irarity ]
-     ++ [ "irarity depth thresholds not unique"
-        | nubBy ((==) `on` fst) sortedRarity /= sortedRarity ]
-     ++ [ "irarity depth not between 1 and 10"
-        | case (sortedRarity, reverse sortedRarity) of
-            ((lowest, _) : _, (highest, _) : _) ->
-              lowest < 1 || highest > 10
-            _ -> False ]
+  [ "iname longer than 23" | T.length iname > 23 ]
+  ++ validateRarity irarity
 
 -- TODO: if "treasure" stays wired-in, assure there are some treasure items
--- TODO: check that there is at least one item in each ifreq group
--- for each level (thought more precisely we'd need to lookup caves and modes
--- and only check at the levels the caves can appear at).
+-- TODO: (spans multiple contents) check that there is at least one item
+-- in each ifreq group for each level (thought more precisely we'd need
+-- to lookup caves and modes and only check at the levels the caves
+-- can appear at).
 -- | Validate all item kinds.
 validateAllItemKind :: [ItemKind] -> [Text]
 validateAllItemKind _ = []

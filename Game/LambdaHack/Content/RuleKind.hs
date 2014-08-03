@@ -53,7 +53,7 @@ data RuleKind = RuleKind
   , rscoresFile     :: !FilePath  -- ^ name of the scores file
   , rsavePrefix     :: !String    -- ^ name of the savefile prefix
   , rsharedStash    :: !Bool      -- ^ whether shared stashes are available
-  , rnearby         :: !Int       -- ^ which distance between actors is 'nearby'
+  , rnearby         :: !Int       -- ^ what distance between actors is 'nearby'
   }
 
 -- | Field Of View scanning mode.

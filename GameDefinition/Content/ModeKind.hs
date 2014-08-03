@@ -113,8 +113,10 @@ rosterCampaign = Roster
 
 rosterDuel = Roster
   { rosterList = [ playerHero { fname = "White Recursive"
+                              , fentryLevel = -3
                               , finitialActors = 1 }
                  , playerAntiHero { fname = "Red Iterative"
+                                  , fentryLevel = -3
                                   , finitialActors = 1 }
                  , playerHorror ]
   , rosterEnemy = [ ("White Recursive", "Red Iterative")
@@ -123,26 +125,32 @@ rosterDuel = Roster
   , rosterAlly = [] }
 
 rosterSkirmish = rosterDuel
-  { rosterList = [ playerHero {fname = "White Haskell"}
-                 , playerAntiHero {fname = "Purple Agda"}
+  { rosterList = [ playerHero { fname = "White Haskell"
+                              , fentryLevel = -3 }
+                 , playerAntiHero { fname = "Purple Agda"
+                                  , fentryLevel = -3 }
                  , playerHorror ]
   , rosterEnemy = [ ("White Haskell", "Purple Agda")
                   , ("White Haskell", "Horror Den")
                   , ("Purple Agda", "Horror Den") ] }
 
 rosterAmbush = rosterDuel
-  { rosterList = [ playerHero {fname = "Yellow Idris"}
-                 , playerAntiHero {fname = "Blue Epigram"}
-                 , playerHorror ]
+  { rosterList = [ playerHero { fname = "Yellow Idris"
+                              , fentryLevel = -5 }
+                 , playerAntiHero { fname = "Blue Epigram"
+                                  , fentryLevel = -5 }
+                 , playerHorror {fentryLevel = -5} ]
   , rosterEnemy = [ ("Yellow Idris", "Blue Epigram")
                   , ("Yellow Idris", "Horror Den")
                   , ("Blue Epigram", "Horror Den") ] }
 
 rosterBattle = Roster
-  { rosterList = [ playerHero {finitialActors = 5}
+  { rosterList = [ playerHero { finitialActors = 5
+                              , fentryLevel = -3 }
                  , playerMonster { finitialActors = 15
                                  , fneverEmpty = True }
                  , playerAnimal { finitialActors = 10
+                                , fentryLevel = -3
                                 , fneverEmpty = True } ]
   , rosterEnemy = [ ("Adventurer Party", "Monster Hive")
                   , ("Adventurer Party", "Animal Kingdom") ]
@@ -178,8 +186,10 @@ rosterSafari = Roster
                   , "Animal Exquisite Herds and Packs" )] }
 
 rosterPvP = Roster
-  { rosterList = [ playerHero {fname = "Red"}
-                 , playerHero {fname = "Blue"}
+  { rosterList = [ playerHero { fname = "Red"
+                              , fentryLevel = -3 }
+                 , playerHero { fname = "Blue"
+                              , fentryLevel = -3 }
                  , playerHorror ]
   , rosterEnemy = [ ("Red", "Blue")
                   , ("Red", "Horror Den")

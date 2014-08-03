@@ -14,7 +14,7 @@ data PlaceKind = PlaceKind
   { psymbol   :: !Char          -- ^ a symbol
   , pname     :: !Text          -- ^ short description
   , pfreq     :: !Freqs         -- ^ frequency within groups
-  , prarity   :: ![(Int, Int)]  -- ^ rarity on given depths
+  , prarity   :: !Rarity        -- ^ rarity on given depths
   , pcover    :: !Cover         -- ^ how to fill whole place based on the corner
   , pfence    :: !Fence         -- ^ whether to fence place with solid border
   , ptopLeft  :: ![Text]        -- ^ plan of the top-left corner of the place
@@ -42,9 +42,9 @@ data Fence =
 -- that is at least 4 tiles distant from the edges, if the place is big enough,
 -- (unless the place has FNone fence, in which case the entrance is
 -- at the outer tiles of the place).
--- TODO: Check that all symbols in place plans are present in the legend.
--- TODO: Add a field with tile group to be used as the legend.
--- |  Catch invalid place  kind definitions. In particular, verify that
+-- TODO: (spans multiple contents) Check that all symbols in place plans
+-- are present in the legend.
+-- | Catch invalid place kind definitions. In particular, verify that
 -- the top-left corner map is rectangular and not empty.
 validateSinglePlaceKind :: PlaceKind -> [Text]
 validateSinglePlaceKind PlaceKind{..} =
@@ -54,6 +54,7 @@ validateSinglePlaceKind PlaceKind{..} =
   in [ "top-left corner empty" | dxcorner == 0 ]
      ++ [ "top-left corner not rectangular"
         | any (/= dxcorner) (map T.length ptopLeft) ]
+     ++ validateRarity prarity
 
 -- | Validate all place kinds. Currently always valid.
 validateAllPlaceKind :: [PlaceKind] -> [Text]
