@@ -81,9 +81,9 @@ targetStrategy oldLeader aid = do
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   dungeon <- getsState sdungeon
   itemD <- getsState sitemD
-  -- TODO: we assume the actor eventually becomes a leader (or has the same
+  -- We assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
-  actorSk <- actorSkillsClient aid (Just aid)
+  actorSk <- maxActorSkillsClient aid
   condCanProject <- condCanProjectM aid
   condMeleeBad <- condMeleeBadM aid
   condHpTooLow <- condHpTooLowM aid

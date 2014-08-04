@@ -97,8 +97,12 @@ computeAnythingBFS :: MonadClient m
 computeAnythingBFS fAnything aid = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   b <- getsState $ getActorBody aid
-  mleader <- getsClient _sleader
-  actorSk <- actorSkillsClient aid mleader  -- TODO: reset BFS at leader change?
+  -- We assume the actor eventually becomes a leader (or has the same
+  -- set of abilities as the leader, anyway). Otherwise we'd have
+  -- to reset BFS after leader changes, but it would still lead to
+  -- wasted movement if, e.g., non-leaders move but only leaders open doors
+  -- and leader change is very rare.
+  actorSk <- maxActorSkillsClient aid
   lvl <- getLevel $ blid b
   -- We treat doors as an open tile and don't add an extra step for opening
   -- the doors, because other actors open and use them, too,

@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, moveStores, deduceQuits, deduceKilled, electLeader
   , addActor, addActorIid, projectFail, pickWeaponServer, sumOrganEqpServer
-  , actorSkillsServer
+  , actorSkillsServer, maxActorSkillsServer
   ) where
 
 import Control.Applicative
@@ -413,3 +413,11 @@ actorSkillsServer :: MonadServer m
 actorSkillsServer aid mleader = do
   activeItems <- activeItemsServer aid
   getsState $ actorSkills aid mleader activeItems
+
+maxActorSkillsServer :: MonadServer m
+                     => ActorId -> m Ability.Skills
+maxActorSkillsServer aid = do
+  activeItems <- activeItemsServer aid
+  skOther <- getsState $ actorSkills aid Nothing activeItems
+  skLeader <- getsState $ actorSkills aid (Just aid) activeItems
+  return $! Ability.maxSkills skOther skLeader

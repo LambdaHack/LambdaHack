@@ -130,7 +130,8 @@ rollSpawnPos Kind.COps{cotile} visible
 dominateFidSfx :: (MonadAtomic m, MonadServer m)
                => FactionId -> ActorId -> m Bool
 dominateFidSfx fid target = do
-  actorSk <- actorSkillsServer target (Just target)
+  -- Actors that never ever move can't be dominated
+  actorSk <- maxActorSkillsServer target
   let canMove = EM.findWithDefault 0 Ability.AbMove actorSk > 0
   if canMove
     then do
