@@ -299,14 +299,14 @@ actorSkills aid mleader activeItems s =
   in itemSkills `Ability.addSkills` factionSkills
 
 -- Check whether an actor can displace an enemy. We assume they are adjacent.
-dispEnemy :: ActorId -> ActorId -> [ItemFull] -> State -> Bool
-dispEnemy source target activeItems s =
+dispEnemy :: ActorId -> Maybe ActorId -> ActorId -> [ItemFull] -> State -> Bool
+dispEnemy source mleader target activeItems s =
   let hasSupport b =
         let fact = (EM.! bfid b) . sfactionD $ s
             friendlyFid fid = fid == bfid b || isAllied fact fid
             sup = actorRegularList friendlyFid (blid b) s
         in any (adjacent (bpos b) . bpos) sup
-      actorSk = actorSkills target (Just target) activeItems s
+      actorSk = actorSkills target mleader activeItems s
       sb = getActorBody source s
       tb = getActorBody target s
   in bproj tb

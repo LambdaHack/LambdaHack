@@ -632,6 +632,7 @@ displaceFoe aid = do
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   fact <- getsState $ (EM.! bfid b) . sfactionD
+  mleader <- getsClient _sleader
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
@@ -643,7 +644,7 @@ displaceFoe aid = do
       nFrHere = nFriends b + 1
       qualifyActor (aid2, body2) = do
         activeItems <- activeItemsClient aid2
-        dEnemy <- getsState $ dispEnemy aid aid2 activeItems
+        dEnemy <- getsState $ dispEnemy aid mleader aid2 activeItems
         let nFr = nFriends body2
         return $! if displaceable body2 && dEnemy && nFr < nFrHere
           then Just (nFr * nFr, bpos body2 `vectorToFrom` bpos b)
@@ -688,7 +689,7 @@ displaceTowards aid source target = do
           Nothing -> do
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
             activeItems <- activeItemsClient aid2
-            dEnemy <- getsState $ dispEnemy aid aid2 activeItems
+            dEnemy <- getsState $ dispEnemy aid mleader aid2 activeItems
             if not (isAtWar tfact (bfid b)) || dEnemy then
               return $! returN "displace other" $ target `vectorToFrom` source
             else return reject  -- DisplaceDying, DisplaceSupported
@@ -756,6 +757,7 @@ moveOrRunAid run source dir = do
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
+  mleader <- getsClient _sleader
   -- We start by checking actors at the the target position,
   -- which gives a partial information (actors can be invisible),
   -- as opposed to accessibility (and items) which are always accurate
@@ -766,7 +768,7 @@ moveOrRunAid run source dir = do
       -- @target@ can be a foe, as well as a friend.
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
       activeItems <- activeItemsClient target
-      dEnemy <- getsState $ dispEnemy source target activeItems
+      dEnemy <- getsState $ dispEnemy source mleader target activeItems
       if boldpos sb /= tpos -- avoid trivial Displace loops
          && accessible cops lvl spos tpos -- DisplaceAccess
          && (not (isAtWar tfact (bfid sb))

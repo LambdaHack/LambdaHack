@@ -235,6 +235,7 @@ reqDisplace source target = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
+  sfact <- getsState $ (EM.! bfid sb) . sfactionD
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   let spos = bpos sb
       tpos = bpos tb
@@ -242,7 +243,8 @@ reqDisplace source target = do
       atWar = isAtWar tfact (bfid sb)
       req = ReqDisplace target
   activeItems <- activeItemsServer target
-  dEnemy <- getsState $ dispEnemy source target activeItems
+  dEnemy <-
+    getsState $ dispEnemy source (fst <$> gleader sfact) target activeItems
   if not adj then execFailure source req DisplaceDistant
   else if atWar && not dEnemy
   then do

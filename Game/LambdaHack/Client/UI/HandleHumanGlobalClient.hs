@@ -165,7 +165,7 @@ displaceAid target = do
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   activeItems <- activeItemsClient target
-  disp <- getsState $ dispEnemy leader target activeItems
+  disp <- getsState $ dispEnemy leader (Just leader) target activeItems
   let spos = bpos sb
       tpos = bpos tb
       adj = checkAdjacent sb tb
