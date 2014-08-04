@@ -241,9 +241,15 @@ library
     build-depends:    vty >= 4.7.0.6 && < 5
     cpp-options:      -DVTY
   } else {
-    other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
-    build-depends:    gtk >= 0.12.1 && < 0.14
-    pkgconfig-depends: gtk+-2.0, x11
+    if impl(ghc > 7.8) {
+      other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
+      build-depends:    gtk >= 0.12.1 && < 0.14
+      pkgconfig-depends: gtk+-2.0, x11
+    } else {
+      other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
+      build-depends:    gtk >= 0.12.1 && < 0.13
+      pkgconfig-depends: gtk+-2.0, x11
+    }
   } }
 
   if flag(expose_internal) {
