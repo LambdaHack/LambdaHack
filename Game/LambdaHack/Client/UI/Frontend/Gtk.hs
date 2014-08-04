@@ -1,5 +1,6 @@
--- | Text frontend based on Gtk.
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
+-- | Text frontend based on Gtk.
 module Game.LambdaHack.Client.UI.Frontend.Gtk
   ( -- * Session data type for the frontend
     FrontendSession(sescMVar)
@@ -20,6 +21,8 @@ import Data.IORef
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.String (IsString (..))
+import qualified Data.Text as T
 import Graphics.UI.Gtk hiding (Point)
 import System.Time
 
@@ -130,7 +133,11 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   sview `on` keyPressEvent $ do
     n <- eventKeyName
     mods <- eventModifier
+#if MIN_VERSION_gtk(0,13,0)
+    let !key = K.keyTranslate $ T.unpack n
+#else
     let !key = K.keyTranslate n
+#endif
         !modifier = modifierTranslate mods
     liftIO $ do
       unless (deadKey n) $ do
@@ -149,15 +156,15 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
     but <- eventButton
     liftIO $ case but of
       RightButton -> do
-        fsd <- fontSelectionDialogNew "Choose font"
+        fsd <- fontSelectionDialogNew ("Choose font" :: String)
         cf  <- readIORef currentfont  -- TODO: "Terminus,Monospace" fails
         fds <- fontDescriptionToString cf
-        fontSelectionDialogSetFontName fsd fds
-        fontSelectionDialogSetPreviewText fsd "eee...@.##+##"
+        fontSelectionDialogSetFontName fsd (fds :: String)
+        fontSelectionDialogSetPreviewText fsd ("eee...@.##+##" :: String)
         resp <- dialogRun fsd
         when (resp == ResponseOk) $ do
           fn <- fontSelectionDialogGetFontName fsd
-          case fn of
+          case fn :: Maybe String of
             Just fn' -> do
               fd <- fontDescriptionFromString fn'
               writeIORef currentfont fd
@@ -431,7 +438,7 @@ fpromptGetKey sess@FrontendSession{..}
   return km
 
 -- | Tells a dead key.
-deadKey :: String -> Bool
+deadKey :: (Eq t, IsString t) => t -> Bool
 deadKey x = case x of
   "Shift_L"          -> True
   "Shift_R"          -> True
