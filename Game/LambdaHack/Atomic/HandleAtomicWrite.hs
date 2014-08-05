@@ -317,8 +317,8 @@ updTacticFaction :: MonadStateWrite m => FactionId -> Tactic -> Tactic -> m ()
 updTacticFaction fid toT fromT = do
   let adj fact =
         let player = gplayer fact
-        in assert (foverrideAI player == fromT)
-           $ fact {gplayer = player {foverrideAI = toT}}
+        in assert (ftactic player == fromT)
+           $ fact {gplayer = player {ftactic = toT}}
   updateFaction fid adj
 
 -- | Record a given number (usually just 1, or -1 for undo) of actor kills

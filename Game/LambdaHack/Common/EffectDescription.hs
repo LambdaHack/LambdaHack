@@ -128,6 +128,7 @@ featureToSuff feat =
     Applicable -> ""
     EqpSlot{} -> ""
     Precious -> ""
+    Tactic tactics -> "overrides tactics to" <+> tshow tactics
 
 dropPlus :: Text -> Text
 dropPlus = T.dropWhile (`elem` ['+', '-'])

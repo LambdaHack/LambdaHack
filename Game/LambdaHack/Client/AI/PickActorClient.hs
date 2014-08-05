@@ -45,29 +45,39 @@ pickActorToMove refreshTarget oldAid = do
       t = lvl `at` bpos oldBody
   mleader <- getsClient _sleader
   ours <- getsState $ actorRegularAssocs (== side) arena
-  let pickOld = do
-        case foverrideAI $ gplayer fact of
-          Just () | mleader /= Just oldAid ->
-            -- AI for non-leaders is overriden with follow-the-leader AI.
+  let explore = void $ refreshTarget oldAid (oldAid, oldBody)
+      pickOld = do
+        if mleader == Just oldAid then explore
+        else case ftactic $ gplayer fact of
+          TBlock -> return ()  -- no point refreshing target
+          TFollow ->
             case mleader of
-              Nothing -> return ()
+              -- If no leader at all (forced @TFollow@ tactic on an actor
+              -- from a leaderless faction), fall back to @TExplore@.
+              Nothing -> explore
               Just leader -> do
-                -- Copy over the leader's target, if any, or follow his bpos.
-                tgtLeader <- do
-                  mtgt <- getsClient $ (EM.lookup leader) . stargetD
-                  case mtgt of
-                    Nothing -> return $! TEnemy leader True
-                    Just (tgtLeader, _) -> return tgtLeader
-                modifyClient $ \cli ->
-                  cli { sbfsD = EM.delete oldAid (sbfsD cli)
-                      , seps = seps cli + 773 }  -- randomize paths
-                mpath <- createPath oldAid tgtLeader
-                let tgtMPath = maybe (tgtLeader, Nothing)
-                                     (\(tgt, p) -> (tgt, Just p)) mpath
-                modifyClient $ \cli ->
-                  cli {stargetD = EM.alter (const $ Just tgtMPath)
-                                           oldAid (stargetD cli)}
-          _ -> void $ refreshTarget oldAid (oldAid, oldBody)
+                onLevel <- getsState $ memActor leader arena
+                -- If leader not on this level, fall back to @TExplore@.
+                if not onLevel then explore
+                else do
+                  -- Copy over the leader's target, if any, or follow his bpos.
+                  tgtLeader <- do
+                    mtgt <- getsClient $ (EM.lookup leader) . stargetD
+                    case mtgt of
+                      Nothing -> return $! TEnemy leader True
+                      Just (tgtLeader, _) -> return tgtLeader
+                  modifyClient $ \cli ->
+                    cli { sbfsD = EM.delete oldAid (sbfsD cli)
+                        , seps = seps cli + 773 }  -- randomize paths
+                  mpath <- createPath oldAid tgtLeader
+                  let tgtMPath = maybe (tgtLeader, Nothing)
+                                       (\(tgt, p) -> (tgt, Just p)) mpath
+                  modifyClient $ \cli ->
+                    cli {stargetD = EM.alter (const $ Just tgtMPath)
+                                             oldAid (stargetD cli)}
+          TExplore -> explore
+          TRoam -> explore  -- @TRoam@ is checked again inside @explore@
+          TPatrol -> explore  -- TODO
         return (oldAid, oldBody)
   case ours of
     _ | -- Keep the leader: only a leader is allowed to pick another leader.

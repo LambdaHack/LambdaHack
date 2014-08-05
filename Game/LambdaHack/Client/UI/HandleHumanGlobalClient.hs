@@ -19,6 +19,7 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import Data.Monoid
+import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
@@ -574,10 +575,12 @@ gameSaveHuman = do
 tacticHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 tacticHuman = do
   fid <- getsClient sside
-  fromT <- getsState $ foverrideAI . gplayer . (EM.! fid) . sfactionD
-  let toT = if isNothing fromT then Just () else Nothing
+  fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
+  let toT = if fromT == maxBound then minBound else succ fromT
   go <- displayMore ColorFull
-        $ "Switching tactic to" <+> tshow toT <+> "(clears all targets)."
+        $ "Switching tactic to"
+          <+> T.pack (show toT)  -- tshow eats up parens
+          <> ". (This clears targets.)"
   if not go
     then failWith "Tactic change canceled."
     else return $ Right $ ReqUITactic toT

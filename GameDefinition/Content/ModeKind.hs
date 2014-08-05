@@ -160,8 +160,8 @@ rosterSafari = Roster
   { rosterList = [ playerAntiMonster { fname = "Monster Tourist Office"
                                      , fcanEscape = True
                                      , fneverEmpty = True
-                                     -- Follow-the-leader, as tourists do.
-                                     , foverrideAI = Just ()
+                                     -- Follow-the-guide, as tourists do.
+                                     , ftactic = TFollow
                                      , fentryLevel = -4
                                      , finitialActors = 15
                                      , fhasLeader = LeaderMode False False }

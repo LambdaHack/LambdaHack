@@ -26,6 +26,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of an AI player.
 queryAI :: MonadClient m => ActorId -> m RequestAI
@@ -33,11 +34,15 @@ queryAI oldAid = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let mleader = gleader fact
+      wasLeader = fmap fst mleader == Just oldAid
   (aidToMove, bToMove) <- pickActorToMove refreshTarget oldAid
-  RequestAnyAbility reqAny <- pickAction (aidToMove, bToMove)
+  RequestAnyAbility reqAny <-
+    if ftactic (gplayer fact) == TBlock && not wasLeader
+    then return $! RequestAnyAbility ReqWait
+    else pickAction (aidToMove, bToMove)
   let req = ReqAITimed reqAny
   mtgt2 <- getsClient $ fmap fst . EM.lookup aidToMove . stargetD
-  if fmap fst mleader == Just oldAid && mleader /= Just (aidToMove, mtgt2)
+  if wasLeader && mleader /= Just (aidToMove, mtgt2)
     then return $! ReqAILeader aidToMove mtgt2 req
     else return $! req
 

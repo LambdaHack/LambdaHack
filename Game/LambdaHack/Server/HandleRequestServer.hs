@@ -483,7 +483,7 @@ reqGameSave = do
 
 reqTactic :: (MonadAtomic m, MonadServer m) => FactionId -> Tactic -> m ()
 reqTactic fid toT = do
-  fromT <- getsState $ foverrideAI . gplayer . (EM.! fid) . sfactionD
+  fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
   execUpdAtomic $ UpdTacticFaction fid toT fromT
 
 -- * ReqAutomate

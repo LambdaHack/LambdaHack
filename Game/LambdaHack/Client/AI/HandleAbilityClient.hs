@@ -483,10 +483,10 @@ trigger aid fleeViaStairs = do
       feats = TileKind.tfeature $ okind t
       ben feat = case feat of
         F.Cause (Effect.Ascend k) ->  -- change levels sensibly, in teams
-          let leaderless = fhasLeader (gplayer fact) == LeaderNull
+          let aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
               expBenefit =
-                if leaderless
-                then 100  -- not-exploring faction, switch at will
+                if aimless
+                then 100  -- faction is not exploring, so switch at will
                 else if unexploredCurrent
                 then 0  -- don't leave the level until explored
                 else if unexploredD (signum k) (blid b)
@@ -501,7 +501,8 @@ trigger aid fleeViaStairs = do
           in if boldpos b == bpos b   -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction
              then 0  -- avoid trivial loops (pushing, being pushed, etc.)
-             else let eben = case actorsThere of
+             else let leaderless = fhasLeader (gplayer fact) == LeaderNull
+                      eben = case actorsThere of
                         [] | canSee -> expBenefit
                         _ | leaderless -> 0  -- leaderless clog stairs easily
                         _ -> min 1 expBenefit  -- risk pushing

@@ -15,6 +15,7 @@ import GHC.Generics (Generic)
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Content.ModeKind
 
 -- TODO: document each constructor
 -- | Effects of items. Can be invoked by the item wielder to affect
@@ -80,15 +81,16 @@ data ThrowMod = ThrowMod
 -- | Features of item. Affect only the item in question, not the actor,
 -- and so not additive in any sense.
 data Feature =
-    ChangeTo !GroupName           -- ^ change to this group when altered
-  | Fragile                  -- ^ break even when not hitting an enemy
-  | Durable                  -- ^ don't break even hitting or applying
-  | ToThrow !ThrowMod        -- ^ parameters modifying a throw
-  | Identified               -- ^ the item starts identified
-  | Applicable               -- ^ AI and uI flag: consider applying
-  | EqpSlot !EqpSlot !Text   -- ^ AI and uI flag: goes to inventory
-  | Precious                 -- ^ AI and UI flag: careful, can be precious;
-                             --   don't risk identifying by use
+    ChangeTo !GroupName     -- ^ change to this group when altered
+  | Fragile                 -- ^ break even when not hitting an enemy
+  | Durable                 -- ^ don't break even hitting or applying
+  | ToThrow !ThrowMod       -- ^ parameters modifying a throw
+  | Identified              -- ^ the item starts identified
+  | Applicable              -- ^ AI and uI flag: consider applying
+  | EqpSlot !EqpSlot !Text  -- ^ AI and uI flag: goes to inventory
+  | Precious                -- ^ AI and UI flag: careful, can be precious;
+                            --   don't risk identifying by use
+  | Tactic !Tactic          -- ^ overrides actor's tactic when under AI (TODO)
   deriving (Show, Eq, Ord, Generic)
 
 data EqpSlot =
