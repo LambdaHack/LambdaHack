@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Content.ModeKind
 
 -- TODO: make remove second arg from ReqLeader; this requires a separate
 -- channel for Ping, probably, and then client sends as many commands
@@ -38,6 +39,7 @@ data RequestUI =
   | ReqUIGameRestart !ActorId !GroupName !Int ![(Int, (Text, Text))]
   | ReqUIGameExit !ActorId !Int
   | ReqUIGameSave
+  | ReqUITactic !Tactic
   | ReqUIAutomate
   | ReqUIPong [CmdAtomic]
 

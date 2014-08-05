@@ -73,6 +73,7 @@ handleRequestUI fid cmd = case cmd of
     reqGameRestart aid t d names >> return Nothing
   ReqUIGameExit aid d -> reqGameExit aid d >> return Nothing
   ReqUIGameSave -> reqGameSave >> return Nothing
+  ReqUITactic toT -> reqTactic fid toT >> return Nothing
   ReqUIAutomate -> reqAutomate fid >> return Nothing
   ReqUIPong _ -> return Nothing
 
@@ -477,6 +478,13 @@ reqGameSave :: MonadServer m => m ()
 reqGameSave = do
   modifyServer $ \ser -> ser {swriteSave = True}
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
+
+-- * ReqTactic
+
+reqTactic :: (MonadAtomic m, MonadServer m) => FactionId -> Tactic -> m ()
+reqTactic fid toT = do
+  fromT <- getsState $ foverrideAI . gplayer . (EM.! fid) . sfactionD
+  execUpdAtomic $ UpdTacticFaction fid toT fromT
 
 -- * ReqAutomate
 
