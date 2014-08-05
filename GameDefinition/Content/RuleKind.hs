@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
--- | Game rules and assorted game setup data for LambdaHack.
+-- | Game rules and assorted game setup data.
 module Content.RuleKind ( cdefs ) where
 
 import Language.Haskell.TH.Syntax

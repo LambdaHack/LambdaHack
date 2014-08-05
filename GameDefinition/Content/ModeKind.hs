@@ -1,4 +1,4 @@
--- | The type of kinds of game modes for LambdaHack.
+-- | Game mode definitions.
 module Content.ModeKind ( cdefs ) where
 
 import qualified Data.IntMap.Strict as IM

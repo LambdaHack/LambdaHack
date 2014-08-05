@@ -1,4 +1,4 @@
--- | Definition of basic players for LambdaHack.
+-- | Basic players definitions.
 module Content.ModeKindPlayer
   ( playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal
   , playerHorror

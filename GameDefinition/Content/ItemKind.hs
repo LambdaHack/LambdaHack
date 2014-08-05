@@ -1,4 +1,4 @@
--- | Weapon and treasure definitions.
+-- | Item and treasure definitions.
 module Content.ItemKind ( cdefs ) where
 
 import Data.List

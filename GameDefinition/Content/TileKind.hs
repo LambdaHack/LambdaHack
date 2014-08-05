@@ -1,4 +1,4 @@
--- | Terrain tiles for LambdaHack.
+-- | Terrain tile definitions.
 module Content.TileKind ( cdefs ) where
 
 import Control.Arrow (first)

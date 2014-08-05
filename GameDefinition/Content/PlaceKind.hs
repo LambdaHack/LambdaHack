@@ -1,4 +1,4 @@
--- | Rooms, halls and passages for LambdaHack.
+-- | Room, hall and passage definitions.
 module Content.PlaceKind ( cdefs ) where
 
 import Game.LambdaHack.Common.ContentDef
