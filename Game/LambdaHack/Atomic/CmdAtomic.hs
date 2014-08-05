@@ -37,8 +37,9 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ItemKind as ItemKind
-import Game.LambdaHack.Content.TileKind as TileKind
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.TileKind
 
 data CmdAtomic =
     UpdAtomic !UpdAtomic
@@ -77,6 +78,7 @@ data UpdAtomic =
   | UpdLeadFaction !FactionId !(Maybe (ActorId, Maybe Target))
                               !(Maybe (ActorId, Maybe Target))
   | UpdDiplFaction !FactionId !FactionId !Diplomacy !Diplomacy
+  | UpdTacticFaction !FactionId !Tactic !Tactic
   | UpdAutoFaction !FactionId !Bool
   | UpdRecordKill !ActorId !(Kind.Id ItemKind) !Int
   -- Alter map.
@@ -158,6 +160,7 @@ undoUpdAtomic cmd = case cmd of
   UpdLeadFaction fid source target -> Just $ UpdLeadFaction fid target source
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     Just $ UpdDiplFaction fid1 fid2 toDipl fromDipl
+  UpdTacticFaction fid toT fromT -> Just $ UpdTacticFaction fid fromT toT
   UpdAutoFaction fid st -> Just $ UpdAutoFaction fid (not st)
   UpdRecordKill aid ikind k -> Just $ UpdRecordKill aid ikind (-k)
   UpdAlterTile lid p fromTile toTile ->

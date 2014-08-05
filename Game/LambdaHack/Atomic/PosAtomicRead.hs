@@ -109,6 +109,7 @@ posUpdAtomic cmd = case cmd of
               then PosFidAndSer Nothing fid
               else PosNone
   UpdDiplFaction{} -> return PosAll
+  UpdTacticFaction fid _ _ -> return $! PosFidAndSer Nothing fid
   UpdAutoFaction{} -> return PosAll
   UpdRecordKill aid _ _ -> singleFidAndAid aid
   UpdAlterTile lid p _ _ -> return $! PosSight lid [p]

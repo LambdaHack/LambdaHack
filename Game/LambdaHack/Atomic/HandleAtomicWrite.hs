@@ -67,6 +67,7 @@ handleUpdAtomic cmd = case cmd of
   UpdLeadFaction fid source target -> updLeadFaction fid source target
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     updDiplFaction fid1 fid2 fromDipl toDipl
+  UpdTacticFaction fid toT fromT -> updTacticFaction fid toT fromT
   UpdAutoFaction fid st -> updAutoFaction fid st
   UpdRecordKill aid ikind k -> updRecordKill aid ikind k
   UpdAlterTile lid p fromTile toTile -> updAlterTile lid p fromTile toTile
@@ -310,6 +311,14 @@ updAutoFaction fid st = do
         let player = gplayer fact
         in assert (fisAI player == not st)
            $ fact {gplayer = player {fisAI = st}}
+  updateFaction fid adj
+
+updTacticFaction :: MonadStateWrite m => FactionId -> Tactic -> Tactic -> m ()
+updTacticFaction fid toT fromT = do
+  let adj fact =
+        let player = gplayer fact
+        in assert (foverrideAI player == fromT)
+           $ fact {gplayer = player {foverrideAI = toT}}
   updateFaction fid adj
 
 -- | Record a given number (usually just 1, or -1 for undo) of actor kills

@@ -160,6 +160,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
         showDipl Alliance = "allied"
         showDipl War = "at war"
     msgAdd $ name1 <+> "and" <+> name2 <+> "are now" <+> showDipl toDipl <> "."
+  UpdTacticFaction{} -> skip
   UpdAutoFaction{} -> skip
   UpdRecordKill{} -> skip
   -- Alter map.

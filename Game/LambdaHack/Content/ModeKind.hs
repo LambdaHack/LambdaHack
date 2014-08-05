@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
-  ( Caves, Roster(..), Player(..), ModeKind(..), LeaderMode(..)
+  ( Caves, Roster(..), Player(..), ModeKind(..), Tactic, LeaderMode(..)
   , validateSingleModeKind, validateAllModeKind
   ) where
 
@@ -50,8 +50,9 @@ data Player = Player
   , fneverEmpty    :: !Bool     -- ^ the faction declared killed if no actors
   , fhasNumbers    :: !Bool     -- ^ whether actors have numbers, not symbols
   , fhasGender     :: !Bool     -- ^ whether actors have gender
-  , foverrideAI    :: !(Maybe (){-TODO: only the follow-leader AI for now-})
-                                -- ^ override all member AIs with this one
+  , foverrideAI    :: !Tactic{-TODO: for now, only follow-the-leader AI;
+                                     rename to ftactic-}
+                                -- ^ members behave according to this tactic
   , fentryLevel    :: !Int      -- ^ level where the initial members start
   , finitialActors :: !Int      -- ^ number of initial members
   , fhasLeader     :: !LeaderMode  -- ^ the mode of switching the leader
@@ -62,6 +63,8 @@ data Player = Player
   deriving (Show, Eq, Generic)
 
 instance Binary Player
+
+type Tactic = Maybe ()
 
 data LeaderMode =
     LeaderNull  -- ^ faction has no leader
