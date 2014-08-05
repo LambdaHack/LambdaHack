@@ -89,6 +89,12 @@ playerAnimal = Player
   , fhasUI = False
   }
 
+-- | A special player, for summoned actors that don't belong to any
+-- of the main players of a given game. E.g., animals summoned during
+-- a duel game between two hero players land in the horror faction.
+-- In every game, either all factions for which summoning items exist
+-- should be present or a horror player should be added to host them.
+-- Actors that can be summoned should have "horror" in their @ifreq@ set.
 playerHorror = Player
   { fname = "Horror Den"
   , fgroup = "horror"
