@@ -155,6 +155,7 @@ standardKeys = KeyKind
       , ("CTRL-v", ([CmdAuto], Repeat 1000))
       , ("CTRL-V", ([CmdAuto], Repeat 10))
       , ("apostrophe", ([CmdAuto], Record))
+      , ("CTRL-T", ([CmdAuto], Tactic))
       , ("CTRL-A", ([CmdAuto], Automate))
 
       -- Assorted

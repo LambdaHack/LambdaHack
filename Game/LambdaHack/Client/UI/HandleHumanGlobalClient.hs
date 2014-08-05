@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , stepToTargetHuman
     -- * Commands that never take time
-  , gameRestartHuman, gameExitHuman, gameSaveHuman, automateHuman
+  , gameRestartHuman, gameExitHuman, gameSaveHuman, tacticHuman, automateHuman
   ) where
 
 import Control.Applicative
@@ -562,6 +562,25 @@ gameSaveHuman = do
   -- TODO: do not save to history:
   msgAdd "Saving game backup."
   return ReqUIGameSave
+
+-- * Tactic; does not take time
+
+-- Note that the difference between seek-target and follow-the-leader tactic
+-- can influence even a faction with passive actors. E.g., if a passive actor
+-- has an extra active skill from equipment, he moves every turn.
+-- TODO: set tactic for allied passive factions, too or all allied factions
+-- and perhaps even factions with a leader should follow our leader
+-- and his target, not their leader.
+tacticHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
+tacticHuman = do
+  fid <- getsClient sside
+  fromT <- getsState $ foverrideAI . gplayer . (EM.! fid) . sfactionD
+  let toT = if isNothing fromT then Just () else Nothing
+  go <- displayMore ColorFull
+        $ "Switching tactic to" <+> tshow toT <+> "(clears all targets)."
+  if not go
+    then failWith "Tactic change canceled."
+    else return $ Right $ ReqUITactic toT
 
 -- * Automate; does not take time
 

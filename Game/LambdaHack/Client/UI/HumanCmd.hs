@@ -45,6 +45,7 @@ data HumanCmd =
   | GameRestart !GroupName
   | GameExit
   | GameSave
+  | Tactic
   | Automate
     -- Local.
     -- Below this line, commands do not notify the server.
@@ -117,6 +118,7 @@ cmdDescription cmd = case cmd of
     makePhrase ["new", MU.Capitalize $ MU.Text $ tshow t, "game"]
   GameExit    -> "save and exit"
   GameSave    -> "save game"
+  Tactic      -> "cycle non-leader team members tactic"
   Automate    -> "automate faction (ESC to retake control)"
 
   GameDifficultyCycle -> "cycle difficulty of the next game"

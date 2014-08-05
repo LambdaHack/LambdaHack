@@ -48,6 +48,7 @@ cmdAction cmd = case cmd of
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman
   GameSave -> fmap Right gameSaveHuman
+  Tactic -> tacticHuman
   Automate -> automateHuman
 
   -- Local.
