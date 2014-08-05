@@ -91,14 +91,12 @@ isHorrorFact fact = fgroup (gplayer fact) == "horror"
 
 canMoveFact :: Faction -> Bool -> Bool
 canMoveFact fact isLeader =
-  let skillsLeader = fskillsLeader $ gplayer fact
-      skillsOther = fskillsOther $ gplayer fact
+  let skillsOther = fskillsOther $ gplayer fact
   in if isLeader
-     then EM.findWithDefault 0 Ability.AbMove skillsLeader > 0
+     then True
      else EM.findWithDefault 0 Ability.AbMove skillsOther > 0
 
--- A faction where leader doesn't move (but, e.g., only fires)
--- or other actors move at once or where some of leader change
+-- A faction where other actors move at once or where some of leader change
 -- is automatic can't run with multiple actors at once. That would be
 -- overpowered or too complex to keep correct.
 --
@@ -108,10 +106,8 @@ canMoveFact fact isLeader =
 -- by the UI user.
 noRunWithMulti :: Faction -> Bool
 noRunWithMulti fact =
-  let skillsLeader = fskillsLeader $ gplayer fact
-      skillsOther = fskillsOther $ gplayer fact
-  in EM.findWithDefault 0 Ability.AbMove skillsLeader <= 0
-     || EM.findWithDefault 0 Ability.AbMove skillsOther > 0
+  let skillsOther = fskillsOther $ gplayer fact
+  in EM.findWithDefault 0 Ability.AbMove skillsOther > 0
      || case fhasLeader (gplayer fact) of
           LeaderMode{..} -> autoDungeon || autoLevel
           LeaderNull -> False

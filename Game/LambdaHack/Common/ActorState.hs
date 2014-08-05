@@ -293,7 +293,7 @@ actorSkills aid mleader activeItems s =
   let body = getActorBody aid s
       fact = (EM.! bfid body) . sfactionD $ s
       factionSkills
-        | Just aid == mleader = fskillsLeader $ gplayer fact
+        | Just aid == mleader = Ability.unitSkills
         | otherwise = fskillsOther $ gplayer fact
       itemSkills = sumSkills activeItems
   in itemSkills `Ability.addSkills` factionSkills

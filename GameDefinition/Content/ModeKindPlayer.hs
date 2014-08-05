@@ -1,7 +1,7 @@
 -- | Basic players definitions.
 module Content.ModeKindPlayer
-  ( playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal
-  , playerHorror
+  ( playerHero, playerAntiHero, playerCivilian, playerMonster
+  , playerAntiMonster, playerAnimal, playerHorror
   ) where
 
 import qualified Data.EnumMap.Strict as EM
@@ -14,7 +14,6 @@ playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, pl
 playerHero = Player
   { fname = "Adventurer Party"
   , fgroup = "hero"
-  , fskillsLeader = allSkills
   , fskillsOther  = meleeAdjacent
   , fcanEscape = True
   , fneverEmpty = True
@@ -36,8 +35,7 @@ playerAntiHero = playerHero
 playerCivilian = Player
   { fname = "Civilian Crowd"
   , fgroup = "civilian"
-  , fskillsLeader = allSkills
-  , fskillsOther  = allSkills  -- not coordinated by any leadership
+  , fskillsOther  = unitSkills  -- not coordinated by any leadership
   , fcanEscape = False
   , fneverEmpty = True
   , fhasNumbers = False
@@ -53,8 +51,7 @@ playerCivilian = Player
 playerMonster = Player
   { fname = "Monster Hive"
   , fgroup = "monster"
-  , fskillsLeader = allSkills
-  , fskillsOther  = allSkills
+  , fskillsOther  = unitSkills
   , fcanEscape = False
   , fneverEmpty = False
   , fhasNumbers = False
@@ -75,7 +72,6 @@ playerAntiMonster = playerMonster
 playerAnimal = Player
   { fname = "Animal Kingdom"
   , fgroup = "animal"
-  , fskillsLeader = animalSkills
   , fskillsOther  = animalSkills
   , fcanEscape = False
   , fneverEmpty = False
@@ -98,8 +94,7 @@ playerAnimal = Player
 playerHorror = Player
   { fname = "Horror Den"
   , fgroup = "horror"
-  , fskillsLeader = allSkills
-  , fskillsOther  = allSkills
+  , fskillsOther  = unitSkills
   , fcanEscape = False
   , fneverEmpty = False
   , fhasNumbers = False
@@ -112,7 +107,7 @@ playerHorror = Player
   , fhasUI = False
   }
 
-meleeAdjacent, _meleeAndRanged, animalSkills, allSkills :: Skills
+meleeAdjacent, _meleeAndRanged, animalSkills :: Skills
 
 meleeAdjacent = EM.fromList $ zip [AbWait, AbMelee] [1, 1..]
 
@@ -121,5 +116,3 @@ _meleeAndRanged = EM.fromList $ zip [AbWait, AbMelee, AbProject] [1, 1..]
 
 animalSkills =
   EM.fromList $ zip [AbMove, AbMelee, AbAlter, AbWait, AbTrigger] [1, 1..]
-
-allSkills = unitSkills

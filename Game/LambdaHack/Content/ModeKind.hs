@@ -45,7 +45,6 @@ data Roster = Roster
 data Player = Player
   { fname          :: !Text        -- ^ name of the player
   , fgroup         :: !GroupName   -- ^ name of the monster group to control
-  , fskillsLeader  :: !Skills      -- ^ skills of the currently selected leader
   , fskillsOther   :: !Skills      -- ^ skills of the other actors
   , fcanEscape     :: !Bool        -- ^ the player can escape the dungeon
   , fneverEmpty    :: !Bool        -- ^ the faction declared killed if no actors
