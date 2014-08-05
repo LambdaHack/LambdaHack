@@ -274,6 +274,16 @@ cmdAtomicSemCli cmd = case cmd of
           modifyClient $ \cli ->
             cli {stargetD = EM.alter (const $ (,Nothing) <$> mtgt)
                                      aid (stargetD cli)}
+  UpdAutoFaction{} -> do
+    -- Clear all targets except the leader's.
+    mleader <- getsClient _sleader
+    mtgt <- case mleader of
+      Nothing -> return Nothing
+      Just leader -> getsClient $ EM.lookup leader . stargetD
+    modifyClient $ \cli ->
+      cli { stargetD = case (mtgt, mleader) of
+              (Just tgt, Just leader) -> EM.singleton leader tgt
+              _ -> EM.empty }
   UpdDiscover lid p iid ik seed -> do
     discoverKind lid p iid ik
     discoverSeed lid p iid seed
