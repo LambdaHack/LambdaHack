@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
   , Target(..)
   , isHorrorFact
-  , canMoveFact, otherMoveFact, noRunWithMulti, isAtWar, isAllied
+  , canMoveFact, noRunWithMulti, isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff
   ) where
 
@@ -96,11 +96,6 @@ canMoveFact fact isLeader =
   in if isLeader
      then EM.findWithDefault 0 Ability.AbMove skillsLeader > 0
      else EM.findWithDefault 0 Ability.AbMove skillsOther > 0
-
-otherMoveFact :: Faction -> Bool
-otherMoveFact fact =
-  let skillsOther = fskillsOther $ gplayer fact
-  in EM.findWithDefault 0 Ability.AbMove skillsOther > 0
 
 -- A faction where leader doesn't move (but, e.g., only fires)
 -- or other actors move at once or where some of leader change
