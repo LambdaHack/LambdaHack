@@ -36,7 +36,6 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Content.ModeKind
 
 failMsg :: MonadClientUI m => Msg -> m Slideshow
 failMsg msg = do
@@ -177,9 +176,7 @@ transition psuit tshaSuit tsuitable verb
   let bagLetterSlots = EM.filter (`EM.member` bag) letterSlots
       bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
       suitableLetterSlots = EM.filter (`EM.member` bagSuit) letterSlots
-      (autoDun, autoLvl) = case fhasLeader (gplayer fact) of
-                             LeaderMode{..} -> (autoDungeon, autoLevel)
-                             LeaderNull -> (False, False)
+      (autoDun, autoLvl) = autoDungeonLevel fact
       keyDefs :: [(K.Key, DefItemKey m)]
       keyDefs = filter (defCond . snd)
         [ (K.Char '?', DefItemKey
@@ -336,9 +333,7 @@ memberCycle verbose = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
-  let autoLvl = case fhasLeader (gplayer fact) of
-                  LeaderMode{autoLevel} -> autoLevel
-                  LeaderNull -> False
+  let autoLvl = snd $ autoDungeonLevel fact
   case filter (\(_, b) -> blid b == blid body) hs of
     _ | autoLvl -> failMsg $ showReqFailure NoChangeLvlLeader
     [] -> failMsg "Cannot pick any other member on this level."
@@ -354,9 +349,7 @@ memberBack verbose = do
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
-  let autoDun = case fhasLeader (gplayer fact) of
-                  LeaderMode{autoDungeon} -> autoDungeon
-                  LeaderNull -> False
+  let autoDun = fst $ autoDungeonLevel fact
   case reverse hs of
     _ | autoDun -> failMsg $ showReqFailure NoChangeDunLeader
     [] -> failMsg "No other member in the party."

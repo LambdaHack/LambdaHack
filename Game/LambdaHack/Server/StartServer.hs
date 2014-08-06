@@ -93,6 +93,10 @@ createFactions players = do
         let cmap = mapFromFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
             nameoc = lowercase $ head $ T.words fname
+            fisAI = case fhasLeader of
+              LeaderNull -> True
+              LeaderAI _ -> True
+              LeaderUI _ -> False
             prefix | fisAI = "Autonomous"
                    | otherwise = "Controlled"
             (gcolor, gname) = case M.lookup nameoc cmap of
@@ -150,8 +154,8 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
         modeKind <- fmap (fromMaybe $ assert `failure` smode)
                     $ opick smode (const True)
         let mode = okind modeKind
-            automate p = p {fisAI = True}
-            automatePS ps = ps {rosterList = map automate $ rosterList ps}
+            automatePS ps = ps {rosterList =
+                                  map (automatePlayer True) $ rosterList ps}
             players = if sautomateAll sdebug
                       then automatePS $ mroster mode
                       else mroster mode

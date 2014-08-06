@@ -306,12 +306,10 @@ updDiplFaction fid1 fid2 fromDipl toDipl =
     updateFaction fid2 (adj fid1)
 
 updAutoFaction :: MonadStateWrite m => FactionId -> Bool -> m ()
-updAutoFaction fid st = do
-  let adj fact =
-        let player = gplayer fact
-        in assert (fisAI player == not st)
-           $ fact {gplayer = player {fisAI = st}}
-  updateFaction fid adj
+updAutoFaction fid st =
+  updateFaction fid (\fact ->
+    assert (isAIFact fact == not st)
+    $ fact {gplayer = automatePlayer st (gplayer fact)})
 
 updTacticFaction :: MonadStateWrite m => FactionId -> Tactic -> Tactic -> m ()
 updTacticFaction fid toT fromT = do

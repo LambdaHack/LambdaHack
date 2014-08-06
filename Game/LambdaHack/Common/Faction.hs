@@ -4,7 +4,8 @@ module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
   , Target(..)
   , isHorrorFact
-  , canMoveFact, noRunWithMulti, isAtWar, isAllied
+  , canMoveFact, noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
+  , isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff
   ) where
 
@@ -109,8 +110,29 @@ noRunWithMulti fact =
   let skillsOther = fskillsOther $ gplayer fact
   in EM.findWithDefault 0 Ability.AbMove skillsOther > 0
      || case fhasLeader (gplayer fact) of
-          LeaderMode{..} -> autoDungeon || autoLevel
-          LeaderNull -> False
+          LeaderNull -> True
+          LeaderAI AutoLeader{} -> True
+          LeaderUI AutoLeader{..} -> autoDungeon || autoLevel
+
+isAIFact :: Faction -> Bool
+isAIFact fact =
+  case fhasLeader (gplayer fact) of
+    LeaderNull -> True
+    LeaderAI _ -> True
+    LeaderUI _ -> False
+
+autoDungeonLevel :: Faction -> (Bool, Bool)
+autoDungeonLevel fact = case fhasLeader (gplayer fact) of
+                          LeaderNull -> (False, False)
+                          LeaderAI AutoLeader{..} -> (autoDungeon, autoLevel)
+                          LeaderUI AutoLeader{..} -> (autoDungeon, autoLevel)
+
+automatePlayer :: Bool -> Player -> Player
+automatePlayer st pl =
+  let autoLeader False Player{fhasLeader=LeaderAI auto} = LeaderUI auto
+      autoLeader True Player{fhasLeader=LeaderUI auto} = LeaderAI auto
+      autoLeader _ Player{fhasLeader} = fhasLeader
+  in pl {fhasLeader = autoLeader st pl}
 
 -- | Check if factions are at war. Assumes symmetry.
 isAtWar :: Faction -> FactionId -> Bool

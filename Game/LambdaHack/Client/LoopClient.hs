@@ -108,7 +108,7 @@ loopUI sdebugCli = do
       handleResponseUI cmd1
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
   fact <- getsState $ (EM.! side) . sfactionD
-  when (fisAI $ gplayer fact) $
+  when (isAIFact fact) $
     -- Prod the frontend to flush frames and start showing then continuously.
     void $ displayMore ColorFull "The team is under AI control (ESC to stop)."
   -- State and client state now valid.

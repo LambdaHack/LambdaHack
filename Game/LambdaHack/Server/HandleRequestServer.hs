@@ -104,9 +104,7 @@ switchLeader fid aidNew mtgtNew = do
   assert (bfid bPre == fid
           `blame` "client tries to move other faction actors"
           `twith` (aidNew, mtgtNew, bPre, fid, fact)) skip
-  let (autoDun, autoLvl) = case fhasLeader (gplayer fact) of
-                             LeaderMode{..} -> (autoDungeon, autoLevel)
-                             LeaderNull -> (False, False)
+  let (autoDun, autoLvl) = autoDungeonLevel fact
   arena <- case mleader of
     Nothing -> return $! blid bPre
     Just (leader, _) -> do

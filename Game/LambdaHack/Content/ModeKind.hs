@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
-  ( Caves, Roster(..), Player(..), ModeKind(..), Tactic(..), LeaderMode(..)
+  ( Caves, Roster(..), Player(..), ModeKind(..), Tactic(..)
+  , LeaderMode(..), AutoLeader(..)
   , validateSingleModeKind, validateAllModeKind
   ) where
 
@@ -54,7 +55,6 @@ data Player = Player
   , fentryLevel    :: !Int         -- ^ level where the initial members start
   , finitialActors :: !Int         -- ^ number of initial members
   , fhasLeader     :: !LeaderMode  -- ^ the mode of switching the leader
-  , fisAI          :: !Bool        -- ^ is the faction under AI control?
   , fhasUI         :: !Bool        -- ^ does the faction have a UI client
                                    --   (for control or passive observation)
   }
@@ -91,17 +91,23 @@ instance Binary Tactic
 
 instance Hashable Tactic
 
--- TODO: this partially overlaps fisAI (LeaderNull implies fisAI)
+-- | If a faction with @LeaderUI@ and @LeaderAI@ has any actor, it has a leader.
 data LeaderMode =
-    LeaderNull  -- ^ faction can have no leader
-  | LeaderMode  -- ^ whenever faction has any actor, it has a leader
-    { autoDungeon :: !Bool  -- ^ leader change between levels only automatic
-    , autoLevel   :: !Bool  -- ^ leader change within a level only automatic
-                            --   (for UI, currently no leader change here)
-    }
+    LeaderNull  -- ^ faction can have no leader, is whole under AI control
+  | LeaderAI AutoLeader -- ^ leader under AI control
+  | LeaderUI AutoLeader -- ^ leader under UI control, assumes @fhasUI@
   deriving (Show, Eq, Generic)
 
 instance Binary LeaderMode
+
+data AutoLeader = AutoLeader
+  { autoDungeon :: !Bool  -- ^ leader change between levels only automatic
+  , autoLevel   :: !Bool  -- ^ leader change within a level only automatic
+                          --   (for UI, currently no leader change here)
+  }
+  deriving (Show, Eq, Generic)
+
+instance Binary AutoLeader
 
 -- TODO: (spans multiple contents) Check that caves with the given groups exist.
 -- | Catch invalid game mode kind definitions.
@@ -134,7 +140,10 @@ validateSinglePlayer caves Player{..} =
   [ "fname empty:" <+> fname | T.null fname ]
   ++ [ "first word of fname longer than 15:" <+> fname
      | T.length (head $ T.words fname) > 15 ]
-  ++ [ "neither AI nor UI:" <+> fname | not fisAI && not fhasUI ]
+  ++ [ "no UI client, but UI leader:" <+> fname
+     | not fhasUI && case fhasLeader of
+                       LeaderUI _ -> True
+                       _ -> False ]
   ++ [ "fentryLevel not among caves:" <+> fname
      | fentryLevel `notElem` IM.keys caves ]
 

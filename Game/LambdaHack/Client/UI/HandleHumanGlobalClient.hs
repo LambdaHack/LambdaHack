@@ -115,9 +115,7 @@ moveRunHuman run dir = do
         -- attack the first one.
         -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do
-          let autoLvl = case fhasLeader (gplayer fact) of
-                          LeaderMode{autoLevel} -> autoLevel
-                          LeaderNull -> False
+          let autoLvl = snd $ autoDungeonLevel fact
           if autoLvl then failWith msgNoChangeLvlLeader
           else do
             -- Select adjacent actor by bumping into him. Takes no time.

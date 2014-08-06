@@ -164,7 +164,8 @@ rosterSafari = Roster
                                      , ftactic = TFollow
                                      , fentryLevel = -4
                                      , finitialActors = 15
-                                     , fhasLeader = LeaderMode False False }
+                                     , fhasLeader =
+                                         LeaderUI $ AutoLeader False False }
                  , playerCivilian { fname = "Hunam Convict Pack"
                                   , fentryLevel = -4 }
                  , playerAnimal { fname =

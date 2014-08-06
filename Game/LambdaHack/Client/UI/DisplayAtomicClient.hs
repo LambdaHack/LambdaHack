@@ -309,7 +309,7 @@ moveItemUI verbose iid k aid c1 c2 = do
     (_, _) | c1 == CGround -> do
       when (bfid b == side) $ updateItemSlot (Just aid) iid
       fact <- getsState $ (EM.! bfid b) . sfactionD
-      let underAI = fisAI $ gplayer fact
+      let underAI = isAIFact fact
       mleader <- getsClient _sleader
       if Just aid == mleader && not underAI then do
         itemToF <- itemToFullClient
@@ -650,7 +650,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         -- the request extra message may be shown, so the other frame is better.
         mleader <- getsClient _sleader
         fact <- getsState $ (EM.! bfid b) . sfactionD
-        let underAI = fisAI $ gplayer fact
+        let underAI = isAIFact fact
         unless (Just aid == mleader && not underAI) $
           -- Something new is gonna happen on this level (otherwise we'd send
           -- @UpdAgeLevel@ later on, with a larger time increment),

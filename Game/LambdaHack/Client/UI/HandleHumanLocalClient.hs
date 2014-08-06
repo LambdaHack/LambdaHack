@@ -64,7 +64,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
@@ -84,9 +83,7 @@ pickLeaderHuman k = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   arena <- getArenaUI
-  let (autoDun, autoLvl) = case fhasLeader (gplayer fact) of
-                             LeaderMode{..} -> (autoDungeon, autoLevel)
-                             LeaderNull -> (False, False)
+  let (autoDun, autoLvl) = autoDungeonLevel fact
   s <- getState
   case tryFindHeroK s side k of
     Nothing -> failMsg "No such member of the party."

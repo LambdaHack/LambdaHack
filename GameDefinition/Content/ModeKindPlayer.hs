@@ -22,13 +22,12 @@ playerHero = Player
   , ftactic = TExplore
   , fentryLevel = -1
   , finitialActors = 3
-  , fhasLeader = LeaderMode False False
-  , fisAI = False
+  , fhasLeader = LeaderUI $ AutoLeader False False
   , fhasUI = True
   }
 
 playerAntiHero = playerHero
-  { fisAI = True
+  { fhasLeader = LeaderAI $ AutoLeader False False
   , fhasUI = False
   }
 
@@ -44,7 +43,6 @@ playerCivilian = Player
   , fentryLevel = -1
   , finitialActors = 3
   , fhasLeader = LeaderNull  -- unorganized
-  , fisAI = True
   , fhasUI = False
   }
 
@@ -59,14 +57,12 @@ playerMonster = Player
   , ftactic = TExplore
   , fentryLevel = -3
   , finitialActors = 5
-  , fhasLeader = LeaderMode True False
-  , fisAI = True
+  , fhasLeader = LeaderAI $ AutoLeader True False
   , fhasUI = False
   }
 
 playerAntiMonster = playerMonster
-  { fisAI = False
-  , fhasUI = True
+  { fhasUI = True
   }
 
 playerAnimal = Player
@@ -81,7 +77,6 @@ playerAnimal = Player
   , fentryLevel = -2
   , finitialActors = 3
   , fhasLeader = LeaderNull
-  , fisAI = True
   , fhasUI = False
   }
 
@@ -103,7 +98,6 @@ playerHorror = Player
   , fentryLevel = -3
   , finitialActors = 0
   , fhasLeader = LeaderNull
-  , fisAI = True
   , fhasUI = False
   }
 

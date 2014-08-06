@@ -137,7 +137,7 @@ registerScore status mbody fid = do
   let path = dataDir </> scoresFile
       outputScore (worthMentioning, (ntable, pos)) =
         -- If not human, probably debugging, so dump instead of registering.
-        if bench || fisAI (gplayer fact) then
+        if bench || isAIFact fact then
           debugPrint $ T.intercalate "\n"
           $ HighScore.showScore (pos, HighScore.getRecord pos ntable)
         else

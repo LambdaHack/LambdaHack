@@ -24,7 +24,6 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Content.ModeKind
 
 -- | A yes-no confirmation.
 getYesNo :: MonadClientUI m => SingleFrame -> m Bool
@@ -85,7 +84,7 @@ displayPush = do
   fact <- getsState $ (EM.! side) . sfactionD
   sls <- promptToSlideshow ""
   let slide = head . snd $ slideshow sls
-      underAI = fisAI $ gplayer fact
+      underAI = isAIFact fact
   frame <- drawOverlay False ColorFull slide
   -- Visually speed up (by remving all empty frames) the show of the sequence
   -- of the move frames if the player is running.

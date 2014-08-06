@@ -240,14 +240,14 @@ handleActors lid = do
                             || fhasLeader (gplayer fact) == LeaderNull)
       queryUI <-
         if mainUIactor then do
-          let underAI = fisAI $ gplayer fact
+          let underAI = isAIFact fact
           if underAI then do
             -- If UI client for the faction completely under AI control,
             -- ping often to sync frames and to catch ESC,
             -- which switches off Ai control.
             sendPingUI side
             fact2 <- getsState $ (EM.! side) . sfactionD
-            let underAI2 = fisAI $ gplayer fact2
+            let underAI2 = isAIFact fact2
             return $! not underAI2
           else return True
         else return False
