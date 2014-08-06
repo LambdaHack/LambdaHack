@@ -106,7 +106,7 @@ keyHelp Binding{bcmdList} =
       ]
     fmt k h = T.justifyRight 72 ' '
               $ T.justifyLeft 15 ' ' k
-                <> T.justifyLeft 41 ' ' h
+                <> T.justifyLeft 48 ' ' h
     fmts s = " " <> T.justifyLeft 71 ' ' s
     minimalText = map fmts minimalBlurb
     movText = map fmts movBlurb
