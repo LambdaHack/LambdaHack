@@ -237,7 +237,7 @@ handleActors lid = do
           aidIsLeader = fmap fst mleader == Just aid
           mainUIactor = fhasUI (gplayer fact)
                         && (aidIsLeader
-                            || fhasLeader (gplayer fact) == LeaderNull)
+                            || fleaderMode (gplayer fact) == LeaderNull)
       queryUI <-
         if mainUIactor then do
           let underAI = isAIFact fact

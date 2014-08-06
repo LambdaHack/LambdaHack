@@ -109,30 +109,30 @@ noRunWithMulti :: Faction -> Bool
 noRunWithMulti fact =
   let skillsOther = fskillsOther $ gplayer fact
   in EM.findWithDefault 0 Ability.AbMove skillsOther > 0
-     || case fhasLeader (gplayer fact) of
+     || case fleaderMode (gplayer fact) of
           LeaderNull -> True
           LeaderAI AutoLeader{} -> True
           LeaderUI AutoLeader{..} -> autoDungeon || autoLevel
 
 isAIFact :: Faction -> Bool
 isAIFact fact =
-  case fhasLeader (gplayer fact) of
+  case fleaderMode (gplayer fact) of
     LeaderNull -> True
     LeaderAI _ -> True
     LeaderUI _ -> False
 
 autoDungeonLevel :: Faction -> (Bool, Bool)
-autoDungeonLevel fact = case fhasLeader (gplayer fact) of
+autoDungeonLevel fact = case fleaderMode (gplayer fact) of
                           LeaderNull -> (False, False)
                           LeaderAI AutoLeader{..} -> (autoDungeon, autoLevel)
                           LeaderUI AutoLeader{..} -> (autoDungeon, autoLevel)
 
 automatePlayer :: Bool -> Player -> Player
 automatePlayer st pl =
-  let autoLeader False Player{fhasLeader=LeaderAI auto} = LeaderUI auto
-      autoLeader True Player{fhasLeader=LeaderUI auto} = LeaderAI auto
-      autoLeader _ Player{fhasLeader} = fhasLeader
-  in pl {fhasLeader = autoLeader st pl}
+  let autoLeader False Player{fleaderMode=LeaderAI auto} = LeaderUI auto
+      autoLeader True Player{fleaderMode=LeaderUI auto} = LeaderAI auto
+      autoLeader _ Player{fleaderMode} = fleaderMode
+  in pl {fleaderMode = autoLeader st pl}
 
 -- | Check if factions are at war. Assumes symmetry.
 isAtWar :: Faction -> FactionId -> Bool

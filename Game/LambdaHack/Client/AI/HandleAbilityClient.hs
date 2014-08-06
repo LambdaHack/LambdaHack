@@ -126,7 +126,7 @@ actionStrategy aid = do
           , condAnyFoeAdj
             || EM.findWithDefault 0 AbDisplace actorSk <= 0
                  -- melee friends, not displace
-               && fhasLeader (gplayer fact) == LeaderNull  -- not restrained
+               && fleaderMode (gplayer fact) == LeaderNull  -- not restrained
                && (condTgtEnemyPresent || condTgtEnemyRemembered) )  -- excited
         , ( [AbTrigger], (toAny :: ToAny AbTrigger)
             <$> trigger aid False
@@ -439,7 +439,7 @@ meleeBlocker aid = do
              && (not (bproj body2)  -- displacing saves a move
                  && isAtWar fact (bfid body2)  -- they at war with us
                  || EM.findWithDefault 0 AbDisplace actorSk <= 0  -- not disp.
-                    && fhasLeader (gplayer fact) == LeaderNull  -- no restrain
+                    && fleaderMode (gplayer fact) == LeaderNull  -- no restrain
                     && EM.findWithDefault 0 AbMove actorSk > 0  -- blocked move
                     && bhp body2 < bhp b)  -- respect power
             then do
@@ -501,7 +501,7 @@ trigger aid fleeViaStairs = do
           in if boldpos b == bpos b   -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction
              then 0  -- avoid trivial loops (pushing, being pushed, etc.)
-             else let leaderless = fhasLeader (gplayer fact) == LeaderNull
+             else let leaderless = fleaderMode (gplayer fact) == LeaderNull
                       eben = case actorsThere of
                         [] | canSee -> expBenefit
                         _ | leaderless -> 0  -- leaderless clog stairs easily
@@ -705,7 +705,7 @@ chase aid doDisplace = do
   str <- case mtgtMPath of
     Just (_, Just (p : q : _, (goal, _))) ->
       -- With no leader, the goal is vague, so permit arbitrary detours.
-      moveTowards aid p q goal (fhasLeader (gplayer fact) == LeaderNull)
+      moveTowards aid p q goal (fleaderMode (gplayer fact) == LeaderNull)
     _ -> return reject  -- goal reached
   -- If @doDisplace@: don't pick fights, assuming the target is more important.
   -- We'd normally melee the target earlier on via @AbMelee@, but for

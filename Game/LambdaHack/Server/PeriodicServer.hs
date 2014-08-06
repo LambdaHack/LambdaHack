@@ -199,7 +199,7 @@ advanceTime aid = do
     dominated <-
       if bcalm b == 0
          && boldfid b /= bfid b
-         && fhasLeader (gplayer fact) /= LeaderNull
+         && fleaderMode (gplayer fact) /= LeaderNull
               -- animals never Calm-dominated
       then dominateFidSfx (boldfid b) aid
       else return False
@@ -219,7 +219,7 @@ advanceTime aid = do
 leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelFlip = do
   Kind.COps{cotile} <- getsState scops
-  let canFlip fact = case fhasLeader (gplayer fact) of
+  let canFlip fact = case fleaderMode (gplayer fact) of
                        LeaderNull -> True
                        LeaderAI _ -> True
                        LeaderUI AutoLeader{autoDungeon} -> autoDungeon

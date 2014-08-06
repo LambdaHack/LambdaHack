@@ -54,7 +54,7 @@ data Player = Player
   , ftactic        :: !Tactic      -- ^ members behave according to this tactic
   , fentryLevel    :: !Int         -- ^ level where the initial members start
   , finitialActors :: !Int         -- ^ number of initial members
-  , fhasLeader     :: !LeaderMode  -- ^ the mode of switching the leader
+  , fleaderMode    :: !LeaderMode  -- ^ the mode of switching the leader
   , fhasUI         :: !Bool        -- ^ does the faction have a UI client
                                    --   (for control or passive observation)
   }
@@ -141,7 +141,7 @@ validateSinglePlayer caves Player{..} =
   ++ [ "first word of fname longer than 15:" <+> fname
      | T.length (head $ T.words fname) > 15 ]
   ++ [ "no UI client, but UI leader:" <+> fname
-     | not fhasUI && case fhasLeader of
+     | not fhasUI && case fleaderMode of
                        LeaderUI _ -> True
                        _ -> False ]
   ++ [ "fentryLevel not among caves:" <+> fname

@@ -280,7 +280,7 @@ updLeadFaction :: MonadStateWrite m
                -> m ()
 updLeadFaction fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
-  assert (fhasLeader (gplayer fact) /= LeaderNull) skip
+  assert (fleaderMode (gplayer fact) /= LeaderNull) skip
     -- @PosNone@ ensures this
   mtb <- getsState $ \s -> flip getActorBody s . fst <$> target
   assert (maybe True (not . bproj) mtb

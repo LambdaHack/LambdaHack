@@ -93,7 +93,7 @@ createFactions players = do
         let cmap = mapFromFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
             nameoc = lowercase $ head $ T.words fname
-            fisAI = case fhasLeader of
+            fisAI = case fleaderMode of
               LeaderNull -> True
               LeaderAI _ -> True
               LeaderUI _ -> False

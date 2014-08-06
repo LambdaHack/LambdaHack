@@ -164,7 +164,7 @@ rosterSafari = Roster
                                      , ftactic = TFollow
                                      , fentryLevel = -4
                                      , finitialActors = 15
-                                     , fhasLeader =
+                                     , fleaderMode =
                                          LeaderUI $ AutoLeader False False }
                  , playerCivilian { fname = "Hunam Convict Pack"
                                   , fentryLevel = -4 }
@@ -200,12 +200,12 @@ rosterPvP = Roster
 rosterCoop = Roster
   { rosterList = [ playerAntiHero { fname = "Coral" }
                  , playerAntiHero { fname = "Amber"
-                                  , fhasLeader = LeaderNull }
+                                  , fleaderMode = LeaderNull }
                  , playerAntiHero { fname = "Green" }
                  , playerAnimal { fhasUI = True }
                  , playerMonster
                  , playerMonster { fname = "Leaderless Monster Hive"
-                                 , fhasLeader = LeaderNull } ]
+                                 , fleaderMode = LeaderNull } ]
   , rosterEnemy = [ ("Coral", "Monster Hive")
                   , ("Amber", "Monster Hive")
                   , ("Animal Kingdom", "Leaderless Monster Hive") ]

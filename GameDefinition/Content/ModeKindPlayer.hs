@@ -22,12 +22,12 @@ playerHero = Player
   , ftactic = TExplore
   , fentryLevel = -1
   , finitialActors = 3
-  , fhasLeader = LeaderUI $ AutoLeader False False
+  , fleaderMode = LeaderUI $ AutoLeader False False
   , fhasUI = True
   }
 
 playerAntiHero = playerHero
-  { fhasLeader = LeaderAI $ AutoLeader False False
+  { fleaderMode = LeaderAI $ AutoLeader False False
   , fhasUI = False
   }
 
@@ -42,7 +42,7 @@ playerCivilian = Player
   , ftactic = TPatrol
   , fentryLevel = -1
   , finitialActors = 3
-  , fhasLeader = LeaderNull  -- unorganized
+  , fleaderMode = LeaderNull  -- unorganized
   , fhasUI = False
   }
 
@@ -57,7 +57,7 @@ playerMonster = Player
   , ftactic = TExplore
   , fentryLevel = -3
   , finitialActors = 5
-  , fhasLeader = LeaderAI $ AutoLeader True False
+  , fleaderMode = LeaderAI $ AutoLeader True False
   , fhasUI = False
   }
 
@@ -76,7 +76,7 @@ playerAnimal = Player
   , ftactic = TRoam
   , fentryLevel = -2
   , finitialActors = 3
-  , fhasLeader = LeaderNull
+  , fleaderMode = LeaderNull
   , fhasUI = False
   }
 
@@ -97,7 +97,7 @@ playerHorror = Player
   , ftactic = TPatrol  -- disoriented
   , fentryLevel = -3
   , finitialActors = 0
-  , fhasLeader = LeaderNull
+  , fleaderMode = LeaderNull
   , fhasUI = False
   }
 

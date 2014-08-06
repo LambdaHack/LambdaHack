@@ -105,7 +105,7 @@ posUpdAtomic cmd = case cmd of
   UpdQuitFaction{} -> return PosAll
   UpdLeadFaction fid _ _ -> do
     fact <- getsState $ (EM.! fid) . sfactionD
-    return $! if fhasLeader (gplayer fact) /= LeaderNull
+    return $! if fleaderMode (gplayer fact) /= LeaderNull
               then PosFidAndSer Nothing fid
               else PosNone
   UpdDiplFaction{} -> return PosAll
