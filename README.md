@@ -31,7 +31,7 @@ by cloning and rewriting [Allure of the Stars] [10] or any other pure
 game content package and mix and merge with the example LambdaHack game
 rules at will. Note that the LambdaHack sample game derives from the
 [Hack/Nethack visual and narrative tradition] [9], while Allure of the Stars
-uses the more free form Moria/Angband style (it also uses the `AGPL` license,
+uses the more free-form Moria/Angband style (it also uses the `AGPL` license,
 and `BSD3 + AGPL = AGPL`, so make sure you want to liberate your code
 and content to such an extent).
 
@@ -103,8 +103,8 @@ touch the topmost UI layer).
     cabal clean
     cabal install --enable-library-coverage
     make test
-    hpc report --hpcdir=dist/hpc/mix/LambdaHack-0.2.14/ LambdaHack
-    hpc markup --hpcdir=dist/hpc/mix/LambdaHack-0.2.14/ LambdaHack
+    hpc report --hpcdir=dist/hpc/mix/LambdaHack-0.4.9.0/ LambdaHack
+    hpc markup --hpcdir=dist/hpc/mix/LambdaHack-0.4.9.0/ LambdaHack
 
 Note that debug option `--stopAfter` is required to cleanly terminate
 any automated test that is used to gather HPC info, because HPC needs

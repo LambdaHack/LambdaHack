@@ -172,7 +172,7 @@ of the team.
                 CTRL-v         voice the recorded commands 1000 times
                 CTRL-V         voice the recorded commands 10 times
                 '              start recording commands
-                CTRL-T         cycle non-leader team members tactic (WIP)
+                CTRL-T         cycle tactic of non-leader team members (WIP)
                 CTRL-A         automate faction (ESC to retake control)
 
 Assorted remaining keys and commands follow.

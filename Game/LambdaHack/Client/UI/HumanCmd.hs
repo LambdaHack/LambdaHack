@@ -118,7 +118,7 @@ cmdDescription cmd = case cmd of
     makePhrase ["new", MU.Capitalize $ MU.Text $ tshow t, "game"]
   GameExit    -> "save and exit"
   GameSave    -> "save game"
-  Tactic      -> "cycle non-leader team members tactic (WIP)"
+  Tactic      -> "cycle tactic of non-leader team members (WIP)"
   Automate    -> "automate faction (ESC to retake control)"
 
   GameDifficultyCycle -> "cycle difficulty of the next game"

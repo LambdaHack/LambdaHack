@@ -90,7 +90,7 @@ data Feature =
   | EqpSlot !EqpSlot !Text  -- ^ AI and uI flag: goes to inventory
   | Precious                -- ^ AI and UI flag: careful, can be precious;
                             --   don't risk identifying by use
-  | Tactic !Tactic          -- ^ overrides actor's tactic when under AI (TODO)
+  | Tactic !Tactic          -- ^ overrides actor's tactic (TODO)
   deriving (Show, Eq, Ord, Generic)
 
 data EqpSlot =

@@ -777,7 +777,6 @@ moveOrRunAid run source dir = do
       then
         return $! Just $ RequestAnyAbility $ ReqDisplace target
       else do
-        -- If cannot displace, hit. TODO: unless melee or wait not permitted.
         wps <- pickWeaponClient source target
         case wps of
           [] -> return Nothing
