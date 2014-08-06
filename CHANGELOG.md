@@ -1,3 +1,16 @@
+## [v0.4.9.0, aka 'Player escapes'](https://github.com/LambdaHack/LambdaHack/compare/v0.2.14...v0.4.9.0)
+
+- balance the example game content a bit (still wildly unbalanced)
+- various code and documentation tweaks and fixes
+- add cabal flag expose_internal that reveals internal library operations
+- merge FactionKind into ModeKind and rework completely the semantics
+- compatibility tweaks for Nixpkgs
+- define AI tactics, expose them to UI and add one more: follow-the-leader
+- share leader target between the UI and AI client of each faction
+- specify monster spawn rate per-cave
+- extend content validation and make it more user friendly
+- freeze v0.5.0.0 of LambdaHack content API
+
 ## [v0.2.14, aka 'Out of balance'](https://github.com/LambdaHack/LambdaHack/compare/v0.2.12...v0.2.14)
 
 - tons of new (unbalanced) content, content fields, effects and descriptions
