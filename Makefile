@@ -250,6 +250,14 @@ test-short-load:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --noMore --savePrefix defense --dumpInitRngs --automateAll --gameMode defense --frontendStd --stopAfter 2 > /tmp/stdtest.log
 
 
+build-binary:
+	cabal configure --prefix=/usr/local
+	cabal build exe:LambdaHack
+	rm -rf /tmp/LambdaHack
+	cabal copy --destdir=/tmp/LambdaHack
+	tar -czf /tmp/LambdaHack.tar.gz -C /tmp --exclude=LambdaHack/usr/local/lib --exclude=LambdaHack/usr/local/share/doc LambdaHack
+
+
 # The rest of the makefile is unmaintained at the moment.
 
 default : dist/setup-config
