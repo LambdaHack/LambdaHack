@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving,
+{-# LANGUAGE CPP, FlexibleInstances, GeneralizedNewtypeDeriving,
              MultiParamTypeClasses #-}
 -- | The main game action monad type implementation. Just as any other
 -- component of the library, this implementation can be substituted.
@@ -6,6 +6,9 @@
 -- to expose the executor to any code using the library.
 module Game.LambdaHack.SampleImplementation.SampleMonadClient
   ( executorCli
+#ifdef EXPOSE_INTERNAL
+  , CliImplementation
+#endif
   ) where
 
 import Control.Applicative

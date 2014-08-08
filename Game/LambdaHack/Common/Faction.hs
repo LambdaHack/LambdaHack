@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -- | Factions taking part in the game: e.g., two human players controlling
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
@@ -7,6 +8,9 @@ module Game.LambdaHack.Common.Faction
   , canMoveFact, noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
   , isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff
+#ifdef EXPOSE_INTERNAL
+  , Dipl
+#endif
   ) where
 
 import Control.Monad

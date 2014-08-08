@@ -37,7 +37,7 @@ and content to such an extent).
 
 Games known to use the LambdaHack library:
 
-* [Allure of the Stars] [6], a near-future Sci-Fi game in early development
+* [Allure of the Stars] [6], a near-future Sci-Fi game
 * [Space Privateers] [8], an adventure game set in far future
 
 

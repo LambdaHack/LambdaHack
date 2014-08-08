@@ -1,8 +1,11 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP, DeriveGeneric, GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | High score table operations.
 module Game.LambdaHack.Common.HighScore
   ( ScoreTable, empty, register, showScore, getRecord, highSlideshow
+#ifdef EXPOSE_INTERNAL
+  , ScoreRecord
+#endif
   ) where
 
 import Control.Exception.Assert.Sugar

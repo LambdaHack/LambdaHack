@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP, TypeFamilies #-}
 -- | Operations concerning dungeon level tiles.
 --
 -- Unlike for many other content types, there is no type @Tile@,
@@ -19,9 +20,13 @@ module Game.LambdaHack.Common.Tile
   , isExplorable, lookSimilar, speedup
   , openTo, closeTo, causeEffects, revealAs, hideAs
   , isOpenable, isClosable, isChangeable, isEscape, isStair
+#ifdef EXPOSE_INTERNAL
+  , TileSpeedup(..), Tab, createTab, accessTab
+#endif
   ) where
 
 import Control.Exception.Assert.Sugar
+import qualified Data.Array.Unboxed as A
 import Data.Maybe
 
 import qualified Game.LambdaHack.Common.Effect as Effect
@@ -34,6 +39,30 @@ import Game.LambdaHack.Content.TileKind
 -- | The last time a hero left a smell in a given tile. To be used
 -- by monsters that hunt by smell.
 type SmellTime = Time
+
+type instance Kind.Speedup TileKind = TileSpeedup
+
+data TileSpeedup = TileSpeedup
+  { isClearTab      :: !Tab
+  , isLitTab        :: !Tab
+  , isWalkableTab   :: !Tab
+  , isPassableTab   :: !Tab
+  , isDoorTab       :: !Tab
+  , isSuspectTab    :: !Tab
+  , isChangeableTab :: !Tab
+  }
+
+newtype Tab = Tab (A.UArray (Kind.Id TileKind) Bool)
+
+createTab :: Kind.Ops TileKind -> (TileKind -> Bool) -> Tab
+createTab Kind.Ops{ofoldrWithKey, obounds} p =
+  let f _ k acc = p k : acc
+      clearAssocs = ofoldrWithKey f []
+  in Tab $ A.listArray obounds clearAssocs
+
+accessTab :: Tab -> Kind.Id TileKind -> Bool
+{-# INLINE accessTab #-}
+accessTab (Tab tab) ki = tab A.! ki
 
 -- | Whether a tile kind has the given feature.
 kindHasFeature :: F.Feature -> TileKind -> Bool
@@ -49,24 +78,24 @@ hasFeature Kind.Ops{okind} f t = kindHasFeature f (okind t)
 -- Essential for efficiency of "FOV", hence tabulated.
 isClear :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isClear #-}
-isClear Kind.Ops{ospeedup = Just Kind.TileSpeedup{isClearTab}} =
-  \k -> Kind.accessTab isClearTab k
+isClear Kind.Ops{ospeedup = Just TileSpeedup{isClearTab}} =
+  \k -> accessTab isClearTab k
 isClear cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile is lit on its own.
 -- Essential for efficiency of "Perception", hence tabulated.
 isLit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isLit #-}
-isLit Kind.Ops{ospeedup = Just Kind.TileSpeedup{isLitTab}} =
-  \k -> Kind.accessTab isLitTab k
+isLit Kind.Ops{ospeedup = Just TileSpeedup{isLitTab}} =
+  \k -> accessTab isLitTab k
 isLit cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether actors can walk into a tile.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isWalkable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isWalkable #-}
-isWalkable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isWalkableTab}} =
-  \k -> Kind.accessTab isWalkableTab k
+isWalkable Kind.Ops{ospeedup = Just TileSpeedup{isWalkableTab}} =
+  \k -> accessTab isWalkableTab k
 isWalkable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether actors can walk into a tile, perhaps opening a door first,
@@ -74,32 +103,32 @@ isWalkable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 -- Essential for efficiency of pathfinding, hence tabulated.
 isPassable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isPassable #-}
-isPassable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isPassableTab}} =
-  \k -> Kind.accessTab isPassableTab k
+isPassable Kind.Ops{ospeedup = Just TileSpeedup{isPassableTab}} =
+  \k -> accessTab isPassableTab k
 isPassable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile is a door, open or closed.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isDoor :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isDoor #-}
-isDoor Kind.Ops{ospeedup = Just Kind.TileSpeedup{isDoorTab}} =
-  \k -> Kind.accessTab isDoorTab k
+isDoor Kind.Ops{ospeedup = Just TileSpeedup{isDoorTab}} =
+  \k -> accessTab isDoorTab k
 isDoor cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile is suspect.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isSuspect :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isSuspect #-}
-isSuspect Kind.Ops{ospeedup = Just Kind.TileSpeedup{isSuspectTab}} =
-  \k -> Kind.accessTab isSuspectTab k
+isSuspect Kind.Ops{ospeedup = Just TileSpeedup{isSuspectTab}} =
+  \k -> accessTab isSuspectTab k
 isSuspect cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile kind (specified by its id) has a ChangeTo feature.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isChangeable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isChangeable #-}
-isChangeable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isChangeableTab}} =
-  \k -> Kind.accessTab isChangeableTab k
+isChangeable Kind.Ops{ospeedup = Just TileSpeedup{isChangeableTab}} =
+  \k -> accessTab isChangeableTab k
 isChangeable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether one can easily explore a tile, possibly finding a treasure
@@ -121,29 +150,29 @@ lookSimilar t u =
   tcolor  t == tcolor  u &&
   tcolor2 t == tcolor2 u
 
-speedup :: Bool -> Kind.Ops TileKind -> Kind.Speedup TileKind
+speedup :: Bool -> Kind.Ops TileKind -> TileSpeedup
 speedup allClear cotile =
   -- Vectors pack bools as Word8 by default. No idea if the extra memory
   -- taken makes random lookups more or less efficient, so not optimizing
   -- further, until I have benchmarks.
-  let isClearTab | allClear = Kind.createTab cotile
+  let isClearTab | allClear = createTab cotile
                               $ not . kindHasFeature F.Impenetrable
-                 | otherwise = Kind.createTab cotile
+                 | otherwise = createTab cotile
                                $ kindHasFeature F.Clear
-      isLitTab = Kind.createTab cotile $ not . kindHasFeature F.Dark
-      isWalkableTab = Kind.createTab cotile $ kindHasFeature F.Walkable
-      isPassableTab = Kind.createTab cotile isPassableKind
-      isDoorTab = Kind.createTab cotile $ \tk ->
+      isLitTab = createTab cotile $ not . kindHasFeature F.Dark
+      isWalkableTab = createTab cotile $ kindHasFeature F.Walkable
+      isPassableTab = createTab cotile isPassableKind
+      isDoorTab = createTab cotile $ \tk ->
         let getTo F.OpenTo{} = True
             getTo F.CloseTo{} = True
             getTo _ = False
         in any getTo $ tfeature tk
-      isSuspectTab = Kind.createTab cotile $ kindHasFeature F.Suspect
-      isChangeableTab = Kind.createTab cotile $ \tk ->
+      isSuspectTab = createTab cotile $ kindHasFeature F.Suspect
+      isChangeableTab = createTab cotile $ \tk ->
         let getTo F.ChangeTo{} = True
             getTo _ = False
         in any getTo $ tfeature tk
-  in Kind.TileSpeedup {..}
+  in TileSpeedup {..}
 
 isPassableKind :: TileKind -> Bool
 isPassableKind tk =
@@ -156,25 +185,25 @@ isPassableKind tk =
 
 openTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 openTo Kind.Ops{okind, opick} t = do
-  let getTo (F.OpenTo group) acc = group : acc
+  let getTo (F.OpenTo grp) acc = grp : acc
       getTo _ acc = acc
   case foldr getTo [] $ tfeature $ okind t of
     [] -> return t
     groups -> do
-      group <- oneOf groups
-      fmap (fromMaybe $ assert `failure` group)
-        $ opick group (const True)
+      grp <- oneOf groups
+      fmap (fromMaybe $ assert `failure` grp)
+        $ opick grp (const True)
 
 closeTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 closeTo Kind.Ops{okind, opick} t = do
-  let getTo (F.CloseTo group) acc = group : acc
+  let getTo (F.CloseTo grp) acc = grp : acc
       getTo _ acc = acc
   case foldr getTo [] $ tfeature $ okind t of
     [] -> return t
     groups -> do
-      group <- oneOf groups
-      fmap (fromMaybe $ assert `failure` group)
-        $ opick group (const True)
+      grp <- oneOf groups
+      fmap (fromMaybe $ assert `failure` grp)
+        $ opick grp (const True)
 
 causeEffects :: Kind.Ops TileKind -> Kind.Id TileKind -> [Effect.Effect Int]
 causeEffects Kind.Ops{okind} t = do
@@ -184,22 +213,22 @@ causeEffects Kind.Ops{okind} t = do
 
 revealAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 revealAs Kind.Ops{okind, opick} t = do
-  let getTo (F.RevealAs group) acc = group : acc
+  let getTo (F.RevealAs grp) acc = grp : acc
       getTo _ acc = acc
   case foldr getTo [] $ tfeature $ okind t of
     [] -> return t
     groups -> do
-      group <- oneOf groups
-      fmap (fromMaybe $ assert `failure` group)
-        $ opick group (const True)
+      grp <- oneOf groups
+      fmap (fromMaybe $ assert `failure` grp)
+        $ opick grp (const True)
 
 hideAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 hideAs Kind.Ops{okind, ouniqGroup} t =
-  let getTo (F.HideAs group) _ = Just group
+  let getTo (F.HideAs grp) _ = Just grp
       getTo _ acc = acc
   in case foldr getTo Nothing (tfeature (okind t)) of
        Nothing    -> t
-       Just group -> ouniqGroup group
+       Just grp -> ouniqGroup grp
 
 -- | Whether a tile kind (specified by its id) has an OpenTo feature.
 isOpenable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE CPP, DeriveGeneric, FlexibleInstances, TypeSynonymInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Representation of dice for parameters scaled with current level depth.
 module Game.LambdaHack.Common.Dice
@@ -8,6 +8,9 @@ module Game.LambdaHack.Common.Dice
   , maxDice, minDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
   , DiceXY(..), maxDiceXY, minDiceXY, meanDiceXY
+#ifdef EXPOSE_INTERNAL
+  , SimpleDice
+#endif
   ) where
 
 import Control.Applicative

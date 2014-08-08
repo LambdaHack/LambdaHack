@@ -1,10 +1,13 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP, GeneralizedNewtypeDeriving #-}
 -- | The main game action monad type implementation. Just as any other
 -- component of the library, this implementation can be substituted.
 -- This module should not be imported anywhere except in 'Action'
 -- to expose the executor to any code using the library.
 module Game.LambdaHack.SampleImplementation.SampleMonadServer
   ( executorSer
+#ifdef EXPOSE_INTERNAL
+  , SerImplementation
+#endif
   ) where
 
 import Control.Applicative

@@ -30,9 +30,13 @@ description:   This is an alpha release of LambdaHack,
                in-game content creation, auto-balancing and persistent
                content modification based on player behaviour.
                .
-               A larger game that depends on the LambdaHack library
-               is Allure of the Stars, available from
-               <http://hackage.haskell.org/package/Allure>.
+               Games known to use the LambdaHack library:
+               .
+               * Allure of the Stars, a near-future Sci-Fi game,
+               <http://hackage.haskell.org/package/Allure>
+               .
+               * Space Privateers, an adventure game set in far future,
+               <http://hackage.haskell.org/package/SpacePrivateers>
                .
                Note: All modules in this library are kept visible,
                to let games override and reuse them.

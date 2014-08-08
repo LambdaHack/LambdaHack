@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -- | The server definitions for the server-client communication protocol.
 module Game.LambdaHack.Server.ProtocolServer
   ( -- * The communication channels
@@ -16,6 +17,9 @@ module Game.LambdaHack.Server.ProtocolServer
   , sendUpdateUI, sendQueryUI, sendPingUI
     -- * Assorted
   , killAllClients, childrenServer, updateConn
+#ifdef EXPOSE_INTERNAL
+  , ConnServerFaction
+#endif
   ) where
 
 import Control.Concurrent

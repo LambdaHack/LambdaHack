@@ -1,12 +1,10 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, RankNTypes, TypeFamilies #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
-  ( Id, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
-  , Tab, createTab, accessTab
+  ( Id, Speedup, Ops(..), COps(..), createOps, stdRuleset
   ) where
 
 import Control.Exception.Assert.Sugar
-import qualified Data.Array.Unboxed as A
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ix as Ix
@@ -33,29 +31,7 @@ newtype Id c = Id Word8
 
 -- | Type family for auxiliary data structures for speeding up
 -- content operations.
-data family Speedup a
-
-data instance Speedup TileKind = TileSpeedup
-  { isClearTab :: !Tab
-  , isLitTab   :: !Tab
-  , isWalkableTab :: !Tab
-  , isPassableTab :: !Tab
-  , isDoorTab :: !Tab
-  , isSuspectTab :: !Tab
-  , isChangeableTab :: !Tab
-  }
-
-newtype Tab = Tab (A.UArray (Id TileKind) Bool)
-
-createTab :: Ops TileKind -> (TileKind -> Bool) -> Tab
-createTab Ops{ofoldrWithKey, obounds} p =
-  let f _ k acc = p k : acc
-      clearAssocs = ofoldrWithKey f []
-  in Tab $ A.listArray obounds clearAssocs
-
-accessTab :: Tab -> Id TileKind -> Bool
-{-# INLINE accessTab #-}
-accessTab (Tab tab) ki = tab A.! ki
+type family Speedup a
 
 -- | Content operations for the content of type @a@.
 data Ops a = Ops
