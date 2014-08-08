@@ -11,9 +11,9 @@ import Game.LambdaHack.Content.ItemKind
 
 shrapnels :: [ItemKind]
 shrapnels =
-  [fragrance, pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue]
+  [fragrance, pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistHealing2, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue]
 
-fragrance,    pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue :: ItemKind
+fragrance,    pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistHealing2, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue :: ItemKind
 
 -- * Parameterized shrapnel
 
@@ -125,6 +125,22 @@ mistHealing = ItemKind
   , iweight  = 1
   , iaspects = [AddLight 1]
   , ieffects = [RefillHP 2]
+  , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
+               , Fragile, Identified ]
+  , idesc    = ""
+  , ikit     = []
+  }
+mistHealing2 = ItemKind
+  { isymbol  = '\''
+  , iname    = "mist"
+  , ifreq    = [("healing mist 2", 1)]
+  , iflavour = zipFancy [White]
+  , icount   = 12
+  , irarity  = [(1, 1)]
+  , iverbHit = "revitalize"
+  , iweight  = 1
+  , iaspects = [AddLight 2]
+  , ieffects = [RefillHP 4]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
   , idesc    = ""
