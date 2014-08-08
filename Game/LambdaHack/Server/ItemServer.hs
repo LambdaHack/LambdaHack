@@ -26,8 +26,9 @@ import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
 registerItem :: (MonadAtomic m, MonadServer m)
-             => ItemKnown -> ItemSeed -> Int -> Container -> Bool -> m ItemId
-registerItem itemKnown@(item, iae) seed k container verbose = do
+             => Item -> ItemKnown -> ItemSeed -> Int -> Container -> Bool
+             -> m ItemId
+registerItem item itemKnown@(_, iae) seed k container verbose = do
   itemRev <- getsServer sitemRev
   let cmd = if verbose then UpdCreateItem else UpdSpotItem
   case HM.lookup itemKnown itemRev of
@@ -67,7 +68,7 @@ rollAndRegisterItem lid itemFreq container verbose = do
   case m4 of
     Nothing -> return Nothing
     Just (itemKnown, itemFull, seed, k, itemGroup) -> do
-      iid <- registerItem itemKnown seed k container verbose
+      iid <- registerItem (itemBase itemFull) itemKnown seed k container verbose
       return $ Just (iid, (itemFull, itemGroup))
 
 placeItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()

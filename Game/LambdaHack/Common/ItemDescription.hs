@@ -108,7 +108,7 @@ itemDesc cstore itemFull =
         <+> nstats
         <+> desc
         <+> makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
-        <+> makeSentence ["Found on level", MU.Text $ tshow ln]
+        <+> makeSentence ["First found on level", MU.Text $ tshow ln]
       splitBlurb = splitText lxsize blurb
       attrBlurb = map (map f . T.unpack) splitBlurb
   in encodeOverlay $ (colorSymbol : tail (head attrBlurb)) : tail attrBlurb

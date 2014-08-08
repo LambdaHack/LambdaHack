@@ -91,9 +91,9 @@ itemNoAE itemFull@ItemFull{..} =
 data Item = Item
   { jkindIx  :: !ItemKindIx    -- ^ index pointing to the kind of the item
   , jlid     :: !LevelId       -- ^ the level on which item was created
-  , jsymbol  :: !Char          -- ^ individual map symbol
-  , jname    :: !Text          -- ^ individual generic name
-  , jflavour :: !Flavour       -- ^ individual flavour
+  , jsymbol  :: !Char          -- ^ map symbol
+  , jname    :: !Text          -- ^ generic name
+  , jflavour :: !Flavour       -- ^ flavour
   , jfeature :: ![Feature]     -- ^ public properties
   , jweight  :: !Int           -- ^ weight in grams, obvious enough
   }
@@ -120,4 +120,9 @@ type ItemBag = EM.EnumMap ItemId Int
 -- indexed by item identifier.
 type ItemDict = EM.EnumMap ItemId Item
 
-type ItemKnown = (Item, ItemAspectEffect)
+-- | The essential item properties, used for the @ItemRev@ hash table
+-- from items to their ids, needed to assign ids to newly generated items.
+-- All the other meaningul properties can be derived from the two.
+-- Note that @jlid@ is not meaningful; it gets forgotten if items from
+-- different levels roll the same random properties and so are merged.
+type ItemKnown = (ItemKindIx, ItemAspectEffect)

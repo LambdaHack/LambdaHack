@@ -98,7 +98,7 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         iae = seedToAspectsEffects seed itemKind ldepth totalDepth
         itemFull = ItemFull {itemBase, itemK, itemDisco = Just itemDisco}
         itemDisco = ItemDisco {itemKindId, itemKind, itemAE = Just iae}
-    return $ Just ( (itemBase, iae)
+    return $ Just ( (jkindIx itemBase, iae)
                   , itemFull
                   , seed
                   , itemK

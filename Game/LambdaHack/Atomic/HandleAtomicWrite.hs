@@ -119,9 +119,18 @@ updCreateActor aid body ais = do
   -- We re-add them all to save time determining which really need it.
   forM_ ais $ \(iid, item) -> do
     let h item1 item2 =
-          assert (item1 == item2 `blame` "inconsistent created actor items"
-                                 `twith` (aid, body, iid, item1, item2)) item1
+          assert (itemsMatch item1 item2
+                  `blame` "inconsistent created actor items"
+                  `twith` (aid, body, iid, item1, item2))
+                 item2 -- keep the first found level
     modifyState $ updateItemD $ EM.insertWith h iid item
+
+itemsMatch :: Item -> Item -> Bool
+itemsMatch item1 item2 =
+  jkindIx item1 == jkindIx item2
+  -- && aspects and effects are the same, but too much writing;
+  -- Note that nothing else needs to be the same, since items are merged
+  -- and clients have different views on dungeon items than the server.
 
 -- | Kills an actor.
 updDestroyActor :: MonadStateWrite m
@@ -135,7 +144,7 @@ updDestroyActor aid body ais = do
   -- Assert that actor's items belong to @sitemD@. Do not remove those
   -- that do not appear anywhere else, for simplicity and speed.
   itemD <- getsState sitemD
-  let match (iid, item) = itemD EM.! iid == item
+  let match (iid, item) = itemsMatch (itemD EM.! iid) item
   assert (allB match ais `blame` "destroyed actor items not found"
                          `twith` (aid, body, ais, itemD)) skip
   -- Remove actor from @sactorD@.
@@ -158,9 +167,10 @@ updCreateItem :: MonadStateWrite m
 updCreateItem iid item k c = assert (k > 0) $ do
   -- The item may or may not be already present in @sitemD@,
   -- regardless if it's actually present in the dungeon.
-  let f item1 item2 = assert (item1 == item2
-                              `blame` "inconsistent created item"
-                              `twith` (iid, item, k, c)) item1
+  -- If items equivalent, pick the one found on easier level.
+  let f item1 item2 =
+        assert (itemsMatch item1 item2)
+               item2 -- keep the first found level
   modifyState $ updateItemD $ EM.insertWith f iid item
   insertItemContainer iid k c
 
@@ -172,8 +182,11 @@ updDestroyItem iid item k c = assert (k > 0) $ do
   -- It's incredibly costly and not noticeable for the player.
   -- However, assert the item is registered in @sitemD@.
   itemD <- getsState sitemD
-  assert (iid `EM.lookup` itemD == Just item `blame` "item already removed"
-                                             `twith` (iid, item, itemD)) skip
+  assert ((case iid `EM.lookup` itemD of
+             Nothing -> False
+             Just item0 -> itemsMatch item0 item)
+           `blame` "item already removed"
+           `twith` (iid, item, itemD)) skip
   deleteItemContainer iid k c
 
 updMoveActor :: MonadStateWrite m => ActorId -> Point -> Point -> m ()
