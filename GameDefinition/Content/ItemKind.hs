@@ -40,7 +40,7 @@ dart = ItemKind
   , ifreq    = [("useful", 100), ("any arrow", 100)]
   , iflavour = zipPlain [Cyan]
   , icount   = 3 * d 3
-  , irarity  = [(1, 20)]
+  , irarity  = [(1, 20), (10, 10)]
   , iverbHit = "prick"
   , iweight  = 50
   , iaspects = [AddHurtRanged ((d 6 + dl 6) |*| 10)]
@@ -55,7 +55,7 @@ dart200 = ItemKind
   , ifreq    = [("useful", 100), ("any arrow", 50)]  -- TODO: until arrows added
   , iflavour = zipPlain [BrRed]
   , icount   = 3 * d 3
-  , irarity  = [(4, 20)]
+  , irarity  = [(4, 20), (10, 10)]
   , iverbHit = "prick"
   , iweight  = 50
   , iaspects = [AddHurtRanged ((d 6 + dl 6) |*| 10)]
@@ -88,7 +88,7 @@ harpoon = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [Brown]
   , icount   = dl 5
-  , irarity  = [(5, 5), (10, 20)]
+  , irarity  = [(10, 10)]
   , iverbHit = "hook"
   , iweight  = 4000
   , iaspects = [AddHurtRanged ((d 2 + 2 * dl 5) |*| 10)]
@@ -122,7 +122,7 @@ woodenTorch = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
-  , irarity  = [(1, 10)]
+  , irarity  = [(1, 7)]
   , iverbHit = "scorch"
   , iweight  = 1200
   , iaspects = [ AddLight 3
@@ -138,7 +138,7 @@ oilLamp = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
-  , irarity  = [(5, 4), (10, 4)]
+  , irarity  = [(5, 5), (10, 5)]
   , iverbHit = "burn"
   , iweight  = 1000
   , iaspects = [AddLight 3, AddSight (-1)]
@@ -154,7 +154,7 @@ brassLantern = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [BrWhite]
   , icount   = 1
-  , irarity  = [(10, 3)]
+  , irarity  = [(10, 4)]
   , iverbHit = "burn"
   , iweight  = 2400
   , iaspects = [AddLight 4, AddSight (-1)]
@@ -231,7 +231,7 @@ necklace = ItemKind
   , iname    = "necklace"
   , ifreq    = [("useful", 100)]
   , iflavour = zipFancy stdCol ++ zipPlain brightCol
-  , irarity  = [(4, 2), (10, 5)]
+  , irarity  = [(10, 3)]
   , icount   = 1
   , iverbHit = "whip"
   , iweight  = 30
@@ -259,11 +259,11 @@ necklace3 = necklace
   }
 necklace4 = necklace
   { iaspects = [Periodic $ 2 * d 10 + dl 10]
-  , ieffects = [Teleport $ 2 + d 3]
+  , ieffects = [Teleport $ d 3 |*| 3]
   }
 necklace5 = necklace
   { iaspects = [Periodic $ d 4 + dl 2]
-  , ieffects = [Teleport $ 10 + d 10]
+  , ieffects = [Teleport $ 12 + d 3 |*| 3]
   }
 necklace6 = necklace
   { iaspects = [Periodic $ 2 * d 5 + dl 5]
@@ -302,7 +302,7 @@ ring = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain stdCol ++ zipFancy darkCol
   , icount   = 1
-  , irarity  = [(6, 2), (10, 5)]
+  , irarity  = [(10, 3)]
   , iverbHit = "knock"
   , iweight  = 15
   , iaspects = []
@@ -326,12 +326,12 @@ ring3 = ring
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
 ring4 = ring  -- TODO: move to level-ups and to timed effects
-  { irarity  = [(3, 8), (10, 12)]
+  { irarity  = [(3, 5), (10, 10)]
   , iaspects = [AddHurtMelee $ 3 * d 4 + dl 15, AddMaxHP $ dl 3 - 4 - d 2]
   , ifeature = ifeature ring ++ [Durable, EqpSlot EqpSlotAddHurtMelee ""]
   }
 ring5 = ring  -- by the time it's found, probably no space in eqp
-  { irarity  = [(5, 0), (10, 1)]
+  { irarity  = [(5, 0)]
   , iaspects = [AddLight $ d 2]
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddLight ""]
   , idesc    = "A sturdy ring with a large, shining stone."
@@ -345,7 +345,7 @@ potion = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain stdCol ++ zipFancy brightCol
   , icount   = 1
-  , irarity  = [(1, 10), (10, 8)]
+  , irarity  = [(1, 15), (10, 12)]
   , iverbHit = "splash"
   , iweight  = 200
   , iaspects = []
@@ -361,7 +361,7 @@ potion1 = potion
   }
 potion2 = potion
   { ifreq    = [("useful", 1)]  -- extremely rare
-  , irarity  = [(10, 1)]
+  , irarity  = [(1, 1)]
   , ieffects = [ NoEffect "of musky concoction", Impress, DropBestWeapon
                , OnSmash (Explode "pheromone")]
   }
@@ -369,7 +369,7 @@ potion3 = potion
   { ieffects = [RefillHP 5, OnSmash (Explode "healing mist")]
   }
 potion4 = potion  -- TODO: a bit boring
-  { irarity  = [(1, 5)]
+  { irarity  = [(1, 7)]
   , ieffects = [RefillHP (-5), OnSmash (Explode "wounding mist")]
   }
 potion5 = potion
@@ -395,7 +395,7 @@ potion8 = potion
                                 , Explode "explosion blast 10" ]) ]
   }
 potion9 = potion
-  { irarity  = [(4, 1), (10, 2)]
+  { irarity  = [(3, 3), (10, 6)]
   , ieffects = [ OneOf [ Dominate, DropBestWeapon, RefillHP 15, Burn 9
                        , InsertMove 2]
                , OnSmash (OneOf [ Explode "healing mist"
@@ -406,7 +406,7 @@ potion9 = potion
   }
 potion10 = potion
   { ifreq    = [("useful", 100), ("potion of glue", 1)]
-  , irarity  = [(1, 1)]
+  , irarity  = [(1, 3), (10, 2)]
   , icount   = 1 + d 2
   , ieffects = [ NoEffect "of glue", Paralyze (5 + d 5)
                , OnSmash (Explode "glue")]
@@ -420,7 +420,7 @@ scroll = ItemKind
   , ifreq    = [("useful", 100), ("any scroll", 100)]
   , iflavour = zipFancy stdCol ++ zipPlain darkCol  -- arcane and old
   , icount   = 1
-  , irarity  = [(1, 10), (10, 7)]
+  , irarity  = [(1, 15), (10, 12)]
   , iverbHit = "thump"
   , iweight  = 50
   , iaspects = []
@@ -431,23 +431,23 @@ scroll = ItemKind
   , ikit     = []
   }
 scroll1 = scroll
-  { irarity  = [(10, 2)]
+  { irarity  = [(1, 2), (10, 3)]
   , ieffects = [CallFriend 1]
   }
 scroll2 = scroll
-  { irarity  = [(1, 5), (10, 3)]
+  { irarity  = [(1, 7), (10, 5)]
   , ieffects = [NoEffect "of fireworks", Explode "firecracker 7"]
   }
 scroll3 = scroll
-  { irarity  = [(1, 4), (10, 2)]
+  { irarity  = [(1, 5), (10, 3)]
   , ieffects = [Ascend (-1)]
   }
 scroll4 = scroll
-  { ieffects = [ OneOf [ Teleport $ 2 + d 5, RefillCalm 10, RefillCalm (-10)
+  { ieffects = [ OneOf [ Teleport $ d 3 |*| 3, RefillCalm 10, RefillCalm (-10)
                        , InsertMove 4, Paralyze 10, Identify CGround ] ]
   }
 scroll5 = scroll
-  { irarity  = [(1, 4), (10, 6)]
+  { irarity  = [(3, 3), (10, 6)]
   , ieffects = [ OneOf [ Summon standardSummon $ d 2
                        , CallFriend 1, Ascend (-1), Ascend 1
                        , RefillCalm 30, RefillCalm (-30), CreateItem $ d 2
@@ -455,18 +455,18 @@ scroll5 = scroll
                -- TODO: ask player: Escape 1
   }
 scroll6 = scroll
-  { ieffects = [Teleport $ 2 + d 5]
+  { ieffects = [Teleport $ d 3 |*| 3]
   }
 scroll7 = scroll
-  { irarity  = [(10, 2)]
+  { irarity  = [(10, 3)]
   , ieffects = [InsertMove $ d 2 + dl 2]
   }
 scroll8 = scroll
-  { irarity  = [(3, 6), (10, 3)]
+  { irarity  = [(3, 8), (10, 4)]
   , ieffects = [Identify CGround]  -- TODO: ask player: AskPlayer cstore eff?
   }
 scroll9 = scroll
-  { irarity  = [(3, 3), (10, 9)]
+  { irarity  = [(10, 10)]
   , ieffects = [PolyItem CGround]
   }
 
@@ -481,7 +481,7 @@ armorLeather = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
-  , irarity  = [(4, 9)]
+  , irarity  = [(3, 6), (10, 3)]
   , iverbHit = "thud"
   , iweight  = 7000
   , iaspects = [ AddHurtMelee (-3)
@@ -496,7 +496,7 @@ armorLeather = ItemKind
 armorMail = armorLeather
   { iname    = "mail armor"
   , iflavour = zipPlain [Cyan]
-  , irarity  = [(7, 9)]
+  , irarity  = [(6, 6), (10, 6)]
   , iweight  = 12000
   , iaspects = [ AddHurtMelee (-3)
                , AddArmorMelee $ (2 + dl 3) |*| 5
@@ -547,7 +547,7 @@ buckler = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [Blue]
   , icount   = 1
-  , irarity  = [(4, 7)]
+  , irarity  = [(4, 6)]
   , iverbHit = "bash"
   , iweight  = 2000
   , iaspects = [AddArmorMelee 40, AddHurtMelee (-30)]
@@ -559,7 +559,7 @@ buckler = ItemKind
   }
 shield = buckler
   { iname    = "shield"
-  , irarity  = [(7, 7)]
+  , irarity  = [(7, 5)]
   , iflavour = zipPlain [Green]
   , iweight  = 3000
   , iaspects = [AddArmorMelee 80, AddHurtMelee (-70)]
@@ -685,7 +685,7 @@ whetstone = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [Blue]
   , icount   = 1
-  , irarity  = [(5, 5)]
+  , irarity  = [(5, 7)]
   , iverbHit = "smack"
   , iweight  = 400
   , iaspects = [AddHurtMelee $ 2 * (d 3 + 2 * dl 5)]

@@ -228,7 +228,7 @@ moveItemHuman cLegalRaw destCStore verb auto = do
           updateItemSlot (Just leader) iid  -- slot not yet assigned
           msgAndSer CInv
         CEqp | eqpOverfull b k -> do
-          msgAdd $ "Warning:" <+> showReqFailure EqpOverfull
+          msgAdd $ "Warning:" <+> showReqFailure EqpOverfull <> "."
           updateItemSlot (Just leader) iid  -- slot not yet assigned
           msgAndSer CInv
         _ -> msgAndSer destCStore
