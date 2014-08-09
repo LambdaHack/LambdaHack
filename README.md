@@ -103,8 +103,8 @@ touch the topmost UI layer).
     cabal clean
     cabal install --enable-library-coverage
     make test
-    hpc report --hpcdir=dist/hpc/mix/LambdaHack-0.4.9.0/ LambdaHack
-    hpc markup --hpcdir=dist/hpc/mix/LambdaHack-0.4.9.0/ LambdaHack
+    hpc report --hpcdir=dist/hpc/mix/LambdaHack-xxx/ LambdaHack
+    hpc markup --hpcdir=dist/hpc/mix/LambdaHack-xxx/ LambdaHack
 
 Note that debug option `--stopAfter` is required to cleanly terminate
 any automated test that is used to gather HPC info, because HPC needs
