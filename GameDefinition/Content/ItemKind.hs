@@ -404,12 +404,13 @@ potion9 = potion
                                 , Explode "distortion"
                                 , Explode "explosion blast 20" ]) ]
   }
-potion10 = potion
+potion10 = potion  -- used only as initial equipmnt; count betray identity
   { ifreq    = [("useful", 100), ("potion of glue", 1)]
-  , irarity  = [(1, 3), (10, 2)]
+  , irarity  = [(1, 1)]
   , icount   = 1 + d 2
   , ieffects = [ NoEffect "of glue", Paralyze (5 + d 5)
                , OnSmash (Explode "glue")]
+  , ifeature = [Identified]
   }
 potion11 = potion
   { irarity  = [(10, 5)]
