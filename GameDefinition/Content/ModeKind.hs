@@ -147,10 +147,10 @@ rosterAmbush = rosterDuel
 rosterBattle = Roster
   { rosterList = [ playerSoldier { finitialActors = 5
                                  , fentryLevel = -5 }
-                 , playerMonster { finitialActors = 15
+                 , playerMonster { finitialActors = 30
                                  , fentryLevel = -5
                                  , fneverEmpty = True }
-                 , playerAnimal { finitialActors = 10
+                 , playerAnimal { finitialActors = 20
                                 , fentryLevel = -5
                                 , fneverEmpty = True } ]
   , rosterEnemy = [ ("Armed Adventurer Party", "Monster Hive")
