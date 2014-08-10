@@ -1,7 +1,8 @@
 -- | Basic players definitions.
 module Content.ModeKindPlayer
   ( playerHero, playerSoldier, playerAntiHero, playerCivilian, playerMonster
-  , playerAntiMonster, playerAnimal, playerHorror
+  , playerMobileMonster,  playerAntiMonster, playerAnimal, playerMobileAnimal
+  , playerHorror
   ) where
 
 import qualified Data.EnumMap.Strict as EM
@@ -9,7 +10,7 @@ import qualified Data.EnumMap.Strict as EM
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Content.ModeKind
 
-playerHero, playerSoldier, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror :: Player
+playerHero, playerSoldier, playerAntiHero, playerCivilian, playerMonster, playerMobileMonster, playerAntiMonster, playerAnimal, playerMobileAnimal, playerHorror :: Player
 
 playerHero = Player
   { fname = "Adventurer Party"
@@ -66,6 +67,8 @@ playerMonster = Player
   , fhasUI = False
   }
 
+playerMobileMonster = playerMonster
+
 playerAntiMonster = playerMonster
   { fhasUI = True
   }
@@ -84,6 +87,9 @@ playerAnimal = Player
   , fleaderMode = LeaderNull
   , fhasUI = False
   }
+
+playerMobileAnimal = playerAnimal
+  { fgroup = "mobile animal" }
 
 -- | A special player, for summoned actors that don't belong to any
 -- of the main players of a given game. E.g., animals summoned during
