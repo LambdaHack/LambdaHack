@@ -34,7 +34,8 @@ data Cover =
 -- | The choice of a fence type for the place.
 data Fence =
     FWall   -- ^ put a solid wall fence around the place
-  | FFloor  -- ^ leave an empty floor space around the place
+  | FFloor  -- ^ leave an empty space, like the rooms floor
+  | FGround -- ^ leave an empty space, like the caves ground
   | FNone   -- ^ skip the fence and fill all with the place proper
   deriving (Show, Eq)
 

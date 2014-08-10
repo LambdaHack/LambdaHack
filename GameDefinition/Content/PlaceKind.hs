@@ -132,6 +132,7 @@ colonnade2 = colonnade
   }
 colonnade3 = colonnade
   { prarity  = [(1, 2), (10, 2)]
+  , pfence   = FGround
   , ptopLeft = [ ".."
                , ".O"
                ]

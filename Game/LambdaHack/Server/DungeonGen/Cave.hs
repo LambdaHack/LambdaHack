@@ -122,14 +122,15 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                 let shrinkPlace (r, Place{qkind}) =
                       case shrink r of
                         Nothing -> (r, r)  -- FNone place of x and/or y size 1
-                        Just sr -> case pfence $ pokind qkind of
-                          FFloor ->
+                        Just sr ->
+                          if pfence (pokind qkind) `elem` [FFloor, FGround]
+                          then
                             -- Avoid corridors touching the floor fence,
                             -- but let them merge with the fence.
                             case shrink sr of
                               Nothing -> (sr, r)
                               Just mergeArea -> (mergeArea, r)
-                          _ -> (sr, sr)
+                          else (sr, sr)
                     shrinkForFence = either (id &&& id) shrinkPlace
                     rr0 = shrinkForFence $ qplaces M.! p0
                     rr1 = shrinkForFence $ qplaces M.! p1

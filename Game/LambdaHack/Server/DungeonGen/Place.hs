@@ -27,12 +27,13 @@ import Game.LambdaHack.Server.DungeonGen.Area
 -- | The parameters of a place. Most are immutable and set
 -- at the time when a place is generated.
 data Place = Place
-  { qkind        :: !(Kind.Id PlaceKind)
-  , qarea        :: !Area
-  , qseen        :: !Bool
-  , qlegend      :: !GroupName
-  , qsolidFence  :: !(Kind.Id TileKind)
-  , qhollowFence :: !(Kind.Id TileKind)
+  { qkind    :: !(Kind.Id PlaceKind)
+  , qarea    :: !Area
+  , qseen    :: !Bool
+  , qlegend  :: !GroupName
+  , qFWall   :: !(Kind.Id TileKind)
+  , qFFloor  :: !(Kind.Id TileKind)
+  , qFGround :: !(Kind.Id TileKind)
   }
   deriving Show
 
@@ -75,9 +76,10 @@ placeCheck r PlaceKind{..} =
 -- generation process (e.g., for stairs).
 interiorArea :: Fence -> Area -> Maybe Area
 interiorArea fence r = case fence of
-  FWall  -> shrink r
-  FFloor -> shrink r
-  FNone  -> Just r
+  FWall   -> shrink r
+  FFloor  -> shrink r
+  FGround -> shrink r
+  FNone   -> Just r
 
 -- | Given a few parameters, roll and construct a 'Place' datastructure
 -- and fill a cave section acccording to it.
@@ -94,7 +96,7 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
                          , coplace=Kind.Ops{ofoldrGroup} }
            CaveKind{..} dnight darkCorTile litCorTile
            ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) r = do
-  qsolidFence <- fmap (fromMaybe $ assert `failure` cfillerTile)
+  qFWall <- fmap (fromMaybe $ assert `failure` cfillerTile)
                  $ opick cfillerTile (const True)
   dark <- chanceDice ldepth totalDepth cdarkChance
   -- TODO: factor out from here and newItem:
@@ -117,7 +119,8 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
       freq = toFreq ("buildPlace ('" <> tshow ld <> ")") checkedFreq
   assert (not (nullFreq freq) `blame` (placeFreq, checkedFreq, r)) skip
   ((qkind, kr), _) <- frequency freq
-  let qhollowFence = if dark then darkCorTile else litCorTile
+  let qFFloor = if dark then darkCorTile else litCorTile
+      qFGround = if dnight then darkCorTile else litCorTile
       qlegend = if dark then clegendDarkTile else clegendLitTile
       qseen = False
       qarea = fromMaybe (assert `failure` (kr, r)) $ interiorArea (pfence kr) r
@@ -129,8 +132,9 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
       xlegendLit = EM.union override legendLit
       cmap = tilePlace qarea kr
       fence = case pfence kr of
-        FWall -> buildFence qsolidFence qarea
-        FFloor -> buildFence qhollowFence qarea
+        FWall -> buildFence qFWall qarea
+        FFloor -> buildFence qFFloor qarea
+        FGround -> buildFence qFGround qarea
         FNone -> EM.empty
       (x0, y0, x1, y1) = fromArea qarea
       isEdge (Point x y) = x `elem` [x0, x1] || y `elem` [y0, y1]
@@ -253,13 +257,15 @@ instance Binary Place where
     put qarea
     put qseen
     put qlegend
-    put qsolidFence
-    put qhollowFence
+    put qFWall
+    put qFFloor
+    put qFGround
   get = do
     qkind <- get
     qarea <- get
     qseen <- get
     qlegend <- get
-    qsolidFence <- get
-    qhollowFence <- get
+    qFWall <- get
+    qFFloor <- get
+    qFGround <- get
     return $! Place{..}
