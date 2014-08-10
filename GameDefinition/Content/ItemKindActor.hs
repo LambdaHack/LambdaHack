@@ -12,9 +12,9 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, adventurer, blacksmith, forester, scientist, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser]
+  [warrior, adventurer, blacksmith, forester, scientist, soldier, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser]
 
-warrior,    adventurer, blacksmith, forester, scientist, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser :: ItemKind
+warrior,    adventurer, blacksmith, forester, scientist, soldier, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser :: ItemKind
 
 -- * Hunams
 
@@ -42,6 +42,12 @@ forester = warrior
   { iname    = "forester" }
 scientist = warrior
   { iname    = "scientist" }
+
+soldier = warrior
+  { iname    = "soldier"
+  , ifreq    = [("soldier", 100)]
+  , ikit     = ikit warrior ++ [("starting weapon", CEqp)]
+  }
 
 clerk = warrior
   { iname    = "clerk"

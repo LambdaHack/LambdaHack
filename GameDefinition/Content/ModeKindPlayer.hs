@@ -1,6 +1,6 @@
 -- | Basic players definitions.
 module Content.ModeKindPlayer
-  ( playerHero, playerAntiHero, playerCivilian, playerMonster
+  ( playerHero, playerSoldier, playerAntiHero, playerCivilian, playerMonster
   , playerAntiMonster, playerAnimal, playerHorror
   ) where
 
@@ -9,7 +9,7 @@ import qualified Data.EnumMap.Strict as EM
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Content.ModeKind
 
-playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror :: Player
+playerHero, playerSoldier, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror :: Player
 
 playerHero = Player
   { fname = "Adventurer Party"
@@ -24,6 +24,11 @@ playerHero = Player
   , finitialActors = 3
   , fleaderMode = LeaderUI $ AutoLeader False False
   , fhasUI = True
+  }
+
+playerSoldier = playerHero
+  { fname = "Armed Adventurer Party"
+  , fgroup = "soldier"
   }
 
 playerAntiHero = playerHero

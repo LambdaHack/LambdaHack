@@ -145,15 +145,16 @@ rosterAmbush = rosterDuel
                   , ("Blue Epigram", "Horror Den") ] }
 
 rosterBattle = Roster
-  { rosterList = [ playerHero { finitialActors = 5
-                              , fentryLevel = -3 }
+  { rosterList = [ playerSoldier { finitialActors = 5
+                                 , fentryLevel = -5 }
                  , playerMonster { finitialActors = 15
+                                 , fentryLevel = -5
                                  , fneverEmpty = True }
                  , playerAnimal { finitialActors = 10
-                                , fentryLevel = -3
+                                , fentryLevel = -5
                                 , fneverEmpty = True } ]
-  , rosterEnemy = [ ("Adventurer Party", "Monster Hive")
-                  , ("Adventurer Party", "Animal Kingdom") ]
+  , rosterEnemy = [ ("Armed Adventurer Party", "Monster Hive")
+                  , ("Armed Adventurer Party", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 rosterSafari = Roster
@@ -239,7 +240,7 @@ cavesSkirmish = IM.fromList [(-3, ("caveSkirmish", Nothing))]
 
 cavesAmbush = IM.fromList [(-5, ("caveAmbush", Nothing))]
 
-cavesBattle = IM.fromList [(-3, ("caveBattle", Nothing))]
+cavesBattle = IM.fromList [(-5, ("caveBattle", Nothing))]
 
 cavesSafari = IM.fromList [ (-4, ("caveSafari1", Nothing))
                           , (-7, ("caveSafari2", Nothing))
