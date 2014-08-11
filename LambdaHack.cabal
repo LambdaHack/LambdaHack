@@ -78,7 +78,7 @@ flag curses
 
 flag expose_internal
   description:        expose internal functions and types (True for release, False for development)
-  default:            False
+  default:            True
 
 library
   exposed-modules:    Game.LambdaHack.Atomic
