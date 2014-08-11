@@ -162,10 +162,11 @@ deduceQuits body status = do
       keysInGame = map fst assocsInGameOutcome
       assocsKeepArena = filter (keepArenaFact . snd) assocsInGame
       assocsUI = filter (fhasUI . gplayer . snd) assocsInGame
+      nonHorrorAIG = filter (not . isHorrorFact . snd) assocsInGame
       worldPeace =
         all (\(fid1, _) -> all (\(_, fact2) -> not $ isAtWar fact2 fid1)
-                           assocsInGame)
-        assocsInGame
+                           nonHorrorAIG)
+        nonHorrorAIG
   case assocsKeepArena of
     _ | null assocsUI ->
       -- Only non-UI players left in the game and they all win.
