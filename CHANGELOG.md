@@ -1,6 +1,6 @@
 ## [v0.4.9.0, aka 'Player escapes'](https://github.com/LambdaHack/LambdaHack/compare/v0.2.14...v0.4.9.0)
 
-- balance the example game content a bit (still wildly unbalanced)
+- balance the example game content a bit (campaign still unbalanced)
 - various code and documentation tweaks and fixes
 - add cabal flag expose_internal that reveals internal library operations
 - merge FactionKind into ModeKind and rework completely the semantics
