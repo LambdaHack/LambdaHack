@@ -255,7 +255,7 @@ your score is based on the number of turns you spent overcoming your foes
 and, as a bonus, the number of enemies you've subdued.
 
 If all your heroes fall, you are awarded a score for your valiant deeds,
-but no winning bonus. When, invariably, a new overconfident party
+but no winning bonus. When, invariably, a new foolhardy party
 of adventurers storms the dungeon, they start from a new entrance,
 with no experience and no equipment, and new, undaunted enemies
 bar their way.

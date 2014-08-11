@@ -47,8 +47,8 @@ Compilation and installation
 The library is best compiled and installed via Cabal (already a part
 of your OS distribution, or available within [The Haskell Platform] [7]),
 which also takes care of all the dependencies. The latest official
-version of the library can be downloaded automatically by Cabal
-from [Hackage] [3] as follows
+version of the library can be downloaded, compiled and installed
+automatically by Cabal from [Hackage] [3] as follows
 
     cabal install gtk2hs-buildtools
     cabal install LambdaHack
@@ -65,6 +65,8 @@ use Cabal flags, e.g,
 
     cabal install gtk2hs-buildtools
     cabal install -fvty
+
+Some pre-compiled game binaries may be available from the [releases] [11] page.
 
 
 Compatibility notes
@@ -135,3 +137,4 @@ Have fun!
 [8]: https://github.com/tuturto/space-privateers
 [9]: https://github.com/LambdaHack/LambdaHack/wiki/Sample-dungeon-crawler
 [10]: https://github.com/AllureOfTheStars/Allure
+[11]: https://github.com/LambdaHack/LambdaHack/releases
