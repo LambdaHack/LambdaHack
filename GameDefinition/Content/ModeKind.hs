@@ -173,12 +173,12 @@ rosterSafari = Roster
                                           "Animal Magnificent Specimen Variety"
                                       , fneverEmpty = True
                                       , fentryLevel = -7
-                                      , finitialActors = 7 }
+                                      , finitialActors = 10 }
                  , playerMobileAnimal { fname =
                                           "Animal Exquisite Herds and Packs"
                                       , fneverEmpty = True
                                       , fentryLevel = -10
-                                      , finitialActors = 20 } ]
+                                      , finitialActors = 25 } ]
   , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
                   , ("Monster Tourist Office",
                      "Animal Magnificent Specimen Variety")
