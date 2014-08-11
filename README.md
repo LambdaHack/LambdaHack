@@ -1,7 +1,7 @@
 LambdaHack [![Build Status](https://travis-ci.org/LambdaHack/LambdaHack.svg?branch=master)](https://travis-ci.org/LambdaHack/LambdaHack)[![Build Status](https://drone.io/github.com/LambdaHack/LambdaHack/status.png)](https://drone.io/github.com/LambdaHack/LambdaHack/latest)
 ==========
 
-This is an alpha release of LambdaHack, a [Haskell] [1] game engine
+LambdaHack is a [Haskell] [1] game engine
 library for [roguelike] [2] games of arbitrary theme, size and complexity,
 packaged together with a small example dungeon crawler. When completed,
 the engine will let you specify content to be procedurally generated,
