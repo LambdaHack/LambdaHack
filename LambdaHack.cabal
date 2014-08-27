@@ -204,6 +204,7 @@ library
                       binary     >= 0.7     && < 1,
                       bytestring >= 0.9.2   && < 1,
                       containers >= 0.5     && < 1,
+                      data-default,
                       deepseq    >= 1.3     && < 2,
                       directory  >= 1.1.0.1 && < 2,
                       enummapset-th >= 0.6.0.0 && < 1,
@@ -247,7 +248,7 @@ library
     cpp-options:      -DCURSES
   } else { if flag(vty) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Vty
-    build-depends:    vty >= 4.7.0.6 && < 5
+    build-depends:    vty >= 5 && < 6
     cpp-options:      -DVTY
   } else {
     if impl(ghc > 7.8) {
@@ -291,6 +292,7 @@ executable LambdaHack
                       binary     >= 0.7     && < 1,
                       bytestring >= 0.9.2   && < 1,
                       containers >= 0.5     && < 1,
+                      data-default,
                       deepseq    >= 1.3     && < 2,
                       directory  >= 1.1.0.1 && < 2,
                       enummapset-th >= 0.6.0.0 && < 1,
@@ -336,6 +338,7 @@ test-suite test
                       binary     >= 0.7     && < 1,
                       bytestring >= 0.9.2   && < 1,
                       containers >= 0.5     && < 1,
+                      data-default,
                       deepseq    >= 1.3     && < 2,
                       directory  >= 1.1.0.1 && < 2,
                       enummapset-th >= 0.6.0.0 && < 1,
