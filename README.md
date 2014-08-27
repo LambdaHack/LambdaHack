@@ -44,6 +44,9 @@ Games known to use the LambdaHack library:
 Compilation and installation
 ----------------------------
 
+Some pre-compiled game binaries are available through the [release page] [11]
+and from the Nix Packages Collection [12].
+
 The library is best compiled and installed via Cabal (already a part
 of your OS distribution, or available within [The Haskell Platform] [7]),
 which also takes care of all the dependencies. The latest official
@@ -65,8 +68,6 @@ use Cabal flags, e.g,
 
     cabal install gtk2hs-buildtools
     cabal install -fvty
-
-Some pre-compiled game binaries may be available from the [releases] [11] page.
 
 
 Compatibility notes
@@ -137,4 +138,5 @@ Have fun!
 [8]: https://github.com/tuturto/space-privateers
 [9]: https://github.com/LambdaHack/LambdaHack/wiki/Sample-dungeon-crawler
 [10]: https://github.com/AllureOfTheStars/Allure
-[11]: https://github.com/LambdaHack/LambdaHack/releases
+[11]: https://github.com/LambdaHack/LambdaHack/releases/latest
+[12]: http://hydra.cryp.to/search?query=LambdaHack
