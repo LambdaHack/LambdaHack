@@ -255,7 +255,14 @@ build-binary:
 	cabal build exe:LambdaHack
 	rm -rf /tmp/LambdaHack
 	cabal copy --destdir=/tmp/LambdaHack
-	tar -czf /tmp/LambdaHack.tar.gz -C /tmp --exclude=LambdaHack/usr/local/lib --exclude=LambdaHack/usr/local/share/doc LambdaHack
+	tar -czf /tmp/LambdaHack_x_ubuntu-12.04-amd64.tar.gz -C /tmp --exclude=LambdaHack/usr/local/lib --exclude=LambdaHack/usr/local/share/doc LambdaHack
+
+build-binary-i386:
+	cabal configure --prefix=/usr/local --ghc-option="-optc-m32" --ghc-option="-opta-m32" --ghc-option="-optl-m32" --ld-option="-melf_i386"
+	cabal build exe:LambdaHack
+	rm -rf /tmp/LambdaHack
+	cabal copy --destdir=/tmp/LambdaHack
+	tar -czf /tmp/LambdaHack_x_ubuntu-12.04-i386.tar.gz -C /tmp --exclude=LambdaHack/usr/local/lib --exclude=LambdaHack/usr/local/share/doc LambdaHack
 
 
 # The rest of the makefile is unmaintained at the moment.
