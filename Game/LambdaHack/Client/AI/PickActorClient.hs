@@ -82,6 +82,8 @@ pickActorToMove refreshTarget oldAid = do
   case ours of
     _ | -- Keep the leader: only a leader is allowed to pick another leader.
         mleader /= Just oldAid
+        -- Keep the leader: the faction forbids client leader change on level.
+        || snd (autoDungeonLevel fact)
         -- Keep the leader: he is on stairs and not stuck
         -- and we don't want to clog stairs or get pushed to another level.
         || not leaderStuck && Tile.isStair cotile t
