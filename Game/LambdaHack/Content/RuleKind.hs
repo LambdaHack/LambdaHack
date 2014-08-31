@@ -49,7 +49,7 @@ data RuleKind = RuleKind
                                   --   ends the game
   , rfovMode        :: !FovMode   -- ^ FOV calculation mode
   , rwriteSaveClips :: !Int       -- ^ game is saved that often
-  , rleadLevelClips :: !Int       -- ^ flip AI/spawn leader level that often
+  , rleadLevelClips :: !Int       -- ^ server switches leader level that often
   , rscoresFile     :: !FilePath  -- ^ name of the scores file
   , rsavePrefix     :: !String    -- ^ name of the savefile prefix
   , rsharedStash    :: !Bool      -- ^ whether shared stashes are available

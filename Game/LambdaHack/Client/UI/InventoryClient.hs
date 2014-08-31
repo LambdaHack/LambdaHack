@@ -1,8 +1,7 @@
 -- | Inventory management and party cycling.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( failMsg, msgNoChangeDunLeader, msgNoChangeLvlLeader
-  , getGroupItem, getAnyItem, getStoreItem
+  ( failMsg, getGroupItem, getAnyItem, getStoreItem
   , memberCycle, memberBack, pickLeader
   ) where
 
@@ -357,12 +356,6 @@ memberBack verbose = do
       success <- pickLeader verbose np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
       return mempty
-
-msgNoChangeDunLeader :: Msg
-msgNoChangeDunLeader = "level change is automatic for your team"
-
-msgNoChangeLvlLeader :: Msg
-msgNoChangeLvlLeader = "leader change is automatic for your team"
 
 partyAfterLeader :: MonadStateRead m => ActorId -> m [(ActorId, Actor)]
 partyAfterLeader leader = do

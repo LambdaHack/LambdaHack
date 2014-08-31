@@ -1,7 +1,7 @@
 -- | Server operations performed periodically in the game loop
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicServer
-  ( spawnMonster, addAnyActor, dominateFidSfx, advanceTime, leadLevelFlip
+  ( spawnMonster, addAnyActor, dominateFidSfx, advanceTime, leadLevelSwitch
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -217,14 +217,11 @@ advanceTime aid = do
         -- Clear delta for the next player turn.
         execUpdAtomic $ UpdRefillHP aid clearMark
 
-leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
-leadLevelFlip = do
+leadLevelSwitch :: (MonadAtomic m, MonadServer m) => m ()
+leadLevelSwitch = do
   Kind.COps{cotile} <- getsState scops
-  let canFlip fact = case fleaderMode (gplayer fact) of
-                       LeaderNull -> True
-                       LeaderAI _ -> True
-                       LeaderUI AutoLeader{autoDungeon} -> autoDungeon
-      flipFaction fact | not $ canFlip fact = return ()
+  let canSwitch fact = fst $ autoDungeonLevel fact
+      flipFaction fact | not $ canSwitch fact = return ()
       flipFaction fact = do
         case gleader fact of
           Nothing -> return ()

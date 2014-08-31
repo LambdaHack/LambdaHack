@@ -142,7 +142,7 @@ endClip arenas = do
   when (clipN `mod` writeSaveClips == 0) $ do
     modifyServer $ \ser -> ser {swriteSave = False}
     writeSaveAll False
-  when (clipN `mod` leadLevelClips == 0) leadLevelFlip
+  when (clipN `mod` leadLevelClips == 0) leadLevelSwitch
   -- Add monsters each turn, not each clip.
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.

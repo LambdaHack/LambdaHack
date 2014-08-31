@@ -116,7 +116,7 @@ moveRunHuman run dir = do
         -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do
           let autoLvl = snd $ autoDungeonLevel fact
-          if autoLvl then failWith msgNoChangeLvlLeader
+          if autoLvl then failSer NoChangeLvlLeader
           else do
             -- Select adjacent actor by bumping into him. Takes no time.
             success <- pickLeader True target

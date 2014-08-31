@@ -101,9 +101,22 @@ data LeaderMode =
 instance Binary LeaderMode
 
 data AutoLeader = AutoLeader
-  { autoDungeon :: !Bool  -- ^ leader change between levels only automatic
-  , autoLevel   :: !Bool  -- ^ leader change within a level only automatic
-                          --   (for UI, currently no leader change here)
+  { autoDungeon :: !Bool
+      -- ^ leader switching between levels is automatically done by the server
+      --   and client is not permitted to change leaders
+      --   (the frequency of leader level switching done by the server
+      --   is controlled by @RuleKind.rleadLevelClips@);
+      --   if the flag is @False@, server still does a subset
+      --   of the automatic switching, e.g., when the old leader dies
+      --   and no other actor of the faction resides on his level,
+      --   but the client (particularly UI) is expected to do changes as well
+  , autoLevel   :: !Bool
+      -- ^ leader switching within a level is automatically done by the server
+      --   and client is not permitted to change leaders
+      --   (server is guaranteed to switch leader within a level very rarely,
+      --   e.g., when the old leader dies);
+      --   if the flag is @False@, server still does a subset
+      --   of the automatic switching, but the client is permitted to do more
   }
   deriving (Show, Eq, Generic)
 
