@@ -8,10 +8,10 @@ module Content.ModeKindPlayer
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Common.Ability
-import qualified Game.LambdaHack.Common.Dice as Dice
+import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Content.ModeKind
 
-playerHero, playerSoldier, playerAntiHero, playerCivilian, playerMonster, playerMobileMonster, playerAntiMonster, playerAnimal, playerMobileAnimal, playerHorror :: Player Dice.Dice
+playerHero, playerSoldier, playerAntiHero, playerCivilian, playerMonster, playerMobileMonster, playerAntiMonster, playerAnimal, playerMobileAnimal, playerHorror :: Player Dice
 
 playerHero = Player
   { fname = "Adventurer Party"
@@ -48,7 +48,7 @@ playerCivilian = Player
   , fhasGender = True
   , ftactic = TPatrol
   , fentryLevel = -1
-  , finitialActors = 3
+  , finitialActors = d 2 + 2
   , fleaderMode = LeaderNull  -- unorganized
   , fhasUI = False
   }
