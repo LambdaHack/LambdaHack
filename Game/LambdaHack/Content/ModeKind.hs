@@ -15,6 +15,7 @@ import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU ()
 
 import Game.LambdaHack.Common.Ability
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 
@@ -36,14 +37,14 @@ type Caves = IM.IntMap (GroupName, Maybe Bool)
 
 -- | The specification of players for the game mode.
 data Roster = Roster
-  { rosterList  :: ![Player]        -- ^ players in the particular team
-  , rosterEnemy :: ![(Text, Text)]  -- ^ the initial enmity matrix
-  , rosterAlly  :: ![(Text, Text)]  -- ^ the initial aliance matrix
+  { rosterList  :: ![Player Dice.Dice]  -- ^ players in the particular team
+  , rosterEnemy :: ![(Text, Text)]      -- ^ the initial enmity matrix
+  , rosterAlly  :: ![(Text, Text)]      -- ^ the initial aliance matrix
   }
   deriving (Show, Eq)
 
 -- | Properties of a particular player.
-data Player = Player
+data Player a = Player
   { fname          :: !Text        -- ^ name of the player
   , fgroup         :: !GroupName   -- ^ name of the monster group to control
   , fskillsOther   :: !Skills      -- ^ skills of the other actors
@@ -52,15 +53,15 @@ data Player = Player
   , fhasNumbers    :: !Bool        -- ^ whether actors have numbers, not symbols
   , fhasGender     :: !Bool        -- ^ whether actors have gender
   , ftactic        :: !Tactic      -- ^ members behave according to this tactic
-  , fentryLevel    :: !Int         -- ^ level where the initial members start
-  , finitialActors :: !Int         -- ^ number of initial members
+  , fentryLevel    :: !a           -- ^ level where the initial members start
+  , finitialActors :: !a           -- ^ number of initial members
   , fleaderMode    :: !LeaderMode  -- ^ the mode of switching the leader
   , fhasUI         :: !Bool        -- ^ does the faction have a UI client
                                    --   (for control or passive observation)
   }
   deriving (Show, Eq, Generic)
 
-instance Binary Player
+instance Binary a => Binary (Player a)
 
 -- Keep this type here, so that Contents/ is as self-contained as possible.
 -- TODO: alway shoot, never shoot, etc., but there is too many and this is best
@@ -148,7 +149,7 @@ validateSingleRoster caves Roster{..} =
         ++ concatMap (checkDipl "rosterAlly") rosterAlly
 
 -- Note that @fSkillsOther@ needn't be a subset of @fSkillsLeader@.
-validateSinglePlayer :: Caves -> Player -> [Text]
+validateSinglePlayer :: Caves -> Player Dice.Dice -> [Text]
 validateSinglePlayer caves Player{..} =
   [ "fname empty:" <+> fname | T.null fname ]
   ++ [ "first word of fname longer than 15:" <+> fname
@@ -157,8 +158,10 @@ validateSinglePlayer caves Player{..} =
      | not fhasUI && case fleaderMode of
                        LeaderUI _ -> True
                        _ -> False ]
-  ++ [ "fentryLevel not among caves:" <+> fname
-     | fentryLevel `notElem` IM.keys caves ]
+  ++ [ "fentryLevel value not among cave numbers:" <+> fname
+     | any (`notElem` IM.keys caves)
+           [Dice.minDice fentryLevel
+            .. Dice.maxDice fentryLevel] ]  -- simplification
 
 -- | Validate all game mode kinds. Currently always valid.
 validateAllModeKind :: [ModeKind] -> [Text]

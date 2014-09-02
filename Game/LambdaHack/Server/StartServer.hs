@@ -87,10 +87,16 @@ mapFromFuns =
 lowercase :: Text -> Text
 lowercase = T.pack . map Char.toLower . T.unpack
 
-createFactions :: Roster -> Rnd FactionDict
-createFactions players = do
-  let rawCreate gplayer@Player{..} = do
-        let cmap = mapFromFuns
+createFactions :: AbsDepth -> Roster -> Rnd FactionDict
+createFactions totalDepth players = do
+  let rawCreate Player{..} = do
+        entryLevel <- castDice (AbsDepth 0) (AbsDepth 0) fentryLevel
+        initialActors <- castDice (AbsDepth entryLevel) totalDepth
+                                  finitialActors
+        let gplayer = Player{ fentryLevel = entryLevel
+                            , finitialActors = initialActors
+                            , ..}
+            cmap = mapFromFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
             nameoc = lowercase $ head $ T.words fname
             fisAI = case fleaderMode of
@@ -159,10 +165,10 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
             players = if sautomateAll sdebug
                       then automatePS $ mroster mode
                       else mroster mode
-        faction <- createFactions players
         sflavour <- dungeonFlavourMap cops
         (sdiscoKind, sdiscoKindRev) <- serverDiscos cops
         freshDng <- DungeonGen.dungeonGen cops $ mcaves mode
+        faction <- createFactions (DungeonGen.freshTotalDepth freshDng) players
         return (faction, sflavour, sdiscoKind, sdiscoKindRev, freshDng)
   let (faction, sflavour, sdiscoKind, sdiscoKindRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
