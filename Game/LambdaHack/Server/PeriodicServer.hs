@@ -48,7 +48,8 @@ spawnMonster lid = do
   f <- getsState $ \s fid -> not $ fcanEscape $ gplayer $ sfactionD s EM.! fid
   spawns <- getsState $ actorRegularList f lid
   totalDepth <- getsState stotalDepth
-  -- We do not check @playerSpawn@ of any faction, but just take @lactorFreq@.
+  -- TODO: eliminate the defeated and victorious faction from lactorFreq;
+  -- then fcanEscape and fneverEmpty make sense for spawning factions
   Level{ldepth, lactorCoeff, lactorFreq} <- getLevel lid
   rc <- rndToAction
         $ monsterGenChance ldepth totalDepth (length spawns) lactorCoeff
