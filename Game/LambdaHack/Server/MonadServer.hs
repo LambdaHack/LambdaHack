@@ -9,7 +9,7 @@ module Game.LambdaHack.Server.MonadServer
                , liftIO  -- exposed only to be implemented, not used
                )
     -- * Assorted primitives
-  , debugPrint, saveServer, saveName, dumpRngs
+  , debugPrint, serverPrint, saveServer, saveName, dumpRngs
   , restoreScore, registerScore
   , resetSessionStart, resetGameStart, elapsedSessionTimeGT
   , tellAllClipPS, tellGameClipPS
@@ -67,6 +67,11 @@ debugPrint t = do
   when debug $ liftIO $ do
     T.hPutStrLn stderr t
     hFlush stderr
+
+serverPrint :: MonadServer m => Text -> m ()
+serverPrint t = liftIO $ do
+  T.hPutStrLn stderr t
+  hFlush stderr
 
 saveServer :: MonadServer m => m ()
 saveServer = do

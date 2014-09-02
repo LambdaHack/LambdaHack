@@ -32,8 +32,8 @@ debugResponseAI cmd = case cmd of
   RespUpdAtomicAI cmdA -> debugPretty cmd cmdA
   RespQueryAI aid -> do
     d <- debugAid aid "RespQueryAI" cmd
-    debugPrint d
-  RespPingAI -> debugPrint $ tshow cmd
+    serverPrint d
+  RespPingAI -> serverPrint $ tshow cmd
 
 debugResponseUI :: MonadServer m => ResponseUI -> m ()
 debugResponseUI cmd = case cmd of
@@ -43,29 +43,29 @@ debugResponseUI cmd = case cmd of
   RespUpdAtomicUI cmdA -> debugPretty cmd cmdA
   RespSfxAtomicUI sfx -> do
     ps <- posSfxAtomic sfx
-    debugPrint $ tshow (cmd, ps)
-  RespQueryUI -> debugPrint $ "RespQueryUI:" <+> tshow cmd
-  RespPingUI -> debugPrint $ tshow cmd
+    serverPrint $ tshow (cmd, ps)
+  RespQueryUI -> serverPrint $ "RespQueryUI:" <+> tshow cmd
+  RespPingUI -> serverPrint $ tshow cmd
 
 debugPretty :: (MonadServer m, Show a) => a -> UpdAtomic -> m ()
 debugPretty cmd cmdA = do
   ps <- posUpdAtomic cmdA
-  debugPrint $ tshow (cmd, ps)
+  serverPrint $ tshow (cmd, ps)
 
 debugPlain :: (MonadServer m, Show a) => a -> UpdAtomic -> m ()
 debugPlain cmd cmdA = do
   ps <- posUpdAtomic cmdA
-  debugPrint $ T.pack $ show (cmd, ps)  -- too large for pretty show
+  serverPrint $ T.pack $ show (cmd, ps)  -- too large for pretty show
 
 debugRequestAI :: MonadServer m => ActorId -> RequestAI -> m ()
 debugRequestAI aid cmd = do
   d <- debugAid aid "AI request" cmd
-  debugPrint d
+  serverPrint d
 
 debugRequestUI :: MonadServer m => ActorId -> RequestUI -> m ()
 debugRequestUI aid cmd = do
   d <- debugAid aid "UI request" cmd
-  debugPrint d
+  serverPrint d
 
 data DebugAid a = DebugAid
   { label   :: !Text
