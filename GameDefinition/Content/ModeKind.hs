@@ -164,9 +164,7 @@ rosterSafari = Roster
                                      -- Follow-the-guide, as tourists do.
                                      , ftactic = TFollow
                                      , fentryLevel = -4
-                                     , finitialActors = 15
-                                     , fleaderMode =
-                                         LeaderUI $ AutoLeader False False }
+                                     , finitialActors = 15 }
                  , playerCivilian { fname = "Hunam Convict Pack"
                                   , fentryLevel = -4 }
                  , playerMobileAnimal { fname =
