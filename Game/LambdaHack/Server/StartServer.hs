@@ -91,7 +91,7 @@ createFactions :: AbsDepth -> Roster -> Rnd FactionDict
 createFactions totalDepth players = do
   let rawCreate Player{..} = do
         entryLevel <- castDice (AbsDepth 0) (AbsDepth 0) fentryLevel
-        initialActors <- castDice (AbsDepth entryLevel) totalDepth
+        initialActors <- castDice (AbsDepth $ abs entryLevel) totalDepth
                                   finitialActors
         let gplayer = Player{ fentryLevel = entryLevel
                             , finitialActors = initialActors
