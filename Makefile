@@ -264,6 +264,27 @@ build-binary-i386:
 	cabal copy --destdir=/tmp/LambdaHack
 	tar -czf /tmp/LambdaHack_x_ubuntu-12.04-i386.tar.gz -C /tmp --exclude=LambdaHack/usr/local/lib --exclude=LambdaHack/usr/local/share/doc LambdaHack
 
+# TODO: make it saner and don't go crazy yourself
+# wine ~/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/make.exe build-binary-windows-i386
+build-binary-windows-i386:
+	cabal configure
+	cabal build exe:LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/rm.exe -r -f Z:/tmp/LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/rm.exe -r -f Z:/tmp/allureofthestars
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/rm.exe -r -f Z:/tmp/LambdaHack_x_windows-i386.zip
+	cabal copy --destdir=Z:/tmp/LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/mkdir.exe Z:/tmp/allureofthestars
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/tmp/LambdaHack\users\mikolaj\Application\ Data\cabal\bin\LambdaHack.exe Z:/tmp/allureofthestars
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe C:/users/mikolaj/gtk/bin/zlib1.dll Z:/tmp/allureofthestars
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/GameDefinition/PLAYING.md Z:/tmp/allureofthestars
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/GameDefinition/scores Z:/tmp/allureofthestars
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/GameDefinition/config.ui.default Z:/tmp/allureofthestars
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/CHANGELOG.md Z:/tmp/allureofthestars
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/CREDITS Z:/tmp/allureofthestars
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/LICENSE Z:/tmp/allureofthestars
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/README.md Z:/tmp/allureofthestars
+	Z:/home/mikolaj/.local/share/wineprefixes/7zip/drive_c/Program\ Files/7-Zip/7z.exe a -ssc -sfx Z:/tmp/LambdaHack_x_windows-i386.exe Z:/tmp/allureofthestars
+
 
 # The rest of the makefile is unmaintained at the moment.
 
