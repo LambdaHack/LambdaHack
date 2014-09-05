@@ -269,21 +269,21 @@ build-binary-i386:
 build-binary-windows-i386:
 	cabal configure
 	cabal build exe:LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/rm.exe -r -f Z:/tmp/LambdaHackInstall
 	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/rm.exe -r -f Z:/tmp/LambdaHack
-	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/rm.exe -r -f Z:/tmp/allureofthestars
 	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/rm.exe -r -f Z:/tmp/LambdaHack_x_windows-i386.zip
-	cabal copy --destdir=Z:/tmp/LambdaHack
-	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/mkdir.exe Z:/tmp/allureofthestars
-	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/tmp/LambdaHack\users\mikolaj\Application\ Data\cabal\bin\LambdaHack.exe Z:/tmp/allureofthestars
-	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe C:/users/mikolaj/gtk/bin/zlib1.dll Z:/tmp/allureofthestars
-	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/GameDefinition/PLAYING.md Z:/tmp/allureofthestars
-	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/GameDefinition/scores Z:/tmp/allureofthestars
-	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/GameDefinition/config.ui.default Z:/tmp/allureofthestars
-	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/CHANGELOG.md Z:/tmp/allureofthestars
-	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/CREDITS Z:/tmp/allureofthestars
-	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/LICENSE Z:/tmp/allureofthestars
-	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/README.md Z:/tmp/allureofthestars
-	Z:/home/mikolaj/.local/share/wineprefixes/7zip/drive_c/Program\ Files/7-Zip/7z.exe a -ssc -sfx Z:/tmp/LambdaHack_x_windows-i386.exe Z:/tmp/allureofthestars
+	cabal copy --destdir=Z:/tmp/LambdaHackInstall
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/mkdir.exe Z:/tmp/LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/tmp/LambdaHackInstall\users\mikolaj\Application\ Data\cabal\bin\LambdaHack.exe Z:/tmp/LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe C:/users/mikolaj/gtk/bin/zlib1.dll Z:/tmp/LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/GameDefinition/PLAYING.md Z:/tmp/LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/GameDefinition/scores Z:/tmp/LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/GameDefinition/config.ui.default Z:/tmp/LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/CHANGELOG.md Z:/tmp/LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/CREDITS Z:/tmp/LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/LICENSE Z:/tmp/LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/mingw/drive_c/MinGW/msys/1.0/bin/cp.exe Z:/home/mikolaj/r/LambdaHack/README.md Z:/tmp/LambdaHack
+	Z:/home/mikolaj/.local/share/wineprefixes/7zip/drive_c/Program\ Files/7-Zip/7z.exe a -ssc -sfx Z:/tmp/LambdaHack_x_windows-i386.exe Z:/tmp/LambdaHack
 
 
 # The rest of the makefile is unmaintained at the moment.
