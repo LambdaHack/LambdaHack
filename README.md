@@ -49,9 +49,14 @@ and from the Nix Packages Collection [12].
 
 The library is best compiled and installed via Cabal (already a part
 of your OS distribution, or available within [The Haskell Platform] [7]),
-which also takes care of all the dependencies. The latest official
-version of the library can be downloaded, compiled and installed
-automatically by Cabal from [Hackage] [3] as follows
+which also takes care of all the dependencies. You also need
+the GTK libraries for your OS. On Linux, remember to install the -dev
+versions as well. On Windows follow [the same steps as for Wine] [13].
+On OSX, if you encounter problems, you may want to
+[compile the GTK libraries from sources] [14].
+
+The latest official version of the library can be downloaded,
+compiled and installed automatically by Cabal from [Hackage] [3] as follows
 
     cabal install gtk2hs-buildtools
     cabal install LambdaHack
@@ -140,3 +145,5 @@ Have fun!
 [10]: https://github.com/AllureOfTheStars/Allure
 [11]: https://github.com/LambdaHack/LambdaHack/releases/latest
 [12]: http://hydra.cryp.to/search?query=LambdaHack
+[13]: http://www.haskell.org/haskellwiki/GHC_under_Wine#Code_that_uses_gtk2hs
+[14]: http://www.edsko.net/2014/04/27/haskell-including-gtk-on-mavericks
