@@ -251,14 +251,14 @@ test-short-load:
 
 
 build-binary:
-	cabal configure --prefix=/usr/local
+	cabal configure -frelease --prefix=/usr/local
 	cabal build exe:LambdaHack
 	rm -rf /tmp/LambdaHack
 	cabal copy --destdir=/tmp/LambdaHack
 	tar -czf /tmp/LambdaHack_x_ubuntu-12.04-amd64.tar.gz -C /tmp --exclude=LambdaHack/usr/local/lib --exclude=LambdaHack/usr/local/share/doc LambdaHack
 
 build-binary-i386:
-	cabal configure --prefix=/usr/local --ghc-option="-optc-m32" --ghc-option="-opta-m32" --ghc-option="-optl-m32" --ld-option="-melf_i386"
+	cabal configure -frelease --prefix=/usr/local --ghc-option="-optc-m32" --ghc-option="-opta-m32" --ghc-option="-optl-m32" --ld-option="-melf_i386"
 	cabal build exe:LambdaHack
 	rm -rf /tmp/LambdaHack
 	cabal copy --destdir=/tmp/LambdaHack
@@ -266,7 +266,7 @@ build-binary-i386:
 
 # TODO: figure out, whey this must be so different from Linux
 build-binary-windows-i386:
-	wine cabal configure
+	wine cabal -frelease configure
 	wine cabal build exe:LambdaHack
 	rm -rf /tmp/LambdaHackInstall
 	rm -rf /tmp/LambdaHack

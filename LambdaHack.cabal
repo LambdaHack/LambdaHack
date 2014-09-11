@@ -83,6 +83,11 @@ flag expose_internal
   default:            False
   manual:             True
 
+flag release
+  description:        prepare for a release (expose, optimize)
+  default:            False
+  manual:             True
+
 library
   exposed-modules:    Game.LambdaHack.Atomic
                       Game.LambdaHack.Atomic.CmdAtomic,
@@ -268,6 +273,10 @@ library
   if flag(expose_internal)
     cpp-options:      -DEXPOSE_INTERNAL
 
+  if flag(release)
+    cpp-options:      -DEXPOSE_INTERNAL
+    ghc-options:      -O2
+
 executable LambdaHack
   hs-source-dirs:     GameDefinition
   main-is:            Main.hs
@@ -326,6 +335,9 @@ executable LambdaHack
   ghc-options:        -threaded -with-rtsopts=-C0.005 -rtsopts
 -- ghc-options:       -with-rtsopts=-N  -- eats all cores
 
+  if flag(release)
+    ghc-options:      -O2
+
 test-suite test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     GameDefinition, test
@@ -370,3 +382,6 @@ test-suite test
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
   ghc-options:        -threaded -with-rtsopts=-C0.005 -rtsopts
+
+  if flag(release)
+    ghc-options:      -O2
