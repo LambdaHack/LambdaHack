@@ -62,13 +62,13 @@ install:
 # mine:
  - cabal-1.18 install -frelease gtk2hs-buildtools
  - cabal-1.18 install -frelease --only-dependencies --force-reinstalls
- - cabal-1.18 install -frelease --enable-tests
+ - cabal-1.18 install -f-release --enable-tests
 
-# - cabal-1.18 install -frelease -fcurses --only-dependencies
+# - cabal-1.18 install -frelease -fcurses --only-dependencies --force-reinstalls
 # - cabal-1.18 configure -f-release -fcurses
 # - cabal-1.18 build
- - cabal-1.18 install -frelease -fvty -fexpose_internal --only-dependencies
- - cabal-1.18 configure -f-release -fvty -fexpose_internal --enable-tests
+ - cabal-1.18 install -frelease -fvty -fexpose_internal --only-dependencies --force-reinstalls
+ - cabal-1.18 configure -frelease -fvty -fexpose_internal --enable-tests
  - cabal-1.18 build
  - cabal-1.18 test
 
