@@ -71,14 +71,17 @@ source-repository head
 flag vty
   description:        switch to the vty frontend
   default:            False
+  manual:             True
 
 flag curses
   description:        switch to the curses frontend (not fully supported)
   default:            False
+  manual:             True
 
 flag expose_internal
   description:        expose internal functions and types (True for release, False for development)
   default:            False
+  manual:             True
 
 library
   exposed-modules:    Game.LambdaHack.Atomic
@@ -262,9 +265,8 @@ library
     }
   } }
 
-  if flag(expose_internal) {
+  if flag(expose_internal)
     cpp-options:      -DEXPOSE_INTERNAL
-  }
 
 executable LambdaHack
   hs-source-dirs:     GameDefinition
