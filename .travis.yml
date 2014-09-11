@@ -68,7 +68,7 @@ install:
  - cabal-1.18 build
  - cabal-1.18 test
  - cabal-1.18 install gtk2hs-buildtools
- - cabal-1.18 install -f-expose_internal --only-dependencies
+ - cabal-1.18 install -f-expose_internal --only-dependencies --force-reinstalls
  - cabal-1.18 install -f-expose_internal --enable-tests
 
 # Here starts the actual work to be performed for the package under
