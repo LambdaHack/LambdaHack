@@ -34,6 +34,7 @@ data Key =
   | Down
   | End
   | Begin
+  | Insert
   | Home
   | KP !Char      -- ^ a keypad key for a character (digits and operators)
   | Char !Char    -- ^ a single printable character
@@ -76,6 +77,7 @@ showKey End      = "END"
 showKey PgUp     = "PGUP"
 showKey PgDn     = "PGDOWN"
 showKey Begin    = "BEGIN"
+showKey Insert   = "INSERT"
 showKey (KP c)   = "KEYPAD_" <> T.singleton c
 showKey (Unknown s) = s
 
@@ -216,6 +218,7 @@ keyTranslate "KP_Page_Up"    = PgUp
 keyTranslate "Page_Down"     = PgDn
 keyTranslate "KP_Page_Down"  = PgDn
 keyTranslate "KP_Begin"      = Begin
+keyTranslate "KP_Insert"     = Insert
 keyTranslate "KP_Enter"      = Return
 keyTranslate ['K','P','_',c] = KP c
 keyTranslate [c]             = Char c

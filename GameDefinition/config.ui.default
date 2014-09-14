@@ -7,6 +7,8 @@
 ; [extra_commands]
 ; ; A handy shorthand with Vi keys:
 ; Macro_1 = ("comma", ([CmdItem], Macro "" ["g"]))
+; ; Angband compatibility (accept target)
+; Macro_2 = ("KP_Insert", ([CmdMeta], Macro "" ["Return"]))
 
 ; [hero_names]
 ; HeroName_0 = ("Haskell Alvin", "he")
