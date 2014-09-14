@@ -221,7 +221,12 @@ advanceTime aid = do
 leadLevelSwitch :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelSwitch = do
   Kind.COps{cotile} <- getsState scops
-  let canSwitch fact = fst $ autoDungeonLevel fact
+  let canSwitch fact = fst (autoDungeonLevel fact)
+                       -- a hack to help AI, until AI client can switch levels
+                       || case fleaderMode (gplayer fact) of
+                            LeaderNull -> False
+                            LeaderAI _ -> True
+                            LeaderUI _ -> False
       flipFaction fact | not $ canSwitch fact = return ()
       flipFaction fact = do
         case gleader fact of
