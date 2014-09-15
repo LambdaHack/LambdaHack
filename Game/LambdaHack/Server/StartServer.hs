@@ -142,7 +142,7 @@ createFactions totalDepth players = do
 
 gameReset :: MonadServer m
           => Kind.COps -> DebugModeSer -> Maybe R.StdGen -> m State
-gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
+gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind, ouniqGroup}}
           sdebug mrandom = do
   dungeonSeed <- getSetGen $ sdungeonRng sdebug `mplus` mrandom
   srandom <- getSetGen $ smainRng sdebug `mplus` mrandom
@@ -157,7 +157,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
                   DungeonGen.FreshDungeon)
       rnd = do
-        modeKind <- fmap (fromMaybe $ assert `failure` smode)
+        modeKind <- fmap (fromMaybe $ ouniqGroup "campaign")  -- the fallback
                     $ opick smode (const True)
         let mode = okind modeKind
             automatePS ps = ps {rosterList =

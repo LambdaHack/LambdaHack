@@ -35,7 +35,7 @@ type family Speedup a
 
 -- | Content operations for the content of type @a@.
 data Ops a = Ops
-  { okind         :: Id a -> a      -- ^ the content element at given id
+  { okind         :: Id a -> a          -- ^ the content element at given id
   , ouniqGroup    :: GroupName -> Id a  -- ^ the id of the unique member of
                                         --   a singleton content group
   , opick         :: GroupName -> (a -> Bool) -> Rnd (Maybe (Id a))

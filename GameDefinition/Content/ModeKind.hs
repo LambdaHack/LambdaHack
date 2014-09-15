@@ -15,9 +15,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content =
-      [campaign, duel, skirmish, ambush, battle, safari, pvp, coop, defense]
+      [campaign, duel, skirmish, ambush, battle, safari, pvp, coop, defense, screensaver]
   }
-campaign,        duel, skirmish, ambush, battle, safari, pvp, coop, defense :: ModeKind
+campaign,        duel, skirmish, ambush, battle, safari, pvp, coop, defense, screensaver :: ModeKind
 
 campaign = ModeKind
   { msymbol = 'a'
@@ -98,6 +98,16 @@ defense = ModeKind
   , mroster = rosterDefense
   , mcaves  = cavesCampaign
   , mdesc   = "Don't let the humans defile your abstract secrets and flee, like the vulgar, literal, base scoundrels that they are!"
+  }
+
+screensaver = safari
+  { mname   = "safari screensaver"
+  , mfreq   = [("screensaver", 1), ("starting", 1)]
+  , mroster = rosterSafari
+      { rosterList = (head (rosterList rosterSafari))
+                       {fleaderMode = LeaderAI $ AutoLeader False False }
+                     : tail (rosterList rosterSafari)
+      }
   }
 
 

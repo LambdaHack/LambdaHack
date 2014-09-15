@@ -122,7 +122,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sniffIn = False
                                , sniffOut = False
                                , sallClear = False
-                               , sgameMode = "campaign"
+                               , sgameMode = "starting"
                                , sautomateAll = False
                                , sstopAfter = Nothing
                                , sdungeonRng = Nothing

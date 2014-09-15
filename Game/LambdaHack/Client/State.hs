@@ -144,7 +144,7 @@ defStateClient shistory sreport _sside sisAI =
     , scurDifficulty = difficultyDefault
     , sslots = (EM.empty, IM.empty)
     , slastSlot = SlotChar 'a'
-    , sgameMode = "campaign"
+    , sgameMode = "starting"
     , sdebugCli = defDebugModeCli
     }
 
