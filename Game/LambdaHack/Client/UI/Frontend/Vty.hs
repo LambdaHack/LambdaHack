@@ -101,7 +101,7 @@ keyTranslate n =
     KPageDown     -> K.PgDn
     KBegin        -> K.Begin
     KCenter       -> K.Begin
-    KInsert       -> K.Insert
+    KIns          -> K.Insert
     (KChar c)     -> K.Char c
     _             -> K.Unknown (tshow n)
 
