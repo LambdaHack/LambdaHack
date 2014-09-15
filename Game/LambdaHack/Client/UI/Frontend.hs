@@ -67,10 +67,11 @@ promptGetKey fs keys frame = do
     then return km
     else promptGetKey fs keys frame
 
-getConfirmGeneric :: RawFrontend -> [K.KM] -> SingleFrame -> IO (Maybe Bool)
-getConfirmGeneric fs clearKeys frame = do
-  let DebugModeCli{snoMore} = fdebugCli fs
-  if snoMore then do
+getConfirmGeneric :: Bool -> RawFrontend -> [K.KM] -> SingleFrame
+                  -> IO (Maybe Bool)
+getConfirmGeneric autoYes fs clearKeys frame = do
+  let DebugModeCli{sdisableAutoYes} = fdebugCli fs
+  if autoYes && not sdisableAutoYes then do
     fdisplay fs True (Just frame)
     return $ Just True
   else do
@@ -84,33 +85,33 @@ getConfirmGeneric fs clearKeys frame = do
 
 -- Read UI requests from the client and send them to the frontend,
 loopFrontend :: RawFrontend -> ChanFrontend -> IO ()
-loopFrontend fsInitial ChanFrontend{..} = loop fsInitial
+loopFrontend fs ChanFrontend{..} = loop False
  where
   writeKM :: K.KM -> IO ()
   writeKM km = STM.atomically $ STM.writeTQueue responseF km
 
-  loop :: RawFrontend -> IO ()
-  loop fs = do
+  loop :: Bool -> IO ()
+  loop autoYes = do
     efr <- STM.atomically $ STM.readTQueue requestF
     case efr of
       FrontNormalFrame{..} -> do
         fdisplay fs False (Just frontFrame)
-        loop fs
+        loop autoYes
       FrontRunningFrame{..} -> do
         fdisplay fs True (Just frontFrame)
-        loop fs
+        loop autoYes
       FrontDelay -> do
         fdisplay fs False Nothing
-        loop fs
+        loop autoYes
       FrontKey{..} -> do
         km <- promptGetKey fs frontKM frontFr
         writeKM km
-        loop fs
+        loop autoYes
       FrontSlides{frontSlides = []} -> do
         -- Hack.
         fsyncFrames fs
         writeKM K.spaceKM
-        loop fs
+        loop autoYes
       FrontSlides{..} -> do
         let displayFrs frs srf =
               case frs of
@@ -119,7 +120,7 @@ loopFrontend fsInitial ChanFrontend{..} = loop fsInitial
                   fdisplay fs False (Just x)
                   writeKM K.spaceKM
                 x : xs -> do
-                  go <- getConfirmGeneric fs frontClear x
+                  go <- getConfirmGeneric autoYes fs frontClear x
                   case go of
                     Nothing -> writeKM K.escKM
                     Just True -> displayFrs xs (x : srf)
@@ -127,9 +128,9 @@ loopFrontend fsInitial ChanFrontend{..} = loop fsInitial
                       [] -> displayFrs frs srf
                       y : ys -> displayFrs (y : frs) ys
         displayFrs frontSlides []
-        loop fs
+        loop autoYes
       FrontAutoYes b ->
-        loop fs{fdebugCli = (fdebugCli fs) {snoMore = b}}
+        loop b
       FrontFinish ->
         return ()
         -- Do not loop again.
