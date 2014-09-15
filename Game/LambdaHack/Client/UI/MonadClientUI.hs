@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , displayFrame, displayDelay, displayFrames, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, stopRunning, askConfig, askBinding
-  , syncFrames, tryTakeMVarSescMVar, scoreToSlideshow
+  , syncFrames, setFrontAutoYes, tryTakeMVarSescMVar, scoreToSlideshow
   , getLeaderUI, getArenaUI, viewedLevel
   , targetDescLeader, targetDescCursor
   , leaderTgtToPos, leaderTgtAims, cursorToPos
@@ -218,6 +218,9 @@ syncFrames = do
   writeConnFrontend FrontSlides{frontClear=[], frontSlides=[]}
   km <- readConnFrontend
   assert (km == K.spaceKM) skip
+
+setFrontAutoYes :: MonadClientUI m => Bool -> m ()
+setFrontAutoYes b = writeConnFrontend $ FrontAutoYes b
 
 tryTakeMVarSescMVar :: MonadClientUI m => m Bool
 tryTakeMVarSescMVar = do

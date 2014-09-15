@@ -161,7 +161,9 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
         showDipl War = "at war"
     msgAdd $ name1 <+> "and" <+> name2 <+> "are now" <+> showDipl toDipl <> "."
   UpdTacticFaction{} -> skip
-  UpdAutoFaction{} -> skip
+  UpdAutoFaction fid b -> do
+    side <- getsClient sside
+    when (fid == side) $ setFrontAutoYes b
   UpdRecordKill{} -> skip
   -- Alter map.
   UpdAlterTile{} -> when verbose $ return ()  -- TODO: door opens
@@ -199,15 +201,19 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdDiscoverSeed _ _ iid _ -> discover oldStateClient iid
   UpdCoverSeed{} -> skip  -- don't spam when doing undo
   UpdPerception{} -> skip
-  UpdRestart _ _ _ _ _ _ -> do
+  UpdRestart fid _ _ _ _ _ -> do
     mode <- getModeClient
     msgAdd $ "New game started in" <+> mname mode <+> "mode." <+> mdesc mode
     -- TODO: use a vertical animation instead, e.g., roll down,
     -- and reveal the first frame of a new game, not blank screen.
     history <- getsClient shistory
     when (lengthHistory history > 1) $ fadeOutOrIn False
+    fact <- getsState $ (EM.! fid) . sfactionD
+    setFrontAutoYes $ isAIFact fact
   UpdRestartServer{} -> skip
-  UpdResume{} -> skip
+  UpdResume fid _ -> do
+    fact <- getsState $ (EM.! fid) . sfactionD
+    setFrontAutoYes $ isAIFact fact
   UpdResumeServer{} -> skip
   UpdKillExit{} -> skip
   UpdWriteSave -> when verbose $ msgAdd "Saving backup."

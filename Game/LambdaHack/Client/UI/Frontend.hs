@@ -32,6 +32,8 @@ data FrontReq =
       -- ^ flush frames, possibly show fadeout/fadein and ask for a keypress
   | FrontSlides {frontClear :: ![K.KM], frontSlides :: ![SingleFrame]}
       -- ^ show a whole slideshow without interleaving with other clients
+  | FrontAutoYes !Bool
+      -- ^ set the frontend option for auto-answering prompts
   | FrontFinish
       -- ^ exit frontend loop
 
@@ -68,8 +70,6 @@ promptGetKey fs keys frame = do
 getConfirmGeneric :: RawFrontend -> [K.KM] -> SingleFrame -> IO (Maybe Bool)
 getConfirmGeneric fs clearKeys frame = do
   let DebugModeCli{snoMore} = fdebugCli fs
-  -- TODO: turn noMore off somehow when faction not under computer control;
-  -- perhaps by adding a FrontReq request that turns it off/on?
   if snoMore then do
     fdisplay fs True (Just frame)
     return $ Just True
@@ -84,33 +84,33 @@ getConfirmGeneric fs clearKeys frame = do
 
 -- Read UI requests from the client and send them to the frontend,
 loopFrontend :: RawFrontend -> ChanFrontend -> IO ()
-loopFrontend fs ChanFrontend{..} = loop
+loopFrontend fsInitial ChanFrontend{..} = loop fsInitial
  where
   writeKM :: K.KM -> IO ()
   writeKM km = STM.atomically $ STM.writeTQueue responseF km
 
-  loop :: IO ()
-  loop = do
+  loop :: RawFrontend -> IO ()
+  loop fs = do
     efr <- STM.atomically $ STM.readTQueue requestF
     case efr of
       FrontNormalFrame{..} -> do
         fdisplay fs False (Just frontFrame)
-        loop
+        loop fs
       FrontRunningFrame{..} -> do
         fdisplay fs True (Just frontFrame)
-        loop
+        loop fs
       FrontDelay -> do
         fdisplay fs False Nothing
-        loop
+        loop fs
       FrontKey{..} -> do
         km <- promptGetKey fs frontKM frontFr
         writeKM km
-        loop
+        loop fs
       FrontSlides{frontSlides = []} -> do
         -- Hack.
         fsyncFrames fs
         writeKM K.spaceKM
-        loop
+        loop fs
       FrontSlides{..} -> do
         let displayFrs frs srf =
               case frs of
@@ -127,7 +127,9 @@ loopFrontend fs ChanFrontend{..} = loop
                       [] -> displayFrs frs srf
                       y : ys -> displayFrs (y : frs) ys
         displayFrs frontSlides []
-        loop
+        loop fs
+      FrontAutoYes b ->
+        loop fs{fdebugCli = (fdebugCli fs) {snoMore = b}}
       FrontFinish ->
         return ()
         -- Do not loop again.
