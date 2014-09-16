@@ -109,11 +109,19 @@ promptToSlideshow prompt = overlayToSlideshow prompt emptyOverlay
 -- of the screen are displayed below. As many slides as needed are shown.
 overlayToSlideshow :: MonadClientUI m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
+  promptAI <- msgPromptAI
   lid <- getArenaUI
   Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
   sreport <- getsClient sreport
-  let msg = splitReport lxsize (addMsg sreport prompt)
+  let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
   return $! splitOverlay False (lysize + 1) msg overlay
+
+msgPromptAI :: MonadClientUI m => m Msg
+msgPromptAI = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  let underAI = isAIFact fact
+  return $! if underAI then "[press ESC for Main Menu]" else ""
 
 overlayToBlankSlideshow :: MonadClientUI m => Msg -> Overlay -> m Slideshow
 overlayToBlankSlideshow prompt overlay = do
@@ -135,7 +143,8 @@ animate arena anim = do
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
   cursorDesc <- targetDescCursor
-  let over = renderReport sreport
+  promptAI <- msgPromptAI
+  let over = renderReport (prependMsg promptAI sreport)
       topLineOnly = truncateToOverlay over
   basicFrame <-
     draw False ColorFull arena cursorPos tgtPos

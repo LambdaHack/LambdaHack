@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.Msg
   ( makePhrase, makeSentence
   , Msg, (<>), (<+>), tshow, toWidth, moreMsg, yesnoMsg, truncateMsg
-  , Report, emptyReport, nullReport, singletonReport, addMsg
+  , Report, emptyReport, nullReport, singletonReport, addMsg, prependMsg
   , splitReport, renderReport, findInReport, lastMsgOfReport
   , History, emptyHistory, lengthHistory, singletonHistory, mergeHistory
   , addReport, renderHistory, takeHistory, lastReportOfHistory
@@ -100,6 +100,10 @@ addMsg (Report ((x, n) : xns)) y' | x == y =
   Report $ (y, n + 1) : xns
  where y = encodeUtf8 y'
 addMsg (Report xns) y = Report $ (encodeUtf8 y, 1) : xns
+
+prependMsg :: Msg -> Report -> Report
+prependMsg m r | T.null m = r
+prependMsg y (Report xns) = Report $ xns ++ [(encodeUtf8 y, 1)]
 
 -- | Split a messages into chunks that fit in one line.
 -- We assume the width of the messages line is the same as of level map.
