@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defaultHistory
   , updateTarget, getTarget, updateLeader, sside
-  , PathEtc, TgtMode(..), RunParams(..), LastRecord
+  , PathEtc, TgtMode(..), RunParams(..), LastRecord, EscAI(..)
   , toggleMarkVision, toggleMarkSmell, toggleMarkSuspect
   ) where
 
@@ -83,6 +83,7 @@ data StateClient = StateClient
   , sslots       :: !ItemSlots     -- ^ map from slots to items
   , slastSlot    :: !SlotChar      -- ^ last used slot
   , sgameMode    :: !GroupName     -- ^ current game mode
+  , sescAI       :: !EscAI         -- ^ just canceled AI control with ESC
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving Show
@@ -108,6 +109,9 @@ type LastRecord = ( [K.KM]  -- accumulated keys of the current command
                   , [K.KM]  -- keys of the rest of the recorded command batch
                   , Int     -- commands left to record for this batch
                   )
+
+data EscAI = EscAINothing | EscAIStarted | EscAIMenu | EscAIExited
+  deriving (Show, Eq)
 
 -- | Initial game client state.
 defStateClient :: History -> Report -> FactionId -> Bool -> StateClient
@@ -145,6 +149,7 @@ defStateClient shistory sreport _sside sisAI =
     , sslots = (EM.empty, IM.empty)
     , slastSlot = SlotChar 'a'
     , sgameMode = "starting"
+    , sescAI = EscAINothing
     , sdebugCli = defDebugModeCli
     }
 
@@ -250,6 +255,7 @@ instance Binary StateClient where
         slastPlay = []
         swaitTimes = 0
         squit = False
+        sescAI = EscAINothing
     return $! StateClient{..}
 
 instance Binary RunParams where

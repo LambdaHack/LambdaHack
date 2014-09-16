@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.Key
   ( Key(..), showKey, handleDir, dirAllKey
   , moveBinding, mkKM, keyTranslate
   , Modifier(..), KM(..), showKM
-  , escKM, spaceKM, pgupKM, pgdnKM
+  , escKM, spaceKM, returnKM, pgupKM, pgdnKM
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -91,6 +91,9 @@ escKM = KM {modifier = NoModifier, key = Esc}
 
 spaceKM :: KM
 spaceKM = KM {modifier = NoModifier, key = Space}
+
+returnKM :: KM
+returnKM = KM {modifier = NoModifier, key = Return}
 
 pgupKM :: KM
 pgupKM = KM {modifier = NoModifier, key = PgUp}

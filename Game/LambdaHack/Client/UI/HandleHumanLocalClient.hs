@@ -272,6 +272,7 @@ helpHuman = do
 mainMenuHuman :: MonadClientUI m => m Slideshow
 mainMenuHuman = do
   Kind.COps{corule} <- getsState scops
+  escAI <- getsClient sescAI
   Binding{brevMap, bcmdList} <- askBinding
   scurDifficulty <- getsClient scurDifficulty
   DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
@@ -291,7 +292,10 @@ mainMenuHuman = do
                    | (km, (desc, [HumanCmd.CmdMenu], cmd)) <- bcmdList,
                      cmd /= HumanCmd.GameDifficultyCycle ]
         in [
-             (fst (revLookup HumanCmd.Cancel), "back to playing")
+             if escAI == EscAIMenu then
+               (fst (revLookup HumanCmd.Automate), "back to screensaver")
+             else
+               (fst (revLookup HumanCmd.Cancel), "back to playing")
            , (fst (revLookup HumanCmd.Accept), "see more help")
            ]
            ++ cmds

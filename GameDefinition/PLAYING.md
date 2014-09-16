@@ -206,16 +206,6 @@ squad combat, stealth, asymmetric battles and more game elements.
                 CTRL-a         new Campaign game
                 CTRL-d         cycle next game difficulty
 
-There are also some debug, testing and cheat options and game modes
-that can be specified on the command line when starting the game server.
-Use at your own peril! :) Of these, you may find the screensaver game modes
-the least spoilery and the most fun, e.g.:
-
-    LambdaHack --savePrefix test --newGame --noMore --maxFps 60 --automateAll --gameMode campaign --difficulty 1
-
-The `--automateAll` option strictly corresponds to the `CTRL-A` command,
-but most of the debug options have no corresponding commands.
-
 
 Monsters
 --------

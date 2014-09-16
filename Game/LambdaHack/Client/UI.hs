@@ -125,9 +125,20 @@ humanCommand msgRunStop = do
                 {swaitTimes = if swaitTimes cli > 0
                               then - swaitTimes cli
                               else 0}
-              if km == K.escKM && isNothing stgtMode && isJust mover
-                then cmdHumanSem Clear
-                else cmdHumanSem cmd
+              escAI <- getsClient sescAI
+              case escAI of
+                EscAIStarted -> do
+                  modifyClient $ \cli -> cli {sescAI = EscAIMenu}
+                  cmdHumanSem cmd
+                EscAIMenu -> do
+                  unless (km `elem` [K.escKM, K.returnKM]) $
+                    modifyClient $ \cli -> cli {sescAI = EscAIExited}
+                  cmdHumanSem cmd
+                _ -> do
+                  modifyClient $ \cli -> cli {sescAI = EscAINothing}
+                  if km == K.escKM && isNothing stgtMode && isJust mover
+                  then cmdHumanSem Clear
+                  else cmdHumanSem cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in fmap Left $ promptToSlideshow msgKey
         -- The command was failed or successful and if the latter,
@@ -170,6 +181,7 @@ pongUI = do
   let pong ats = return $ ReqUIPong ats
       underAI = isAIFact fact
   if escPressed && underAI && fleaderMode (gplayer fact) /= LeaderNull then do
+    modifyClient $ \cli -> cli {sescAI = EscAIStarted}
     -- Ask server to turn off AI for the faction's leader.
     let atomicCmd = UpdAtomic $ UpdAutoFaction side False
     pong [atomicCmd]
