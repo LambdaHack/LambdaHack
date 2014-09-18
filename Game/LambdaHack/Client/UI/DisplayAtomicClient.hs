@@ -418,17 +418,19 @@ quitFactionUI fid mbody toSt = do
         else do
           io <- itemOverlay CGround bag
           overlayToSlideshow itemMsg io
-      -- Show score for any UI client, even though it is saved only
-      -- for human UI clients.
+      -- Show score for any UI client (except after ESC),
+      -- even though it is saved only for human UI clients.
       scoreSlides <- scoreToSlideshow total status
       partingSlide <- promptToSlideshow $ pp <+> moreMsg
       shutdownSlide <- promptToSlideshow pp
-      -- TODO: First ESC cancels items display.
-      void $ getInitConfirms ColorFull []
-           $ startingSlide <> itemSlides
-      -- TODO: Second ESC cancels high score and parting message display.
-      -- The last slide stays onscreen during shutdown, etc.
-             <> scoreSlides <> partingSlide <> shutdownSlide
+      escAI <- getsClient sescAI
+      unless (escAI == EscAIExited) $
+        -- TODO: First ESC cancels items display.
+        void $ getInitConfirms ColorFull []
+             $ startingSlide <> itemSlides
+        -- TODO: Second ESC cancels high score and parting message display.
+        -- The last slide stays onscreen during shutdown, etc.
+               <> scoreSlides <> partingSlide <> shutdownSlide
       -- TODO: perhaps use a vertical animation instead, e.g., roll down
       -- and put it before item and score screens (on blank background)
       unless (fmap stOutcome toSt == Just Camping) $ fadeOutOrIn True

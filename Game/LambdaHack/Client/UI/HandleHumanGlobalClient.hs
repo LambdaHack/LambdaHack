@@ -527,21 +527,26 @@ stepToTargetHuman = do
 
 gameRestartHuman :: MonadClientUI m => GroupName -> m (SlideOrCmd RequestUI)
 gameRestartHuman t = do
-  let msg = "You just requested a new" <+> tshow t <+> "game."
-  b1 <- displayMore ColorFull msg
-  if not b1 then failWith "never mind"
+  let restart = do
+        leader <- getLeaderUI
+        DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
+        Config{configHeroNames} <- askConfig
+        return $ Right
+               $ ReqUIGameRestart leader t sdifficultyCli configHeroNames
+  escAI <- getsClient sescAI
+  if escAI == EscAIExited then restart
   else do
-    b2 <- displayYesNo ColorBW
-            "Current progress will be lost! Really restart the game?"
-    msg2 <- rndToAction $ oneOf
-              [ "Yea, would be a pity to leave them all to die."
-              , "Yea, a shame to get your own team stranded." ]
-    if not b2 then failWith msg2
+    let msg = "You just requested a new" <+> tshow t <+> "game."
+    b1 <- displayMore ColorFull msg
+    if not b1 then failWith "never mind"
     else do
-      leader <- getLeaderUI
-      DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
-      Config{configHeroNames} <- askConfig
-      return $ Right $ ReqUIGameRestart leader t sdifficultyCli configHeroNames
+      b2 <- displayYesNo ColorBW
+              "Current progress will be lost! Really restart the game?"
+      msg2 <- rndToAction $ oneOf
+                [ "Yea, would be a pity to leave them all to die."
+                , "Yea, a shame to get your own team stranded." ]
+      if not b2 then failWith msg2
+      else restart
 
 -- * GameExit; does not take time
 
