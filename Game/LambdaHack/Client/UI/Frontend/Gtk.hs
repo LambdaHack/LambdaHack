@@ -12,6 +12,7 @@ module Game.LambdaHack.Client.UI.Frontend.Gtk
 
 import Control.Concurrent
 import Control.Concurrent.Async
+import qualified Control.Concurrent.STM as STM
 import qualified Control.Exception as Ex hiding (handle)
 import Control.Exception.Assert.Sugar
 import Control.Monad
@@ -43,7 +44,7 @@ data FrameState =
 data FrontendSession = FrontendSession
   { sview       :: !TextView                    -- ^ the widget to draw to
   , stags       :: !(M.Map Color.Attr TextTag)  -- ^ text color tags for fg/bg
-  , schanKey    :: !(Chan K.KM)                 -- ^ channel for keyboard input
+  , schanKey    :: !(STM.TQueue K.KM)           -- ^ channel for keyboard input
   , sframeState :: !(MVar FrameState)
       -- ^ State of the frame finite machine. This mvar is locked
       -- for a short time only, because it's needed, among others,
@@ -114,7 +115,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   textViewSetEditable sview False
   textViewSetCursorVisible sview False
   -- Set up the channel for keyboard input.
-  schanKey <- newChan
+  schanKey <- STM.atomically $ STM.newTQueue
   -- Set up the frame state.
   let frameState = FNone
   -- Create the session record.
@@ -145,7 +146,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
         when (key == K.Esc) $
           void $ tryPutMVar escMVar ()
         -- Store the key in the channel.
-        writeChan schanKey K.KM{key, modifier}
+        STM.atomically $ STM.writeTQueue schanKey K.KM{key, modifier}
       return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString $ fromMaybe "" sfont
@@ -423,7 +424,7 @@ fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 fpromptGetKey sess@FrontendSession{..}
               frame = do
   pushFrame sess True True $ Just frame
-  km <- readChan schanKey
+  km <- STM.atomically $ STM.readTQueue schanKey
   case km of
     K.KM{key=K.Space} ->
       -- Drop frames up to the first empty frame.
