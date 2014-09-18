@@ -229,7 +229,7 @@ tryTakeMVarSescMVar = do
     Nothing -> return False
     Just escMVar -> do
       mUnit <- liftIO $ tryTakeMVar escMVar
-      return $ isJust mUnit
+      return $! isJust mUnit
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do

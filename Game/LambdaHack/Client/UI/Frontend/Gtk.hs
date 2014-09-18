@@ -10,6 +10,7 @@ module Game.LambdaHack.Client.UI.Frontend.Gtk
   , frontendName, startup
   ) where
 
+import Control.Applicative
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
@@ -393,9 +394,14 @@ fdisplay sess noDelay = pushFrame sess noDelay False
 
 -- Display all queued frames, synchronously.
 displayAllFramesSync :: FrontendSession -> FrameState -> IO ()
-displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}} fs = do
+displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}, sescMVar}
+                     fs = do
+  escPressed <- case sescMVar of
+    Nothing -> return False
+    Just escMVar -> not <$> isEmptyMVar escMVar
   let maxFps = fromMaybe defaultMaxFps smaxFps
   case fs of
+    _ | escPressed -> return ()
     FPushed{..} ->
       case tryReadLQueue fpushed of
         Just (Just frame, queue) -> do
