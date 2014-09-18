@@ -140,11 +140,15 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
     let !key = K.keyTranslate n
 #endif
         !modifier = modifierTranslate mods
+        readAll = do
+          res <- liftIO $ STM.atomically $ STM.tryReadTQueue schanKey
+          when (isJust res) $ readAll
     liftIO $ do
       unless (deadKey n) $ do
-        -- If ESC, also mark it specially.
-        when (key == K.Esc) $
+        -- If ESC, also mark it specially and reset the key channel.
+        when (key == K.Esc) $ do
           void $ tryPutMVar escMVar ()
+          readAll
         -- Store the key in the channel.
         STM.atomically $ STM.writeTQueue schanKey K.KM{key, modifier}
       return True
