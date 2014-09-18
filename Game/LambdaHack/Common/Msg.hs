@@ -174,7 +174,10 @@ mergeHistory l =
 renderHistory :: History -> Overlay
 renderHistory (History h) =
   let w = fst normalLevelBound + 1
-  in toOverlay $ concatMap (splitReportList w) h
+  in toOverlay $ concatMap (splitReportForHistory w) h
+
+splitReportForHistory :: X -> Report -> [Text]
+splitReportForHistory w r = splitText w $ ">" <+> renderReport r
 
 -- | Add a report to history, handling repetitions.
 addReport :: Report -> History -> History

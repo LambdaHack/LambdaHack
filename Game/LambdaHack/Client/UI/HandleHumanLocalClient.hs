@@ -229,11 +229,13 @@ historyHuman = do
   arena <- getArenaUI
   local <- getsState $ getLocalTime arena
   global <- getsState stime
-  let msg = makeSentence
+  let turnsGlobal = global `timeFitUp` timeTurn
+      turnsLocal = local `timeFitUp` timeTurn
+      msg = makeSentence
         [ "You survived for"
-        , MU.CarWs (global `timeFitUp` timeTurn) "half-second turn"
+        , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
-        , MU.Text (tshow (local `timeFitUp` timeTurn)) MU.:> ")" ]
+        , MU.Text (tshow turnsLocal) MU.:> ")" ]
         <+> "Past messages:"
   overlayToBlankSlideshow msg $ renderHistory history
 
