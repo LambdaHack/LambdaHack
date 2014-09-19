@@ -209,7 +209,7 @@ activeItemsClient aid = do
   activeAssocs <- fullAssocsClient aid [CEqp, COrgan]
   return $! map snd activeAssocs
 
-itemToFullClient :: MonadClient m => m (ItemId -> Int -> ItemFull)
+itemToFullClient :: MonadClient m => m (ItemId -> ItemQuant -> ItemFull)
 itemToFullClient = do
   cops <- getsState scops
   discoKind <- getsClient sdiscoKind

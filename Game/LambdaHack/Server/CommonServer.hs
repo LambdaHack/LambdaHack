@@ -117,7 +117,7 @@ moveStores :: (MonadAtomic m, MonadServer m)
            => ActorId -> CStore -> CStore -> m ()
 moveStores aid fromStore toStore = do
   b <- getsState $ getActorBody aid
-  let g iid k = execUpdAtomic $ UpdMoveItem iid k aid fromStore toStore
+  let g iid (k, _) = execUpdAtomic $ UpdMoveItem iid k aid fromStore toStore
   mapActorCStore_ fromStore g b
 
 quitF :: (MonadAtomic m, MonadServer m)
@@ -305,7 +305,7 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               -> m ()
 addProjectile bpos rest iid blid bfid btime isShrapnel = do
   itemToF <- itemToFullServer
-  let itemFull@ItemFull{itemBase} = itemToF iid 1
+  let itemFull@ItemFull{itemBase} = itemToF iid (1, [])
       (trajectory, (speed, trange)) = itemTrajectory itemBase (bpos : rest)
       adj | trange < 5 = "falling"
           | otherwise = "flying"
@@ -318,7 +318,7 @@ addProjectile bpos rest iid blid bfid btime isShrapnel = do
                       , bhp = 0
                       , bproj = True
                       , btrajectory = Just (trajectory, speed)
-                      , beqp = EM.singleton iid 1
+                      , beqp = EM.singleton iid (1, [])
                       , borgan = EM.empty}
       bpronoun = "it"
   void $ addActorIid iid itemFull
@@ -368,7 +368,7 @@ addActorIid trunkId trunkFull@ItemFull{..}
       b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
                         pos lid time bfid
       -- Insert the trunk as the actor's organ.
-      withTrunk = b {borgan = EM.singleton trunkId itemK}
+      withTrunk = b {borgan = EM.singleton trunkId (itemK, itemTimer)}
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
   execUpdAtomic $ UpdCreateActor aid (tweakBody withTrunk) [(trunkId, itemBase)]

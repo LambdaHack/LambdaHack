@@ -216,7 +216,8 @@ cmdAtomicFilterCli cmd = case cmd of
         pMaybe p = maybe Nothing (\x -> Just (p, x))
         inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p lfloor)
                            (ES.elems inFov)
-        fItem p (iid, k) = UpdLoseItem iid (getItemBody iid s) k (CFloor lid p)
+        fItem p (iid, (k, _)) =
+          UpdLoseItem iid (getItemBody iid s) k (CFloor lid p)
         fBag (p, bag) = map (fItem p) $ EM.assocs bag
         inItem = concatMap fBag inFloor
     -- Remembered map tiles not wiped out, due to optimization in @updSpotTile@.

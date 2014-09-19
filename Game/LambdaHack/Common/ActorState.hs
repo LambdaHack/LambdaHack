@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.ActorState
   , actorAssocsLvl, actorAssocs, actorList
   , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList
   , bagAssocs, bagAssocsK, calculateTotal
-  , sharedAllOwned, sharedAllOwnedFid
+  , mergeItemQuant, sharedAllOwned, sharedAllOwnedFid
   , getCBag, getActorBag, getBodyActorBag, getActorAssocs
   , nearbyFreePoints, whereTo, getCarriedAssocs
   , posToActors, posToActor, getItemBody, memActor, getActorBody
@@ -94,9 +94,9 @@ bagAssocs s bag =
   let iidItem iid = (iid, getItemBody iid s)
   in map iidItem $ EM.keys bag
 
-bagAssocsK :: State -> ItemBag -> [(ItemId, (Item, Int))]
+bagAssocsK :: State -> ItemBag -> [(ItemId, (Item, ItemQuant))]
 bagAssocsK s bag =
-  let iidItem (iid, k) = (iid, (getItemBody iid s, k))
+  let iidItem (iid, kit) = (iid, (getItemBody iid s, kit))
   in map iidItem $ EM.assocs bag
 
 -- | Finds an actor at a position on the current level.
@@ -134,29 +134,36 @@ nearbyFreePoints f start lid s =
 calculateTotal :: Actor -> State -> (ItemBag, Int)
 calculateTotal body s =
   let bag = sharedAllOwned body s
-      items = map (\(iid, k) -> (getItemBody iid s, k)) $ EM.assocs bag
+      items = map (\(iid, (k, _)) -> (getItemBody iid s, k)) $ EM.assocs bag
   in (bag, sum $ map itemPrice items)
+
+mergeItemQuant :: ItemQuant -> ItemQuant -> ItemQuant
+mergeItemQuant (k1, it1) (k2, it2) = (k1 + k2, it1 ++ it2)
 
 sharedInv :: Actor -> State -> ItemBag
 sharedInv body s =
   let bs = fidActorNotProjList (bfid body) s
-  in EM.unionsWith (+) $ map binv $ if null bs then [body] else bs
+  in EM.unionsWith mergeItemQuant
+     $ map binv $ if null bs then [body] else bs
 
 sharedEqp :: Actor -> State -> ItemBag
 sharedEqp body s =
   let bs = fidActorNotProjList (bfid body) s
-  in EM.unionsWith (+) $ map beqp $ if null bs then [body] else bs
+  in EM.unionsWith mergeItemQuant
+     $ map beqp $ if null bs then [body] else bs
 
 sharedAllOwned :: Actor -> State -> ItemBag
 sharedAllOwned body s =
   let shaBag = gsha $ sfactionD s EM.! bfid body
-  in EM.unionsWith (+) [sharedEqp body s, sharedInv body s, shaBag]
+  in EM.unionsWith mergeItemQuant
+       [sharedEqp body s, sharedInv body s, shaBag]
 
 sharedAllOwnedFid :: FactionId -> State -> ItemBag
 sharedAllOwnedFid fid s =
   let shaBag = gsha $ sfactionD s EM.! fid
       bs = fidActorNotProjList fid s
-  in EM.unionsWith (+) $ map binv bs ++ map beqp bs ++ [shaBag]
+  in EM.unionsWith mergeItemQuant
+     $ map binv bs ++ map beqp bs ++ [shaBag]
 
 -- | Price an item, taking count into consideration.
 itemPrice :: (Item, Int) -> Int
@@ -241,7 +248,7 @@ getBodyActorBag b cstore s =
 getActorAssocs :: ActorId -> CStore -> State -> [(ItemId, Item)]
 getActorAssocs aid cstore s = bagAssocs s $ getActorBag aid cstore s
 
-getActorAssocsK :: ActorId -> CStore -> State -> [(ItemId, (Item, Int))]
+getActorAssocsK :: ActorId -> CStore -> State -> [(ItemId, (Item, ItemQuant))]
 getActorAssocsK aid cstore s = bagAssocsK s $ getActorBag aid cstore s
 
 -- | Checks if the actor is present on the current level.
@@ -328,14 +335,15 @@ fullAssocs :: Kind.COps -> DiscoveryKind -> DiscoveryEffect
            -> [(ItemId, ItemFull)]
 fullAssocs cops disco discoEffect aid cstores s =
   let allAssocs = concatMap (\cstore -> getActorAssocsK aid cstore s) cstores
-      iToFull (iid, (item, k)) =
-        (iid, itemToFull cops disco discoEffect iid item k)
+      iToFull (iid, (item, kit)) =
+        (iid, itemToFull cops disco discoEffect iid item kit)
   in map iToFull allAssocs
 
-itemToFull :: Kind.COps -> DiscoveryKind -> DiscoveryEffect -> ItemId -> Item -> Int
+itemToFull :: Kind.COps -> DiscoveryKind -> DiscoveryEffect -> ItemId -> Item
+           -> ItemQuant
            -> ItemFull
 itemToFull Kind.COps{coitem=Kind.Ops{okind}}
-           disco discoEffect iid itemBase itemK =
+           disco discoEffect iid itemBase (itemK, itemTimer) =
   let itemDisco = case EM.lookup (jkindIx itemBase) disco of
         Nothing -> Nothing
         Just itemKindId -> Just ItemDisco{ itemKindId
@@ -347,7 +355,7 @@ goesIntoInv :: Item -> Bool
 goesIntoInv item = isNothing $ strengthEqpSlot item
 
 eqpOverfull :: Actor -> Int -> Bool
-eqpOverfull b n = let size = sum $ EM.elems $ beqp b
+eqpOverfull b n = let size = sum $ map fst $ EM.elems $ beqp b
                   in assert (size <= 10 `blame` (b, n, size))
                      $ size + n > 10
 

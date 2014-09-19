@@ -158,8 +158,8 @@ benAvailableItems aid permitted cstores = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let ben cstore bag =
         [ ((benefit, (k, cstore)), (iid, itemFull))
-        | (iid, k) <- EM.assocs bag
-        , let itemFull = itemToF iid k
+        | (iid, kit@(k, _)) <- EM.assocs bag
+        , let itemFull = itemToF iid kit
         , let benefit = totalUsefulness cops b activeItems fact itemFull
         , permitted itemFull (fst <$> benefit)]
       benCStore cs = do

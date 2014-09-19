@@ -215,7 +215,7 @@ reqMelee source target iid cstore = do
           execUpdAtomic
           $ UpdTrajectory source (btrajectory sb) (Just ([], speed))
     -- Msgs inside itemEffect describe the target part.
-    itemEffectAndDestroy source target iid (itemToF iid 1) cstore
+    itemEffectAndDestroy source target iid (itemToF iid (1, [])) cstore
     -- The only way to start a war is to slap an enemy. Being hit by
     -- and hitting projectiles count as unintentional friendly fire.
     let friendlyFire = bproj sb || bproj tb

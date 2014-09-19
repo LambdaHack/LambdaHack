@@ -132,7 +132,7 @@ describeItemC c = do
   ggi <- getStoreItem shaBlurb stdBlurb verb c
   case ggi of
     Right ((iid, _), _) ->
-      overlayToSlideshow "" $ itemDesc (storeFromC c) (itemToF iid 1)
+      overlayToSlideshow "" $ itemDesc (storeFromC c) (itemToF iid (1, []))
     Left slides -> return slides
 
 -- * AllOwned
@@ -393,7 +393,7 @@ doLook = do
                      verb = "be here"
                      desc = if not (null rest)  -- many actors
                             then ""
-                            else case itemDisco $ itemToF (btrunk body) 1 of
+                            else case itemDisco $ itemToF (btrunk body) (1, []) of
                               Nothing -> ""
                               Just ItemDisco{itemKind} -> idesc itemKind
                      pdesc = if desc == "" then "" else "(" <> desc <> ")"

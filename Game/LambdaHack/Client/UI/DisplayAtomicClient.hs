@@ -67,9 +67,9 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdCreateItem iid _ k c -> do
     -- TODO: probably not Nothing if container not CGround
     updateItemSlot Nothing iid
-    itemVerbMU iid k (MU.Text $ "appear" <+> ppContainer c) (storeFromC c)
+    itemVerbMU iid (k, []) (MU.Text $ "appear" <+> ppContainer c) (storeFromC c)
     stopPlayBack
-  UpdDestroyItem iid _ k c -> itemVerbMU iid k "disappear" (storeFromC c)
+  UpdDestroyItem iid _ k c -> itemVerbMU iid (k, []) "disappear" (storeFromC c)
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
   UpdLoseActor aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
@@ -90,7 +90,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
               TEnemy{} -> return ()  -- probably too important to overwrite
               TEnemyPos{} -> return ()
               _ -> modifyClient $ \cli -> cli {scursor = TPoint lid p}
-            itemVerbMU iid k "be spotted" CGround
+            itemVerbMU iid (k, []) "be spotted" CGround
             stopPlayBack
           CTrunk{} -> return ()
       _ -> return ()  -- seen recently (still has a slot assigned)
@@ -250,21 +250,21 @@ aVerbMU aid verb = do
   actorVerbMU aid b verb
 
 itemVerbMU :: MonadClientUI m
-           => ItemId -> Int -> MU.Part -> CStore -> m ()
-itemVerbMU iid k verb cstore = assert (k > 0) $ do
+           => ItemId -> ItemQuant -> MU.Part -> CStore -> m ()
+itemVerbMU iid kit@(k, _) verb cstore = assert (k > 0) $ do
   itemToF <- itemToFullClient
-  let subject = partItemWs k cstore (itemToF iid k)
+  let subject = partItemWs kit cstore (itemToF iid kit)
       msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
 
 aiVerbMU :: MonadClientUI m
-         => ActorId -> MU.Part -> ItemId -> Int -> CStore -> m ()
-aiVerbMU aid verb iid k cstore = do
+         => ActorId -> MU.Part -> ItemId -> ItemQuant -> CStore -> m ()
+aiVerbMU aid verb iid kit cstore = do
   itemToF <- itemToFullClient
   subject <- partAidLeader aid
   let msg = makeSentence [ MU.SubjectVerbSg subject verb
-                         , partItemWs k cstore (itemToF iid k) ]
+                         , partItemWs kit cstore (itemToF iid kit) ]
   msgAdd msg
 
 msgDuplicateScrap :: MonadClientUI m => m ()
@@ -331,9 +331,9 @@ moveItemUI verbose iid k aid c1 c2 = do
                       , "\n" ]
           Nothing -> return ()
       else when (c1 == CGround && c1 /= c2) $
-        aiVerbMU aid "get" iid k c2
+        aiVerbMU aid "get" iid (k, []) c2
     (_, CGround) | c1 /= c2 -> do
-      when verbose $ aiVerbMU aid "drop" iid k c1
+      when verbose $ aiVerbMU aid "drop" iid (k, []) c1
       if bfid b == side
         then updateItemSlot (Just aid) iid
         else updateItemSlot Nothing iid
@@ -440,7 +440,7 @@ discover :: MonadClientUI m => StateClient -> ItemId ->  m ()
 discover oldcli iid = do
   cops <- getsState scops
   itemToF <- itemToFullClient
-  let itemFull = itemToF iid 1
+  let itemFull = itemToF iid (1, [])
       (knownName, knownAEText) = partItem CGround itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
@@ -453,7 +453,7 @@ discover oldcli iid = do
         , MU.AW $ MU.Phrase [knownName, knownAEText] ]
       oldItemFull =
         itemToFull cops (sdiscoKind oldcli) (sdiscoEffect oldcli)
-                   iid (itemBase itemFull) 1
+                   iid (itemBase itemFull) (1, [])
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
   when (textAllAE False CEqp itemFull /= textAllAE False CEqp oldItemFull) $
@@ -469,10 +469,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     spart <- partAidLeader source
     tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
-  SfxProject aid iid -> aiVerbMU aid "aim" iid 1 CInv
-  SfxCatch aid iid -> aiVerbMU aid "catch" iid 1 CInv
-  SfxActivate aid iid k -> aiVerbMU aid "activate" iid k CInv
-  SfxCheck aid iid k -> aiVerbMU aid "deactivate" iid k CInv
+  SfxProject aid iid -> aiVerbMU aid "aim" iid (1, []) CInv
+  SfxCatch aid iid -> aiVerbMU aid "catch" iid (1, []) CInv
+  SfxActivate aid iid k -> aiVerbMU aid "activate" iid (k, []) CInv
+  SfxCheck aid iid k -> aiVerbMU aid "deactivate" iid (k, []) CInv
   SfxTrigger aid _p _feat ->
     when verbose $ aVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->
@@ -674,7 +674,7 @@ strike source target iid hitStatus = assert (source /= target) $ do
   spart <- partActorLeader source sb
   tpart <- partActorLeader target tb
   spronoun <- partPronounLeader source sb
-  let itemFull = itemToF iid 1
+  let itemFull = itemToF iid (1, [])
       verb = case itemDisco itemFull of
         Nothing -> "hit"  -- not identified
         Just ItemDisco{itemKind} -> iverbHit itemKind

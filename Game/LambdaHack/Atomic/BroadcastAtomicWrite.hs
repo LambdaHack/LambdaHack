@@ -168,7 +168,7 @@ atomicRemember lid inPer s =
       -- Items.
       pMaybe p = maybe Nothing (\x -> Just (p, x))
       inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p (lfloor lvl)) inFov
-      fItem p (iid, k) = UpdSpotItem iid (getItemBody iid s) k (CFloor lid p)
+      fItem p (iid, (k, _)) = UpdSpotItem iid (getItemBody iid s) k (CFloor lid p)
       fBag (p, bag) = map (fItem p) $ EM.assocs bag
       inItem = concatMap fBag inFloor
       -- Tiles.

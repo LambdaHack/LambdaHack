@@ -72,8 +72,9 @@ textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
                       (ieffects itemKind) kindEffectToSuffix
       in aets ++ features
 
-partItemWs :: Int -> CStore -> ItemFull -> MU.Part
-partItemWs count cstore itemFull =
+-- TODO: use kit
+partItemWs :: ItemQuant -> CStore -> ItemFull -> MU.Part
+partItemWs _kit@(count, _) cstore itemFull =
   let (name, stats) = partItem cstore itemFull
   in MU.Phrase [MU.CarWs count name, stats]
 

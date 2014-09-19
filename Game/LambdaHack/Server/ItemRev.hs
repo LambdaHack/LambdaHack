@@ -95,9 +95,10 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
     seed <- fmap toEnum random
     let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
         itemK = max 1 itemN
+        itemTimer = []
+        itemDisco = Just ItemDisco {itemKindId, itemKind, itemAE = Just iae}
         iae = seedToAspectsEffects seed itemKind ldepth totalDepth
-        itemFull = ItemFull {itemBase, itemK, itemDisco = Just itemDisco}
-        itemDisco = ItemDisco {itemKindId, itemKind, itemAE = Just iae}
+        itemFull = ItemFull {itemBase, itemK, itemTimer, itemDisco}
     return $ Just ( (jkindIx itemBase, iae)
                   , itemFull
                   , seed

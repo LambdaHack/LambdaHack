@@ -65,8 +65,8 @@ insertItemContainer iid k c = case c of
 insertItemFloor :: MonadStateWrite m
                 => ItemId -> Int -> LevelId -> Point -> m ()
 insertItemFloor iid k lid pos =
-  let bag = EM.singleton iid k
-      mergeBag = EM.insertWith (EM.unionWith (+)) pos bag
+  let bag = EM.singleton iid (k, [])
+      mergeBag = EM.insertWith (EM.unionWith mergeItemQuant) pos bag
   in updateLevel lid $ updateFloor mergeBag
 
 insertItemActor :: MonadStateWrite m
@@ -85,29 +85,29 @@ insertItemActor iid k aid cstore = case cstore of
 insertItemBody :: MonadStateWrite m
                => ItemId -> Int -> ActorId -> m ()
 insertItemBody iid k aid = do
-  let bag = EM.singleton iid k
-      upd = EM.unionWith (+) bag
+  let bag = EM.singleton iid (k, [])
+      upd = EM.unionWith mergeItemQuant bag
   updateActor aid $ \b -> b {borgan = upd (borgan b)}
 
 insertItemEqp :: MonadStateWrite m
               => ItemId -> Int -> ActorId -> m ()
 insertItemEqp iid k aid = do
-  let bag = EM.singleton iid k
-      upd = EM.unionWith (+) bag
+  let bag = EM.singleton iid (k, [])
+      upd = EM.unionWith mergeItemQuant bag
   updateActor aid $ \b -> b {beqp = upd (beqp b)}
 
 insertItemInv :: MonadStateWrite m
               => ItemId -> Int -> ActorId -> m ()
 insertItemInv iid k aid = do
-  let bag = EM.singleton iid k
-      upd = EM.unionWith (+) bag
+  let bag = EM.singleton iid (k, [])
+      upd = EM.unionWith mergeItemQuant bag
   updateActor aid $ \b -> b {binv = upd (binv b)}
 
 insertItemSha :: MonadStateWrite m
                => ItemId -> Int -> FactionId -> m ()
 insertItemSha iid k fid = do
-  let bag = EM.singleton iid k
-      upd = EM.unionWith (+) bag
+  let bag = EM.singleton iid (k, [])
+      upd = EM.unionWith mergeItemQuant bag
   updateFaction fid $ \fact -> fact {gsha = upd (gsha fact)}
 
 deleteItemContainer :: MonadStateWrite m
@@ -159,10 +159,10 @@ deleteItemSha iid k fid = do
 rmFromBag :: Int -> ItemId -> ItemBag -> ItemBag
 rmFromBag k iid bag =
   let rfb Nothing = assert `failure` "rm from empty slot" `twith` (k, iid, bag)
-      rfb (Just n) =
+      rfb (Just (n, it)) =
         case compare n k of
           LT -> assert `failure` "rm more than there is"
                        `twith` (n, k, iid, bag)
           EQ -> Nothing
-          GT -> Just (n - k)
+          GT -> Just (n - k, take (n - k) it)
   in EM.alter rfb iid bag

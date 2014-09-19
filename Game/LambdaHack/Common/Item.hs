@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Item
   , ItemKindIx, DiscoveryKind, ItemSeed, ItemAspectEffect(..), DiscoveryEffect
   , ItemFull(..), ItemDisco(..), itemNoDisco, itemNoAE
     -- * Inventory management types
-  , ItemBag, ItemDict, ItemKnown
+  , ItemQuant, ItemBag, ItemDict, ItemKnown
   ) where
 
 import qualified Control.Monad.State as St
@@ -25,6 +25,7 @@ import Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind
 
 -- | A unique identifier of an item in the dungeon.
@@ -70,13 +71,14 @@ data ItemDisco = ItemDisco
 data ItemFull = ItemFull
   { itemBase  :: !Item
   , itemK     :: !Int
+  , itemTimer :: ![Time]
   , itemDisco :: !(Maybe ItemDisco)
   }
   deriving Show
 
 itemNoDisco :: (Item, Int) -> ItemFull
 itemNoDisco (itemBase, itemK) =
-  ItemFull {itemBase, itemK, itemDisco=Nothing}
+  ItemFull {itemBase, itemK, itemTimer = [], itemDisco=Nothing}
 
 itemNoAE :: ItemFull -> ItemFull
 itemNoAE itemFull@ItemFull{..} =
@@ -114,7 +116,9 @@ seedToAspectsEffects (ItemSeed itemSeed) kind ldepth totalDepth =
       (jaspects, jeffects) = St.evalState rollAE (mkStdGen itemSeed)
   in ItemAspectEffect{..}
 
-type ItemBag = EM.EnumMap ItemId Int
+type ItemQuant = (Int, [Time])
+
+type ItemBag = EM.EnumMap ItemId ItemQuant
 
 -- | All items in the dungeon (including in actor inventories),
 -- indexed by item identifier.

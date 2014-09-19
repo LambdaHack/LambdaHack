@@ -542,8 +542,8 @@ effectDropBestWeapon execSfx target = do
   case strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
     (_, (iid, _)) : _ -> do
       b <- getsState $ getActorBody target
-      let k = beqp b EM.! iid
-      dropEqpItem target b False iid k
+      let kit = beqp b EM.! iid
+      dropEqpItem target b False iid kit
       execSfx
       return True
     [] ->
@@ -554,15 +554,15 @@ effectDropBestWeapon execSfx target = do
 -- (let's say, the multiple explosions interfere with each other or perhaps
 -- larger quantities of explosives tend to be packaged more safely).
 dropEqpItem :: (MonadAtomic m, MonadServer m)
-            => ActorId -> Actor -> Bool -> ItemId -> Int -> m ()
-dropEqpItem aid b hit iid k = do
+            => ActorId -> Actor -> Bool -> ItemId -> ItemQuant -> m ()
+dropEqpItem aid b hit iid kit@(k, _) = do
   item <- getsState $ getItemBody iid
   itemToF <- itemToFullServer
   let container = CActor aid CEqp
       fragile = Effect.Fragile `elem` jfeature item
       durable = Effect.Durable `elem` jfeature item
       isDestroyed = hit && not durable || bproj b && fragile
-      itemFull = itemToF iid k
+      itemFull = itemToF iid kit
   if isDestroyed then do
     -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
     execUpdAtomic $ UpdLoseItem iid item k container
@@ -586,7 +586,7 @@ effectDropEqp execSfx hit target symbol = do
 
 effectTransformEqp :: forall m. (MonadAtomic m, MonadServer m)
                    => m () -> ActorId -> Char -> CStore
-                   -> (ItemId -> Int -> m ())
+                   -> (ItemId -> ItemQuant -> m ())
                    -> m Bool
 effectTransformEqp execSfx target symbol cstore m = do
   let hasSymbol (iid, _) = do
@@ -777,7 +777,7 @@ effectExplode execSfx cgroup target = do
   m2 <- rollAndRegisterItem (blid tb) itemFreq container False
   let (iid, (ItemFull{..}, _)) = fromMaybe (assert `failure` cgroup) m2
       Point x y = bpos tb
-      projectN k100 n = do
+      projectN k100 (n, _) = do
         -- We pick a point at the border, not inside, to have a uniform
         -- distribution for the points the line goes through at each distance
         -- from the source. Otherwise, e.g., the points on cardinal
@@ -810,8 +810,8 @@ effectExplode execSfx cgroup target = do
     maybe skip (projectN k100) mn2
   bag3 <- getsState $ beqp . getActorBody target
   let mn3 = EM.lookup iid bag3
-  maybe skip (\k -> execUpdAtomic
-                    $ UpdLoseItem iid itemBase k container) mn3
+  maybe skip (\(k, _) -> execUpdAtomic
+                         $ UpdLoseItem iid itemBase k container) mn3
   execSfx
   return True  -- we avoid verifying that at least one projectile got off
 

@@ -322,9 +322,9 @@ targetDesc target = do
           lvl <- getLevel lid
           case EM.assocs $ lvl `atI` p of
             [] -> return $! "exact spot" <+> (T.pack . show) p
-            [(iid, k)] -> do
+            [(iid, kit@(k, _))] -> do
               itemToF <- itemToFullClient
-              let (name, stats) = partItem CGround (itemToF iid k)
+              let (name, stats) = partItem CGround (itemToF iid kit)
               return $! makePhrase $ if k == 1
                                      then [name, stats]  -- "a sword" too wordy
                                      else [MU.CarWs k name, stats]

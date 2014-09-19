@@ -117,7 +117,7 @@ activeItemsServer aid = do
   activeAssocs <- fullAssocsServer aid [CEqp, COrgan]
   return $! map snd activeAssocs
 
-itemToFullServer :: MonadServer m => m (ItemId -> Int -> ItemFull)
+itemToFullServer :: MonadServer m => m (ItemId -> ItemQuant -> ItemFull)
 itemToFullServer = do
   cops <- getsState scops
   discoKind <- getsServer sdiscoKind
@@ -128,7 +128,7 @@ itemToFullServer = do
 
 -- | Mapping over actor's items from a give store.
 mapActorCStore_ :: MonadServer m
-                => CStore -> (ItemId -> Int -> m a) -> Actor ->  m ()
+                => CStore -> (ItemId -> ItemQuant -> m a) -> Actor ->  m ()
 mapActorCStore_ cstore f b = do
   bag <- getsState $ getBodyActorBag b cstore
   mapM_ (uncurry f) $ EM.assocs bag

@@ -217,10 +217,12 @@ moveItemHuman cLegalRaw destCStore verb auto = do
   case ggi of
     Right ((iid, itemFull), CActor _ fromCStore) -> do
       let k = itemK itemFull
+          timer = itemTimer itemFull
           msgAndSer toCStore = do
             subject <- partAidLeader leader
             msgAdd $ makeSentence
-              [ MU.SubjectVerbSg subject verb, partItemWs k toCStore itemFull ]
+              [ MU.SubjectVerbSg subject verb
+              , partItemWs (k, timer) toCStore itemFull ]
             return $ Right $ ReqMoveItem iid k fromCStore toCStore
       if fromCStore == CGround
       then case destCStore of

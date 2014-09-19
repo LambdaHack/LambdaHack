@@ -188,7 +188,7 @@ type ActorDict = EM.EnumMap ActorId Actor
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)
 
-mapActorItems_ :: Monad m => (ItemId -> Int -> m a) -> Actor -> m ()
+mapActorItems_ :: Monad m => (ItemId -> ItemQuant -> m a) -> Actor -> m ()
 mapActorItems_ f Actor{binv, beqp, borgan} = do
   let is = EM.assocs beqp ++ EM.assocs binv ++ EM.assocs borgan
   mapM_ (uncurry f) is
