@@ -409,16 +409,13 @@ sumOrganEqpServer eqpSlot aid = do
   activeAssocs <- activeItemsServer aid
   return $! sumSlotNoFilter eqpSlot activeAssocs
 
-actorSkillsServer :: MonadServer m
-                  => ActorId -> Maybe ActorId -> m Ability.Skills
-actorSkillsServer aid mleader = do
+actorSkillsServer :: MonadServer m => ActorId -> m Ability.Skills
+actorSkillsServer aid  = do
   activeItems <- activeItemsServer aid
-  getsState $ actorSkills aid mleader activeItems
+  getsState $ actorSkills aid activeItems
 
 maxActorSkillsServer :: MonadServer m
                      => ActorId -> m Ability.Skills
 maxActorSkillsServer aid = do
   activeItems <- activeItemsServer aid
-  skOther <- getsState $ actorSkills aid Nothing activeItems
-  skLeader <- getsState $ actorSkills aid (Just aid) activeItems
-  return $! Ability.maxSkills skOther skLeader
+  getsState $ maxActorSkills aid activeItems

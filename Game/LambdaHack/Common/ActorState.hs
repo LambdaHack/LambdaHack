@@ -12,10 +12,11 @@ module Game.LambdaHack.Common.ActorState
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime
   , itemPrice, calmEnough, hpEnough, regenCalmDelta
-  , actorInAmbient, actorSkills, dispEnemy, radiusBlind
+  , actorInAmbient, actorSkills, maxActorSkills, dispEnemy, radiusBlind
   , fullAssocs, itemToFull, goesIntoInv, eqpOverfull, storeFromC
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
@@ -295,25 +296,35 @@ actorInAmbient b s =
       lvl = (EM.! blid b) . sdungeon $ s
   in Tile.isLit cotile (lvl `at` bpos b)
 
-actorSkills :: ActorId -> Maybe ActorId -> [ItemFull] -> State -> Ability.Skills
-actorSkills aid mleader activeItems s =
+actorSkills :: ActorId -> [ItemFull] -> State -> Ability.Skills
+actorSkills aid activeItems s =
   let body = getActorBody aid s
       fact = (EM.! bfid body) . sfactionD $ s
+      mleader = fst <$> gleader fact
       factionSkills
         | Just aid == mleader = Ability.unitSkills
         | otherwise = fskillsOther $ gplayer fact
       itemSkills = sumSkills activeItems
   in itemSkills `Ability.addSkills` factionSkills
 
+maxActorSkills :: ActorId -> [ItemFull] -> State -> Ability.Skills
+maxActorSkills aid activeItems s =
+  let body = getActorBody aid s
+      fact = (EM.! bfid body) . sfactionD $ s
+      factionSkills = Ability.maxSkills Ability.unitSkills
+                                        (fskillsOther $ gplayer fact)
+      itemSkills = sumSkills activeItems
+  in itemSkills `Ability.addSkills` factionSkills
+
 -- Check whether an actor can displace an enemy. We assume they are adjacent.
-dispEnemy :: ActorId -> Maybe ActorId -> ActorId -> [ItemFull] -> State -> Bool
-dispEnemy source mleader target activeItems s =
+dispEnemy :: ActorId -> ActorId -> [ItemFull] -> State -> Bool
+dispEnemy source target activeItems s =
   let hasSupport b =
         let fact = (EM.! bfid b) . sfactionD $ s
             friendlyFid fid = fid == bfid b || isAllied fact fid
             sup = actorRegularList friendlyFid (blid b) s
         in any (adjacent (bpos b) . bpos) sup
-      actorSk = actorSkills target mleader activeItems s
+      actorSk = maxActorSkills target activeItems s
       sb = getActorBody source s
       tb = getActorBody target s
   in bproj tb

@@ -161,19 +161,16 @@ makeLine body fpos epsOld = do
             then Nothing  -- ProjectBlockActor, ProjectAimOnself
             else tryLines epsOld (Nothing, minBound)
 
-actorSkillsClient :: MonadClient m
-                  => ActorId -> Maybe ActorId -> m Ability.Skills
-actorSkillsClient aid mleader = do
+actorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
+actorSkillsClient aid = do
   activeItems <- activeItemsClient aid
-  getsState $ actorSkills aid mleader activeItems
+  getsState $ actorSkills aid activeItems
 
 maxActorSkillsClient :: MonadClient m
                      => ActorId -> m Ability.Skills
 maxActorSkillsClient aid = do
   activeItems <- activeItemsClient aid
-  skOther <- getsState $ actorSkills aid Nothing activeItems
-  skLeader <- getsState $ actorSkills aid (Just aid) activeItems
-  return $! Ability.maxSkills skOther skLeader
+  getsState $ maxActorSkills aid activeItems
 
 updateItemSlot :: MonadClient m => Maybe ActorId -> ItemId -> m ()
 updateItemSlot maid iid = do
@@ -226,8 +223,7 @@ pickWeaponClient :: MonadClient m
 pickWeaponClient source target = do
   eqpAssocs <- fullAssocsClient source [CEqp]
   bodyAssocs <- fullAssocsClient source [COrgan]
-  mleader <- getsClient _sleader
-  actorSk <- actorSkillsClient source mleader
+  actorSk <- actorSkillsClient source
   let allAssocs = eqpAssocs ++ bodyAssocs
   case filter (not . unknownPrecious . snd . snd)
        $ strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
