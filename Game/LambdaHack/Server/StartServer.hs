@@ -72,8 +72,9 @@ reinitGame = do
                in EM.filter f discoS
   sdebugCli <- getsServer $ sdebugCli . sdebugSer
   modeName <- getsServer $ sgameMode . sdebugSer
+  let gameMode = fromMaybe "starting" modeName
   broadcastUpdAtomic
-    $ \fid -> UpdRestart fid sdiscoKind (pers EM.! fid) defLocal sdebugCli modeName
+    $ \fid -> UpdRestart fid sdiscoKind (pers EM.! fid) defLocal sdebugCli gameMode
   populateDungeon
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
@@ -153,12 +154,12 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind, ouniqGroup}}
   sstart <- getsServer sstart  -- copy over from previous game
   sallTime <- getsServer sallTime  -- copy over from previous game
   sheroNames <- getsServer sheroNames  -- copy over from previous game
-  let smode = sgameMode sdebug
+  let gameMode = fromMaybe "starting" $ sgameMode sdebug
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
                   DungeonGen.FreshDungeon)
       rnd = do
         modeKind <- fmap (fromMaybe $ ouniqGroup "campaign")  -- the fallback
-                    $ opick smode (const True)
+                    $ opick gameMode (const True)
         let mode = okind modeKind
             automatePS ps = ps {rosterList =
                                   map (automatePlayer True) $ rosterList ps}

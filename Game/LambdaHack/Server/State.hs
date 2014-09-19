@@ -60,7 +60,7 @@ data DebugModeSer = DebugModeSer
   , sniffIn        :: !Bool
   , sniffOut       :: !Bool
   , sallClear      :: !Bool
-  , sgameMode      :: !GroupName
+  , sgameMode      :: !(Maybe GroupName)
   , sautomateAll   :: !Bool
   , sstopAfter     :: !(Maybe Int)
   , sdungeonRng    :: !(Maybe R.StdGen)
@@ -122,7 +122,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sniffIn = False
                                , sniffOut = False
                                , sallClear = False
-                               , sgameMode = "starting"
+                               , sgameMode = Nothing
                                , sautomateAll = False
                                , sstopAfter = Nothing
                                , sdungeonRng = Nothing

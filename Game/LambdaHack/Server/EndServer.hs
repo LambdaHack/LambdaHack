@@ -49,13 +49,11 @@ endOrLoop loop restart gameExit gameSave = do
     modifyServer $ \ser -> ser {swriteSave = False}
     gameSave
   case (quitters, campers) of
-    (sgameMode : _, _) -> do
-      modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {sgameMode}}
-      restart
-    _ | gameOver -> do
+    (gameMode : _, _) -> do
       modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser)
-                                                {sgameMode = "starting"}}
+                                                {sgameMode = Just gameMode}}
       restart
+    _ | gameOver -> restart
     ([], []) -> loop  -- continue current game
     ([], _ : _) -> gameExit  -- don't call @loop@, that is, quit the game loop
 
