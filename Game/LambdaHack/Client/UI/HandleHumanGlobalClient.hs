@@ -165,7 +165,10 @@ displaceAid target = do
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   activeItems <- activeItemsClient target
   disp <- getsState $ dispEnemy leader target activeItems
-  let spos = bpos sb
+  actorSk <- getsState $ maxActorSkills target activeItems
+  let immobile = EM.findWithDefault 0 AbDisplace actorSk <= 0
+                 && EM.findWithDefault 0 AbMove actorSk <= 0
+      spos = bpos sb
       tpos = bpos tb
       adj = checkAdjacent sb tb
       atWar = isAtWar tfact (bfid sb)
@@ -174,6 +177,8 @@ displaceAid target = do
           && actorDying tb then failSer DisplaceDying
   else if not (bproj tb) && atWar
           && braced tb then failSer DisplaceBraced
+  else if not (bproj tb) && atWar
+          && immobile then failSer DisplaceImmobile
   else if not disp && atWar then failSer DisplaceSupported
   else do
     let lid = blid sb

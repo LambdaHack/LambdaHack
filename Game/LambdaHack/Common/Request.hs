@@ -76,6 +76,7 @@ data ReqFailure =
   | DisplaceProjectiles
   | DisplaceDying
   | DisplaceBraced
+  | DisplaceImmobile
   | DisplaceSupported
   | AlterDistant
   | AlterBlockActor
@@ -100,12 +101,13 @@ showReqFailure reqFailure = case reqFailure of
   MoveNothing -> "wasting time on moving into obstacle"
   MeleeSelf -> "trying to melee oneself"
   MeleeDistant -> "trying to melee a distant foe"
-  DisplaceDistant -> "trying to switch places with a distant actor"
+  DisplaceDistant -> "trying to displace a distant actor"
   DisplaceAccess -> "switching places without access"
-  DisplaceProjectiles -> "trying to switch places with multiple projectiles"
-  DisplaceDying -> "trying to switch places with a dying foe"
-  DisplaceBraced -> "trying to switch places with a braced foe"
-  DisplaceSupported -> "trying to switch places with a supported foe"
+  DisplaceProjectiles -> "trying to displace multiple projectiles"
+  DisplaceDying -> "trying to displace a dying foe"
+  DisplaceBraced -> "trying to displace a braced foe"
+  DisplaceImmobile -> "trying to displace an immoblie foe"
+  DisplaceSupported -> "trying to displace a supported foe"
   AlterDistant -> "trying to alter a distant tile"
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"
