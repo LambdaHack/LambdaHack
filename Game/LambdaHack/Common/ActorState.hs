@@ -296,11 +296,10 @@ actorInAmbient b s =
       lvl = (EM.! blid b) . sdungeon $ s
   in Tile.isLit cotile (lvl `at` bpos b)
 
-actorSkills :: ActorId -> [ItemFull] -> State -> Ability.Skills
-actorSkills aid activeItems s =
+actorSkills :: Maybe ActorId -> ActorId -> [ItemFull] -> State -> Ability.Skills
+actorSkills mleader aid activeItems s =
   let body = getActorBody aid s
       fact = (EM.! bfid body) . sfactionD $ s
-      mleader = fst <$> gleader fact
       factionSkills
         | Just aid == mleader = Ability.unitSkills
         | otherwise = fskillsOther $ gplayer fact

@@ -164,7 +164,9 @@ makeLine body fpos epsOld = do
 actorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 actorSkillsClient aid = do
   activeItems <- activeItemsClient aid
-  getsState $ actorSkills aid activeItems
+  -- Newest Leader in _sleader, not yet in sfactionD.
+  mleader <- getsClient _sleader
+  getsState $ actorSkills mleader aid activeItems
 
 maxActorSkillsClient :: MonadClient m
                      => ActorId -> m Ability.Skills
