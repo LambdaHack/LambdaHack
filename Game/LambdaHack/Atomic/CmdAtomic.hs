@@ -53,12 +53,12 @@ data UpdAtomic =
   -- Create/destroy actors and items.
     UpdCreateActor !ActorId !Actor ![(ItemId, Item)]
   | UpdDestroyActor !ActorId !Actor ![(ItemId, Item)]
-  | UpdCreateItem !ItemId !Item !Int !Container
-  | UpdDestroyItem !ItemId !Item !Int !Container
+  | UpdCreateItem !ItemId !Item !ItemQuant !Container
+  | UpdDestroyItem !ItemId !Item !ItemQuant !Container
   | UpdSpotActor !ActorId !Actor ![(ItemId, Item)]
   | UpdLoseActor !ActorId !Actor ![(ItemId, Item)]
-  | UpdSpotItem !ItemId !Item !Int !Container
-  | UpdLoseItem !ItemId !Item !Int !Container
+  | UpdSpotItem !ItemId !Item !ItemQuant !Container
+  | UpdLoseItem !ItemId !Item !ItemQuant !Container
   -- Move actors and items.
   | UpdMoveActor !ActorId !Point !Point
   | UpdWaitActor !ActorId !Bool

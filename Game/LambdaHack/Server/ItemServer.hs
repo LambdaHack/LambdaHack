@@ -35,7 +35,7 @@ registerItem item itemKnown@(_, iae) seed k container verbose = do
     Just iid -> do
       -- TODO: try to avoid this case for createItems,
       -- to make items more interesting
-      execUpdAtomic $ cmd iid item k container
+      execUpdAtomic $ cmd iid item (k, []) container
       return iid
     Nothing -> do
       icounter <- getsServer sicounter
@@ -44,7 +44,7 @@ registerItem item itemKnown@(_, iae) seed k container verbose = do
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
             , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
             , sdiscoEffect = EM.insert icounter iae (sdiscoEffect ser)}
-      execUpdAtomic $ cmd icounter item k container
+      execUpdAtomic $ cmd icounter item (k, []) container
       return $! icounter
 
 createItems :: (MonadAtomic m, MonadServer m)

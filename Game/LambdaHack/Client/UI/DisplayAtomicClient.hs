@@ -64,16 +64,16 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     destroyActorUI aid body "die" "be destroyed" verbose
     side <- getsClient sside
     when (bfid body == side && not (bproj body)) stopPlayBack
-  UpdCreateItem iid _ k c -> do
+  UpdCreateItem iid _ kit c -> do
     -- TODO: probably not Nothing if container not CGround
     updateItemSlot Nothing iid
-    itemVerbMU iid (k, []) (MU.Text $ "appear" <+> ppContainer c) (storeFromC c)
+    itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) (storeFromC c)
     stopPlayBack
-  UpdDestroyItem iid _ k c -> itemVerbMU iid (k, []) "disappear" (storeFromC c)
+  UpdDestroyItem iid _ kit c -> itemVerbMU iid kit "disappear" (storeFromC c)
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
   UpdLoseActor aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
-  UpdSpotItem iid _ k c -> do
+  UpdSpotItem iid _ kit c -> do
     -- We assign slots to all items visible on the floor,
     -- but some of the slots are later on recycled and then
     -- we report spotting the items again.
@@ -90,7 +90,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
               TEnemy{} -> return ()  -- probably too important to overwrite
               TEnemyPos{} -> return ()
               _ -> modifyClient $ \cli -> cli {scursor = TPoint lid p}
-            itemVerbMU iid (k, []) "be spotted" CGround
+            itemVerbMU iid kit "be spotted" CGround
             stopPlayBack
           CTrunk{} -> return ()
       _ -> return ()  -- seen recently (still has a slot assigned)

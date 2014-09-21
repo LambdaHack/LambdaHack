@@ -259,10 +259,8 @@ breakUpdAtomic cmd = case cmd of
            , UpdSpotActor target tb {bpos = bpos sb, boldpos = bpos tb} tais
            ]
   UpdMoveItem iid k aid cstore1 cstore2 | cstore1 == CSha  -- CSha is private
-                                          || cstore2 == CSha -> do
-    item <- getsState $ getItemBody iid
-    return [ UpdLoseItem iid item k (CActor aid cstore1)
-           , UpdSpotItem iid item k (CActor aid cstore2) ]
+                                          || cstore2 == CSha ->
+    containerMoveItem iid k (CActor aid cstore1) (CActor aid cstore2)
   -- No need to cover @UpdSearchTile@, because if an actor sees only
   -- one of the positions and so doesn't notice the search results,
   -- he's left with a hidden tile, which doesn't cause any trouble
@@ -327,9 +325,18 @@ generalMoveItem :: MonadStateRead m
                 -> m [UpdAtomic]
 generalMoveItem iid k c1 c2 = do
   case (c1, c2) of
-    (CActor aid1 cstore1, CActor aid2 cstore2) | aid1 == aid2 -> do
+    (CActor aid1 cstore1, CActor aid2 cstore2) | aid1 == aid2 ->
       return [UpdMoveItem iid k aid1 cstore1 cstore2]
-    _ -> do
+    _ -> containerMoveItem iid k c1 c2
+
+containerMoveItem :: MonadStateRead m
+                  => ItemId -> Int -> Container -> Container
+                  -> m [UpdAtomic]
+containerMoveItem iid k c1 c2 = do
+  bag <- getsState $ getCBag c1
+  case iid `EM.lookup` bag of
+    Nothing -> assert `failure` (iid, k, c1, c2)
+    Just (_, it) -> do
       item <- getsState $ getItemBody iid
-      return [ UpdLoseItem iid item k c1
-             , UpdSpotItem iid item k c2 ]
+      return [ UpdLoseItem iid item (k, take k it) c1
+             , UpdSpotItem iid item (k, take k it) c2 ]

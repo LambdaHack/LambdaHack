@@ -56,57 +56,57 @@ updateFaction fid f = do
   modifyState $ updateFactionD $ EM.alter alt fid
 
 insertItemContainer :: MonadStateWrite m
-                    => ItemId -> Int -> Container -> m ()
-insertItemContainer iid k c = case c of
-  CFloor lid pos -> insertItemFloor iid k lid pos
-  CActor aid store -> insertItemActor iid k aid store
+                    => ItemId -> ItemQuant -> Container -> m ()
+insertItemContainer iid kit c = case c of
+  CFloor lid pos -> insertItemFloor iid kit lid pos
+  CActor aid store -> insertItemActor iid kit aid store
   CTrunk{} -> return ()
 
 insertItemFloor :: MonadStateWrite m
-                => ItemId -> Int -> LevelId -> Point -> m ()
-insertItemFloor iid k lid pos =
-  let bag = EM.singleton iid (k, [])
+                => ItemId -> ItemQuant -> LevelId -> Point -> m ()
+insertItemFloor iid kit lid pos =
+  let bag = EM.singleton iid kit
       mergeBag = EM.insertWith (EM.unionWith mergeItemQuant) pos bag
   in updateLevel lid $ updateFloor mergeBag
 
 insertItemActor :: MonadStateWrite m
-                => ItemId -> Int -> ActorId -> CStore -> m ()
-insertItemActor iid k aid cstore = case cstore of
+                => ItemId -> ItemQuant -> ActorId -> CStore -> m ()
+insertItemActor iid kit aid cstore = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
-    insertItemFloor iid k (blid b) (bpos b)
-  COrgan -> insertItemBody iid k aid
-  CEqp -> insertItemEqp iid k aid
-  CInv -> insertItemInv iid k aid
+    insertItemFloor iid kit (blid b) (bpos b)
+  COrgan -> insertItemBody iid kit aid
+  CEqp -> insertItemEqp iid kit aid
+  CInv -> insertItemInv iid kit aid
   CSha -> do
     b <- getsState $ getActorBody aid
-    insertItemSha iid k (bfid b)
+    insertItemSha iid kit (bfid b)
 
 insertItemBody :: MonadStateWrite m
-               => ItemId -> Int -> ActorId -> m ()
-insertItemBody iid k aid = do
-  let bag = EM.singleton iid (k, [])
+               => ItemId -> ItemQuant -> ActorId -> m ()
+insertItemBody iid kit aid = do
+  let bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
   updateActor aid $ \b -> b {borgan = upd (borgan b)}
 
 insertItemEqp :: MonadStateWrite m
-              => ItemId -> Int -> ActorId -> m ()
-insertItemEqp iid k aid = do
-  let bag = EM.singleton iid (k, [])
+              => ItemId -> ItemQuant -> ActorId -> m ()
+insertItemEqp iid kit aid = do
+  let bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
   updateActor aid $ \b -> b {beqp = upd (beqp b)}
 
 insertItemInv :: MonadStateWrite m
-              => ItemId -> Int -> ActorId -> m ()
-insertItemInv iid k aid = do
-  let bag = EM.singleton iid (k, [])
+              => ItemId -> ItemQuant -> ActorId -> m ()
+insertItemInv iid kit aid = do
+  let bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
   updateActor aid $ \b -> b {binv = upd (binv b)}
 
 insertItemSha :: MonadStateWrite m
-               => ItemId -> Int -> FactionId -> m ()
-insertItemSha iid k fid = do
-  let bag = EM.singleton iid (k, [])
+              => ItemId -> ItemQuant -> FactionId -> m ()
+insertItemSha iid kit fid = do
+  let bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
   updateFaction fid $ \fact -> fact {gsha = upd (gsha fact)}
 
@@ -164,5 +164,5 @@ rmFromBag k iid bag =
           LT -> assert `failure` "rm more than there is"
                        `twith` (n, k, iid, bag)
           EQ -> Nothing
-          GT -> Just (n - k, take (n - k) it)
+          GT -> Just (n - k, drop k it)
   in EM.alter rfb iid bag

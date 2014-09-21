@@ -50,36 +50,40 @@ import Game.LambdaHack.Server.State
 applyItem :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> CStore -> m ()
 applyItem aid iid cstore = do
-  itemToF <- itemToFullServer
-  bag <- getsState $ getActorBag aid cstore
-  let k = bag EM.! iid
-      itemFull = itemToF iid k
   execSfxAtomic $ SfxActivate aid iid 1
-  itemEffectAndDestroy aid aid iid itemFull cstore
+  itemEffectAndDestroy aid aid iid cstore
 
 itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
-                     => ActorId -> ActorId -> ItemId -> ItemFull -> CStore
+                     => ActorId -> ActorId -> ItemId -> CStore
                      -> m ()
-itemEffectAndDestroy source target iid itemFull cstore = do
+itemEffectAndDestroy source target iid cstore = do
   -- We have to destroy the item before the effect affects the item
   -- or the actor holding it or standing on it (later on we could
   -- lose track of the item and wouldn't be able to destroy it) .
   -- This is OK, because we don't remove the item type from various
   -- item dictionaries, just an individual copy from the container,
   -- so, e.g., the item can be identified after it's removed.
-  let item = itemBase itemFull
-      durable = Effect.Durable `elem` jfeature item
-      periodic = isJust $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
-      c = CActor source cstore
-  unless (durable && periodic) $ do
-    when (not durable) $
-      execUpdAtomic $ UpdLoseItem iid item 1 c
-    triggered <- itemEffect source target iid itemFull False False
-    -- If none of item's effects was performed, we try to recreate the item.
-    -- Regardless, we don't rewind the time, because some info is gained
-    -- (that the item does not exhibit any effects in the given context).
-    when (not triggered && not durable) $
-      execUpdAtomic $ UpdSpotItem iid item 1 c
+  bag <- getsState $ getActorBag source cstore
+  case iid `EM.lookup` bag of
+    Nothing -> assert `failure` (source, target, iid, cstore)
+    Just kitK -> do
+      itemToF <- itemToFullServer
+      let itemFull = itemToF iid kitK
+          item = itemBase itemFull
+          durable = Effect.Durable `elem` jfeature item
+          periodic =
+            isJust $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
+          c = CActor source cstore
+      unless (durable && periodic) $ do
+        let kit = (1, take 1 $ itemTimer itemFull)
+        when (not durable) $
+          execUpdAtomic $ UpdLoseItem iid item kit c
+        triggered <- itemEffect source target iid itemFull False False
+        -- If none of item's effects was performed, we try to recreate the item.
+        -- Regardless, we don't rewind the time, because some info is gained
+        -- (that the item does not exhibit any effects in the given context).
+        when (not triggered && not durable) $
+          execUpdAtomic $ UpdSpotItem iid item kit c
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effect effect fires up, the item gets identified. This function
@@ -566,7 +570,7 @@ dropEqpItem aid b hit iid kit@(k, _) = do
       itemFull = itemToF iid kit
   if isDestroyed then do
     -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
-    execUpdAtomic $ UpdLoseItem iid item k container
+    execUpdAtomic $ UpdLoseItem iid item kit container
     void $ itemEffect aid aid iid itemFull True False
   else do
     mvCmd <- generalMoveItem iid k (CActor aid CEqp)
@@ -718,7 +722,8 @@ effectPolyItem execSfx cstore target = do
         if itemK >= maxCount
         then do
           let c = CActor target cstore
-          execUpdAtomic $ UpdDestroyItem iid itemBase maxCount c
+              kit = (maxCount, take maxCount itemTimer)
+          execUpdAtomic $ UpdDestroyItem iid itemBase kit c
           execSfx
           effectCreateItem 1 target
         else do
@@ -811,8 +816,8 @@ effectExplode execSfx cgroup target = do
     maybe skip (projectN k100) mn2
   bag3 <- getsState $ beqp . getActorBody target
   let mn3 = EM.lookup iid bag3
-  maybe skip (\(k, _) -> execUpdAtomic
-                         $ UpdLoseItem iid itemBase k container) mn3
+  maybe skip (\kit -> execUpdAtomic
+                      $ UpdLoseItem iid itemBase kit container) mn3
   execSfx
   return True  -- we avoid verifying that at least one projectile got off
 

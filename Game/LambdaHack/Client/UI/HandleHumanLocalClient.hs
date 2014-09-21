@@ -127,12 +127,11 @@ describeItemC c = do
          $ MU.SubjectVerbSg (subject body) (verbSha body activeItems)]
       stdBlurb body = makePhrase
         [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
-  itemToF <- itemToFullClient
   let verb = "describe"
   ggi <- getStoreItem shaBlurb stdBlurb verb c
   case ggi of
-    Right ((iid, _), _) ->
-      overlayToSlideshow "" $ itemDesc (storeFromC c) (itemToF iid (1, []))
+    Right ((_, itemFull), c2) ->
+      overlayToSlideshow "" $ itemDesc (storeFromC c2) itemFull
     Left slides -> return slides
 
 -- * AllOwned

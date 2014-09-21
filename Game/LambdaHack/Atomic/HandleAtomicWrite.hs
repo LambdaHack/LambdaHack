@@ -47,12 +47,12 @@ handleUpdAtomic :: MonadStateWrite m => UpdAtomic -> m ()
 handleUpdAtomic cmd = case cmd of
   UpdCreateActor aid body ais -> updCreateActor aid body ais
   UpdDestroyActor aid body ais -> updDestroyActor aid body ais
-  UpdCreateItem iid item k c -> updCreateItem iid item k c
-  UpdDestroyItem iid item k c -> updDestroyItem iid item k c
+  UpdCreateItem iid item kit c -> updCreateItem iid item kit c
+  UpdDestroyItem iid item kit c -> updDestroyItem iid item kit c
   UpdSpotActor aid body ais -> updCreateActor aid body ais
   UpdLoseActor aid body ais -> updDestroyActor aid body ais
-  UpdSpotItem iid item k c -> updCreateItem iid item k c
-  UpdLoseItem iid item k c -> updDestroyItem iid item k c
+  UpdSpotItem iid item kit c -> updCreateItem iid item kit c
+  UpdLoseItem iid item kit c -> updDestroyItem iid item kit c
   UpdMoveActor aid fromP toP -> updMoveActor aid fromP toP
   UpdWaitActor aid toWait -> updWaitActor aid toWait
   UpdDisplaceActor source target -> updDisplaceActor source target
@@ -163,8 +163,8 @@ updDestroyActor aid body ais = do
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
 updCreateItem :: MonadStateWrite m
-              => ItemId -> Item -> Int -> Container -> m ()
-updCreateItem iid item k c = assert (k > 0) $ do
+              => ItemId -> Item -> ItemQuant -> Container -> m ()
+updCreateItem iid item kit@(k, _) c = assert (k > 0) $ do
   -- The item may or may not be already present in @sitemD@,
   -- regardless if it's actually present in the dungeon.
   -- If items equivalent, pick the one found on easier level.
@@ -172,12 +172,13 @@ updCreateItem iid item k c = assert (k > 0) $ do
         assert (itemsMatch item1 item2)
                item2 -- keep the first found level
   modifyState $ updateItemD $ EM.insertWith f iid item
-  insertItemContainer iid k c
+  insertItemContainer iid kit c
 
+-- TODO: verify kit
 -- | Destroy some copies (possibly not all) of an item.
 updDestroyItem :: MonadStateWrite m
-               => ItemId -> Item -> Int -> Container -> m ()
-updDestroyItem iid item k c = assert (k > 0) $ do
+               => ItemId -> Item -> ItemQuant -> Container -> m ()
+updDestroyItem iid item (k, _) c = assert (k > 0) $ do
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
   -- It's incredibly costly and not noticeable for the player.
   -- However, assert the item is registered in @sitemD@.
@@ -214,8 +215,12 @@ updMoveItem :: MonadStateWrite m
             => ItemId -> Int -> ActorId -> CStore -> CStore
             -> m ()
 updMoveItem iid k aid c1 c2 = assert (k > 0 && c1 /= c2) $ do
-  deleteItemActor iid k aid c1
-  insertItemActor iid k aid c2
+  bag <- getsState $ getActorBag aid c1
+  case iid `EM.lookup` bag of
+    Nothing -> assert `failure` (iid, k, aid, c1, c2)
+    Just (_, it) -> do
+      deleteItemActor iid k aid c1
+      insertItemActor iid (k, take k it) aid c2
 
 -- TODO: optimize (a single call to updatePrio is enough)
 updAgeActor :: MonadStateWrite m => ActorId -> Delta Time -> m ()

@@ -292,20 +292,24 @@ projectBla source pos rest iid cstore isShrapnel = do
   let lid = blid sb
   localTime <- getsState $ getLocalTime lid
   unless isShrapnel $ execSfxAtomic $ SfxProject source iid
-  addProjectile pos rest iid lid (bfid sb) localTime isShrapnel
-  let c = CActor source cstore
-  execUpdAtomic $ UpdLoseItem iid item 1 c
+  bag <- getsState $ getActorBag source cstore
+  case iid `EM.lookup` bag of
+    Nothing -> assert `failure` (source, pos, rest, iid, cstore)
+    Just kit@(_, it) -> do
+      addProjectile pos rest iid kit lid (bfid sb) localTime isShrapnel
+      let c = CActor source cstore
+      execUpdAtomic $ UpdLoseItem iid item (1, take 1 it)  c
 
 -- | Create a projectile actor containing the given missile.
 --
 -- Projectile has no organs except for the trunk.
 addProjectile :: (MonadAtomic m, MonadServer m)
-              => Point -> [Point] -> ItemId -> LevelId -> FactionId
+              => Point -> [Point] -> ItemId -> ItemQuant -> LevelId -> FactionId
               -> Time -> Bool
               -> m ()
-addProjectile bpos rest iid blid bfid btime isShrapnel = do
+addProjectile bpos rest iid (_, it) blid bfid btime isShrapnel = do
   itemToF <- itemToFullServer
-  let itemFull@ItemFull{itemBase} = itemToF iid (1, [])
+  let itemFull@ItemFull{itemBase} = itemToF iid (1, take 1 it)
       (trajectory, (speed, trange)) = itemTrajectory itemBase (bpos : rest)
       adj | trange < 5 = "falling"
           | otherwise = "flying"
@@ -318,7 +322,7 @@ addProjectile bpos rest iid blid bfid btime isShrapnel = do
                       , bhp = 0
                       , bproj = True
                       , btrajectory = Just (trajectory, speed)
-                      , beqp = EM.singleton iid (1, [])
+                      , beqp = EM.singleton iid (1, take 1 it)
                       , borgan = EM.empty}
       bpronoun = "it"
   void $ addActorIid iid itemFull
