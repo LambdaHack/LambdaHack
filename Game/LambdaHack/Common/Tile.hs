@@ -18,7 +18,7 @@ module Game.LambdaHack.Common.Tile
   , kindHasFeature, hasFeature
   , isClear, isLit, isWalkable, isPassableKind, isPassable, isDoor, isSuspect
   , isExplorable, lookSimilar, speedup
-  , openTo, closeTo, causeEffects, revealAs, hideAs
+  , openTo, closeTo, embedItems, causeEffects, revealAs, hideAs
   , isOpenable, isClosable, isChangeable, isEscape, isStair
 #ifdef EXPOSE_INTERNAL
   , TileSpeedup(..), Tab, createTab, accessTab
@@ -32,6 +32,7 @@ import Data.Maybe
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.TileKind
@@ -204,6 +205,12 @@ closeTo Kind.Ops{okind, opick} t = do
       grp <- oneOf groups
       fmap (fromMaybe $ assert `failure` grp)
         $ opick grp (const True)
+
+embedItems :: Kind.Ops TileKind -> Kind.Id TileKind -> [GroupName]
+embedItems Kind.Ops{okind} t = do
+  let getTo (F.Embed eff) acc = eff : acc
+      getTo _ acc = acc
+  foldr getTo [] $ tfeature $ okind t
 
 causeEffects :: Kind.Ops TileKind -> Kind.Id TileKind -> [Effect.Effect Int]
 causeEffects Kind.Ops{okind} t = do

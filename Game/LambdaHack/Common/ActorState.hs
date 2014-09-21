@@ -16,7 +16,6 @@ module Game.LambdaHack.Common.ActorState
   , fullAssocs, itemToFull, goesIntoInv, eqpOverfull, storeFromC
   ) where
 
-import Control.Applicative
 import Control.Exception.Assert.Sugar
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM

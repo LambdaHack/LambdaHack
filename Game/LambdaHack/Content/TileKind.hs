@@ -74,6 +74,7 @@ validateAllTileKind lt =
 actionFeatures :: Bool -> TileKind -> IS.IntSet
 actionFeatures markSuspect t =
   let f feat = case feat of
+        F.Embed{} -> Just feat
         F.Cause{} -> Just feat
         F.OpenTo{} -> Just $ F.OpenTo ""  -- if needed, remove prefix/suffix
         F.CloseTo{} -> Just $ F.CloseTo ""
@@ -81,7 +82,6 @@ actionFeatures markSuspect t =
         F.Walkable -> Just feat
         F.Clear -> Just feat
         F.Suspect -> if markSuspect then Just feat else Nothing
-        F.Aura{} -> Just feat
         F.Impenetrable -> Just feat
         F.Trail -> Just feat  -- doesn't affect tile behaviour, but important
         F.HideAs{} -> Nothing

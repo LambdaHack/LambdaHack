@@ -13,10 +13,10 @@ import Game.LambdaHack.Common.Misc
 
 -- | All possible terrain tile features.
 data Feature =
-    Cause !(Effect.Effect Int)  -- ^ causes the effect when triggered
-                                -- TODO: embed a hidden item bag instead
-                                -- and then simplify effectsSem;
-                                -- also: FEmbed group_ItemKind: n and timer
+    Embed !GroupName      -- ^ embed an item of this group, to cause effects
+  | Cause !(Effect.Effect Int)  -- ^ causes the effect when triggered;
+                                --   more succint than @Embed@, but will
+                                --   probably get supplanted by @Embed@
   | OpenTo !GroupName    -- ^ goes from a closed to an open tile when altered
   | CloseTo !GroupName   -- ^ goes from an open to a closed tile when altered
   | ChangeTo !GroupName  -- ^ alters tile, but does not change walkability
@@ -27,7 +27,6 @@ data Feature =
   | Clear                -- ^ actors can see through
   | Dark                 -- ^ is not lit with an ambient shine
   | Suspect              -- ^ may not be what it seems (clients only)
-  | Aura !(Effect.Effect Int)  -- ^ sustains the effect continuously, TODO
   | Impenetrable         -- ^ can never be excavated nor seen through
 
   | OftenItem            -- ^ initial items often generated there
