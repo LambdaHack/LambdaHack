@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Level
     -- * The @Level@ type and its components
   , Level(..), ActorPrio, ItemFloor, TileMap, SmellMap
     -- * Level query
-  , at, atI, checkAccess, checkDoorAccess
+  , at, atI, atE, checkAccess, checkDoorAccess
   , accessible, accessibleUnknown, accessibleDir
   , knownLsecret, isSecretPos, hideTile
   , findPos, findPosTry, mapLevelActors_, mapDungeonActors_
@@ -68,6 +68,7 @@ data Level = Level
   { ldepth      :: !AbsDepth   -- ^ absolute depth of the level
   , lprio       :: !ActorPrio  -- ^ remembered actor times on the level
   , lfloor      :: !ItemFloor  -- ^ remembered items lying on the floor
+  , lembed      :: !ItemFloor  -- ^ items embedded in the tile
   , ltile       :: !TileMap    -- ^ remembered level map
   , lxsize      :: !X          -- ^ width of the level
   , lysize      :: !Y          -- ^ height of the level
@@ -100,6 +101,10 @@ at Level{ltile} p = ltile PointArray.! p
 -- | Query for items on the ground.
 atI :: Level -> Point -> ItemBag
 atI Level{lfloor} p = EM.findWithDefault EM.empty p lfloor
+
+-- | Query for items embedded in the tile.
+atE :: Level -> Point -> ItemBag
+atE Level{lembed} p = EM.findWithDefault EM.empty p lembed
 
 checkAccess :: Kind.COps -> Level -> Maybe (Point -> Point -> Bool)
 checkAccess Kind.COps{corule} _ =
@@ -217,6 +222,7 @@ instance Binary Level where
     put ldepth
     put lprio
     put (assertSparseItems lfloor)
+    put (assertSparseItems lembed)
     put ltile
     put lxsize
     put lysize
@@ -237,6 +243,7 @@ instance Binary Level where
     ldepth <- get
     lprio <- get
     lfloor <- get
+    lembed <- get
     ltile <- get
     lxsize <- get
     lysize <- get

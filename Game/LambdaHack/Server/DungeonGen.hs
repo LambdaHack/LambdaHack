@@ -217,6 +217,7 @@ levelFromCaveKind Kind.COps{cotile}
         { ldepth
         , lprio = EM.empty
         , lfloor = EM.empty
+        , lembed = EM.empty  -- is populated inside $MonadServer$
         , ltile
         , lxsize = cxsize
         , lysize = cysize

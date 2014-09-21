@@ -54,6 +54,7 @@ unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
   in Level { ldepth
            , lprio = EM.empty
            , lfloor = EM.empty
+           , lembed = EM.empty
            , ltile = unknownTileMap unknownId outerId lxsize lysize
            , lxsize
            , lysize
