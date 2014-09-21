@@ -165,6 +165,7 @@ effectSem effect source target = do
     Effect.Explode t -> effectExplode execSfx t target
     Effect.OneOf l -> effectOneOf l source target
     Effect.OnSmash _ -> return False  -- ignored under normal circumstances
+    Effect.Timeout k e -> effectTimeout k e source target
     Effect.TimedAspect{} -> return False  -- TODO
 
 -- + Individual semantic functions for effects
@@ -822,3 +823,10 @@ effectOneOf :: (MonadAtomic m, MonadServer m)
 effectOneOf l source target = do
   ef <-  rndToAction $ oneOf l
   effectSem ef source target
+
+-- ** Timeout
+
+effectTimeout :: (MonadAtomic m, MonadServer m)
+              => Int -> Effect.Effect Int -> ActorId -> ActorId -> m Bool
+effectTimeout _k _e _source _target = do
+  return False  -- TODO

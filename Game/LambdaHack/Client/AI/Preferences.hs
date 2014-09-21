@@ -69,6 +69,8 @@ effectToBenefit cops b activeItems fact eff =
     Effect.Explode _ -> -10
     Effect.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
     Effect.OnSmash _ -> -10
+    Effect.Timeout k e -> effectToBenefit cops b activeItems fact e
+                          `div` (k `divUp` 5)
     Effect.TimedAspect k asp -> k * (aspectToBenefit cops b asp) `div` 50
 
 -- | Return the value to add to effect value and another to multiply it.

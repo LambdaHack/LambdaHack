@@ -49,8 +49,10 @@ data Effect a =
   | ApplyPerfume
   | OneOf ![Effect a]
   | OnSmash !(Effect a)   -- ^ trigger if item smashed (not applied nor meleed)
+  | Timeout !Int !(Effect a)
+                          -- ^ inactive for some clips after each use
   | TimedAspect !Int !(Aspect a)
-                          -- ^ enable the aspect for k clips
+                          -- ^ enable the aspect for some clips
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
 -- | Aspects of items. Additive (starting at 0) for all items wielded
@@ -174,6 +176,9 @@ effectTrav (OneOf la) f = do
 effectTrav (OnSmash effa) f = do
   effb <- effectTrav effa f
   return $! OnSmash effb
+effectTrav (Timeout k effa) f = do
+  effb <- effectTrav effa f
+  return $! Timeout k effb
 effectTrav (Explode t) _ = return $! Explode t
 effectTrav (TimedAspect k asp) f = do
   asp2 <- aspectTrav asp f

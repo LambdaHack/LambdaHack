@@ -627,6 +627,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         Effect.Explode{} -> skip  -- lots of visual feedback
         Effect.OneOf{} -> skip
         Effect.OnSmash{} -> assert `failure` sfx
+        Effect.Timeout{} -> assert `failure` sfx
         Effect.TimedAspect{} -> skip  -- TODO
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
