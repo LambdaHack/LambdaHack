@@ -2,7 +2,8 @@
 module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateMA, sizeA
-  , foldlA, ifoldlA, imapA, minIndexA, minLastIndexA, maxIndexA, maxLastIndexA
+  , foldlA, ifoldlA, imapA, mapWithKeyM_A
+  , minIndexA, minLastIndexA, maxIndexA, maxLastIndexA
   ) where
 
 import Control.Arrow ((***))
@@ -59,7 +60,7 @@ replicateA :: Enum c => X -> Y -> c -> Array c
 replicateA axsize aysize c =
   Array{avector = U.replicate (axsize * aysize) $ cnv c, ..}
 
--- | Create an  array from a replicated monadic action.
+-- | Create an array from a replicated monadic action.
 replicateMA :: Enum c => Monad m => X -> Y -> m c -> m (Array c)
 replicateMA axsize aysize m = do
   v <- U.replicateM (axsize * aysize) $ liftM cnv m
@@ -92,6 +93,16 @@ imapA :: (Enum c, Enum d) => (Point -> c -> d) -> Array c -> Array d
 imapA f Array{..} =
   let v = U.imap (\n c -> cnv $ f (punindex axsize n) (cnv c)) avector
   in Array{avector = v, ..}
+
+-- | Map monadically over an array (function applied to each element
+-- and its index) and ignore the results.
+mapWithKeyM_A :: Enum c => Monad m
+              => (Point -> c -> m ()) -> Array c -> m ()
+{-# INLINE mapWithKeyM_A #-}
+mapWithKeyM_A f Array{..} =
+  U.ifoldl' (\a n c -> a >> f (punindex axsize n) (cnv c))
+            (return ())
+            avector
 
 -- | Yield the point coordinates of a minimum element of the array.
 -- The array may not be empty.

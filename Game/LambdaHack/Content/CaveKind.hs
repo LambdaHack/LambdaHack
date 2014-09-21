@@ -12,6 +12,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
 -- | Parameters for the generation of dungeon levels.
+-- Warning: for efficiency, avoid embedded items in any of the common tiles.
 data CaveKind = CaveKind
   { csymbol         :: !Char         -- ^ a symbol
   , cname           :: !Text         -- ^ short description

@@ -1,7 +1,8 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemServer
-  ( rollAndRegisterItem, registerItem, createItems, placeItemsInDungeon
-  , fullAssocsServer, activeItemsServer, itemToFullServer, mapActorCStore_
+  ( rollAndRegisterItem, registerItem, createItems
+  , placeItemsInDungeon, embedItemsInDungeon, fullAssocsServer
+  , activeItemsServer, itemToFullServer, mapActorCStore_
   ) where
 
 import Control.Monad
@@ -19,8 +20,10 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
@@ -54,6 +57,20 @@ createItems n pos lid = do
   let container = CFloor lid pos
   replicateM_ n $ void $ rollAndRegisterItem lid litemFreq container True
 
+embedItem :: (MonadAtomic m, MonadServer m)
+          => LevelId -> Point -> Kind.Id TileKind -> m ()
+embedItem lid pos tk = do
+  Kind.COps{cotile} <- getsState scops
+  let embeds = Tile.embedItems cotile tk
+      causes = Tile.causeEffects cotile tk
+      -- TODO: unack this, e.g., by turning each Cause into Embed
+      itemFreq = zip embeds (repeat 1)
+                 ++ if not (null causes) && null embeds
+                    then [("hero", 1)]  -- hack: the bag, not item, is relevant
+                    else []
+      container = CEmbed lid pos
+  void $ rollAndRegisterItem lid itemFreq container False
+
 rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
                     => LevelId -> Freqs -> Container -> Bool
                     -> m (Maybe (ItemId, (ItemFull, GroupName)))
@@ -74,10 +91,9 @@ rollAndRegisterItem lid itemFreq container verbose = do
 placeItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()
 placeItemsInDungeon = do
   Kind.COps{cotile} <- getsState scops
-  let initialItems lid (Level{ltile, litemNum, lxsize, lysize}) = do
+  let initialItems lid (Level{lfloor, ltile, litemNum, lxsize, lysize}) = do
         let factionDist = max lxsize lysize - 5
         replicateM litemNum $ do
-          Level{lfloor} <- getLevel lid
           let dist p = minimum $ maxBound : map (chessDist p) (EM.keys lfloor)
           pos <- rndToAction $ findPosTry 100 ltile
                    (\_ t -> Tile.isWalkable cotile t
@@ -103,6 +119,13 @@ placeItemsInDungeon = do
           createItems 1 pos lid
   dungeon <- getsState sdungeon
   mapWithKeyM_ initialItems dungeon
+
+embedItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()
+embedItemsInDungeon = do
+  let embedItems lid (Level{ltile}) =
+        PointArray.mapWithKeyM_A (embedItem lid) ltile
+  dungeon <- getsState sdungeon
+  mapWithKeyM_ embedItems dungeon
 
 fullAssocsServer :: MonadServer m
                  => ActorId -> [CStore] -> m [(ItemId, ItemFull)]

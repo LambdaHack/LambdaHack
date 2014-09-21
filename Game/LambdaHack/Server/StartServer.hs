@@ -189,6 +189,7 @@ populateDungeon :: (MonadAtomic m, MonadServer m) => m ()
 populateDungeon = do
   cops@Kind.COps{cotile} <- getsState scops
   placeItemsInDungeon
+  embedItemsInDungeon
   dungeon <- getsState sdungeon
   factionD <- getsState sfactionD
   sheroNames <- getsServer sheroNames

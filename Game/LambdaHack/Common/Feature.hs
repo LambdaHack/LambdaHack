@@ -13,7 +13,7 @@ import Game.LambdaHack.Common.Misc
 
 -- | All possible terrain tile features.
 data Feature =
-    Embed !GroupName      -- ^ embed an item of this group, to cause effects
+    Embed !GroupName      -- ^ embed an item of this group, to cause effects (WIP)
   | Cause !(Effect.Effect Int)  -- ^ causes the effect when triggered;
                                 --   more succint than @Embed@, but will
                                 --   probably get supplanted by @Embed@
