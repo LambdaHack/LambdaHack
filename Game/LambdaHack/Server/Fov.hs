@@ -165,7 +165,7 @@ litInDungeon fovMode s ser =
               itemToFull cops (sdiscoKind ser) (sdiscoEffect ser) iid item kit
             processPos (p, bag) =
               (p, map iToFull $ bagAssocsK s bag)
-        in map processPos $ EM.assocs $ lfloor lvl
+        in map processPos $ EM.assocs $ lfloor lvl  -- lembed are covered
       -- Note that an actor can be blind or a projectile,
       -- in which case he doesn't see his own light
       -- (but others, from his or other factions, possibly do).

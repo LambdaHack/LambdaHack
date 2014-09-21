@@ -167,10 +167,14 @@ atomicRemember lid inPer s =
       inActor = map fActor inPrio
       -- Items.
       pMaybe p = maybe Nothing (\x -> Just (p, x))
-      inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p (lfloor lvl)) inFov
-      fItem p (iid, kit) = UpdSpotItem iid (getItemBody iid s) kit (CFloor lid p)
-      fBag (p, bag) = map (fItem p) $ EM.assocs bag
-      inItem = concatMap fBag inFloor
+      inContainer fc itemFloor =
+        let inItem = mapMaybe (\p -> pMaybe p $ EM.lookup p itemFloor) inFov
+            fItem p (iid, kit) =
+              UpdSpotItem iid (getItemBody iid s) kit (fc lid p)
+            fBag (p, bag) = map (fItem p) $ EM.assocs bag
+        in concatMap fBag inItem
+      inFloor = inContainer CFloor (lfloor lvl)
+      inEmbed = inContainer CEmbed (lembed lvl)
       -- Tiles.
       inTileMap = map (\p -> (p, hideTile (scops s) lvl p)) inFov
       atomicTile = if null inTileMap then [] else [UpdSpotTile lid inTileMap]
@@ -178,4 +182,4 @@ atomicRemember lid inPer s =
       inSmellFov = ES.elems $ smellVisible inPer
       inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl)) inSmellFov
       atomicSmell = if null inSm then [] else [UpdSpotSmell lid inSm]
-  in inItem ++ inActor ++ atomicTile ++ atomicSmell
+  in inFloor ++ inEmbed ++ inActor ++ atomicTile ++ atomicSmell

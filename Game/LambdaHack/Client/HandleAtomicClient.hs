@@ -211,19 +211,21 @@ cmdAtomicFilterCli cmd = case cmd of
           else Just $ UpdLoseActor aid b ais
         outActor = mapMaybe fActor outPrio
     -- Wipe out remembered items on tiles that now came into view.
-    Level{lfloor, lsmell} <- getLevel lid
-    let inFov = totalVisible perNew ES.\\ totalVisible perOld
+    lvl <- getLevel lid
+    let inFov = ES.elems $ totalVisible perNew ES.\\ totalVisible perOld
         pMaybe p = maybe Nothing (\x -> Just (p, x))
-        inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p lfloor)
-                           (ES.elems inFov)
-        fItem p (iid, kit) =
-          UpdLoseItem iid (getItemBody iid s) kit (CFloor lid p)
-        fBag (p, bag) = map (fItem p) $ EM.assocs bag
-        inItem = concatMap fBag inFloor
+        inContainer fc itemFloor =
+          let inItem = mapMaybe (\p -> pMaybe p $ EM.lookup p itemFloor) inFov
+              fItem p (iid, kit) =
+                UpdLoseItem iid (getItemBody iid s) kit (fc lid p)
+              fBag (p, bag) = map (fItem p) $ EM.assocs bag
+          in concatMap fBag inItem
+        inFloor = inContainer CFloor (lfloor lvl)
+        inEmbed = inContainer CEmbed (lembed lvl)
     -- Remembered map tiles not wiped out, due to optimization in @updSpotTile@.
     -- Wipe out remembered smell on tiles that now came into smell Fov.
     let inSmellFov = smellVisible perNew ES.\\ smellVisible perOld
-        inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p lsmell)
+        inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl))
                         (ES.elems inSmellFov)
         inSmell = if null inSm then [] else [UpdLoseSmell lid inSm]
     let seenNew = seenAtomicCli False fid perNew
@@ -234,12 +236,13 @@ cmdAtomicFilterCli cmd = case cmd of
     assert (allB seenOld psActor) skip
     -- Verify that we forget only currently invisible actors.
     assert (allB (not . seenNew) psActor) skip
-    psItemSmell <- mapM posUpdAtomic $ inItem ++ inSmell
+    let inTileSmell = inFloor ++ inEmbed ++ inSmell
+    psItemSmell <- mapM posUpdAtomic inTileSmell
     -- Verify that we forget only previously invisible items and smell.
     assert (allB (not . seenOld) psItemSmell) skip
     -- Verify that we forget only currently seen items and smell.
     assert (allB seenNew psItemSmell) skip
-    return $! cmd : outActor ++ inItem ++ inSmell
+    return $! cmd : outActor ++ inTileSmell
   _ -> return [cmd]
 
 deleteSmell :: MonadClient m => ActorId -> Point -> m [UpdAtomic]
