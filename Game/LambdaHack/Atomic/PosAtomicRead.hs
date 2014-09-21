@@ -192,6 +192,7 @@ singleAid aid = do
 
 singleContainer :: MonadStateRead m => Container -> m PosAtomic
 singleContainer (CFloor lid p) = return $! PosSight lid [p]
+singleContainer (CEmbed lid p) = return $! PosSight lid [p]
 singleContainer (CActor aid CSha) = do  -- shared stash is private
   b <- getsState $ getActorBody aid
   return $! PosFidAndSer (Just $ blid b) (bfid b)

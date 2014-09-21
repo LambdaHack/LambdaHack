@@ -228,6 +228,7 @@ getCarriedAssocs b s =
 getCBag :: Container -> State -> ItemBag
 getCBag c s = case c of
   CFloor lid p -> sdungeon s EM.! lid `atI` p
+  CEmbed lid p -> sdungeon s EM.! lid `atE` p
   CActor aid cstore -> getActorBag aid cstore s
   CTrunk fid _ _ -> sharedAllOwnedFid fid s
 
@@ -371,5 +372,6 @@ eqpOverfull b n = let size = sum $ map fst $ EM.elems $ beqp b
 storeFromC :: Container -> CStore
 storeFromC c = case c of
   CFloor{} -> CGround
+  CEmbed{} -> CGround
   CActor _ cstore -> cstore
   CTrunk{} -> CGround

@@ -86,6 +86,7 @@ breturn False _ = mzero
 -- | Item container type.
 data Container =
     CFloor !LevelId !Point
+  | CEmbed !LevelId !Point
   | CActor !ActorId !CStore
   | CTrunk !FactionId !LevelId !Point   -- ^ for bootstrapping actor bodies
   deriving (Show, Eq, Ord, Generic)

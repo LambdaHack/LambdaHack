@@ -84,6 +84,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
         updateItemSlot Nothing iid
         case c of
           CActor{} -> return ()  -- not actionable at this time
+          CEmbed{} -> return ()  -- not actionable at this time
           CFloor lid p -> do
             scursorOld <- getsClient scursor
             case scursorOld of

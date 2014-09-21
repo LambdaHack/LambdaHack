@@ -31,6 +31,10 @@ updatePrio f lvl = lvl {lprio = f (lprio lvl)}
 updateFloor :: (ItemFloor -> ItemFloor) -> Level -> Level
 updateFloor f lvl = lvl {lfloor = f (lfloor lvl)}
 
+-- | Update the items embedded in a tile on the level.
+updateEmbed :: (ItemFloor -> ItemFloor) -> Level -> Level
+updateEmbed f lvl = lvl {lembed = f (lembed lvl)}
+
 -- | Update the tile map.
 updateTile :: (TileMap -> TileMap) -> Level -> Level
 updateTile f lvl = lvl {ltile = f (ltile lvl)}
@@ -59,6 +63,7 @@ insertItemContainer :: MonadStateWrite m
                     => ItemId -> ItemQuant -> Container -> m ()
 insertItemContainer iid kit c = case c of
   CFloor lid pos -> insertItemFloor iid kit lid pos
+  CEmbed lid pos -> insertItemEmbed iid kit lid pos
   CActor aid store -> insertItemActor iid kit aid store
   CTrunk{} -> return ()
 
@@ -68,6 +73,13 @@ insertItemFloor iid kit lid pos =
   let bag = EM.singleton iid kit
       mergeBag = EM.insertWith (EM.unionWith mergeItemQuant) pos bag
   in updateLevel lid $ updateFloor mergeBag
+
+insertItemEmbed :: MonadStateWrite m
+                => ItemId -> ItemQuant -> LevelId -> Point -> m ()
+insertItemEmbed iid kit lid pos =
+  let bag = EM.singleton iid kit
+      mergeBag = EM.insertWith (EM.unionWith mergeItemQuant) pos bag
+  in updateLevel lid $ updateEmbed mergeBag
 
 insertItemActor :: MonadStateWrite m
                 => ItemId -> ItemQuant -> ActorId -> CStore -> m ()
@@ -114,6 +126,7 @@ deleteItemContainer :: MonadStateWrite m
                     => ItemId -> Int -> Container -> m ()
 deleteItemContainer iid k c = case c of
   CFloor lid pos -> deleteItemFloor iid k lid pos
+  CEmbed lid pos -> deleteItemEmbed iid k lid pos
   CActor aid store -> deleteItemActor iid k aid store
   CTrunk{} -> return ()
 
@@ -126,6 +139,16 @@ deleteItemFloor iid k lid pos =
       rmFromFloor Nothing = assert `failure` "item already removed"
                                    `twith` (iid, k, lid, pos)
   in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
+
+deleteItemEmbed :: MonadStateWrite m
+                => ItemId -> Int -> LevelId -> Point -> m ()
+deleteItemEmbed iid k lid pos =
+  let rmFromFloor (Just bag) =
+        let nbag = rmFromBag k iid bag
+        in if EM.null nbag then Nothing else Just nbag
+      rmFromFloor Nothing = assert `failure` "item already removed"
+                                   `twith` (iid, k, lid, pos)
+  in updateLevel lid $ updateEmbed $ EM.alter rmFromFloor pos
 
 deleteItemActor :: MonadStateWrite m
                 => ItemId -> Int -> ActorId -> CStore -> m ()
