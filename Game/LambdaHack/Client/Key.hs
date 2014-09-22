@@ -35,6 +35,7 @@ data Key =
   | End
   | Begin
   | Insert
+  | Delete
   | Home
   | KP !Char      -- ^ a keypad key for a character (digits and operators)
   | Char !Char    -- ^ a single printable character
@@ -78,6 +79,7 @@ showKey PgUp     = "PGUP"
 showKey PgDn     = "PGDOWN"
 showKey Begin    = "BEGIN"
 showKey Insert   = "INSERT"
+showKey Delete   = "DELETE"
 showKey (KP c)   = "KEYPAD_" <> T.singleton c
 showKey (Unknown s) = s
 
@@ -210,18 +212,36 @@ keyTranslate "space"         = Space
 keyTranslate "Tab"           = Tab
 keyTranslate "ISO_Left_Tab"  = BackTab
 keyTranslate "BackSpace"     = BackSpace
+keyTranslate "Up"            = Up
 keyTranslate "KP_Up"         = Up
+keyTranslate "Down"          = Down
 keyTranslate "KP_Down"       = Down
+keyTranslate "Left"          = Left
 keyTranslate "KP_Left"       = Left
+keyTranslate "Right"         = Right
 keyTranslate "KP_Right"      = Right
+keyTranslate "Home"          = Home
 keyTranslate "KP_Home"       = Home
+keyTranslate "End"           = End
 keyTranslate "KP_End"        = End
 keyTranslate "Page_Up"       = PgUp
 keyTranslate "KP_Page_Up"    = PgUp
+keyTranslate "Prior"         = PgUp
+keyTranslate "KP_Prior"      = PgUp
 keyTranslate "Page_Down"     = PgDn
 keyTranslate "KP_Page_Down"  = PgDn
+keyTranslate "Next"          = PgDn
+keyTranslate "KP_Next"       = PgDn
+keyTranslate "Begin"         = Begin
 keyTranslate "KP_Begin"      = Begin
+keyTranslate "Clear"         = Begin
+keyTranslate "KP_Clear"      = Begin
+keyTranslate "Center"        = Begin
+keyTranslate "KP_Center"     = Begin
+keyTranslate "Insert"        = Insert
 keyTranslate "KP_Insert"     = Insert
+keyTranslate "Delete"        = Delete
+keyTranslate "KP_Delete"     = Delete
 keyTranslate "KP_Enter"      = Return
 keyTranslate ['K','P','_',c] = KP c
 keyTranslate [c]             = Char c

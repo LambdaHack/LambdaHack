@@ -1,11 +1,13 @@
 ; ; This is a commented out copy of the default UI settings config file
 ; ; that is embedded in the binary.
-; ; A user config file can overrides these options. The game looks for it at
-; ; ~/.LambdaHack/config.ui.ini (or a similar path, depending on the OS).
+; ; A user config file can override these options. The game looks for it at
+; ; path where saved games directory is located. E.g. on Linux the file is
+; ; ~/.LambdaHack/config.ui.ini and on Windows it can be
+; ; C:\Documents And Settings\user\Application Data\LambdaHack\config.ui.ini
 ; ; Warning: options are case-sensitive and only ';' for comments is permitted.
 
 ; [extra_commands]
-; ; A handy shorthand with Vi keys:
+; ; A handy shorthand with Vi keys
 ; Macro_1 = ("comma", ([CmdItem], Macro "" ["g"]))
 ; ; Angband compatibility (accept target)
 ; Macro_2 = ("KP_Insert", ([CmdMeta], Macro "" ["Return"]))

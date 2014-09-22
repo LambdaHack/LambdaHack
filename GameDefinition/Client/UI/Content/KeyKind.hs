@@ -87,7 +87,10 @@ standardKeys = KeyKind
                           , object = "door"
                           , feature = F.CloseTo "horizontal closed door Dark" }
            ]))
+      , ("CTRL-KP_Begin", ([CmdMove], Macro "" ["KP_Begin"]))
       , ("period", ([CmdMove], Macro "" ["KP_Begin"]))
+      , ("KP_5", ([CmdMove], Macro "" ["KP_Begin"]))
+      , ("CTRL-KP_5", ([CmdMove], Macro "" ["KP_Begin"]))
       , ("i", ([CmdMove], Macro "" ["KP_Begin"]))
 
       -- Item use
