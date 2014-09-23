@@ -71,19 +71,16 @@ itemEffectAndDestroy source target iid cstore = do
       let itemFull = itemToF iid kitK
           item = itemBase itemFull
           durable = Effect.Durable `elem` jfeature item
-          periodic =
-            isJust $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
           c = CActor source cstore
-      unless (durable && periodic) $ do
-        let kit = (1, take 1 $ itemTimer itemFull)
-        when (not durable) $
-          execUpdAtomic $ UpdLoseItem iid item kit c
-        triggered <- itemEffect source target iid itemFull False False
-        -- If none of item's effects was performed, we try to recreate the item.
-        -- Regardless, we don't rewind the time, because some info is gained
-        -- (that the item does not exhibit any effects in the given context).
-        when (not triggered && not durable) $
-          execUpdAtomic $ UpdSpotItem iid item kit c
+          kit = (1, take 1 $ itemTimer itemFull)
+      when (not durable) $
+        execUpdAtomic $ UpdLoseItem iid item kit c
+      triggered <- itemEffect source target iid itemFull False False
+      -- If none of item's effects was performed, we try to recreate the item.
+      -- Regardless, we don't rewind the time, because some info is gained
+      -- (that the item does not exhibit any effects in the given context).
+      when (not triggered && not durable) $
+        execUpdAtomic $ UpdSpotItem iid item kit c
 
 itemEffectPeriodic :: (MonadAtomic m, MonadServer m)
                    => ActorId -> ActorId -> ItemId -> ItemFull
