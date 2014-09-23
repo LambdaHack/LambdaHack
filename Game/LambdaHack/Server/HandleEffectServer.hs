@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
-  ( applyItem, itemEffect, itemEffectAndDestroy
+  ( applyItem, itemEffect, itemEffectPeriodic, itemEffectAndDestroy
   , dropEqpItem, armorHurtBonus
   ) where
 
@@ -84,6 +84,21 @@ itemEffectAndDestroy source target iid cstore = do
         -- (that the item does not exhibit any effects in the given context).
         when (not triggered && not durable) $
           execUpdAtomic $ UpdSpotItem iid item kit c
+
+itemEffectPeriodic :: (MonadAtomic m, MonadServer m)
+                   => ActorId -> ActorId -> ItemId -> ItemFull
+                   -> m ()
+itemEffectPeriodic source target iid itemFull = do
+  let item = itemBase itemFull
+      durable = Effect.Durable `elem` jfeature item
+  unless durable $
+    void $ itemEffect source target iid itemFull False True
+
+itemEffectOnSmash :: (MonadAtomic m, MonadServer m)
+                  => ActorId -> ActorId -> ItemId -> ItemFull
+                  -> m ()
+itemEffectOnSmash source target iid itemFull =
+  void $ itemEffect source target iid itemFull True False
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effect effect fires up, the item gets identified. This function
@@ -571,7 +586,7 @@ dropEqpItem aid b hit iid kit@(k, _) = do
   if isDestroyed then do
     -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
     execUpdAtomic $ UpdLoseItem iid item kit container
-    void $ itemEffect aid aid iid itemFull True False
+    itemEffectOnSmash aid aid iid itemFull
   else do
     mvCmd <- generalMoveItem iid k (CActor aid CEqp)
                                    (CActor aid CGround)
