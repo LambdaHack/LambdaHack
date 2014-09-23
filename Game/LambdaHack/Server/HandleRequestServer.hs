@@ -321,7 +321,7 @@ reqAlter source tpos mfeat = do
           maybe skip changeTo $ listToMaybe groupsToAlterTo
             -- TODO: pick another, if the first one void
           -- Perform an effect, if any permitted.
-          void $ triggerEffect source feats
+          void $ triggerEffect source tpos feats
         else execFailure source req AlterBlockActor
       else execFailure source req AlterBlockItem
 
@@ -408,21 +408,34 @@ reqTrigger aid mfeat = do
         Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
         Just _ -> []
       req = ReqTrigger mfeat
-  go <- triggerEffect aid feats
+  go <- triggerEffect aid tpos feats
   unless go $ execFailure aid req TriggerNothing
 
 triggerEffect :: (MonadAtomic m, MonadServer m)
-              => ActorId -> [F.Feature] -> m Bool
-triggerEffect aid feats = do
+              => ActorId -> Point -> [F.Feature] -> m Bool
+triggerEffect aid tpos feats = do
   sb <- getsState $ getActorBody aid
-  let tpos = bpos sb
-      triggerFeat feat =
+  let triggerFeat feat =
         case feat of
           F.Cause ef -> do
-            -- No block against tile, hence unconditional.
-            execSfxAtomic $ SfxTrigger aid tpos feat
-            void $ effectsSem [ef] aid aid False
-            return True
+            Level{lembed} <- getLevel $ blid sb
+            case tpos `EM.lookup` lembed of
+              Nothing -> assert `failure` (aid, tpos, feats)
+              Just bag -> case EM.assocs bag of
+                [(iid, kit)] -> do
+                  itemToF <- itemToFullServer
+                  let itemFull = itemToF iid kit
+                      iD = fromJust $ itemDisco itemFull
+                      iAE = fromJust $ itemAE iD
+                      itemFullHack =
+                        itemFull {itemDisco =
+                                    Just iD{itemAE =
+                                              Just iAE{jeffects = [ef]}}}
+                  -- No block against tile, hence unconditional.
+                  execSfxAtomic $ SfxTrigger aid tpos feat
+                  void $ itemEffect aid aid iid itemFullHack False False
+                  return True
+                ab -> assert `failure` (aid, tpos, feats, ab)
           _ -> return False
   goes <- mapM triggerFeat feats
   return $! or goes

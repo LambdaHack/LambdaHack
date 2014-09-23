@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
-  ( applyItem, itemEffect, itemEffectAndDestroy, effectsSem
+  ( applyItem, itemEffect, itemEffectAndDestroy
   , dropEqpItem, armorHurtBonus
   ) where
 

@@ -67,6 +67,7 @@ insertItemContainer iid kit c = case c of
   CActor aid store -> insertItemActor iid kit aid store
   CTrunk{} -> return ()
 
+-- New @kit@ lands at the front of the list.
 insertItemFloor :: MonadStateWrite m
                 => ItemId -> ItemQuant -> LevelId -> Point -> m ()
 insertItemFloor iid kit lid pos =
@@ -179,6 +180,8 @@ deleteItemSha :: MonadStateWrite m => ItemId -> Int -> FactionId -> m ()
 deleteItemSha iid k fid = do
   updateFaction fid $ \fact -> fact {gsha = rmFromBag k iid (gsha fact)}
 
+-- Removing the part of the kit from the front of the list,
+-- so that @DestroyItem kit (CreateItem kit x) == x@.
 rmFromBag :: Int -> ItemId -> ItemBag -> ItemBag
 rmFromBag k iid bag =
   let rfb Nothing = assert `failure` "rm from empty slot" `twith` (k, iid, bag)
