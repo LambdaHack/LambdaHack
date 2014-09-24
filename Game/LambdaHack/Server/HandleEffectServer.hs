@@ -64,18 +64,16 @@ itemEffectAndDestroy source target iid c = do
   -- This is OK, because we don't remove the item type from various
   -- item dictionaries, just an individual copy from the container,
   -- so, e.g., the item can be identified after it's removed.
+  item <- getsState $ getItemBody iid
   bag <- getsState $ getCBag c
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (source, target, iid, c)
-    Just kitK -> do
-      itemToF <- itemToFullServer
-      let itemFull = itemToF iid kitK
-          item = itemBase itemFull
-          durable = Effect.Durable `elem` jfeature item
-          kit = (1, take 1 $ itemTimer itemFull)
+    Just (_, it) -> do
+      let durable = Effect.Durable `elem` jfeature item
+          kit = (1, take 1 it)
       when (not durable) $
         execUpdAtomic $ UpdLoseItem iid item kit c
-      triggered <- itemEffectAE source target iid itemFull False c
+      triggered <- itemEffectAE source target iid False c
       -- If none of item's effects was performed, we try to recreate the item.
       -- Regardless, we don't rewind the time, because some info is gained
       -- (that the item does not exhibit any effects in the given context).
@@ -83,20 +81,20 @@ itemEffectAndDestroy source target iid c = do
         execUpdAtomic $ UpdSpotItem iid item kit c
 
 itemEffectPeriodic :: (MonadAtomic m, MonadServer m)
-                   => ActorId -> ActorId -> ItemId -> ItemFull -> Container
+                   => ActorId -> ActorId -> ItemId -> Container
                    -> m ()
-itemEffectPeriodic source target iid itemFull c = do
-  let item = itemBase itemFull
-      durable = Effect.Durable `elem` jfeature item
+itemEffectPeriodic source target iid c = do
+  item <- getsState $ getItemBody iid
+  let durable = Effect.Durable `elem` jfeature item
   unless durable $
-    void $ itemEffectAE source target iid itemFull True c
+    void $ itemEffectAE source target iid True c
 
 itemEffectOnSmash :: (MonadAtomic m, MonadServer m)
                   => ActorId -> ActorId -> ItemId -> ItemFull -> Container
                   -> m ()
 itemEffectOnSmash source target iid itemFull c =
   void
-  $ itemEffectDisco source target iid itemFull False (strengthOnSmash itemFull) c
+  $ itemEffectDisco source target iid False (strengthOnSmash itemFull) c
 
 itemEffectCause :: (MonadAtomic m, MonadServer m)
                 => ActorId -> Point -> Effect.Effect Int
@@ -115,21 +113,24 @@ itemEffectCause aid tpos ef = do
     ab -> assert `failure` (aid, tpos, ab)
 
 itemEffectAE :: (MonadAtomic m, MonadServer m)
-                => ActorId -> ActorId -> ItemId -> ItemFull -> Bool -> Container
+                => ActorId -> ActorId -> ItemId -> Bool -> Container
                 -> m Bool
-itemEffectAE source target iid itemFull periodic c = do
-  case itemDisco itemFull of
-    Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} -> do
-      itemEffectDisco source target iid itemFull periodic jeffects c
-    _ -> assert `failure` (source, target, iid, itemFull)
+itemEffectAE source target iid periodic c = do
+  discoEffect <- getsServer sdiscoEffect
+  case EM.lookup iid discoEffect of
+    Just ItemAspectEffect{jeffects} -> do
+      itemEffectDisco source target iid periodic jeffects c
+    _ -> assert `failure` (source, target, iid)
 
 itemEffectDisco :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> ItemId -> ItemFull -> Bool
+           => ActorId -> ActorId -> ItemId -> Bool
            -> [Effect.Effect Int] -> Container
            -> m Bool
-itemEffectDisco source target iid itemFull periodic effs _c = do
-  case itemDisco itemFull of
-    Just ItemDisco{itemKindId} -> do
+itemEffectDisco source target iid periodic effs _c = do
+  discoKind <- getsServer sdiscoKind
+  item <- getsState $ getItemBody iid
+  case EM.lookup (jkindIx item) discoKind of
+    Just itemKindId -> do
       triggered <- itemEffect source target iid periodic effs _c
       -- The effect fires up, so the item gets identified, if seen
       -- (the item was at the source actor's position, so his old position
@@ -142,7 +143,7 @@ itemEffectDisco source target iid itemFull periodic effs _c = do
         execUpdAtomic $ UpdDiscover (blid postb) (bpos postb)
                                     iid itemKindId seed
       return triggered
-    _ -> assert `failure` (source, target, iid, itemFull)
+    _ -> assert `failure` (source, target, iid, item)
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effect effect fires up, the item gets identified. This function
