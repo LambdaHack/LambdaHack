@@ -24,6 +24,7 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -118,7 +119,7 @@ targetStrategy oldLeader aid = do
           Nothing -> 30  -- experimenting is fun
       desirableItem iid item k
         | canEscape = itemUsefulness iid k /= 0
-                           || Effect.Precious `elem` jfeature item
+                        || Effect.Precious `elem` jfeature item
         | otherwise = itemUsefulness iid k /= 0
       desirableBag bag = any (\(iid, k) ->
                                desirableItem iid (itemD EM.! iid) k)
@@ -254,6 +255,7 @@ targetStrategy oldLeader aid = do
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
           let allExplored = ES.size explored == EM.size dungeon
+          bag <- getsState $ getCBag $ CFloor lid pos
           if lid /= blid b  -- wrong level
              -- Below we check the target could not be picked again in
              -- pickNewTarget, and only in this case it is invalidated.
@@ -262,7 +264,7 @@ targetStrategy oldLeader aid = do
              -- to equally interesting, but perhaps a bit closer targets,
              -- most probably already targeted by other actors.
              || (EM.findWithDefault 0 AbMoveItem actorSk <= 0  -- closestItems
-                 || not (desirableBag (lvl `atI` pos)))
+                 || not (desirableBag bag))
                 && (not canSmell  -- closestSmell
                     || pos == bpos b  -- in case server resends deleted smell
                     || let sml = EM.findWithDefault timeZero pos (lsmell lvl)

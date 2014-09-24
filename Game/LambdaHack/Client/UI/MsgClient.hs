@@ -89,8 +89,8 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   lvl <- getLevel lidV
   b <- getsState $ getActorBody aid
   subject <- partAidLeader aid
-  let is = lvl `atI` pos
-      verb = MU.Text $ if pos == bpos b
+  is <- getsState $ getCBag $ CFloor lidV pos
+  let verb = MU.Text $ if pos == bpos b
                        then "stand on"
                        else if canSee then "notice" else "remember"
   let nWs (iid, k) = partItemWs k CGround (itemToF iid k)

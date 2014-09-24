@@ -790,7 +790,7 @@ moveOrRunAid run source dir = do
         -- Movement requires full access.
         return $! Just $ RequestAnyAbility $ ReqMove dir
         -- The potential invisible actor is hit.
-      else if not $ EM.null $ lvl `atI` tpos then
+      else if EM.member tpos $ lfloor lvl then
         -- This is, e.g., inaccessible open door with an item in it.
         assert `failure` "AI causes AlterBlockItem" `twith` (run, source, dir)
       else if not (Tile.isWalkable cotile t)  -- not implied

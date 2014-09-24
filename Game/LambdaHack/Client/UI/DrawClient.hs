@@ -95,7 +95,7 @@ draw sfBlank dm drawnLevelId cursorPos tgtPos bfsmpathRaw
       dis pos0 =
         let tile = lvl `at` pos0
             tk = tokind tile
-            floorBag = lvl `atI` pos0
+            floorBag = EM.findWithDefault EM.empty pos0 $ lfloor lvl
             (letterSlots, numberSlots) = sslots cli
             bagLetterSlots = EM.filter (`EM.member` floorBag) letterSlots
             bagNumberSlots = IM.filter (`EM.member` floorBag) numberSlots

@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Level
     -- * The @Level@ type and its components
   , Level(..), ActorPrio, ItemFloor, TileMap, SmellMap
     -- * Level query
-  , at, atI, atE, checkAccess, checkDoorAccess
+  , at, checkAccess, checkDoorAccess
   , accessible, accessibleUnknown, accessibleDir
   , knownLsecret, isSecretPos, hideTile
   , findPos, findPosTry, mapLevelActors_, mapDungeonActors_
@@ -97,14 +97,6 @@ assertSparseItems m =
 -- | Query for tile kinds on the map.
 at :: Level -> Point -> Kind.Id TileKind
 at Level{ltile} p = ltile PointArray.! p
-
--- | Query for items on the ground.
-atI :: Level -> Point -> ItemBag
-atI Level{lfloor} p = EM.findWithDefault EM.empty p lfloor
-
--- | Query for items embedded in the tile.
-atE :: Level -> Point -> ItemBag
-atE Level{lembed} p = EM.findWithDefault EM.empty p lembed
 
 checkAccess :: Kind.COps -> Level -> Maybe (Point -> Point -> Bool)
 checkAccess Kind.COps{corule} _ =

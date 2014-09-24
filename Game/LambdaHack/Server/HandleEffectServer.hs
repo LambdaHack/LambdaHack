@@ -102,18 +102,16 @@ itemEffectCause :: (MonadAtomic m, MonadServer m)
                 -> m Bool
 itemEffectCause aid tpos ef = do
   sb <- getsState $ getActorBody aid
-  Level{lembed} <- getLevel $ blid sb
-  case tpos `EM.lookup` lembed of
-    Nothing -> assert `failure` (aid, tpos, ef)
-    Just bag -> case EM.assocs bag of
-      [(iid, kit)] -> do
-        itemToF <- itemToFullServer
-        let itemFull = itemToF iid kit
-        -- No block against tile, hence unconditional.
-        execSfxAtomic $ SfxTrigger aid tpos $ F.Cause ef
-        void $ itemEffect aid aid iid itemFull False [ef]
-        return True
-      ab -> assert `failure` (aid, tpos, ab)
+  bag <- getsState $ getCBag $ CEmbed (blid sb) tpos
+  case EM.assocs bag of
+    [(iid, kit)] -> do
+      itemToF <- itemToFullServer
+      let itemFull = itemToF iid kit
+      -- No block against tile, hence unconditional.
+      execSfxAtomic $ SfxTrigger aid tpos $ F.Cause ef
+      void $ itemEffect aid aid iid itemFull False [ef]
+      return True
+    ab -> assert `failure` (aid, tpos, ab)
 
 itemEffectDisco :: (MonadAtomic m, MonadServer m)
                 => ActorId -> ActorId -> ItemId -> ItemFull -> Bool

@@ -312,7 +312,7 @@ reqAlter source tpos mfeat = do
       -- Neither searching nor altering possible; silly client.
       execFailure source req AlterNothing
     else do
-      if EM.null $ lvl `atI` tpos then
+      if EM.notMember tpos $ lfloor lvl then
         if unoccupied as tpos then do
           when (serverTile /= freshClientTile) $ do
             -- Search, in case some actors (of other factions?)

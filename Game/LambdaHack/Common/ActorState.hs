@@ -226,21 +226,27 @@ getCarriedAssocs b s =
   bagAssocs s $ EM.unionsWith (const) [binv b, beqp b, borgan b]
 
 getCBag :: Container -> State -> ItemBag
+{-# INLINE getCBag #-}
 getCBag c s = case c of
-  CFloor lid p -> sdungeon s EM.! lid `atI` p
-  CEmbed lid p -> sdungeon s EM.! lid `atE` p
+  CFloor lid p -> EM.findWithDefault EM.empty p
+                  $ lfloor (sdungeon s EM.! lid)
+  CEmbed lid p -> EM.findWithDefault EM.empty p
+                  $ lembed (sdungeon s EM.! lid)
   CActor aid cstore -> getActorBag aid cstore s
   CTrunk fid _ _ -> sharedAllOwnedFid fid s
 
 getActorBag :: ActorId -> CStore -> State -> ItemBag
+{-# INLINE getActorBag #-}
 getActorBag aid cstore s =
   let b = getActorBody aid s
   in getBodyActorBag b cstore s
 
 getBodyActorBag :: Actor -> CStore -> State -> ItemBag
+{-# INLINE getBodyActorBag #-}
 getBodyActorBag b cstore s =
   case cstore of
-    CGround -> sdungeon s EM.! blid b `atI` bpos b
+    CGround -> EM.findWithDefault EM.empty (bpos b)
+               $ lfloor (sdungeon s EM.! blid b)
     COrgan -> borgan b
     CEqp -> beqp b
     CInv -> binv b

@@ -319,8 +319,8 @@ targetDesc target = do
       pointedText <-
         if lid == lidV
         then do
-          lvl <- getLevel lid
-          case EM.assocs $ lvl `atI` p of
+          bag <- getsState $ getCBag (CFloor lid p)
+          case EM.assocs bag of
             [] -> return $! "exact spot" <+> (T.pack . show) p
             [(iid, kit@(k, _))] -> do
               itemToF <- itemToFullClient

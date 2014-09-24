@@ -22,7 +22,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.State
 
 newtype SlotChar = SlotChar {slotChar :: Char}
@@ -76,7 +76,7 @@ assignSlot item fid mbody (letterSlots, numberSlots) lastSlot s =
                    (\body -> sharedAllOwned body s)
                    mbody
   onGroud = maybe EM.empty
-                  (\body -> sdungeon s EM.! blid body `atI` bpos body)
+                  (\b -> getCBag (CFloor (blid b) (bpos b)) s)
                   mbody
   inBags = ES.unions $ map EM.keysSet [onPerson, onGroud]
   f l = maybe True (`ES.notMember` inBags) $ EM.lookup l letterSlots

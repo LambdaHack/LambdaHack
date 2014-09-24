@@ -125,7 +125,7 @@ moveRunAid source dir = do
                     || Tile.isOpenable cotile t
                     || Tile.isClosable cotile t
                     || Tile.isChangeable cotile t) then
-          if not $ EM.null $ lvl `atI` tpos then
+          if EM.member tpos $ lfloor lvl then
             Left $ showReqFailure AlterBlockItem
           else
             Right $ RequestAnyAbility $ ReqAlter tpos Nothing
@@ -227,7 +227,7 @@ checkAndRun aid dir = do
   let lid = blid body
   lvl <- getLevel lid
   let posHere = bpos body
-      posHasItems pos = not $ EM.null $ lvl `atI` pos
+      posHasItems pos = EM.member pos $ lfloor lvl
       posThere = posHere `shift` dir
   actorsThere <- getsState $ posToActors posThere lid
   let posLast = boldpos body

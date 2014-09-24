@@ -404,7 +404,7 @@ doLook = do
       -- Show general info about current position.
       lookMsg <- lookAt True vis canSee p leader enemyMsg
       -- Check if there's something lying around at current position.
-      let is = lvl `atI` p
+      is <- getsState $ getCBag $ CFloor lidV p
       if EM.size is <= 2 then
         promptToSlideshow lookMsg
       else do
