@@ -133,9 +133,9 @@ itemEffectAE source target iid c periodic = do
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
 itemEffectDisco :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> ItemId -> Container -> Bool
-           -> [Effect.Effect Int]
-           -> m Bool
+                => ActorId -> ActorId -> ItemId -> Container -> Bool
+                -> [Effect.Effect Int]
+                -> m Bool
 itemEffectDisco source target iid c periodic effs = do
   discoKind <- getsServer sdiscoKind
   item <- getsState $ getItemBody iid
@@ -160,7 +160,7 @@ itemEffect :: (MonadAtomic m, MonadServer m)
            -> [Effect.Effect Int]
            -> m Bool
 itemEffect source target iid c periodic effects = do
-  trs <- mapM (\ef -> effectSem ef source target) effects
+  trs <- mapM (effectSem source target iid c) effects
   let triggered = or trs
   sb <- getsState $ getActorBody source
   -- Announce no effect, which is rare and wastes time, so noteworthy.
@@ -176,9 +176,9 @@ itemEffect source target iid c periodic effects = do
 -- The boolean result indicates if the effect actually fired up,
 -- as opposed to fizzled.
 effectSem :: (MonadAtomic m, MonadServer m)
-          => Effect.Effect Int -> ActorId -> ActorId
+          => ActorId -> ActorId -> ItemId -> Container -> Effect.Effect Int
           -> m Bool
-effectSem effect source target = do
+effectSem source target iid c effect = do
   sb <- getsState $ getActorBody source
   -- @execSfx@ usually comes last in effect semantics, but not always
   -- and we are likely to introduce more variety.
@@ -188,14 +188,14 @@ effectSem effect source target = do
     Effect.RefillHP p -> effectRefillHP execSfx p source target
     Effect.Hurt nDm -> effectHurt nDm source target
     Effect.RefillCalm p -> effectRefillCalm execSfx p target
-    Effect.Dominate -> effectDominate source target
+    Effect.Dominate -> effectDominate source target iid c
     Effect.Impress -> effectImpress execSfx source target
     Effect.CallFriend p -> effectCallFriend p source target
-    Effect.Summon freqs p -> effectSummon freqs p source target
+    Effect.Summon freqs p -> effectSummon freqs p source target iid c
     Effect.CreateItem p -> effectCreateItem p target
     Effect.ApplyPerfume -> effectApplyPerfume execSfx target
     Effect.Burn p -> effectBurn execSfx p source target
-    Effect.Ascend p -> effectAscend execSfx p source target
+    Effect.Ascend p -> effectAscend execSfx p source target iid c
     Effect.Escape{} -> effectEscape target
     Effect.Paralyze p -> effectParalyze execSfx p target
     Effect.InsertMove p -> effectInsertMove execSfx p target
@@ -212,7 +212,7 @@ effectSem effect source target = do
     Effect.Identify cstore -> effectIdentify execSfx cstore target
     Effect.ActivateInv symbol -> effectActivateInv execSfx target symbol
     Effect.Explode t -> effectExplode execSfx t target
-    Effect.OneOf l -> effectOneOf l source target
+    Effect.OneOf l -> effectOneOf l source target iid c
     Effect.OnSmash _ -> return False  -- ignored under normal circumstances
     Effect.Timeout k e -> effectTimeout k e source target
     Effect.TimedAspect{} -> return False  -- TODO
@@ -306,14 +306,15 @@ effectRefillCalm execSfx power target = do
 -- ** Dominate
 
 effectDominate :: (MonadAtomic m, MonadServer m)
-               => ActorId -> ActorId -> m Bool
-effectDominate source target = do
+               => ActorId -> ActorId -> ItemId -> Container
+               -> m Bool
+effectDominate source target iid c = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if bproj tb then
     return False
   else if bfid tb == bfid sb then
-    effectSem Effect.Impress source target
+    effectSem source target iid c Effect.Impress
   else
     dominateFidSfx (bfid sb) target
 
@@ -358,8 +359,11 @@ effectCallFriend power source target = assert (power > 0) $ do
 -- ** Summon
 
 effectSummon :: (MonadAtomic m, MonadServer m)
-             => Freqs -> Int -> ActorId -> ActorId -> m Bool
-effectSummon actorFreq power source target = assert (power > 0) $ do
+             => Freqs -> Int
+             -> ActorId -> ActorId -> ItemId -> Container
+             -> m Bool
+effectSummon actorFreq power source target iid c = assert (power > 0)
+                                                   $ do
   -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -384,7 +388,7 @@ effectSummon actorFreq power source target = assert (power > 0) $ do
       case maid of
         Nothing ->
           -- Don't make this item useless.
-          effectSem (Effect.CallFriend 1) source target
+          effectSem source target iid c (Effect.CallFriend 1)
         Just aid -> do
           b <- getsState $ getActorBody aid
           mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
@@ -432,8 +436,9 @@ effectBurn execSfx power source target = do
 
 -- Note that projectiles can be teleported, too, for extra fun.
 effectAscend :: (MonadAtomic m, MonadServer m)
-             => m () -> Int -> ActorId -> ActorId -> m Bool
-effectAscend execSfx k source aid = do
+             => m () -> Int
+             -> ActorId -> ActorId -> ItemId -> Container -> m Bool
+effectAscend execSfx k source aid iid c = do
   b1 <- getsState $ getActorBody aid
   ais1 <- getsState $ getCarriedAssocs b1
   let lid1 = blid b1
@@ -442,7 +447,7 @@ effectAscend execSfx k source aid = do
   if lid2 == lid1 && pos2 == pos1 then do
     execSfxAtomic $ SfxMsgFid (bfid b1) "No more levels in this direction."
     let effect = Effect.Teleport 30  -- powerful teleport
-    effectSem effect source aid
+    effectSem source aid iid c effect
   else do
     let switch1 = void $ switchLevels1 ((aid, b1), ais1)
         switch2 = do
@@ -867,10 +872,12 @@ effectExplode execSfx cgroup target = do
 -- ** OneOf
 
 effectOneOf :: (MonadAtomic m, MonadServer m)
-            => [Effect.Effect Int] -> ActorId -> ActorId -> m Bool
-effectOneOf l source target = do
-  ef <-  rndToAction $ oneOf l
-  effectSem ef source target
+            => [Effect.Effect Int]
+            -> ActorId -> ActorId -> ItemId -> Container
+            -> m Bool
+effectOneOf l source target iid c = do
+  ef <- rndToAction $ oneOf l
+  effectSem source target iid c ef
 
 -- ** Timeout
 
