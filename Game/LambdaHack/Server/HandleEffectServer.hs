@@ -51,31 +51,31 @@ applyItem :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> CStore -> m ()
 applyItem aid iid cstore = do
   execSfxAtomic $ SfxActivate aid iid 1
-  itemEffectAndDestroy aid aid iid cstore
+  let c = CActor aid cstore
+  itemEffectAndDestroy aid aid iid c
 
 itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
-                     => ActorId -> ActorId -> ItemId -> CStore
+                     => ActorId -> ActorId -> ItemId -> Container
                      -> m ()
-itemEffectAndDestroy source target iid cstore = do
+itemEffectAndDestroy source target iid c = do
   -- We have to destroy the item before the effect affects the item
   -- or the actor holding it or standing on it (later on we could
   -- lose track of the item and wouldn't be able to destroy it) .
   -- This is OK, because we don't remove the item type from various
   -- item dictionaries, just an individual copy from the container,
   -- so, e.g., the item can be identified after it's removed.
-  bag <- getsState $ getActorBag source cstore
+  bag <- getsState $ getCBag c
   case iid `EM.lookup` bag of
-    Nothing -> assert `failure` (source, target, iid, cstore)
+    Nothing -> assert `failure` (source, target, iid, c)
     Just kitK -> do
       itemToF <- itemToFullServer
       let itemFull = itemToF iid kitK
           item = itemBase itemFull
           durable = Effect.Durable `elem` jfeature item
-          c = CActor source cstore
           kit = (1, take 1 $ itemTimer itemFull)
       when (not durable) $
         execUpdAtomic $ UpdLoseItem iid item kit c
-      triggered <- itemEffectDisco source target iid itemFull False
+      triggered <- itemEffectDisco source target iid itemFull False c
       -- If none of item's effects was performed, we try to recreate the item.
       -- Regardless, we don't rewind the time, because some info is gained
       -- (that the item does not exhibit any effects in the given context).
@@ -83,43 +83,45 @@ itemEffectAndDestroy source target iid cstore = do
         execUpdAtomic $ UpdSpotItem iid item kit c
 
 itemEffectPeriodic :: (MonadAtomic m, MonadServer m)
-                   => ActorId -> ActorId -> ItemId -> ItemFull
+                   => ActorId -> ActorId -> ItemId -> ItemFull -> Container
                    -> m ()
-itemEffectPeriodic source target iid itemFull = do
+itemEffectPeriodic source target iid itemFull c = do
   let item = itemBase itemFull
       durable = Effect.Durable `elem` jfeature item
   unless durable $
-    void $ itemEffectDisco source target iid itemFull True
+    void $ itemEffectDisco source target iid itemFull True c
 
 itemEffectOnSmash :: (MonadAtomic m, MonadServer m)
-                  => ActorId -> ActorId -> ItemId -> ItemFull
+                  => ActorId -> ActorId -> ItemId -> ItemFull -> Container
                   -> m ()
-itemEffectOnSmash source target iid itemFull =
-  void $ itemEffect source target iid itemFull False (strengthOnSmash itemFull)
+itemEffectOnSmash source target iid itemFull c =
+  void
+  $ itemEffect source target iid itemFull False (strengthOnSmash itemFull) c
 
 itemEffectCause :: (MonadAtomic m, MonadServer m)
                 => ActorId -> Point -> Effect.Effect Int
                 -> m Bool
 itemEffectCause aid tpos ef = do
   sb <- getsState $ getActorBody aid
-  bag <- getsState $ getCBag $ CEmbed (blid sb) tpos
+  let c = CEmbed (blid sb) tpos
+  bag <- getsState $ getCBag c
   case EM.assocs bag of
     [(iid, kit)] -> do
       itemToF <- itemToFullServer
       let itemFull = itemToF iid kit
       -- No block against tile, hence unconditional.
       execSfxAtomic $ SfxTrigger aid tpos $ F.Cause ef
-      void $ itemEffect aid aid iid itemFull False [ef]
+      void $ itemEffect aid aid iid itemFull False [ef] c
       return True
     ab -> assert `failure` (aid, tpos, ab)
 
 itemEffectDisco :: (MonadAtomic m, MonadServer m)
-                => ActorId -> ActorId -> ItemId -> ItemFull -> Bool
+                => ActorId -> ActorId -> ItemId -> ItemFull -> Bool -> Container
                 -> m Bool
-itemEffectDisco source target iid itemFull periodic = do
+itemEffectDisco source target iid itemFull periodic c = do
   case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} -> do
-      itemEffect source target iid itemFull periodic jeffects
+      itemEffect source target iid itemFull periodic jeffects c
     _ -> assert `failure` (source, target, iid, itemFull)
 
 -- | The source actor affects the target actor, with a given item.
@@ -128,9 +130,9 @@ itemEffectDisco source target iid itemFull periodic = do
 -- semantics.
 itemEffect :: (MonadAtomic m, MonadServer m)
            => ActorId -> ActorId -> ItemId -> ItemFull -> Bool
-           -> [Effect.Effect Int]
+           -> [Effect.Effect Int] -> Container
            -> m Bool
-itemEffect source target iid itemFull periodic effs = do
+itemEffect source target iid itemFull periodic effs _c = do
   case itemDisco itemFull of
     Just ItemDisco{itemKindId} -> do
       triggered <- effectsSem effs source target periodic
@@ -607,7 +609,7 @@ dropEqpItem aid b hit iid kit@(k, _) = do
   if isDestroyed then do
     -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
     execUpdAtomic $ UpdLoseItem iid item kit container
-    itemEffectOnSmash aid aid iid itemFull
+    itemEffectOnSmash aid aid iid itemFull container
   else do
     mvCmd <- generalMoveItem iid k (CActor aid CEqp)
                                    (CActor aid CGround)

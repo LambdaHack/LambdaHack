@@ -169,15 +169,19 @@ activatePeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 activatePeriodicLevel lid = do
   time <- getsState $ getLocalTime lid
   let turnN = time `timeFit` timeTurn
-      activatePeriodicItem aid (iid, itemFull) = do
+      activatePeriodicItem cstore aid (iid, itemFull) = do
         case strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull of
           Nothing -> return ()
-          Just n -> when (turnN `mod` (100 `div` n) == 0) $
-                      itemEffectPeriodic aid aid iid itemFull
+          Just n -> do
+            let c = CActor aid cstore
+            when (turnN `mod` (100 `div` n) == 0) $
+              itemEffectPeriodic aid aid iid itemFull c
             -- periodic activation doesn't destroy items, even non-Durable
       activatePeriodicActor aid = do
-        allItems <- fullAssocsServer aid [COrgan, CEqp]
-        mapM_ (activatePeriodicItem aid) allItems
+        allItemsOrgan <- fullAssocsServer aid [COrgan]
+        allItemsEqp <- fullAssocsServer aid [CEqp]
+        mapM_ (activatePeriodicItem COrgan aid) allItemsOrgan
+        mapM_ (activatePeriodicItem CEqp aid) allItemsEqp
   allActors <- getsState $ actorRegularAssocs (const True) lid
   mapM_ (\(aid, _) -> activatePeriodicActor aid) allActors
 

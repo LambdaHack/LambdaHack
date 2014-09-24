@@ -213,8 +213,9 @@ reqMelee source target iid cstore = do
           -- Non-projectiles can't pierce, so terminate their flight.
           execUpdAtomic
           $ UpdTrajectory source (btrajectory sb) (Just ([], speed))
+    let c = CActor source cstore
     -- Msgs inside itemEffect describe the target part.
-    itemEffectAndDestroy source target iid cstore
+    itemEffectAndDestroy source target iid c
     -- The only way to start a war is to slap an enemy. Being hit by
     -- and hitting projectiles count as unintentional friendly fire.
     let friendlyFire = bproj sb || bproj tb
