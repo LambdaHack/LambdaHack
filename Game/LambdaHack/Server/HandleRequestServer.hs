@@ -414,28 +414,9 @@ reqTrigger aid mfeat = do
 triggerEffect :: (MonadAtomic m, MonadServer m)
               => ActorId -> Point -> [F.Feature] -> m Bool
 triggerEffect aid tpos feats = do
-  sb <- getsState $ getActorBody aid
   let triggerFeat feat =
         case feat of
-          F.Cause ef -> do
-            Level{lembed} <- getLevel $ blid sb
-            case tpos `EM.lookup` lembed of
-              Nothing -> assert `failure` (aid, tpos, feats)
-              Just bag -> case EM.assocs bag of
-                [(iid, kit)] -> do
-                  itemToF <- itemToFullServer
-                  let itemFull = itemToF iid kit
-                      iD = fromJust $ itemDisco itemFull
-                      iAE = fromJust $ itemAE iD
-                      itemFullHack =
-                        itemFull {itemDisco =
-                                    Just iD{itemAE =
-                                              Just iAE{jeffects = [ef]}}}
-                  -- No block against tile, hence unconditional.
-                  execSfxAtomic $ SfxTrigger aid tpos feat
-                  void $ itemEffect aid aid iid itemFullHack False False
-                  return True
-                ab -> assert `failure` (aid, tpos, feats, ab)
+          F.Cause ef -> itemEffectCause aid tpos ef
           _ -> return False
   goes <- mapM triggerFeat feats
   return $! or goes

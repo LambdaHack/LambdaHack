@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
-  ( applyItem, itemEffect, itemEffectPeriodic, itemEffectAndDestroy
+  ( applyItem, itemEffectPeriodic, itemEffectAndDestroy, itemEffectCause
   , dropEqpItem, armorHurtBonus
   ) where
 
@@ -75,7 +75,7 @@ itemEffectAndDestroy source target iid cstore = do
           kit = (1, take 1 $ itemTimer itemFull)
       when (not durable) $
         execUpdAtomic $ UpdLoseItem iid item kit c
-      triggered <- itemEffect source target iid itemFull False False
+      triggered <- itemEffectDisco source target iid itemFull False
       -- If none of item's effects was performed, we try to recreate the item.
       -- Regardless, we don't rewind the time, because some info is gained
       -- (that the item does not exhibit any effects in the given context).
@@ -89,26 +89,52 @@ itemEffectPeriodic source target iid itemFull = do
   let item = itemBase itemFull
       durable = Effect.Durable `elem` jfeature item
   unless durable $
-    void $ itemEffect source target iid itemFull False True
+    void $ itemEffectDisco source target iid itemFull True
 
 itemEffectOnSmash :: (MonadAtomic m, MonadServer m)
                   => ActorId -> ActorId -> ItemId -> ItemFull
                   -> m ()
 itemEffectOnSmash source target iid itemFull =
-  void $ itemEffect source target iid itemFull True False
+  void $ itemEffect source target iid itemFull False (strengthOnSmash itemFull)
+
+itemEffectCause :: (MonadAtomic m, MonadServer m)
+                => ActorId -> Point -> Effect.Effect Int
+                -> m Bool
+itemEffectCause aid tpos ef = do
+  sb <- getsState $ getActorBody aid
+  Level{lembed} <- getLevel $ blid sb
+  case tpos `EM.lookup` lembed of
+    Nothing -> assert `failure` (aid, tpos, ef)
+    Just bag -> case EM.assocs bag of
+      [(iid, kit)] -> do
+        itemToF <- itemToFullServer
+        let itemFull = itemToF iid kit
+        -- No block against tile, hence unconditional.
+        execSfxAtomic $ SfxTrigger aid tpos $ F.Cause ef
+        void $ itemEffect aid aid iid itemFull False [ef]
+        return True
+      ab -> assert `failure` (aid, tpos, ab)
+
+itemEffectDisco :: (MonadAtomic m, MonadServer m)
+                => ActorId -> ActorId -> ItemId -> ItemFull -> Bool
+                -> m Bool
+itemEffectDisco source target iid itemFull periodic = do
+  case itemDisco itemFull of
+    Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} -> do
+      itemEffect source target iid itemFull periodic jeffects
+    _ -> assert `failure` (source, target, iid, itemFull)
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effect effect fires up, the item gets identified. This function
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
 itemEffect :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> ItemId -> ItemFull -> Bool -> Bool
+           => ActorId -> ActorId -> ItemId -> ItemFull -> Bool
+           -> [Effect.Effect Int]
            -> m Bool
-itemEffect source target iid itemFull onSmash periodic = do
+itemEffect source target iid itemFull periodic effs = do
   case itemDisco itemFull of
-    Just ItemDisco{itemKindId, itemAE=Just ItemAspectEffect{jeffects}} -> do
-      let effs | onSmash = strengthOnSmash itemFull
-               | otherwise = jeffects
+    Just ItemDisco{itemKindId} -> do
       triggered <- effectsSem effs source target periodic
       -- The effect fires up, so the item gets identified, if seen
       -- (the item was at the source actor's position, so his old position
