@@ -214,7 +214,7 @@ effectSem source target iid c effect = do
     Effect.Explode t -> effectExplode execSfx t target
     Effect.OneOf l -> effectOneOf l source target iid c
     Effect.OnSmash _ -> return False  -- ignored under normal circumstances
-    Effect.Timeout k e -> effectTimeout k e source target
+    Effect.Timeout timeout e -> effectTimeout timeout e source target iid c
     Effect.TimedAspect{} -> return False  -- TODO
 
 -- + Individual semantic functions for effects
@@ -882,6 +882,22 @@ effectOneOf l source target iid c = do
 -- ** Timeout
 
 effectTimeout :: (MonadAtomic m, MonadServer m)
-              => Int -> Effect.Effect Int -> ActorId -> ActorId -> m Bool
-effectTimeout _k _e _source _target = do
-  return False  -- TODO
+              => Int -> Effect.Effect Int
+              -> ActorId -> ActorId -> ItemId -> Container
+              -> m Bool
+effectTimeout _timeout e source target iid c = do
+  item <- getsState $ getItemBody iid
+  let durable = Effect.Durable `elem` jfeature item
+  bag <- getsState $ getCBag c
+  case iid `EM.lookup` bag of
+    Just (k, it) | durable -> do
+      sb <- getsState $ getActorBody source
+      localTime <- getsState $ getLocalTime (blid sb)
+      if length it == k && all (>= localTime) it then
+        -- All items in the stack not recharged yet.
+        return False
+      else
+        effectSem source target iid c e
+    _ ->
+      -- The item was not Durable or we are activating OnSmash effects, etc.
+      return False
