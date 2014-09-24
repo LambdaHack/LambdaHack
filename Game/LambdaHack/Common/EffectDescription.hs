@@ -22,15 +22,19 @@ import Game.LambdaHack.Common.Time
 effectToSuff :: (Show a, Ord a, Num a)
              => Effect a -> (a -> Text) -> (a -> Maybe Int) -> Text
 effectToSuff effect f g =
-  case ( St.evalState (effectTrav effect $ return . f) ()
-       , St.evalState (effectTrav effect $ return . g) () ) of
+  rawEffectToSuff (St.evalState (effectTrav effect $ return . f) ())
+                  (St.evalState (effectTrav effect $ return . g) ())
+
+rawEffectToSuff :: Effect Text -> Effect (Maybe Int) -> Text
+rawEffectToSuff effectText effectMInt =
+  case (effectText, effectMInt) of
     (NoEffect t, _) -> t
     (RefillHP p, _) | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
-    (RefillHP 0, _) -> assert `failure` effect
+    (RefillHP 0, _) -> assert `failure` (effectText, effectMInt)
     (RefillHP p, _) -> "of wounding" <+> wrapInParens (affixBonus p)
     (Hurt dice, _) -> wrapInParens (tshow dice)
     (RefillCalm p, _) | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
-    (RefillCalm 0, _) -> assert `failure` effect
+    (RefillCalm 0, _) -> assert `failure` (effectText, effectMInt)
     (RefillCalm p, _) -> "of dismaying" <+> wrapInParens (affixBonus p)
     (Dominate, _) -> "of domination"
     (Impress, _) -> "of impression"
@@ -44,12 +48,12 @@ effectToSuff effect f g =
     (CreateItem t, _) -> "of uncovering"
                          <+> wrapInParens (dropPlus t <+> "items")
     (ApplyPerfume, _) -> "of smell removal"
-    (Burn p, _) | p <= 0 -> assert `failure` effect
+    (Burn p, _) | p <= 0 -> assert `failure` (effectText, effectMInt)
     (Burn p, _) -> wrapInParens (makePhrase [MU.CarWs p "burn"])
     (Ascend 1, _) -> "of ascending"
     (Ascend p, _) | p > 0 ->
       "of ascending" <+> wrapInParens (tshow p <+> "levels")
-    (Ascend 0, _) -> assert `failure` effect
+    (Ascend 0, _) -> assert `failure` (effectText, effectMInt)
     (Ascend (-1), _) -> "of descending"
     (Ascend p, _) ->
       "of descending" <+> wrapInParens (tshow (-p) <+> "levels")
@@ -71,7 +75,8 @@ effectToSuff effect f g =
     (SendFlying tmod, _) -> "of impact" <+> tmodToSuff "" tmod
     (PushActor tmod, _) -> "of pushing" <+> tmodToSuff "" tmod
     (PullActor tmod, _) -> "of pulling" <+> tmodToSuff "" tmod
-    (_, Teleport (Just p)) | p <= 1  -> assert `failure` effect
+    (_, Teleport (Just p)) | p <= 1  ->
+      assert `failure` (effectText, effectMInt)
     (Teleport t, Teleport (Just p)) | p <= 9  ->
       "of blinking" <+> wrapInParens (dropPlus t <+> "steps")
     (Teleport t, _)->
@@ -85,8 +90,11 @@ effectToSuff effect f g =
       let subject = if length l <= 5 then "marvel" else "wonder"
       in makePhrase ["of", MU.CardinalWs (length l) subject]
     (OnSmash _, _) -> ""  -- conditional effect, TMI
+    (Timeout timeout subEffectText, Timeout _timeout subEffectMInt) ->
+      rawEffectToSuff subEffectText subEffectMInt
+      <+> "(timeout" <+> tshow timeout <> ")"
     (TimedAspect _ aspect, _) -> "keep (" <> rawAspectToSuff aspect <> ")"
-    (effectF, effectG) -> assert `failure` (effect, effectF, effectG)
+    _ -> assert `failure` (effectText, effectMInt)
 
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =

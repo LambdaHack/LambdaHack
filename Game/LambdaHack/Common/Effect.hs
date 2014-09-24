@@ -176,10 +176,10 @@ effectTrav (OneOf la) f = do
 effectTrav (OnSmash effa) f = do
   effb <- effectTrav effa f
   return $! OnSmash effb
-effectTrav (Timeout k effa) f = do
-  effb <- effectTrav effa f
-  return $! Timeout k effb
 effectTrav (Explode t) _ = return $! Explode t
+effectTrav (Timeout timeout effa) f = do
+  effb <- effectTrav effa f
+  return $! Timeout timeout effb
 effectTrav (TimedAspect k asp) f = do
   asp2 <- aspectTrav asp f
   return $! TimedAspect k asp2
