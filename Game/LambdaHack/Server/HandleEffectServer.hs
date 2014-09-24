@@ -90,11 +90,17 @@ itemEffectPeriodic source target iid c = do
     void $ itemEffectAE source target iid True c
 
 itemEffectOnSmash :: (MonadAtomic m, MonadServer m)
-                  => ActorId -> ActorId -> ItemId -> ItemFull -> Container
+                  => ActorId -> ActorId -> ItemId -> Container
                   -> m ()
-itemEffectOnSmash source target iid itemFull c =
-  void
-  $ itemEffectDisco source target iid False (strengthOnSmash itemFull) c
+itemEffectOnSmash source target iid c = do
+  itemToF <- itemToFullServer
+  bag <- getsState $ getCBag c
+  case iid `EM.lookup` bag of
+    Nothing -> assert `failure` (source, target, iid, c)
+    Just kit -> do
+      let itemFull = itemToF iid kit
+          effs = strengthOnSmash itemFull
+      void $ itemEffectDisco source target iid False effs c
 
 itemEffectCause :: (MonadAtomic m, MonadServer m)
                 => ActorId -> Point -> Effect.Effect Int
@@ -607,16 +613,14 @@ dropEqpItem :: (MonadAtomic m, MonadServer m)
             => ActorId -> Actor -> Bool -> ItemId -> ItemQuant -> m ()
 dropEqpItem aid b hit iid kit@(k, _) = do
   item <- getsState $ getItemBody iid
-  itemToF <- itemToFullServer
   let container = CActor aid CEqp
       fragile = Effect.Fragile `elem` jfeature item
       durable = Effect.Durable `elem` jfeature item
       isDestroyed = hit && not durable || bproj b && fragile
-      itemFull = itemToF iid kit
   if isDestroyed then do
     -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
     execUpdAtomic $ UpdLoseItem iid item kit container
-    itemEffectOnSmash aid aid iid itemFull container
+    itemEffectOnSmash aid aid iid container
   else do
     mvCmd <- generalMoveItem iid k (CActor aid CEqp)
                                    (CActor aid CGround)
