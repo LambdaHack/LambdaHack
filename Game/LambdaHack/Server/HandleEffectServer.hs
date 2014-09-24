@@ -73,7 +73,7 @@ itemEffectAndDestroy source target iid c = do
           kit = (1, take 1 it)
       when (not durable) $
         execUpdAtomic $ UpdLoseItem iid item kit c
-      triggered <- itemEffectAE source target iid False c
+      triggered <- itemEffectAE source target iid c False
       -- If none of item's effects was performed, we try to recreate the item.
       -- Regardless, we don't rewind the time, because some info is gained
       -- (that the item does not exhibit any effects in the given context).
@@ -87,7 +87,7 @@ itemEffectPeriodic source target iid c = do
   item <- getsState $ getItemBody iid
   let durable = Effect.Durable `elem` jfeature item
   unless durable $
-    void $ itemEffectAE source target iid True c
+    void $ itemEffectAE source target iid c True
 
 itemEffectOnSmash :: (MonadAtomic m, MonadServer m)
                   => ActorId -> ActorId -> ItemId -> Container
@@ -100,7 +100,7 @@ itemEffectOnSmash source target iid c = do
     Just kit -> do
       let itemFull = itemToF iid kit
           effs = strengthOnSmash itemFull
-      void $ itemEffectDisco source target iid False effs c
+      void $ itemEffectDisco source target iid c False effs
 
 itemEffectCause :: (MonadAtomic m, MonadServer m)
                 => ActorId -> Point -> Effect.Effect Int
@@ -114,30 +114,34 @@ itemEffectCause aid tpos ef = do
       -- No block against tile, hence unconditional.
       execSfxAtomic $ SfxTrigger aid tpos $ F.Cause ef
       -- Embedded items are not announced, e.g., via dicovery.
-      void $ itemEffect aid aid iid False [ef] c
+      void $ itemEffect aid aid iid c False [ef]
       return True
     ab -> assert `failure` (aid, tpos, ab)
 
 itemEffectAE :: (MonadAtomic m, MonadServer m)
-                => ActorId -> ActorId -> ItemId -> Bool -> Container
+                => ActorId -> ActorId -> ItemId -> Container -> Bool
                 -> m Bool
-itemEffectAE source target iid periodic c = do
+itemEffectAE source target iid c periodic = do
   discoEffect <- getsServer sdiscoEffect
   case EM.lookup iid discoEffect of
     Just ItemAspectEffect{jeffects} -> do
-      itemEffectDisco source target iid periodic jeffects c
+      itemEffectDisco source target iid c periodic jeffects
     _ -> assert `failure` (source, target, iid)
 
+-- | The source actor affects the target actor, with a given item.
+-- If any of the effects fires up, the item gets identified. This function
+-- is mutually recursive with @effect@ and so it's a part of @Effect@
+-- semantics.
 itemEffectDisco :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> ItemId -> Bool
-           -> [Effect.Effect Int] -> Container
+           => ActorId -> ActorId -> ItemId -> Container -> Bool
+           -> [Effect.Effect Int]
            -> m Bool
-itemEffectDisco source target iid periodic effs _c = do
+itemEffectDisco source target iid c periodic effs = do
   discoKind <- getsServer sdiscoKind
   item <- getsState $ getItemBody iid
   case EM.lookup (jkindIx item) discoKind of
     Just itemKindId -> do
-      triggered <- itemEffect source target iid periodic effs _c
+      triggered <- itemEffect source target iid c periodic effs
       -- The effect fires up, so the item gets identified, if seen
       -- (the item was at the source actor's position, so his old position
       -- is given, since the actor and/or the item may be moved by the effect;
@@ -151,21 +155,11 @@ itemEffectDisco source target iid periodic effs _c = do
       return triggered
     _ -> assert `failure` (source, target, iid, item)
 
--- | The source actor affects the target actor, with a given item.
--- If any of the effect effect fires up, the item gets identified. This function
--- is mutually recursive with @effect@ and so it's a part of @Effect@
--- semantics.
 itemEffect :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> ItemId -> Bool
-           -> [Effect.Effect Int] -> Container
+           => ActorId -> ActorId -> ItemId -> Container -> Bool
+           -> [Effect.Effect Int]
            -> m Bool
-itemEffect source target _iid periodic effs _c = do
-  effectsSem effs source target periodic
-
-effectsSem :: (MonadAtomic m, MonadServer m)
-           => [Effect.Effect Int] -> ActorId -> ActorId -> Bool
-           -> m Bool
-effectsSem effects source target periodic = do
+itemEffect source target iid c periodic effects = do
   trs <- mapM (\ef -> effectSem ef source target) effects
   let triggered = or trs
   sb <- getsState $ getActorBody source
