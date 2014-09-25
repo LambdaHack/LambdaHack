@@ -885,7 +885,7 @@ effectTimeout :: (MonadAtomic m, MonadServer m)
               => Int -> Effect.Effect Int
               -> ActorId -> ActorId -> ItemId -> Container
               -> m Bool
-effectTimeout _timeout e source target iid c = do
+effectTimeout timeout e source target iid c = do
   item <- getsState $ getItemBody iid
   let durable = Effect.Durable `elem` jfeature item
   bag <- getsState $ getCBag c
@@ -893,10 +893,18 @@ effectTimeout _timeout e source target iid c = do
     Just (k, it) | durable -> do
       sb <- getsState $ getActorBody source
       localTime <- getsState $ getLocalTime (blid sb)
-      if length it == k && all (>= localTime) it then
+      let it1 = filter (< localTime) it
+          len = length it1
+      assert (len <= k `blame` (k, it, source, target, iid, c)) skip
+      if len == k then
         -- All items in the stack not recharged yet.
+        -- TODO: report failure
         return False
-      else
+      else do
+        let rechargeTime = timeShift localTime
+                                     (timeDeltaScale (Delta timeClip) timeout)
+            it2 = rechargeTime : it1
+        execUpdAtomic $ UpdTimeItem iid c it it2
         effectSem source target iid c e
     _ ->
       -- The item was not Durable or we are activating OnSmash effects, etc.

@@ -80,6 +80,7 @@ handleUpdAtomic cmd = case cmd of
   UpdAlterSmell lid p fromSm toSm -> updAlterSmell lid p fromSm toSm
   UpdSpotSmell lid sms -> updSpotSmell lid sms
   UpdLoseSmell lid sms -> updLoseSmell lid sms
+  UpdTimeItem iid c fromIt toIt -> updTimeItem iid c fromIt toIt
   UpdAgeGame t lids -> updAgeGame t lids
   UpdDiscover{} -> return ()      -- We can't keep dicovered data in State,
   UpdCover{} -> return ()         -- because server saves all atomic commands
@@ -449,6 +450,18 @@ updLoseSmell lid sms = assert (not $ null sms) $ do
       f (p, sm) = EM.alter (alt sm) p
       upd m = foldr f m sms
   updateLevel lid $ updateSmell upd
+
+updTimeItem :: MonadStateWrite m
+            => ItemId -> Container -> [Time] -> [Time]
+            -> m ()
+updTimeItem iid c fromIt toIt = do
+  bag <- getsState $ getCBag c
+  case iid `EM.lookup` bag of
+    Just (k, it) -> do
+      assert (fromIt == it `blame` (k, it, iid, c, fromIt, toIt)) skip
+      deleteItemContainer iid k c
+      insertItemContainer iid (k, toIt) c
+    Nothing -> assert `failure` (bag, iid, c, fromIt, toIt)
 
 -- | Age the game.
 --

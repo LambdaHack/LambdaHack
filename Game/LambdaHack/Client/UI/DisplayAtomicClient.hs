@@ -194,7 +194,8 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdSpotSmell{} -> skip
   UpdLoseSmell{} -> skip
   -- Assorted.
-  UpdAgeGame {} -> skip
+  UpdTimeItem{} -> skip
+  UpdAgeGame{} -> skip
   UpdDiscover _ _ iid _ _ -> discover oldStateClient iid
   UpdCover{} ->  skip  -- don't spam when doing undo
   UpdDiscoverKind _ _ iid _ -> discover oldStateClient iid
