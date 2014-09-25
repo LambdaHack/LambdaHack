@@ -94,13 +94,9 @@ itemEffectOnSmash :: (MonadAtomic m, MonadServer m)
                   -> m ()
 itemEffectOnSmash source target iid c = do
   itemToF <- itemToFullServer
-  bag <- getsState $ getCBag c
-  case iid `EM.lookup` bag of
-    Nothing -> assert `failure` (source, target, iid, c)
-    Just kit -> do
-      let itemFull = itemToF iid kit
-          effs = strengthOnSmash itemFull
-      void $ itemEffectDisco source target iid c False effs
+  let itemFull = itemToF iid (1, [])
+      effs = strengthOnSmash itemFull
+  void $ itemEffectDisco source target iid c False effs
 
 itemEffectCause :: (MonadAtomic m, MonadServer m)
                 => ActorId -> Point -> Effect.Effect Int
@@ -173,6 +169,7 @@ itemEffect source target iid c periodic effects = do
 
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.
+-- The item may or may not still be in the container.
 -- The boolean result indicates if the effect actually fired up,
 -- as opposed to fizzled.
 effectSem :: (MonadAtomic m, MonadServer m)
