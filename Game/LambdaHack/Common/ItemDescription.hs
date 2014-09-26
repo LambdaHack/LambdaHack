@@ -10,6 +10,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.EffectDescription
@@ -22,24 +23,24 @@ import Game.LambdaHack.Content.ItemKind
 
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
-partItemN :: Bool -> Int -> CStore -> ItemFull -> (MU.Part, MU.Part)
-partItemN fullInfo n cstore itemFull =
+partItemN :: Bool -> Int -> Container -> ItemFull -> (MU.Part, MU.Part)
+partItemN fullInfo n c itemFull =
   let genericName = jname $ itemBase itemFull
   in case itemDisco itemFull of
     Nothing ->
       let flav = flavourToName $ jflavour $ itemBase itemFull
       in (MU.Text $ flav <+> genericName, "")
     Just _ ->
-      let effTs = filter (not . T.null) $ textAllAE fullInfo cstore itemFull
+      let effTs = filter (not . T.null) $ textAllAE fullInfo c itemFull
           ts = take n effTs ++ if length effTs > n then ["(...)"] else []
       in (MU.Text genericName, MU.Phrase $ map MU.Text ts)
 
 -- | The part of speech describing the item.
-partItem :: CStore -> ItemFull -> (MU.Part, MU.Part)
+partItem :: Container -> ItemFull -> (MU.Part, MU.Part)
 partItem = partItemN False 4
 
-textAllAE :: Bool -> CStore -> ItemFull -> [Text]
-textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
+textAllAE :: Bool -> Container -> ItemFull -> [Text]
+textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
   let features | fullInfo = map featureToSuff $ sort $ jfeature itemBase
                | otherwise = []
   in case itemDisco of
@@ -51,6 +52,7 @@ textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
           hurtEffect :: Effect.Effect a -> Bool
           hurtEffect (Effect.Hurt _) = True
           hurtEffect _ = False
+          cstore = storeFromC c
           active = cstore `elem` [CEqp, COrgan]
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
           splitAE :: Ord a
@@ -73,24 +75,24 @@ textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
       in aets ++ features
 
 -- TODO: use kit
-partItemWs :: ItemQuant -> CStore -> ItemFull -> MU.Part
-partItemWs _kit@(count, _) cstore itemFull =
-  let (name, stats) = partItem cstore itemFull
+partItemWs :: ItemQuant -> Container -> ItemFull -> MU.Part
+partItemWs _kit@(count, _) c itemFull =
+  let (name, stats) = partItem c itemFull
   in MU.Phrase [MU.CarWs count name, stats]
 
-partItemAW :: CStore -> ItemFull -> MU.Part
-partItemAW cstore itemFull =
-  let (name, stats) = partItem cstore itemFull
+partItemAW :: Container -> ItemFull -> MU.Part
+partItemAW c itemFull =
+  let (name, stats) = partItem c itemFull
   in MU.AW $ MU.Phrase [name, stats]
 
-partItemWownW :: MU.Part -> CStore -> ItemFull -> MU.Part
-partItemWownW partA cstore itemFull =
-  let (name, stats) = partItem cstore itemFull
+partItemWownW :: MU.Part -> Container -> ItemFull -> MU.Part
+partItemWownW partA c itemFull =
+  let (name, stats) = partItem c itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
-itemDesc :: CStore -> ItemFull -> Overlay
-itemDesc cstore itemFull =
-  let (name, stats) = partItemN True 99 cstore itemFull
+itemDesc :: Container -> ItemFull -> Overlay
+itemDesc c itemFull =
+  let (name, stats) = partItemN True 99 c itemFull
       nstats = makePhrase [name, stats MU.:> ":"]
       desc = case itemDisco itemFull of
         Nothing -> "This item is as unremarkable as can be."
@@ -102,7 +104,7 @@ itemDesc cstore itemFull =
         else (tshow weight, "g")
       ln = abs $ fromEnum $ jlid (itemBase itemFull)
       colorSymbol = uncurry (flip Color.AttrChar) (viewItem $ itemBase itemFull)
-      f c = Color.AttrChar Color.defAttr c
+      f color = Color.AttrChar Color.defAttr color
       lxsize = fst normalLevelBound + 1  -- TODO
       blurb =
         "D"  -- dummy

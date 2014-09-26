@@ -67,9 +67,9 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdCreateItem iid _ kit c -> do
     -- TODO: probably not Nothing if container not CGround
     updateItemSlot Nothing iid
-    itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) (storeFromC c)
+    itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
     stopPlayBack
-  UpdDestroyItem iid _ kit c -> itemVerbMU iid kit "disappear" (storeFromC c)
+  UpdDestroyItem iid _ kit c -> itemVerbMU iid kit "disappear" c
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
   UpdLoseActor aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
@@ -91,7 +91,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
               TEnemy{} -> return ()  -- probably too important to overwrite
               TEnemyPos{} -> return ()
               _ -> modifyClient $ \cli -> cli {scursor = TPoint lid p}
-            itemVerbMU iid kit "be spotted" CGround
+            itemVerbMU iid kit "be spotted" c
             stopPlayBack
           CTrunk{} -> return ()
       _ -> return ()  -- seen recently (still has a slot assigned)
@@ -196,11 +196,11 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   -- Assorted.
   UpdTimeItem{} -> skip
   UpdAgeGame{} -> skip
-  UpdDiscover _ _ iid _ _ -> discover oldStateClient iid
-  UpdCover{} ->  skip  -- don't spam when doing undo
-  UpdDiscoverKind _ _ iid _ -> discover oldStateClient iid
-  UpdCoverKind{} ->  skip  -- don't spam when doing undo
-  UpdDiscoverSeed _ _ iid _ -> discover oldStateClient iid
+  UpdDiscover lid p iid _ _ -> discover lid p oldStateClient iid
+  UpdCover{} -> skip  -- don't spam when doing undo
+  UpdDiscoverKind lid p iid _ -> discover lid p oldStateClient iid
+  UpdCoverKind{} -> skip  -- don't spam when doing undo
+  UpdDiscoverSeed lid p iid _ -> discover lid p oldStateClient iid
   UpdCoverSeed{} -> skip  -- don't spam when doing undo
   UpdPerception{} -> skip
   UpdRestart fid _ _ _ _ _ -> do
@@ -252,10 +252,10 @@ aVerbMU aid verb = do
   actorVerbMU aid b verb
 
 itemVerbMU :: MonadClientUI m
-           => ItemId -> ItemQuant -> MU.Part -> CStore -> m ()
-itemVerbMU iid kit@(k, _) verb cstore = assert (k > 0) $ do
+           => ItemId -> ItemQuant -> MU.Part -> Container -> m ()
+itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
   itemToF <- itemToFullClient
-  let subject = partItemWs kit cstore (itemToF iid kit)
+  let subject = partItemWs kit c (itemToF iid kit)
       msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
@@ -266,7 +266,7 @@ aiVerbMU aid verb iid kit cstore = do
   itemToF <- itemToFullClient
   subject <- partAidLeader aid
   let msg = makeSentence [ MU.SubjectVerbSg subject verb
-                         , partItemWs kit cstore (itemToF iid kit) ]
+                         , partItemWs kit (CActor aid cstore) (itemToF iid kit) ]
   msgAdd msg
 
 msgDuplicateScrap :: MonadClientUI m => m ()
@@ -310,19 +310,20 @@ destroyActorUI aid body verb verboseVerb verbose = do
 moveItemUI :: MonadClientUI m
            => Bool -> ItemId -> Int -> ActorId -> CStore -> CStore
            -> m ()
-moveItemUI verbose iid k aid c1 c2 = do
+moveItemUI verbose iid k aid cstore1 cstore2 = do
   side <- getsClient sside
   b <- getsState $ getActorBody aid
-  case (c1, c2) of
-    (_, _) | c1 == CGround -> do
+  case (cstore1, cstore2) of
+    (_, _) | cstore1 == CGround -> do
       when (bfid b == side) $ updateItemSlot (Just aid) iid
       fact <- getsState $ (EM.! bfid b) . sfactionD
       let underAI = isAIFact fact
+          c2 = CActor aid cstore2
       mleader <- getsClient _sleader
       if Just aid == mleader && not underAI then do
         itemToF <- itemToFullClient
         (letterSlots, _) <- getsClient sslots
-        bag <- getsState $ getCBag $ CActor aid c2
+        bag <- getsState $ getCBag c2
         let n = bag EM.! iid
         case lookup iid $ map swap $ EM.assocs letterSlots of
           Just l -> msgAdd $ makePhrase
@@ -332,10 +333,10 @@ moveItemUI verbose iid k aid c1 c2 = do
                       , partItemWs n c2 (itemToF iid n)
                       , "\n" ]
           Nothing -> return ()
-      else when (c1 == CGround && c1 /= c2) $
-        aiVerbMU aid "get" iid (k, []) c2
-    (_, CGround) | c1 /= c2 -> do
-      when verbose $ aiVerbMU aid "drop" iid (k, []) c1
+      else when (cstore1 == CGround && cstore1 /= cstore2) $
+        aiVerbMU aid "get" iid (k, []) cstore2
+    (_, CGround) | cstore1 /= cstore2 -> do
+      when verbose $ aiVerbMU aid "drop" iid (k, []) cstore1
       if bfid b == side
         then updateItemSlot (Just aid) iid
         else updateItemSlot Nothing iid
@@ -402,24 +403,27 @@ quitFactionUI fid mbody toSt = do
       msgAdd msg
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
-      (bag, total) <- case mbody of
-        Just body | fid == side -> getsState $ calculateTotal body
-        _ -> case gleader fact of
-          Nothing -> return (EM.empty, 0)
-          Just (aid, _) -> do
-            b <- getsState $ getActorBody aid
-            getsState $ calculateTotal b
-      let currencyName = MU.Text $ iname $ okind $ ouniqGroup "currency"
-          itemMsg = makeSentence [ "Your loot is worth"
-                                 , MU.CarWs total currencyName ]
-                    <+> moreMsg
       startingSlide <- promptToSlideshow moreMsg
       recordHistory  -- we are going to exit or restart, so record
-      itemSlides <-
-        if EM.null bag then return mempty
-        else do
-          io <- itemOverlay CGround bag
-          overlayToSlideshow itemMsg io
+      let bodyToItemSlides b = do
+            (bag, tot) <- getsState $ calculateTotal b
+            let currencyName = MU.Text $ iname $ okind
+                               $ ouniqGroup "currency"
+                itemMsg = makeSentence [ "Your loot is worth"
+                                       , MU.CarWs tot currencyName ]
+                          <+> moreMsg
+            if EM.null bag then return (mempty, 0)
+            else do
+              io <- itemOverlay (CFloor (blid b) (bpos b)) bag
+              sli <- overlayToSlideshow itemMsg io
+              return (sli, tot)
+      (itemSlides, total) <-case mbody of
+        Just b | fid == side -> bodyToItemSlides b
+        _ -> case gleader fact of
+          Nothing -> return (mempty, 0)
+          Just (aid, _) -> do
+            b <- getsState $ getActorBody aid
+            bodyToItemSlides b
       -- Show score for any UI client (except after ESC),
       -- even though it is saved only for human UI clients.
       scoreSlides <- scoreToSlideshow total status
@@ -438,17 +442,19 @@ quitFactionUI fid mbody toSt = do
       unless (fmap stOutcome toSt == Just Camping) $ fadeOutOrIn True
     _ -> return ()
 
-discover :: MonadClientUI m => StateClient -> ItemId ->  m ()
-discover oldcli iid = do
+discover :: MonadClientUI m
+         => LevelId -> Point -> StateClient -> ItemId -> m ()
+discover lid p oldcli iid = do
   cops <- getsState scops
   itemToF <- itemToFullClient
   let itemFull = itemToF iid (1, [])
-      (knownName, knownAEText) = partItem CGround itemFull
+      c = CFloor lid p
+      (knownName, knownAEText) = partItem c itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
       itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
-      (secretName, secretAEText) = partItem CGround itemSecret
+      (secretName, secretAEText) = partItem c itemSecret
       msg = makeSentence
         [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
                                   "turn out to be"
@@ -458,7 +464,7 @@ discover oldcli iid = do
                    iid (itemBase itemFull) (1, [])
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
-  when (textAllAE False CEqp itemFull /= textAllAE False CEqp oldItemFull) $
+  when (textAllAE False c itemFull /= textAllAE False c oldItemFull) $
     msgAdd msg
 
 -- * RespSfxAtomicUI
@@ -605,7 +611,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
               let itemSecret = itemNoDisco (itemBase, itemK)
-                  (secretName, secretAEText) = partItem cstore itemSecret
+                  (secretName, secretAEText) = partItem (CActor aid cstore) itemSecret
                   subject = partActor b
                   verb = "repurpose"
                   store = MU.Text $ ppCStore cstore
@@ -618,7 +624,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
               let itemSecret = itemNoDisco (itemBase, itemK)
-                  (secretName, secretAEText) = partItem cstore itemSecret
+                  (secretName, secretAEText) = partItem (CActor aid cstore) itemSecret
                   subject = partActor b
                   verb = "compare"
                   store = MU.Text $ ppCStore cstore
@@ -683,8 +689,8 @@ strike source target iid hitStatus = assert (source /= target) $ do
         Just ItemDisco{itemKind} -> iverbHit itemKind
       isOrgan = iid `EM.member` borgan sb
       partItemChoice = if isOrgan
-                       then partItemWownW spronoun COrgan
-                       else partItemAW CEqp
+                       then partItemWownW spronoun (CActor source COrgan)
+                       else partItemAW (CActor source CEqp)
       msg HitClear = makeSentence $
         [MU.SubjectVerbSg spart verb, tpart]
         ++ if bproj sb

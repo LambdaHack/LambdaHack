@@ -296,25 +296,25 @@ projectBla source pos rest iid cstore isShrapnel = do
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (source, pos, rest, iid, cstore)
     Just kit@(_, it) -> do
-      addProjectile pos rest iid kit lid (bfid sb) localTime isShrapnel
+      addProjectile source pos rest iid kit lid (bfid sb) localTime isShrapnel
       let c = CActor source cstore
-      execUpdAtomic $ UpdLoseItem iid item (1, take 1 it)  c
+      execUpdAtomic $ UpdLoseItem iid item (1, take 1 it) c
 
 -- | Create a projectile actor containing the given missile.
 --
 -- Projectile has no organs except for the trunk.
 addProjectile :: (MonadAtomic m, MonadServer m)
-              => Point -> [Point] -> ItemId -> ItemQuant -> LevelId -> FactionId
+              => ActorId -> Point -> [Point] -> ItemId -> ItemQuant -> LevelId -> FactionId
               -> Time -> Bool
               -> m ()
-addProjectile bpos rest iid (_, it) blid bfid btime isShrapnel = do
+addProjectile source bpos rest iid (_, it) blid bfid btime isShrapnel = do
   itemToF <- itemToFullServer
   let itemFull@ItemFull{itemBase} = itemToF iid (1, take 1 it)
       (trajectory, (speed, trange)) = itemTrajectory itemBase (bpos : rest)
       adj | trange < 5 = "falling"
           | otherwise = "flying"
       -- Not much detail about a fast flying item.
-      (object1, object2) = partItem CInv $ itemNoDisco (itemBase, 1)
+      (object1, object2) = partItem (CActor source CInv) $ itemNoDisco (itemBase, 1)
       bname = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       tweakBody b = b { bsymbol = if isShrapnel then bsymbol b else '*'
                       , bcolor = if isShrapnel then bcolor b else Color.BrWhite

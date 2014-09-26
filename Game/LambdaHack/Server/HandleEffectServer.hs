@@ -793,8 +793,9 @@ effectIdentify execSfx cstore target = do
         -- also to prevent sending any other UpdDiscover.
         let ided = Effect.Identified `elem` ifeature itemKind
             itemSecret = itemNoAE itemFull
-            statsObvious = textAllAE False cstore itemFull
-                           == textAllAE False cstore itemSecret
+            c = CActor target cstore
+            statsObvious = textAllAE False c itemFull
+                           == textAllAE False c itemSecret
         if ided && statsObvious
           then return False
           else do
