@@ -51,12 +51,15 @@ getCacheBfsAndPath aid target = do
           cli {sbfsD = EM.insert aid (bfs, target, seps, mpath) (sbfsD cli)}
         return (bfs, mpath)
   mbfs <- getsClient $ EM.lookup aid . sbfsD
+  b <- getsState $ getActorBody aid
   case mbfs of
-    Just (bfs, targetOld, sepsOld, mpath) | targetOld == target
-                                            && sepsOld == seps ->
-      return (bfs, mpath)
-    Just (bfs, _, _, _) -> pathAndStore bfs
-    Nothing -> do
+    Just (bfs, targetOld, sepsOld, mpath)
+      -- TODO: hack: in screensavers this is not always ensured, so check here:
+      | bfs PointArray.! bpos b == minKnownBfs ->
+      if targetOld == target && sepsOld == seps
+      then return (bfs, mpath)
+      else pathAndStore bfs
+    _ -> do
       bfs <- computeBFS aid
       pathAndStore bfs
 
