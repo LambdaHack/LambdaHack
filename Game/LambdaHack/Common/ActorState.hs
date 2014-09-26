@@ -13,7 +13,7 @@ module Game.LambdaHack.Common.ActorState
   , tryFindHeroK, getLocalTime
   , itemPrice, calmEnough, hpEnough, regenCalmDelta
   , actorInAmbient, actorSkills, maxActorSkills, dispEnemy, radiusBlind
-  , fullAssocs, itemToFull, goesIntoInv, eqpOverfull, storeFromC
+  , fullAssocs, itemToFull, goesIntoInv, eqpOverfull, storeFromC, lidFromC
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -381,3 +381,11 @@ storeFromC c = case c of
   CEmbed{} -> CGround
   CActor _ cstore -> cstore
   CTrunk{} -> CGround
+
+-- | Determine the dungeon level of the container. If the item is in a shared
+-- stash, the level depends on which actor asks.
+lidFromC :: Container -> State -> LevelId
+lidFromC (CFloor lid _) _ = lid
+lidFromC (CEmbed lid _) _ = lid
+lidFromC (CActor aid _) s = blid $ getActorBody aid s
+lidFromC (CTrunk _ lid _) _ = lid

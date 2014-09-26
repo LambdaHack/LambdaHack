@@ -69,9 +69,7 @@ data UpdAtomic =
   | UpdRefillHP !ActorId !Int64
   | UpdRefillCalm !ActorId !Int64
   | UpdOldFidActor !ActorId !FactionId !FactionId
-  | UpdTrajectory !ActorId
-                       !(Maybe ([Vector], Speed))
-                       !(Maybe ([Vector], Speed))
+  | UpdTrajectory !ActorId !(Maybe ([Vector], Speed)) !(Maybe ([Vector], Speed))
   | UpdColorActor !ActorId !Color.Color !Color.Color
   -- Change faction attributes.
   | UpdQuitFaction !FactionId !(Maybe Actor) !(Maybe Status) !(Maybe Status)
@@ -92,7 +90,7 @@ data UpdAtomic =
   | UpdSpotSmell !LevelId ![(Point, Time)]
   | UpdLoseSmell !LevelId ![(Point, Time)]
   -- Assorted.
-  | UpdTimeItem !ItemId !Container ![Time] ![Time]
+  | UpdTimeItem !ItemId !Container !ItemTimer !ItemTimer
   | UpdAgeGame !(Delta Time) ![LevelId]
   | UpdDiscover !LevelId !Point !ItemId !(Kind.Id ItemKind) !ItemSeed
   | UpdCover !LevelId !Point !ItemId !(Kind.Id ItemKind) !ItemSeed

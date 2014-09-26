@@ -885,12 +885,15 @@ effectTimeout :: (MonadAtomic m, MonadServer m)
 effectTimeout timeout e source target iid c = do
   item <- getsState $ getItemBody iid
   let durable = Effect.Durable `elem` jfeature item
+  lid <- getsState $ lidFromC c
   bag <- getsState $ getCBag c
   case iid `EM.lookup` bag of
     Just (k, it) | durable -> do
       sb <- getsState $ getActorBody source
       localTime <- getsState $ getLocalTime (blid sb)
-      let it1 = filter (< localTime) it
+      -- The whole stack gets recharged at level change and activation,
+      -- not only the item activated.
+      let it1 = filter (\(lid1, t1) -> lid1 == lid && t1 < localTime) it
           len = length it1
       assert (len <= k `blame` (k, it, source, target, iid, c)) skip
       if len == k then
@@ -900,7 +903,7 @@ effectTimeout timeout e source target iid c = do
       else do
         let rechargeTime = timeShift localTime
                                      (timeDeltaScale (Delta timeClip) timeout)
-            it2 = rechargeTime : it1
+            it2 = (lid, rechargeTime) : it1
         execUpdAtomic $ UpdTimeItem iid c it it2
         effectSem source target iid c e
     _ ->

@@ -452,7 +452,7 @@ updLoseSmell lid sms = assert (not $ null sms) $ do
   updateLevel lid $ updateSmell upd
 
 updTimeItem :: MonadStateWrite m
-            => ItemId -> Container -> [Time] -> [Time]
+            => ItemId -> Container -> ItemTimer -> ItemTimer
             -> m ()
 updTimeItem iid c fromIt toIt = do
   bag <- getsState $ getCBag c

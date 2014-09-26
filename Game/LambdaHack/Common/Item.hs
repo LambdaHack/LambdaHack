@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Item
   , ItemKindIx, DiscoveryKind, ItemSeed, ItemAspectEffect(..), DiscoveryEffect
   , ItemFull(..), ItemDisco(..), itemNoDisco, itemNoAE
     -- * Inventory management types
-  , ItemQuant, ItemBag, ItemDict, ItemKnown
+  , ItemTimer, ItemQuant, ItemBag, ItemDict, ItemKnown
   ) where
 
 import qualified Control.Monad.State as St
@@ -71,7 +71,7 @@ data ItemDisco = ItemDisco
 data ItemFull = ItemFull
   { itemBase  :: !Item
   , itemK     :: !Int
-  , itemTimer :: ![Time]
+  , itemTimer :: !ItemTimer
   , itemDisco :: !(Maybe ItemDisco)
   }
   deriving Show
@@ -116,7 +116,9 @@ seedToAspectsEffects (ItemSeed itemSeed) kind ldepth totalDepth =
       (jaspects, jeffects) = St.evalState rollAE (mkStdGen itemSeed)
   in ItemAspectEffect{..}
 
-type ItemQuant = (Int, [Time])
+type ItemTimer = [(LevelId, Time)]
+
+type ItemQuant = (Int, ItemTimer)
 
 type ItemBag = EM.EnumMap ItemId ItemQuant
 
