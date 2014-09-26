@@ -254,8 +254,9 @@ aVerbMU aid verb = do
 itemVerbMU :: MonadClientUI m
            => ItemId -> ItemQuant -> MU.Part -> Container -> m ()
 itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
+  lid <- getsState $ lidFromC c
   itemToF <- itemToFullClient
-  let subject = partItemWs kit c (itemToF iid kit)
+  let subject = partItemWs kit c lid (itemToF iid kit)
       msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
@@ -264,9 +265,11 @@ aiVerbMU :: MonadClientUI m
          => ActorId -> MU.Part -> ItemId -> ItemQuant -> CStore -> m ()
 aiVerbMU aid verb iid kit cstore = do
   itemToF <- itemToFullClient
+  let c = CActor aid cstore
+  lid <- getsState $ lidFromC c
   subject <- partAidLeader aid
   let msg = makeSentence [ MU.SubjectVerbSg subject verb
-                         , partItemWs kit (CActor aid cstore) (itemToF iid kit) ]
+                         , partItemWs kit c lid (itemToF iid kit) ]
   msgAdd msg
 
 msgDuplicateScrap :: MonadClientUI m => m ()
@@ -330,7 +333,7 @@ moveItemUI verbose iid k aid cstore1 cstore2 = do
                       [ "\n"
                       , slotLabel $ Left l
                       , "-"
-                      , partItemWs n c2 (itemToF iid n)
+                      , partItemWs n c2 (blid b) (itemToF iid n)
                       , "\n" ]
           Nothing -> return ()
       else when (cstore1 == CGround && cstore1 /= cstore2) $
@@ -414,7 +417,7 @@ quitFactionUI fid mbody toSt = do
                           <+> moreMsg
             if EM.null bag then return (mempty, 0)
             else do
-              io <- itemOverlay (CFloor (blid b) (bpos b)) bag
+              io <- itemOverlay (CFloor (blid b) (bpos b)) (blid b) bag
               sli <- overlayToSlideshow itemMsg io
               return (sli, tot)
       (itemSlides, total) <-case mbody of
@@ -449,12 +452,12 @@ discover lid p oldcli iid = do
   itemToF <- itemToFullClient
   let itemFull = itemToF iid (1, [])
       c = CFloor lid p
-      (knownName, knownAEText) = partItem c itemFull
+      (knownName, knownAEText) = partItem c lid itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
       itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
-      (secretName, secretAEText) = partItem c itemSecret
+      (secretName, secretAEText) = partItem c lid itemSecret
       msg = makeSentence
         [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
                                   "turn out to be"
@@ -611,7 +614,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
               let itemSecret = itemNoDisco (itemBase, itemK)
-                  (secretName, secretAEText) = partItem (CActor aid cstore) itemSecret
+                  (secretName, secretAEText) = partItem (CActor aid cstore) (blid b) itemSecret
                   subject = partActor b
                   verb = "repurpose"
                   store = MU.Text $ ppCStore cstore
@@ -624,7 +627,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
               let itemSecret = itemNoDisco (itemBase, itemK)
-                  (secretName, secretAEText) = partItem (CActor aid cstore) itemSecret
+                  (secretName, secretAEText) = partItem (CActor aid cstore) (blid b) itemSecret
                   subject = partActor b
                   verb = "compare"
                   store = MU.Text $ ppCStore cstore
@@ -688,9 +691,10 @@ strike source target iid hitStatus = assert (source /= target) $ do
         Nothing -> "hit"  -- not identified
         Just ItemDisco{itemKind} -> iverbHit itemKind
       isOrgan = iid `EM.member` borgan sb
-      partItemChoice = if isOrgan
-                       then partItemWownW spronoun (CActor source COrgan)
-                       else partItemAW (CActor source CEqp)
+      partItemChoice =
+        if isOrgan
+        then partItemWownW spronoun (CActor source COrgan) (blid sb)
+        else partItemAW (CActor source CEqp) (blid sb)
       msg HitClear = makeSentence $
         [MU.SubjectVerbSg spart verb, tpart]
         ++ if bproj sb

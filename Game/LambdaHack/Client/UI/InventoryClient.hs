@@ -274,7 +274,7 @@ transition psuit tshaSuit tsuitable verb
           IAll      -> (bagLetterSlots,
                         bag,
                         "Items" <+> ppCur <> ":")
-  io <- itemOverlay cCur bagFiltered
+  io <- itemOverlay cCur (blid body) bagFiltered
   runDefItemKey keyDefs lettersDef io labelLetterSlots prompt
 
 runDefItemKey :: MonadClientUI m

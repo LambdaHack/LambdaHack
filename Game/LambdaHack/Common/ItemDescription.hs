@@ -23,8 +23,9 @@ import Game.LambdaHack.Content.ItemKind
 
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
-partItemN :: Bool -> Int -> Container -> ItemFull -> (MU.Part, MU.Part)
-partItemN fullInfo n c itemFull =
+partItemN :: Bool -> Int -> Container -> LevelId -> ItemFull
+          -> (MU.Part, MU.Part)
+partItemN fullInfo n c lid itemFull =
   let genericName = jname $ itemBase itemFull
   in case itemDisco itemFull of
     Nothing ->
@@ -36,7 +37,7 @@ partItemN fullInfo n c itemFull =
       in (MU.Text genericName, MU.Phrase $ map MU.Text ts)
 
 -- | The part of speech describing the item.
-partItem :: Container -> ItemFull -> (MU.Part, MU.Part)
+partItem :: Container -> LevelId -> ItemFull -> (MU.Part, MU.Part)
 partItem = partItemN False 4
 
 textAllAE :: Bool -> Container -> ItemFull -> [Text]
@@ -75,24 +76,24 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
       in aets ++ features
 
 -- TODO: use kit
-partItemWs :: ItemQuant -> Container -> ItemFull -> MU.Part
-partItemWs _kit@(count, _) c itemFull =
-  let (name, stats) = partItem c itemFull
+partItemWs :: ItemQuant -> Container -> LevelId -> ItemFull -> MU.Part
+partItemWs _kit@(count, _) c lid itemFull =
+  let (name, stats) = partItem c lid itemFull
   in MU.Phrase [MU.CarWs count name, stats]
 
-partItemAW :: Container -> ItemFull -> MU.Part
-partItemAW c itemFull =
-  let (name, stats) = partItem c itemFull
+partItemAW :: Container -> LevelId -> ItemFull -> MU.Part
+partItemAW c lid itemFull =
+  let (name, stats) = partItem c lid itemFull
   in MU.AW $ MU.Phrase [name, stats]
 
-partItemWownW :: MU.Part -> Container -> ItemFull -> MU.Part
-partItemWownW partA c itemFull =
-  let (name, stats) = partItem c itemFull
+partItemWownW :: MU.Part -> Container -> LevelId -> ItemFull -> MU.Part
+partItemWownW partA c lid itemFull =
+  let (name, stats) = partItem c lid itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
-itemDesc :: Container -> ItemFull -> Overlay
-itemDesc c itemFull =
-  let (name, stats) = partItemN True 99 c itemFull
+itemDesc :: Container -> LevelId -> ItemFull -> Overlay
+itemDesc c lid itemFull =
+  let (name, stats) = partItemN True 99 c lid itemFull
       nstats = makePhrase [name, stats MU.:> ":"]
       desc = case itemDisco itemFull of
         Nothing -> "This item is as unremarkable as can be."

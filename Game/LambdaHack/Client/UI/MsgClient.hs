@@ -93,7 +93,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   let verb = MU.Text $ if pos == bpos b
                        then "stand on"
                        else if canSee then "notice" else "remember"
-  let nWs (iid, k) = partItemWs k (CFloor lidV pos) (itemToF iid k)
+  let nWs (iid, k) = partItemWs k (CFloor lidV pos) lidV (itemToF iid k)
       isd = case detailed of
               _ | EM.size is == 0 -> ""
               _ | EM.size is <= 2 ->
@@ -118,8 +118,9 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   else return $! msg <+> isd
 
 -- | Create a list of item names.
-itemOverlay :: MonadClient m => Container -> ItemBag -> m Overlay
-itemOverlay c bag = do
+itemOverlay :: MonadClient m
+            => Container -> LevelId -> ItemBag -> m Overlay
+itemOverlay c lid bag = do
   itemToF <- itemToFullClient
   (letterSlots, numberSlots) <- getsClient sslots
   let pr (l, iid) =
@@ -131,7 +132,7 @@ itemOverlay c bag = do
                 -- with all items visible on the floor or known to player
                 -- symbol = jsymbol $ itemBase itemFull
             in Just $ makePhrase [ slotLabel l, "-"  -- MU.String [symbol]
-                                 , partItemWs k c itemFull ]
+                                 , partItemWs k c lid itemFull ]
                            <> " "
   return $! toOverlay $ mapMaybe pr
     $ map (first Left) (EM.assocs letterSlots)

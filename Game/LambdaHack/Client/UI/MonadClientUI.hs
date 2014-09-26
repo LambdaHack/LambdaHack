@@ -324,7 +324,7 @@ targetDesc target = do
             [] -> return $! "exact spot" <+> (T.pack . show) p
             [(iid, kit@(k, _))] -> do
               itemToF <- itemToFullClient
-              let (name, stats) = partItem (CFloor lid p) (itemToF iid kit)
+              let (name, stats) = partItem (CFloor lid p) lid (itemToF iid kit)
               return $! makePhrase $ if k == 1
                                      then [name, stats]  -- "a sword" too wordy
                                      else [MU.CarWs k name, stats]

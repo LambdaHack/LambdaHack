@@ -130,8 +130,9 @@ describeItemC c = do
   let verb = "describe"
   ggi <- getStoreItem shaBlurb stdBlurb verb c
   case ggi of
-    Right ((_, itemFull), c2) ->
-      overlayToSlideshow "" $ itemDesc c2 itemFull
+    Right ((_, itemFull), c2) -> do
+      lid2 <- getsState $ lidFromC c2
+      overlayToSlideshow "" $ itemDesc c2 lid2 itemFull
     Left slides -> return slides
 
 -- * AllOwned
