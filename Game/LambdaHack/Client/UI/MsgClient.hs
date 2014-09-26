@@ -87,13 +87,14 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   itemToF <- itemToFullClient
   lidV <- viewedLevel
   lvl <- getLevel lidV
+  localTime <- getsState $ getLocalTime lidV
   b <- getsState $ getActorBody aid
   subject <- partAidLeader aid
   is <- getsState $ getCBag $ CFloor lidV pos
   let verb = MU.Text $ if pos == bpos b
                        then "stand on"
                        else if canSee then "notice" else "remember"
-  let nWs (iid, k) = partItemWs k (CFloor lidV pos) lidV (itemToF iid k)
+  let nWs (iid, k) = partItemWs k (CFloor lidV pos) lidV localTime (itemToF iid k)
       isd = case detailed of
               _ | EM.size is == 0 -> ""
               _ | EM.size is <= 2 ->
@@ -121,6 +122,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
 itemOverlay :: MonadClient m
             => Container -> LevelId -> ItemBag -> m Overlay
 itemOverlay c lid bag = do
+  localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   (letterSlots, numberSlots) <- getsClient sslots
   let pr (l, iid) =
@@ -132,7 +134,7 @@ itemOverlay c lid bag = do
                 -- with all items visible on the floor or known to player
                 -- symbol = jsymbol $ itemBase itemFull
             in Just $ makePhrase [ slotLabel l, "-"  -- MU.String [symbol]
-                                 , partItemWs k c lid itemFull ]
+                                 , partItemWs k c lid localTime itemFull ]
                            <> " "
   return $! toOverlay $ mapMaybe pr
     $ map (first Left) (EM.assocs letterSlots)

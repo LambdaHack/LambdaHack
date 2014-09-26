@@ -890,8 +890,7 @@ effectTimeout timeout e source target iid c = do
   bag <- getsState $ getCBag c
   case iid `EM.lookup` bag of
     Just (k, it) | durable -> do
-      sb <- getsState $ getActorBody source
-      localTime <- getsState $ getLocalTime (blid sb)
+      localTime <- getsState $ getLocalTime lid
       -- The whole stack gets recharged at level change and activation,
       -- not only the item activated.
       let it1 = filter (\(lid1, t1) -> lid1 == lid && t1 < localTime) it

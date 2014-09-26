@@ -211,6 +211,7 @@ moveItemHuman cLegalRaw destCStore verb auto = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
+  localTime <- getsState $ getLocalTime (blid b)
   let cLegal = if calmEnough b activeItems
                then cLegalRaw
                else if destCStore == CSha
@@ -227,7 +228,7 @@ moveItemHuman cLegalRaw destCStore verb auto = do
             subject <- partAidLeader leader
             msgAdd $ makeSentence
               [ MU.SubjectVerbSg subject verb
-              , partItemWs (k, timer) (CActor leader toCStore) (blid b) itemFull ]
+              , partItemWs (k, timer) (CActor leader toCStore) (blid b) localTime itemFull ]
             return $ Right $ ReqMoveItem iid k fromCStore toCStore
       if fromCStore == CGround
       then case destCStore of

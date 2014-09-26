@@ -308,13 +308,14 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               -> Time -> Bool
               -> m ()
 addProjectile source bpos rest iid (_, it) blid bfid btime isShrapnel = do
+  localTime <- getsState $ getLocalTime blid
   itemToF <- itemToFullServer
   let itemFull@ItemFull{itemBase} = itemToF iid (1, take 1 it)
       (trajectory, (speed, trange)) = itemTrajectory itemBase (bpos : rest)
       adj | trange < 5 = "falling"
           | otherwise = "flying"
       -- Not much detail about a fast flying item.
-      (object1, object2) = partItem (CActor source CInv) blid $ itemNoDisco (itemBase, 1)
+      (object1, object2) = partItem (CActor source CInv) blid localTime $ itemNoDisco (itemBase, 1)
       bname = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       tweakBody b = b { bsymbol = if isShrapnel then bsymbol b else '*'
                       , bcolor = if isShrapnel then bcolor b else Color.BrWhite

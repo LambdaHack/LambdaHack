@@ -132,7 +132,8 @@ describeItemC c = do
   case ggi of
     Right ((_, itemFull), c2) -> do
       lid2 <- getsState $ lidFromC c2
-      overlayToSlideshow "" $ itemDesc c2 lid2 itemFull
+      localTime <- getsState $ getLocalTime lid2
+      overlayToSlideshow "" $ itemDesc c2 lid2 localTime itemFull
     Left slides -> return slides
 
 -- * AllOwned

@@ -255,8 +255,9 @@ itemVerbMU :: MonadClientUI m
            => ItemId -> ItemQuant -> MU.Part -> Container -> m ()
 itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
   lid <- getsState $ lidFromC c
+  localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
-  let subject = partItemWs kit c lid (itemToF iid kit)
+  let subject = partItemWs kit c lid localTime (itemToF iid kit)
       msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
@@ -267,9 +268,10 @@ aiVerbMU aid verb iid kit cstore = do
   itemToF <- itemToFullClient
   let c = CActor aid cstore
   lid <- getsState $ lidFromC c
+  localTime <- getsState $ getLocalTime lid
   subject <- partAidLeader aid
   let msg = makeSentence [ MU.SubjectVerbSg subject verb
-                         , partItemWs kit c lid (itemToF iid kit) ]
+                         , partItemWs kit c lid localTime (itemToF iid kit) ]
   msgAdd msg
 
 msgDuplicateScrap :: MonadClientUI m => m ()
@@ -324,6 +326,7 @@ moveItemUI verbose iid k aid cstore1 cstore2 = do
           c2 = CActor aid cstore2
       mleader <- getsClient _sleader
       if Just aid == mleader && not underAI then do
+        localTime <- getsState $ getLocalTime (blid b)
         itemToF <- itemToFullClient
         (letterSlots, _) <- getsClient sslots
         bag <- getsState $ getCBag c2
@@ -333,7 +336,7 @@ moveItemUI verbose iid k aid cstore1 cstore2 = do
                       [ "\n"
                       , slotLabel $ Left l
                       , "-"
-                      , partItemWs n c2 (blid b) (itemToF iid n)
+                      , partItemWs n c2 (blid b) localTime (itemToF iid n)
                       , "\n" ]
           Nothing -> return ()
       else when (cstore1 == CGround && cstore1 /= cstore2) $
@@ -449,15 +452,16 @@ discover :: MonadClientUI m
          => LevelId -> Point -> StateClient -> ItemId -> m ()
 discover lid p oldcli iid = do
   cops <- getsState scops
+  localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   let itemFull = itemToF iid (1, [])
       c = CFloor lid p
-      (knownName, knownAEText) = partItem c lid itemFull
+      (knownName, knownAEText) = partItem c lid localTime itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
       itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
-      (secretName, secretAEText) = partItem c lid itemSecret
+      (secretName, secretAEText) = partItem c lid localTime itemSecret
       msg = makeSentence
         [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
                                   "turn out to be"
@@ -609,12 +613,13 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         Effect.Teleport t | t > 9 -> actorVerbMU aid b "teleport"
         Effect.Teleport{} -> actorVerbMU aid b "blink"
         Effect.PolyItem cstore -> do
+          localTime <- getsState $ getLocalTime $ blid b
           allAssocs <- fullAssocsClient aid [cstore]
           case allAssocs of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
               let itemSecret = itemNoDisco (itemBase, itemK)
-                  (secretName, secretAEText) = partItem (CActor aid cstore) (blid b) itemSecret
+                  (secretName, secretAEText) = partItem (CActor aid cstore) (blid b) localTime itemSecret
                   subject = partActor b
                   verb = "repurpose"
                   store = MU.Text $ ppCStore cstore
@@ -622,12 +627,13 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                 [ MU.SubjectVerbSg subject verb
                 , "the", secretName, secretAEText, store ]
         Effect.Identify cstore -> do
+          localTime <- getsState $ getLocalTime $ blid b
           allAssocs <- fullAssocsClient aid [cstore]
           case allAssocs of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
               let itemSecret = itemNoDisco (itemBase, itemK)
-                  (secretName, secretAEText) = partItem (CActor aid cstore) (blid b) itemSecret
+                  (secretName, secretAEText) = partItem (CActor aid cstore) (blid b) localTime itemSecret
                   subject = partActor b
                   verb = "compare"
                   store = MU.Text $ ppCStore cstore
@@ -686,6 +692,7 @@ strike source target iid hitStatus = assert (source /= target) $ do
   spart <- partActorLeader source sb
   tpart <- partActorLeader target tb
   spronoun <- partPronounLeader source sb
+  localTime <- getsState $ getLocalTime (blid sb)
   let itemFull = itemToF iid (1, [])
       verb = case itemDisco itemFull of
         Nothing -> "hit"  -- not identified
@@ -693,8 +700,8 @@ strike source target iid hitStatus = assert (source /= target) $ do
       isOrgan = iid `EM.member` borgan sb
       partItemChoice =
         if isOrgan
-        then partItemWownW spronoun (CActor source COrgan) (blid sb)
-        else partItemAW (CActor source CEqp) (blid sb)
+        then partItemWownW spronoun (CActor source COrgan) (blid sb) localTime
+        else partItemAW (CActor source CEqp) (blid sb) localTime
       msg HitClear = makeSentence $
         [MU.SubjectVerbSg spart verb, tpart]
         ++ if bproj sb

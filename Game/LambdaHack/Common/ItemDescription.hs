@@ -19,13 +19,14 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind
 
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
-partItemN :: Bool -> Int -> Container -> LevelId -> ItemFull
+partItemN :: Bool -> Int -> Container -> LevelId -> Time -> ItemFull
           -> (MU.Part, MU.Part)
-partItemN fullInfo n c lid itemFull =
+partItemN fullInfo n c lid localTime itemFull =
   let genericName = jname $ itemBase itemFull
   in case itemDisco itemFull of
     Nothing ->
@@ -37,7 +38,7 @@ partItemN fullInfo n c lid itemFull =
       in (MU.Text genericName, MU.Phrase $ map MU.Text ts)
 
 -- | The part of speech describing the item.
-partItem :: Container -> LevelId -> ItemFull -> (MU.Part, MU.Part)
+partItem :: Container  -> LevelId -> Time -> ItemFull -> (MU.Part, MU.Part)
 partItem = partItemN False 4
 
 textAllAE :: Bool -> Container -> ItemFull -> [Text]
@@ -76,24 +77,24 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
       in aets ++ features
 
 -- TODO: use kit
-partItemWs :: ItemQuant -> Container -> LevelId -> ItemFull -> MU.Part
-partItemWs _kit@(count, _) c lid itemFull =
-  let (name, stats) = partItem c lid itemFull
+partItemWs :: ItemQuant -> Container  -> LevelId -> Time -> ItemFull -> MU.Part
+partItemWs _kit@(count, _) c lid localTime itemFull =
+  let (name, stats) = partItem c lid localTime itemFull
   in MU.Phrase [MU.CarWs count name, stats]
 
-partItemAW :: Container -> LevelId -> ItemFull -> MU.Part
-partItemAW c lid itemFull =
-  let (name, stats) = partItem c lid itemFull
+partItemAW :: Container  -> LevelId -> Time -> ItemFull -> MU.Part
+partItemAW c lid localTime itemFull =
+  let (name, stats) = partItem c lid localTime itemFull
   in MU.AW $ MU.Phrase [name, stats]
 
-partItemWownW :: MU.Part -> Container -> LevelId -> ItemFull -> MU.Part
-partItemWownW partA c lid itemFull =
-  let (name, stats) = partItem c lid itemFull
+partItemWownW :: MU.Part -> Container  -> LevelId -> Time -> ItemFull -> MU.Part
+partItemWownW partA c lid localTime itemFull =
+  let (name, stats) = partItem c lid localTime itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
-itemDesc :: Container -> LevelId -> ItemFull -> Overlay
-itemDesc c lid itemFull =
-  let (name, stats) = partItemN True 99 c lid itemFull
+itemDesc :: Container  -> LevelId -> Time -> ItemFull -> Overlay
+itemDesc c lid localTime itemFull =
+  let (name, stats) = partItemN True 99 c lid localTime itemFull
       nstats = makePhrase [name, stats MU.:> ":"]
       desc = case itemDisco itemFull of
         Nothing -> "This item is as unremarkable as can be."

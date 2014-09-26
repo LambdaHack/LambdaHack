@@ -323,8 +323,9 @@ targetDesc target = do
           case EM.assocs bag of
             [] -> return $! "exact spot" <+> (T.pack . show) p
             [(iid, kit@(k, _))] -> do
+              localTime <- getsState $ getLocalTime lid
               itemToF <- itemToFullClient
-              let (name, stats) = partItem (CFloor lid p) lid (itemToF iid kit)
+              let (name, stats) = partItem (CFloor lid p) lid localTime (itemToF iid kit)
               return $! makePhrase $ if k == 1
                                      then [name, stats]  -- "a sword" too wordy
                                      else [MU.CarWs k name, stats]
