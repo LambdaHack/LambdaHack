@@ -34,7 +34,19 @@ partItemN fullInfo n c lid localTime itemFull =
       in (MU.Text $ flav <+> genericName, "")
     Just _ ->
       let effTs = filter (not . T.null) $ textAllAE fullInfo c itemFull
-          ts = take n effTs ++ if length effTs > n then ["(...)"] else []
+      -- The whole stack gets recharged at level change and activation,
+      -- not only the item activated.
+          it1 = filter (\(lid1, t1) -> lid1 == lid && t1 < localTime)
+                       (itemTimer itemFull)
+          len = length it1
+          timer = if len == 0
+                  then ""
+                  else if itemK itemFull == 1 && len == 1
+                  then "(charging)"
+                  else "(" <> tshow len <+> "charging" <> ")"
+          ts = take n effTs
+               ++ (if length effTs > n then ["(...)"] else [])
+               ++ [timer]
       in (MU.Text genericName, MU.Phrase $ map MU.Text ts)
 
 -- | The part of speech describing the item.
