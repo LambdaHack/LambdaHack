@@ -94,6 +94,12 @@ strengthPeriodic =
       p _ = []
   in strengthAspectMaybe p
 
+strengthTimeout :: ItemFull -> Maybe Int
+strengthTimeout =
+  let p (Timeout k) = [k]
+      p _ = []
+  in strengthAspectMaybe p
+
 strengthAddMaxHP :: ItemFull -> Maybe Int
 strengthAddMaxHP =
   let p (AddMaxHP k) = [k]
@@ -199,6 +205,7 @@ strengthFromEqpSlot :: EqpSlot -> ItemFull -> Maybe Int
 strengthFromEqpSlot eqpSlot =
   case eqpSlot of
     EqpSlotPeriodic -> strengthPeriodic  -- a very crude approximation
+    EqpSlotTimeout -> strengthTimeout
     EqpSlotAddMaxHP -> strengthAddMaxHP
     EqpSlotAddMaxCalm -> strengthAddMaxCalm
     EqpSlotAddSpeed -> strengthAddSpeed

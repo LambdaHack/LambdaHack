@@ -49,8 +49,7 @@ data Effect a =
   | ApplyPerfume
   | OneOf ![Effect a]
   | OnSmash !(Effect a)   -- ^ trigger if item smashed (not applied nor meleed)
-  | Timeout !Int !(Effect a)
-                          -- ^ inactive for some clips after each use
+  | Recharging !(Effect a)  -- ^ this effect inactive until timeout passes
   | TimedAspect !Int !(Aspect a)
                           -- ^ enable the aspect for some clips
   deriving (Show, Read, Eq, Ord, Generic, Functor)
@@ -60,6 +59,7 @@ data Effect a =
 -- the item and so is not additive).
 data Aspect a =
     Periodic !a        -- ^ is activated this many times in 100
+  | Timeout !a         -- ^ some effects will be disabled until item recharges
   | AddHurtMelee !a    -- ^ percentage damage bonus in melee
   | AddArmorMelee !a   -- ^ percentage armor bonus against melee
   | AddHurtRanged !a   -- ^ percentage damage bonus in ranged
@@ -97,6 +97,7 @@ data Feature =
 
 data EqpSlot =
     EqpSlotPeriodic
+  | EqpSlotTimeout
   | EqpSlotAddHurtMelee
   | EqpSlotAddArmorMelee
   | EqpSlotAddHurtRanged
@@ -177,9 +178,9 @@ effectTrav (OnSmash effa) f = do
   effb <- effectTrav effa f
   return $! OnSmash effb
 effectTrav (Explode t) _ = return $! Explode t
-effectTrav (Timeout timeout effa) f = do
+effectTrav (Recharging effa) f = do
   effb <- effectTrav effa f
-  return $! Timeout timeout effb
+  return $! Recharging effb
 effectTrav (TimedAspect k asp) f = do
   asp2 <- aspectTrav asp f
   return $! TimedAspect k asp2
@@ -189,6 +190,9 @@ aspectTrav :: Aspect a -> (a -> St.State s b) -> St.State s (Aspect b)
 aspectTrav (Periodic a) f = do
   b <- f a
   return $! Periodic b
+aspectTrav (Timeout a) f = do
+  b <- f a
+  return $! Timeout b
 aspectTrav (AddMaxHP a) f = do
   b <- f a
   return $! AddMaxHP b

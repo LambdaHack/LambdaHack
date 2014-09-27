@@ -69,8 +69,8 @@ effectToBenefit cops b activeItems fact eff =
     Effect.Explode _ -> -10
     Effect.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
     Effect.OnSmash _ -> -10
-    Effect.Timeout k e -> effectToBenefit cops b activeItems fact e
-                          `div` (k `divUp` 5)
+    Effect.Recharging e -> effectToBenefit cops b activeItems fact e
+                           `div` 3
     Effect.TimedAspect k asp -> k * (aspectToBenefit cops b asp) `div` 50
 
 -- | Return the value to add to effect value and another to multiply it.
@@ -78,6 +78,7 @@ aspectToBenefit :: Kind.COps -> Actor -> Effect.Aspect Int -> Int
 aspectToBenefit _cops _b asp =
   case asp of
     Effect.Periodic{} -> 0
+    Effect.Timeout p -> max (-10) (-p `div` 10)
     Effect.AddMaxHP p -> p * 10
     Effect.AddMaxCalm p -> p `divUp` 2
     Effect.AddSpeed p -> p * 10000

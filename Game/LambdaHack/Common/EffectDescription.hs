@@ -90,9 +90,8 @@ rawEffectToSuff effectText effectMInt =
       let subject = if length l <= 5 then "marvel" else "wonder"
       in makePhrase ["of", MU.CardinalWs (length l) subject]
     (OnSmash _, _) -> ""  -- conditional effect, TMI
-    (Timeout timeout subEffectText, Timeout _timeout subEffectMInt) ->
-      rawEffectToSuff subEffectText subEffectMInt
-      <+> "(timeout" <+> tshow timeout <> ")"
+    (Recharging subEffectText, Recharging subEffectMInt) ->
+      "recharging (" <> rawEffectToSuff subEffectText subEffectMInt <> ")"
     (TimedAspect _ aspect, _) -> "keep (" <> rawAspectToSuff aspect <> ")"
     _ -> assert `failure` (effectText, effectMInt)
 
@@ -113,6 +112,7 @@ rawAspectToSuff :: Aspect Text -> Text
 rawAspectToSuff aspect =
   case aspect of
     Periodic t -> wrapInParens $ dropPlus t <+> "in 100"
+    Timeout timeout -> wrapInParens $ "timeout" <+> tshow timeout
     AddMaxHP t -> wrapInParens $ t <+> "HP"
     AddMaxCalm t -> wrapInParens $ t <+> "Calm"
     AddSpeed t -> wrapInParens $ t <+> "speed"
