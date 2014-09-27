@@ -85,11 +85,11 @@ data ThrowMod = ThrowMod
 data Feature =
     ChangeTo !GroupName     -- ^ change to this group when altered
   | Fragile                 -- ^ break even when not hitting an enemy
-  | Durable                 -- ^ don't break even hitting or applying
+  | Durable                 -- ^ don't break even when hitting or applying
   | ToThrow !ThrowMod       -- ^ parameters modifying a throw
   | Identified              -- ^ the item starts identified
-  | Applicable              -- ^ AI and uI flag: consider applying
-  | EqpSlot !EqpSlot !Text  -- ^ AI and uI flag: goes to inventory
+  | Applicable              -- ^ AI and UI flag: consider applying
+  | EqpSlot !EqpSlot !Text  -- ^ AI and UI flag: goes to inventory
   | Precious                -- ^ AI and UI flag: careful, can be precious;
                             --   don't risk identifying by use
   | Tactic !Tactic          -- ^ overrides actor's tactic (TODO)

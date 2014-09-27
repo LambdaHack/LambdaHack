@@ -97,6 +97,9 @@ strengthPeriodic =
 strengthTimeout :: ItemFull -> Maybe Int
 strengthTimeout =
   let p (Timeout k) = [k]
+      -- @Periodic@ implies that the item has a timeout.
+      p (Periodic n) = let clipInTurn = timeTurn `timeFit` timeClip
+                       in [clipInTurn * (100 `div` n)]
       p _ = []
   in strengthAspectMaybe p
 
@@ -204,12 +207,13 @@ totalRange item = snd $ snd $ itemTrajectory item []
 strengthFromEqpSlot :: EqpSlot -> ItemFull -> Maybe Int
 strengthFromEqpSlot eqpSlot =
   case eqpSlot of
-    EqpSlotPeriodic -> strengthPeriodic  -- a very crude approximation
+    EqpSlotPeriodic -> strengthPeriodic
     EqpSlotTimeout -> strengthTimeout
     EqpSlotAddMaxHP -> strengthAddMaxHP
     EqpSlotAddMaxCalm -> strengthAddMaxCalm
     EqpSlotAddSpeed -> strengthAddSpeed
-    EqpSlotAddSkills -> \itemFull -> sum . EM.elems <$> strengthAddSkills itemFull
+    EqpSlotAddSkills ->
+      \itemFull -> sum . EM.elems <$> strengthAddSkills itemFull
     EqpSlotAddHurtMelee -> strengthAddHurtMelee
     EqpSlotAddHurtRanged -> strengthAddHurtRanged
     EqpSlotAddArmorMelee -> strengthAddArmorMelee

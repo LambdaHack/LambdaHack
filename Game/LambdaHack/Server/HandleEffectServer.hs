@@ -72,43 +72,38 @@ itemEffectAndDestroy source target iid c = do
       let itemFull = itemToF iid kitK
           item = itemBase itemFull
           durable = Effect.Durable `elem` jfeature item
-          periodic =
-            isJust $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
           mtimeout = strengthFromEqpSlot Effect.EqpSlotTimeout itemFull
           hasTimeout = isJust mtimeout
           kit = (1, take 1 it)
-      -- Prevent abuse via activating durable periodic items. They are made
-      -- durable to prevent another abuse (destroying them before death).
-      unless (durable && periodic) $ do
-        lid <- getsState $ lidFromC c
-        localTime <- getsState $ getLocalTime lid
-        -- The whole stack gets recharged, at level change and activation,
-        -- not only the item activated.
-        let it1 = filter (\(lid1, t1) -> lid1 == lid && t1 < localTime) it
-            len = length it1
-            recharged = len < k
-        assert (len <= k `blame` (kitK, source, target, iid, c)) skip
-        -- If there is no Timout, but there are Recharging,
-        -- then such effects are disabled whenever the item is affected
-        -- by a Discharge attack (TODO).
-        it2 <- case mtimeout of
-          Just timeout | recharged -> do
-            let rechargeTime =
-                  timeShift localTime (timeDeltaScale (Delta timeClip) timeout)
-            return $ (lid, rechargeTime) : it1
-          _ ->
-            -- TODO: if hasTimeout and not recharged, report failure
-            return it1
-        when (it /= it2) $ execUpdAtomic $ UpdTimeItem iid c it it2
-        when (not durable && not hasTimeout) $
-          execUpdAtomic $ UpdLoseItem iid item kit c
-        -- At this point, the item is potentially no longer in container @c@.
-        triggered <- itemEffectAE source target iid recharged False
-        -- If none of item's effects was performed, we try to recreate the item.
-        -- Regardless, we don't rewind the time, because some info is gained
-        -- (that the item does not exhibit any effects in the given context).
-        when (not triggered && not durable && not hasTimeout) $
-          execUpdAtomic $ UpdSpotItem iid item kit c
+      lid <- getsState $ lidFromC c
+      localTime <- getsState $ getLocalTime lid
+      -- The whole stack gets recharged, at level change and activation,
+      -- not only the item activated.
+      let it1 = filter (\(lid1, t1) -> lid1 == lid && t1 < localTime) it
+          len = length it1
+          recharged = len < k
+      assert (len <= k `blame` (kitK, source, target, iid, c)) skip
+      -- If there is no Timout, but there are Recharging,
+      -- then such effects are disabled whenever the item is affected
+      -- by a Discharge attack (TODO).
+      it2 <- case mtimeout of
+        Just timeout | recharged -> do
+          let rechargeTime =
+                timeShift localTime (timeDeltaScale (Delta timeClip) timeout)
+          return $ (lid, rechargeTime) : it1
+        _ ->
+          -- TODO: if hasTimeout and not recharged, report failure
+          return it1
+      when (it /= it2) $ execUpdAtomic $ UpdTimeItem iid c it it2
+      when (not durable && not hasTimeout) $
+        execUpdAtomic $ UpdLoseItem iid item kit c
+      -- At this point, the item is potentially no longer in container @c@.
+      triggered <- itemEffectAE source target iid recharged False
+      -- If none of item's effects was performed, we try to recreate the item.
+      -- Regardless, we don't rewind the time, because some info is gained
+      -- (that the item does not exhibit any effects in the given context).
+      when (not triggered && not durable && not hasTimeout) $
+        execUpdAtomic $ UpdSpotItem iid item kit c
 
 itemEffectPeriodic :: (MonadAtomic m, MonadServer m)
                    => ActorId -> ActorId -> ItemId -> Container
