@@ -58,7 +58,7 @@ data Effect a =
 -- by an actor and affect the actor (except @Periodic@ that only affect
 -- the item and so is not additive).
 data Aspect a =
-    Periodic !a        -- ^ is activated this many times in 100
+    Periodic !a        -- ^ is activated this many times in 100 turns
   | Timeout !a         -- ^ some effects will be disabled until item recharges
   | AddHurtMelee !a    -- ^ percentage damage bonus in melee
   | AddArmorMelee !a   -- ^ percentage armor bonus against melee

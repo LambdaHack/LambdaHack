@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
-  ( applyItem, itemEffectPeriodic, itemEffectAndDestroy, itemEffectCause
+  ( applyItem, itemEffectAndDestroy, itemEffectCause
   , dropEqpItem, armorHurtBonus
   ) where
 
@@ -104,13 +104,6 @@ itemEffectAndDestroy source target iid c = do
       -- (that the item does not exhibit any effects in the given context).
       when (not triggered && not durable && not hasTimeout) $
         execUpdAtomic $ UpdSpotItem iid item kit c
-
-itemEffectPeriodic :: (MonadAtomic m, MonadServer m)
-                   => ActorId -> ActorId -> ItemId -> Container
-                   -> m ()
-itemEffectPeriodic source target iid _c = do
-  let recharged = True  -- disregard recharging status
-  void $ itemEffectAE source target iid recharged True
 
 itemEffectOnSmash :: (MonadAtomic m, MonadServer m)
                   => ActorId -> ActorId -> ItemId
