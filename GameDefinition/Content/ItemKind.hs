@@ -220,8 +220,8 @@ gorget = ItemKind
   , iverbHit = "whip"
   , iweight  = 30
   , iaspects = [Periodic $ d 4 + dl 4, AddArmorMelee 1, AddArmorRanged 1]
-  , ieffects = [RefillCalm 1]
-  , ifeature = [ Precious, EqpSlot EqpSlotPeriodic "", Identified
+  , ieffects = [Recharging (RefillCalm 1)]
+  , ifeature = [ Durable, Precious, EqpSlot EqpSlotPeriodic "", Identified
                , toVelocity 50 ]  -- not dense enough
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
   , ikit     = []
@@ -237,46 +237,45 @@ necklace = ItemKind
   , iweight  = 30
   , iaspects = []
   , ieffects = []
-  , ifeature = [ Precious, EqpSlot EqpSlotPeriodic ""
+  , ifeature = [ Durable, Precious, EqpSlot EqpSlotPeriodic ""
                , toVelocity 50 ]  -- not dense enough
   , idesc    = "Menacing Greek symbols shimmer with increasing speeds along a chain of fine encrusted links. After a tense build-up, a prismatic arc shoots towards the ground and the iridescence subdues, becomes ordered and resembles a harmless ornament again, for a time."
   , ikit     = []
   }
 necklace1 = necklace
   { iaspects = [Periodic $ d 2 + dl 2]
-  , ieffects = [RefillHP 1]
+  , ieffects = [Recharging (RefillHP 1)]
   , idesc    = "A cord of dried herbs and healing berries."
   }
 necklace2 = necklace
   { irarity  = [(2, 0), (10, 1)]
   , iaspects = [Periodic $ d 4 + dl 2]
-  , ieffects = [ Impress
-               , Summon [("mobile animal", 1)] $ 1 + dl 2, Explode "waste" ]
+  , ieffects = [ Recharging (Impress)
+               , Recharging (Summon [("mobile animal", 1)] $ 1 + dl 2)
+               , Recharging (Explode "waste") ]
   }
 necklace3 = necklace
   { iaspects = [Periodic $ d 4 + dl 2]
-  , ieffects = [Paralyze $ 5 + d 5 + dl 5, RefillCalm 999]
+  , ieffects = [ Recharging (Paralyze $ 5 + d 5 + dl 5)
+               , Recharging (RefillCalm 999) ]
   }
 necklace4 = necklace
   { iaspects = [Periodic $ 2 * d 10 + dl 10]
-  , ieffects = [Teleport $ d 3 |*| 3]
+  , ieffects = [Recharging (Teleport $ d 3 |*| 3)]
   }
 necklace5 = necklace
   { iaspects = [Periodic $ d 4 + dl 2]
-  , ieffects = [Teleport $ 12 + d 3 |*| 3]
+  , ieffects = [Recharging (Teleport $ 12 + d 3 |*| 3)]
   }
 necklace6 = necklace
   { iaspects = [Periodic $ 2 * d 5 + dl 5]
-  , ieffects = [PushActor (ThrowMod 100 50)]
+  , ieffects = [Recharging (PushActor (ThrowMod 100 50))]
   }
-necklace7 = necklace
+necklace7 = necklace  -- TODO: teach AI to wear only for fight
   { irarity  = [(4, 0), (10, 2)]
   , iaspects = [Periodic $ 2 * d 5 + dl 15]
-  , ieffects = [InsertMove 1, RefillHP (-1)]
-  , ifeature = ifeature necklace ++ [Durable]
-      -- evil players would throw before death, to destroy
-      -- TODO: teach AI to wear only for fight; prevent players from meleeing
-      -- allies with that (Durable)
+  , ieffects = [ Recharging (InsertMove 1)
+               , RefillHP (-1) ]  -- a durable damage 1 missile
   }
 
 -- * Non-periodic jewelry
