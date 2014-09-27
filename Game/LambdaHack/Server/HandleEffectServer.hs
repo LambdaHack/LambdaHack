@@ -64,30 +64,34 @@ itemEffectAndDestroy source target iid c = do
   -- This is OK, because we don't remove the item type from various
   -- item dictionaries, just an individual copy from the container,
   -- so, e.g., the item can be identified after it's removed.
-  item <- getsState $ getItemBody iid
+  itemToF <- itemToFullServer
   bag <- getsState $ getCBag c
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (source, target, iid, c)
-    Just (_, it) -> do
-      let durable = Effect.Durable `elem` jfeature item
+    Just kitK@(_, it) -> do
+      let itemFull = itemToF iid kitK
+          item = itemBase itemFull
+          durable = Effect.Durable `elem` jfeature item
+          periodic =
+            isJust $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
           kit = (1, take 1 it)
-      when (not durable) $
-        execUpdAtomic $ UpdLoseItem iid item kit c
-      triggered <- itemEffectAE source target iid c False
-      -- If none of item's effects was performed, we try to recreate the item.
-      -- Regardless, we don't rewind the time, because some info is gained
-      -- (that the item does not exhibit any effects in the given context).
-      when (not triggered && not durable) $
-        execUpdAtomic $ UpdSpotItem iid item kit c
+      -- Prevent abuse of expesive periodic items that are made durable
+      -- to prevent another abuse (destroying them before death).
+      unless (durable && periodic) $ do
+        when (not durable) $
+          execUpdAtomic $ UpdLoseItem iid item kit c
+        triggered <- itemEffectAE source target iid c False
+        -- If none of item's effects was performed, we try to recreate the item.
+        -- Regardless, we don't rewind the time, because some info is gained
+        -- (that the item does not exhibit any effects in the given context).
+        when (not triggered && not durable) $
+          execUpdAtomic $ UpdSpotItem iid item kit c
 
 itemEffectPeriodic :: (MonadAtomic m, MonadServer m)
                    => ActorId -> ActorId -> ItemId -> Container
                    -> m ()
-itemEffectPeriodic source target iid c = do
-  item <- getsState $ getItemBody iid
-  let durable = Effect.Durable `elem` jfeature item
-  unless durable $
-    void $ itemEffectAE source target iid c True
+itemEffectPeriodic source target iid c =
+  void $ itemEffectAE source target iid c True
 
 itemEffectOnSmash :: (MonadAtomic m, MonadServer m)
                   => ActorId -> ActorId -> ItemId -> Container
