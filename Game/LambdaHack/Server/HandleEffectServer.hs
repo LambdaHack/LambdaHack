@@ -68,40 +68,66 @@ itemEffectAndDestroy source target iid c = do
   bag <- getsState $ getCBag c
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (source, target, iid, c)
-    Just kitK@(_, it) -> do
+    Just kitK@(k, it) -> do
       let itemFull = itemToF iid kitK
           item = itemBase itemFull
           durable = Effect.Durable `elem` jfeature item
           periodic =
             isJust $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
+          mtimeout = strengthFromEqpSlot Effect.EqpSlotTimeout itemFull
+          hasTimeout = isJust mtimeout
           kit = (1, take 1 it)
-      -- Prevent abuse of expesive periodic items that are made durable
-      -- to prevent another abuse (destroying them before death).
+      -- Prevent abuse via activating durable periodic items. They are made
+      -- durable to prevent another abuse (destroying them before death).
       unless (durable && periodic) $ do
-        when (not durable) $
+        lid <- getsState $ lidFromC c
+        localTime <- getsState $ getLocalTime lid
+        -- The whole stack gets recharged, at level change and activation,
+        -- not only the item activated.
+        let it1 = filter (\(lid1, t1) -> lid1 == lid && t1 < localTime) it
+            len = length it1
+            recharged = len < k
+        assert (len <= k `blame` (kitK, source, target, iid, c)) skip
+        -- If there is no Timout, but there are Recharging,
+        -- then such effects are disabled whenever the item is affected
+        -- by a Discharge attack (TODO).
+        it2 <- case mtimeout of
+          Just timeout | recharged -> do
+            let rechargeTime =
+                  timeShift localTime (timeDeltaScale (Delta timeClip) timeout)
+            return $ (lid, rechargeTime) : it1
+          _ ->
+            -- TODO: if hasTimeout and not recharged, report failure
+            return it1
+        when (it /= it2) $ execUpdAtomic $ UpdTimeItem iid c it it2
+        when (not durable && not hasTimeout) $
           execUpdAtomic $ UpdLoseItem iid item kit c
-        triggered <- itemEffectAE source target iid c False
+        -- At this point, the item is potentially no longer in container @c@.
+        triggered <- itemEffectAE source target iid recharged False
         -- If none of item's effects was performed, we try to recreate the item.
         -- Regardless, we don't rewind the time, because some info is gained
         -- (that the item does not exhibit any effects in the given context).
-        when (not triggered && not durable) $
+        when (not triggered && not durable && not hasTimeout) $
           execUpdAtomic $ UpdSpotItem iid item kit c
 
 itemEffectPeriodic :: (MonadAtomic m, MonadServer m)
                    => ActorId -> ActorId -> ItemId -> Container
                    -> m ()
-itemEffectPeriodic source target iid c =
-  void $ itemEffectAE source target iid c True
+itemEffectPeriodic source target iid _c = do
+  let recharged = True  -- disregard recharging status
+  void $ itemEffectAE source target iid recharged True
 
 itemEffectOnSmash :: (MonadAtomic m, MonadServer m)
-                  => ActorId -> ActorId -> ItemId -> Container
+                  => ActorId -> ActorId -> ItemId
                   -> m ()
-itemEffectOnSmash source target iid c = do
+itemEffectOnSmash source target iid = do
   itemToF <- itemToFullServer
   let itemFull = itemToF iid (1, [])
       effs = strengthOnSmash itemFull
-  void $ itemEffectDisco source target iid c False effs
+      recharged = True  -- disregard recharging status
+  void $ itemEffectDisco source target iid recharged False effs
 
+-- TODO: apply timeout; perhaps also destroy, if not durable
 itemEffectCause :: (MonadAtomic m, MonadServer m)
                 => ActorId -> Point -> Effect.Effect Int
                 -> m Bool
@@ -113,19 +139,20 @@ itemEffectCause aid tpos ef = do
     [iid] -> do
       -- No block against tile, hence unconditional.
       execSfxAtomic $ SfxTrigger aid tpos $ F.Cause ef
-      -- Embedded items are not announced, e.g., via dicovery.
-      void $ itemEffect aid aid iid c False [ef]
+      -- Embedded items are not announced, e.g., via discovery.
+      let recharged = True  -- disregard recharging status
+      void $ itemEffect aid aid iid recharged False [ef]
       return True
     ab -> assert `failure` (aid, tpos, ab)
 
 itemEffectAE :: (MonadAtomic m, MonadServer m)
-                => ActorId -> ActorId -> ItemId -> Container -> Bool
-                -> m Bool
-itemEffectAE source target iid c periodic = do
+             => ActorId -> ActorId -> ItemId -> Bool -> Bool
+             -> m Bool
+itemEffectAE source target iid recharged periodic = do
   discoEffect <- getsServer sdiscoEffect
   case EM.lookup iid discoEffect of
     Just ItemAspectEffect{jeffects} -> do
-      itemEffectDisco source target iid c periodic jeffects
+      itemEffectDisco source target iid recharged periodic jeffects
     _ -> assert `failure` (source, target, iid)
 
 -- | The source actor affects the target actor, with a given item.
@@ -133,15 +160,15 @@ itemEffectAE source target iid c periodic = do
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
 itemEffectDisco :: (MonadAtomic m, MonadServer m)
-                => ActorId -> ActorId -> ItemId -> Container -> Bool
+                => ActorId -> ActorId -> ItemId -> Bool -> Bool
                 -> [Effect.Effect Int]
                 -> m Bool
-itemEffectDisco source target iid c periodic effs = do
+itemEffectDisco source target iid recharged periodic effs = do
   discoKind <- getsServer sdiscoKind
   item <- getsState $ getItemBody iid
   case EM.lookup (jkindIx item) discoKind of
     Just itemKindId -> do
-      triggered <- itemEffect source target iid c periodic effs
+      triggered <- itemEffect source target iid recharged periodic effs
       -- The effect fires up, so the item gets identified, if seen
       -- (the item was at the source actor's position, so his old position
       -- is given, since the actor and/or the item may be moved by the effect;
@@ -156,11 +183,11 @@ itemEffectDisco source target iid c periodic effs = do
     _ -> assert `failure` (source, target, iid, item)
 
 itemEffect :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> ItemId -> Container -> Bool
+           => ActorId -> ActorId -> ItemId -> Bool -> Bool
            -> [Effect.Effect Int]
            -> m Bool
-itemEffect source target iid c periodic effects = do
-  trs <- mapM (effectSem source target iid c) effects
+itemEffect source target iid recharged periodic effects = do
+  trs <- mapM (effectSem source target iid recharged) effects
   let triggered = or trs
   sb <- getsState $ getActorBody source
   -- Announce no effect, which is rare and wastes time, so noteworthy.
@@ -177,9 +204,9 @@ itemEffect source target iid c periodic effects = do
 -- The boolean result indicates if the effect actually fired up,
 -- as opposed to fizzled.
 effectSem :: (MonadAtomic m, MonadServer m)
-          => ActorId -> ActorId -> ItemId -> Container -> Effect.Effect Int
+          => ActorId -> ActorId -> ItemId -> Bool -> Effect.Effect Int
           -> m Bool
-effectSem source target iid c effect = do
+effectSem source target iid recharged effect = do
   sb <- getsState $ getActorBody source
   -- @execSfx@ usually comes last in effect semantics, but not always
   -- and we are likely to introduce more variety.
@@ -189,14 +216,14 @@ effectSem source target iid c effect = do
     Effect.RefillHP p -> effectRefillHP execSfx p source target
     Effect.Hurt nDm -> effectHurt nDm source target
     Effect.RefillCalm p -> effectRefillCalm execSfx p target
-    Effect.Dominate -> effectDominate source target iid c
+    Effect.Dominate -> effectDominate source target iid recharged
     Effect.Impress -> effectImpress execSfx source target
     Effect.CallFriend p -> effectCallFriend p source target
-    Effect.Summon freqs p -> effectSummon freqs p source target iid c
+    Effect.Summon freqs p -> effectSummon freqs p source target iid recharged
     Effect.CreateItem p -> effectCreateItem p target
     Effect.ApplyPerfume -> effectApplyPerfume execSfx target
     Effect.Burn p -> effectBurn execSfx p source target
-    Effect.Ascend p -> effectAscend execSfx p source target iid c
+    Effect.Ascend p -> effectAscend execSfx p source target iid recharged
     Effect.Escape{} -> effectEscape target
     Effect.Paralyze p -> effectParalyze execSfx p target
     Effect.InsertMove p -> effectInsertMove execSfx p target
@@ -213,9 +240,9 @@ effectSem source target iid c effect = do
     Effect.Identify cstore -> effectIdentify execSfx cstore target
     Effect.ActivateInv symbol -> effectActivateInv execSfx target symbol
     Effect.Explode t -> effectExplode execSfx t target
-    Effect.OneOf l -> effectOneOf l source target iid c
+    Effect.OneOf l -> effectOneOf l source target iid recharged
     Effect.OnSmash _ -> return False  -- ignored under normal circumstances
-    Effect.Recharging e -> effectRecharging e source target iid c
+    Effect.Recharging e -> effectRecharging e source target iid recharged
     Effect.TimedAspect{} -> return False  -- TODO
 
 -- + Individual semantic functions for effects
@@ -307,15 +334,15 @@ effectRefillCalm execSfx power target = do
 -- ** Dominate
 
 effectDominate :: (MonadAtomic m, MonadServer m)
-               => ActorId -> ActorId -> ItemId -> Container
+               => ActorId -> ActorId -> ItemId -> Bool
                -> m Bool
-effectDominate source target iid c = do
+effectDominate source target iid recharged = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if bproj tb then
     return False
   else if bfid tb == bfid sb then
-    effectSem source target iid c Effect.Impress
+    effectSem source target iid recharged Effect.Impress
   else
     dominateFidSfx (bfid sb) target
 
@@ -361,9 +388,9 @@ effectCallFriend power source target = assert (power > 0) $ do
 
 effectSummon :: (MonadAtomic m, MonadServer m)
              => Freqs -> Int
-             -> ActorId -> ActorId -> ItemId -> Container
+             -> ActorId -> ActorId -> ItemId -> Bool
              -> m Bool
-effectSummon actorFreq power source target iid c = assert (power > 0)
+effectSummon actorFreq power source target iid recharged = assert (power > 0)
                                                    $ do
   -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
@@ -389,7 +416,7 @@ effectSummon actorFreq power source target iid c = assert (power > 0)
       case maid of
         Nothing ->
           -- Don't make this item useless.
-          effectSem source target iid c (Effect.CallFriend 1)
+          effectSem source target iid recharged (Effect.CallFriend 1)
         Just aid -> do
           b <- getsState $ getActorBody aid
           mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
@@ -438,8 +465,8 @@ effectBurn execSfx power source target = do
 -- Note that projectiles can be teleported, too, for extra fun.
 effectAscend :: (MonadAtomic m, MonadServer m)
              => m () -> Int
-             -> ActorId -> ActorId -> ItemId -> Container -> m Bool
-effectAscend execSfx k source aid iid c = do
+             -> ActorId -> ActorId -> ItemId -> Bool -> m Bool
+effectAscend execSfx k source aid iid recharged = do
   b1 <- getsState $ getActorBody aid
   ais1 <- getsState $ getCarriedAssocs b1
   let lid1 = blid b1
@@ -448,7 +475,7 @@ effectAscend execSfx k source aid iid c = do
   if lid2 == lid1 && pos2 == pos1 then do
     execSfxAtomic $ SfxMsgFid (bfid b1) "No more levels in this direction."
     let effect = Effect.Teleport 30  -- powerful teleport
-    effectSem source aid iid c effect
+    effectSem source aid iid recharged effect
   else do
     let switch1 = void $ switchLevels1 ((aid, b1), ais1)
         switch2 = do
@@ -620,7 +647,7 @@ dropEqpItem aid b hit iid kit@(k, _) = do
   if isDestroyed then do
     -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
     execUpdAtomic $ UpdLoseItem iid item kit container
-    itemEffectOnSmash aid aid iid container
+    itemEffectOnSmash aid aid iid
   else do
     mvCmd <- generalMoveItem iid k (CActor aid CEqp)
                                    (CActor aid CGround)
@@ -875,37 +902,19 @@ effectExplode execSfx cgroup target = do
 
 effectOneOf :: (MonadAtomic m, MonadServer m)
             => [Effect.Effect Int]
-            -> ActorId -> ActorId -> ItemId -> Container
+            -> ActorId -> ActorId -> ItemId -> Bool
             -> m Bool
-effectOneOf l source target iid c = do
+effectOneOf l source target iid recharged = do
   ef <- rndToAction $ oneOf l
-  effectSem source target iid c ef
+  effectSem source target iid recharged ef
 
 -- ** Recharging
 
 effectRecharging :: (MonadAtomic m, MonadServer m)
                  => Effect.Effect Int
-                 -> ActorId -> ActorId -> ItemId -> Container
+                 -> ActorId -> ActorId -> ItemId -> Bool
                  -> m Bool
-effectRecharging e source target iid c = do
-  item <- getsState $ getItemBody iid
-  let durable = Effect.Durable `elem` jfeature item
-  lid <- getsState $ lidFromC c
-  bag <- getsState $ getCBag c
-  case iid `EM.lookup` bag of
-    Just (k, it) | durable -> do
-      localTime <- getsState $ getLocalTime lid
-      -- The whole stack gets recharged at level change and activation,
-      -- not only the item activated.
-      let it1 = filter (\(lid1, t1) -> lid1 == lid && t1 < localTime) it
-          len = length it1
-      assert (len <= k `blame` (k, it, source, target, iid, c)) skip
-      if len == k then
-        -- All items in the stack not recharged yet.
-        -- TODO: report failure
-        return False
-      else
-        effectSem source target iid c e
-    _ ->
-      -- The item was not Durable or we are activating OnSmash effects, etc.
-      return False
+effectRecharging e source target iid recharged =
+  if recharged
+  then effectSem source target iid recharged e
+  else return False
