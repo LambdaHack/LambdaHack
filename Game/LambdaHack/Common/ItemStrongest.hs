@@ -98,8 +98,7 @@ strengthTimeout :: ItemFull -> Maybe Int
 strengthTimeout =
   let p (Timeout k) = [k]
       -- @Periodic@ implies that the item has a timeout.
-      p (Periodic n) = let clipInTurn = timeTurn `timeFit` timeClip
-                       in [clipInTurn * (100 `div` n)]
+      p (Periodic n) = [100 `div` n]
       p _ = []
   in strengthAspectMaybe p
 

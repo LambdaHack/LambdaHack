@@ -89,7 +89,7 @@ itemEffectAndDestroy source target iid c = do
       it2 <- case mtimeout of
         Just timeout | recharged -> do
           let rechargeTime =
-                timeShift localTime (timeDeltaScale (Delta timeClip) timeout)
+                timeShift localTime (timeDeltaScale (Delta timeTurn) timeout)
           return $ (lid, rechargeTime) : it1
         _ ->
           -- TODO: if hasTimeout and not recharged, report failure

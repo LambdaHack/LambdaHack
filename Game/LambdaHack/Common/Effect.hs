@@ -54,6 +54,7 @@ data Effect a =
                           -- ^ enable the aspect for some clips
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
+-- TODO: let Periodic have no arguments and use Timeout to specify them
 -- | Aspects of items. Additive (starting at 0) for all items wielded
 -- by an actor and affect the actor (except @Periodic@ that only affect
 -- the item and so is not additive).
