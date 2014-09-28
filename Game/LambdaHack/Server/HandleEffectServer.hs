@@ -58,6 +58,17 @@ itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
                      => ActorId -> ActorId -> ItemId -> Container
                      -> m ()
 itemEffectAndDestroy source target iid c = do
+  discoEffect <- getsServer sdiscoEffect
+  case EM.lookup iid discoEffect of
+    Just ItemAspectEffect{jeffects} -> do
+      effectAndDestroy source target iid c jeffects
+    _ -> assert `failure` (source, target, iid, c)
+
+effectAndDestroy :: (MonadAtomic m, MonadServer m)
+                 => ActorId -> ActorId -> ItemId -> Container
+                 -> [Effect.Effect Int]
+                 -> m ()
+effectAndDestroy source target iid c effs = do
   -- We have to destroy the item before the effect affects the item
   -- or the actor holding it or standing on it (later on we could
   -- lose track of the item and wouldn't be able to destroy it) .
@@ -72,6 +83,8 @@ itemEffectAndDestroy source target iid c = do
       let itemFull = itemToF iid kitK
           item = itemBase itemFull
           durable = Effect.Durable `elem` jfeature item
+          periodic = isJust
+                     $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
           mtimeout = strengthFromEqpSlot Effect.EqpSlotTimeout itemFull
           hasTimeout = isJust mtimeout
           kit = (1, take 1 it)
@@ -98,7 +111,7 @@ itemEffectAndDestroy source target iid c = do
       when (not durable && not hasTimeout) $
         execUpdAtomic $ UpdLoseItem iid item kit c
       -- At this point, the item is potentially no longer in container @c@.
-      triggered <- itemEffectAE source target iid recharged False
+      triggered <- itemEffectDisco source target iid recharged periodic effs
       -- If none of item's effects was performed, we try to recreate the item.
       -- Regardless, we don't rewind the time, because some info is gained
       -- (that the item does not exhibit any effects in the given context).
@@ -112,10 +125,11 @@ itemEffectOnSmash source target iid = do
   itemToF <- itemToFullServer
   let itemFull = itemToF iid (1, [])
       effs = strengthOnSmash itemFull
-      recharged = True  -- disregard recharging status
+      -- Disregard recharging status. You can wrench out an activation
+      -- from a recharging item by smashing it. (TODO: smash command)
+      recharged = True
   void $ itemEffectDisco source target iid recharged False effs
 
--- TODO: apply timeout; perhaps also destroy, if not durable
 itemEffectCause :: (MonadAtomic m, MonadServer m)
                 => ActorId -> Point -> Effect.Effect Int
                 -> m Bool
@@ -127,21 +141,9 @@ itemEffectCause aid tpos ef = do
     [iid] -> do
       -- No block against tile, hence unconditional.
       execSfxAtomic $ SfxTrigger aid tpos $ F.Cause ef
-      -- Embedded items are not announced, e.g., via discovery.
-      let recharged = True  -- disregard recharging status
-      void $ itemEffect aid aid iid recharged False [ef]
+      void $ effectAndDestroy aid aid iid c [ef]
       return True
     ab -> assert `failure` (aid, tpos, ab)
-
-itemEffectAE :: (MonadAtomic m, MonadServer m)
-             => ActorId -> ActorId -> ItemId -> Bool -> Bool
-             -> m Bool
-itemEffectAE source target iid recharged periodic = do
-  discoEffect <- getsServer sdiscoEffect
-  case EM.lookup iid discoEffect of
-    Just ItemAspectEffect{jeffects} -> do
-      itemEffectDisco source target iid recharged periodic jeffects
-    _ -> assert `failure` (source, target, iid)
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effects fires up, the item gets identified. This function
