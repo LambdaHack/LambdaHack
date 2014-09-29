@@ -91,7 +91,7 @@ effectAndDestroy source target iid c periodic effs = do
       localTime <- getsState $ getLocalTime lid
       -- The whole stack gets recharged, at level change and activation,
       -- not only the item activated.
-      let it1 = filter (\(lid1, t1) -> lid1 == lid && t1 < localTime) it
+      let it1 = filter (\(lid1, t1) -> lid1 == lid && t1 > localTime) it
           len = length it1
           recharged = len < k
       assert (len <= k `blame` (kitK, source, target, iid, c)) skip

@@ -36,7 +36,7 @@ partItemN fullInfo n c lid localTime itemFull =
       let effTs = filter (not . T.null) $ textAllAE fullInfo c itemFull
       -- The whole stack gets recharged at level change and activation,
       -- not only the item activated.
-          it1 = filter (\(lid1, t1) -> lid1 == lid && t1 < localTime)
+          it1 = filter (\(lid1, t1) -> lid1 == lid && t1 > localTime)
                        (itemTimer itemFull)
           len = length it1
           timer = if len == 0
