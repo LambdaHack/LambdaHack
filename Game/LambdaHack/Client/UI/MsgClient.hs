@@ -94,7 +94,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   let verb = MU.Text $ if pos == bpos b
                        then "stand on"
                        else if canSee then "notice" else "remember"
-  let nWs (iid, k) = partItemWs k (CFloor lidV pos) lidV localTime (itemToF iid k)
+  let nWs (iid, kit@(k, _)) = partItemWs k (CFloor lidV pos) lidV localTime (itemToF iid kit)
       isd = case detailed of
               _ | EM.size is == 0 -> ""
               _ | EM.size is <= 2 ->
@@ -128,8 +128,8 @@ itemOverlay c lid bag = do
   let pr (l, iid) =
         case EM.lookup iid bag of
           Nothing -> Nothing
-          Just k ->
-            let itemFull = itemToF iid k
+          Just kit@(k, _) ->
+            let itemFull = itemToF iid kit
                 -- TODO: add color item symbols as soon as we have a menu
                 -- with all items visible on the floor or known to player
                 -- symbol = jsymbol $ itemBase itemFull

@@ -160,8 +160,8 @@ posSfxAtomic cmd = case cmd of
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
     return $! assert (slid == tlid) $ PosSight slid [sp, tp]
-  SfxProject aid _ -> singleAid aid
-  SfxCatch aid _ -> singleAid aid
+  SfxProject aid _ _ -> singleAid aid
+  SfxCatch aid _ _ -> singleAid aid
   SfxActivate aid _ _ -> singleAid aid
   SfxCheck aid _ _ -> singleAid aid
   SfxTrigger aid p _ -> do

@@ -116,10 +116,10 @@ instance Binary UpdAtomic
 data SfxAtomic =
     SfxStrike !ActorId !ActorId !ItemId !HitAtomic
   | SfxRecoil !ActorId !ActorId !ItemId !HitAtomic
-  | SfxProject !ActorId !ItemId
-  | SfxCatch !ActorId !ItemId
-  | SfxActivate !ActorId !ItemId !Int
-  | SfxCheck !ActorId !ItemId !Int
+  | SfxProject !ActorId !ItemId !CStore
+  | SfxCatch !ActorId !ItemId !CStore
+  | SfxActivate !ActorId !ItemId !CStore
+  | SfxCheck !ActorId !ItemId !CStore
   | SfxTrigger !ActorId !Point !F.Feature
   | SfxShun !ActorId !Point !F.Feature
   | SfxEffect !FactionId !ActorId !(Effect.Effect Int)
@@ -195,10 +195,10 @@ undoSfxAtomic :: SfxAtomic -> SfxAtomic
 undoSfxAtomic cmd = case cmd of
   SfxStrike source target iid b -> SfxRecoil source target iid b
   SfxRecoil source target iid b -> SfxStrike source target iid b
-  SfxProject aid iid -> SfxCatch aid iid
-  SfxCatch aid iid -> SfxProject aid iid
-  SfxActivate aid iid k -> SfxCheck aid iid k
-  SfxCheck aid iid k -> SfxActivate aid iid k
+  SfxProject aid iid cstore -> SfxCatch aid iid cstore
+  SfxCatch aid iid cstore -> SfxProject aid iid cstore
+  SfxActivate aid iid cstore -> SfxCheck aid iid cstore
+  SfxCheck aid iid cstore -> SfxActivate aid iid cstore
   SfxTrigger aid p feat -> SfxShun aid p feat
   SfxShun aid p feat -> SfxTrigger aid p feat
   SfxEffect{} -> cmd  -- not ideal?

@@ -291,7 +291,7 @@ projectBla source pos rest iid cstore isShrapnel = do
   item <- getsState $ getItemBody iid
   let lid = blid sb
   localTime <- getsState $ getLocalTime lid
-  unless isShrapnel $ execSfxAtomic $ SfxProject source iid
+  unless isShrapnel $ execSfxAtomic $ SfxProject source iid cstore
   bag <- getsState $ getActorBag source cstore
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (source, pos, rest, iid, cstore)

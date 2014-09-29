@@ -50,7 +50,7 @@ partItemN fullInfo n c lid localTime itemFull =
       in (MU.Text genericName, MU.Phrase $ map MU.Text ts)
 
 -- | The part of speech describing the item.
-partItem :: Container  -> LevelId -> Time -> ItemFull -> (MU.Part, MU.Part)
+partItem :: Container -> LevelId -> Time -> ItemFull -> (MU.Part, MU.Part)
 partItem = partItemN False 4
 
 textAllAE :: Bool -> Container -> ItemFull -> [Text]
@@ -91,12 +91,14 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
                 rechargingTs = T.intercalate (T.singleton ' ')
                                $ map ppE rechargingEs
                 periodicOrTimeout = case mperiodic of
-                  Nothing -> case mtimeout of
-                    Nothing -> ""
-                    Just t -> "(timeout" <+> tshow t <> ":"
-                              <+> rechargingTs <> ")"
-                  Just t -> "(" <> tshow t <+> "in 100:"
-                            <+> rechargingTs <> ")"
+                  Just (Effect.Periodic t) ->
+                    "(" <> tshow t <+> "in 100:"
+                    <+> rechargingTs <> ")"
+                  _ -> case mtimeout of
+                    Just (Effect.Timeout t) ->
+                      "(timeout" <+> tshow t <> ":"
+                      <+> rechargingTs <> ")"
+                    _ -> ""
             in [periodicOrTimeout] ++ aes
           aets = case itemAE of
             Just ItemAspectEffect{jaspects, jeffects} ->
@@ -108,22 +110,22 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
       in aets ++ features
 
 -- TODO: use kit
-partItemWs :: ItemQuant -> Container  -> LevelId -> Time -> ItemFull -> MU.Part
-partItemWs _kit@(count, _) c lid localTime itemFull =
+partItemWs :: Int -> Container -> LevelId -> Time -> ItemFull -> MU.Part
+partItemWs count c lid localTime itemFull =
   let (name, stats) = partItem c lid localTime itemFull
   in MU.Phrase [MU.CarWs count name, stats]
 
-partItemAW :: Container  -> LevelId -> Time -> ItemFull -> MU.Part
+partItemAW :: Container -> LevelId -> Time -> ItemFull -> MU.Part
 partItemAW c lid localTime itemFull =
   let (name, stats) = partItem c lid localTime itemFull
   in MU.AW $ MU.Phrase [name, stats]
 
-partItemWownW :: MU.Part -> Container  -> LevelId -> Time -> ItemFull -> MU.Part
+partItemWownW :: MU.Part -> Container -> LevelId -> Time -> ItemFull -> MU.Part
 partItemWownW partA c lid localTime itemFull =
   let (name, stats) = partItem c lid localTime itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
-itemDesc :: Container  -> LevelId -> Time -> ItemFull -> Overlay
+itemDesc :: Container -> LevelId -> Time -> ItemFull -> Overlay
 itemDesc c lid localTime itemFull =
   let (name, stats) = partItemN True 99 c lid localTime itemFull
       nstats = makePhrase [name, stats MU.:> ":"]

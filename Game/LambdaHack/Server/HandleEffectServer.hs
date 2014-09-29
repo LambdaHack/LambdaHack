@@ -50,7 +50,7 @@ import Game.LambdaHack.Server.State
 applyItem :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> CStore -> m ()
 applyItem aid iid cstore = do
-  execSfxAtomic $ SfxActivate aid iid 1
+  execSfxAtomic $ SfxActivate aid iid cstore
   let c = CActor aid cstore
   itemEffectAndDestroy aid aid iid c False
 

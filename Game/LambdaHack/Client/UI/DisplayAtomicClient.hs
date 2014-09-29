@@ -257,22 +257,30 @@ itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
-  let subject = partItemWs kit c lid localTime (itemToF iid kit)
+  let subject = partItemWs k c lid localTime (itemToF iid kit)
       msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
 
+-- We assume the item is inside the specified container.
+-- So, this function can't be used for, e.g., @UpdDestroyItem@.
 aiVerbMU :: MonadClientUI m
-         => ActorId -> MU.Part -> ItemId -> ItemQuant -> CStore -> m ()
-aiVerbMU aid verb iid kit cstore = do
-  itemToF <- itemToFullClient
+         => ActorId -> MU.Part -> ItemId -> Int -> CStore -> m ()
+aiVerbMU aid verb iid n cstore = do
   let c = CActor aid cstore
-  lid <- getsState $ lidFromC c
-  localTime <- getsState $ getLocalTime lid
-  subject <- partAidLeader aid
-  let msg = makeSentence [ MU.SubjectVerbSg subject verb
-                         , partItemWs kit c lid localTime (itemToF iid kit) ]
-  msgAdd msg
+  bag <- getsState $ getCBag c
+  -- The item may no longer be in @c@, but it was
+  case iid `EM.lookup` bag of
+    Nothing -> assert `failure` (aid, verb, iid, n, cstore)
+    Just kit@(k, _) -> do
+      assert (n <= k `blame` (aid, verb, iid, n, cstore)) skip
+      itemToF <- itemToFullClient
+      lid <- getsState $ lidFromC c
+      localTime <- getsState $ getLocalTime lid
+      subject <- partAidLeader aid
+      let object = partItemWs n c lid localTime (itemToF iid kit)
+          msg = makeSentence [MU.SubjectVerbSg subject verb, object]
+      msgAdd msg
 
 msgDuplicateScrap :: MonadClientUI m => m ()
 msgDuplicateScrap = do
@@ -330,19 +338,19 @@ moveItemUI verbose iid k aid cstore1 cstore2 = do
         itemToF <- itemToFullClient
         (letterSlots, _) <- getsClient sslots
         bag <- getsState $ getCBag c2
-        let n = bag EM.! iid
+        let kit@(n, _) = bag EM.! iid
         case lookup iid $ map swap $ EM.assocs letterSlots of
           Just l -> msgAdd $ makePhrase
                       [ "\n"
                       , slotLabel $ Left l
                       , "-"
-                      , partItemWs n c2 (blid b) localTime (itemToF iid n)
+                      , partItemWs n c2 (blid b) localTime (itemToF iid kit)
                       , "\n" ]
           Nothing -> return ()
       else when (cstore1 == CGround && cstore1 /= cstore2) $
-        aiVerbMU aid "get" iid (k, []) cstore2
+        aiVerbMU aid "get" iid k cstore2
     (_, CGround) | cstore1 /= cstore2 -> do
-      when verbose $ aiVerbMU aid "drop" iid (k, []) cstore1
+      when verbose $ aiVerbMU aid "drop" iid k cstore2
       if bfid b == side
         then updateItemSlot (Just aid) iid
         else updateItemSlot Nothing iid
@@ -484,10 +492,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     spart <- partAidLeader source
     tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
-  SfxProject aid iid -> aiVerbMU aid "aim" iid (1, []) CInv
-  SfxCatch aid iid -> aiVerbMU aid "catch" iid (1, []) CInv
-  SfxActivate aid iid k -> aiVerbMU aid "activate" iid (k, []) CInv
-  SfxCheck aid iid k -> aiVerbMU aid "deactivate" iid (k, []) CInv
+  SfxProject aid iid cstore -> aiVerbMU aid "aim" iid 1 cstore
+  SfxCatch aid iid cstore -> aiVerbMU aid "catch" iid 1 cstore
+  SfxActivate aid iid cstore -> aiVerbMU aid "activate" iid 1 cstore
+  SfxCheck aid iid cstore -> aiVerbMU aid "deactivate" iid 1 cstore
   SfxTrigger aid _p _feat ->
     when verbose $ aVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->
@@ -693,6 +701,7 @@ strike source target iid hitStatus = assert (source /= target) $ do
   tpart <- partActorLeader target tb
   spronoun <- partPronounLeader source sb
   localTime <- getsState $ getLocalTime (blid sb)
+  -- We don't show the charging status in the weapon strike message. Succinct.
   let itemFull = itemToF iid (1, [])
       verb = case itemDisco itemFull of
         Nothing -> "hit"  -- not identified
@@ -701,6 +710,8 @@ strike source target iid hitStatus = assert (source /= target) $ do
       partItemChoice =
         if isOrgan
         then partItemWownW spronoun (CActor source COrgan) (blid sb) localTime
+        -- The @CEqp@ store may be fake, but it results in an item description
+        -- for an active item, which is the right one for a weapon.
         else partItemAW (CActor source CEqp) (blid sb) localTime
       msg HitClear = makeSentence $
         [MU.SubjectVerbSg spart verb, tpart]
