@@ -18,10 +18,13 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ModeKind
 
 -- TODO: document each constructor
+-- TODO: perhaps separate the types of ordinary and exotic effects.
 -- | Effects of items. Can be invoked by the item wielder to affect
 -- another actor or the wielder himself. Many occurences in the same item
--- are possible.
+-- are possible. Unchecked assumption: only ordinary effects are inside
+-- the exotic effects (at the end of this list).
 data Effect a =
+    -- Ordinary effects.
     NoEffect !Text
   | Hurt !Dice.Dice
   | Burn !Int
@@ -47,6 +50,7 @@ data Effect a =
   | DropEqp !Char !Bool   -- ^ symbol @' '@ means all, @True@ means hit on drop
   | ActivateInv !Char     -- ^ symbol @' '@ means all
   | ApplyPerfume
+    -- Exotic effects follow.
   | OneOf ![Effect a]
   | OnSmash !(Effect a)   -- ^ trigger if item smashed (not applied nor meleed)
   | Recharging !(Effect a)  -- ^ this effect inactive until timeout passes

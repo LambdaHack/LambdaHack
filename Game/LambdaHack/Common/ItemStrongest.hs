@@ -64,6 +64,8 @@ strengthEffect999 f itemFull =
 strengthFeature :: (Feature -> [b]) -> Item -> [b]
 strengthFeature f item = concatMap f (jfeature item)
 
+-- Simplification: does not take into account effects inside @Recharging@,
+-- because @Hurt@, etc., are unlikely to have a timeout.
 strengthMelee :: ItemFull -> Maybe Int
 strengthMelee itemFull =
   let durable = Durable `elem` jfeature (itemBase itemFull)
