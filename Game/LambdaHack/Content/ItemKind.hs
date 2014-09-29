@@ -44,6 +44,8 @@ validateSingleItemKind :: ItemKind -> [Text]
 validateSingleItemKind ItemKind{..} =
   [ "iname longer than 23" | T.length iname > 23 ]
   ++ validateRarity irarity
+  -- Reject duplicate Timeout and Periodic. Otherwise the behaviour
+  -- may not agree with the item's in-game description.
   ++ let timeoutOrPeriodic :: Effect.Aspect a -> Bool
          timeoutOrPeriodic Effect.Periodic{} = True
          timeoutOrPeriodic Effect.Timeout{} = True

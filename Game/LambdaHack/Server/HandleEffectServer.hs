@@ -52,23 +52,23 @@ applyItem :: (MonadAtomic m, MonadServer m)
 applyItem aid iid cstore = do
   execSfxAtomic $ SfxActivate aid iid 1
   let c = CActor aid cstore
-  itemEffectAndDestroy aid aid iid c
+  itemEffectAndDestroy aid aid iid c False
 
 itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
-                     => ActorId -> ActorId -> ItemId -> Container
+                     => ActorId -> ActorId -> ItemId -> Container -> Bool
                      -> m ()
-itemEffectAndDestroy source target iid c = do
+itemEffectAndDestroy source target iid c periodic = do
   discoEffect <- getsServer sdiscoEffect
   case EM.lookup iid discoEffect of
     Just ItemAspectEffect{jeffects} -> do
-      effectAndDestroy source target iid c jeffects
+      effectAndDestroy source target iid c periodic jeffects
     _ -> assert `failure` (source, target, iid, c)
 
 effectAndDestroy :: (MonadAtomic m, MonadServer m)
-                 => ActorId -> ActorId -> ItemId -> Container
+                 => ActorId -> ActorId -> ItemId -> Container -> Bool
                  -> [Effect.Effect Int]
                  -> m ()
-effectAndDestroy source target iid c effs = do
+effectAndDestroy source target iid c periodic effs = do
   -- We have to destroy the item before the effect affects the item
   -- or the actor holding it or standing on it (later on we could
   -- lose track of the item and wouldn't be able to destroy it) .
@@ -83,8 +83,6 @@ effectAndDestroy source target iid c effs = do
       let itemFull = itemToF iid kitK
           item = itemBase itemFull
           durable = Effect.Durable `elem` jfeature item
-          periodic = isJust
-                     $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
           mtimeoutOr =
             strengthFromEqpSlot Effect.EqpSlotTimeoutOrPeriodic itemFull
           hasTimeout = isJust mtimeoutOr
@@ -142,7 +140,7 @@ itemEffectCause aid tpos ef = do
     [iid] -> do
       -- No block against tile, hence unconditional.
       execSfxAtomic $ SfxTrigger aid tpos $ F.Cause ef
-      void $ effectAndDestroy aid aid iid c [ef]
+      void $ effectAndDestroy aid aid iid c False [ef]
       return True
     ab -> assert `failure` (aid, tpos, ab)
 

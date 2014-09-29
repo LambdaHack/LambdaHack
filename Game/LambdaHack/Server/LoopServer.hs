@@ -175,7 +175,7 @@ activatePeriodicLevel lid = do
           Just n -> do
             let c = CActor aid cstore
             when (turnN `mod` (100 `div` n) == 0) $
-              itemEffectAndDestroy aid aid iid c
+              itemEffectAndDestroy aid aid iid c True
             -- periodic activation doesn't destroy items, even non-Durable
       activatePeriodicActor aid = do
         allItemsOrgan <- fullAssocsServer aid [COrgan]
