@@ -61,24 +61,43 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
     Nothing -> features
     Just ItemDisco{itemKind, itemAE} ->
       let periodicAspect :: Effect.Aspect a -> Bool
-          periodicAspect (Effect.Periodic _) = True
+          periodicAspect Effect.Periodic{} = True
           periodicAspect _ = False
+          timeoutAspect :: Effect.Aspect a -> Bool
+          timeoutAspect Effect.Timeout{} = True
+          timeoutAspect _ = False
           hurtEffect :: Effect.Effect a -> Bool
           hurtEffect (Effect.Hurt _) = True
           hurtEffect _ = False
+          getRechargingEffect :: Effect.Effect a -> Maybe (Effect.Effect a)
+          getRechargingEffect (Effect.Recharging e) = Just e
+          getRechargingEffect _ = Nothing
           cstore = storeFromC c
           active = cstore `elem` [CEqp, COrgan]
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
-          splitAE :: Ord a
+          splitAE :: (Show a, Ord a)
                   => [Effect.Aspect a] -> (Effect.Aspect a -> Text)
                   -> [Effect.Effect a] -> (Effect.Effect a -> Text) -> [Text]
           splitAE aspects ppA effects ppE =
-            let (periodicAs, restAs) = partition periodicAspect $ sort aspects
+            let mperiodic = find periodicAspect aspects
+                mtimeout = find timeoutAspect aspects
+                restAs = sort aspects
                 (hurtEs, restEs) = partition hurtEffect $ sort effects
-            in map ppA periodicAs ++ map ppE hurtEs
-               ++ if active
-                  then map ppA restAs ++ map ppE restEs
-                  else map ppE restEs ++ map ppA restAs
+                rechargingEs = mapMaybe getRechargingEffect restEs
+                aes = map ppE hurtEs
+                      ++ if active
+                         then map ppA restAs ++ map ppE restEs
+                         else map ppE restEs ++ map ppA restAs
+                rechargingTs = T.intercalate (T.singleton ' ')
+                               $ map ppE rechargingEs
+                periodicOrTimeout = case mperiodic of
+                  Nothing -> case mtimeout of
+                    Nothing -> ""
+                    Just t -> "(timeout" <+> tshow t <> ":"
+                              <+> rechargingTs <> ")"
+                  Just t -> "(" <> tshow t <+> "in 100:"
+                            <+> rechargingTs <> ")"
+            in [periodicOrTimeout] ++ aes
           aets = case itemAE of
             Just ItemAspectEffect{jaspects, jeffects} ->
               splitAE jaspects aspectToSuffix

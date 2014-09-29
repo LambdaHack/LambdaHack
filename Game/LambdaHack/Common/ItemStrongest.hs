@@ -97,6 +97,12 @@ strengthPeriodic =
 strengthTimeout :: ItemFull -> Maybe Int
 strengthTimeout =
   let p (Timeout k) = [k]
+      p _ = []
+  in strengthAspectMaybe p
+
+strengthTimeoutOrPeriodic :: ItemFull -> Maybe Int
+strengthTimeoutOrPeriodic =
+  let p (Timeout k) = [k]
       -- @Periodic@ implies that the item has a timeout.
       p (Periodic n) = [100 `div` n]
       p _ = []
@@ -208,6 +214,7 @@ strengthFromEqpSlot eqpSlot =
   case eqpSlot of
     EqpSlotPeriodic -> strengthPeriodic
     EqpSlotTimeout -> strengthTimeout
+    EqpSlotTimeoutOrPeriodic -> strengthTimeoutOrPeriodic
     EqpSlotAddMaxHP -> strengthAddMaxHP
     EqpSlotAddMaxCalm -> strengthAddMaxCalm
     EqpSlotAddSpeed -> strengthAddSpeed

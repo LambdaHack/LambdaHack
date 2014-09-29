@@ -85,8 +85,9 @@ effectAndDestroy source target iid c effs = do
           durable = Effect.Durable `elem` jfeature item
           periodic = isJust
                      $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
-          mtimeout = strengthFromEqpSlot Effect.EqpSlotTimeout itemFull
-          hasTimeout = isJust mtimeout
+          mtimeoutOr =
+            strengthFromEqpSlot Effect.EqpSlotTimeoutOrPeriodic itemFull
+          hasTimeout = isJust mtimeoutOr
           kit = (1, take 1 it)
       lid <- getsState $ lidFromC c
       localTime <- getsState $ getLocalTime lid
@@ -99,7 +100,7 @@ effectAndDestroy source target iid c effs = do
       -- If there is no Timout, but there are Recharging,
       -- then such effects are disabled whenever the item is affected
       -- by a Discharge attack (TODO).
-      it2 <- case mtimeout of
+      it2 <- case mtimeoutOr of
         Just timeout | recharged -> do
           let rechargeTime =
                 timeShift localTime (timeDeltaScale (Delta timeTurn) timeout)

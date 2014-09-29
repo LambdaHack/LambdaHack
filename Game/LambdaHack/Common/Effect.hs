@@ -99,6 +99,7 @@ data Feature =
 data EqpSlot =
     EqpSlotPeriodic
   | EqpSlotTimeout
+  | EqpSlotTimeoutOrPeriodic
   | EqpSlotAddHurtMelee
   | EqpSlotAddArmorMelee
   | EqpSlotAddHurtRanged
