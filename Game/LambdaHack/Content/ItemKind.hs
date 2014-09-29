@@ -44,6 +44,12 @@ validateSingleItemKind :: ItemKind -> [Text]
 validateSingleItemKind ItemKind{..} =
   [ "iname longer than 23" | T.length iname > 23 ]
   ++ validateRarity irarity
+  ++ let timeoutOrPeriodic :: Effect.Aspect a -> Bool
+         timeoutOrPeriodic Effect.Periodic{} = True
+         timeoutOrPeriodic Effect.Timeout{} = True
+         timeoutOrPeriodic _ = False
+         ts = filter timeoutOrPeriodic iaspects
+     in if length ts > 1 then ["more than one Periodic and/or Timeout"] else []
 
 -- TODO: if "treasure" stays wired-in, assure there are some treasure items
 -- TODO: (spans multiple contents) check that there is at least one item
