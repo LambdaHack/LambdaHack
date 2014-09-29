@@ -70,7 +70,7 @@ effectToBenefit cops b activeItems fact eff =
     Effect.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
     Effect.OnSmash _ -> -10
     Effect.Recharging e -> effectToBenefit cops b activeItems fact e
-                           `div` 3
+                           `div` 3  -- TODO: use Timeout
     Effect.TimedAspect k asp -> k * (aspectToBenefit cops b asp) `div` 50
 
 -- | Return the value to add to effect value and another to multiply it.
@@ -78,7 +78,7 @@ aspectToBenefit :: Kind.COps -> Actor -> Effect.Aspect Int -> Int
 aspectToBenefit _cops _b asp =
   case asp of
     Effect.Periodic{} -> 0
-    Effect.Timeout p -> max (-10) (-p `div` 10)
+    Effect.Timeout{} -> 0
     Effect.AddMaxHP p -> p * 10
     Effect.AddMaxCalm p -> p `divUp` 2
     Effect.AddSpeed p -> p * 10000
@@ -91,6 +91,8 @@ aspectToBenefit _cops _b asp =
     Effect.AddSmell p -> p * 2
     Effect.AddLight p -> p * 10
 
+-- TODO: take Timeout, Periodic and Durable into account for effects, too,
+-- not only for keeping in equipment
 -- | Determine the total benefit from having an item in eqp or inv,
 -- according to item type, and also the benefit confered by equipping the item
 -- and from meleeing with it or applying it or throwing it.

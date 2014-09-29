@@ -460,6 +460,7 @@ meleeAny aid = do
   let freq = uniformFreq "melee adjacent" $ concat mels
   return $! liftFrequency freq
 
+-- TODO: take charging status into account
 -- Fast monsters don't pay enough attention to features.
 trigger :: MonadClient m
         => ActorId -> Bool -> m (Strategy (RequestTimed AbTrigger))
@@ -525,8 +526,8 @@ trigger aid fleeViaStairs = do
 ranged :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
 ranged aid = do
   btarget <- getsClient $ getTarget aid
-  b@Actor{bpos, blid} <- getsState $ getActorBody aid
-  mfpos <- aidTgtToPos aid blid btarget
+  b@Actor{bpos} <- getsState $ getActorBody aid
+  mfpos <- aidTgtToPos aid (blid b) btarget
   seps <- getsClient seps
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
@@ -537,13 +538,18 @@ ranged aid = do
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
           benList <- benAvailableItems aid permittedRanged [CEqp, CInv, CGround]
+          localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2
               coeff COrgan = 3  -- can't give to others
               coeff CEqp = 1
               coeff CInv = 1
               coeff CSha = undefined  -- banned
-              fRanged ((mben, (_, cstore)), (iid, ItemFull{itemBase})) =
-                let trange = totalRange itemBase
+              fRanged ((mben, (_, cstore)), (iid, ItemFull{..})) =
+                let it1 = filter (\(lid1, t1) -> lid1 == blid b
+                                                 && t1 <= localTime) itemTimer
+                    len = length it1
+                    recharged = len < itemK
+                    trange = totalRange itemBase
                     bestRange = chessDist bpos fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
                       10 + max 0 (10 - abs (trange - bestRange))
@@ -555,6 +561,7 @@ ranged aid = do
                            * case mben of
                                Nothing -> -20  -- experimenting is fun
                                Just (_, (_, ben)) -> ben
+                           * if recharged then 1 else 0  -- wait for full power
                 in if benR < 0 && trange >= chessDist bpos fpos
                    then Just ( -benR * rangeMult `div` 10
                              , ReqProject fpos newEps iid cstore )
@@ -571,12 +578,14 @@ applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
   actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
-  let permitted itemFull@ItemFull{itemBase=item} _ =
+  let permitted itemFull@ItemFull{itemBase} _ =
         not (unknownPrecious itemFull)
-        && if jsymbol item == '?' && actorBlind
+        && if jsymbol itemBase == '?' && actorBlind
            then False
-           else Effect.Applicable `elem` jfeature item
+           else Effect.Applicable `elem` jfeature itemBase
   benList <- benAvailableItems aid permitted [CEqp, CInv, CGround]
+  b <- getsState $ getActorBody aid
+  localTime <- getsState $ getLocalTime (blid b)
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
           let getP (Effect.RefillHP p) _ | p > 0 = True
@@ -591,8 +600,12 @@ applyItem aid applyGroup = do
       coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = undefined  -- banned
-      fTool ((mben, (_, cstore)), (iid, itemFull)) =
-        let durableBonus = if Effect.Durable `elem` jfeature (itemBase itemFull)
+      fTool ((mben, (_, cstore)), (iid, itemFull@ItemFull{..})) =
+        let it1 = filter (\(lid1, t1) -> lid1 == blid b
+                                         && t1 <= localTime) itemTimer
+            len = length it1
+            recharged = len < itemK
+            durableBonus = if Effect.Durable `elem` jfeature itemBase
                            then 5  -- we keep it after use
                            else 1
             benR = durableBonus
@@ -604,6 +617,7 @@ applyItem aid applyGroup = do
                          -- is implemented, enable this for items too heavy,
                          -- etc. for throwing
                        Just (_, (_, ben)) -> ben
+                   * if recharged then 1 else 0  -- wait until full power
         in if itemLegal itemFull
            then if benR > 0
                 then Just (benR, ReqApply iid cstore)
