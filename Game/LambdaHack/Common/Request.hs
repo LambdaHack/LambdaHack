@@ -83,7 +83,6 @@ data ReqFailure =
   | AlterBlockItem
   | AlterNothing
   | EqpOverfull
-  | DurablePeriodicAbuse
   | ApplyBlind
   | ApplyOutOfReach
   | ItemNothing
@@ -113,7 +112,6 @@ showReqFailure reqFailure = case reqFailure of
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"
   EqpOverfull -> "cannot equip any more items"
-  DurablePeriodicAbuse -> "cannot apply a durable periodic item"
   ApplyBlind -> "blind actors cannot read"
   ApplyOutOfReach -> "cannot apply an item out of reach"
   ItemNothing -> "wasting time on void item manipulation"

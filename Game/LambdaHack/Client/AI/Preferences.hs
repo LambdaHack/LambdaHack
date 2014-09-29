@@ -91,8 +91,6 @@ aspectToBenefit _cops _b asp =
     Effect.AddSmell p -> p * 2
     Effect.AddLight p -> p * 10
 
--- TODO: take Timeout, Periodic and Durable into account for effects, too,
--- not only for keeping in equipment
 -- | Determine the total benefit from having an item in eqp or inv,
 -- according to item type, and also the benefit confered by equipping the item
 -- and from meleeing with it or applying it or throwing it.

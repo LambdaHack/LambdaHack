@@ -361,15 +361,10 @@ applyHuman ts = do
                   else jsymbol item `elem` triggerSyms
   ggi <- getGroupItem p object1 verb1 cLegal cLegal
   case ggi of
-    Right ((iid, itemFull), CActor _ fromCStore) -> do
-      let durable = Effect.Durable `elem` jfeature (itemBase itemFull)
-          periodic = isJust
-                     $ strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull
-      if durable && periodic
-        then failSer DurablePeriodicAbuse
-        else if (blindScroll $ itemBase itemFull)
-             then failSer ApplyBlind
-             else return $ Right $ ReqApply iid fromCStore
+    Right ((iid, itemFull), CActor _ fromCStore) ->
+      if (blindScroll $ itemBase itemFull)
+      then failSer ApplyBlind
+      else return $ Right $ ReqApply iid fromCStore
     Left slides -> return $ Left slides
     _ -> assert `failure` ggi
 
