@@ -61,7 +61,9 @@ itemEffectAndDestroy source target iid c periodic = do
   discoEffect <- getsServer sdiscoEffect
   case EM.lookup iid discoEffect of
     Just ItemAspectEffect{jeffects} -> do
-      effectAndDestroy source target iid c periodic jeffects
+      -- If periodic activation, consider *only* recharging effects.
+      let effs = if periodic then allRecharging jeffects else jeffects
+      effectAndDestroy source target iid c periodic effs
     _ -> assert `failure` (source, target, iid, c)
 
 effectAndDestroy :: (MonadAtomic m, MonadServer m)

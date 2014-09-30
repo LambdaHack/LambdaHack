@@ -69,9 +69,6 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
           hurtEffect :: Effect.Effect a -> Bool
           hurtEffect (Effect.Hurt _) = True
           hurtEffect _ = False
-          getRechargingEffect :: Effect.Effect a -> Maybe (Effect.Effect a)
-          getRechargingEffect (Effect.Recharging e) = Just e
-          getRechargingEffect _ = Nothing
           cstore = storeFromC c
           active = cstore `elem` [CEqp, COrgan]
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
@@ -83,13 +80,12 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
                 mtimeout = find timeoutAspect aspects
                 restAs = sort aspects
                 (hurtEs, restEs) = partition hurtEffect $ sort effects
-                rechargingEs = mapMaybe getRechargingEffect restEs
                 aes = map ppE hurtEs
                       ++ if active
                          then map ppA restAs ++ map ppE restEs
                          else map ppE restEs ++ map ppA restAs
                 rechargingTs = T.intercalate (T.singleton ' ')
-                               $ map ppE rechargingEs
+                               $ map ppE $ stripRecharging restEs
                 periodicOrTimeout = case mperiodic of
                   Just (Effect.Periodic t) ->
                     "(" <> tshow t <+> "in 100:"

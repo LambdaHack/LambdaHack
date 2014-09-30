@@ -7,6 +7,7 @@ module Game.LambdaHack.Common.ItemStrongest
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   , unknownPrecious, permittedRanged, unknownMelee
+  , allRecharging, stripRecharging
   ) where
 
 import Control.Applicative
@@ -293,3 +294,17 @@ unknownMelee =
       p _ = []
       f itemFull b = b || unknownAspect p itemFull
   in foldr f False
+
+allRecharging :: [Effect a] -> [Effect a]
+allRecharging effs =
+  let getRechargingEffect :: Effect a -> Maybe (Effect a)
+      getRechargingEffect e@Recharging{} = Just e
+      getRechargingEffect _ = Nothing
+  in mapMaybe getRechargingEffect effs
+
+stripRecharging :: [Effect a] -> [Effect a]
+stripRecharging effs =
+  let getRechargingEffect :: Effect a -> Maybe (Effect a)
+      getRechargingEffect (Recharging e) = Just e
+      getRechargingEffect _ = Nothing
+  in mapMaybe getRechargingEffect effs
