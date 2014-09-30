@@ -89,7 +89,7 @@ data ThrowMod = ThrowMod
 -- and so not additive in any sense.
 data Feature =
     ChangeTo !GroupName     -- ^ change to this group when altered
-  | Fragile                 -- ^ break even when not hitting an enemy
+  | Fragile                 -- ^ drop and break even when without hitting enemy
   | Durable                 -- ^ don't break even when hitting or applying
   | ToThrow !ThrowMod       -- ^ parameters modifying a throw
   | Identified              -- ^ the item starts identified
