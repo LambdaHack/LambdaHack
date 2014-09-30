@@ -87,7 +87,6 @@ effectAndDestroy source target iid c periodic effs = do
           durable = Effect.Durable `elem` jfeature item
           mtimeoutOr =
             strengthFromEqpSlot Effect.EqpSlotTimeoutOrPeriodic itemFull
-          hasTimeout = isJust mtimeoutOr
           kit = (1, take 1 it)
       lid <- getsState $ lidFromC c
       localTime <- getsState $ getLocalTime lid
@@ -106,17 +105,17 @@ effectAndDestroy source target iid c periodic effs = do
                 timeShift localTime (timeDeltaScale (Delta timeTurn) timeout)
           return $ (lid, rechargeTime) : it1
         _ ->
-          -- TODO: if hasTimeout and not recharged, report failure
+          -- TODO: if has timeout and not recharged, report failure
           return it1
       when (it /= it2) $ execUpdAtomic $ UpdTimeItem iid c it it2
-      when (not durable && not hasTimeout) $
+      unless durable $
         execUpdAtomic $ UpdLoseItem iid item kit c
       -- At this point, the item is potentially no longer in container @c@.
       triggered <- itemEffectDisco source target iid recharged periodic effs
       -- If none of item's effects was performed, we try to recreate the item.
       -- Regardless, we don't rewind the time, because some info is gained
       -- (that the item does not exhibit any effects in the given context).
-      when (not triggered && not durable && not hasTimeout) $
+      unless (triggered || durable) $
         execUpdAtomic $ UpdSpotItem iid item kit c
 
 itemEffectOnSmash :: (MonadAtomic m, MonadServer m)
