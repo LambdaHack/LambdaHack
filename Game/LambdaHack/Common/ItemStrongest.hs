@@ -92,22 +92,17 @@ strengthOnSmash =
   in strengthEffect999 p
 
 strengthPeriodic :: ItemFull -> Maybe Int
-strengthPeriodic =
-  let p (Periodic k) = [k]
+strengthPeriodic itemFull =
+  let p Periodic = [()]
       p _ = []
-  in strengthAspectMaybe p
+      isPeriodic = isJust $ strengthAspectMaybe p itemFull
+      q (Timeout k) = [k]
+      q _ = []
+  in if isPeriodic then strengthAspectMaybe q itemFull else Nothing
 
 strengthTimeout :: ItemFull -> Maybe Int
 strengthTimeout =
   let p (Timeout k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthTimeoutOrPeriodic :: ItemFull -> Maybe Int
-strengthTimeoutOrPeriodic =
-  let p (Timeout k) = [k]
-      -- @Periodic@ implies that the item has a timeout.
-      p (Periodic n) = [100 `div` n]
       p _ = []
   in strengthAspectMaybe p
 
@@ -217,7 +212,6 @@ strengthFromEqpSlot eqpSlot =
   case eqpSlot of
     EqpSlotPeriodic -> strengthPeriodic
     EqpSlotTimeout -> strengthTimeout
-    EqpSlotTimeoutOrPeriodic -> strengthTimeoutOrPeriodic
     EqpSlotAddMaxHP -> strengthAddMaxHP
     EqpSlotAddMaxCalm -> strengthAddMaxCalm
     EqpSlotAddSpeed -> strengthAddSpeed

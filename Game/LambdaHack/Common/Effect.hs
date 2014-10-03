@@ -58,12 +58,10 @@ data Effect a =
                           -- ^ enable the aspect for some clips
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
--- TODO: let Periodic have no arguments and use Timeout to specify them
--- | Aspects of items. Additive (starting at 0) for all items wielded
--- by an actor and affect the actor (except @Periodic@ that only affect
--- the item and so is not additive).
+-- | Aspects of items. Those that are named @Add*@ are additive
+-- (starting at 0) for all items wielded by an actor and they affect the actor.
 data Aspect a =
-    Periodic !a        -- ^ is activated this many times in 100 turns
+    Periodic           -- ^ in equipment, activate as often as @Timeout@ permits
   | Timeout !a         -- ^ some effects will be disabled until item recharges
   | AddHurtMelee !a    -- ^ percentage damage bonus in melee
   | AddArmorMelee !a   -- ^ percentage armor bonus against melee
@@ -103,7 +101,6 @@ data Feature =
 data EqpSlot =
     EqpSlotPeriodic
   | EqpSlotTimeout
-  | EqpSlotTimeoutOrPeriodic
   | EqpSlotAddHurtMelee
   | EqpSlotAddArmorMelee
   | EqpSlotAddHurtRanged
@@ -193,9 +190,7 @@ effectTrav (TimedAspect k asp) f = do
 
 -- | Transform an aspect using a stateful function.
 aspectTrav :: Aspect a -> (a -> St.State s b) -> St.State s (Aspect b)
-aspectTrav (Periodic a) f = do
-  b <- f a
-  return $! Periodic b
+aspectTrav Periodic _ = return Periodic
 aspectTrav (Timeout a) f = do
   b <- f a
   return $! Timeout b

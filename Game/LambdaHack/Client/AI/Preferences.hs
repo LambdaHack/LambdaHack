@@ -100,10 +100,13 @@ totalUsefulness cops b activeItems fact itemFull =
   let ben effects aspects =
         let effBens = map (effectToBenefit cops b activeItems fact) effects
             aspBens = map (aspectToBenefit cops b) aspects
-            periodicEffBens =
+            periodicEffBens = [0]
+              {- TODO: for Timeout and Periodic only consider Recharging items
               case strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull of
                 Nothing -> []
-                Just in100 -> map (\eff -> eff * in100 `div` 5) effBens
+                Just timeout ->
+                  map (\eff -> eff * (100 `div` timeout) `div` 5) effBens
+              -}
             selfBens = aspBens ++ periodicEffBens
             eqpSum = if not (null selfBens) && minimum selfBens < -10
                                             && maximum selfBens > 10

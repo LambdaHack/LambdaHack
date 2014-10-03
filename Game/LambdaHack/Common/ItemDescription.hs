@@ -61,7 +61,7 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
     Nothing -> features
     Just ItemDisco{itemKind, itemAE} ->
       let periodicAspect :: Effect.Aspect a -> Bool
-          periodicAspect Effect.Periodic{} = True
+          periodicAspect Effect.Periodic = True
           periodicAspect _ = False
           timeoutAspect :: Effect.Aspect a -> Bool
           timeoutAspect Effect.Timeout{} = True
@@ -74,7 +74,8 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
           splitAE :: (Show a, Ord a)
                   => [Effect.Aspect a] -> (Effect.Aspect a -> Text)
-                  -> [Effect.Effect a] -> (Effect.Effect a -> Text) -> [Text]
+                  -> [Effect.Effect a] -> (Effect.Effect a -> Text)
+                  -> [Text]
           splitAE aspects ppA effects ppE =
             let mperiodic = find periodicAspect aspects
                 mtimeout = find timeoutAspect aspects
@@ -87,9 +88,13 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
                 rechargingTs = T.intercalate (T.singleton ' ')
                                $ map ppE $ stripRecharging restEs
                 periodicOrTimeout = case mperiodic of
-                  Just (Effect.Periodic t) ->
-                    "(" <> tshow t <+> "in 100:"
-                    <+> rechargingTs <> ")"
+                  Just Effect.Periodic ->
+                    case mtimeout of
+                      Just (Effect.Timeout t) ->
+                        -- TODO: let t = 100 `div` p
+                        "(every" <> tshow t <> ":"
+                        <+> rechargingTs <> ")"
+                      _ -> ""
                   _ -> case mtimeout of
                     Just (Effect.Timeout t) ->
                       "(timeout" <+> tshow t <> ":"

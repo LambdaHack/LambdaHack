@@ -172,9 +172,9 @@ activatePeriodicLevel lid = do
       activatePeriodicItem cstore aid (iid, itemFull) = do
         case strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull of
           Nothing -> return ()
-          Just n -> do
+          Just timeout -> do
             let c = CActor aid cstore
-            when (turnN `mod` (100 `div` n) == 0) $
+            when (turnN `mod` timeout == 0) $
               itemEffectAndDestroy aid aid iid c True
       activatePeriodicActor aid = do
         allItemsOrgan <- fullAssocsServer aid [COrgan]
