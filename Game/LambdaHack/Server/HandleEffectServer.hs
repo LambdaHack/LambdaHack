@@ -90,8 +90,9 @@ effectAndDestroy source target iid c periodic effs = do
       lid <- getsState $ lidFromC c
       localTime <- getsState $ getLocalTime lid
       -- The whole stack gets recharged, at level change and activation,
-      -- not only the item activated.
-      let it1 = filter (\(lid1, t1) -> lid1 == lid && t1 > localTime) it
+      -- not only the item activated. Note that normally the second
+      -- clause should always hold, since timer is reset at level ascending.
+      let it1 = filter (\(lid1, t1) -> t1 > localTime && lid1 == lid) it
           len = length it1
           recharged = len < k
       assert (len <= k `blame` (kitK, source, target, iid, c)) skip
@@ -527,7 +528,7 @@ switchLevels1 ((aid, bOld), ais) = do
   execUpdAtomic $ UpdLoseActor aid bOld ais
   return mlead
 
-switchLevels2 :: MonadAtomic m
+switchLevels2 ::(MonadAtomic m, MonadServer m)
               => LevelId -> Point
               -> ((ActorId, Actor), [(ItemId, Item)]) -> Maybe ActorId
               -> m ()
@@ -537,16 +538,20 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
   assert (lidNew /= lidOld `blame` "stairs looped" `twith` lidNew) skip
   -- Sync the actor time with the level time.
   timeOld <- getsState $ getLocalTime lidOld
-  timeLastVisited <- getsState $ getLocalTime lidNew
+  timeLastActive <- getsState $ getLocalTime lidNew
   -- This time calculation may cause a double move of a foe of the same
   -- speed, but this is OK --- the foe didn't have a chance to move
   -- before, because the arena went inactive, so he moves now one more time.
+  borgan <- setMaxTimeout lidNew timeLastActive $ borgan bOld
+  beqp <- setMaxTimeout lidNew timeLastActive $ beqp bOld
   let delta = btime bOld `timeDeltaToFrom` timeOld
       bNew = bOld { blid = lidNew
-                  , btime = timeShift timeLastVisited delta
+                  , btime = timeShift timeLastActive delta
                   , bpos = posNew
                   , boldpos = posNew  -- new level, new direction
-                  , boldlid = lidOld }  -- record old level
+                  , boldlid = lidOld  -- record old level
+                  , borgan
+                  , beqp }
   -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
