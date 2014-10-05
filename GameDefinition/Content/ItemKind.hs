@@ -219,7 +219,7 @@ gorget = ItemKind
   , icount   = 1
   , iverbHit = "whip"
   , iweight  = 30
-  , iaspects = [Periodic $ d 4 + dl 4, AddArmorMelee 1, AddArmorRanged 1]
+  , iaspects = [Periodic, Timeout $ (d 3 + 3 - dl 3) |*| 10, AddArmorMelee 1, AddArmorRanged 1]
   , ieffects = [ Recharging (RefillCalm 1)
                , RefillHP (-1) ]  -- extra pain without periodic
   , ifeature = [ Durable, Precious, EqpSlot EqpSlotPeriodic "", Identified
@@ -236,7 +236,7 @@ necklace = ItemKind
   , icount   = 1
   , iverbHit = "whip"
   , iweight  = 30
-  , iaspects = []
+  , iaspects = [Periodic]
   , ieffects = []
   , ifeature = [ Durable, Precious, EqpSlot EqpSlotPeriodic ""
                , toVelocity 50 ]  -- not dense enough
@@ -244,20 +244,20 @@ necklace = ItemKind
   , ikit     = []
   }
 necklace1 = necklace
-  { iaspects = [Periodic $ d 2 + dl 2]
+  { iaspects = [Timeout $ (d 3 + 4 - dl 3) |*| 10]
   , ieffects = [ Recharging (RefillHP 1)
                , Burn 1 ]  -- only beneficial if activation is periodic
   , idesc    = "A cord of dried herbs and healing berries."
   }
 necklace2 = necklace
   { irarity  = [(2, 0), (10, 1)]
-  , iaspects = [Periodic $ d 4 + dl 2]
+  , iaspects = [Timeout $ (d 3 + 3 - dl 3) |*| 10]
   , ieffects = [ Recharging (Impress)
                , Recharging (Summon [("mobile animal", 1)] $ 1 + dl 2)
                , Recharging (Explode "waste") ]
   }
 necklace3 = necklace
-  { iaspects = [Periodic $ d 4 + dl 2]
+  { iaspects = [Timeout $ (d 3 + 3 - dl 3) |*| 10]
   , ieffects = [ Recharging (Paralyze $ 5 + d 5 + dl 5)
                , Recharging (RefillCalm 999)
                , Paralyze $ 10 + d 10 + dl 10  -- extra pain without periodic
@@ -265,21 +265,21 @@ necklace3 = necklace
   , ifeature = Fragile : ifeature necklace  -- too powerful projection
   }
 necklace4 = necklace
-  { iaspects = [Periodic $ 2 * d 10 + dl 10]
+  { iaspects = [Timeout $ (d 4 + 4 - dl 4) |*| 2]
   , ieffects = [ Recharging (Teleport $ d 3 |*| 3)
                , RefillHP (-2)  -- price to pay if activation not periodic
                , OnSmash (Explode "explosion blast 2") ]
   , ifeature = Fragile : ifeature necklace  -- too powerful projection
   }
 necklace5 = necklace
-  { iaspects = [Periodic $ d 4 + dl 2]
+  { iaspects = [Timeout $ (d 3 + 4 - dl 3) |*| 10]
   , ieffects = [ Recharging (Teleport $ 12 + d 3 |*| 3)
                , RefillHP (-3)  -- price to pay if activation not periodic
                , OnSmash (Explode "explosion blast 2") ]
   , ifeature = Fragile : ifeature necklace  -- too powerful projection
   }
 necklace6 = necklace
-  { iaspects = [Periodic $ 2 * d 5 + dl 5]
+  { iaspects = [Timeout $ d 4 |*| 10]
   , ieffects = [ Recharging (PushActor (ThrowMod 100 50))
                , RefillHP (-1)  -- price to pay if activation not periodic
                , OnSmash (Explode "explosion blast 2") ]
@@ -287,7 +287,7 @@ necklace6 = necklace
   }
 necklace7 = necklace  -- TODO: teach AI to wear only for fight
   { irarity  = [(4, 0), (10, 2)]
-  , iaspects = [Periodic $ 2 * d 5 + dl 15]
+  , iaspects = [Timeout $ (d 3 + 3 - dl 3) |*| 2]
   , ieffects = [ Recharging (InsertMove 1)
                , Recharging (RefillHP (-1)) ]
   }
