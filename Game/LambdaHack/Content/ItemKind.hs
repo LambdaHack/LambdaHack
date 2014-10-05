@@ -46,12 +46,16 @@ validateSingleItemKind ItemKind{..} =
   ++ validateRarity irarity
   -- Reject duplicate Timeout and Periodic. Otherwise the behaviour
   -- may not agree with the item's in-game description.
-  ++ let timeoutOrPeriodic :: Effect.Aspect a -> Bool
-         timeoutOrPeriodic Effect.Periodic{} = True
-         timeoutOrPeriodic Effect.Timeout{} = True
-         timeoutOrPeriodic _ = False
-         ts = filter timeoutOrPeriodic iaspects
-     in if length ts > 1 then ["more than one Periodic and/or Timeout"] else []
+  ++ let periodicAspect :: Effect.Aspect a -> Bool
+         periodicAspect Effect.Periodic = True
+         periodicAspect _ = False
+         ps = filter periodicAspect iaspects
+     in if length ps > 1 then ["more than one Periodic specification"] else []
+  ++ let timeoutAspect :: Effect.Aspect a -> Bool
+         timeoutAspect Effect.Timeout{} = True
+         timeoutAspect _ = False
+         ts = filter timeoutAspect iaspects
+     in if length ts > 1 then ["more than one Timeout specification"] else []
 
 -- TODO: if "treasure" stays wired-in, assure there are some treasure items
 -- TODO: (spans multiple contents) check that there is at least one item
