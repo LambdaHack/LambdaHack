@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, moveStores, deduceQuits, deduceKilled, electLeader
   , addActor, addActorIid, projectFail, pickWeaponServer, sumOrganEqpServer
-  , actorSkillsServer, maxActorSkillsServer, setMaxTimeout
+  , actorSkillsServer, maxActorSkillsServer, setMaxTimeout, computeMaxTimeout
   ) where
 
 import Control.Applicative
@@ -431,6 +431,11 @@ maxActorSkillsServer aid = do
 setMaxTimeout :: MonadServer m => LevelId -> Time -> ItemBag -> m ItemBag
 setMaxTimeout lid localTime bag = do
   discoEffect <- getsServer sdiscoEffect
+  return $! EM.mapWithKey (computeMaxTimeout lid localTime discoEffect) bag
+
+computeMaxTimeout :: LevelId -> Time -> DiscoveryEffect
+                  -> ItemId -> ItemQuant -> ItemQuant
+computeMaxTimeout lid localTime discoEffect =
   let timeoutAspect :: Effect.Aspect Int -> Maybe Int
       timeoutAspect (Effect.Timeout t) = Just t
       timeoutAspect _ = Nothing
@@ -443,5 +448,5 @@ setMaxTimeout lid localTime bag = do
                       timeShift localTime (timeDeltaScale (Delta timeTurn) t)
                 in (k, replicate k (lid, rechargeTime))
               _ -> kit
-          _ -> assert `failure` (iid, discoEffect, bag)
-  return $! EM.mapWithKey setMax bag
+          _ -> assert `failure` (iid, discoEffect)
+  in setMax

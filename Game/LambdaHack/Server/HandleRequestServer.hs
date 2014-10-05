@@ -356,6 +356,18 @@ reqMoveItem aid iid k fromCStore toCStore = do
   else do
     if calmEnough b activeItems then moveItem
     else execFailure aid req ItemNotCalm
+  when (toCStore `elem` [CEqp, COrgan]
+        && fromCStore `notElem` [CEqp, COrgan]) $ do
+    localTime <- getsState $ getLocalTime (blid b)
+    discoEffect <- getsServer sdiscoEffect
+    let c = CActor aid toCStore
+    bag <- getsState $ getCBag c
+    let kit@(_, fromIt) = case iid `EM.lookup` bag of
+          Nothing -> assert `failure` (iid, bag, aid, fromCStore)
+          Just kit2 -> kit2
+        (_, toIt) = computeMaxTimeout
+                 (blid b) localTime discoEffect iid kit
+    execUpdAtomic $ UpdTimeItem iid c fromIt toIt
 
 -- * ReqProject
 
