@@ -219,7 +219,10 @@ gorget = ItemKind
   , icount   = 1
   , iverbHit = "whip"
   , iweight  = 30
-  , iaspects = [Periodic, Timeout $ (d 3 + 3 - dl 3) |*| 10, AddArmorMelee 1, AddArmorRanged 1]
+  , iaspects = [ Periodic
+               , Timeout $ (d 3 + 3 - dl 3) |*| 10
+               , AddArmorMelee 1
+               , AddArmorRanged 1 ]
   , ieffects = [ Recharging (RefillCalm 1)
                , RefillHP (-1) ]  -- extra pain without periodic
   , ifeature = [ Durable, Precious, EqpSlot EqpSlotPeriodic "", Identified
@@ -568,8 +571,10 @@ buckler = ItemKind
   , irarity  = [(4, 6)]
   , iverbHit = "bash"
   , iweight  = 2000
-  , iaspects = [AddArmorMelee 40, AddHurtMelee (-30)]
-  , ieffects = []
+  , iaspects = [ AddArmorMelee 40
+               , AddHurtMelee (-30)
+               , Timeout $ (d 3 + 3 - dl 3) |*| 2 ]
+  , ieffects = [Recharging (PushActor (ThrowMod 200 50))]
   , ifeature = [ toVelocity 30  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
   , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
@@ -580,7 +585,10 @@ shield = buckler
   , irarity  = [(7, 5)]
   , iflavour = zipPlain [Green]
   , iweight  = 3000
-  , iaspects = [AddArmorMelee 80, AddHurtMelee (-70)]
+  , iaspects = [ AddArmorMelee 80
+               , AddHurtMelee (-70)
+               , Timeout $ (d 3 + 6 - dl 3) |*| 2 ]
+  , ieffects = [Recharging (PushActor (ThrowMod 400 50))]
   , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
   , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
