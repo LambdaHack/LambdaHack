@@ -73,13 +73,24 @@ tryCopyDataFiles :: FilePath
                  -> IO ()
 tryCopyDataFiles dataDir pathsDataFile files =
   let cpFile (fin, fout) = do
-        pathsDataIn <- pathsDataFile fin
-        bIn <- doesFileExist pathsDataIn
-        let pathsDataOut = dataDir </> fout
-        bOut <- doesFileExist pathsDataOut
-        when (not bOut && bIn) $
-          Ex.handle (\(_ :: Ex.IOException) -> return ())
-                    (copyFile pathsDataIn pathsDataOut)
+        mpathsDataIn <- do
+          pathsDataIn1 <- pathsDataFile fin
+          bIn1 <- doesFileExist pathsDataIn1
+          if bIn1 then return $ Just pathsDataIn1
+          else do
+            currentDir <- getCurrentDirectory
+            let pathsDataIn2 = currentDir </> fin
+            bIn2 <- doesFileExist pathsDataIn2
+            if bIn2 then return $ Just pathsDataIn2
+            else return Nothing
+        case mpathsDataIn of
+          Nothing -> return ()
+          Just pathsDataIn -> do
+            let pathsDataOut = dataDir </> fout
+            bOut <- doesFileExist pathsDataOut
+            when (not bOut) $
+              Ex.handle (\(_ :: Ex.IOException) -> return ())
+                        (copyFile pathsDataIn pathsDataOut)
   in mapM_ cpFile files
 
 -- | Personal data directory for the game. Depends on the OS and the game,
