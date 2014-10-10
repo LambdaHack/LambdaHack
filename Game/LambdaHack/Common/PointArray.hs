@@ -33,12 +33,15 @@ instance Show (Array c) where
   show a = "PointArray.Array with size " ++ show (sizeA a)
 
 cnv :: (Enum a, Enum b) => a -> b
+{-# INLINE cnv #-}
 cnv = toEnum . fromEnum
 
 pindex :: X -> Point -> Int
+{-# INLINE pindex #-}
 pindex xsize (Point x y) = x + y * xsize
 
 punindex :: X -> Int -> Point
+{-# INLINE punindex #-}
 punindex xsize n = let (y, x) = n `quotRem` xsize
                    in Point x y
 
@@ -52,22 +55,26 @@ punindex xsize n = let (y, x) = n `quotRem` xsize
 
 -- | Construct an array updated with the association list.
 (//) :: Enum c => Array c -> [(Point, c)] -> Array c
+{-# INLINE (//) #-}
 (//) Array{..} l = let v = avector U.// map (pindex axsize *** cnv) l
                    in Array{avector = v, ..}
 
 -- | Create an array from a replicated element.
 replicateA :: Enum c => X -> Y -> c -> Array c
+{-# INLINE replicateA #-}
 replicateA axsize aysize c =
   Array{avector = U.replicate (axsize * aysize) $ cnv c, ..}
 
 -- | Create an array from a replicated monadic action.
 replicateMA :: Enum c => Monad m => X -> Y -> m c -> m (Array c)
+{-# INLINE replicateMA #-}
 replicateMA axsize aysize m = do
   v <- U.replicateM (axsize * aysize) $ liftM cnv m
   return $! Array{avector = v, ..}
 
 -- | Create an array from a monadic function.
 generateMA :: Enum c => Monad m => X -> Y -> (Point -> m c) -> m (Array c)
+{-# INLINE generateMA #-}
 generateMA axsize aysize fm = do
   let gm n = liftM cnv $ fm $ punindex axsize n
   v <- U.generateM (axsize * aysize) gm
@@ -75,21 +82,25 @@ generateMA axsize aysize fm = do
 
 -- | Content identifiers array size.
 sizeA :: Array c -> (X, Y)
+{-# INLINE sizeA #-}
 sizeA Array{..} = (axsize, aysize)
 
 -- | Fold left strictly over an array.
 foldlA :: Enum c => (a -> c -> a) -> a -> Array c -> a
+{-# INLINE foldlA #-}
 foldlA f z0 Array{..} =
   U.foldl' (\a c -> f a (cnv c)) z0 avector
 
 -- | Fold left strictly over an array
 -- (function applied to each element and its index).
 ifoldlA :: Enum c => (a -> Point -> c -> a) -> a -> Array c -> a
+{-# INLINE ifoldlA #-}
 ifoldlA f z0 Array{..} =
   U.ifoldl' (\a n c -> f a (punindex axsize n) (cnv c)) z0 avector
 
 -- | Map over an array (function applied to each element and its index).
 imapA :: (Enum c, Enum d) => (Point -> c -> d) -> Array c -> Array d
+{-# INLINE imapA #-}
 imapA f Array{..} =
   let v = U.imap (\n c -> cnv $ f (punindex axsize n) (cnv c)) avector
   in Array{avector = v, ..}

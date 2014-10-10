@@ -96,6 +96,7 @@ assertSparseItems m =
 
 -- | Query for tile kinds on the map.
 at :: Level -> Point -> Kind.Id TileKind
+{-# INLINE at #-}
 at Level{ltile} p = ltile PointArray.! p
 
 checkAccess :: Kind.COps -> Level -> Maybe (Point -> Point -> Bool)

@@ -203,6 +203,7 @@ fullscan Kind.COps{cotile} fovMode radius spectatorPos lvl =
       concatMap (\tr -> map tr (Digital.scan (radius - 1) (isCl . tr))) tr4
  where
   isCl :: Point -> Bool
+  {-# INLINE isCl #-}
   isCl = Tile.isClear cotile . (lvl `at`)
 
   -- This function is cheap, so no problem it's called twice
@@ -213,6 +214,7 @@ fullscan Kind.COps{cotile} fovMode radius spectatorPos lvl =
 
   -- | The translation, rotation and symmetry functions for octants.
   tr8 :: [(Distance, Progress) -> Point]
+  {-# INLINE tr8 #-}
   tr8 =
     [ \(p, d) -> trV   p    d
     , \(p, d) -> trV (-p)   d
@@ -226,6 +228,7 @@ fullscan Kind.COps{cotile} fovMode radius spectatorPos lvl =
 
   -- | The translation and rotation functions for quadrants.
   tr4 :: [Bump -> Point]
+  {-# INLINE tr4 #-}
   tr4 =
     [ \B{..} -> trV   bx  (-by)  -- quadrant I
     , \B{..} -> trV   by    bx   -- II (we rotate counter-clockwise)

@@ -24,14 +24,14 @@ scan r isClear = assert (r > 0 `blame` r) $
   dscan d ( s0@(sl{-shallow line-}, sHull0)
           , e@(el{-steep line-}, eHull) ) =
 
-    let ps0 = let (n, k) = intersect sl d  -- minimal progress to consider
-              in n `div` k
-        pe = let (n, k) = intersect el d   -- maximal progress to consider
-               -- Corners obstruct view, so the steep line, constructed
-               -- from corners, is itself not a part of the view,
-               -- so if its intersection with the line of diagonals is only
-               -- at a corner, choose the diamond leading to a smaller view.
-             in -1 + n `divUp` k
+    let !ps0 = let (n, k) = intersect sl d  -- minimal progress to consider
+               in n `div` k
+        !pe = let (n, k) = intersect el d   -- maximal progress to consider
+                -- Corners obstruct view, so the steep line, constructed
+                -- from corners, is itself not a part of the view,
+                -- so if its intersection with the line of diagonals is only
+                -- at a corner, choose the diamond leading to a smaller view.
+              in -1 + n `divUp` k
         inside = [B p d | p <- [ps0..pe]]
         outside
           | d >= r = []
@@ -40,17 +40,21 @@ scan r isClear = assert (r > 0 `blame` r) $
 
         -- We're in a visible interval.
         mscanVisible :: Edge -> Progress -> [Bump]
-        mscanVisible s@(_, sHull) ps
-          | ps > pe = dscan (d+1) (s, e)       -- reached end, scan next
-          | not $ isClear steepBump =          -- entering shadow
-              mscanShadowed (ps+1)
-              ++ dscan (d+1) (s, (dline nep steepBump, neHull))
-          | otherwise = mscanVisible s (ps+1)  -- continue in visible area
+        {-# INLINE mscanVisible #-}
+        mscanVisible s = go
          where
-          steepBump = B ps d
-          gte = dsteeper steepBump
-          nep = maximal gte sHull
-          neHull = addHull gte steepBump eHull
+          go ps | ps > pe = dscan (d+1) (s, e)       -- reached end, scan next
+                | not $ isClear steepBump =          -- entering shadow
+                    mscanShadowed (ps+1)
+                    ++ dscan (d+1) (s, (dline nep steepBump, neHull))
+                | otherwise = go (ps+1)  -- continue in visible area
+           where
+            steepBump = B ps d
+            gte :: Bump -> Bump -> Bool
+            {-# INLINE gte #-}
+            gte = dsteeper steepBump
+            nep = maximal gte (snd s)
+            neHull = addHull gte steepBump eHull
 
         -- We're in a shadowed interval.
         mscanShadowed :: Progress -> [Bump]
@@ -61,6 +65,8 @@ scan r isClear = assert (r > 0 `blame` r) $
           | otherwise = mscanShadowed (ps+1)   -- continue in shadow
          where
           shallowBump = B ps d
+          gte :: Bump -> Bump -> Bool
+          {-# INLINE gte #-}
           gte = flip $ dsteeper shallowBump
           nsp = maximal gte eHull
           nsHull = addHull gte shallowBump sHull0
