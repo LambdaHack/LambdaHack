@@ -44,10 +44,10 @@ Installation from binary archives
 ---------------------------------
 
 Pre-compiled game binaries for some platforms are available through
-the [release page] [11] and from the Nix Packages Collection [12].
+the [release page] [11] and from the [Nix Packages Collection] [12].
 To manually install a binary archive, make sure you have the GTK
 libraries suite on your system, unpack the archive and run the executable
-in the unpacked directory.
+in the unpacked directory, which will copy the required game data files.
 
 On Windows, if you don't already have GTK installed (e.g., for the GIMP
 picture editor) please download and run (with default settings)
@@ -65,7 +65,7 @@ The commented out version of this file with the default settings is in
 When the game is run for the first time, the file is copied to the official
 location, which is `~/.LambdaHack/config.ui.ini` on Linux and
 `C:\Users\<username>\AppData\Roaming\LambdaHack\config.ui.ini`
-(or `C:\Documents And Settings\user\Application Data\LambdaHack\config.ui.ini
+(or `C:\Documents And Settings\user\Application Data\LambdaHack\config.ui.ini`
 or something else altogether) on Windows.
 
 Screen font can be changed and enlarged by uncommenting and editing
@@ -73,11 +73,11 @@ the config file at its official location or by right-clicking
 on the game window.
 
 If you use the numeric keypad, use the NumLock key on your keyboard
-to toggle the game keyboard mode. With NumLock off, you walk with numeric
-keys and run with Shift (or Control) and keys. When you turn NumLock on,
-the key setup instills good playing habits by making running
-(which automatically stops at threats) the default and requiring Shift
-for walking step by step.
+to toggle the game keyboard mode. With NumLock off, you walk with the numeric
+keys and run with Shift (or Control) and the keys. When you turn NumLock on,
+the special key setup instills good playing habits by setting the run
+command (which automatically stops at threats) as the default
+and requiring Shift for walking step by step (which is error-prone).
 
 If you don't have a numeric keypad, you can use laptop keys (uk8o79jl)
 or you can enable in the config file the Vi keys (aka roguelike keys).
@@ -134,7 +134,7 @@ Testing and debugging
 
 The [Makefile](Makefile) contains many sample test commands.
 All commands that use the screensaver game modes (AI vs. AI)
- and the dumb `stdout` frontend are gathered in `make test`.
+or the dumb `stdout` frontend are gathered in `make test`.
 Of these, travis runs `test-travis-*` on each push to the repo.
 Test commands with prefix `frontend` start AI vs. AI games
 with the standard, user-friendly frontend.
