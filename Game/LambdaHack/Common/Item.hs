@@ -62,9 +62,9 @@ instance Hashable ItemAspectEffect
 type DiscoveryEffect = EM.EnumMap ItemId ItemAspectEffect
 
 data ItemDisco = ItemDisco
-  { itemKindId :: Kind.Id ItemKind
-  , itemKind   :: ItemKind
-  , itemAE     :: Maybe ItemAspectEffect
+  { itemKindId :: !(Kind.Id ItemKind)
+  , itemKind   :: !ItemKind
+  , itemAE     :: !(Maybe ItemAspectEffect)
   }
   deriving Show
 

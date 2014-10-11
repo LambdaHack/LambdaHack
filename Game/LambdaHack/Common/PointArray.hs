@@ -23,9 +23,9 @@ import Game.LambdaHack.Common.Point
 -- TODO: perhaps make them an instance of Data.Vector.Generic?
 -- | Arrays indexed by @Point@.
 data Array c = Array
-  { axsize  :: X
-  , aysize  :: Y
-  , avector :: U.Vector Word8
+  { axsize  :: !X
+  , aysize  :: !Y
+  , avector :: !(U.Vector Word8)
   }
   deriving Eq
 

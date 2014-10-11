@@ -22,5 +22,5 @@ data ContentDef a = ContentDef
       -- ^ validate a content item and list all offences
   , validateAll    :: [a] -> [Text]
       -- ^ validate the whole defined content of this type and list all offences
-  , content        :: [a]          -- ^ all the defined content of this type
+  , content        :: ![a]         -- ^ all the defined content of this type
   }
