@@ -1,9 +1,8 @@
 LambdaHack [![Build Status](https://travis-ci.org/LambdaHack/LambdaHack.svg?branch=master)](https://travis-ci.org/LambdaHack/LambdaHack)[![Build Status](https://drone.io/github.com/LambdaHack/LambdaHack/status.png)](https://drone.io/github.com/LambdaHack/LambdaHack/latest)
 ==========
 
-LambdaHack is a [Haskell] [1] game engine
-library for [roguelike] [2] games of arbitrary theme, size and complexity,
-packaged together with a small example dungeon crawler. When completed,
+LambdaHack is a [Haskell] [1] game engine library for [roguelike] [2]
+games of arbitrary theme, size and complexity. When completed,
 the engine will let you specify content to be procedurally generated,
 define the AI behaviour on top of the generic content-independent rules
 and compile a ready-to-play game binary, using either the supplied
@@ -20,32 +19,72 @@ called LambdaHack and described in [PLAYING.md](GameDefinition/PLAYING.md).
 
 ![gameplay screenshot](GameDefinition/screenshot.png?raw=true)
 
-The engine and the example game are bundled together in a single [Hackage] [3]
-package released under the permissive `BSD3` license. You are welcome
-to create your own games by forking and modifying the single package,
-but please consider eventually splitting your changes into a separate
-content-only package that depends on the upstream engine library. This will
-help us exchange ideas and share improvements to the common codebase.
-Alternatively, you can already start the development in separation
-by cloning and rewriting [Allure of the Stars] [10] or any other pure
-game content package and mix and merge with the example LambdaHack game
-rules at will. Note that the LambdaHack sample game derives from the
-[Hack/Nethack visual and narrative tradition] [9], while Allure of the Stars
-uses the more free-form Moria/Angband style (it also uses the `AGPL` license,
-and `BSD3 + AGPL = AGPL`, so make sure you want to liberate your code
-and content to such an extent).
-
-Games known to use the LambdaHack library:
+Other games known to use the LambdaHack library:
 
 * [Allure of the Stars] [6], a near-future Sci-Fi game
 * [Space Privateers] [8], an adventure game set in far future
 
+Note: the engine and the example game are bundled together in a single
+[Hackage] [3] package released under the permissive `BSD3` license.
+You are welcome to create your own games by forking and modifying
+the single package, but please consider eventually splitting your changes
+into a separate content-only package that depends on the upstream
+engine library. This will help us exchange ideas and share improvements
+to the common codebase. Alternatively, you can already start the development
+in separation by cloning and rewriting [Allure of the Stars] [10]
+or any other pure game content package and mix and merge with the example
+LambdaHack game rules at will. Note that the LambdaHack sample game
+derives from the [Hack/Nethack visual and narrative tradition] [9],
+while Allure of the Stars uses the more free-form Moria/Angband style
+(it also uses the `AGPL` license, and `BSD3 + AGPL = AGPL`,
+so make sure you want to liberate your code and content to such an extent).
 
-Compilation and installation
-----------------------------
 
-Some pre-compiled game binaries are available through the [release page] [11]
-and from the Nix Packages Collection [12].
+Installation from binary archives
+---------------------------------
+
+Pre-compiled game binaries for some platforms are available through
+the [release page] [11] and from the Nix Packages Collection [12].
+To manually install a binary archive, make sure you have the GTK
+libraries suite on your system, unpack the archive and run the executable
+in the unpacked directory.
+
+On Windows, if you don't already have GTK installed (e.g., for the GIMP
+picture editor) please download and run (with default settings)
+the GTK installer from
+
+http://sourceforge.net/projects/gtk-win/
+
+
+Screen and keyboard configuration
+---------------------------------
+
+The game UI can be configured via a config file.
+The commented out version of this file with the default settings is in
+[GameDefinition/config.ui.default](GameDefinition/config.ui.default).
+When the game is run for the first time, the file is copied to the official
+location, which is `~/.LambdaHack/config.ui.ini` on Linux and
+`C:\Users\<username>\AppData\Roaming\LambdaHack\config.ui.ini`
+(or `C:\Documents And Settings\user\Application Data\LambdaHack\config.ui.ini
+or something else altogether) on Windows.
+
+Screen font can be changed and enlarged by uncommenting and editing
+the config file at its official location or by right-clicking
+on the game window.
+
+If you use the numeric keypad, use the NumLock key on your keyboard
+to toggle the game keyboard mode. With NumLock off, you walk with numeric
+keys and run with Shift (or Control) and keys. When you turn NumLock on,
+the key setup instills good playing habits by making running
+(which automatically stops at threats) the default and requiring Shift
+for walking step by step.
+
+If you don't have a numeric keypad, you can use laptop keys (uk8o79jl)
+or you can enable in the config file the Vi keys (aka roguelike keys).
+
+
+Compilation from source
+-----------------------
 
 The library is best compiled and installed via Cabal (already a part
 of your OS distribution, or available within [The Haskell Platform] [7]),
@@ -79,7 +118,7 @@ Compatibility notes
 -------------------
 
 The current code was tested with GHC 7.6 and 7.8,
-but should also work with other GHC versions.
+but should also work with other GHC versions, with minor modifications.
 
 If you are using the terminal frontends, numerical keypad may not work
 correctly depending on versions of the libraries, terminfo and terminal
@@ -142,6 +181,7 @@ Have fun!
 [7]: http://www.haskell.org/platform
 [8]: https://github.com/tuturto/space-privateers
 [9]: https://github.com/LambdaHack/LambdaHack/wiki/Sample-dungeon-crawler
+
 [10]: https://github.com/AllureOfTheStars/Allure
 [11]: https://github.com/LambdaHack/LambdaHack/releases/latest
 [12]: http://hydra.cryp.to/search?query=LambdaHack
