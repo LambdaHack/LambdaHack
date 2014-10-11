@@ -68,7 +68,13 @@ install:
 # - cabal-1.18 configure -f-release -fcurses
 # - cabal-1.18 build
  - cabal-1.18 install -O2 -frelease -fvty --only-dependencies --force-reinstalls
- - cabal-1.18 configure -frelease -fvty --enable-tests
+# 7.6.3 has broken -O2, apparently
+ - |
+   if [ $GHCVER = "head" ] || [ ${GHCVER%.*} = "7.8" ]; then
+     cabal-1.18 configure -frelease -fvty --enable-tests
+   else
+     cabal-1.18 configure -f-release -fvty --enable-tests
+   fi
  - cabal-1.18 build
  - cabal-1.18 test
 
