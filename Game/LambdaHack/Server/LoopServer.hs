@@ -147,8 +147,8 @@ endClip arenas = do
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
   if clipMod == 1 then do
+    mapM_ activatePeriodicLevel arenas
     arena <- rndToAction $ oneOf arenas
-    activatePeriodicLevel arena
     spawnMonster arena
     stopAfter <- getsServer $ sstopAfter . sdebugSer
     case stopAfter of
