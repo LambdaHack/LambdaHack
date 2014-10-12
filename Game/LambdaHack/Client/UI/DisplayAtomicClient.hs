@@ -724,7 +724,7 @@ strike source target iid hitStatus = assert (source /= target) $ do
               then [ MU.SubjectVerbSg spart "connect" ]
               else [ MU.SubjectVerbSg spart "swing"
                    , partItemChoice itemFull ]
-        in makeSentence [ MU.Phrase sActs MU.:> ", but"
+        in makeSentence [ MU.Phrase sActs <> ", but"
                         , MU.SubjectVerbSg tpart "block"
                         , if n > 1 then "doggedly" else "partly"
                         ]

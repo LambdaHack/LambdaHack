@@ -379,7 +379,7 @@ alterDirHuman ts = do
         tr : _ -> verb tr
       keys = zipWith K.KM (repeat K.NoModifier)
                           (K.dirAllKey configVi configLaptop)
-      prompt = makePhrase ["What to", verb1 MU.:> "? [movement key"]
+      prompt = makePhrase ["What to", verb1 <> "? [movement key"]
   me <- displayChoiceUI prompt emptyOverlay keys
   case me of
     Left slides -> failSlides slides

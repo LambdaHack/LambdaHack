@@ -92,7 +92,7 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
                     case mtimeout of
                       Just (Effect.Timeout t) ->
                         -- TODO: let t = 100 `div` p
-                        "(every" <> tshow t <> ":"
+                        "(every" <+> tshow t <> ":"
                         <+> rechargingTs <> ")"
                       _ -> ""
                   _ -> case mtimeout of
@@ -129,7 +129,7 @@ partItemWownW partA c lid localTime itemFull =
 itemDesc :: Container -> LevelId -> Time -> ItemFull -> Overlay
 itemDesc c lid localTime itemFull =
   let (name, stats) = partItemN True 99 c lid localTime itemFull
-      nstats = makePhrase [name, stats MU.:> ":"]
+      nstats = makePhrase [name, stats]
       desc = case itemDisco itemFull of
         Nothing -> "This item is as unremarkable as can be."
         Just ItemDisco{itemKind} -> idesc itemKind
@@ -145,6 +145,7 @@ itemDesc c lid localTime itemFull =
       blurb =
         "D"  -- dummy
         <+> nstats
+        <> ":"
         <+> desc
         <+> makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]

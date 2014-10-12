@@ -236,7 +236,7 @@ historyHuman = do
         [ "You survived for"
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
-        , MU.Text (tshow turnsLocal) MU.:> ")" ]
+        , MU.Text (tshow turnsLocal) <> ")" ]
         <+> "Past messages:"
   overlayToBlankSlideshow msg $ renderHistory history
 
