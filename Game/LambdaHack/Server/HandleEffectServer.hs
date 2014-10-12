@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
-  ( applyItem, itemEffectAndDestroy, itemEffectCause
+  ( applyItem, itemEffectAndDestroy, effectAndDestroy, itemEffectCause
   , dropEqpItem, armorHurtBonus
   ) where
 
@@ -52,25 +52,26 @@ applyItem :: (MonadAtomic m, MonadServer m)
 applyItem aid iid cstore = do
   execSfxAtomic $ SfxActivate aid iid cstore
   let c = CActor aid cstore
-  itemEffectAndDestroy aid aid iid c False
+  itemEffectAndDestroy aid aid iid c
 
 itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
-                     => ActorId -> ActorId -> ItemId -> Container -> Bool
+                     => ActorId -> ActorId -> ItemId -> Container
                      -> m ()
-itemEffectAndDestroy source target iid c periodic = do
+itemEffectAndDestroy source target iid c = do
   discoEffect <- getsServer sdiscoEffect
   case EM.lookup iid discoEffect of
     Just ItemAspectEffect{jeffects} -> do
-      -- If periodic activation, consider *only* recharging effects.
-      let effs = if periodic then allRecharging jeffects else jeffects
-      effectAndDestroy source target iid c periodic effs
+      bag <- getsState $ getCBag c
+      case iid `EM.lookup` bag of
+        Nothing -> assert `failure` (source, target, iid, c)
+        Just kit -> effectAndDestroy source target iid c False jeffects kit
     _ -> assert `failure` (source, target, iid, c)
 
 effectAndDestroy :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> ItemId -> Container -> Bool
-                 -> [Effect.Effect Int]
+                 -> [Effect.Effect Int] -> ItemQuant
                  -> m ()
-effectAndDestroy source target iid c periodic effs = do
+effectAndDestroy source target iid c periodic effs kitK@(k, it) = do
   -- We have to destroy the item before the effect affects the item
   -- or the actor holding it or standing on it (later on we could
   -- lose track of the item and wouldn't be able to destroy it) .
@@ -78,45 +79,44 @@ effectAndDestroy source target iid c periodic effs = do
   -- item dictionaries, just an individual copy from the container,
   -- so, e.g., the item can be identified after it's removed.
   itemToF <- itemToFullServer
-  bag <- getsState $ getCBag c
-  case iid `EM.lookup` bag of
-    Nothing -> assert `failure` (source, target, iid, c)
-    Just kitK@(k, it) -> do
-      let itemFull = itemToF iid kitK
-          item = itemBase itemFull
-          durable = Effect.Durable `elem` jfeature item
-          mtimeout = strengthFromEqpSlot Effect.EqpSlotTimeout itemFull
-          kit = (1, take 1 it)
-      lid <- getsState $ lidFromC c
-      localTime <- getsState $ getLocalTime lid
-      -- The whole stack gets recharged, at level change and activation,
-      -- not only the item activated. Note that normally the second
-      -- clause should always hold, since timer is reset at level ascending.
-      let it1 = filter (\(lid1, t1) -> t1 > localTime && lid1 == lid) it
-          len = length it1
-          recharged = len < k
-      assert (len <= k `blame` (kitK, source, target, iid, c)) skip
-      -- If there is no Timout, but there are Recharging,
-      -- then such effects are disabled whenever the item is affected
-      -- by a Discharge attack (TODO).
-      it2 <- case mtimeout of
-        Just timeout | recharged -> do
-          let rechargeTime =
-                timeShift localTime (timeDeltaScale (Delta timeTurn) timeout)
-          return $ (lid, rechargeTime) : it1
-        _ ->
-          -- TODO: if has timeout and not recharged, report failure
-          return it1
-      when (it /= it2) $ execUpdAtomic $ UpdTimeItem iid c it it2
-      unless durable $
-        execUpdAtomic $ UpdLoseItem iid item kit c
-      -- At this point, the item is potentially no longer in container @c@.
-      triggered <- itemEffectDisco source target iid recharged periodic effs
-      -- If none of item's effects was performed, we try to recreate the item.
-      -- Regardless, we don't rewind the time, because some info is gained
-      -- (that the item does not exhibit any effects in the given context).
-      unless (triggered || durable) $
-        execUpdAtomic $ UpdSpotItem iid item kit c
+  let itemFull = itemToF iid kitK
+      item = itemBase itemFull
+      durable = Effect.Durable `elem` jfeature item
+      mtimeout = strengthFromEqpSlot Effect.EqpSlotTimeout itemFull
+      kit = (1, take 1 it)
+  lid <- getsState $ lidFromC c
+  localTime <- getsState $ getLocalTime lid
+  -- The whole stack gets recharged, at level change and activation,
+  -- not only the item activated. Note that normally the second
+  -- clause should always hold, since timer is reset at level ascending.
+  let it1 = filter (\(lid1, t1) -> t1 > localTime && lid1 == lid) it
+      len = length it1
+      -- TODO: optimize by checking this condition in a wrapper,
+      -- without calling itemToF
+      recharged = len < k
+  assert (len <= k `blame` (kitK, source, target, iid, c)) skip
+  -- If there is no Timeout, but there are Recharging,
+  -- then such effects are disabled whenever the item is affected
+  -- by a Discharge attack (TODO).
+  it2 <- case mtimeout of
+    Just timeout | recharged -> do
+      let rechargeTime =
+            timeShift localTime (timeDeltaScale (Delta timeTurn) timeout)
+      return $ (lid, rechargeTime) : it1
+    _ ->
+      -- TODO: if has timeout and not recharged, report failure
+      return it1
+  when (it /= it2) $ execUpdAtomic $ UpdTimeItem iid c it it2
+  unless (periodic && not recharged) $ do
+    unless durable $
+      execUpdAtomic $ UpdLoseItem iid item kit c
+    -- At this point, the item is potentially no longer in container @c@.
+    triggered <- itemEffectDisco source target iid recharged periodic effs
+    -- If none of item's effects was performed, we try to recreate the item.
+    -- Regardless, we don't rewind the time, because some info is gained
+    -- (that the item does not exhibit any effects in the given context).
+    unless (triggered || durable) $
+      execUpdAtomic $ UpdSpotItem iid item kit c
 
 itemEffectOnSmash :: (MonadAtomic m, MonadServer m)
                   => ActorId -> ActorId -> ItemId
@@ -137,11 +137,11 @@ itemEffectCause aid tpos ef = do
   sb <- getsState $ getActorBody aid
   let c = CEmbed (blid sb) tpos
   bag <- getsState $ getCBag c
-  case EM.keys bag of
-    [iid] -> do
+  case EM.assocs bag of
+    [(iid, kit)] -> do
       -- No block against tile, hence unconditional.
       execSfxAtomic $ SfxTrigger aid tpos $ F.Cause ef
-      void $ effectAndDestroy aid aid iid c False [ef]
+      void $ effectAndDestroy aid aid iid c False [ef] kit
       return True
     ab -> assert `failure` (aid, tpos, ab)
 

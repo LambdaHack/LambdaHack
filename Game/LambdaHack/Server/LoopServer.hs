@@ -20,6 +20,7 @@ import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -36,7 +37,6 @@ import Game.LambdaHack.Server.EndServer
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.HandleEffectServer
 import Game.LambdaHack.Server.HandleRequestServer
-import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicServer
 import Game.LambdaHack.Server.ProtocolServer
@@ -167,20 +167,23 @@ endClip arenas = do
 -- fast actors (assuming the effects are positive).
 activatePeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 activatePeriodicLevel lid = do
-  time <- getsState $ getLocalTime lid
-  let turnN = time `timeFit` timeTurn
-      activatePeriodicItem cstore aid (iid, itemFull) = do
-        case strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull of
-          Nothing -> return ()
-          Just timeout -> do
-            let c = CActor aid cstore
-            when (turnN `mod` timeout == 0) $
-              itemEffectAndDestroy aid aid iid c True
+  discoEffect <- getsServer sdiscoEffect
+  let activatePeriodicItem c aid (iid, kit) =
+        case EM.lookup iid discoEffect of
+          Just ItemAspectEffect{jeffects, jaspects} ->
+            if Effect.Periodic `elem` jaspects then
+              -- In periodic activation, consider *only* recharging effects.
+              effectAndDestroy aid aid iid c True (allRecharging jeffects) kit
+            else
+              return ()
+          _ -> assert `failure` (lid, aid, c, iid, kit)
+      activatePeriodicCStore aid cstore = do
+        let c = CActor aid cstore
+        bag <- getsState $ getCBag c
+        mapM_ (activatePeriodicItem c aid) $ EM.assocs bag
       activatePeriodicActor aid = do
-        allItemsOrgan <- fullAssocsServer aid [COrgan]
-        allItemsEqp <- fullAssocsServer aid [CEqp]
-        mapM_ (activatePeriodicItem COrgan aid) allItemsOrgan
-        mapM_ (activatePeriodicItem CEqp aid) allItemsEqp
+        activatePeriodicCStore aid COrgan
+        activatePeriodicCStore aid CEqp
   allActors <- getsState $ actorRegularAssocs (const True) lid
   mapM_ (\(aid, _) -> activatePeriodicActor aid) allActors
 

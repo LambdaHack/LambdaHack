@@ -215,7 +215,7 @@ reqMelee source target iid cstore = do
           $ UpdTrajectory source (btrajectory sb) (Just ([], speed))
     let c = CActor source cstore
     -- Msgs inside itemEffect describe the target part.
-    itemEffectAndDestroy source target iid c False
+    itemEffectAndDestroy source target iid c
     -- The only way to start a war is to slap an enemy. Being hit by
     -- and hitting projectiles count as unintentional friendly fire.
     let friendlyFire = bproj sb || bproj tb
@@ -366,7 +366,7 @@ reqMoveItem aid iid k fromCStore toCStore = do
           Nothing -> assert `failure` (iid, bag, aid, fromCStore)
           Just kit2 -> kit2
         (_, toIt) = computeMaxTimeout
-                 (blid b) localTime discoEffect iid kit
+                      (blid b) localTime discoEffect iid kit
     execUpdAtomic $ UpdTimeItem iid c fromIt toIt
 
 -- * ReqProject
