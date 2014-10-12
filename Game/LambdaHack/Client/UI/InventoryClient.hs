@@ -143,7 +143,7 @@ getItem p tshaSuit tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
 
 -- TODO: m is no longer needed and perhaps this can be simplified even more
 data DefItemKey m = DefItemKey
-  { defLabel  :: !Text
+  { defLabel  :: Text  -- ^ can be undefined if not @defCond@
   , defCond   :: !Bool
   , defAction :: K.Key -> m (SlideOrCmd ((ItemId, ItemFull), Container))
   }
