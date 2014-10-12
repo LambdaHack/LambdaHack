@@ -247,20 +247,20 @@ necklace = ItemKind
   , ikit     = []
   }
 necklace1 = necklace
-  { iaspects = [Timeout $ (d 3 + 4 - dl 3) |*| 10]
+  { iaspects = (Timeout $ (d 3 + 4 - dl 3) |*| 10) : iaspects necklace
   , ieffects = [ Recharging (RefillHP 1)
                , Burn 1 ]  -- only beneficial if activation is periodic
   , idesc    = "A cord of dried herbs and healing berries."
   }
 necklace2 = necklace
   { irarity  = [(2, 0), (10, 1)]
-  , iaspects = [Timeout $ (d 3 + 3 - dl 3) |*| 10]
+  , iaspects = (Timeout $ (d 3 + 3 - dl 3) |*| 10) : iaspects necklace
   , ieffects = [ Recharging (Impress)
                , Recharging (Summon [("mobile animal", 1)] $ 1 + dl 2)
                , Recharging (Explode "waste") ]
   }
 necklace3 = necklace
-  { iaspects = [Timeout $ (d 3 + 3 - dl 3) |*| 10]
+  { iaspects = (Timeout $ (d 3 + 3 - dl 3) |*| 10) : iaspects necklace
   , ieffects = [ Recharging (Paralyze $ 5 + d 5 + dl 5)
                , Recharging (RefillCalm 999)
                , Paralyze $ 10 + d 10 + dl 10  -- extra pain without periodic
@@ -268,21 +268,21 @@ necklace3 = necklace
   , ifeature = Fragile : ifeature necklace  -- too powerful projection
   }
 necklace4 = necklace
-  { iaspects = [Timeout $ (d 4 + 4 - dl 4) |*| 2]
+  { iaspects = (Timeout $ (d 4 + 4 - dl 4) |*| 2) : iaspects necklace
   , ieffects = [ Recharging (Teleport $ d 3 |*| 3)
                , RefillHP (-2)  -- price to pay if activation not periodic
                , OnSmash (Explode "explosion blast 2") ]
   , ifeature = Fragile : ifeature necklace  -- too powerful projection
   }
 necklace5 = necklace
-  { iaspects = [Timeout $ (d 3 + 4 - dl 3) |*| 10]
+  { iaspects = (Timeout $ (d 3 + 4 - dl 3) |*| 10) : iaspects necklace
   , ieffects = [ Recharging (Teleport $ 12 + d 3 |*| 3)
                , RefillHP (-3)  -- price to pay if activation not periodic
                , OnSmash (Explode "explosion blast 2") ]
   , ifeature = Fragile : ifeature necklace  -- too powerful projection
   }
 necklace6 = necklace
-  { iaspects = [Timeout $ d 4 |*| 10]
+  { iaspects = (Timeout $ d 4 |*| 10) : iaspects necklace
   , ieffects = [ Recharging (PushActor (ThrowMod 100 50))
                , RefillHP (-1)  -- price to pay if activation not periodic
                , OnSmash (Explode "explosion blast 2") ]
@@ -290,7 +290,7 @@ necklace6 = necklace
   }
 necklace7 = necklace  -- TODO: teach AI to wear only for fight
   { irarity  = [(4, 0), (10, 2)]
-  , iaspects = [Timeout $ (d 3 + 3 - dl 3) |*| 2]
+  , iaspects = (Timeout $ (d 3 + 3 - dl 3) |*| 2) : iaspects necklace
   , ieffects = [ Recharging (InsertMove 1)
                , Recharging (RefillHP (-1)) ]
   }
