@@ -11,6 +11,7 @@ import Control.Monad
 import Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM_)
+import Data.List
 import Data.Maybe
 import qualified NLP.Miniutter.English as MU
 
@@ -72,18 +73,14 @@ effectAndDestroy :: (MonadAtomic m, MonadServer m)
                  -> [Effect.Effect Int] -> ItemQuant
                  -> m ()
 effectAndDestroy source target iid c periodic effs kitK@(k, it) = do
-  -- We have to destroy the item before the effect affects the item
-  -- or the actor holding it or standing on it (later on we could
-  -- lose track of the item and wouldn't be able to destroy it) .
-  -- This is OK, because we don't remove the item type from various
-  -- item dictionaries, just an individual copy from the container,
-  -- so, e.g., the item can be identified after it's removed.
-  itemToF <- itemToFullServer
-  let itemFull = itemToF iid kitK
-      item = itemBase itemFull
-      durable = Effect.Durable `elem` jfeature item
-      mtimeout = strengthFromEqpSlot Effect.EqpSlotTimeout itemFull
-      kit = (1, take 1 it)
+  discoEffect <- getsServer sdiscoEffect
+  let mtimeout = case EM.lookup iid discoEffect of
+        Just ItemAspectEffect{jaspects} ->
+          let timeoutAspect :: Effect.Aspect a -> Bool
+              timeoutAspect Effect.Timeout{} = True
+              timeoutAspect _ = False
+          in find timeoutAspect jaspects
+        _ -> assert `failure` (source, target, iid, c, kitK)
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
   -- The whole stack gets recharged, at level change and activation,
@@ -91,15 +88,13 @@ effectAndDestroy source target iid c periodic effs kitK@(k, it) = do
   -- clause should always hold, since timer is reset at level ascending.
   let it1 = filter (\(lid1, t1) -> t1 > localTime && lid1 == lid) it
       len = length it1
-      -- TODO: optimize by checking this condition in a wrapper,
-      -- without calling itemToF
       recharged = len < k
   assert (len <= k `blame` (kitK, source, target, iid, c)) skip
   -- If there is no Timeout, but there are Recharging,
   -- then such effects are disabled whenever the item is affected
   -- by a Discharge attack (TODO).
   it2 <- case mtimeout of
-    Just timeout | recharged -> do
+    Just (Effect.Timeout timeout) | recharged -> do
       let rechargeTime =
             timeShift localTime (timeDeltaScale (Delta timeTurn) timeout)
       return $ (lid, rechargeTime) : it1
@@ -107,7 +102,18 @@ effectAndDestroy source target iid c periodic effs kitK@(k, it) = do
       -- TODO: if has timeout and not recharged, report failure
       return it1
   when (it /= it2) $ execUpdAtomic $ UpdTimeItem iid c it it2
-  unless (periodic && not recharged) $ do
+  -- If the activation is not periodic, trigger at least the effects
+  -- that are not recharging and so don't depend on @recharged@.
+  when (not periodic || recharged) $ do
+    -- We have to destroy the item before the effect affects the item
+    -- or the actor holding it or standing on it (later on we could
+    -- lose track of the item and wouldn't be able to destroy it) .
+    -- This is OK, because we don't remove the item type from various
+    -- item dictionaries, just an individual copy from the container,
+    -- so, e.g., the item can be identified after it's removed.
+    item <- getsState $ getItemBody iid
+    let durable = Effect.Durable `elem` jfeature item
+        kit = (1, take 1 it2)
     unless durable $
       execUpdAtomic $ UpdLoseItem iid item kit c
     -- At this point, the item is potentially no longer in container @c@.

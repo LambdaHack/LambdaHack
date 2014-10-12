@@ -169,6 +169,7 @@ activatePeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 activatePeriodicLevel lid = do
   discoEffect <- getsServer sdiscoEffect
   let activatePeriodicItem c aid (iid, kit) =
+        -- TODO: merge this lookup and the one in effectAndDestroy
         case EM.lookup iid discoEffect of
           Just ItemAspectEffect{jeffects, jaspects} ->
             if Effect.Periodic `elem` jaspects then
