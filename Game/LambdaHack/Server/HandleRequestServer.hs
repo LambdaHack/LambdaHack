@@ -365,9 +365,9 @@ reqMoveItem aid iid k fromCStore toCStore = do
     localTime <- getsState $ getLocalTime (blid b)
     discoEffect <- getsServer sdiscoEffect
     mrndTimeout <- rndToAction $ computeRndTimeout localTime discoEffect iid
-    let (_, beforeIt) = case iid `EM.lookup` bagBefore of
-          Nothing -> assert `failure` (iid, bagBefore, toC)
-          Just kit2 -> kit2
+    let beforeIt = case iid `EM.lookup` bagBefore of
+          Nothing -> []  -- no such items before move
+          Just (_, it2) -> it2
     -- The moved item set (not the whole stack) has its timeout
     -- reset to a random value between timeout and twice timeout.
     -- This prevents micromanagement via swapping items in and out of eqp
@@ -375,11 +375,12 @@ reqMoveItem aid iid k fromCStore toCStore = do
     case mrndTimeout of
       Just rndT -> do
         bagAfter <- getsState $ getCBag toC
-        let (_, afterIt) = case iid `EM.lookup` bagAfter of
+        let afterIt = case iid `EM.lookup` bagAfter of
               Nothing -> assert `failure` (iid, bagAfter, toC)
-              Just kit2 -> kit2
+              Just (_, it2) -> it2
             resetIt = beforeIt ++ replicate k rndT
-        execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
+        when (afterIt /= resetIt) $
+          execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
       Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
 
 computeRndTimeout :: Time -> DiscoveryEffect -> ItemId -> Rnd (Maybe Time)

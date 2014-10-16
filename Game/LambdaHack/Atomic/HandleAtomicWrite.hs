@@ -454,7 +454,7 @@ updLoseSmell lid sms = assert (not $ null sms) $ do
 updTimeItem :: MonadStateWrite m
             => ItemId -> Container -> ItemTimer -> ItemTimer
             -> m ()
-updTimeItem iid c fromIt toIt = do
+updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
   bag <- getsState $ getCBag c
   case iid `EM.lookup` bag of
     Just (k, it) -> do
@@ -477,8 +477,7 @@ ageLevel :: MonadStateWrite m => Delta Time -> LevelId -> m ()
 ageLevel delta lid =
   updateLevel lid $ \lvl -> lvl {ltime = timeShift (ltime lvl) delta}
 
-updRestart :: MonadStateWrite m
-           => State -> m ()
+updRestart :: MonadStateWrite m => State -> m ()
 updRestart = putState
 
 updRestartServer :: MonadStateWrite m => State -> m ()
