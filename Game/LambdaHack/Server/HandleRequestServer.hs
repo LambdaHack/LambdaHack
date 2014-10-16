@@ -32,6 +32,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -341,12 +342,14 @@ reqMoveItem :: (MonadAtomic m, MonadServer m)
 reqMoveItem aid iid k fromCStore toCStore = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsServer aid
+  let fromC = CActor aid fromCStore
+      toC = CActor aid toCStore
+  bagBefore <- getsState $ getCBag toC
   let moveItem = do
         when (fromCStore == CGround) $ do
           seed <- getsServer $ (EM.! iid) . sitemSeedD
           execUpdAtomic $ UpdDiscoverSeed (blid b) (bpos b) iid seed
-        upds <- generalMoveItem iid k (CActor aid fromCStore)
-                                      (CActor aid toCStore)
+        upds <- generalMoveItem iid k fromC toC
         mapM_ execUpdAtomic upds
       req = ReqMoveItem iid k fromCStore toCStore
   if k < 1 || fromCStore == toCStore then execFailure aid req ItemNothing
@@ -356,17 +359,43 @@ reqMoveItem aid iid k fromCStore toCStore = do
   else do
     if calmEnough b activeItems then moveItem
     else execFailure aid req ItemNotCalm
+  -- Reset timeout for equipped periodic items.
   when (toCStore `elem` [CEqp, COrgan]
         && fromCStore `notElem` [CEqp, COrgan]) $ do
     localTime <- getsState $ getLocalTime (blid b)
     discoEffect <- getsServer sdiscoEffect
-    let c = CActor aid toCStore
-    bag <- getsState $ getCBag c
-    let kit@(_, fromIt) = case iid `EM.lookup` bag of
-          Nothing -> assert `failure` (iid, bag, aid, fromCStore)
+    mrndTimeout <- rndToAction $ computeRndTimeout localTime discoEffect iid
+    let (_, beforeIt) = case iid `EM.lookup` bagBefore of
+          Nothing -> assert `failure` (iid, bagBefore, toC)
           Just kit2 -> kit2
-        (_, toIt) = computeMaxTimeout localTime discoEffect iid kit
-    execUpdAtomic $ UpdTimeItem iid c fromIt toIt
+    -- The moved item set (not the whole stack) has its timeout
+    -- reset to a random value between timeout and twice timeout.
+    -- This prevents micromanagement via swapping items in and out of eqp
+    -- and via exact prediction of first timeout after equip.
+    case mrndTimeout of
+      Just rndT -> do
+        bagAfter <- getsState $ getCBag toC
+        let (_, afterIt) = case iid `EM.lookup` bagAfter of
+              Nothing -> assert `failure` (iid, bagAfter, toC)
+              Just kit2 -> kit2
+            resetIt = beforeIt ++ replicate k rndT
+        execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
+      Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
+
+computeRndTimeout :: Time -> DiscoveryEffect -> ItemId -> Rnd (Maybe Time)
+computeRndTimeout localTime discoEffect iid = do
+  let timeoutAspect :: Effect.Aspect Int -> Maybe Int
+      timeoutAspect (Effect.Timeout t) = Just t
+      timeoutAspect _ = Nothing
+  case EM.lookup iid discoEffect of
+    Just ItemAspectEffect{jaspects} -> do
+      case mapMaybe timeoutAspect jaspects of
+        [t] | Effect.Periodic `elem` jaspects -> do
+          rndT <- randomR (0, t)
+          let rndTurns = timeDeltaScale (Delta timeTurn) rndT
+          return $ Just $ timeShift localTime rndTurns
+        _ -> return Nothing
+    _ -> assert `failure` (iid, discoEffect)
 
 -- * ReqProject
 
