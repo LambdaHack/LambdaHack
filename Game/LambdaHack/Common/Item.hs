@@ -116,7 +116,7 @@ seedToAspectsEffects (ItemSeed itemSeed) kind ldepth totalDepth =
       (jaspects, jeffects) = St.evalState rollAE (mkStdGen itemSeed)
   in ItemAspectEffect{..}
 
-type ItemTimer = [(LevelId, Time)]
+type ItemTimer = [Time]
 
 type ItemQuant = (Int, ItemTimer)
 

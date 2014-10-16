@@ -365,8 +365,7 @@ reqMoveItem aid iid k fromCStore toCStore = do
     let kit@(_, fromIt) = case iid `EM.lookup` bag of
           Nothing -> assert `failure` (iid, bag, aid, fromCStore)
           Just kit2 -> kit2
-        (_, toIt) = computeMaxTimeout
-                      (blid b) localTime discoEffect iid kit
+        (_, toIt) = computeMaxTimeout localTime discoEffect iid kit
     execUpdAtomic $ UpdTimeItem iid c fromIt toIt
 
 -- * ReqProject

@@ -22,11 +22,12 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind
 
+-- TODO: remove _lid if still unused after some time
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
 partItemN :: Bool -> Int -> Container -> LevelId -> Time -> ItemFull
           -> (MU.Part, MU.Part)
-partItemN fullInfo n c lid localTime itemFull =
+partItemN fullInfo n c _lid localTime itemFull =
   let genericName = jname $ itemBase itemFull
   in case itemDisco itemFull of
     Nothing ->
@@ -34,10 +35,12 @@ partItemN fullInfo n c lid localTime itemFull =
       in (MU.Text $ flav <+> genericName, "")
     Just _ ->
       let effTs = filter (not . T.null) $ textAllAE fullInfo c itemFull
-      -- The whole stack gets recharged at level change and activation,
-      -- not only the item activated.
-          it1 = filter (\(lid1, t1) -> lid1 == lid && t1 > localTime)
-                       (itemTimer itemFull)
+          it1 = case strengthFromEqpSlot Effect.EqpSlotTimeout itemFull of
+            Nothing -> []
+            Just timeout ->
+              let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
+                  f startT = timeShift startT timeoutTurns > localTime
+              in filter f (itemTimer itemFull)
           len = length it1
           timer = if len == 0
                   then ""

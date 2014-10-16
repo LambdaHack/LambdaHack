@@ -544,9 +544,16 @@ ranged aid = do
               coeff CEqp = 1
               coeff CInv = 1
               coeff CSha = undefined  -- banned
-              fRanged ((mben, (_, cstore)), (iid, ItemFull{..})) =
-                let it1 = filter (\(lid1, t1) -> lid1 == blid b
-                                                 && t1 <= localTime) itemTimer
+              fRanged ((mben, (_, cstore)), (iid, itemFull@ItemFull{..})) =
+                let it1 = case strengthFromEqpSlot Effect.EqpSlotTimeout
+                                                   itemFull of
+                      Nothing -> []
+                      Just timeout ->
+                        let timeoutTurns =
+                              timeDeltaScale (Delta timeTurn) timeout
+                            pending startT =
+                              timeShift startT timeoutTurns > localTime
+                        in filter pending itemTimer
                     len = length it1
                     recharged = len < itemK
                     trange = totalRange itemBase
@@ -561,7 +568,7 @@ ranged aid = do
                            * case mben of
                                Nothing -> -20  -- experimenting is fun
                                Just (_, (_, ben)) -> ben
-                           * if recharged then 1 else 0  -- wait for full power
+                           * if recharged then 1 else 0  -- wait until recharged
                 in if benR < 0 && trange >= chessDist bpos fpos
                    then Just ( -benR * rangeMult `div` 10
                              , ReqProject fpos newEps iid cstore )
@@ -601,8 +608,12 @@ applyItem aid applyGroup = do
       coeff CInv = 1
       coeff CSha = undefined  -- banned
       fTool ((mben, (_, cstore)), (iid, itemFull@ItemFull{..})) =
-        let it1 = filter (\(lid1, t1) -> lid1 == blid b
-                                         && t1 <= localTime) itemTimer
+        let it1 = case strengthFromEqpSlot Effect.EqpSlotTimeout itemFull of
+              Nothing -> []
+              Just timeout ->
+                let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
+                    pending startT = timeShift startT timeoutTurns > localTime
+                in filter pending itemTimer
             len = length it1
             recharged = len < itemK
             durableBonus = if Effect.Durable `elem` jfeature itemBase
@@ -617,7 +628,7 @@ applyItem aid applyGroup = do
                          -- is implemented, enable this for items too heavy,
                          -- etc. for throwing
                        Just (_, (_, ben)) -> ben
-                   * if recharged then 1 else 0  -- wait until full power
+                   * if recharged then 1 else 0  -- wait until can be used
         in if itemLegal itemFull
            then if benR > 0
                 then Just (benR, ReqApply iid cstore)

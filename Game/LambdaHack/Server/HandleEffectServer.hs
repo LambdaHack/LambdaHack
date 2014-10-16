@@ -80,10 +80,12 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
                  in find timeoutAspect aspects
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
-  -- The whole stack gets recharged, at level change and activation,
-  -- not only the item activated. Note that normally the second
-  -- clause should always hold, since timer is reset at level ascending.
-  let it1 = filter (\(lid1, t1) -> t1 > localTime && lid1 == lid) it
+  let it1 = case mtimeout of
+        Just (Effect.Timeout timeout) ->
+          let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
+              pending startT = timeShift startT timeoutTurns > localTime
+          in filter pending it
+        _ -> []
       len = length it1
       recharged = len < k
   assert (len <= k `blame` (kitK, source, target, iid, c)) skip
@@ -91,10 +93,8 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
   -- then such effects are disabled whenever the item is affected
   -- by a Discharge attack (TODO).
   it2 <- case mtimeout of
-    Just (Effect.Timeout timeout) | recharged -> do
-      let rechargeTime =
-            timeShift localTime (timeDeltaScale (Delta timeTurn) timeout)
-      return $ (lid, rechargeTime) : it1
+    Just (Effect.Timeout _) | recharged ->
+      return $ localTime : it1
     _ ->
       -- TODO: if has timeout and not recharged, report failure
       return it1
@@ -549,16 +549,19 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
   -- This time calculation may cause a double move of a foe of the same
   -- speed, but this is OK --- the foe didn't have a chance to move
   -- before, because the arena went inactive, so he moves now one more time.
-  borgan <- setMaxTimeout lidNew timeLastActive $ borgan bOld
-  beqp <- setMaxTimeout lidNew timeLastActive $ beqp bOld
-  let delta = btime bOld `timeDeltaToFrom` timeOld
+  let delta = timeLastActive `timeDeltaToFrom` timeOld
+      shiftByDelta = (`timeShift` delta)
+      computeNewTimeout :: ItemQuant -> ItemQuant
+      computeNewTimeout (k, it) = (k, map shiftByDelta it)
+      setTimeout :: ItemBag -> ItemBag
+      setTimeout bag = EM.map computeNewTimeout bag
       bNew = bOld { blid = lidNew
-                  , btime = timeShift timeLastActive delta
+                  , btime = shiftByDelta $ btime bOld
                   , bpos = posNew
                   , boldpos = posNew  -- new level, new direction
                   , boldlid = lidOld  -- record old level
-                  , borgan
-                  , beqp }
+                  , borgan = setTimeout $ borgan bOld
+                  , beqp = setTimeout $ beqp bOld }
   -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
