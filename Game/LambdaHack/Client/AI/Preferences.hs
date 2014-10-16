@@ -59,8 +59,8 @@ effectToBenefit cops b activeItems fact eff =
     Effect.SendFlying _ -> -10  -- but useful on self sometimes, too
     Effect.PushActor _ -> -10  -- but useful on self sometimes, too
     Effect.PullActor _ -> -10
-    Effect.Teleport p | p < 5 -> 5 * p  -- blink to shoot at foe
-    Effect.Teleport p | p < 10 -> 1  -- neither escape nor repositioning
+    Effect.Teleport p | p <= 9 -> 10  -- blink to shoot at foe
+    Effect.Teleport p | p <= 19 -> 1  -- neither escape nor repositioning
     Effect.Teleport p -> -5 * p  -- get rid of the foe
     Effect.PolyItem _ -> 0  -- AI would loop
     Effect.Identify _ -> 0  -- AI would loop
@@ -100,14 +100,14 @@ totalUsefulness cops b activeItems fact itemFull =
   let ben effects aspects =
         let effBens = map (effectToBenefit cops b activeItems fact) effects
             aspBens = map (aspectToBenefit cops b) aspects
-            periodicEffBens = [0]
-              {- TODO: for Timeout and Periodic only consider Recharging items
+            periodicEffBens = map (effectToBenefit cops b activeItems fact)
+                                  (allRecharging effects)
+            periodicBens =
               case strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull of
                 Nothing -> []
                 Just timeout ->
-                  map (\eff -> eff * (100 `div` timeout) `div` 5) effBens
-              -}
-            selfBens = aspBens ++ periodicEffBens
+                  map (\eff -> eff * 10 `div` timeout) periodicEffBens
+            selfBens = aspBens ++ periodicBens
             eqpSum = if not (null selfBens) && minimum selfBens < -10
                                             && maximum selfBens > 10
                      then 0  -- significant mixed blessings out of AI control

@@ -262,8 +262,8 @@ equipItems aid = do
       -- items should be removed in yieldUnneeded earlier or soon after.
       filterNeeded (_, itemFull) =
         not $ unneeded cops condLightBetrays body activeItems fact itemFull
-      bestThree = bestByEqpSlot (filter filterNeeded invAssocs)
-                                (filter filterNeeded eqpAssocs)
+      bestThree = bestByEqpSlot (filter filterNeeded eqpAssocs)
+                                (filter filterNeeded invAssocs)
                                 (filter filterNeeded shaAssocs)
       bEqpInv = msum $ map (improve CInv)
                 $ map (\(_, (eqp, inv, _)) -> (inv, eqp)) bestThree
@@ -322,7 +322,7 @@ unEquipItems aid = do
       getK ((_, (_, itemFull)) : _) = itemK itemFull
       betterThanInv _ [] = True
       betterThanInv vEqp ((vInv, _) : _) = vEqp > vInv
-      bestThree = bestByEqpSlot invAssocs eqpAssocs shaAssocs
+      bestThree = bestByEqpSlot eqpAssocs invAssocs shaAssocs
   case yieldUnneeded of
     [] ->
       if rsharedStash && calmEnough body activeItems
@@ -361,17 +361,17 @@ bestByEqpSlot :: [(ItemId, ItemFull)]
                   , ( [(Int, (ItemId, ItemFull))]
                     , [(Int, (ItemId, ItemFull))]
                     , [(Int, (ItemId, ItemFull))] ) )]
-bestByEqpSlot invAssocs eqpAssocs shaAssocs =
+bestByEqpSlot eqpAssocs invAssocs shaAssocs =
   let eqpMap = M.map (\g -> (g, [], [])) $ groupByEqpSlot eqpAssocs
       invMap = M.map (\g -> ([], g, [])) $ groupByEqpSlot invAssocs
       shaMap = M.map (\g -> ([], [], g)) $ groupByEqpSlot shaAssocs
       appendThree (g1, g2, g3) (h1, h2, h3) = (g1 ++ h1, g2 ++ h2, g3 ++ h3)
-      invEqpShaMap = M.unionsWith appendThree [invMap, eqpMap, shaMap]
+      eqpInvShaMap = M.unionsWith appendThree [eqpMap, invMap, shaMap]
       bestSingle eqpSlot g = strongestSlot eqpSlot g
       bestThree (eqpSlot, _) (g1, g2, g3) = (bestSingle eqpSlot g1,
                                              bestSingle eqpSlot g2,
                                              bestSingle eqpSlot g3)
-  in M.assocs $ M.mapWithKey bestThree invEqpShaMap
+  in M.assocs $ M.mapWithKey bestThree eqpInvShaMap
 
 hinders :: Bool -> Actor -> [ItemFull] -> ItemFull -> Bool
 hinders condLightBetrays body activeItems itemFull =

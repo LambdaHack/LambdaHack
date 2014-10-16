@@ -71,7 +71,7 @@ strengthMelee :: ItemFull -> Maybe Int
 strengthMelee itemFull =
   let durable = Durable `elem` jfeature (itemBase itemFull)
       p (Hurt d) = [floor (Dice.meanDice d)]
-      p (Burn k) = [k]
+      p (Burn k) | k > 1 = [k]  -- TODO: rethink
       p _ = []
       hasNoEffects = case itemDisco itemFull of
         Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
@@ -79,10 +79,10 @@ strengthMelee itemFull =
         Just ItemDisco{itemKind=ItemKind{ieffects}} ->
           null ieffects
         Nothing -> True
-  in if hasNoEffects
+      psum = sum (strengthEffect999 p itemFull)
+  in if hasNoEffects || psum == 0
      then Nothing
-     else Just $ sum (strengthEffect999 p itemFull)
-                 + if durable then 100 else 0
+     else Just $ psum + if durable then 100 else 0
 
 -- Called only by the server, so 999 is OK.
 strengthOnSmash :: ItemFull -> [Effect Int]
