@@ -61,26 +61,23 @@ itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
 itemEffectAndDestroy source target iid c = do
   discoEffect <- getsServer sdiscoEffect
   case EM.lookup iid discoEffect of
-    Just ItemAspectEffect{jeffects} -> do
+    Just ItemAspectEffect{jeffects, jaspects} -> do
       bag <- getsState $ getCBag c
       case iid `EM.lookup` bag of
         Nothing -> assert `failure` (source, target, iid, c)
-        Just kit -> effectAndDestroy source target iid c False jeffects kit
+        Just kit ->
+          effectAndDestroy source target iid c False jeffects jaspects kit
     _ -> assert `failure` (source, target, iid, c)
 
 effectAndDestroy :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> ItemId -> Container -> Bool
-                 -> [Effect.Effect Int] -> ItemQuant
+                 -> [Effect.Effect Int] -> [Effect.Aspect Int] -> ItemQuant
                  -> m ()
-effectAndDestroy source target iid c periodic effs kitK@(k, it) = do
-  discoEffect <- getsServer sdiscoEffect
-  let mtimeout = case EM.lookup iid discoEffect of
-        Just ItemAspectEffect{jaspects} ->
-          let timeoutAspect :: Effect.Aspect a -> Bool
-              timeoutAspect Effect.Timeout{} = True
-              timeoutAspect _ = False
-          in find timeoutAspect jaspects
-        _ -> assert `failure` (source, target, iid, c, kitK)
+effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
+  let mtimeout = let timeoutAspect :: Effect.Aspect a -> Bool
+                     timeoutAspect Effect.Timeout{} = True
+                     timeoutAspect _ = False
+                 in find timeoutAspect aspects
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
   -- The whole stack gets recharged, at level change and activation,
@@ -146,8 +143,12 @@ itemEffectCause aid tpos ef = do
   case EM.assocs bag of
     [(iid, kit)] -> do
       -- No block against tile, hence unconditional.
+      discoEffect <- getsServer sdiscoEffect
+      let aspects = case EM.lookup iid discoEffect of
+            Just ItemAspectEffect{jaspects} -> jaspects
+            _ -> assert `failure` (aid, tpos, ef, iid)
       execSfxAtomic $ SfxTrigger aid tpos $ F.Cause ef
-      void $ effectAndDestroy aid aid iid c False [ef] kit
+      void $ effectAndDestroy aid aid iid c False [ef] aspects kit
       return True
     ab -> assert `failure` (aid, tpos, ab)
 
