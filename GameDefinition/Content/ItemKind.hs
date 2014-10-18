@@ -27,9 +27,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [bolas, brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone]
+  [bolas, brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone]
 
-bolas,    brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone :: ItemKind
+bolas,    brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone :: ItemKind
 
 gem, necklace, potion, ring, scroll, wand :: ItemKind  -- generic templates
 
@@ -400,21 +400,23 @@ potion6 = potion
                , OnSmash (Explode "distortion")]
   }
 potion7 = potion
-  { ieffects = [ NoEffect "of bait cocktail", Impress
+  { ieffects = [ NoEffect "of bait cocktail", CreateOrgan (5 + d 5) "drunk"
                , OnSmash (Summon [("mobile animal", 1)] $ 1 + dl 2)
                , OnSmash (Explode "waste") ]
   }
 potion8 = potion
-  { ieffects = [ OneOf [Impress, DropBestWeapon, RefillHP 5, Burn 3]
+  { ieffects = [ OneOf [ Impress, DropBestWeapon, RefillHP 5, Burn 3
+                       , CreateOrgan (7 + d 3) "drunk" ]
                , OnSmash (OneOf [ Explode "healing mist"
                                 , Explode "wounding mist"
                                 , Explode "fragrance"
-                                , Explode "explosion blast 10" ]) ]
+                                , Explode "explosion blast 10"
+                                , Explode "whiskey spray" ]) ]
   }
 potion9 = potion
   { irarity  = [(3, 3), (10, 6)]
   , ieffects = [ OneOf [ Dominate, DropBestWeapon, RefillHP 20, Burn 9
-                       , InsertMove 2]
+                       , InsertMove 2, CreateOrgan (4 + d 3) "fast 20" ]
                , OnSmash (OneOf [ Explode "healing mist 2"
                                 , Explode "healing mist 2"
                                 , Explode "pheromone"
@@ -432,6 +434,11 @@ potion10 = potion  -- used only as initial equipmnt; count betray identity
 potion11 = potion
   { irarity  = [(10, 5)]
   , ieffects = [RefillHP 10, OnSmash (Explode "healing mist 2")]
+  }
+potion12 = potion
+  { irarity  = [(1, 500), (10, 500)]
+  , ieffects = [ NoEffect "whiskey", CreateOrgan (20 + d 5) "drunk"
+               , Burn 3, RefillHP 4, OnSmash (Explode "whiskey spray") ]
   }
 
 -- * Non-exploding consumables, not specifically designed for throwing

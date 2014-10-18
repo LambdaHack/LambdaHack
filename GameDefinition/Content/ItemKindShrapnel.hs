@@ -11,9 +11,9 @@ import Game.LambdaHack.Content.ItemKind
 
 shrapnels :: [ItemKind]
 shrapnels =
-  [fragrance, pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistHealing2, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue, spark]
+  [fragrance, pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistHealing2, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue, spark, whiskeySpray]
 
-fragrance,    pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistHealing2, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue, spark :: ItemKind
+fragrance,    pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistHealing2, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue, spark, whiskeySpray :: ItemKind
 
 -- * Parameterized shrapnel
 
@@ -266,6 +266,22 @@ spark = ItemKind
   , iaspects = [AddLight 4]
   , ieffects = [Burn 1]
   , ifeature = [Fragile, toLinger 10, Identified]
+  , idesc    = ""
+  , ikit     = []
+  }
+whiskeySpray = ItemKind
+  { isymbol  = '\''
+  , iname    = "whiskey spray"
+  , ifreq    = [("whiskey spray", 1)]
+  , iflavour = zipPlain [Brown]
+  , icount   = 16
+  , irarity  = [(1, 1)]
+  , iverbHit = "inebriate"
+  , iweight  = 1
+  , iaspects = []
+  , ieffects = [CreateOrgan (3 + d 3) "drunk"]
+  , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
+               , Fragile, Identified ]
   , idesc    = ""
   , ikit     = []
   }

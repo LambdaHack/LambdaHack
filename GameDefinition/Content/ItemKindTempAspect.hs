@@ -31,7 +31,7 @@ tmpAs name aspects = ItemKind
   , iaspects = [Periodic, Timeout 0]  -- activates and vanishes soon,
                                       -- depending on initial timer setting
                ++ aspects
-  , ieffects = []
+  , ieffects = [Recharging (Temporary name)]
   , ifeature = [Identified]
   , idesc    = ""
   , ikit     = []
