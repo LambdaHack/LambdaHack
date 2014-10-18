@@ -91,6 +91,7 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
                 rechargingTs = T.intercalate (T.singleton ' ')
                                $ map ppE $ stripRecharging restEs
                 periodicOrTimeout = case mperiodic of
+                  _ | T.null rechargingTs -> ""
                   Just Effect.Periodic ->
                     case mtimeout of
                       Just (Effect.Timeout t) ->

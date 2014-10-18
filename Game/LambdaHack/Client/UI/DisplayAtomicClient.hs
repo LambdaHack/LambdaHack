@@ -67,7 +67,16 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdCreateItem iid _ kit c -> do
     -- TODO: probably not Nothing if container not CGround
     updateItemSlot Nothing iid
-    itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
+    case c of
+      CActor aid COrgan -> do
+        let verb =
+              MU.Text $ "become" <+> case fst kit of
+                                       1 -> ""
+                                       k -> tshow k <> "-fold"
+        -- This describes all such items already among organs,
+        -- which is useful, because it shows "charging".
+        aiVerbMU aid verb iid Nothing COrgan
+      _ -> itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
     stopPlayBack
   UpdDestroyItem iid _ kit c -> itemVerbMU iid kit "disappear" c
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
@@ -265,20 +274,25 @@ itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
 -- We assume the item is inside the specified container.
 -- So, this function can't be used for, e.g., @UpdDestroyItem@.
 aiVerbMU :: MonadClientUI m
-         => ActorId -> MU.Part -> ItemId -> Int -> CStore -> m ()
-aiVerbMU aid verb iid n cstore = do
+         => ActorId -> MU.Part -> ItemId -> Maybe Int -> CStore -> m ()
+aiVerbMU aid verb iid mk cstore = do
   let c = CActor aid cstore
   bag <- getsState $ getCBag c
   -- The item may no longer be in @c@, but it was
   case iid `EM.lookup` bag of
-    Nothing -> assert `failure` (aid, verb, iid, n, cstore)
+    Nothing -> assert `failure` (aid, verb, iid, cstore)
     Just kit@(k, _) -> do
-      assert (n <= k `blame` (aid, verb, iid, n, cstore)) skip
       itemToF <- itemToFullClient
       lid <- getsState $ lidFromC c
       localTime <- getsState $ getLocalTime lid
       subject <- partAidLeader aid
-      let object = partItemWs n c lid localTime (itemToF iid kit)
+      let object = case mk of
+            Just n ->
+              assert (n <= k `blame` (aid, verb, iid, cstore))
+              $ partItemWs n c lid localTime (itemToF iid kit)
+            Nothing ->
+              let (name, stats) = partItem c lid localTime (itemToF iid kit)
+              in MU.Phrase [name, stats]
           msg = makeSentence [MU.SubjectVerbSg subject verb, object]
       msgAdd msg
 
@@ -348,9 +362,9 @@ moveItemUI verbose iid k aid cstore1 cstore2 = do
                       , "\n" ]
           Nothing -> return ()
       else when (cstore1 == CGround && cstore1 /= cstore2) $
-        aiVerbMU aid "get" iid k cstore2
+        aiVerbMU aid "get" iid (Just k) cstore2
     (_, CGround) | cstore1 /= cstore2 -> do
-      when verbose $ aiVerbMU aid "drop" iid k cstore2
+      when verbose $ aiVerbMU aid "drop" iid (Just k) cstore2
       if bfid b == side
         then updateItemSlot (Just aid) iid
         else updateItemSlot Nothing iid
@@ -492,10 +506,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     spart <- partAidLeader source
     tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
-  SfxProject aid iid cstore -> aiVerbMU aid "aim" iid 1 cstore
-  SfxCatch aid iid cstore -> aiVerbMU aid "catch" iid 1 cstore
-  SfxActivate aid iid cstore -> aiVerbMU aid "activate" iid 1 cstore
-  SfxCheck aid iid cstore -> aiVerbMU aid "deactivate" iid 1 cstore
+  SfxProject aid iid cstore -> aiVerbMU aid "aim" iid (Just 1) cstore
+  SfxCatch aid iid cstore -> aiVerbMU aid "catch" iid (Just 1) cstore
+  SfxActivate aid iid cstore -> aiVerbMU aid "activate" iid (Just 1) cstore
+  SfxCheck aid iid cstore -> aiVerbMU aid "deactivate" iid (Just 1) cstore
   SfxTrigger aid _p _feat ->
     when verbose $ aVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->
@@ -654,7 +668,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         Effect.OnSmash{} -> assert `failure` sfx
         Effect.Recharging{} -> assert `failure` sfx
         Effect.CreateOrgan{} -> skip  -- TODO
-        Effect.Temporary t -> actorVerbMU aid b $ MU.Text $ "be no longer" <+> t
+        Effect.Temporary t -> actorVerbMU aid b $ MU.Text t
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
   SfxActorStart aid -> do

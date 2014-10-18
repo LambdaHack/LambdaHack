@@ -8,6 +8,7 @@ import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.ItemKind
 
 tempAspects :: [ItemKind]
@@ -31,7 +32,7 @@ tmpAs name aspects = ItemKind
   , iaspects = [Periodic, Timeout 0]  -- activates and vanishes soon,
                                       -- depending on initial timer setting
                ++ aspects
-  , ieffects = [Recharging (Temporary name)]
+  , ieffects = [Recharging (Temporary $ "be no longer (so)" <+> name)]
   , ifeature = [Identified]
   , idesc    = ""
   , ikit     = []
