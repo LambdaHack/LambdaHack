@@ -80,7 +80,7 @@ addAnyActor actorFreq lid time mpos = do
         $ newItem cops flavour discoRev actorFreq lid ldepth totalDepth
   case m4 of
     Nothing -> return Nothing
-    Just (itemKnown, trunkFull, seed, k, _) -> do
+    Just (itemKnown, trunkFull, seed, _) -> do
       let ik = maybe (assert `failure` trunkFull) itemKind $ itemDisco trunkFull
           freqNames = map fst $ ifreq ik
           f fact = fgroup (gplayer fact)
@@ -101,7 +101,8 @@ addAnyActor actorFreq lid time mpos = do
           rndToAction rollPos
       let container = (CTrunk fid lid pos)
       trunkId <-
-        registerItem (itemBase trunkFull) itemKnown seed k container False
+        registerItem (itemBase trunkFull) itemKnown seed
+                     (itemK trunkFull) container False
       addActorIid trunkId trunkFull fid pos lid id "it" time
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point

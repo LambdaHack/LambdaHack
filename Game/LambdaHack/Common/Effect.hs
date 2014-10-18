@@ -54,8 +54,11 @@ data Effect a =
   | OneOf ![Effect a]
   | OnSmash !(Effect a)   -- ^ trigger if item smashed (not applied nor meleed)
   | Recharging !(Effect a)  -- ^ this effect inactive until timeout passes
-  | TimedAspect !Int !(Aspect a)
-                          -- ^ enable the aspect for some clips
+  | CreateOrgan !Dice.Dice !Text
+                          -- ^ create a matching item and insert as an organ
+                          --   with the given timer; not restricted
+                          --   to temporary aspect item kinds
+  | Temporary !Text       -- ^ the item is temporary, vanishes at activation
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
 -- | Aspects of items. Those that are named @Add*@ are additive
@@ -184,9 +187,8 @@ effectTrav (Explode t) _ = return $! Explode t
 effectTrav (Recharging effa) f = do
   effb <- effectTrav effa f
   return $! Recharging effb
-effectTrav (TimedAspect k asp) f = do
-  asp2 <- aspectTrav asp f
-  return $! TimedAspect k asp2
+effectTrav (CreateOrgan k t) _ = return $! CreateOrgan k t
+effectTrav (Temporary t) _ = return $! Temporary t
 
 -- | Transform an aspect using a stateful function.
 aspectTrav :: Aspect a -> (a -> St.State s b) -> St.State s (Aspect b)

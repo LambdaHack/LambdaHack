@@ -13,6 +13,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM_)
 import Data.List
 import Data.Maybe
+import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
@@ -240,7 +241,8 @@ effectSem source target iid recharged effect = do
     Effect.OneOf l -> effectOneOf l source target iid recharged
     Effect.OnSmash _ -> return False  -- ignored under normal circumstances
     Effect.Recharging e -> effectRecharging e source target iid recharged
-    Effect.TimedAspect{} -> return False  -- TODO
+    Effect.CreateOrgan nDm t -> effectCreateOrgan target nDm t
+    Effect.Temporary _ -> execSfx >> return True
 
 -- + Individual semantic functions for effects
 
@@ -922,3 +924,33 @@ effectRecharging e source target iid recharged =
   if recharged
   then effectSem source target iid recharged e
   else return False
+
+-- ** CreateOrgan
+
+-- TODO: perhaps factor out common parts with reqMoveItem
+effectCreateOrgan :: (MonadAtomic m, MonadServer m)
+                  => ActorId -> Dice.Dice -> Text
+                  -> m Bool
+effectCreateOrgan target nDm t = do
+  tb <- getsState $ getActorBody target
+  k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
+  localTime <- getsState $ getLocalTime (blid tb)
+  let kturns = localTime `timeShift` timeDeltaScale (Delta timeTurn) k
+      litemFreq = [(toGroupName t, 1)]
+      c = CActor target COrgan
+  bagBefore <- getsState $ getCBag c
+  mi <- rollAndRegisterItem (blid tb) litemFreq c True
+  case mi of
+    Nothing -> assert `failure` (blid tb, litemFreq, c)
+    Just (iid, (itemFull, _)) -> do
+      bagAfter <- getsState $ getCBag c
+      let beforeIt = case iid `EM.lookup` bagBefore of
+            Nothing -> []  -- no such items before organ created
+            Just (_, it2) -> it2
+          afterIt = case iid `EM.lookup` bagAfter of
+            Nothing -> assert `failure` (iid, bagAfter, c)
+            Just (_, it2) -> it2
+      let newIt = beforeIt ++ replicate (itemK itemFull) kturns
+      when (afterIt /= newIt) $
+        execUpdAtomic $ UpdTimeItem iid c afterIt newIt
+      return True

@@ -84,8 +84,9 @@ rollAndRegisterItem lid itemFreq container verbose = do
         $ newItem cops flavour discoRev itemFreq lid ldepth totalDepth
   case m4 of
     Nothing -> return Nothing
-    Just (itemKnown, itemFull, seed, k, itemGroup) -> do
-      iid <- registerItem (itemBase itemFull) itemKnown seed k container verbose
+    Just (itemKnown, itemFull, seed, itemGroup) -> do
+      iid <- registerItem (itemBase itemFull) itemKnown seed
+                          (itemK itemFull) container verbose
       return $ Just (iid, (itemFull, itemGroup))
 
 placeItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()

@@ -653,7 +653,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         Effect.OneOf{} -> skip
         Effect.OnSmash{} -> assert `failure` sfx
         Effect.Recharging{} -> assert `failure` sfx
-        Effect.TimedAspect{} -> skip  -- TODO
+        Effect.CreateOrgan{} -> skip  -- TODO
+        Effect.Temporary t -> actorVerbMU aid b $ MU.Text $ "be no longer" <+> t
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
   SfxActorStart aid -> do

@@ -71,7 +71,8 @@ effectToBenefit cops b activeItems fact eff =
     Effect.OnSmash _ -> -10
     Effect.Recharging e -> effectToBenefit cops b activeItems fact e
                            `div` 3  -- TODO: use Timeout
-    Effect.TimedAspect k asp -> k * (aspectToBenefit cops b asp) `div` 50
+    Effect.CreateOrgan _k _t -> 0  -- TODO: hard; look up t
+    Effect.Temporary _ -> 0
 
 -- | Return the value to add to effect value and another to multiply it.
 aspectToBenefit :: Kind.COps -> Actor -> Effect.Aspect Int -> Int
