@@ -436,8 +436,7 @@ potion11 = potion
   , ieffects = [RefillHP 10, OnSmash (Explode "healing mist 2")]
   }
 potion12 = potion
-  { irarity  = [(1, 500), (10, 500)]
-  , ieffects = [ NoEffect "whiskey", CreateOrgan (20 + d 5) "drunk"
+  { ieffects = [ NoEffect "whiskey", CreateOrgan (20 + d 5) "drunk"
                , Burn 3, RefillHP 4, OnSmash (Explode "whiskey spray") ]
   }
 
@@ -745,14 +744,12 @@ jumpingPole = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [White]
   , icount   = 1
-  , irarity  = [(1, 4), (10, 2)]
+  , irarity  = [(1, 2), (10, 1)]
   , iverbHit = "prod"
   , iweight  = 10000
   , iaspects = []
-  , ieffects = [InsertMove 2]  -- TODO: implement with timed speed instead
-                               -- and then make Durable, freq 2, and just trade
-                               -- taken turn now for a free turn later
-  , ifeature = [Applicable, Identified]
+  , ieffects = [CreateOrgan 1 "fast 20"]
+  , ifeature = [Durable, Applicable, Identified]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
   , ikit     = []
   }
