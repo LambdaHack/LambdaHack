@@ -143,11 +143,12 @@ endClip arenas = do
     modifyServer $ \ser -> ser {swriteSave = False}
     writeSaveAll False
   when (clipN `mod` leadLevelClips == 0) leadLevelSwitch
+  -- Periodic activation needed each clip, to delete temporary organs, etc.
+  mapM_ activatePeriodicLevel arenas
   -- Add monsters each turn, not each clip.
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
   if clipMod == 1 then do
-    mapM_ activatePeriodicLevel arenas
     arena <- rndToAction $ oneOf arenas
     spawnMonster arena
     stopAfter <- getsServer $ sstopAfter . sdebugSer
@@ -163,8 +164,6 @@ endClip arenas = do
   else return True
 
 -- | Trigger periodic items for all actors on the given level.
--- This is done each game turn, not player turn, not to overpower
--- fast actors (assuming the effects are positive).
 activatePeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 activatePeriodicLevel lid = do
   discoEffect <- getsServer sdiscoEffect

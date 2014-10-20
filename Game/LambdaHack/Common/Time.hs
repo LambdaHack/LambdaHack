@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Time
   , Delta(..), timeShift, timeDeltaToFrom, timeDeltaReverse, timeDeltaScale
   , timeDeltaToDigit, ticksPerMeter
   , Speed, toSpeed, fromSpeed, speedZero, speedNormal
-  , speedScale, speedAdd, speedNegate
+  , speedScale, timeDeltaDiv, speedAdd, speedNegate
   , speedFromWeight, rangeFromSpeed, rangeFromSpeedAndLinger
   ) where
 
@@ -103,6 +103,10 @@ timeDeltaToFrom (Time t1) (Time t2) = Delta $ Time (t1 - t2)
 -- | Scale the time vector by an @Int@ scalar value.
 timeDeltaScale :: Delta Time -> Int -> Delta Time
 timeDeltaScale (Delta (Time t)) s = Delta (Time (t * fromIntegral s))
+
+-- | Divide a time vector.
+timeDeltaDiv :: Delta Time -> Int -> Delta Time
+timeDeltaDiv (Delta (Time t)) n = Delta (Time (t `div` fromIntegral n))
 
 -- | Represent the main 10 thresholds of a time range by digits,
 -- given the total length of the time range.

@@ -1,6 +1,6 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemServer
-  ( rollAndRegisterItem, registerItem, createItems
+  ( rollItem, rollAndRegisterItem, registerItem, createItems
   , placeItemsInDungeon, embedItemsInDungeon, fullAssocsServer
   , activeItemsServer, itemToFullServer, mapActorCStore_
   ) where
@@ -71,17 +71,22 @@ embedItem lid pos tk = do
       container = CEmbed lid pos
   void $ rollAndRegisterItem lid itemFreq container False
 
-rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
-                    => LevelId -> Freqs -> Container -> Bool
-                    -> m (Maybe (ItemId, (ItemFull, GroupName)))
-rollAndRegisterItem lid itemFreq container verbose = do
+rollItem :: (MonadAtomic m, MonadServer m)
+         => LevelId -> Freqs
+         -> m (Maybe (ItemKnown, ItemFull, ItemSeed, GroupName))
+rollItem lid itemFreq = do
   cops <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoKindRev
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
-  m4 <- rndToAction
-        $ newItem cops flavour discoRev itemFreq lid ldepth totalDepth
+  rndToAction $ newItem cops flavour discoRev itemFreq lid ldepth totalDepth
+
+rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
+                    => LevelId -> Freqs -> Container -> Bool
+                    -> m (Maybe (ItemId, (ItemFull, GroupName)))
+rollAndRegisterItem lid itemFreq container verbose = do
+  m4 <- rollItem lid itemFreq
   case m4 of
     Nothing -> return Nothing
     Just (itemKnown, itemFull, seed, itemGroup) -> do

@@ -10,6 +10,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.HashMap.Strict as HM
 import Data.Key (mapWithKeyM_)
 import Data.List
 import Data.Maybe
@@ -927,30 +928,44 @@ effectRecharging e source target iid recharged =
 
 -- ** CreateOrgan
 
--- TODO: perhaps factor out common parts with reqMoveItem
 effectCreateOrgan :: (MonadAtomic m, MonadServer m)
                   => ActorId -> Dice.Dice -> Text
                   -> m Bool
 effectCreateOrgan target nDm t = do
-  tb <- getsState $ getActorBody target
   k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
-  localTime <- getsState $ getLocalTime (blid tb)
-  let kturns = localTime `timeShift` timeDeltaScale (Delta timeTurn) k
-      litemFreq = [(toGroupName t, 1)]
-      c = CActor target COrgan
+  let c = CActor target COrgan
   bagBefore <- getsState $ getCBag c
-  mi <- rollAndRegisterItem (blid tb) litemFreq c True
-  case mi of
-    Nothing -> assert `failure` (blid tb, litemFreq, c)
-    Just (iid, (itemFull, _)) -> do
+  tb <- getsState $ getActorBody target
+  let litemFreq = [(toGroupName t, 1)]
+  m4 <- rollItem (blid tb) litemFreq
+  let (itemKnown, itemFull, seed, _) = case m4 of
+        Nothing -> assert `failure` (blid tb, litemFreq, c)
+        Just i4 -> i4
+  itemRev <- getsServer sitemRev
+  let mquant = case HM.lookup itemKnown itemRev of
+        Nothing -> Nothing
+        Just iid -> (iid,) <$> iid `EM.lookup` bagBefore
+  case mquant of
+    Nothing -> do  -- no such items before organ created, create one
+      iid <- registerItem (itemBase itemFull) itemKnown seed
+                          (itemK itemFull) c True
       bagAfter <- getsState $ getCBag c
-      let beforeIt = case iid `EM.lookup` bagBefore of
-            Nothing -> []  -- no such items before organ created
-            Just (_, it2) -> it2
-          afterIt = case iid `EM.lookup` bagAfter of
+      localTime <- getsState $ getLocalTime (blid tb)
+      let newTimer = localTime `timeShift` timeDeltaScale (Delta timeTurn) k
+          newIt = replicate (itemK itemFull) newTimer
+      let afterIt = case iid `EM.lookup` bagAfter of
             Nothing -> assert `failure` (iid, bagAfter, c)
             Just (_, it2) -> it2
-      let newIt = beforeIt ++ replicate (itemK itemFull) kturns
       when (afterIt /= newIt) $
         execUpdAtomic $ UpdTimeItem iid c afterIt newIt
+      return True
+    Just (iid, (_, afterIt)) -> do  -- already has such items, increase timer
+      let newIt = case afterIt of
+            [] -> []  -- permanent item, we don't touch it
+            timer : rest ->  -- we increase duration only by half delta
+              let halfTurns = timeDeltaScale (Delta timeTurn) k `timeDeltaDiv` 2
+                  newTimer = timer `timeShift` halfTurns
+              in newTimer : rest
+      when (afterIt /= newIt) $
+        execUpdAtomic $ UpdTimeItem iid c afterIt newIt  -- TODO: announce
       return True

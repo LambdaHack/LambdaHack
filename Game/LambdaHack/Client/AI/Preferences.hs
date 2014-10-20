@@ -70,8 +70,9 @@ effectToBenefit cops b activeItems fact eff =
     Effect.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
     Effect.OnSmash _ -> -10
     Effect.Recharging e -> effectToBenefit cops b activeItems fact e
-                           `div` 3  -- TODO: use Timeout
+                           `divUp` 3  -- TODO: use Timeout
     Effect.CreateOrgan _k _t -> 0  -- TODO: hard; look up t
+                                   -- and also check if t active at the time
     Effect.Temporary _ -> 0
 
 -- | Return the value to add to effect value and another to multiply it.
@@ -107,7 +108,7 @@ totalUsefulness cops b activeItems fact itemFull =
               case strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull of
                 Nothing -> []
                 Just timeout ->
-                  map (\eff -> eff * 10 `div` timeout) periodicEffBens
+                  map (\eff -> eff * 10 `divUp` timeout) periodicEffBens
             selfBens = aspBens ++ periodicBens
             eqpSum = if not (null selfBens) && minimum selfBens < -10
                                             && maximum selfBens > 10
