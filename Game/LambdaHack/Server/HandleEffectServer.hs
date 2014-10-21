@@ -14,7 +14,6 @@ import qualified Data.HashMap.Strict as HM
 import Data.Key (mapWithKeyM_)
 import Data.List
 import Data.Maybe
-import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
@@ -929,14 +928,14 @@ effectRecharging e source target iid recharged =
 -- ** CreateOrgan
 
 effectCreateOrgan :: (MonadAtomic m, MonadServer m)
-                  => ActorId -> Dice.Dice -> Text
+                  => ActorId -> Dice.Dice -> GroupName
                   -> m Bool
-effectCreateOrgan target nDm t = do
+effectCreateOrgan target nDm grp = do
   k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   let c = CActor target COrgan
   bagBefore <- getsState $ getCBag c
   tb <- getsState $ getActorBody target
-  let litemFreq = [(toGroupName t, 1)]
+  let litemFreq = [(grp, 1)]
   m4 <- rollItem (blid tb) litemFreq
   let (itemKnown, itemFull, seed, _) = case m4 of
         Nothing -> assert `failure` (blid tb, litemFreq, c)

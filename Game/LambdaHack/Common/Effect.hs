@@ -54,7 +54,7 @@ data Effect a =
   | OneOf ![Effect a]
   | OnSmash !(Effect a)   -- ^ trigger if item smashed (not applied nor meleed)
   | Recharging !(Effect a)  -- ^ this effect inactive until timeout passes
-  | CreateOrgan !Dice.Dice !Text
+  | CreateOrgan !Dice.Dice !GroupName
                           -- ^ create a matching item and insert as an organ
                           --   with the given timer; not restricted
                           --   to temporary aspect item kinds
