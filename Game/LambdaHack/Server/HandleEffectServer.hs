@@ -213,7 +213,7 @@ effectSem source target iid recharged effect = do
   case effect of
     Effect.NoEffect _ -> return False
     Effect.RefillHP p -> effectRefillHP execSfx p source target
-    Effect.Hurt nDm -> effectHurt nDm source target
+    Effect.Hurt nDm -> effectHurt nDm source target False
     Effect.RefillCalm p -> effectRefillCalm execSfx p target
     Effect.Dominate -> effectDominate source target iid recharged
     Effect.Impress -> effectImpress execSfx source target
@@ -282,9 +282,9 @@ halveCalm target = do
 -- ** Hurt
 
 effectHurt :: (MonadAtomic m, MonadServer m)
-           => Dice.Dice -> ActorId -> ActorId
+           => Dice.Dice -> ActorId -> ActorId -> Bool
            -> m Bool
-effectHurt nDm source target = do
+effectHurt nDm source target silent = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
@@ -298,7 +298,7 @@ effectHurt nDm source target = do
   execUpdAtomic $ UpdRefillHP target deltaHP
   when (source /= target && not (bproj tb)) $ halveCalm target
   execSfxAtomic $ SfxEffect (bfid sb) target $
-    if source == target
+    if source == target || silent
     then Effect.RefillHP deltaDiv  -- no SfxStrike, so treat as any heal/wound
     else Effect.Hurt (Dice.intToDice deltaDiv)  -- avoid spam; SfxStrike sent
   return True
@@ -456,7 +456,7 @@ effectBurn :: (MonadAtomic m, MonadServer m)
            -> m Bool
 effectBurn execSfx power source target = do
   -- Damage from both impact and fire.
-  void $ effectHurt (Dice.intToDice $ 2 * power) source target
+  void $ effectHurt (Dice.intToDice $ 2 * power) source target True
   execSfx
   return True
 
