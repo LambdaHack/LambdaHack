@@ -17,7 +17,7 @@ tempAspects =
 
 tmpFast20,    tmpDrunk :: ItemKind
 
--- The @name@ will be used in item description, so it should be an adjetive
+-- The @name@ is be used in item description, so it should be an adjetive
 -- describing the temporary set of aspects.
 tmpAs :: Text -> [Aspect Dice] -> ItemKind
 tmpAs name aspects = ItemKind

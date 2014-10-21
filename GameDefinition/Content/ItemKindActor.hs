@@ -5,7 +5,6 @@ import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Misc
@@ -139,10 +138,9 @@ elbow = ItemKind
 
 -- * Animals
 
-animalSkillMalus :: Aspect Dice
+animalSkillMalus :: Skills
 animalSkillMalus =
-  AddSkills $ EM.fromList
-  $ zip [AbMove, AbMelee, AbAlter, AbWait, AbTrigger] [-1, -1..]
+  EM.fromList $ zip [AbDisplace, AbMoveItem, AbProject, AbApply] [-1, -1..]
 
 armadillo = ItemKind
   { isymbol  = 'a'
@@ -154,7 +152,7 @@ armadillo = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 30, AddSpeed 18
-               , animalSkillMalus, AddSkills $ EM.singleton AbAlter (-1)
+               , AddSkills $ EM.insert AbAlter (-1) animalSkillMalus
                , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -172,7 +170,7 @@ gilaMonster = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 15, AddMaxCalm 60, AddSpeed 15
-               , animalSkillMalus, AddSkills $ EM.singleton AbAlter (-1)
+               , AddSkills $ EM.insert AbAlter (-1) animalSkillMalus
                , AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -190,7 +188,7 @@ komodoDragon = ItemKind  -- bad hearing
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 40, AddMaxCalm 60, AddSpeed 18
-               , animalSkillMalus, AddSight 3 ]
+               , AddSkills animalSkillMalus, AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -208,7 +206,7 @@ hyena = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 60, AddSpeed 35
-               , animalSkillMalus, AddSight 3 ]
+               , AddSkills animalSkillMalus, AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -225,7 +223,7 @@ alligator = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 60, AddSpeed 17
                , AddArmorMelee 30, AddArmorRanged 30
-               , animalSkillMalus, AddSight 3 ]
+               , AddSkills animalSkillMalus, AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -245,7 +243,7 @@ hornetSwarm = ItemKind
   , iverbHit = "thud"
   , iweight  = 1000
   , iaspects = [ AddMaxHP 5, AddMaxCalm 60, AddSpeed 30, AddSight 2
-               , animalSkillMalus, AddSkills $ EM.singleton AbAlter (-1)
+               , AddSkills $ EM.insert AbAlter (-1) animalSkillMalus
                , AddArmorMelee 90, AddArmorRanged 90 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -261,7 +259,7 @@ thornbush = ItemKind
   , irarity  = [(3, 2), (10, 1)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20, animalSkillMalus
+  , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20
                , AddSkills
                  $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1, -1..])
                    `addSkills` EM.fromList (zip [AbWait, AbMelee] [1, 1..])
@@ -280,7 +278,7 @@ geyser = ItemKind
   , irarity  = [(5, 2), (10, 1)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 100, AddMaxCalm 999, AddSpeed 5, animalSkillMalus
+  , iaspects = [ AddMaxHP 100, AddMaxCalm 999, AddSpeed 5
                , AddSkills
                  $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1, -1..])
                    `addSkills` EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
