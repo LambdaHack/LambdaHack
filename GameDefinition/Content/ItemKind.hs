@@ -224,8 +224,7 @@ gorget = ItemKind
                , Timeout $ (d 3 + 3 - dl 3) |*| 10
                , AddArmorMelee 1
                , AddArmorRanged 1 ]
-  , ieffects = [ Recharging (RefillCalm 1)
-               , RefillHP (-1) ]  -- extra pain without periodic
+  , ieffects = [Recharging (RefillCalm 1)]  -- extra pain without periodic
   , ifeature = [ Durable, Precious, EqpSlot EqpSlotPeriodic "", Identified
                , toVelocity 50 ]  -- not dense enough
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
@@ -264,7 +263,7 @@ necklace3 = necklace
   { iaspects = (Timeout $ (d 3 + 3 - dl 3) |*| 10) : iaspects necklace
   , ieffects = [ Recharging (Paralyze $ 5 + d 5 + dl 5)
                , Recharging (RefillCalm 999)
-               , Paralyze $ 10 + d 10 + dl 10  -- extra pain without periodic
+               , Paralyze $ 15 + d 15  -- extra pain without periodic
                , OnSmash (Explode "explosion blast 2") ]
   , ifeature = Fragile : ifeature necklace  -- too powerful projection
   }

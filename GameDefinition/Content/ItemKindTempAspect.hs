@@ -39,9 +39,8 @@ tmpAs name aspects = ItemKind
   }
 
 tmpFast20 = tmpAs "fast 20" [AddSpeed 20]
-tmpDrunk = tmpAs "drunk" [ AddHurtMelee 20  -- fury
+tmpDrunk = tmpAs "drunk" [ AddHurtMelee 30  -- fury
                          , AddArmorMelee (-20)
-                         , AddHurtRanged (-20)
                          , AddArmorRanged (-20)
                          , AddSight (-7)
                          ]
