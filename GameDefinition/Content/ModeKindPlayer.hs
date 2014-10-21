@@ -78,7 +78,7 @@ playerAntiMonster = playerMonster
 playerAnimal = Player
   { fname = "Animal Kingdom"
   , fgroup = "animal"
-  , fskillsOther = animalSkills
+  , fskillsOther = unitSkills
   , fcanEscape = False
   , fneverEmpty = False
   , fhasNumbers = False
@@ -114,12 +114,9 @@ playerHorror = Player
   , fhasUI = False
   }
 
-meleeAdjacent, _meleeAndRanged, animalSkills :: Skills
+meleeAdjacent, _meleeAndRanged :: Skills
 
 meleeAdjacent = EM.fromList $ zip [AbWait, AbMelee] [1, 1..]
 
 -- Melee and reaction fire.
 _meleeAndRanged = EM.fromList $ zip [AbWait, AbMelee, AbProject] [1, 1..]
-
-animalSkills =
-  EM.fromList $ zip [AbMove, AbMelee, AbAlter, AbWait, AbTrigger] [1, 1..]
