@@ -73,16 +73,21 @@ strengthMelee itemFull =
       p (Hurt d) = [floor (Dice.meanDice d)]
       p (Burn k) | k > 1 = [k]  -- TODO: rethink
       p _ = []
-      hasNoEffects = case itemDisco itemFull of
+      hasExtraEffects = case itemDisco itemFull of
         Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
-          null jeffects
+          any (\ef -> null $ p ef) jeffects
         Just ItemDisco{itemKind=ItemKind{ieffects}} ->
-          null ieffects
-        Nothing -> True
+          any (\ef -> null $ p ef) ieffects
+        Nothing -> False
+      -- We assume extra weapon effects are usually useful and so such
+      -- weapons are preferred over weapons with the same power, by default.
+      -- If the player doesn't like a particular weapon's extra effect,
+      -- he has to manage this manually.
+      bonusExtraEffects = if hasExtraEffects then 1 else 0
       psum = sum (strengthEffect999 p itemFull)
-  in if hasNoEffects || psum == 0
+  in if psum == 0
      then Nothing
-     else Just $ psum + if durable then 100 else 0
+     else Just $ bonusExtraEffects + psum + if durable then 100 else 0
 
 -- Called only by the server, so 999 is OK.
 strengthOnSmash :: ItemFull -> [Effect Int]
