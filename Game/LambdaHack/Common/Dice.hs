@@ -69,7 +69,8 @@ liftA2AdditiveName :: Text
 liftA2AdditiveName name f fra frb =
   let frRes = liftA2 f fra frb
       nameRes =
-        if nameFrequency fra == "0" then nameFrequency frb
+        if nameFrequency fra == "0" then
+          (if name == "+" then "" else name) <+> nameFrequency frb
         else if nameFrequency frb == "0" then nameFrequency fra
         else nameFrequency fra <+> name <+> nameFrequency frb
   in renameFreq nameRes frRes
