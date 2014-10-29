@@ -143,14 +143,15 @@ endClip arenas = do
     modifyServer $ \ser -> ser {swriteSave = False}
     writeSaveAll False
   when (clipN `mod` leadLevelClips == 0) leadLevelSwitch
-  -- Periodic activation needed each clip, to delete temporary organs, etc.
-  mapM_ activatePeriodicLevel arenas
-  -- Add monsters each turn, not each clip.
-  -- Do this on only one of the arenas to prevent micromanagement,
-  -- e.g., spreading leaders across levels to bump monster generation.
   if clipMod == 1 then do
+    -- Periodic activation only once per turn, for speed, but on all arenas.
+    mapM_ activatePeriodicLevel arenas
+    -- Add monsters each turn, not each clip.
+    -- Do this on only one of the arenas to prevent micromanagement,
+    -- e.g., spreading leaders across levels to bump monster generation.
     arena <- rndToAction $ oneOf arenas
     spawnMonster arena
+    -- Check, once per turn, for benchmark game stop, after a set time.
     stopAfter <- getsServer $ sstopAfter . sdebugSer
     case stopAfter of
       Nothing -> return True
