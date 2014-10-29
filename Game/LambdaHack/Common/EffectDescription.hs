@@ -91,7 +91,9 @@ rawEffectToSuff effectText effectMInt =
       in makePhrase ["of", MU.CardinalWs (length l) subject]
     (OnSmash _, _) -> ""  -- conditional effect, TMI
     (Recharging _, _) -> ""  -- printed inside Periodic or Timeout
-    (CreateOrgan k t, _) -> "(keep" <+> tshow k <> ":" <+> tshow t <> ")"
+    (CreateOrgan k t, _) ->
+      let stime = if k == 0 then "" else tshow k <> ":"
+      in "(keep" <+> stime <+> tshow t <> ")"
     (Temporary _, _) -> ""
     _ -> assert `failure` (effectText, effectMInt)
 

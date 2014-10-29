@@ -89,6 +89,7 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
                          then map ppA restAs ++ map ppE restEs
                          else map ppE restEs ++ map ppA restAs
                 rechargingTs = T.intercalate (T.singleton ' ')
+                               $ filter (not . T.null)
                                $ map ppE $ stripRecharging restEs
                 periodicOrTimeout = case mperiodic of
                   _ | T.null rechargingTs -> ""
