@@ -32,7 +32,7 @@ tmpAs name aspects = ItemKind
   , iaspects = [Periodic, Timeout 1]  -- activates and vanishes soon,
                                       -- depending on initial timer setting
                ++ aspects
-  , ieffects = [Recharging (Temporary $ "be no longer" <+> name)]
+  , ieffects = [Recharging (Temporary $ "be about to stop being" <+> name)]
   , ifeature = [Identified]
   , idesc    = ""
   , ikit     = []
@@ -56,10 +56,10 @@ tmpDrunk = tmpAs "drunk" [ AddHurtMelee 30  -- fury
 tmpRegenerating =
   let tmp = tmpAs "regenerating" []
   in tmp { icount = 7 + d 5
-         , ieffects = ieffects tmp ++ [Recharging (RefillHP 1)]
+         , ieffects = [Recharging (RefillHP 1)] ++ ieffects tmp
          }
 tmpPoisoned =
   let tmp = tmpAs "poisoned" []
   in tmp { icount = 7 + d 5
-         , ieffects = ieffects tmp ++ [Recharging (RefillHP (-1))]
+         , ieffects = [Recharging (RefillHP (-1))] ++ ieffects tmp
          }

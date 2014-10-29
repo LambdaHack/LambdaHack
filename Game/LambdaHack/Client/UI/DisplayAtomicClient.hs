@@ -548,7 +548,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         displayActorStart b animDie
     else case effect of
         Effect.NoEffect t -> msgAdd $ "Nothing happens." <+> t
-        Effect.RefillHP p | p == 1 -> skip  -- no spam from regen items
+        Effect.RefillHP p | p == 1 -> skip  -- no spam from regeneration
         Effect.RefillHP p | p > 0 -> do
           if fid == side then
             actorVerbMU aid b "feel healthier"
@@ -557,6 +557,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
           displayActorStart b animFrs
+        Effect.RefillHP p | p == -1 -> skip  -- no spam from poison
         Effect.RefillHP _ -> do
           if fid == side then
             actorVerbMU aid b "feel wounded"

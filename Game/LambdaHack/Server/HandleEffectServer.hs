@@ -242,7 +242,7 @@ effectSem source target iid recharged effect = do
     Effect.OnSmash _ -> return False  -- ignored under normal circumstances
     Effect.Recharging e -> effectRecharging e source target iid recharged
     Effect.CreateOrgan nDm t -> effectCreateOrgan target nDm t
-    Effect.Temporary _ -> execSfx >> return True
+    Effect.Temporary _ -> effectTemporary execSfx source iid
 
 -- + Individual semantic functions for effects
 
@@ -945,20 +945,7 @@ effectCreateOrgan target nDm grp = do
         Nothing -> Nothing
         Just iid -> (iid,) <$> iid `EM.lookup` bagBefore
   case mquant of
-    Nothing -> do  -- no such items before organ created, create one
-      iid <- registerItem (itemBase itemFull) itemKnown seed
-                          (itemK itemFull) c True
-      bagAfter <- getsState $ getCBag c
-      localTime <- getsState $ getLocalTime (blid tb)
-      let newTimer = localTime `timeShift` timeDeltaScale (Delta timeTurn) k
-          newIt = replicate (itemK itemFull) newTimer
-      let afterIt = case iid `EM.lookup` bagAfter of
-            Nothing -> assert `failure` (iid, bagAfter, c)
-            Just (_, it2) -> it2
-      when (afterIt /= newIt) $
-        execUpdAtomic $ UpdTimeItem iid c afterIt newIt
-      return True
-    Just (iid, (_, afterIt)) -> do  -- already has such items, increase timer
+    Just (iid, (1, afterIt)) -> do  -- already has such an item, increase timer
       let newIt = case afterIt of
             [] -> []  -- permanent item, we don't touch it
             timer : rest ->  -- we increase duration only by half delta
@@ -968,3 +955,30 @@ effectCreateOrgan target nDm grp = do
       when (afterIt /= newIt) $
         execUpdAtomic $ UpdTimeItem iid c afterIt newIt  -- TODO: announce
       return True
+    _ -> do
+      -- Multiple such items, so it's a periodic poison, etc., so just stack,
+      -- resetting the timer; or no such items at all, so create one.
+      iid <- registerItem (itemBase itemFull) itemKnown seed
+                          (itemK itemFull) c True
+      bagAfter <- getsState $ getCBag c
+      localTime <- getsState $ getLocalTime (blid tb)
+      let newTimer = localTime `timeShift` timeDeltaScale (Delta timeTurn) k
+          (afterK, afterIt) = case iid `EM.lookup` bagAfter of
+            Nothing -> assert `failure` (iid, bagAfter, c)
+            Just kit -> kit
+          newIt = replicate afterK newTimer
+      when (afterIt /= newIt) $
+        execUpdAtomic $ UpdTimeItem iid c afterIt newIt
+      return True
+
+-- ** Temporary
+
+effectTemporary :: (MonadAtomic m, MonadServer m)
+                => m () -> ActorId -> ItemId
+                -> m Bool
+effectTemporary execSfx source iid = do
+  bag <- getsState $ getCBag $ CActor source COrgan
+  case iid `EM.lookup` bag of
+    Just (1, _) -> execSfx  -- last copy about to be destroyed
+    _ -> skip  -- already vanished or still many copied to go or not an organ
+  return True
