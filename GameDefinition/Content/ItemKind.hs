@@ -247,7 +247,8 @@ necklace = ItemKind
   , ikit     = []
   }
 necklace1 = necklace
-  { iaspects = (Timeout $ (d 3 + 4 - dl 3) |*| 10) : iaspects necklace
+  { irarity  = [(1, 1), (10, 2)]
+  , iaspects = (Timeout $ (d 3 + 4 - dl 3) |*| 10) : iaspects necklace
   , ieffects = [ Recharging (RefillHP 1)
                , Burn 1 ]  -- only beneficial if activation is periodic
   , idesc    = "A cord of dried herbs and healing berries."
