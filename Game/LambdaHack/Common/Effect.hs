@@ -97,7 +97,8 @@ data Feature =
   | Identified              -- ^ the item starts identified
   | Applicable              -- ^ AI and UI flag: consider applying
   | EqpSlot !EqpSlot !Text  -- ^ AI and UI flag: goes to inventory
-  | Precious                -- ^ AI and UI flag: don't risk identifying by use
+  | Precious                -- ^ can't throw or apply if not calm enough;
+                            --   AI and UI flag: don't risk identifying by use
   | Tactic !Tactic          -- ^ overrides actor's tactic (TODO)
   deriving (Show, Eq, Ord, Generic)
 

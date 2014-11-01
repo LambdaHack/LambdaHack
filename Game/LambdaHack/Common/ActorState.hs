@@ -14,7 +14,7 @@ module Game.LambdaHack.Common.ActorState
   , itemPrice, calmEnough, calmEnough10, hpEnough, regenCalmDelta
   , actorInAmbient, actorSkills, maxActorSkills, dispEnemy, radiusBlind
   , fullAssocs, itemToFull, goesIntoInv, eqpOverfull, storeFromC, lidFromC
-  , unknownPrecious, permittedRanged
+  , unknownPrecious, permittedProject, permittedApply
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -281,25 +281,36 @@ hpEnough b activeItems =
   let hpMax = max 1 $ sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
   in 2 * xM hpMax <= 3 * bhp b
 
-unknownPrecious :: ItemFull -> Bool
-unknownPrecious itemFull =
-  Effect.Durable `notElem` jfeature (itemBase itemFull)  -- if durable, no risk
-  && case itemDisco itemFull of
-    Just ItemDisco{itemAE=Just _} -> False
-    _ -> Effect.Precious `elem` jfeature (itemBase itemFull)
+-- The item should not be activated nor thrown because it's too delicate
+-- to operate when not calm or becuse it's too precious to identify by use.
+unknownPrecious :: Bool -> ItemFull -> Bool
+unknownPrecious calm10 itemFull =
+  let isPrecious = Effect.Precious `elem` jfeature (itemBase itemFull)
+  in not calm10 && isPrecious
+     || Effect.Durable `notElem` jfeature (itemBase itemFull)
+        && case itemDisco itemFull of
+          Just ItemDisco{itemAE=Just _} -> False
+          _ -> isPrecious
 
-permittedRanged :: ItemFull -> Maybe Int -> Bool
-permittedRanged itemFull _ =
+permittedProject :: Bool -> ItemFull -> Maybe Int -> Bool
+permittedProject calm10 itemFull _ =
   let hasEffects = case itemDisco itemFull of
         Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects=[]}} -> False
         Just ItemDisco{itemAE=Nothing, itemKind=ItemKind{ieffects=[]}} -> False
         _ -> True
   in hasEffects
-     && not (unknownPrecious itemFull)
+     && not (unknownPrecious calm10 itemFull)
      && case strengthEqpSlot (itemBase itemFull) of
           Just (Effect.EqpSlotAddLight, _) -> True
           Just _ -> False
           Nothing -> True
+
+permittedApply :: Bool -> Bool -> ItemFull -> Maybe Int -> Bool
+permittedApply actorBlind calm10 itemFull@ItemFull{itemBase} _ =
+  not (unknownPrecious calm10 itemFull)
+  && if jsymbol itemBase == '?' && actorBlind
+     then False
+     else Effect.Applicable `elem` jfeature itemBase
 
 -- | Get current time from the dungeon data.
 getLocalTime :: LevelId -> State -> Time

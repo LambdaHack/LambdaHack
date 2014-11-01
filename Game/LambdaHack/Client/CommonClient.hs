@@ -226,8 +226,10 @@ pickWeaponClient source target = do
   eqpAssocs <- fullAssocsClient source [CEqp]
   bodyAssocs <- fullAssocsClient source [COrgan]
   actorSk <- actorSkillsClient source
+  sb <- getsState $ getActorBody source
   let allAssocs = eqpAssocs ++ bodyAssocs
-  case filter (not . unknownPrecious . snd . snd)
+      calm10 = calmEnough10 sb $ map snd allAssocs
+  case filter (not . unknownPrecious calm10 . snd . snd)
        $ strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
     _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> return []
     [] -> return []

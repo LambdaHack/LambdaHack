@@ -141,7 +141,7 @@ actionStrategy aid = do
       distant =
         [ ( [AbProject]  -- for high-value target, shoot even in melee
           , stratToFreq 2 $ (toAny :: ToAny AbProject)
-            <$> ranged aid
+            <$> projectItem aid
           , condTgtEnemyPresent && condCanProject && not condOnTriggerable )
         , ( [AbApply]
           , stratToFreq 2 $ (toAny :: ToAny AbApply)
@@ -523,8 +523,8 @@ trigger aid fleeViaStairs = do
            | (benefit, feat) <- benFeat
            , benefit > 0 ]
 
-ranged :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
-ranged aid = do
+projectItem :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
+projectItem aid = do
   btarget <- getsClient $ getTarget aid
   b@Actor{bpos} <- getsState $ getActorBody aid
   mfpos <- aidTgtToPos aid (blid b) btarget
@@ -537,7 +537,7 @@ ranged aid = do
         Just newEps | not actorBlind -> do  -- ProjectBlind
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
-          benList <- benAvailableItems aid permittedRanged [CEqp, CInv, CGround]
+          benList <- benAvailableItems aid permittedProject [CEqp, CInv, CGround]
           localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2
               coeff COrgan = 3  -- can't give to others
@@ -574,7 +574,7 @@ ranged aid = do
                              , ReqProject fpos newEps iid cstore )
                    else Nothing
               benRanged = mapMaybe fRanged benList
-          return $! liftFrequency $ toFreq "ranged" benRanged
+          return $! liftFrequency $ toFreq "projectItem" benRanged
         _ -> return reject
     _ -> return reject
 
@@ -585,12 +585,8 @@ applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
   actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
-  let permitted itemFull@ItemFull{itemBase} _ =
-        not (unknownPrecious itemFull)
-        && if jsymbol itemBase == '?' && actorBlind
-           then False
-           else Effect.Applicable `elem` jfeature itemBase
-  benList <- benAvailableItems aid permitted [CEqp, CInv, CGround]
+  benList <- benAvailableItems aid (permittedApply actorBlind)
+                               [CEqp, CInv, CGround]
   b <- getsState $ getActorBody aid
   localTime <- getsState $ getLocalTime (blid b)
   let itemLegal itemFull = case applyGroup of

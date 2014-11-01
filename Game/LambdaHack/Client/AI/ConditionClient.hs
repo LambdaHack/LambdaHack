@@ -139,7 +139,7 @@ condNoEqpWeaponM aid = do
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
   actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
-  benList <- benAvailableItems aid permittedRanged [CEqp, CInv, CGround]
+  benList <- benAvailableItems aid permittedProject [CEqp, CInv, CGround]
   let missiles = filter (maybe True ((< 0) . snd . snd) . fst . fst) benList
   return $ not actorBlind && not (null missiles)
     -- keep it lazy
@@ -147,7 +147,9 @@ condCanProjectM aid = do
 -- | Produce the list of items with a given property available to the actor
 -- and the items' values.
 benAvailableItems :: MonadClient m
-                  => ActorId -> (ItemFull -> Maybe Int -> Bool) -> [CStore]
+                  => ActorId
+                  -> (Bool -> ItemFull -> Maybe Int -> Bool)
+                  -> [CStore]
                   -> m [( (Maybe (Int, (Int, Int)), (Int, CStore))
                         , (ItemId, ItemFull) )]
 benAvailableItems aid permitted cstores = do
@@ -155,13 +157,14 @@ benAvailableItems aid permitted cstores = do
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
+  let calm10 = calmEnough10 b activeItems
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let ben cstore bag =
         [ ((benefit, (k, cstore)), (iid, itemFull))
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
         , let benefit = totalUsefulness cops b activeItems fact itemFull
-        , permitted itemFull (fst <$> benefit) ]
+        , permitted calm10 itemFull (fst <$> benefit) ]
       benCStore cs = do
         bag <- getsState $ getActorBag aid cs
         return $! ben cs bag
@@ -182,7 +185,8 @@ condDesirableFloorItemM aid = do
   benItemL <- benGroundItems aid
   return $ not $ null benItemL  -- keep it lazy
 
--- | Produce the list of items on the ground beneath the actor.
+-- | Produce the list of items on the ground beneath the actor
+-- that are worth picking up.
 benGroundItems :: MonadClient m
                => ActorId
                -> m [( (Maybe (Int, (Int, Int))
@@ -190,7 +194,7 @@ benGroundItems :: MonadClient m
 benGroundItems aid = do
   b <- getsState $ getActorBody aid
   canEscape <- factionCanEscape (bfid b)
-  let desirableItem ItemFull{itemBase} use
+  let desirableItem _ ItemFull{itemBase} use
         | canEscape = use /= Just 0
                       || Effect.Precious `elem` jfeature itemBase
         | otherwise = use /= Just 0
