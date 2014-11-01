@@ -6,8 +6,7 @@ module Game.LambdaHack.Common.ItemStrongest
   , strongestSlotNoFilter, strongestSlot, sumSlotNoFilter, sumSkills
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
-  , unknownPrecious, permittedRanged, unknownMelee
-  , allRecharging, stripRecharging
+  , unknownMelee, allRecharging, stripRecharging
   ) where
 
 import Control.Applicative
@@ -258,26 +257,6 @@ sumSkills is =
   let g itemFull = (Ability.scaleSkills (itemK itemFull))
                    <$> strengthAddSkills itemFull
   in foldr Ability.addSkills Ability.zeroSkills $ mapMaybe g is
-
-unknownPrecious :: ItemFull -> Bool
-unknownPrecious itemFull =
-  Durable `notElem` jfeature (itemBase itemFull)  -- if durable, no risk
-  && case itemDisco itemFull of
-    Just ItemDisco{itemAE=Just _} -> False
-    _ -> Precious `elem` jfeature (itemBase itemFull)
-
-permittedRanged :: ItemFull -> Maybe Int -> Bool
-permittedRanged itemFull _ =
-  let hasEffects = case itemDisco itemFull of
-        Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects=[]}} -> False
-        Just ItemDisco{itemAE=Nothing, itemKind=ItemKind{ieffects=[]}} -> False
-        _ -> True
-  in hasEffects
-     && not (unknownPrecious itemFull)
-     && case strengthEqpSlot (itemBase itemFull) of
-          Just (EqpSlotAddLight, _) -> True
-          Just _ -> False
-          Nothing -> True
 
 unknownAspect :: (Aspect Dice.Dice -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =

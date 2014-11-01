@@ -109,17 +109,22 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
     -- This is OK, because we don't remove the item type from various
     -- item dictionaries, just an individual copy from the container,
     -- so, e.g., the item can be identified after it's removed.
+    let mtmp = let tmpEffect :: Effect.Effect a -> Bool
+                   tmpEffect Effect.Temporary{} = True
+                   tmpEffect _ = False
+               in find tmpEffect effs
     item <- getsState $ getItemBody iid
     let durable = Effect.Durable `elem` jfeature item
+        imperishable = durable || periodic && isNothing mtmp
         kit = (1, take 1 it2)
-    unless durable $
+    unless imperishable $
       execUpdAtomic $ UpdLoseItem iid item kit c
     -- At this point, the item is potentially no longer in container @c@.
     triggered <- itemEffectDisco source target iid recharged periodic effs
     -- If none of item's effects was performed, we try to recreate the item.
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
-    unless (triggered || durable) $
+    unless (triggered || imperishable) $
       execUpdAtomic $ UpdSpotItem iid item kit c
 
 itemEffectOnSmash :: (MonadAtomic m, MonadServer m)

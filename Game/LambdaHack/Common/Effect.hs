@@ -58,7 +58,8 @@ data Effect a =
                           -- ^ create a matching item and insert as an organ
                           --   with the given timer; not restricted
                           --   to temporary aspect item kinds
-  | Temporary !Text       -- ^ the item is temporary, vanishes at activation
+  | Temporary !Text       -- ^ the item is temporary, vanishes at even void
+                          --   Periodic activation, unless Durable
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
 -- | Aspects of items. Those that are named @Add*@ are additive
@@ -90,14 +91,13 @@ data ThrowMod = ThrowMod
 -- and so not additive in any sense.
 data Feature =
     ChangeTo !GroupName     -- ^ change to this group when altered
-  | Fragile                 -- ^ drop and break even when without hitting enemy
+  | Fragile                 -- ^ drop and break at target tile, even if no hit
   | Durable                 -- ^ don't break even when hitting or applying
   | ToThrow !ThrowMod       -- ^ parameters modifying a throw
   | Identified              -- ^ the item starts identified
   | Applicable              -- ^ AI and UI flag: consider applying
   | EqpSlot !EqpSlot !Text  -- ^ AI and UI flag: goes to inventory
-  | Precious                -- ^ AI and UI flag: careful, can be precious;
-                            --   don't risk identifying by use
+  | Precious                -- ^ AI and UI flag: don't risk identifying by use
   | Tactic !Tactic          -- ^ overrides actor's tactic (TODO)
   deriving (Show, Eq, Ord, Generic)
 

@@ -14,6 +14,7 @@ module Game.LambdaHack.Common.ActorState
   , itemPrice, calmEnough, calmEnough10, hpEnough, regenCalmDelta
   , actorInAmbient, actorSkills, maxActorSkills, dispEnemy, radiusBlind
   , fullAssocs, itemToFull, goesIntoInv, eqpOverfull, storeFromC, lidFromC
+  , unknownPrecious, permittedRanged
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -37,6 +38,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind
 
@@ -278,6 +280,26 @@ hpEnough :: Actor -> [ItemFull] -> Bool
 hpEnough b activeItems =
   let hpMax = max 1 $ sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
   in 2 * xM hpMax <= 3 * bhp b
+
+unknownPrecious :: ItemFull -> Bool
+unknownPrecious itemFull =
+  Effect.Durable `notElem` jfeature (itemBase itemFull)  -- if durable, no risk
+  && case itemDisco itemFull of
+    Just ItemDisco{itemAE=Just _} -> False
+    _ -> Effect.Precious `elem` jfeature (itemBase itemFull)
+
+permittedRanged :: ItemFull -> Maybe Int -> Bool
+permittedRanged itemFull _ =
+  let hasEffects = case itemDisco itemFull of
+        Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects=[]}} -> False
+        Just ItemDisco{itemAE=Nothing, itemKind=ItemKind{ieffects=[]}} -> False
+        _ -> True
+  in hasEffects
+     && not (unknownPrecious itemFull)
+     && case strengthEqpSlot (itemBase itemFull) of
+          Just (Effect.EqpSlotAddLight, _) -> True
+          Just _ -> False
+          Nothing -> True
 
 -- | Get current time from the dungeon data.
 getLocalTime :: LevelId -> State -> Time
