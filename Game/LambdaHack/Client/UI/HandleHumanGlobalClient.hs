@@ -227,7 +227,8 @@ moveItemHuman cLegalRaw destCStore verb auto = do
             subject <- partAidLeader leader
             msgAdd $ makeSentence
               [ MU.SubjectVerbSg subject verb
-              , partItemWs k (CActor leader toCStore) (blid b) localTime itemFull ]
+              , partItemWs k (CActor leader toCStore) (blid b) localTime
+                itemFull ]
             return $ Right $ ReqMoveItem iid k fromCStore toCStore
       if fromCStore == CGround
       then case destCStore of
@@ -251,12 +252,10 @@ projectHuman :: MonadClientUI m
              => [Trigger] -> m (SlideOrCmd (RequestTimed AbProject))
 projectHuman ts = do
   leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
   tgtPos <- leaderTgtToPos
   tgt <- getsClient $ getTarget leader
   case tgtPos of
     Nothing -> failWith "last target invalid"
-    Just pos | pos == bpos b -> failWith "cannot aim at oneself"
     Just pos -> do
       -- Set cursor to the personal target, temporarily.
       oldCursor <- getsClient scursor
@@ -288,25 +287,24 @@ projectPos ts tpos = do
   let lid = blid sb
       spos = bpos sb
   Level{lxsize, lysize} <- getLevel lid
-  do
-      case bla lxsize lysize eps spos tpos of
-        Nothing -> failSer ProjectAimOnself
-        Just [] -> assert `failure` "project from the edge of level"
-                          `twith` (spos, tpos, sb, ts)
-        Just (pos : _) -> do
-          lvl <- getLevel lid
-          let t = lvl `at` pos
-          if not $ Tile.isWalkable cotile t
-            then failSer ProjectBlockTerrain
-            else do
-              actorBlind <-
-                radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight leader
-              mab <- getsState $ posToActor pos lid
-              if maybe True (bproj . snd . fst) mab
-              then if actorBlind
-                   then failSer ProjectBlind
-                   else projectEps ts tpos eps
-              else failSer ProjectBlockActor
+  case bla lxsize lysize eps spos tpos of
+    Nothing -> failSer ProjectAimOnself
+    Just [] -> assert `failure` "project from the edge of level"
+                      `twith` (spos, tpos, sb, ts)
+    Just (pos : _) -> do
+      lvl <- getLevel lid
+      let t = lvl `at` pos
+      if not $ Tile.isWalkable cotile t
+        then failSer ProjectBlockTerrain
+        else do
+          actorBlind <-
+            radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight leader
+          mab <- getsState $ posToActor pos lid
+          if maybe True (bproj . snd . fst) mab
+          then if actorBlind
+               then failSer ProjectBlind
+               else projectEps ts tpos eps
+          else failSer ProjectBlockActor
 
 projectEps :: MonadClientUI m
            => [Trigger] -> Point -> Int

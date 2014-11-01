@@ -161,7 +161,7 @@ benAvailableItems aid permitted cstores = do
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
         , let benefit = totalUsefulness cops b activeItems fact itemFull
-        , permitted itemFull (fst <$> benefit)]
+        , permitted itemFull (fst <$> benefit) ]
       benCStore cs = do
         bag <- getsState $ getActorBag aid cs
         return $! ben cs bag

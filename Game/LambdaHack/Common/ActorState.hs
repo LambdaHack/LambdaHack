@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.ActorState
   , nearbyFreePoints, whereTo, getCarriedAssocs
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime
-  , itemPrice, calmEnough, hpEnough, regenCalmDelta
+  , itemPrice, calmEnough, calmEnough10, hpEnough, regenCalmDelta
   , actorInAmbient, actorSkills, maxActorSkills, dispEnemy, radiusBlind
   , fullAssocs, itemToFull, goesIntoInv, eqpOverfull, storeFromC, lidFromC
   ) where
@@ -270,6 +270,9 @@ calmEnough :: Actor -> [ItemFull] -> Bool
 calmEnough b activeItems =
   let calmMax = max 1 $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
   in 2 * xM calmMax <= 3 * bcalm b
+
+calmEnough10 :: Actor -> [ItemFull] -> Bool
+calmEnough10 b activeItems = calmEnough b activeItems && bcalm b >= xM 10
 
 hpEnough :: Actor -> [ItemFull] -> Bool
 hpEnough b activeItems =

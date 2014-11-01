@@ -395,10 +395,7 @@ effectSummon actorFreq power source target iid recharged = assert (power > 0)
   Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
   activeItems <- activeItemsServer source
-  let legal = source == target
-              && (bproj sb
-                  || calmEnough sb activeItems
-                     && bcalm sb >= xM 10)
+  let legal = source == target && (bproj sb || calmEnough10 sb activeItems)
   if not legal then return False
   else do
     let calmMax = max 1 $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
