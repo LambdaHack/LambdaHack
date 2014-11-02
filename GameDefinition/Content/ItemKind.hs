@@ -27,9 +27,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [bolas, brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone]
+  [bolas, brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone]
 
-bolas,    brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone :: ItemKind
+bolas,    brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone :: ItemKind
 
 gem, necklace, potion, flask, ring, scroll, wand :: ItemKind  -- generic templates
 
@@ -68,7 +68,7 @@ dart200 = ItemKind
 
 -- * Exotic thrown weapons
 
-bolas = ItemKind  -- TODO: temporarily can't walk instead or in addition to paralysis; perhaps move ActivateInv to some exceptional item or only activate Durable things, otherwise it's too cruel and discourages creative collecting and use of bad stuff for throwing
+bolas = ItemKind  -- TODO: temporarily can't walk instead of paralysis; perhaps move ActivateInv to some exceptional item, otherwise it's too cruel and discourages creative collecting and use of bad stuff for throwing
   { isymbol  = '|'
   , iname    = "bolas set"
   , ifreq    = [("useful", 100)]
@@ -98,7 +98,7 @@ harpoon = ItemKind
   , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
   , ikit     = []
   }
-net = ItemKind -- TODO: temporarily slow down for some time instead of paralysis
+net = ItemKind
   { isymbol  = '|'
   , iname    = "net"
   , ifreq    = [("useful", 100)]
@@ -108,7 +108,7 @@ net = ItemKind -- TODO: temporarily slow down for some time instead of paralysis
   , iverbHit = "entangle"
   , iweight  = 1000
   , iaspects = []
-  , ieffects = [ Paralyze (5 + d 5)
+  , ieffects = [ CreateOrgan (3 + d 3) "slow 10"
                , DropBestWeapon, DropEqp ']' False ]
   , ifeature = []
   , idesc    = "A wide net with weights along the edges. Entangles weapon and armor alike."
@@ -321,6 +321,7 @@ ring = ItemKind
 ring1 = ring
   { irarity  = [(2, 0), (10, 2)]
   , iaspects = [AddSpeed $ d 2, AddMaxHP $ dl 3 - 5 - d 3]
+  , ieffects = [Explode "distortion"]  -- strong magic
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddSpeed ""]
   }
 ring2 = ring
@@ -340,6 +341,7 @@ ring4 = ring  -- TODO: move to level-ups and to timed effects
 ring5 = ring  -- by the time it's found, probably no space in eqp
   { irarity  = [(5, 0)]
   , iaspects = [AddLight $ d 2]
+  , ieffects = [Explode "distortion"]  -- strong magic
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddLight ""]
   , idesc    = "A sturdy ring with a large, shining stone."
   }
@@ -359,7 +361,7 @@ potion = ItemKind
   , ieffects = []
   , ifeature = [ toVelocity 50  -- oily, bad grip
                , Applicable, Fragile ]
-  , idesc    = "A vial of bright, frothing concoction."  -- purely natural; no maths, no magic  -- TODO: move distortion to a special flask item or when some precious magical item is destroyed (jewelry?)?
+  , idesc    = "A vial of bright, frothing concoction."  -- purely natural; no maths, no magic
   , ikit     = []
   }
 potion1 = potion
@@ -377,9 +379,8 @@ potion3 = potion
   , ieffects = [RefillHP 5, OnSmash (Explode "healing mist")]
   }
 potion4 = potion
-  { irarity  = [(10, 2)]
-  , ieffects = [ NoEffect "of distortion", Impress
-               , OnSmash (Explode "distortion")]
+  { irarity  = [(10, 3)]
+  , ieffects = [RefillHP 10, OnSmash (Explode "healing mist 2")]
   }
 potion5 = potion
   { ieffects = [ OneOf [Impress, DropBestWeapon, RefillHP 5, Burn 3]
@@ -395,7 +396,7 @@ potion6 = potion
                , OnSmash (OneOf [ Explode "healing mist 2"
                                 , Explode "healing mist 2"
                                 , Explode "pheromone"
-                                , Explode "distortion"
+                                , Explode "distortion"  -- outlier, OK
                                 , Explode "explosion blast 20" ]) ]
   }
 potion7 = potion  -- used only as initial equipment; count betrays identity
@@ -405,10 +406,6 @@ potion7 = potion  -- used only as initial equipment; count betrays identity
   , ieffects = [ NoEffect "of glue", Paralyze (5 + d 5)
                , OnSmash (Explode "glue")]
   , ifeature = [Identified]
-  }
-potion8 = potion
-  { irarity  = [(10, 3)]
-  , ieffects = [RefillHP 10, OnSmash (Explode "healing mist 2")]
   }
 
 -- * Exploding consumables, with temporary aspects
