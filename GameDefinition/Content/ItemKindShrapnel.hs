@@ -11,9 +11,9 @@ import Game.LambdaHack.Content.ItemKind
 
 shrapnels :: [ItemKind]
 shrapnels =
-  [fragrance, pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistHealing2, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue, spark, mistStrength, mistWeakness, protectingBalm, redPaint, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray]
+  [fragrance, pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistHealing2, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue, spark, mistStrength, mistWeakness, protectingBalm, redPaint, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray]
 
-fragrance,    pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistHealing2, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue, spark, mistStrength, mistWeakness, protectingBalm, redPaint, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray :: ItemKind
+fragrance,    pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistHealing2, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue, spark, mistStrength, mistWeakness, protectingBalm, redPaint, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray :: ItemKind
 
 -- * Parameterized shrapnel
 
@@ -54,6 +54,7 @@ explosionBlast n = ItemKind
   , idesc    = ""
   , ikit     = []
   }
+explosionBlast2 = explosionBlast 2
 explosionBlast10 = explosionBlast 10
 explosionBlast20 = explosionBlast 20
 firecracker :: Int -> ItemKind
