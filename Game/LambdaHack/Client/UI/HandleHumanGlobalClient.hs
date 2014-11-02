@@ -297,13 +297,9 @@ projectPos ts tpos = do
       if not $ Tile.isWalkable cotile t
         then failSer ProjectBlockTerrain
         else do
-          actorBlind <-
-            radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight leader
           mab <- getsState $ posToActor pos lid
           if maybe True (bproj . snd . fst) mab
-          then if actorBlind
-               then failSer ProjectBlind
-               else projectEps ts tpos eps
+          then projectEps ts tpos eps
           else failSer ProjectBlockActor
 
 projectEps :: MonadClientUI m
@@ -311,6 +307,7 @@ projectEps :: MonadClientUI m
            -> m (SlideOrCmd (RequestTimed AbProject))
 projectEps ts tpos eps = do
   leader <- getLeaderUI
+  actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight leader
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
   let cLegal = [CGround, CInv, CEqp]
@@ -320,7 +317,7 @@ projectEps ts tpos eps = do
       triggerSyms = triggerSymbols ts
       calm10 = calmEnough10 b activeItems
       p itemFull@ItemFull{itemBase} =
-        let legal = permittedProject triggerSyms calm10 itemFull
+        let legal = permittedProject triggerSyms actorBlind calm10 False itemFull
         in case legal of
           Left{} -> legal
           Right False -> legal

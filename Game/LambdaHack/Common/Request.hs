@@ -143,36 +143,39 @@ permittedPrecious calm10 itemFull =
                     Just ItemDisco{itemAE=Just _} -> True
                     _ -> not isPrecious
 
-permittedProject :: [Char] -> Bool -> ItemFull -> Either ReqFailure Bool
-permittedProject triggerSyms calm10 itemFull@ItemFull{itemBase} =
-  let legal = permittedPrecious calm10 itemFull
-  in case legal of
-    Left{} -> legal
-    Right False -> legal
-    Right True -> Right $
-      let hasEffects = case itemDisco itemFull of
-            Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects=[]}} -> False
-            Just ItemDisco{ itemAE=Nothing
-                          , itemKind=ItemKind{ieffects=[]} } -> False
-            _ -> True
-          permittedSlot =
-            if ' ' `elem` triggerSyms
-            then case strengthEqpSlot itemBase of
-              Just (Effect.EqpSlotAddLight, _) -> True
-              Just _ -> False
-              Nothing -> True
-            else jsymbol itemBase `elem` triggerSyms
-      in hasEffects && permittedSlot
+permittedProject :: [Char] -> Bool -> Bool -> Bool -> ItemFull -> Either ReqFailure Bool
+permittedProject triggerSyms actorBlind calm10 forced itemFull@ItemFull{itemBase} =
+  if actorBlind && not forced then Left ProjectBlind
+  else
+    let legal = permittedPrecious calm10 itemFull
+    in case legal of
+      Left{} -> legal
+      Right False -> legal
+      Right True -> Right $
+        let hasEffects = case itemDisco itemFull of
+              Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects=[]}} -> False
+              Just ItemDisco{ itemAE=Nothing
+                            , itemKind=ItemKind{ieffects=[]} } -> False
+              _ -> True
+            permittedSlot =
+              if ' ' `elem` triggerSyms
+              then case strengthEqpSlot itemBase of
+                Just (Effect.EqpSlotAddLight, _) -> True
+                Just _ -> False
+                Nothing -> True
+              else jsymbol itemBase `elem` triggerSyms
+        in hasEffects && permittedSlot
 
 permittedApply :: [Char] -> Bool -> Bool -> ItemFull
                -> Either ReqFailure Bool
 permittedApply triggerSyms actorBlind calm10 itemFull@ItemFull{itemBase} =
   if jsymbol itemBase == '?' && actorBlind then Left ApplyBlind
-  else let legal = permittedPrecious calm10 itemFull
-       in case legal of
-         Left{} -> legal
-         Right False -> legal
-         Right True -> Right $
-           if ' ' `elem` triggerSyms
-           then Effect.Applicable `elem` jfeature itemBase
-           else jsymbol itemBase `elem` triggerSyms
+  else
+    let legal = permittedPrecious calm10 itemFull
+    in case legal of
+      Left{} -> legal
+      Right False -> legal
+      Right True -> Right $
+        if ' ' `elem` triggerSyms
+        then Effect.Applicable `elem` jfeature itemBase
+        else jsymbol itemBase `elem` triggerSyms

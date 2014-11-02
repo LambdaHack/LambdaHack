@@ -534,11 +534,11 @@ projectItem aid = do
       actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
       mnewEps <- makeLine b fpos seps
       case mnewEps of
-        Just newEps | not actorBlind -> do  -- ProjectBlind
+        Just newEps -> do
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
           let q calm10 itemFull _ =
-                either (const False) id $ permittedProject " " calm10 itemFull
+                either (const False) id $ permittedProject " " actorBlind calm10 False itemFull
           benList <- benAvailableItems aid q [CEqp, CInv, CGround]
           localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2

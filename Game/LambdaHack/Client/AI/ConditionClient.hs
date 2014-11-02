@@ -141,10 +141,10 @@ condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
   actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
   let q calm10 itemFull _ =
-        either (const False) id $ permittedProject " " calm10 itemFull
+        either (const False) id $ permittedProject " " actorBlind calm10 False itemFull
   benList <- benAvailableItems aid q [CEqp, CInv, CGround]
   let missiles = filter (maybe True ((< 0) . snd . snd) . fst . fst) benList
-  return $ not actorBlind && not (null missiles)
+  return $ not (null missiles)
     -- keep it lazy
 
 -- | Produce the list of items with a given property available to the actor

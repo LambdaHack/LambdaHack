@@ -260,7 +260,8 @@ projectFail source tpxy eps iid cstore isShrapnel = do
                         <$> sumOrganEqpServer Effect.EqpSlotAddSight source
           let itemFull@ItemFull{itemBase} = itemToF iid kit
               calm10 = calmEnough10 sb activeItems
-              legal = permittedProject " " calm10 itemFull
+              forced = isShrapnel || bproj sb
+              legal = permittedProject " " actorBlind calm10 forced itemFull
           case legal of
             Left reqFail ->  return $ Just reqFail
             Right _ -> do
@@ -280,16 +281,14 @@ projectFail source tpxy eps iid cstore isShrapnel = do
                                       isShrapnel
                            return Nothing
                          else return $ Just ProjectBlockActor
-                    else if actorBlind && not (isShrapnel || bproj sb) then
-                           return $ Just ProjectBlind
-                         else do
-                           if isShrapnel && bproj sb && eps `mod` 2 == 0 then
-                             -- Make the explosion a bit less regular.
-                             projectBla source spos (pos:rest) iid cstore
-                                        isShrapnel
-                           else
-                             projectBla source pos rest iid cstore isShrapnel
-                           return Nothing
+                    else do
+                      if isShrapnel && bproj sb && eps `mod` 2 == 0 then
+                        -- Make the explosion a bit less regular.
+                        projectBla source spos (pos:rest) iid cstore isShrapnel
+                      else
+                        projectBla source pos rest iid cstore isShrapnel
+                      return Nothing
+
 
 projectBla :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)
