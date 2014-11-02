@@ -96,6 +96,7 @@ data ReqFailure =
   | ProjectBlockTerrain
   | ProjectBlockActor
   | ProjectBlind
+  | ProjectOutOfReach
   | TriggerNothing
   | NoChangeDunLeader
   | NoChangeLvlLeader
@@ -126,6 +127,7 @@ showReqFailure reqFailure = case reqFailure of
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
   ProjectBlind -> "blind actors cannot aim"
+  ProjectOutOfReach -> "cannot aim an item out of reach"
   TriggerNothing -> "wasting time on triggering nothing"
   NoChangeDunLeader -> "no manual level change for your team"
   NoChangeLvlLeader -> "no manual leader change for your team"

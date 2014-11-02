@@ -250,33 +250,46 @@ projectFail source tpxy eps iid cstore isShrapnel = do
     Just [] -> assert `failure` "projecting from the edge of level"
                       `twith` (spos, tpxy)
     Just (pos : restUnlimited) -> do
-      item <- getsState $ getItemBody iid
-      let fragile = Effect.Fragile `elem` jfeature item
-          rest = if fragile
-                 then take (chessDist spos tpxy - 1) restUnlimited
-                 else restUnlimited
-          t = lvl `at` pos
-      if not $ Tile.isWalkable cotile t
-        then return $ Just ProjectBlockTerrain
-        else do
-          mab <- getsState $ posToActor pos lid
+      bag <- getsState $ getActorBag source cstore
+      case EM.lookup iid bag of
+        Nothing ->  return $ Just ProjectOutOfReach
+        Just kit -> do
+          itemToF <- itemToFullServer
+          activeItems <- activeItemsServer source
           actorBlind <- radiusBlind
                         <$> sumOrganEqpServer Effect.EqpSlotAddSight source
-          if not $ maybe True (bproj . snd . fst) mab
-            then if isShrapnel && bproj sb then do
-                   -- Hit the blocking actor.
-                   projectBla source spos (pos:rest) iid cstore isShrapnel
-                   return Nothing
-                 else return $ Just ProjectBlockActor
-            else if actorBlind && not (isShrapnel || bproj sb) then
-                   return $ Just ProjectBlind
-                 else do
-                   if isShrapnel && bproj sb && eps `mod` 2 == 0 then
-                     -- Make the explosion a bit less regular.
-                     projectBla source spos (pos:rest) iid cstore isShrapnel
-                   else
-                     projectBla source pos rest iid cstore isShrapnel
-                   return Nothing
+          let itemFull@ItemFull{itemBase} = itemToF iid kit
+              calm10 = calmEnough10 sb activeItems
+              legal = permittedProject " " calm10 itemFull
+          case legal of
+            Left reqFail ->  return $ Just reqFail
+            Right _ -> do
+              let fragile = Effect.Fragile `elem` jfeature itemBase
+                  rest = if fragile
+                         then take (chessDist spos tpxy - 1) restUnlimited
+                         else restUnlimited
+                  t = lvl `at` pos
+              if not $ Tile.isWalkable cotile t
+                then return $ Just ProjectBlockTerrain
+                else do
+                  mab <- getsState $ posToActor pos lid
+                  if not $ maybe True (bproj . snd . fst) mab
+                    then if isShrapnel && bproj sb then do
+                           -- Hit the blocking actor.
+                           projectBla source spos (pos:rest) iid cstore
+                                      isShrapnel
+                           return Nothing
+                         else return $ Just ProjectBlockActor
+                    else if actorBlind && not (isShrapnel || bproj sb) then
+                           return $ Just ProjectBlind
+                         else do
+                           if isShrapnel && bproj sb && eps `mod` 2 == 0 then
+                             -- Make the explosion a bit less regular.
+                             projectBla source spos (pos:rest) iid cstore
+                                        isShrapnel
+                           else
+                             projectBla source pos rest iid cstore isShrapnel
+                           return Nothing
 
 projectBla :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)

@@ -420,18 +420,22 @@ reqApply :: (MonadAtomic m, MonadServer m)
          -> CStore   -- ^ the location of the item
          -> m ()
 reqApply aid iid cstore = assert (cstore /= CSha) $ do
-  bag <- getsState $ getActorBag aid cstore
   let req = ReqApply iid cstore
-  if EM.notMember iid bag
-    then execFailure aid req ApplyOutOfReach
-    else do
+  bag <- getsState $ getActorBag aid cstore
+  case EM.lookup iid bag of
+    Nothing -> execFailure aid req ApplyOutOfReach
+    Just kit -> do
+      itemToF <- itemToFullServer
+      b <- getsState $ getActorBody aid
+      activeItems <- activeItemsServer aid
       actorBlind <- radiusBlind
                     <$> sumOrganEqpServer Effect.EqpSlotAddSight aid
-      item <- getsState $ getItemBody iid
-      let blindScroll = jsymbol item == '?' && actorBlind
-      if blindScroll
-        then execFailure aid req ApplyBlind
-        else applyItem aid iid cstore
+      let itemFull = itemToF iid kit
+          calm10 = calmEnough10 b activeItems
+          legal = permittedApply " " actorBlind calm10 itemFull
+      case legal of
+        Left reqFail -> execFailure aid req reqFail
+        Right _ -> applyItem aid iid cstore
 
 -- * ReqTrigger
 
