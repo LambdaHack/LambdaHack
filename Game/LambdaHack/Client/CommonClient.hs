@@ -229,7 +229,8 @@ pickWeaponClient source target = do
   sb <- getsState $ getActorBody source
   let allAssocs = eqpAssocs ++ bodyAssocs
       calm10 = calmEnough10 sb $ map snd allAssocs
-      legalPrecious = either (const False) id . permittedPrecious calm10
+      forced = assert (not $ bproj sb) False
+      legalPrecious = either (const False) id . permittedPrecious calm10 forced
   case filter (legalPrecious . snd . snd)
        $ strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
     _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> return []

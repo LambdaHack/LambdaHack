@@ -134,10 +134,10 @@ showReqFailure reqFailure = case reqFailure of
 
 -- The item should not be activated nor thrown because it's too delicate
 -- to operate when not calm or becuse it's too precious to identify by use.
-permittedPrecious :: Bool -> ItemFull -> Either ReqFailure Bool
-permittedPrecious calm10 itemFull =
+permittedPrecious :: Bool -> Bool -> ItemFull -> Either ReqFailure Bool
+permittedPrecious calm10 forced itemFull =
   let isPrecious = Effect.Precious `elem` jfeature (itemBase itemFull)
-  in if not calm10 && isPrecious then Left NotCalmPrecious
+  in if not calm10 && not forced && isPrecious then Left NotCalmPrecious
      else Right $ Effect.Durable `elem` jfeature (itemBase itemFull)
                   || case itemDisco itemFull of
                     Just ItemDisco{itemAE=Just _} -> True
@@ -147,7 +147,7 @@ permittedProject :: [Char] -> Bool -> Bool -> Bool -> ItemFull -> Either ReqFail
 permittedProject triggerSyms actorBlind calm10 forced itemFull@ItemFull{itemBase} =
   if actorBlind && not forced then Left ProjectBlind
   else
-    let legal = permittedPrecious calm10 itemFull
+    let legal = permittedPrecious calm10 forced itemFull
     in case legal of
       Left{} -> legal
       Right False -> legal
@@ -171,7 +171,7 @@ permittedApply :: [Char] -> Bool -> Bool -> ItemFull
 permittedApply triggerSyms actorBlind calm10 itemFull@ItemFull{itemBase} =
   if jsymbol itemBase == '?' && actorBlind then Left ApplyBlind
   else
-    let legal = permittedPrecious calm10 itemFull
+    let legal = permittedPrecious calm10 False itemFull
     in case legal of
       Left{} -> legal
       Right False -> legal
