@@ -231,8 +231,9 @@ pickWeaponClient source target = do
       calm10 = calmEnough10 sb $ map snd allAssocs
       forced = assert (not $ bproj sb) False
       legalPrecious = either (const False) id . permittedPrecious calm10 forced
-  case filter (legalPrecious . snd . snd)
-       $ strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
+      strongest = strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs
+      strongestLegal = filter (legalPrecious . snd . snd) strongest
+  case strongestLegal of
     _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> return []
     [] -> return []
     iis@((maxS, _) : _) -> do

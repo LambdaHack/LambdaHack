@@ -402,16 +402,27 @@ addActorIid trunkId trunkFull@ItemFull{..}
 -- unidentified items.
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
 pickWeaponServer source = do
-  sb <- getsState $ getActorBody source
   eqpAssocs <- fullAssocsServer source [CEqp]
   bodyAssocs <- fullAssocsServer source [COrgan]
+  actorSk <- actorSkillsServer source
+  sb <- getsState $ getActorBody source
   -- For projectiles we need to accept even items without any effect,
   -- so that the projectile dissapears and NoEffect feedback is produced.
   let allAssocs = eqpAssocs ++ bodyAssocs
-      strongest | bproj sb = map (1,) eqpAssocs
-                | otherwise =
-                    strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs
-  case strongest of
+      calm10 = calmEnough10 sb $ map snd allAssocs
+      forced = bproj sb
+      permitted = permittedPrecious calm10 forced
+      legalPrecious = either (const False) (const True) . permitted
+      preferredPrecious = either (const False) id . permitted
+      strongest = strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs
+      strongestLegal = filter (legalPrecious . snd . snd) strongest
+      strongestPreferred = filter (preferredPrecious . snd . snd) strongestLegal
+      best = case strongestPreferred of
+        _ | bproj sb -> map (1,) eqpAssocs
+        _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> []
+        _:_ -> strongestPreferred
+        [] -> strongestLegal
+  case best of
     [] -> return Nothing
     iis -> do
       let is = map snd iis
