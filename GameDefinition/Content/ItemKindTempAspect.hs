@@ -17,7 +17,7 @@ tempAspects =
 
 tmpStrengthened,    tmpWeakened, tmpProtected, tmpPaintedRed, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned :: ItemKind
 
--- The @name@ is be used in item description, so it should be an adjetive
+-- The @name@ is be used in item description, so it should be an adjective
 -- describing the temporary set of aspects.
 tmpAs :: Text -> [Aspect Dice] -> ItemKind
 tmpAs name aspects = ItemKind
@@ -32,7 +32,7 @@ tmpAs name aspects = ItemKind
   , iaspects = [Periodic, Timeout 1]  -- activates and vanishes soon,
                                       -- depending on initial timer setting
                ++ aspects
-  , ieffects = [Recharging (Temporary $ "be about to stop being" <+> name)]
+  , ieffects = [Recharging (Temporary $ "be no longer" <+> name)]
   , ifeature = [Identified]
   , idesc    = ""
   , ikit     = []

@@ -111,6 +111,7 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
     -- so, e.g., the item can be identified after it's removed.
     let mtmp = let tmpEffect :: Effect.Effect a -> Bool
                    tmpEffect Effect.Temporary{} = True
+                   tmpEffect (Effect.Recharging Effect.Temporary{}) = True
                    tmpEffect _ = False
                in find tmpEffect effs
     item <- getsState $ getItemBody iid
@@ -254,8 +255,9 @@ effectSem source target iid recharged effect = do
 
 -- ** RefillHP
 
+-- Unaffected by armor.
 effectRefillHP :: (MonadAtomic m, MonadServer m)
-           => m () -> Int -> ActorId -> ActorId -> m Bool
+               => m () -> Int -> ActorId -> ActorId -> m Bool
 effectRefillHP execSfx power source target = do
   tb <- getsState $ getActorBody target
   hpMax <- sumOrganEqpServer Effect.EqpSlotAddMaxHP target
@@ -286,6 +288,7 @@ halveCalm target = do
 
 -- ** Hurt
 
+-- Modified by armor.
 effectHurt :: (MonadAtomic m, MonadServer m)
            => Dice.Dice -> ActorId -> ActorId -> Bool
            -> m Bool
@@ -302,10 +305,10 @@ effectHurt nDm source target silent = do
   -- Damage the target.
   execUpdAtomic $ UpdRefillHP target deltaHP
   when (source /= target && not (bproj tb)) $ halveCalm target
-  execSfxAtomic $ SfxEffect (bfid sb) target $
-    if source == target || silent
+  unless silent $ execSfxAtomic $ SfxEffect (bfid sb) target $
+    if source == target
     then Effect.RefillHP deltaDiv  -- no SfxStrike, so treat as any heal/wound
-    else Effect.Hurt (Dice.intToDice deltaDiv)  -- avoid spam; SfxStrike sent
+    else Effect.Hurt (Dice.intToDice deltaDiv)  -- SfxStrike sent, avoid spam
   return True
 
 armorHurtBonus :: (MonadAtomic m, MonadServer m)
@@ -454,12 +457,12 @@ effectApplyPerfume execSfx target = do
 
 -- ** Burn
 
+-- Damage from both impact and fire. Modified by armor.
 effectBurn :: (MonadAtomic m, MonadServer m)
            => m () -> Int -> ActorId -> ActorId
            -> m Bool
 effectBurn execSfx power source target = do
-  -- Damage from both impact and fire.
-  void $ effectHurt (Dice.intToDice $ 2 * power) source target True
+  void $ effectHurt (Dice.intToDice power) source target True
   execSfx
   return True
 
@@ -983,6 +986,6 @@ effectTemporary :: (MonadAtomic m, MonadServer m)
 effectTemporary execSfx source iid = do
   bag <- getsState $ getCBag $ CActor source COrgan
   case iid `EM.lookup` bag of
-    Just (1, _) -> execSfx  -- last copy about to be destroyed
-    _ -> skip  -- already vanished or still many copied to go or not an organ
+    Just _ -> skip  -- still some copies left of a multi-copy tmp item
+    Nothing -> execSfx  -- last copy just destroyed
   return True

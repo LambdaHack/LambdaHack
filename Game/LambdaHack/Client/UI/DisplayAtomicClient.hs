@@ -112,10 +112,11 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdMoveItem iid k aid c1 c2 -> moveItemUI verbose iid k aid c1 c2
   -- Change actor attributes.
   UpdAgeActor{} -> skip
+  UpdRefillHP _ 0 -> skip
   UpdRefillHP aid n -> do
     when verbose $
       aVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
-                              <+> tshow (abs n) <> "HP"
+                              <+> tshow (abs $ n `divUp` oneM) <> "HP"
     mleader <- getsClient _sleader
     when (Just aid == mleader) $ do
       b <- getsState $ getActorBody aid

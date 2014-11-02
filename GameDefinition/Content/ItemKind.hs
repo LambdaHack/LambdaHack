@@ -484,7 +484,7 @@ flask9 = flask
   }
 flask10 = flask
   { ieffects = [ NoEffect "of whiskey", CreateOrgan (20 + d 5) "drunk"
-               , Burn 3, RefillHP 4, OnSmash (Explode "whiskey spray") ]
+               , Burn 2, RefillHP 4, OnSmash (Explode "whiskey spray") ]
   }
 flask11 = flask
   { ieffects = [ NoEffect "of regeneration brew"
