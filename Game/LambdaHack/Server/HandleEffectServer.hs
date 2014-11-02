@@ -210,6 +210,7 @@ effectSem :: (MonadAtomic m, MonadServer m)
           => ActorId -> ActorId -> ItemId -> Bool -> Effect.Effect Int
           -> m Bool
 effectSem source target iid recharged effect = do
+  let recursiveCall = effectSem source target iid recharged
   sb <- getsState $ getActorBody source
   -- @execSfx@ usually comes last in effect semantics, but not always
   -- and we are likely to introduce more variety.
@@ -219,14 +220,14 @@ effectSem source target iid recharged effect = do
     Effect.RefillHP p -> effectRefillHP execSfx p source target
     Effect.Hurt nDm -> effectHurt nDm source target False
     Effect.RefillCalm p -> effectRefillCalm execSfx p target
-    Effect.Dominate -> effectDominate source target iid recharged
+    Effect.Dominate -> effectDominate recursiveCall source target
     Effect.Impress -> effectImpress execSfx source target
     Effect.CallFriend p -> effectCallFriend p source target
-    Effect.Summon freqs p -> effectSummon freqs p source target iid recharged
+    Effect.Summon freqs p -> effectSummon recursiveCall freqs p source target
     Effect.CreateItem p -> effectCreateItem p target
     Effect.ApplyPerfume -> effectApplyPerfume execSfx target
     Effect.Burn p -> effectBurn execSfx p source target
-    Effect.Ascend p -> effectAscend execSfx p source target iid recharged
+    Effect.Ascend p -> effectAscend recursiveCall execSfx p target
     Effect.Escape{} -> effectEscape target
     Effect.Paralyze p -> effectParalyze execSfx p target
     Effect.InsertMove p -> effectInsertMove execSfx p target
@@ -243,9 +244,9 @@ effectSem source target iid recharged effect = do
     Effect.Identify cstore -> effectIdentify execSfx cstore target
     Effect.ActivateInv symbol -> effectActivateInv execSfx target symbol
     Effect.Explode t -> effectExplode execSfx t target
-    Effect.OneOf l -> effectOneOf l source target iid recharged
+    Effect.OneOf l -> effectOneOf recursiveCall l
     Effect.OnSmash _ -> return False  -- ignored under normal circumstances
-    Effect.Recharging e -> effectRecharging e source target iid recharged
+    Effect.Recharging e -> effectRecharging recursiveCall e recharged
     Effect.CreateOrgan nDm t -> effectCreateOrgan target nDm t
     Effect.Temporary _ -> effectTemporary execSfx source iid
 
@@ -338,15 +339,16 @@ effectRefillCalm execSfx power target = do
 -- ** Dominate
 
 effectDominate :: (MonadAtomic m, MonadServer m)
-               => ActorId -> ActorId -> ItemId -> Bool
+               => (Effect.Effect Int -> m Bool)
+               -> ActorId -> ActorId
                -> m Bool
-effectDominate source target iid recharged = do
+effectDominate recursiveCall source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if bproj tb then
     return False
   else if bfid tb == bfid sb then
-    effectSem source target iid recharged Effect.Impress
+    recursiveCall Effect.Impress
   else
     dominateFidSfx (bfid sb) target
 
@@ -391,11 +393,11 @@ effectCallFriend power source target = assert (power > 0) $ do
 -- ** Summon
 
 effectSummon :: (MonadAtomic m, MonadServer m)
-             => Freqs -> Int
-             -> ActorId -> ActorId -> ItemId -> Bool
+             => (Effect.Effect Int -> m Bool)
+             -> Freqs -> Int
+             -> ActorId -> ActorId
              -> m Bool
-effectSummon actorFreq power source target iid recharged = assert (power > 0)
-                                                   $ do
+effectSummon recursiveCall actorFreq power source target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -417,7 +419,7 @@ effectSummon actorFreq power source target iid recharged = assert (power > 0)
       case maid of
         Nothing ->
           -- Don't make this item useless.
-          effectSem source target iid recharged (Effect.CallFriend 1)
+          recursiveCall (Effect.CallFriend 1)
         Just aid -> do
           b <- getsState $ getActorBody aid
           mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
@@ -465,9 +467,10 @@ effectBurn execSfx power source target = do
 
 -- Note that projectiles can be teleported, too, for extra fun.
 effectAscend :: (MonadAtomic m, MonadServer m)
-             => m () -> Int
-             -> ActorId -> ActorId -> ItemId -> Bool -> m Bool
-effectAscend execSfx k source aid iid recharged = do
+             => (Effect.Effect Int -> m Bool)
+             -> m () -> Int -> ActorId
+             -> m Bool
+effectAscend recursiveCall execSfx k aid = do
   b1 <- getsState $ getActorBody aid
   ais1 <- getsState $ getCarriedAssocs b1
   let lid1 = blid b1
@@ -475,8 +478,7 @@ effectAscend execSfx k source aid iid recharged = do
   (lid2, pos2) <- getsState $ whereTo lid1 pos1 k . sdungeon
   if lid2 == lid1 && pos2 == pos1 then do
     execSfxAtomic $ SfxMsgFid (bfid b1) "No more levels in this direction."
-    let effect = Effect.Teleport 30  -- powerful teleport
-    effectSem source aid iid recharged effect
+    recursiveCall $ Effect.Teleport 30  -- powerful teleport
   else do
     let switch1 = void $ switchLevels1 ((aid, b1), ais1)
         switch2 = do
@@ -909,22 +911,22 @@ effectExplode execSfx cgroup target = do
 -- ** OneOf
 
 effectOneOf :: (MonadAtomic m, MonadServer m)
-            => [Effect.Effect Int]
-            -> ActorId -> ActorId -> ItemId -> Bool
+            => (Effect.Effect Int -> m Bool)
+            -> [Effect.Effect Int]
             -> m Bool
-effectOneOf l source target iid recharged = do
+effectOneOf recursiveCall l = do
   ef <- rndToAction $ oneOf l
-  effectSem source target iid recharged ef
+  recursiveCall ef
 
 -- ** Recharging
 
 effectRecharging :: (MonadAtomic m, MonadServer m)
-                 => Effect.Effect Int
-                 -> ActorId -> ActorId -> ItemId -> Bool
+                 => (Effect.Effect Int -> m Bool)
+                 -> Effect.Effect Int -> Bool
                  -> m Bool
-effectRecharging e source target iid recharged =
+effectRecharging recursiveCall e recharged =
   if recharged
-  then effectSem source target iid recharged e
+  then recursiveCall e
   else return False
 
 -- ** CreateOrgan
