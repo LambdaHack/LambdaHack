@@ -44,6 +44,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
@@ -139,7 +140,9 @@ condNoEqpWeaponM aid = do
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
   actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
-  benList <- benAvailableItems aid permittedProject [CEqp, CInv, CGround]
+  let q calm10 itemFull _ =
+        either (const False) id $ permittedProject " " calm10 itemFull
+  benList <- benAvailableItems aid q [CEqp, CInv, CGround]
   let missiles = filter (maybe True ((< 0) . snd . snd) . fst . fst) benList
   return $ not actorBlind && not (null missiles)
     -- keep it lazy

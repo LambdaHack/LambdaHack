@@ -45,19 +45,19 @@ failMsg msg = do
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
 getGroupItem :: MonadClientUI m
-             => (Item -> Bool)  -- ^ which items to consider suitable
+             => (ItemFull -> Bool)  -- ^ which items to consider suitable
              -> MU.Part   -- ^ name of the item group
              -> MU.Part   -- ^ the verb describing the action
              -> [CStore]  -- ^ initial legal containers
              -> [CStore]  -- ^ legal containers after Calm taken into account
              -> m (SlideOrCmd ((ItemId, ItemFull), Container))
-getGroupItem p itemsName verb cLegalRaw cLegalAfterCalm = do
+getGroupItem psuit itemsName verb cLegalRaw cLegalAfterCalm = do
   leader <- getLeaderUI
   getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
   let cNotEmpty = not . EM.null . getCStoreBag
       cLegal = filter cNotEmpty cLegalAfterCalm  -- don't display empty stores
       tsuitable = const $ makePhrase [MU.Capitalize (MU.Ws itemsName)]
-  getItem p (\b _ -> tsuitable b) tsuitable verb
+  getItem psuit (\b _ -> tsuitable b) tsuitable verb
           (map (CActor leader) cLegalRaw)
           (map (CActor leader) cLegal)
           True INone
@@ -109,7 +109,7 @@ data ItemDialogState = INone | ISuitable | IAll
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
 getItem :: MonadClientUI m
-        => (Item -> Bool)   -- ^ which items to consider suitable
+        => (ItemFull -> Bool)  -- ^ which items to consider suitable
         -> (Actor -> [ItemFull] -> Text)
                             -- ^ how to describe suitable items in CSha
         -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
@@ -120,7 +120,8 @@ getItem :: MonadClientUI m
                             --   in the starting container is suitable
         -> ItemDialogState  -- ^ the dialog state to start in
         -> m (SlideOrCmd ((ItemId, ItemFull), Container))
-getItem p tshaSuit tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
+getItem psuit tshaSuit tsuitable verb cLegalRaw cLegal askWhenLone
+        initalState = do
   leader <- getLeaderUI
   accessCBag <- getsState $ flip getCBag
   let storeAssocs = EM.assocs . accessCBag
@@ -134,7 +135,7 @@ getItem p tshaSuit tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
       let groundCs = filter ((== CGround) . storeFromC) cLegal
       mapM_ (updateItemSlot (Just leader)) $
         concatMap (EM.keys . accessCBag) groundCs
-      transition p tshaSuit tsuitable verb cLegal initalState
+      transition psuit tshaSuit tsuitable verb cLegal initalState
     _ -> if null rawAssocs then do
            let tLegal = map (MU.Text . ppContainer) cLegalRaw
                ppLegal = makePhrase [MU.WWxW "nor" tLegal]
@@ -149,11 +150,11 @@ data DefItemKey m = DefItemKey
   }
 
 transition :: forall m. MonadClientUI m
-           => (Item -> Bool)   -- ^ which items to consider suitable
+           => (ItemFull -> Bool)  -- ^ which items to consider suitable
            -> (Actor -> [ItemFull] -> Text)
-                               -- ^ how to describe suitable items in CSha
-           -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
-           -> MU.Part          -- ^ the verb describing the action
+                                  -- ^ how to describe suitable items in CSha
+           -> (Actor -> Text)     -- ^ how to describe suitable items elsewhere
+           -> MU.Part             -- ^ the verb describing the action
            -> [Container]
            -> ItemDialogState
            -> m (SlideOrCmd ((ItemId, ItemFull), Container))
@@ -170,9 +171,9 @@ transition psuit tshaSuit tsuitable verb
   itemToF <- itemToFullClient
   let getResult :: ItemId -> ((ItemId, ItemFull), Container)
       getResult iid = ((iid, itemToF iid (bag EM.! iid)), cCur)
-      filterP s iid _ = psuit (getItemBody iid s)
-  bagSuit <- getsState $ \s -> EM.filterWithKey (filterP s) bag
-  let bagLetterSlots = EM.filter (`EM.member` bag) letterSlots
+      filterP iid kit = psuit $ itemToF iid kit
+      bagSuit = EM.filterWithKey filterP bag
+      bagLetterSlots = EM.filter (`EM.member` bag) letterSlots
       bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
       suitableLetterSlots = EM.filter (`EM.member` bagSuit) letterSlots
       (autoDun, autoLvl) = autoDungeonLevel fact

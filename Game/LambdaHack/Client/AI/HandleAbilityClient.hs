@@ -537,7 +537,9 @@ projectItem aid = do
         Just newEps | not actorBlind -> do  -- ProjectBlind
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
-          benList <- benAvailableItems aid permittedProject [CEqp, CInv, CGround]
+          let q calm10 itemFull _ =
+                either (const False) id $ permittedProject " " calm10 itemFull
+          benList <- benAvailableItems aid q [CEqp, CInv, CGround]
           localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2
               coeff COrgan = 3  -- can't give to others
@@ -585,8 +587,9 @@ applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
   actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
-  benList <- benAvailableItems aid (permittedApply actorBlind)
-                               [CEqp, CInv, CGround]
+  let q calm10 itemFull _ =
+        either (const False) id $ permittedApply " " actorBlind calm10 itemFull
+  benList <- benAvailableItems aid q [CEqp, CInv, CGround]
   b <- getsState $ getActorBody aid
   localTime <- getsState $ getLocalTime (blid b)
   let itemLegal itemFull = case applyGroup of

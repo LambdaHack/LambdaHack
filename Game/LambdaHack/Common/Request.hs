@@ -5,6 +5,7 @@
 module Game.LambdaHack.Common.Request
   ( RequestAI(..), RequestUI(..), RequestTimed(..), RequestAnyAbility(..)
   , ReqFailure(..), showReqFailure, anyToUI
+  , permittedPrecious, permittedProject, permittedApply
   ) where
 
 import Data.Text (Text)
@@ -20,6 +21,9 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.ItemKind
+import qualified Game.LambdaHack.Common.Effect as Effect
+import Game.LambdaHack.Common.ItemStrongest
 
 -- TODO: make remove second arg from ReqLeader; this requires a separate
 -- channel for Ping, probably, and then client sends as many commands
@@ -87,6 +91,7 @@ data ReqFailure =
   | ApplyOutOfReach
   | ItemNothing
   | ItemNotCalm
+  | NotCalmPrecious
   | ProjectAimOnself
   | ProjectBlockTerrain
   | ProjectBlockActor
@@ -116,6 +121,7 @@ showReqFailure reqFailure = case reqFailure of
   ApplyOutOfReach -> "cannot apply an item out of reach"
   ItemNothing -> "wasting time on void item manipulation"
   ItemNotCalm -> "you are too alarmed to sort through the shared stash"
+  NotCalmPrecious -> "you are too alarmed to handle such an exquisite item"
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
@@ -123,3 +129,48 @@ showReqFailure reqFailure = case reqFailure of
   TriggerNothing -> "wasting time on triggering nothing"
   NoChangeDunLeader -> "no manual level change for your team"
   NoChangeLvlLeader -> "no manual leader change for your team"
+
+-- The item should not be activated nor thrown because it's too delicate
+-- to operate when not calm or becuse it's too precious to identify by use.
+permittedPrecious :: Bool -> ItemFull -> Either ReqFailure Bool
+permittedPrecious calm10 itemFull =
+  let isPrecious = Effect.Precious `elem` jfeature (itemBase itemFull)
+  in if not calm10 && isPrecious then Left NotCalmPrecious
+     else Right $ Effect.Durable `elem` jfeature (itemBase itemFull)
+                  || case itemDisco itemFull of
+                    Just ItemDisco{itemAE=Just _} -> True
+                    _ -> not isPrecious
+
+permittedProject :: [Char] -> Bool -> ItemFull -> Either ReqFailure Bool
+permittedProject triggerSyms calm10 itemFull@ItemFull{itemBase} =
+  let legal = permittedPrecious calm10 itemFull
+  in case legal of
+    Left{} -> legal
+    Right False -> legal
+    Right True -> Right $
+      let hasEffects = case itemDisco itemFull of
+            Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects=[]}} -> False
+            Just ItemDisco{ itemAE=Nothing
+                          , itemKind=ItemKind{ieffects=[]} } -> False
+            _ -> True
+          permittedSlot =
+            if ' ' `elem` triggerSyms
+            then case strengthEqpSlot itemBase of
+              Just (Effect.EqpSlotAddLight, _) -> True
+              Just _ -> False
+              Nothing -> True
+            else jsymbol itemBase `elem` triggerSyms
+      in hasEffects && permittedSlot
+
+permittedApply :: [Char] -> Bool -> Bool -> ItemFull
+               -> Either ReqFailure Bool
+permittedApply triggerSyms actorBlind calm10 itemFull@ItemFull{itemBase} =
+  if jsymbol itemBase == '?' && actorBlind then Left ApplyBlind
+  else let legal = permittedPrecious calm10 itemFull
+       in case legal of
+         Left{} -> legal
+         Right False -> legal
+         Right True -> Right $
+           if ' ' `elem` triggerSyms
+           then Effect.Applicable `elem` jfeature itemBase
+           else jsymbol itemBase `elem` triggerSyms

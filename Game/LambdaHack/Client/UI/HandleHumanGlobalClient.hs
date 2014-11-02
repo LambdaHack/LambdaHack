@@ -311,26 +311,26 @@ projectEps :: MonadClientUI m
            -> m (SlideOrCmd (RequestTimed AbProject))
 projectEps ts tpos eps = do
   leader <- getLeaderUI
-  sb <- getsState $ getActorBody leader
+  b <- getsState $ getActorBody leader
+  activeItems <- activeItemsClient leader
   let cLegal = [CGround, CInv, CEqp]
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      p item =
-        let goodKind = if ' ' `elem` triggerSyms
-                       then case strengthEqpSlot item of
-                         Just (Effect.EqpSlotAddLight, _) -> True
-                         Just _ -> False
-                         Nothing -> True
-                       else jsymbol item `elem` triggerSyms
-            trange = totalRange item
-        in goodKind
-           && trange >= chessDist (bpos sb) tpos
-  ggi <- getGroupItem p object1 verb1 cLegal cLegal
+      calm10 = calmEnough10 b activeItems
+      p itemFull@ItemFull{itemBase} =
+        let legal = permittedProject triggerSyms calm10 itemFull
+        in case legal of
+          Left{} -> legal
+          Right False -> legal
+          Right True -> Right $ totalRange itemBase >= chessDist (bpos b) tpos
+  ggi <- getGroupItem (either (const False) id . p) object1 verb1 cLegal cLegal
   case ggi of
-    Right ((iid, _), CActor _ fromCStore) -> do
-      return $ Right $ ReqProject tpos eps iid fromCStore
+    Right ((iid, itemFull), CActor _ fromCStore) ->
+      case p itemFull of
+        Left reqFail -> failSer reqFail
+        Right _ -> return $ Right $ ReqProject tpos eps iid fromCStore
     Left slides -> return $ Left slides
     _ -> assert `failure` ggi
 
@@ -346,22 +346,21 @@ applyHuman :: MonadClientUI m
 applyHuman ts = do
   leader <- getLeaderUI
   actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight leader
+  b <- getsState $ getActorBody leader
+  activeItems <- activeItemsClient leader
   let cLegal = [CGround, CInv, CEqp]
       (verb1, object1) = case ts of
         [] -> ("activate", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      blindScroll item = jsymbol item == '?' && actorBlind
-      p item = not (blindScroll item)
-               && if ' ' `elem` triggerSyms
-                  then Effect.Applicable `elem` jfeature item
-                  else jsymbol item `elem` triggerSyms
-  ggi <- getGroupItem p object1 verb1 cLegal cLegal
+      calm10 = calmEnough10 b activeItems
+      p = permittedApply triggerSyms actorBlind calm10
+  ggi <- getGroupItem (either (const False) id . p) object1 verb1 cLegal cLegal
   case ggi of
     Right ((iid, itemFull), CActor _ fromCStore) ->
-      if (blindScroll $ itemBase itemFull)
-      then failSer ApplyBlind
-      else return $ Right $ ReqApply iid fromCStore
+      case p itemFull of
+        Left reqFail -> failSer reqFail
+        Right _ -> return $ Right $ ReqApply iid fromCStore
     Left slides -> return $ Left slides
     _ -> assert `failure` ggi
 
