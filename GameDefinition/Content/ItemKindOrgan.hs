@@ -186,7 +186,7 @@ sting = fist
   , icount   = 1
   , iverbHit = "sting"
   , iaspects = [Timeout $ 1 + d 5]
-  , ieffects = [Burn 1, Paralyze 3]
+  , ieffects = [Burn 1, Recharging (Paralyze 3)]
   , idesc    = ""
   }
 venomTooth = fist
@@ -195,7 +195,7 @@ venomTooth = fist
   , icount   = 2
   , iverbHit = "bite"
   , iaspects = [Timeout $ 2 + d 8]
-  , ieffects = [Hurt (3 * d 1), Paralyze 5]
+  , ieffects = [Hurt (3 * d 1), Recharging (Paralyze 5)]
   , idesc    = ""
   }
 venomFang = fist
@@ -221,7 +221,7 @@ pupil = fist
   , icount   = 1
   , iverbHit = "gaze at"
   , iaspects = [AddSight 7, Timeout $ 5 + d 5]
-  , ieffects = [Hurt (4 * d 1), Paralyze 5]  -- TODO: decrease Hurt, but use
+  , ieffects = [Hurt (4 * d 1), Recharging (Paralyze 5)]  -- TODO: decrease Hurt, but use
   , idesc    = ""
   }
 
