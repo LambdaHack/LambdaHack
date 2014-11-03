@@ -94,7 +94,7 @@ dart200 = ItemKind
 
 -- * Exotic thrown weapons
 
-bolas = ItemKind  -- TODO: temporarily can't walk instead of paralysis; perhaps move ActivateInv to some exceptional item, otherwise it's too cruel and discourages creative collecting and use of bad stuff for throwing
+bolas = ItemKind
   { isymbol  = symbolProjectile
   , iname    = "bolas set"
   , ifreq    = [("useful", 100)]
@@ -104,9 +104,9 @@ bolas = ItemKind  -- TODO: temporarily can't walk instead of paralysis; perhaps 
   , iverbHit = "entangle"
   , iweight  = 500
   , iaspects = []
-  , ieffects = [Hurt (2 * d 1), Paralyze (5 + d 5), ActivateInv '!']
+  , ieffects = [Hurt (2 * d 1), Paralyze (5 + d 5), DropBestWeapon]
   , ifeature = []
-  , idesc    = "Wood balls tied with hemp rope for tripping, entangling and bringing down crashing."
+  , idesc    = "Wood balls tied with hemp rope. The target enemy is tripped and bound to drop its weapon, while recovering balance."
   , ikit     = []
   }
 harpoon = ItemKind
@@ -134,10 +134,9 @@ net = ItemKind
   , iverbHit = "entangle"
   , iweight  = 1000
   , iaspects = []
-  , ieffects = [ CreateOrgan (3 + d 3) "slow 10"
-               , DropBestWeapon, DropEqp ']' False ]
+  , ieffects = [CreateOrgan (3 + d 3) "slow 10", DropEqp symbolTorsoArmor False]
   , ifeature = []
-  , idesc    = "A wide net with weights along the edges. Entangles weapon and armor alike."
+  , idesc    = "A wide net with weights along the edges. Entangles armor and restricts movement."
   , ikit     = []
   }
 
@@ -287,8 +286,7 @@ necklace2 = necklace
   }
 necklace3 = necklace
   { iaspects = (Timeout $ (d 3 + 3 - dl 3) |*| 10) : iaspects necklace
-  , ieffects = [ Recharging (Paralyze $ 5 + d 5 + dl 5)
-               , Recharging (RefillCalm 999) ]
+  , ieffects = [Recharging (Paralyze $ 5 + d 5 + dl 5)]
   }
 necklace4 = necklace
   { iaspects = (Timeout $ (d 4 + 4 - dl 4) |*| 2) : iaspects necklace
@@ -304,9 +302,9 @@ necklace6 = necklace
   }
 necklace7 = necklace  -- TODO: teach AI to wear only for fight
   { irarity  = [(4, 0), (10, 2)]
-  , iaspects = (Timeout $ (d 3 + 3 - dl 3) |*| 2) : iaspects necklace
-  , ieffects = [ Recharging (InsertMove 1)
-               , Recharging (RefillHP (-1)) ]
+  , iaspects = [AddSpeed $ d 2, Timeout $ (d 3 + 3 + dl 3) |*| 2]
+               ++ iaspects necklace
+  , ieffects = [Recharging (RefillHP (-1))]
   }
 
 -- * Non-periodic jewelry
@@ -341,7 +339,7 @@ ring = ItemKind
   , iaspects = []
   , ieffects = [Explode "explosion blast 2"]
   , ifeature = [Precious, Identified]
-  , idesc    = "It looks like an ordinary object, but it's in fact a generator of exceptional effects: adding to some of your natural abilities and subtracting from others. You'd profit enormously if you could find a way to multiply such generators..."  -- TODO: merge rings: define correct, but not overpowered multiplication, if possible
+  , idesc    = "It looks like an ordinary object, but it's in fact a generator of exceptional effects: adding to some of your natural abilities and subtracting from others. You'd profit enormously if you could find a way to multiply such generators..."
   , ikit     = []
   }
 ring1 = ring
@@ -359,8 +357,8 @@ ring3 = ring
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddMaxCalm ""]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
-ring4 = ring  -- TODO: move to level-ups and to timed effects
-  { irarity  = [(3, 12), (10, 12)]
+ring4 = ring
+  { irarity  = [(3, 6), (10, 6)]
   , iaspects = [AddHurtMelee $ (d 5 + dl 5) |*| 3, AddMaxHP $ dl 3 - 4 - d 2]
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddHurtMelee ""]
   }
@@ -436,8 +434,8 @@ potion7 = potion  -- used only as initial equipment; count betrays identity
 
 -- * Exploding consumables, with temporary aspects
 -- TODO: dip projectiles in those
--- TODO: add flavour and realisn in the same as, e.g., "flask of whiskey"
--- is more flavourful and believable than "flask of strength"
+-- TODO: add flavour and realism as in, e.g., "flask of whiskey",
+-- which is more flavourful and believable than "flask of strength"
 
 flask = ItemKind
   { isymbol  = symbolFlask
@@ -661,7 +659,7 @@ buckler = ItemKind
   , iaspects = [ AddArmorMelee 40
                , AddHurtMelee (-30)
                , Timeout $ (d 3 + 3 - dl 3) |*| 2 ]
-  , ieffects = [Recharging (PushActor (ThrowMod 200 50))]
+  , ieffects = []  -- [Recharging (PushActor (ThrowMod 200 50))]
   , ifeature = [ toVelocity 30  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
   , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
@@ -675,7 +673,7 @@ shield = buckler
   , iaspects = [ AddArmorMelee 80
                , AddHurtMelee (-70)
                , Timeout $ (d 3 + 6 - dl 3) |*| 2 ]
-  , ieffects = [Recharging (PushActor (ThrowMod 400 50))]
+  , ieffects = []  -- [Recharging (PushActor (ThrowMod 400 50))]
   , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
   , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
