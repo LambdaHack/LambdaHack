@@ -23,7 +23,8 @@ import Game.LambdaHack.Content.ModeKind
 -- benefit won't ever be used, neither actively nor passively.
 effectToBenefit :: Kind.COps -> Actor -> [ItemFull] -> Faction
                 -> IK.Effect Int -> Int
-effectToBenefit cops b activeItems fact eff =
+effectToBenefit cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
+                b activeItems fact eff =
   let dungeonDweller = not $ fcanEscape $ gplayer fact
   in case eff of
     IK.NoEffect _ -> 0
@@ -70,8 +71,17 @@ effectToBenefit cops b activeItems fact eff =
     IK.OnSmash _ -> -10
     IK.Recharging e -> effectToBenefit cops b activeItems fact e
                            `divUp` 3  -- TODO: use Timeout
-    IK.CreateOrgan _k _t -> 0  -- TODO: hard; look up t
-                                   -- and also check if t active at the time
+    IK.CreateOrgan _k t ->  -- TODO: use the timeout and also check
+                            -- if the tmp aspect already active at the time
+      let travA x =
+            St.evalState (IK.aspectTrav x (return . round . Dice.meanDice)) ()
+          f p _ kind (pacc, sacc) =
+            let paspect asp = p * aspectToBenefit cops b (travA asp)
+
+            in ( pacc + p
+               , sacc + sum (map paspect $ IK.iaspects kind))
+          (ptotal, stotal) = ofoldrGroup t f (0, 0)
+      in stotal `divUp` ptotal
     IK.Temporary _ -> 0
 
 -- | Return the value to add to effect value and another to multiply it.
