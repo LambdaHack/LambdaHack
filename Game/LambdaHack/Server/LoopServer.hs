@@ -269,7 +269,7 @@ handleActors lid = do
         cmdS <- sendQueryUI side aid
         -- TODO: check that the command is legal first, report and reject,
         -- but do not crash (currently server asserts things and crashes)
-        aidNew <- handleRequestUI side cmdS
+        (aidNew, action) <- handleRequestUI side cmdS
         let hasWait (ReqUITimed ReqWait{}) = True
             hasWait (ReqUILeader _ _ cmd) = hasWait cmd
             hasWait _ = False
@@ -282,6 +282,7 @@ handleActors lid = do
         -- He is able to move normally in the same turn, immediately
         -- after the new leader completes his move.
         maybe skip advanceTime aidNew
+        action
       else do
         -- Clear messages in the UI client (if any), if the actor
         -- is a leader (which happens when a UI client is fully
@@ -290,13 +291,14 @@ handleActors lid = do
         -- but we'd have to add -more- prompts.
         when mainUIactor $ execUpdAtomic $ UpdRecordHistory side
         cmdS <- sendQueryAI side aid
-        aidNew <- handleRequestAI side aid cmdS
+        (aidNew, action) <- handleRequestAI side aid cmdS
         let hasWait (ReqAITimed ReqWait{}) = True
             hasWait (ReqAILeader _ _ cmd) = hasWait cmd
             hasWait _ = False
         setBWait (hasWait cmdS) aidNew
         -- AI always takes time and so doesn't loop.
         advanceTime aidNew
+        action
       handleActors lid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()

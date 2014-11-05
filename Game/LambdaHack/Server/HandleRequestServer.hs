@@ -23,7 +23,6 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -37,6 +36,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonServer
@@ -48,34 +48,34 @@ import Game.LambdaHack.Server.State
 -- | The semantics of server commands. The resulting actor id
 -- is of the actor that carried out the request.
 handleRequestAI :: (MonadAtomic m, MonadServer m)
-                => FactionId -> ActorId -> RequestAI -> m ActorId
+                => FactionId -> ActorId -> RequestAI -> m (ActorId, m ())
 handleRequestAI fid aid cmd = case cmd of
-  ReqAITimed cmdT -> handleRequestTimed aid cmdT >> return aid
+  ReqAITimed cmdT -> return (aid, handleRequestTimed aid cmdT)
   ReqAILeader aidNew mtgtNew cmd2 -> do
     switchLeader fid aidNew mtgtNew
     handleRequestAI fid aidNew cmd2
-  ReqAIPong -> return aid
+  ReqAIPong -> return (aid, skip)
 
 -- | The semantics of server commands. The resulting actor id
 -- is of the actor that carried out the request. @Nothing@ means
 -- the command took no time.
 handleRequestUI :: (MonadAtomic m, MonadServer m)
-                => FactionId -> RequestUI -> m (Maybe ActorId)
+                => FactionId -> RequestUI -> m (Maybe ActorId, m ())
 handleRequestUI fid cmd = case cmd of
   ReqUITimed cmdT -> do
     fact <- getsState $ (EM.! fid) . sfactionD
     let (aid, _) = fromMaybe (assert `failure` fact) $ gleader fact
-    handleRequestTimed aid cmdT >> return (Just aid)
+    return (Just aid, handleRequestTimed aid cmdT)
   ReqUILeader aidNew mtgtNew cmd2 -> do
     switchLeader fid aidNew mtgtNew
     handleRequestUI fid cmd2
   ReqUIGameRestart aid t d names ->
-    reqGameRestart aid t d names >> return Nothing
-  ReqUIGameExit aid d -> reqGameExit aid d >> return Nothing
-  ReqUIGameSave -> reqGameSave >> return Nothing
-  ReqUITactic toT -> reqTactic fid toT >> return Nothing
-  ReqUIAutomate -> reqAutomate fid >> return Nothing
-  ReqUIPong _ -> return Nothing
+    return (Nothing, reqGameRestart aid t d names)
+  ReqUIGameExit aid d -> return (Nothing, reqGameExit aid d)
+  ReqUIGameSave -> return (Nothing, reqGameSave)
+  ReqUITactic toT -> return (Nothing, reqTactic fid toT)
+  ReqUIAutomate -> return (Nothing, reqAutomate fid)
+  ReqUIPong _ -> return (Nothing, skip)
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
                    => ActorId -> RequestTimed a -> m ()
