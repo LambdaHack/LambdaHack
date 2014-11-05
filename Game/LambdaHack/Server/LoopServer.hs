@@ -223,10 +223,6 @@ handleActors lid = do
       handleActors lid
     Just (aid, b) | bhp b < 0 && bproj b -> do
       -- A projectile hits an actor. The carried item is destroyed.
-      -- TODO: perhaps don't destroy if no effect (NoEffect),
-      -- to help testing items. But OTOH, we want most items to have
-      -- some effect, even silly, for flavour. Anyway, if the silly
-      -- effect identifies an item, the hit is not wasted, so this makes sense.
       startActor aid
       dieSer aid b True
       handleActors lid

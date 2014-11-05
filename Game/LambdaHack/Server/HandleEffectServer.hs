@@ -128,18 +128,6 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
     unless (triggered || imperishable) $
       execUpdAtomic $ UpdSpotItem iid item kit c
 
-itemEffectOnSmash :: (MonadAtomic m, MonadServer m)
-                  => ActorId -> ActorId -> ItemId
-                  -> m ()
-itemEffectOnSmash source target iid = do
-  itemToF <- itemToFullServer
-  let itemFull = itemToF iid (1, [])
-      effs = strengthOnSmash itemFull
-      -- Disregard recharging status. You can wrench out an activation
-      -- from a recharging item by smashing it. (TODO: smash command)
-      recharged = True
-  void $ itemEffectDisco source target iid recharged False effs
-
 itemEffectCause :: (MonadAtomic m, MonadServer m)
                 => ActorId -> Point -> IK.Effect Int
                 -> m Bool
@@ -155,7 +143,7 @@ itemEffectCause aid tpos ef = do
             Just ItemAspectEffect{jaspects} -> jaspects
             _ -> assert `failure` (aid, tpos, ef, iid)
       execSfxAtomic $ SfxTrigger aid tpos $ TK.Cause ef
-      void $ effectAndDestroy aid aid iid c False [ef] aspects kit
+      effectAndDestroy aid aid iid c False [ef] aspects kit
       return True
     ab -> assert `failure` (aid, tpos, ab)
 
@@ -653,14 +641,19 @@ dropEqpItem :: (MonadAtomic m, MonadServer m)
             => ActorId -> Actor -> Bool -> ItemId -> ItemQuant -> m ()
 dropEqpItem aid b hit iid kit@(k, _) = do
   item <- getsState $ getItemBody iid
-  let container = CActor aid CEqp
+  let c = CActor aid CEqp
       fragile = IK.Fragile `elem` jfeature item
       durable = IK.Durable `elem` jfeature item
       isDestroyed = hit && not durable || bproj b && fragile
   if isDestroyed then do
-    -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
-    execUpdAtomic $ UpdLoseItem iid item kit container
-    itemEffectOnSmash aid aid iid
+    discoEffect <- getsServer sdiscoEffect
+    let aspects = case EM.lookup iid discoEffect of
+          Just ItemAspectEffect{jaspects} -> jaspects
+          _ -> assert `failure` (aid, iid)
+    itemToF <- itemToFullServer
+    let itemFull = itemToF iid kit
+        effs = strengthOnSmash itemFull
+    effectAndDestroy aid aid iid c False effs aspects kit
   else do
     mvCmd <- generalMoveItem iid k (CActor aid CEqp)
                                    (CActor aid CGround)
