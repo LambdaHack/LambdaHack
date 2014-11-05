@@ -25,7 +25,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
-import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
@@ -37,9 +36,9 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * RespUpdAtomicUI
 
@@ -120,7 +119,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     mleader <- getsClient _sleader
     when (Just aid == mleader) $ do
       b <- getsState $ getActorBody aid
-      hpMax <- sumOrganEqpClient Effect.EqpSlotAddMaxHP aid
+      hpMax <- sumOrganEqpClient IK.EqpSlotAddMaxHP aid
       when (bhp b == xM hpMax && hpMax > 0) $ do
         actorVerbMU aid b "recover your health fully"
         stopPlayBack
@@ -189,13 +188,13 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     let t = lvl `at` p
         verb | t == toTile = "confirm"
              | otherwise = "reveal"
-        subject2 = MU.Text $ tname $ okind fromTile
+        subject2 = MU.Text $ TK.tname $ okind fromTile
         verb2 = "be"
     let msg = makeSentence [ MU.SubjectVerbSg subject verb
                            , "that the"
                            , MU.SubjectVerbSg subject2 verb2
                            , "a hidden"
-                           , MU.Text $ tname $ okind toTile ]
+                           , MU.Text $ TK.tname $ okind toTile ]
     msgAdd msg
   UpdLearnSecrets{} -> skip
   UpdSpotTile{} -> skip
@@ -436,7 +435,7 @@ quitFactionUI fid mbody toSt = do
       recordHistory  -- we are going to exit or restart, so record
       let bodyToItemSlides b = do
             (bag, tot) <- getsState $ calculateTotal b
-            let currencyName = MU.Text $ iname $ okind
+            let currencyName = MU.Text $ IK.iname $ okind
                                $ ouniqGroup "currency"
                 itemMsg = makeSentence [ "Your loot is worth"
                                        , MU.CarWs tot currencyName ]
@@ -535,9 +534,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                                    || bhp b < p)
           (deadBefore, verbDie) =
             case effect of
-              Effect.Hurt p | deadPreviousTurn (xM $ Dice.maxDice p) ->
+              IK.Hurt p | deadPreviousTurn (xM $ Dice.maxDice p) ->
                 (True, hurtExtra)
-              Effect.RefillHP p | deadPreviousTurn (xM p) -> (True, hurtExtra)
+              IK.RefillHP p | deadPreviousTurn (xM p) -> (True, hurtExtra)
               _ -> (False, firstFall)
           msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
       msgAdd msgDie
@@ -548,9 +547,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                    else animate (blid b) $ deathBody $ bpos b
         displayActorStart b animDie
     else case effect of
-        Effect.NoEffect t -> msgAdd $ "Nothing happens." <+> t
-        Effect.RefillHP p | p == 1 -> skip  -- no spam from regeneration
-        Effect.RefillHP p | p > 0 -> do
+        IK.NoEffect t -> msgAdd $ "Nothing happens." <+> t
+        IK.RefillHP p | p == 1 -> skip  -- no spam from regeneration
+        IK.RefillHP p | p > 0 -> do
           if fid == side then
             actorVerbMU aid b "feel healthier"
           else
@@ -558,8 +557,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
           displayActorStart b animFrs
-        Effect.RefillHP p | p == -1 -> skip  -- no spam from poison
-        Effect.RefillHP _ -> do
+        IK.RefillHP p | p == -1 -> skip  -- no spam from poison
+        IK.RefillHP _ -> do
           if fid == side then
             actorVerbMU aid b "feel wounded"
           else
@@ -567,9 +566,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs
-        Effect.Hurt{} -> skip  -- avoid spam; SfxStrike just sent
-        Effect.RefillCalm p | p == 1 -> skip  -- no spam from regen items
-        Effect.RefillCalm p | p > 0 -> do
+        IK.Hurt{} -> skip  -- avoid spam; SfxStrike just sent
+        IK.RefillCalm p | p == 1 -> skip  -- no spam from regen items
+        IK.RefillCalm p | p > 0 -> do
           if fid == side then
             actorVerbMU aid b "feel calmer"
           else
@@ -577,7 +576,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
           displayActorStart b animFrs
-        Effect.RefillCalm _ -> do
+        IK.RefillCalm _ -> do
           if fid == side then
             actorVerbMU aid b "feel agitated"
           else
@@ -585,7 +584,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs
-        Effect.Dominate -> do
+        IK.Dominate -> do
           -- For subsequent messages use the proper name, never "you".
           let subject = partActor b
           if fid /= fidSource then do  -- before domination
@@ -605,38 +604,38 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             let verb = "be now under"
             msgAdd $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
-        Effect.Impress{} ->
+        IK.Impress{} ->
           actorVerbMU aid b
           $ if boldfid b /= bfid b
             then
               "get sobered and refocused by the fragrant moisture"
             else
               "inhale the sweet smell that weakens resolve and erodes loyalty"
-        Effect.CallFriend{} -> skip
-        Effect.Summon{} -> skip
-        Effect.CreateItem{} -> skip
-        Effect.ApplyPerfume ->
+        IK.CallFriend{} -> skip
+        IK.Summon{} -> skip
+        IK.CreateItem{} -> skip
+        IK.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
-        Effect.Burn{} ->
+        IK.Burn{} ->
           if fid == side then
             actorVerbMU aid b "feel burned"
           else
             actorVerbMU aid b "look burned"
-        Effect.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"
-        Effect.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
-        Effect.Ascend{} -> assert `failure` sfx
-        Effect.Escape{} -> skip
-        Effect.Paralyze{} -> actorVerbMU aid b "be paralyzed"
-        Effect.InsertMove{} -> actorVerbMU aid b "move with extreme speed"
-        Effect.DropBestWeapon -> actorVerbMU aid b "be disarmed"
-        Effect.DropEqp _ False -> actorVerbMU aid b "be stripped"  -- TODO
-        Effect.DropEqp _ True -> actorVerbMU aid b "be violently stripped"
-        Effect.SendFlying{} -> actorVerbMU aid b "be sent flying"
-        Effect.PushActor{} -> actorVerbMU aid b "be pushed"
-        Effect.PullActor{} -> actorVerbMU aid b "be pulled"
-        Effect.Teleport t | t > 9 -> actorVerbMU aid b "teleport"
-        Effect.Teleport{} -> actorVerbMU aid b "blink"
-        Effect.PolyItem cstore -> do
+        IK.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"
+        IK.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
+        IK.Ascend{} -> assert `failure` sfx
+        IK.Escape{} -> skip
+        IK.Paralyze{} -> actorVerbMU aid b "be paralyzed"
+        IK.InsertMove{} -> actorVerbMU aid b "move with extreme speed"
+        IK.DropBestWeapon -> actorVerbMU aid b "be disarmed"
+        IK.DropEqp _ False -> actorVerbMU aid b "be stripped"  -- TODO
+        IK.DropEqp _ True -> actorVerbMU aid b "be violently stripped"
+        IK.SendFlying{} -> actorVerbMU aid b "be sent flying"
+        IK.PushActor{} -> actorVerbMU aid b "be pushed"
+        IK.PullActor{} -> actorVerbMU aid b "be pulled"
+        IK.Teleport t | t > 9 -> actorVerbMU aid b "teleport"
+        IK.Teleport{} -> actorVerbMU aid b "blink"
+        IK.PolyItem cstore -> do
           localTime <- getsState $ getLocalTime $ blid b
           allAssocs <- fullAssocsClient aid [cstore]
           case allAssocs of
@@ -650,7 +649,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               msgAdd $ makeSentence
                 [ MU.SubjectVerbSg subject verb
                 , "the", secretName, secretAEText, store ]
-        Effect.Identify cstore -> do
+        IK.Identify cstore -> do
           localTime <- getsState $ getLocalTime $ blid b
           allAssocs <- fullAssocsClient aid [cstore]
           case allAssocs of
@@ -664,13 +663,13 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               msgAdd $ makeSentence
                 [ MU.SubjectVerbSg subject verb
                 , "old notes with the", secretName, secretAEText, store ]
-        Effect.ActivateInv{} -> skip
-        Effect.Explode{} -> skip  -- lots of visual feedback
-        Effect.OneOf{} -> skip
-        Effect.OnSmash{} -> assert `failure` sfx
-        Effect.Recharging{} -> assert `failure` sfx
-        Effect.CreateOrgan{} -> skip  -- TODO
-        Effect.Temporary t -> actorVerbMU aid b $ MU.Text t
+        IK.ActivateInv{} -> skip
+        IK.Explode{} -> skip  -- lots of visual feedback
+        IK.OneOf{} -> skip
+        IK.OnSmash{} -> assert `failure` sfx
+        IK.Recharging{} -> assert `failure` sfx
+        IK.CreateOrgan{} -> skip  -- TODO
+        IK.Temporary t -> actorVerbMU aid b $ MU.Text t
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
   SfxActorStart aid -> do
@@ -722,7 +721,7 @@ strike source target iid hitStatus = assert (source /= target) $ do
   let itemFull = itemToF iid (1, [])
       verb = case itemDisco itemFull of
         Nothing -> "hit"  -- not identified
-        Just ItemDisco{itemKind} -> iverbHit itemKind
+        Just ItemDisco{itemKind} -> IK.iverbHit itemKind
       isOrgan = iid `EM.member` borgan sb
       partItemChoice =
         if isOrgan

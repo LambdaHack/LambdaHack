@@ -12,7 +12,6 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.EffectDescription
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
@@ -20,7 +19,7 @@ import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind
+import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- TODO: remove _lid if still unused after some time
 -- | The part of speech describing the item parameterized by the number
@@ -35,7 +34,7 @@ partItemN fullInfo n c _lid localTime itemFull =
       in (MU.Text $ flav <+> genericName, "")
     Just _ ->
       let effTs = filter (not . T.null) $ textAllAE fullInfo c itemFull
-          it1 = case strengthFromEqpSlot Effect.EqpSlotTimeout itemFull of
+          it1 = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
             Nothing -> []
             Just timeout ->
               let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
@@ -63,21 +62,21 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
   in case itemDisco of
     Nothing -> features
     Just ItemDisco{itemKind, itemAE} ->
-      let periodicAspect :: Effect.Aspect a -> Bool
-          periodicAspect Effect.Periodic = True
+      let periodicAspect :: IK.Aspect a -> Bool
+          periodicAspect IK.Periodic = True
           periodicAspect _ = False
-          timeoutAspect :: Effect.Aspect a -> Bool
-          timeoutAspect Effect.Timeout{} = True
+          timeoutAspect :: IK.Aspect a -> Bool
+          timeoutAspect IK.Timeout{} = True
           timeoutAspect _ = False
-          hurtEffect :: Effect.Effect a -> Bool
-          hurtEffect (Effect.Hurt _) = True
+          hurtEffect :: IK.Effect a -> Bool
+          hurtEffect (IK.Hurt _) = True
           hurtEffect _ = False
           cstore = storeFromC c
           active = cstore `elem` [CEqp, COrgan]
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
           splitAE :: (Show a, Ord a)
-                  => [Effect.Aspect a] -> (Effect.Aspect a -> Text)
-                  -> [Effect.Effect a] -> (Effect.Effect a -> Text)
+                  => [IK.Aspect a] -> (IK.Aspect a -> Text)
+                  -> [IK.Effect a] -> (IK.Effect a -> Text)
                   -> [Text]
           splitAE aspects ppA effects ppE =
             let mperiodic = find periodicAspect aspects
@@ -93,15 +92,15 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
                                $ map ppE $ stripRecharging restEs
                 periodicOrTimeout = case mperiodic of
                   _ | T.null rechargingTs -> ""
-                  Just Effect.Periodic ->
+                  Just IK.Periodic ->
                     case mtimeout of
-                      Just (Effect.Timeout t) ->
+                      Just (IK.Timeout t) ->
                         -- TODO: let t = 100 `div` p
                         "(every" <+> tshow t <> ":"
                         <+> rechargingTs <> ")"
                       _ -> ""
                   _ -> case mtimeout of
-                    Just (Effect.Timeout t) ->
+                    Just (IK.Timeout t) ->
                       "(timeout" <+> tshow t <> ":"
                       <+> rechargingTs <> ")"
                     _ -> ""
@@ -111,8 +110,8 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
               splitAE jaspects aspectToSuffix
                       jeffects effectToSuffix
             Nothing ->
-              splitAE (iaspects itemKind) kindAspectToSuffix
-                      (ieffects itemKind) kindEffectToSuffix
+              splitAE (IK.iaspects itemKind) kindAspectToSuffix
+                      (IK.ieffects itemKind) kindEffectToSuffix
       in aets ++ features
 
 -- TODO: use kit
@@ -137,7 +136,7 @@ itemDesc c lid localTime itemFull =
       nstats = makePhrase [name, stats]
       desc = case itemDisco itemFull of
         Nothing -> "This item is as unremarkable as can be."
-        Just ItemDisco{itemKind} -> idesc itemKind
+        Just ItemDisco{itemKind} -> IK.idesc itemKind
       weight = jweight (itemBase itemFull)
       (scaledWeight, unitWeight) =
         if weight > 1000

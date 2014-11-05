@@ -13,7 +13,6 @@ import Data.Key (mapWithKeyM_)
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -23,7 +22,9 @@ import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.ItemKind (ItemKind)
+import Game.LambdaHack.Content.TileKind (TileKind)
+import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
@@ -72,8 +73,8 @@ embedItem lid pos tk = do
   void $ rollAndRegisterItem lid itemFreq container False
 
 rollItem :: (MonadAtomic m, MonadServer m)
-         => LevelId -> Freqs
-         -> m (Maybe (ItemKnown, ItemFull, ItemSeed, GroupName))
+         => LevelId -> Freqs ItemKind
+         -> m (Maybe (ItemKnown, ItemFull, ItemSeed, GroupName ItemKind))
 rollItem lid itemFreq = do
   cops <- getsState scops
   flavour <- getsServer sflavour
@@ -83,8 +84,8 @@ rollItem lid itemFreq = do
   rndToAction $ newItem cops flavour discoRev itemFreq lid ldepth totalDepth
 
 rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
-                    => LevelId -> Freqs -> Container -> Bool
-                    -> m (Maybe (ItemId, (ItemFull, GroupName)))
+                    => LevelId -> Freqs ItemKind -> Container -> Bool
+                    -> m (Maybe (ItemId, (ItemFull, GroupName ItemKind)))
 rollAndRegisterItem lid itemFreq container verbose = do
   m4 <- rollItem lid itemFreq
   case m4 of
@@ -103,21 +104,21 @@ placeItemsInDungeon = do
           let dist p = minimum $ maxBound : map (chessDist p) (EM.keys lfloor)
           pos <- rndToAction $ findPosTry 100 ltile
                    (\_ t -> Tile.isWalkable cotile t
-                            && (not $ Tile.hasFeature cotile F.NoItem t))
-                   [ \p t -> Tile.hasFeature cotile F.OftenItem t
+                            && (not $ Tile.hasFeature cotile TK.NoItem t))
+                   [ \p t -> Tile.hasFeature cotile TK.OftenItem t
                              && dist p > factionDist `div` 5
-                   , \p t -> Tile.hasFeature cotile F.OftenItem t
+                   , \p t -> Tile.hasFeature cotile TK.OftenItem t
                              && dist p > factionDist `div` 7
-                   , \p t -> Tile.hasFeature cotile F.OftenItem t
+                   , \p t -> Tile.hasFeature cotile TK.OftenItem t
                              && dist p > factionDist `div` 9
-                   , \p t -> Tile.hasFeature cotile F.OftenItem t
+                   , \p t -> Tile.hasFeature cotile TK.OftenItem t
                              && dist p > factionDist `div` 12
                    , \p _ -> dist p > factionDist `div` 5
-                   , \p t -> Tile.hasFeature cotile F.OftenItem t
+                   , \p t -> Tile.hasFeature cotile TK.OftenItem t
                              || dist p > factionDist `div` 7
-                   , \p t -> Tile.hasFeature cotile F.OftenItem t
+                   , \p t -> Tile.hasFeature cotile TK.OftenItem t
                              || dist p > factionDist `div` 9
-                   , \p t -> Tile.hasFeature cotile F.OftenItem t
+                   , \p t -> Tile.hasFeature cotile TK.OftenItem t
                              || dist p > factionDist `div` 12
                    , \p _ -> dist p > 1
                    , \p _ -> EM.notMember p lfloor

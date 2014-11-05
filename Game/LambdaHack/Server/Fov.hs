@@ -20,7 +20,7 @@ import Data.Ord
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -69,7 +69,7 @@ levelPerception cops litHere actorEqpBody fovMode lvl@Level{lxsize, lysize} =
       nocto = concat $ map fst noctoBodies
       ptotal = visibleOnLevel cops totalReachable litHere nocto lvl
       canSmellAround (_, allAssocs) =
-        let radius = sumSlotNoFilter Effect.EqpSlotAddSmell allAssocs
+        let radius = sumSlotNoFilter IK.EqpSlotAddSmell allAssocs
         in radius >= 2
       -- TODO: handle smell radius < 2, that is only under the actor
       -- TODO: filter out tiles that are solid and so can't hold smell.
@@ -118,7 +118,7 @@ reachableFromActor :: Kind.COps -> FovMode -> Level
                    -> ((ActorId, Actor), [ItemFull])
                    -> PerceptionReachable
 reachableFromActor cops fovMode lvl ((_, body), allItems) =
-  let sumSight = sumSlotNoFilter Effect.EqpSlotAddSight allItems
+  let sumSight = sumSlotNoFilter IK.EqpSlotAddSight allItems
       radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) sumSight
   in PerceptionReachable $ fullscan cops fovMode radius (bpos body) lvl
 
@@ -131,7 +131,7 @@ litByItems :: Kind.COps -> FovMode -> Level
 litByItems cops@Kind.COps{cotile} fovMode lvl allItems =
   let litPos :: (Point, [ItemFull]) -> [Point]
       litPos (p, is) =
-        let radius = sumSlotNoFilter Effect.EqpSlotAddLight is
+        let radius = sumSlotNoFilter IK.EqpSlotAddLight is
             scan = fullscan cops fovMode radius p lvl
             -- Optimization: filter out positions already having ambient light.
             opt = filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos) scan

@@ -7,8 +7,7 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
-import qualified Game.LambdaHack.Common.Effect as Effect
-import Game.LambdaHack.Common.Feature
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.TileKind
@@ -73,7 +72,7 @@ pillarCache = TileKind
                , ("legendLit", 100), ("legendDark", 100) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Cause $ Effect.CreateItem 1, ChangeTo "cachable"]
+  , tfeature = [Cause $ IK.CreateItem 1, ChangeTo "cachable"]
   }
 lampPost = TileKind
   { tsymbol  = 'O'
@@ -185,7 +184,7 @@ stairsUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ Effect.Ascend 1]
+  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ IK.Ascend 1]
   }
 stairsLit = TileKind
   { tsymbol  = '>'
@@ -194,8 +193,8 @@ stairsLit = TileKind
   , tcolor   = BrCyan
   , tcolor2  = Cyan  -- TODO
   , tfeature = [ Walkable, Clear, NoItem, NoActor
-               , Cause $ Effect.Ascend 1
-               , Cause $ Effect.Ascend (-1) ]
+               , Cause $ IK.Ascend 1
+               , Cause $ IK.Ascend (-1) ]
   }
 stairsDownLit = TileKind
   { tsymbol  = '>'
@@ -203,7 +202,7 @@ stairsDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ Effect.Ascend (-1)]
+  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ IK.Ascend (-1)]
   }
 escapeUpLit = TileKind
   { tsymbol  = '<'
@@ -211,7 +210,7 @@ escapeUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ Effect.Escape 1]
+  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ IK.Escape 1]
   }
 escapeDownLit = TileKind
   { tsymbol  = '>'
@@ -219,7 +218,7 @@ escapeDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ Effect.Escape (-1)]
+  , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ IK.Escape (-1)]
   }
 unknown = TileKind
   { tsymbol  = ' '
@@ -290,7 +289,7 @@ floorBrownLit = floorRedLit
   }
 
 makeDark :: TileKind -> TileKind
-makeDark k = let darkText :: GroupName -> GroupName
+makeDark k = let darkText :: GroupName TileKind -> GroupName TileKind
                  darkText t = maybe t (toGroupName . (<> "Dark"))
                               $ T.stripSuffix "Lit" $ tshow t
                  darkFrequency = map (first darkText) $ tfreq k

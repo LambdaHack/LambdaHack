@@ -15,9 +15,7 @@ import Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -30,8 +28,10 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
+import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ItemServer
@@ -65,7 +65,7 @@ spawnMonster lid = do
           execUpdAtomic $ UpdLeadFaction (bfid b) Nothing (Just (aid, Nothing))
 
 addAnyActor :: (MonadAtomic m, MonadServer m)
-            => Freqs -> LevelId -> Time -> Maybe Point
+            => Freqs ItemKind -> LevelId -> Time -> Maybe Point
             -> m (Maybe ActorId)
 addAnyActor actorFreq lid time mpos = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
@@ -82,7 +82,7 @@ addAnyActor actorFreq lid time mpos = do
     Nothing -> return Nothing
     Just (itemKnown, trunkFull, seed, _) -> do
       let ik = maybe (assert `failure` trunkFull) itemKind $ itemDisco trunkFull
-          freqNames = map fst $ ifreq ik
+          freqNames = map fst $ IK.ifreq ik
           f fact = fgroup (gplayer fact)
           factNames = map f $ EM.elems factionD
           fidName = case freqNames `intersect` factNames of
@@ -116,11 +116,11 @@ rollSpawnPos Kind.COps{cotile} visible
       isLit = Tile.isLit cotile
       distantAtLeast d p _ =
         all (\b -> chessDist (bpos b) p > d) inhabitants
-  -- Not considering F.OftenActor, because monsters emerge from hidden ducts,
+  -- Not considering TK.OftenActor, because monsters emerge from hidden ducts,
   -- which are easier to hide in crampy corridors that lit halls.
   findPosTry 100 ltile
     ( \p t -> Tile.isWalkable cotile t
-              && not (Tile.hasFeature cotile F.NoActor t)
+              && not (Tile.hasFeature cotile TK.NoActor t)
               && unoccupied as p)
     [ \_ t -> not (isLit t)  -- no such tiles on some maps
     , distantAtLeast factionDist
@@ -140,7 +140,7 @@ dominateFidSfx fid target = do
     then do
       tb <- getsState $ getActorBody target
       let execSfx = execSfxAtomic
-                    $ SfxEffect (boldfid tb) target Effect.Dominate
+                    $ SfxEffect (boldfid tb) target IK.Dominate
       execSfx
       dominateFid fid target
       execSfx
@@ -165,7 +165,7 @@ dominateFid fid target = do
   tb <- getsState $ getActorBody target
   deduceKilled tb
   ais <- getsState $ getCarriedAssocs tb
-  calmMax <- sumOrganEqpServer Effect.EqpSlotAddMaxCalm target
+  calmMax <- sumOrganEqpServer IK.EqpSlotAddMaxCalm target
   execUpdAtomic $ UpdLoseActor target tb ais
   let bNew = tb { bfid = fid
                 , boldfid = bfid tb

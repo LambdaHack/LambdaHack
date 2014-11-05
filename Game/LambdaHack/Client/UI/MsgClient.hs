@@ -36,7 +36,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Add a message to the current report.
 msgAdd :: MonadClientUI m => Msg -> m ()
@@ -106,7 +106,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
       obscured | knownLsecret lvl
                  && tile /= hideTile cops lvl pos = "partially obscured"
                | otherwise = ""
-      tileText = obscured <+> tname (okind tile)
+      tileText = obscured <+> TK.tname (okind tile)
       tilePart | T.null tilePrefix = MU.Text tileText
                | otherwise = MU.AW $ MU.Text tileText
       tileDesc = [MU.Text tilePrefix, tilePart]

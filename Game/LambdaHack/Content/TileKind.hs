@@ -1,19 +1,24 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of terrain tiles.
 module Game.LambdaHack.Content.TileKind
-  ( TileKind(..), validateSingleTileKind, validateAllTileKind, actionFeatures
+  ( TileKind(..), Feature(..)
+  , validateSingleTileKind, validateAllTileKind, actionFeatures
   ) where
 
 import Control.Exception.Assert.Sugar
-import Data.Hashable (hash)
+import Data.Binary
+import Data.Hashable
 import qualified Data.IntSet as IS
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | The type of kinds of terrain tiles. See @Tile.hs@ for explanation
 -- of the absence of a corresponding type @Tile@ that would hold
@@ -21,20 +26,49 @@ import Game.LambdaHack.Common.Msg
 data TileKind = TileKind
   { tsymbol  :: !Char         -- ^ map symbol
   , tname    :: !Text         -- ^ short description
-  , tfreq    :: !Freqs        -- ^ frequency within groups
+  , tfreq    :: !(Freqs TileKind)  -- ^ frequency within groups
   , tcolor   :: !Color        -- ^ map color
   , tcolor2  :: !Color        -- ^ map color when not in FOV
-  , tfeature :: ![F.Feature]  -- ^ properties
+  , tfeature :: ![Feature]  -- ^ properties
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
+
+-- | All possible terrain tile features.
+data Feature =
+    Embed !(GroupName ItemKind)  -- ^ embed an item of this group, to cause effects (WIP)
+  | Cause !(IK.Effect Int)   -- ^ causes the effect when triggered;
+                                 --   more succint than @Embed@, but will
+                                 --   probably get supplanted by @Embed@
+  | OpenTo !(GroupName TileKind)    -- ^ goes from a closed to an open tile when altered
+  | CloseTo !(GroupName TileKind)   -- ^ goes from an open to a closed tile when altered
+  | ChangeTo !(GroupName TileKind)  -- ^ alters tile, but does not change walkability
+  | HideAs !(GroupName TileKind)    -- ^ when hidden, looks as a tile of the group
+  | RevealAs !(GroupName TileKind)  -- ^ if secret, can be revealed to belong to the group
+
+  | Walkable             -- ^ actors can walk through
+  | Clear                -- ^ actors can see through
+  | Dark                 -- ^ is not lit with an ambient shine
+  | Suspect              -- ^ may not be what it seems (clients only)
+  | Impenetrable         -- ^ can never be excavated nor seen through
+
+  | OftenItem            -- ^ initial items often generated there
+  | OftenActor           -- ^ initial actors and stairs often generated there
+  | NoItem               -- ^ no items ever generated there
+  | NoActor              -- ^ no actors nor stairs ever generated there
+  | Trail                -- ^ used for visible trails throughout the level
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance Binary Feature
+
+instance Hashable Feature
 
 -- TODO: (spans multiple contents) check that all posible solid place
 -- fences have hidden counterparts.
 -- | Validate a single tile kind.
 validateSingleTileKind :: TileKind -> [Text]
 validateSingleTileKind TileKind{..} =
-  [ "suspect tile is walkable" | F.Walkable `elem` tfeature
-                                 && F.Suspect `elem` tfeature ]
+  [ "suspect tile is walkable" | Walkable `elem` tfeature
+                                 && Suspect `elem` tfeature ]
 
 -- TODO: verify that OpenTo, CloseTo and ChangeTo are assigned as specified.
 -- | Validate all tile kinds.
@@ -47,7 +81,7 @@ validateSingleTileKind TileKind{..} =
 validateAllTileKind :: [TileKind] -> [Text]
 validateAllTileKind lt =
   let listVis f = map (\kt -> ( ( tsymbol kt
-                                  , F.Suspect `elem` tfeature kt
+                                  , Suspect `elem` tfeature kt
                                   , f kt
                                   )
                                 , [kt] ) ) lt
@@ -74,21 +108,21 @@ validateAllTileKind lt =
 actionFeatures :: Bool -> TileKind -> IS.IntSet
 actionFeatures markSuspect t =
   let f feat = case feat of
-        F.Embed{} -> Just feat
-        F.Cause{} -> Just feat
-        F.OpenTo{} -> Just $ F.OpenTo ""  -- if needed, remove prefix/suffix
-        F.CloseTo{} -> Just $ F.CloseTo ""
-        F.ChangeTo{} -> Just $ F.ChangeTo ""
-        F.Walkable -> Just feat
-        F.Clear -> Just feat
-        F.Suspect -> if markSuspect then Just feat else Nothing
-        F.Impenetrable -> Just feat
-        F.Trail -> Just feat  -- doesn't affect tile behaviour, but important
-        F.HideAs{} -> Nothing
-        F.RevealAs{} -> Nothing
-        F.Dark -> Nothing  -- not important any longer, after FOV computed
-        F.OftenItem -> Nothing
-        F.OftenActor -> Nothing
-        F.NoItem -> Nothing
-        F.NoActor -> Nothing
+        Embed{} -> Just feat
+        Cause{} -> Just feat
+        OpenTo{} -> Just $ OpenTo ""  -- if needed, remove prefix/suffix
+        CloseTo{} -> Just $ CloseTo ""
+        ChangeTo{} -> Just $ ChangeTo ""
+        Walkable -> Just feat
+        Clear -> Just feat
+        Suspect -> if markSuspect then Just feat else Nothing
+        Impenetrable -> Just feat
+        Trail -> Just feat  -- doesn't affect tile behaviour, but important
+        HideAs{} -> Nothing
+        RevealAs{} -> Nothing
+        Dark -> Nothing  -- not important any longer, after FOV computed
+        OftenItem -> Nothing
+        OftenActor -> Nothing
+        NoItem -> Nothing
+        NoActor -> Nothing
   in IS.fromList $ map hash $ mapMaybe f $ tfeature t

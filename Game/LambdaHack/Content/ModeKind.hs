@@ -1,13 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
-  ( Caves, Roster(..), Player(..), ModeKind(..), Tactic(..)
-  , LeaderMode(..), AutoLeader(..)
+  ( Caves, Roster(..), Player(..), ModeKind(..), LeaderMode(..), AutoLeader(..)
   , validateSingleModeKind, validateAllModeKind
   ) where
 
 import Data.Binary
-import Data.Hashable (Hashable)
 import qualified Data.IntMap.Strict as IM
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -18,12 +16,14 @@ import Game.LambdaHack.Common.Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Content.CaveKind
+import Game.LambdaHack.Content.ItemKind (ItemKind)
 
 -- | Game mode specification.
 data ModeKind = ModeKind
   { msymbol :: !Char    -- ^ a symbol (matches the keypress, if any)
   , mname   :: !Text    -- ^ short description
-  , mfreq   :: !Freqs   -- ^ frequency within groups
+  , mfreq   :: !(Freqs ModeKind)  -- ^ frequency within groups
   , mroster :: !Roster  -- ^ players taking part in the game
   , mcaves  :: !Caves   -- ^ arena of the game
   , mdesc   :: !Text    -- ^ description
@@ -33,7 +33,7 @@ data ModeKind = ModeKind
 -- | Requested cave groups for particular levels. The second component
 -- is the @Escape@ feature on the level. @True@ means it's represented
 -- by @<@, @False@, by @>@.
-type Caves = IM.IntMap (GroupName, Maybe Bool)
+type Caves = IM.IntMap (GroupName CaveKind, Maybe Bool)
 
 -- | The specification of players for the game mode.
 data Roster = Roster
@@ -46,7 +46,7 @@ data Roster = Roster
 -- | Properties of a particular player.
 data Player a = Player
   { fname          :: !Text        -- ^ name of the player
-  , fgroup         :: !GroupName   -- ^ name of the monster group to control
+  , fgroup         :: !(GroupName ItemKind)  -- ^ name of the monster group to control
   , fskillsOther   :: !Skills      -- ^ skills of the other actors
   , fcanEscape     :: !Bool        -- ^ the player can escape the dungeon
   , fneverEmpty    :: !Bool        -- ^ the faction declared killed if no actors
@@ -62,35 +62,6 @@ data Player a = Player
   deriving (Show, Eq, Generic)
 
 instance Binary a => Binary (Player a)
-
--- Keep this type here, so that Contents/ is as self-contained as possible.
--- TODO: alway shoot, never shoot, etc., but there is too many and this is best
--- expressed via skills, and also we risk micromanagement, so let's stop
--- and think first; perhaps only have as many tactics as needed for realistic
--- AI behaviour in our game modes; perhaps even expose only some of them to UI
-data Tactic =
-    TBlock    -- ^ always only wait, even if enemy in melee range
-  | TFollow   -- ^ always follow leader's target or his position if no target
-  | TExplore  -- ^ if enemy nearby, attack, if no items, etc., explore unknown
-  | TRoam     -- ^ if enemy nearby, attack, if no items, etc., roam randomly
-  | TPatrol   -- ^ find an open and uncrowded area, patrol it according
-              --   to sight radius and fallback temporarily to @TRoam@
-              --   when enemy is seen by the faction and is within
-              --   the actor's sight radius
-              --   TODO (currently the same as TExplore; should it chase
-              --   targets too (TRoam) and only switch to TPatrol when none?)
-  deriving (Eq, Ord, Enum, Bounded, Generic)
-
-instance Show Tactic where
-  show TBlock = "block and wait"
-  show TFollow = "follow leader's target or position"
-  show TExplore = "explore unknown, chase targets"
-  show TRoam = "roam freely, chase targets"
-  show TPatrol = "find and patrol an area (TODO)"
-
-instance Binary Tactic
-
-instance Hashable Tactic
 
 -- | If a faction with @LeaderUI@ and @LeaderAI@ has any actor, it has a leader.
 data LeaderMode =

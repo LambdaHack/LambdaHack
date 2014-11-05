@@ -20,7 +20,6 @@ import Data.Text (Text)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time

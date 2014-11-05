@@ -15,8 +15,7 @@ import qualified Data.IntMap.Strict as IM
 import Data.List
 import Data.Maybe
 
-import qualified Game.LambdaHack.Common.Effect as Effect
-import qualified Game.LambdaHack.Common.Feature as F
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -26,8 +25,10 @@ import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.CaveKind
+import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.TileKind (TileKind)
+import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Server.DungeonGen.Cave
 import Game.LambdaHack.Server.DungeonGen.Place
@@ -92,12 +93,12 @@ placeStairs Kind.COps{cotile} cmap CaveKind{..} ps = do
   let dist cmin l _ = all (\pos -> chessDist l pos > cmin) ps
   findPosTry 1000 cmap
     (\p t -> Tile.isWalkable cotile t
-             && not (Tile.hasFeature cotile F.NoActor t)
+             && not (Tile.hasFeature cotile TK.NoActor t)
              && dist 0 p t)  -- can't overwrite stairs with other stairs
     [ dist $ cminStairDist
     , dist $ cminStairDist `div` 2
     , dist $ cminStairDist `div` 4
-    , const $ Tile.hasFeature cotile F.OftenActor
+    , const $ Tile.hasFeature cotile TK.OftenActor
     , dist $ cminStairDist `div` 8
     ]
 
@@ -113,18 +114,18 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
       fitArea pos = inside pos . fromArea . qarea
       findLegend pos = maybe clegendLitTile qlegend
                        $ find (fitArea pos) dplaces
-      hasEscape p t = Tile.kindHasFeature (F.Cause $ Effect.Escape p) t
-      ascendable  = Tile.kindHasFeature $ F.Cause (Effect.Ascend 1)
-      descendable = Tile.kindHasFeature $ F.Cause (Effect.Ascend (-1))
-      nightCond kt = (not (Tile.kindHasFeature F.Clear kt)
+      hasEscape p t = Tile.kindHasFeature (TK.Cause $ IK.Escape p) t
+      ascendable  = Tile.kindHasFeature $ TK.Cause (IK.Ascend 1)
+      descendable = Tile.kindHasFeature $ TK.Cause (IK.Ascend (-1))
+      nightCond kt = (not (Tile.kindHasFeature TK.Clear kt)
                       || (if dnight then id else not)
-                            (Tile.kindHasFeature F.Dark kt))
+                            (Tile.kindHasFeature TK.Dark kt))
       dcond kt = (cpassable
-                  || not (Tile.kindHasFeature F.Walkable kt))
+                  || not (Tile.kindHasFeature TK.Walkable kt))
                  && nightCond kt
       pickDefTile = fmap (fromMaybe $ assert `failure` cdefTile)
                     $ opick cdefTile dcond
-      wcond kt = Tile.kindHasFeature F.Walkable kt
+      wcond kt = Tile.kindHasFeature TK.Walkable kt
                  && nightCond kt
       mpickWalkable =
         if cpassable
@@ -207,7 +208,7 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
 -- | Build rudimentary level from a cave kind.
 levelFromCaveKind :: Kind.COps
                   -> CaveKind -> AbsDepth -> TileMap -> ([Point], [Point])
-                  -> Int -> Freqs -> Int -> Freqs -> Int -> Bool
+                  -> Int -> Freqs ItemKind -> Int -> Freqs ItemKind -> Int -> Bool
                   -> Level
 levelFromCaveKind Kind.COps{cotile}
                   CaveKind{..}
@@ -241,7 +242,7 @@ levelFromCaveKind Kind.COps{cotile}
   in lvl {lclear}
 
 findGenerator :: Kind.COps -> LevelId -> LevelId -> LevelId -> AbsDepth -> Int
-              -> (GroupName, Maybe Bool)
+              -> (GroupName CaveKind, Maybe Bool)
               -> Rnd Level
 findGenerator cops ln minD maxD totalDepth nstairUp
               (genName, escapeFeature) = do
@@ -270,7 +271,7 @@ dungeonGen cops caves = do
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
-  let gen :: (Int, [(LevelId, Level)]) -> (Int, (GroupName, Maybe Bool))
+  let gen :: (Int, [(LevelId, Level)]) -> (Int, (GroupName CaveKind, Maybe Bool))
           -> Rnd (Int, [(LevelId, Level)])
       gen (nstairUp, l) (n, caveTB) = do
         let ln = toEnum n

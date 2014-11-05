@@ -23,7 +23,6 @@ import Game.LambdaHack.Common.Actor as Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
-import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
@@ -40,9 +39,9 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ItemKind
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Color mode for the display.
 data ColorMode =
@@ -116,8 +115,8 @@ draw sfBlank dm drawnLevelId cursorPos tgtPos bfsmpathRaw
             -- over both visible and invisible tiles.
             vcolor
               | smarkSuspect && Tile.isSuspect cotile tile = Color.BrCyan
-              | vis = tcolor tk
-              | otherwise = tcolor2 tk
+              | vis = TK.tcolor tk
+              | otherwise = TK.tcolor2 tk
             fgOnPathOrLine = case (vis, Tile.isWalkable cotile tile) of
               _ | tile == unknownId -> Color.BrBlack
               _ | Tile.isSuspect cotile tile -> Color.BrCyan
@@ -141,7 +140,7 @@ draw sfBlank dm drawnLevelId cursorPos tgtPos bfsmpathRaw
                   (timeDeltaToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
                   case floorIids of
-                    [] -> (tsymbol tk, Color.defAttr {Color.fg = vcolor})
+                    [] -> (TK.tsymbol tk, Color.defAttr {Color.fg = vcolor})
                     iid : _ -> viewItem $ getItemBody iid s
             vis = ES.member pos0 $ totalVisible per
             a = case dm of
@@ -255,8 +254,8 @@ drawLeaderStatus waitT width = do
       let (darkL, bracedL, hpDelta, calmDelta,
            ahpS, bhpS, acalmS, bcalmS) =
             let b@Actor{bhp, bcalm} = getActorBody leader s
-                amaxHP = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
-                amaxCalm = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
+                amaxHP = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
+                amaxCalm = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
             in ( not (actorInAmbient b s)
                , braced b, bhpDelta b, bcalmDelta b
                , tshow $ max 0 amaxHP, tshow (bhp `divUp` oneM)
@@ -295,22 +294,22 @@ drawLeaderDamage width = do
     Just leader -> do
       allAssocs <- fullAssocsClient leader [CEqp, COrgan]
       let activeItems = map snd allAssocs
-          damage = case strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
+          damage = case strongestSlotNoFilter IK.EqpSlotWeapon allAssocs of
             (_, (_, itemFull)) : _->
-              let getD :: Effect.Effect a -> Maybe Dice.Dice
+              let getD :: IK.Effect a -> Maybe Dice.Dice
                        -> Maybe Dice.Dice
-                  getD (Effect.Hurt dice) _ = Just dice
+                  getD (IK.Hurt dice) _ = Just dice
                   getD _ acc = acc
                   mdice = case itemDisco itemFull of
                     Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
                       foldr getD Nothing jeffects
                     Just ItemDisco{itemKind} ->
-                      foldr getD Nothing (ieffects itemKind)
+                      foldr getD Nothing (IK.ieffects itemKind)
                     Nothing -> Nothing
                   tdice = case mdice of
                     Nothing -> "0"
                     Just dice -> tshow dice
-                  bonus = sumSlotNoFilter Effect.EqpSlotAddHurtMelee activeItems
+                  bonus = sumSlotNoFilter IK.EqpSlotAddHurtMelee activeItems
                   unknownBonus = unknownMelee activeItems
                   tbonus = if bonus == 0
                            then if unknownBonus then "+?" else ""

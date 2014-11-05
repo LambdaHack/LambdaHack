@@ -46,9 +46,7 @@ import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
-import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -63,9 +61,9 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ItemKind
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * GameDifficultyCycle
 
@@ -396,7 +394,7 @@ doLook = do
                             then ""
                             else case itemDisco $ itemToF (btrunk body) (1, []) of
                               Nothing -> ""
-                              Just ItemDisco{itemKind} -> idesc itemKind
+                              Just ItemDisco{itemKind} -> IK.idesc itemKind
                      pdesc = if desc == "" then "" else "(" <> desc <> ")"
                  in makeSentence [MU.SubjectVerbSg subject verb] <+> pdesc
           vis | lvl `at` p == unknownId = "that is"
@@ -549,7 +547,7 @@ tgtAscendHuman k = do
         Nothing -> Nothing
         Just cpos ->
           let tile = lvl `at` cpos
-          in if Tile.hasFeature cotile (F.Cause $ Effect.Ascend k) tile
+          in if Tile.hasFeature cotile (TK.Cause $ IK.Ascend k) tile
              then Just cpos
              else Nothing
   case rightStairs of
@@ -558,10 +556,10 @@ tgtAscendHuman k = do
       assert (nln /= lidV `blame` "stairs looped" `twith` nln) skip
       nlvl <- getLevel nln
       -- Do not freely reveal the other end of the stairs.
-      let ascDesc (F.Cause (Effect.Ascend _)) = True
+      let ascDesc (TK.Cause (IK.Ascend _)) = True
           ascDesc _ = False
           scursor =
-            if any ascDesc $ tfeature $ okind (nlvl `at` npos)
+            if any ascDesc $ TK.tfeature $ okind (nlvl `at` npos)
             then TPoint nln npos  -- already known as an exit, focus on it
             else scursorOld  -- unknown, do not reveal
       modifyClient $ \cli -> cli {scursor, stgtMode = Just (TgtMode nln)}

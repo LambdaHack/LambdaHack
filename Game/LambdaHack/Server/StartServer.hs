@@ -22,9 +22,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
@@ -38,9 +36,11 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
+import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonServer
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.Fov
@@ -68,7 +68,7 @@ reinitGame = do
   let defLocal | knowMap = s
                | otherwise = localFromGlobal s
   discoS <- getsServer sdiscoKind
-  let sdiscoKind = let f ik = Effect.Identified `elem` ifeature (okind ik)
+  let sdiscoKind = let f ik = IK.Identified `elem` IK.ifeature (okind ik)
                in EM.filter f discoS
   sdebugCli <- getsServer $ sdebugCli . sdebugSer
   modeName <- getsServer $ sgameMode . sdebugSer
@@ -221,7 +221,7 @@ populateDungeon = do
         time <- getsState $ getLocalTime lid
         let nmult = 1 + fromEnum fid3 `mod` 4  -- always positive
             ntime = timeShift time (timeDeltaScale (Delta timeClip) nmult)
-            validTile t = not $ Tile.hasFeature cotile F.NoActor t
+            validTile t = not $ Tile.hasFeature cotile TK.NoActor t
         psFree <- getsState $ nearbyFreePoints validTile ppos lid
         let ps = take (finitialActors $ gplayer fact3) $ zip [0..] psFree
         forM_ ps $ \ (n, p) -> do
@@ -266,7 +266,7 @@ recruitActors ps lid time fid = assert (not $ null ps) $ do
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: (MonadAtomic m, MonadServer m)
-           => GroupName -> FactionId -> Point -> LevelId -> Time
+           => GroupName ItemKind -> FactionId -> Point -> LevelId -> Time
            -> m (Maybe ActorId)
 addMonster groupName bfid ppos lid time = do
   fact <- getsState $ (EM.! bfid) . sfactionD
@@ -308,10 +308,10 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
       tryFind ps n = do
         np <- findPosTry 1000 ltile  -- try really hard, for skirmish fairness
                 (\_ t -> Tile.isWalkable cotile t
-                         && (not $ Tile.hasFeature cotile F.NoActor t))
+                         && (not $ Tile.hasFeature cotile TK.NoActor t))
                 [ dist ps $ factionDist `div` 2
                 , dist ps $ factionDist `div` 3
-                , const (Tile.hasFeature cotile F.OftenActor)
+                , const (Tile.hasFeature cotile TK.OftenActor)
                 , dist ps $ factionDist `div` 3
                 , dist ps $ factionDist `div` 4
                 , dist ps $ factionDist `div` 5

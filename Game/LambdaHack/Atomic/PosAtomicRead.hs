@@ -16,7 +16,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -28,7 +28,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Content.ModeKind as ModeKind
+import Game.LambdaHack.Content.ModeKind
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -276,9 +276,9 @@ breakSfxAtomic cmd = case cmd of
   SfxStrike source target _ _ -> do
     -- Hack: make a fight detectable even if one of combatants not visible.
     sb <- getsState $ getActorBody source
-    return $! [ SfxEffect (bfid sb) source (Effect.RefillCalm (-1))
+    return $! [ SfxEffect (bfid sb) source (IK.RefillCalm (-1))
               | not $ bproj sb ]
-              ++ [SfxEffect (bfid sb) target (Effect.RefillHP (-1))]
+              ++ [SfxEffect (bfid sb) target (IK.RefillHP (-1))]
   _ -> return [cmd]
 
 -- | Messages for some unseen game object creation/destruction/alteration.

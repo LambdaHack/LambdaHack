@@ -8,10 +8,11 @@ import Control.Exception.Assert.Sugar
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ModeKind
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 data CmdCategory =
     CmdMenu | CmdMove | CmdItem | CmdTgt | CmdAuto | CmdMeta
@@ -42,7 +43,7 @@ data HumanCmd =
   | TriggerTile ![Trigger]
   | StepToTarget
     -- Below this line, commands do not take time.
-  | GameRestart !GroupName
+  | GameRestart !(GroupName ModeKind)
   | GameExit
   | GameSave
   | Tactic
@@ -83,8 +84,9 @@ data HumanCmd =
 
 data Trigger =
     ApplyItem {verb :: !MU.Part, object :: !MU.Part, symbol :: !Char}
-  | AlterFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !F.Feature}
-  | TriggerFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !F.Feature}
+  | AlterFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
+  | TriggerFeature
+      {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
   deriving (Show, Read, Eq, Ord)
 
 -- | Commands that are forbidden on a remote level, because they

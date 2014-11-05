@@ -19,7 +19,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -31,8 +31,8 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * RespUpdAtomicAI
 
@@ -64,11 +64,11 @@ cmdAtomicFilterCli cmd = case cmd of
         -- to @toTile@. See @updAlterTile@.
         let subject = ""  -- a hack, we we don't handle adverbs well
             verb = "turn into"
-            msg = makeSentence [ "the", MU.Text $ tname $ okind t
+            msg = makeSentence [ "the", MU.Text $ TK.tname $ okind t
                                , "at position", MU.Text $ tshow p
                                , "suddenly"  -- adverb
                                , MU.SubjectVerbSg subject verb
-                               , MU.AW $ MU.Text $ tname $ okind toTile ]
+                               , MU.AW $ MU.Text $ TK.tname $ okind toTile ]
         return [ cmd  -- reveal the tile
                , UpdMsgAll msg  -- show the message
                ]
@@ -248,7 +248,7 @@ cmdAtomicFilterCli cmd = case cmd of
 deleteSmell :: MonadClient m => ActorId -> Point -> m [UpdAtomic]
 deleteSmell aid pos = do
   b <- getsState $ getActorBody aid
-  smellRadius <- sumOrganEqpClient Effect.EqpSlotAddSmell aid
+  smellRadius <- sumOrganEqpClient IK.EqpSlotAddSmell aid
   if smellRadius <= 0 then return []
   else do
     lvl <- getLevel $ blid b

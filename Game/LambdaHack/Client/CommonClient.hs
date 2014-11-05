@@ -22,7 +22,7 @@ import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -231,7 +231,7 @@ pickWeaponClient source target = do
       calm10 = calmEnough10 sb $ map snd allAssocs
       forced = assert (not $ bproj sb) False
       legalPrecious = either (const False) id . permittedPrecious calm10 forced
-      strongest = strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs
+      strongest = strongestSlotNoFilter IK.EqpSlotWeapon allAssocs
       strongestLegal = filter (legalPrecious . snd . snd) strongest
   case strongestLegal of
     _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> return []
@@ -245,7 +245,7 @@ pickWeaponClient source target = do
       return $! [ReqMelee target iid cstore]
 
 sumOrganEqpClient :: MonadClient m
-                  => Effect.EqpSlot -> ActorId -> m Int
+                  => IK.EqpSlot -> ActorId -> m Int
 sumOrganEqpClient eqpSlot aid = do
   activeItems <- activeItemsClient aid
   return $! sumSlotNoFilter eqpSlot activeItems

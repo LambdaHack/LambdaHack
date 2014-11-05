@@ -15,12 +15,12 @@ import Game.LambdaHack.Common.Misc
 
 -- | The general type of a particular game content, e.g., item kinds.
 data ContentDef a = ContentDef
-  { getSymbol      :: a -> Char    -- ^ symbol, e.g., to print on the map
-  , getName        :: a -> Text    -- ^ name, e.g., to show to the player
-  , getFreq        :: a -> Freqs   -- ^ frequency within groups
+  { getSymbol      :: a -> Char  -- ^ symbol, e.g., to print on the map
+  , getName        :: a -> Text  -- ^ name, e.g., to show to the player
+  , getFreq        :: a -> Freqs a  -- ^ frequency within groups
   , validateSingle :: a -> [Text]
       -- ^ validate a content item and list all offences
   , validateAll    :: [a] -> [Text]
       -- ^ validate the whole defined content of this type and list all offences
-  , content        :: ![a]         -- ^ all the defined content of this type
+  , content        :: ![a]       -- ^ all the defined content of this type
   }

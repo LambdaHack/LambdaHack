@@ -14,9 +14,9 @@ import qualified NLP.Miniutter.English as MU
 
 -- import Game.LambdaHack.Common.Actor (ppCStore)
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ItemKind
 
 -- | Suffix to append to a basic content name if the content causes the effect.
 effectToSuff :: (Show a, Ord a, Num a)

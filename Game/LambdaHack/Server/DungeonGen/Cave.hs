@@ -20,7 +20,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.PlaceKind
-import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.TileKind (TileKind)
 import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Server.DungeonGen.AreaRnd
 import Game.LambdaHack.Server.DungeonGen.Place

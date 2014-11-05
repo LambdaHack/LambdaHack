@@ -24,7 +24,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | View on game state. "Remembered" fields carry a subset of the info
 -- in the client copies of the state. Clients never directly change

@@ -35,7 +35,7 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -125,7 +125,7 @@ condFloorWeaponM aid = do
   -- We do consider OFF weapons, because e.g., enemies might have turned
   -- them off or they can be wrong for other party members, but are OK for us.
   let lootIsWeapon =
-        not $ null $ strongestSlot Effect.EqpSlotWeapon floorAssocs
+        not $ null $ strongestSlot IK.EqpSlotWeapon floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
 -- | Check whether the actor has no weapon in equipment.
@@ -133,13 +133,13 @@ condNoEqpWeaponM :: MonadClient m => ActorId -> m Bool
 condNoEqpWeaponM aid = do
   allAssocs <- fullAssocsClient aid [CEqp]
   -- We do not consider OFF weapons, because they apparently are not good.
-  return $ null $ strongestSlot Effect.EqpSlotWeapon allAssocs
+  return $ null $ strongestSlot IK.EqpSlotWeapon allAssocs
     -- keep it lazy
 
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
-  actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
+  actorBlind <- radiusBlind <$> sumOrganEqpClient IK.EqpSlotAddSight aid
   let q calm10 itemFull _ =
         either (const False) id $ permittedProject " " actorBlind calm10 False itemFull
   benList <- benAvailableItems aid q [CEqp, CInv, CGround]
@@ -199,7 +199,7 @@ benGroundItems aid = do
   canEscape <- factionCanEscape (bfid b)
   let desirableItem _ ItemFull{itemBase} use
         | canEscape = use /= Just 0
-                      || Effect.Precious `elem` jfeature itemBase
+                      || IK.Precious `elem` jfeature itemBase
         | otherwise = use /= Just 0
   benAvailableItems aid desirableItem [CGround]
 
@@ -231,7 +231,7 @@ condLightBetraysM :: MonadClient m => ActorId -> m Bool
 condLightBetraysM aid = do
   b <- getsState $ getActorBody aid
   eqpItems <- map snd <$> fullAssocsClient aid [CEqp]
-  let actorEqpShines = sumSlotNoFilter Effect.EqpSlotAddLight eqpItems > 0
+  let actorEqpShines = sumSlotNoFilter IK.EqpSlotAddLight eqpItems > 0
   aInAmbient<- getsState $ actorInAmbient b
   return $! not aInAmbient     -- tile is dark, so actor could hide
             && actorEqpShines  -- but actor betrayed by his equipped light

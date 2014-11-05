@@ -39,9 +39,8 @@ import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
@@ -57,7 +56,8 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.TileKind (TileKind)
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * Move and Run
 
@@ -307,7 +307,7 @@ projectEps :: MonadClientUI m
            -> m (SlideOrCmd (RequestTimed AbProject))
 projectEps ts tpos eps = do
   leader <- getLeaderUI
-  actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight leader
+  actorBlind <- radiusBlind <$> sumOrganEqpClient IK.EqpSlotAddSight leader
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
   let cLegal = [CGround, CInv, CEqp]
@@ -342,7 +342,7 @@ applyHuman :: MonadClientUI m
            => [Trigger] -> m (SlideOrCmd (RequestTimed AbApply))
 applyHuman ts = do
   leader <- getLeaderUI
-  actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight leader
+  actorBlind <- radiusBlind <$> sumOrganEqpClient IK.EqpSlotAddSight leader
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
   let cLegal = [CGround, CInv, CEqp]
@@ -395,19 +395,19 @@ alterTile dir ts = do
     [] -> failWith $ guessAlter cops alterFeats t
     feat : _ -> return $ Right $ ReqAlter tpos $ Just feat
 
-alterFeatures :: [Trigger] -> [F.Feature]
+alterFeatures :: [Trigger] -> [TK.Feature]
 alterFeatures [] = []
 alterFeatures (AlterFeature{feature} : ts) = feature : alterFeatures ts
 alterFeatures (_ : ts) = alterFeatures ts
 
 -- | Guess and report why the bump command failed.
-guessAlter :: Kind.COps -> [F.Feature] -> Kind.Id TileKind -> Msg
-guessAlter Kind.COps{cotile} (F.OpenTo _ : _) t
+guessAlter :: Kind.COps -> [TK.Feature] -> Kind.Id TileKind -> Msg
+guessAlter Kind.COps{cotile} (TK.OpenTo _ : _) t
   | Tile.isClosable cotile t = "already open"
-guessAlter _ (F.OpenTo _ : _) _ = "cannot be opened"
-guessAlter Kind.COps{cotile} (F.CloseTo _ : _) t
+guessAlter _ (TK.OpenTo _ : _) _ = "cannot be opened"
+guessAlter Kind.COps{cotile} (TK.CloseTo _ : _) t
   | Tile.isOpenable cotile t = "already closed"
-guessAlter _ (F.CloseTo _ : _) _ = "cannot be closed"
+guessAlter _ (TK.CloseTo _ : _) _ = "cannot be closed"
 guessAlter _ _ _ = "never mind"
 
 -- * TriggerTile
@@ -419,7 +419,7 @@ triggerTileHuman ts = do
   tgtMode <- getsClient stgtMode
   if isJust tgtMode then do
     let getK tfs = case tfs of
-          TriggerFeature {feature = F.Cause (Effect.Ascend k)} : _ -> Just k
+          TriggerFeature {feature = TK.Cause (IK.Ascend k)} : _ -> Just k
           _ : rest -> getK rest
           [] -> Nothing
         mk = getK ts
@@ -446,16 +446,16 @@ triggerTile ts = do
         Right () -> return $ Right $ ReqTrigger $ Just feat
         Left slides -> return $ Left slides
 
-triggerFeatures :: [Trigger] -> [F.Feature]
+triggerFeatures :: [Trigger] -> [TK.Feature]
 triggerFeatures [] = []
 triggerFeatures (TriggerFeature{feature} : ts) = feature : triggerFeatures ts
 triggerFeatures (_ : ts) = triggerFeatures ts
 
 -- | Verify important feature triggers, such as fleeing the dungeon.
 verifyTrigger :: MonadClientUI m
-              => ActorId -> F.Feature -> m (SlideOrCmd ())
+              => ActorId -> TK.Feature -> m (SlideOrCmd ())
 verifyTrigger leader feat = case feat of
-  F.Cause Effect.Escape{} -> do
+  TK.Cause IK.Escape{} -> do
     b <- getsState $ getActorBody leader
     side <- getsClient sside
     fact <- getsState $ (EM.! side) . sfactionD
@@ -480,13 +480,13 @@ verifyTrigger leader feat = case feat of
   _ -> return $ Right ()
 
 -- | Guess and report why the bump command failed.
-guessTrigger :: Kind.COps -> [F.Feature] -> Kind.Id TileKind -> Msg
-guessTrigger Kind.COps{cotile} fs@(F.Cause (Effect.Ascend k) : _) t
-  | Tile.hasFeature cotile (F.Cause (Effect.Ascend (-k))) t =
+guessTrigger :: Kind.COps -> [TK.Feature] -> Kind.Id TileKind -> Msg
+guessTrigger Kind.COps{cotile} fs@(TK.Cause (IK.Ascend k) : _) t
+  | Tile.hasFeature cotile (TK.Cause (IK.Ascend (-k))) t =
     if k > 0 then "the way goes down, not up"
     else if k < 0 then "the way goes up, not down"
     else assert `failure` fs
-guessTrigger _ fs@(F.Cause (Effect.Ascend k) : _) _ =
+guessTrigger _ fs@(TK.Cause (IK.Ascend k) : _) _ =
     if k > 0 then "cannot ascend"
     else if k < 0 then "cannot descend"
     else assert `failure` fs
@@ -521,7 +521,7 @@ stepToTargetHuman = do
 
 -- * GameRestart; does not take time
 
-gameRestartHuman :: MonadClientUI m => GroupName -> m (SlideOrCmd RequestUI)
+gameRestartHuman :: MonadClientUI m => GroupName ModeKind -> m (SlideOrCmd RequestUI)
 gameRestartHuman t = do
   let restart = do
         leader <- getLeaderUI

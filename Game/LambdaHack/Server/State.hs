@@ -22,6 +22,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.ItemRev
 
@@ -60,7 +61,7 @@ data DebugModeSer = DebugModeSer
   , sniffIn        :: !Bool
   , sniffOut       :: !Bool
   , sallClear      :: !Bool
-  , sgameMode      :: !(Maybe GroupName)
+  , sgameMode      :: !(Maybe (GroupName ModeKind))
   , sautomateAll   :: !Bool
   , sstopAfter     :: !(Maybe Int)
   , sdungeonRng    :: !(Maybe R.StdGen)

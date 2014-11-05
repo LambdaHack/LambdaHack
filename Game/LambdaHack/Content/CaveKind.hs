@@ -10,13 +10,16 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Content.ItemKind (ItemKind)
+import Game.LambdaHack.Content.PlaceKind
+import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Parameters for the generation of dungeon levels.
 -- Warning: for efficiency, avoid embedded items in any of the common tiles.
 data CaveKind = CaveKind
   { csymbol         :: !Char         -- ^ a symbol
   , cname           :: !Text         -- ^ short description
-  , cfreq           :: !Freqs        -- ^ frequency within groups
+  , cfreq           :: !(Freqs CaveKind)  -- ^ frequency within groups
   , cxsize          :: !X            -- ^ X size of the whole cave
   , cysize          :: !Y            -- ^ Y size of the whole cave
   , cgrid           :: !Dice.DiceXY  -- ^ the dimensions of the grid of places
@@ -31,18 +34,20 @@ data CaveKind = CaveKind
   , copenChance     :: !Chance       -- ^ if there's a door, is it open?
   , chidden         :: !Int          -- ^ if not open, hidden one in n times
   , cactorCoeff     :: !Int          -- ^ the lower, the more monsters spawn
-  , cactorFreq      :: !Freqs        -- ^ actor groups to consider
+  , cactorFreq      :: !(Freqs ItemKind)  -- ^ actor groups to consider
   , citemNum        :: !Dice.Dice    -- ^ the number of items in the cave
-  , citemFreq       :: !Freqs        -- ^ item groups to consider
-  , cplaceFreq      :: !Freqs        -- ^ place groups to consider
+  , citemFreq       :: !(Freqs ItemKind)
+                                     -- ^ item groups to consider
+  , cplaceFreq      :: !(Freqs PlaceKind)
+                                     -- ^ place groups to consider
   , cpassable       :: !Bool         -- ^ are passable default tiles permitted
-  , cdefTile        :: !GroupName    -- ^ the default cave tile
-  , cdarkCorTile    :: !GroupName    -- ^ the dark cave corridor tile
-  , clitCorTile     :: !GroupName    -- ^ the lit cave corridor tile
-  , cfillerTile     :: !GroupName    -- ^ the filler wall
-  , couterFenceTile :: !GroupName    -- ^ the outer fence wall
-  , clegendDarkTile :: !GroupName    -- ^ the dark place plan legend
-  , clegendLitTile  :: !GroupName    -- ^ the lit place plan legend
+  , cdefTile        :: !(GroupName TileKind)  -- ^ the default cave tile
+  , cdarkCorTile    :: !(GroupName TileKind)  -- ^ the dark cave corridor tile
+  , clitCorTile     :: !(GroupName TileKind)  -- ^ the lit cave corridor tile
+  , cfillerTile     :: !(GroupName TileKind)  -- ^ the filler wall
+  , couterFenceTile :: !(GroupName TileKind)  -- ^ the outer fence wall
+  , clegendDarkTile :: !(GroupName TileKind)  -- ^ the dark place plan legend
+  , clegendLitTile  :: !(GroupName TileKind)  -- ^ the lit place plan legend
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
 

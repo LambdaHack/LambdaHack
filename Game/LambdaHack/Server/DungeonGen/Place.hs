@@ -20,7 +20,8 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.PlaceKind
-import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.TileKind (TileKind)
+import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.DungeonGen.Area
 
 -- TODO: use more, rewrite as needed, document each field.
@@ -30,7 +31,7 @@ data Place = Place
   { qkind    :: !(Kind.Id PlaceKind)
   , qarea    :: !Area
   , qseen    :: !Bool
-  , qlegend  :: !GroupName
+  , qlegend  :: !(GroupName TileKind)
   , qFWall   :: !(Kind.Id TileKind)
   , qFFloor  :: !(Kind.Id TileKind)
   , qFGround :: !(Kind.Id TileKind)
@@ -149,22 +150,22 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
   return (tmap, place)
 
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
-olegend :: Kind.COps -> GroupName
+olegend :: Kind.COps -> GroupName TileKind
         -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
 olegend Kind.COps{cotile=Kind.Ops{ofoldrWithKey, opick}} cgroup =
   let getSymbols _ tk acc =
-        maybe acc (const $ ES.insert (tsymbol tk) acc)
-          (lookup cgroup $ tfreq tk)
+        maybe acc (const $ ES.insert (TK.tsymbol tk) acc)
+          (lookup cgroup $ TK.tfreq tk)
       symbols = ofoldrWithKey getSymbols ES.empty
       getLegend s acc = do
         m <- acc
         tk <- fmap (fromMaybe $ assert `failure` (cgroup, s))
-              $ opick cgroup $ (== s) . tsymbol
+              $ opick cgroup $ (== s) . TK.tsymbol
         return $! EM.insert s tk m
       legend = ES.foldr getLegend (return EM.empty) symbols
   in legend
 
-ooverride :: Kind.COps -> [(Char, GroupName)]
+ooverride :: Kind.COps -> [(Char, GroupName TileKind)]
           -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
 ooverride Kind.COps{cotile=Kind.Ops{opick}} poverride =
   let getLegend (s, cgroup) acc = do
@@ -185,7 +186,7 @@ buildFence fenceId area =
                    | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct a fence around an area, with the given tile group.
-buildFenceRnd :: Kind.COps -> GroupName -> Area -> Rnd TileMapEM
+buildFenceRnd :: Kind.COps -> GroupName TileKind -> Area -> Rnd TileMapEM
 buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
   let (x0, y0, x1, y1) = fromArea area
       fenceIdRnd (xf, yf) = do

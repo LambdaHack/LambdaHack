@@ -22,7 +22,6 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
@@ -40,7 +39,8 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Fov
@@ -257,7 +257,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
           itemToF <- itemToFullServer
           activeItems <- activeItemsServer source
           actorBlind <- radiusBlind
-                        <$> sumOrganEqpServer Effect.EqpSlotAddSight source
+                        <$> sumOrganEqpServer IK.EqpSlotAddSight source
           let itemFull@ItemFull{itemBase} = itemToF iid kit
               calm10 = calmEnough10 sb activeItems
               forced = isShrapnel || bproj sb
@@ -265,7 +265,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
           case legal of
             Left reqFail ->  return $ Just reqFail
             Right _ -> do
-              let fragile = Effect.Fragile `elem` jfeature itemBase
+              let fragile = IK.Fragile `elem` jfeature itemBase
                   rest = if fragile
                          then take (chessDist spos tpxy - 1) restUnlimited
                          else restUnlimited
@@ -342,7 +342,7 @@ addProjectile source bpos rest iid (_, it) blid bfid btime isShrapnel = do
                      bfid bpos blid tweakBody bpronoun btime
 
 addActor :: (MonadAtomic m, MonadServer m)
-         => GroupName -> FactionId -> Point -> LevelId
+         => GroupName ItemKind -> FactionId -> Point -> LevelId
          -> (Actor -> Actor) -> Text -> Time
          -> m (Maybe ActorId)
 addActor actorGroup bfid pos lid tweakBody bpronoun time = do
@@ -365,10 +365,10 @@ addActorIid trunkId trunkFull@ItemFull{..}
         Just ItemDisco{itemKind} -> itemKind
         Nothing -> assert `failure` trunkFull
   -- Initial HP and Calm is based only on trunk and ignores organs.
-  let hp = xM (max 2 $ sumSlotNoFilter Effect.EqpSlotAddMaxHP [trunkFull])
+  let hp = xM (max 2 $ sumSlotNoFilter IK.EqpSlotAddMaxHP [trunkFull])
            `div` 2
       calm = xM $ max 1
-             $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm [trunkFull]
+             $ sumSlotNoFilter IK.EqpSlotAddMaxCalm [trunkFull]
   -- Create actor.
   Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
@@ -390,7 +390,7 @@ addActorIid trunkId trunkFull@ItemFull{..}
   modifyServer $ \ser -> ser {sacounter = succ aid}
   execUpdAtomic $ UpdCreateActor aid (tweakBody withTrunk) [(trunkId, itemBase)]
   -- Create, register and insert all initial actor items.
-  forM_ (ikit trunkKind) $ \(ikText, cstore) -> do
+  forM_ (IK.ikit trunkKind) $ \(ikText, cstore) -> do
     let container = CActor aid cstore
         itemFreq = [(ikText, 1)]
     void $ rollAndRegisterItem lid itemFreq container False
@@ -414,7 +414,7 @@ pickWeaponServer source = do
       permitted = permittedPrecious calm10 forced
       legalPrecious = either (const False) (const True) . permitted
       preferredPrecious = either (const False) id . permitted
-      strongest = strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs
+      strongest = strongestSlotNoFilter IK.EqpSlotWeapon allAssocs
       strongestLegal = filter (legalPrecious . snd . snd) strongest
       strongestPreferred = filter (preferredPrecious . snd . snd) strongestLegal
       best = case strongestPreferred of
@@ -432,7 +432,7 @@ pickWeaponServer source = do
       return $ Just (iid, cstore)
 
 sumOrganEqpServer :: MonadServer m
-                 => Effect.EqpSlot -> ActorId -> m Int
+                 => IK.EqpSlot -> ActorId -> m Int
 sumOrganEqpServer eqpSlot aid = do
   activeAssocs <- activeItemsServer aid
   return $! sumSlotNoFilter eqpSlot activeAssocs

@@ -3,7 +3,6 @@ module Content.ItemKindShrapnel ( shrapnels ) where
 
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Dice
-import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg

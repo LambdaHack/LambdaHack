@@ -35,7 +35,7 @@ import Game.LambdaHack.Common.Point
 data RuleKind = RuleKind
   { rsymbol         :: !Char      -- ^ a symbol
   , rname           :: !Text      -- ^ short description
-  , rfreq           :: !Freqs     -- ^ frequency within groups
+  , rfreq           :: !(Freqs RuleKind)  -- ^ frequency within groups
   , raccessible     :: !(Maybe (Point -> Point -> Bool))  -- ^ see above
   , raccessibleDoor :: !(Maybe (Point -> Point -> Bool))  -- ^ see above
   , rtitle          :: !Text      -- ^ the title of the game

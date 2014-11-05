@@ -26,7 +26,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Content.ModeKind
 
 -- | All factions in the game, indexed by faction identifier.
@@ -67,9 +67,10 @@ data Outcome =
 
 -- | Current game status.
 data Status = Status
-  { stOutcome :: !Outcome            -- ^ current game outcome
-  , stDepth   :: !Int                -- ^ depth of the final encounter
-  , stNewGame :: !(Maybe GroupName)  -- ^ new game group to start, if any
+  { stOutcome :: !Outcome  -- ^ current game outcome
+  , stDepth   :: !Int      -- ^ depth of the final encounter
+  , stNewGame :: !(Maybe (GroupName ModeKind))
+                           -- ^ new game group to start, if any
   }
   deriving (Show, Eq, Ord)
 

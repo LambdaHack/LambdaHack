@@ -24,7 +24,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ItemKind (ItemKind)
 
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.

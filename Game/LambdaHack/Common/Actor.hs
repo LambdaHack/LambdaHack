@@ -23,7 +23,7 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
@@ -139,7 +139,7 @@ bspeed :: Actor -> [ItemFull] -> Speed
 bspeed b activeItems =
   case btrajectory b of
     Nothing -> toSpeed $ max 1  -- avoid infinite wait
-               $ sumSlotNoFilter Effect.EqpSlotAddSpeed activeItems
+               $ sumSlotNoFilter IK.EqpSlotAddSpeed activeItems
     Just (_, speed) -> speed
 
 -- | Add time taken by a single step at the actor's current speed.
@@ -170,7 +170,7 @@ actorNewBorn b = boldpos b == Point 0 0
 
 hpTooLow :: Actor -> [ItemFull] -> Bool
 hpTooLow b activeItems =
-  let maxHP = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
+  let maxHP = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
   in bhp b <= oneM || 5 * bhp b < xM maxHP
 
 -- | Checks for the presence of actors in a position.

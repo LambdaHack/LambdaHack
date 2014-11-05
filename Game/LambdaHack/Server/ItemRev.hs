@@ -25,7 +25,8 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | The reverse map to @DiscoveryKind@, needed for item creation.
 type DiscoveryKindRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
@@ -55,20 +56,20 @@ buildItem :: FlavourMap -> DiscoveryKindRev -> Kind.Id ItemKind -> ItemKind -> L
           -> Item
 buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
   let jkindIx  = discoRev EM.! ikChosen
-      jsymbol  = isymbol kind
-      jname    = iname kind
+      jsymbol  = IK.isymbol kind
+      jname    = IK.iname kind
       jflavour =
-        case iflavour kind of
+        case IK.iflavour kind of
           [fl] -> fl
           _ -> flavour EM.! ikChosen
-      jfeature = ifeature kind
-      jweight = iweight kind
+      jfeature = IK.ifeature kind
+      jweight = IK.iweight kind
   in Item{..}
 
 -- | Generate an item based on level.
 newItem :: Kind.COps -> FlavourMap -> DiscoveryKindRev
-        -> Freqs -> LevelId -> AbsDepth -> AbsDepth
-        -> Rnd (Maybe (ItemKnown, ItemFull, ItemSeed, GroupName))
+        -> Freqs ItemKind -> LevelId -> AbsDepth -> AbsDepth
+        -> Rnd (Maybe (ItemKnown, ItemFull, ItemSeed, GroupName ItemKind))
 newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         flavour discoRev itemFreq jlid
         ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) = do
@@ -83,7 +84,7 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         in y1 + (y2 - y1) * (ld * 10 - x1 * depth)
            `divUp` ((x2 - x1) * depth)
       f itemGroup q p ik kind acc =
-        let rarity = linearInterpolation (irarity kind)
+        let rarity = linearInterpolation (IK.irarity kind)
         in (q * p * rarity, ((ik, kind), itemGroup)) : acc
       g (itemGroup, q) = ofoldrGroup itemGroup (f itemGroup q) []
       freqDepth = concatMap g itemFreq
@@ -91,7 +92,7 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
   if nullFreq freq then return Nothing
   else do
     ((itemKindId, itemKind), itemGroup) <- frequency freq
-    itemN <- castDice ldepth totalDepth (icount itemKind)
+    itemN <- castDice ldepth totalDepth (IK.icount itemKind)
     seed <- fmap toEnum random
     let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
         itemK = max 1 itemN
@@ -119,12 +120,12 @@ rollFlavourMap :: S.Set Flavour -> Kind.Id ItemKind -> ItemKind
                -> Rnd ( EM.EnumMap (Kind.Id ItemKind) Flavour
                       , EM.EnumMap Char (S.Set Flavour) )
 rollFlavourMap fullFlavSet key ik rnd =
-  let flavours = iflavour ik
+  let flavours = IK.iflavour ik
   in if length flavours == 1
      then rnd
      else do
        (assocs, availableMap) <- rnd
-       let available = EM.findWithDefault fullFlavSet (isymbol ik) availableMap
+       let available = EM.findWithDefault fullFlavSet (IK.isymbol ik) availableMap
            proper = S.fromList flavours `S.intersection` available
        assert (not (S.null proper)
                `blame` "not enough flavours for items"
@@ -132,7 +133,7 @@ rollFlavourMap fullFlavSet key ik rnd =
          flavour <- oneOf (S.toList proper)
          let availableReduced = S.delete flavour available
          return ( EM.insert key flavour assocs
-                , EM.insert (isymbol ik) availableReduced availableMap)
+                , EM.insert (IK.isymbol ik) availableReduced availableMap)
 
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonFlavourMap :: Kind.COps -> Rnd FlavourMap

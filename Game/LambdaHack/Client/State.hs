@@ -36,6 +36,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ModeKind
 
 -- | Client state, belonging to a single faction.
 -- Some of the data, e.g, the history, carries over
@@ -82,7 +83,7 @@ data StateClient = StateClient
   , scurDifficulty :: !Int         -- ^ current game difficulty level
   , sslots       :: !ItemSlots     -- ^ map from slots to items
   , slastSlot    :: !SlotChar      -- ^ last used slot
-  , sgameMode    :: !GroupName     -- ^ current game mode
+  , sgameMode    :: !(GroupName ModeKind)  -- ^ current game mode
   , sescAI       :: !EscAI         -- ^ just canceled AI control with ESC
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }

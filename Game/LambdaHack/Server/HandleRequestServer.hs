@@ -23,9 +23,8 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -39,7 +38,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.TileKind as TileKind
+import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.HandleEffectServer
 import Game.LambdaHack.Server.ItemServer
@@ -127,7 +126,7 @@ addSmell :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 addSmell aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  smellRadius <- sumOrganEqpServer Effect.EqpSlotAddSmell aid
+  smellRadius <- sumOrganEqpServer IK.EqpSlotAddSmell aid
   -- TODO: right now only humans leave smell and content should not
   -- give humans the ability to smell (dominated monsters are rare enough).
   -- In the future smells should be marked by the faction that left them
@@ -275,7 +274,7 @@ reqDisplace source target = do
 -- Note that if @serverTile /= freshClientTile@, @freshClientTile@
 -- should not be alterable (but @serverTile@ may be).
 reqAlter :: (MonadAtomic m, MonadServer m)
-         => ActorId -> Point -> Maybe F.Feature -> m ()
+         => ActorId -> Point -> Maybe TK.Feature -> m ()
 reqAlter source tpos mfeat = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{okind, opick}} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -299,14 +298,14 @@ reqAlter source tpos mfeat = do
               (True, False) -> execUpdAtomic $ UpdAlterClear lid (-1)
               _ -> return ()
         feats = case mfeat of
-          Nothing -> TileKind.tfeature $ okind serverTile
+          Nothing -> TK.tfeature $ okind serverTile
           Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
           Just _ -> []
         toAlter feat =
           case feat of
-            F.OpenTo tgroup -> Just tgroup
-            F.CloseTo tgroup -> Just tgroup
-            F.ChangeTo tgroup -> Just tgroup
+            TK.OpenTo tgroup -> Just tgroup
+            TK.CloseTo tgroup -> Just tgroup
+            TK.ChangeTo tgroup -> Just tgroup
             _ -> Nothing
         groupsToAlterTo = mapMaybe toAlter feats
     as <- getsState $ actorList (const True) lid
@@ -385,13 +384,13 @@ reqMoveItem aid iid k fromCStore toCStore = do
 
 computeRndTimeout :: Time -> DiscoveryEffect -> ItemId -> Rnd (Maybe Time)
 computeRndTimeout localTime discoEffect iid = do
-  let timeoutAspect :: Effect.Aspect Int -> Maybe Int
-      timeoutAspect (Effect.Timeout t) = Just t
+  let timeoutAspect :: IK.Aspect Int -> Maybe Int
+      timeoutAspect (IK.Timeout t) = Just t
       timeoutAspect _ = Nothing
   case EM.lookup iid discoEffect of
     Just ItemAspectEffect{jaspects} -> do
       case mapMaybe timeoutAspect jaspects of
-        [t] | Effect.Periodic `elem` jaspects -> do
+        [t] | IK.Periodic `elem` jaspects -> do
           rndT <- randomR (0, t)
           let rndTurns = timeDeltaScale (Delta timeTurn) rndT
           return $ Just $ timeShift localTime rndTurns
@@ -429,7 +428,7 @@ reqApply aid iid cstore = assert (cstore /= CSha) $ do
       b <- getsState $ getActorBody aid
       activeItems <- activeItemsServer aid
       actorBlind <- radiusBlind
-                    <$> sumOrganEqpServer Effect.EqpSlotAddSight aid
+                    <$> sumOrganEqpServer IK.EqpSlotAddSight aid
       let itemFull = itemToF iid kit
           calm10 = calmEnough10 b activeItems
           legal = permittedApply " " actorBlind calm10 itemFull
@@ -441,7 +440,7 @@ reqApply aid iid cstore = assert (cstore /= CSha) $ do
 
 -- | Perform the effect specified for the tile in case it's triggered.
 reqTrigger :: (MonadAtomic m, MonadServer m)
-           => ActorId -> Maybe F.Feature -> m ()
+           => ActorId -> Maybe TK.Feature -> m ()
 reqTrigger aid mfeat = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   sb <- getsState $ getActorBody aid
@@ -450,7 +449,7 @@ reqTrigger aid mfeat = do
   let tpos = bpos sb
       serverTile = lvl `at` tpos
       feats = case mfeat of
-        Nothing -> TileKind.tfeature $ okind serverTile
+        Nothing -> TK.tfeature $ okind serverTile
         Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
         Just _ -> []
       req = ReqTrigger mfeat
@@ -458,11 +457,11 @@ reqTrigger aid mfeat = do
   unless go $ execFailure aid req TriggerNothing
 
 triggerEffect :: (MonadAtomic m, MonadServer m)
-              => ActorId -> Point -> [F.Feature] -> m Bool
+              => ActorId -> Point -> [TK.Feature] -> m Bool
 triggerEffect aid tpos feats = do
   let triggerFeat feat =
         case feat of
-          F.Cause ef -> itemEffectCause aid tpos ef
+          TK.Cause ef -> itemEffectCause aid tpos ef
           _ -> return False
   goes <- mapM triggerFeat feats
   return $! or goes
@@ -473,7 +472,7 @@ triggerEffect aid tpos feats = do
 -- so that they are available in the first game too,
 -- not only in subsequent, restarted, games.
 reqGameRestart :: (MonadAtomic m, MonadServer m)
-               => ActorId -> GroupName -> Int -> [(Int, (Text, Text))] -> m ()
+               => ActorId -> GroupName ModeKind -> Int -> [(Int, (Text, Text))] -> m ()
 reqGameRestart aid groupName d configHeroNames = do
   modifyServer $ \ser ->
     ser {sdebugNxt = (sdebugNxt ser) { sdifficultySer = d

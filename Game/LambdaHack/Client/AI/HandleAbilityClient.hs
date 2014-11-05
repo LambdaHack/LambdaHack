@@ -29,9 +29,8 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -48,7 +47,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Content.TileKind as TileKind
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 type ToAny a = Strategy (RequestTimed a) -> Strategy RequestAnyAbility
 
@@ -214,7 +213,7 @@ pickup :: MonadClient m
 pickup aid onlyWeapon = do
   benItemL <- benGroundItems aid
   let isWeapon (_, (_, itemFull)) =
-        maybe False ((== Effect.EqpSlotWeapon) . fst)
+        maybe False ((== IK.EqpSlotWeapon) . fst)
         $ strengthEqpSlot $ itemBase itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
@@ -297,13 +296,13 @@ unEquipItems aid = do
            then Just $ ReqMoveItem iidEqp (itemK itemEqp) CEqp csha  -- share
            else Nothing
       yieldUnneeded = mapMaybe yieldSingleUnneeded eqpAssocs
-      improve :: CStore -> ( Effect.EqpSlot
+      improve :: CStore -> ( IK.EqpSlot
                            , ( [(Int, (ItemId, ItemFull))]
                              , [(Int, (ItemId, ItemFull))] ) )
               -> Strategy (RequestTimed AbMoveItem)
       improve fromCStore (slot, (bestInv, bestEqp)) =
         case (bestInv, bestEqp) of
-          _ | slot == Effect.EqpSlotPeriodic
+          _ | slot == IK.EqpSlotPeriodic
               && fromCStore == CEqp
               && not (eqpOverfull body 0) ->
             -- Don't get rid of periodic items from eqp unless eqp full.
@@ -346,7 +345,7 @@ unEquipItems aid = do
       return $! liftFrequency $ uniformFreq "yield unneeded" yieldUnneeded
 
 groupByEqpSlot :: [(ItemId, ItemFull)]
-               -> M.Map (Effect.EqpSlot, Text) [(ItemId, ItemFull)]
+               -> M.Map (IK.EqpSlot, Text) [(ItemId, ItemFull)]
 groupByEqpSlot is =
   let f (iid, itemFull) = case strengthEqpSlot $ itemBase itemFull of
         Nothing -> Nothing
@@ -357,7 +356,7 @@ groupByEqpSlot is =
 bestByEqpSlot :: [(ItemId, ItemFull)]
               -> [(ItemId, ItemFull)]
               -> [(ItemId, ItemFull)]
-              -> [((Effect.EqpSlot, Text)
+              -> [((IK.EqpSlot, Text)
                   , ( [(Int, (ItemId, ItemFull))]
                     , [(Int, (ItemId, ItemFull))]
                     , [(Int, (ItemId, ItemFull))] ) )]
@@ -378,16 +377,16 @@ hinders condLightBetrays body activeItems itemFull =
   -- Fast actors want to hide in darkness to ambush opponents and want
   -- to hit hard for the short span they get to survive melee.
   (bspeed body activeItems > speedNormal
-   && (isJust (strengthFromEqpSlot Effect.EqpSlotAddLight itemFull)
-       || 0 > fromMaybe 0 (strengthFromEqpSlot Effect.EqpSlotAddHurtMelee
+   && (isJust (strengthFromEqpSlot IK.EqpSlotAddLight itemFull)
+       || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtMelee
                                                itemFull)
-       || 0 > fromMaybe 0 (strengthFromEqpSlot Effect.EqpSlotAddHurtRanged
+       || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtRanged
                                                itemFull)))
   -- Distressed actors want to hide in the dark.
   || (let heavilyDistressed =  -- actor hit by a proj or similarly distressed
             deltaSerious (bcalmDelta body)
       in condLightBetrays && heavilyDistressed
-         && isJust (strengthFromEqpSlot Effect.EqpSlotAddLight itemFull))
+         && isJust (strengthFromEqpSlot IK.EqpSlotAddLight itemFull))
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
   -- (friends close, only one enemy close)
@@ -402,7 +401,7 @@ harmful cops body activeItems fact itemFull =
   -- should not be equipped (either they are harmful or they waste eqp space).
   maybe False (\(u, _) -> u <= 0)
     (totalUsefulness cops body activeItems fact itemFull)
-  && (maybe True ((/= Effect.EqpSlotWeapon) . fst)
+  && (maybe True ((/= IK.EqpSlotWeapon) . fst)
       $ strengthEqpSlot $ itemBase itemFull)
 
 unneeded :: Kind.COps -> Bool -> Actor -> [ItemFull] -> Faction -> ItemFull
@@ -479,9 +478,9 @@ trigger aid fleeViaStairs = do
       unexploredCurrent = ES.notMember (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
       t = lvl `at` bpos b
-      feats = TileKind.tfeature $ okind t
+      feats = TK.tfeature $ okind t
       ben feat = case feat of
-        F.Cause (Effect.Ascend k) ->  -- change levels sensibly, in teams
+        TK.Cause (IK.Ascend k) ->  -- change levels sensibly, in teams
           let aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
               expBenefit =
                 if aimless
@@ -508,13 +507,13 @@ trigger aid fleeViaStairs = do
                   in if fleeViaStairs
                      then 1000 * eben + 1  -- strongly prefer correct direction
                      else eben
-        F.Cause ef@Effect.Escape{} -> do  -- flee via this way, too
+        TK.Cause ef@IK.Escape{} -> do  -- flee via this way, too
           -- Only some factions try to escape but they first explore all
           -- for high score.
           if not (fcanEscape $ gplayer fact) || not allExplored
           then 0
           else effectToBenefit cops b activeItems fact ef
-        F.Cause ef | not fleeViaStairs ->
+        TK.Cause ef | not fleeViaStairs ->
           effectToBenefit cops b activeItems fact ef
         _ -> 0
       benFeat = zip (map ben feats) feats
@@ -531,7 +530,7 @@ projectItem aid = do
   seps <- getsClient seps
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
-      actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
+      actorBlind <- radiusBlind <$> sumOrganEqpClient IK.EqpSlotAddSight aid
       mnewEps <- makeLine b fpos seps
       case mnewEps of
         Just newEps -> do
@@ -547,7 +546,7 @@ projectItem aid = do
               coeff CInv = 1
               coeff CSha = undefined  -- banned
               fRanged ((mben, (_, cstore)), (iid, itemFull@ItemFull{..})) =
-                let it1 = case strengthFromEqpSlot Effect.EqpSlotTimeout
+                let it1 = case strengthFromEqpSlot IK.EqpSlotTimeout
                                                    itemFull of
                       Nothing -> []
                       Just timeout ->
@@ -562,7 +561,7 @@ projectItem aid = do
                     bestRange = chessDist bpos fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
                       10 + max 0 (10 - abs (trange - bestRange))
-                    durableBonus = if Effect.Durable `elem` jfeature itemBase
+                    durableBonus = if IK.Durable `elem` jfeature itemBase
                                    then 2  -- we or foes keep it after the throw
                                    else 1
                     benR = durableBonus
@@ -586,7 +585,7 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
-  actorBlind <- radiusBlind <$> sumOrganEqpClient Effect.EqpSlotAddSight aid
+  actorBlind <- radiusBlind <$> sumOrganEqpClient IK.EqpSlotAddSight aid
   let q calm10 itemFull _ =
         either (const False) id $ permittedApply " " actorBlind calm10 itemFull
   benList <- benAvailableItems aid q [CEqp, CInv, CGround]
@@ -594,7 +593,7 @@ applyItem aid applyGroup = do
   localTime <- getsState $ getLocalTime (blid b)
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
-          let getP (Effect.RefillHP p) _ | p > 0 = True
+          let getP (IK.RefillHP p) _ | p > 0 = True
               getP _ acc = acc
           in case itemDisco itemFull of
             Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
@@ -607,7 +606,7 @@ applyItem aid applyGroup = do
       coeff CInv = 1
       coeff CSha = undefined  -- banned
       fTool ((mben, (_, cstore)), (iid, itemFull@ItemFull{..})) =
-        let it1 = case strengthFromEqpSlot Effect.EqpSlotTimeout itemFull of
+        let it1 = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
               Nothing -> []
               Just timeout ->
                 let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
@@ -615,7 +614,7 @@ applyItem aid applyGroup = do
                 in filter pending itemTimer
             len = length it1
             recharged = len < itemK
-            durableBonus = if Effect.Durable `elem` jfeature itemBase
+            durableBonus = if IK.Durable `elem` jfeature itemBase
                            then 5  -- we keep it after use
                            else 1
             benR = durableBonus

@@ -12,7 +12,6 @@ import Data.Text (Text)
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
@@ -21,9 +20,9 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.ItemKind
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.ItemStrongest
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- TODO: make remove second arg from ReqLeader; this requires a separate
 -- channel for Ping, probably, and then client sends as many commands
@@ -40,7 +39,7 @@ deriving instance Show RequestAI
 data RequestUI =
     forall a. ReqUITimed !(RequestTimed a)
   | ReqUILeader !ActorId !(Maybe Target) !RequestUI
-  | ReqUIGameRestart !ActorId !GroupName !Int ![(Int, (Text, Text))]
+  | ReqUIGameRestart !ActorId !(GroupName ModeKind) !Int ![(Int, (Text, Text))]
   | ReqUIGameExit !ActorId !Int
   | ReqUIGameSave
   | ReqUITactic !Tactic
@@ -61,13 +60,13 @@ data RequestTimed :: Ability -> * where
   ReqMove :: !Vector -> RequestTimed AbMove
   ReqMelee :: !ActorId -> !ItemId -> !CStore -> RequestTimed AbMelee
   ReqDisplace :: !ActorId -> RequestTimed AbDisplace
-  ReqAlter :: !Point -> !(Maybe F.Feature) -> RequestTimed AbAlter
+  ReqAlter :: !Point -> !(Maybe TK.Feature) -> RequestTimed AbAlter
   ReqWait :: RequestTimed AbWait
   ReqMoveItem :: !ItemId -> !Int -> !CStore -> !CStore
               -> RequestTimed AbMoveItem
   ReqProject :: !Point -> !Int -> !ItemId -> !CStore -> RequestTimed AbProject
   ReqApply :: !ItemId -> !CStore -> RequestTimed AbApply
-  ReqTrigger :: !(Maybe F.Feature) -> RequestTimed AbTrigger
+  ReqTrigger :: !(Maybe TK.Feature) -> RequestTimed AbTrigger
 
 deriving instance Show (RequestTimed a)
 
@@ -136,9 +135,9 @@ showReqFailure reqFailure = case reqFailure of
 -- to operate when not calm or becuse it's too precious to identify by use.
 permittedPrecious :: Bool -> Bool -> ItemFull -> Either ReqFailure Bool
 permittedPrecious calm10 forced itemFull =
-  let isPrecious = Effect.Precious `elem` jfeature (itemBase itemFull)
+  let isPrecious = IK.Precious `elem` jfeature (itemBase itemFull)
   in if not calm10 && not forced && isPrecious then Left NotCalmPrecious
-     else Right $ Effect.Durable `elem` jfeature (itemBase itemFull)
+     else Right $ IK.Durable `elem` jfeature (itemBase itemFull)
                   || case itemDisco itemFull of
                     Just ItemDisco{itemAE=Just _} -> True
                     _ -> not isPrecious
@@ -155,12 +154,12 @@ permittedProject triggerSyms actorBlind calm10 forced itemFull@ItemFull{itemBase
         let hasEffects = case itemDisco itemFull of
               Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects=[]}} -> False
               Just ItemDisco{ itemAE=Nothing
-                            , itemKind=ItemKind{ieffects=[]} } -> False
+                            , itemKind=IK.ItemKind{IK.ieffects=[]} } -> False
               _ -> True
             permittedSlot =
               if ' ' `elem` triggerSyms
               then case strengthEqpSlot itemBase of
-                Just (Effect.EqpSlotAddLight, _) -> True
+                Just (IK.EqpSlotAddLight, _) -> True
                 Just _ -> False
                 Nothing -> True
               else jsymbol itemBase `elem` triggerSyms
@@ -177,5 +176,5 @@ permittedApply triggerSyms actorBlind calm10 itemFull@ItemFull{itemBase} =
       Right False -> legal
       Right True -> Right $
         if ' ' `elem` triggerSyms
-        then Effect.Applicable `elem` jfeature itemBase
+        then IK.Applicable `elem` jfeature itemBase
         else jsymbol itemBase `elem` triggerSyms

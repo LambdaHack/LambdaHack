@@ -29,13 +29,14 @@ import Control.Exception.Assert.Sugar
 import qualified Data.Array.Unboxed as A
 import Data.Maybe
 
-import qualified Game.LambdaHack.Common.Effect as Effect
-import qualified Game.LambdaHack.Common.Feature as F
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.ItemKind (ItemKind)
+import Game.LambdaHack.Content.TileKind (TileKind)
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | The last time a hero left a smell in a given tile. To be used
 -- by monsters that hunt by smell.
@@ -66,12 +67,12 @@ accessTab :: Tab -> Kind.Id TileKind -> Bool
 accessTab (Tab tab) ki = tab A.! ki
 
 -- | Whether a tile kind has the given feature.
-kindHasFeature :: F.Feature -> TileKind -> Bool
+kindHasFeature :: TK.Feature -> TileKind -> Bool
 {-# INLINE kindHasFeature #-}
-kindHasFeature f t = f `elem` tfeature t
+kindHasFeature f t = f `elem` TK.tfeature t
 
 -- | Whether a tile kind (specified by its id) has the given feature.
-hasFeature :: Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Bool
+hasFeature :: Kind.Ops TileKind -> TK.Feature -> Kind.Id TileKind -> Bool
 {-# INLINE hasFeature #-}
 hasFeature Kind.Ops{okind} f t = kindHasFeature f (okind t)
 
@@ -146,10 +147,10 @@ isExplorable cotile t =
 lookSimilar :: TileKind -> TileKind -> Bool
 {-# INLINE lookSimilar #-}
 lookSimilar t u =
-  tsymbol t == tsymbol u &&
-  tname   t == tname   u &&
-  tcolor  t == tcolor  u &&
-  tcolor2 t == tcolor2 u
+  TK.tsymbol t == TK.tsymbol u &&
+  TK.tname   t == TK.tname   u &&
+  TK.tcolor  t == TK.tcolor  u &&
+  TK.tcolor2 t == TK.tcolor2 u
 
 speedup :: Bool -> Kind.Ops TileKind -> TileSpeedup
 speedup allClear cotile =
@@ -157,38 +158,38 @@ speedup allClear cotile =
   -- taken makes random lookups more or less efficient, so not optimizing
   -- further, until I have benchmarks.
   let isClearTab | allClear = createTab cotile
-                              $ not . kindHasFeature F.Impenetrable
+                              $ not . kindHasFeature TK.Impenetrable
                  | otherwise = createTab cotile
-                               $ kindHasFeature F.Clear
-      isLitTab = createTab cotile $ not . kindHasFeature F.Dark
-      isWalkableTab = createTab cotile $ kindHasFeature F.Walkable
+                               $ kindHasFeature TK.Clear
+      isLitTab = createTab cotile $ not . kindHasFeature TK.Dark
+      isWalkableTab = createTab cotile $ kindHasFeature TK.Walkable
       isPassableTab = createTab cotile isPassableKind
       isDoorTab = createTab cotile $ \tk ->
-        let getTo F.OpenTo{} = True
-            getTo F.CloseTo{} = True
+        let getTo TK.OpenTo{} = True
+            getTo TK.CloseTo{} = True
             getTo _ = False
-        in any getTo $ tfeature tk
-      isSuspectTab = createTab cotile $ kindHasFeature F.Suspect
+        in any getTo $ TK.tfeature tk
+      isSuspectTab = createTab cotile $ kindHasFeature TK.Suspect
       isChangeableTab = createTab cotile $ \tk ->
-        let getTo F.ChangeTo{} = True
+        let getTo TK.ChangeTo{} = True
             getTo _ = False
-        in any getTo $ tfeature tk
+        in any getTo $ TK.tfeature tk
   in TileSpeedup {..}
 
 isPassableKind :: TileKind -> Bool
 isPassableKind tk =
-  let getTo F.Walkable = True
-      getTo F.OpenTo{} = True
-      getTo F.ChangeTo{} = True  -- can change to passable and may have loot
-      getTo F.Suspect = True
+  let getTo TK.Walkable = True
+      getTo TK.OpenTo{} = True
+      getTo TK.ChangeTo{} = True  -- can change to passable and may have loot
+      getTo TK.Suspect = True
       getTo _ = False
-  in any getTo $ tfeature tk
+  in any getTo $ TK.tfeature tk
 
 openTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 openTo Kind.Ops{okind, opick} t = do
-  let getTo (F.OpenTo grp) acc = grp : acc
+  let getTo (TK.OpenTo grp) acc = grp : acc
       getTo _ acc = acc
-  case foldr getTo [] $ tfeature $ okind t of
+  case foldr getTo [] $ TK.tfeature $ okind t of
     [] -> return t
     groups -> do
       grp <- oneOf groups
@@ -197,32 +198,32 @@ openTo Kind.Ops{okind, opick} t = do
 
 closeTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 closeTo Kind.Ops{okind, opick} t = do
-  let getTo (F.CloseTo grp) acc = grp : acc
+  let getTo (TK.CloseTo grp) acc = grp : acc
       getTo _ acc = acc
-  case foldr getTo [] $ tfeature $ okind t of
+  case foldr getTo [] $ TK.tfeature $ okind t of
     [] -> return t
     groups -> do
       grp <- oneOf groups
       fmap (fromMaybe $ assert `failure` grp)
         $ opick grp (const True)
 
-embedItems :: Kind.Ops TileKind -> Kind.Id TileKind -> [GroupName]
+embedItems :: Kind.Ops TileKind -> Kind.Id TileKind -> [GroupName ItemKind]
 embedItems Kind.Ops{okind} t = do
-  let getTo (F.Embed eff) acc = eff : acc
+  let getTo (TK.Embed eff) acc = eff : acc
       getTo _ acc = acc
-  foldr getTo [] $ tfeature $ okind t
+  foldr getTo [] $ TK.tfeature $ okind t
 
-causeEffects :: Kind.Ops TileKind -> Kind.Id TileKind -> [Effect.Effect Int]
+causeEffects :: Kind.Ops TileKind -> Kind.Id TileKind -> [IK.Effect Int]
 causeEffects Kind.Ops{okind} t = do
-  let getTo (F.Cause eff) acc = eff : acc
+  let getTo (TK.Cause eff) acc = eff : acc
       getTo _ acc = acc
-  foldr getTo [] $ tfeature $ okind t
+  foldr getTo [] $ TK.tfeature $ okind t
 
 revealAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 revealAs Kind.Ops{okind, opick} t = do
-  let getTo (F.RevealAs grp) acc = grp : acc
+  let getTo (TK.RevealAs grp) acc = grp : acc
       getTo _ acc = acc
-  case foldr getTo [] $ tfeature $ okind t of
+  case foldr getTo [] $ TK.tfeature $ okind t of
     [] -> return t
     groups -> do
       grp <- oneOf groups
@@ -231,32 +232,32 @@ revealAs Kind.Ops{okind, opick} t = do
 
 hideAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 hideAs Kind.Ops{okind, ouniqGroup} t =
-  let getTo (F.HideAs grp) _ = Just grp
+  let getTo (TK.HideAs grp) _ = Just grp
       getTo _ acc = acc
-  in case foldr getTo Nothing (tfeature (okind t)) of
+  in case foldr getTo Nothing (TK.tfeature (okind t)) of
        Nothing    -> t
        Just grp -> ouniqGroup grp
 
 -- | Whether a tile kind (specified by its id) has an OpenTo feature.
 isOpenable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isOpenable Kind.Ops{okind} t =
-  let getTo F.OpenTo{} = True
+  let getTo TK.OpenTo{} = True
       getTo _ = False
-  in any getTo $ tfeature $ okind t
+  in any getTo $ TK.tfeature $ okind t
 
 -- | Whether a tile kind (specified by its id) has a CloseTo feature.
 isClosable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isClosable Kind.Ops{okind} t =
-  let getTo F.CloseTo{} = True
+  let getTo TK.CloseTo{} = True
       getTo _ = False
-  in any getTo $ tfeature $ okind t
+  in any getTo $ TK.tfeature $ okind t
 
 isEscape :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isEscape cotile t = let isEffectEscape Effect.Escape{} = True
+isEscape cotile t = let isEffectEscape IK.Escape{} = True
                         isEffectEscape _ = False
                     in any isEffectEscape $ causeEffects cotile t
 
 isStair :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isStair cotile t = let isEffectAscend Effect.Ascend{} = True
+isStair cotile t = let isEffectAscend IK.Ascend{} = True
                        isEffectAscend _ = False
                    in any isEffectAscend $ causeEffects cotile t

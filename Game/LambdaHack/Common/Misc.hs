@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Misc
   , Container(..), CStore(..)
     -- * Assorted
   , normalLevelBound, divUp, GroupName, toGroupName, Freqs, breturn
-  , serverSaveName, Rarity, validateRarity
+  , serverSaveName, Rarity, validateRarity, Tactic(..)
   ) where
 
 import Control.Monad
@@ -46,22 +46,22 @@ divUp n k = (n + k - 1) `div` k
 -- If ever needed, we can use a symbol table here, since content
 -- is never serialized. But we'd need to cover the few cases
 -- (e.g., @litemFreq@) where @GroupName@ goes into savegame.
-newtype GroupName = GroupName Text
+newtype GroupName a = GroupName Text
   deriving (Eq, Ord, Read, Hashable, Binary)
 
-instance IsString GroupName where
+instance IsString (GroupName a) where
   fromString = GroupName . T.pack
 
-instance Show GroupName where
+instance Show (GroupName a) where
   show (GroupName gn) = T.unpack gn
 
-toGroupName :: Text -> GroupName
+toGroupName :: Text -> GroupName a
 toGroupName = GroupName
 
 -- | For each group that the kind belongs to, denoted by a @GroupName@
 -- in the first component of a pair, the second component of a pair shows
 -- how common the kind is within the group.
-type Freqs = [(GroupName, Int)]
+type Freqs a = [(GroupName a, Int)]
 
 -- | Rarity on given depths.
 type Rarity = [(Int, Int)]
@@ -123,6 +123,34 @@ newtype AbsDepth = AbsDepth Int
 -- | A unique identifier of an actor in the dungeon.
 newtype ActorId = ActorId Int
   deriving (Show, Eq, Ord, Enum, Binary)
+
+-- TODO: alway shoot, never shoot, etc., but there is too many and this is best
+-- expressed via skills, and also we risk micromanagement, so let's stop
+-- and think first; perhaps only have as many tactics as needed for realistic
+-- AI behaviour in our game modes; perhaps even expose only some of them to UI
+data Tactic =
+    TBlock    -- ^ always only wait, even if enemy in melee range
+  | TFollow   -- ^ always follow leader's target or his position if no target
+  | TExplore  -- ^ if enemy nearby, attack, if no items, etc., explore unknown
+  | TRoam     -- ^ if enemy nearby, attack, if no items, etc., roam randomly
+  | TPatrol   -- ^ find an open and uncrowded area, patrol it according
+              --   to sight radius and fallback temporarily to @TRoam@
+              --   when enemy is seen by the faction and is within
+              --   the actor's sight radius
+              --   TODO (currently the same as TExplore; should it chase
+              --   targets too (TRoam) and only switch to TPatrol when none?)
+  deriving (Eq, Ord, Enum, Bounded, Generic)
+
+instance Show Tactic where
+  show TBlock = "block and wait"
+  show TFollow = "follow leader's target or position"
+  show TExplore = "explore unknown, chase targets"
+  show TRoam = "roam freely, chase targets"
+  show TPatrol = "find and patrol an area (TODO)"
+
+instance Binary Tactic
+
+instance Hashable Tactic
 
 -- Data.Binary
 

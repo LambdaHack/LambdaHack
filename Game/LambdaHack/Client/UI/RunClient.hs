@@ -35,7 +35,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Continue running in the given direction.
 continueRun :: MonadClient m
@@ -258,7 +258,7 @@ checkAndRun aid dir = do
       rightTilesLast = map (lvl `at`) rightPsLast
       leftForwardTileHere = lvl `at` leftForwardPosHere
       rightForwardTileHere = lvl `at` rightForwardPosHere
-      featAt = actionFeatures smarkSuspect . okind
+      featAt = TK.actionFeatures smarkSuspect . okind
       terrainChangeMiddle = null (Tile.causeEffects cotile tileThere)
                               -- step into; will stop next turn due to message
                             && featAt tileThere

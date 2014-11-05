@@ -42,7 +42,7 @@ import Game.LambdaHack.Client.UI.Frontend as Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.ItemDescription
@@ -300,7 +300,7 @@ targetDesc target = do
     Just (TEnemy aid _) -> do
       side <- getsClient sside
       b <- getsState $ getActorBody aid
-      maxHP <- sumOrganEqpClient Effect.EqpSlotAddMaxHP aid
+      maxHP <- sumOrganEqpClient IK.EqpSlotAddMaxHP aid
       let percentage = 100 * bhp b `div` xM (max 5 maxHP)
           stars | percentage < 20  = "[_____]"
                 | percentage < 40  = "[*____]"

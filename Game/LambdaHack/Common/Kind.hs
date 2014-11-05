@@ -36,15 +36,15 @@ type family Speedup a
 -- | Content operations for the content of type @a@.
 data Ops a = Ops
   { okind         :: Id a -> a          -- ^ the content element at given id
-  , ouniqGroup    :: GroupName -> Id a  -- ^ the id of the unique member of
-                                        --   a singleton content group
-  , opick         :: GroupName -> (a -> Bool) -> Rnd (Maybe (Id a))
+  , ouniqGroup    :: GroupName a -> Id a  -- ^ the id of the unique member of
+                                          --   a singleton content group
+  , opick         :: GroupName a -> (a -> Bool) -> Rnd (Maybe (Id a))
                                     -- ^ pick a random id belonging to a group
                                     --   and satisfying a predicate
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
                                     -- ^ fold over all content elements of @a@
   , ofoldrGroup   :: forall b.
-                     GroupName -> (Int -> Id a -> a -> b -> b) -> b -> b
+                     GroupName a -> (Int -> Id a -> a -> b -> b) -> b -> b
                                     -- ^ fold over the given group only
   , obounds       :: !(Id a, Id a)  -- ^ bounds of identifiers of content @a@
   , ospeedup      :: !(Maybe (Speedup a))  -- ^ auxiliary speedup components
@@ -57,7 +57,7 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
   assert (length content <= fromEnum (maxBound :: Id a)) $
   let kindMap :: EM.EnumMap (Id a) a
       !kindMap = EM.fromDistinctAscList $ zip [Id 0..] content
-      kindFreq :: M.Map GroupName [(Int, (Id a, a))]
+      kindFreq :: M.Map (GroupName a) [(Int, (Id a, a))]
       kindFreq =
         let tuples = [ (cgroup, (n, (i, k)))
                      | (i, k) <- EM.assocs kindMap

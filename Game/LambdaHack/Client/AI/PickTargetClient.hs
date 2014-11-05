@@ -19,7 +19,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -96,7 +96,7 @@ targetStrategy oldLeader aid = do
   -- and only if they can shoot at the moment)
   canEscape <- factionCanEscape (bfid b)
   explored <- getsClient sexplored
-  smellRadius <- sumOrganEqpClient Effect.EqpSlotAddSmell aid
+  smellRadius <- sumOrganEqpClient IK.EqpSlotAddSmell aid
   let canSmell = smellRadius > 0
       meleeNearby | canEscape = nearby `div` 2  -- not aggresive
                   | otherwise = nearby
@@ -119,7 +119,7 @@ targetStrategy oldLeader aid = do
           Nothing -> 30  -- experimenting is fun
       desirableItem iid item k
         | canEscape = itemUsefulness iid k /= 0
-                        || Effect.Precious `elem` jfeature item
+                        || IK.Precious `elem` jfeature item
         | otherwise = itemUsefulness iid k /= 0
       desirableBag bag = any (\(iid, k) ->
                                desirableItem iid (itemD EM.! iid) k)

@@ -20,7 +20,6 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import System.Random (mkStdGen)
 
-import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc

@@ -25,7 +25,7 @@ import Data.Maybe
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -38,7 +38,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.TileKind (TileKind)
 
 fidActorNotProjAssocs :: FactionId -> State -> [(ActorId, Actor)]
 fidActorNotProjAssocs fid s =
@@ -268,7 +268,7 @@ memActor aid lid s =
 
 calmEnough :: Actor -> [ItemFull] -> Bool
 calmEnough b activeItems =
-  let calmMax = max 1 $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
+  let calmMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
   in 2 * xM calmMax <= 3 * bcalm b
 
 calmEnough10 :: Actor -> [ItemFull] -> Bool
@@ -276,7 +276,7 @@ calmEnough10 b activeItems = calmEnough b activeItems && bcalm b >= xM 10
 
 hpEnough :: Actor -> [ItemFull] -> Bool
 hpEnough b activeItems =
-  let hpMax = max 1 $ sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
+  let hpMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
   in 2 * xM hpMax <= 3 * bhp b
 
 -- | Get current time from the dungeon data.
@@ -285,7 +285,7 @@ getLocalTime lid s = ltime $ sdungeon s EM.! lid
 
 regenCalmDelta :: Actor -> [ItemFull] -> State -> Int64
 regenCalmDelta b activeItems s =
-  let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
+  let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
       calmIncr = oneM  -- normal rate of calm regen
       maxDeltaCalm = xM calmMax - bcalm b
       -- Worry actor by enemies felt (even if not seen)

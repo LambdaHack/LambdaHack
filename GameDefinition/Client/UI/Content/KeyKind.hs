@@ -7,9 +7,9 @@ import Control.Arrow (first)
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.HumanCmd
-import qualified Game.LambdaHack.Common.Effect as Effect
-import qualified Game.LambdaHack.Common.Feature as F
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Misc
+import qualified Game.LambdaHack.Content.TileKind as TK
 
 standardKeys :: KeyKind
 standardKeys = KeyKind
@@ -34,25 +34,25 @@ standardKeys = KeyKind
       , ("less", ([CmdMove, CmdMinimal], TriggerTile
            [ TriggerFeature { verb = "ascend"
                             , object = "a level"
-                            , feature = F.Cause (Effect.Ascend 1) }
+                            , feature = TK.Cause (IK.Ascend 1) }
            , TriggerFeature { verb = "escape"
                             , object = "dungeon"
-                            , feature = F.Cause (Effect.Escape 1) } ]))
+                            , feature = TK.Cause (IK.Escape 1) } ]))
       , ("CTRL-less", ([CmdMove], TriggerTile
            [ TriggerFeature { verb = "ascend"
                             , object = "10 levels"
-                            , feature = F.Cause (Effect.Ascend 10) } ]))
+                            , feature = TK.Cause (IK.Ascend 10) } ]))
       , ("greater", ([CmdMove, CmdMinimal], TriggerTile
            [ TriggerFeature { verb = "descend"
                             , object = "a level"
-                            , feature = F.Cause (Effect.Ascend (-1)) }
+                            , feature = TK.Cause (IK.Ascend (-1)) }
            , TriggerFeature { verb = "escape"
                             , object = "dungeon"
-                            , feature = F.Cause (Effect.Escape (-1)) } ]))
+                            , feature = TK.Cause (IK.Escape (-1)) } ]))
       , ("CTRL-greater", ([CmdMove], TriggerTile
            [ TriggerFeature { verb = "descend"
                             , object = "10 levels"
-                            , feature = F.Cause (Effect.Ascend (-10)) } ]))
+                            , feature = TK.Cause (IK.Ascend (-10)) } ]))
       , ("semicolon", ([CmdMove], StepToTarget))
       , ("colon", ([CmdMove], Macro "go to target for 100 steps"
                                     ["semicolon", "V"]))
@@ -76,16 +76,16 @@ standardKeys = KeyKind
       , ("c", ([CmdMove], AlterDir
            [ AlterFeature { verb = "close"
                           , object = "door"
-                          , feature = F.CloseTo "vertical closed door Lit" }
+                          , feature = TK.CloseTo "vertical closed door Lit" }
            , AlterFeature { verb = "close"
                           , object = "door"
-                          , feature = F.CloseTo "horizontal closed door Lit" }
+                          , feature = TK.CloseTo "horizontal closed door Lit" }
            , AlterFeature { verb = "close"
                           , object = "door"
-                          , feature = F.CloseTo "vertical closed door Dark" }
+                          , feature = TK.CloseTo "vertical closed door Dark" }
            , AlterFeature { verb = "close"
                           , object = "door"
-                          , feature = F.CloseTo "horizontal closed door Dark" }
+                          , feature = TK.CloseTo "horizontal closed door Dark" }
            ]))
       , ("CTRL-KP_Begin", ([CmdMove], Macro "" ["KP_Begin"]))
       , ("period", ([CmdMove], Macro "" ["KP_Begin"]))

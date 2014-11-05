@@ -30,8 +30,9 @@ import Game.LambdaHack.Common.Tile
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | The complete dungeon is a map from level names to levels.
 type Dungeon = EM.EnumMap LevelId Level
@@ -80,12 +81,12 @@ data Level = Level
   , lclear      :: !Int        -- ^ total number of initially clear tiles
   , ltime       :: !Time       -- ^ date of the last activity on the level
   , lactorCoeff :: !Int        -- ^ the lower, the more monsters spawn
-  , lactorFreq  :: !Freqs      -- ^ frequency of spawned actors; [] for clients
+  , lactorFreq  :: !(Freqs ItemKind)  -- ^ frequency of spawned actors; [] for clients
   , litemNum    :: !Int        -- ^ number of initial items, 0 for clients
-  , litemFreq   :: !Freqs      -- ^ frequency of initial items; [] for clients
+  , litemFreq   :: !(Freqs ItemKind)  -- ^ frequency of initial items; [] for clients
   , lsecret     :: !Int        -- ^ secret tile seed
   , lhidden     :: !Int        -- ^ secret tile density
-  , lescape     :: !Bool       -- ^ has an Effect.Escape tile
+  , lescape     :: !Bool       -- ^ has an IK.Escape tile
   }
   deriving (Show, Eq)
 

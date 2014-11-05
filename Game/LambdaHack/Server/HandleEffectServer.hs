@@ -20,9 +20,7 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Dice as Dice
-import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
@@ -38,8 +36,10 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
+import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
@@ -72,17 +72,17 @@ itemEffectAndDestroy source target iid c = do
 
 effectAndDestroy :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> ItemId -> Container -> Bool
-                 -> [Effect.Effect Int] -> [Effect.Aspect Int] -> ItemQuant
+                 -> [IK.Effect Int] -> [IK.Aspect Int] -> ItemQuant
                  -> m ()
 effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
-  let mtimeout = let timeoutAspect :: Effect.Aspect a -> Bool
-                     timeoutAspect Effect.Timeout{} = True
+  let mtimeout = let timeoutAspect :: IK.Aspect a -> Bool
+                     timeoutAspect IK.Timeout{} = True
                      timeoutAspect _ = False
                  in find timeoutAspect aspects
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
   let it1 = case mtimeout of
-        Just (Effect.Timeout timeout) ->
+        Just (IK.Timeout timeout) ->
           let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
               pending startT = timeShift startT timeoutTurns > localTime
           in filter pending it
@@ -94,7 +94,7 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
   -- then such effects are disabled whenever the item is affected
   -- by a Discharge attack (TODO).
   it2 <- case mtimeout of
-    Just (Effect.Timeout _) | recharged ->
+    Just (IK.Timeout _) | recharged ->
       return $ localTime : it1
     _ ->
       -- TODO: if has timeout and not recharged, report failure
@@ -109,13 +109,13 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
     -- This is OK, because we don't remove the item type from various
     -- item dictionaries, just an individual copy from the container,
     -- so, e.g., the item can be identified after it's removed.
-    let mtmp = let tmpEffect :: Effect.Effect a -> Bool
-                   tmpEffect Effect.Temporary{} = True
-                   tmpEffect (Effect.Recharging Effect.Temporary{}) = True
+    let mtmp = let tmpEffect :: IK.Effect a -> Bool
+                   tmpEffect IK.Temporary{} = True
+                   tmpEffect (IK.Recharging IK.Temporary{}) = True
                    tmpEffect _ = False
                in find tmpEffect effs
     item <- getsState $ getItemBody iid
-    let durable = Effect.Durable `elem` jfeature item
+    let durable = IK.Durable `elem` jfeature item
         imperishable = durable || periodic && isNothing mtmp
         kit = (1, take 1 it2)
     unless imperishable $
@@ -141,7 +141,7 @@ itemEffectOnSmash source target iid = do
   void $ itemEffectDisco source target iid recharged False effs
 
 itemEffectCause :: (MonadAtomic m, MonadServer m)
-                => ActorId -> Point -> Effect.Effect Int
+                => ActorId -> Point -> IK.Effect Int
                 -> m Bool
 itemEffectCause aid tpos ef = do
   sb <- getsState $ getActorBody aid
@@ -154,7 +154,7 @@ itemEffectCause aid tpos ef = do
       let aspects = case EM.lookup iid discoEffect of
             Just ItemAspectEffect{jaspects} -> jaspects
             _ -> assert `failure` (aid, tpos, ef, iid)
-      execSfxAtomic $ SfxTrigger aid tpos $ F.Cause ef
+      execSfxAtomic $ SfxTrigger aid tpos $ TK.Cause ef
       void $ effectAndDestroy aid aid iid c False [ef] aspects kit
       return True
     ab -> assert `failure` (aid, tpos, ab)
@@ -165,7 +165,7 @@ itemEffectCause aid tpos ef = do
 -- semantics.
 itemEffectDisco :: (MonadAtomic m, MonadServer m)
                 => ActorId -> ActorId -> ItemId -> Bool -> Bool
-                -> [Effect.Effect Int]
+                -> [IK.Effect Int]
                 -> m Bool
 itemEffectDisco source target iid recharged periodic effs = do
   discoKind <- getsServer sdiscoKind
@@ -188,7 +188,7 @@ itemEffectDisco source target iid recharged periodic effs = do
 
 itemEffect :: (MonadAtomic m, MonadServer m)
            => ActorId -> ActorId -> ItemId -> Bool -> Bool
-           -> [Effect.Effect Int]
+           -> [IK.Effect Int]
            -> m Bool
 itemEffect source target iid recharged periodic effects = do
   trs <- mapM (effectSem source target iid recharged) effects
@@ -199,7 +199,7 @@ itemEffect source target iid recharged periodic effects = do
           || null effects  -- no effects present, no feedback needed
           || periodic  -- don't spam from fizzled periodic effects
           || bproj sb) $  -- don't spam, projectiles can be very numerous
-    execSfxAtomic $ SfxEffect (bfid sb) target $ Effect.NoEffect ""
+    execSfxAtomic $ SfxEffect (bfid sb) target $ IK.NoEffect ""
   return triggered
 
 -- | The source actor affects the target actor, with a given effect and power.
@@ -208,7 +208,7 @@ itemEffect source target iid recharged periodic effects = do
 -- The boolean result indicates if the effect actually fired up,
 -- as opposed to fizzled.
 effectSem :: (MonadAtomic m, MonadServer m)
-          => ActorId -> ActorId -> ItemId -> Bool -> Effect.Effect Int
+          => ActorId -> ActorId -> ItemId -> Bool -> IK.Effect Int
           -> m Bool
 effectSem source target iid recharged effect = do
   let recursiveCall = effectSem source target iid recharged
@@ -217,39 +217,39 @@ effectSem source target iid recharged effect = do
   -- and we are likely to introduce more variety.
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
   case effect of
-    Effect.NoEffect _ -> return False
-    Effect.RefillHP p -> effectRefillHP execSfx p source target
-    Effect.Hurt nDm -> effectHurt nDm source target False
-    Effect.RefillCalm p -> effectRefillCalm execSfx p target
-    Effect.Dominate -> effectDominate recursiveCall source target
-    Effect.Impress -> effectImpress execSfx source target
-    Effect.CallFriend p -> effectCallFriend p source target
-    Effect.Summon freqs p -> effectSummon recursiveCall freqs p source target
-    Effect.CreateItem p -> effectCreateItem p target
-    Effect.ApplyPerfume -> effectApplyPerfume execSfx target
-    Effect.Burn p -> effectBurn execSfx p source target
-    Effect.Ascend p -> effectAscend recursiveCall execSfx p target
-    Effect.Escape{} -> effectEscape target
-    Effect.Paralyze p -> effectParalyze execSfx p target
-    Effect.InsertMove p -> effectInsertMove execSfx p target
-    Effect.DropBestWeapon -> effectDropBestWeapon execSfx target
-    Effect.DropEqp symbol hit -> effectDropEqp execSfx hit target symbol
-    Effect.SendFlying tmod ->
+    IK.NoEffect _ -> return False
+    IK.RefillHP p -> effectRefillHP execSfx p source target
+    IK.Hurt nDm -> effectHurt nDm source target False
+    IK.RefillCalm p -> effectRefillCalm execSfx p target
+    IK.Dominate -> effectDominate recursiveCall source target
+    IK.Impress -> effectImpress execSfx source target
+    IK.CallFriend p -> effectCallFriend p source target
+    IK.Summon freqs p -> effectSummon recursiveCall freqs p source target
+    IK.CreateItem p -> effectCreateItem p target
+    IK.ApplyPerfume -> effectApplyPerfume execSfx target
+    IK.Burn p -> effectBurn execSfx p source target
+    IK.Ascend p -> effectAscend recursiveCall execSfx p target
+    IK.Escape{} -> effectEscape target
+    IK.Paralyze p -> effectParalyze execSfx p target
+    IK.InsertMove p -> effectInsertMove execSfx p target
+    IK.DropBestWeapon -> effectDropBestWeapon execSfx target
+    IK.DropEqp symbol hit -> effectDropEqp execSfx hit target symbol
+    IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target Nothing
-    Effect.PushActor tmod ->
+    IK.PushActor tmod ->
       effectSendFlying execSfx tmod source target (Just True)
-    Effect.PullActor tmod ->
+    IK.PullActor tmod ->
       effectSendFlying execSfx tmod source target (Just False)
-    Effect.Teleport p -> effectTeleport execSfx p target
-    Effect.PolyItem cstore -> effectPolyItem execSfx cstore target
-    Effect.Identify cstore -> effectIdentify execSfx cstore target
-    Effect.ActivateInv symbol -> effectActivateInv execSfx target symbol
-    Effect.Explode t -> effectExplode execSfx t target
-    Effect.OneOf l -> effectOneOf recursiveCall l
-    Effect.OnSmash _ -> return False  -- ignored under normal circumstances
-    Effect.Recharging e -> effectRecharging recursiveCall e recharged
-    Effect.CreateOrgan nDm t -> effectCreateOrgan target nDm t
-    Effect.Temporary _ -> effectTemporary execSfx source iid
+    IK.Teleport p -> effectTeleport execSfx p target
+    IK.PolyItem cstore -> effectPolyItem execSfx cstore target
+    IK.Identify cstore -> effectIdentify execSfx cstore target
+    IK.ActivateInv symbol -> effectActivateInv execSfx target symbol
+    IK.Explode t -> effectExplode execSfx t target
+    IK.OneOf l -> effectOneOf recursiveCall l
+    IK.OnSmash _ -> return False  -- ignored under normal circumstances
+    IK.Recharging e -> effectRecharging recursiveCall e recharged
+    IK.CreateOrgan nDm t -> effectCreateOrgan target nDm t
+    IK.Temporary _ -> effectTemporary execSfx source iid
 
 -- + Individual semantic functions for effects
 
@@ -260,7 +260,7 @@ effectRefillHP :: (MonadAtomic m, MonadServer m)
                => m () -> Int -> ActorId -> ActorId -> m Bool
 effectRefillHP execSfx power source target = do
   tb <- getsState $ getActorBody target
-  hpMax <- sumOrganEqpServer Effect.EqpSlotAddMaxHP target
+  hpMax <- sumOrganEqpServer IK.EqpSlotAddMaxHP target
   let deltaHP = min (xM power) (max 0 $ xM hpMax - bhp tb)
   if deltaHP == 0
     then return False
@@ -276,7 +276,7 @@ halveCalm :: (MonadAtomic m, MonadServer m)
 halveCalm target = do
   tb <- getsState $ getActorBody target
   activeItems <- activeItemsServer target
-  let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
+  let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
       calmUpperBound = if hpTooLow tb activeItems
                        then 0  -- to trigger domination, etc.
                        else xM calmMax `div` 2
@@ -307,8 +307,8 @@ effectHurt nDm source target silent = do
   when (source /= target && not (bproj tb)) $ halveCalm target
   unless silent $ execSfxAtomic $ SfxEffect (bfid sb) target $
     if source == target
-    then Effect.RefillHP deltaDiv  -- no SfxStrike, so treat as any heal/wound
-    else Effect.Hurt (Dice.intToDice deltaDiv)  -- SfxStrike sent, avoid spam
+    then IK.RefillHP deltaDiv  -- no SfxStrike, so treat as any heal/wound
+    else IK.Hurt (Dice.intToDice deltaDiv)  -- SfxStrike sent, avoid spam
   return True
 
 armorHurtBonus :: (MonadAtomic m, MonadServer m)
@@ -319,10 +319,10 @@ armorHurtBonus source target = do
   tactiveItems <- activeItemsServer target
   sb <- getsState $ getActorBody source
   return $! if bproj sb
-            then sumSlotNoFilter Effect.EqpSlotAddHurtRanged sactiveItems
-                 - sumSlotNoFilter Effect.EqpSlotAddArmorRanged tactiveItems
-            else sumSlotNoFilter Effect.EqpSlotAddHurtMelee sactiveItems
-                 - sumSlotNoFilter Effect.EqpSlotAddArmorMelee tactiveItems
+            then sumSlotNoFilter IK.EqpSlotAddHurtRanged sactiveItems
+                 - sumSlotNoFilter IK.EqpSlotAddArmorRanged tactiveItems
+            else sumSlotNoFilter IK.EqpSlotAddHurtMelee sactiveItems
+                 - sumSlotNoFilter IK.EqpSlotAddArmorMelee tactiveItems
 
 -- ** RefillCalm
 
@@ -330,7 +330,7 @@ effectRefillCalm ::  (MonadAtomic m, MonadServer m)
            => m () -> Int -> ActorId -> m Bool
 effectRefillCalm execSfx power target = do
   tb <- getsState $ getActorBody target
-  calmMax <- sumOrganEqpServer Effect.EqpSlotAddMaxCalm target
+  calmMax <- sumOrganEqpServer IK.EqpSlotAddMaxCalm target
   let deltaCalm = min (xM power) (max 0 $ xM calmMax - bcalm tb)
   if deltaCalm == 0
     then return False
@@ -342,7 +342,7 @@ effectRefillCalm execSfx power target = do
 -- ** Dominate
 
 effectDominate :: (MonadAtomic m, MonadServer m)
-               => (Effect.Effect Int -> m Bool)
+               => (IK.Effect Int -> m Bool)
                -> ActorId -> ActorId
                -> m Bool
 effectDominate recursiveCall source target = do
@@ -351,7 +351,7 @@ effectDominate recursiveCall source target = do
   if bproj tb then
     return False
   else if bfid tb == bfid sb then
-    recursiveCall Effect.Impress
+    recursiveCall IK.Impress
   else
     dominateFidSfx (bfid sb) target
 
@@ -384,10 +384,10 @@ effectCallFriend power source target = assert (power > 0) $ do
               && bhp sb >= xM 10  -- prevent spam from regenerating wimps
   if not legal then return False
   else do
-    let hpMax = max 1 $ sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
+    let hpMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
         deltaHP = - xM hpMax `div` 3
     execUpdAtomic $ UpdRefillHP source deltaHP
-    let validTile t = not $ Tile.hasFeature cotile F.NoActor t
+    let validTile t = not $ Tile.hasFeature cotile TK.NoActor t
         lid = blid sb
     ps <- getsState $ nearbyFreePoints validTile (bpos sb) lid
     time <- getsState $ getLocalTime lid
@@ -396,8 +396,8 @@ effectCallFriend power source target = assert (power > 0) $ do
 -- ** Summon
 
 effectSummon :: (MonadAtomic m, MonadServer m)
-             => (Effect.Effect Int -> m Bool)
-             -> Freqs -> Int
+             => (IK.Effect Int -> m Bool)
+             -> Freqs ItemKind -> Int
              -> ActorId -> ActorId
              -> m Bool
 effectSummon recursiveCall actorFreq power source target = assert (power > 0) $ do
@@ -408,10 +408,10 @@ effectSummon recursiveCall actorFreq power source target = assert (power > 0) $ 
   let legal = source == target && (bproj sb || calmEnough10 sb activeItems)
   if not legal then return False
   else do
-    let calmMax = max 1 $ sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
+    let calmMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
         deltaCalm = - xM calmMax `div` 3
     unless (bproj sb) $ execUpdAtomic $ UpdRefillCalm source deltaCalm
-    let validTile t = not $ Tile.hasFeature cotile F.NoActor t
+    let validTile t = not $ Tile.hasFeature cotile TK.NoActor t
     ps <- getsState $ nearbyFreePoints validTile (bpos sb) (blid sb)
     localTime <- getsState $ getLocalTime (blid sb)
     -- Make sure summoned actors start acting after the summoner.
@@ -422,7 +422,7 @@ effectSummon recursiveCall actorFreq power source target = assert (power > 0) $ 
       case maid of
         Nothing ->
           -- Don't make this item useless.
-          recursiveCall (Effect.CallFriend 1)
+          recursiveCall (IK.CallFriend 1)
         Just aid -> do
           b <- getsState $ getActorBody aid
           mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
@@ -470,7 +470,7 @@ effectBurn execSfx power source target = do
 
 -- Note that projectiles can be teleported, too, for extra fun.
 effectAscend :: (MonadAtomic m, MonadServer m)
-             => (Effect.Effect Int -> m Bool)
+             => (IK.Effect Int -> m Bool)
              -> m () -> Int -> ActorId
              -> m Bool
 effectAscend recursiveCall execSfx k aid = do
@@ -481,7 +481,7 @@ effectAscend recursiveCall execSfx k aid = do
   (lid2, pos2) <- getsState $ whereTo lid1 pos1 k . sdungeon
   if lid2 == lid1 && pos2 == pos1 then do
     execSfxAtomic $ SfxMsgFid (bfid b1) "No more levels in this direction."
-    recursiveCall $ Effect.Teleport 30  -- powerful teleport
+    recursiveCall $ IK.Teleport 30  -- powerful teleport
   else do
     let switch1 = void $ switchLevels1 ((aid, b1), ais1)
         switch2 = do
@@ -635,7 +635,7 @@ effectDropBestWeapon :: (MonadAtomic m, MonadServer m)
                      => m () -> ActorId -> m Bool
 effectDropBestWeapon execSfx target = do
   allAssocs <- fullAssocsServer target [CEqp]
-  case strongestSlotNoFilter Effect.EqpSlotWeapon allAssocs of
+  case strongestSlotNoFilter IK.EqpSlotWeapon allAssocs of
     (_, (iid, _)) : _ -> do
       b <- getsState $ getActorBody target
       let kit = beqp b EM.! iid
@@ -654,8 +654,8 @@ dropEqpItem :: (MonadAtomic m, MonadServer m)
 dropEqpItem aid b hit iid kit@(k, _) = do
   item <- getsState $ getItemBody iid
   let container = CActor aid CEqp
-      fragile = Effect.Fragile `elem` jfeature item
-      durable = Effect.Durable `elem` jfeature item
+      fragile = IK.Fragile `elem` jfeature item
+      durable = IK.Durable `elem` jfeature item
       isDestroyed = hit && not durable || bproj b && fragile
   if isDestroyed then do
     -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
@@ -705,10 +705,10 @@ effectTransformEqp execSfx target symbol cstore m = do
 -- boldpos is used, if it can't, a random outward vector of length 10
 -- is picked.
 effectSendFlying :: (MonadAtomic m, MonadServer m)
-                 => m () -> Effect.ThrowMod
+                 => m () -> IK.ThrowMod
                  -> ActorId -> ActorId -> Maybe Bool
                  -> m Bool
-effectSendFlying execSfx Effect.ThrowMod{..} source target modePush = do
+effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   v <- sendFlyingVector source target modePush
   Kind.COps{cotile} <- getsState scops
   tb <- getsState $ getActorBody target
@@ -781,7 +781,7 @@ effectTeleport execSfx range target = do
   tpos <- rndToAction $ findPosTry 200 ltile
     (\p t -> Tile.isWalkable cotile t
              && (not (dMinMax 9 p)  -- don't loop, very rare
-                 || not (Tile.hasFeature cotile F.NoActor t)
+                 || not (Tile.hasFeature cotile TK.NoActor t)
                     && unoccupied as p))
     [ dist $ 1
     , dist $ 1 + range `div` 9
@@ -807,7 +807,7 @@ effectPolyItem execSfx cstore target = do
     [] -> return False
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
       Just ItemDisco{itemKind} -> do
-        let maxCount = Dice.maxDice $ icount itemKind
+        let maxCount = Dice.maxDice $ IK.icount itemKind
         if itemK >= maxCount
         then do
           let c = CActor target cstore
@@ -835,7 +835,7 @@ effectIdentify execSfx cstore target = do
       Just ItemDisco{..} -> do
         -- TODO: use this (but faster, via traversing effects with 999)
         -- also to prevent sending any other UpdDiscover.
-        let ided = Effect.Identified `elem` ifeature itemKind
+        let ided = IK.Identified `elem` IK.ifeature itemKind
             itemSecret = itemNoAE itemFull
             c = CActor target cstore
             statsObvious = textAllAE False c itemFull
@@ -865,7 +865,7 @@ effectActivateInv execSfx target symbol = do
 -- ** Explode
 
 effectExplode :: (MonadAtomic m, MonadServer m)
-              => m () -> GroupName -> ActorId -> m Bool
+              => m () -> GroupName ItemKind -> ActorId -> m Bool
 effectExplode execSfx cgroup target = do
   tb <- getsState $ getActorBody target
   let itemFreq = [(cgroup, 1)]
@@ -914,8 +914,8 @@ effectExplode execSfx cgroup target = do
 -- ** OneOf
 
 effectOneOf :: (MonadAtomic m, MonadServer m)
-            => (Effect.Effect Int -> m Bool)
-            -> [Effect.Effect Int]
+            => (IK.Effect Int -> m Bool)
+            -> [IK.Effect Int]
             -> m Bool
 effectOneOf recursiveCall l = do
   ef <- rndToAction $ oneOf l
@@ -924,8 +924,8 @@ effectOneOf recursiveCall l = do
 -- ** Recharging
 
 effectRecharging :: (MonadAtomic m, MonadServer m)
-                 => (Effect.Effect Int -> m Bool)
-                 -> Effect.Effect Int -> Bool
+                 => (IK.Effect Int -> m Bool)
+                 -> IK.Effect Int -> Bool
                  -> m Bool
 effectRecharging recursiveCall e recharged =
   if recharged
@@ -935,7 +935,7 @@ effectRecharging recursiveCall e recharged =
 -- ** CreateOrgan
 
 effectCreateOrgan :: (MonadAtomic m, MonadServer m)
-                  => ActorId -> Dice.Dice -> GroupName
+                  => ActorId -> Dice.Dice -> GroupName ItemKind
                   -> m Bool
 effectCreateOrgan target nDm grp = do
   k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm

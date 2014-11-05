@@ -10,88 +10,87 @@ import Data.Maybe
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Dice as Dice
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 
 -- | How much AI benefits from applying the effect. Multipllied by item p.
 -- Negative means harm to the enemy when thrown at him. Effects with zero
 -- benefit won't ever be used, neither actively nor passively.
 effectToBenefit :: Kind.COps -> Actor -> [ItemFull] -> Faction
-                -> Effect.Effect Int -> Int
+                -> IK.Effect Int -> Int
 effectToBenefit cops b activeItems fact eff =
   let dungeonDweller = not $ fcanEscape $ gplayer fact
   in case eff of
-    Effect.NoEffect _ -> 0
-    Effect.RefillHP p ->
-      let hpMax = sumSlotNoFilter Effect.EqpSlotAddMaxHP activeItems
+    IK.NoEffect _ -> 0
+    IK.RefillHP p ->
+      let hpMax = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
       in if p > 0
          then 1 + 10 * min p (fromIntegral $ (xM hpMax - bhp b) `divUp` oneM)
          else max (-99) (10 * p)
-    Effect.Hurt d -> -(min 99 $ round (10 * Dice.meanDice d))
-    Effect.RefillCalm p ->
-      let calmMax = sumSlotNoFilter Effect.EqpSlotAddMaxCalm activeItems
+    IK.Hurt d -> -(min 99 $ round (10 * Dice.meanDice d))
+    IK.RefillCalm p ->
+      let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
       in if p > 0
          then 1 + min p (fromIntegral $ (xM calmMax - bcalm b) `divUp` oneM)
          else max (-20) p
-    Effect.Dominate -> -200
-    Effect.Impress -> -10
-    Effect.CallFriend p -> 20 * p
-    Effect.Summon{} | dungeonDweller -> 1 -- probably summons friends or crazies
-    Effect.Summon{} -> 0                  -- probably generates enemies
-    Effect.CreateItem p -> 20 * p
-    Effect.ApplyPerfume -> -10
-    Effect.Burn p -> -15 * p           -- usually splash damage, etc.
-    Effect.Ascend{} -> 1               -- change levels sensibly, in teams
-    Effect.Escape{} -> 10000           -- AI wants to win; spawners to guard
-    Effect.Paralyze p -> -20 * p
-    Effect.InsertMove p -> 50 * p
-    Effect.DropBestWeapon -> -50
-    Effect.DropEqp ' ' False -> -80
-    Effect.DropEqp ' ' True -> -100
-    Effect.DropEqp _ False -> -40
-    Effect.DropEqp _ True -> -50
-    Effect.SendFlying _ -> -10  -- but useful on self sometimes, too
-    Effect.PushActor _ -> -10  -- but useful on self sometimes, too
-    Effect.PullActor _ -> -10
-    Effect.Teleport p | p <= 9 -> 10  -- blink to shoot at foe
-    Effect.Teleport p | p <= 19 -> 1  -- neither escape nor repositioning
-    Effect.Teleport p -> -5 * p  -- get rid of the foe
-    Effect.PolyItem _ -> 0  -- AI would loop
-    Effect.Identify _ -> 0  -- AI would loop
-    Effect.ActivateInv ' ' -> -100
-    Effect.ActivateInv _ -> -50
-    Effect.Explode _ -> -10
-    Effect.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
-    Effect.OnSmash _ -> -10
-    Effect.Recharging e -> effectToBenefit cops b activeItems fact e
+    IK.Dominate -> -200
+    IK.Impress -> -10
+    IK.CallFriend p -> 20 * p
+    IK.Summon{} | dungeonDweller -> 1 -- probably summons friends or crazies
+    IK.Summon{} -> 0                  -- probably generates enemies
+    IK.CreateItem p -> 20 * p
+    IK.ApplyPerfume -> -10
+    IK.Burn p -> -15 * p           -- usually splash damage, etc.
+    IK.Ascend{} -> 1               -- change levels sensibly, in teams
+    IK.Escape{} -> 10000           -- AI wants to win; spawners to guard
+    IK.Paralyze p -> -20 * p
+    IK.InsertMove p -> 50 * p
+    IK.DropBestWeapon -> -50
+    IK.DropEqp ' ' False -> -80
+    IK.DropEqp ' ' True -> -100
+    IK.DropEqp _ False -> -40
+    IK.DropEqp _ True -> -50
+    IK.SendFlying _ -> -10  -- but useful on self sometimes, too
+    IK.PushActor _ -> -10  -- but useful on self sometimes, too
+    IK.PullActor _ -> -10
+    IK.Teleport p | p <= 9 -> 10  -- blink to shoot at foe
+    IK.Teleport p | p <= 19 -> 1  -- neither escape nor repositioning
+    IK.Teleport p -> -5 * p  -- get rid of the foe
+    IK.PolyItem _ -> 0  -- AI would loop
+    IK.Identify _ -> 0  -- AI would loop
+    IK.ActivateInv ' ' -> -100
+    IK.ActivateInv _ -> -50
+    IK.Explode _ -> -10
+    IK.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
+    IK.OnSmash _ -> -10
+    IK.Recharging e -> effectToBenefit cops b activeItems fact e
                            `divUp` 3  -- TODO: use Timeout
-    Effect.CreateOrgan _k _t -> 0  -- TODO: hard; look up t
+    IK.CreateOrgan _k _t -> 0  -- TODO: hard; look up t
                                    -- and also check if t active at the time
-    Effect.Temporary _ -> 0
+    IK.Temporary _ -> 0
 
 -- | Return the value to add to effect value and another to multiply it.
-aspectToBenefit :: Kind.COps -> Actor -> Effect.Aspect Int -> Int
+aspectToBenefit :: Kind.COps -> Actor -> IK.Aspect Int -> Int
 aspectToBenefit _cops _b asp =
   case asp of
-    Effect.Periodic{} -> 0
-    Effect.Timeout{} -> 0
-    Effect.AddMaxHP p -> p * 10
-    Effect.AddMaxCalm p -> p `divUp` 2
-    Effect.AddSpeed p -> p * 10000
-    Effect.AddSkills m -> 5 * sum (EM.elems m)
-    Effect.AddHurtMelee p -> p `divUp` 3
-    Effect.AddHurtRanged p -> p `divUp` 5
-    Effect.AddArmorMelee p -> p `divUp` 5
-    Effect.AddArmorRanged p -> p `divUp` 10
-    Effect.AddSight p -> p * 10
-    Effect.AddSmell p -> p * 2
-    Effect.AddLight p -> p * 10
+    IK.Periodic{} -> 0
+    IK.Timeout{} -> 0
+    IK.AddMaxHP p -> p * 10
+    IK.AddMaxCalm p -> p `divUp` 2
+    IK.AddSpeed p -> p * 10000
+    IK.AddSkills m -> 5 * sum (EM.elems m)
+    IK.AddHurtMelee p -> p `divUp` 3
+    IK.AddHurtRanged p -> p `divUp` 5
+    IK.AddArmorMelee p -> p `divUp` 5
+    IK.AddArmorRanged p -> p `divUp` 10
+    IK.AddSight p -> p * 10
+    IK.AddSmell p -> p * 2
+    IK.AddLight p -> p * 10
 
 -- | Determine the total benefit from having an item in eqp or inv,
 -- according to item type, and also the benefit confered by equipping the item
@@ -105,7 +104,7 @@ totalUsefulness cops b activeItems fact itemFull =
             periodicEffBens = map (effectToBenefit cops b activeItems fact)
                                   (allRecharging effects)
             periodicBens =
-              case strengthFromEqpSlot Effect.EqpSlotPeriodic itemFull of
+              case strengthFromEqpSlot IK.EqpSlotPeriodic itemFull of
                 Nothing -> []
                 Just timeout ->
                   map (\eff -> eff * 10 `divUp` timeout) periodicEffBens
@@ -116,7 +115,7 @@ totalUsefulness cops b activeItems fact itemFull =
                      else sum selfBens
             effSum = sum effBens
             isWeapon =
-              isJust (strengthFromEqpSlot Effect.EqpSlotWeapon itemFull)
+              isJust (strengthFromEqpSlot IK.EqpSlotWeapon itemFull)
             totalSum = if goesIntoInv $ itemBase itemFull
                        then effSum
                        else if isWeapon
@@ -126,13 +125,13 @@ totalUsefulness cops b activeItems fact itemFull =
   in case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
       Just $ ben jeffects jaspects
-    Just ItemDisco{itemKind=ItemKind{iaspects, ieffects}} ->
+    Just ItemDisco{itemKind=IK.ItemKind{iaspects, IK.ieffects}} ->
       let travA x =
-            St.evalState (Effect.aspectTrav x (return . round . Dice.meanDice))
+            St.evalState (IK.aspectTrav x (return . round . Dice.meanDice))
                          ()
           jaspects = map travA iaspects
           travE x =
-            St.evalState (Effect.effectTrav x (return . round . Dice.meanDice))
+            St.evalState (IK.effectTrav x (return . round . Dice.meanDice))
                          ()
           jeffects = map travE ieffects
       in Just $ ben jeffects jaspects

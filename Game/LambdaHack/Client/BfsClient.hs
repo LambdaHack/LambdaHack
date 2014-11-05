@@ -22,7 +22,7 @@ import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -33,7 +33,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Get cached BFS data and path or, if not stored, generate,
 -- store and return. Due to laziness, they are not calculated until needed.
@@ -239,7 +239,7 @@ closestTriggers onlyDir exploredToo aid = do
   let allExplored = ES.size explored == EM.size dungeon
       unexUp = onlyDir /= Just False && unexploredD 1 (blid body)
       unexDown = onlyDir /= Just True && unexploredD (-1) (blid body)
-      unexEffect (Effect.Ascend p) = if p > 0 then unexUp else unexDown
+      unexEffect (IK.Ascend p) = if p > 0 then unexUp else unexDown
       unexEffect _ =
         -- Escape (or guard) only after exploring, for high score, etc.
         allExplored

@@ -18,7 +18,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Effect as Effect
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -171,7 +171,7 @@ activatePeriodicLevel lid = do
   let activatePeriodicItem c aid (iid, kit) =
         case EM.lookup iid discoEffect of
           Just ItemAspectEffect{jeffects, jaspects} ->
-            if Effect.Periodic `elem` jaspects then
+            if IK.Periodic `elem` jaspects then
               -- In periodic activation, consider *only* recharging effects.
               effectAndDestroy aid aid iid c True
                                (allRecharging jeffects) jaspects kit
