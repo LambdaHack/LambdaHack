@@ -18,7 +18,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -31,6 +30,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.EndServer
@@ -275,13 +275,12 @@ handleActors lid = do
             hasWait _ = False
         maybe skip (setBWait (hasWait cmdS)) aidNew
         -- Advance time once, after the leader switched perhaps many times.
-        -- TODO: this is correct only when all heroes have the same
-        -- speed and can't switch leaders by, e.g., aiming a wand
-        -- of domination. We need to generalize by displaying
-        -- "(next move in .3s [RET]" when switching leaders.
-        -- RET waits .3s and gives back control,
-        -- Any other key does the .3s wait and the action from the key
-        -- at once.
+        -- Sometimes this may result in a double move of the new leader,
+        -- followed by a double pause. Or a fractional variant of that.
+        -- In this setup, reading a scroll of Previous Leader is a free action
+        -- for the old leader, but otherwise his time is undisturbed.
+        -- He is able to move normally in the same turn, immediately
+        -- after the new leader completes his move.
         maybe skip advanceTime aidNew
       else do
         -- Clear messages in the UI client (if any), if the actor
