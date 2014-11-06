@@ -874,7 +874,7 @@ effectExplode execSfx cgroup target = do
   tb <- getsState $ getActorBody target
   let itemFreq = [(cgroup, 1)]
       container = CActor target CEqp
-  m2 <- rollAndRegisterItem (blid tb) itemFreq container False
+  m2 <- rollAndRegisterItem (blid tb) itemFreq container False Nothing
   let (iid, (ItemFull{..}, _)) = fromMaybe (assert `failure` cgroup) m2
       Point x y = bpos tb
       projectN k100 (n, _) = do

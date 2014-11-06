@@ -348,7 +348,7 @@ addActor actorGroup bfid pos lid tweakBody bpronoun time = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- contains the constant properties.
   let trunkFreq = [(actorGroup, 1)]
-  m2 <- rollAndRegisterItem lid trunkFreq (CTrunk bfid lid pos) False
+  m2 <- rollAndRegisterItem lid trunkFreq (CTrunk bfid lid pos) False Nothing
   case m2 of
     Nothing -> return Nothing
     Just (trunkId, (trunkFull, _)) ->
@@ -381,7 +381,7 @@ addActorIid trunkId trunkFull@ItemFull{..}
                  hp * 2 ^ abs diffBonusCoeff
              | otherwise = hp
       bonusHP = fromIntegral $ (diffHP - hp) `divUp` oneM
-      healthOrgans = replicate bonusHP ("bonus HP", COrgan)
+      healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
       bsymbol = jsymbol itemBase
       bname = jname itemBase
       bcolor = flavourToColor $ jflavour itemBase
@@ -394,11 +394,11 @@ addActorIid trunkId trunkFull@ItemFull{..}
   execUpdAtomic $ UpdCreateActor aid (tweakBody withTrunk) [(trunkId, itemBase)]
   -- Create, register and insert all initial actor items, including
   -- the bonus health organs from difficulty setting.
-  -- TODO: optimize creation of healthOrgans.
-  forM_ (IK.ikit trunkKind ++ healthOrgans) $ \(ikText, cstore) -> do
+  forM_ (healthOrgans ++ map (Nothing,) (IK.ikit trunkKind))
+        $ \(mk, (ikText, cstore)) -> do
     let container = CActor aid cstore
         itemFreq = [(ikText, 1)]
-    void $ rollAndRegisterItem lid itemFreq container False
+    void $ rollAndRegisterItem lid itemFreq container False mk
   return $ Just aid
 
 -- Server has to pick a random weapon or it could leak item discovery

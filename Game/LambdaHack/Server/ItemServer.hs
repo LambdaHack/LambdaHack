@@ -9,6 +9,7 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.HashMap.Strict as HM
 import Data.Key (mapWithKeyM_)
+import Data.Maybe
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
@@ -56,7 +57,8 @@ createItems :: (MonadAtomic m, MonadServer m)
 createItems n pos lid = do
   Level{litemFreq} <- getLevel lid
   let container = CFloor lid pos
-  replicateM_ n $ void $ rollAndRegisterItem lid litemFreq container True
+  replicateM_ n $ void $
+    rollAndRegisterItem lid litemFreq container True Nothing
 
 embedItem :: (MonadAtomic m, MonadServer m)
           => LevelId -> Point -> Kind.Id TileKind -> m ()
@@ -70,7 +72,7 @@ embedItem lid pos tk = do
                     then [("hero", 1)]  -- hack: the bag, not item, is relevant
                     else []
       container = CEmbed lid pos
-  void $ rollAndRegisterItem lid itemFreq container False
+  void $ rollAndRegisterItem lid itemFreq container False Nothing
 
 rollItem :: (MonadAtomic m, MonadServer m)
          => LevelId -> Freqs ItemKind
@@ -85,12 +87,14 @@ rollItem lid itemFreq = do
 
 rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
                     => LevelId -> Freqs ItemKind -> Container -> Bool
+                    -> Maybe Int
                     -> m (Maybe (ItemId, (ItemFull, GroupName ItemKind)))
-rollAndRegisterItem lid itemFreq container verbose = do
+rollAndRegisterItem lid itemFreq container verbose mk = do
   m4 <- rollItem lid itemFreq
   case m4 of
     Nothing -> return Nothing
-    Just (itemKnown, itemFull, seed, itemGroup) -> do
+    Just (itemKnown, itemFullRaw, seed, itemGroup) -> do
+      let itemFull = itemFullRaw {itemK = fromMaybe (itemK itemFullRaw) mk}
       iid <- registerItem (itemBase itemFull) itemKnown seed
                           (itemK itemFull) container verbose
       return $ Just (iid, (itemFull, itemGroup))
