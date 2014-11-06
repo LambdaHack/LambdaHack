@@ -336,9 +336,9 @@ ring = ItemKind
   , iverbHit = "knock"
   , iweight  = 15
   , iaspects = []
-  , ieffects = [Explode "explosion blast 2"]
+  , ieffects = [Explode "blast 2"]
   , ifeature = [Precious, Identified]
-  , idesc    = "It looks like an ordinary object, but it's in fact a generator of exceptional effects: adding to some of your natural abilities and subtracting from others. You'd profit enormously if you could find a way to multiply such generators..."
+  , idesc    = "It looks like an ordinary object, but it's in fact a generator of exceptional effects: adding to some of your natural abilities and subtracting from others. You'd profit enormously if you could find a way to multiply such generators."
   , ikit     = []
   }
 ring1 = ring
@@ -410,7 +410,7 @@ potion5 = potion
                , OnSmash (OneOf [ Explode "healing mist"
                                 , Explode "wounding mist"
                                 , Explode "fragrance"
-                                , Explode "explosion blast 10" ]) ]
+                                , Explode "blast 10" ]) ]
   }
 potion6 = potion
   { irarity  = [(3, 3), (10, 6)]
@@ -420,7 +420,7 @@ potion6 = potion
                                 , Explode "healing mist 2"
                                 , Explode "pheromone"
                                 , Explode "distortion"  -- outlier, OK
-                                , Explode "explosion blast 20" ]) ]
+                                , Explode "blast 20" ]) ]
   }
 potion7 = potion  -- used only as initial equipment; count betrays identity
   { ifreq    = [("useful", 100), ("potion of glue", 1)]

@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.ItemStrongest
   , strongestSlotNoFilter, strongestSlot, sumSlotNoFilter, sumSkills
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
-  , unknownMelee, allRecharging, stripRecharging
+  , unknownMelee, allRecharging, stripRecharging, stripOnSmash
   ) where
 
 import Control.Applicative
@@ -285,3 +285,10 @@ stripRecharging effs =
       getRechargingEffect (Recharging e) = Just e
       getRechargingEffect _ = Nothing
   in mapMaybe getRechargingEffect effs
+
+stripOnSmash :: [Effect a] -> [Effect a]
+stripOnSmash effs =
+  let getOnSmashEffect :: Effect a -> Maybe (Effect a)
+      getOnSmashEffect (OnSmash e) = Just e
+      getOnSmashEffect _ = Nothing
+  in mapMaybe getOnSmashEffect effs

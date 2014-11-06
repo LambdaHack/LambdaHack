@@ -71,6 +71,9 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
           hurtEffect :: IK.Effect a -> Bool
           hurtEffect (IK.Hurt _) = True
           hurtEffect _ = False
+          notDetail :: IK.Effect a -> Bool
+          notDetail IK.Explode{} = fullInfo
+          notDetail _ = True
           cstore = storeFromC c
           active = cstore `elem` [CEqp, COrgan]
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
@@ -82,7 +85,8 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
             let mperiodic = find periodicAspect aspects
                 mtimeout = find timeoutAspect aspects
                 restAs = sort aspects
-                (hurtEs, restEs) = partition hurtEffect $ sort effects
+                (hurtEs, restEs) = partition hurtEffect $ sort
+                                   $ filter notDetail effects
                 aes = map ppE hurtEs
                       ++ if active
                          then map ppA restAs ++ map ppE restEs
@@ -90,12 +94,14 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
                 rechargingTs = T.intercalate (T.singleton ' ')
                                $ filter (not . T.null)
                                $ map ppE $ stripRecharging restEs
+                onSmashTs = T.intercalate (T.singleton ' ')
+                            $ filter (not . T.null)
+                            $ map ppE $ stripOnSmash restEs
                 periodicOrTimeout = case mperiodic of
                   _ | T.null rechargingTs -> ""
                   Just IK.Periodic ->
                     case mtimeout of
                       Just (IK.Timeout t) ->
-                        -- TODO: let t = 100 `div` p
                         "(every" <+> tshow t <> ":"
                         <+> rechargingTs <> ")"
                       _ -> ""
@@ -104,7 +110,9 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
                       "(timeout" <+> tshow t <> ":"
                       <+> rechargingTs <> ")"
                     _ -> ""
-            in [periodicOrTimeout] ++ aes
+                onSmash = if T.null onSmashTs then ""
+                          else "(on smash:" <+> onSmashTs <> ")"
+            in [periodicOrTimeout] ++ aes ++ [onSmash | fullInfo]
           aets = case itemAE of
             Just ItemAspectEffect{jaspects, jeffects} ->
               splitAE jaspects aspectToSuffix

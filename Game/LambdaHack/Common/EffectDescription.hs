@@ -95,11 +95,11 @@ rawEffectToSuff effectText effectMInt =
     (Identify _cstore, _) -> "of identify"  -- <+> ppCStore cstore
     (ActivateInv ' ', _) -> "of inventory burst"
     (ActivateInv symbol, _) -> "of burst '" <> T.singleton symbol <> "'"
-    (Explode _, _) -> "of explosion"  -- TODO: first word + explosion? nothing?
+    (Explode t, _) -> "of explosion '" <> tshow t <> "'"
     (OneOf l, _) ->
       let subject = if length l <= 5 then "marvel" else "wonder"
       in makePhrase ["of", MU.CardinalWs (length l) subject]
-    (OnSmash _, _) -> ""  -- conditional effect, TMI
+    (OnSmash _, _) -> ""  -- printed inside a separate section
     (Recharging _, _) -> ""  -- printed inside Periodic or Timeout
     (CreateOrgan k t, _) ->
       let stime = if k == 0 then "" else tshow k <> ":"
@@ -141,13 +141,13 @@ featureToSuff :: Feature -> Text
 featureToSuff feat =
   case feat of
     ChangeTo t -> wrapInChevrons $ "changes to" <+> tshow t
-    Fragile -> wrapInChevrons $ "fragile"
-    Durable -> wrapInChevrons $ "durable"
+    Fragile -> wrapInChevrons "fragile"
+    Durable -> wrapInChevrons "durable"
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
     Identified -> ""
     Applicable -> ""
     EqpSlot{} -> ""
-    Precious -> ""
+    Precious -> wrapInChevrons "precious"
     Tactic tactics -> "overrides tactics to" <+> tshow tactics
 
 dropPlus :: Text -> Text

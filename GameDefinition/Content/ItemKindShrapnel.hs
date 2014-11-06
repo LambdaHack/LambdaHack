@@ -40,8 +40,8 @@ burningOil4 = burningOil 4
 explosionBlast :: Int -> ItemKind
 explosionBlast n = ItemKind
   { isymbol  = '*'
-  , iname    = "explosion blast"
-  , ifreq    = [(toGroupName $ "explosion blast" <+> tshow n, 1)]
+  , iname    = "blast"
+  , ifreq    = [(toGroupName $ "blast" <+> tshow n, 1)]
   , iflavour = zipPlain [BrRed]
   , icount   = 12  -- strong, but few, so not always hits target
   , irarity  = [(1, 1)]
