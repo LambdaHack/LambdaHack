@@ -8,7 +8,8 @@ module Game.LambdaHack.Common.Actor
   , Actor(..), ResDelta(..)
   , deltaSerious, deltaMild, xM, minusM, minusTwoM, oneM
   , bspeed, actorTemplate, timeShiftFromSpeed, braced, waitedLastTurn
-  , actorDying, actorNewBorn, hpTooLow, unoccupied
+  , actorDying, actorNewBorn, unoccupied
+  , hpTooLow, calmEnough, calmEnough10, hpEnough, hpEnough10
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
   , mapActorItems_, ppCStore, ppContainer
@@ -23,7 +24,6 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
@@ -31,6 +31,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | Actor properties that are changing throughout the game.
 -- If they are dublets of properties from @ActorKind@,
@@ -171,7 +172,23 @@ actorNewBorn b = boldpos b == Point 0 0
 hpTooLow :: Actor -> [ItemFull] -> Bool
 hpTooLow b activeItems =
   let maxHP = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
-  in bhp b <= oneM || 5 * bhp b < xM maxHP
+  in bhp b <= oneM || 5 * bhp b < xM maxHP && bhp b < xM 10
+
+calmEnough :: Actor -> [ItemFull] -> Bool
+calmEnough b activeItems =
+  let calmMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
+  in 2 * xM calmMax <= 3 * bcalm b
+
+calmEnough10 :: Actor -> [ItemFull] -> Bool
+calmEnough10 b activeItems = calmEnough b activeItems && bcalm b >= xM 10
+
+hpEnough :: Actor -> [ItemFull] -> Bool
+hpEnough b activeItems =
+  let hpMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
+  in 2 * xM hpMax <= 3 * bhp b
+
+hpEnough10 :: Actor -> [ItemFull] -> Bool
+hpEnough10 b activeItems = hpEnough b activeItems && bhp b >= xM 10
 
 -- | Checks for the presence of actors in a position.
 -- Does not check if the tile is walkable.

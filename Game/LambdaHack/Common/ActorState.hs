@@ -10,8 +10,7 @@ module Game.LambdaHack.Common.ActorState
   , getCBag, getActorBag, getBodyActorBag, getActorAssocs
   , nearbyFreePoints, whereTo, getCarriedAssocs
   , posToActors, posToActor, getItemBody, memActor, getActorBody
-  , tryFindHeroK, getLocalTime
-  , itemPrice, calmEnough, calmEnough10, hpEnough, regenCalmDelta
+  , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, maxActorSkills, dispEnemy, radiusBlind
   , fullAssocs, itemToFull, goesIntoInv, eqpOverfull, storeFromC, lidFromC
   ) where
@@ -25,7 +24,6 @@ import Data.Maybe
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -37,6 +35,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 
@@ -265,19 +264,6 @@ getActorAssocsK aid cstore s = bagAssocsK s $ getActorBag aid cstore s
 memActor :: ActorId -> LevelId -> State -> Bool
 memActor aid lid s =
   maybe False ((== lid) . blid) $ EM.lookup aid $ sactorD s
-
-calmEnough :: Actor -> [ItemFull] -> Bool
-calmEnough b activeItems =
-  let calmMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
-  in 2 * xM calmMax <= 3 * bcalm b
-
-calmEnough10 :: Actor -> [ItemFull] -> Bool
-calmEnough10 b activeItems = calmEnough b activeItems && bcalm b >= xM 10
-
-hpEnough :: Actor -> [ItemFull] -> Bool
-hpEnough b activeItems =
-  let hpMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
-  in 2 * xM hpMax <= 3 * bhp b
 
 -- | Get current time from the dungeon data.
 getLocalTime :: LevelId -> State -> Time

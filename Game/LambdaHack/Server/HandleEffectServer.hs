@@ -380,8 +380,7 @@ effectCallFriend power source target = assert (power > 0) $ do
   sb <- getsState $ getActorBody source
   activeItems <- activeItemsServer source
   let legal = source == target
-              && hpEnough sb activeItems
-              && bhp sb >= xM 10  -- prevent spam from regenerating wimps
+              && hpEnough10 sb activeItems  -- prevent spam from regen wimps
   if not legal then return False
   else do
     let hpMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
