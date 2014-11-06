@@ -56,18 +56,18 @@ install:
      export PATH=/opt/alex/3.1.3/bin:/opt/happy/1.19.4/bin:$PATH
    else
      travis_retry sudo apt-get install happy alex
-     cabal-1.18 install Cabal-1.18.0
+     cabal-1.18 install -j2 Cabal-1.18.0
    fi
 
 # mine:
- - cabal-1.18 install gtk2hs-buildtools
- - cabal-1.18 install -O2 -frelease --only-dependencies --force-reinstalls
- - cabal-1.18 install -f-release --enable-tests
+ - cabal-1.18 install -j2 gtk2hs-buildtools
+ - cabal-1.18 install -j2 -O2 -frelease --only-dependencies --force-reinstalls
+ - cabal-1.18 install -j2 -f-release --enable-tests
 
-# - cabal-1.18 install -O2 -frelease -fcurses --only-dependencies --force-reinstalls
+# - cabal-1.18 instal -j2l -O2 -frelease -fcurses --only-dependencies --force-reinstalls
 # - cabal-1.18 configure -f-release -fcurses
-# - cabal-1.18 build
- - cabal-1.18 install -O2 -frelease -fvty --only-dependencies --force-reinstalls
+# - cabal-1.18 build -j2
+ - cabal-1.18 install -j2 -O2 -frelease -fvty --only-dependencies --force-reinstalls
 # 7.6.3 has broken -O2, apparently
  - |
    if [ $GHCVER = "head" ] || [ ${GHCVER%.*} = "7.8" ]; then
@@ -75,7 +75,7 @@ install:
    else
      cabal-1.18 configure -f-release -fvty --enable-tests
    fi
- - cabal-1.18 build
+ - cabal-1.18 build -j2
  - cabal-1.18 test
 
 # Here starts the actual work to be performed for the package under
@@ -92,7 +92,7 @@ script:
  - export SRC_TGZ=$(cabal-1.18 info . | awk '{print $2 ".tar.gz";exit}');
    cd dist/;
    if [ -f "$SRC_TGZ" ]; then
-      cabal-1.18 install "$SRC_TGZ";
+      cabal-1.18 install -j2 "$SRC_TGZ";
    else
       echo "expected '$SRC_TGZ' not found";
       exit 1;
