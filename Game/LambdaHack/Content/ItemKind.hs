@@ -55,7 +55,9 @@ data Effect a =
   | Explode !(GroupName ItemKind)
                           -- ^ explode, producing this group of shrapnel
   | RefillHP !Int
+  | OverfillHP !Int
   | RefillCalm !Int
+  | OverfillCalm !Int
   | Dominate
   | Impress
   | CallFriend !a
@@ -170,8 +172,10 @@ instance Binary EqpSlot
 effectTrav :: Effect a -> (a -> St.State s b) -> St.State s (Effect b)
 effectTrav (NoEffect t) _ = return $! NoEffect t
 effectTrav (RefillHP p) _ = return $! RefillHP p
+effectTrav (OverfillHP p) _ = return $! OverfillHP p
 effectTrav (Hurt dice) _ = return $! Hurt dice
 effectTrav (RefillCalm p) _ = return $! RefillCalm p
+effectTrav (OverfillCalm p) _ = return $! OverfillCalm p
 effectTrav Dominate _ = return Dominate
 effectTrav Impress _ = return Impress
 effectTrav (CallFriend a) f = do

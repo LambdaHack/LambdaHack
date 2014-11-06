@@ -29,13 +29,23 @@ rawEffectToSuff :: Effect Text -> Effect (Maybe Int) -> Text
 rawEffectToSuff effectText effectMInt =
   case (effectText, effectMInt) of
     (NoEffect t, _) -> t
-    (RefillHP p, _) | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
+    (RefillHP p, _) | p > 0 ->
+      "of limited healing" <+> wrapInParens (affixBonus p)
     (RefillHP 0, _) -> assert `failure` (effectText, effectMInt)
-    (RefillHP p, _) -> "of wounding" <+> wrapInParens (affixBonus p)
+    (RefillHP p, _) ->
+      "of limited wounding" <+> wrapInParens (affixBonus p)
+    (OverfillHP p, _) | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
+    (OverfillHP 0, _) -> assert `failure` (effectText, effectMInt)
+    (OverfillHP p, _) -> "of wounding" <+> wrapInParens (affixBonus p)
     (Hurt dice, _) -> wrapInParens (tshow dice)
-    (RefillCalm p, _) | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
+    (RefillCalm p, _) | p > 0 ->
+      "of limited soothing" <+> wrapInParens (affixBonus p)
     (RefillCalm 0, _) -> assert `failure` (effectText, effectMInt)
-    (RefillCalm p, _) -> "of dismaying" <+> wrapInParens (affixBonus p)
+    (RefillCalm p, _) ->
+      "of limited dismaying" <+> wrapInParens (affixBonus p)
+    (OverfillCalm p, _) | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
+    (OverfillCalm 0, _) -> assert `failure` (effectText, effectMInt)
+    (OverfillCalm p, _) -> "of dismaying" <+> wrapInParens (affixBonus p)
     (Dominate, _) -> "of domination"
     (Impress, _) -> "of impression"
     (_, CallFriend (Just 1)) -> "of aid calling"

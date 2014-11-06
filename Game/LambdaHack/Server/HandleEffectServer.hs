@@ -206,9 +206,11 @@ effectSem source target iid recharged effect = do
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
   case effect of
     IK.NoEffect _ -> return False
-    IK.RefillHP p -> effectRefillHP execSfx p source target
+    IK.RefillHP p -> effectRefillHP False execSfx p source target
+    IK.OverfillHP p -> effectRefillHP True execSfx p source target
     IK.Hurt nDm -> effectHurt nDm source target False
-    IK.RefillCalm p -> effectRefillCalm execSfx p target
+    IK.RefillCalm p -> effectRefillCalm False execSfx p target
+    IK.OverfillCalm p -> effectRefillCalm True execSfx p target
     IK.Dominate -> effectDominate recursiveCall source target
     IK.Impress -> effectImpress execSfx source target
     IK.CallFriend p -> effectCallFriend p source target
@@ -245,17 +247,21 @@ effectSem source target iid recharged effect = do
 
 -- Unaffected by armor.
 effectRefillHP :: (MonadAtomic m, MonadServer m)
-               => m () -> Int -> ActorId -> ActorId -> m Bool
-effectRefillHP execSfx power source target = do
+               => Bool -> m () -> Int -> ActorId -> ActorId -> m Bool
+effectRefillHP overfill execSfx power source target = do
   tb <- getsState $ getActorBody target
   hpMax <- sumOrganEqpServer IK.EqpSlotAddMaxHP target
-  let deltaHP = min (xM power) (max 0 $ xM hpMax - bhp tb)
+  let overMax | overfill = xM hpMax * 10  -- arbitrary limit to scumming
+              | otherwise = xM hpMax
+      serious = overfill && source /= target && not (bproj tb)
+      upperBound = if serious then xM hpMax else maxBound
+      deltaHP | power > 0 = min (xM power) (max 0 $ overMax - bhp tb)
+              | otherwise = min (xM power) (upperBound - bhp tb)
   if deltaHP == 0
     then return False
     else do
       execUpdAtomic $ UpdRefillHP target deltaHP
-      when (deltaHP < 0 && source /= target && not (bproj tb)) $
-        halveCalm target
+      when (deltaHP < 0 && serious) $ halveCalm target
       execSfx
       return True
 
@@ -265,13 +271,13 @@ halveCalm target = do
   tb <- getsState $ getActorBody target
   activeItems <- activeItemsServer target
   let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
-      calmUpperBound = if hpTooLow tb activeItems
-                       then 0  -- to trigger domination, etc.
-                       else xM calmMax `div` 2
-      deltaCalm = min minusTwoM (calmUpperBound - bcalm tb)
+      upperBound = if hpTooLow tb activeItems
+                   then 0  -- to trigger domination, etc.
+                   else max (xM calmMax) (bcalm tb) `div` 2
+      deltaCalm = min minusTwoM (upperBound - bcalm tb)
   -- HP loss decreases Calm by at least minusTwoM, to overcome Calm regen,
   -- when far from shooting foe and to avoid "hears something",
-  -- which is emitted for decrease minusM.
+  -- which is emitted for decrease @minusM@.
   execUpdAtomic $ UpdRefillCalm target deltaCalm
 
 -- ** Hurt
@@ -283,16 +289,20 @@ effectHurt :: (MonadAtomic m, MonadServer m)
 effectHurt nDm source target silent = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
+  hpMax <- sumOrganEqpServer IK.EqpSlotAddMaxHP target
   n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   hurtBonus <- armorHurtBonus source target
   let block = braced tb
       mult = (100 + hurtBonus) * (if block then 50 else 100)
-      deltaHP = - (max oneM  -- at least 1 HP taken
-                   $ fromIntegral mult * xM n `divUp` (100 * 100))
+      rawDeltaHP = - (max oneM  -- at least 1 HP taken
+                          (fromIntegral mult * xM n `divUp` (100 * 100)))
+      serious = source /= target && not (bproj tb)
+      upperBound = if serious then xM hpMax else maxBound
+      deltaHP = min rawDeltaHP (upperBound - bhp tb)
       deltaDiv = fromIntegral $ deltaHP `divUp` oneM
   -- Damage the target.
   execUpdAtomic $ UpdRefillHP target deltaHP
-  when (source /= target && not (bproj tb)) $ halveCalm target
+  when serious $ halveCalm target
   unless silent $ execSfxAtomic $ SfxEffect (bfid sb) target $
     if source == target
     then IK.RefillHP deltaDiv  -- no SfxStrike, so treat as any heal/wound
@@ -315,11 +325,13 @@ armorHurtBonus source target = do
 -- ** RefillCalm
 
 effectRefillCalm ::  (MonadAtomic m, MonadServer m)
-           => m () -> Int -> ActorId -> m Bool
-effectRefillCalm execSfx power target = do
+           => Bool -> m () -> Int -> ActorId -> m Bool
+effectRefillCalm overfill execSfx power target = do
   tb <- getsState $ getActorBody target
   calmMax <- sumOrganEqpServer IK.EqpSlotAddMaxCalm target
-  let deltaCalm = min (xM power) (max 0 $ xM calmMax - bcalm tb)
+  let overMax | overfill = xM calmMax * 10  -- arbitrary limit to scumming
+              | otherwise = xM calmMax
+  let deltaCalm = min (xM power) (max 0 $ overMax - bcalm tb)
   if deltaCalm == 0
     then return False
     else do

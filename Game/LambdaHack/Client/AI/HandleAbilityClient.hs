@@ -29,7 +29,6 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
@@ -45,6 +44,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -594,6 +594,7 @@ applyItem aid applyGroup = do
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
           let getP (IK.RefillHP p) _ | p > 0 = True
+              getP (IK.OverfillHP p) _ | p > 0 = True
               getP _ acc = acc
           in case itemDisco itemFull of
             Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->

@@ -33,11 +33,21 @@ effectToBenefit cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
       in if p > 0
          then 1 + 10 * min p (fromIntegral $ (xM hpMax - bhp b) `divUp` oneM)
          else max (-99) (10 * p)
+    IK.OverfillHP p ->
+      let hpMax = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
+      in if p > 0
+         then 2 + 10 * min p (fromIntegral $ (xM hpMax - bhp b) `divUp` oneM)
+         else max (-99) (10 * p)
     IK.Hurt d -> -(min 99 $ round (10 * Dice.meanDice d))
     IK.RefillCalm p ->
       let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
       in if p > 0
          then 1 + min p (fromIntegral $ (xM calmMax - bcalm b) `divUp` oneM)
+         else max (-20) p
+    IK.OverfillCalm p ->
+      let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
+      in if p > 0
+         then 2 + min p (fromIntegral $ (xM calmMax - bcalm b) `divUp` oneM)
          else max (-20) p
     IK.Dominate -> -200
     IK.Impress -> -10

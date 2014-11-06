@@ -537,6 +537,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               IK.Hurt p | deadPreviousTurn (xM $ Dice.maxDice p) ->
                 (True, hurtExtra)
               IK.RefillHP p | deadPreviousTurn (xM p) -> (True, hurtExtra)
+              IK.OverfillHP p | deadPreviousTurn (xM p) -> (True, hurtExtra)
               _ -> (False, firstFall)
           msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
       msgAdd msgDie
@@ -566,6 +567,22 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs
+        IK.OverfillHP p | p > 0 -> do
+          if fid == side then
+            actorVerbMU aid b "feel healthier"
+          else
+            actorVerbMU aid b "look healthier"
+          let ps = (bpos b, bpos b)
+          animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
+          displayActorStart b animFrs
+        IK.OverfillHP _ -> do
+          if fid == side then
+            actorVerbMU aid b "feel wounded"
+          else
+            actorVerbMU aid b "look wounded"
+          let ps = (bpos b, bpos b)
+          animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
+          displayActorStart b animFrs
         IK.Hurt{} -> skip  -- avoid spam; SfxStrike just sent
         IK.RefillCalm p | p == 1 -> skip  -- no spam from regen items
         IK.RefillCalm p | p > 0 -> do
@@ -577,6 +594,22 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
           displayActorStart b animFrs
         IK.RefillCalm _ -> do
+          if fid == side then
+            actorVerbMU aid b "feel agitated"
+          else
+            actorVerbMU aid b "look agitated"
+          let ps = (bpos b, bpos b)
+          animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
+          displayActorStart b animFrs
+        IK.OverfillCalm p | p > 0 -> do
+          if fid == side then
+            actorVerbMU aid b "feel calmer"
+          else
+            actorVerbMU aid b "look calmer"
+          let ps = (bpos b, bpos b)
+          animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
+          displayActorStart b animFrs
+        IK.OverfillCalm _ -> do
           if fid == side then
             actorVerbMU aid b "feel agitated"
           else
