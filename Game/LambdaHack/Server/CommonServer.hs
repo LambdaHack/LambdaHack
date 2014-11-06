@@ -11,7 +11,6 @@ import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
-import Data.Int (Int64)
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
@@ -373,12 +372,16 @@ addActorIid trunkId trunkFull@ItemFull{..}
   Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   nU <- nUI
-  -- If no UI factions, the difficulty applies to the escapees (for testing).
-  let diffHP | fhasUI gplayer || nU == 0 && fcanEscape gplayer =
-        (ceiling :: Double -> Int64)
-        $ fromIntegral hp
-          * 1.5 ^^ difficultyCoeff sdifficultySer
+  -- If difficulty is below standard, HP is added to the UI factions,
+  -- otherwise HP is added to their enemies.
+  -- If no UI factions, their role is taken by the escapees (for testing).
+  let diffBonusCoeff = difficultyCoeff sdifficultySer
+      hasUIorEscapes = fhasUI gplayer || nU == 0 && fcanEscape gplayer
+      diffHP | (diffBonusCoeff > 0) == hasUIorEscapes =
+                 hp * 2 ^ abs diffBonusCoeff
              | otherwise = hp
+      bonusHP = fromIntegral $ (diffHP - hp) `divUp` oneM
+      healthOrgans = replicate bonusHP ("bonus HP", COrgan)
       bsymbol = jsymbol itemBase
       bname = jname itemBase
       bcolor = flavourToColor $ jflavour itemBase
@@ -389,8 +392,10 @@ addActorIid trunkId trunkFull@ItemFull{..}
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
   execUpdAtomic $ UpdCreateActor aid (tweakBody withTrunk) [(trunkId, itemBase)]
-  -- Create, register and insert all initial actor items.
-  forM_ (IK.ikit trunkKind) $ \(ikText, cstore) -> do
+  -- Create, register and insert all initial actor items, including
+  -- the bonus health organs from difficulty setting.
+  -- TODO: optimize creation of healthOrgans.
+  forM_ (IK.ikit trunkKind ++ healthOrgans) $ \(ikText, cstore) -> do
     let container = CActor aid cstore
         itemFreq = [(ikText, 1)]
     void $ rollAndRegisterItem lid itemFreq container False

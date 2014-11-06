@@ -10,9 +10,9 @@ import Game.LambdaHack.Content.ItemKind
 
 organs :: [ItemKind]
 organs =
-  [fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, sting, venomTooth, venomFang, largeTail, jaw, largeJaw, tooth, pupil, armoredSkin, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, eye2, eye3, eye4, eye5, nostril, thorn, vent, fissure]
+  [fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, sting, venomTooth, venomFang, largeTail, jaw, largeJaw, tooth, pupil, armoredSkin, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, eye2, eye3, eye4, eye5, nostril, thorn, vent, bonusHP, fissure]
 
-fist,    foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, sting, venomTooth, venomFang, largeTail, jaw, largeJaw, tooth, pupil, armoredSkin, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, eye2, eye3, eye4, eye5, nostril, thorn, vent, fissure :: ItemKind
+fist,    foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, sting, venomTooth, venomFang, largeTail, jaw, largeJaw, tooth, pupil, armoredSkin, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, eye2, eye3, eye4, eye5, nostril, thorn, vent, bonusHP, fissure :: ItemKind
 
 -- * Parameterized organs
 
@@ -260,6 +260,16 @@ vent = fist
   , iverbHit = "menace"
   , iaspects = [Periodic, Timeout $ (2 + d 4) |*| 10]
   , ieffects = [Recharging (Explode "boiling water")]
+  , ifeature = [Durable, Identified]
+  , idesc    = ""
+  }
+bonusHP = fist
+  { iname    = "bonus HP"
+  , ifreq    = [("bonus HP", 100)]
+  , icount   = 1
+  , iverbHit = "intimidate"
+  , iaspects = [AddMaxHP 1]
+  , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
   }
