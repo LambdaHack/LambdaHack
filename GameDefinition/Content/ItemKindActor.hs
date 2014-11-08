@@ -11,9 +11,9 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, adventurer, blacksmith, forester, scientist, soldier, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser]
+  [warrior, adventurer, blacksmith, forester, scientist, soldier, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser]
 
-warrior,    adventurer, blacksmith, forester, scientist, soldier, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser :: ItemKind
+warrior,    adventurer, blacksmith, forester, scientist, soldier, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser :: ItemKind
 
 -- * Hunams
 
@@ -175,6 +175,24 @@ gilaMonster = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("venom tooth", COrgan), ("small claw", COrgan)
+               , ("eye 4", COrgan), ("nostril", COrgan) ]
+  }
+rattlesnake = ItemKind
+  { isymbol  = 'r'
+  , iname    = "rattlesnake"
+  , ifreq    = [("animal", 100), ("horror", 100), ("mobile animal", 100)]
+  , iflavour = zipPlain [Brown]
+  , icount   = 1
+  , irarity  = [(3, 2), (10, 4)]
+  , iverbHit = "thud"
+  , iweight  = 80000
+  , iaspects = [ AddMaxHP 25, AddMaxCalm 60, AddSpeed 18
+               , AddSkills $ EM.insert AbAlter (-1) animalSkillMalus
+               , AddSight 3 ]
+  , ieffects = []
+  , ifeature = [Durable, Identified]
+  , idesc    = ""
+  , ikit     = [ ("venom fang", COrgan)
                , ("eye 4", COrgan), ("nostril", COrgan) ]
   }
 komodoDragon = ItemKind  -- bad hearing
