@@ -85,7 +85,7 @@ data Effect a =
                           -- ^ create a matching item and insert as an organ
                           --   with the given timer; not restricted
                           --   to temporary aspect item kinds
-  | DestroyOrgan !(GroupName ItemKind)  -- ^usually a Temporary organ
+  | DestroyOrgan !(GroupName ItemKind)  -- ^ usually a Temporary organ
   | Temporary !Text       -- ^ the item is temporary, vanishes at even void
                           --   Periodic activation, unless Durable
   deriving (Show, Read, Eq, Ord, Generic, Functor)
