@@ -26,9 +26,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [bolas, brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone]
+  [bolas, brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone]
 
-bolas,    brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone :: ItemKind
+bolas,    brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone :: ItemKind
 
 gem, necklace, potion, flask, ring, scroll, wand :: ItemKind  -- generic templates
 
@@ -279,6 +279,7 @@ necklace2 = necklace
   { irarity  = [(2, 0), (10, 1)]
   , iaspects = (Timeout $ (d 3 + 3 - dl 3) |*| 10) : iaspects necklace
   , ieffects = [ Recharging (Impress)
+               , Recharging (DropOrgan "temporary conditions")
                , Recharging (Summon [("mobile animal", 1)] $ 1 + dl 2)
                , Recharging (Explode "waste") ]
   }
@@ -374,7 +375,7 @@ potion = ItemKind
   { isymbol  = symbolPotion
   , iname    = "potion"
   , ifreq    = [("useful", 100)]
-  , iflavour = zipPlain brightCol ++ zipFancy brightCol
+  , iflavour = zipPlain brightCol ++ zipFancy brightCol ++ zipPlain darkCol
   , icount   = 1
   , irarity  = [(1, 13), (10, 10)]
   , iverbHit = "splash"
@@ -422,12 +423,19 @@ potion6 = potion
                                 , Explode "blast 20" ]) ]
   }
 potion7 = potion  -- used only as initial equipment; count betrays identity
-  { ifreq    = [("useful", 100), ("potion of glue", 1)]
+  { ifreq    = [("useful", 30), ("potion of glue", 1)]
   , icount   = 1 + d 2
   , irarity  = [(1, 1)]
   , ieffects = [ NoEffect "of glue", Paralyze (5 + d 5)
                , OnSmash (Explode "glue")]
   , ifeature = [Identified]
+  }
+potion8 = potion
+  { ieffects = [DropOrgan "poisoned", OnSmash (Explode "antidote mist")]
+  }
+potion9 = potion
+  { ieffects = [ NoEffect "of nullification", DropOrgan "temporary conditions"
+               , OnSmash (Explode "blast 10") ]
   }
 
 -- * Exploding consumables, with temporary aspects
@@ -439,7 +447,7 @@ flask = ItemKind
   { isymbol  = symbolFlask
   , iname    = "flask"
   , ifreq    = [("useful", 100)]
-  , iflavour = zipPlain darkCol ++ zipFancy darkCol
+  , iflavour = zipPlain darkCol ++ zipFancy darkCol ++ zipFancy brightCol
   , icount   = 1
   , irarity  = [(1, 11), (10, 9)]
   , iverbHit = "splash"
@@ -514,6 +522,18 @@ flask12 = flask  -- but not flask of Calm depletion, since Calm reduced often
   { ieffects = [ NoEffect "of poison"
                , CreateOrgan 0 "poisoned"
                , OnSmash (Explode "wounding mist") ]
+  }
+flask13 = flask
+  { irarity  = [(10, 5)]
+  , ieffects = [ NoEffect "of slow resistance"
+               , CreateOrgan 0 "slow resistant"
+               , OnSmash (Explode "anti-slow mist") ]
+  }
+flask14 = flask  -- but not flask of Calm depletion, since Calm reduced often
+  { irarity  = [(10, 5)]
+  , ieffects = [ NoEffect "of poison resistance"
+               , CreateOrgan 0 "poison resistant"
+               , OnSmash (Explode "antidote mist") ]
   }
 
 -- * Non-exploding consumables, not specifically designed for throwing
@@ -761,6 +781,13 @@ swordImpress = sword
   , iaspects = iaspects sword ++ [Timeout $ (d 4 + 5 - dl 4) |*| 2]
   , ieffects = ieffects sword ++ [Recharging Impress]
   , idesc    = "A particularly well-balance blade, lending itself to impressive shows of fencing skill."
+  }
+swordNullify = sword
+  { ifreq    = [("useful", 100)]
+  , irarity  = [(3, 0), (10, 1)]
+  , iaspects = iaspects sword ++ [Timeout $ (d 4 + 5 - dl 4) |*| 2]
+  , ieffects = ieffects sword ++ [Recharging $ DropOrgan "temporary conditions"]
+  , idesc    = "Cold, thin blade that pierces deeply and sends its victim into abrupt, sobering shock."
   }
 halberd = ItemKind
   { isymbol  = symbolPolearm

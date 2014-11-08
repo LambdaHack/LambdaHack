@@ -90,6 +90,7 @@ effectToBenefit cops b activeItems fact eff =
       - organBenefit t cops b
     IK.Temporary _ -> 0
 
+-- TODO: calculating this for "temporary" takes forever
 organBenefit :: GroupName ItemKind -> Kind.COps -> Actor -> Int
 organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b =
   let travA x = St.evalState (IK.aspectTrav x (return . round . Dice.meanDice)) ()

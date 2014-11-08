@@ -12,9 +12,9 @@ import Game.LambdaHack.Content.ItemKind
 
 temporaries :: [ItemKind]
 temporaries =
-  [tmpStrengthened, tmpWeakened, tmpProtected, tmpPaintedRed, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned]
+  [tmpStrengthened, tmpWeakened, tmpProtected, tmpPaintedRed, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResitant]
 
-tmpStrengthened,    tmpWeakened, tmpProtected, tmpPaintedRed, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned :: ItemKind
+tmpStrengthened,    tmpWeakened, tmpProtected, tmpPaintedRed, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResitant :: ItemKind
 
 -- The @name@ is be used in item description, so it should be an adjective
 -- describing the temporary set of aspects.
@@ -22,7 +22,7 @@ tmpAs :: Text -> [Aspect Dice] -> ItemKind
 tmpAs name aspects = ItemKind
   { isymbol  = '.'
   , iname    = name
-  , ifreq    = [(toGroupName name, 1)]
+  , ifreq    = [(toGroupName name, 1), ("temporary conditions", 1)]
   , iflavour = zipPlain [BrWhite]
   , icount   = 1
   , irarity  = [(1, 1)]
@@ -61,4 +61,14 @@ tmpPoisoned =
   let tmp = tmpAs "poisoned" []
   in tmp { icount = 7 + d 5
          , ieffects = [Recharging (RefillHP (-1))] ++ ieffects tmp
+         }
+tmpSlow10Resistant =
+  let tmp = tmpAs "slow resistant" []
+  in tmp { icount = 7 + d 5
+         , ieffects = [Recharging (DropOrgan "slow 10")] ++ ieffects tmp
+         }
+tmpPoisonResitant =
+  let tmp = tmpAs "poison resistant" []
+  in tmp { icount = 7 + d 5
+         , ieffects = [Recharging (DropOrgan "poisoned")] ++ ieffects tmp
          }

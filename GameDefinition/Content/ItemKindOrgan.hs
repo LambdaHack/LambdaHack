@@ -141,7 +141,7 @@ lash = fist
   , ifreq    = [("lash", 100)]
   , icount   = 1
   , iverbHit = "lash"
-  , ieffects = [Hurt (4 * d 1)]
+  , ieffects = [Hurt (4 * d 1), DropOrgan "far-sighted"]
   , idesc    = ""
   }
 noseTip = fist
@@ -157,7 +157,7 @@ lip = fist
   , ifreq    = [("lip", 10)]
   , icount   = 2
   , iverbHit = "lap"
-  , ieffects = [Hurt (2 * d 1)]  -- TODO: decrease Hurt, but use
+  , ieffects = [Hurt (2 * d 1), DropOrgan "keen-smelling"]  -- TODO: decrease Hurt, but use
   , idesc    = ""
   }
 
@@ -193,16 +193,18 @@ venomTooth = fist
   , ifreq    = [("venom tooth", 100)]
   , icount   = 2
   , iverbHit = "bite"
-  , iaspects = [Timeout $ 3 + d 3]
+  , iaspects = [Timeout $ 5 + d 3]
   , ieffects = [Hurt (3 * d 1), Recharging (CreateOrgan (3 + d 3) "slow 10")]
   , idesc    = ""
   }
+-- TODO: should also confer poison resistance, but current implementation
+-- is too costly (poison removal each turn)
 venomFang = fist
   { iname    = "venom fang"
   , ifreq    = [("venom fang", 100)]
   , icount   = 2
   , iverbHit = "bite"
-  , iaspects = [Timeout $ 10 + d 5]
+  , iaspects = [Timeout $ 7 + d 5]
   , ieffects = [Hurt (3 * d 1), Recharging (CreateOrgan 0 "poisoned")]
   , idesc    = ""
   }
@@ -221,7 +223,7 @@ pupil = fist
   , icount   = 1
   , iverbHit = "gaze at"
   , iaspects = [AddSight 7, Timeout $ 5 + d 5]
-  , ieffects = [Hurt (4 * d 1), Recharging (Paralyze 5)]  -- TODO: decrease Hurt, but use
+  , ieffects = [Hurt (4 * d 1), Recharging (DropOrgan "temporary conditions")]  -- TODO: decrease Hurt, but use
   , idesc    = ""
   }
 
