@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Flavour
   ( -- * The @Flavour@ type
     Flavour
   , -- * Constructors
-    zipPlain, zipFancy, stdFlav
+    zipPlain, zipFancy, stdFlav, zipLiquid
   , -- * Accessors
     flavourToColor, flavourToName
     -- * Assorted
@@ -18,11 +18,18 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
 
+data FancyName = Plain | Fancy | Liquid
+  deriving (Show, Eq, Ord, Generic)
+
+instance Hashable FancyName
+
+instance Binary FancyName
+
 -- TODO: add more variety, as the number of items increases
 -- | The type of item flavours.
 data Flavour = Flavour
-  { fancyName :: !Bool   -- ^ should the colour description be fancy or plain
-  , baseColor :: !Color  -- ^ the colour of the flavour
+  { fancyName :: !FancyName  -- ^ how fancy should the colour description be
+  , baseColor :: !Color      -- ^ the colour of the flavour
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -31,9 +38,10 @@ instance Hashable Flavour
 instance Binary Flavour
 
 -- | Turn a colour set into a flavour set.
-zipPlain, zipFancy :: [Color] -> [Flavour]
-zipPlain = map (Flavour False)
-zipFancy = map (Flavour True)
+zipPlain, zipFancy, zipLiquid :: [Color] -> [Flavour]
+zipPlain = map (Flavour Plain)
+zipFancy = map (Flavour Fancy)
+zipLiquid = map (Flavour Liquid)
 
 -- | The standard full set of flavours.
 stdFlav :: [Flavour]
@@ -45,10 +53,11 @@ flavourToColor Flavour{baseColor} = baseColor
 
 -- | Construct the full name of a flavour.
 flavourToName :: Flavour -> Text
-flavourToName Flavour{..} | fancyName = colorToFancyName baseColor
-flavourToName Flavour{..}             = colorToPlainName baseColor
+flavourToName Flavour{fancyName=Plain, ..} = colorToFancyName baseColor
+flavourToName Flavour{fancyName=Fancy, ..} = colorToPlainName baseColor
+flavourToName Flavour{fancyName=Liquid, ..} = colorToLiquidName baseColor
 
--- | Human-readable names, for item colors. The simple set.
+-- | Human-readable names for item colors. The plain set.
 colorToPlainName :: Color -> Text
 colorToPlainName Black     = "black"
 colorToPlainName Red       = "red"
@@ -67,7 +76,7 @@ colorToPlainName BrMagenta = "pink"
 colorToPlainName BrCyan    = "aquamarine"
 colorToPlainName BrWhite   = "white"
 
--- | Human-readable names, for item colors. The fancy set.
+-- | Human-readable names for item colors. The fancy set.
 colorToFancyName :: Color -> Text
 colorToFancyName Black     = "smoky-black"
 colorToFancyName Red       = "apple-red"
@@ -85,6 +94,25 @@ colorToFancyName BrBlue    = "sky-blue"
 colorToFancyName BrMagenta = "magenta"
 colorToFancyName BrCyan    = "turquoise"
 colorToFancyName BrWhite   = "ghost-white"
+
+-- | Human-readable names for item colors. The liquid set.
+colorToLiquidName :: Color -> Text
+colorToLiquidName Black     = "tarry"
+colorToLiquidName Red       = "bloody"
+colorToLiquidName Green     = "moldy"
+colorToLiquidName Brown     = "muddy"
+colorToLiquidName Blue      = "oily"
+colorToLiquidName Magenta   = "swirling"
+colorToLiquidName Cyan      = "bubbling"
+colorToLiquidName White     = "cloudy"
+colorToLiquidName BrBlack   = "pitchy"
+colorToLiquidName BrRed     = "red-speckled"
+colorToLiquidName BrGreen   = "sappy"
+colorToLiquidName BrYellow  = "gold"
+colorToLiquidName BrBlue    = "blue-speckled"
+colorToLiquidName BrMagenta = "hazy"
+colorToLiquidName BrCyan    = "misty"
+colorToLiquidName BrWhite   = "shining"
 
 -- | Simple names for team colors (bright colours preferred).
 colorToTeamName :: Color -> Text
