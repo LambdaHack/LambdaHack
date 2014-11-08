@@ -1,5 +1,5 @@
 -- | Temporary aspect pseudo-item definitions.
-module Content.ItemKindTempAspect ( tempAspects ) where
+module Content.ItemKindTemporary ( temporaries ) where
 
 import Data.Text (Text)
 
@@ -10,8 +10,8 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.ItemKind
 
-tempAspects :: [ItemKind]
-tempAspects =
+temporaries :: [ItemKind]
+temporaries =
   [tmpStrengthened, tmpWeakened, tmpProtected, tmpPaintedRed, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned]
 
 tmpStrengthened,    tmpWeakened, tmpProtected, tmpPaintedRed, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned :: ItemKind

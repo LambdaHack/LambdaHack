@@ -6,7 +6,7 @@ import Data.List
 import Content.ItemKindActor
 import Content.ItemKindOrgan
 import Content.ItemKindShrapnel
-import Content.ItemKindTempAspect
+import Content.ItemKindTemporary
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
@@ -21,7 +21,7 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validateSingle = validateSingleItemKind
   , validateAll = validateAllItemKind
-  , content = items ++ organs ++ shrapnels ++ actors ++ tempAspects
+  , content = items ++ organs ++ shrapnels ++ actors ++ temporaries
   }
 
 items :: [ItemKind]
