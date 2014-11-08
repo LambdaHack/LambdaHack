@@ -49,11 +49,12 @@ msgReset msg = modifyClient $ \d -> d {sreport = singletonReport msg}
 -- | Store current report in the history and reset report.
 recordHistory :: MonadClientUI m => m ()
 recordHistory = do
+  time <- getsState stime
   StateClient{sreport, shistory} <- getClient
   unless (nullReport sreport) $ do
     Config{configHistoryMax} <- askConfig
     msgReset ""
-    let nhistory = takeHistory configHistoryMax $! addReport sreport shistory
+    let nhistory = takeHistory configHistoryMax $! addReport shistory time sreport
     modifyClient $ \cli -> cli {shistory = nhistory}
 
 type SlideOrCmd a = Either Slideshow a

@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Msg
   , Msg, (<>), (<+>), tshow, toWidth, moreMsg, yesnoMsg, truncateMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg, prependMsg
   , splitReport, renderReport, findInReport, lastMsgOfReport
-  , History, emptyHistory, lengthHistory, singletonHistory, mergeHistory
+  , History, emptyHistory, lengthHistory, singletonHistory
   , addReport, renderHistory, takeHistory, lastReportOfHistory
   , Overlay(overlay), emptyOverlay, truncateToOverlay, toOverlay
   , Slideshow(slideshow), splitOverlay, toSlideshow
@@ -30,6 +30,7 @@ import qualified Text.Show.Pretty as Show.Pretty
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Time
 
 infixr 6 <+>  -- TODO: not needed when we require a very new minimorph
 (<+>) :: Text -> Text -> Text
@@ -150,25 +151,32 @@ splitText' w xs
          else T.reverse ppost : splitText w (T.reverse ppre <> post)
 
 -- | The history of reports.
-newtype History = History [Report]
+newtype History = History [(Time, Report)]
   deriving (Show, Binary)
 
 -- | Empty history of reports.
 emptyHistory :: History
 emptyHistory = History []
 
+-- | Construct a singleton history of reports.
+singletonHistory :: Time -> Report -> History
+singletonHistory = addReport emptyHistory
+
+-- | Add a report to history, handling repetitions.
+addReport :: History -> Time -> Report -> History
+addReport h _ (Report []) = h
+addReport (History []) time m = History [(time, m)]
+addReport (History oldRs@((oldTime, Report h) : hs)) time (Report m)  =
+  case (reverse m, h) of
+    ((s1, n1) : rs, (s2, n2) : hhs) | s1 == s2 ->
+      let hist = (oldTime, Report ((s2, n1 + n2) : hhs)) : hs
+      in History $ if null rs
+                   then hist
+                   else (time, Report (reverse rs)) : hist
+    _ -> History $ (time, Report m) : oldRs
+
 lengthHistory :: History -> Int
 lengthHistory (History rs) = length rs
-
--- | Construct a singleton history of reports.
-singletonHistory :: Report -> History
-singletonHistory r = addReport r emptyHistory
-
-mergeHistory :: [(Msg, History)] -> History
-mergeHistory l =
-  let unhist (History x) = x
-      f (msg, h) = singletonReport msg : unhist h
-  in History $ concatMap f l
 
 -- | Render history as many lines of text, wrapping if necessary.
 renderHistory :: History -> Overlay
@@ -176,19 +184,15 @@ renderHistory (History h) =
   let w = fst normalLevelBound + 1
   in toOverlay $ concatMap (splitReportForHistory w) h
 
-splitReportForHistory :: X -> Report -> [Text]
-splitReportForHistory w r = splitText w $ ">" <+> renderReport r
-
--- | Add a report to history, handling repetitions.
-addReport :: Report -> History -> History
-addReport (Report []) h = h
-addReport m (History []) = History [m]
-addReport (Report m) (History (Report h : hs)) =
-  case (reverse m, h) of
-    ((s1, n1) : rs, (s2, n2) : hhs) | s1 == s2 ->
-      let hist = Report ((s2, n1 + n2) : hhs) : hs
-      in History $ if null rs then hist else Report (reverse rs) : hist
-    _ -> History $ Report m : Report h : hs
+splitReportForHistory :: X -> (Time, Report) -> [Text]
+splitReportForHistory w (time, r) =
+  -- TODO: display time fractions with granularity enough to differ
+  -- from previous and next report, if possible
+  let turns = time `timeFitUp` timeTurn
+      ts = splitText (w - 1) $ tshow turns <> ":" <+> renderReport r
+  in case ts of
+    [] -> []
+    hd : tl -> hd : map (T.cons ' ') tl
 
 -- | Take the given prefix of reports from a history.
 takeHistory :: Int -> History -> History
@@ -197,7 +201,7 @@ takeHistory k (History h) = History $ take k h
 lastReportOfHistory :: History -> Maybe Report
 lastReportOfHistory (History hist) = case hist of
   [] -> Nothing
-  rep : _ -> Just rep
+  (_, rep) : _ -> Just rep
 
 type ScreenLine = U.Vector Int32
 

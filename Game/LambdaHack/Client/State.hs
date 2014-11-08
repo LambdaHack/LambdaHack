@@ -158,7 +158,7 @@ defaultHistory :: IO History
 defaultHistory = do
   dateTime <- getClockTime
   let curDate = MU.Text $ T.pack $ calendarTimeToString $ toUTCTime dateTime
-  return $! singletonHistory $ singletonReport
+  return $! singletonHistory timeZero $ singletonReport
          $! makeSentence ["Human history log started on", curDate]
 
 -- | Update target parameters within client state.
