@@ -17,14 +17,14 @@ import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.ItemKind (ItemKind)
 
 -- | How much AI benefits from applying the effect. Multipllied by item p.
 -- Negative means harm to the enemy when thrown at him. Effects with zero
 -- benefit won't ever be used, neither actively nor passively.
 effectToBenefit :: Kind.COps -> Actor -> [ItemFull] -> Faction
                 -> IK.Effect Int -> Int
-effectToBenefit cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
-                b activeItems fact eff =
+effectToBenefit cops b activeItems fact eff =
   let dungeonDweller = not $ fcanEscape $ gplayer fact
   in case eff of
     IK.NoEffect _ -> 0
@@ -83,16 +83,22 @@ effectToBenefit cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
                            `divUp` 3  -- TODO: use Timeout
     IK.CreateOrgan _k t ->  -- TODO: use the timeout and also check
                             -- if the tmp aspect already active at the time
-      let travA x =
-            St.evalState (IK.aspectTrav x (return . round . Dice.meanDice)) ()
-          f p _ kind (pacc, sacc) =
-            let paspect asp = p * aspectToBenefit cops b (travA asp)
-
-            in ( pacc + p
-               , sacc + sum (map paspect $ IK.iaspects kind))
-          (ptotal, stotal) = ofoldrGroup t f (0, 0)
-      in stotal `divUp` ptotal
+      organBenefit t cops b
+    IK.DestroyOrgan t ->  -- TODO: this is calculated only for future use,
+                          -- not when some actor is known to be affected;
+                          -- so this is benefit of general pickup, not of use
+      - organBenefit t cops b
     IK.Temporary _ -> 0
+
+organBenefit :: GroupName ItemKind -> Kind.COps -> Actor -> Int
+organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b =
+  let travA x = St.evalState (IK.aspectTrav x (return . round . Dice.meanDice)) ()
+      f p _ kind (pacc, sacc) =
+        let paspect asp = p * aspectToBenefit cops b (travA asp)
+        in ( pacc + p
+           , sacc + sum (map paspect $ IK.iaspects kind))
+      (ptotal, stotal) = ofoldrGroup t f (0, 0)
+  in stotal `divUp` ptotal
 
 -- | Return the value to add to effect value and another to multiply it.
 aspectToBenefit :: Kind.COps -> Actor -> IK.Aspect Int -> Int

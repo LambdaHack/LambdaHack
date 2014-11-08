@@ -2,7 +2,7 @@
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
   ( applyItem, itemEffectAndDestroy, effectAndDestroy, itemEffectCause
-  , dropEqpItem, armorHurtBonus
+  , dropCStoreItem, armorHurtBonus
   ) where
 
 import Control.Applicative
@@ -239,6 +239,7 @@ effectSem source target iid recharged effect = do
     IK.OnSmash _ -> return False  -- ignored under normal circumstances
     IK.Recharging e -> effectRecharging recursiveCall e recharged
     IK.CreateOrgan nDm t -> effectCreateOrgan target nDm t
+    IK.DestroyOrgan t -> effectDestroyOrgan target t
     IK.Temporary _ -> effectTemporary execSfx source iid
 
 -- + Individual semantic functions for effects
@@ -638,7 +639,7 @@ effectDropBestWeapon execSfx target = do
     (_, (iid, _)) : _ -> do
       b <- getsState $ getActorBody target
       let kit = beqp b EM.! iid
-      dropEqpItem target b False iid kit
+      dropCStoreItem CEqp target b False iid kit
       execSfx
       return True
     [] ->
@@ -648,11 +649,12 @@ effectDropBestWeapon execSfx target = do
 -- at most one explodes to avoid excessive carnage and UI clutter
 -- (let's say, the multiple explosions interfere with each other or perhaps
 -- larger quantities of explosives tend to be packaged more safely).
-dropEqpItem :: (MonadAtomic m, MonadServer m)
-            => ActorId -> Actor -> Bool -> ItemId -> ItemQuant -> m ()
-dropEqpItem aid b hit iid kit@(k, _) = do
+dropCStoreItem :: (MonadAtomic m, MonadServer m)
+               => CStore -> ActorId -> Actor -> Bool -> ItemId -> ItemQuant
+               -> m ()
+dropCStoreItem store aid b hit iid kit@(k, _) = do
   item <- getsState $ getItemBody iid
-  let c = CActor aid CEqp
+  let c = CActor aid store
       fragile = IK.Fragile `elem` jfeature item
       durable = IK.Durable `elem` jfeature item
       isDestroyed = hit && not durable || bproj b && fragile
@@ -666,7 +668,7 @@ dropEqpItem aid b hit iid kit@(k, _) = do
         effs = strengthOnSmash itemFull
     effectAndDestroy aid aid iid c False effs aspects kit
   else do
-    mvCmd <- generalMoveItem iid k (CActor aid CEqp)
+    mvCmd <- generalMoveItem iid k (CActor aid store)
                                    (CActor aid CGround)
     mapM_ execUpdAtomic mvCmd
 
@@ -680,7 +682,7 @@ effectDropEqp :: (MonadAtomic m, MonadServer m)
 effectDropEqp execSfx hit target symbol = do
   b <- getsState $ getActorBody target
   effectTransformEqp execSfx target symbol CEqp $
-    dropEqpItem target b hit
+    dropCStoreItem CEqp target b hit
 
 effectTransformEqp :: forall m. (MonadAtomic m, MonadServer m)
                    => m () -> ActorId -> Char -> CStore
@@ -980,6 +982,30 @@ effectCreateOrgan target nDm grp = do
           newIt = replicate afterK newTimer
       when (afterIt /= newIt) $
         execUpdAtomic $ UpdTimeItem iid c afterIt newIt
+      return True
+
+-- ** DestroyOrgan
+
+effectDestroyOrgan :: (MonadAtomic m, MonadServer m)
+                   => ActorId -> GroupName ItemKind
+                   -> m Bool
+effectDestroyOrgan target grp = do
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  discoKind <- getsServer sdiscoKind
+  b <- getsState $ getActorBody target
+  let hasGroup (iid, _) = do
+        item <- getsState $ getItemBody iid
+        case EM.lookup (jkindIx item) discoKind of
+          Just kindId ->
+            return $! maybe False (> 0) $ lookup grp $ IK.ifreq (okind kindId)
+          Nothing ->
+            assert `failure` (target, grp, iid, item)
+  assocsCStore <- getsState $ EM.assocs . getActorBag target COrgan
+  is <- filterM hasGroup assocsCStore
+  if null is
+    then return False
+    else do
+      mapM_ (\(iid, kit) -> dropCStoreItem COrgan target b True iid kit) is
       return True
 
 -- ** Temporary

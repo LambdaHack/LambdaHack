@@ -701,7 +701,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.OneOf{} -> skip
         IK.OnSmash{} -> assert `failure` sfx
         IK.Recharging{} -> assert `failure` sfx
-        IK.CreateOrgan{} -> skip  -- TODO
+        IK.CreateOrgan{} -> skip
+        IK.DestroyOrgan{} -> skip
         IK.Temporary t -> actorVerbMU aid b $ MU.Text t
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg

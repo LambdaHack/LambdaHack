@@ -93,4 +93,4 @@ equipAllItems aid b = do
 -- to the ground due to exceeded range or bumping off an obstacle).
 dropEqpItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> Bool -> m ()
-dropEqpItems aid b hit = mapActorCStore_ CEqp (dropEqpItem aid b hit) b
+dropEqpItems aid b hit = mapActorCStore_ CEqp (dropCStoreItem CEqp aid b hit) b
