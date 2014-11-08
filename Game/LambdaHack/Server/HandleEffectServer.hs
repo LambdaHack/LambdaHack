@@ -239,7 +239,7 @@ effectSem source target iid recharged effect = do
     IK.OnSmash _ -> return False  -- ignored under normal circumstances
     IK.Recharging e -> effectRecharging recursiveCall e recharged
     IK.CreateOrgan nDm t -> effectCreateOrgan target nDm t
-    IK.DestroyOrgan t -> effectDestroyOrgan target t
+    IK.DropOrgan t -> effectDropOrgan target t
     IK.Temporary _ -> effectTemporary execSfx source iid
 
 -- + Individual semantic functions for effects
@@ -984,12 +984,12 @@ effectCreateOrgan target nDm grp = do
         execUpdAtomic $ UpdTimeItem iid c afterIt newIt
       return True
 
--- ** DestroyOrgan
+-- ** DropOrgan
 
-effectDestroyOrgan :: (MonadAtomic m, MonadServer m)
+effectDropOrgan :: (MonadAtomic m, MonadServer m)
                    => ActorId -> GroupName ItemKind
                    -> m Bool
-effectDestroyOrgan target grp = do
+effectDropOrgan target grp = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   discoKind <- getsServer sdiscoKind
   b <- getsState $ getActorBody target

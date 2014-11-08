@@ -84,7 +84,7 @@ effectToBenefit cops b activeItems fact eff =
     IK.CreateOrgan _k t ->  -- TODO: use the timeout and also check
                             -- if the tmp aspect already active at the time
       organBenefit t cops b
-    IK.DestroyOrgan t ->  -- TODO: this is calculated only for future use,
+    IK.DropOrgan t ->  -- TODO: this is calculated only for future use,
                           -- not when some actor is known to be affected;
                           -- so this is benefit of general pickup, not of use
       - organBenefit t cops b

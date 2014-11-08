@@ -104,7 +104,7 @@ rawEffectToSuff effectText effectMInt =
     (CreateOrgan k t, _) ->
       let stime = if k == 0 then "" else tshow k <> ":"
       in "(keep" <+> stime <+> tshow t <> ")"
-    (DestroyOrgan t, _) -> "of nullify" <+> tshow t
+    (DropOrgan t, _) -> "of nullify" <+> tshow t
     (Temporary _, _) -> ""
     _ -> assert `failure` (effectText, effectMInt)
 
