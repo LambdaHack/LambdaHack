@@ -45,7 +45,7 @@ zipLiquid = map (Flavour Liquid)
 
 -- | The standard full set of flavours.
 stdFlav :: [Flavour]
-stdFlav = zipPlain stdCol ++ zipFancy stdCol
+stdFlav = zipPlain stdCol ++ zipFancy stdCol ++ zipLiquid stdCol
 
 -- | Get the underlying base colour of a flavour.
 flavourToColor :: Flavour -> Color

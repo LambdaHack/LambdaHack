@@ -112,8 +112,8 @@ newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)
 emptyFlavourMap :: FlavourMap
 emptyFlavourMap = FlavourMap EM.empty
 
--- | Assigns flavours to item kinds. Assures no flavor is repeated,
--- except for items with only one permitted flavour.
+-- | Assigns flavours to item kinds. Assures no flavor is repeated for the same
+-- symbol, except for items with only one permitted flavour.
 rollFlavourMap :: S.Set Flavour -> Kind.Id ItemKind -> ItemKind
                -> Rnd ( EM.EnumMap (Kind.Id ItemKind) Flavour
                       , EM.EnumMap Char (S.Set Flavour) )
@@ -125,7 +125,8 @@ rollFlavourMap fullFlavSet key ik rnd =
      then rnd
      else do
        (assocs, availableMap) <- rnd
-       let available = EM.findWithDefault fullFlavSet (IK.isymbol ik) availableMap
+       let available =
+             EM.findWithDefault fullFlavSet (IK.isymbol ik) availableMap
            proper = S.fromList flavours `S.intersection` available
        assert (not (S.null proper)
                `blame` "not enough flavours for items"
