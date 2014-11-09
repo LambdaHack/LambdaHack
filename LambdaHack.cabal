@@ -271,9 +271,12 @@ library
   if flag(expose_internal)
     cpp-options:      -DEXPOSE_INTERNAL
 
-  if flag(release)
+  if flag(release) {
     cpp-options:      -DEXPOSE_INTERNAL
-    ghc-options:      -O2
+-- 7.6.3 has broken -O2, apparently
+    if impl(ghc > 7.8)
+      ghc-options:      -O2
+  }
 
 executable LambdaHack
   hs-source-dirs:     GameDefinition
