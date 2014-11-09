@@ -7,8 +7,8 @@ import Control.Arrow (first)
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.HumanCmd
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Misc
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 standardKeys :: KeyKind
@@ -177,5 +177,6 @@ standardKeys = KeyKind
       , ("CTRL-s", ([CmdDebug], GameSave))
       , ("CTRL-f", ([CmdDebug], GameRestart "safari"))
       , ("CTRL-e", ([CmdDebug], GameRestart "defense"))
+      , ("CTRL-O", ([CmdDebug], DescribeItem COrgan))
       ]
   }
