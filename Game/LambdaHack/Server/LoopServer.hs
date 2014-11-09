@@ -168,20 +168,25 @@ endClip arenas = do
 activatePeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 activatePeriodicLevel lid = do
   discoEffect <- getsServer sdiscoEffect
-  let activatePeriodicItem c aid (iid, kit) =
+  let activatePeriodicItem c aid iid =
         case EM.lookup iid discoEffect of
           Just ItemAspectEffect{jeffects, jaspects} ->
-            if IK.Periodic `elem` jaspects then
-              -- In periodic activation, consider *only* recharging effects.
-              effectAndDestroy aid aid iid c True
-                               (allRecharging jeffects) jaspects kit
+            if IK.Periodic `elem` jaspects then do
+              -- Check if the item is still in the bag (previous items act!).
+              bag <- getsState $ getCBag c
+              case iid `EM.lookup` bag of
+                Nothing -> return ()  -- item dropped
+                Just kit ->
+                  -- In periodic activation, consider *only* recharging effects.
+                  effectAndDestroy aid aid iid c True
+                                   (allRecharging jeffects) jaspects kit
             else
               return ()
-          _ -> assert `failure` (lid, aid, c, iid, kit)
+          _ -> assert `failure` (lid, aid, c, iid)
       activatePeriodicCStore aid cstore = do
         let c = CActor aid cstore
         bag <- getsState $ getCBag c
-        mapM_ (activatePeriodicItem c aid) $ EM.assocs bag
+        mapM_ (activatePeriodicItem c aid) $ EM.keys bag
       activatePeriodicActor aid = do
         activatePeriodicCStore aid COrgan
         activatePeriodicCStore aid CEqp
