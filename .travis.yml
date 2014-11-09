@@ -73,7 +73,7 @@ install:
    if [ $GHCVER = "head" ] || [ ${GHCVER%.*} = "7.8" ]; then
      cabal-1.18 configure -frelease -fvty --enable-tests
    else
-     cabal-1.18 configure -f-release -fvty --enable-tests
+     cabal-1.18 configure -frelease -O1 -fvty --enable-tests
    fi
  - cabal-1.18 build -j2
  - cabal-1.18 test

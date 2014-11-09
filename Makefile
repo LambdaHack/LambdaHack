@@ -30,16 +30,16 @@ xcfrontendDefense:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --maxFps 60 --dumpInitRngs --automateAll --gameMode defense --difficulty 9
 
 xcbenchCampaign:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --noDelay --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 60 --automateAll --gameMode campaign --difficulty 1 --setDungeonRng 42 --setMainRng 42
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --noDelay --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 60 --automateAll --gameMode campaign --difficulty 1 --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
 
 xcbenchBattle:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --noDelay --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 60 --automateAll --gameMode battle --difficulty 1 --setDungeonRng 42 --setMainRng 42
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --noDelay --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 60 --automateAll --gameMode battle --difficulty 1 --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
 
 xcbenchFrontendCampaign:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --maxFps 100000 --benchmark --stopAfter 60 --automateAll --gameMode campaign --difficulty 1 --setDungeonRng 42 --setMainRng 42
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --maxFps 100000 --benchmark --stopAfter 60 --automateAll --gameMode campaign --difficulty 1 --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
 
 xcbenchFrontendBattle:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --maxFps 100000 --benchmark --stopAfter 60 --automateAll --gameMode battle --difficulty 1 --setDungeonRng 42 --setMainRng 42
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --maxFps 100000 --benchmark --stopAfter 60 --automateAll --gameMode battle --difficulty 1 --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
 
 xcbenchNull: xcbenchCampaign xcbenchBattle
 
@@ -151,16 +151,16 @@ frontendDefense:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --maxFps 60 --dumpInitRngs --automateAll --gameMode defense --difficulty 9
 
 benchCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --noDelay --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 60 --automateAll --gameMode campaign --difficulty 1 --setDungeonRng 42 --setMainRng 42
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --noDelay --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 60 --automateAll --gameMode campaign --difficulty 1 --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
 
 benchBattle:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --noDelay --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 60 --automateAll --gameMode battle --difficulty 1 --setDungeonRng 42 --setMainRng 42
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --noDelay --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 60 --automateAll --gameMode battle --difficulty 1 --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
 
 benchFrontendCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --maxFps 100000 --benchmark --stopAfter 60 --automateAll --gameMode campaign --difficulty 1 --setDungeonRng 42 --setMainRng 42
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --maxFps 100000 --benchmark --stopAfter 60 --automateAll --gameMode campaign --difficulty 1 --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
 
 benchFrontendBattle:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --maxFps 100000 --benchmark --stopAfter 60 --automateAll --gameMode battle --difficulty 1 --setDungeonRng 42 --setMainRng 42
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --maxFps 100000 --benchmark --stopAfter 60 --automateAll --gameMode battle --difficulty 1 --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
 
 benchNull: benchCampaign benchBattle
 

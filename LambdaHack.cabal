@@ -332,10 +332,9 @@ executable LambdaHack
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
   ghc-options:        -threaded -with-rtsopts=-C0.005 -rtsopts
--- ghc-options:       -with-rtsopts=-N  -- eats all cores
 
   if flag(release)
-    ghc-options:      -O2
+    ghc-options:      -O2 -with-rtsopts=-N
 
 test-suite test
   type:               exitcode-stdio-1.0
@@ -383,4 +382,4 @@ test-suite test
   ghc-options:        -threaded -with-rtsopts=-C0.005 -rtsopts
 
   if flag(release)
-    ghc-options:      -O2
+    ghc-options:      -O2 -with-rtsopts=-N
