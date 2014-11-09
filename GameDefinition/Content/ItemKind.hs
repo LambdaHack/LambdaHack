@@ -26,11 +26,11 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [bolas, brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone]
+  [dart, dart200, bolas, harpoon, net, jumpingPole, whetstone, woodenTorch, oilLamp, brassLantern, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, monocle, ring1, ring2, ring3, ring4, ring5, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, currency]
 
-bolas,    brassLantern, buckler, dart, dart200, gem1, gem2, gem3, gloveFencing, gloveGauntlet, gloveJousting, currency, gorget, harpoon, jumpingPole, monocle, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, net, oilLamp, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, ring1, ring2, ring3, ring4, ring5, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, woodenTorch, armorLeather, armorMail, whetstone :: ItemKind
+dart,    dart200, bolas, harpoon, net, jumpingPole, whetstone, woodenTorch, oilLamp, brassLantern, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, monocle, ring1, ring2, ring3, ring4, ring5, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, currency :: ItemKind
 
-gem, necklace, potion, flask, ring, scroll, wand :: ItemKind  -- generic templates
+necklace, ring, potion, flask, scroll, wand, gem :: ItemKind  -- generic templates
 
 -- * Item group symbols, partially from Nethack
 
@@ -139,6 +139,39 @@ net = ItemKind
   , ikit     = []
   }
 
+-- * Assorted tools
+
+jumpingPole = ItemKind
+  { isymbol  = symbolTool
+  , iname    = "jumping pole"
+  , ifreq    = [("useful", 100)]
+  , iflavour = zipPlain [White]
+  , icount   = 1
+  , irarity  = [(1, 2), (10, 1)]
+  , iverbHit = "prod"
+  , iweight  = 10000
+  , iaspects = []
+  , ieffects = [CreateOrgan 1 "fast 20"]
+  , ifeature = [Durable, Applicable, Identified]
+  , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
+  , ikit     = []
+  }
+whetstone = ItemKind
+  { isymbol  = symbolTool
+  , iname    = "whetstone"
+  , ifreq    = [("useful", 100)]
+  , iflavour = zipPlain [Blue]
+  , icount   = 1
+  , irarity  = [(10, 10)]
+  , iverbHit = "smack"
+  , iweight  = 400
+  , iaspects = [AddHurtMelee $ d 10 |*| 3]
+  , ieffects = []
+  , ifeature = [EqpSlot EqpSlotAddHurtMelee "", Identified]
+  , idesc    = "A portable sharpening stone that lets you fix your weapons between or even during fights, without the need to set up camp, fish out tools and assemble a proper sharpening workshop."
+  , ikit     = []
+  }
+
 -- * Lights
 
 woodenTorch = ItemKind
@@ -187,48 +220,6 @@ brassLantern = ItemKind
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
                , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
   , idesc    = "Very bright and very heavy brass lantern."
-  , ikit     = []
-  }
-
--- * Treasure
-
-gem = ItemKind
-  { isymbol  = symbolGem
-  , iname    = "gem"
-  , ifreq    = [("treasure", 100)]
-  , iflavour = zipPlain $ delete BrYellow brightCol  -- natural, so not fancy
-  , icount   = 1
-  , irarity  = []
-  , iverbHit = "tap"
-  , iweight  = 50
-  , iaspects = [AddLight 1, AddSpeed (-1)]  -- reflects strongly, distracts
-  , ieffects = []
-  , ifeature = [Precious]
-  , idesc    = "Useless, and still worth around 100 gold each. Would gems of thought and pearls of artful design be valued that much in our age of Science and Progress!"
-  , ikit     = []
-  }
-gem1 = gem
-  { irarity  = [(2, 0), (10, 10)]
-  }
-gem2 = gem
-  { irarity  = [(5, 0), (10, 10)]
-  }
-gem3 = gem
-  { irarity  = [(8, 0), (10, 10)]
-  }
-currency = ItemKind
-  { isymbol  = symbolGold
-  , iname    = "gold piece"
-  , ifreq    = [("treasure", 100), ("currency", 1)]
-  , iflavour = zipPlain [BrYellow]
-  , icount   = 10 + d 20 + dl 20
-  , irarity  = [(1, 0), (2, 15), (5, 25), (10, 10)]
-  , iverbHit = "tap"
-  , iweight  = 31
-  , iaspects = []
-  , ieffects = []
-  , ifeature = [Identified, Precious]
-  , idesc    = "Reliably valuable in every civilized plane of existence."
   , ikit     = []
   }
 
@@ -663,6 +654,9 @@ gloveJousting = gloveFencing
                , AddArmorRanged $ (2 + dl 2) |*| 5 ]
   , idesc    = "Rigid, steel, jousting handgear. If only you had a lance. And a horse."
   }
+
+-- * Shields
+
 -- Shield doesn't protect against ranged attacks to prevent
 -- micromanagement: walking with shield, melee without.
 buckler = ItemKind
@@ -839,35 +833,44 @@ wand2 = wand
   { ieffects = []
   }
 
--- * Assorted tools
+-- * Treasure
 
-jumpingPole = ItemKind
-  { isymbol  = symbolTool
-  , iname    = "jumping pole"
-  , ifreq    = [("useful", 100)]
-  , iflavour = zipPlain [White]
+gem = ItemKind
+  { isymbol  = symbolGem
+  , iname    = "gem"
+  , ifreq    = [("treasure", 100)]
+  , iflavour = zipPlain $ delete BrYellow brightCol  -- natural, so not fancy
   , icount   = 1
-  , irarity  = [(1, 2), (10, 1)]
-  , iverbHit = "prod"
-  , iweight  = 10000
-  , iaspects = []
-  , ieffects = [CreateOrgan 1 "fast 20"]
-  , ifeature = [Durable, Applicable, Identified]
-  , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
+  , irarity  = []
+  , iverbHit = "tap"
+  , iweight  = 50
+  , iaspects = [AddLight 1, AddSpeed (-1)]  -- reflects strongly, distracts
+  , ieffects = []
+  , ifeature = [Precious]
+  , idesc    = "Useless, and still worth around 100 gold each. Would gems of thought and pearls of artful design be valued that much in our age of Science and Progress!"
   , ikit     = []
   }
-whetstone = ItemKind
-  { isymbol  = symbolTool
-  , iname    = "whetstone"
-  , ifreq    = [("useful", 100)]
-  , iflavour = zipPlain [Blue]
-  , icount   = 1
-  , irarity  = [(10, 10)]
-  , iverbHit = "smack"
-  , iweight  = 400
-  , iaspects = [AddHurtMelee $ d 10 |*| 3]
+gem1 = gem
+  { irarity  = [(2, 0), (10, 10)]
+  }
+gem2 = gem
+  { irarity  = [(5, 0), (10, 10)]
+  }
+gem3 = gem
+  { irarity  = [(8, 0), (10, 10)]
+  }
+currency = ItemKind
+  { isymbol  = symbolGold
+  , iname    = "gold piece"
+  , ifreq    = [("treasure", 100), ("currency", 1)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = 10 + d 20 + dl 20
+  , irarity  = [(1, 0), (2, 15), (5, 25), (10, 10)]
+  , iverbHit = "tap"
+  , iweight  = 31
+  , iaspects = []
   , ieffects = []
-  , ifeature = [EqpSlot EqpSlotAddHurtMelee "", Identified]
-  , idesc    = "A portable sharpening stone that lets you fix your weapons between or even during fights, without the need to set up camp, fish out tools and assemble a proper sharpening workshop."
+  , ifeature = [Identified, Precious]
+  , idesc    = "Reliably valuable in every civilized plane of existence."
   , ikit     = []
   }

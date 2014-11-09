@@ -10,11 +10,11 @@ import Game.LambdaHack.Content.ItemKind
 
 shrapnels :: [ItemKind]
 shrapnels =
-  [fragrance, pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistHealing2, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue, spark, mistStrength, mistWeakness, protectingBalm, redPaint, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray, mistAntiSlow, mistAntidote]
+  [burningOil2, burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalm, redPaint, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray]
 
-fragrance,    pheromone, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, mistHealing, mistHealing2, mistWounding, distortion, waste, burningOil2, burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, glassPiece, smoke, boilingWater, glue, spark, mistStrength, mistWeakness, protectingBalm, redPaint, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray, mistAntiSlow, mistAntidote :: ItemKind
+burningOil2,    burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalm, redPaint, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray :: ItemKind
 
--- * Parameterized shrapnel
+-- * Parameterized immediate effect shrapnel
 
 burningOil :: Int -> ItemKind
 burningOil n = ItemKind
@@ -82,7 +82,7 @@ firecracker4 = firecracker 4
 firecracker3 = firecracker 3
 firecracker2 = firecracker 2
 
--- * Assorted
+-- * Assorted immediate effect shrapnel
 
 fragrance = ItemKind
   { isymbol  = '\''
@@ -271,6 +271,41 @@ spark = ItemKind
   , idesc    = ""
   , ikit     = []
   }
+mistAntiSlow = ItemKind
+  { isymbol  = '\''
+  , iname    = "mist"
+  , ifreq    = [("anti-slow mist", 1)]
+  , iflavour = zipPlain [BrRed]
+  , icount   = 11
+  , irarity  = [(1, 1)]
+  , iverbHit = "propel"
+  , iweight  = 1
+  , iaspects = []
+  , ieffects = [DropOrgan "slow 10"]
+  , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
+               , Fragile, Identified ]
+  , idesc    = ""
+  , ikit     = []
+  }
+mistAntidote = ItemKind
+  { isymbol  = '\''
+  , iname    = "mist"
+  , ifreq    = [("antidote mist", 1)]
+  , iflavour = zipPlain [BrBlue]
+  , icount   = 11
+  , irarity  = [(1, 1)]
+  , iverbHit = "cure"
+  , iweight  = 1
+  , iaspects = []
+  , ieffects = [DropOrgan "poisoned"]
+  , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
+               , Fragile, Identified ]
+  , idesc    = ""
+  , ikit     = []
+  }
+
+-- * Assorted temporary condition shrapnel
+
 mistStrength = ItemKind
   { isymbol  = '\''
   , iname    = "mist"
@@ -411,38 +446,6 @@ whiskeySpray = ItemKind
   , iaspects = []
   , ieffects = [CreateOrgan (3 + d 3) "drunk"]
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
-               , Fragile, Identified ]
-  , idesc    = ""
-  , ikit     = []
-  }
-mistAntiSlow = ItemKind
-  { isymbol  = '\''
-  , iname    = "mist"
-  , ifreq    = [("anti-slow mist", 1)]
-  , iflavour = zipPlain [BrRed]
-  , icount   = 11
-  , irarity  = [(1, 1)]
-  , iverbHit = "propel"
-  , iweight  = 1
-  , iaspects = []
-  , ieffects = [DropOrgan "slow 10"]
-  , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
-               , Fragile, Identified ]
-  , idesc    = ""
-  , ikit     = []
-  }
-mistAntidote = ItemKind
-  { isymbol  = '\''
-  , iname    = "mist"
-  , ifreq    = [("antidote mist", 1)]
-  , iflavour = zipPlain [BrBlue]
-  , icount   = 11
-  , irarity  = [(1, 1)]
-  , iverbHit = "cure"
-  , iweight  = 1
-  , iaspects = []
-  , ieffects = [DropOrgan "poisoned"]
-  , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
   , idesc    = ""
   , ikit     = []
