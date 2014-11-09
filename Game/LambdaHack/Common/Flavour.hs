@@ -53,8 +53,8 @@ flavourToColor Flavour{baseColor} = baseColor
 
 -- | Construct the full name of a flavour.
 flavourToName :: Flavour -> Text
-flavourToName Flavour{fancyName=Plain, ..} = colorToFancyName baseColor
-flavourToName Flavour{fancyName=Fancy, ..} = colorToPlainName baseColor
+flavourToName Flavour{fancyName=Plain, ..} = colorToPlainName baseColor
+flavourToName Flavour{fancyName=Fancy, ..} = colorToFancyName baseColor
 flavourToName Flavour{fancyName=Liquid, ..} = colorToLiquidName baseColor
 
 -- | Human-readable names for item colors. The plain set.
