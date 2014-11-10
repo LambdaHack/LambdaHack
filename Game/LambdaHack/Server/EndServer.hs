@@ -83,7 +83,10 @@ dropAllItems aid b hit = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   -- A faction that is defeated, leaderless or with temporarlity no member
   -- drops all items from the faction stash, too.
-  when (isNothing $ gleader fact) $
+  -- Projectiles can't drop stash, because they are blind and so the faction
+  -- would not see the actor that drops the stash, leading to a crash.
+  -- But this is OK --- projectiles can't be leaders, so stash dropped earlier.
+  when (not (bproj b) && isNothing (gleader fact)) $
     mapActorCStore_ CSha (dropCStoreItem CSha aid b hit) b
   mapActorCStore_ CInv (dropCStoreItem CInv aid b hit) b
   mapActorCStore_ CEqp (dropCStoreItem CEqp aid b hit) b
