@@ -960,7 +960,7 @@ effectCreateOrgan :: (MonadAtomic m, MonadServer m)
                   -> m Bool
 effectCreateOrgan target nDm grp = do
   k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
-  assert (k > 0) skip
+  assert (k >= 0) skip
   let c = CActor target COrgan
   bagBefore <- getsState $ getCBag c
   tb <- getsState $ getActorBody target
