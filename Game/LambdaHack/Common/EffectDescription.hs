@@ -12,8 +12,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
--- import Game.LambdaHack.Common.Actor (ppCStore)
+import Game.LambdaHack.Common.Actor (ppCStore)
 import qualified Game.LambdaHack.Common.Dice as Dice
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind
@@ -78,10 +79,12 @@ rawEffectToSuff effectText effectMInt =
     (_, InsertMove (Just p)) ->
       "of speed surge" <+> wrapInParens (makePhrase [MU.CarWs p "move"])
     (DropBestWeapon, _) -> "of disarming"
-    (DropEqp ' ' False, _) -> "of equipment drop"
-    (DropEqp symbol False, _) -> "of drop '" <> T.singleton symbol <> "'"
-    (DropEqp ' ' True, _) -> "of equipment smash"
-    (DropEqp symbol True, _) -> "of smash '" <> T.singleton symbol <> "'"
+    (DropItem COrgan grp True, _) -> "of nullify" <+> tshow grp
+    (DropItem store grp hit, _) ->
+      let storeText = ppCStore store
+          grpText = tshow grp
+          hitText = if hit then "smash" else "drop"
+      in "of" <+> grpText <+> "in" <+> storeText <+> hitText
     (SendFlying tmod, _) -> "of impact" <+> tmodToSuff "" tmod
     (PushActor tmod, _) -> "of pushing" <+> tmodToSuff "" tmod
     (PullActor tmod, _) -> "of pulling" <+> tmodToSuff "" tmod
@@ -104,7 +107,6 @@ rawEffectToSuff effectText effectMInt =
     (CreateOrgan k t, _) ->
       let stime = if k == 0 then "" else tshow k <> ":"
       in "(keep" <+> stime <+> tshow t <> ")"
-    (DropOrgan t, _) -> "of nullify" <+> tshow t
     (Temporary _, _) -> ""
     _ -> assert `failure` (effectText, effectMInt)
 

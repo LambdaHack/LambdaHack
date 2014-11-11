@@ -133,7 +133,8 @@ net = ItemKind
   , iverbHit = "entangle"
   , iweight  = 1000
   , iaspects = []
-  , ieffects = [CreateOrgan (3 + d 3) "slow 10", DropEqp symbolTorsoArmor False]
+  , ieffects = [ CreateOrgan (3 + d 3) "slow 10"
+               , DropItem CEqp "torso armor" False ]
   , ifeature = []
   , idesc    = "A wide net with weights along the edges. Entangles armor and restricts movement."
   , ikit     = []
@@ -270,7 +271,7 @@ necklace2 = necklace
   { irarity  = [(2, 0), (10, 1)]
   , iaspects = (Timeout $ (d 3 + 3 - dl 3) |*| 10) : iaspects necklace
   , ieffects = [ Recharging (Impress)
-               , Recharging (DropOrgan "temporary conditions")
+               , Recharging (DropItem COrgan "temporary conditions" True)
                , Recharging (Summon [("mobile animal", 1)] $ 1 + dl 2)
                , Recharging (Explode "waste") ]
   }
@@ -422,10 +423,12 @@ potion7 = potion  -- used only as initial equipment; count betrays identity
   , ifeature = [Identified]
   }
 potion8 = potion
-  { ieffects = [DropOrgan "poisoned", OnSmash (Explode "antidote mist")]
+  { ieffects = [ DropItem COrgan "poisoned" True
+               , OnSmash (Explode "antidote mist") ]
   }
 potion9 = potion
-  { ieffects = [ NoEffect "of nullification", DropOrgan "temporary conditions"
+  { ieffects = [ NoEffect "of nullification"
+               , DropItem COrgan "temporary conditions" True
                , OnSmash (Explode "blast 10") ]
   }
 
@@ -593,7 +596,7 @@ standardSummon = [("monster", 30), ("mobile animal", 70)]
 armorLeather = ItemKind
   { isymbol  = symbolTorsoArmor
   , iname    = "leather armor"
-  , ifreq    = [("useful", 100)]
+  , ifreq    = [("useful", 100), ("torso armor", 1)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
   , irarity  = [(3, 6), (10, 3)]
@@ -780,7 +783,8 @@ swordNullify = sword
   { ifreq    = [("useful", 100)]
   , irarity  = [(3, 0), (10, 1)]
   , iaspects = iaspects sword ++ [Timeout $ (d 4 + 5 - dl 4) |*| 2]
-  , ieffects = ieffects sword ++ [Recharging $ DropOrgan "temporary conditions"]
+  , ieffects = ieffects sword
+               ++ [Recharging $ DropItem COrgan "temporary conditions" True]
   , idesc    = "Cold, thin blade that pierces deeply and sends its victim into abrupt, sobering shock."
   }
 halberd = ItemKind

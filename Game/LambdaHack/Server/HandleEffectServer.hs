@@ -223,7 +223,7 @@ effectSem source target iid recharged effect = do
     IK.Paralyze p -> effectParalyze execSfx p target
     IK.InsertMove p -> effectInsertMove execSfx p target
     IK.DropBestWeapon -> effectDropBestWeapon execSfx target
-    IK.DropEqp symbol hit -> effectDropEqp execSfx hit target symbol
+    IK.DropItem store grp hit -> effectDropItem execSfx store grp hit target
     IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target Nothing
     IK.PushActor tmod ->
@@ -239,7 +239,6 @@ effectSem source target iid recharged effect = do
     IK.OnSmash _ -> return False  -- ignored under normal circumstances
     IK.Recharging e -> effectRecharging recursiveCall e recharged
     IK.CreateOrgan nDm t -> effectCreateOrgan target nDm t
-    IK.DropOrgan t -> effectDropOrgan target t
     IK.Temporary _ -> effectTemporary execSfx source iid
 
 -- + Individual semantic functions for effects
@@ -283,7 +282,7 @@ halveCalm target = do
 
 -- ** Hurt
 
--- Modified by armor.
+-- Modified by armor. Can, exceptionally, add HP.
 effectHurt :: (MonadAtomic m, MonadServer m)
            => Dice.Dice -> ActorId -> ActorId -> Bool
            -> m Bool
@@ -370,7 +369,7 @@ effectImpress execSfx source target = do
     execUpdAtomic $ UpdOldFidActor target (boldfid tb) (bfid sb)
     return True
 
--- ** SummonFriend
+-- ** CallFriend
 
 effectCallFriend :: (MonadAtomic m, MonadServer m)
                    => Int -> ActorId -> ActorId
@@ -461,7 +460,7 @@ effectApplyPerfume execSfx target = do
 effectBurn :: (MonadAtomic m, MonadServer m)
            => m () -> Int -> ActorId -> ActorId
            -> m Bool
-effectBurn execSfx power source target = do
+effectBurn execSfx power source target = assert (power > 0) $ do
   void $ effectHurt (Dice.intToDice power) source target True
   execSfx
   return True
@@ -672,35 +671,32 @@ dropCStoreItem store aid b hit iid kit@(k, _) = do
                                    (CActor aid CGround)
     mapM_ execUpdAtomic mvCmd
 
--- ** DropEqp
+-- ** DropItem
 
 -- | Make the target actor drop all items in his equiment with the given symbol
 -- (not just a random one, or cluttering equipment with rubbish
 -- would be beneficial).
-effectDropEqp :: (MonadAtomic m, MonadServer m)
-              => m () -> Bool -> ActorId -> Char -> m Bool
-effectDropEqp execSfx hit target symbol = do
+effectDropItem :: (MonadAtomic m, MonadServer m)
+               => m () -> CStore -> GroupName ItemKind -> Bool -> ActorId
+               -> m Bool
+effectDropItem execSfx store grp hit target = do
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  discoKind <- getsServer sdiscoKind
   b <- getsState $ getActorBody target
-  effectTransformEqp execSfx target symbol CEqp $
-    dropCStoreItem CEqp target b hit
-
-effectTransformEqp :: forall m. (MonadAtomic m, MonadServer m)
-                   => m () -> ActorId -> Char -> CStore
-                   -> (ItemId -> ItemQuant -> m ())
-                   -> m Bool
-effectTransformEqp execSfx target symbol cstore m = do
-  let hasSymbol (iid, _) = do
+  let hasGroup (iid, _) = do
         item <- getsState $ getItemBody iid
-        return $! jsymbol item == symbol
-  assocsCStore <- getsState $ EM.assocs . getActorBag target cstore
-  is <- if symbol == ' '
-        then return assocsCStore
-        else filterM hasSymbol assocsCStore
+        case EM.lookup (jkindIx item) discoKind of
+          Just kindId ->
+            return $! maybe False (> 0) $ lookup grp $ IK.ifreq (okind kindId)
+          Nothing ->
+            assert `failure` (target, grp, iid, item)
+  assocsCStore <- getsState $ EM.assocs . getActorBag target store
+  is <- filterM hasGroup assocsCStore
   if null is
     then return False
     else do
-      mapM_ (uncurry m) is
-      execSfx
+      mapM_ (\(iid, kit) -> dropCStoreItem store target b hit iid kit) is
+      unless (store == COrgan) execSfx
       return True
 
 -- ** SendFlying
@@ -774,7 +770,7 @@ sendFlyingVector source target modePush = do
 -- Note that projectiles can be teleported, too, for extra fun.
 effectTeleport :: (MonadAtomic m, MonadServer m)
                => m () -> Int -> ActorId -> m Bool
-effectTeleport execSfx range target = do
+effectTeleport execSfx range target = assert (range > 0) $ do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody target
   Level{ltile} <- getLevel (blid b)
@@ -868,6 +864,25 @@ effectActivateInv execSfx target symbol = do
   effectTransformEqp execSfx target symbol CInv $ \iid _ ->
     applyItem target iid CInv
 
+effectTransformEqp :: forall m. (MonadAtomic m, MonadServer m)
+                   => m () -> ActorId -> Char -> CStore
+                   -> (ItemId -> ItemQuant -> m ())
+                   -> m Bool
+effectTransformEqp execSfx target symbol cstore m = do
+  let hasSymbol (iid, _) = do
+        item <- getsState $ getItemBody iid
+        return $! jsymbol item == symbol
+  assocsCStore <- getsState $ EM.assocs . getActorBag target cstore
+  is <- if symbol == ' '
+        then return assocsCStore
+        else filterM hasSymbol assocsCStore
+  if null is
+    then return False
+    else do
+      mapM_ (uncurry m) is
+      execSfx
+      return True
+
 -- ** Explode
 
 effectExplode :: (MonadAtomic m, MonadServer m)
@@ -945,6 +960,7 @@ effectCreateOrgan :: (MonadAtomic m, MonadServer m)
                   -> m Bool
 effectCreateOrgan target nDm grp = do
   k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
+  assert (k > 0) skip
   let c = CActor target COrgan
   bagBefore <- getsState $ getCBag c
   tb <- getsState $ getActorBody target
@@ -982,30 +998,6 @@ effectCreateOrgan target nDm grp = do
           newIt = replicate afterK newTimer
       when (afterIt /= newIt) $
         execUpdAtomic $ UpdTimeItem iid c afterIt newIt
-      return True
-
--- ** DropOrgan
-
-effectDropOrgan :: (MonadAtomic m, MonadServer m)
-                   => ActorId -> GroupName ItemKind
-                   -> m Bool
-effectDropOrgan target grp = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-  discoKind <- getsServer sdiscoKind
-  b <- getsState $ getActorBody target
-  let hasGroup (iid, _) = do
-        item <- getsState $ getItemBody iid
-        case EM.lookup (jkindIx item) discoKind of
-          Just kindId ->
-            return $! maybe False (> 0) $ lookup grp $ IK.ifreq (okind kindId)
-          Nothing ->
-            assert `failure` (target, grp, iid, item)
-  assocsCStore <- getsState $ EM.assocs . getActorBag target COrgan
-  is <- filterM hasGroup assocsCStore
-  if null is
-    then return False
-    else do
-      mapM_ (\(iid, kit) -> dropCStoreItem COrgan target b True iid kit) is
       return True
 
 -- ** Temporary

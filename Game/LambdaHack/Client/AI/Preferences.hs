@@ -62,10 +62,13 @@ effectToBenefit cops b activeItems fact eff =
     IK.Paralyze p -> -20 * p
     IK.InsertMove p -> 50 * p
     IK.DropBestWeapon -> -50
-    IK.DropEqp ' ' False -> -80
-    IK.DropEqp ' ' True -> -100
-    IK.DropEqp _ False -> -40
-    IK.DropEqp _ True -> -50
+    IK.DropItem COrgan grp True ->
+      -- TODO: this is calculated only for future use,
+      -- not when some actor is known to be affected;
+      -- so this is benefit of general pickup, not of use
+      - organBenefit grp cops b
+    IK.DropItem _ _ False -> -15
+    IK.DropItem _ _ True -> -30
     IK.SendFlying _ -> -10  -- but useful on self sometimes, too
     IK.PushActor _ -> -10  -- but useful on self sometimes, too
     IK.PullActor _ -> -10
@@ -84,10 +87,6 @@ effectToBenefit cops b activeItems fact eff =
     IK.CreateOrgan _k t ->  -- TODO: use the timeout and also check
                             -- if the tmp aspect already active at the time
       organBenefit t cops b
-    IK.DropOrgan t ->  -- TODO: this is calculated only for future use,
-                          -- not when some actor is known to be affected;
-                          -- so this is benefit of general pickup, not of use
-      - organBenefit t cops b
     IK.Temporary _ -> 0
 
 -- TODO: calculating this for "temporary" takes forever

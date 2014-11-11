@@ -661,8 +661,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Paralyze{} -> actorVerbMU aid b "be paralyzed"
         IK.InsertMove{} -> actorVerbMU aid b "move with extreme speed"
         IK.DropBestWeapon -> actorVerbMU aid b "be disarmed"
-        IK.DropEqp _ False -> actorVerbMU aid b "be stripped"  -- TODO
-        IK.DropEqp _ True -> actorVerbMU aid b "be violently stripped"
+        IK.DropItem COrgan _ True -> skip
+        IK.DropItem _ _ False -> actorVerbMU aid b "be stripped"  -- TODO
+        IK.DropItem _ _ True -> actorVerbMU aid b "be violently stripped"
         IK.SendFlying{} -> actorVerbMU aid b "be sent flying"
         IK.PushActor{} -> actorVerbMU aid b "be pushed"
         IK.PullActor{} -> actorVerbMU aid b "be pulled"
@@ -702,7 +703,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.OnSmash{} -> assert `failure` sfx
         IK.Recharging{} -> assert `failure` sfx
         IK.CreateOrgan{} -> skip
-        IK.DropOrgan{} -> skip
         IK.Temporary t -> actorVerbMU aid b $ MU.Text t
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg

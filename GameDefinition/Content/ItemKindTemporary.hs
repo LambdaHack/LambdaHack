@@ -65,10 +65,10 @@ tmpPoisoned =
 tmpSlow10Resistant =
   let tmp = tmpAs "slow resistant" []
   in tmp { icount = 7 + d 5
-         , ieffects = [Recharging (DropOrgan "slow 10")] ++ ieffects tmp
+         , ieffects = [Recharging (DropItem COrgan "slow 10" True)] ++ ieffects tmp
          }
 tmpPoisonResitant =
   let tmp = tmpAs "poison resistant" []
   in tmp { icount = 7 + d 5
-         , ieffects = [Recharging (DropOrgan "poisoned")] ++ ieffects tmp
+         , ieffects = [Recharging (DropItem COrgan "poisoned" True)] ++ ieffects tmp
          }

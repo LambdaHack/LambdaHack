@@ -107,7 +107,7 @@ lash = fist
   , ifreq    = [("lash", 100)]
   , icount   = 1
   , iverbHit = "lash"
-  , ieffects = [Hurt (4 * d 1), DropOrgan "far-sighted"]
+  , ieffects = [Hurt (4 * d 1), DropItem COrgan "far-sighted" True]
   , idesc    = ""
   }
 noseTip = fist
@@ -123,7 +123,7 @@ lip = fist
   , ifreq    = [("lip", 10)]
   , icount   = 2
   , iverbHit = "lap"
-  , ieffects = [Hurt (2 * d 1), DropOrgan "keen-smelling"]  -- TODO: decrease Hurt, but use
+  , ieffects = [Hurt (2 * d 1), DropItem COrgan "keen-smelling" True]  -- TODO: decrease Hurt, but use
   , idesc    = ""
   }
 
@@ -189,7 +189,7 @@ pupil = fist
   , icount   = 1
   , iverbHit = "gaze at"
   , iaspects = [AddSight 7, Timeout $ 5 + d 5]
-  , ieffects = [Hurt (4 * d 1), Recharging (DropOrgan "temporary conditions")]  -- TODO: decrease Hurt, but use
+  , ieffects = [Hurt (4 * d 1), Recharging (DropItem COrgan "temporary conditions" True)]  -- TODO: decrease Hurt, but use
   , idesc    = ""
   }
 

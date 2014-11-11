@@ -74,7 +74,8 @@ data Effect a =
   | PushActor !ThrowMod
   | PullActor !ThrowMod
   | DropBestWeapon
-  | DropEqp !Char !Bool   -- ^ symbol @' '@ means all, @True@ means hit on drop
+  | DropItem !CStore !(GroupName ItemKind) !Bool
+                          -- ^ @DropItem CGround x True@ means stomp on items
   | ActivateInv !Char     -- ^ symbol @' '@ means all
   | ApplyPerfume
     -- Exotic effects follow.
@@ -85,7 +86,6 @@ data Effect a =
                           -- ^ create a matching item and insert as an organ
                           --   with the given timer; not restricted
                           --   to temporary aspect item kinds
-  | DropOrgan !(GroupName ItemKind)  -- ^ usually a Temporary organ, hit on drop
   | Temporary !Text       -- ^ the item is temporary, vanishes at even void
                           --   Periodic activation, unless Durable
   deriving (Show, Read, Eq, Ord, Generic, Functor)
@@ -198,8 +198,6 @@ effectTrav (Paralyze a) f = do
 effectTrav (InsertMove a) f = do
   b <- f a
   return $! InsertMove b
-effectTrav DropBestWeapon _ = return DropBestWeapon
-effectTrav (DropEqp symbol hit) _ = return $! DropEqp symbol hit
 effectTrav (SendFlying tmod) _ = return $! SendFlying tmod
 effectTrav (PushActor tmod) _ = return $! PushActor tmod
 effectTrav (PullActor tmod) _ = return $! PullActor tmod
@@ -208,6 +206,8 @@ effectTrav (Teleport a) f = do
   return $! Teleport b
 effectTrav (PolyItem cstore) _ = return $! PolyItem cstore
 effectTrav (Identify cstore) _ = return $! Identify cstore
+effectTrav DropBestWeapon _ = return DropBestWeapon
+effectTrav (DropItem store grp hit) _ = return $! DropItem store grp hit
 effectTrav (ActivateInv symbol) _ = return $! ActivateInv symbol
 effectTrav (OneOf la) f = do
   lb <- mapM (\a -> effectTrav a f) la
@@ -220,7 +220,6 @@ effectTrav (Recharging effa) f = do
   effb <- effectTrav effa f
   return $! Recharging effb
 effectTrav (CreateOrgan k t) _ = return $! CreateOrgan k t
-effectTrav (DropOrgan t) _ = return $! DropOrgan t
 effectTrav (Temporary t) _ = return $! Temporary t
 
 -- | Transform an aspect using a stateful function.
