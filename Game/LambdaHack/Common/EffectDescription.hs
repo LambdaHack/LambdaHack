@@ -55,9 +55,6 @@ rawEffectToSuff effectText effectMInt =
     (_, Summon _freqs (Just 1)) -> "of summoning"  -- TODO
     (Summon _freqs t, _) -> "of summoning"
                             <+> wrapInParens (dropPlus t <+> "actors")
-    (_, CreateItem (Just 1)) -> "of uncovering"
-    (CreateItem t, _) -> "of uncovering"
-                         <+> wrapInParens (dropPlus t <+> "items")
     (ApplyPerfume, _) -> "of smell removal"
     (Burn p, _) | p <= 0 -> assert `failure` (effectText, effectMInt)
     (Burn p, _) -> wrapInParens (makePhrase [MU.CarWs p "burn"])
@@ -85,6 +82,12 @@ rawEffectToSuff effectText effectMInt =
           grpText = tshow grp
           hitText = if hit then "smash" else "drop"
       in "of" <+> grpText <+> "in" <+> storeText <+> hitText
+    (CreateItem COrgan grp tim, _) ->
+      let stime = if tim == TimerNone then "" else tshow tim <> ":"
+      in "(keep" <+> stime <+> tshow grp <> ")"
+    (CreateItem _ grp _, _) ->
+      let object = if grp == "useful" then "" else tshow grp
+      in "of" <+> object <+> "uncovering"
     (SendFlying tmod, _) -> "of impact" <+> tmodToSuff "" tmod
     (PushActor tmod, _) -> "of pushing" <+> tmodToSuff "" tmod
     (PullActor tmod, _) -> "of pulling" <+> tmodToSuff "" tmod
@@ -104,9 +107,6 @@ rawEffectToSuff effectText effectMInt =
       in makePhrase ["of", MU.CardinalWs (length l) subject]
     (OnSmash _, _) -> ""  -- printed inside a separate section
     (Recharging _, _) -> ""  -- printed inside Periodic or Timeout
-    (CreateOrgan k t, _) ->
-      let stime = if k == 0 then "" else tshow k <> ":"
-      in "(keep" <+> stime <+> tshow t <> ")"
     (Temporary _, _) -> ""
     _ -> assert `failure` (effectText, effectMInt)
 

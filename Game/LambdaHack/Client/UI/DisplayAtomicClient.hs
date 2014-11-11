@@ -646,7 +646,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               "inhale the sweet smell that weakens resolve and erodes loyalty"
         IK.CallFriend{} -> skip
         IK.Summon{} -> skip
-        IK.CreateItem{} -> skip
         IK.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
         IK.Burn{} ->
@@ -664,6 +663,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.DropItem COrgan _ True -> skip
         IK.DropItem _ _ False -> actorVerbMU aid b "be stripped"  -- TODO
         IK.DropItem _ _ True -> actorVerbMU aid b "be violently stripped"
+        IK.CreateItem{} -> skip
         IK.SendFlying{} -> actorVerbMU aid b "be sent flying"
         IK.PushActor{} -> actorVerbMU aid b "be pushed"
         IK.PullActor{} -> actorVerbMU aid b "be pulled"
@@ -702,7 +702,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.OneOf{} -> skip
         IK.OnSmash{} -> assert `failure` sfx
         IK.Recharging{} -> assert `failure` sfx
-        IK.CreateOrgan{} -> skip
         IK.Temporary t -> actorVerbMU aid b $ MU.Text t
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg

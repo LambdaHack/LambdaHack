@@ -2,9 +2,12 @@
 -- | The type of kinds of weapons, treasure, organs, shrapnel and actors.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..)
-  , Effect(..), Aspect(..), ThrowMod(..), Feature(..), EqpSlot(..)
-  , toVelocity, toLinger, validateSingleItemKind, validateAllItemKind
+  , Effect(..), TimerDice(..)
+  , Aspect(..), ThrowMod(..)
+  , Feature(..), EqpSlot(..)
   , effectTrav, aspectTrav
+  , toVelocity, toLinger, toOrganGameTurn, toOrganActorTurn, toOrganNone
+  , validateSingleItemKind, validateAllItemKind
   ) where
 
 import qualified Control.Monad.State as St
@@ -62,7 +65,6 @@ data Effect a =
   | Impress
   | CallFriend !a
   | Summon !(Freqs ItemKind) !a
-  | CreateItem !a
   | Ascend !Int
   | Escape !Int           -- ^ the Int says if can be placed on last level, etc.
   | Paralyze !a
@@ -76,19 +78,24 @@ data Effect a =
   | DropBestWeapon
   | DropItem !CStore !(GroupName ItemKind) !Bool
                           -- ^ @DropItem CGround x True@ means stomp on items
+  | CreateItem !CStore !(GroupName ItemKind) !TimerDice
+                          -- ^ create an item of the group and insert into
+                          --   the store with the given random timer
   | ActivateInv !Char     -- ^ symbol @' '@ means all
   | ApplyPerfume
     -- Exotic effects follow.
   | OneOf ![Effect a]
   | OnSmash !(Effect a)   -- ^ trigger if item smashed (not applied nor meleed)
   | Recharging !(Effect a)  -- ^ this effect inactive until timeout passes
-  | CreateOrgan !Dice.Dice !(GroupName ItemKind)
-                          -- ^ create a matching item and insert as an organ
-                          --   with the given timer; not restricted
-                          --   to temporary aspect item kinds
   | Temporary !Text       -- ^ the item is temporary, vanishes at even void
                           --   Periodic activation, unless Durable
   deriving (Show, Read, Eq, Ord, Generic, Functor)
+
+data TimerDice =
+    TimerNone
+  | TimerGameTurn !Dice.Dice
+  | TimerActorTurn !Dice.Dice
+  deriving (Show, Read, Eq, Ord, Generic)
 
 -- | Aspects of items. Those that are named @Add*@ are additive
 -- (starting at 0) for all items wielded by an actor and they affect the actor.
@@ -150,6 +157,8 @@ data EqpSlot =
 
 instance Hashable a => Hashable (Effect a)
 
+instance Hashable TimerDice
+
 instance Hashable a => Hashable (Aspect a)
 
 instance Hashable ThrowMod
@@ -159,6 +168,8 @@ instance Hashable Feature
 instance Hashable EqpSlot
 
 instance Binary a => Binary (Effect a)
+
+instance Binary TimerDice
 
 instance Binary a => Binary (Aspect a)
 
@@ -185,9 +196,6 @@ effectTrav (CallFriend a) f = do
 effectTrav (Summon freqs a) f = do
   b <- f a
   return $! Summon freqs b
-effectTrav (CreateItem a) f = do
-  b <- f a
-  return $! CreateItem b
 effectTrav ApplyPerfume _ = return ApplyPerfume
 effectTrav (Burn p) _ = return $! Burn p
 effectTrav (Ascend p) _ = return $! Ascend p
@@ -208,6 +216,7 @@ effectTrav (PolyItem cstore) _ = return $! PolyItem cstore
 effectTrav (Identify cstore) _ = return $! Identify cstore
 effectTrav DropBestWeapon _ = return DropBestWeapon
 effectTrav (DropItem store grp hit) _ = return $! DropItem store grp hit
+effectTrav (CreateItem store grp tim) _ = return $! CreateItem store grp tim
 effectTrav (ActivateInv symbol) _ = return $! ActivateInv symbol
 effectTrav (OneOf la) f = do
   lb <- mapM (\a -> effectTrav a f) la
@@ -219,7 +228,6 @@ effectTrav (Explode t) _ = return $! Explode t
 effectTrav (Recharging effa) f = do
   effb <- effectTrav effa f
   return $! Recharging effb
-effectTrav (CreateOrgan k t) _ = return $! CreateOrgan k t
 effectTrav (Temporary t) _ = return $! Temporary t
 
 -- | Transform an aspect using a stateful function.
@@ -265,6 +273,15 @@ toVelocity n = ToThrow $ ThrowMod n 100
 
 toLinger :: Int -> Feature
 toLinger n = ToThrow $ ThrowMod 100 n
+
+toOrganGameTurn :: GroupName ItemKind -> Dice.Dice -> Effect Dice.Dice
+toOrganGameTurn grp nDm = CreateItem COrgan grp (TimerGameTurn nDm)
+
+toOrganActorTurn :: GroupName ItemKind -> Dice.Dice -> Effect Dice.Dice
+toOrganActorTurn grp nDm = CreateItem COrgan grp (TimerActorTurn nDm)
+
+toOrganNone :: GroupName ItemKind -> Effect Dice.Dice
+toOrganNone grp = CreateItem COrgan grp TimerNone
 
 -- | Catch invalid item kind definitions.
 validateSingleItemKind :: ItemKind -> [Text]

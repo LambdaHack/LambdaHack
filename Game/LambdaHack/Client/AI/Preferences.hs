@@ -54,7 +54,6 @@ effectToBenefit cops b activeItems fact eff =
     IK.CallFriend p -> 20 * p
     IK.Summon{} | dungeonDweller -> 1 -- probably summons friends or crazies
     IK.Summon{} -> 0                  -- probably generates enemies
-    IK.CreateItem p -> 20 * p
     IK.ApplyPerfume -> -10
     IK.Burn p -> -15 * p           -- usually splash damage, etc.
     IK.Ascend{} -> 1               -- change levels sensibly, in teams
@@ -69,6 +68,10 @@ effectToBenefit cops b activeItems fact eff =
       - organBenefit grp cops b
     IK.DropItem _ _ False -> -15
     IK.DropItem _ _ True -> -30
+    IK.CreateItem COrgan grp _ ->  -- TODO: use the timeout and also check
+                                   -- if the tmp aspect already active at the time
+      organBenefit grp cops b
+    IK.CreateItem _ _ _ -> 30
     IK.SendFlying _ -> -10  -- but useful on self sometimes, too
     IK.PushActor _ -> -10  -- but useful on self sometimes, too
     IK.PullActor _ -> -10
@@ -84,9 +87,6 @@ effectToBenefit cops b activeItems fact eff =
     IK.OnSmash _ -> -10
     IK.Recharging e -> effectToBenefit cops b activeItems fact e
                            `divUp` 3  -- TODO: use Timeout
-    IK.CreateOrgan _k t ->  -- TODO: use the timeout and also check
-                            -- if the tmp aspect already active at the time
-      organBenefit t cops b
     IK.Temporary _ -> 0
 
 -- TODO: calculating this for "temporary" takes forever

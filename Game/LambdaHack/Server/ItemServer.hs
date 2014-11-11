@@ -1,6 +1,6 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemServer
-  ( rollItem, rollAndRegisterItem, registerItem, createItems
+  ( rollItem, rollAndRegisterItem, registerItem
   , placeItemsInDungeon, embedItemsInDungeon, fullAssocsServer
   , activeItemsServer, itemToFullServer, mapActorCStore_
   ) where
@@ -52,13 +52,12 @@ registerItem item itemKnown@(_, iae) seed k container verbose = do
       execUpdAtomic $ cmd icounter item (k, []) container
       return $! icounter
 
-createItems :: (MonadAtomic m, MonadServer m)
-            => Int -> Point -> LevelId -> m ()
-createItems n pos lid = do
+createLevelItem :: (MonadAtomic m, MonadServer m)
+                => Point -> LevelId -> m ()
+createLevelItem pos lid = do
   Level{litemFreq} <- getLevel lid
   let container = CFloor lid pos
-  replicateM_ n $ void $
-    rollAndRegisterItem lid litemFreq container True Nothing
+  void $ rollAndRegisterItem lid litemFreq container True Nothing
 
 embedItem :: (MonadAtomic m, MonadServer m)
           => LevelId -> Point -> Kind.Id TileKind -> m ()
@@ -127,7 +126,7 @@ placeItemsInDungeon = do
                    , \p _ -> dist p > 1
                    , \p _ -> EM.notMember p lfloor
                    ]
-          createItems 1 pos lid
+          createLevelItem pos lid
   dungeon <- getsState sdungeon
   mapWithKeyM_ initialItems dungeon
 

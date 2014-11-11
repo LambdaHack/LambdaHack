@@ -316,7 +316,7 @@ mistStrength = ItemKind
   , iverbHit = "strengthen"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [CreateOrgan (3 + d 3) "strengthened"]
+  , ieffects = [toOrganActorTurn "strengthened" (3 + d 3)]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
   , idesc    = ""
@@ -332,7 +332,7 @@ mistWeakness = ItemKind
   , iverbHit = "weaken"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [CreateOrgan (3 + d 3) "weakened"]
+  , ieffects = [toOrganGameTurn "weakened" (3 + d 3)]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
   , idesc    = ""
@@ -348,7 +348,7 @@ protectingBalm = ItemKind
   , iverbHit = "balm"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [CreateOrgan (3 + d 3) "protected"]
+  , ieffects = [toOrganActorTurn "protected" (3 + d 3)]
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
                , Fragile, Identified ]
   , idesc    = ""
@@ -364,7 +364,7 @@ redPaint = ItemKind
   , iverbHit = "paint"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [CreateOrgan (3 + d 3) "painted red"]
+  , ieffects = [toOrganGameTurn "painted red" (3 + d 3)]
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
                , Fragile, Identified ]
   , idesc    = ""
@@ -380,7 +380,7 @@ hasteSpray = ItemKind
   , iverbHit = "haste"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [CreateOrgan (3 + d 3) "fast 20"]
+  , ieffects = [toOrganActorTurn "fast 20" (3 + d 3)]
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
                , Fragile, Identified ]
   , idesc    = ""
@@ -396,7 +396,7 @@ slownessSpray = ItemKind
   , iverbHit = "slow"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [CreateOrgan (3 + d 3) "slow 10"]
+  , ieffects = [toOrganGameTurn "slow 10" (3 + d 3)]
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
                , Fragile, Identified ]
   , idesc    = ""
@@ -412,7 +412,7 @@ eyeDrop = ItemKind
   , iverbHit = "cleanse"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [CreateOrgan (3 + d 3) "far-sighted"]
+  , ieffects = [toOrganActorTurn "far-sighted" (3 + d 3)]
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
                , Fragile, Identified ]
   , idesc    = ""
@@ -428,7 +428,7 @@ smellyDroplet = ItemKind
   , iverbHit = "sensitize"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [CreateOrgan (3 + d 3) "keen-smelling"]
+  , ieffects = [toOrganActorTurn "keen-smelling" (3 + d 3)]
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
                , Fragile, Identified ]
   , idesc    = ""
@@ -444,7 +444,7 @@ whiskeySpray = ItemKind
   , iverbHit = "inebriate"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [CreateOrgan (3 + d 3) "drunk"]
+  , ieffects = [toOrganActorTurn "drunk" (3 + d 3)]
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
                , Fragile, Identified ]
   , idesc    = ""

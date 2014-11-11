@@ -215,7 +215,6 @@ effectSem source target iid recharged effect = do
     IK.Impress -> effectImpress execSfx source target
     IK.CallFriend p -> effectCallFriend p source target
     IK.Summon freqs p -> effectSummon recursiveCall freqs p source target
-    IK.CreateItem p -> effectCreateItem p target
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.Burn p -> effectBurn execSfx p source target
     IK.Ascend p -> effectAscend recursiveCall execSfx p target
@@ -224,6 +223,7 @@ effectSem source target iid recharged effect = do
     IK.InsertMove p -> effectInsertMove execSfx p target
     IK.DropBestWeapon -> effectDropBestWeapon execSfx target
     IK.DropItem store grp hit -> effectDropItem execSfx store grp hit target
+    IK.CreateItem store grp tim -> effectCreateItem target store grp tim
     IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target Nothing
     IK.PushActor tmod ->
@@ -238,7 +238,6 @@ effectSem source target iid recharged effect = do
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return False  -- ignored under normal circumstances
     IK.Recharging e -> effectRecharging recursiveCall e recharged
-    IK.CreateOrgan nDm t -> effectCreateOrgan target nDm t
     IK.Temporary _ -> effectTemporary execSfx source iid
 
 -- + Individual semantic functions for effects
@@ -430,16 +429,6 @@ effectSummon recursiveCall actorFreq power source target = assert (power > 0) $ 
             $ UpdLeadFaction (bfid b) Nothing (Just (aid, Nothing))
           return True
     return $! or bs
-
--- ** CreateItem
-
-effectCreateItem :: (MonadAtomic m, MonadServer m)
-                 => Int -> ActorId -> m Bool
-effectCreateItem power target = assert (power > 0) $ do
-  -- Obvious effect, nothing announced.
-  tb <- getsState $ getActorBody target
-  void $ createItems power (bpos tb) (blid tb)
-  return True
 
 -- ** ApplyPerfume
 
@@ -816,7 +805,7 @@ effectPolyItem execSfx cstore target = do
               kit = (maxCount, take maxCount itemTimer)
           execUpdAtomic $ UpdDestroyItem iid itemBase kit c
           execSfx
-          effectCreateItem 1 target
+          effectCreateItem target cstore "useful" IK.TimerNone
         else do
           tb <- getsState $ getActorBody target
           execSfxAtomic $ SfxMsgFid (bfid tb) $
@@ -953,17 +942,27 @@ effectRecharging recursiveCall e recharged =
   then recursiveCall e
   else return False
 
--- ** CreateOrgan
+-- ** CreateItem
 
-effectCreateOrgan :: (MonadAtomic m, MonadServer m)
-                  => ActorId -> Dice.Dice -> GroupName ItemKind
+effectCreateItem :: (MonadAtomic m, MonadServer m)
+                  => ActorId -> CStore -> GroupName ItemKind -> IK.TimerDice
                   -> m Bool
-effectCreateOrgan target nDm grp = do
-  k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
-  assert (k >= 0) skip
-  let c = CActor target COrgan
-  bagBefore <- getsState $ getCBag c
+effectCreateItem target store grp tim = do
   tb <- getsState $ getActorBody target
+  delta <- case tim of
+    IK.TimerNone -> return $ Delta timeZero
+    IK.TimerGameTurn nDm -> do
+      k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
+      assert (k >= 0) skip
+      return $! timeDeltaScale (Delta timeTurn) k
+    IK.TimerActorTurn nDm -> do
+      k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
+      assert (k >= 0) skip
+      activeItems <- activeItemsServer target
+      let actorTurn = ticksPerMeter $ bspeed tb activeItems
+      return $! timeDeltaScale actorTurn k
+  let c = CActor target store
+  bagBefore <- getsState $ getCBag c
   let litemFreq = [(grp, 1)]
   m4 <- rollItem (blid tb) litemFreq
   let (itemKnown, itemFull, seed, _) = case m4 of
@@ -974,31 +973,29 @@ effectCreateOrgan target nDm grp = do
         Nothing -> Nothing
         Just iid -> (iid,) <$> iid `EM.lookup` bagBefore
   case mquant of
-    Just (iid, (1, afterIt)) -> do  -- already has such an item, increase timer
-      let newIt = case afterIt of
-            [] -> []  -- permanent item, we don't touch it
-            timer : rest ->  -- we increase duration only by half delta
-              let halfTurns = timeDeltaScale (Delta timeTurn) k `timeDeltaDiv` 2
-                  newTimer = timer `timeShift` halfTurns
-              in newTimer : rest
+    Just (iid, (1, afterIt@(timer : rest))) | tim /= IK.TimerNone -> do
+      -- Already has such an item, so only increase the timer by half delta.
+      let newIt = let halfTurns = delta `timeDeltaDiv` 2
+                      newTimer = timer `timeShift` halfTurns
+                  in newTimer : rest
       when (afterIt /= newIt) $
         execUpdAtomic $ UpdTimeItem iid c afterIt newIt  -- TODO: announce
-      return True
     _ -> do
       -- Multiple such items, so it's a periodic poison, etc., so just stack,
-      -- resetting the timer; or no such items at all, so create one.
+      -- or no such items at all, so create some.
       iid <- registerItem (itemBase itemFull) itemKnown seed
                           (itemK itemFull) c True
-      bagAfter <- getsState $ getCBag c
-      localTime <- getsState $ getLocalTime (blid tb)
-      let newTimer = localTime `timeShift` timeDeltaScale (Delta timeTurn) k
-          (afterK, afterIt) = case iid `EM.lookup` bagAfter of
-            Nothing -> assert `failure` (iid, bagAfter, c)
-            Just kit -> kit
-          newIt = replicate afterK newTimer
-      when (afterIt /= newIt) $
-        execUpdAtomic $ UpdTimeItem iid c afterIt newIt
-      return True
+      unless (tim == IK.TimerNone) $ do
+        bagAfter <- getsState $ getCBag c
+        localTime <- getsState $ getLocalTime (blid tb)
+        let newTimer = localTime `timeShift` delta
+            (afterK, afterIt) = case iid `EM.lookup` bagAfter of
+              Nothing -> assert `failure` (iid, bagAfter, c)
+              Just kit -> kit
+            newIt = replicate afterK newTimer
+        when (afterIt /= newIt) $
+          execUpdAtomic $ UpdTimeItem iid c afterIt newIt
+  return True
 
 -- ** Temporary
 

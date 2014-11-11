@@ -7,9 +7,9 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind
 
 cdefs :: ContentDef TileKind
@@ -72,7 +72,8 @@ pillarCache = TileKind
                , ("legendLit", 100), ("legendDark", 100) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Cause $ IK.CreateItem 1, ChangeTo "cachable"]
+  , tfeature = [ Cause $ IK.CreateItem CGround "useful" IK.TimerNone
+               , ChangeTo "cachable" ]
   }
 lampPost = TileKind
   { tsymbol  = 'O'
