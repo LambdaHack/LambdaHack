@@ -151,7 +151,7 @@ jumpingPole = ItemKind
   , irarity  = [(1, 2), (10, 1)]
   , iverbHit = "prod"
   , iweight  = 10000
-  , iaspects = [Timeout $ (d 3 + 3 - dl 3) |*| 10]
+  , iaspects = [Timeout $ (d 2 + 2 - dl 2) |*| 10]
   , ieffects = [Recharging (toOrganActorTurn "fast 20" 1)]
   , ifeature = [Durable, Applicable, Identified]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
@@ -407,7 +407,7 @@ potion5 = potion
 potion6 = potion
   { irarity  = [(3, 3), (10, 6)]
   , ieffects = [ OneOf [ Dominate, DropBestWeapon, RefillHP 20, Burn 9
-                       , InsertMove 2 ]
+                       , InsertMove 4 ]
                , OnSmash (OneOf [ Explode "healing mist 2"
                                 , Explode "healing mist 2"
                                 , Explode "pheromone"
@@ -427,8 +427,7 @@ potion8 = potion
                , OnSmash (Explode "antidote mist") ]
   }
 potion9 = potion
-  { ieffects = [ NoEffect "of nullification"
-               , DropItem COrgan "temporary conditions" True
+  { ieffects = [ DropItem COrgan "temporary conditions" True
                , OnSmash (Explode "blast 10") ]
   }
 
@@ -562,7 +561,7 @@ scroll3 = scroll
   }
 scroll4 = scroll
   { ieffects = [OneOf [ Teleport $ d 3 |*| 3, RefillCalm 10, RefillCalm (-10)
-                      , InsertMove 4, Paralyze 10, Identify CGround ]]
+                      , InsertMove 3, Paralyze 10, Identify CGround ]]
   }
 scroll5 = scroll
   { irarity  = [(3, 3), (10, 6)]
@@ -578,7 +577,7 @@ scroll6 = scroll
   }
 scroll7 = scroll
   { irarity  = [(10, 3)]
-  , ieffects = [InsertMove $ d 2 + dl 2]
+  , ieffects = [InsertMove $ 1 + d 2 + dl 2]
   }
 scroll8 = scroll
   { irarity  = [(3, 8), (10, 4)]
