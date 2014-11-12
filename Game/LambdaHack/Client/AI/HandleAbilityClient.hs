@@ -222,7 +222,6 @@ pickup aid onlyWeapon = do
   -- Pick up the best desirable item, if any.
   case reverse $ sortBy (comparing cmp) $ filterWeapon benItemL of
     ((_, (k, _)), (iid, itemFull)) : _ -> do
-      updateItemSlot (Just aid) iid
       b <- getsState $ getActorBody aid
       -- TODO: instead of pickup to eqp and then move to inv, pickup to inv
       let toCStore = if goesIntoInv (itemBase itemFull)

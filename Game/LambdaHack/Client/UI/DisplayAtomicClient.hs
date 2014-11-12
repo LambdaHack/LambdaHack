@@ -64,8 +64,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     side <- getsClient sside
     when (bfid body == side && not (bproj body)) stopPlayBack
   UpdCreateItem iid _ kit c -> do
-    -- TODO: probably not Nothing if container not CGround
-    updateItemSlot Nothing iid
+    side <- getsClient sside
     case c of
       CActor aid COrgan -> do
         let verb =
@@ -75,7 +74,15 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
         -- This describes all such items already among organs,
         -- which is useful, because it shows "charging".
         aiVerbMU aid verb iid Nothing COrgan
-      _ -> itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
+      CActor aid _ -> do
+        b <- getsState $ getActorBody aid
+        when (bfid b == side) $ updateItemSlot (Just aid) iid
+        itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
+      CEmbed{} -> return ()
+      CFloor{} -> do
+        updateItemSlot Nothing iid
+        itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
+      CTrunk{} -> return ()
     stopPlayBack
   UpdDestroyItem iid _ kit c -> itemVerbMU iid kit "disappear" c
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
@@ -89,11 +96,11 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     case ( lookup iid $ map swap $ EM.assocs letterSlots
          , lookup iid $ map swap $ IM.assocs numberSlots ) of
       (Nothing, Nothing) -> do
-        updateItemSlot Nothing iid
         case c of
           CActor{} -> return ()  -- not actionable at this time
           CEmbed{} -> return ()  -- not actionable at this time
           CFloor lid p -> do
+            updateItemSlot Nothing iid
             scursorOld <- getsClient scursor
             case scursorOld of
               TEnemy{} -> return ()  -- probably too important to overwrite
