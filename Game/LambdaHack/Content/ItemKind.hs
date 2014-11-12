@@ -45,11 +45,9 @@ data ItemKind = ItemKind
   deriving Show  -- No Eq and Ord to make extending it logically sound
 
 -- TODO: document each constructor
--- TODO: perhaps separate the types of ordinary and exotic effects.
 -- | Effects of items. Can be invoked by the item wielder to affect
 -- another actor or the wielder himself. Many occurences in the same item
--- are possible. Unchecked assumption: only ordinary effects are inside
--- the exotic effects (at the end of this list).
+-- are possible. Constructors are sorted vs increasing impact/danger.
 data Effect a =
     -- Ordinary effects.
     NoEffect !Text
@@ -70,17 +68,17 @@ data Effect a =
   | Paralyze !a
   | InsertMove !a
   | Teleport !a
+  | CreateItem !CStore !(GroupName ItemKind) !TimerDice
+                          -- ^ create an item of the group and insert into
+                          --   the store with the given random timer
+  | DropItem !CStore !(GroupName ItemKind) !Bool
+                          -- ^ @DropItem CGround x True@ means stomp on items
   | PolyItem !CStore
   | Identify !CStore
   | SendFlying !ThrowMod
   | PushActor !ThrowMod
   | PullActor !ThrowMod
   | DropBestWeapon
-  | DropItem !CStore !(GroupName ItemKind) !Bool
-                          -- ^ @DropItem CGround x True@ means stomp on items
-  | CreateItem !CStore !(GroupName ItemKind) !TimerDice
-                          -- ^ create an item of the group and insert into
-                          --   the store with the given random timer
   | ActivateInv !Char     -- ^ symbol @' '@ means all
   | ApplyPerfume
     -- Exotic effects follow.
@@ -183,9 +181,11 @@ instance Binary EqpSlot
 -- | Transform an effect using a stateful function.
 effectTrav :: Effect a -> (a -> St.State s b) -> St.State s (Effect b)
 effectTrav (NoEffect t) _ = return $! NoEffect t
+effectTrav (Hurt dice) _ = return $! Hurt dice
+effectTrav (Burn p) _ = return $! Burn p
+effectTrav (Explode t) _ = return $! Explode t
 effectTrav (RefillHP p) _ = return $! RefillHP p
 effectTrav (OverfillHP p) _ = return $! OverfillHP p
-effectTrav (Hurt dice) _ = return $! Hurt dice
 effectTrav (RefillCalm p) _ = return $! RefillCalm p
 effectTrav (OverfillCalm p) _ = return $! OverfillCalm p
 effectTrav Dominate _ = return Dominate
@@ -196,8 +196,6 @@ effectTrav (CallFriend a) f = do
 effectTrav (Summon freqs a) f = do
   b <- f a
   return $! Summon freqs b
-effectTrav ApplyPerfume _ = return ApplyPerfume
-effectTrav (Burn p) _ = return $! Burn p
 effectTrav (Ascend p) _ = return $! Ascend p
 effectTrav (Escape p) _ = return $! Escape p
 effectTrav (Paralyze a) f = do
@@ -206,25 +204,25 @@ effectTrav (Paralyze a) f = do
 effectTrav (InsertMove a) f = do
   b <- f a
   return $! InsertMove b
-effectTrav (SendFlying tmod) _ = return $! SendFlying tmod
-effectTrav (PushActor tmod) _ = return $! PushActor tmod
-effectTrav (PullActor tmod) _ = return $! PullActor tmod
 effectTrav (Teleport a) f = do
   b <- f a
   return $! Teleport b
+effectTrav (CreateItem store grp tim) _ = return $! CreateItem store grp tim
+effectTrav (DropItem store grp hit) _ = return $! DropItem store grp hit
 effectTrav (PolyItem cstore) _ = return $! PolyItem cstore
 effectTrav (Identify cstore) _ = return $! Identify cstore
+effectTrav (SendFlying tmod) _ = return $! SendFlying tmod
+effectTrav (PushActor tmod) _ = return $! PushActor tmod
+effectTrav (PullActor tmod) _ = return $! PullActor tmod
 effectTrav DropBestWeapon _ = return DropBestWeapon
-effectTrav (DropItem store grp hit) _ = return $! DropItem store grp hit
-effectTrav (CreateItem store grp tim) _ = return $! CreateItem store grp tim
 effectTrav (ActivateInv symbol) _ = return $! ActivateInv symbol
+effectTrav ApplyPerfume _ = return ApplyPerfume
 effectTrav (OneOf la) f = do
   lb <- mapM (\a -> effectTrav a f) la
   return $! OneOf lb
 effectTrav (OnSmash effa) f = do
   effb <- effectTrav effa f
   return $! OnSmash effb
-effectTrav (Explode t) _ = return $! Explode t
 effectTrav (Recharging effa) f = do
   effb <- effectTrav effa f
   return $! Recharging effb

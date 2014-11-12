@@ -549,6 +549,13 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         displayActorStart b animDie
     else case effect of
         IK.NoEffect t -> msgAdd $ "Nothing happens." <+> t
+        IK.Hurt{} -> skip  -- avoid spam; SfxStrike just sent
+        IK.Burn{} ->
+          if fid == side then
+            actorVerbMU aid b "feel burned"
+          else
+            actorVerbMU aid b "look burned"
+        IK.Explode{} -> skip  -- lots of visual feedback
         IK.RefillHP p | p == 1 -> skip  -- no spam from regeneration
         IK.RefillHP p | p > 0 -> do
           if fid == side then
@@ -583,7 +590,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs
-        IK.Hurt{} -> skip  -- avoid spam; SfxStrike just sent
         IK.RefillCalm p | p == 1 -> skip  -- no spam from regen items
         IK.RefillCalm p | p > 0 -> do
           if fid == side then
@@ -646,29 +652,18 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               "inhale the sweet smell that weakens resolve and erodes loyalty"
         IK.CallFriend{} -> skip
         IK.Summon{} -> skip
-        IK.ApplyPerfume ->
-          msgAdd "The fragrance quells all scents in the vicinity."
-        IK.Burn{} ->
-          if fid == side then
-            actorVerbMU aid b "feel burned"
-          else
-            actorVerbMU aid b "look burned"
         IK.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"
         IK.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
         IK.Ascend{} -> assert `failure` sfx
         IK.Escape{} -> skip
         IK.Paralyze{} -> actorVerbMU aid b "be paralyzed"
         IK.InsertMove{} -> actorVerbMU aid b "move with extreme speed"
-        IK.DropBestWeapon -> actorVerbMU aid b "be disarmed"
+        IK.Teleport t | t > 9 -> actorVerbMU aid b "teleport"
+        IK.Teleport{} -> actorVerbMU aid b "blink"
+        IK.CreateItem{} -> skip
         IK.DropItem COrgan _ True -> skip
         IK.DropItem _ _ False -> actorVerbMU aid b "be stripped"  -- TODO
         IK.DropItem _ _ True -> actorVerbMU aid b "be violently stripped"
-        IK.CreateItem{} -> skip
-        IK.SendFlying{} -> actorVerbMU aid b "be sent flying"
-        IK.PushActor{} -> actorVerbMU aid b "be pushed"
-        IK.PullActor{} -> actorVerbMU aid b "be pulled"
-        IK.Teleport t | t > 9 -> actorVerbMU aid b "teleport"
-        IK.Teleport{} -> actorVerbMU aid b "blink"
         IK.PolyItem cstore -> do
           localTime <- getsState $ getLocalTime $ blid b
           allAssocs <- fullAssocsClient aid [cstore]
@@ -697,8 +692,13 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               msgAdd $ makeSentence
                 [ MU.SubjectVerbSg subject verb
                 , "old notes with the", secretName, secretAEText, store ]
+        IK.SendFlying{} -> actorVerbMU aid b "be sent flying"
+        IK.PushActor{} -> actorVerbMU aid b "be pushed"
+        IK.PullActor{} -> actorVerbMU aid b "be pulled"
+        IK.DropBestWeapon -> actorVerbMU aid b "be disarmed"
         IK.ActivateInv{} -> skip
-        IK.Explode{} -> skip  -- lots of visual feedback
+        IK.ApplyPerfume ->
+          msgAdd "The fragrance quells all scents in the vicinity."
         IK.OneOf{} -> skip
         IK.OnSmash{} -> assert `failure` sfx
         IK.Recharging{} -> assert `failure` sfx

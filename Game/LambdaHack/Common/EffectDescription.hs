@@ -30,6 +30,10 @@ rawEffectToSuff :: Effect Text -> Effect (Maybe Int) -> Text
 rawEffectToSuff effectText effectMInt =
   case (effectText, effectMInt) of
     (NoEffect t, _) -> t
+    (Hurt dice, _) -> wrapInParens (tshow dice)
+    (Burn p, _) | p <= 0 -> assert `failure` (effectText, effectMInt)
+    (Burn p, _) -> wrapInParens (makePhrase [MU.CarWs p "burn"])
+    (Explode t, _) -> "of explosion '" <> tshow t <> "'"
     (RefillHP p, _) | p > 0 ->
       "of limited healing" <+> wrapInParens (affixBonus p)
     (RefillHP 0, _) -> assert `failure` (effectText, effectMInt)
@@ -38,7 +42,6 @@ rawEffectToSuff effectText effectMInt =
     (OverfillHP p, _) | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
     (OverfillHP 0, _) -> assert `failure` (effectText, effectMInt)
     (OverfillHP p, _) -> "of wounding" <+> wrapInParens (affixBonus p)
-    (Hurt dice, _) -> wrapInParens (tshow dice)
     (RefillCalm p, _) | p > 0 ->
       "of limited soothing" <+> wrapInParens (affixBonus p)
     (RefillCalm 0, _) -> assert `failure` (effectText, effectMInt)
@@ -56,8 +59,6 @@ rawEffectToSuff effectText effectMInt =
     (Summon _freqs t, _) -> "of summoning"
                             <+> wrapInParens (dropPlus t <+> "actors")
     (ApplyPerfume, _) -> "of smell removal"
-    (Burn p, _) | p <= 0 -> assert `failure` (effectText, effectMInt)
-    (Burn p, _) -> wrapInParens (makePhrase [MU.CarWs p "burn"])
     (Ascend 1, _) -> "of ascending"
     (Ascend p, _) | p > 0 ->
       "of ascending" <+> wrapInParens (tshow p <+> "levels")
@@ -75,33 +76,32 @@ rawEffectToSuff effectText effectMInt =
       "of speed surge (? moves)"
     (_, InsertMove (Just p)) ->
       "of speed surge" <+> wrapInParens (makePhrase [MU.CarWs p "move"])
-    (DropBestWeapon, _) -> "of disarming"
-    (DropItem COrgan grp True, _) -> "of nullify" <+> tshow grp
-    (DropItem store grp hit, _) ->
-      let storeText = ppCStore store
-          grpText = tshow grp
-          hitText = if hit then "smash" else "drop"
-      in "of" <+> grpText <+> "in" <+> storeText <+> hitText
-    (CreateItem COrgan grp tim, _) ->
-      let stime = if tim == TimerNone then "" else tshow tim <> ":"
-      in "(keep" <+> stime <+> tshow grp <> ")"
-    (CreateItem _ grp _, _) ->
-      let object = if grp == "useful" then "" else tshow grp
-      in "of" <+> object <+> "uncovering"
-    (SendFlying tmod, _) -> "of impact" <+> tmodToSuff "" tmod
-    (PushActor tmod, _) -> "of pushing" <+> tmodToSuff "" tmod
-    (PullActor tmod, _) -> "of pulling" <+> tmodToSuff "" tmod
     (_, Teleport (Just p)) | p <= 1  ->
       assert `failure` (effectText, effectMInt)
     (Teleport t, Teleport (Just p)) | p <= 9  ->
       "of blinking" <+> wrapInParens (dropPlus t <+> "steps")
     (Teleport t, _)->
       "of teleport" <+> wrapInParens (dropPlus t <+> "steps")
+    (CreateItem COrgan grp tim, _) ->
+      let stime = if tim == TimerNone then "" else tshow tim <> ":"
+      in "(keep" <+> stime <+> tshow grp <> ")"
+    (CreateItem _ grp _, _) ->
+      let object = if grp == "useful" then "" else tshow grp
+      in "of" <+> object <+> "uncovering"
+    (DropItem COrgan grp True, _) -> "of nullify" <+> tshow grp
+    (DropItem store grp hit, _) ->
+      let storeText = ppCStore store
+          grpText = tshow grp
+          hitText = if hit then "smash" else "drop"
+      in "of" <+> grpText <+> "in" <+> storeText <+> hitText
     (PolyItem _cstore, _) -> "of repurpose"  -- <+> ppCStore cstore
     (Identify _cstore, _) -> "of identify"  -- <+> ppCStore cstore
+    (SendFlying tmod, _) -> "of impact" <+> tmodToSuff "" tmod
+    (PushActor tmod, _) -> "of pushing" <+> tmodToSuff "" tmod
+    (PullActor tmod, _) -> "of pulling" <+> tmodToSuff "" tmod
+    (DropBestWeapon, _) -> "of disarming"
     (ActivateInv ' ', _) -> "of inventory burst"
     (ActivateInv symbol, _) -> "of burst '" <> T.singleton symbol <> "'"
-    (Explode t, _) -> "of explosion '" <> tshow t <> "'"
     (OneOf l, _) ->
       let subject = if length l <= 5 then "marvel" else "wonder"
       in makePhrase ["of", MU.CardinalWs (length l) subject]

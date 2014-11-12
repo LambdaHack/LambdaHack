@@ -206,78 +206,41 @@ effectSem source target iid recharged effect = do
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
   case effect of
     IK.NoEffect _ -> return False
+    IK.Hurt nDm -> effectHurt nDm source target False
+    IK.Burn p -> effectBurn execSfx p source target
+    IK.Explode t -> effectExplode execSfx t target
     IK.RefillHP p -> effectRefillHP False execSfx p source target
     IK.OverfillHP p -> effectRefillHP True execSfx p source target
-    IK.Hurt nDm -> effectHurt nDm source target False
     IK.RefillCalm p -> effectRefillCalm False execSfx p target
     IK.OverfillCalm p -> effectRefillCalm True execSfx p target
     IK.Dominate -> effectDominate recursiveCall source target
     IK.Impress -> effectImpress execSfx source target
     IK.CallFriend p -> effectCallFriend p source target
     IK.Summon freqs p -> effectSummon recursiveCall freqs p source target
-    IK.ApplyPerfume -> effectApplyPerfume execSfx target
-    IK.Burn p -> effectBurn execSfx p source target
     IK.Ascend p -> effectAscend recursiveCall execSfx p target
     IK.Escape{} -> effectEscape target
     IK.Paralyze p -> effectParalyze execSfx p target
     IK.InsertMove p -> effectInsertMove execSfx p target
-    IK.DropBestWeapon -> effectDropBestWeapon execSfx target
-    IK.DropItem store grp hit -> effectDropItem execSfx store grp hit target
+    IK.Teleport p -> effectTeleport execSfx p target
     IK.CreateItem store grp tim -> effectCreateItem target store grp tim
+    IK.DropItem store grp hit -> effectDropItem execSfx store grp hit target
+    IK.PolyItem cstore -> effectPolyItem execSfx cstore target
+    IK.Identify cstore -> effectIdentify execSfx cstore target
     IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target Nothing
     IK.PushActor tmod ->
       effectSendFlying execSfx tmod source target (Just True)
     IK.PullActor tmod ->
       effectSendFlying execSfx tmod source target (Just False)
-    IK.Teleport p -> effectTeleport execSfx p target
-    IK.PolyItem cstore -> effectPolyItem execSfx cstore target
-    IK.Identify cstore -> effectIdentify execSfx cstore target
+    IK.DropBestWeapon -> effectDropBestWeapon execSfx target
     IK.ActivateInv symbol -> effectActivateInv execSfx target symbol
-    IK.Explode t -> effectExplode execSfx t target
+    IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return False  -- ignored under normal circumstances
     IK.Recharging e -> effectRecharging recursiveCall e recharged
     IK.Temporary _ -> effectTemporary execSfx source iid
 
 -- + Individual semantic functions for effects
-
--- ** RefillHP
-
--- Unaffected by armor.
-effectRefillHP :: (MonadAtomic m, MonadServer m)
-               => Bool -> m () -> Int -> ActorId -> ActorId -> m Bool
-effectRefillHP overfill execSfx power source target = do
-  tb <- getsState $ getActorBody target
-  hpMax <- sumOrganEqpServer IK.EqpSlotAddMaxHP target
-  let overMax | overfill = xM hpMax * 10  -- arbitrary limit to scumming
-              | otherwise = xM hpMax
-      serious = overfill && source /= target && not (bproj tb)
-      upperBound = if serious then xM hpMax else maxBound
-      deltaHP | power > 0 = min (xM power) (max 0 $ overMax - bhp tb)
-              | otherwise = min (xM power) (upperBound - bhp tb)
-  if deltaHP == 0
-    then return False
-    else do
-      execUpdAtomic $ UpdRefillHP target deltaHP
-      when (deltaHP < 0 && serious) $ halveCalm target
-      execSfx
-      return True
-
-halveCalm :: (MonadAtomic m, MonadServer m)
-          => ActorId -> m ()
-halveCalm target = do
-  tb <- getsState $ getActorBody target
-  activeItems <- activeItemsServer target
-  let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
-      upperBound = if hpTooLow tb activeItems
-                   then 0  -- to trigger domination, etc.
-                   else max (xM calmMax) (bcalm tb) `div` 2
-      deltaCalm = min minusTwoM (upperBound - bcalm tb)
-  -- HP loss decreases Calm by at least minusTwoM, to overcome Calm regen,
-  -- when far from shooting foe and to avoid "hears something",
-  -- which is emitted for decrease @minusM@.
-  execUpdAtomic $ UpdRefillCalm target deltaCalm
 
 -- ** Hurt
 
@@ -320,6 +283,103 @@ armorHurtBonus source target = do
                  - sumSlotNoFilter IK.EqpSlotAddArmorRanged tactiveItems
             else sumSlotNoFilter IK.EqpSlotAddHurtMelee sactiveItems
                  - sumSlotNoFilter IK.EqpSlotAddArmorMelee tactiveItems
+
+halveCalm :: (MonadAtomic m, MonadServer m)
+          => ActorId -> m ()
+halveCalm target = do
+  tb <- getsState $ getActorBody target
+  activeItems <- activeItemsServer target
+  let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
+      upperBound = if hpTooLow tb activeItems
+                   then 0  -- to trigger domination, etc.
+                   else max (xM calmMax) (bcalm tb) `div` 2
+      deltaCalm = min minusTwoM (upperBound - bcalm tb)
+  -- HP loss decreases Calm by at least minusTwoM, to overcome Calm regen,
+  -- when far from shooting foe and to avoid "hears something",
+  -- which is emitted for decrease @minusM@.
+  execUpdAtomic $ UpdRefillCalm target deltaCalm
+
+-- ** Burn
+
+-- Damage from both impact and fire. Modified by armor.
+effectBurn :: (MonadAtomic m, MonadServer m)
+           => m () -> Int -> ActorId -> ActorId
+           -> m Bool
+effectBurn execSfx power source target = assert (power > 0) $ do
+  void $ effectHurt (Dice.intToDice power) source target True
+  execSfx
+  return True
+
+-- ** Explode
+
+effectExplode :: (MonadAtomic m, MonadServer m)
+              => m () -> GroupName ItemKind -> ActorId -> m Bool
+effectExplode execSfx cgroup target = do
+  tb <- getsState $ getActorBody target
+  let itemFreq = [(cgroup, 1)]
+      container = CActor target CEqp
+  m2 <- rollAndRegisterItem (blid tb) itemFreq container False Nothing
+  let (iid, (ItemFull{..}, _)) = fromMaybe (assert `failure` cgroup) m2
+      Point x y = bpos tb
+      projectN k100 (n, _) = do
+        -- We pick a point at the border, not inside, to have a uniform
+        -- distribution for the points the line goes through at each distance
+        -- from the source. Otherwise, e.g., the points on cardinal
+        -- and diagonal lines from the source would be more common.
+        let fuzz = 2 + (k100 `xor` (itemK * n)) `mod` 9
+            k = if itemK >= 8 && n < 8 then 0
+                else if n < 8 && n >= 4 then 4 else n
+            ps = take k $
+              [ Point (x - 12) $ y + fuzz
+              , Point (x - 12) $ y - fuzz
+              , Point (x + 12) $ y + fuzz
+              , Point (x + 12) $ y - fuzz
+              , flip Point (y - 12) $ x + fuzz
+              , flip Point (y - 12) $ x - fuzz
+              , flip Point (y + 12) $ x + fuzz
+              , flip Point (y + 12) $ x - fuzz
+              ]
+        forM_ ps $ \tpxy -> do
+          let req = ReqProject tpxy k100 iid CEqp
+          mfail <- projectFail target tpxy k100 iid CEqp True
+          case mfail of
+            Nothing -> return ()
+            Just ProjectBlockTerrain -> return ()
+            Just ProjectBlockActor | not $ bproj tb -> return ()
+            Just failMsg -> execFailure target req failMsg
+  -- All shrapnels bounce off obstacles many times before they destruct.
+  forM_ [101..201] $ \k100 -> do
+    bag2 <- getsState $ beqp . getActorBody target
+    let mn2 = EM.lookup iid bag2
+    maybe skip (projectN k100) mn2
+  bag3 <- getsState $ beqp . getActorBody target
+  let mn3 = EM.lookup iid bag3
+  maybe skip (\kit -> execUpdAtomic
+                      $ UpdLoseItem iid itemBase kit container) mn3
+  execSfx
+  return True  -- we avoid verifying that at least one projectile got off
+
+-- ** RefillHP
+
+-- Unaffected by armor.
+effectRefillHP :: (MonadAtomic m, MonadServer m)
+               => Bool -> m () -> Int -> ActorId -> ActorId -> m Bool
+effectRefillHP overfill execSfx power source target = do
+  tb <- getsState $ getActorBody target
+  hpMax <- sumOrganEqpServer IK.EqpSlotAddMaxHP target
+  let overMax | overfill = xM hpMax * 10  -- arbitrary limit to scumming
+              | otherwise = xM hpMax
+      serious = overfill && source /= target && not (bproj tb)
+      upperBound = if serious then xM hpMax else maxBound
+      deltaHP | power > 0 = min (xM power) (max 0 $ overMax - bhp tb)
+              | otherwise = min (xM power) (upperBound - bhp tb)
+  if deltaHP == 0
+    then return False
+    else do
+      execUpdAtomic $ UpdRefillHP target deltaHP
+      when (deltaHP < 0 && serious) $ halveCalm target
+      execSfx
+      return True
 
 -- ** RefillCalm
 
@@ -429,30 +489,6 @@ effectSummon recursiveCall actorFreq power source target = assert (power > 0) $ 
             $ UpdLeadFaction (bfid b) Nothing (Just (aid, Nothing))
           return True
     return $! or bs
-
--- ** ApplyPerfume
-
-effectApplyPerfume :: (MonadAtomic m, MonadServer m)
-                   => m () -> ActorId -> m Bool
-effectApplyPerfume execSfx target = do
-  tb <- getsState $ getActorBody target
-  Level{lsmell} <- getLevel $ blid tb
-  let f p fromSm =
-        execUpdAtomic $ UpdAlterSmell (blid tb) p (Just fromSm) Nothing
-  mapWithKeyM_ f lsmell
-  execSfx
-  return True
-
--- ** Burn
-
--- Damage from both impact and fire. Modified by armor.
-effectBurn :: (MonadAtomic m, MonadServer m)
-           => m () -> Int -> ActorId -> ActorId
-           -> m Bool
-effectBurn execSfx power source target = assert (power > 0) $ do
-  void $ effectHurt (Dice.intToDice power) source target True
-  execSfx
-  return True
 
 -- ** Ascend
 
@@ -616,49 +652,95 @@ effectInsertMove execSfx p target = assert (p > 0) $ do
   execSfx
   return True
 
--- ** DropBestWeapon
+-- ** Teleport
 
--- | Make the target actor drop his best weapon (stack).
-effectDropBestWeapon :: (MonadAtomic m, MonadServer m)
-                     => m () -> ActorId -> m Bool
-effectDropBestWeapon execSfx target = do
-  allAssocs <- fullAssocsServer target [CEqp]
-  case strongestSlotNoFilter IK.EqpSlotWeapon allAssocs of
-    (_, (iid, _)) : _ -> do
-      b <- getsState $ getActorBody target
-      let kit = beqp b EM.! iid
-      dropCStoreItem CEqp target b False iid kit
-      execSfx
-      return True
-    [] ->
-      return False
-
--- | Drop a single actor's item. Note that if there multiple copies,
--- at most one explodes to avoid excessive carnage and UI clutter
--- (let's say, the multiple explosions interfere with each other or perhaps
--- larger quantities of explosives tend to be packaged more safely).
-dropCStoreItem :: (MonadAtomic m, MonadServer m)
-               => CStore -> ActorId -> Actor -> Bool -> ItemId -> ItemQuant
-               -> m ()
-dropCStoreItem store aid b hit iid kit@(k, _) = do
-  item <- getsState $ getItemBody iid
-  let c = CActor aid store
-      fragile = IK.Fragile `elem` jfeature item
-      durable = IK.Durable `elem` jfeature item
-      isDestroyed = hit && not durable || bproj b && fragile
-  if isDestroyed then do
-    discoEffect <- getsServer sdiscoEffect
-    let aspects = case EM.lookup iid discoEffect of
-          Just ItemAspectEffect{jaspects} -> jaspects
-          _ -> assert `failure` (aid, iid)
-    itemToF <- itemToFullServer
-    let itemFull = itemToF iid kit
-        effs = strengthOnSmash itemFull
-    effectAndDestroy aid aid iid c False effs aspects kit
+-- | Teleport the target actor.
+-- Note that projectiles can be teleported, too, for extra fun.
+effectTeleport :: (MonadAtomic m, MonadServer m)
+               => m () -> Int -> ActorId -> m Bool
+effectTeleport execSfx range target = assert (range > 0) $ do
+  Kind.COps{cotile} <- getsState scops
+  b <- getsState $ getActorBody target
+  Level{ltile} <- getLevel (blid b)
+  as <- getsState $ actorList (const True) (blid b)
+  let spos = bpos b
+      dMinMax delta pos =
+        let d = chessDist spos pos
+        in d >= range - delta && d <= range + delta
+      dist delta pos _ = dMinMax delta pos
+  tpos <- rndToAction $ findPosTry 200 ltile
+    (\p t -> Tile.isWalkable cotile t
+             && (not (dMinMax 9 p)  -- don't loop, very rare
+                 || not (Tile.hasFeature cotile TK.NoActor t)
+                    && unoccupied as p))
+    [ dist $ 1
+    , dist $ 1 + range `div` 9
+    , dist $ 1 + range `div` 7
+    , dist $ 1 + range `div` 5
+    , dist $ 5
+    , dist $ 7
+    ]
+  if not (dMinMax 9 tpos) then
+    return False  -- very rare
   else do
-    mvCmd <- generalMoveItem iid k (CActor aid store)
-                                   (CActor aid CGround)
-    mapM_ execUpdAtomic mvCmd
+    execUpdAtomic $ UpdMoveActor target spos tpos
+    execSfx
+    return True
+
+-- ** CreateItem
+
+effectCreateItem :: (MonadAtomic m, MonadServer m)
+                  => ActorId -> CStore -> GroupName ItemKind -> IK.TimerDice
+                  -> m Bool
+effectCreateItem target store grp tim = do
+  tb <- getsState $ getActorBody target
+  delta <- case tim of
+    IK.TimerNone -> return $ Delta timeZero
+    IK.TimerGameTurn nDm -> do
+      k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
+      assert (k >= 0) skip
+      return $! timeDeltaScale (Delta timeTurn) k
+    IK.TimerActorTurn nDm -> do
+      k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
+      assert (k >= 0) skip
+      activeItems <- activeItemsServer target
+      let actorTurn = ticksPerMeter $ bspeed tb activeItems
+      return $! timeDeltaScale actorTurn k
+  let c = CActor target store
+  bagBefore <- getsState $ getCBag c
+  let litemFreq = [(grp, 1)]
+  m4 <- rollItem (blid tb) litemFreq
+  let (itemKnown, itemFull, seed, _) = case m4 of
+        Nothing -> assert `failure` (blid tb, litemFreq, c)
+        Just i4 -> i4
+  itemRev <- getsServer sitemRev
+  let mquant = case HM.lookup itemKnown itemRev of
+        Nothing -> Nothing
+        Just iid -> (iid,) <$> iid `EM.lookup` bagBefore
+  case mquant of
+    Just (iid, (1, afterIt@(timer : rest))) | tim /= IK.TimerNone -> do
+      -- Already has such an item, so only increase the timer by half delta.
+      let newIt = let halfTurns = delta `timeDeltaDiv` 2
+                      newTimer = timer `timeShift` halfTurns
+                  in newTimer : rest
+      when (afterIt /= newIt) $
+        execUpdAtomic $ UpdTimeItem iid c afterIt newIt  -- TODO: announce
+    _ -> do
+      -- Multiple such items, so it's a periodic poison, etc., so just stack,
+      -- or no such items at all, so create some.
+      iid <- registerItem (itemBase itemFull) itemKnown seed
+                          (itemK itemFull) c True
+      unless (tim == IK.TimerNone) $ do
+        bagAfter <- getsState $ getCBag c
+        localTime <- getsState $ getLocalTime (blid tb)
+        let newTimer = localTime `timeShift` delta
+            (afterK, afterIt) = case iid `EM.lookup` bagAfter of
+              Nothing -> assert `failure` (iid, bagAfter, c)
+              Just kit -> kit
+            newIt = replicate afterK newTimer
+        when (afterIt /= newIt) $
+          execUpdAtomic $ UpdTimeItem iid c afterIt newIt
+  return True
 
 -- ** DropItem
 
@@ -687,6 +769,59 @@ effectDropItem execSfx store grp hit target = do
       mapM_ (\(iid, kit) -> dropCStoreItem store target b hit iid kit) is
       unless (store == COrgan) execSfx
       return True
+
+-- ** PolyItem
+
+effectPolyItem :: (MonadAtomic m, MonadServer m)
+               => m () -> CStore -> ActorId -> m Bool
+effectPolyItem execSfx cstore target = do
+  allAssocs <- fullAssocsServer target [cstore]
+  case allAssocs of
+    [] -> return False
+    (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
+      Just ItemDisco{itemKind} -> do
+        let maxCount = Dice.maxDice $ IK.icount itemKind
+        if itemK >= maxCount
+        then do
+          let c = CActor target cstore
+              kit = (maxCount, take maxCount itemTimer)
+          execUpdAtomic $ UpdDestroyItem iid itemBase kit c
+          execSfx
+          effectCreateItem target cstore "useful" IK.TimerNone
+        else do
+          tb <- getsState $ getActorBody target
+          execSfxAtomic $ SfxMsgFid (bfid tb) $
+            "The purpose is served by" <+> tshow maxCount
+            <+> "pieces of this item, not by" <+> tshow itemK <> "."
+          return False
+      _ -> assert `failure` (cstore, target, iid, itemFull)
+
+-- ** Identify
+
+effectIdentify :: (MonadAtomic m, MonadServer m)
+               => m () -> CStore -> ActorId -> m Bool
+effectIdentify execSfx cstore target = do
+  allAssocs <- fullAssocsServer target [cstore]
+  case allAssocs of
+    [] -> return False
+    (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
+      Just ItemDisco{..} -> do
+        -- TODO: use this (but faster, via traversing effects with 999)
+        -- also to prevent sending any other UpdDiscover.
+        let ided = IK.Identified `elem` IK.ifeature itemKind
+            itemSecret = itemNoAE itemFull
+            c = CActor target cstore
+            statsObvious = textAllAE False c itemFull
+                           == textAllAE False c itemSecret
+        if ided && statsObvious
+          then return False
+          else do
+            execSfx
+            tb <- getsState $ getActorBody target
+            seed <- getsServer $ (EM.! iid) . sitemSeedD
+            execUpdAtomic $ UpdDiscover (blid tb) (bpos tb) iid itemKindId seed
+            return True
+      _ -> assert `failure` (cstore, target, iid, itemFull)
 
 -- ** SendFlying
 
@@ -753,93 +888,49 @@ sendFlyingVector source target modePush = do
                 Nothing | adjacent (bpos sb) (bpos tb) -> pushV
                 Nothing -> pullV
 
--- ** Teleport
+-- ** DropBestWeapon
 
--- | Teleport the target actor.
--- Note that projectiles can be teleported, too, for extra fun.
-effectTeleport :: (MonadAtomic m, MonadServer m)
-               => m () -> Int -> ActorId -> m Bool
-effectTeleport execSfx range target = assert (range > 0) $ do
-  Kind.COps{cotile} <- getsState scops
-  b <- getsState $ getActorBody target
-  Level{ltile} <- getLevel (blid b)
-  as <- getsState $ actorList (const True) (blid b)
-  let spos = bpos b
-      dMinMax delta pos =
-        let d = chessDist spos pos
-        in d >= range - delta && d <= range + delta
-      dist delta pos _ = dMinMax delta pos
-  tpos <- rndToAction $ findPosTry 200 ltile
-    (\p t -> Tile.isWalkable cotile t
-             && (not (dMinMax 9 p)  -- don't loop, very rare
-                 || not (Tile.hasFeature cotile TK.NoActor t)
-                    && unoccupied as p))
-    [ dist $ 1
-    , dist $ 1 + range `div` 9
-    , dist $ 1 + range `div` 7
-    , dist $ 1 + range `div` 5
-    , dist $ 5
-    , dist $ 7
-    ]
-  if not (dMinMax 9 tpos) then
-    return False  -- very rare
+-- | Make the target actor drop his best weapon (stack).
+effectDropBestWeapon :: (MonadAtomic m, MonadServer m)
+                     => m () -> ActorId -> m Bool
+effectDropBestWeapon execSfx target = do
+  allAssocs <- fullAssocsServer target [CEqp]
+  case strongestSlotNoFilter IK.EqpSlotWeapon allAssocs of
+    (_, (iid, _)) : _ -> do
+      b <- getsState $ getActorBody target
+      let kit = beqp b EM.! iid
+      dropCStoreItem CEqp target b False iid kit
+      execSfx
+      return True
+    [] ->
+      return False
+
+-- | Drop a single actor's item. Note that if there multiple copies,
+-- at most one explodes to avoid excessive carnage and UI clutter
+-- (let's say, the multiple explosions interfere with each other or perhaps
+-- larger quantities of explosives tend to be packaged more safely).
+dropCStoreItem :: (MonadAtomic m, MonadServer m)
+               => CStore -> ActorId -> Actor -> Bool -> ItemId -> ItemQuant
+               -> m ()
+dropCStoreItem store aid b hit iid kit@(k, _) = do
+  item <- getsState $ getItemBody iid
+  let c = CActor aid store
+      fragile = IK.Fragile `elem` jfeature item
+      durable = IK.Durable `elem` jfeature item
+      isDestroyed = hit && not durable || bproj b && fragile
+  if isDestroyed then do
+    discoEffect <- getsServer sdiscoEffect
+    let aspects = case EM.lookup iid discoEffect of
+          Just ItemAspectEffect{jaspects} -> jaspects
+          _ -> assert `failure` (aid, iid)
+    itemToF <- itemToFullServer
+    let itemFull = itemToF iid kit
+        effs = strengthOnSmash itemFull
+    effectAndDestroy aid aid iid c False effs aspects kit
   else do
-    execUpdAtomic $ UpdMoveActor target spos tpos
-    execSfx
-    return True
-
--- ** PolyItem
-
-effectPolyItem :: (MonadAtomic m, MonadServer m)
-               => m () -> CStore -> ActorId -> m Bool
-effectPolyItem execSfx cstore target = do
-  allAssocs <- fullAssocsServer target [cstore]
-  case allAssocs of
-    [] -> return False
-    (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
-      Just ItemDisco{itemKind} -> do
-        let maxCount = Dice.maxDice $ IK.icount itemKind
-        if itemK >= maxCount
-        then do
-          let c = CActor target cstore
-              kit = (maxCount, take maxCount itemTimer)
-          execUpdAtomic $ UpdDestroyItem iid itemBase kit c
-          execSfx
-          effectCreateItem target cstore "useful" IK.TimerNone
-        else do
-          tb <- getsState $ getActorBody target
-          execSfxAtomic $ SfxMsgFid (bfid tb) $
-            "The purpose is served by" <+> tshow maxCount
-            <+> "pieces of this item, not by" <+> tshow itemK <> "."
-          return False
-      _ -> assert `failure` (cstore, target, iid, itemFull)
-
--- ** Identify
-
-effectIdentify :: (MonadAtomic m, MonadServer m)
-               => m () -> CStore -> ActorId -> m Bool
-effectIdentify execSfx cstore target = do
-  allAssocs <- fullAssocsServer target [cstore]
-  case allAssocs of
-    [] -> return False
-    (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
-      Just ItemDisco{..} -> do
-        -- TODO: use this (but faster, via traversing effects with 999)
-        -- also to prevent sending any other UpdDiscover.
-        let ided = IK.Identified `elem` IK.ifeature itemKind
-            itemSecret = itemNoAE itemFull
-            c = CActor target cstore
-            statsObvious = textAllAE False c itemFull
-                           == textAllAE False c itemSecret
-        if ided && statsObvious
-          then return False
-          else do
-            execSfx
-            tb <- getsState $ getActorBody target
-            seed <- getsServer $ (EM.! iid) . sitemSeedD
-            execUpdAtomic $ UpdDiscover (blid tb) (bpos tb) iid itemKindId seed
-            return True
-      _ -> assert `failure` (cstore, target, iid, itemFull)
+    mvCmd <- generalMoveItem iid k (CActor aid store)
+                                   (CActor aid CGround)
+    mapM_ execUpdAtomic mvCmd
 
 -- ** ActivateInv
 
@@ -872,54 +963,18 @@ effectTransformEqp execSfx target symbol cstore m = do
       execSfx
       return True
 
--- ** Explode
+-- ** ApplyPerfume
 
-effectExplode :: (MonadAtomic m, MonadServer m)
-              => m () -> GroupName ItemKind -> ActorId -> m Bool
-effectExplode execSfx cgroup target = do
+effectApplyPerfume :: (MonadAtomic m, MonadServer m)
+                   => m () -> ActorId -> m Bool
+effectApplyPerfume execSfx target = do
   tb <- getsState $ getActorBody target
-  let itemFreq = [(cgroup, 1)]
-      container = CActor target CEqp
-  m2 <- rollAndRegisterItem (blid tb) itemFreq container False Nothing
-  let (iid, (ItemFull{..}, _)) = fromMaybe (assert `failure` cgroup) m2
-      Point x y = bpos tb
-      projectN k100 (n, _) = do
-        -- We pick a point at the border, not inside, to have a uniform
-        -- distribution for the points the line goes through at each distance
-        -- from the source. Otherwise, e.g., the points on cardinal
-        -- and diagonal lines from the source would be more common.
-        let fuzz = 2 + (k100 `xor` (itemK * n)) `mod` 9
-            k = if itemK >= 8 && n < 8 then 0
-                else if n < 8 && n >= 4 then 4 else n
-            ps = take k $
-              [ Point (x - 12) $ y + fuzz
-              , Point (x - 12) $ y - fuzz
-              , Point (x + 12) $ y + fuzz
-              , Point (x + 12) $ y - fuzz
-              , flip Point (y - 12) $ x + fuzz
-              , flip Point (y - 12) $ x - fuzz
-              , flip Point (y + 12) $ x + fuzz
-              , flip Point (y + 12) $ x - fuzz
-              ]
-        forM_ ps $ \tpxy -> do
-          let req = ReqProject tpxy k100 iid CEqp
-          mfail <- projectFail target tpxy k100 iid CEqp True
-          case mfail of
-            Nothing -> return ()
-            Just ProjectBlockTerrain -> return ()
-            Just ProjectBlockActor | not $ bproj tb -> return ()
-            Just failMsg -> execFailure target req failMsg
-  -- All shrapnels bounce off obstacles many times before they destruct.
-  forM_ [101..201] $ \k100 -> do
-    bag2 <- getsState $ beqp . getActorBody target
-    let mn2 = EM.lookup iid bag2
-    maybe skip (projectN k100) mn2
-  bag3 <- getsState $ beqp . getActorBody target
-  let mn3 = EM.lookup iid bag3
-  maybe skip (\kit -> execUpdAtomic
-                      $ UpdLoseItem iid itemBase kit container) mn3
+  Level{lsmell} <- getLevel $ blid tb
+  let f p fromSm =
+        execUpdAtomic $ UpdAlterSmell (blid tb) p (Just fromSm) Nothing
+  mapWithKeyM_ f lsmell
   execSfx
-  return True  -- we avoid verifying that at least one projectile got off
+  return True
 
 -- ** OneOf
 
@@ -941,61 +996,6 @@ effectRecharging recursiveCall e recharged =
   if recharged
   then recursiveCall e
   else return False
-
--- ** CreateItem
-
-effectCreateItem :: (MonadAtomic m, MonadServer m)
-                  => ActorId -> CStore -> GroupName ItemKind -> IK.TimerDice
-                  -> m Bool
-effectCreateItem target store grp tim = do
-  tb <- getsState $ getActorBody target
-  delta <- case tim of
-    IK.TimerNone -> return $ Delta timeZero
-    IK.TimerGameTurn nDm -> do
-      k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
-      assert (k >= 0) skip
-      return $! timeDeltaScale (Delta timeTurn) k
-    IK.TimerActorTurn nDm -> do
-      k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
-      assert (k >= 0) skip
-      activeItems <- activeItemsServer target
-      let actorTurn = ticksPerMeter $ bspeed tb activeItems
-      return $! timeDeltaScale actorTurn k
-  let c = CActor target store
-  bagBefore <- getsState $ getCBag c
-  let litemFreq = [(grp, 1)]
-  m4 <- rollItem (blid tb) litemFreq
-  let (itemKnown, itemFull, seed, _) = case m4 of
-        Nothing -> assert `failure` (blid tb, litemFreq, c)
-        Just i4 -> i4
-  itemRev <- getsServer sitemRev
-  let mquant = case HM.lookup itemKnown itemRev of
-        Nothing -> Nothing
-        Just iid -> (iid,) <$> iid `EM.lookup` bagBefore
-  case mquant of
-    Just (iid, (1, afterIt@(timer : rest))) | tim /= IK.TimerNone -> do
-      -- Already has such an item, so only increase the timer by half delta.
-      let newIt = let halfTurns = delta `timeDeltaDiv` 2
-                      newTimer = timer `timeShift` halfTurns
-                  in newTimer : rest
-      when (afterIt /= newIt) $
-        execUpdAtomic $ UpdTimeItem iid c afterIt newIt  -- TODO: announce
-    _ -> do
-      -- Multiple such items, so it's a periodic poison, etc., so just stack,
-      -- or no such items at all, so create some.
-      iid <- registerItem (itemBase itemFull) itemKnown seed
-                          (itemK itemFull) c True
-      unless (tim == IK.TimerNone) $ do
-        bagAfter <- getsState $ getCBag c
-        localTime <- getsState $ getLocalTime (blid tb)
-        let newTimer = localTime `timeShift` delta
-            (afterK, afterIt) = case iid `EM.lookup` bagAfter of
-              Nothing -> assert `failure` (iid, bagAfter, c)
-              Just kit -> kit
-            newIt = replicate afterK newTimer
-        when (afterIt /= newIt) $
-          execUpdAtomic $ UpdTimeItem iid c afterIt newIt
-  return True
 
 -- ** Temporary
 

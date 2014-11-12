@@ -620,6 +620,12 @@ applyItem aid applyGroup = do
                            then 5  -- we keep it after use
                            else 1
             oldGrps = map (toGroupName . jname) organs
+            createOrganAgain =
+              -- This assumes the organ creation is beneficial. If it's
+              -- a drawback of an otherwise good item, we should reverse
+              -- the condition.
+              let newGrps = strengthCreateOrgan itemFull
+              in not $ null $ intersect newGrps oldGrps
             dropOrganVoid =
               -- This assumes the organ dropping is beneficial. If it's
               -- a drawback of an otherwise good item, or a marginal
@@ -629,12 +635,6 @@ applyItem aid applyGroup = do
               let newGrps = strengthDropOrgan itemFull
                   hasDropOrgan = not $ null newGrps
               in hasDropOrgan && null (intersect newGrps oldGrps)
-            createOrganAgain =
-              -- This assumes the organ creation is beneficial. If it's
-              -- a drawback of an otherwise good item, we should reverse
-              -- the condition.
-              let newGrps = strengthCreateOrgan itemFull
-              in not $ null $ intersect newGrps oldGrps
             benR = case mben of
                      Nothing -> 0
                        -- experimenting is fun, but it's better to risk
@@ -644,8 +644,8 @@ applyItem aid applyGroup = do
                      Just (_, (_, ben)) -> ben
                    * if recharged then 1 else 0  -- wait until can be used
                    * if not createOrganAgain then 1 else 0
-                    * if not dropOrganVoid then 1 else 0
-                  * durableBonus
+                   * if not dropOrganVoid then 1 else 0
+                   * durableBonus
                    * coeff cstore
         in if itemLegal itemFull
            then if benR > 0

@@ -28,6 +28,9 @@ effectToBenefit cops b activeItems fact eff =
   let dungeonDweller = not $ fcanEscape $ gplayer fact
   in case eff of
     IK.NoEffect _ -> 0
+    IK.Hurt d -> -(min 99 $ round (10 * Dice.meanDice d))
+    IK.Burn p -> -15 * p           -- usually splash damage, etc.
+    IK.Explode _ -> -10
     IK.RefillHP p ->
       let hpMax = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
       in if p > 0
@@ -38,7 +41,6 @@ effectToBenefit cops b activeItems fact eff =
       in if p > 0
          then 2 + 10 * min p (fromIntegral $ (xM hpMax - bhp b) `divUp` oneM)
          else max (-99) (10 * p)
-    IK.Hurt d -> -(min 99 $ round (10 * Dice.meanDice d))
     IK.RefillCalm p ->
       let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
       in if p > 0
@@ -54,33 +56,31 @@ effectToBenefit cops b activeItems fact eff =
     IK.CallFriend p -> 20 * p
     IK.Summon{} | dungeonDweller -> 1 -- probably summons friends or crazies
     IK.Summon{} -> 0                  -- probably generates enemies
-    IK.ApplyPerfume -> -10
-    IK.Burn p -> -15 * p           -- usually splash damage, etc.
     IK.Ascend{} -> 1               -- change levels sensibly, in teams
     IK.Escape{} -> 10000           -- AI wants to win; spawners to guard
     IK.Paralyze p -> -20 * p
     IK.InsertMove p -> 50 * p
-    IK.DropBestWeapon -> -50
+    IK.Teleport p | p <= 9 -> 10  -- blink to shoot at foe
+    IK.Teleport p | p <= 19 -> 1  -- neither escape nor repositioning
+    IK.Teleport p -> -5 * p  -- get rid of the foe
+    IK.CreateItem COrgan grp _ ->  -- TODO: use the timeout
+      let (total, count) = organBenefit grp cops b
+      in total `divUp` count  -- average over all matching grp; rarities ignored
+    IK.CreateItem _ _ _ -> 30
     IK.DropItem COrgan grp True ->  -- calculated for future use, general pickup
       let (total, _) = organBenefit grp cops b
       in - total  -- sum over all matching grp; simplification: rarities ignored
     IK.DropItem _ _ False -> -15
     IK.DropItem _ _ True -> -30
-    IK.CreateItem COrgan grp _ ->  -- TODO: use the timeout
-      let (total, count) = organBenefit grp cops b
-      in total `divUp` count  -- average over all matching grp; rarities ignored
-    IK.CreateItem _ _ _ -> 30
+    IK.PolyItem _ -> 0  -- AI would loop
+    IK.Identify _ -> 0  -- AI would loop
     IK.SendFlying _ -> -10  -- but useful on self sometimes, too
     IK.PushActor _ -> -10  -- but useful on self sometimes, too
     IK.PullActor _ -> -10
-    IK.Teleport p | p <= 9 -> 10  -- blink to shoot at foe
-    IK.Teleport p | p <= 19 -> 1  -- neither escape nor repositioning
-    IK.Teleport p -> -5 * p  -- get rid of the foe
-    IK.PolyItem _ -> 0  -- AI would loop
-    IK.Identify _ -> 0  -- AI would loop
+    IK.DropBestWeapon -> -50
     IK.ActivateInv ' ' -> -100
     IK.ActivateInv _ -> -50
-    IK.Explode _ -> -10
+    IK.ApplyPerfume -> -10
     IK.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
     IK.OnSmash _ -> -10
     IK.Recharging e -> effectToBenefit cops b activeItems fact e
