@@ -93,7 +93,13 @@ data TimerDice =
     TimerNone
   | TimerGameTurn !Dice.Dice
   | TimerActorTurn !Dice.Dice
-  deriving (Show, Read, Eq, Ord, Generic)
+  deriving (Read, Eq, Ord, Generic)
+
+instance Show TimerDice where
+  show TimerNone = "0"
+  show (TimerGameTurn nDm) = show nDm
+  show (TimerActorTurn nDm) =
+    show nDm ++ " " ++ if nDm == 1 then "step" else "steps"
 
 -- | Aspects of items. Those that are named @Add*@ are additive
 -- (starting at 0) for all items wielded by an actor and they affect the actor.

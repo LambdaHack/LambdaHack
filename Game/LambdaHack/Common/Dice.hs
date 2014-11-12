@@ -35,7 +35,7 @@ normalizeSimple fr = toFreq (nameFrequency fr)
                      $ map swap $ runFrequency fr
 
 -- Normalized mainly as an optimization, but it also makes many expected
--- algeraic laws hold (wrt @Eq@), except for some laws about
+-- algebraic laws hold (wrt @Eq@), except for some laws about
 -- multiplication. We use @liftA2@ instead of @liftM2@, because it's probably
 -- faster in this case.
 instance Num SimpleDice where
