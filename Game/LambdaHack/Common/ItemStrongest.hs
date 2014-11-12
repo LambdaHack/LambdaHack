@@ -2,7 +2,7 @@
 -- No operation in this module involves the state or any of our custom monads.
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
-    strengthOnSmash, strengthCreateOrgan
+    strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
   , strengthToThrow, strengthEqpSlot, strengthFromEqpSlot
   , strongestSlotNoFilter, strongestSlot, sumSlotNoFilter, sumSkills
     -- * Assorted
@@ -99,6 +99,12 @@ strengthOnSmash =
 strengthCreateOrgan :: ItemFull -> [GroupName ItemKind]
 strengthCreateOrgan =
   let p (CreateItem COrgan grp _) = [grp]
+      p _ = []
+  in strengthEffect999 p
+
+strengthDropOrgan :: ItemFull -> [GroupName ItemKind]
+strengthDropOrgan =
+  let p (DropItem COrgan grp _) = [grp]
       p _ = []
   in strengthEffect999 p
 
