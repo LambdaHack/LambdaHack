@@ -83,8 +83,8 @@ rawEffectToSuff effectText effectMInt =
     (Teleport t, _)->
       "of teleport" <+> wrapInParens (dropPlus t <+> "steps")
     (CreateItem COrgan grp tim, _) ->
-      let stime = if tim == TimerNone then "" else tshow tim <> ":"
-      in "(keep for" <+> stime <+> tshow grp <> ")"
+      let stime = if tim == TimerNone then "" else "for" <+> tshow tim <> ":"
+      in "(keep" <+> stime <+> tshow grp <> ")"
     (CreateItem _ grp _, _) ->
       let object = if grp == "useful" then "" else tshow grp
       in "of" <+> object <+> "uncovering"
