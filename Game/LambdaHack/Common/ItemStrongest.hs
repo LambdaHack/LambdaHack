@@ -2,7 +2,8 @@
 -- No operation in this module involves the state or any of our custom monads.
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
-    strengthOnSmash, strengthToThrow, strengthEqpSlot, strengthFromEqpSlot
+    strengthOnSmash, strengthCreateOrgan
+  , strengthToThrow, strengthEqpSlot, strengthFromEqpSlot
   , strongestSlotNoFilter, strongestSlot, sumSlotNoFilter, sumSkills
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
@@ -21,6 +22,7 @@ import Data.Text (Text)
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
@@ -91,6 +93,12 @@ strengthMelee itemFull =
 strengthOnSmash :: ItemFull -> [Effect Int]
 strengthOnSmash =
   let p (OnSmash eff) = [eff]
+      p _ = []
+  in strengthEffect999 p
+
+strengthCreateOrgan :: ItemFull -> [GroupName ItemKind]
+strengthCreateOrgan =
+  let p (CreateItem COrgan grp _) = [grp]
       p _ = []
   in strengthEffect999 p
 

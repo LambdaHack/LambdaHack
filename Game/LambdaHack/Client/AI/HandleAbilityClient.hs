@@ -590,6 +590,7 @@ applyItem aid applyGroup = do
         either (const False) id $ permittedApply " " actorBlind calm10 itemFull
   benList <- benAvailableItems aid q [CEqp, CInv, CGround]
   b <- getsState $ getActorBody aid
+  organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b
   localTime <- getsState $ getLocalTime (blid b)
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
@@ -618,16 +619,24 @@ applyItem aid applyGroup = do
             durableBonus = if IK.Durable `elem` jfeature itemBase
                            then 5  -- we keep it after use
                            else 1
-            benR = durableBonus
-                   * coeff cstore
-                   * case mben of
-                       Nothing -> 0
-                         -- experimenting is fun, but it's better to risk
-                         -- foes' skin than ours -- TODO: when {activated}
-                         -- is implemented, enable this for items too heavy,
-                         -- etc. for throwing
-                       Just (_, (_, ben)) -> ben
+            notOrganAgain =
+              -- This assumes the organ creation is beneficial. If it's
+              -- a drawback of an otherwise good item, we should reverse
+              -- the condition.
+              let newGrps = strengthCreateOrgan itemFull
+                  oldGrps = map (toGroupName . jname) organs
+              in null $ intersect newGrps oldGrps
+            benR = case mben of
+                     Nothing -> 0
+                       -- experimenting is fun, but it's better to risk
+                       -- foes' skin than ours -- TODO: when {activated}
+                       -- is implemented, enable this for items too heavy,
+                       -- etc. for throwing
+                     Just (_, (_, ben)) -> ben
                    * if recharged then 1 else 0  -- wait until can be used
+                   * if notOrganAgain then 1 else 0
+                   * durableBonus
+                   * coeff cstore
         in if itemLegal itemFull
            then if benR > 0
                 then Just (benR, ReqApply iid cstore)
