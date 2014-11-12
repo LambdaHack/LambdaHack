@@ -126,6 +126,9 @@ itemOverlay c lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   (letterSlots, numberSlots) <- getsClient sslots
+  assert (all (`elem` EM.elems letterSlots ++ IM.elems numberSlots)
+              (EM.keys bag)
+          `blame` (c, lid, bag, letterSlots, numberSlots)) skip
   let pr (l, iid) =
         case EM.lookup iid bag of
           Nothing -> Nothing
