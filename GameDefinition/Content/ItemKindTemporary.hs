@@ -28,7 +28,7 @@ tmpAs name aspects = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "affect"
   , iweight  = 1
-  , iaspects = [Periodic, Timeout 1]  -- activates and vanishes soon,
+  , iaspects = [Periodic, Timeout 0]  -- activates and vanishes soon,
                                       -- depending on initial timer setting
                ++ aspects
   , ieffects = [Recharging (Temporary $ "be no longer" <+> name)]

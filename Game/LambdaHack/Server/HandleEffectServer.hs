@@ -99,7 +99,8 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
     _ ->
       -- TODO: if has timeout and not recharged, report failure
       return it1
-  when (it /= it2) $ execUpdAtomic $ UpdTimeItem iid c it it2
+  when (it /= it2 && mtimeout /= Just (IK.Timeout 0)) $
+    execUpdAtomic $ UpdTimeItem iid c it it2
   -- If the activation is not periodic, trigger at least the effects
   -- that are not recharging and so don't depend on @recharged@.
   when (not periodic || recharged) $ do
