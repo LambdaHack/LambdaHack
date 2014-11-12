@@ -569,7 +569,7 @@ projectItem aid = do
                            * case mben of
                                Nothing -> -20  -- experimenting is fun
                                Just (_, (_, ben)) -> ben
-                           * if recharged then 1 else 0  -- wait until recharged
+                           * (if recharged then 1 else 0)
                 in if benR < 0 && trange >= chessDist bpos fpos
                    then Just ( -benR * rangeMult `div` 10
                              , ReqProject fpos newEps iid cstore )
@@ -642,9 +642,9 @@ applyItem aid applyGroup = do
                        -- is implemented, enable this for items too heavy,
                        -- etc. for throwing
                      Just (_, (_, ben)) -> ben
-                   * if recharged then 1 else 0  -- wait until can be used
-                   * if not createOrganAgain then 1 else 0
-                   * if not dropOrganVoid then 1 else 0
+                   * (if recharged then 1 else 0)  -- wait until can be used
+                   * (if not createOrganAgain then 1 else 0)
+                   * (if not dropOrganVoid then 1 else 0)
                    * durableBonus
                    * coeff cstore
         in if itemLegal itemFull

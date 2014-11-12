@@ -99,12 +99,14 @@ strengthOnSmash =
 strengthCreateOrgan :: ItemFull -> [GroupName ItemKind]
 strengthCreateOrgan =
   let p (CreateItem COrgan grp _) = [grp]
+      p (Recharging (CreateItem COrgan grp _)) = [grp]
       p _ = []
   in strengthEffect999 p
 
 strengthDropOrgan :: ItemFull -> [GroupName ItemKind]
 strengthDropOrgan =
   let p (DropItem COrgan grp _) = [grp]
+      p (Recharging (DropItem COrgan grp _)) = [grp]
       p _ = []
   in strengthEffect999 p
 
