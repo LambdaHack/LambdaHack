@@ -232,14 +232,13 @@ moveItemHuman cLegalRaw destCStore verb auto = do
             return $ Right $ ReqMoveItem iid k fromCStore toCStore
       if fromCStore == CGround
       then case destCStore of
-        CEqp | goesIntoInv (itemBase itemFull) -> do
-          updateItemSlot (Just leader) iid  -- slot not yet assigned
+        CEqp | goesIntoInv (itemBase itemFull) ->
           msgAndSer CInv
         CEqp | eqpOverfull b k -> do
           msgAdd $ "Warning:" <+> showReqFailure EqpOverfull <> "."
-          updateItemSlot (Just leader) iid  -- slot not yet assigned
           msgAndSer CInv
-        _ -> msgAndSer destCStore
+        _ ->
+          msgAndSer destCStore
       else case destCStore of
         CEqp | eqpOverfull b k -> failSer EqpOverfull
         _ -> msgAndSer destCStore

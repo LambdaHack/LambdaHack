@@ -64,7 +64,6 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
     side <- getsClient sside
     when (bfid body == side && not (bproj body)) stopPlayBack
   UpdCreateItem iid _ kit c -> do
-    side <- getsClient sside
     case c of
       CActor aid COrgan -> do
         let verb =
@@ -74,9 +73,8 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
         -- This describes all such items already among organs,
         -- which is useful, because it shows "charging".
         aiVerbMU aid verb iid Nothing COrgan
-      CActor aid _ -> do
-        b <- getsState $ getActorBody aid
-        when (bfid b == side) $ updateItemSlot (Just aid) iid
+      CActor aid store -> do
+        when (store == CGround) $ updateItemSlotSide aid iid
         itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
       CEmbed{} -> return ()
       CFloor{} -> do
@@ -97,8 +95,9 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
          , lookup iid $ map swap $ IM.assocs numberSlots ) of
       (Nothing, Nothing) -> do
         case c of
-          CActor{} -> return ()  -- not actionable at this time
-          CEmbed{} -> return ()  -- not actionable at this time
+          CActor aid CGround -> updateItemSlotSide aid iid
+          CActor{} -> return ()
+          CEmbed{} -> return ()
           CFloor lid p -> do
             updateItemSlot Nothing iid
             scursorOld <- getsClient scursor
@@ -238,6 +237,14 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdMsgAll msg -> msgAdd msg
   UpdRecordHistory _ -> recordHistory
 
+updateItemSlotSide :: MonadClient m => ActorId -> ItemId -> m ()
+updateItemSlotSide aid iid = do
+  side <- getsClient sside
+  b <- getsState $ getActorBody aid
+  if bfid b == side
+  then updateItemSlot (Just aid) iid
+  else updateItemSlot Nothing iid
+
 lookAtMove :: MonadClientUI m => ActorId -> m ()
 lookAtMove aid = do
   body <- getsState $ getActorBody aid
@@ -345,11 +352,9 @@ moveItemUI :: MonadClientUI m
            => Bool -> ItemId -> Int -> ActorId -> CStore -> CStore
            -> m ()
 moveItemUI verbose iid k aid cstore1 cstore2 = do
-  side <- getsClient sside
   b <- getsState $ getActorBody aid
   case (cstore1, cstore2) of
     (_, _) | cstore1 == CGround -> do
-      when (bfid b == side) $ updateItemSlot (Just aid) iid
       fact <- getsState $ (EM.! bfid b) . sfactionD
       let underAI = isAIFact fact
           c2 = CActor aid cstore2
@@ -372,9 +377,7 @@ moveItemUI verbose iid k aid cstore1 cstore2 = do
         aiVerbMU aid "get" iid (Just k) cstore2
     (_, CGround) | cstore1 /= cstore2 -> do
       when verbose $ aiVerbMU aid "drop" iid (Just k) cstore2
-      if bfid b == side
-        then updateItemSlot (Just aid) iid
-        else updateItemSlot Nothing iid
+      updateItemSlotSide aid iid
     _ -> return ()
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
@@ -449,10 +452,11 @@ quitFactionUI fid mbody toSt = do
                           <+> moreMsg
             if EM.null bag then return (mempty, 0)
             else do
+              mapM_ (updateItemSlot Nothing) $ EM.keys bag
               io <- itemOverlay (CFloor (blid b) (bpos b)) (blid b) bag
               sli <- overlayToSlideshow itemMsg io
               return (sli, tot)
-      (itemSlides, total) <-case mbody of
+      (itemSlides, total) <- case mbody of
         Just b | fid == side -> bodyToItemSlides b
         _ -> case gleader fact of
           Nothing -> return (mempty, 0)

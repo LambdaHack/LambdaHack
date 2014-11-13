@@ -12,7 +12,8 @@ module Game.LambdaHack.Common.ActorState
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, maxActorSkills, dispEnemy, radiusBlind
-  , fullAssocs, itemToFull, goesIntoInv, eqpOverfull, storeFromC, lidFromC
+  , fullAssocs, itemToFull, goesIntoInv, eqpOverfull
+  , storeFromC, lidFromC, aidFromC
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -378,3 +379,9 @@ lidFromC (CFloor lid _) _ = lid
 lidFromC (CEmbed lid _) _ = lid
 lidFromC (CActor aid _) s = blid $ getActorBody aid s
 lidFromC (CTrunk _ lid _) _ = lid
+
+aidFromC :: Container -> Maybe ActorId
+aidFromC CFloor{} = Nothing
+aidFromC CEmbed{} = Nothing
+aidFromC (CActor aid _) = Just aid
+aidFromC CTrunk{} = Nothing

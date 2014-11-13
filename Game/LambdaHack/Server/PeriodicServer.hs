@@ -130,6 +130,7 @@ rollSpawnPos Kind.COps{cotile} visible
     , \p _ -> not $ p `ES.member` visible
     , distantAtLeast 3  -- otherwise a fast actor can walk and hit in one turn
     ]
+
 dominateFidSfx :: (MonadAtomic m, MonadServer m)
                => FactionId -> ActorId -> m Bool
 dominateFidSfx fid target = do

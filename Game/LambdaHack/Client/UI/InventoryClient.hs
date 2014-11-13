@@ -127,14 +127,13 @@ getItem psuit tshaSuit tsuitable verb cLegalRaw cLegal askWhenLone
   let storeAssocs = EM.assocs . accessCBag
       allAssocs = concatMap storeAssocs cLegal
       rawAssocs = concatMap storeAssocs cLegalRaw
+  mapM_ (updateItemSlot (Just leader)) $
+    concatMap (EM.keys . accessCBag) cLegal
   case (cLegal, allAssocs) of
     ([cStart], [(iid, k)]) | not askWhenLone -> do
       itemToF <- itemToFullClient
       return $ Right ((iid, itemToF iid k), cStart)
-    (_ : _, _ : _) -> do
-      let groundCs = filter ((== CGround) . storeFromC) cLegal
-      mapM_ (updateItemSlot (Just leader)) $
-        concatMap (EM.keys . accessCBag) groundCs
+    (_ : _, _ : _) ->
       transition psuit tshaSuit tsuitable verb cLegal initalState
     _ -> if null rawAssocs then do
            let tLegal = map (MU.Text . ppContainer) cLegalRaw
