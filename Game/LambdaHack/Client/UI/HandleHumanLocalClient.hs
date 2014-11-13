@@ -120,13 +120,19 @@ describeItemC c = do
       verbSha body activeItems = if calmEnough body activeItems
                                  then "notice"
                                  else "paw distractedly"
-      shaBlurb body activeItems = makePhrase
-        [MU.Capitalize
-         $ MU.SubjectVerbSg (subject body) (verbSha body activeItems)]
-      stdBlurb body = makePhrase
-        [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
+      blurb body activeItems c2 = case c2 of
+        CActor _ CSha ->
+          makePhrase
+            [MU.Capitalize
+             $ MU.SubjectVerbSg (subject body) (verbSha body activeItems)]
+        CTrunk{} ->
+          makePhrase
+            [MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"]
+        _ ->
+          makePhrase
+            [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
   let verb = "describe"
-  ggi <- getStoreItem shaBlurb stdBlurb verb c
+  ggi <- getStoreItem blurb verb c
   case ggi of
     Right ((_, itemFull), c2) -> do
       lid2 <- getsState $ lidFromC c2

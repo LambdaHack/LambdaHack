@@ -658,7 +658,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           actorVerbMU aid b
           $ if boldfid b /= bfid b
             then
-              "get sobered and refocused by the fragrant moisture"
+              "get refocused by the fragrant moisture"
             else
               "inhale the sweet smell that weakens resolve and erodes loyalty"
         IK.CallFriend{} -> skip
