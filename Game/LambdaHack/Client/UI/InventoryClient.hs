@@ -57,7 +57,7 @@ getGroupItem psuit itemsName verb cLegalRaw cLegalAfterCalm = do
   let cNotEmpty = not . EM.null . getCStoreBag
       cLegal = filter cNotEmpty cLegalAfterCalm  -- don't display empty stores
       tsuitable = const $ makePhrase [MU.Capitalize (MU.Ws itemsName)]
-  getItem psuit (\b _ _ -> tsuitable b) verb
+  getItem psuit (Just $ \b _ _ -> tsuitable b) verb
           (map (CActor leader) cLegalRaw)
           (map (CActor leader) cLegal)
           True INone
@@ -74,10 +74,10 @@ getAnyItem :: MonadClientUI m
            -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
   leader <- getLeaderUI
-  soc <- getItem (const True) (\_ _ _ -> "Items") verb
+  soc <- getItem (const True) Nothing verb
                  (map (CActor leader) cLegalRaw)
                  (map (CActor leader) cLegalAfterCalm)
-                 askWhenLone INone
+                 askWhenLone ISuitable
   case soc of
     Left _ -> return soc
     Right ((iid, itemFull), c) -> do
@@ -99,7 +99,7 @@ getStoreItem blurb verb cInitial = do
   leader <- getLeaderUI
   let allStores = map (CActor leader) [CEqp, CInv, CSha, CGround]
       cLegalRaw = cInitial : delete cInitial allStores
-  getItem (const True) blurb verb cLegalRaw cLegalRaw
+  getItem (const True) (Just blurb) verb cLegalRaw cLegalRaw
           True ISuitable
 
 data ItemDialogState = INone | ISuitable | IAll
@@ -109,7 +109,7 @@ data ItemDialogState = INone | ISuitable | IAll
 -- item from a list of items.
 getItem :: MonadClientUI m
         => (ItemFull -> Bool)  -- ^ which items to consider suitable
-        -> (Actor -> [ItemFull] -> Container -> Text)
+        -> Maybe (Actor -> [ItemFull] -> Container -> Text)
                             -- ^ how to describe suitable items
         -> MU.Part          -- ^ the verb describing the action
         -> [Container]      -- ^ initial legal containers
@@ -118,7 +118,7 @@ getItem :: MonadClientUI m
                             --   in the starting container is suitable
         -> ItemDialogState  -- ^ the dialog state to start in
         -> m (SlideOrCmd ((ItemId, ItemFull), Container))
-getItem psuit blurb verb cLegalRaw cLegal askWhenLone
+getItem psuit mblurb verb cLegalRaw cLegal askWhenLone
         initalState = do
   leader <- getLeaderUI
   accessCBag <- getsState $ flip getCBag
@@ -132,7 +132,7 @@ getItem psuit blurb verb cLegalRaw cLegal askWhenLone
       itemToF <- itemToFullClient
       return $ Right ((iid, itemToF iid k), cStart)
     (_ : _, _ : _) ->
-      transition psuit blurb verb cLegal initalState
+      transition psuit mblurb verb cLegal initalState
     _ -> if null rawAssocs then do
            let tLegal = map (MU.Text . ppContainer) cLegalRaw
                ppLegal = makePhrase [MU.WWxW "nor" tLegal]
@@ -148,14 +148,14 @@ data DefItemKey m = DefItemKey
 
 transition :: forall m. MonadClientUI m
            => (ItemFull -> Bool)  -- ^ which items to consider suitable
-           -> (Actor -> [ItemFull] -> Container -> Text)
+           -> Maybe (Actor -> [ItemFull] -> Container -> Text)
                                   -- ^ how to describe suitable items
            -> MU.Part             -- ^ the verb describing the action
            -> [Container]
            -> ItemDialogState
            -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 transition _ _ verb [] iDS = assert `failure` (verb, iDS)
-transition psuit blurb verb cLegal@(cCur:cRest) itemDialogState = do
+transition psuit mblurb verb cLegal@(cCur:cRest) itemDialogState = do
   (letterSlots, numberSlots) <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -180,16 +180,16 @@ transition psuit blurb verb cLegal@(cCur:cRest) itemDialogState = do
            , defAction = \_ -> case itemDialogState of
                INone ->
                  if EM.null bagSuit
-                 then transition psuit blurb verb cLegal IAll
-                 else transition psuit blurb verb cLegal ISuitable
+                 then transition psuit mblurb verb cLegal IAll
+                 else transition psuit mblurb verb cLegal ISuitable
                ISuitable | bag /= bagSuit ->
-                 transition psuit blurb verb cLegal IAll
-               _ -> transition psuit blurb verb cLegal INone
+                 transition psuit mblurb verb cLegal IAll
+               _ -> transition psuit mblurb verb cLegal INone
            })
         , (K.Char '/', DefItemKey
            { defLabel = "/"
            , defCond = length cLegal > 1
-           , defAction = \_ -> transition psuit blurb verb
+           , defAction = \_ -> transition psuit mblurb verb
                                           (cRest ++ [cCur]) itemDialogState
            })
         , (K.Return,
@@ -228,7 +228,7 @@ transition psuit blurb verb cLegal@(cCur:cRest) itemDialogState = do
                      CActor _ cstore -> CActor newLeader cstore
                      _ -> c
                    newLegal = map newC cLegal
-               transition psuit blurb verb newLegal itemDialogState
+               transition psuit mblurb verb newLegal itemDialogState
            })
         , (K.BackTab, DefItemKey
            { defLabel = "SHIFT-TAB"
@@ -241,7 +241,7 @@ transition psuit blurb verb cLegal@(cCur:cRest) itemDialogState = do
                      CActor _ cstore -> CActor newLeader cstore
                      _ -> c
                    newLegal = map newC cLegal
-               transition psuit blurb verb newLegal itemDialogState
+               transition psuit mblurb verb newLegal itemDialogState
            })
         ]
       lettersDef :: DefItemKey m
@@ -256,15 +256,18 @@ transition psuit blurb verb cLegal@(cCur:cRest) itemDialogState = do
             _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
       ppCur = ppContainer cCur
-      tsuit = blurb body activeItems cCur
+      tverb = makePhrase ["What to", verb] <+> ppCur <> "?"
+      tsuit = maybe tverb
+                    (\blurb -> blurb body activeItems cCur <+> ppCur <> ":")
+                    mblurb
       (labelLetterSlots, bagFiltered, prompt) =
         case itemDialogState of
           INone     -> (suitableLetterSlots,
                         EM.empty,
-                        makePhrase ["What to", verb] <+> ppCur <> "?")
+                        tverb)
           ISuitable -> (suitableLetterSlots,
                         bagSuit,
-                        tsuit <+> ppCur <> ":")
+                        tsuit)
           IAll      -> (bagLetterSlots,
                         bag,
                         "Items" <+> ppCur <> ":")
