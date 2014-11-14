@@ -72,8 +72,8 @@ assignSlot item fid mbody (letterSlots, numberSlots) lastSlot s =
   candidates = take (length allSlots)
                $ drop (1 + fromJust (elemIndex lastSlot allSlots))
                $ cycle allSlots
-  onPerson = maybe (sharedAllOwnedFid fid s)
-                   (\body -> sharedAllOwned body s)
+  onPerson = maybe (sharedAllOwnedFid True fid s)
+                   (\body -> sharedAllOwned True body s)
                    mbody
   onGroud = maybe EM.empty
                   (\b -> getCBag (CFloor (blid b) (bpos b)) s)
