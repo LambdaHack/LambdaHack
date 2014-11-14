@@ -272,7 +272,7 @@ transition psuit mblurb verb cLegal@(cCur:cRest) itemDialogState = do
                         bag,
                         "Items" <+> ppCur <> ":")
   io <- itemOverlay cCur (blid body) bagFiltered
-  runDefItemKey keyDefs lettersDef io labelLetterSlots prompt
+  runDefItemKey keyDefs lettersDef io bagLetterSlots prompt
 
 runDefItemKey :: MonadClientUI m
               => [(K.Key, DefItemKey m)]
