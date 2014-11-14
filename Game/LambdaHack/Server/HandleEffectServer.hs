@@ -330,16 +330,22 @@ effectExplode execSfx cgroup target = do
         let fuzz = 2 + (k100 `xor` (itemK * n)) `mod` 9
             k = if itemK >= 8 && n < 8 then 0
                 else if n < 8 && n >= 4 then 4 else n
-            ps = take k $
+            psAll =
               [ Point (x - 12) $ y + fuzz
+              , Point (x + 12) $ y - fuzz
               , Point (x - 12) $ y - fuzz
               , Point (x + 12) $ y + fuzz
-              , Point (x + 12) $ y - fuzz
               , flip Point (y - 12) $ x + fuzz
+              , flip Point (y + 12) $ x - fuzz
               , flip Point (y - 12) $ x - fuzz
               , flip Point (y + 12) $ x + fuzz
-              , flip Point (y + 12) $ x - fuzz
               ]
+            -- Keep full symmetry, but only if enough projectiles. Fall back
+            -- to random, on average, symmetry.
+            ps = take k $
+              if k >= 4 then psAll
+              else drop ((n + x + y + fromEnum iid * 7) `mod` 16)
+                   $ cycle $ psAll ++ reverse psAll
         forM_ ps $ \tpxy -> do
           let req = ReqProject tpxy k100 iid CEqp
           mfail <- projectFail target tpxy k100 iid CEqp True

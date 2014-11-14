@@ -63,14 +63,17 @@ firecracker n = ItemKind
   { isymbol  = '*'
   , iname    = "firecracker"
   , ifreq    = [(toGroupName $ "firecracker" <+> tshow n, 1)]
-  , iflavour = zipPlain [stdCol !! (n `mod` length stdCol)]
-  , icount   = intToDice $ 2 * n
+  , iflavour = zipPlain [brightCol !! (n `mod` length brightCol)]
+  , icount   = intToDice (n `div` 6) + d (n `div` 2)
   , irarity  = [(1, 1)]
   , iverbHit = "crack"
   , iweight  = 1
   , iaspects = [AddLight $ intToDice $ n `div` 2]
-  , ieffects = [Burn 1, Explode $ toGroupName $ "firecracker" <+> tshow (n - 1)]
-  , ifeature = [ ToThrow $ ThrowMod (n * 10) 20
+  , ieffects = [ Burn 1 | n > 5 ]
+               ++ [ OnSmash (Explode $ toGroupName
+                             $ "firecracker" <+> tshow (n - 1))
+                  | n > 2 ]
+  , ifeature = [ ToThrow $ ThrowMod (10 + 3 * n) (10 + 100 `div` n)
                , Fragile, Identified ]
   , idesc    = ""
   , ikit     = []
@@ -214,7 +217,7 @@ glassPiece = ItemKind  -- when blowing up windows
 smoke = ItemKind  -- when stuff burns out
   { isymbol  = '\''
   , iname    = "smoke"
-  , ifreq    = [("smoke", 1), ("firecracker 1", 1)]
+  , ifreq    = [("smoke", 1)]
   , iflavour = zipPlain [BrBlack]
   , icount   = 19
   , irarity  = [(1, 1)]
