@@ -1,6 +1,9 @@
 {-# LANGUAGE DataKinds #-}
 -- | Semantics of 'Command.Cmd' client commands that return server commands.
 -- A couple of them do not take time, the rest does.
+-- Here prompts and menus and displayed, but any feedback resulting
+-- from the commands (e.g., from inventory manipulation) is generated later on,
+-- for all clients that witness the results of the commands.
 -- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   ( -- * Commands that usually take time
@@ -41,7 +44,6 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -204,14 +206,14 @@ waitHuman = do
 -- * MoveItem
 
 moveItemHuman :: MonadClientUI m
-              => [CStore] -> CStore -> MU.Part -> Bool
+              => [CStore] -> CStore -> (Maybe MU.Part) -> Bool
               -> m (SlideOrCmd (RequestTimed AbMoveItem))
-moveItemHuman cLegalRaw destCStore verb auto = do
+moveItemHuman cLegalRaw destCStore mverb auto = do
   assert (destCStore `notElem` cLegalRaw) skip
+  let verb = fromMaybe (MU.Text $ verbCStore destCStore) mverb
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
-  localTime <- getsState $ getLocalTime (blid b)
   let cLegal = if calmEnough b activeItems
                then cLegalRaw
                else if destCStore == CSha
@@ -223,25 +225,20 @@ moveItemHuman cLegalRaw destCStore verb auto = do
   case ggi of
     Right ((iid, itemFull), CActor _ fromCStore) -> do
       let k = itemK itemFull
-          msgAndSer toCStore = do
-            subject <- partAidLeader leader
-            msgAdd $ makeSentence
-              [ MU.SubjectVerbSg subject verb
-              , partItemWs k (CActor leader toCStore) (blid b) localTime
-                itemFull ]
+          retReq toCStore =
             return $ Right $ ReqMoveItem iid k fromCStore toCStore
       if fromCStore == CGround
       then case destCStore of
         CEqp | goesIntoInv (itemBase itemFull) ->
-          msgAndSer CInv
+          retReq CInv
         CEqp | eqpOverfull b k -> do
           msgAdd $ "Warning:" <+> showReqFailure EqpOverfull <> "."
-          msgAndSer CInv
+          retReq CInv
         _ ->
-          msgAndSer destCStore
+          retReq destCStore
       else case destCStore of
         CEqp | eqpOverfull b k -> failSer EqpOverfull
-        _ -> msgAndSer destCStore
+        _ -> retReq destCStore
     Left slides -> return $ Left slides
     _ -> assert `failure` ggi
 
@@ -423,7 +420,7 @@ triggerTileHuman ts = do
           [] -> Nothing
         mk = getK ts
     case mk of
-      Nothing -> failWith  "never mind"
+      Nothing -> failWith "never mind"
       Just k -> fmap Left $ tgtAscendHuman k
   else triggerTile ts
 
@@ -558,6 +555,8 @@ gameExitHuman = do
 
 gameSaveHuman :: MonadClientUI m => m RequestUI
 gameSaveHuman = do
+  -- Announce before the saving started, since it can take some time
+  -- and may slow down the machine, even if not block the client.
   -- TODO: do not save to history:
   msgAdd "Saving game backup."
   return ReqUIGameSave

@@ -100,16 +100,16 @@ standardKeys = KeyKind
       , ("G", ([CmdItem], DescribeItem CGround))
       , ("A", ([CmdItem], AllOwned))
       , ("g", ([CmdItem, CmdMinimal],
-               MoveItem [CGround] CEqp "get" "an item" True))
+               MoveItem [CGround] CEqp (Just "get") "an item" True))
       , ("d", ([CmdItem], MoveItem [CEqp, CInv, CSha] CGround
-                                   "drop" "an item" False))
+                                   Nothing "an item" False))
       , ("e", ([CmdItem], MoveItem [CInv, CSha] CEqp
-                                   "equip" "an item" False))
+                                   Nothing "an item" False))
       , ("p", ([CmdItem], MoveItem [CEqp, CSha] CInv
-                                   "pack" "an item into inventory backpack"
+                                   Nothing "an item into inventory backpack"
                                    False))
       , ("s", ([CmdItem], MoveItem [CInv, CEqp] CSha
-                                   "stash" "and share an item" False))
+                                   Nothing "and share an item" False))
       , ("a", ([CmdItem, CmdMinimal], Apply
            [ ApplyItem { verb = "activate"
                        , object = "applicable item"

@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.Actor
   , hpTooLow, calmEnough, calmEnough10, hpEnough, hpEnough10
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
-  , mapActorItems_, ppCStore, ppContainer
+  , mapActorItems_, ppContainer, ppCStore, verbCStore
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -210,6 +210,12 @@ mapActorItems_ f Actor{binv, beqp, borgan} = do
   let is = EM.assocs beqp ++ EM.assocs binv ++ EM.assocs borgan
   mapM_ (uncurry f) is
 
+ppContainer :: Container -> Text
+ppContainer CFloor{} = "nearby"
+ppContainer CEmbed{} = "embedded nearby"
+ppContainer (CActor _ cstore) = ppCStore cstore
+ppContainer CTrunk{} = "in our possession"
+
 ppCStore :: CStore -> Text
 ppCStore CGround = "on the ground"
 ppCStore COrgan = "among organs"
@@ -217,11 +223,12 @@ ppCStore CEqp = "in equipment"
 ppCStore CInv = "in inventory"
 ppCStore CSha = "in shared stash"
 
-ppContainer :: Container -> Text
-ppContainer CFloor{} = "nearby"
-ppContainer CEmbed{} = "embedded nearby"
-ppContainer (CActor _ cstore) = ppCStore cstore
-ppContainer CTrunk{} = "in our possession"
+verbCStore :: CStore -> Text
+verbCStore CGround = "drop"
+verbCStore COrgan = "implant"
+verbCStore CEqp = "equip"
+verbCStore CInv = "pack"
+verbCStore CSha = "stash"
 
 instance Binary Actor where
   put Actor{..} = do

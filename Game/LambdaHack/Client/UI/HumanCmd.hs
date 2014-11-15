@@ -5,9 +5,11 @@ module Game.LambdaHack.Client.UI.HumanCmd
   ) where
 
 import Control.Exception.Assert.Sugar
+import Data.Maybe
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Common.Actor (verbCStore)
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Vector
@@ -36,7 +38,7 @@ data HumanCmd =
     Move !Vector
   | Run !Vector
   | Wait
-  | MoveItem ![CStore] !CStore !MU.Part !MU.Part !Bool
+  | MoveItem ![CStore] !CStore !(Maybe MU.Part) !MU.Part !Bool
   | Project     ![Trigger]
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]
@@ -108,7 +110,9 @@ cmdDescription cmd = case cmd of
   Move v      -> "move" <+> compassText v
   Run v       -> "run" <+> compassText v
   Wait        -> "wait"
-  MoveItem _ _ verb object _ -> makePhrase [verb, object]
+  MoveItem _ store2 mverb object _ ->
+    let verb = fromMaybe (MU.Text $ verbCStore store2) mverb
+    in makePhrase [verb, object]
   Project ts  -> triggerDescription ts
   Apply ts    -> triggerDescription ts
   AlterDir ts -> triggerDescription ts

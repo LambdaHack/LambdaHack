@@ -37,8 +37,8 @@ cmdAction cmd = case cmd of
   Move v -> fmap anyToUI <$> moveRunHuman False v
   Run v -> fmap anyToUI <$> moveRunHuman True v
   Wait -> Right <$> fmap ReqUITimed waitHuman
-  MoveItem cLegalRaw toCStore verb _ auto ->
-    fmap ReqUITimed <$> moveItemHuman cLegalRaw toCStore verb auto
+  MoveItem cLegalRaw toCStore mverb _ auto ->
+    fmap ReqUITimed <$> moveItemHuman cLegalRaw toCStore mverb auto
   Project ts -> fmap ReqUITimed <$> projectHuman ts
   Apply ts -> fmap ReqUITimed <$> applyHuman ts
   AlterDir ts -> fmap ReqUITimed <$> alterDirHuman ts

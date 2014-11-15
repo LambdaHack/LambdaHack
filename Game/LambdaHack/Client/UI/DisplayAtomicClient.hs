@@ -114,7 +114,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdMoveActor aid _ _ -> lookAtMove aid
   UpdWaitActor aid _ -> when verbose $ aVerbMU aid "wait"
   UpdDisplaceActor source target -> displaceActorUI source target
-  UpdMoveItem iid k aid c1 c2 -> moveItemUI verbose iid k aid c1 c2
+  UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
   -- Change actor attributes.
   UpdAgeActor{} -> skip
   UpdRefillHP _ 0 -> skip
@@ -300,12 +300,13 @@ aiVerbMU aid verb iid mk cstore = do
       lid <- getsState $ lidFromC c
       localTime <- getsState $ getLocalTime lid
       subject <- partAidLeader aid
-      let object = case mk of
+      let itemFull = itemToF iid kit
+          object = case mk of
             Just n ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
-              $ partItemWs n c lid localTime (itemToF iid kit)
+              $ partItemWs n c lid localTime itemFull
             Nothing ->
-              let (name, stats) = partItem c lid localTime (itemToF iid kit)
+              let (name, stats) = partItem c lid localTime itemFull
               in MU.Phrase [name, stats]
           msg = makeSentence [MU.SubjectVerbSg subject verb, object]
       msgAdd msg
@@ -349,36 +350,31 @@ destroyActorUI aid body verb verboseVerb verbose = do
   else when verbose $ actorVerbMU aid body verboseVerb
 
 moveItemUI :: MonadClientUI m
-           => Bool -> ItemId -> Int -> ActorId -> CStore -> CStore
+           => ItemId -> Int -> ActorId -> CStore -> CStore
            -> m ()
-moveItemUI verbose iid k aid cstore1 cstore2 = do
+moveItemUI iid k aid cstore1 cstore2 = do
+  let verb = verbCStore cstore2
+  aiVerbMU aid (MU.Text verb) iid (Just k) cstore2
+  when (cstore2 == CGround) $ updateItemSlotSide aid iid
   b <- getsState $ getActorBody aid
-  case (cstore1, cstore2) of
-    (_, _) | cstore1 == CGround -> do
-      fact <- getsState $ (EM.! bfid b) . sfactionD
-      let underAI = isAIFact fact
-          c2 = CActor aid cstore2
-      mleader <- getsClient _sleader
-      if Just aid == mleader && not underAI then do
-        localTime <- getsState $ getLocalTime (blid b)
-        itemToF <- itemToFullClient
-        (letterSlots, _) <- getsClient sslots
-        bag <- getsState $ getCBag c2
-        let kit@(n, _) = bag EM.! iid
-        case lookup iid $ map swap $ EM.assocs letterSlots of
-          Just l -> msgAdd $ makePhrase
-                      [ "\n"
-                      , slotLabel $ Left l
-                      , "-"
-                      , partItemWs n c2 (blid b) localTime (itemToF iid kit)
-                      , "\n" ]
-          Nothing -> return ()
-      else when (cstore1 == CGround && cstore1 /= cstore2) $
-        aiVerbMU aid "get" iid (Just k) cstore2
-    (_, CGround) | cstore1 /= cstore2 -> do
-      when verbose $ aiVerbMU aid "drop" iid (Just k) cstore2
-      updateItemSlotSide aid iid
-    _ -> return ()
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let underAI = isAIFact fact
+  mleader <- getsClient _sleader
+  when (cstore1 == CGround && Just aid == mleader && not underAI) $ do
+    localTime <- getsState $ getLocalTime (blid b)
+    itemToF <- itemToFullClient
+    (letterSlots, _) <- getsClient sslots
+    let c2 = CActor aid cstore2
+    bag <- getsState $ getCBag c2
+    let kit@(n, _) = bag EM.! iid
+    case lookup iid $ map swap $ EM.assocs letterSlots of
+      Just l -> msgAdd $ makePhrase
+                  [ "\n"
+                  , slotLabel $ Left l
+                  , "-"
+                  , partItemWs n c2 (blid b) localTime (itemToF iid kit)
+                  , "\n" ]
+      Nothing -> return ()
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
