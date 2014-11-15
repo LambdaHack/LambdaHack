@@ -318,7 +318,9 @@ projectEps ts tpos eps = do
           Left{} -> legal
           Right False -> legal
           Right True -> Right $ totalRange itemBase >= chessDist (bpos b) tpos
-  ggi <- getGroupItem (either (const False) id . p) object1 verb1 cLegal cLegal
+      prompt = makePhrase ["What", object1, "to", verb1]
+      promptGeneric = "What item to fling"
+  ggi <- getGroupItem (either (const False) id . p) prompt promptGeneric cLegal cLegal
   case ggi of
     Right ((iid, itemFull), CActor _ fromCStore) ->
       case p itemFull of
@@ -348,7 +350,9 @@ applyHuman ts = do
       triggerSyms = triggerSymbols ts
       calm10 = calmEnough10 b activeItems
       p = permittedApply triggerSyms actorBlind calm10
-  ggi <- getGroupItem (either (const False) id . p) object1 verb1 cLegal cLegal
+      prompt = makePhrase ["What", object1, "to", verb1]
+      promptGeneric = "What item to activate"
+  ggi <- getGroupItem (either (const False) id . p) prompt promptGeneric cLegal cLegal
   case ggi of
     Right ((iid, itemFull), CActor _ fromCStore) ->
       case p itemFull of

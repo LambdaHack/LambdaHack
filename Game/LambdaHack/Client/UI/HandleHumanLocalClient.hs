@@ -120,7 +120,7 @@ describeItemC c = do
       verbSha body activeItems = if calmEnough body activeItems
                                  then "notice"
                                  else "paw distractedly"
-      blurb body activeItems c2 = case c2 of
+      prompt body activeItems c2 = case c2 of
         CActor _ CSha ->
           makePhrase
             [MU.Capitalize
@@ -131,8 +131,7 @@ describeItemC c = do
         _ ->
           makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
-  let verb = "describe"
-  ggi <- getStoreItem blurb verb c
+  ggi <- getStoreItem prompt c
   case ggi of
     Right ((_, itemFull), c2) -> do
       lid2 <- getsState $ lidFromC c2
