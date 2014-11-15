@@ -72,7 +72,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
                                        k -> tshow k <> "-fold"
         -- This describes all such items already among organs,
         -- which is useful, because it shows "charging".
-        aiVerbMU aid verb iid Nothing COrgan
+        itemAidVerbMU aid verb iid (Left Nothing) COrgan
       CActor aid store -> do
         when (store == CGround) $ updateItemSlotSide aid iid
         itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
@@ -112,7 +112,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdLoseItem{} -> skip
   -- Move actors and items.
   UpdMoveActor aid _ _ -> lookAtMove aid
-  UpdWaitActor aid _ -> when verbose $ aVerbMU aid "wait"
+  UpdWaitActor aid _ -> when verbose $ aidVerbMU aid "wait"
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
   -- Change actor attributes.
@@ -120,7 +120,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdRefillHP _ 0 -> skip
   UpdRefillHP aid n -> do
     when verbose $
-      aVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
+      aidVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
                               <+> tshow (abs $ n `divUp` oneM) <> "HP"
     mleader <- getsClient _sleader
     when (Just aid == mleader) $ do
@@ -138,7 +138,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
         allFoes  <- getsState $ actorRegularList (isAtWar fact) (blid b)
         let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
         when (null closeFoes) $ do  -- obvious where the feeling comes from
-          aVerbMU aid "hear something"
+          aidVerbMU aid "hear something"
           msgDuplicateScrap
   UpdOldFidActor{} -> skip
   UpdTrajectory{} -> skip
@@ -269,8 +269,8 @@ actorVerbMU aid b verb = do
   subject <- partActorLeader aid b
   msgAdd $ makeSentence [MU.SubjectVerbSg subject verb]
 
-aVerbMU :: MonadClientUI m => ActorId -> MU.Part -> m ()
-aVerbMU aid verb = do
+aidVerbMU :: MonadClientUI m => ActorId -> MU.Part -> m ()
+aidVerbMU aid verb = do
   b <- getsState $ getActorBody aid
   actorVerbMU aid b verb
 
@@ -285,11 +285,14 @@ itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
 
+-- TODO: split into 3 parts wrt ek and reuse somehow, e.g., the secret part
 -- We assume the item is inside the specified container.
 -- So, this function can't be used for, e.g., @UpdDestroyItem@.
-aiVerbMU :: MonadClientUI m
-         => ActorId -> MU.Part -> ItemId -> Maybe Int -> CStore -> m ()
-aiVerbMU aid verb iid mk cstore = do
+itemAidVerbMU :: MonadClientUI m
+              => ActorId -> MU.Part
+              -> ItemId -> Either (Maybe Int) Int -> CStore
+              -> m ()
+itemAidVerbMU aid verb iid ek cstore = do
   let c = CActor aid cstore
   bag <- getsState $ getCBag c
   -- The item may no longer be in @c@, but it was
@@ -301,13 +304,22 @@ aiVerbMU aid verb iid mk cstore = do
       localTime <- getsState $ getLocalTime lid
       subject <- partAidLeader aid
       let itemFull = itemToF iid kit
-          object = case mk of
-            Just n ->
+          object = case ek of
+            Left (Just n) ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
               $ partItemWs n c lid localTime itemFull
-            Nothing ->
+            Left Nothing ->
               let (name, stats) = partItem c lid localTime itemFull
               in MU.Phrase [name, stats]
+            Right n ->
+              assert (n <= k `blame` (aid, verb, iid, cstore))
+              $ let itemSecret = itemNoDisco (itemBase itemFull, n)
+                    (secretName, secretAE) = partItem c lid localTime itemSecret
+                    name = MU.Phrase [secretName, secretAE]
+                    nameList = if n == 1
+                               then ["the", name]
+                               else ["the", MU.Text $ tshow n, MU.Ws name]
+                in MU.Phrase nameList
           msg = makeSentence [MU.SubjectVerbSg subject verb, object]
       msgAdd msg
 
@@ -354,13 +366,13 @@ moveItemUI :: MonadClientUI m
            -> m ()
 moveItemUI iid k aid cstore1 cstore2 = do
   let verb = verbCStore cstore2
-  aiVerbMU aid (MU.Text verb) iid (Just k) cstore2
   when (cstore2 == CGround) $ updateItemSlotSide aid iid
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let underAI = isAIFact fact
   mleader <- getsClient _sleader
-  when (cstore1 == CGround && Just aid == mleader && not underAI) $ do
+  if (cstore1 == CGround && Just aid == mleader && not underAI) then do
+    itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
     localTime <- getsState $ getLocalTime (blid b)
     itemToF <- itemToFullClient
     (letterSlots, _) <- getsClient sslots
@@ -375,6 +387,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
                   , partItemWs n c2 (blid b) localTime (itemToF iid kit)
                   , "\n" ]
       Nothing -> return ()
+  else itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
@@ -513,14 +526,18 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     spart <- partAidLeader source
     tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
-  SfxProject aid iid cstore -> aiVerbMU aid "aim" iid (Just 1) cstore
-  SfxCatch aid iid cstore -> aiVerbMU aid "catch" iid (Just 1) cstore
-  SfxActivate aid iid cstore -> aiVerbMU aid "activate" iid (Just 1) cstore
-  SfxCheck aid iid cstore -> aiVerbMU aid "deactivate" iid (Just 1) cstore
+  SfxProject aid iid cstore ->
+    itemAidVerbMU aid "aim" iid (Left $ Just 1) cstore
+  SfxCatch aid iid cstore ->
+    itemAidVerbMU aid "catch" iid (Left $ Just 1) cstore
+  SfxActivate aid iid cstore ->
+    itemAidVerbMU aid "activate" iid (Left $ Just 1) cstore
+  SfxCheck aid iid cstore ->
+    itemAidVerbMU aid "deactivate" iid (Left $ Just 1) cstore
   SfxTrigger aid _p _feat ->
-    when verbose $ aVerbMU aid "trigger"  -- TODO: opens door, etc.
+    when verbose $ aidVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->
-    when verbose $ aVerbMU aid "shun"  -- TODO: shuns stairs down
+    when verbose $ aidVerbMU aid "shun"  -- TODO: shuns stairs down
   SfxEffect fidSource aid effect -> do
     b <- getsState $ getActorBody aid
     side <- getsClient sside
@@ -635,11 +652,11 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let subject = partActor b
           if fid /= fidSource then do  -- before domination
             if bcalm b == 0 then do -- sometimes only a coincidence, but nm
-              aVerbMU aid $ MU.Text "yield, under extreme pressure"
+              aidVerbMU aid $ MU.Text "yield, under extreme pressure"
             else if fid == side then
-              aVerbMU aid $ MU.Text "black out, dominated by foes"
+              aidVerbMU aid $ MU.Text "black out, dominated by foes"
             else
-              aVerbMU aid $ MU.Text "decide abrubtly to switch allegiance"
+              aidVerbMU aid $ MU.Text "decide abrubtly to switch allegiance"
             fidName <- getsState $ gname . (EM.! fid) . sfactionD
             let verb = "be no longer controlled by"
             msgAdd $ makeSentence
