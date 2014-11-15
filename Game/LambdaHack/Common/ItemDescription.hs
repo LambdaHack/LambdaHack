@@ -77,7 +77,7 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
           cstore = storeFromC c
           active = cstore `elem` [CEqp, COrgan]
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
-          splitAE :: (Show a, Ord a)
+          splitAE :: (Num a, Show a, Ord a)
                   => [IK.Aspect a] -> (IK.Aspect a -> Text)
                   -> [IK.Effect a] -> (IK.Effect a -> Text)
                   -> [Text]
@@ -97,10 +97,14 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
                 onSmashTs = T.intercalate (T.singleton ' ')
                             $ filter (not . T.null)
                             $ map ppE $ stripOnSmash restEs
+                durable = IK.Durable `elem` jfeature itemBase
                 periodicOrTimeout = case mperiodic of
                   _ | T.null rechargingTs -> ""
                   Just IK.Periodic ->
                     case mtimeout of
+                      Just (IK.Timeout 0) | not durable ->
+                        "(each turn until gone:"
+                        <+> rechargingTs <> ")"
                       Just (IK.Timeout t) ->
                         "(every" <+> tshow t <> ":"
                         <+> rechargingTs <> ")"
