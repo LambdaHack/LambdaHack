@@ -20,7 +20,6 @@ import Data.Ord
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -32,6 +31,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Fov.Common
 import qualified Game.LambdaHack.Server.Fov.Digital as Digital
@@ -77,7 +77,7 @@ levelPerception cops litHere actorEqpBody fovMode lvl@Level{lxsize, lysize} =
                $ concat $ map fst $ filter (canSmellAround . snd) noctoBodies
   in Perception ptotal psmell
 
--- | Calculate faction's perception of a level based on the lit tiles cache..
+-- | Calculate faction's perception of a level based on the lit tiles cache.
 fidLidPerception :: Kind.COps -> FovMode -> PersLit
                  -> FactionId -> LevelId -> Level
                  -> Perception

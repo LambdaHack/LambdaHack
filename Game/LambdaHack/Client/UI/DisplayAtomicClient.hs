@@ -681,7 +681,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Ascend{} -> assert `failure` sfx
         IK.Escape{} -> skip
         IK.Paralyze{} -> actorVerbMU aid b "be paralyzed"
-        IK.InsertMove{} -> actorVerbMU aid b "move with extreme speed"
+        IK.InsertMove{} -> actorVerbMU aid b "act with extreme speed"
         IK.Teleport t | t > 9 -> actorVerbMU aid b "teleport"
         IK.Teleport{} -> actorVerbMU aid b "blink"
         IK.CreateItem{} -> skip

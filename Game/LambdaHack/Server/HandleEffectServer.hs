@@ -644,8 +644,6 @@ effectParalyze execSfx p target = assert (p > 0) $ do
 
 -- ** InsertMove
 
--- TODO: Replace with SpeedBurst that lasts just 1 turn,
--- but make sure the cost of this item activation is vs previous speed
 -- | Give target actor the given number of extra moves. Don't give
 -- an absolute amount of time units, to benefit slow actors more.
 effectInsertMove :: (MonadAtomic m, MonadServer m)

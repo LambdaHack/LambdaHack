@@ -143,7 +143,7 @@ bspeed b activeItems =
                $ sumSlotNoFilter IK.EqpSlotAddSpeed activeItems
     Just (_, speed) -> speed
 
--- | Add time taken by a single step at the actor's current speed.
+-- | Add time taken by a single 1m step at the actor's current speed.
 timeShiftFromSpeed :: Actor -> [ItemFull] -> Time -> Time
 timeShiftFromSpeed b activeItems time =
   let speed = bspeed b activeItems

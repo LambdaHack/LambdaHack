@@ -97,9 +97,10 @@ data TimerDice =
 
 instance Show TimerDice where
   show TimerNone = "0"
-  show (TimerGameTurn nDm) = show nDm
+  show (TimerGameTurn nDm) =
+    show nDm ++ " " ++ if nDm == 1 then "turn" else "turns"
   show (TimerActorTurn nDm) =
-    show nDm ++ " " ++ if nDm == 1 then "step" else "steps"
+    show nDm ++ " " ++ if nDm == 1 then "move" else "moves"
 
 -- | Aspects of items. Those that are named @Add*@ are additive
 -- (starting at 0) for all items wielded by an actor and they affect the actor.

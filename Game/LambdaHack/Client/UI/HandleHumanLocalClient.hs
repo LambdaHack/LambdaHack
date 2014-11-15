@@ -219,12 +219,12 @@ recordHuman = do
       let slastRecord = ([], [], maxK)
       modifyClient $ \cli -> cli {slastRecord}
       promptToSlideshow $ "Macro will be recorded for up to"
-                          <+> tshow maxK <+> "steps."
+                          <+> tshow maxK <+> "actions."  -- no MU, poweruser
     _ -> do
       let slastRecord = (seqPrevious, [], 0)
       modifyClient $ \cli -> cli {slastRecord}
       promptToSlideshow $ "Macro recording interrupted after"
-                          <+> tshow (maxK - k - 1) <+> "steps."
+                          <+> tshow (maxK - k - 1) <+> "actions."
 
 -- * History
 

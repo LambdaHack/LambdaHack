@@ -120,7 +120,7 @@ timeDeltaToDigit (Delta (Time maxT)) (Delta (Time t)) =
 
 -- | Speed in meters per 1 million seconds (m/Ms).
 -- Actors at normal speed (2 m/s) take one time turn (0.5 s)
--- to move one tile (1 m by 1 m).
+-- to make one step (move one tile, which is 1 m by 1 m).
 newtype Speed = Speed Int64
   deriving (Eq, Ord, Binary)
 

@@ -284,7 +284,7 @@ regenCalmDelta b activeItems s =
       calmIncr = oneM  -- normal rate of calm regen
       maxDeltaCalm = xM calmMax - bcalm b
       -- Worry actor by enemies felt (even if not seen)
-      -- on the level within 3 tiles.
+      -- on the level within 3 steps.
       fact = (EM.! bfid b) . sfactionD $ s
       allFoes = actorRegularList (isAtWar fact) (blid b) $ s
       isHeard body = not (waitedLastTurn body)

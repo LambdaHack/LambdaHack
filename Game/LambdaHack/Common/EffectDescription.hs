@@ -26,6 +26,14 @@ effectToSuff effect f g =
   rawEffectToSuff (St.evalState (effectTrav effect $ return . f) ())
                   (St.evalState (effectTrav effect $ return . g) ())
 
+-- We show absolute time in seconds, not @moves@, because actors can have
+-- different speeds (and actions can potentially take different time intervals).
+-- We call the time taken by one player move, when walking, a @move@.
+-- @Turn@ and @clip@ are used mostly internally, the former as an absolute
+-- time unit.
+-- We show distances in @steps@, because one step, from a tile to another
+-- tile, is always 1 meter. We don't call steps @tiles@, reserving
+-- that term for the context of terrain kinds or units of area.
 rawEffectToSuff :: Effect Text -> Effect (Maybe Int) -> Text
 rawEffectToSuff effectText effectMInt =
   case (effectText, effectMInt) of
@@ -33,7 +41,7 @@ rawEffectToSuff effectText effectMInt =
     (Hurt dice, _) -> wrapInParens (tshow dice)
     (Burn p, _) | p <= 0 -> assert `failure` (effectText, effectMInt)
     (Burn p, _) -> wrapInParens (makePhrase [MU.CarWs p "burn"])
-    (Explode t, _) -> "of explosion '" <> tshow t <> "'"
+    (Explode t, _) -> "of" <+> tshow t <+> "explosion"
     (RefillHP p, _) | p > 0 ->
       "of limited healing" <+> wrapInParens (affixBonus p)
     (RefillHP 0, _) -> assert `failure` (effectText, effectMInt)
@@ -61,21 +69,21 @@ rawEffectToSuff effectText effectMInt =
     (ApplyPerfume, _) -> "of smell removal"
     (Ascend 1, _) -> "of ascending"
     (Ascend p, _) | p > 0 ->
-      "of ascending" <+> wrapInParens (tshow p <+> "levels")
+      "of ascending for" <+> tshow p <+> "levels"
     (Ascend 0, _) -> assert `failure` (effectText, effectMInt)
     (Ascend (-1), _) -> "of descending"
     (Ascend p, _) ->
-      "of descending" <+> wrapInParens (tshow (-p) <+> "levels")
+      "of descending for" <+> tshow (-p) <+> "levels"
     (Escape{}, _) -> "of escaping"
-    (_, Paralyze Nothing) -> "of paralysis (? clips)"
+    (_, Paralyze Nothing) -> "of paralysis for ? seconds"
     (_, Paralyze (Just p)) ->
       let clipInTurn = timeTurn `timeFit` timeClip
           seconds = 0.5 * fromIntegral p / fromIntegral clipInTurn :: Double
-      in "of paralysis" <+> wrapInParens (tshow seconds <> "s")
+      in "of paralysis for" <+> tshow seconds <> "s"
     (_, InsertMove Nothing) ->
-      "of speed surge (? moves)"
+      "of speed surge for ? moves"
     (_, InsertMove (Just p)) ->
-      "of speed surge" <+> wrapInParens (makePhrase [MU.CarWs p "move"])
+      "of speed surge for" <+> makePhrase [MU.CarWs p "move"]
     (_, Teleport (Just p)) | p <= 1  ->
       assert `failure` (effectText, effectMInt)
     (Teleport t, Teleport (Just p)) | p <= 9  ->
