@@ -98,14 +98,16 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
                           (itemK itemFull) container verbose
       return $ Just (iid, (itemFull, itemGroup))
 
-placeItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()
+placeItemsInDungeon :: forall m. (MonadAtomic m, MonadServer m) => m ()
 placeItemsInDungeon = do
   Kind.COps{cotile} <- getsState scops
   let initialItems lid (Level{lfloor, ltile, litemNum, lxsize, lysize}) = do
         let factionDist = max lxsize lysize - 5
-        replicateM litemNum $ do
-          let dist p = minimum $ maxBound : map (chessDist p) (EM.keys lfloor)
-          pos <- rndToAction $ findPosTry 100 ltile
+            placeItems :: [Point] -> Int -> m ()
+            placeItems _ 0 = return ()
+            placeItems lfloorKeys n = do
+              let dist p = minimum $ maxBound : map (chessDist p) lfloorKeys
+              pos <- rndToAction $ findPosTry 100 ltile
                    (\_ t -> Tile.isWalkable cotile t
                             && (not $ Tile.hasFeature cotile TK.NoItem t))
                    [ \p t -> Tile.hasFeature cotile TK.OftenItem t
@@ -124,9 +126,11 @@ placeItemsInDungeon = do
                    , \p t -> Tile.hasFeature cotile TK.OftenItem t
                              || dist p > factionDist `div` 12
                    , \p _ -> dist p > 1
-                   , \p _ -> EM.notMember p lfloor
+                   , \p _ -> dist p > 0
                    ]
-          createLevelItem pos lid
+              createLevelItem pos lid
+              placeItems (pos : lfloorKeys) (n - 1)
+        placeItems (EM.keys lfloor) litemNum
   dungeon <- getsState sdungeon
   mapWithKeyM_ initialItems dungeon
 
