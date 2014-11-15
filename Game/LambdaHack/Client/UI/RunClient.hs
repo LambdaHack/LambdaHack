@@ -138,8 +138,9 @@ moveRunAid source dir = do
             -- in hopes of killing a monster lurking within.
             -- If the action had a cost, misclicks would incur the cost, too.
             -- Right now the player may repeatedly alter tiles trying to learn
-            -- about invisible pass-wall actors, but it costs a turn
-            -- and does not harm the invisible actors, so it's not tempting.
+            -- about invisible pass-wall actors, but when an actor detected,
+            -- it costs a turn and does not harm the invisible actors,
+            -- so it's not so tempting.
        -- Ignore a known boring, not accessible tile.
        else Left "never mind"
   return $! runStopOrCmd

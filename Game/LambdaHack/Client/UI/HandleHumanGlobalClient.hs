@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds, GADTs #-}
 -- | Semantics of 'Command.Cmd' client commands that return server commands.
 -- A couple of them do not take time, the rest does.
 -- Here prompts and menus and displayed, but any feedback resulting
@@ -89,7 +89,7 @@ moveRunHuman run dir = do
         runStopOrCmd <- moveRunAid leader dir
         case runStopOrCmd of
           Left stopMsg -> failWith stopMsg
-          Right runCmd -> do
+          Right runCmd@(RequestAnyAbility ReqMove{}) -> do
             sel <- getsClient sselected
             let runMembers = if noRunWithMulti fact
                              then [leader]  -- TODO: warn?
@@ -101,6 +101,8 @@ moveRunHuman run dir = do
                                       , runInitDir = Just dir }
             when run $ modifyClient $ \cli -> cli {srunning = Just runParams}
             return $ Right runCmd
+          -- Any other command does ends the run immediately.
+          Right runCmd -> return $ Right runCmd
         -- When running, the invisible actor is hit (not displaced!),
         -- so that running in the presence of roving invisible
         -- actors is equivalent to moving (with visible actors

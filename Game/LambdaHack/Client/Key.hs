@@ -127,18 +127,34 @@ dirViKey = map Char dirViChar
 dirViShiftKey :: [Key]
 dirViShiftKey = map (Char . Char.toUpper) dirViChar
 
+dirMoveNoModifier :: Bool -> Bool -> [Key]
+dirMoveNoModifier configVi configLaptop =
+  dirKeypadKey ++ if configVi then dirViKey
+                  else if configLaptop then dirLaptopKey
+                  else []
+
+dirRunNoModifier :: Bool -> Bool -> [Key]
+dirRunNoModifier configVi configLaptop =
+  dirKeypadShiftKey ++ if configVi then dirViShiftKey
+                       else if configLaptop then dirLaptopShiftKey
+                       else []
+
+dirRunControl :: [Key]
+dirRunControl = dirKeypadKey
+                ++ dirKeypadShiftKey
+                ++ (map Char dirKeypadShiftChar)
+
 dirAllKey :: Bool -> Bool -> [Key]
-dirAllKey configVi configLaptop = dirKeypadKey ++ if configVi
-                                                  then dirViKey
-                                                  else if configLaptop
-                                                       then dirLaptopKey
-                                                       else []
+dirAllKey configVi configLaptop =
+  dirMoveNoModifier configVi configLaptop
+  ++ dirRunNoModifier configVi configLaptop
+  ++ dirRunControl
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
 handleDir :: Bool -> Bool -> KM -> (Vector -> a) -> a -> a
 handleDir configVi configLaptop KM{modifier=NoModifier, key} h k =
-  let assocs = zip (dirAllKey configVi configLaptop) $ moves ++ moves
+  let assocs = zip (dirAllKey configVi configLaptop) $ cycle moves
   in maybe k h (lookup key assocs)
 handleDir _ _ _ _ k = k
 
@@ -151,19 +167,9 @@ moveBinding configVi configLaptop move run =
         map (assign move) (zip (zipWith KM (repeat modifier) keys) moves)
       mapRun modifier keys =
         map (assign run) (zip (zipWith KM (repeat modifier) keys) moves)
-      dirOtherKey | configVi = dirViKey
-                  | configLaptop = dirLaptopKey
-                  | otherwise = []
-      dirOtherShiftKey | configVi = dirViShiftKey
-                       | configLaptop = dirLaptopShiftKey
-                       | otherwise = []
-  in mapMove NoModifier dirKeypadKey
-     ++ mapMove NoModifier dirOtherKey
-     ++ mapRun NoModifier dirKeypadShiftKey
-     ++ mapRun NoModifier dirOtherShiftKey
-     ++ mapRun Control dirKeypadKey
-     ++ mapRun Control dirKeypadShiftKey
-     ++ mapRun Control (map Char dirKeypadShiftChar)
+  in mapMove NoModifier (dirMoveNoModifier configVi configLaptop)
+     ++ mapRun NoModifier (dirRunNoModifier configVi configLaptop)
+     ++ mapRun Control dirRunControl
 
 mkKM :: String -> KM
 mkKM s = let mkKey sk =
