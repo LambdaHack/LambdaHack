@@ -31,7 +31,8 @@ tmpAs name aspects = ItemKind
   , iaspects = [Periodic, Timeout 0]  -- activates and vanishes soon,
                                       -- depending on initial timer setting
                ++ aspects
-  , ieffects = [Recharging (Temporary $ "be no longer" <+> name)]
+  , ieffects = let tmp = Temporary $ "be no longer" <+> name
+               in [Recharging tmp, OnSmash tmp]
   , ifeature = [Identified]
   , idesc    = ""
   , ikit     = []

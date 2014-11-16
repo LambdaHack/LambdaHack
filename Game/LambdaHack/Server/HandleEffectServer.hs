@@ -113,12 +113,13 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
     let mtmp = let tmpEffect :: IK.Effect a -> Bool
                    tmpEffect IK.Temporary{} = True
                    tmpEffect (IK.Recharging IK.Temporary{}) = True
+                   tmpEffect (IK.OnSmash IK.Temporary{}) = True
                    tmpEffect _ = False
                in find tmpEffect effs
     item <- getsState $ getItemBody iid
     let durable = IK.Durable `elem` jfeature item
         imperishable = durable || periodic && isNothing mtmp
-        kit = (1, take 1 it2)
+        kit = if isNothing mtmp || periodic then (1, take 1 it2) else (k, it2)
     unless imperishable $
       execUpdAtomic $ UpdLoseItem iid item kit c
     -- At this point, the item is potentially no longer in container @c@.
@@ -750,7 +751,7 @@ effectCreateItem target store grp tim = do
 -- ** DropItem
 
 -- | Make the target actor drop all items in his equiment with the given symbol
--- (not just a random one, or cluttering equipment with rubbish
+-- (not just a random single item, or cluttering equipment with rubbish
 -- would be beneficial).
 effectDropItem :: (MonadAtomic m, MonadServer m)
                => m () -> CStore -> GroupName ItemKind -> Bool -> ActorId
@@ -774,6 +775,33 @@ effectDropItem execSfx store grp hit target = do
       mapM_ (\(iid, kit) -> dropCStoreItem store target b hit iid kit) is
       unless (store == COrgan) execSfx
       return True
+
+-- | Drop a single actor's item. Note that if there are multiple copies,
+-- at most one explodes to avoid excessive carnage and UI clutter
+-- (let's say, the multiple explosions interfere with each other or perhaps
+-- larger quantities of explosives tend to be packaged more safely).
+dropCStoreItem :: (MonadAtomic m, MonadServer m)
+               => CStore -> ActorId -> Actor -> Bool -> ItemId -> ItemQuant
+               -> m ()
+dropCStoreItem store aid b hit iid kit@(k, _) = do
+  item <- getsState $ getItemBody iid
+  let c = CActor aid store
+      fragile = IK.Fragile `elem` jfeature item
+      durable = IK.Durable `elem` jfeature item
+      isDestroyed = hit && not durable || bproj b && fragile
+  if isDestroyed then do
+    discoEffect <- getsServer sdiscoEffect
+    let aspects = case EM.lookup iid discoEffect of
+          Just ItemAspectEffect{jaspects} -> jaspects
+          _ -> assert `failure` (aid, iid)
+    itemToF <- itemToFullServer
+    let itemFull = itemToF iid kit
+        effs = strengthOnSmash itemFull
+    effectAndDestroy aid aid iid c False effs aspects kit
+  else do
+    mvCmd <- generalMoveItem iid k (CActor aid store)
+                                   (CActor aid CGround)
+    mapM_ execUpdAtomic mvCmd
 
 -- ** PolyItem
 
@@ -909,33 +937,6 @@ effectDropBestWeapon execSfx target = do
       return True
     [] ->
       return False
-
--- | Drop a single actor's item. Note that if there multiple copies,
--- at most one explodes to avoid excessive carnage and UI clutter
--- (let's say, the multiple explosions interfere with each other or perhaps
--- larger quantities of explosives tend to be packaged more safely).
-dropCStoreItem :: (MonadAtomic m, MonadServer m)
-               => CStore -> ActorId -> Actor -> Bool -> ItemId -> ItemQuant
-               -> m ()
-dropCStoreItem store aid b hit iid kit@(k, _) = do
-  item <- getsState $ getItemBody iid
-  let c = CActor aid store
-      fragile = IK.Fragile `elem` jfeature item
-      durable = IK.Durable `elem` jfeature item
-      isDestroyed = hit && not durable || bproj b && fragile
-  if isDestroyed then do
-    discoEffect <- getsServer sdiscoEffect
-    let aspects = case EM.lookup iid discoEffect of
-          Just ItemAspectEffect{jaspects} -> jaspects
-          _ -> assert `failure` (aid, iid)
-    itemToF <- itemToFullServer
-    let itemFull = itemToF iid kit
-        effs = strengthOnSmash itemFull
-    effectAndDestroy aid aid iid c False effs aspects kit
-  else do
-    mvCmd <- generalMoveItem iid k (CActor aid store)
-                                   (CActor aid CGround)
-    mapM_ execUpdAtomic mvCmd
 
 -- ** ActivateInv
 
