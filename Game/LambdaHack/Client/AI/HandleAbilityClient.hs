@@ -469,31 +469,38 @@ trigger aid fleeViaStairs = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  lvl <- getLevel $ blid b
+  let lid = blid b
+  lvl <- getLevel lid
   unexploredD <- unexploredDepth
   s <- getState
-  per <- getPerFid $ blid b
+  per <- getPerFid lid
   let canSee = ES.member (bpos b) (totalVisible per)
-      unexploredCurrent = ES.notMember (blid b) explored
+      unexploredCurrent = ES.notMember lid explored
       allExplored = ES.size explored == EM.size dungeon
       t = lvl `at` bpos b
       feats = TK.tfeature $ okind t
       ben feat = case feat of
         TK.Cause (IK.Ascend k) ->  -- change levels sensibly, in teams
           let aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
+              easeDelta = abs (fromEnum lid) - abs (fromEnum lid + k)
+              unexpForth = unexploredD (signum k) lid
+              unexpBack = unexploredD (- signum k) lid
               expBenefit =
                 if aimless
                 then 100  -- faction is not exploring, so switch at will
                 else if unexploredCurrent
                 then 0  -- don't leave the level until explored
-                else if unexploredD (signum k) (blid b)
-                then 1000
-                else if unexploredD (- signum k) (blid b)
+                else if unexpForth
+                then if easeDelta > 0  -- alway try as easy level as possible
+                        || not unexpBack  -- no other choice for exploration
+                     then 1000 * abs easeDelta
+                     else 0
+                else if unexpBack
                 then 0  -- wait for stairs in the opposite direciton
                 else if lescape lvl
                 then 0  -- all explored, stay on the escape level
                 else 2  -- no escape anywhere, switch levels occasionally
-              (lid2, pos2) = whereTo (blid b) (bpos b) k dungeon
+              (lid2, pos2) = whereTo lid (bpos b) k dungeon
               actorsThere = posToActors pos2 lid2 s
           in if boldpos b == bpos b   -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction

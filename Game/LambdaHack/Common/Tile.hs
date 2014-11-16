@@ -19,7 +19,7 @@ module Game.LambdaHack.Common.Tile
   , isClear, isLit, isWalkable, isPassableKind, isPassable, isDoor, isSuspect
   , isExplorable, lookSimilar, speedup
   , openTo, closeTo, embedItems, causeEffects, revealAs, hideAs
-  , isOpenable, isClosable, isChangeable, isEscape, isStair
+  , isOpenable, isClosable, isChangeable, isEscape, isStair, ascendTo
 #ifdef EXPOSE_INTERNAL
   , TileSpeedup(..), Tab, createTab, accessTab
 #endif
@@ -29,12 +29,12 @@ import Control.Exception.Assert.Sugar
 import qualified Data.Array.Unboxed as A
 import Data.Maybe
 
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
@@ -208,16 +208,16 @@ closeTo Kind.Ops{okind, opick} t = do
         $ opick grp (const True)
 
 embedItems :: Kind.Ops TileKind -> Kind.Id TileKind -> [GroupName ItemKind]
-embedItems Kind.Ops{okind} t = do
+embedItems Kind.Ops{okind} t =
   let getTo (TK.Embed eff) acc = eff : acc
       getTo _ acc = acc
-  foldr getTo [] $ TK.tfeature $ okind t
+  in foldr getTo [] $ TK.tfeature $ okind t
 
 causeEffects :: Kind.Ops TileKind -> Kind.Id TileKind -> [IK.Effect Int]
-causeEffects Kind.Ops{okind} t = do
+causeEffects Kind.Ops{okind} t =
   let getTo (TK.Cause eff) acc = eff : acc
       getTo _ acc = acc
-  foldr getTo [] $ TK.tfeature $ okind t
+  in foldr getTo [] $ TK.tfeature $ okind t
 
 revealAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 revealAs Kind.Ops{okind, opick} t = do
@@ -261,3 +261,9 @@ isStair :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isStair cotile t = let isEffectAscend IK.Ascend{} = True
                        isEffectAscend _ = False
                    in any isEffectAscend $ causeEffects cotile t
+
+ascendTo :: Kind.Ops TileKind -> Kind.Id TileKind -> [Int]
+ascendTo cotile t =
+  let getTo (IK.Ascend k) acc = k : acc
+      getTo _ acc = acc
+  in foldr getTo [] (causeEffects cotile t)

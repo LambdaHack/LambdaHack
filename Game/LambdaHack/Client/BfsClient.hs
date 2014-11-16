@@ -22,7 +22,6 @@ import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -232,35 +231,48 @@ closestTriggers :: MonadClient m => Maybe Bool -> Bool -> ActorId -> m [Point]
 closestTriggers onlyDir exploredToo aid = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
-  lvl <- getLevel $ blid body
+  let lid = blid body
+  lvl <- getLevel lid
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   unexploredD <- unexploredDepth
   let allExplored = ES.size explored == EM.size dungeon
-      unexUp = onlyDir /= Just False && unexploredD 1 (blid body)
-      unexDown = onlyDir /= Just True && unexploredD (-1) (blid body)
-      unexEffect (IK.Ascend p) = if p > 0 then unexUp else unexDown
-      unexEffect _ =
-        -- Escape (or guard) only after exploring, for high score, etc.
-        allExplored
-      isTrigger
-        | exploredToo = \t -> Tile.isWalkable cotile t
-                              && not (null $ Tile.causeEffects cotile t)
-        | otherwise = \t -> Tile.isWalkable cotile t
-                            && any unexEffect (Tile.causeEffects cotile t)
-      f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
-      f acc p t = if isTrigger t then p : acc else acc
+      f :: [(Int, Point)] -> Point -> Kind.Id TileKind -> [(Int, Point)]
+      f acc p t =
+        if Tile.isWalkable cotile t
+        then if exploredToo
+             then if null $ Tile.causeEffects cotile t
+                  then acc
+                  else (1, p) : acc  -- direction irrelevant
+             else case Tile.ascendTo cotile t of
+               [] ->
+                 -- Escape (or guard) after exploring, for high score, etc.
+                 if allExplored then (1, p) : acc else acc
+               l ->
+                 let g k = k > 0
+                           && onlyDir /= Just False
+                           && unexploredD 1 lid
+                           ||
+                           k < 0
+                           && onlyDir /= Just True
+                           && unexploredD (-1) lid
+                 in map (,p) (filter g l) ++ acc
+        else acc
   let triggersAll = PointArray.ifoldlA f [] $ ltile lvl
       -- Don't target stairs under the actor. Most of the time they
       -- are blocked and stay so, so we seek other stairs, if any.
       -- If no other stairs in this direction, let's wait here.
-      triggers | length triggersAll > 1 = delete (bpos body) triggersAll
+      triggers | length triggersAll > 1 =
+                 filter ((/= bpos body) . snd) triggersAll
                | otherwise = triggersAll
   case triggers of
     [] -> return []
     _ -> do
       bfs <- getCacheBfs aid
-      let ds = mapMaybe (\p -> fmap (,p) (accessBfs bfs p)) triggers
+      -- Prefer stairs to easier levels.
+      let mix (k, p) dist = ((abs (fromEnum lid + k), dist), p)
+          ds = mapMaybe (\(k, p) -> fmap (mix (k, p)) (accessBfs bfs p))
+                        triggers
       return $! map snd $ sortBy (comparing fst) ds
 
 unexploredDepth :: MonadClient m => m (Int -> LevelId -> Bool)
