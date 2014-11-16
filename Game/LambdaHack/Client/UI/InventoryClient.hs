@@ -93,15 +93,17 @@ getStoreItem :: MonadClientUI m
              => (Actor -> [ItemFull] -> Container -> Text)
                                  -- ^ how to describe suitable items
              -> Container        -- ^ initial container
+             -> Bool             -- ^ whether Enter should be disabled
              -> m (SlideOrCmd ((ItemId, ItemFull), Container))
-getStoreItem prompt cInitial = do
+getStoreItem prompt cInitial noEnter = do
   leader <- getLeaderUI
   let allStores = map (CActor leader) [CEqp, CInv, CSha, CGround]
       cLegalRaw = cInitial : delete cInitial allStores
+      dialogState = if noEnter then INoEnter else ISuitable
   getItem (const True) prompt prompt cLegalRaw cLegalRaw
-          True ISuitable
+          True dialogState
 
-data ItemDialogState = INone | ISuitable | IAll
+data ItemDialogState = INone | ISuitable | IAll | INoEnter
   deriving (Show, Eq)
 
 -- | Let the human player choose a single, preferably suitable,
@@ -172,12 +174,14 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) itemDialogState = do
       bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
       suitableLetterSlots = EM.filter (`EM.member` bagSuit) letterSlots
       (autoDun, autoLvl) = autoDungeonLevel fact
+      normalizeState INoEnter = INone
+      normalizeState x = x
       keyDefs :: [(K.Key, DefItemKey m)]
       keyDefs = filter (defCond . snd)
         [ (K.Char '?', DefItemKey
            { defLabel = "?"
            , defCond = True
-           , defAction = \_ -> case itemDialogState of
+           , defAction = \_ -> case normalizeState itemDialogState of
                INone ->
                  if EM.null bagSuit
                  then transition psuit prompt promptGeneric cLegal IAll
@@ -189,8 +193,9 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) itemDialogState = do
         , (K.Char '/', DefItemKey
            { defLabel = "/"
            , defCond = length cLegal > 1
-           , defAction = \_ -> transition psuit prompt promptGeneric
-                                          (cRest ++ [cCur]) itemDialogState
+           , defAction = \_ ->
+               transition psuit prompt promptGeneric
+                          (cRest ++ [cCur]) (normalizeState itemDialogState)
            })
         , (K.Return,
            let enterSlots = if itemDialogState == IAll
@@ -201,7 +206,8 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) itemDialogState = do
                Nothing -> assert `failure` "no suitable items"
                                  `twith` enterSlots
                Just ((l, _), _) -> "RET(" <> T.singleton (slotChar l) <> ")"
-           , defCond = not $ EM.null enterSlots
+           , defCond = not (EM.null enterSlots
+                            || itemDialogState == INoEnter)
            , defAction = \_ -> case EM.maxView enterSlots of
                Nothing -> assert `failure` "no suitable items"
                                  `twith` enterSlots
@@ -258,15 +264,15 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) itemDialogState = do
       ppCur = ppContainer cCur
       (labelLetterSlots, bagFiltered, promptChosen) =
         case itemDialogState of
-          INone     -> (suitableLetterSlots,
-                        EM.empty,
-                        prompt body activeItems cCur <+> ppCur <> ":")
           ISuitable -> (suitableLetterSlots,
                         bagSuit,
                         prompt body activeItems cCur <+> ppCur <> ":")
           IAll      -> (bagLetterSlots,
                         bag,
                         promptGeneric body activeItems cCur <+> ppCur <> ":")
+          _         -> (suitableLetterSlots,
+                        EM.empty,
+                        prompt body activeItems cCur <+> ppCur <> ":")
   io <- itemOverlay cCur (blid body) bagFiltered
   runDefItemKey keyDefs lettersDef io bagLetterSlots promptChosen
 

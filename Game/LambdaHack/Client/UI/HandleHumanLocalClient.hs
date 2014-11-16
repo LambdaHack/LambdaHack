@@ -112,10 +112,10 @@ memberBackHuman = memberBack True
 describeItemHuman :: MonadClientUI m => CStore -> m Slideshow
 describeItemHuman cstore = do
   leader <- getLeaderUI
-  describeItemC $ CActor leader cstore
+  describeItemC (CActor leader cstore) False
 
-describeItemC :: MonadClientUI m => Container -> m Slideshow
-describeItemC c = do
+describeItemC :: MonadClientUI m => Container -> Bool -> m Slideshow
+describeItemC c noEnter = do
   let subject body = partActor body
       verbSha body activeItems = if calmEnough body activeItems
                                  then "notice"
@@ -131,7 +131,7 @@ describeItemC c = do
         _ ->
           makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
-  ggi <- getStoreItem prompt c
+  ggi <- getStoreItem prompt c noEnter
   case ggi of
     Right ((_, itemFull), c2) -> do
       lid2 <- getsState $ lidFromC c2
@@ -146,7 +146,7 @@ allOwnedHuman :: MonadClientUI m => m Slideshow
 allOwnedHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  describeItemC $ CTrunk (bfid b) (blid b) (bpos b)
+  describeItemC (CTrunk (bfid b) (blid b) (bpos b)) False
 
 -- * SelectActor
 
@@ -418,7 +418,7 @@ doLook = do
 
 -- | Create a list of item names.
 floorItemOverlay :: MonadClientUI m => LevelId -> Point -> m Slideshow
-floorItemOverlay lid p = describeItemC (CFloor lid p)
+floorItemOverlay lid p = describeItemC (CFloor lid p) True
 
 -- * TgtFloor
 
