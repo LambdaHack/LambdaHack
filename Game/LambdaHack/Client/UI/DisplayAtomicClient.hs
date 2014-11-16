@@ -114,7 +114,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdMoveActor aid _ _ -> lookAtMove aid
   UpdWaitActor aid _ -> when verbose $ aidVerbMU aid "wait"
   UpdDisplaceActor source target -> displaceActorUI source target
-  UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
+  UpdMoveItem iid k aid c1 c2 -> moveItemUI verbose iid k aid c1 c2
   -- Change actor attributes.
   UpdAgeActor{} -> skip
   UpdRefillHP _ 0 -> skip
@@ -362,9 +362,9 @@ destroyActorUI aid body verb verboseVerb verbose = do
   else when verbose $ actorVerbMU aid body verboseVerb
 
 moveItemUI :: MonadClientUI m
-           => ItemId -> Int -> ActorId -> CStore -> CStore
+           => Bool -> ItemId -> Int -> ActorId -> CStore -> CStore
            -> m ()
-moveItemUI iid k aid cstore1 cstore2 = do
+moveItemUI verbose iid k aid cstore1 cstore2 = do
   let verb = verbCStore cstore2
   when (cstore2 == CGround) $ updateItemSlotSide aid iid
   b <- getsState $ getActorBody aid
@@ -387,7 +387,8 @@ moveItemUI iid k aid cstore1 cstore2 = do
                   , partItemWs n c2 (blid b) localTime (itemToF iid kit)
                   , "\n" ]
       Nothing -> return ()
-  else itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
+  else when (cstore2 /= CGround || verbose) $  -- dropping is silent
+    itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
