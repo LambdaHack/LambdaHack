@@ -154,7 +154,7 @@ continueRunDir :: MonadClient m
                => ActorId -> Int -> Maybe Vector -> m (Either Msg Vector)
 continueRunDir aid distLast mdir = do
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
-  let boringMsgs = map BS.pack [ "You hear some noises."
+  let boringMsgs = map BS.pack [ "You hear a distant"
                                , "reveals that the" ]
       boring repLine = any (`BS.isInfixOf` repLine) boringMsgs
       -- TODO: use a regexp from the UI config instead
