@@ -234,6 +234,9 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) itemDialogState = do
                      CActor _ cstore -> CActor newLeader cstore
                      _ -> c
                    newLegal = map newC cLegal
+               accessCBag <- getsState $ flip getCBag
+               mapM_ (updateItemSlot (Just newLeader)) $
+                 concatMap (EM.keys . accessCBag) newLegal
                transition psuit prompt promptGeneric newLegal itemDialogState
            })
         , (K.BackTab, DefItemKey
@@ -247,6 +250,9 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) itemDialogState = do
                      CActor _ cstore -> CActor newLeader cstore
                      _ -> c
                    newLegal = map newC cLegal
+               accessCBag <- getsState $ flip getCBag
+               mapM_ (updateItemSlot (Just newLeader)) $
+                 concatMap (EM.keys . accessCBag) newLegal
                transition psuit prompt promptGeneric newLegal itemDialogState
            })
         ]
