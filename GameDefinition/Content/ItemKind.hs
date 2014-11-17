@@ -369,7 +369,7 @@ potion = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipLiquid brightCol ++ zipPlain brightCol ++ zipFancy brightCol
   , icount   = 1
-  , irarity  = [(1, 13), (10, 10)]
+  , irarity  = [(1, 12), (10, 9)]
   , iverbHit = "splash"
   , iweight  = 200
   , iaspects = []
@@ -442,7 +442,7 @@ flask = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipLiquid darkCol ++ zipPlain darkCol ++ zipFancy darkCol
   , icount   = 1
-  , irarity  = [(1, 11), (10, 9)]
+  , irarity  = [(1, 9), (10, 6)]
   , iverbHit = "splash"
   , iweight  = 500
   , iaspects = []
@@ -459,8 +459,7 @@ flask1 = flask
                , OnSmash (Explode "strength mist") ]
   }
 flask2 = flask
-  { irarity  = [(10, 7)]
-  , ieffects = [ NoEffect "of weakness brew"
+  { ieffects = [ NoEffect "of weakness brew"
                , toOrganGameTurn "weakened" (20 + d 5)
                , OnSmash (Explode "weakness mist") ]
   }
@@ -858,10 +857,10 @@ gem1 = gem
   { irarity  = [(2, 0), (10, 10)]
   }
 gem2 = gem
-  { irarity  = [(5, 0), (10, 10)]
+  { irarity  = [(4, 0), (10, 15)]
   }
 gem3 = gem
-  { irarity  = [(8, 0), (10, 10)]
+  { irarity  = [(6, 0), (10, 20)]
   }
 currency = ItemKind
   { isymbol  = symbolGold
