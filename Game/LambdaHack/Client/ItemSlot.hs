@@ -42,6 +42,7 @@ slotRange ls =
   sectionBy (sort ls) Nothing
  where
   succSlot c d = ord (slotChar d) - ord (slotChar c) == 1
+  succ2Slot c d = ord (slotChar d) - ord (slotChar c) == 2
 
   sectionBy []     Nothing       = T.empty
   sectionBy []     (Just (c, d)) = finish (c,d)
@@ -52,6 +53,9 @@ slotRange ls =
 
   finish (c, d) | c == d         = T.pack [slotChar c]
                 | succSlot c d   = T.pack [slotChar c, slotChar d]
+                | succ2Slot c d  = T.pack [ slotChar c
+                                          , chr (1 + ord (slotChar c))
+                                          , slotChar d ]
                 | otherwise      = T.pack [slotChar c, '-', slotChar d]
 
 allSlots :: [SlotChar]
