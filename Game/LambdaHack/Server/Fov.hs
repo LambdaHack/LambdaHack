@@ -16,6 +16,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
 import Data.List
+import Data.Maybe
 import Data.Ord
 
 import Game.LambdaHack.Common.Actor
@@ -52,16 +53,19 @@ newtype PerceptionLit = PerceptionLit
 type ActorEqpBody = [((ActorId, Actor), [ItemFull])]
 
 type PersLit = EML.EnumMap LevelId ( PerceptionLit
-                                   , EM.EnumMap FactionId ActorEqpBody )
+                                   , EM.EnumMap FactionId ActorEqpBody
+                                   , ES.EnumSet Point )
 
 -- | Calculate faction's perception of a level.
-levelPerception :: Kind.COps -> PerceptionLit -> ActorEqpBody
+levelPerception :: Kind.COps
+                -> PerceptionLit -> ActorEqpBody -> ES.EnumSet Point
                 -> FovMode -> Level
                 -> Perception
-levelPerception cops litHere actorEqpBody fovMode lvl@Level{lxsize, lysize} =
+levelPerception cops litHere actorEqpBody blockers
+                fovMode lvl@Level{lxsize, lysize} =
   let -- Dying actors included, to let them see their own demise.
       ours = filter (not . bproj . snd . fst) actorEqpBody
-      ourR = preachable . reachableFromActor cops fovMode lvl
+      ourR = preachable . reachableFromActor cops blockers fovMode lvl
       totalReachable = PerceptionReachable $ concatMap ourR ours
       pAndVicinity p = p : vicinity lxsize lysize p
       -- All actors feel adjacent positions, even dark (for easy exploration).
@@ -82,9 +86,9 @@ fidLidPerception :: Kind.COps -> FovMode -> PersLit
                  -> FactionId -> LevelId -> Level
                  -> Perception
 fidLidPerception cops fovMode persLit fid lid lvl =
-  let (litHere, bodyMap) = persLit EML.! lid
+  let (litHere, bodyMap, blockers) = persLit EML.! lid
       actorEqpBody = EM.findWithDefault [] fid bodyMap
-  in levelPerception cops litHere actorEqpBody fovMode lvl
+  in levelPerception cops litHere actorEqpBody blockers fovMode lvl
 
 -- | Calculate perception of a faction.
 factionPerception :: FovMode -> PersLit -> FactionId -> State -> FactionPers
@@ -114,25 +118,25 @@ visibleOnLevel Kind.COps{cotile}
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
-reachableFromActor :: Kind.COps -> FovMode -> Level
+reachableFromActor :: Kind.COps -> ES.EnumSet Point -> FovMode -> Level
                    -> ((ActorId, Actor), [ItemFull])
                    -> PerceptionReachable
-reachableFromActor cops fovMode lvl ((_, body), allItems) =
+reachableFromActor cops blockers fovMode lvl ((_, body), allItems) =
   let sumSight = sumSlotNoFilter IK.EqpSlotAddSight allItems
       radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) sumSight
-  in PerceptionReachable $ fullscan cops fovMode radius (bpos body) lvl
+  in PerceptionReachable $ fullscan cops blockers fovMode radius (bpos body) lvl
 
 -- | Compute all lit positions on a level, whether lit by actors or floor items.
 -- Note that an actor can be blind or a projectile, in which case he doesn't see
 -- his own light (but others, from his or other factions, possibly do).
-litByItems :: Kind.COps -> FovMode -> Level
+litByItems :: Kind.COps -> ES.EnumSet Point -> FovMode -> Level
            -> [(Point, [ItemFull])]
            -> PerceptionLit
-litByItems cops@Kind.COps{cotile} fovMode lvl allItems =
+litByItems cops@Kind.COps{cotile} blockers fovMode lvl allItems =
   let litPos :: (Point, [ItemFull]) -> [Point]
       litPos (p, is) =
         let radius = sumSlotNoFilter IK.EqpSlotAddLight is
-            scan = fullscan cops fovMode radius p lvl
+            scan = fullscan cops blockers fovMode radius p lvl
             -- Optimization: filter out positions already having ambient light.
             opt = filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos) scan
         in opt
@@ -170,14 +174,18 @@ litInDungeon fovMode s ser =
       -- in which case he doesn't see his own light
       -- (but others, from his or other factions, possibly do).
       litOnLevel :: Level -> ( PerceptionLit
-                             , EM.EnumMap FactionId ActorEqpBody )
+                             , EM.EnumMap FactionId ActorEqpBody
+                             , ES.EnumSet Point )
       litOnLevel lvl =
         let bodyMap = itemsInActors lvl
             allBodies = concat $ EM.elems bodyMap
+            blockFromBody ((_, b), _) =
+              if bproj b then Nothing else Just (bpos b)
+            blockers = ES.fromList $ mapMaybe blockFromBody allBodies
             actorItems = map (\((_, b), iis) -> (bpos b, iis)) allBodies
             floorItems = itemsOnFloor lvl
             allItems = floorItems ++ actorItems
-        in (litByItems cops fovMode lvl allItems, bodyMap)
+        in (litByItems cops blockers fovMode lvl allItems, bodyMap, blockers)
       litLvl (lid, lvl) = (lid, litOnLevel lvl)
   in EML.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
 
@@ -186,12 +194,13 @@ litInDungeon fovMode s ser =
 -- algorithm to use is passed in the second argument.
 -- The actor's own position is considred reachable by him.
 fullscan :: Kind.COps  -- ^ tile content, determines clear tiles
+         -> ES.EnumSet Point  -- ^ extra view-blocking positions
          -> FovMode    -- ^ scanning mode
          -> Int        -- ^ scanning radius
          -> Point      -- ^ position of the spectator
          -> Level      -- ^ the map that is scanned
          -> [Point]
-fullscan Kind.COps{cotile} fovMode radius spectatorPos lvl =
+fullscan Kind.COps{cotile} blockers fovMode radius spectatorPos lvl =
   if radius <= 0 then []
   else if radius == 1 then [spectatorPos]
   else spectatorPos : case fovMode of
@@ -204,7 +213,7 @@ fullscan Kind.COps{cotile} fovMode radius spectatorPos lvl =
  where
   isCl :: Point -> Bool
   {-# INLINE isCl #-}
-  isCl = Tile.isClear cotile . (lvl `at`)
+  isCl p = Tile.isClear cotile (lvl `at` p) && ES.notMember p blockers
 
   -- This function is cheap, so no problem it's called twice
   -- for each point: once with @isCl@, once via @concatMap@.
