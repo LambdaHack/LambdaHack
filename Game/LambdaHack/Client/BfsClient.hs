@@ -113,7 +113,7 @@ computeAnythingBFS fAnything aid = do
       chAccess = checkAccess cops lvl
       canOpenDoors = EM.findWithDefault 0 Ability.AbAlter actorSk > 0
       chDoorAccess = if canOpenDoors then [checkDoorAccess cops lvl] else []
-      conditions = catMaybes $ chAccess : chDoorAccess
+      !conditions = catMaybes $ chAccess : chDoorAccess
       -- Legality of move from a known tile, assuming doors freely openable.
       isEnterable :: Point -> Point -> MoveLegal
       isEnterable spos tpos =

@@ -3,7 +3,7 @@ module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateA, generateMA, sizeA
   , foldlA, ifoldlA, mapA, imapA, mapWithKeyM_A
-  , minIndexA, minLastIndexA, maxIndexA, maxLastIndexA
+  , minIndexA, minLastIndexA, maxIndexA, maxLastIndexA, forceA
   ) where
 
 import Control.Arrow ((***))
@@ -160,6 +160,11 @@ maxLastIndexA Array{..} =
   $ avector
  where
   imax (i, x) (j, y) = i `seq` j `seq` if x <= y then (j, y) else (i, x)
+
+-- | Force the array not to retain any extra memory.
+forceA :: Enum c => Array c -> Array c
+{-# INLINE forceA #-}
+forceA Array{..} = Array{avector = U.force avector, ..}
 
 instance Binary (Array c) where
   put Array{..} = do

@@ -79,7 +79,8 @@ fillBfs isEnterable passUnknown origin aInitial =
                 s2 = a PointArray.// mvs
             in bfs q2 s2
       origin0 = (origin, minKnownBfs)
-  in bfs (Seq.singleton origin0) (aInitial PointArray.// [origin0])
+  in PointArray.forceA  -- no more modifications of this array
+     $ bfs (Seq.singleton origin0) (aInitial PointArray.// [origin0])
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
 -- to determine a few really different paths and compare them,
