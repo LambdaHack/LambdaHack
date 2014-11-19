@@ -1,8 +1,8 @@
 -- | Arrays, based on Data.Vector.Unboxed, indexed by @Point@.
 module Game.LambdaHack.Common.PointArray
   ( Array
-  , (!), (//), replicateA, replicateMA, generateMA, sizeA
-  , foldlA, ifoldlA, imapA, mapWithKeyM_A
+  , (!), (//), replicateA, replicateMA, generateA, generateMA, sizeA
+  , foldlA, ifoldlA, mapA, imapA, mapWithKeyM_A
   , minIndexA, minLastIndexA, maxIndexA, maxLastIndexA
   ) where
 
@@ -72,6 +72,13 @@ replicateMA axsize aysize m = do
   v <- U.replicateM (axsize * aysize) $ liftM cnv m
   return $! Array{avector = v, ..}
 
+-- | Create an array from a function.
+generateA :: Enum c => X -> Y -> (Point -> c) -> Array c
+{-# INLINE generateA #-}
+generateA axsize aysize f =
+  let g n = cnv $ f $ punindex axsize n
+  in Array{avector = U.generate (axsize * aysize) g, ..}
+
 -- | Create an array from a monadic function.
 generateMA :: Enum c => Monad m => X -> Y -> (Point -> m c) -> m (Array c)
 {-# INLINE generateMA #-}
@@ -97,6 +104,11 @@ ifoldlA :: Enum c => (a -> Point -> c -> a) -> a -> Array c -> a
 {-# INLINE ifoldlA #-}
 ifoldlA f z0 Array{..} =
   U.ifoldl' (\a n c -> f a (punindex axsize n) (cnv c)) z0 avector
+
+-- | Map over an array.
+mapA :: (Enum c, Enum d) => (c -> d) -> Array c -> Array d
+{-# INLINE mapA #-}
+mapA f Array{..} = Array{avector = U.map (cnv . f . cnv) avector, ..}
 
 -- | Map over an array (function applied to each element and its index).
 imapA :: (Enum c, Enum d) => (Point -> c -> d) -> Array c -> Array d

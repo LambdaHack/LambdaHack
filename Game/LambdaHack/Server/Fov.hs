@@ -29,6 +29,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
@@ -54,18 +55,18 @@ type ActorEqpBody = [((ActorId, Actor), [ItemFull])]
 
 type PersLit = EML.EnumMap LevelId ( PerceptionLit
                                    , EM.EnumMap FactionId ActorEqpBody
-                                   , ES.EnumSet Point )
+                                   , PointArray.Array Bool )
 
 -- | Calculate faction's perception of a level.
 levelPerception :: Kind.COps
-                -> PerceptionLit -> ActorEqpBody -> ES.EnumSet Point
+                -> PerceptionLit -> ActorEqpBody -> PointArray.Array Bool
                 -> FovMode -> Level
                 -> Perception
 levelPerception cops litHere actorEqpBody blockers
                 fovMode lvl@Level{lxsize, lysize} =
   let -- Dying actors included, to let them see their own demise.
       ours = filter (not . bproj . snd . fst) actorEqpBody
-      ourR = preachable . reachableFromActor cops blockers fovMode lvl
+      ourR = preachable . reachableFromActor blockers fovMode
       totalReachable = PerceptionReachable $ concatMap ourR ours
       pAndVicinity p = p : vicinity lxsize lysize p
       -- All actors feel adjacent positions, even dark (for easy exploration).
@@ -118,25 +119,25 @@ visibleOnLevel Kind.COps{cotile}
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
-reachableFromActor :: Kind.COps -> ES.EnumSet Point -> FovMode -> Level
+reachableFromActor :: PointArray.Array Bool -> FovMode
                    -> ((ActorId, Actor), [ItemFull])
                    -> PerceptionReachable
-reachableFromActor cops blockers fovMode lvl ((_, body), allItems) =
+reachableFromActor blockers fovMode ((_, body), allItems) =
   let sumSight = sumSlotNoFilter IK.EqpSlotAddSight allItems
       radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) sumSight
-  in PerceptionReachable $ fullscan cops blockers fovMode radius (bpos body) lvl
+  in PerceptionReachable $ fullscan blockers fovMode radius (bpos body)
 
 -- | Compute all lit positions on a level, whether lit by actors or floor items.
 -- Note that an actor can be blind or a projectile, in which case he doesn't see
 -- his own light (but others, from his or other factions, possibly do).
-litByItems :: Kind.COps -> ES.EnumSet Point -> FovMode -> Level
+litByItems :: Kind.COps -> PointArray.Array Bool -> FovMode -> Level
            -> [(Point, [ItemFull])]
            -> PerceptionLit
-litByItems cops@Kind.COps{cotile} blockers fovMode lvl allItems =
+litByItems Kind.COps{cotile} blockers fovMode lvl allItems =
   let litPos :: (Point, [ItemFull]) -> [Point]
       litPos (p, is) =
         let radius = sumSlotNoFilter IK.EqpSlotAddLight is
-            scan = fullscan cops blockers fovMode radius p lvl
+            scan = fullscan blockers fovMode radius p
             -- Optimization: filter out positions already having ambient light.
             opt = filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos) scan
         in opt
@@ -146,7 +147,7 @@ litByItems cops@Kind.COps{cotile} blockers fovMode lvl allItems =
 -- | Compute all lit positions in the dungeon
 litInDungeon :: FovMode -> State -> StateServer -> PersLit
 litInDungeon fovMode s ser =
-  let cops = scops s
+  let cops@Kind.COps{cotile} = scops s
       itemsInActors :: Level -> EM.EnumMap FactionId ActorEqpBody
       itemsInActors lvl =
         let asLid = map (\aid -> (aid, getActorBody aid s))
@@ -175,13 +176,17 @@ litInDungeon fovMode s ser =
       -- (but others, from his or other factions, possibly do).
       litOnLevel :: Level -> ( PerceptionLit
                              , EM.EnumMap FactionId ActorEqpBody
-                             , ES.EnumSet Point )
-      litOnLevel lvl =
+                             , PointArray.Array Bool )
+      litOnLevel lvl@Level{ltile} =
         let bodyMap = itemsInActors lvl
             allBodies = concat $ EM.elems bodyMap
+            blockingTiles = PointArray.mapA (Tile.isClear cotile) ltile
             blockFromBody ((_, b), _) =
-              if bproj b then Nothing else Just (bpos b)
-            blockers = ES.fromList $ mapMaybe blockFromBody allBodies
+              if bproj b then Nothing else Just (bpos b, False)
+            -- TODO: keep it in server state and update when tiles change
+            -- and actors are born/move/die. Actually, do this for PersLit.
+            blockingActors = mapMaybe blockFromBody allBodies
+            blockers = blockingTiles PointArray.// blockingActors
             actorItems = map (\((_, b), iis) -> (bpos b, iis)) allBodies
             floorItems = itemsOnFloor lvl
             allItems = floorItems ++ actorItems
@@ -193,14 +198,12 @@ litInDungeon fovMode s ser =
 -- that are currently in the field of view. The Field of View
 -- algorithm to use is passed in the second argument.
 -- The actor's own position is considred reachable by him.
-fullscan :: Kind.COps  -- ^ tile content, determines clear tiles
-         -> ES.EnumSet Point  -- ^ extra view-blocking positions
+fullscan :: PointArray.Array Bool  -- ^ the array with non-clear points
          -> FovMode    -- ^ scanning mode
          -> Int        -- ^ scanning radius
          -> Point      -- ^ position of the spectator
-         -> Level      -- ^ the map that is scanned
          -> [Point]
-fullscan Kind.COps{cotile} blockers fovMode radius spectatorPos lvl =
+fullscan blockers fovMode radius spectatorPos =
   if radius <= 0 then []
   else if radius == 1 then [spectatorPos]
   else spectatorPos : case fovMode of
@@ -213,7 +216,7 @@ fullscan Kind.COps{cotile} blockers fovMode radius spectatorPos lvl =
  where
   isCl :: Point -> Bool
   {-# INLINE isCl #-}
-  isCl p = Tile.isClear cotile (lvl `at` p) && ES.notMember p blockers
+  isCl = (blockers PointArray.!)
 
   -- This function is cheap, so no problem it's called twice
   -- for each point: once with @isCl@, once via @concatMap@.
