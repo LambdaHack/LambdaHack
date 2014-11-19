@@ -1,13 +1,24 @@
 -- | Actor (or rather actor body trunk) definitions.
-module Content.ItemKindActor ( actors ) where
+module Content.ItemKindActor ( cdefs ) where
 
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
+import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ItemKind
+
+cdefs :: ContentDef ItemKind
+cdefs = ContentDef
+  { getSymbol = isymbol
+  , getName = iname
+  , getFreq = ifreq
+  , validateSingle = validateSingleItemKind
+  , validateAll = validateAllItemKind
+  , content = actors
+  }
 
 actors :: [ItemKind]
 actors =

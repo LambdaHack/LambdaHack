@@ -1,12 +1,23 @@
 -- | Shrapnel definitions.
-module Content.ItemKindShrapnel ( shrapnels ) where
+module Content.ItemKindShrapnel ( cdefs ) where
 
 import Game.LambdaHack.Common.Color
+import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.ItemKind
+
+cdefs :: ContentDef ItemKind
+cdefs = ContentDef
+  { getSymbol = isymbol
+  , getName = iname
+  , getFreq = ifreq
+  , validateSingle = validateSingleItemKind
+  , validateAll = validateAllItemKind
+  , content = shrapnels
+  }
 
 shrapnels :: [ItemKind]
 shrapnels =

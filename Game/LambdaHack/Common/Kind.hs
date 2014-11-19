@@ -113,12 +113,16 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
 
 -- | Operations for all content types, gathered together.
 data COps = COps
-  { cocave  :: !(Ops CaveKind)     -- server only
-  , coitem  :: !(Ops ItemKind)
-  , comode  :: !(Ops ModeKind)     -- server only
-  , coplace :: !(Ops PlaceKind)    -- server only, so far
-  , corule  :: !(Ops RuleKind)
-  , cotile  :: !(Ops TileKind)
+  { cocave     :: !(Ops CaveKind)     -- server only
+  , coitem     :: !(Ops ItemKind)
+  , coactor    :: !(Ops ItemKind)
+  , coorgan    :: !(Ops ItemKind)
+  , coshrapnel :: !(Ops ItemKind)
+  , cotmp      :: !(Ops ItemKind)
+  , comode     :: !(Ops ModeKind)     -- server only
+  , coplace    :: !(Ops PlaceKind)    -- server only, so far
+  , corule     :: !(Ops RuleKind)
+  , cotile     :: !(Ops TileKind)
   }
 
 -- | The standard ruleset used for level operations.

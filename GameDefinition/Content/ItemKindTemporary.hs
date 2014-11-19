@@ -1,14 +1,25 @@
 -- | Temporary aspect pseudo-item definitions.
-module Content.ItemKindTemporary ( temporaries ) where
+module Content.ItemKindTemporary ( cdefs ) where
 
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Color
+import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.ItemKind
+
+cdefs :: ContentDef ItemKind
+cdefs = ContentDef
+  { getSymbol = isymbol
+  , getName = iname
+  , getFreq = ifreq
+  , validateSingle = validateSingleItemKind
+  , validateAll = validateAllItemKind
+  , content = temporaries
+  }
 
 temporaries :: [ItemKind]
 temporaries =
