@@ -151,7 +151,6 @@ rawAspectToSuff aspect =
 featureToSuff :: Feature -> Text
 featureToSuff feat =
   case feat of
-    ChangeTo t -> wrapInChevrons $ "changes to" <+> tshow t
     Fragile -> wrapInChevrons "fragile"
     Durable -> wrapInChevrons "durable"
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod

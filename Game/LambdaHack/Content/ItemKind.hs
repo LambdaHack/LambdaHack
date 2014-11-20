@@ -37,7 +37,7 @@ data ItemKind = ItemKind
                                    -- ^ keep the aspect continuously
   , ieffects :: ![Effect Dice.Dice]
                                    -- ^ cause the effect when triggered
-  , ifeature :: ![Feature]  -- ^ public properties
+  , ifeature :: ![Feature]         -- ^ public properties
   , idesc    :: !Text              -- ^ description
   , ikit     :: ![(GroupName ItemKind, CStore)]
                                    -- ^ accompanying organs and items
@@ -130,9 +130,7 @@ data ThrowMod = ThrowMod
 -- | Features of item. Affect only the item in question, not the actor,
 -- and so not additive in any sense.
 data Feature =
-    ChangeTo !(GroupName ItemKind)
-                            -- ^ change to this group when altered
-  | Fragile                 -- ^ drop and break at target tile, even if no hit
+    Fragile                 -- ^ drop and break at target tile, even if no hit
   | Durable                 -- ^ don't break even when hitting or applying
   | ToThrow !ThrowMod       -- ^ parameters modifying a throw
   | Identified              -- ^ the item starts identified
