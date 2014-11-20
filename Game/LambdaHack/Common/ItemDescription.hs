@@ -12,6 +12,7 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.EffectDescription
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
@@ -78,10 +79,11 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
           active = cstore `elem` [CEqp, COrgan]
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
           splitAE :: (Num a, Show a, Ord a)
-                  => [IK.Aspect a] -> (IK.Aspect a -> Text)
+                  => (a -> Text)
+                  -> [IK.Aspect a] -> (IK.Aspect a -> Text)
                   -> [IK.Effect a] -> (IK.Effect a -> Text)
                   -> [Text]
-          splitAE aspects ppA effects ppE =
+          splitAE reduce_a aspects ppA effects ppE =
             let mperiodic = find periodicAspect aspects
                 mtimeout = find timeoutAspect aspects
                 restAs = sort aspects
@@ -106,12 +108,12 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
                         "(each turn until gone:"
                         <+> rechargingTs <> ")"
                       Just (IK.Timeout t) ->
-                        "(every" <+> tshow t <> ":"
+                        "(every" <+> reduce_a t <> ":"
                         <+> rechargingTs <> ")"
                       _ -> ""
                   _ -> case mtimeout of
                     Just (IK.Timeout t) ->
-                      "(timeout" <+> tshow t <> ":"
+                      "(timeout" <+> reduce_a t <> ":"
                       <+> rechargingTs <> ")"
                     _ -> ""
                 onSmash = if T.null onSmashTs then ""
@@ -119,10 +121,12 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
             in [periodicOrTimeout] ++ aes ++ [onSmash | fullInfo]
           aets = case itemAE of
             Just ItemAspectEffect{jaspects, jeffects} ->
-              splitAE jaspects aspectToSuffix
+              splitAE tshow
+                      jaspects aspectToSuffix
                       jeffects effectToSuffix
             Nothing ->
-              splitAE (IK.iaspects itemKind) kindAspectToSuffix
+              splitAE (\d -> maybe "?" tshow $ Dice.reduceDice d)
+                      (IK.iaspects itemKind) kindAspectToSuffix
                       (IK.ieffects itemKind) kindEffectToSuffix
       in aets ++ features
 
