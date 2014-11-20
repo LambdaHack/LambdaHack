@@ -10,6 +10,7 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
+import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
@@ -19,7 +20,6 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -32,6 +32,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * RespUpdAtomicAI
@@ -65,7 +66,7 @@ cmdAtomicFilterCli cmd = case cmd of
         let subject = ""  -- a hack, we we don't handle adverbs well
             verb = "turn into"
             msg = makeSentence [ "the", MU.Text $ TK.tname $ okind t
-                               , "at position", MU.Text $ tshow p
+                               , "at position", MU.Text $ T.pack $ show p
                                , "suddenly"  -- adverb
                                , MU.SubjectVerbSg subject verb
                                , MU.AW $ MU.Text $ TK.tname $ okind toTile ]
