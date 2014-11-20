@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, TypeFamilies #-}
+{-# LANGUAGE CPP, DataKinds, TypeFamilies #-}
 -- | Operations concerning dungeon level tiles.
 --
 -- Unlike for many other content types, there is no type @Tile@,
@@ -33,7 +33,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -207,7 +206,8 @@ closeTo Kind.Ops{okind, opick} t = do
       fmap (fromMaybe $ assert `failure` grp)
         $ opick grp (const True)
 
-embedItems :: Kind.Ops TileKind -> Kind.Id TileKind -> [GroupName ItemKind]
+embedItems :: Kind.Ops TileKind -> Kind.Id TileKind
+           -> [GroupName (IK.ItemKind IK.ItemLoot)]
 embedItems Kind.Ops{okind} t =
   let getTo (TK.Embed eff) acc = eff : acc
       getTo _ acc = acc

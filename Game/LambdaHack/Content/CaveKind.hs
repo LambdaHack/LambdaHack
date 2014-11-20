@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 -- | The type of cave layout kinds.
 module Game.LambdaHack.Content.CaveKind
   ( CaveKind(..), validateSingleCaveKind, validateAllCaveKind
@@ -10,7 +11,7 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 
@@ -34,9 +35,10 @@ data CaveKind = CaveKind
   , copenChance     :: !Chance       -- ^ if there's a door, is it open?
   , chidden         :: !Int          -- ^ if not open, hidden one in n times
   , cactorCoeff     :: !Int          -- ^ the lower, the more monsters spawn
-  , cactorFreq      :: !(Freqs ItemKind)  -- ^ actor groups to consider
+  , cactorFreq      :: !(Freqs (IK.ItemKind IK.ItemActor))
+                                     -- ^ actor groups to consider
   , citemNum        :: !Dice.Dice    -- ^ the number of items in the cave
-  , citemFreq       :: !(Freqs ItemKind)
+  , citemFreq       :: !(Freqs (IK.ItemKind IK.ItemLoot))
                                      -- ^ item groups to consider
   , cplaceFreq      :: !(Freqs PlaceKind)
                                      -- ^ place groups to consider

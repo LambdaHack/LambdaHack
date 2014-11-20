@@ -1,7 +1,7 @@
-{-# LANGUAGE DeriveFunctor, DeriveGeneric #-}
+{-# LANGUAGE DataKinds, DeriveFunctor, DeriveGeneric, KindSignatures #-}
 -- | The type of kinds of weapons, treasure, organs, shrapnel and actors.
 module Game.LambdaHack.Content.ItemKind
-  ( ItemKind(..)
+  ( ItemRole(..), ItemKindAny(..), ItemKind(..)
   , Effect(..), TimerDice(..)
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
@@ -23,11 +23,26 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Misc
 
+data ItemRole =
+    ItemLoot
+  | ItemActor
+  | ItemOrgan
+  | ItemShrapnel
+  | ItemTmp
+
+data ItemKindAny =
+    ItemKindLoot (ItemKind ItemLoot)
+  | ItemKindActor (ItemKind ItemActor)
+  | ItemKindOrgan (ItemKind ItemOrgan)
+  | ItemKindShrapnel (ItemKind ItemShrapnel)
+  | ItemKindTmp (ItemKind ItemTmp)
+  deriving Show  -- No Eq and Ord to make extending it logically sound
+
 -- | Item properties that are fixed for a given kind of items.
-data ItemKind = ItemKind
+data ItemKind (a :: ItemRole) = ItemKind
   { isymbol  :: !Char              -- ^ map symbol
   , iname    :: !Text              -- ^ generic name
-  , ifreq    :: !(Freqs ItemKind)  -- ^ frequency within groups
+  , ifreq    :: !(Freqs (ItemKind a))  -- ^ frequency within groups
   , iflavour :: ![Flavour]         -- ^ possible flavours
   , icount   :: !Dice.Dice         -- ^ created in that quantity
   , irarity  :: !Rarity            -- ^ rarity on given depths
@@ -37,9 +52,9 @@ data ItemKind = ItemKind
                                    -- ^ keep the aspect continuously
   , ieffects :: ![Effect Dice.Dice]
                                    -- ^ cause the effect when triggered
-  , ifeature :: ![Feature]  -- ^ public properties
+  , ifeature :: ![Feature]         -- ^ public properties
   , idesc    :: !Text              -- ^ description
-  , ikit     :: ![(GroupName ItemKind, CStore)]
+  , ikit     :: !([(GroupName (ItemKind ItemOrgan), CStore)])
                                    -- ^ accompanying organs and items
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
@@ -53,7 +68,7 @@ data Effect a =
     NoEffect !Text
   | Hurt !Dice.Dice
   | Burn !Int
-  | Explode !(GroupName ItemKind)
+  | Explode !(GroupName (ItemKind ItemShrapnel))
                           -- ^ explode, producing this group of shrapnel
   | RefillHP !Int
   | OverfillHP !Int
@@ -62,16 +77,16 @@ data Effect a =
   | Dominate
   | Impress
   | CallFriend !a
-  | Summon !(Freqs ItemKind) !a
+  | Summon !(Freqs (ItemKind ItemActor)) !a
   | Ascend !Int
   | Escape !Int           -- ^ the Int says if can be placed on last level, etc.
   | Paralyze !a
   | InsertMove !a
   | Teleport !a
-  | CreateItem !CStore !(GroupName ItemKind) !TimerDice
+  | CreateItem !CStore !(GroupName (ItemKind ItemTmp)) !TimerDice
                           -- ^ create an item of the group and insert into
                           --   the store with the given random timer
-  | DropItem !CStore !(GroupName ItemKind) !Bool
+  | DropItem !CStore !(GroupName (ItemKind ItemTmp)) !Bool
                           -- ^ @DropItem CGround x True@ means stomp on items
   | PolyItem !CStore
   | Identify !CStore
@@ -130,9 +145,7 @@ data ThrowMod = ThrowMod
 -- | Features of item. Affect only the item in question, not the actor,
 -- and so not additive in any sense.
 data Feature =
-    ChangeTo !(GroupName ItemKind)
-                            -- ^ change to this group when altered
-  | Fragile                 -- ^ drop and break at target tile, even if no hit
+    Fragile                 -- ^ drop and break at target tile, even if no hit
   | Durable                 -- ^ don't break even when hitting or applying
   | ToThrow !ThrowMod       -- ^ parameters modifying a throw
   | Identified              -- ^ the item starts identified
@@ -279,17 +292,19 @@ toVelocity n = ToThrow $ ThrowMod n 100
 toLinger :: Int -> Feature
 toLinger n = ToThrow $ ThrowMod 100 n
 
-toOrganGameTurn :: GroupName ItemKind -> Dice.Dice -> Effect Dice.Dice
+toOrganGameTurn :: GroupName (ItemKind ItemTmp) -> Dice.Dice
+                -> Effect Dice.Dice
 toOrganGameTurn grp nDm = CreateItem COrgan grp (TimerGameTurn nDm)
 
-toOrganActorTurn :: GroupName ItemKind -> Dice.Dice -> Effect Dice.Dice
+toOrganActorTurn :: GroupName (ItemKind ItemTmp) -> Dice.Dice
+                 -> Effect Dice.Dice
 toOrganActorTurn grp nDm = CreateItem COrgan grp (TimerActorTurn nDm)
 
-toOrganNone :: GroupName ItemKind -> Effect Dice.Dice
+toOrganNone :: GroupName (ItemKind ItemTmp) -> Effect Dice.Dice
 toOrganNone grp = CreateItem COrgan grp TimerNone
 
 -- | Catch invalid item kind definitions.
-validateSingleItemKind :: ItemKind -> [Text]
+validateSingleItemKind :: ItemKind a -> [Text]
 validateSingleItemKind ItemKind{..} =
   [ "iname longer than 23" | T.length iname > 23 ]
   ++ validateRarity irarity
@@ -312,5 +327,5 @@ validateSingleItemKind ItemKind{..} =
 -- to lookup caves and modes and only check at the levels the caves
 -- can appear at).
 -- | Validate all item kinds.
-validateAllItemKind :: [ItemKind] -> [Text]
+validateAllItemKind :: [ItemKind a] -> [Text]
 validateAllItemKind _ = []

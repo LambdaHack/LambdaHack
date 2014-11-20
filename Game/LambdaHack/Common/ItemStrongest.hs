@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 -- | Determining the strongest item wrt some property.
 -- No operation in this module involves the state or any of our custom monads.
 module Game.LambdaHack.Common.ItemStrongest
@@ -96,14 +97,14 @@ strengthOnSmash =
       p _ = []
   in strengthEffect999 p
 
-strengthCreateOrgan :: ItemFull -> [GroupName ItemKind]
+strengthCreateOrgan :: ItemFull -> [GroupName (ItemKind ItemTmp)]
 strengthCreateOrgan =
   let p (CreateItem COrgan grp _) = [grp]
       p (Recharging (CreateItem COrgan grp _)) = [grp]
       p _ = []
   in strengthEffect999 p
 
-strengthDropOrgan :: ItemFull -> [GroupName ItemKind]
+strengthDropOrgan :: ItemFull -> [GroupName (ItemKind ItemTmp)]
 strengthDropOrgan =
   let p (DropItem COrgan grp _) = [grp]
       p (Recharging (DropItem COrgan grp _)) = [grp]

@@ -38,7 +38,7 @@ newtype ItemKindIx = ItemKindIx Int
 
 -- | The map of item kind indexes to item kind ids.
 -- The full map, as known by the server, is a bijection.
-type DiscoveryKind = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
+type DiscoveryKind = EM.EnumMap ItemKindIx (Kind.Id ItemKindAny)
 
 -- | A seed for rolling aspects and effects of an item
 -- Clients have partial knowledge of how item ids map to the seeds.
@@ -61,8 +61,8 @@ instance Hashable ItemAspectEffect
 type DiscoveryEffect = EM.EnumMap ItemId ItemAspectEffect
 
 data ItemDisco = ItemDisco
-  { itemKindId :: !(Kind.Id ItemKind)
-  , itemKind   :: !ItemKind
+  { itemKindId :: !(Kind.Id ItemKindAny)
+  , itemKind   :: !(ItemKindAny)
   , itemAE     :: !(Maybe ItemAspectEffect)
   }
   deriving Show
@@ -104,7 +104,7 @@ instance Hashable Item
 
 instance Binary Item
 
-seedToAspectsEffects :: ItemSeed -> ItemKind -> AbsDepth -> AbsDepth
+seedToAspectsEffects :: ItemSeed -> ItemKind a -> AbsDepth -> AbsDepth
                      -> ItemAspectEffect
 seedToAspectsEffects (ItemSeed itemSeed) kind ldepth totalDepth =
   let castD = castDice ldepth totalDepth

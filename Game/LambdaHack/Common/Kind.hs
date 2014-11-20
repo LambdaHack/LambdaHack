@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, RankNTypes, TypeFamilies #-}
+{-# LANGUAGE DataKinds, GeneralizedNewtypeDeriving, RankNTypes, TypeFamilies #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
   ( Id, Speedup, Ops(..), COps(..), createOps, stdRuleset
@@ -114,11 +114,11 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
 -- | Operations for all content types, gathered together.
 data COps = COps
   { cocave     :: !(Ops CaveKind)     -- server only
-  , coitem     :: !(Ops ItemKind)
-  , coactor    :: !(Ops ItemKind)
-  , coorgan    :: !(Ops ItemKind)
-  , coshrapnel :: !(Ops ItemKind)
-  , cotmp      :: !(Ops ItemKind)
+  , coitem     :: !(Ops (ItemKind ItemLoot))
+  , coactor    :: !(Ops (ItemKind ItemActor))
+  , coorgan    :: !(Ops (ItemKind ItemOrgan))
+  , coshrapnel :: !(Ops (ItemKind ItemShrapnel))
+  , cotmp      :: !(Ops (ItemKind ItemTmp))
   , comode     :: !(Ops ModeKind)     -- server only
   , coplace    :: !(Ops PlaceKind)    -- server only, so far
   , corule     :: !(Ops RuleKind)

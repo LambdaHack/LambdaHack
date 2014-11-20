@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DataKinds, DeriveGeneric #-}
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
   ( Caves, Roster(..), Player(..), ModeKind(..), LeaderMode(..), AutoLeader(..)
@@ -17,7 +17,7 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.CaveKind
-import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | Game mode specification.
 data ModeKind = ModeKind
@@ -46,7 +46,8 @@ data Roster = Roster
 -- | Properties of a particular player.
 data Player a = Player
   { fname          :: !Text        -- ^ name of the player
-  , fgroup         :: !(GroupName ItemKind)  -- ^ name of the monster group to control
+  , fgroup         :: !(GroupName (IK.ItemKind IK.ItemActor))
+                                   -- ^ name of the monster group to control
   , fskillsOther   :: !Skills      -- ^ skills of the other actors
   , fcanEscape     :: !Bool        -- ^ the player can escape the dungeon
   , fneverEmpty    :: !Bool        -- ^ the faction declared killed if no actors

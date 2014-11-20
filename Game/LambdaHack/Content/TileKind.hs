@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DataKinds, DeriveGeneric #-}
 -- | The type of kinds of terrain tiles.
 module Game.LambdaHack.Content.TileKind
   ( TileKind(..), Feature(..)
@@ -17,7 +17,6 @@ import GHC.Generics (Generic)
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | The type of kinds of terrain tiles. See @Tile.hs@ for explanation
@@ -35,8 +34,9 @@ data TileKind = TileKind
 
 -- | All possible terrain tile features.
 data Feature =
-    Embed !(GroupName ItemKind)  -- ^ embed an item of this group, to cause effects (WIP)
-  | Cause !(IK.Effect Int)   -- ^ causes the effect when triggered;
+    Embed !(GroupName (IK.ItemKind IK.ItemLoot))
+      -- ^ embed an item of this group, to cause effects (WIP)
+  | Cause !(IK.Effect Int)       -- ^ causes the effect when triggered;
                                  --   more succint than @Embed@, but will
                                  --   probably get supplanted by @Embed@
   | OpenTo !(GroupName TileKind)    -- ^ goes from a closed to an open tile when altered

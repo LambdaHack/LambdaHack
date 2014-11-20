@@ -25,11 +25,10 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | The reverse map to @DiscoveryKind@, needed for item creation.
-type DiscoveryKindRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
+type DiscoveryKindRev = EM.EnumMap (Kind.Id IK.ItemKindAny) ItemKindIx
 
 -- | The map of item ids to item seeds, needed for item creation.
 type ItemSeedDict = EM.EnumMap ItemId ItemSeed
