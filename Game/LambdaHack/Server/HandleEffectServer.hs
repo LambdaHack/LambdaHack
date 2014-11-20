@@ -355,7 +355,7 @@ effectExplode execSfx cgroup target = do
             Just ProjectBlockTerrain -> return ()
             Just ProjectBlockActor | not $ bproj tb -> return ()
             Just failMsg -> execFailure target req failMsg
-  -- All shrapnels bounce off obstacles many times before they destruct.
+  -- All blasts bounce off obstacles many times before they destruct.
   forM_ [101..201] $ \k100 -> do
     bag2 <- getsState $ beqp . getActorBody target
     let mn2 = EM.lookup iid bag2

@@ -236,9 +236,9 @@ projectFail :: (MonadAtomic m, MonadServer m)
             -> Int        -- ^ digital line parameter
             -> ItemId     -- ^ the item to be projected
             -> CStore     -- ^ whether the items comes from floor or inventory
-            -> Bool       -- ^ whether the item is a shrapnel
+            -> Bool       -- ^ whether the item is a blast
             -> m (Maybe ReqFailure)
-projectFail source tpxy eps iid cstore isShrapnel = do
+projectFail source tpxy eps iid cstore isBlast = do
   Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -259,7 +259,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
                         <$> sumOrganEqpServer IK.EqpSlotAddSight source
           let itemFull@ItemFull{itemBase} = itemToF iid kit
               calm10 = calmEnough10 sb activeItems
-              forced = isShrapnel || bproj sb
+              forced = isBlast || bproj sb
               legal = permittedProject " " actorBlind calm10 forced itemFull
           case legal of
             Left reqFail ->  return $ Just reqFail
@@ -274,18 +274,18 @@ projectFail source tpxy eps iid cstore isShrapnel = do
                 else do
                   mab <- getsState $ posToActor pos lid
                   if not $ maybe True (bproj . snd . fst) mab
-                    then if isShrapnel && bproj sb then do
+                    then if isBlast && bproj sb then do
                            -- Hit the blocking actor.
                            projectBla source spos (pos:rest) iid cstore
-                                      isShrapnel
+                                      isBlast
                            return Nothing
                          else return $ Just ProjectBlockActor
                     else do
-                      if isShrapnel && bproj sb && eps `mod` 2 == 0 then
+                      if isBlast && bproj sb && eps `mod` 2 == 0 then
                         -- Make the explosion a bit less regular.
-                        projectBla source spos (pos:rest) iid cstore isShrapnel
+                        projectBla source spos (pos:rest) iid cstore isBlast
                       else
-                        projectBla source pos rest iid cstore isShrapnel
+                        projectBla source pos rest iid cstore isBlast
                       return Nothing
 
 
@@ -295,19 +295,19 @@ projectBla :: (MonadAtomic m, MonadServer m)
            -> [Point]    -- ^ rest of the trajectory of the projectile
            -> ItemId     -- ^ the item to be projected
            -> CStore     -- ^ whether the items comes from floor or inventory
-           -> Bool       -- ^ whether the item is a shrapnel
+           -> Bool       -- ^ whether the item is a blast
            -> m ()
-projectBla source pos rest iid cstore isShrapnel = do
+projectBla source pos rest iid cstore isBlast = do
   sb <- getsState $ getActorBody source
   item <- getsState $ getItemBody iid
   let lid = blid sb
   localTime <- getsState $ getLocalTime lid
-  unless isShrapnel $ execSfxAtomic $ SfxProject source iid cstore
+  unless isBlast $ execSfxAtomic $ SfxProject source iid cstore
   bag <- getsState $ getActorBag source cstore
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (source, pos, rest, iid, cstore)
     Just kit@(_, it) -> do
-      addProjectile source pos rest iid kit lid (bfid sb) localTime isShrapnel
+      addProjectile source pos rest iid kit lid (bfid sb) localTime isBlast
       let c = CActor source cstore
       execUpdAtomic $ UpdLoseItem iid item (1, take 1 it) c
 
@@ -318,7 +318,7 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               => ActorId -> Point -> [Point] -> ItemId -> ItemQuant -> LevelId -> FactionId
               -> Time -> Bool
               -> m ()
-addProjectile source bpos rest iid (_, it) blid bfid btime isShrapnel = do
+addProjectile source bpos rest iid (_, it) blid bfid btime isBlast = do
   localTime <- getsState $ getLocalTime blid
   itemToF <- itemToFullServer
   let itemFull@ItemFull{itemBase} = itemToF iid (1, take 1 it)
@@ -328,8 +328,8 @@ addProjectile source bpos rest iid (_, it) blid bfid btime isShrapnel = do
       -- Not much detail about a fast flying item.
       (object1, object2) = partItem (CActor source CInv) blid localTime $ itemNoDisco (itemBase, 1)
       bname = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      tweakBody b = b { bsymbol = if isShrapnel then bsymbol b else '*'
-                      , bcolor = if isShrapnel then bcolor b else Color.BrWhite
+      tweakBody b = b { bsymbol = if isBlast then bsymbol b else '*'
+                      , bcolor = if isBlast then bcolor b else Color.BrWhite
                       , bname
                       , bhp = 0
                       , bproj = True

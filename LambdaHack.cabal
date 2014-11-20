@@ -286,7 +286,7 @@ executable LambdaHack
                       Content.ItemKind,
                       Content.ItemKindActor,
                       Content.ItemKindOrgan,
-                      Content.ItemKindShrapnel,
+                      Content.ItemKindBlast,
                       Content.ItemKindTemporary,
                       Content.ModeKind,
                       Content.ModeKindPlayer,

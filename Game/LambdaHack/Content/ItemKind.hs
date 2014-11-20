@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveFunctor, DeriveGeneric #-}
--- | The type of kinds of weapons, treasure, organs, shrapnel and actors.
+-- | The type of kinds of weapons, treasure, organs, blasts and actors.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..)
   , Effect(..), TimerDice(..)
@@ -54,7 +54,7 @@ data Effect a =
   | Hurt !Dice.Dice
   | Burn !Int
   | Explode !(GroupName ItemKind)
-                          -- ^ explode, producing this group of shrapnel
+                          -- ^ explode, producing this group of blasts
   | RefillHP !Int
   | OverfillHP !Int
   | RefillCalm !Int
