@@ -712,7 +712,7 @@ dagger = ItemKind
   , ikit     = []
   }
 daggerDropBestWeapon = dagger
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 30)]
   , irarity  = [(1, 1), (10, 2)]
   -- The timeout has to be small, so that the player can count on the effect
   -- occuring consistently in any longer fight. Otherwise, the effect will be
@@ -743,14 +743,14 @@ hammer = ItemKind
   , ikit     = []
   }
 hammerParalyze = hammer
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 30)]
   , irarity  = [(4, 1), (10, 2)]
   , iaspects = iaspects hammer ++ [Timeout $ (d 2 + 3 - dl 2) |*| 2]
   , ieffects = ieffects hammer ++ [Recharging $ Paralyze 5]
   }
 hammerSpark = hammer
   { iname    = "smithhammer"
-  , ifreq    = [("useful", 100)]
+  , ifreq    = [("useful", 30)]
   , irarity  = [(4, 1), (10, 2)]
   , iaspects = iaspects hammer ++ [Timeout $ (d 4 + 4 - dl 4) |*| 2]
   , ieffects = ieffects hammer ++ [Recharging $ Explode "spark"]
@@ -772,14 +772,14 @@ sword = ItemKind
   , ikit     = []
   }
 swordImpress = sword
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 30)]
   , irarity  = [(3, 1), (10, 2)]
   , iaspects = iaspects sword ++ [Timeout $ (d 4 + 5 - dl 4) |*| 2]
   , ieffects = ieffects sword ++ [Recharging Impress]
   , idesc    = "A particularly well-balance blade, lending itself to impressive shows of fencing skill."
   }
 swordNullify = sword
-  { ifreq    = [("useful", 100)]
+  { ifreq    = [("useful", 30)]
   , irarity  = [(3, 0), (10, 1)]
   , iaspects = iaspects sword ++ [Timeout $ (d 4 + 5 - dl 4) |*| 2]
   , ieffects = ieffects sword
@@ -804,7 +804,7 @@ halberd = ItemKind
   }
 halberdPushActor = halberd
   { iname    = "halberd"
-  , ifreq    = [("useful", 100)]
+  , ifreq    = [("useful", 30)]
   , irarity  = [(7, 1), (10, 2)]
   , iaspects = iaspects halberd ++ [Timeout $ (d 5 + 5 - dl 5) |*| 2]
   , ieffects = ieffects halberd ++ [Recharging (PushActor (ThrowMod 400 25))]
