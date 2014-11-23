@@ -593,9 +593,11 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
-  let q _ itemFull b activeItems =
+  actorSk <- actorSkillsClient aid
+  let skill = EM.findWithDefault 0 AbProject actorSk
+      q _ itemFull b activeItems =
         either (const False) id
-        $ permittedApply " " itemFull b activeItems
+        $ permittedApply " " skill itemFull b activeItems
   benList <- benAvailableItems aid q [CEqp, CInv, CGround]
   b <- getsState $ getActorBody aid
   organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b

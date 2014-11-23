@@ -343,13 +343,15 @@ applyHuman :: MonadClientUI m
 applyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
+  actorSk <- actorSkillsClient leader
+  let skill = EM.findWithDefault 0 AbProject actorSk
   activeItems <- activeItemsClient leader
   let cLegal = [CGround, CInv, CEqp]
       (verb1, object1) = case ts of
         [] -> ("activate", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      p itemFull = permittedApply triggerSyms itemFull b activeItems
+      p itemFull = permittedApply triggerSyms skill itemFull b activeItems
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What item to activate"
   ggi <- getGroupItem (either (const False) id . p) prompt promptGeneric cLegal cLegal

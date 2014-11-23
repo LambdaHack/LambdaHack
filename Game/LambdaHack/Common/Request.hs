@@ -14,7 +14,6 @@ import Data.Text (Text)
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -88,7 +87,8 @@ data ReqFailure =
   | AlterBlockItem
   | AlterNothing
   | EqpOverfull
-  | ApplyBlind
+  | ApplyUnskilled
+  | ApplyRead
   | ApplyOutOfReach
   | ItemNothing
   | ItemNotCalm
@@ -120,7 +120,8 @@ showReqFailure reqFailure = case reqFailure of
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"
   EqpOverfull -> "cannot equip any more items"
-  ApplyBlind -> "blind actors cannot read"
+  ApplyUnskilled -> "unskilled actors cannot read"
+  ApplyRead -> "to read an item requires activate skill 2"
   ApplyOutOfReach -> "cannot apply an item out of reach"
   ItemNothing -> "wasting time on void item manipulation"
   ItemNotCalm -> "you are too alarmed to sort through the shared stash"
@@ -129,7 +130,7 @@ showReqFailure reqFailure = case reqFailure of
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
   ProjectUnskilled -> "unskilled actors cannot aim"
-  ProjectFragile -> "lobbing fragile items requires fling skill 2"
+  ProjectFragile -> "to lob a fragile item requires fling skill 2"
   ProjectOutOfReach -> "cannot aim an item out of reach"
   TriggerNothing -> "wasting time on triggering nothing"
   NoChangeDunLeader -> "no manual level change for your team"
@@ -176,12 +177,13 @@ permittedProject triggerSyms forced skill itemFull@ItemFull{itemBase}
               else jsymbol itemBase `elem` triggerSyms
         in hasEffects && permittedSlot
 
-permittedApply :: [Char] -> ItemFull -> Actor -> [ItemFull]
+permittedApply :: [Char] -> Int -> ItemFull -> Actor -> [ItemFull]
                -> Either ReqFailure Bool
-permittedApply triggerSyms itemFull@ItemFull{itemBase} b activeItems =
-  let actorBlind = radiusBlind $ sumSlotNoFilter IK.EqpSlotAddSight activeItems
-      calm10 = calmEnough10 b activeItems
-  in if jsymbol itemBase == '?' && actorBlind then Left ApplyBlind
+permittedApply triggerSyms skill itemFull@ItemFull{itemBase} b activeItems =
+  let calm10 = calmEnough10 b activeItems
+  in if skill < 1 then Left ApplyUnskilled
+  else if jsymbol itemBase == '?'
+        && skill < 2 then Left ApplyRead
   else
     let legal = permittedPrecious calm10 False itemFull
     in case legal of

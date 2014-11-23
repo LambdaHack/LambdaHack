@@ -19,6 +19,7 @@ import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Atomic
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
@@ -426,8 +427,10 @@ reqApply aid iid cstore = assert (cstore /= CSha) $ do
       itemToF <- itemToFullServer
       b <- getsState $ getActorBody aid
       activeItems <- activeItemsServer aid
-      let itemFull = itemToF iid kit
-          legal = permittedApply " " itemFull b activeItems
+      actorSk <- actorSkillsServer aid
+      let skill = EM.findWithDefault 0 Ability.AbProject actorSk
+          itemFull = itemToF iid kit
+          legal = permittedApply " " skill itemFull b activeItems
       case legal of
         Left reqFail -> execFailure aid req reqFail
         Right _ -> applyItem aid iid cstore

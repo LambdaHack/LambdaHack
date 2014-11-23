@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.ActorState
   , nearbyFreePoints, whereTo, getCarriedAssocs
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
-  , actorInAmbient, actorSkills, maxActorSkills, dispEnemy, radiusBlind
+  , actorInAmbient, actorSkills, maxActorSkills, dispEnemy
   , fullAssocs, itemToFull, goesIntoInv, eqpOverfull
   , storeFromC, lidFromC, aidFromC
   ) where
@@ -336,13 +336,6 @@ dispEnemy source target activeItems s =
              || EM.findWithDefault 0 Ability.AbDisplace actorSk <= 0
                 && EM.findWithDefault 0 Ability.AbMove actorSk <= 0
              || hasSupport sb && hasSupport tb)  -- solo actors are flexible
-
--- | Determine if the sight radius is high enough to deem the actor capable
--- of projecting items and similar activities. Otherwise, the actor
--- is assumed to use a combination of peripherial vision, hearing, etc.,
--- and not the actual focused, long-distance sight sense.
-radiusBlind :: Int -> Bool
-radiusBlind radius = radius < 4
 
 fullAssocs :: Kind.COps -> DiscoveryKind -> DiscoveryEffect
            -> ActorId -> [CStore] -> State
