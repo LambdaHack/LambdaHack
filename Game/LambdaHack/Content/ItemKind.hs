@@ -151,7 +151,7 @@ data EqpSlot =
   | EqpSlotAddMaxHP
   | EqpSlotAddMaxCalm
   | EqpSlotAddSpeed
-  | EqpSlotAddSkills
+  | EqpSlotAddSkills Ability.Ability
   | EqpSlotAddSight
   | EqpSlotAddSmell
   | EqpSlotAddLight
