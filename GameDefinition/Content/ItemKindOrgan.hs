@@ -72,7 +72,7 @@ jaw = fist
   , ifreq    = [("jaw", 20)]
   , icount   = 1
   , iverbHit = "rip"
-  , ieffects = [Hurt (5 * d 1)]
+  , ieffects = [Hurt (4 * d 1)]
   , idesc    = ""
   }
 largeJaw = fist
@@ -88,7 +88,7 @@ tooth = fist
   , ifreq    = [("tooth", 20)]
   , icount   = 3
   , iverbHit = "nail"
-  , ieffects = [Hurt (3 * d 1)]
+  , ieffects = [Hurt (2 * d 1)]
   , idesc    = ""
   }
 
@@ -107,7 +107,7 @@ lash = fist
   , ifreq    = [("lash", 100)]
   , icount   = 1
   , iverbHit = "lash"
-  , ieffects = [Hurt (4 * d 1), DropItem COrgan "far-sighted" True]
+  , ieffects = [Hurt (3 * d 1), DropItem COrgan "far-sighted" True]
   , idesc    = ""
   }
 noseTip = fist
@@ -191,7 +191,7 @@ pupil = fist
   , icount   = 1
   , iverbHit = "gaze at"
   , iaspects = [AddSight 7, Timeout $ 5 + d 5]
-  , ieffects = [Hurt (4 * d 1), Recharging (DropItem COrgan "temporary conditions" True)]  -- TODO: decrease Hurt, but use
+  , ieffects = [Hurt (3 * d 1), Recharging (DropItem COrgan "temporary conditions" True)]  -- TODO: decrease Hurt, but use
   , idesc    = ""
   }
 

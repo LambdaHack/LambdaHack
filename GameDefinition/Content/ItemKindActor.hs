@@ -73,7 +73,7 @@ eye = ItemKind
   , irarity  = [(1, 10), (10, 6)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 20, AddMaxCalm 60, AddSpeed 20
+  , iaspects = [ AddMaxHP 10, AddMaxCalm 60, AddSpeed 20
                , AddSkills $ EM.fromList [(AbProject, 1), (AbApply, 1)]
                , AddSight 4 ]
   , ieffects = []
@@ -87,10 +87,10 @@ fastEye = ItemKind
   , ifreq    = [("monster", 100), ("horror", 100)]
   , iflavour = zipPlain [BrBlue]
   , icount   = 1
-  , irarity  = [(10, 5)]
+  , irarity  = [(1, 3), (10, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 6, AddMaxCalm 60, AddSpeed 30
+  , iaspects = [ AddMaxHP 5, AddMaxCalm 60, AddSpeed 30
                , AddSight 7 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -107,7 +107,7 @@ nose = ItemKind
   , irarity  = [(1, 10), (3, 0), (4, 5), (10, 5)]  -- ensure explorers at lvl 3
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 40, AddMaxCalm 30, AddSpeed 18
+  , iaspects = [ AddMaxHP 20, AddMaxCalm 30, AddSpeed 18
                , AddSkills $ EM.fromList [(AbProject, -1), (AbApply, -1)]
                , AddSmell 3 ]  -- depends solely on smell
   , ieffects = []
@@ -124,7 +124,7 @@ elbow = ItemKind
   , irarity  = [(6, 1), (10, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 10, AddMaxCalm 80, AddSpeed 26
+  , iaspects = [ AddMaxHP 8, AddMaxCalm 90, AddSpeed 24
                , AddSkills
                  $ EM.fromList [(AbProject, 1), (AbApply, 1), (AbMelee, -1)]
                , AddSight 15 ]
