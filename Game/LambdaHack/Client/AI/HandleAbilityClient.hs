@@ -539,11 +539,13 @@ projectItem aid = do
       mnewEps <- makeLine b fpos seps
       case mnewEps of
         Just newEps -> do
+          actorSk <- actorSkillsClient aid
+          let skill = EM.findWithDefault 0 AbProject actorSk
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
           let q _ itemFull b2 activeItems =
                 either (const False) id
-                $ permittedProject " " False itemFull b2 activeItems
+                $ permittedProject " " False skill itemFull b2 activeItems
           benList <- benAvailableItems aid q [CEqp, CInv, CGround]
           localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2

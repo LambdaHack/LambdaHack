@@ -255,9 +255,11 @@ projectFail source tpxy eps iid cstore isBlast = do
         Just kit -> do
           itemToF <- itemToFullServer
           activeItems <- activeItemsServer source
-          let itemFull@ItemFull{itemBase} = itemToF iid kit
+          actorSk <- actorSkillsServer source
+          let skill = EM.findWithDefault 0 Ability.AbProject actorSk
+              itemFull@ItemFull{itemBase} = itemToF iid kit
               forced = isBlast || bproj sb
-              legal = permittedProject " " forced itemFull sb activeItems
+              legal = permittedProject " " forced skill itemFull sb activeItems
           case legal of
             Left reqFail ->  return $ Just reqFail
             Right _ -> do

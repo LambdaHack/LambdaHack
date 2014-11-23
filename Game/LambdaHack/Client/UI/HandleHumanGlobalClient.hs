@@ -306,6 +306,8 @@ projectEps :: MonadClientUI m
 projectEps ts tpos eps = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
+  actorSk <- actorSkillsClient leader
+  let skill = EM.findWithDefault 0 AbProject actorSk
   activeItems <- activeItemsClient leader
   let cLegal = [CGround, CInv, CEqp]
       (verb1, object1) = case ts of
@@ -313,7 +315,7 @@ projectEps ts tpos eps = do
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
       p itemFull@ItemFull{itemBase} =
-        let legal = permittedProject triggerSyms False itemFull b activeItems
+        let legal = permittedProject triggerSyms False skill itemFull b activeItems
         in case legal of
           Left{} -> legal
           Right False -> legal

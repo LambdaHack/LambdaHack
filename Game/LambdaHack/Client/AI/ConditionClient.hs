@@ -33,6 +33,7 @@ import Game.LambdaHack.Client.AI.Preferences
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -139,9 +140,11 @@ condNoEqpWeaponM aid = do
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
-  let q _ itemFull b activeItems =
+  actorSk <- actorSkillsClient aid
+  let skill = EM.findWithDefault 0 Ability.AbProject actorSk
+      q _ itemFull b activeItems =
         either (const False) id
-        $ permittedProject " " False itemFull b activeItems
+        $ permittedProject " " False skill itemFull b activeItems
   benList <- benAvailableItems aid q [CEqp, CInv, CGround]
   let missiles = filter (maybe True ((< 0) . snd . snd) . fst . fst) benList
   return $ not (null missiles)
