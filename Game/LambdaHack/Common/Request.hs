@@ -96,7 +96,7 @@ data ReqFailure =
   | ProjectAimOnself
   | ProjectBlockTerrain
   | ProjectBlockActor
-  | ProjectBlind
+  | ProjectUnskilled
   | ProjectFragile
   | ProjectOutOfReach
   | TriggerNothing
@@ -128,7 +128,7 @@ showReqFailure reqFailure = case reqFailure of
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
-  ProjectBlind -> "blind actors cannot aim"
+  ProjectUnskilled -> "unskilled actors cannot aim"
   ProjectFragile -> "lobbing fragile items requires fling skill 2"
   ProjectOutOfReach -> "cannot aim an item out of reach"
   TriggerNothing -> "wasting time on triggering nothing"
@@ -150,10 +150,11 @@ permittedProject :: [Char] -> Bool -> Int -> ItemFull -> Actor -> [ItemFull]
                  -> Either ReqFailure Bool
 permittedProject triggerSyms forced skill itemFull@ItemFull{itemBase}
                  b activeItems =
-  let actorBlind = radiusBlind $ sumSlotNoFilter IK.EqpSlotAddSight activeItems
-      calm10 = calmEnough10 b activeItems
-  in if actorBlind && not forced then Left ProjectBlind
-  else if IK.Fragile `elem` jfeature itemBase
+  let calm10 = calmEnough10 b activeItems
+  in if not forced
+        && skill < 1 then Left ProjectUnskilled
+  else if not forced
+          && IK.Fragile `elem` jfeature itemBase
           && skill < 2 then Left ProjectFragile
   else
     let legal = permittedPrecious calm10 forced itemFull
