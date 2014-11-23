@@ -1,4 +1,5 @@
-{-# LANGUAGE ExistentialQuantification, GADTs, StandaloneDeriving, DataKinds, KindSignatures #-}
+{-# LANGUAGE DataKinds, ExistentialQuantification, GADTs, KindSignatures,
+             StandaloneDeriving #-}
 -- | Abstract syntax of server commands.
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
@@ -11,17 +12,18 @@ module Game.LambdaHack.Common.Request
 import Data.Text (Text)
 
 import Game.LambdaHack.Atomic
+import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Common.Ability
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Common.ItemStrongest
+import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- TODO: make remove second arg from ReqLeader; this requires a separate
@@ -142,9 +144,12 @@ permittedPrecious calm10 forced itemFull =
                     Just ItemDisco{itemAE=Just _} -> True
                     _ -> not isPrecious
 
-permittedProject :: [Char] -> Bool -> Bool -> Bool -> ItemFull -> Either ReqFailure Bool
-permittedProject triggerSyms actorBlind calm10 forced itemFull@ItemFull{itemBase} =
-  if actorBlind && not forced then Left ProjectBlind
+permittedProject :: [Char] -> Bool -> ItemFull -> Actor -> [ItemFull]
+                 -> Either ReqFailure Bool
+permittedProject triggerSyms forced itemFull@ItemFull{itemBase} b activeItems =
+  let actorBlind = radiusBlind $ sumSlotNoFilter IK.EqpSlotAddSight activeItems
+      calm10 = calmEnough10 b activeItems
+  in if actorBlind && not forced then Left ProjectBlind
   else
     let legal = permittedPrecious calm10 forced itemFull
     in case legal of
@@ -165,10 +170,12 @@ permittedProject triggerSyms actorBlind calm10 forced itemFull@ItemFull{itemBase
               else jsymbol itemBase `elem` triggerSyms
         in hasEffects && permittedSlot
 
-permittedApply :: [Char] -> Bool -> Bool -> ItemFull
+permittedApply :: [Char] -> ItemFull -> Actor -> [ItemFull]
                -> Either ReqFailure Bool
-permittedApply triggerSyms actorBlind calm10 itemFull@ItemFull{itemBase} =
-  if jsymbol itemBase == '?' && actorBlind then Left ApplyBlind
+permittedApply triggerSyms itemFull@ItemFull{itemBase} b activeItems =
+  let actorBlind = radiusBlind $ sumSlotNoFilter IK.EqpSlotAddSight activeItems
+      calm10 = calmEnough10 b activeItems
+  in if jsymbol itemBase == '?' && actorBlind then Left ApplyBlind
   else
     let legal = permittedPrecious calm10 False itemFull
     in case legal of

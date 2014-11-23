@@ -305,7 +305,6 @@ projectEps :: MonadClientUI m
            -> m (SlideOrCmd (RequestTimed AbProject))
 projectEps ts tpos eps = do
   leader <- getLeaderUI
-  actorBlind <- radiusBlind <$> sumOrganEqpClient IK.EqpSlotAddSight leader
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
   let cLegal = [CGround, CInv, CEqp]
@@ -313,9 +312,8 @@ projectEps ts tpos eps = do
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      calm10 = calmEnough10 b activeItems
       p itemFull@ItemFull{itemBase} =
-        let legal = permittedProject triggerSyms actorBlind calm10 False itemFull
+        let legal = permittedProject triggerSyms False itemFull b activeItems
         in case legal of
           Left{} -> legal
           Right False -> legal
@@ -342,7 +340,6 @@ applyHuman :: MonadClientUI m
            => [Trigger] -> m (SlideOrCmd (RequestTimed AbApply))
 applyHuman ts = do
   leader <- getLeaderUI
-  actorBlind <- radiusBlind <$> sumOrganEqpClient IK.EqpSlotAddSight leader
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
   let cLegal = [CGround, CInv, CEqp]
@@ -350,8 +347,7 @@ applyHuman ts = do
         [] -> ("activate", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      calm10 = calmEnough10 b activeItems
-      p = permittedApply triggerSyms actorBlind calm10
+      p itemFull = permittedApply triggerSyms itemFull b activeItems
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What item to activate"
   ggi <- getGroupItem (either (const False) id . p) prompt promptGeneric cLegal cLegal

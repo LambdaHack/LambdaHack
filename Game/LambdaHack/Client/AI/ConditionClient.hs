@@ -35,7 +35,6 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -48,6 +47,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | Require that the target enemy is visible by the party.
 condTgtEnemyPresentM :: MonadClient m => ActorId -> m Bool
@@ -139,9 +139,9 @@ condNoEqpWeaponM aid = do
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
-  actorBlind <- radiusBlind <$> sumOrganEqpClient IK.EqpSlotAddSight aid
-  let q calm10 itemFull _ =
-        either (const False) id $ permittedProject " " actorBlind calm10 False itemFull
+  let q _ itemFull b activeItems =
+        either (const False) id
+        $ permittedProject " " False itemFull b activeItems
   benList <- benAvailableItems aid q [CEqp, CInv, CGround]
   let missiles = filter (maybe True ((< 0) . snd . snd) . fst . fst) benList
   return $ not (null missiles)
@@ -151,7 +151,7 @@ condCanProjectM aid = do
 -- and the items' values.
 benAvailableItems :: MonadClient m
                   => ActorId
-                  -> (Bool -> ItemFull -> Maybe Int -> Bool)
+                  -> (Maybe Int -> ItemFull -> Actor -> [ItemFull] -> Bool)
                   -> [CStore]
                   -> m [( (Maybe (Int, (Int, Int)), (Int, CStore))
                         , (ItemId, ItemFull) )]
@@ -160,14 +160,13 @@ benAvailableItems aid permitted cstores = do
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
-  let calm10 = calmEnough10 b activeItems
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let ben cstore bag =
         [ ((benefit, (k, cstore)), (iid, itemFull))
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
         , let benefit = totalUsefulness cops b activeItems fact itemFull
-        , permitted calm10 itemFull (fst <$> benefit) ]
+        , permitted (fst <$> benefit) itemFull b activeItems ]
       benCStore cs = do
         bag <- getsState $ getActorBag aid cs
         return $! ben cs bag
@@ -197,7 +196,7 @@ benGroundItems :: MonadClient m
 benGroundItems aid = do
   b <- getsState $ getActorBody aid
   canEscape <- factionCanEscape (bfid b)
-  let desirableItem _ ItemFull{itemBase} use
+  let desirableItem use ItemFull{itemBase} _ _
         | canEscape = use /= Just 0
                       || IK.Precious `elem` jfeature itemBase
         | otherwise = use /= Just 0

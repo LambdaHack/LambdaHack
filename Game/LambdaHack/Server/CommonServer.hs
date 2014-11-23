@@ -255,12 +255,9 @@ projectFail source tpxy eps iid cstore isBlast = do
         Just kit -> do
           itemToF <- itemToFullServer
           activeItems <- activeItemsServer source
-          actorBlind <- radiusBlind
-                        <$> sumOrganEqpServer IK.EqpSlotAddSight source
           let itemFull@ItemFull{itemBase} = itemToF iid kit
-              calm10 = calmEnough10 sb activeItems
               forced = isBlast || bproj sb
-              legal = permittedProject " " actorBlind calm10 forced itemFull
+              legal = permittedProject " " forced itemFull sb activeItems
           case legal of
             Left reqFail ->  return $ Just reqFail
             Right _ -> do

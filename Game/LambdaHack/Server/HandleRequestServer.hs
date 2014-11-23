@@ -12,7 +12,6 @@ module Game.LambdaHack.Server.HandleRequestServer
   ( handleRequestAI, handleRequestUI, reqMove
   ) where
 
-import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -427,11 +426,8 @@ reqApply aid iid cstore = assert (cstore /= CSha) $ do
       itemToF <- itemToFullServer
       b <- getsState $ getActorBody aid
       activeItems <- activeItemsServer aid
-      actorBlind <- radiusBlind
-                    <$> sumOrganEqpServer IK.EqpSlotAddSight aid
       let itemFull = itemToF iid kit
-          calm10 = calmEnough10 b activeItems
-          legal = permittedApply " " actorBlind calm10 itemFull
+          legal = permittedApply " " itemFull b activeItems
       case legal of
         Left reqFail -> execFailure aid req reqFail
         Right _ -> applyItem aid iid cstore

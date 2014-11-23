@@ -536,14 +536,14 @@ projectItem aid = do
   seps <- getsClient seps
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
-      actorBlind <- radiusBlind <$> sumOrganEqpClient IK.EqpSlotAddSight aid
       mnewEps <- makeLine b fpos seps
       case mnewEps of
         Just newEps -> do
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
-          let q calm10 itemFull _ =
-                either (const False) id $ permittedProject " " actorBlind calm10 False itemFull
+          let q _ itemFull b2 activeItems =
+                either (const False) id
+                $ permittedProject " " False itemFull b2 activeItems
           benList <- benAvailableItems aid q [CEqp, CInv, CGround]
           localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2
@@ -591,9 +591,9 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
-  actorBlind <- radiusBlind <$> sumOrganEqpClient IK.EqpSlotAddSight aid
-  let q calm10 itemFull _ =
-        either (const False) id $ permittedApply " " actorBlind calm10 itemFull
+  let q _ itemFull b activeItems =
+        either (const False) id
+        $ permittedApply " " itemFull b activeItems
   benList <- benAvailableItems aid q [CEqp, CInv, CGround]
   b <- getsState $ getActorBody aid
   organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b
