@@ -64,7 +64,7 @@ playerMonster = Player
   , fhasGender = False
   , ftactic = TExplore
   , fentryLevel = -3
-  , finitialActors = 5
+  , finitialActors = 1  -- an explorer, not a nose, ensured via irarity
   , fleaderMode = LeaderAI $ AutoLeader True True
   , fhasUI = False
   }
@@ -85,8 +85,8 @@ playerAnimal = Player
   , fhasNumbers = False
   , fhasGender = False
   , ftactic = TRoam  -- can't pick up, so no point exploring
-  , fentryLevel = -2
-  , finitialActors = 3
+  , fentryLevel = -1  -- fun from the start; don't cumulate with monsters
+  , finitialActors = 1 + d 2
   , fleaderMode = LeaderNull
   , fhasUI = False
   }
