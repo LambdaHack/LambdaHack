@@ -262,8 +262,7 @@ necklace = ItemKind
   , ikit     = []
   }
 necklace1 = necklace
-  { irarity  = [(1, 1), (10, 2)]
-  , iaspects = (Timeout $ (d 3 + 4 - dl 3) |*| 10) : iaspects necklace
+  { iaspects = (Timeout $ (d 3 + 4 - dl 3) |*| 10) : iaspects necklace
   , ieffects = [Recharging (RefillHP 1)]
   , idesc    = "A cord of dried herbs and healing berries."
   }
@@ -334,7 +333,7 @@ ring = ItemKind
   , ikit     = []
   }
 ring1 = ring
-  { irarity  = [(2, 0), (10, 2)]
+  { irarity  = [(10, 2)]
   , iaspects = [AddSpeed $ d 2, AddMaxHP $ dl 3 - 5 - d 3]
   , ieffects = [Explode "distortion"]  -- strong magic
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddSpeed ""]
@@ -384,17 +383,16 @@ potion1 = potion
                , OnSmash (ApplyPerfume), OnSmash (Explode "fragrance") ]
   }
 potion2 = potion
-  { ifreq    = [("useful", 1)]  -- extremely rare
+  { ifreq    = [("useful", 10)]  -- extremely rare
   , irarity  = [(1, 1)]
-  , ieffects = [ NoEffect "of attraction", Impress, DropBestWeapon
-               , PullActor (ThrowMod 200 50), OnSmash (Explode "pheromone")]
+  , ieffects = [ NoEffect "of attraction", OnSmash (Explode "pheromone")]
   }
 potion3 = potion
   { irarity  = [(1, 5), (10, 5)]
   , ieffects = [RefillHP 5, OnSmash (Explode "healing mist")]
   }
 potion4 = potion
-  { irarity  = [(10, 3)]
+  { irarity  = [(10, 5)]
   , ieffects = [RefillHP 10, OnSmash (Explode "healing mist 2")]
   }
 potion5 = potion
@@ -423,11 +421,11 @@ potion7 = potion  -- used only as initial equipment; count betrays identity
   , ifeature = [Identified]
   }
 potion8 = potion
-  { ieffects = [ DropItem COrgan "poisoned" True
+  { ieffects = [ DropItem COrgan "poisoned" True, RefillHP 1
                , OnSmash (Explode "antidote mist") ]
   }
 potion9 = potion
-  { ieffects = [ DropItem COrgan "temporary conditions" True
+  { ieffects = [ DropItem COrgan "temporary conditions" True, RefillHP 2
                , OnSmash (Explode "blast 10") ]
   }
 
@@ -480,8 +478,9 @@ flask5 = flask
                , OnSmash (Explode "haste spray") ]
   }
 flask6 = flask
-  { ieffects = [ NoEffect "of slowness brew"
+  { ieffects = [ NoEffect "of lethargy brew"
                , toOrganGameTurn "slow 10" (20 + d 5)
+               , toOrganNone "regenerating"
                , OnSmash (Explode "slowness spray") ]
   }
 flask7 = flask  -- sight can be reduced from Calm, drunk, etc.
@@ -506,7 +505,8 @@ flask10 = flask
                , Burn 2, RefillHP 4, OnSmash (Explode "whiskey spray") ]
   }
 flask11 = flask
-  { ieffects = [ NoEffect "of regeneration brew"
+  { irarity  = [(1, 20), (10, 6)]
+  , ieffects = [ NoEffect "of regeneration brew"
                , toOrganNone "regenerating"
                , OnSmash (Explode "healing mist") ]
   }
@@ -579,7 +579,7 @@ scroll7 = scroll
   , ieffects = [InsertMove $ 1 + d 2 + dl 2]
   }
 scroll8 = scroll
-  { irarity  = [(3, 8), (10, 4)]
+  { irarity  = [(1, 15), (10, 4)]
   , ieffects = [Identify CGround]  -- TODO: ask player: AskPlayer cstore eff?
   }
 scroll9 = scroll

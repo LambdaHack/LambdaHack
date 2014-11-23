@@ -26,7 +26,8 @@ warrior = ItemKind
   , irarity  = [(1, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 50, AddMaxCalm 60, AddSpeed 20
+  , iaspects = [ AddMaxHP 60  -- partially from clothes and assumed first aid
+               , AddMaxCalm 60, AddSpeed 20
                , AddSkills $ EM.fromList [(AbProject, 1), (AbApply, 1)]
                    -- TODO: on a ring?
                , AddSight 3 ]  -- not via eyes, but feel, hearing, etc.
@@ -141,6 +142,9 @@ elbow = ItemKind
 -- skeletal
 
 -- * Animals
+
+-- They need rather strong melee, because they don't use items.
+-- Unless/until they level up.
 
 animalSkillMalus :: Skills
 animalSkillMalus =
