@@ -816,7 +816,7 @@ effectPolyItem execSfx cstore target = do
         "The purpose of repurpose cannot be availed without an item"
         <+> ppCStore cstore <> "."
       -- TODO: identify the scroll, but don't use up.
-      return False
+      return True
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
       Just ItemDisco{itemKind} -> do
         let maxCount = Dice.maxDice $ IK.icount itemKind
@@ -833,7 +833,7 @@ effectPolyItem execSfx cstore target = do
             "The purpose of repurpose is served by" <+> tshow maxCount
             <+> "pieces of this item, not by" <+> tshow itemK <> "."
           -- TODO: identify the scroll, but don't use up.
-          return False
+          return True
       _ -> assert `failure` (cstore, target, iid, itemFull)
 
 -- ** Identify

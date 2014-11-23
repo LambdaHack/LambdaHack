@@ -73,7 +73,7 @@ effectToBenefit cops b activeItems fact eff =
     IK.DropItem _ _ False -> -15
     IK.DropItem _ _ True -> -30
     IK.PolyItem _ -> 0  -- AI would loop
-    IK.Identify _ -> 0  -- AI would loop
+    IK.Identify _ -> 1  -- not higher, or AI would loop
     IK.SendFlying _ -> -10  -- but useful on self sometimes, too
     IK.PushActor _ -> -10  -- but useful on self sometimes, too
     IK.PullActor _ -> -10
