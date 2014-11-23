@@ -71,7 +71,7 @@ dart = ItemKind
   , iweight  = 50
   , iaspects = [AddHurtRanged ((d 6 + dl 6) |*| 10)]
   , ieffects = [Hurt (3 * d 1)]
-  , ifeature = []
+  , ifeature = [Identified]
   , idesc    = "Little, but sharp and sturdy."  -- "Much inferior to arrows though, especially given the contravariance problems."  --- funny, but destroy the suspension of disbelief; this is supposed to be a Lovecraftian horror and any hilarity must ensue from the failures in making it so and not from actively trying to be funny; also, mundane objects are not supposed to be scary or transcendental; the scare is in horrors from the abstract dimension visiting our ordinary reality; without the contrast there's no horror and no wonder, so also the magical items must be contrasted with ordinary XIX century and antique items
   , ikit     = []
   }
@@ -86,7 +86,7 @@ dart200 = ItemKind
   , iweight  = 50
   , iaspects = [AddHurtRanged ((d 6 + dl 6) |*| 10)]
   , ieffects = [Hurt (2 * d 1)]
-  , ifeature = [toVelocity 200]
+  , ifeature = [toVelocity 200, Identified]
   , idesc    = "Finely balanced for throws of great speed."
   , ikit     = []
   }
