@@ -810,7 +810,13 @@ effectPolyItem :: (MonadAtomic m, MonadServer m)
 effectPolyItem execSfx cstore target = do
   allAssocs <- fullAssocsServer target [cstore]
   case allAssocs of
-    [] -> return False
+    [] -> do
+      tb <- getsState $ getActorBody target
+      execSfxAtomic $ SfxMsgFid (bfid tb) $
+        "The purpose of repurpose cannot be availed without an item"
+        <+> ppCStore cstore <> "."
+      -- TODO: identify the scroll, but don't use up.
+      return False
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
       Just ItemDisco{itemKind} -> do
         let maxCount = Dice.maxDice $ IK.icount itemKind
@@ -824,8 +830,9 @@ effectPolyItem execSfx cstore target = do
         else do
           tb <- getsState $ getActorBody target
           execSfxAtomic $ SfxMsgFid (bfid tb) $
-            "The purpose is served by" <+> tshow maxCount
+            "The purpose of repurpose is served by" <+> tshow maxCount
             <+> "pieces of this item, not by" <+> tshow itemK <> "."
+          -- TODO: identify the scroll, but don't use up.
           return False
       _ -> assert `failure` (cstore, target, iid, itemFull)
 
@@ -834,27 +841,30 @@ effectPolyItem execSfx cstore target = do
 effectIdentify :: (MonadAtomic m, MonadServer m)
                => m () -> CStore -> ActorId -> m Bool
 effectIdentify execSfx cstore target = do
-  allAssocs <- fullAssocsServer target [cstore]
-  case allAssocs of
-    [] -> return False
-    (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
-      Just ItemDisco{..} -> do
-        -- TODO: use this (but faster, via traversing effects with 999)
-        -- also to prevent sending any other UpdDiscover.
-        let ided = IK.Identified `elem` IK.ifeature itemKind
-            itemSecret = itemNoAE itemFull
-            c = CActor target cstore
-            statsObvious = textAllAE False c itemFull
-                           == textAllAE False c itemSecret
-        if ided && statsObvious
-          then return False
-          else do
-            execSfx
-            tb <- getsState $ getActorBody target
-            seed <- getsServer $ (EM.! iid) . sitemSeedD
-            execUpdAtomic $ UpdDiscover (blid tb) (bpos tb) iid itemKindId seed
-            return True
-      _ -> assert `failure` (cstore, target, iid, itemFull)
+  let stores = cstore : delete cstore [CGround, CInv, CEqp]
+  allAssocs <- fullAssocsServer target stores
+  let tryStore as = case as of
+        [] -> return False
+        (iid, itemFull@ItemFull{..}) : rest -> case itemDisco of
+          Just ItemDisco{..} -> do
+            -- TODO: use this (but faster, via traversing effects with 999)
+            -- also to prevent sending any other UpdDiscover.
+            let ided = IK.Identified `elem` IK.ifeature itemKind
+                itemSecret = itemNoAE itemFull
+                c = CActor target cstore
+                statsObvious = textAllAE False c itemFull
+                               == textAllAE False c itemSecret
+            if ided && statsObvious
+              then tryStore rest
+              else do
+                execSfx
+                tb <- getsState $ getActorBody target
+                seed <- getsServer $ (EM.! iid) . sitemSeedD
+                execUpdAtomic $
+                  UpdDiscover (blid tb) (bpos tb) iid itemKindId seed
+                return True
+          _ -> assert `failure` (cstore, target, iid, itemFull)
+  tryStore allAssocs
 
 -- ** SendFlying
 
