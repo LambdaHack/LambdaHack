@@ -43,7 +43,6 @@ debugArgs args = do
         , "    Digital"
         , "    Permissive"
         , "    Shadow"
-        , "    Blind"
         ]
       parseArgs [] = defDebugModeSer
       parseArgs ("--knowMap" : rest) =
