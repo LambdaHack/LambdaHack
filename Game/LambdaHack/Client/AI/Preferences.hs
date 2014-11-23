@@ -10,14 +10,14 @@ import Data.Maybe
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Dice as Dice
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
+import Game.LambdaHack.Content.ModeKind
 
 -- | How much AI benefits from applying the effect. Multipllied by item p.
 -- Negative means harm to the enemy when thrown at him. Effects with zero
@@ -97,7 +97,7 @@ organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b =
            , pacc + p )
   in ofoldrGroup t f (0, 0)
 
--- | Return the value to add to effect value and another to multiply it.
+-- | Return the value to add to effect value.
 aspectToBenefit :: Kind.COps -> Actor -> IK.Aspect Int -> Int
 aspectToBenefit _cops _b asp =
   case asp of
@@ -107,8 +107,8 @@ aspectToBenefit _cops _b asp =
     IK.AddMaxCalm p -> p `divUp` 2
     IK.AddSpeed p -> p * 10000
     IK.AddSkills m -> 5 * sum (EM.elems m)
-    IK.AddHurtMelee p -> p `divUp` 3
-    IK.AddHurtRanged p -> p `divUp` 5
+    IK.AddHurtMelee _p -> 1  -- TODO: negative only for weapons; p `divUp` 3
+    IK.AddHurtRanged p -> - p `divUp` 5
     IK.AddArmorMelee p -> p `divUp` 5
     IK.AddArmorRanged p -> p `divUp` 10
     IK.AddSight p -> p * 10

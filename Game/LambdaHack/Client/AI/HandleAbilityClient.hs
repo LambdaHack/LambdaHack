@@ -575,7 +575,7 @@ projectItem aid = do
                     benR = durableBonus
                            * coeff cstore
                            * case mben of
-                               Nothing -> -20  -- experimenting is fun
+                               Nothing -> -1  -- experiment if no options
                                Just (_, (_, ben)) -> ben
                            * (if recharged then 1 else 0)
                 in if benR < 0 && trange >= chessDist bpos fpos
