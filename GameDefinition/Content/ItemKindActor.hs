@@ -27,8 +27,9 @@ warrior = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 50, AddMaxCalm 60, AddSpeed 20
-               , AddSkills $ EM.fromList [(AbProject, 1)]  -- TODO: on a ring?
-               , AddSight 3 ]  -- no via eyes, but feel, hearing, etc.
+               , AddSkills $ EM.fromList [(AbProject, 1), (AbApply, 1)]
+                   -- TODO: on a ring?
+               , AddSight 3 ]  -- not via eyes, but feel, hearing, etc.
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -73,8 +74,8 @@ eye = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 20, AddMaxCalm 60, AddSpeed 20
-               , AddSkills $ EM.fromList [(AbProject, 1)]
-               , AddSight 4 ]  -- can shoot for as long as lives
+               , AddSkills $ EM.fromList [(AbProject, 1), (AbApply, 1)]
+               , AddSight 4 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "Under your stare, it reduces to the bits that define its essence. Under introspection, the bits slow down and solidify into an arbitrary form again. It must be huge inside, for holographic principle to manifest so overtly."  -- holographic principle is an anachronism for XIX or most of XX century, but "the cosmological scale effects" is too weak
@@ -90,7 +91,7 @@ fastEye = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 6, AddMaxCalm 60, AddSpeed 30
-               , AddSight 7 ]  -- can shoot for as long as lives
+               , AddSight 7 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "Hungers but never eats. Bites but never swallows. Burrows its own image through, but never carries anything back."  -- rather weak: not about injective objects, but puny, concrete, injective functions  --- where's the madness in that?
@@ -107,7 +108,7 @@ nose = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 40, AddMaxCalm 30, AddSpeed 18
-               , AddSkills $ EM.fromList [(AbProject, -1)]
+               , AddSkills $ EM.fromList [(AbProject, -1), (AbApply, -1)]
                , AddSmell 3 ]  -- depends solely on smell
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -124,8 +125,9 @@ elbow = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 10, AddMaxCalm 80, AddSpeed 26
-               , AddSkills $ EM.fromList [(AbProject, 1), (AbMelee, -1)]
-               , AddSight 15 ]  -- can shoot for as long as lives
+               , AddSkills
+                 $ EM.fromList [(AbProject, 1), (AbApply, 1), (AbMelee, -1)]
+               , AddSight 15 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
