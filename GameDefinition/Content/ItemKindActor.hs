@@ -27,6 +27,7 @@ warrior = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 50, AddMaxCalm 60, AddSpeed 20
+               , AddSkills $ EM.fromList [(AbProject, 1)]  -- TODO: on a ring?
                , AddSight 3 ]  -- no via eyes, but feel, hearing, etc.
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -72,6 +73,7 @@ eye = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 20, AddMaxCalm 60, AddSpeed 20
+               , AddSkills $ EM.fromList [(AbProject, 1)]
                , AddSight 4 ]  -- can shoot for as long as lives
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -105,6 +107,7 @@ nose = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 40, AddMaxCalm 30, AddSpeed 18
+               , AddSkills $ EM.fromList [(AbProject, -1)]
                , AddSmell 3 ]  -- depends solely on smell
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -121,7 +124,7 @@ elbow = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 10, AddMaxCalm 80, AddSpeed 26
-               , AddSkills $ EM.singleton AbMelee (-1)
+               , AddSkills $ EM.fromList [(AbProject, 1), (AbMelee, -1)]
                , AddSight 15 ]  -- can shoot for as long as lives
   , ieffects = []
   , ifeature = [Durable, Identified]

@@ -115,9 +115,14 @@ playerHorror = Player
   , fhasUI = False
   }
 
-meleeAdjacent, _meleeAndRanged :: Skills
+minusHundred, meleeAdjacent, _meleeAndRanged :: Skills
 
-meleeAdjacent = EM.fromList $ zip [AbWait, AbMelee] [1, 1..]
+-- To make sure weak items can't override move-only-leader, etc.
+minusHundred = EM.fromList $ zip [minBound..maxBound] [-100, -100..]
+
+meleeAdjacent = addSkills minusHundred
+                $ EM.fromList $ zip [AbWait, AbMelee] [101, 101..]
 
 -- Melee and reaction fire.
-_meleeAndRanged = EM.fromList $ zip [AbWait, AbMelee, AbProject] [1, 1..]
+_meleeAndRanged = addSkills minusHundred
+                  $ EM.fromList $ zip [AbWait, AbMelee, AbProject] [101, 101..]
