@@ -368,16 +368,21 @@ addActorIid trunkId trunkFull@ItemFull{..}
       calm = xM $ max 1
              $ sumSlotNoFilter IK.EqpSlotAddMaxCalm [trunkFull]
   -- Create actor.
-  Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
+  factionD <- getsState sfactionD
+  let factMine = factionD EM.! bfid
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   nU <- nUI
   -- If difficulty is below standard, HP is added to the UI factions,
   -- otherwise HP is added to their enemies.
   -- If no UI factions, their role is taken by the escapees (for testing).
   let diffBonusCoeff = difficultyCoeff sdifficultySer
-      hasUIorEscapes = fhasUI gplayer || nU == 0 && fcanEscape gplayer
-      diffHP | (diffBonusCoeff > 0) == hasUIorEscapes =
-                 hp * 2 ^ abs diffBonusCoeff
+      hasUIorEscapes Faction{gplayer} =
+        fhasUI gplayer || nU == 0 && fcanEscape gplayer
+      boostFact fact = if diffBonusCoeff > 0
+                       then hasUIorEscapes fact
+                       else any hasUIorEscapes
+                            $ filter (`isAtWar` bfid) $ EM.elems factionD
+      diffHP | boostFact factMine = hp * 2 ^ abs diffBonusCoeff
              | otherwise = hp
       bonusHP = fromIntegral $ (diffHP - hp) `divUp` oneM
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
