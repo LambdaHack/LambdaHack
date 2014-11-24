@@ -239,11 +239,9 @@ closestTriggers onlyDir exploredToo aid = do
   let allExplored = ES.size explored == EM.size dungeon
       f :: [(Int, Point)] -> Point -> Kind.Id TileKind -> [(Int, Point)]
       f acc p t =
-        if Tile.isWalkable cotile t
+        if Tile.isWalkable cotile t && not (null $ Tile.causeEffects cotile t)
         then if exploredToo
-             then if null $ Tile.causeEffects cotile t
-                  then acc
-                  else (1, p) : acc  -- direction irrelevant
+             then (1, p) : acc  -- direction irrelevant
              else case Tile.ascendTo cotile t of
                [] ->
                  -- Escape (or guard) after exploring, for high score, etc.
