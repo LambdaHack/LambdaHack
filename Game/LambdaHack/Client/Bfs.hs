@@ -4,9 +4,9 @@ module Game.LambdaHack.Client.Bfs
   ( -- * Public API
     BfsDistance, MoveLegal(..), apartBfs
   , fillBfs, findPathBfs, accessBfs
--- #ifdef EXPOSE_INTERNAL
+#ifdef EXPOSE_INTERNAL
   , minKnownBfs
--- #endif
+#endif
   ) where
 
 import Control.Exception.Assert.Sugar
