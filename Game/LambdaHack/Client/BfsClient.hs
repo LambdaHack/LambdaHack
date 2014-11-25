@@ -41,16 +41,17 @@ getCacheBfsAndPath :: forall m. MonadClient m
                    -> m (PointArray.Array BfsDistance, Maybe [Point])
 getCacheBfsAndPath aid target = do
   seps <- getsClient seps
+  b <- getsState $ getActorBody aid
+  let origin = bpos b
+  (isEnterable, passUnknown) <- condBFS aid
   let pathAndStore :: PointArray.Array BfsDistance
                    -> m (PointArray.Array BfsDistance, Maybe [Point])
       pathAndStore bfs = do
-        computePath <- computePathBFS aid
-        let mpath = computePath target seps bfs
+        let mpath = findPathBfs isEnterable passUnknown origin target seps bfs
         modifyClient $ \cli ->
           cli {sbfsD = EM.insert aid (bfs, target, seps, mpath) (sbfsD cli)}
         return (bfs, mpath)
   mbfs <- getsClient $ EM.lookup aid . sbfsD
-  b <- getsState $ getActorBody aid
   case mbfs of
     Just (bfs, targetOld, sepsOld, mpath)
       -- TODO: hack: in screensavers this is not always ensured, so check here:
@@ -59,7 +60,9 @@ getCacheBfsAndPath aid target = do
       then return (bfs, mpath)
       else pathAndStore bfs
     _ -> do
-      bfs <- computeBFS aid
+      Level{lxsize, lysize} <- getLevel $ blid b
+      let vInitial = PointArray.replicateA lxsize lysize apartBfs
+          bfs = fillBfs isEnterable passUnknown origin vInitial
       pathAndStore bfs
 
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
@@ -70,29 +73,11 @@ getCacheBfs aid = do
     Just (bfs, _, _, _) -> return bfs
     Nothing -> fmap fst $ getCacheBfsAndPath aid (Point 0 0)
 
-computeBFS :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
-computeBFS aid = do
-  (isEnterable, passUnknown) <- condBFS aid
-  b <- getsState $ getActorBody aid
-  Level{lxsize, lysize} <- getLevel $ blid b
-  let origin = bpos b
-      vInitial = PointArray.replicateA lxsize lysize apartBfs
-  return $! fillBfs isEnterable passUnknown origin vInitial
-
-computePathBFS :: MonadClient m
-               => ActorId
-               -> m (Point -> Int -> PointArray.Array BfsDistance
-                     -> Maybe [Point])
-computePathBFS aid = do
-  (isEnterable, passUnknown) <- condBFS aid
-  b <- getsState $ getActorBody aid
-  let origin = bpos b
-  return $! findPathBfs isEnterable passUnknown origin
-
 condBFS :: MonadClient m
         => ActorId
         -> m (Point -> Point -> MoveLegal,
               Point -> Point -> Bool)
+{-# INLINE condBFS #-}
 condBFS aid = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -113,6 +98,7 @@ condBFS aid = do
       conditions = catMaybes $ chAccess : chDoorAccess
       -- Legality of move from a known tile, assuming doors freely openable.
       isEnterable :: Point -> Point -> MoveLegal
+      {-# INLINE isEnterable #-}
       isEnterable spos tpos =
         let st = lvl `at` spos
             tt = lvl `at` tpos
@@ -128,6 +114,7 @@ condBFS aid = do
                 else MoveBlocked
       -- Legality of move from an unknown tile, assuming unknown are open.
       passUnknown :: Point -> Point -> Bool
+      {-# INLINE passUnknown #-}
       passUnknown = case chAccess of  -- spos is unknown, so not a door
         Nothing -> \_ tpos -> let tt = lvl `at` tpos
                               in tt == unknownId

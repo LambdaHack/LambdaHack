@@ -44,6 +44,7 @@ fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
         -> Point                          -- ^ starting position
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
+{-# INLINE fillBfs #-}
 fillBfs isEnterable passUnknown origin aInitial =
   let maxUnknownBfs = pred apartBfs
       maxKnownBfs = pred maxBound
@@ -105,6 +106,7 @@ findPathBfs :: (Point -> Point -> MoveLegal)
             -> (Point -> Point -> Bool)
             -> Point -> Point -> Int -> PointArray.Array BfsDistance
             -> Maybe [Point]
+{-# INLINE findPathBfs #-}
 findPathBfs isEnterable passUnknown source target sepsRaw bfs =
   assert (bfs PointArray.! source == minKnownBfs) $
   let targetDist = bfs PointArray.! target
