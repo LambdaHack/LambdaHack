@@ -33,8 +33,7 @@ standard = RuleKind
   -- and the target tile is walkable. For LambdaHack we forbid
   -- diagonal movement to and from doors.
   , raccessible    = Nothing
-  , raccessibleDoor =
-      Just $ \spos tpos -> not $ isDiagonal $ spos `vectorToFrom` tpos
+  , raccessibleDoor = Nothing
   , rtitle         = "LambdaHack"
   , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version

@@ -48,15 +48,17 @@ fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
 fillBfs isEnterable passUnknown origin aInitial =
   let maxUnknownBfs = pred apartBfs
       maxKnownBfs = pred maxBound
-      bfs :: Seq.Seq (Point, BfsDistance)
+      bfs :: Seq.Seq (Vector, Point, BfsDistance)
           -> PointArray.Array BfsDistance
           -> PointArray.Array BfsDistance
       bfs q a =
         case Seq.viewr q of
           Seq.EmptyR -> a  -- too far or no more dungeon positions to check
-          q1 Seq.:> (pos, oldDistance) ->
+          q1 Seq.:> (oldMove, pos, oldDistance) ->
             let distance = succ oldDistance
-                fOpen move =
+                negOldMv = neg oldMove
+                fOpen move | euclidDistSqVector negOldMv move <= 2 = Nothing
+                           | otherwise =
                   let p = shift pos move
                       freshMv = a PointArray.! p == apartBfs
                       legality = isEnterable pos p
@@ -66,33 +68,34 @@ fillBfs isEnterable passUnknown origin aInitial =
                         MoveToUnknown ->
                           (True, distance .&. complement minKnownBfs)
                   in if freshMv && notBlocked
-                     then Just (p, newDistance)
+                     then Just (move, p, newDistance)
                      else Nothing
-                fUnknown move =
+                fUnknown move | euclidDistSqVector negOldMv move <= 2 = Nothing
+                              | otherwise =
                   let p = shift pos move
                       freshMv = a PointArray.! p == apartBfs
                       notBlocked = passUnknown pos p
                   in if freshMv && notBlocked
-                     then Just (p, distance)
+                     then Just (move, p, distance)
                      else Nothing
                 (f, tooFar) = if distance > minKnownBfs
                               then (fOpen, distance == maxKnownBfs)
                               else (fUnknown, distance == maxUnknownBfs)
                 mvs = mapMaybe f moves
                 (q4, a4) = if tooFar
-                           then let g pd a2 =
-                                      let !a3 = a2 PointArray.// [pd]
+                           then let g (_, p, d) a2 =
+                                      let !a3 = a2 PointArray.// [(p, d)]
                                       in a3
                                 in (q1, foldr g a mvs)
-                           else let g pd (q2, a2) =
-                                      let !q3 = pd Seq.<| q2
-                                          !a3 = a2 PointArray.// [pd]
+                           else let g vpd@(_, p, d) (q2, a2) =
+                                      let !q3 = vpd Seq.<| q2
+                                          !a3 = a2 PointArray.// [(p, d)]
                                       in (q3, a3)
                                 in foldr g (q1, a) mvs
             in bfs q4 a4
-      origin0 = (origin, minKnownBfs)
   in PointArray.forceA  -- no more modifications of this array
-     $ bfs (Seq.singleton origin0) (aInitial PointArray.// [origin0])
+     $ bfs (Seq.singleton (Vector 1000000 1000000, origin, minKnownBfs))
+           (aInitial PointArray.// [(origin, minKnownBfs)])
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
 -- to determine a few really different paths and compare them,
