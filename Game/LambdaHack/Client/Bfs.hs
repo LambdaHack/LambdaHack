@@ -60,18 +60,19 @@ fillBfs isEnterable passUnknown origin aInitial =
                   let p = shift pos move
                       freshMv = a PointArray.! p == apartBfs
                       legality = isEnterable pos p
-                      notBlocked = legality /= MoveBlocked
-                      newDistance = case legality of
-                        MoveToOpen -> distance
-                        _ -> distance .&. complement minKnownBfs
+                      (notBlocked, newDistance) = case legality of
+                        MoveBlocked -> (False, undefined)
+                        MoveToOpen -> (True, distance)
+                        MoveToUnknown ->
+                          (True, distance .&. complement minKnownBfs)
                   in if freshMv && notBlocked
                      then Just (p, newDistance)
                      else Nothing
                 fUnknown move =
                   let p = shift pos move
-                      goodMv = a PointArray.! p == apartBfs
-                               && passUnknown pos p
-                  in if goodMv
+                      freshMv = a PointArray.! p == apartBfs
+                      notBlocked = passUnknown pos p
+                  in if freshMv && notBlocked
                      then Just (p, distance)
                      else Nothing
                 (f, tooFar) = if distance > minKnownBfs
