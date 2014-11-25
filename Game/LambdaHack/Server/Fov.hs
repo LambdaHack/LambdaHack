@@ -114,6 +114,8 @@ visibleOnLevel :: Kind.COps -> PerceptionReachable
 visibleOnLevel Kind.COps{cotile}
                PerceptionReachable{preachable} PerceptionLit{plit}
                nocto lvl =
+  -- TODO: costly
+  -- TODO: make a vector mask from isVisible; possibly of PerceptionVisible, too
   let isVisible pos = Tile.isLit cotile (lvl `at` pos) || pos `ES.member` plit
   in PerceptionVisible $ ES.fromList $ nocto ++ filter isVisible preachable
 

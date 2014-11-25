@@ -9,7 +9,6 @@ module Game.LambdaHack.Client.Bfs
 -- #endif
   ) where
 
-import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Bits (Bits, complement, (.&.), (.|.))
@@ -38,6 +37,7 @@ minKnownBfs = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
 apartBfs :: BfsDistance
 apartBfs = pred minKnownBfs
 
+-- TODO: costly; peephole optimize, optmize BFS, don't call so often
 -- | Fill out the given BFS array.
 fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
         -> (Point -> Point -> Bool)       -- ^ is a move from unknown legal
@@ -53,31 +53,40 @@ fillBfs isEnterable passUnknown origin aInitial =
       bfs q a =
         case Seq.viewr q of
           Seq.EmptyR -> a  -- no more positions to check
-          _ Seq.:> (_, d)
-            | d == maxUnknownBfs || d == maxKnownBfs -> a  -- too far
-          q1 Seq.:> (pos, oldDistance) | oldDistance >= minKnownBfs ->
-            let distance = succ oldDistance
-                allMvs = map (shift pos) moves
-                freshMv p = a PointArray.! p == apartBfs
-                freshMvs = filter freshMv allMvs
-                legal p = (p, isEnterable pos p)
-                legalities = map legal freshMvs
-                notBlocked = filter ((/= MoveBlocked) . snd) legalities
-                legalToDist l = if l == MoveToOpen
-                                then distance
-                                else distance .&. complement minKnownBfs
-                mvs = map (second legalToDist) notBlocked
-                q2 = foldr (Seq.<|) q1 mvs
-                s2 = a PointArray.// mvs
-            in bfs q2 s2
           q1 Seq.:> (pos, oldDistance) ->
-            let distance = succ oldDistance
-                allMvs = map (shift pos) moves
-                goodMv p = a PointArray.! p == apartBfs && passUnknown pos p
-                mvs = zip (filter goodMv allMvs) (repeat distance)
-                q2 = foldr (Seq.<|) q1 mvs
-                s2 = a PointArray.// mvs
-            in bfs q2 s2
+            if oldDistance == maxUnknownBfs
+               || oldDistance == maxKnownBfs
+            then a  -- too far
+            else
+              let distance = succ oldDistance
+                  fOpen move =
+                    let p = shift pos move
+                        freshMv = a PointArray.! p == apartBfs
+                        legality = isEnterable pos p
+                        notBlocked = legality /= MoveBlocked
+                        newDistance = case legality of
+                          MoveToOpen -> distance
+                          _ -> distance .&. complement minKnownBfs
+                    in if freshMv && notBlocked
+                       then Just (p, newDistance)
+                       else Nothing
+                  fUnknown move =
+                    let p = shift pos move
+                        goodMv = a PointArray.! p == apartBfs
+                                 && passUnknown pos p
+                    in if goodMv
+                       then Just (p, distance)
+                       else Nothing
+                  f = if oldDistance >= minKnownBfs
+                      then fOpen
+                      else fUnknown
+                  mvs = mapMaybe f moves
+                  g pd (q2, a2) =
+                    let !q3 = pd Seq.<| q2
+                        !a3 = a2 PointArray.// [pd]
+                    in (q3, a3)
+                  (q4, a4) = foldr g (q1, a) mvs
+              in bfs q4 a4
       origin0 = (origin, minKnownBfs)
   in PointArray.forceA  -- no more modifications of this array
      $ bfs (Seq.singleton origin0) (aInitial PointArray.// [origin0])
