@@ -71,32 +71,29 @@ getCacheBfs aid = do
     Nothing -> fmap fst $ getCacheBfsAndPath aid (Point 0 0)
 
 computeBFS :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
-computeBFS = computeAnythingBFS $ \isEnterable passUnknown aid -> do
+computeBFS aid = do
+  (isEnterable, passUnknown) <- condBFS aid
   b <- getsState $ getActorBody aid
   Level{lxsize, lysize} <- getLevel $ blid b
   let origin = bpos b
       vInitial = PointArray.replicateA lxsize lysize apartBfs
-  -- Here we don't want '$!', because we want the BFS data lazy.
-  return ${-keep it!-} fillBfs isEnterable passUnknown origin vInitial
+  return $! fillBfs isEnterable passUnknown origin vInitial
 
 computePathBFS :: MonadClient m
                => ActorId
                -> m (Point -> Int -> PointArray.Array BfsDistance
                      -> Maybe [Point])
-computePathBFS = computeAnythingBFS $ \isEnterable passUnknown aid -> do
+computePathBFS aid = do
+  (isEnterable, passUnknown) <- condBFS aid
   b <- getsState $ getActorBody aid
   let origin = bpos b
-  -- Here we don't want '$!', because we want the BFS data lazy.
-  return ${-keep it!-} findPathBfs isEnterable passUnknown origin
+  return $! findPathBfs isEnterable passUnknown origin
 
-computeAnythingBFS :: MonadClient m
-                   => ((Point -> Point -> MoveLegal)
-                       -> (Point -> Point -> Bool)
-                       -> ActorId
-                       -> m a)
-                   -> ActorId
-                   -> m a
-computeAnythingBFS fAnything aid = do
+condBFS :: MonadClient m
+        => ActorId
+        -> m (Point -> Point -> MoveLegal,
+              Point -> Point -> Bool)
+condBFS aid = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   b <- getsState $ getActorBody aid
   -- We assume the actor eventually becomes a leader (or has the same
@@ -113,7 +110,7 @@ computeAnythingBFS fAnything aid = do
       chAccess = checkAccess cops lvl
       canOpenDoors = EM.findWithDefault 0 Ability.AbAlter actorSk > 0
       chDoorAccess = if canOpenDoors then [checkDoorAccess cops lvl] else []
-      !conditions = catMaybes $ chAccess : chDoorAccess
+      conditions = catMaybes $ chAccess : chDoorAccess
       -- Legality of move from a known tile, assuming doors freely openable.
       isEnterable :: Point -> Point -> MoveLegal
       isEnterable spos tpos =
@@ -137,7 +134,7 @@ computeAnythingBFS fAnything aid = do
         Just ch -> \spos tpos -> let tt = lvl `at` tpos
                                  in tt == unknownId
                                     && ch spos tpos
-  fAnything isEnterable passUnknown aid
+  return (isEnterable, passUnknown)
 
 accessCacheBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
 {-# INLINE accessCacheBfs #-}
