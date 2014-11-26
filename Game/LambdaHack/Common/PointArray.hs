@@ -1,7 +1,8 @@
 -- | Arrays, based on Data.Vector.Unboxed, indexed by @Point@.
 module Game.LambdaHack.Common.PointArray
-  ( Array
-  , (!), (//), replicateA, replicateMA, generateA, generateMA, sizeA
+  ( Array, aindex, aunindex
+  , (!), atInt, (//), updateConst
+  , replicateA, replicateMA, generateA, generateMA, sizeA
   , foldlA, ifoldlA, mapA, imapA, mapWithKeyM_A
   , minIndexA, minLastIndexA, maxIndexA, maxLastIndexA, forceA
   ) where
@@ -45,6 +46,15 @@ punindex :: X -> Int -> Point
 punindex xsize n = let (y, x) = n `quotRem` xsize
                    in Point x y
 
+aindex :: Array c -> Point -> Int
+{-# INLINE aindex #-}
+aindex Array{axsize} (Point x y) = x + y * axsize
+
+aunindex :: Array c -> Int -> Point
+{-# INLINE aunindex #-}
+aunindex Array{axsize} n = let (y, x) = n `quotRem` axsize
+                           in Point x y
+
 -- Note: there's no point specializing this to @Point@ arguments,
 -- since the extra few additions in @fromPoint@ may be less expensive than
 -- memory or register allocations needed for the extra @Int@ in @Point@.
@@ -53,11 +63,25 @@ punindex xsize n = let (y, x) = n `quotRem` xsize
 {-# INLINE (!) #-}
 (!) Array{..} p = cnv $ avector U.! pindex axsize p
 
+-- | Array lookup at an absolute @Int@ index..
+atInt :: Enum c => Array c -> Int -> c
+{-# INLINE atInt #-}
+atInt Array{..} i = cnv $ avector U.! i
+
 -- | Construct an array updated with the association list.
 (//) :: Enum c => Array c -> [(Point, c)] -> Array c
 {-# INLINE (//) #-}
 (//) Array{..} l = let v = avector U.// map (pindex axsize *** cnv) l
                    in Array{avector = v, ..}
+
+-- | Construct an array updated with the constant value at given
+-- vector of indexes.
+updateConst :: Enum c => Array c -> U.Vector Int -> c -> Array c
+{-# INLINE updateConst #-}
+updateConst Array{..} vi c =
+  let vConst = U.replicate (U.length vi) $ cnv c
+      v = U.update_ avector vi vConst
+  in Array{avector = v, ..}
 
 -- | Create an array from a replicated element.
 replicateA :: Enum c => X -> Y -> c -> Array c

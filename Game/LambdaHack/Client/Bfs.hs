@@ -14,6 +14,7 @@ import Data.Binary
 import Data.Bits (Bits, complement, (.&.), (.|.))
 import Data.List
 import Data.Maybe
+import qualified Data.Vector.Unboxed as U
 
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -47,17 +48,22 @@ fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
 fillBfs isEnterable passUnknown origin aInitial =
   let maxKnownBfs = pred maxBound
       predMaxKnownBfs = pred maxKnownBfs
+      movesV = U.fromList
+               $ map (\(Vector x y) -> PointArray.aindex aInitial $ Point x y)
+               moves
       bfs :: BfsDistance
-          -> [Point]
-          -> [Point]
+          -> U.Vector Int  -- Int32? alloc big vector and take slices?
+          -> U.Vector Int
           -> PointArray.Array BfsDistance
           -> PointArray.Array BfsDistance
-      bfs _ [] [] a = a  -- no more dungeon positions to check
       bfs distance predK predU a =
-        let processKnown pos (succK2, succU2, a2) =
-              let fKnown move (lK, lU) =
-                    let p = shift pos move
-                        freshMv = a2 PointArray.! p == apartBfs
+        let distCompl = distance .&. complement minKnownBfs
+            processKnown (succK2, succU2, a2) posInt =
+              let pos = PointArray.aunindex a2 posInt
+                  fKnown (lK, lU) moveInt =
+                    let pInt = posInt + moveInt
+                        p = PointArray.aunindex a2 pInt
+                        freshMv = a2 `PointArray.atInt` pInt == apartBfs
                         legality = isEnterable pos p
                         (notBlocked, enteredUnknown) = case legality of
                           MoveBlocked -> (False, undefined)
@@ -65,35 +71,37 @@ fillBfs isEnterable passUnknown origin aInitial =
                           MoveToUnknown -> (True, True)
                     in if freshMv && notBlocked
                        then if enteredUnknown
-                            then (lK, p : lU)
-                            else (p : lK, lU)
+                            then (lK, U.cons pInt lU)
+                            else (U.cons pInt lK, lU)
                        else (lK, lU)
-                  (mvsK, mvsU) = foldr fKnown ([], []) moves
-                  distCompl = distance .&. complement minKnownBfs
-                  upd = zip mvsK (repeat distance)
-                        ++ zip mvsU (repeat distCompl)
-                  a3 = a2 PointArray.// upd
-              in (mvsK ++ succK2, mvsU ++ succU2, a3)
-            processUnknown pos (succU2, a2) =
-              let fUnknown move lU =
-                    let p = shift pos move
-                        freshMv = a2 PointArray.! p == apartBfs
+                  (mvsK, mvsU) = U.foldl' fKnown (U.empty, U.empty) movesV
+                  a3 = PointArray.updateConst a2 mvsK distance
+                  a4 = PointArray.updateConst a3 mvsU distCompl
+              in (mvsK U.++ succK2, mvsU U.++ succU2, a4)
+            processUnknown (succU2, a2) posInt =
+              let pos = PointArray.aunindex a2 posInt
+                  fUnknown lU moveInt =
+                    let pInt = posInt + moveInt
+                        p = PointArray.aunindex a2 pInt
+                        freshMv = a2 `PointArray.atInt` pInt == apartBfs
                         notBlocked = passUnknown pos p
                     in if freshMv && notBlocked
-                       then p : lU
+                       then U.cons pInt lU
                        else lU
-                  mvsU = foldr fUnknown [] moves
-                  distCompl = distance .&. complement minKnownBfs
-                  upd = zip mvsU (repeat distCompl)
-                  a3 = a2 PointArray.// upd
-              in (mvsU ++ succU2, a3)
-            (succU4, !a4) = foldr processUnknown ([], a) predU
-            (succK6, succU6, !a6) = foldr processKnown ([], succU4, a4) predK
+                  mvsU = U.foldl' fUnknown U.empty movesV
+                  a3 = PointArray.updateConst a2 mvsU distCompl
+              in (mvsU U.++ succU2, a3)
+            (succU5, !a5) = U.foldl' processUnknown (U.empty, a) predU
+            (succK6, succU6, !a6) =
+              U.foldl' processKnown (U.empty, succU5, a5) predK
         in if distance == predMaxKnownBfs  -- wasting one Known slot
            then a6  -- too far
-           else bfs (succ distance) succK6 succU6 a6
+           else if U.null succK6 && U.null succU6
+                then a6  -- no more dungeon positions to check
+                else bfs (succ distance) succK6 succU6 a6
   in PointArray.forceA  -- no more modifications of this array
-     $ bfs (succ minKnownBfs) [origin] []
+     $ bfs (succ minKnownBfs)
+           (U.singleton $ PointArray.aindex aInitial origin) U.empty
            (aInitial PointArray.// [(origin, minKnownBfs)])
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
