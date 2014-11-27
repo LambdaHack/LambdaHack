@@ -703,20 +703,17 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               msgAdd $ makeSentence
                 [ MU.SubjectVerbSg subject verb
                 , "the", secretName, secretAEText, store ]
-        IK.Identify cstore -> do
-          localTime <- getsState $ getLocalTime $ blid b
+        IK.Identify cstore -> do  -- here cstore is the real location
           allAssocs <- fullAssocsClient aid [cstore]
           case allAssocs of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
-              let itemSecret = itemNoDisco (itemBase, itemK)
-                  (secretName, secretAEText) = partItem (CActor aid cstore) (blid b) localTime itemSecret
-                  subject = partActor b
-                  verb = "compare"
+              let subject = partActor b
+                  verb = "inspect"
                   store = MU.Text $ ppCStore cstore
               msgAdd $ makeSentence
                 [ MU.SubjectVerbSg subject verb
-                , "old notes with the", secretName, secretAEText, store ]
+                , "an item", store ]
         IK.SendFlying{} -> actorVerbMU aid b "be sent flying"
         IK.PushActor{} -> actorVerbMU aid b "be pushed"
         IK.PullActor{} -> actorVerbMU aid b "be pulled"

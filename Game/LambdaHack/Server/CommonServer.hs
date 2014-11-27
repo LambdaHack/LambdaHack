@@ -93,6 +93,8 @@ getPerFid fid lid = do
                               `twith` (lid, fid)) $ EM.lookup lid fper
   return $! per
 
+-- We don't provide ActorId, because the actor can be dead and then, e.g.,
+-- containers with the ActorId are invalid and lead to crashes.
 revealItems :: (MonadAtomic m, MonadServer m)
             => Maybe FactionId -> Maybe Actor -> m ()
 revealItems mfid mbody = do

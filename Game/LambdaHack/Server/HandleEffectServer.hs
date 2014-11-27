@@ -122,7 +122,8 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
         kit = if isNothing mtmp || periodic then (1, take 1 it2) else (k, it2)
     unless imperishable $
       execUpdAtomic $ UpdLoseItem iid item kit c
-    -- At this point, the item is potentially no longer in container @c@.
+    -- At this point, the item is potentially no longer in container @c@,
+    -- so we don't pass @c@ along.
     triggered <- itemEffectDisco source target iid recharged periodic effs
     -- If none of item's effects was performed, we try to recreate the item.
     -- Regardless, we don't rewind the time, because some info is gained
@@ -171,6 +172,8 @@ itemEffectDisco source target iid recharged periodic effs = do
       when triggered $ do
         postb <- getsState $ getActorBody source
         seed <- getsServer $ (EM.! iid) . sitemSeedD
+        -- Not giving a container to UpdDiscover, because the actor
+        -- from the container can be dead, etc.
         execUpdAtomic $ UpdDiscover (blid postb) (bpos postb)
                                     iid itemKindId seed
       return triggered
@@ -227,7 +230,7 @@ effectSem source target iid recharged effect = do
     IK.CreateItem store grp tim -> effectCreateItem target store grp tim
     IK.DropItem store grp hit -> effectDropItem execSfx store grp hit target
     IK.PolyItem cstore -> effectPolyItem execSfx cstore target
-    IK.Identify cstore -> effectIdentify execSfx cstore target
+    IK.Identify cstore -> effectIdentify (bfid sb) cstore target
     IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target Nothing
     IK.PushActor tmod ->
@@ -839,11 +842,9 @@ effectPolyItem execSfx cstore target = do
 -- ** Identify
 
 effectIdentify :: (MonadAtomic m, MonadServer m)
-               => m () -> CStore -> ActorId -> m Bool
-effectIdentify execSfx cstore target = do
-  let stores = cstore : delete cstore [CGround, CInv, CEqp]
-  allAssocs <- fullAssocsServer target stores
-  let tryStore as = case as of
+               => FactionId -> CStore -> ActorId -> m Bool
+effectIdentify fid storeInitial target = do
+  let tryFull store as = case as of
         [] -> return False
         (iid, itemFull@ItemFull{..}) : rest -> case itemDisco of
           Just ItemDisco{..} -> do
@@ -851,20 +852,28 @@ effectIdentify execSfx cstore target = do
             -- also to prevent sending any other UpdDiscover.
             let ided = IK.Identified `elem` IK.ifeature itemKind
                 itemSecret = itemNoAE itemFull
-                c = CActor target cstore
+                c = CActor target store
                 statsObvious = textAllAE False c itemFull
                                == textAllAE False c itemSecret
             if ided && statsObvious
-              then tryStore rest
+              then tryFull store rest
               else do
-                execSfx
+                let effect = IK.Identify store  -- the real store, not initial
+                execSfxAtomic $ SfxEffect fid target effect  -- a cheat
                 tb <- getsState $ getActorBody target
                 seed <- getsServer $ (EM.! iid) . sitemSeedD
                 execUpdAtomic $
                   UpdDiscover (blid tb) (bpos tb) iid itemKindId seed
                 return True
-          _ -> assert `failure` (cstore, target, iid, itemFull)
-  tryStore allAssocs
+          _ -> assert `failure` (store, target, iid, itemFull)
+      tryStore stores = case stores of
+        [] -> return False
+        store : rest -> do
+          allAssocs <- fullAssocsServer target [store]
+          go <- tryFull store allAssocs
+          if go then return True else tryStore rest
+      storesSorted = storeInitial : delete storeInitial [CGround, CInv, CEqp]
+  tryStore storesSorted
 
 -- ** SendFlying
 
