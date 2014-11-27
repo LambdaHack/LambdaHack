@@ -195,7 +195,7 @@ rattlesnake = ItemKind
   , irarity  = [(3, 2), (10, 4)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 25, AddMaxCalm 60, AddSpeed 18
+  , iaspects = [ AddMaxHP 25, AddMaxCalm 60, AddSpeed 15
                , AddSkills $ EM.insert AbAlter (-1) animalSkillMalus
                , AddSight 3 ]
   , ieffects = []
@@ -213,7 +213,7 @@ komodoDragon = ItemKind  -- bad hearing
   , irarity  = [(5, 5), (10, 7)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 40, AddMaxCalm 60, AddSpeed 18
+  , iaspects = [ AddMaxHP 40, AddMaxCalm 60, AddSpeed 16
                , AddSkills animalSkillMalus, AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -231,7 +231,7 @@ hyena = ItemKind
   , irarity  = [(4, 6), (10, 6)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 60, AddSpeed 35
+  , iaspects = [ AddMaxHP 20, AddMaxCalm 60, AddSpeed 30
                , AddSkills animalSkillMalus, AddSight 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
