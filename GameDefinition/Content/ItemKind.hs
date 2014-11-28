@@ -26,9 +26,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [dart, dart200, bolas, harpoon, net, jumpingPole, whetstone, woodenTorch, oilLamp, brassLantern, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, monocle, ring1, ring2, ring3, ring4, ring5, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, currency]
+  [dart, dart200, bolas, harpoon, net, jumpingPole, whetstone, woodenTorch, oilLamp, brassLantern, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, monocle, ring1, ring2, ring3, ring4, ring5, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, currency]
 
-dart,    dart200, bolas, harpoon, net, jumpingPole, whetstone, woodenTorch, oilLamp, brassLantern, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, monocle, ring1, ring2, ring3, ring4, ring5, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, currency :: ItemKind
+dart,    dart200, bolas, harpoon, net, jumpingPole, whetstone, woodenTorch, oilLamp, brassLantern, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, monocle, ring1, ring2, ring3, ring4, ring5, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, currency :: ItemKind
 
 necklace, ring, potion, flask, scroll, wand, gem :: ItemKind  -- generic templates
 
@@ -572,17 +572,20 @@ scroll5 = scroll
                -- TODO: ask player: Escape 1
   }
 scroll6 = scroll
-  { ieffects = [Teleport $ d 3 |*| 3]
+  { ieffects = [Teleport 5]
   }
 scroll7 = scroll
+  { ieffects = [Teleport 20]
+  }
+scroll8 = scroll
   { irarity  = [(10, 3)]
   , ieffects = [InsertMove $ 1 + d 2 + dl 2]
   }
-scroll8 = scroll
+scroll9 = scroll
   { irarity  = [(1, 15)]
   , ieffects = [Identify CGround]  -- TODO: ask player: AskPlayer cstore eff?
   }
-scroll9 = scroll
+scroll10 = scroll
   { irarity  = [(10, 10)]
   , ieffects = [PolyItem CGround]
   }
