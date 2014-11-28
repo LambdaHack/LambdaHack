@@ -135,6 +135,7 @@ thorn = fist
   , icount   = 7
   , iverbHit = "impale"
   , ieffects = [Hurt (2 * d 1)]
+  , ifeature = [EqpSlot EqpSlotWeapon "", Identified]  -- not Durable
   , idesc    = ""
   }
 fissure = fist
@@ -263,7 +264,7 @@ vent = armoredSkin
   , ifreq    = [("vent", 100)]
   , icount   = 1
   , iverbHit = "menace"
-  , iaspects = [Periodic, Timeout $ (2 + d 4) |*| 10]
+  , iaspects = [Periodic, Timeout $ (2 + d 4) |*| 5]
   , ieffects = [Recharging (Explode "boiling water")]
   , idesc    = ""
   }

@@ -285,7 +285,7 @@ thornbush = ItemKind
   , irarity  = [(3, 2), (10, 1)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20
+  , iaspects = [ AddMaxHP 20, AddMaxCalm 999, AddSpeed 20
                , AddSkills
                  $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1, -1..])
                    `addSkills` EM.fromList (zip [AbWait, AbMelee] [1, 1..])
@@ -304,10 +304,11 @@ geyser = ItemKind
   , irarity  = [(5, 2), (10, 1)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 100, AddMaxCalm 999, AddSpeed 5
+  , iaspects = [ AddMaxHP 10, AddMaxCalm 999, AddSpeed 5
                , AddSkills
                  $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1, -1..])
-                   `addSkills` EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
+                   `addSkills` EM.fromList (zip [AbWait, AbMelee] [1, 1..])
+               , AddArmorMelee 80, AddArmorRanged 80 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
