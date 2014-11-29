@@ -8,7 +8,7 @@
 # GHCVER. Omit lines with versions you don't need/want testing for.
 env:
  - HPVER=7.6.3.gtk
- - HPVER=7.6.3.vty
+# - HPVER=7.6.3.vty
  - HPVER=7.8.3.gtk
  - HPVER=7.8.3.vty
  - HPVER=2013.2.0.0
@@ -72,29 +72,31 @@ install:
 
  - |
    if [ $GHCVER = "head" ] || [ ${GHCVER%.*} = "7.8" ]; then
-     travis_retry sudo apt-get install happy-1.19.4 alex-3.1.3
-     export PATH=/opt/alex/3.1.3/bin:/opt/happy/1.19.4/bin:$PATH
+     travis_retry sudo apt-get install happy-1.19.4 alex-3.1.3;
+     export PATH=/opt/alex/3.1.3/bin:/opt/happy/1.19.4/bin:$PATH;
    else
-     travis_retry sudo apt-get install happy alex
-     cabal-1.18 install -j2 Cabal-1.18.0
+     travis_retry sudo apt-get install happy alex;
+     if [ $GTKVTY = "vty" ]; then
+       cabal-1.18 install -j2 Cabal-1.18.0;
+     fi;
    fi
 
 # mine:
  - |
    if [ $GTKVTY = "gtk" ]; then
-     cabal-1.18 install -j2 gtk2hs-buildtools
-     cabal-1.18 install -j2 -f-release -O2 --only-dependencies --force-reinstalls
-     cabal-1.18 configure -f-release -O2 --enable-tests
-     cabal-1.18 build -j2
-     cabal-1.18 test
+     cabal-1.18 install -j2 gtk2hs-buildtools;
+     cabal-1.18 install -j2 -f-release -O2 --only-dependencies;
+     cabal-1.18 configure -f-release -O2 --enable-tests;
+     cabal-1.18 build -j2;
+     cabal-1.18 test;
    else
-     cabal-1.18 install -fvty -j2 -frelease -O2 --only-dependencies --force-reinstalls
-     cabal-1.18 configure -fvty -frelease --enable-tests
-     cabal-1.18 build -j2
-     cabal-1.18 test
+     cabal-1.18 install -fvty -j2 -frelease -O2 --only-dependencies;
+     cabal-1.18 configure -fvty -frelease --enable-tests;
+     cabal-1.18 build -j2;
+     cabal-1.18 test;
    fi
 
-# - cabal-1.18 instal -j2l -O2 -frelease -fcurses --only-dependencies --force-reinstalls
+# - cabal-1.18 install -j2 -O2 -frelease -fcurses --only-dependencies
 # - cabal-1.18 configure -f-release -fcurses
 # - cabal-1.18 build -j2
 
@@ -116,7 +118,7 @@ script:
         cabal-1.18 install -j2 "$SRC_TGZ";
       else
         cabal-1.18 install -vty -j2 "$SRC_TGZ";
-      fi
+      fi;
    else
       echo "expected '$SRC_TGZ' not found";
       exit 1;
