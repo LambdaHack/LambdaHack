@@ -69,10 +69,10 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
           timeoutAspect :: IK.Aspect a -> Bool
           timeoutAspect IK.Timeout{} = True
           timeoutAspect _ = False
-          hurtEffect :: IK.Effect a -> Bool
+          hurtEffect :: IK.Effect -> Bool
           hurtEffect (IK.Hurt _) = True
           hurtEffect _ = False
-          notDetail :: IK.Effect a -> Bool
+          notDetail :: IK.Effect -> Bool
           notDetail IK.Explode{} = fullInfo
           notDetail _ = True
           cstore = storeFromC c
@@ -81,7 +81,7 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
           splitAE :: (Num a, Show a, Ord a)
                   => (a -> Text)
                   -> [IK.Aspect a] -> (IK.Aspect a -> Text)
-                  -> [IK.Effect a] -> (IK.Effect a -> Text)
+                  -> [IK.Effect] -> (IK.Effect -> Text)
                   -> [Text]
           splitAE reduce_a aspects ppA effects ppE =
             let mperiodic = find periodicAspect aspects

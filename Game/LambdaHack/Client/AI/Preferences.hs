@@ -23,7 +23,7 @@ import Game.LambdaHack.Content.ModeKind
 -- Negative means harm to the enemy when thrown at him. Effects with zero
 -- benefit won't ever be used, neither actively nor passively.
 effectToBenefit :: Kind.COps -> Actor -> [ItemFull] -> Faction
-                -> IK.Effect Int -> Int
+                -> IK.Effect -> Int
 effectToBenefit cops b activeItems fact eff =
   let dungeonDweller = not $ fcanEscape $ gplayer fact
   in case eff of
@@ -53,16 +53,18 @@ effectToBenefit cops b activeItems fact eff =
          else max (-20) p
     IK.Dominate -> -200
     IK.Impress -> -10
-    IK.CallFriend p -> 20 * p
+    IK.CallFriend d -> round $ 20 * Dice.meanDice d
     IK.Summon{} | dungeonDweller -> 1 -- probably summons friends or crazies
     IK.Summon{} -> 0                  -- probably generates enemies
     IK.Ascend{} -> 1               -- change levels sensibly, in teams
     IK.Escape{} -> 10000           -- AI wants to win; spawners to guard
-    IK.Paralyze p -> -20 * p
-    IK.InsertMove p -> 50 * p
-    IK.Teleport p | p <= 9 -> 10  -- blink to shoot at foe
-    IK.Teleport p | p <= 19 -> 1  -- neither escape nor repositioning
-    IK.Teleport p -> -5 * p  -- get rid of the foe
+    IK.Paralyze d ->  round $ -20 * Dice.meanDice d
+    IK.InsertMove d -> round $ 50 * Dice.meanDice d
+    IK.Teleport d ->
+      let p = round $ Dice.meanDice d
+      in if p <= 9 then 10  -- blink to shoot at foe
+         else if p <= 19 then 1  -- neither escape nor repositioning
+         else -5 * p  -- get rid of the foe
     IK.CreateItem COrgan grp _ ->  -- TODO: use the timeout
       let (total, count) = organBenefit grp cops b
       in total `divUp` count  -- average over all matching grp; rarities ignored
@@ -148,14 +150,10 @@ totalUsefulness cops b activeItems fact itemFull =
   in case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
       Just $ ben jeffects jaspects
-    Just ItemDisco{itemKind=IK.ItemKind{iaspects, IK.ieffects}} ->
+    Just ItemDisco{itemKind=IK.ItemKind{iaspects, ieffects}} ->
       let travA x =
             St.evalState (IK.aspectTrav x (return . round . Dice.meanDice))
                          ()
           jaspects = map travA iaspects
-          travE x =
-            St.evalState (IK.effectTrav x (return . round . Dice.meanDice))
-                         ()
-          jeffects = map travE ieffects
-      in Just $ ben jeffects jaspects
+      in Just $ ben ieffects jaspects
     _ -> Nothing

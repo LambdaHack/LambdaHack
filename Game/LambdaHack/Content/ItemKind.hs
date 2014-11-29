@@ -5,7 +5,7 @@ module Game.LambdaHack.Content.ItemKind
   , Effect(..), TimerDice(..)
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
-  , effectTrav, aspectTrav
+  , aspectTrav
   , toVelocity, toLinger, toOrganGameTurn, toOrganActorTurn, toOrganNone
   , validateSingleItemKind, validateAllItemKind
   ) where
@@ -35,7 +35,7 @@ data ItemKind = ItemKind
   , iweight  :: !Int               -- ^ weight in grams
   , iaspects :: ![Aspect Dice.Dice]
                                    -- ^ keep the aspect continuously
-  , ieffects :: ![Effect Dice.Dice]
+  , ieffects :: ![Effect]
                                    -- ^ cause the effect when triggered
   , ifeature :: ![Feature]         -- ^ public properties
   , idesc    :: !Text              -- ^ description
@@ -48,11 +48,11 @@ data ItemKind = ItemKind
 -- | Effects of items. Can be invoked by the item wielder to affect
 -- another actor or the wielder himself. Many occurences in the same item
 -- are possible. Constructors are sorted vs increasing impact/danger.
-data Effect a =
+data Effect =
     -- Ordinary effects.
     NoEffect !Text
   | Hurt !Dice.Dice
-  | Burn !Int
+  | Burn !Int  -- Dice.Dice? generalize to other elements? ignite terrain?
   | Explode !(GroupName ItemKind)
                           -- ^ explode, producing this group of blasts
   | RefillHP !Int
@@ -61,13 +61,13 @@ data Effect a =
   | OverfillCalm !Int
   | Dominate
   | Impress
-  | CallFriend !a
-  | Summon !(Freqs ItemKind) !a
+  | CallFriend !Dice.Dice
+  | Summon !(Freqs ItemKind) !Dice.Dice
   | Ascend !Int
   | Escape !Int           -- ^ the Int says if can be placed on last level, etc.
-  | Paralyze !a
-  | InsertMove !a
-  | Teleport !a
+  | Paralyze !Dice.Dice
+  | InsertMove !Dice.Dice
+  | Teleport !Dice.Dice
   | CreateItem !CStore !(GroupName ItemKind) !TimerDice
                           -- ^ create an item of the group and insert into
                           --   the store with the given random timer
@@ -82,12 +82,12 @@ data Effect a =
   | ActivateInv !Char     -- ^ symbol @' '@ means all
   | ApplyPerfume
     -- Exotic effects follow.
-  | OneOf ![Effect a]
-  | OnSmash !(Effect a)   -- ^ trigger if item smashed (not applied nor meleed)
-  | Recharging !(Effect a)  -- ^ this effect inactive until timeout passes
+  | OneOf ![Effect]
+  | OnSmash !Effect       -- ^ trigger if item smashed (not applied nor meleed)
+  | Recharging !Effect    -- ^ this effect inactive until timeout passes
   | Temporary !Text       -- ^ the item is temporary, vanishes at even void
                           --   Periodic activation, unless Durable
-  deriving (Show, Read, Eq, Ord, Generic, Functor)
+  deriving (Show, Read, Eq, Ord, Generic)
 
 data TimerDice =
     TimerNone
@@ -158,7 +158,7 @@ data EqpSlot =
   | EqpSlotWeapon
   deriving (Show, Eq, Ord, Generic)
 
-instance Hashable a => Hashable (Effect a)
+instance Hashable Effect
 
 instance Hashable TimerDice
 
@@ -170,7 +170,7 @@ instance Hashable Feature
 
 instance Hashable EqpSlot
 
-instance Binary a => Binary (Effect a)
+instance Binary Effect
 
 instance Binary TimerDice
 
@@ -183,56 +183,6 @@ instance Binary Feature
 instance Binary EqpSlot
 
 -- TODO: Traversable?
--- | Transform an effect using a stateful function.
-effectTrav :: Effect a -> (a -> St.State s b) -> St.State s (Effect b)
-effectTrav (NoEffect t) _ = return $! NoEffect t
-effectTrav (Hurt dice) _ = return $! Hurt dice
-effectTrav (Burn p) _ = return $! Burn p
-effectTrav (Explode t) _ = return $! Explode t
-effectTrav (RefillHP p) _ = return $! RefillHP p
-effectTrav (OverfillHP p) _ = return $! OverfillHP p
-effectTrav (RefillCalm p) _ = return $! RefillCalm p
-effectTrav (OverfillCalm p) _ = return $! OverfillCalm p
-effectTrav Dominate _ = return Dominate
-effectTrav Impress _ = return Impress
-effectTrav (CallFriend a) f = do
-  b <- f a
-  return $! CallFriend b
-effectTrav (Summon freqs a) f = do
-  b <- f a
-  return $! Summon freqs b
-effectTrav (Ascend p) _ = return $! Ascend p
-effectTrav (Escape p) _ = return $! Escape p
-effectTrav (Paralyze a) f = do
-  b <- f a
-  return $! Paralyze b
-effectTrav (InsertMove a) f = do
-  b <- f a
-  return $! InsertMove b
-effectTrav (Teleport a) f = do
-  b <- f a
-  return $! Teleport b
-effectTrav (CreateItem store grp tim) _ = return $! CreateItem store grp tim
-effectTrav (DropItem store grp hit) _ = return $! DropItem store grp hit
-effectTrav (PolyItem cstore) _ = return $! PolyItem cstore
-effectTrav (Identify cstore) _ = return $! Identify cstore
-effectTrav (SendFlying tmod) _ = return $! SendFlying tmod
-effectTrav (PushActor tmod) _ = return $! PushActor tmod
-effectTrav (PullActor tmod) _ = return $! PullActor tmod
-effectTrav DropBestWeapon _ = return DropBestWeapon
-effectTrav (ActivateInv symbol) _ = return $! ActivateInv symbol
-effectTrav ApplyPerfume _ = return ApplyPerfume
-effectTrav (OneOf la) f = do
-  lb <- mapM (\a -> effectTrav a f) la
-  return $! OneOf lb
-effectTrav (OnSmash effa) f = do
-  effb <- effectTrav effa f
-  return $! OnSmash effb
-effectTrav (Recharging effa) f = do
-  effb <- effectTrav effa f
-  return $! Recharging effb
-effectTrav (Temporary t) _ = return $! Temporary t
-
 -- | Transform an aspect using a stateful function.
 aspectTrav :: Aspect a -> (a -> St.State s b) -> St.State s (Aspect b)
 aspectTrav Periodic _ = return Periodic
@@ -277,13 +227,13 @@ toVelocity n = ToThrow $ ThrowMod n 100
 toLinger :: Int -> Feature
 toLinger n = ToThrow $ ThrowMod 100 n
 
-toOrganGameTurn :: GroupName ItemKind -> Dice.Dice -> Effect Dice.Dice
+toOrganGameTurn :: GroupName ItemKind -> Dice.Dice -> Effect
 toOrganGameTurn grp nDm = CreateItem COrgan grp (TimerGameTurn nDm)
 
-toOrganActorTurn :: GroupName ItemKind -> Dice.Dice -> Effect Dice.Dice
+toOrganActorTurn :: GroupName ItemKind -> Dice.Dice -> Effect
 toOrganActorTurn grp nDm = CreateItem COrgan grp (TimerActorTurn nDm)
 
-toOrganNone :: GroupName ItemKind -> Effect Dice.Dice
+toOrganNone :: GroupName ItemKind -> Effect
 toOrganNone grp = CreateItem COrgan grp TimerNone
 
 -- | Catch invalid item kind definitions.

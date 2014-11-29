@@ -19,12 +19,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind
 
 -- | Suffix to append to a basic content name if the content causes the effect.
-effectToSuff :: (Show a, Ord a, Num a)
-             => Effect a -> (a -> Text) -> (a -> Maybe Int) -> Text
-effectToSuff effect f g =
-  rawEffectToSuff (St.evalState (effectTrav effect $ return . f) ())
-                  (St.evalState (effectTrav effect $ return . g) ())
-
+--
 -- We show absolute time in seconds, not @moves@, because actors can have
 -- different speeds (and actions can potentially take different time intervals).
 -- We call the time taken by one player move, when walking, a @move@.
@@ -33,88 +28,92 @@ effectToSuff effect f g =
 -- We show distances in @steps@, because one step, from a tile to another
 -- tile, is always 1 meter. We don't call steps @tiles@, reserving
 -- that term for the context of terrain kinds or units of area.
-rawEffectToSuff :: Effect Text -> Effect (Maybe Int) -> Text
-rawEffectToSuff effectText effectMInt =
-  case (effectText, effectMInt) of
-    (NoEffect t, _) -> t
-    (Hurt dice, _) -> wrapInParens (tshow dice)
-    (Burn p, _) | p <= 0 -> assert `failure` (effectText, effectMInt)
-    (Burn p, _) -> wrapInParens (makePhrase [MU.CarWs p "burn"])
-    (Explode t, _) -> "of" <+> tshow t <+> "explosion"
-    (RefillHP p, _) | p > 0 ->
+effectToSuff :: Effect -> Text
+effectToSuff effect =
+  case effect of
+    NoEffect t -> t
+    Hurt dice -> wrapInParens (tshow dice)
+    Burn p | p <= 0 -> assert `failure` effect
+    Burn p -> wrapInParens (makePhrase [MU.CarWs p "burn"])
+    Explode t -> "of" <+> tshow t <+> "explosion"
+    RefillHP p | p > 0 ->
       "of limited healing" <+> wrapInParens (affixBonus p)
-    (RefillHP 0, _) -> assert `failure` (effectText, effectMInt)
-    (RefillHP p, _) ->
+    RefillHP 0 -> assert `failure` effect
+    RefillHP p ->
       "of limited wounding" <+> wrapInParens (affixBonus p)
-    (OverfillHP p, _) | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
-    (OverfillHP 0, _) -> assert `failure` (effectText, effectMInt)
-    (OverfillHP p, _) -> "of wounding" <+> wrapInParens (affixBonus p)
-    (RefillCalm p, _) | p > 0 ->
+    OverfillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
+    OverfillHP 0 -> assert `failure` effect
+    OverfillHP p -> "of wounding" <+> wrapInParens (affixBonus p)
+    RefillCalm p | p > 0 ->
       "of limited soothing" <+> wrapInParens (affixBonus p)
-    (RefillCalm 0, _) -> assert `failure` (effectText, effectMInt)
-    (RefillCalm p, _) ->
+    RefillCalm 0 -> assert `failure` effect
+    RefillCalm p ->
       "of limited dismaying" <+> wrapInParens (affixBonus p)
-    (OverfillCalm p, _) | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
-    (OverfillCalm 0, _) -> assert `failure` (effectText, effectMInt)
-    (OverfillCalm p, _) -> "of dismaying" <+> wrapInParens (affixBonus p)
-    (Dominate, _) -> "of domination"
-    (Impress, _) -> "of impression"
-    (_, CallFriend (Just 1)) -> "of aid calling"
-    (CallFriend t, _) -> "of aid calling"
-                         <+> wrapInParens (dropPlus t <+> "friends")
-    (_, Summon _freqs (Just 1)) -> "of summoning"  -- TODO
-    (Summon _freqs t, _) -> "of summoning"
-                            <+> wrapInParens (dropPlus t <+> "actors")
-    (ApplyPerfume, _) -> "of smell removal"
-    (Ascend 1, _) -> "of ascending"
-    (Ascend p, _) | p > 0 ->
+    OverfillCalm p | p > 0 -> "of soothing" <+> wrapInParens (affixBonus p)
+    OverfillCalm 0 -> assert `failure` effect
+    OverfillCalm p -> "of dismaying" <+> wrapInParens (affixBonus p)
+    Dominate -> "of domination"
+    Impress -> "of impression"
+    CallFriend 1 -> "of aid calling"
+    CallFriend dice -> "of aid calling"
+                       <+> wrapInParens (tshow dice <+> "friends")
+    Summon _freqs 1 -> "of summoning"  -- TODO
+    Summon _freqs dice -> "of summoning"
+                          <+> wrapInParens (tshow dice <+> "actors")
+    ApplyPerfume -> "of smell removal"
+    Ascend 1 -> "of ascending"
+    Ascend p | p > 0 ->
       "of ascending for" <+> tshow p <+> "levels"
-    (Ascend 0, _) -> assert `failure` (effectText, effectMInt)
-    (Ascend (-1), _) -> "of descending"
-    (Ascend p, _) ->
+    Ascend 0 -> assert `failure` effect
+    Ascend (-1) -> "of descending"
+    Ascend p ->
       "of descending for" <+> tshow (-p) <+> "levels"
-    (Escape{}, _) -> "of escaping"
-    (_, Paralyze Nothing) -> "of paralysis for ? seconds"
-    (_, Paralyze (Just p)) ->
-      let clipInTurn = timeTurn `timeFit` timeClip
-          seconds = 0.5 * fromIntegral p / fromIntegral clipInTurn :: Double
-      in "of paralysis for" <+> tshow seconds <> "s"
-    (_, InsertMove Nothing) ->
-      "of speed surge for ? moves"
-    (_, InsertMove (Just p)) ->
-      "of speed surge for" <+> makePhrase [MU.CarWs p "move"]
-    (_, Teleport (Just p)) | p <= 1  ->
-      assert `failure` (effectText, effectMInt)
-    (Teleport t, Teleport (Just p)) | p <= 9  ->
-      "of blinking" <+> wrapInParens (dropPlus t <+> "steps")
-    (Teleport t, _)->
-      "of teleport" <+> wrapInParens (dropPlus t <+> "steps")
-    (CreateItem COrgan grp tim, _) ->
+    Escape{} -> "of escaping"
+    Paralyze dice ->
+      let time = case Dice.reduceDice dice of
+            Nothing -> tshow dice
+            Just p ->
+              let clipInTurn = timeTurn `timeFit` timeClip
+                  seconds =
+                    0.5 * fromIntegral p / fromIntegral clipInTurn :: Double
+              in tshow seconds <> "s"
+      in "of paralysis for" <+> time
+    InsertMove dice ->
+      let moves = case Dice.reduceDice dice of
+            Nothing -> tshow dice <+> "moves"
+            Just p -> makePhrase [MU.CarWs p "move"]
+      in "of speed surge for" <+> moves
+    Teleport dice | dice <= 0 ->
+      assert `failure` effect
+    Teleport dice | dice <= 9 ->
+      "of blinking" <+> wrapInParens (tshow dice <+> "steps")
+    Teleport dice ->
+      "of teleport" <+> wrapInParens (tshow dice <+> "steps")
+    CreateItem COrgan grp tim ->
       let stime = if tim == TimerNone then "" else "for" <+> tshow tim <> ":"
       in "(keep" <+> stime <+> tshow grp <> ")"
-    (CreateItem _ grp _, _) ->
+    CreateItem _ grp _ ->
       let object = if grp == "useful" then "" else tshow grp
       in "of" <+> object <+> "uncovering"
-    (DropItem COrgan grp True, _) -> "of nullify" <+> tshow grp
-    (DropItem _ grp hit, _) ->
+    DropItem COrgan grp True -> "of nullify" <+> tshow grp
+    DropItem _ grp hit ->
       let grpText = tshow grp
           hitText = if hit then "smash" else "drop"
       in "of" <+> hitText <+> grpText  -- TMI: <+> ppCStore store
-    (PolyItem _, _) -> "of repurpose"
-    (Identify _, _) -> "of identify"
-    (SendFlying tmod, _) -> "of impact" <+> tmodToSuff "" tmod
-    (PushActor tmod, _) -> "of pushing" <+> tmodToSuff "" tmod
-    (PullActor tmod, _) -> "of pulling" <+> tmodToSuff "" tmod
-    (DropBestWeapon, _) -> "of disarming"
-    (ActivateInv ' ', _) -> "of inventory burst"
-    (ActivateInv symbol, _) -> "of burst '" <> T.singleton symbol <> "'"
-    (OneOf l, _) ->
+    PolyItem _ -> "of repurpose"
+    Identify _ -> "of identify"
+    SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
+    PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
+    PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod
+    DropBestWeapon -> "of disarming"
+    ActivateInv ' ' -> "of inventory burst"
+    ActivateInv symbol -> "of burst '" <> T.singleton symbol <> "'"
+    OneOf l ->
       let subject = if length l <= 5 then "marvel" else "wonder"
       in makePhrase ["of", MU.CardinalWs (length l) subject]
-    (OnSmash _, _) -> ""  -- printed inside a separate section
-    (Recharging _, _) -> ""  -- printed inside Periodic or Timeout
-    (Temporary _, _) -> ""
-    _ -> assert `failure` (effectText, effectMInt)
+    OnSmash _ -> ""  -- printed inside a separate section
+    Recharging _ -> ""  -- printed inside Periodic or Timeout
+    Temporary _ -> ""
 
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =
@@ -158,11 +157,8 @@ featureToSuff feat =
     Precious -> wrapInChevrons "precious"
     Tactic tactics -> "overrides tactics to" <+> tshow tactics
 
-dropPlus :: Text -> Text
-dropPlus = T.dropWhile (`elem` ['+', '-'])
-
-effectToSuffix :: Effect Int -> Text
-effectToSuffix effect = effectToSuff effect affixBonus Just
+effectToSuffix :: Effect -> Text
+effectToSuffix effect = effectToSuff effect
 
 aspectToSuffix :: Aspect Int -> Text
 aspectToSuffix aspect = aspectToSuff aspect affixBonus
@@ -184,8 +180,8 @@ wrapInChevrons t = "<" <> t <> ">"
 affixDice :: Dice.Dice -> Text
 affixDice d = maybe "+?" affixBonus $ Dice.reduceDice d
 
-kindEffectToSuffix :: Effect Dice.Dice -> Text
-kindEffectToSuffix effect = effectToSuff effect affixDice Dice.reduceDice
+kindEffectToSuffix :: Effect -> Text
+kindEffectToSuffix = effectToSuffix
 
 kindAspectToSuffix :: Aspect Dice.Dice -> Text
 kindAspectToSuffix aspect = aspectToSuff aspect affixDice

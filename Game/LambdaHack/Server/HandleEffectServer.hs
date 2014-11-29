@@ -72,7 +72,7 @@ itemEffectAndDestroy source target iid c = do
 
 effectAndDestroy :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> ItemId -> Container -> Bool
-                 -> [IK.Effect Int] -> [IK.Aspect Int] -> ItemQuant
+                 -> [IK.Effect] -> [IK.Aspect Int] -> ItemQuant
                  -> m ()
 effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
   let mtimeout = let timeoutAspect :: IK.Aspect a -> Bool
@@ -110,7 +110,7 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
     -- This is OK, because we don't remove the item type from various
     -- item dictionaries, just an individual copy from the container,
     -- so, e.g., the item can be identified after it's removed.
-    let mtmp = let tmpEffect :: IK.Effect a -> Bool
+    let mtmp = let tmpEffect :: IK.Effect -> Bool
                    tmpEffect IK.Temporary{} = True
                    tmpEffect (IK.Recharging IK.Temporary{}) = True
                    tmpEffect (IK.OnSmash IK.Temporary{}) = True
@@ -132,7 +132,7 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
       execUpdAtomic $ UpdSpotItem iid item kit c
 
 itemEffectCause :: (MonadAtomic m, MonadServer m)
-                => ActorId -> Point -> IK.Effect Int
+                => ActorId -> Point -> IK.Effect
                 -> m Bool
 itemEffectCause aid tpos ef = do
   sb <- getsState $ getActorBody aid
@@ -156,7 +156,7 @@ itemEffectCause aid tpos ef = do
 -- semantics.
 itemEffectDisco :: (MonadAtomic m, MonadServer m)
                 => ActorId -> ActorId -> ItemId -> Bool -> Bool
-                -> [IK.Effect Int]
+                -> [IK.Effect]
                 -> m Bool
 itemEffectDisco source target iid recharged periodic effs = do
   discoKind <- getsServer sdiscoKind
@@ -181,7 +181,7 @@ itemEffectDisco source target iid recharged periodic effs = do
 
 itemEffect :: (MonadAtomic m, MonadServer m)
            => ActorId -> ActorId -> ItemId -> Bool -> Bool
-           -> [IK.Effect Int]
+           -> [IK.Effect]
            -> m Bool
 itemEffect source target iid recharged periodic effects = do
   trs <- mapM (effectSem source target iid recharged) effects
@@ -201,7 +201,7 @@ itemEffect source target iid recharged periodic effects = do
 -- The boolean result indicates if the effect actually fired up,
 -- as opposed to fizzled.
 effectSem :: (MonadAtomic m, MonadServer m)
-          => ActorId -> ActorId -> ItemId -> Bool -> IK.Effect Int
+          => ActorId -> ActorId -> ItemId -> Bool -> IK.Effect
           -> m Bool
 effectSem source target iid recharged effect = do
   let recursiveCall = effectSem source target iid recharged
@@ -412,7 +412,7 @@ effectRefillCalm overfill execSfx power target = do
 -- ** Dominate
 
 effectDominate :: (MonadAtomic m, MonadServer m)
-               => (IK.Effect Int -> m Bool)
+               => (IK.Effect -> m Bool)
                -> ActorId -> ActorId
                -> m Bool
 effectDominate recursiveCall source target = do
@@ -442,11 +442,12 @@ effectImpress execSfx source target = do
 -- ** CallFriend
 
 effectCallFriend :: (MonadAtomic m, MonadServer m)
-                   => Int -> ActorId -> ActorId
+                   => Dice.Dice -> ActorId -> ActorId
                    -> m Bool
-effectCallFriend power source target = assert (power > 0) $ do
+effectCallFriend nDm source target = do
   -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
+  power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   activeItems <- activeItemsServer source
   let legal = source == target
@@ -465,13 +466,14 @@ effectCallFriend power source target = assert (power > 0) $ do
 -- ** Summon
 
 effectSummon :: (MonadAtomic m, MonadServer m)
-             => (IK.Effect Int -> m Bool)
-             -> Freqs ItemKind -> Int
+             => (IK.Effect -> m Bool)
+             -> Freqs ItemKind -> Dice.Dice
              -> ActorId -> ActorId
              -> m Bool
-effectSummon recursiveCall actorFreq power source target = assert (power > 0) $ do
+effectSummon recursiveCall actorFreq nDm source target = do
   -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
+  power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   activeItems <- activeItemsServer source
   let legal = source == target && (bproj sb || calmEnough10 sb activeItems)
@@ -505,7 +507,7 @@ effectSummon recursiveCall actorFreq power source target = assert (power > 0) $ 
 
 -- Note that projectiles can be teleported, too, for extra fun.
 effectAscend :: (MonadAtomic m, MonadServer m)
-             => (IK.Effect Int -> m Bool)
+             => (IK.Effect -> m Bool)
              -> m () -> Int -> ActorId
              -> m Bool
 effectAscend recursiveCall execSfx k aid = do
@@ -635,8 +637,9 @@ effectEscape target = do
 -- | Advance target actor time by this many time clips. Not by actor moves,
 -- to hurt fast actors more.
 effectParalyze :: (MonadAtomic m, MonadServer m)
-               => m () -> Int -> ActorId -> m Bool
-effectParalyze execSfx p target = assert (p > 0) $ do
+               => m () -> Dice.Dice -> ActorId -> m Bool
+effectParalyze execSfx nDm target = do
+  p <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   b <- getsState $ getActorBody target
   if bproj b || bhp b <= 0
     then return False
@@ -651,8 +654,9 @@ effectParalyze execSfx p target = assert (p > 0) $ do
 -- | Give target actor the given number of extra moves. Don't give
 -- an absolute amount of time units, to benefit slow actors more.
 effectInsertMove :: (MonadAtomic m, MonadServer m)
-                 => m () -> Int -> ActorId -> m Bool
-effectInsertMove execSfx p target = assert (p > 0) $ do
+                 => m () -> Dice.Dice -> ActorId -> m Bool
+effectInsertMove execSfx nDm target = do
+  p <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   b <- getsState $ getActorBody target
   activeItems <- activeItemsServer target
   let tpm = ticksPerMeter $ bspeed b activeItems
@@ -666,9 +670,10 @@ effectInsertMove execSfx p target = assert (p > 0) $ do
 -- | Teleport the target actor.
 -- Note that projectiles can be teleported, too, for extra fun.
 effectTeleport :: (MonadAtomic m, MonadServer m)
-               => m () -> Int -> ActorId -> m Bool
-effectTeleport execSfx range target = assert (range > 0) $ do
+               => m () -> Dice.Dice -> ActorId -> m Bool
+effectTeleport execSfx nDm target = do
   Kind.COps{cotile} <- getsState scops
+  range <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   b <- getsState $ getActorBody target
   Level{ltile} <- getLevel (blid b)
   as <- getsState $ actorList (const True) (blid b)
@@ -1004,8 +1009,8 @@ effectApplyPerfume execSfx target = do
 -- ** OneOf
 
 effectOneOf :: (MonadAtomic m, MonadServer m)
-            => (IK.Effect Int -> m Bool)
-            -> [IK.Effect Int]
+            => (IK.Effect -> m Bool)
+            -> [IK.Effect]
             -> m Bool
 effectOneOf recursiveCall l = do
   ef <- rndToAction $ oneOf l
@@ -1014,8 +1019,8 @@ effectOneOf recursiveCall l = do
 -- ** Recharging
 
 effectRecharging :: (MonadAtomic m, MonadServer m)
-                 => (IK.Effect Int -> m Bool)
-                 -> IK.Effect Int -> Bool
+                 => (IK.Effect -> m Bool)
+                 -> IK.Effect -> Bool
                  -> m Bool
 effectRecharging recursiveCall e recharged =
   if recharged

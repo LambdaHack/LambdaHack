@@ -36,7 +36,7 @@ data TileKind = TileKind
 -- | All possible terrain tile features.
 data Feature =
     Embed !(GroupName ItemKind)  -- ^ embed an item of this group, to cause effects (WIP)
-  | Cause !(IK.Effect Int)   -- ^ causes the effect when triggered;
+  | Cause !IK.Effect             -- ^ causes the effect when triggered;
                                  --   more succint than @Embed@, but will
                                  --   probably get supplanted by @Embed@
   | OpenTo !(GroupName TileKind)    -- ^ goes from a closed to an open tile when altered

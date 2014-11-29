@@ -296,8 +296,7 @@ drawLeaderDamage width = do
       let activeItems = map snd allAssocs
           damage = case strongestSlotNoFilter IK.EqpSlotWeapon allAssocs of
             (_, (_, itemFull)) : _->
-              let getD :: IK.Effect a -> Maybe Dice.Dice
-                       -> Maybe Dice.Dice
+              let getD :: IK.Effect -> Maybe Dice.Dice -> Maybe Dice.Dice
                   getD (IK.Hurt dice) _ = Just dice
                   getD _ acc = acc
                   mdice = case itemDisco itemFull of

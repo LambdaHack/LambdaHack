@@ -48,7 +48,7 @@ newtype ItemSeed = ItemSeed Int
 
 data ItemAspectEffect = ItemAspectEffect
   { jaspects :: ![Aspect Int]  -- ^ the aspects of the item
-  , jeffects :: ![Effect Int]  -- ^ the effects when activated
+  , jeffects :: ![Effect]      -- ^ the effects when activated
   }
   deriving (Show, Eq, Generic)
 
@@ -108,11 +108,9 @@ seedToAspectsEffects :: ItemSeed -> ItemKind -> AbsDepth -> AbsDepth
                      -> ItemAspectEffect
 seedToAspectsEffects (ItemSeed itemSeed) kind ldepth totalDepth =
   let castD = castDice ldepth totalDepth
-      rollAE = do
-        aspects <- mapM (flip aspectTrav castD) (iaspects kind)
-        effects <- mapM (flip effectTrav castD) (ieffects kind)
-        return (aspects, effects)
-      (jaspects, jeffects) = St.evalState rollAE (mkStdGen itemSeed)
+      rollA = mapM (flip aspectTrav castD) (iaspects kind)
+      jaspects = St.evalState rollA (mkStdGen itemSeed)
+      jeffects = ieffects kind
   in ItemAspectEffect{..}
 
 type ItemTimer = [Time]

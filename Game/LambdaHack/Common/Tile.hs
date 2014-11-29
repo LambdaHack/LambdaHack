@@ -213,7 +213,7 @@ embedItems Kind.Ops{okind} t =
       getTo _ acc = acc
   in foldr getTo [] $ TK.tfeature $ okind t
 
-causeEffects :: Kind.Ops TileKind -> Kind.Id TileKind -> [IK.Effect Int]
+causeEffects :: Kind.Ops TileKind -> Kind.Id TileKind -> [IK.Effect]
 causeEffects Kind.Ops{okind} t =
   let getTo (TK.Cause eff) acc = eff : acc
       getTo _ acc = acc

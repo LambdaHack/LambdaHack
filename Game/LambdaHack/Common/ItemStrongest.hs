@@ -28,9 +28,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
 
-dice999 :: Dice.Dice -> Int
-dice999 d = fromMaybe 999 $ Dice.reduceDice d
-
 strengthAspect :: (Aspect Int -> [b]) -> ItemFull -> [b]
 strengthAspect f itemFull =
   case itemDisco itemFull of
@@ -51,15 +48,13 @@ strengthAspectMaybe f itemFull =
     [x] -> Just x
     xs -> assert `failure` (xs, itemFull)
 
-strengthEffect999 :: (Effect Int -> [b]) -> ItemFull -> [b]
-strengthEffect999 f itemFull =
+strengthEffect :: (Effect -> [b]) -> ItemFull -> [b]
+strengthEffect f itemFull =
   case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
       concatMap f jeffects
     Just ItemDisco{itemKind=ItemKind{ieffects}} ->
-      -- Default for unknown power is 999 to encourage experimenting.
-      let trav x = St.evalState (effectTrav x (return . dice999)) ()
-      in concatMap f $ map trav ieffects
+      concatMap f ieffects
     Nothing -> []
 
 strengthFeature :: (Feature -> [b]) -> Item -> [b]
@@ -84,31 +79,31 @@ strengthMelee itemFull =
       -- If the player doesn't like a particular weapon's extra effect,
       -- he has to manage this manually.
       bonusExtraEffects = if hasExtraEffects then 1 else 0
-      psum = sum (strengthEffect999 p itemFull)
+      psum = sum (strengthEffect p itemFull)
   in if psum == 0
      then Nothing
      else Just $ bonusExtraEffects + psum + if durable then 100 else 0
 
 -- Called only by the server, so 999 is OK.
-strengthOnSmash :: ItemFull -> [Effect Int]
+strengthOnSmash :: ItemFull -> [Effect]
 strengthOnSmash =
   let p (OnSmash eff) = [eff]
       p _ = []
-  in strengthEffect999 p
+  in strengthEffect p
 
 strengthCreateOrgan :: ItemFull -> [GroupName ItemKind]
 strengthCreateOrgan =
   let p (CreateItem COrgan grp _) = [grp]
       p (Recharging (CreateItem COrgan grp _)) = [grp]
       p _ = []
-  in strengthEffect999 p
+  in strengthEffect p
 
 strengthDropOrgan :: ItemFull -> [GroupName ItemKind]
 strengthDropOrgan =
   let p (DropItem COrgan grp _) = [grp]
       p (Recharging (DropItem COrgan grp _)) = [grp]
       p _ = []
-  in strengthEffect999 p
+  in strengthEffect p
 
 strengthPeriodic :: ItemFull -> Maybe Int
 strengthPeriodic itemFull =
@@ -293,23 +288,23 @@ unknownMelee =
       f itemFull b = b || unknownAspect p itemFull
   in foldr f False
 
-allRecharging :: [Effect a] -> [Effect a]
+allRecharging :: [Effect] -> [Effect]
 allRecharging effs =
-  let getRechargingEffect :: Effect a -> Maybe (Effect a)
+  let getRechargingEffect :: Effect -> Maybe (Effect)
       getRechargingEffect e@Recharging{} = Just e
       getRechargingEffect _ = Nothing
   in mapMaybe getRechargingEffect effs
 
-stripRecharging :: [Effect a] -> [Effect a]
+stripRecharging :: [Effect] -> [Effect]
 stripRecharging effs =
-  let getRechargingEffect :: Effect a -> Maybe (Effect a)
+  let getRechargingEffect :: Effect -> Maybe (Effect)
       getRechargingEffect (Recharging e) = Just e
       getRechargingEffect _ = Nothing
   in mapMaybe getRechargingEffect effs
 
-stripOnSmash :: [Effect a] -> [Effect a]
+stripOnSmash :: [Effect] -> [Effect]
 stripOnSmash effs =
-  let getOnSmashEffect :: Effect a -> Maybe (Effect a)
+  let getOnSmashEffect :: Effect -> Maybe (Effect)
       getOnSmashEffect (OnSmash e) = Just e
       getOnSmashEffect _ = Nothing
   in mapMaybe getOnSmashEffect effs
