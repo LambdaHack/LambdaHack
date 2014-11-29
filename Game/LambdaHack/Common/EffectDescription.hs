@@ -12,7 +12,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Actor (ppCStore)
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
@@ -97,13 +96,12 @@ rawEffectToSuff effectText effectMInt =
       let object = if grp == "useful" then "" else tshow grp
       in "of" <+> object <+> "uncovering"
     (DropItem COrgan grp True, _) -> "of nullify" <+> tshow grp
-    (DropItem store grp hit, _) ->
-      let storeText = ppCStore store
-          grpText = tshow grp
+    (DropItem _ grp hit, _) ->
+      let grpText = tshow grp
           hitText = if hit then "smash" else "drop"
-      in "of" <+> grpText <+> "in" <+> storeText <+> hitText
-    (PolyItem _cstore, _) -> "of repurpose"  -- <+> ppCStore cstore
-    (Identify _cstore, _) -> "of identify"  -- <+> ppCStore cstore
+      in "of" <+> hitText <+> grpText  -- TMI: <+> ppCStore store
+    (PolyItem _, _) -> "of repurpose"
+    (Identify _, _) -> "of identify"
     (SendFlying tmod, _) -> "of impact" <+> tmodToSuff "" tmod
     (PushActor tmod, _) -> "of pushing" <+> tmodToSuff "" tmod
     (PullActor tmod, _) -> "of pulling" <+> tmodToSuff "" tmod
