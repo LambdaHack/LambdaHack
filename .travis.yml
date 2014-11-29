@@ -7,8 +7,10 @@
 # release of a major GHC version. Setting HPVER implictly sets
 # GHCVER. Omit lines with versions you don't need/want testing for.
 env:
- - GHCVER=7.6.3
- - GHCVER=7.8.3
+ - HPVER=7.6.3.gtk
+ - HPVER=7.6.3.vty
+ - HPVER=7.8.3.gtk
+ - HPVER=7.8.3.vty
  - HPVER=2013.2.0.0
  - HPVER=2012.4.0.0
 # - HPVER=2014.2.0.0
@@ -19,12 +21,30 @@ before_install:
  - case "$HPVER" in
     "") ;;
 
+    "7.6.3.gtk")
+      export GHCVER=7.6.3 ;
+      export GTKVTY=gtk ;;
+
+    "7.6.3.vty")
+      export GHCVER=7.6.3 ;
+      export GTKVTY=vty ;;
+
+    "7.8.3.gtk")
+      export GHCVER=7.8.3 ;
+      export GTKVTY=gtk ;;
+
+    "7.8.3.vty")
+      export GHCVER=7.8.3 ;
+      export GTKVTY=vty ;;
+
     "2013.2.0.0")
       export GHCVER=7.6.3 ;
+      export GTKVTY=gtk ;
       echo "constraints:async==2.0.1.4,attoparsec==0.10.4.0,case-insensitive==1.0.0.1,cgi==3001.1.7.5,fgl==5.4.2.4,GLUT==2.4.0.0,GLURaw==1.3.0.0,haskell-src==1.0.1.5,html==1.0.1.2,HTTP==4000.2.8,HUnit==1.2.5.2,mtl==2.1.2,network==2.4.1.2,OpenGL==2.8.0.0,OpenGLRaw==1.3.0.0,parallel==3.2.0.3,parsec==3.1.3,QuickCheck==2.6,random==1.0.1.1,regex-base==0.93.2,regex-compat==0.95.1,regex-posix==0.95.2,split==0.2.2,stm==2.4.2,syb==0.4.0,text==0.11.3.1,transformers==0.3.0.0,unordered-containers==0.2.3.0,vector==0.10.0.1,xhtml==3000.2.1,zlib==0.5.4.1" > cabal.config ;;
 
     "2012.4.0.0")
       export GHCVER=7.6.2 ;
+      export GTKVTY=vty ;
       echo "constraints:async==2.0.1.3,cgi==3001.1.7.4,fgl==5.4.2.4,GLUT==2.1.2.1,haskell-src==1.0.1.5,html==1.0.1.2,HTTP==4000.2.5,HUnit==1.2.5.1,mtl==2.1.2,network==2.3.1.0,OpenGL==2.2.3.1,parallel==3.2.0.3,parsec==3.1.3,QuickCheck==2.5.1.1,random==1.0.1.1,regex-base==0.93.2,regex-compat==0.95.1,regex-posix==0.95.2,split==0.2.1.1,stm==2.4,syb==0.3.7,text==0.11.3.1,transformers==0.3.0.0,vector==0.10.0.1,xhtml==3000.2.1,zlib==0.5.4.0" > cabal.config ;;
 
     "2012.2.0.0")
@@ -60,17 +80,21 @@ install:
    fi
 
 # mine:
- - cabal-1.18 install -j2 gtk2hs-buildtools
- - cabal-1.18 install -j2 -O2 -frelease --only-dependencies --force-reinstalls
- - cabal-1.18 install -j2 -f-release --enable-tests
+ - |
+   if [ $GTKVTY = "gtk" ]; then
+     cabal-1.18 install -j2 gtk2hs-buildtools
+     cabal-1.18 install -j2 -f-release -O2 --only-dependencies --force-reinstalls
+     cabal-1.18 install -j2 -f-release -O2 --enable-tests
+   else
+     cabal-1.18 install -fvty -j2 -frelease -O2 --only-dependencies --force-reinstalls
+     cabal-1.18 configure -fvty -frelease --enable-tests
+     cabal-1.18 build -j2
+     cabal-1.18 test
+   fi
 
 # - cabal-1.18 instal -j2l -O2 -frelease -fcurses --only-dependencies --force-reinstalls
 # - cabal-1.18 configure -f-release -fcurses
 # - cabal-1.18 build -j2
- - cabal-1.18 install -j2 -O2 -frelease -fvty --only-dependencies --force-reinstalls
- - cabal-1.18 configure -frelease -fvty --enable-tests
- - cabal-1.18 build -j2
- - cabal-1.18 test
 
 # Here starts the actual work to be performed for the package under
 # test; any command which exits with a non-zero exit code causes the
@@ -95,10 +119,6 @@ script:
 
 # mine:
  - touch /tmp/stdtest.log;
-   if [ $GHCVER = "head" ] || [ ${GHCVER%.*} = "7.8" ]; then
-     (make test-travis-short || (tail -n 200 /tmp/stdtest.log ; exit 77));
-   else
-     (make test-travis || (tail -n 200 /tmp/stdtest.log ; exit 77));
-   fi
+   (make test-travis || (tail -n 200 /tmp/stdtest.log ; exit 77));
 
 # EOF
