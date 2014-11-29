@@ -84,7 +84,9 @@ install:
    if [ $GTKVTY = "gtk" ]; then
      cabal-1.18 install -j2 gtk2hs-buildtools
      cabal-1.18 install -j2 -f-release -O2 --only-dependencies --force-reinstalls
-     cabal-1.18 install -j2 -f-release -O2 --enable-tests
+     cabal-1.18 configure -f-release -O2 --enable-tests
+     cabal-1.18 build -j2
+     cabal-1.18 test
    else
      cabal-1.18 install -fvty -j2 -frelease -O2 --only-dependencies --force-reinstalls
      cabal-1.18 configure -fvty -frelease --enable-tests
@@ -110,7 +112,11 @@ script:
  - export SRC_TGZ=$(cabal-1.18 info . | awk '{print $2 ".tar.gz";exit}');
    cd dist/;
    if [ -f "$SRC_TGZ" ]; then
-      cabal-1.18 install -j2 "$SRC_TGZ";
+      if [ $GTKVTY = "gtk" ]; then
+        cabal-1.18 install -j2 "$SRC_TGZ";
+      else
+        cabal-1.18 install -vty -j2 "$SRC_TGZ";
+      fi
    else
       echo "expected '$SRC_TGZ' not found";
       exit 1;
