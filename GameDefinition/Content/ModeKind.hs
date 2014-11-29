@@ -158,10 +158,10 @@ rosterAmbush = rosterDuel
 rosterBattle = Roster
   { rosterList = [ playerSoldier { finitialActors = 5
                                  , fentryLevel = -5 }
-                 , playerMobileMonster { finitialActors = 30
+                 , playerMobileMonster { finitialActors = 35
                                        , fentryLevel = -5
                                        , fneverEmpty = True }
-                 , playerMobileAnimal { finitialActors = 20
+                 , playerMobileAnimal { finitialActors = 30
                                       , fentryLevel = -5
                                       , fneverEmpty = True } ]
   , rosterEnemy = [ ("Armed Adventurer Party", "Monster Hive")
@@ -185,12 +185,12 @@ rosterSafari = Roster
                                           "Animal Magnificent Specimen Variety"
                                       , fneverEmpty = True
                                       , fentryLevel = -7
-                                      , finitialActors = 10 }
+                                      , finitialActors = 15 }
                  , playerMobileAnimal { fname =
                                           "Animal Exquisite Herds and Packs"
                                       , fneverEmpty = True
                                       , fentryLevel = -10
-                                      , finitialActors = 25 } ]
+                                      , finitialActors = 30 } ]
   , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
                   , ("Monster Tourist Office",
                      "Animal Magnificent Specimen Variety")
