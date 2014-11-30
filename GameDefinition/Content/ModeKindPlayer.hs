@@ -49,7 +49,7 @@ playerCivilian = Player
   , fhasGender = True
   , ftactic = TPatrol
   , fentryLevel = -1
-  , finitialActors = d 2 + 2
+  , finitialActors = d 2 + 1
   , fleaderMode = LeaderNull  -- unorganized
   , fhasUI = False
   }
