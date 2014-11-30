@@ -52,6 +52,8 @@ xctest-travis: xctest-short xctest-medium
 
 xctest-travis-long: xctest-short xctest-long
 
+xctest-travis-long-no-safari: xctest-short xctest-long-no-safari
+
 xctest: xctest-short xctest-medium xctest-long
 
 xctest-short: xctest-short-new xctest-short-load
@@ -174,6 +176,8 @@ test-travis-short: test-short
 test-travis: test-short test-medium
 
 test-travis-long: test-short test-long
+
+test-travis-long-no-safari: test-short test-long-no-safari
 
 test: test-short test-medium test-long
 
