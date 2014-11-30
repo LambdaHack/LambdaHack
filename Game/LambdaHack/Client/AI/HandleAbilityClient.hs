@@ -265,13 +265,13 @@ equipItems aid = do
                                 (filter filterNeeded shaAssocs)
       bEqpInv = msum $ map (improve CInv)
                 $ map (\(_, (eqp, inv, _)) -> (inv, eqp)) bestThree
+      bEqpSha = msum $ map (improve CSha)
+                $ map (\(_, (eqp, _, sha)) -> (sha, eqp)) bestThree
   if nullStrategy bEqpInv
     then if rsharedStash && calmEnough body activeItems
-         then return
-              $! msum $ map (improve CSha)
-              $ map (\(_, (eqp, _, sha)) -> (sha, eqp)) bestThree
+         then return $! bEqpSha
          else return reject
-    else return bEqpInv
+    else return $! bEqpInv
 
 unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed AbMoveItem))
@@ -321,19 +321,18 @@ unEquipItems aid = do
       betterThanInv _ [] = True
       betterThanInv vEqp ((vInv, _) : _) = vEqp > vInv
       bestThree = bestByEqpSlot eqpAssocs invAssocs shaAssocs
+      bInvSha = msum $ map (improve CInv)
+                $ map (\((slot, _), (_, inv, sha)) ->
+                        (slot, (sha, inv))) bestThree
+      bEqpSha = msum $ map (improve CEqp)
+                $ map (\((slot, _), (eqp, _, sha)) ->
+                        (slot, (sha, eqp))) bestThree
   case yieldUnneeded of
-    [] ->
-      if rsharedStash && calmEnough body activeItems
-      then do
-        let bInvSha = msum $ map (improve CInv)
-                      $ map (\((slot, _), (_, inv, sha)) ->
-                               (slot, (sha, inv))) bestThree
-        if nullStrategy bInvSha
-          then return $! msum $ map (improve CEqp)
-                         $ map (\((slot, _), (eqp, _, sha)) ->
-                                 (slot, (sha, eqp))) bestThree
-          else return $! bInvSha
-        else return reject
+    [] -> if rsharedStash && calmEnough body activeItems
+          then if nullStrategy bInvSha
+               then return $! bEqpSha
+               else return $! bInvSha
+          else return reject
     _ ->
       -- Here AI hides from the human player the Ring of Speed And Bleeding,
       -- which is a bit harsh, but fair. However any subsequent such
