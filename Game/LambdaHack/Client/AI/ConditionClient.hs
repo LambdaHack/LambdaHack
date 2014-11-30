@@ -146,7 +146,7 @@ condCanProjectM aid = do
         either (const False) id
         $ permittedProject " " False skill itemFull b activeItems
   benList <- benAvailableItems aid q [CEqp, CInv, CGround]
-  let missiles = filter (maybe True ((< 0) . snd . snd) . fst . fst) benList
+  let missiles = filter (maybe True ((< 0) . snd) . fst . fst) benList
   return $ not (null missiles)
     -- keep it lazy
 
@@ -156,7 +156,7 @@ benAvailableItems :: MonadClient m
                   => ActorId
                   -> (Maybe Int -> ItemFull -> Actor -> [ItemFull] -> Bool)
                   -> [CStore]
-                  -> m [( (Maybe (Int, (Int, Int)), (Int, CStore))
+                  -> m [( (Maybe (Int, Int), (Int, CStore))
                         , (ItemId, ItemFull) )]
 benAvailableItems aid permitted cstores = do
   cops <- getsState scops
@@ -194,7 +194,7 @@ condDesirableFloorItemM aid = do
 -- that are worth picking up.
 benGroundItems :: MonadClient m
                => ActorId
-               -> m [( (Maybe (Int, (Int, Int))
+               -> m [( (Maybe (Int, Int)
                      , (Int, CStore)), (ItemId, ItemFull) )]
 benGroundItems aid = do
   b <- getsState $ getActorBody aid

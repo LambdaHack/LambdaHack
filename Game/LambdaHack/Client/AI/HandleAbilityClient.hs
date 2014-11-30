@@ -396,12 +396,10 @@ hinders condLightBetrays body activeItems itemFull =
 
 harmful :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull -> Bool
 harmful cops body activeItems fact itemFull =
-  -- items that are known and their effects are not stricly beneficial
+  -- Items that are known and their effects are not stricly beneficial
   -- should not be equipped (either they are harmful or they waste eqp space).
   maybe False (\(u, _) -> u <= 0)
     (totalUsefulness cops body activeItems fact itemFull)
-  && (maybe True ((/= IK.EqpSlotWeapon) . fst)
-      $ strengthEqpSlot $ itemBase itemFull)
 
 unneeded :: Kind.COps -> Bool -> Actor -> [ItemFull] -> Faction -> ItemFull
          -> Bool
@@ -576,7 +574,7 @@ projectItem aid = do
                            * coeff cstore
                            * case mben of
                                Nothing -> -1  -- experiment if no options
-                               Just (_, (_, ben)) -> ben
+                               Just (_, ben) -> ben
                            * (if recharged then 1 else 0)
                 in if benR < 0 && trange >= chessDist bpos fpos
                    then Just ( -benR * rangeMult `div` 10
@@ -651,7 +649,7 @@ applyItem aid applyGroup = do
                        -- foes' skin than ours -- TODO: when {activated}
                        -- is implemented, enable this for items too heavy,
                        -- etc. for throwing
-                     Just (_, (_, ben)) -> ben
+                     Just (_, ben) -> ben
                    * (if recharged then 1 else 0)  -- wait until can be used
                    * (if not createOrganAgain then 1 else 0)
                    * (if not dropOrganVoid then 1 else 0)

@@ -109,8 +109,8 @@ aspectToBenefit _cops _b asp =
     IK.AddMaxCalm p -> p `divUp` 2
     IK.AddSpeed p -> p * 10000
     IK.AddSkills m -> 5 * sum (EM.elems m)
-    IK.AddHurtMelee _p -> 1  -- TODO: negative only for weapons; p `divUp` 3
-    IK.AddHurtRanged p -> - p `divUp` 5
+    IK.AddHurtMelee p -> p `divUp` 3
+    IK.AddHurtRanged p -> p `divUp` 5  -- TODO: should be summed with damage
     IK.AddArmorMelee p -> p `divUp` 5
     IK.AddArmorRanged p -> p `divUp` 10
     IK.AddSight p -> p * 10
@@ -121,7 +121,7 @@ aspectToBenefit _cops _b asp =
 -- according to item type, and also the benefit confered by equipping the item
 -- and from meleeing with it or applying it or throwing it.
 totalUsefulness :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull
-                -> Maybe (Int, (Int, Int))
+                -> Maybe (Int, Int)
 totalUsefulness cops b activeItems fact itemFull =
   let ben effects aspects =
         let effBens = map (effectToBenefit cops b activeItems fact) effects
@@ -143,10 +143,10 @@ totalUsefulness cops b activeItems fact itemFull =
               isJust (strengthFromEqpSlot IK.EqpSlotWeapon itemFull)
             totalSum = if goesIntoInv $ itemBase itemFull
                        then effSum
-                       else if isWeapon
-                            then effSum + eqpSum
+                       else if isWeapon && effSum < 0
+                            then - effSum + eqpSum
                             else eqpSum
-        in (totalSum, (eqpSum, effSum))
+        in (totalSum, effSum)
   in case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
       Just $ ben jeffects jaspects
