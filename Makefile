@@ -62,7 +62,7 @@ xctest-medium: xctestCampaign-medium xctestSkirmish-medium xctestAmbush-medium x
 
 xctest-long: xctestCampaign-long xctestSkirmish-medium xctestAmbush-medium xctestBattle-long xctestSafari-long xctestPvP-medium xctestDefense-long
 
-xctest-long-no-safari: xctestCampaign-long xctestSkirmish-medium xctestAmbush-medium xctestBattle-long xctestSafari-long xctestPvP-medium xctestDefense-long
+xctest-long-no-safari: xctestCampaign-long xctestSkirmish-medium xctestAmbush-medium xctestBattle-long xctestPvP-medium xctestDefense-long
 
 xctestCampaign-long:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 500 --dumpInitRngs --automateAll --gameMode campaign --difficulty 2 > /tmp/stdtest.log
@@ -187,7 +187,7 @@ test-medium: testCampaign-medium testSkirmish-medium testAmbush-medium testBattl
 
 test-long: testCampaign-long testSkirmish-medium testAmbush-medium testBattle-long testSafari-long testPvP-medium testDefense-long
 
-test-long-no-safari: testCampaign-long testSkirmish-medium testAmbush-medium testBattle-long testSafari-long testPvP-medium testDefense-long
+test-long-no-safari: testCampaign-long testSkirmish-medium testAmbush-medium testBattle-long testPvP-medium testDefense-long
 
 testCampaign-long:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 500 --dumpInitRngs --automateAll --gameMode campaign --difficulty 2 > /tmp/stdtest.log
