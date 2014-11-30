@@ -9,7 +9,8 @@ module Game.LambdaHack.Server.MonadServer
                , liftIO  -- exposed only to be implemented, not used
                )
     -- * Assorted primitives
-  , debugPrint, serverPrint, saveServer, saveName, dumpRngs
+  , debugPossiblyPrint, debugPossiblyPrintAndExit
+  , serverPrint, saveServer, saveName, dumpRngs
   , restoreScore, registerScore
   , resetSessionStart, resetGameStart, elapsedSessionTimeGT
   , tellAllClipPS, tellGameClipPS
@@ -30,6 +31,7 @@ import System.FilePath
 import System.IO
 import qualified System.Random as R
 import System.Time
+import System.Exit (exitFailure)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -61,12 +63,20 @@ class MonadStateRead m => MonadServer m where
   liftIO         :: IO a -> m a
   saveChanServer :: m (Save.ChanSave (State, StateServer))
 
-debugPrint :: MonadServer m => Text -> m ()
-debugPrint t = do
+debugPossiblyPrint :: MonadServer m => Text -> m ()
+debugPossiblyPrint t = do
   debug <- getsServer $ sdbgMsgSer . sdebugSer
   when debug $ liftIO $ do
     T.hPutStrLn stderr t
     hFlush stderr
+
+debugPossiblyPrintAndExit :: MonadServer m => Text -> m ()
+debugPossiblyPrintAndExit t = do
+  debug <- getsServer $ sdbgMsgSer . sdebugSer
+  when debug $ liftIO $ do
+    T.hPutStrLn stderr t
+    hFlush stderr
+    exitFailure
 
 serverPrint :: MonadServer m => Text -> m ()
 serverPrint t = liftIO $ do
@@ -143,7 +153,7 @@ registerScore status mbody fid = do
       outputScore (worthMentioning, (ntable, pos)) =
         -- If not human, probably debugging, so dump instead of registering.
         if bench || isAIFact fact then
-          debugPrint $ T.intercalate "\n"
+          debugPossiblyPrint $ T.intercalate "\n"
           $ HighScore.showScore (pos, HighScore.getRecord pos ntable)
         else
           if worthMentioning then
@@ -196,8 +206,9 @@ tellAllClipPS = do
     let diff = fromIntegral sCur + fromIntegral pCur / 10e12
                - fromIntegral s - fromIntegral p / 10e12
         cps = fromIntegral (timeFit time timeClip) / diff :: Double
-    debugPrint $ "Session time:" <+> tshow diff <> "s."
-                 <+> "Average clips per second:" <+> tshow cps <> "."
+    debugPossiblyPrint $
+      "Session time:" <+> tshow diff <> "s."
+      <+> "Average clips per second:" <+> tshow cps <> "."
 
 tellGameClipPS :: MonadServer m => m ()
 tellGameClipPS = do
@@ -210,8 +221,9 @@ tellGameClipPS = do
       let diff = fromIntegral sCur + fromIntegral pCur / 10e12
                  - fromIntegral s - fromIntegral p / 10e12
           cps = fromIntegral (timeFit time timeClip) / diff :: Double
-      debugPrint $ "Game time:" <+> tshow diff <> "s."
-                   <+> "Average clips per second:" <+> tshow cps <> "."
+      debugPossiblyPrint $
+        "Game time:" <+> tshow diff <> "s."
+        <+> "Average clips per second:" <+> tshow cps <> "."
 
 tryRestore :: MonadServer m
            => Kind.COps -> DebugModeSer -> m (Maybe (State, StateServer))

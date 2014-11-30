@@ -56,8 +56,9 @@ execFailure aid req failureSer = do
   body <- getsState $ getActorBody aid
   let fid = bfid body
       msg = showReqFailure failureSer
-  debugPrint $ "execFailure:" <+> msg <> "\n"
-               <> tshow body <> "\n" <> tshow req
+  debugPossiblyPrintAndExit $
+    "execFailure:" <+> msg <> "\n"
+    <> tshow body <> "\n" <> tshow req
   execSfxAtomic $ SfxMsgFid fid $ "Unexpected problem:" <+> msg <> "."
     -- TODO: --more--, but keep in history
 
