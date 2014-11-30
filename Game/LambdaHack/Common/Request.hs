@@ -5,7 +5,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.Request
   ( RequestAI(..), RequestUI(..), RequestTimed(..), RequestAnyAbility(..)
-  , ReqFailure(..), showReqFailure, anyToUI
+  , ReqFailure(..), impossibleReqFailure, showReqFailure, anyToUI
   , permittedPrecious, permittedProject, permittedApply
   ) where
 
@@ -102,6 +102,39 @@ data ReqFailure =
   | TriggerNothing
   | NoChangeDunLeader
   | NoChangeLvlLeader
+
+impossibleReqFailure :: ReqFailure -> Bool
+impossibleReqFailure reqFailure = case reqFailure of
+  MoveNothing -> True
+  MeleeSelf -> True
+  MeleeDistant -> True
+  DisplaceDistant -> True
+  DisplaceAccess -> True
+  DisplaceProjectiles -> True
+  DisplaceDying -> True
+  DisplaceBraced -> True
+  DisplaceImmobile -> False  -- unidentified skill items
+  DisplaceSupported -> True
+  AlterDistant -> True
+  AlterBlockActor -> True  -- adjacent actor always visible
+  AlterBlockItem -> True  -- adjacent item always visible
+  AlterNothing -> True
+  EqpOverfull -> True
+  ApplyUnskilled -> False  -- unidentified skill items
+  ApplyRead -> False  -- unidentified skill items
+  ApplyOutOfReach -> True
+  ItemNothing -> True
+  ItemNotCalm -> False  -- unidentified skill items
+  NotCalmPrecious -> False  -- unidentified skill items
+  ProjectAimOnself -> True
+  ProjectBlockTerrain -> True  -- adjacent terrain always visible
+  ProjectBlockActor -> True  -- adjacent actor always visible
+  ProjectUnskilled -> False  -- unidentified skill items
+  ProjectFragile -> False  -- unidentified skill items
+  ProjectOutOfReach -> True
+  TriggerNothing -> True  -- terrain underneath always visibl
+  NoChangeDunLeader -> True
+  NoChangeLvlLeader -> True
 
 showReqFailure :: ReqFailure -> Msg
 showReqFailure reqFailure = case reqFailure of

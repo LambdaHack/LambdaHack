@@ -56,7 +56,11 @@ execFailure aid req failureSer = do
   body <- getsState $ getActorBody aid
   let fid = bfid body
       msg = showReqFailure failureSer
-  debugPossiblyPrintAndExit $
+      impossible = impossibleReqFailure failureSer
+      possiblyAlarm = if impossible
+                      then debugPossiblyPrintAndExit
+                      else debugPossiblyPrint
+  possiblyAlarm $
     "execFailure:" <+> msg <> "\n"
     <> tshow body <> "\n" <> tshow req
   execSfxAtomic $ SfxMsgFid fid $ "Unexpected problem:" <+> msg <> "."
