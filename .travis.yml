@@ -7,8 +7,8 @@
 # release of a major GHC version. Setting HPVER implictly sets
 # GHCVER. Omit lines with versions you don't need/want testing for.
 env:
- - HPVER=7.6.3.gtk
-# - HPVER=7.6.3.vty
+# - HPVER=7.6.3.gtk
+ - HPVER=7.6.3.vty
  - HPVER=7.8.3.gtk
  - HPVER=7.8.3.vty
  - HPVER=2013.2.0.0
@@ -71,27 +71,37 @@ install:
  - cabal-1.18 update
 
  - |
-   if [ $GHCVER = "head" ] || [ ${GHCVER%.*} = "7.8" ]; then
-     travis_retry sudo apt-get install happy-1.19.4 alex-3.1.3;
-     export PATH=/opt/alex/3.1.3/bin:/opt/happy/1.19.4/bin:$PATH;
-   else
+   if [ ${GHCVER%.*} = "7.6" ]; then
      travis_retry sudo apt-get install happy alex;
      if [ $GTKVTY = "vty" ]; then
        cabal-1.18 install -j2 Cabal-1.18.0;
      fi;
+   else
+     travis_retry sudo apt-get install happy-1.19.4 alex-3.1.3;
+     export PATH=/opt/alex/3.1.3/bin:/opt/happy/1.19.4/bin:$PATH;
    fi
 
-# mine:
+# mine (7.6 struggles with -O2):
  - |
    if [ $GTKVTY = "gtk" ]; then
      cabal-1.18 install -j2 gtk2hs-buildtools;
-     cabal-1.18 install -j2 -f-release -O2 --only-dependencies;
-     cabal-1.18 configure -f-release -O2 --enable-tests;
+     if [ ${GHCVER%.*} = "7.6" ]; then
+       cabal-1.18 install -j2 -f-release -O1 --only-dependencies;
+       cabal-1.18 configure -f-release -O1 --enable-tests;
+     else
+       cabal-1.18 install -j2 -f-release -O2 --only-dependencies;
+       cabal-1.18 configure -f-release -O2 --enable-tests;
+     fi;
      cabal-1.18 build -j2;
      cabal-1.18 test;
    else
-     cabal-1.18 install -fvty -j2 -frelease -O2 --only-dependencies;
-     cabal-1.18 configure -fvty -frelease --enable-tests;
+     if [ ${GHCVER%.*} = "7.6" ]; then
+       cabal-1.18 install -fvty -j2 -frelease -O1 --only-dependencies;
+       cabal-1.18 configure -fvty -frelease -O1 --enable-tests;
+     else
+       cabal-1.18 install -fvty -j2 -frelease -O2 --only-dependencies;
+       cabal-1.18 configure -fvty -frelease -O2 --enable-tests;
+     fi;
      cabal-1.18 build -j2;
      cabal-1.18 test;
    fi
