@@ -539,7 +539,7 @@ scroll = ItemKind
   , ikit     = []
   }
 scroll1 = scroll
-  { irarity  = [(1, 2), (10, 3)]
+  { irarity  = [(3, 6), (10, 6)]
   , ieffects = [CallFriend 1]
   }
 scroll2 = scroll
@@ -555,9 +555,9 @@ scroll4 = scroll
                       , InsertMove 3, Paralyze 10, Identify CGround ]]
   }
 scroll5 = scroll
-  { irarity  = [(3, 3), (10, 6)]
+  { irarity  = [(10, 15)]
   , ieffects = [OneOf [ Summon standardSummon $ d 2
-                      , CallFriend 1, Ascend (-1), Ascend 1
+                      , CallFriend (d 2), Ascend (-1), Ascend 1
                       , RefillCalm 30, RefillCalm (-30)
                       , CreateItem CGround "useful" TimerNone
                       , PolyItem CGround ]]
