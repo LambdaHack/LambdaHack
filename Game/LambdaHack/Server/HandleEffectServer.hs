@@ -264,8 +264,9 @@ effectHurt nDm source target silent = do
       rawDeltaHP = - (max oneM  -- at least 1 HP taken
                           (fromIntegral mult * xM n `divUp` (100 * 100)))
       serious = source /= target && not (bproj tb)
-      upperBound = if serious then xM hpMax else maxBound
-      deltaHP = min rawDeltaHP (upperBound - bhp tb)
+      deltaHP | serious = -- if HP overfull, at least cut back to max HP
+                          min rawDeltaHP (xM hpMax - bhp tb)
+              | otherwise = rawDeltaHP
       deltaDiv = fromIntegral $ deltaHP `divUp` oneM
   -- Damage the target.
   execUpdAtomic $ UpdRefillHP target deltaHP
@@ -381,9 +382,10 @@ effectRefillHP overfill execSfx power source target = do
   let overMax | overfill = xM hpMax * 10  -- arbitrary limit to scumming
               | otherwise = xM hpMax
       serious = overfill && source /= target && not (bproj tb)
-      upperBound = if serious then xM hpMax else maxBound
       deltaHP | power > 0 = min (xM power) (max 0 $ overMax - bhp tb)
-              | otherwise = min (xM power) (upperBound - bhp tb)
+              | serious = -- if HP overfull, at least cut back to max HP
+                          min (xM power) (xM hpMax - bhp tb)
+              | otherwise = xM power
   if deltaHP == 0
     then return False
     else do
