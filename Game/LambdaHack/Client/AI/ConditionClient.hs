@@ -205,9 +205,7 @@ benGroundItems aid = do
         | otherwise = use /= Just 0
   benAvailableItems aid desirableItem [CGround]
 
--- | Require the actor is in a bad position to melee.
--- We do not check if the actor has a weapon, because having
--- no innate weapon is rare.
+-- | Require the actor is in a bad position to melee or can't melee at all.
 condMeleeBadM :: MonadClient m => ActorId -> m Bool
 condMeleeBadM aid = do
   b <- getsState $ getActorBody aid

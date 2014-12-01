@@ -167,9 +167,6 @@ actionStrategy aid = do
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeAny aid  -- avoid getting damaged for naught
           , condAnyFoeAdj )
-        , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
-            <$> unEquipItems aid  -- late, because better to throw than unequip
-          , True )
         , ( [AbMove]
             -- TODO: forget old target (e.g., tile), to start shooting,
             -- unless can't shoot, etc.
@@ -177,6 +174,9 @@ actionStrategy aid = do
           , condMeleeBad && condThreatNearby && (condNotCalmEnough
                                                  || condThreatAtHand
                                                  || condNoUsableWeapon) )
+        , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
+            <$> unEquipItems aid  -- late, because better to throw than unequip
+          , True )
         , ( [AbMove]
           , chase aid False
           , True )
