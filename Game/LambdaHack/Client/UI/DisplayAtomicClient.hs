@@ -5,6 +5,7 @@ module Game.LambdaHack.Client.UI.DisplayAtomicClient
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
+import qualified Data.EnumSet as ES
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
 import Data.Maybe
@@ -256,7 +257,7 @@ lookAtMove aid = do
     lookMsg <- lookAt False "" True (bpos body) aid ""
     msgAdd lookMsg
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  if side == bfid body then do
+  if not (bproj body) && side == bfid body then do
     foes <- getsState $ actorList (isAtWar fact) (blid body)
     when (any (adjacent (bpos body) . bpos) foes) stopPlayBack
   else when (isAtWar fact side) $ do
@@ -335,10 +336,17 @@ msgDuplicateScrap = do
     modifyClient $ \cli -> cli {sreport = repRest}
 
 -- TODO: "XXX spots YYY"? or blink or show the changed cursor?
-createActorUI :: MonadClientUI m => ActorId -> Actor -> Bool -> MU.Part -> m ()
+createActorUI :: MonadClientUI m
+              => ActorId -> Actor -> Bool -> MU.Part -> m ()
 createActorUI aid body verbose verb = do
   side <- getsClient sside
-  when (bfid body /= side && not (bproj body) || verbose) $
+  -- Don't spam if the actor was already visible (but, e.g., on a tile that is
+  -- invisible this turn (in that case move is broken down to lose+spot)
+  -- or on a distant tile, via teleport while the observer teleported, too).
+  lastLost <- getsClient slastLost
+  when (ES.notMember aid lastLost
+        && (bfid body /= side
+            && not (bproj body) || verbose)) $
     actorVerbMU aid body verb
   when (bfid body /= side) $ do
     fact <- getsState $ (EM.! bfid body) . sfactionD
@@ -350,7 +358,7 @@ createActorUI aid body verbose verb = do
       -- into account.
       modifyClient $ \cli -> cli {scursor = TEnemy aid False}
     stopPlayBack
-  when (bfid body == side && not (bproj body)) $ lookAtMove aid
+  lookAtMove aid
 
 destroyActorUI :: MonadClientUI m
                => ActorId -> Actor -> MU.Part -> MU.Part -> Bool -> m ()
@@ -360,6 +368,7 @@ destroyActorUI aid body verb verboseVerb verbose = do
     actorVerbMU aid body verb
     void $ displayMore ColorBW ""
   else when verbose $ actorVerbMU aid body verboseVerb
+  modifyClient $ \cli -> cli {slastLost = ES.insert aid $ slastLost cli}
 
 moveItemUI :: MonadClientUI m
            => Bool -> ItemId -> Int -> ActorId -> CStore -> CStore

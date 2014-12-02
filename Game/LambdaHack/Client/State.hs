@@ -71,6 +71,8 @@ data StateClient = StateClient
   , srandom      :: !R.StdGen      -- ^ current random generator
   , slastRecord  :: !LastRecord    -- ^ state of key sequence recording
   , slastPlay    :: ![K.KM]        -- ^ state of key sequence playback
+  , slastLost    :: !(ES.EnumSet ActorId)
+                                   -- ^ actors that just got out of sight
   , swaitTimes   :: !Int           -- ^ player just waited this many times
   , _sleader     :: !(Maybe ActorId)
                                    -- ^ current picked party leader
@@ -138,6 +140,7 @@ defStateClient shistory sreport _sside sisAI =
     , srandom = R.mkStdGen 42  -- will be set later
     , slastRecord = ([], [], 0)
     , slastPlay = []
+    , slastLost = ES.empty
     , swaitTimes = 0
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
@@ -254,6 +257,7 @@ instance Binary StateClient where
         srandom = read g
         slastRecord = ([], [], 0)
         slastPlay = []
+        slastLost = ES.empty
         swaitTimes = 0
         squit = False
         sescAI = EscAINothing

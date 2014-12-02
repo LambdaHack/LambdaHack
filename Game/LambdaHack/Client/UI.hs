@@ -20,6 +20,7 @@ module Game.LambdaHack.Client.UI
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import Data.Maybe
 
@@ -92,7 +93,7 @@ humanCommand msgRunStop = do
   -- For human UI we invalidate whole @sbfsD@ at the start of each
   -- UI player input, which is an overkill, but doesn't affects
   -- screensavers, because they are UI, but not human.
-  modifyClient $ \cli -> cli {sbfsD = EM.empty}
+  modifyClient $ \cli -> cli {sbfsD = EM.empty, slastLost = ES.empty}
   let loop :: Maybe (Bool, Overlay) -> m RequestUI
       loop mover = do
         (lastBlank, over) <- case mover of
