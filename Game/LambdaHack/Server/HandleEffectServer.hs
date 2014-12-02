@@ -230,7 +230,7 @@ effectSem source target iid recharged effect = do
     IK.CreateItem store grp tim -> effectCreateItem target store grp tim
     IK.DropItem store grp hit -> effectDropItem execSfx store grp hit target
     IK.PolyItem cstore -> effectPolyItem execSfx cstore target
-    IK.Identify cstore -> effectIdentify (bfid sb) cstore target
+    IK.Identify cstore -> effectIdentify iid (bfid sb) cstore target
     IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target Nothing
     IK.PushActor tmod ->
@@ -849,11 +849,12 @@ effectPolyItem execSfx cstore target = do
 -- ** Identify
 
 effectIdentify :: (MonadAtomic m, MonadServer m)
-               => FactionId -> CStore -> ActorId -> m Bool
-effectIdentify fid storeInitial target = do
+               => ItemId -> FactionId -> CStore -> ActorId -> m Bool
+effectIdentify iidId fid storeInitial target = do
   let tryFull store as = case as of
         [] -> return False
         (iid, itemFull@ItemFull{..}) : rest -> case itemDisco of
+          _ | iid == iidId -> tryFull store rest  -- don't id itself
           Just ItemDisco{..} -> do
             -- TODO: use this (but faster, via traversing effects with 999)
             -- also to prevent sending any other UpdDiscover.
