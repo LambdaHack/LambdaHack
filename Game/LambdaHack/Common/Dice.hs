@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
     Dice, diceConst, diceLevel, diceScale, (|*|)
-  , d, z, dl, zl, intToDice
+  , d, ds, dl, intToDice
   , maxDice, minDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
   , DiceXY(..), maxDiceXY, minDiceXY, meanDiceXY
@@ -81,6 +81,12 @@ dieSimple n = uniformFreq ("d" <> tshow n) [1..n]
 zdieSimple :: Int -> SimpleDice
 zdieSimple n = uniformFreq ("z" <> tshow n) [0..n-1]
 
+dieLevelSimple :: Int -> SimpleDice
+dieLevelSimple n = uniformFreq ("ds" <> tshow n) [1..n]
+
+zdieLevelSimple :: Int -> SimpleDice
+zdieLevelSimple n = uniformFreq ("zl" <> tshow n) [0..n-1]
+
 -- | Dice for parameters scaled with current level depth.
 -- To the result of rolling the first set of dice we add the second,
 -- scaled in proportion to current depth divided by maximal dungeon depth.
@@ -95,7 +101,8 @@ data Dice = Dice
 
 instance Show Dice where
   show Dice{..} = T.unpack $
-    let scaled = "scaled(" <> nameFrequency diceLevel <> ")"
+    let rawScaled = nameFrequency diceLevel
+        scaled = if rawScaled == "0" then "" else rawScaled
     in (if nameFrequency diceLevel == "0" then nameFrequency diceConst
         else if nameFrequency diceConst == "0" then scaled
         else nameFrequency diceConst <+> "+" <+> scaled)
@@ -143,14 +150,18 @@ affectBothDice f (Dice dc1 dl1 ds1) = Dice (f dc1) (f dl1) ds1
 d :: Int -> Dice
 d n = Dice (dieSimple n) (fromInteger 0) 1
 
-z :: Int -> Dice
-z n = Dice (zdieSimple n) (fromInteger 0) 1
+ds :: Int -> Dice
+ds n = Dice (fromInteger 0) (dieLevelSimple n) 1
 
 dl :: Int -> Dice
-dl n = Dice (fromInteger 0) (dieSimple n) 1
+dl = ds
 
-zl :: Int -> Dice
-zl n = Dice (fromInteger 0) (zdieSimple n) 1
+-- Not exposed to save on documentation.
+_z :: Int -> Dice
+_z n = Dice (zdieSimple n) (fromInteger 0) 1
+
+_zl :: Int -> Dice
+_zl n = Dice (fromInteger 0) (zdieLevelSimple n) 1
 
 intToDice :: Int -> Dice
 intToDice = fromInteger . fromIntegral
