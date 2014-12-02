@@ -208,8 +208,9 @@ handleActors lid = do
   let -- Actors of the same faction move together.
       -- TODO: insert wrt the order, instead of sorting
       isLeader (aid, b) = Just aid /= fmap fst (gleader (factionD EM.! bfid b))
+      notDead (_, b) = if bproj b then bhp b >= 0 else bhp b > 0
       order = Ord.comparing $
-        ((>= 0) . bhp . snd) &&& bfid . snd &&& isLeader &&& bsymbol . snd
+        notDead &&& bfid . snd &&& isLeader &&& bsymbol . snd
       (atime, as) = EM.findMin lprio
       ams = map (\a -> (a, getActorBody a s)) as
       mnext | EM.null lprio = Nothing  -- no actor alive, wait until it spawns
