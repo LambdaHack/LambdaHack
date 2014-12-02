@@ -53,6 +53,7 @@ getGroupItem :: MonadClientUI m
              -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 getGroupItem psuit prompt promptGeneric cLegalRaw cLegalAfterCalm = do
   side <- getsClient sside
+  leader <- getLeaderUI
   let aidNotEmpty store aid = do
         bag <- getsState $ getCBag (CActor aid store)
         return $! not $ EM.null bag
@@ -60,8 +61,14 @@ getGroupItem psuit prompt promptGeneric cLegalRaw cLegalAfterCalm = do
         as <- getsState $ fidActorNotProjAssocs side
         bs <- mapM (aidNotEmpty store . fst) as
         return $! or bs
-  cLegal <- filterM partyNotEmpty cLegalAfterCalm  -- don't display empty stores
-  leader <- getLeaderUI
+  -- Don't display stores empty for all actors
+  cLegalNotEmpty <- filterM partyNotEmpty cLegalAfterCalm
+  -- Move a store that is empty for this actor to the back.
+  getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
+  let hasThisActor = not . EM.null . getCStoreBag
+      cLegal = case find hasThisActor cLegalAfterCalm of
+        Nothing -> cLegalNotEmpty
+        Just cThisActor -> cThisActor : delete cThisActor cLegalNotEmpty
   getItem psuit (\_ _ _ -> prompt) (\_ _ _ -> promptGeneric)
           (map (CActor leader) cLegalRaw)
           (map (CActor leader) cLegal)
