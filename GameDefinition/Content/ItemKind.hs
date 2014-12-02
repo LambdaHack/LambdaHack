@@ -104,7 +104,7 @@ bolas = ItemKind
   , iweight  = 500
   , iaspects = []
   , ieffects = [Hurt (2 * d 1), Paralyze (5 + d 5), DropBestWeapon]
-  , ifeature = []
+  , ifeature = [Identified]
   , idesc    = "Wood balls tied with hemp rope. The target enemy is tripped and bound to drop its weapon, while recovering balance."
   , ikit     = []
   }
@@ -135,7 +135,7 @@ net = ItemKind
   , iaspects = []
   , ieffects = [ toOrganGameTurn "slow 10" (3 + d 3)
                , DropItem CEqp "torso armor" False ]
-  , ifeature = []
+  , ifeature = [Identified]
   , idesc    = "A wide net with weights along the edges. Entangles armor and restricts movement."
   , ikit     = []
   }
