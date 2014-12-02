@@ -52,10 +52,16 @@ getGroupItem :: MonadClientUI m
              -> [CStore]  -- ^ legal containers after Calm taken into account
              -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 getGroupItem psuit prompt promptGeneric cLegalRaw cLegalAfterCalm = do
+  side <- getsClient sside
+  let aidNotEmpty store aid = do
+        bag <- getsState $ getCBag (CActor aid store)
+        return $! not $ EM.null bag
+      partyNotEmpty store = do
+        as <- getsState $ fidActorNotProjAssocs side
+        bs <- mapM (aidNotEmpty store . fst) as
+        return $! or bs
+  cLegal <- filterM partyNotEmpty cLegalAfterCalm  -- don't display empty stores
   leader <- getLeaderUI
-  getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
-  let cNotEmpty = not . EM.null . getCStoreBag
-      cLegal = filter cNotEmpty cLegalAfterCalm  -- don't display empty stores
   getItem psuit (\_ _ _ -> prompt) (\_ _ _ -> promptGeneric)
           (map (CActor leader) cLegalRaw)
           (map (CActor leader) cLegal)
