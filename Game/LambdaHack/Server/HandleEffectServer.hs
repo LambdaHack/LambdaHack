@@ -848,6 +848,8 @@ effectPolyItem execSfx cstore target = do
 
 -- ** Identify
 
+-- TODO: ask player for an item, because server doesn't know which
+-- is already identified, it only knows which cannot ever be.
 effectIdentify :: (MonadAtomic m, MonadServer m)
                => ItemId -> FactionId -> CStore -> ActorId -> m Bool
 effectIdentify iidId fid storeInitial target = do

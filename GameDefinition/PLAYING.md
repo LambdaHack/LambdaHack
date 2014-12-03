@@ -13,7 +13,7 @@ while tirelessly chasing the elusive heroes by sight, sound and smell.
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
 and literary imagination. To be honest, a lot of imagination is required
-for this rudimentary game, but it's playable and winnable.
+for this rudimentary game, even though it is playable and winnable.
 Contributions are welcome.
 
 
@@ -38,7 +38,12 @@ Calm (composure, focus, attentiveness), then his current and maximum
 HP (hit points, health). At the end, the personal target of the leader
 is described, in this case a basilisk monster, with hit points drawn as a bar.
 
-The other status line describes the current location in relation to the party.
+Weapon damage and other item stats are displayed using the dice notation `XdY`.
+which means X rolls of Y-sided dice. A variant denoted 'XdsY' is additionally
+scaled by the level depth in proportion to the maximal dungeon depth.
+
+The second status line describes the current dungeon location in relation
+to the party.
 
     5  Lofty hall   [33% seen] Cursor: exact spot (71,12)  p15 l10
 
@@ -146,9 +151,9 @@ you need to set your target first (however, initial target is set
 automatically as soon as a monster comes into view). Once in targeting mode,
 you can move the targeting cursor with arrow keys and switch focus
 among enemies with `*` (or among friends, projectiles and enemies, depending
-on targeting mode set by `/`). The details of the shared cursor position
-and of the personal target are described at the bottom of the screen.
-All targeting keys are listed below.
+on targeting mode toggled by `/`). The details of the shared cursor position
+and of the personal target are described in the status lines, at the bottom
+of the screen. All targeting keys are listed below.
 
                 keys           command
                 KEYPAD_* and \ target enemy
@@ -226,12 +231,13 @@ on the monster's armor. Heroes and monsters running into one another
 This gives the opponent a free blow, but can improve the tactical situation
 or aid escape.
 
-Slinging a missile at a target wounds it, consuming the weapon in the process.
+Flinging a missile at a target wounds it, consuming the weapon in the process.
 You may propel any item in your equipment, inventory and on the ground
-(press `?` to choose an item and press it again for a non-standard choice).
-Only items of a few kinds inflict any damage, but some have other effects.
-Whenever the monster's or hero's hit points reach zero, the combatant dies.
-When the last hero dies, the game ends in defeat.
+(press `?` to see appropriate items in a menu and press it again
+for a non-standard choice). Only items of a few kinds inflict any damage,
+but some have other effects. Whenever the monster's or hero's hit points
+reach zero, the combatant dies. When the last hero dies, the game ends
+in defeat.
 
 
 On Winning and Dying

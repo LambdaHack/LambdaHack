@@ -153,7 +153,6 @@ getItem psuit prompt promptGeneric cLegalRaw cLegal askWhenLone initalState = do
            failWith $ "no items" <+> ppLegal
          else failSer ItemNotCalm
 
--- TODO: m is no longer needed and perhaps this can be simplified even more
 data DefItemKey m = DefItemKey
   { defLabel  :: Text  -- ^ can be undefined if not @defCond@
   , defCond   :: !Bool
