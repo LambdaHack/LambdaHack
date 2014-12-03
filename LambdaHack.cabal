@@ -4,8 +4,8 @@ name:           LambdaHack
 -- http://www.haskell.org/haskellwiki/Package_versioning_policy
 -- PVP summary: +-+------- breaking API changes
 --              | | +----- non-breaking API additions
---              | | |  +--- code changes with no API change
-version:        0.4.99.1
+--              | | |   +--- code changes with no API change
+version:        0.4.100.0
 synopsis:       A game engine library for roguelike dungeon crawlers
 description:   LambdaHack is a game engine library for roguelike games
                of arbitrary theme, size and complexity,
@@ -85,7 +85,7 @@ flag expose_internal
 
 flag release
   description:        prepare for a release (expose, optimize)
-  default:            False
+  default:            True
   manual:             True
 
 library
