@@ -103,9 +103,12 @@ instance Show Dice where
   show Dice{..} = T.unpack $
     let rawScaled = nameFrequency diceLevel
         scaled = if rawScaled == "0" then "" else rawScaled
+        signAndScaled = case T.uncons scaled of
+          Just ('-', _) -> scaled
+          _ -> "+" <+> scaled
     in (if nameFrequency diceLevel == "0" then nameFrequency diceConst
         else if nameFrequency diceConst == "0" then scaled
-        else nameFrequency diceConst <+> "+" <+> scaled)
+        else nameFrequency diceConst <+> signAndScaled)
        <+> if diceScale == 1 then "" else "|*|" <+> tshow diceScale
 
 instance Hashable Dice
