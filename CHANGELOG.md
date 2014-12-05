@@ -1,3 +1,14 @@
+## [v0.4.100.0, aka 'The last thaw'](https://github.com/LambdaHack/LambdaHack/compare/v0.4.99.0..v0.4.100.0)
+
+- unexpectedly thaw and freeze again v0.5.0.0 of LambdaHack content API
+- unexpectedly implement timeouts and temporary effects easily without FRP
+- make a couple of skill levels meaningful and tweak skills of some actors
+- make AI prefer exploration of easier levels
+- permit overfull HP and Calm
+- let non-projectile actors block view
+- start the game with a screensaver safari mode
+- add i386 Linux and Windows compilation targets to Makefile
+
 ## [v0.4.99.0, aka 'Player escapes'](https://github.com/LambdaHack/LambdaHack/compare/v0.2.14...v0.4.99.0)
 
 - balance the example game content a bit (campaign still unbalanced)
