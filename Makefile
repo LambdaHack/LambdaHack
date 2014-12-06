@@ -296,15 +296,14 @@ build-binary-i386:
 
 # TODO: figure out, whey this must be so different from Linux
 build-binary-windows-i386:
-	wine cabal configure -frelease --prefix=/
+	wine cabal configure -frelease
 	wine cabal build exe:LambdaHack
 	rm -rf /tmp/LambdaHack_x_windows-i386.zip
-	rm -rf /tmp/LambdaHack_x_ubuntu-12.04-i386.tar.gz
 	rm -rf /tmp/LambdaHackTheGameInstall
 	rm -rf /tmp/LambdaHackTheGame
 	mkdir -p /tmp/LambdaHackTheGame/GameDefinition
 	wine cabal copy --destdir=Z:/tmp/LambdaHackTheGameInstall
-	cp /tmp/LambdaHackTheGameInstall/bin/LambdaHack.exe /tmp/LambdaHackTheGame
+	cp /tmp/LambdaHackTheGameInstall/users/mikolaj/Application\ Data/cabal/bin/LambdaHack.exe /tmp/LambdaHackTheGame
 	cp GameDefinition/PLAYING.md /tmp/LambdaHackTheGame/GameDefinition
 	cp GameDefinition/scores /tmp/LambdaHackTheGame/GameDefinition
 	cp GameDefinition/config.ui.default /tmp/LambdaHackTheGame/GameDefinition
