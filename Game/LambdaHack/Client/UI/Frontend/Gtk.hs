@@ -142,7 +142,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
 #endif
         !modifier = modifierTranslate mods
         readAll = do
-          res <- liftIO $ STM.atomically $ STM.tryReadTQueue schanKey
+          res <- STM.atomically $ STM.tryReadTQueue schanKey
           when (isJust res) $ readAll
     liftIO $ do
       unless (deadKey n) $ do

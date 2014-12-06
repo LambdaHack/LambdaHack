@@ -14,6 +14,9 @@ import qualified Control.Exception as Ex hiding (handle)
 import Data.Default
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
+import qualified Control.Concurrent.STM as STM
+import Control.Monad
+import Data.Maybe
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
@@ -24,6 +27,7 @@ import Game.LambdaHack.Common.Msg
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { svty      :: !Vty  -- internal vty session
+  , schanKey  :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
   , sescMVar  :: !(Maybe (MVar ()))
   , sdebugCli :: !DebugModeCli  -- ^ client configuration
       -- ^ Configuration of the frontend session.
@@ -37,11 +41,34 @@ frontendName = "vty"
 startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
 startup sdebugCli k = do
   svty <- mkVty def
-  -- TODO: implement sescMVar, when we switch to a new vty that has
-  -- a separate key listener thread or something. Avoid polling.
-  a <- async $ k FrontendSession{sescMVar = Nothing, ..}
-               `Ex.finally` Vty.shutdown svty
+  schanKey <- STM.atomically $ STM.newTQueue
+  escMVar <- newEmptyMVar
+  let sess = FrontendSession{sescMVar = Just escMVar, ..}
+  void $ async $ storeKeys sess
+  a <- async $ k sess `Ex.finally` Vty.shutdown svty
   wait a
+
+storeKeys :: FrontendSession -> IO ()
+storeKeys sess@FrontendSession{..} = do
+  e <- nextEvent svty  -- blocks here, so no polling
+  case e of
+    EvKey n mods -> do
+      let !key = keyTranslate n
+          !modifier = modifierTranslate mods
+          readAll = do
+            res <- STM.atomically $ STM.tryReadTQueue schanKey
+            when (isJust res) $ readAll
+      -- If ESC, also mark it specially and reset the key channel.
+      case sescMVar of
+        Just escMVar -> do
+          when (key == K.Esc) $ do
+            void $ tryPutMVar escMVar ()
+            readAll
+        Nothing -> return ()
+      -- Store the key in the channel.
+      STM.atomically $ STM.writeTQueue schanKey K.KM{key, modifier}
+    _ -> return ()
+  storeKeys sess
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data
@@ -61,14 +88,22 @@ fdisplay FrontendSession{svty} _ (Just rawSF) =
 
 -- | Input key via the frontend.
 nextKeyEvent :: FrontendSession -> IO K.KM
-nextKeyEvent sess@FrontendSession{svty} = do
-  e <- nextEvent svty
-  case e of
-    EvKey n mods -> do
-      let key = keyTranslate n
-          modifier = modifierTranslate mods
-      return $! K.KM {key, modifier}
-    _ -> nextKeyEvent sess
+nextKeyEvent FrontendSession{..} = do
+  km <- STM.atomically $ STM.readTQueue schanKey
+  case km of
+    K.KM{key=K.Space} ->
+      -- Drop frames up to the first empty frame.
+      -- Keep the last non-empty frame, if any.
+      -- Pressing SPACE repeatedly can be used to step
+      -- through intermediate stages of an animation,
+      -- whereas any other key skips the whole animation outright.
+--      onQueue dropStartLQueue sess
+      return ()
+    _ ->
+      -- Show the last non-empty frame and empty the queue.
+--      trimFrameState sess
+      return ()
+  return km
 
 fsyncFrames :: FrontendSession -> IO ()
 fsyncFrames _ = return ()
