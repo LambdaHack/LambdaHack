@@ -6,6 +6,7 @@
 - make AI prefer exploration of easier levels
 - permit overfull HP and Calm
 - let non-projectile actors block view
+- make colorful characters bold (if it resizes your fonts, turn off via colorIsBold = False in config file or --noColorIsBold on commandline)
 - start the game with a screensaver safari mode
 - add i386 Linux and Windows compilation targets to Makefile
 

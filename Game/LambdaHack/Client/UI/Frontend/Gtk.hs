@@ -105,7 +105,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
              mapM (\ ak -> do
                       tt <- textTagNew Nothing
                       textTagTableAdd ttt tt
-                      doAttr tt ak
+                      doAttr sdebugCli tt ak
                       return (ak, tt))
                [ Color.Attr{fg, bg}
                | fg <- [minBound..maxBound], bg <- Color.legalBG ]
@@ -473,18 +473,21 @@ modifierTranslate :: [Modifier] -> K.Modifier
 modifierTranslate mods =
   if Control `elem` mods then K.Control else K.NoModifier
 
-doAttr :: TextTag -> Color.Attr -> IO ()
-doAttr tt attr@Color.Attr{fg, bg}
+doAttr :: DebugModeCli -> TextTag -> Color.Attr -> IO ()
+doAttr sdebugCli tt attr@Color.Attr{fg, bg}
   | attr == Color.defAttr = return ()
-  | fg == Color.defFG = set tt $ extraAttr
+  | fg == Color.defFG = set tt $ extraAttr sdebugCli
                                  ++ [textTagBackground := Color.colorToRGB bg]
-  | bg == Color.defBG = set tt $ extraAttr
+  | bg == Color.defBG = set tt $ extraAttr sdebugCli
                                  ++ [textTagForeground := Color.colorToRGB fg]
-  | otherwise         = set tt $ extraAttr
+  | otherwise         = set tt $ extraAttr sdebugCli
                                  ++ [ textTagForeground := Color.colorToRGB fg
                                     , textTagBackground := Color.colorToRGB bg ]
 
-extraAttr :: [AttrOp TextTag]
-extraAttr = [ textTagWeight := fromEnum WeightBold
---            , textTagStretch := StretchUltraExpanded
-            ]
+extraAttr :: DebugModeCli -> [AttrOp TextTag]
+extraAttr DebugModeCli{scolorIsBold} =
+  if scolorIsBold == Just True
+  then [ textTagWeight := fromEnum WeightBold
+--     , textTagStretch := StretchUltraExpanded
+       ]
+  else []

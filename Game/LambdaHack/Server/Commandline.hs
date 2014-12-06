@@ -31,6 +31,7 @@ debugArgs args = do
         , "  --dumpInitRngs  dump RNG states from the start of the game"
         , "  --dbgMsgSer  let the server emit its internal debug messages"
         , "  --font fn  use the given font for the main game window"
+        , "  --noColorIsBold  don't use bold attribute for colorful characters"
         , "  --maxFps n  display at most n frames per second"
         , "  --noDelay  don't maintain any requested delays between frames"
         , "  --disableAutoYes  never auto-answer all prompts"
@@ -86,6 +87,10 @@ debugArgs args = do
       parseArgs ("--font" : s : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sfont = Just s}}
+      parseArgs ("--noColorIsBold" : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli =
+                       (sdebugCli debugSer) {scolorIsBold = Just False}}
       parseArgs ("--maxFps" : n : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli =

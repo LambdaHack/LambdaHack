@@ -32,6 +32,7 @@
 ; movementLaptopKeys_uk8o79jl = True
 ; ; Monospace fonts that have fixed size regardless of boldness
 ; font = "Terminus,Courier New,Liberation Mono,Courier,FreeMono,Monospace normal normal normal normal 16"
+; colorIsBold = True
 ; historyMax = 5000
 ; maxFps = 15
 ; noAnim = False

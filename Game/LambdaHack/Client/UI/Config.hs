@@ -37,6 +37,7 @@ data Config = Config
   , configVi          :: !Bool  -- ^ the option for Vi keys takes precendence
   , configLaptop      :: !Bool  -- ^ because the laptop keys are the default
   , configFont        :: !String
+  , configColorIsBold :: !Bool
   , configHistoryMax  :: !Int
   , configMaxFps      :: !Int
   , configNoAnim      :: !Bool
@@ -77,6 +78,7 @@ parseConfig cfg =
       -- because the laptop keys are the default.
       configLaptop = not configVi && getOption "movementLaptopKeys_uk8o79jl"
       configFont = getOption "font"
+      configColorIsBold = getOption "colorIsBold"
       configHistoryMax = getOption "historyMax"
       configMaxFps = max 1 $ getOption "maxFps"
       configNoAnim = getOption "noAnim"
@@ -111,6 +113,8 @@ applyConfigToDebug sconfig sdebugCli Kind.COps{corule} =
   let stdRuleset = Kind.stdRuleset corule
   in (\dbg -> dbg {sfont =
         sfont dbg `mplus` Just (configFont sconfig)}) .
+     (\dbg -> dbg {scolorIsBold =
+        scolorIsBold dbg `mplus` Just (configColorIsBold sconfig)}) .
      (\dbg -> dbg {smaxFps =
         smaxFps dbg `mplus` Just (configMaxFps sconfig)}) .
      (\dbg -> dbg {snoAnim =

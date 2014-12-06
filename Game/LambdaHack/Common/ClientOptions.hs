@@ -12,6 +12,8 @@ import Game.LambdaHack.Common.Faction
 data DebugModeCli = DebugModeCli
   { sfont           :: !(Maybe String)
       -- ^ Font to use for the main game window.
+  , scolorIsBold    :: !(Maybe Bool)
+      -- ^ Whether to use bold attribute for colorful characters.
   , smaxFps         :: !(Maybe Int)
       -- ^ Maximal frames per second.
       -- This is better low and fixed, to avoid jerkiness and delays
@@ -47,6 +49,7 @@ instance Binary DebugModeCli
 defDebugModeCli :: DebugModeCli
 defDebugModeCli = DebugModeCli
   { sfont = Nothing
+  , scolorIsBold = Nothing
   , smaxFps = Nothing
   , snoDelay = False
   , sdisableAutoYes = False
