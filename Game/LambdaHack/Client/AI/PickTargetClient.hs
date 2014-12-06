@@ -3,6 +3,7 @@ module Game.LambdaHack.Client.AI.PickTargetClient
   ( targetStrategy, createPath
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -19,9 +20,9 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -32,6 +33,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 
@@ -114,13 +116,20 @@ targetStrategy oldLeader aid = do
       nearbyFoes = filter (targetableEnemy . snd) allFoes
       unknownId = ouniqGroup "unknown space"
       itemUsefulness iid k =
-        case totalUsefulness cops b activeItems fact (itemToF iid k) of
-          Just (v, _) -> v
-          Nothing -> 30  -- experimenting is fun
+        fst <$> totalUsefulness cops b activeItems fact (itemToF iid k)
+      -- TODO: factor out from here and benGroundItems
       desirableItem iid item k
-        | canEscape = itemUsefulness iid k /= 0
+        | canEscape = itemUsefulness iid k /= Just 0
                         || IK.Precious `elem` jfeature item
-        | otherwise = itemUsefulness iid k /= 0
+        | otherwise =
+            let use = itemUsefulness iid k
+                -- A hack to prevent monsters from picking up treasure.
+                preciousWithoutSlot item2 =
+                  IK.Precious `elem` jfeature item2  -- risk from treasure hunters
+                  && isNothing (strengthEqpSlot item2)  -- unlikely to be useful
+            in use /= Just 0
+               && not (isNothing use  -- needs resources to id
+                       && preciousWithoutSlot item)
       desirableBag bag = any (\(iid, k) ->
                                desirableItem iid (itemD EM.! iid) k)
                          $ EM.assocs bag

@@ -199,10 +199,16 @@ benGroundItems :: MonadClient m
 benGroundItems aid = do
   b <- getsState $ getActorBody aid
   canEscape <- factionCanEscape (bfid b)
-  let desirableItem use ItemFull{itemBase} _ _
+  let -- A hack to prevent monsters from picking up treasure.
+      preciousWithoutSlot item =
+        IK.Precious `elem` jfeature item  -- risk from treasure hunters
+        && isNothing (strengthEqpSlot item)  -- unlikely to be useful
+      desirableItem use ItemFull{itemBase} _ _
         | canEscape = use /= Just 0
                       || IK.Precious `elem` jfeature itemBase
         | otherwise = use /= Just 0
+                      && not (isNothing use  -- needs resources to id
+                              && preciousWithoutSlot itemBase)
   benAvailableItems aid desirableItem [CGround]
 
 -- | Require the actor is in a bad position to melee or can't melee at all.
