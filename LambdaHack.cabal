@@ -79,12 +79,12 @@ flag curses
   manual:             True
 
 flag expose_internal
-  description:        expose internal functions and types (True for release, False for development)
+  description:        expose internal functions and types, but don't switch on any other release mode options
   default:            False
   manual:             True
 
 flag release
-  description:        prepare for a release (expose, optimize)
+  description:        prepare for a release (expose, optimize, etc.)
   default:            True
   manual:             True
 
