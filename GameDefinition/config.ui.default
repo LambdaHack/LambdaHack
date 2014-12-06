@@ -30,7 +30,8 @@
 ; [ui]
 ; movementViKeys_hjklyubn = False
 ; movementLaptopKeys_uk8o79jl = True
-; font = "Terminus,Monospace normal normal normal normal 12"
+; ; Monospace fonts that have fixed size regardless of boldness
+; font = "Terminus,Courier New,Liberation Mono,Courier,FreeMono,Monospace normal normal normal normal 16"
 ; historyMax = 5000
 ; maxFps = 15
 ; noAnim = False

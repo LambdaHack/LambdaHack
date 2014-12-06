@@ -163,7 +163,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
     liftIO $ case but of
       RightButton -> do
         fsd <- fontSelectionDialogNew ("Choose font" :: String)
-        cf  <- readIORef currentfont  -- TODO: "Terminus,Monospace" fails
+        cf  <- readIORef currentfont
         fds <- fontDescriptionToString cf
         fontSelectionDialogSetFontName fsd (fds :: String)
         fontSelectionDialogSetPreviewText fsd ("eee...@.##+##" :: String)
@@ -476,7 +476,15 @@ modifierTranslate mods =
 doAttr :: TextTag -> Color.Attr -> IO ()
 doAttr tt attr@Color.Attr{fg, bg}
   | attr == Color.defAttr = return ()
-  | fg == Color.defFG = set tt [textTagBackground := Color.colorToRGB bg]
-  | bg == Color.defBG = set tt [textTagForeground := Color.colorToRGB fg]
-  | otherwise         = set tt [textTagForeground := Color.colorToRGB fg,
-                                textTagBackground := Color.colorToRGB bg]
+  | fg == Color.defFG = set tt $ extraAttr
+                                 ++ [textTagBackground := Color.colorToRGB bg]
+  | bg == Color.defBG = set tt $ extraAttr
+                                 ++ [textTagForeground := Color.colorToRGB fg]
+  | otherwise         = set tt $ extraAttr
+                                 ++ [ textTagForeground := Color.colorToRGB fg
+                                    , textTagBackground := Color.colorToRGB bg ]
+
+extraAttr :: [AttrOp TextTag]
+extraAttr = [ textTagWeight := fromEnum WeightBold
+--            , textTagStretch := StretchUltraExpanded
+            ]
