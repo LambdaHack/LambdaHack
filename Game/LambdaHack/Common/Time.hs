@@ -135,6 +135,11 @@ sInMs = 1000000
 toSpeed :: Int -> Speed
 toSpeed s = Speed $ fromIntegral s * sInMs `div` 10
 
+-- Can't be lower or actors would slow down (via tmp organs and weight),
+-- boost time with InsertMove, speed up and have lots of free moves.
+minimalSpeed :: Int64
+minimalSpeed = sInMs `div` 10
+
 -- | Pretty-printing of speed in the format used in content definitions.
 fromSpeed :: Speed -> Int
 fromSpeed (Speed s) = fromIntegral $ s * 10 `div` sInMs
@@ -161,7 +166,8 @@ speedNegate (Speed n) = Speed (-n)
 
 -- | The number of time ticks it takes to walk 1 meter at the given speed.
 ticksPerMeter :: Speed -> Delta Time
-ticksPerMeter (Speed v) = Delta $ Time $ _ticksInSecond * sInMs `divUp` max 1 v
+ticksPerMeter (Speed v) =
+  Delta $ Time $ _ticksInSecond * sInMs `divUp` max minimalSpeed v
 
 -- | Calculate projectile speed from item weight in grams
 -- and velocity percent modifier.
@@ -174,7 +180,7 @@ speedFromWeight weight velocityPercent =
            | w > 500 && w <= 2000 = sInMs * 16 * 1500 `div` (w + 1000)
            | w < 16000 = sInMs * (18000 - w) `div` 1000
            | w < 200000 = sInMs  -- half a step per turn is the minimum
-           | otherwise = 0  -- unless _very_ heavy
+           | otherwise = minimalSpeed  -- unless _very_ heavy
                -- TODO: such high weight should also affect moving
       v = mpMs * vp `div` 100
       -- We round down to the nearest multiple of 2M (unless the speed
@@ -183,7 +189,7 @@ speedFromWeight weight velocityPercent =
       multiple2M = sInMs * if v > 2 * sInMs
                            then 2 * (v `div` (2 * sInMs))
                            else v `div` sInMs
-      minimumSpeed = if mpMs == 0 then 0 else sInMs
+      minimumSpeed = if mpMs == minimalSpeed then minimalSpeed else sInMs
   in Speed $ max minimumSpeed multiple2M
 
 -- | Calculate maximum range in meters of a projectile from its speed.
