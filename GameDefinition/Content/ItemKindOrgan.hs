@@ -273,6 +273,7 @@ bonusHP = armoredSkin
   , ifreq    = [("bonus HP", 100)]
   , icount   = 1
   , iverbHit = "intimidate"
+  , iweight  = 0
   , iaspects = [AddMaxHP 1]
   , idesc    = ""
   }
