@@ -103,7 +103,7 @@ addAnyActor actorFreq lid time mpos = do
       trunkId <-
         registerItem (itemBase trunkFull) itemKnown seed
                      (itemK trunkFull) container False
-      addActorIid trunkId trunkFull fid pos lid id "it" time
+      addActorIid trunkId trunkFull False fid pos lid id "it" time
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
              -> LevelId -> Level -> FactionId -> State

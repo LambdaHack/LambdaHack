@@ -344,7 +344,7 @@ addProjectile source bpos rest iid (_, it) blid bfid btime isBlast = do
                       , borgan = EM.empty}
       bpronoun = "it"
   void $ addActorIid iid itemFull
-                     bfid bpos blid tweakBody bpronoun btime
+                     True bfid bpos blid tweakBody bpronoun btime
 
 addActor :: (MonadAtomic m, MonadServer m)
          => GroupName ItemKind -> FactionId -> Point -> LevelId
@@ -358,13 +358,13 @@ addActor actorGroup bfid pos lid tweakBody bpronoun time = do
   case m2 of
     Nothing -> return Nothing
     Just (trunkId, (trunkFull, _)) ->
-      addActorIid trunkId trunkFull bfid pos lid tweakBody bpronoun time
+      addActorIid trunkId trunkFull False bfid pos lid tweakBody bpronoun time
 
 addActorIid :: (MonadAtomic m, MonadServer m)
-            => ItemId -> ItemFull -> FactionId -> Point -> LevelId
+            => ItemId -> ItemFull -> Bool -> FactionId -> Point -> LevelId
             -> (Actor -> Actor) -> Text -> Time
             -> m (Maybe ActorId)
-addActorIid trunkId trunkFull@ItemFull{..}
+addActorIid trunkId trunkFull@ItemFull{..} bproj
             bfid pos lid tweakBody bpronoun time = do
   let trunkKind = case itemDisco of
         Just ItemDisco{itemKind} -> itemKind
@@ -385,10 +385,11 @@ addActorIid trunkId trunkFull@ItemFull{..}
   let diffBonusCoeff = difficultyCoeff sdifficultySer
       hasUIorEscapes Faction{gplayer} =
         fhasUI gplayer || nU == 0 && fcanEscape gplayer
-      boostFact fact = if diffBonusCoeff > 0
-                       then hasUIorEscapes fact
-                       else any hasUIorEscapes
-                            $ filter (`isAtWar` bfid) $ EM.elems factionD
+      boostFact fact = not bproj
+                       && if diffBonusCoeff > 0
+                          then hasUIorEscapes fact
+                          else any hasUIorEscapes
+                               $ filter (`isAtWar` bfid) $ EM.elems factionD
       diffHP | boostFact factMine = hp * 2 ^ abs diffBonusCoeff
              | otherwise = hp
       bonusHP = fromIntegral $ (diffHP - hp) `divUp` oneM
