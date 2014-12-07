@@ -1,4 +1,4 @@
-## [v0.4.100.0, aka 'The last thaw'](https://github.com/LambdaHack/LambdaHack/compare/v0.4.99.0..v0.4.100.0)
+## [v0.4.100.0, aka 'The last thaw'](https://github.com/LambdaHack/LambdaHack/compare/v0.4.99.0...v0.4.100.0)
 
 - unexpectedly thaw and freeze again v0.5.0.0 of LambdaHack content API
 - unexpectedly implement timeouts and temporary effects easily without FRP
