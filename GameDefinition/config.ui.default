@@ -30,8 +30,8 @@
 ; [ui]
 ; movementViKeys_hjklyubn = False
 ; movementLaptopKeys_uk8o79jl = True
-; ; Monospace fonts that have fixed size regardless of boldness
-; font = "Terminus,Courier New,Liberation Mono,Courier,FreeMono,Monospace normal normal normal normal 16"
+; ; Monospace fonts that have fixed size regardless of boldness (on some OSes)
+; font = "Terminus,DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace normal normal normal normal 16"
 ; colorIsBold = True
 ; historyMax = 5000
 ; maxFps = 15
