@@ -12,9 +12,9 @@ import Game.LambdaHack.Content.ItemKind
 
 temporaries :: [ItemKind]
 temporaries =
-  [tmpStrengthened, tmpWeakened, tmpProtected, tmpPaintedRed, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResitant]
+  [tmpStrengthened, tmpWeakened, tmpProtected, tmpPaintedRed, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant]
 
-tmpStrengthened,    tmpWeakened, tmpProtected, tmpPaintedRed, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResitant :: ItemKind
+tmpStrengthened,    tmpWeakened, tmpProtected, tmpPaintedRed, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant :: ItemKind
 
 -- The @name@ is be used in item description, so it should be an adjective
 -- describing the temporary set of aspects.
@@ -68,7 +68,7 @@ tmpSlow10Resistant =
   in tmp { icount = 7 + d 5
          , ieffects = [Recharging (DropItem COrgan "slow 10" True)] ++ ieffects tmp
          }
-tmpPoisonResitant =
+tmpPoisonResistant =
   let tmp = tmpAs "poison resistant" []
   in tmp { icount = 7 + d 5
          , ieffects = [Recharging (DropItem COrgan "poisoned" True)] ++ ieffects tmp
