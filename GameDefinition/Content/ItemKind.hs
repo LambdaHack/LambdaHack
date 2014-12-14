@@ -105,7 +105,7 @@ bolas = ItemKind
   , iaspects = []
   , ieffects = [Hurt (2 * d 1), Paralyze (5 + d 5), DropBestWeapon]
   , ifeature = [Identified]
-  , idesc    = "Wood balls tied with hemp rope. The target enemy is tripped and bound to drop its weapon, while recovering balance."
+  , idesc    = "Wood balls tied with hemp rope. The target enemy is tripped and bound to drop the main weapon, while fighting for balance."
   , ikit     = []
   }
 harpoon = ItemKind
@@ -188,7 +188,7 @@ woodenTorch = ItemKind
                , AddSight (-2) ]  -- not only flashes, but also sparks
   , ieffects = [Burn 3]
   , ifeature = [EqpSlot EqpSlotAddLight "", Identified]
-  , idesc    = "A smoking, heavy wooden torch, burning in an unsteady fire."
+  , idesc    = "A smoking, heavy wooden torch, burning in an unsteady glow."
   , ikit     = []
   }
 oilLamp = ItemKind
@@ -459,9 +459,9 @@ flask3 = flask
                , OnSmash (Explode "protecting balm") ]
   }
 flask4 = flask
-  { ieffects = [ NoEffect "of red paint"
-               , toOrganGameTurn "painted red" (20 + d 5)
-               , OnSmash (Explode "red paint") ]
+  { ieffects = [ NoEffect "of PhD defense questions"
+               , toOrganGameTurn "defenseless" (20 + d 5)
+               , OnSmash (Explode "PhD defense question") ]
   }
 flask5 = flask
   { irarity  = [(10, 5)]
@@ -575,7 +575,7 @@ scroll8 = scroll
   }
 scroll9 = scroll
   { irarity  = [(1, 15)]
-  , ieffects = [Identify CGround]  -- TODO: ask player: AskPlayer cstore eff?
+  , ieffects = [NoEffect "scientific explanation", Identify CGround]  -- TODO: ask player: AskPlayer cstore eff?
   }
 scroll10 = scroll
   { irarity  = [(10, 10)]

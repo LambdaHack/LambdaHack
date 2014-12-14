@@ -10,9 +10,9 @@ import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]
 blasts =
-  [burningOil2, burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalm, redPaint, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray]
+  [burningOil2, burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalm, defenseQuestion, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray]
 
-burningOil2,    burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalm, redPaint, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray :: ItemKind
+burningOil2,    burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalm, defenseQuestion, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray :: ItemKind
 
 -- * Parameterized immediate effect blasts
 
@@ -357,17 +357,17 @@ protectingBalm = ItemKind
   , idesc    = ""
   , ikit     = []
   }
-redPaint = ItemKind
+defenseQuestion = ItemKind
   { isymbol  = '\''
-  , iname    = "red paint"
-  , ifreq    = [("red paint", 1)]
+  , iname    = "PhD defense question"
+  , ifreq    = [("PhD defense question", 1)]
   , iflavour = zipPlain [BrRed]
   , icount   = 14
   , irarity  = [(1, 1)]
   , iverbHit = "paint"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [toOrganGameTurn "painted red" (3 + d 3)]
+  , ieffects = [toOrganGameTurn "defenseless" (3 + d 3)]
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
                , Fragile, Identified ]
   , idesc    = ""

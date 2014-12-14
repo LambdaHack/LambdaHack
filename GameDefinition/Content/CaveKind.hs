@@ -53,7 +53,7 @@ rogue = CaveKind
   }
 arena = rogue
   { csymbol       = 'A'
-  , cname         = "Underground city"
+  , cname         = "Underground library"
   , cfreq         = [("campaign random", 30), ("caveArena", 1)]
   , cgrid         = DiceXY (2 * d 2) (2 * d 2)
   , cminPlaceSize = DiceXY (2 * d 2 + 3) 4
@@ -64,6 +64,7 @@ arena = rogue
   , cactorCoeff   = 40
   , cactorFreq    = [("monster", 70), ("animal", 30)]
   , citemNum      = 11 * d 2  -- few rooms
+  , citemFreq     = [("useful", 20), ("treasure", 30), ("any scroll", 50)]
   , cpassable     = True
   , cdefTile      = "arenaSet"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
@@ -92,7 +93,7 @@ empty = rogue
   }
 noise = rogue
   { csymbol       = 'N'
-  , cname         = "Glittering cave"
+  , cname         = "Leaky, burrowed sediment"
   , cfreq         = [("campaign random", 10), ("caveNoise", 1)]
   , cgrid         = DiceXY (2 + d 2) 3
   , cminPlaceSize = DiceXY 12 5
