@@ -208,7 +208,6 @@ actionStrategy aid = do
 waitBlockNow :: MonadClient m => m (Strategy (RequestTimed AbWait))
 waitBlockNow = return $! returN "wait" ReqWait
 
--- TODO: join multiple ReqMoveItems into one
 pickup :: MonadClient m
        => ActorId -> Bool -> m (Strategy (RequestTimed AbMoveItem))
 pickup aid onlyWeapon = do
@@ -218,21 +217,19 @@ pickup aid onlyWeapon = do
         $ strengthEqpSlot $ itemBase itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
-      cmp ((Nothing, _), _) = 5  -- experimenting is fun
-      cmp ((Just (n, _), _), _) = abs n
-  -- Pick up the best desirable item, if any.
-  case reverse $ sortBy (comparing cmp) $ filterWeapon benItemL of
-    ((_, (k, _)), (iid, itemFull)) : _ -> do
-      b <- getsState $ getActorBody aid
-      -- TODO: instead of pickup to eqp and then move to inv, pickup to inv
-      let toCStore = if goesIntoInv (itemBase itemFull)
-                        || eqpOverfull b k
-                     then CInv
-                     else CEqp
-      return $! returN "pickup" $ ReqMoveItems [(iid, k, CGround, toCStore)]
-    [] -> return reject
+      prepareOne ((_, (k, _)), (iid, itemFull)) = do
+        b <- getsState $ getActorBody aid
+        -- TODO: instead of pickup to eqp and then move to inv, pickup to inv
+        let toCStore = if goesIntoInv (itemBase itemFull)
+                          || eqpOverfull b k
+                       then CInv
+                       else CEqp
+        return (iid, k, CGround, toCStore)
+  prepared <- mapM prepareOne $ filterWeapon benItemL
+  return $! if null prepared
+            then reject
+            else returN "pickup" $ ReqMoveItems prepared
 
--- TODO: join multiple ReqMoveItems into one
 equipItems :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 equipItems aid = do
   cops@Kind.COps{corule} <- getsState scops
@@ -246,17 +243,15 @@ equipItems aid = do
   condLightBetrays <- condLightBetraysM aid
   let improve :: CStore -> ([(Int, (ItemId, ItemFull))],
                             [(Int, (ItemId, ItemFull))])
-              -> Strategy (RequestTimed AbMoveItem)
+              -> [(ItemId, Int, CStore, CStore)]
       improve fromCStore (bestInv, bestEqp) =
         case (bestInv, bestEqp) of
           ((_, (iidInv, _)) : _, []) | not (eqpOverfull body 1) ->
-            returN "wield any"
-            $ ReqMoveItems [(iidInv, 1, fromCStore, CEqp)]
+            [(iidInv, 1, fromCStore, CEqp)]
           ((vInv, (iidInv, _)) : _, (vEqp, _) : _) | not (eqpOverfull body 1)
                                                      && vInv > vEqp ->
-            returN "wield better"
-            $ ReqMoveItems [(iidInv, 1, fromCStore, CEqp)]
-          _ -> reject
+            [(iidInv, 1, fromCStore, CEqp)]
+          _ -> []
       -- We filter out unneeded items. In particular, we ignore them in eqp
       -- when comparing to items we may want to equip. Anyway, the unneeded
       -- items should be removed in yieldUnneeded earlier or soon after.
@@ -265,17 +260,17 @@ equipItems aid = do
       bestThree = bestByEqpSlot (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded invAssocs)
                                 (filter filterNeeded shaAssocs)
-      bEqpInv = msum $ map (improve CInv)
+      bEqpInv = concatMap (improve CInv)
                 $ map (\(_, (eqp, inv, _)) -> (inv, eqp)) bestThree
-      bEqpSha = msum $ map (improve CSha)
-                $ map (\(_, (eqp, _, sha)) -> (sha, eqp)) bestThree
-  if nullStrategy bEqpInv
-    then if rsharedStash && calmEnough body activeItems
-         then return $! bEqpSha
-         else return reject
-    else return $! bEqpInv
+      bEqpSha | rsharedStash && calmEnough body activeItems =
+                  concatMap (improve CSha)
+                  $ map (\(_, (eqp, _, sha)) -> (sha, eqp)) bestThree
+              | otherwise = []
+      prepared = bEqpInv ++ bEqpSha
+  return $! if null prepared
+            then reject
+            else returN "equipItems" $ ReqMoveItems prepared
 
--- TODO: join multiple ReqMoveItems into one
 unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 unEquipItems aid = do
@@ -288,64 +283,59 @@ unEquipItems aid = do
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
   condLightBetrays <- condLightBetraysM aid
-  let yieldSingleUnneeded (iidEqp, itemEqp) =
-        let csha = if rsharedStash && calmEnough body activeItems
-                   then CSha
-                   else CInv
-        in if harmful cops body activeItems fact itemEqp
-           then Just $ ReqMoveItems [(iidEqp, itemK itemEqp, CEqp, CInv)]
-                -- throw
-           else if hinders condLightBetrays body activeItems itemEqp
-           then Just $ ReqMoveItems [(iidEqp, itemK itemEqp, CEqp, csha)]
-                -- share
-           else Nothing
-      yieldUnneeded = mapMaybe yieldSingleUnneeded eqpAssocs
-      improve :: CStore -> ( IK.EqpSlot
-                           , ( [(Int, (ItemId, ItemFull))]
-                             , [(Int, (ItemId, ItemFull))] ) )
-              -> Strategy (RequestTimed AbMoveItem)
-      improve fromCStore (slot, (bestInv, bestEqp)) =
-        case (bestInv, bestEqp) of
-          _ | slot == IK.EqpSlotPeriodic
-              && fromCStore == CEqp
-              && not (eqpOverfull body 0) ->
-            -- Don't get rid of periodic items from eqp unless eqp full.
-            reject
-          (_, (vEqp, (iidEqp, _)) : _) | getK bestEqp > 1
-                                         && betterThanInv vEqp bestInv ->
-            -- To share the best items with others, if they care.
-            returN "yield rest"
-            $ ReqMoveItems [(iidEqp, getK bestEqp - 1, fromCStore, CSha)]
-          (_, _ : (vEqp, (iidEqp, _)) : _) | betterThanInv vEqp bestInv ->
-            -- To share the second best items with others, if they care.
-            returN "yield worse"
-            $ ReqMoveItems [(iidEqp, getK bestEqp, fromCStore, CSha)]
-          _ -> reject
-      getK [] = 0
-      getK ((_, (_, itemFull)) : _) = itemK itemFull
-      betterThanInv _ [] = True
-      betterThanInv vEqp ((vInv, _) : _) = vEqp > vInv
-      bestThree = bestByEqpSlot eqpAssocs invAssocs shaAssocs
-      bInvSha = msum $ map (improve CInv)
-                $ map (\((slot, _), (_, inv, sha)) ->
-                        (slot, (sha, inv))) bestThree
-      bEqpSha = msum $ map (improve CEqp)
-                $ map (\((slot, _), (eqp, _, sha)) ->
-                        (slot, (sha, eqp))) bestThree
-  case yieldUnneeded of
-    [] -> if rsharedStash && calmEnough body activeItems
-          then if nullStrategy bInvSha
-               then return $! bEqpSha
-               else return $! bInvSha
-          else return reject
-    _ ->
       -- Here AI hides from the human player the Ring of Speed And Bleeding,
       -- which is a bit harsh, but fair. However any subsequent such
       -- rings will not be picked up at all, so the human player
       -- doesn't lose much fun. Additionally, if AI learns alchemy later on,
       -- they can repair the ring, wield it, drop at death and it's
       -- in play again.
-      return $! liftFrequency $ uniformFreq "yield unneeded" yieldUnneeded
+  let yieldSingleUnneeded (iidEqp, itemEqp) =
+        let csha = if rsharedStash && calmEnough body activeItems
+                   then CSha
+                   else CInv
+        in if harmful cops body activeItems fact itemEqp
+           then [(iidEqp, itemK itemEqp, CEqp, CInv)]
+           else if hinders condLightBetrays body activeItems itemEqp
+           then [(iidEqp, itemK itemEqp, CEqp, csha)]
+           else []
+      yieldUnneeded = concatMap yieldSingleUnneeded eqpAssocs
+      improve :: CStore -> ( IK.EqpSlot
+                           , ( [(Int, (ItemId, ItemFull))]
+                             , [(Int, (ItemId, ItemFull))] ) )
+              -> [(ItemId, Int, CStore, CStore)]
+      improve fromCStore (slot, (bestInv, bestEqp)) =
+        case (bestInv, bestEqp) of
+          _ | slot == IK.EqpSlotPeriodic
+              && fromCStore == CEqp
+              && not (eqpOverfull body 0) ->
+            -- Don't get rid of periodic items from eqp unless eqp full.
+            []
+          (_, (vEqp, (iidEqp, _)) : _) | getK bestEqp > 1
+                                         && betterThanInv vEqp bestInv ->
+            -- To share the best items with others, if they care.
+            [(iidEqp, getK bestEqp - 1, fromCStore, CSha)]
+          (_, _ : (vEqp, (iidEqp, _)) : _) | betterThanInv vEqp bestInv ->
+            -- To share the second best items with others, if they care.
+            [(iidEqp, getK bestEqp, fromCStore, CSha)]
+          _ -> []
+      getK [] = 0
+      getK ((_, (_, itemFull)) : _) = itemK itemFull
+      betterThanInv _ [] = True
+      betterThanInv vEqp ((vInv, _) : _) = vEqp > vInv
+      bestThree = bestByEqpSlot eqpAssocs invAssocs shaAssocs
+      bInvSha = concatMap (improve CInv)
+                $ map (\((slot, _), (_, inv, sha)) ->
+                        (slot, (sha, inv))) bestThree
+      bEqpSha = concatMap (improve CEqp)
+                $ map (\((slot, _), (eqp, _, sha)) ->
+                        (slot, (sha, eqp))) bestThree
+      prepared = yieldUnneeded
+                 ++ if rsharedStash && calmEnough body activeItems
+                    then bInvSha ++ bEqpSha
+                    else []
+  return $! if null prepared
+            then reject
+            else returN "unEquipItems" $ ReqMoveItems prepared
 
 groupByEqpSlot :: [(ItemId, ItemFull)]
                -> M.Map (IK.EqpSlot, Text) [(ItemId, ItemFull)]
