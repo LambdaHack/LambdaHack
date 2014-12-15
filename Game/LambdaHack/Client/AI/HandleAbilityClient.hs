@@ -342,10 +342,11 @@ unEquipItems aid = do
       bEqpSha = concatMap (improve CEqp)
                 $ map (\((slot, _), (eqp, _, sha)) ->
                         (slot, (sha, eqp))) bestThree
-      prepared = yieldUnneeded
-                 ++ if rsharedStash && calmE
-                    then bInvSha ++ bEqpSha
-                    else []
+      prepared = if null yieldUnneeded
+                 then if rsharedStash && calmE
+                      then bInvSha ++ bEqpSha
+                      else []
+                 else yieldUnneeded
   return $! if null prepared
             then reject
             else returN "unEquipItems" $ ReqMoveItems prepared
