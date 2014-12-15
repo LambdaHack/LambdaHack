@@ -85,8 +85,7 @@ handleRequestTimed aid cmd = case cmd of
   ReqDisplace target -> reqDisplace aid target
   ReqAlter tpos mfeat -> reqAlter aid tpos mfeat
   ReqWait -> reqWait aid
-  ReqMoveItem iid k fromCStore toCStore ->
-    reqMoveItem aid iid k fromCStore toCStore
+  ReqMoveItems l -> reqMoveItems aid l
   ReqProject p eps iid cstore -> reqProject aid p eps iid cstore
   ReqApply iid cstore -> reqApply aid iid cstore
   ReqTrigger mfeat -> reqTrigger aid mfeat
@@ -334,11 +333,15 @@ reqAlter source tpos mfeat = do
 reqWait :: MonadAtomic m => ActorId -> m ()
 reqWait _ = return ()
 
--- * ReqMoveItem
+-- * ReqMoveItems
+
+reqMoveItems :: (MonadAtomic m, MonadServer m)
+             => ActorId -> [(ItemId, Int, CStore, CStore)] -> m ()
+reqMoveItems aid l = mapM_ (reqMoveItem aid) l
 
 reqMoveItem :: (MonadAtomic m, MonadServer m)
-            => ActorId -> ItemId -> Int -> CStore -> CStore -> m ()
-reqMoveItem aid iid k fromCStore toCStore = do
+            => ActorId -> (ItemId, Int, CStore, CStore) -> m ()
+reqMoveItem aid (iid, k, fromCStore, toCStore) = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsServer aid
   let fromC = CActor aid fromCStore
@@ -350,7 +353,7 @@ reqMoveItem aid iid k fromCStore toCStore = do
           execUpdAtomic $ UpdDiscoverSeed (blid b) (bpos b) iid seed
         upds <- generalMoveItem iid k fromC toC
         mapM_ execUpdAtomic upds
-      req = ReqMoveItem iid k fromCStore toCStore
+      req = ReqMoveItems [(iid, k, fromCStore, toCStore)]
   if k < 1 || fromCStore == toCStore then execFailure aid req ItemNothing
   else if toCStore == CEqp
           && eqpOverfull b k then execFailure aid req EqpOverfull

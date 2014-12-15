@@ -208,6 +208,7 @@ actionStrategy aid = do
 waitBlockNow :: MonadClient m => m (Strategy (RequestTimed AbWait))
 waitBlockNow = return $! returN "wait" ReqWait
 
+-- TODO: join multiple ReqMoveItems into one
 pickup :: MonadClient m
        => ActorId -> Bool -> m (Strategy (RequestTimed AbMoveItem))
 pickup aid onlyWeapon = do
@@ -228,9 +229,10 @@ pickup aid onlyWeapon = do
                         || eqpOverfull b k
                      then CInv
                      else CEqp
-      return $! returN "pickup" $ ReqMoveItem iid k CGround toCStore
+      return $! returN "pickup" $ ReqMoveItems [(iid, k, CGround, toCStore)]
     [] -> return reject
 
+-- TODO: join multiple ReqMoveItems into one
 equipItems :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 equipItems aid = do
   cops@Kind.COps{corule} <- getsState scops
@@ -249,11 +251,11 @@ equipItems aid = do
         case (bestInv, bestEqp) of
           ((_, (iidInv, _)) : _, []) | not (eqpOverfull body 1) ->
             returN "wield any"
-            $ ReqMoveItem iidInv 1 fromCStore CEqp
+            $ ReqMoveItems [(iidInv, 1, fromCStore, CEqp)]
           ((vInv, (iidInv, _)) : _, (vEqp, _) : _) | not (eqpOverfull body 1)
                                                      && vInv > vEqp ->
             returN "wield better"
-            $ ReqMoveItem iidInv 1 fromCStore CEqp
+            $ ReqMoveItems [(iidInv, 1, fromCStore, CEqp)]
           _ -> reject
       -- We filter out unneeded items. In particular, we ignore them in eqp
       -- when comparing to items we may want to equip. Anyway, the unneeded
@@ -273,6 +275,7 @@ equipItems aid = do
          else return reject
     else return $! bEqpInv
 
+-- TODO: join multiple ReqMoveItems into one
 unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 unEquipItems aid = do
@@ -290,9 +293,11 @@ unEquipItems aid = do
                    then CSha
                    else CInv
         in if harmful cops body activeItems fact itemEqp
-           then Just $ ReqMoveItem iidEqp (itemK itemEqp) CEqp CInv  -- throw
+           then Just $ ReqMoveItems [(iidEqp, itemK itemEqp, CEqp, CInv)]
+                -- throw
            else if hinders condLightBetrays body activeItems itemEqp
-           then Just $ ReqMoveItem iidEqp (itemK itemEqp) CEqp csha  -- share
+           then Just $ ReqMoveItems [(iidEqp, itemK itemEqp, CEqp, csha)]
+                -- share
            else Nothing
       yieldUnneeded = mapMaybe yieldSingleUnneeded eqpAssocs
       improve :: CStore -> ( IK.EqpSlot
@@ -310,11 +315,11 @@ unEquipItems aid = do
                                          && betterThanInv vEqp bestInv ->
             -- To share the best items with others, if they care.
             returN "yield rest"
-            $ ReqMoveItem iidEqp (getK bestEqp - 1) fromCStore CSha
+            $ ReqMoveItems [(iidEqp, getK bestEqp - 1, fromCStore, CSha)]
           (_, _ : (vEqp, (iidEqp, _)) : _) | betterThanInv vEqp bestInv ->
             -- To share the second best items with others, if they care.
             returN "yield worse"
-            $ ReqMoveItem iidEqp (getK bestEqp) fromCStore CSha
+            $ ReqMoveItems [(iidEqp, getK bestEqp, fromCStore, CSha)]
           _ -> reject
       getK [] = 0
       getK ((_, (_, itemFull)) : _) = itemK itemFull

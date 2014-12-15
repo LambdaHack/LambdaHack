@@ -63,8 +63,7 @@ data RequestTimed :: Ability -> * where
   ReqDisplace :: !ActorId -> RequestTimed AbDisplace
   ReqAlter :: !Point -> !(Maybe TK.Feature) -> RequestTimed AbAlter
   ReqWait :: RequestTimed AbWait
-  ReqMoveItem :: !ItemId -> !Int -> !CStore -> !CStore
-              -> RequestTimed AbMoveItem
+  ReqMoveItems :: ![(ItemId, Int, CStore, CStore)] -> RequestTimed AbMoveItem
   ReqProject :: !Point -> !Int -> !ItemId -> !CStore -> RequestTimed AbProject
   ReqApply :: !ItemId -> !CStore -> RequestTimed AbApply
   ReqTrigger :: !(Maybe TK.Feature) -> RequestTimed AbTrigger

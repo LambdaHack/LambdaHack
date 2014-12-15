@@ -227,8 +227,8 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
   case ggi of
     Right ((iid, itemFull), CActor _ fromCStore) -> do
       let k = itemK itemFull
-          retReq toCStore =
-            return $ Right $ ReqMoveItem iid k fromCStore toCStore
+          retReq toCStore = return $ Right $
+            ReqMoveItems [(iid, k, fromCStore, toCStore)]
       if fromCStore == CGround
       then case destCStore of
         CEqp | goesIntoInv (itemBase itemFull) ->
