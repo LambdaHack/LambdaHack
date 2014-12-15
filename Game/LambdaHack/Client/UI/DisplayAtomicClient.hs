@@ -5,8 +5,8 @@ module Game.LambdaHack.Client.UI.DisplayAtomicClient
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import qualified Data.EnumSet as ES
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.IntMap.Strict as IM
 import Data.Maybe
 import Data.Monoid
@@ -115,7 +115,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   UpdMoveActor aid _ _ -> lookAtMove aid
   UpdWaitActor aid _ -> when verbose $ aidVerbMU aid "wait"
   UpdDisplaceActor source target -> displaceActorUI source target
-  UpdMoveItem iid k aid c1 c2 -> moveItemUI verbose iid k aid c1 c2
+  UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
   -- Change actor attributes.
   UpdAgeActor{} -> skip
   UpdRefillHP _ 0 -> skip
@@ -371,9 +371,9 @@ destroyActorUI aid body verb verboseVerb verbose = do
   modifyClient $ \cli -> cli {slastLost = ES.insert aid $ slastLost cli}
 
 moveItemUI :: MonadClientUI m
-           => Bool -> ItemId -> Int -> ActorId -> CStore -> CStore
+           => ItemId -> Int -> ActorId -> CStore -> CStore
            -> m ()
-moveItemUI verbose iid k aid cstore1 cstore2 = do
+moveItemUI iid k aid cstore1 cstore2 = do
   let verb = verbCStore cstore2
   when (cstore2 == CGround) $ updateItemSlotSide aid iid
   b <- getsState $ getActorBody aid
@@ -396,8 +396,7 @@ moveItemUI verbose iid k aid cstore1 cstore2 = do
                   , partItemWs n c2 (blid b) localTime (itemToF iid kit)
                   , "\n" ]
       Nothing -> return ()
-  else when (cstore2 /= CGround || verbose) $  -- dropping is silent
-    itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
+  else itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
