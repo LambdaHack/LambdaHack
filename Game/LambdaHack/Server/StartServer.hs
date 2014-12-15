@@ -3,6 +3,7 @@ module Game.LambdaHack.Server.StartServer
   ( gameReset, reinitGame, initPer, recruitActors, applyDebug, initDebug
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
@@ -143,7 +144,7 @@ createFactions totalDepth players = do
 
 gameReset :: MonadServer m
           => Kind.COps -> DebugModeSer -> Maybe R.StdGen -> m State
-gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind, ouniqGroup}}
+gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
           sdebug mrandom = do
   dungeonSeed <- getSetGen $ sdungeonRng sdebug `mplus` mrandom
   srandom <- getSetGen $ smainRng sdebug `mplus` mrandom
@@ -158,8 +159,8 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind, ouniqGroup}}
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
                   DungeonGen.FreshDungeon)
       rnd = do
-        modeKind <- fmap (fromMaybe $ ouniqGroup "campaign")  -- the fallback
-                    $ opick gameMode (const True)
+        modeKind <- fromMaybe (assert `failure` gameMode)
+                    <$> opick gameMode (const True)
         let mode = okind modeKind
             automatePS ps = ps {rosterList =
                                   map (automatePlayer True) $ rosterList ps}
