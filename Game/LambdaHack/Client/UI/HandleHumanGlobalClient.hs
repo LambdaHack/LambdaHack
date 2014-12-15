@@ -216,7 +216,8 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
-  let cLegal = if calmEnough b activeItems
+  let calmE = calmEnough b activeItems
+      cLegal = if calmE
                then cLegalRaw
                else if destCStore == CSha
                     then []
@@ -231,8 +232,10 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
             n = k + oldN
             retRec toCStore =
               ret4 fromCStore rest n ((iid, k, fromCStore, toCStore) : acc)
-        if fromCStore == CGround
+        if cLegalRaw == [CGround]  -- normal pickup
         then case destCStore of
+          CEqp | calmE && goesIntoSha (itemBase itemFull) ->
+            retRec CSha
           CEqp | goesIntoInv (itemBase itemFull) ->
             retRec CInv
           CEqp | eqpOverfull b n -> do

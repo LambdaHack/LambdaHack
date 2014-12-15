@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.ActorState
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, maxActorSkills, dispEnemy
-  , fullAssocs, itemToFull, goesIntoInv, eqpOverfull
+  , fullAssocs, itemToFull, goesIntoInv, goesIntoSha, eqpOverfull
   , storeFromC, lidFromC, aidFromC
   ) where
 
@@ -360,6 +360,9 @@ itemToFull Kind.COps{coitem=Kind.Ops{okind}}
 
 goesIntoInv :: Item -> Bool
 goesIntoInv item = isNothing $ strengthEqpSlot item
+
+goesIntoSha :: Item -> Bool
+goesIntoSha item = IK.Precious `elem` jfeature item && goesIntoInv item
 
 eqpOverfull :: Actor -> Int -> Bool
 eqpOverfull b n = let size = sum $ map fst $ EM.elems $ beqp b

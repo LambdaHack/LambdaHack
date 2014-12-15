@@ -212,21 +212,25 @@ pickup :: MonadClient m
        => ActorId -> Bool -> m (Strategy (RequestTimed AbMoveItem))
 pickup aid onlyWeapon = do
   benItemL <- benGroundItems aid
-  let isWeapon (_, (_, itemFull)) =
+  b <- getsState $ getActorBody aid
+  activeItems <- activeItemsClient aid
+  let calmE = calmEnough b activeItems
+      isWeapon (_, (_, itemFull)) =
         maybe False ((== IK.EqpSlotWeapon) . fst)
         $ strengthEqpSlot $ itemBase itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
-      prepareOne (oldN, l4) ((_, (k, _)), (iid, itemFull)) = do
-        b <- getsState $ getActorBody aid
+      prepareOne (oldN, l4) ((_, (k, _)), (iid, itemFull)) =
         -- TODO: instead of pickup to eqp and then move to inv, pickup to inv
         let n = k + oldN
-            toCStore = if goesIntoInv (itemBase itemFull)
-                          || eqpOverfull b n
+            toCStore = if calmE && goesIntoSha (itemBase itemFull)
+                       then CSha
+                       else if goesIntoInv (itemBase itemFull)
+                               || eqpOverfull b n
                        then CInv
                        else CEqp
-        return (n, (iid, k, CGround, toCStore) : l4)
-  (_, prepared) <- foldM prepareOne (0, []) $ filterWeapon benItemL
+        in (n, (iid, k, CGround, toCStore) : l4)
+      (_, prepared) = foldl' prepareOne (0, []) $ filterWeapon benItemL
   return $! if null prepared
             then reject
             else returN "pickup" $ ReqMoveItems prepared
