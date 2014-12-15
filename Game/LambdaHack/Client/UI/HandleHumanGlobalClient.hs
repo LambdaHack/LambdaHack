@@ -222,31 +222,33 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
                     then []
                     else delete CSha cLegalRaw
       ret4 :: MonadClientUI m
-           => CStore -> [(ItemId, ItemFull)] -> [(ItemId, Int, CStore, CStore)]
+           => CStore -> [(ItemId, ItemFull)]
+           -> Int -> [(ItemId, Int, CStore, CStore)]
            -> m (Either Slideshow [(ItemId, Int, CStore, CStore)])
-      ret4 _ [] acc = return $ Right acc
-      ret4 fromCStore ((iid, itemFull) : rest) acc = do
+      ret4 _ [] _ acc = return $ Right acc
+      ret4 fromCStore ((iid, itemFull) : rest) oldN acc = do
         let k = itemK itemFull
+            n = k + oldN
             retRec toCStore =
-              ret4 fromCStore rest ((iid, k, fromCStore, toCStore) : acc)
+              ret4 fromCStore rest n ((iid, k, fromCStore, toCStore) : acc)
         if fromCStore == CGround
         then case destCStore of
           CEqp | goesIntoInv (itemBase itemFull) ->
             retRec CInv
-          CEqp | eqpOverfull b k -> do
+          CEqp | eqpOverfull b n -> do
             msgAdd $ "Warning:" <+> showReqFailure EqpOverfull <> "."
             retRec CInv
           _ ->
             retRec destCStore
         else case destCStore of
-          CEqp | eqpOverfull b k -> failSer EqpOverfull
+          CEqp | eqpOverfull b n -> failSer EqpOverfull
           _ -> retRec destCStore
   ggi <- if auto
          then getAnyItems verb cLegalRaw cLegal False False
          else getAnyItems verb cLegalRaw cLegal True True
   case ggi of
     Right (l, CActor _ fromCStore) -> do
-      l4 <- ret4 fromCStore l []
+      l4 <- ret4 fromCStore l 0 []
       return $! case l4 of
         Left sli -> Left sli
         Right [] -> assert `failure` ggi
