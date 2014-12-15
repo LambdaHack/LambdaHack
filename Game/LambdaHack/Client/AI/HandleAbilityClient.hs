@@ -217,15 +217,16 @@ pickup aid onlyWeapon = do
         $ strengthEqpSlot $ itemBase itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
-      prepareOne ((_, (k, _)), (iid, itemFull)) = do
+      prepareOne (oldN, l4) ((_, (k, _)), (iid, itemFull)) = do
         b <- getsState $ getActorBody aid
         -- TODO: instead of pickup to eqp and then move to inv, pickup to inv
-        let toCStore = if goesIntoInv (itemBase itemFull)
-                          || eqpOverfull b k
+        let n = k + oldN
+            toCStore = if goesIntoInv (itemBase itemFull)
+                          || eqpOverfull b n
                        then CInv
                        else CEqp
-        return (iid, k, CGround, toCStore)
-  prepared <- mapM prepareOne $ filterWeapon benItemL
+        return (n, (iid, k, CGround, toCStore) : l4)
+  (_, prepared) <- foldM prepareOne (0, []) $ filterWeapon benItemL
   return $! if null prepared
             then reject
             else returN "pickup" $ ReqMoveItems prepared
@@ -241,17 +242,20 @@ equipItems aid = do
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
   condLightBetrays <- condLightBetraysM aid
-  let improve :: CStore -> ([(Int, (ItemId, ItemFull))],
-                            [(Int, (ItemId, ItemFull))])
-              -> [(ItemId, Int, CStore, CStore)]
-      improve fromCStore (bestInv, bestEqp) =
-        case (bestInv, bestEqp) of
-          ((_, (iidInv, _)) : _, []) | not (eqpOverfull body 1) ->
-            [(iidInv, 1, fromCStore, CEqp)]
-          ((vInv, (iidInv, _)) : _, (vEqp, _) : _) | not (eqpOverfull body 1)
+  let improve :: CStore
+              -> (Int, [(ItemId, Int, CStore, CStore)])
+              -> ([(Int, (ItemId, ItemFull))],
+                  [(Int, (ItemId, ItemFull))])
+              -> (Int, [(ItemId, Int, CStore, CStore)])
+      improve fromCStore (oldN, l4) (bestInv, bestEqp) =
+        let n = 1 + oldN
+        in case (bestInv, bestEqp) of
+          ((_, (iidInv, _)) : _, []) | not (eqpOverfull body n) ->
+            (n, (iidInv, 1, fromCStore, CEqp) : l4)
+          ((vInv, (iidInv, _)) : _, (vEqp, _) : _) | not (eqpOverfull body n)
                                                      && vInv > vEqp ->
-            [(iidInv, 1, fromCStore, CEqp)]
-          _ -> []
+            (n, (iidInv, 1, fromCStore, CEqp) : l4)
+          _ -> (n, l4)
       -- We filter out unneeded items. In particular, we ignore them in eqp
       -- when comparing to items we may want to equip. Anyway, the unneeded
       -- items should be removed in yieldUnneeded earlier or soon after.
@@ -260,13 +264,13 @@ equipItems aid = do
       bestThree = bestByEqpSlot (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded invAssocs)
                                 (filter filterNeeded shaAssocs)
-      bEqpInv = concatMap (improve CInv)
+      bEqpInv = foldl' (improve CInv) (0, [])
                 $ map (\(_, (eqp, inv, _)) -> (inv, eqp)) bestThree
-      bEqpSha | rsharedStash && calmEnough body activeItems =
-                  concatMap (improve CSha)
-                  $ map (\(_, (eqp, _, sha)) -> (sha, eqp)) bestThree
-              | otherwise = []
-      prepared = bEqpInv ++ bEqpSha
+      bEqpBoth | rsharedStash && calmEnough body activeItems =
+                   foldl' (improve CSha) bEqpInv
+                   $ map (\(_, (eqp, _, sha)) -> (sha, eqp)) bestThree
+               | otherwise = bEqpInv
+      (_, prepared) = bEqpBoth
   return $! if null prepared
             then reject
             else returN "equipItems" $ ReqMoveItems prepared
