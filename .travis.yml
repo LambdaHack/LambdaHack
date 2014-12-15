@@ -89,8 +89,8 @@ install:
        cabal-1.18 install -j2 -f-release -O1 --only-dependencies;
        cabal-1.18 configure -f-release -O1 --enable-tests;
      else
-       cabal-1.18 install -j2 -f-release -O2 --only-dependencies;
-       cabal-1.18 configure -f-release -O2 --enable-tests;
+       cabal-1.18 install -j2 -f-release -O2 -fno-ignore-asserts --only-dependencies;
+       cabal-1.18 configure -f-release -O2 -fno-ignore-asserts --enable-tests;
      fi;
      cabal-1.18 build -j2;
      cabal-1.18 test;
@@ -99,8 +99,8 @@ install:
        cabal-1.18 install -fvty -j2 -frelease -O1 --only-dependencies;
        cabal-1.18 configure -fvty -frelease -O1 --enable-tests;
      else
-       cabal-1.18 install -fvty -j2 -frelease -O2 --only-dependencies;
-       cabal-1.18 configure -fvty -frelease -O2 --enable-tests;
+       cabal-1.18 install -fvty -j2 -frelease -O2 -fno-ignore-asserts --only-dependencies;
+       cabal-1.18 configure -fvty -frelease -O2 -fno-ignore-asserts --enable-tests;
      fi;
      cabal-1.18 build -j2;
      cabal-1.18 test;
