@@ -221,26 +221,36 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
                else if destCStore == CSha
                     then []
                     else delete CSha cLegalRaw
+      ret4 :: MonadClientUI m
+           => CStore -> [(ItemId, ItemFull)] -> [(ItemId, Int, CStore, CStore)]
+           -> m (Either Slideshow [(ItemId, Int, CStore, CStore)])
+      ret4 _ [] acc = return $ Right acc
+      ret4 fromCStore ((iid, itemFull) : rest) acc = do
+        let k = itemK itemFull
+            retRec toCStore =
+              ret4 fromCStore rest ((iid, k, fromCStore, toCStore) : acc)
+        if fromCStore == CGround
+        then case destCStore of
+          CEqp | goesIntoInv (itemBase itemFull) ->
+            retRec CInv
+          CEqp | eqpOverfull b k -> do
+            msgAdd $ "Warning:" <+> showReqFailure EqpOverfull <> "."
+            retRec CInv
+          _ ->
+            retRec destCStore
+        else case destCStore of
+          CEqp | eqpOverfull b k -> failSer EqpOverfull
+          _ -> retRec destCStore
   ggi <- if auto
-         then getAnyItem verb cLegalRaw cLegal False False
-         else getAnyItem verb cLegalRaw cLegal True True
+         then getAnyItems verb cLegalRaw cLegal False False
+         else getAnyItems verb cLegalRaw cLegal True True
   case ggi of
-    Right ((iid, itemFull), CActor _ fromCStore) -> do
-      let k = itemK itemFull
-          retReq toCStore = return $ Right $
-            ReqMoveItems [(iid, k, fromCStore, toCStore)]
-      if fromCStore == CGround
-      then case destCStore of
-        CEqp | goesIntoInv (itemBase itemFull) ->
-          retReq CInv
-        CEqp | eqpOverfull b k -> do
-          msgAdd $ "Warning:" <+> showReqFailure EqpOverfull <> "."
-          retReq CInv
-        _ ->
-          retReq destCStore
-      else case destCStore of
-        CEqp | eqpOverfull b k -> failSer EqpOverfull
-        _ -> retReq destCStore
+    Right (l, CActor _ fromCStore) -> do
+      l4 <- ret4 fromCStore l []
+      return $! case l4 of
+        Left sli -> Left sli
+        Right [] -> assert `failure` ggi
+        Right lr -> Right $ ReqMoveItems lr
     Left slides -> return $ Left slides
     _ -> assert `failure` ggi
 

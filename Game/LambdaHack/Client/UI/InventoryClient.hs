@@ -1,7 +1,7 @@
 -- | Inventory management and party cycling.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( failMsg, getGroupItem, getAnyItem, getStoreItem
+  ( failMsg, getGroupItem, getAnyItems, getStoreItem
   , memberCycle, memberBack, pickLeader
   ) where
 
@@ -69,36 +69,41 @@ getGroupItem psuit prompt promptGeneric cLegalRaw cLegalAfterCalm = do
       cLegal = case find hasThisActor cLegalAfterCalm of
         Nothing -> cLegalNotEmpty
         Just cThisActor -> cThisActor : delete cThisActor cLegalNotEmpty
-  getItem psuit (\_ _ _ -> prompt) (\_ _ _ -> promptGeneric)
-          (map (CActor leader) cLegalRaw)
-          (map (CActor leader) cLegal)
-          True INone
+  soc <- getItem psuit (\_ _ _ -> prompt) (\_ _ _ -> promptGeneric)
+                 (map (CActor leader) cLegalRaw)
+                 (map (CActor leader) cLegal)
+                 True False INone
+  case soc of
+    Left sli -> return $ Left sli
+    Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
+    Right _ -> assert `failure` soc
 
 -- | Let the human player choose any item from a list of items
 -- and let him specify the number of items.
-getAnyItem :: MonadClientUI m
-           => MU.Part   -- ^ the verb describing the action
-           -> [CStore]  -- ^ initial legal containers
-           -> [CStore]  -- ^ legal containers after Calm taken into account
-           -> Bool      -- ^ whether to ask, when the only item
-                        --   in the starting container is suitable
-           -> Bool      -- ^ whether to ask for the number of items
-           -> m (SlideOrCmd ((ItemId, ItemFull), Container))
-getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
+getAnyItems :: MonadClientUI m
+            => MU.Part   -- ^ the verb describing the action
+            -> [CStore]  -- ^ initial legal containers
+            -> [CStore]  -- ^ legal containers after Calm taken into account
+            -> Bool      -- ^ whether to ask, when the only item
+                         --   in the starting container is suitable
+            -> Bool      -- ^ whether to ask for the number of items
+            -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
+getAnyItems verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
   leader <- getLeaderUI
   let prompt = makePhrase ["What to", verb]
   soc <- getItem (const True) (\_ _ _ -> prompt) (\_ _ _ -> prompt)
                  (map (CActor leader) cLegalRaw)
                  (map (CActor leader) cLegalAfterCalm)
-                 askWhenLone ISuitable
+                 askWhenLone True ISuitable
   case soc of
     Left _ -> return soc
-    Right ((iid, itemFull), c) -> do
+    Right ([(iid, itemFull)], c) -> do
       socK <- pickNumber askNumber $ itemK itemFull
       case socK of
         Left slides -> return $ Left slides
         Right k ->
-          return $ Right ((iid, itemFull{itemK=k}), c)
+          return $ Right ([(iid, itemFull{itemK=k})], c)
+    Right _ -> return soc
 
 -- | Display all items from a store and let the human player choose any
 -- or switch to any other store.
@@ -113,8 +118,12 @@ getStoreItem prompt cInitial noEnter = do
   let allStores = map (CActor leader) [CEqp, CInv, CSha, CGround]
       cLegalRaw = cInitial : delete cInitial allStores
       dialogState = if noEnter then INoEnter else ISuitable
-  getItem (const True) prompt prompt cLegalRaw cLegalRaw
-          True dialogState
+  soc <- getItem (const True) prompt prompt cLegalRaw cLegalRaw
+                 True False dialogState
+  case soc of
+    Left sli -> return $ Left sli
+    Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
+    Right _ -> assert `failure` soc
 
 data ItemDialogState = INone | ISuitable | IAll | INoEnter
   deriving (Show, Eq)
@@ -131,9 +140,11 @@ getItem :: MonadClientUI m
         -> [Container]      -- ^ legal containers with Calm taken into account
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting container is suitable
+        -> Bool             -- ^ whether to permit multiple items as a result
         -> ItemDialogState  -- ^ the dialog state to start in
-        -> m (SlideOrCmd ((ItemId, ItemFull), Container))
-getItem psuit prompt promptGeneric cLegalRaw cLegal askWhenLone initalState = do
+        -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
+getItem psuit prompt promptGeneric cLegalRaw cLegal askWhenLone permitMulitple
+        initalState = do
   leader <- getLeaderUI
   accessCBag <- getsState $ flip getCBag
   let storeAssocs = EM.assocs . accessCBag
@@ -144,9 +155,9 @@ getItem psuit prompt promptGeneric cLegalRaw cLegal askWhenLone initalState = do
   case (cLegal, allAssocs) of
     ([cStart], [(iid, k)]) | not askWhenLone -> do
       itemToF <- itemToFullClient
-      return $ Right ((iid, itemToF iid k), cStart)
+      return $ Right ([(iid, itemToF iid k)], cStart)
     (_ : _, _ : _) ->
-      transition psuit prompt promptGeneric cLegal initalState
+      transition psuit prompt promptGeneric cLegal permitMulitple initalState
     _ -> if null rawAssocs then do
            let tLegal = map (MU.Text . ppContainer) cLegalRaw
                ppLegal = makePhrase [MU.WWxW "nor" tLegal]
@@ -156,7 +167,7 @@ getItem psuit prompt promptGeneric cLegalRaw cLegal askWhenLone initalState = do
 data DefItemKey m = DefItemKey
   { defLabel  :: Text  -- ^ can be undefined if not @defCond@
   , defCond   :: !Bool
-  , defAction :: K.Key -> m (SlideOrCmd ((ItemId, ItemFull), Container))
+  , defAction :: K.Key -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
   }
 
 transition :: forall m. MonadClientUI m
@@ -166,10 +177,12 @@ transition :: forall m. MonadClientUI m
            -> (Actor -> [ItemFull] -> Container -> Text)
                             -- ^ generic prompt
            -> [Container]
+           -> Bool
            -> ItemDialogState
-           -> m (SlideOrCmd ((ItemId, ItemFull), Container))
-transition _ _ _ [] iDS = assert `failure` iDS
-transition psuit prompt promptGeneric cLegal@(cCur:cRest) itemDialogState = do
+           -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
+transition _ _ _ [] _ iDS = assert `failure` iDS
+transition psuit prompt promptGeneric cLegal@(cCur:cRest) permitMulitple
+           itemDialogState = do
   (letterSlots, numberSlots) <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -178,8 +191,12 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) itemDialogState = do
   hs <- partyAfterLeader leader
   bag <- getsState $ getCBag cCur
   itemToF <- itemToFullClient
-  let getResult :: ItemId -> ((ItemId, ItemFull), Container)
-      getResult iid = ((iid, itemToF iid (bag EM.! iid)), cCur)
+  let getSingleResult :: ItemId -> (ItemId, ItemFull)
+      getSingleResult iid = (iid, itemToF iid (bag EM.! iid))
+      getResult :: ItemId -> ([(ItemId, ItemFull)], Container)
+      getResult iid = ([getSingleResult iid], cCur)
+      getMultResult :: [ItemId] -> ([(ItemId, ItemFull)], Container)
+      getMultResult iids = (map getSingleResult iids, cCur)
       filterP iid kit = psuit $ itemToF iid kit
       bagSuit = EM.filterWithKey filterP bag
       bagLetterSlots = EM.filter (`EM.member` bag) letterSlots
@@ -188,6 +205,9 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) itemDialogState = do
       (autoDun, autoLvl) = autoDungeonLevel fact
       normalizeState INoEnter = INone
       normalizeState x = x
+      enterSlots = if itemDialogState == IAll
+                   then bagLetterSlots
+                   else suitableLetterSlots
       keyDefs :: [(K.Key, DefItemKey m)]
       keyDefs = filter (defCond . snd)
         [ (K.Char '?', DefItemKey
@@ -196,24 +216,31 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) itemDialogState = do
            , defAction = \_ -> case normalizeState itemDialogState of
                INone ->
                  if EM.null bagSuit
-                 then transition psuit prompt promptGeneric cLegal IAll
-                 else transition psuit prompt promptGeneric cLegal ISuitable
+                 then transition psuit prompt promptGeneric cLegal
+                                 permitMulitple IAll
+                 else transition psuit prompt promptGeneric cLegal
+                                 permitMulitple ISuitable
                ISuitable | bag /= bagSuit ->
-                 transition psuit prompt promptGeneric cLegal IAll
-               _ -> transition psuit prompt promptGeneric cLegal INone
+                 transition psuit prompt promptGeneric cLegal
+                            permitMulitple IAll
+               _ -> transition psuit prompt promptGeneric cLegal
+                               permitMulitple INone
            })
         , (K.Char '/', DefItemKey
            { defLabel = "/"
            , defCond = length cLegal > 1
            , defAction = \_ ->
                transition psuit prompt promptGeneric
-                          (cRest ++ [cCur]) (normalizeState itemDialogState)
+                          (cRest ++ [cCur]) permitMulitple
+                          (normalizeState itemDialogState)
            })
-        , (K.Return,
-           let enterSlots = if itemDialogState == IAll
-                            then bagLetterSlots
-                            else suitableLetterSlots
-           in DefItemKey
+        , (K.Char '*', DefItemKey
+           { defLabel = "*"
+           , defCond = permitMulitple && not (EM.null enterSlots)
+           , defAction = \_ -> return $ Right
+                               $ getMultResult $ EM.elems enterSlots
+           })
+        , (K.Return, DefItemKey
            { defLabel = case EM.maxViewWithKey enterSlots of
                Nothing -> assert `failure` "no suitable items"
                                  `twith` enterSlots
@@ -249,7 +276,8 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) itemDialogState = do
                accessCBag <- getsState $ flip getCBag
                mapM_ (updateItemSlot (Just newLeader)) $
                  concatMap (EM.keys . accessCBag) newLegal
-               transition psuit prompt promptGeneric newLegal itemDialogState
+               transition psuit prompt promptGeneric newLegal
+                          permitMulitple itemDialogState
            })
         , (K.BackTab, DefItemKey
            { defLabel = "SHIFT-TAB"
@@ -265,7 +293,8 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) itemDialogState = do
                accessCBag <- getsState $ flip getCBag
                mapM_ (updateItemSlot (Just newLeader)) $
                  concatMap (EM.keys . accessCBag) newLegal
-               transition psuit prompt promptGeneric newLegal itemDialogState
+               transition psuit prompt promptGeneric newLegal
+                          permitMulitple itemDialogState
            })
         ]
       lettersDef :: DefItemKey m
@@ -300,7 +329,7 @@ runDefItemKey :: MonadClientUI m
               -> Overlay
               -> EM.EnumMap SlotChar ItemId
               -> Text
-              -> m (SlideOrCmd ((ItemId, ItemFull), Container))
+              -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
 runDefItemKey keyDefs lettersDef io labelLetterSlots prompt = do
   let itemKeys =
         let slotKeys = map (K.Char . slotChar) (EM.keys labelLetterSlots)
