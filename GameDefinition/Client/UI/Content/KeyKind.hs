@@ -103,12 +103,12 @@ standardKeys = KeyKind
                MoveItem [CGround] CEqp (Just "get") "an item" True))
       , ("d", ([CmdItem], MoveItem [CEqp, CInv, CSha] CGround
                                    Nothing "an item" False))
-      , ("e", ([CmdItem], MoveItem [CInv, CSha] CEqp
+      , ("e", ([CmdItem], MoveItem [CGround, CInv, CSha] CEqp
                                    Nothing "an item" False))
-      , ("p", ([CmdItem], MoveItem [CEqp, CSha] CInv
+      , ("p", ([CmdItem], MoveItem [CGround, CEqp, CSha] CInv
                                    Nothing "an item into inventory backpack"
                                    False))
-      , ("s", ([CmdItem], MoveItem [CInv, CEqp] CSha
+      , ("s", ([CmdItem], MoveItem [CGround, CInv, CEqp] CSha
                                    Nothing "and share an item" False))
       , ("a", ([CmdItem, CmdMinimal], Apply
            [ ApplyItem { verb = "activate"
