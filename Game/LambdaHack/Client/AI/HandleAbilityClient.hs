@@ -211,6 +211,8 @@ waitBlockNow = return $! returN "wait" ReqWait
 pickup :: MonadClient m
        => ActorId -> Bool -> m (Strategy (RequestTimed AbMoveItem))
 pickup aid onlyWeapon = do
+  Kind.COps{corule} <- getsState scops
+  let RuleKind{rsharedStash} = Kind.stdRuleset corule
   benItemL <- benGroundItems aid
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
@@ -223,7 +225,8 @@ pickup aid onlyWeapon = do
       prepareOne (oldN, l4) ((_, (k, _)), (iid, itemFull)) =
         -- TODO: instead of pickup to eqp and then move to inv, pickup to inv
         let n = k + oldN
-            toCStore = if calmE && goesIntoSha (itemBase itemFull)
+            toCStore = if rsharedStash && calmE
+                          && goesIntoSha (itemBase itemFull)
                        then CSha
                        else if goesIntoInv (itemBase itemFull)
                                || eqpOverfull b n
@@ -241,6 +244,7 @@ equipItems aid = do
   let RuleKind{rsharedStash} = Kind.stdRuleset corule
   body <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
+  let calmE = calmEnough body activeItems
   fact <- getsState $ (EM.! bfid body) . sfactionD
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
@@ -270,7 +274,7 @@ equipItems aid = do
                                 (filter filterNeeded shaAssocs)
       bEqpInv = foldl' (improve CInv) (0, [])
                 $ map (\(_, (eqp, inv, _)) -> (inv, eqp)) bestThree
-      bEqpBoth | rsharedStash && calmEnough body activeItems =
+      bEqpBoth | rsharedStash && calmE =
                    foldl' (improve CSha) bEqpInv
                    $ map (\(_, (eqp, _, sha)) -> (sha, eqp)) bestThree
                | otherwise = bEqpInv
@@ -286,6 +290,7 @@ unEquipItems aid = do
   let RuleKind{rsharedStash} = Kind.stdRuleset corule
   body <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
+  let calmE = calmEnough body activeItems
   fact <- getsState $ (EM.! bfid body) . sfactionD
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
@@ -298,7 +303,7 @@ unEquipItems aid = do
       -- they can repair the ring, wield it, drop at death and it's
       -- in play again.
   let yieldSingleUnneeded (iidEqp, itemEqp) =
-        let csha = if rsharedStash && calmEnough body activeItems
+        let csha = if rsharedStash && calmE
                    then CSha
                    else CInv
         in if harmful cops body activeItems fact itemEqp
@@ -338,7 +343,7 @@ unEquipItems aid = do
                 $ map (\((slot, _), (eqp, _, sha)) ->
                         (slot, (sha, eqp))) bestThree
       prepared = yieldUnneeded
-                 ++ if rsharedStash && calmEnough body activeItems
+                 ++ if rsharedStash && calmE
                     then bInvSha ++ bEqpSha
                     else []
   return $! if null prepared
