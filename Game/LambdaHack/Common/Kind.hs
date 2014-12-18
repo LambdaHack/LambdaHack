@@ -61,7 +61,8 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
       kindFreq =
         let tuples = [ (cgroup, (n, (i, k)))
                      | (i, k) <- EM.assocs kindMap
-                     , (cgroup, n) <- getFreq k, n > 0 ]
+                     , (cgroup, n) <- getFreq k
+                     , n > 0 ]
             f m (cgroup, nik) = M.insertWith (++) cgroup [nik] m
         in foldl' f M.empty tuples
       okind i = fromMaybe (assert `failure` "no kind" `twith` (i, kindMap))
@@ -106,7 +107,7 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
            case M.lookup cgroup kindFreq of
              Just freq -> foldr (\(p, (i, a)) -> f p i a) z freq
              _ -> assert `failure` "no group '" <> tshow cgroup
-                                   <> "' among content with groups"
+                                   <> "' among content that has groups"
                                    <+> tshow (M.keys kindFreq)
        , obounds = ( fst $ EM.findMin kindMap
                    , fst $ EM.findMax kindMap )

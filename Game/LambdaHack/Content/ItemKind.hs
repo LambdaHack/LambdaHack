@@ -13,6 +13,7 @@ module Game.LambdaHack.Content.ItemKind
 import qualified Control.Monad.State as St
 import Data.Binary
 import Data.Hashable (Hashable)
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
@@ -22,6 +23,7 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
 
 -- | Item properties that are fixed for a given kind of items.
 data ItemKind = ItemKind
@@ -262,4 +264,20 @@ validateSingleItemKind ItemKind{..} =
 -- can appear at).
 -- | Validate all item kinds.
 validateAllItemKind :: [ItemKind] -> [Text]
-validateAllItemKind _ = []
+validateAllItemKind content =
+  let kindFreq :: S.Set (GroupName ItemKind)  -- cf. Kind.kindFreq
+      kindFreq = let tuples = [ cgroup
+                              | k <- content
+                              , (cgroup, n) <- ifreq k
+                              , n > 0 ]
+                 in S.fromList tuples
+      missingGroups = [ cgroup
+                      | k <- content
+                      , (cgroup, _) <- ikit k
+                      , S.notMember cgroup kindFreq ]
+      errorMsg = case missingGroups of
+        [] -> []
+        _ -> ["no groups" <+> tshow missingGroups
+              <+> "among content that has groups"
+              <+> tshow (S.elems kindFreq)]
+  in errorMsg
