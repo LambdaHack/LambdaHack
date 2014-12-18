@@ -105,7 +105,9 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
        , ofoldrGroup = \cgroup f z ->
            case M.lookup cgroup kindFreq of
              Just freq -> foldr (\(p, (i, a)) -> f p i a) z freq
-             _ -> z
+             _ -> assert `failure` "no group '" <> tshow cgroup
+                                   <> "' among content with groups"
+                                   <+> tshow (M.keys kindFreq)
        , obounds = ( fst $ EM.findMin kindMap
                    , fst $ EM.findMax kindMap )
        , ospeedup = Nothing  -- define elsewhere
