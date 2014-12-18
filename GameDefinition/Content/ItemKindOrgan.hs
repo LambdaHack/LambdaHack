@@ -10,9 +10,9 @@ import Game.LambdaHack.Content.ItemKind
 
 organs :: [ItemKind]
 organs =
-  [fist, foot, claw, smallClaw, snout, jaw, largeJaw, tooth, tentacle, lash, noseTip, lip, thorn, fissure, sting, venomTooth, venomFang, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, nostril, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, vent, bonusHP]
+  [fist, foot, claw, smallClaw, snout, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, fissure, sting, venomTooth, venomFang, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, nostril, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, vent, bonusHP]
 
-fist,    foot, claw, smallClaw, snout, jaw, largeJaw, tooth, tentacle, lash, noseTip, lip, thorn, fissure, sting, venomTooth, venomFang, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, nostril, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, vent, bonusHP :: ItemKind
+fist,    foot, claw, smallClaw, snout, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, fissure, sting, venomTooth, venomFang, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, nostril, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, vent, bonusHP :: ItemKind
 
 -- Weapons
 
@@ -91,6 +91,14 @@ tooth = fist
   , ieffects = [Hurt (2 * d 1)]
   , idesc    = ""
   }
+horn = fist
+  { iname    = "horn"
+  , ifreq    = [("horn", 20)]
+  , icount   = 2
+  , iverbHit = "impale"
+  , ieffects = [Hurt (8 * d 1)]
+  , idesc    = ""
+  }
 
 -- * Monster weapon organs
 
@@ -124,6 +132,26 @@ lip = fist
   , icount   = 2
   , iverbHit = "lap"
   , ieffects = [Hurt (2 * d 1), DropItem COrgan "keen-smelling" True]  -- TODO: decrease Hurt, but use
+  , idesc    = ""
+  }
+torsionRight = fist
+  { iname    = "right torsion"
+  , ifreq    = [("right torsion", 100)]
+  , icount   = 1
+  , iverbHit = "twist"
+  , iaspects = [Timeout $ 5 + d 5]
+  , ieffects = [ Hurt (17 * d 1)
+               , Recharging (toOrganGameTurn "slow 10" (3 + d 3)) ]
+  , idesc    = ""
+  }
+torsionLeft = fist
+  { iname    = "left torsion"
+  , ifreq    = [("left torsion", 100)]
+  , icount   = 1
+  , iverbHit = "twist"
+  , iaspects = [Timeout $ 5 + d 5]
+  , ieffects = [ Hurt (17 * d 1)
+               , Recharging (toOrganGameTurn "weakened" (3 + d 3)) ]
   , idesc    = ""
   }
 

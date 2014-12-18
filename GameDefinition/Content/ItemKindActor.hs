@@ -11,9 +11,9 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, adventurer, blacksmith, forester, scientist, soldier, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser]
+  [warrior, adventurer, blacksmith, forester, scientist, soldier, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, hornetSwarm, thornbush, geyser]
 
-warrior,    adventurer, blacksmith, forester, scientist, soldier, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, hornetSwarm, thornbush, geyser :: ItemKind
+warrior,    adventurer, blacksmith, forester, scientist, soldier, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, hornetSwarm, thornbush, geyser :: ItemKind
 
 -- * Hunams
 
@@ -136,8 +136,27 @@ elbow = ItemKind
                , ("any arrow", CInv), ("any arrow", CInv)
                , ("any arrow", CInv), ("any arrow", CInv) ]
   }
+torsor = ItemKind
+  { isymbol  = 'T'
+  , iname    = "The Forgetful Torsor"
+  , ifreq    = [("monster", 100), ("horror", 100)]
+  , iflavour = zipPlain [BrCyan]
+  , icount   = 1
+  , irarity  = [(9, 0), (10, 1000)]  -- unique
+  , iverbHit = "thud"
+  , iweight  = 80000
+  , iaspects = [ AddMaxHP 100, AddMaxCalm 100, AddSpeed 10
+               , AddSkills $ EM.fromList
+                   [(AbProject, 1), (AbApply, 1), (AbTrigger, -1)] ]
+                   -- can't switch levels, a miniboss
+  , ieffects = []
+  , ifeature = [Durable, Identified]
+  , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
+  , ikit     = [ ("right torsion", COrgan),  ("left torsion", COrgan)
+               , ("pupil", COrgan), ("pupil", COrgan)
+               , ("gem", CInv), ("gem", CInv), ("gem", CInv), ("gem", CInv) ]
+  }
 -- "ground x" --- for immovable monster that can only tele or prob travel
--- forgetful
 -- pullback
 -- skeletal
 
@@ -255,6 +274,24 @@ alligator = ItemKind
   , idesc    = ""
   , ikit     = [ ("large jaw", COrgan), ("large tail", COrgan), ("claw", COrgan)
                , ("armored skin", COrgan), ("eye 4", COrgan) ]
+  }
+rhinoceros = ItemKind
+  { isymbol  = 'R'
+  , iname    = "The Maddened Rhinoceros"
+  , ifreq    = [("animal", 100), ("horror", 100)]
+  , iflavour = zipPlain [Brown]
+  , icount   = 1
+  , irarity  = [(2, 0), (3, 1000), (4, 0)]  -- unique
+  , iverbHit = "thud"
+  , iweight  = 80000
+  , iaspects = [ AddMaxHP 60, AddMaxCalm 60, AddSpeed 25
+               , AddSkills $ EM.insert AbTrigger (-1) animalSkillMalus ]
+                   -- can't switch levels, a miniboss
+  , ieffects = []
+  , ifeature = [Durable, Identified]
+  , idesc    = "The last of its kind. Blind with rage. Charges at crazy speeds."
+  , ikit     = [ ("armored skin", COrgan), ("eye 2", COrgan)
+               , ("horn", COrgan), ("snout", COrgan) ]
   }
 
 -- * Non-animal animals
