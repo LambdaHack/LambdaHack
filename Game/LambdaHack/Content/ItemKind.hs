@@ -132,6 +132,7 @@ data ThrowMod = ThrowMod
 data Feature =
     Fragile                 -- ^ drop and break at target tile, even if no hit
   | Durable                 -- ^ don't break even when hitting or applying
+  | Unique                  -- ^ at most one copy can be randomly generated
   | ToThrow !ThrowMod       -- ^ parameters modifying a throw
   | Identified              -- ^ the item starts identified
   | Applicable              -- ^ AI and UI flag: consider applying

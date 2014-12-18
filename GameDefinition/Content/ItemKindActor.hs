@@ -150,7 +150,7 @@ torsor = ItemKind
                    [(AbProject, 1), (AbApply, 1), (AbTrigger, -1)] ]
                    -- can't switch levels, a miniboss
   , ieffects = []
-  , ifeature = [Durable, Identified]
+  , ifeature = [Unique, Durable, Identified]
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
   , ikit     = [ ("right torsion", COrgan),  ("left torsion", COrgan)
                , ("pupil", COrgan), ("pupil", COrgan)
@@ -288,7 +288,7 @@ rhinoceros = ItemKind
                , AddSkills $ EM.insert AbTrigger (-1) animalSkillMalus ]
                    -- can't switch levels, a miniboss
   , ieffects = []
-  , ifeature = [Durable, Identified]
+  , ifeature = [Unique, Durable, Identified]
   , idesc    = "The last of its kind. Blind with rage. Charges at crazy speeds."
   , ikit     = [ ("armored skin", COrgan), ("eye 2", COrgan)
                , ("horn", COrgan), ("snout", COrgan) ]

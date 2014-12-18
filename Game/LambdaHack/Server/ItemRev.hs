@@ -2,7 +2,7 @@
 -- | Server types and operations for items that don't involve server state
 -- nor our custom monads.
 module Game.LambdaHack.Server.ItemRev
-  ( ItemRev, buildItem, newItem
+  ( ItemRev, buildItem, newItem, UniqueSet
     -- * Item discovery types
   , DiscoveryKindRev, serverDiscos, ItemSeedDict
     -- * The @FlavourMap@ type
@@ -13,6 +13,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Ix as Ix
 import Data.List
@@ -33,6 +34,8 @@ type DiscoveryKindRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
 
 -- | The map of item ids to item seeds, needed for item creation.
 type ItemSeedDict = EM.EnumMap ItemId ItemSeed
+
+type UniqueSet = ES.EnumSet (Kind.Id ItemKind)
 
 serverDiscos :: Kind.COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
 serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldrWithKey}} = do
@@ -67,11 +70,11 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
   in Item{..}
 
 -- | Generate an item based on level.
-newItem :: Kind.COps -> FlavourMap -> DiscoveryKindRev
+newItem :: Kind.COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
         -> Freqs ItemKind -> LevelId -> AbsDepth -> AbsDepth
         -> Rnd (Maybe (ItemKnown, ItemFull, ItemSeed, GroupName ItemKind))
 newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
-        flavour discoRev itemFreq jlid
+        flavour discoRev uniqueSet itemFreq jlid
         ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) = do
   let findInterval x1y1 [] = (x1y1, (11, 0))
       findInterval x1y1 ((x, y) : rest) =
@@ -83,6 +86,7 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         let ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
         in y1 + (y2 - y1) * (ld * 10 - x1 * depth)
            `divUp` ((x2 - x1) * depth)
+      f _ _ _ ik _ acc | ik `ES.member` uniqueSet = acc
       f itemGroup q p ik kind acc =
         let rarity = linearInterpolation (IK.irarity kind)
         in (q * p * rarity, ((ik, kind), itemGroup)) : acc

@@ -7,6 +7,7 @@ module Game.LambdaHack.Server.State
 
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import Data.List
 import Data.Text (Text)
@@ -30,6 +31,7 @@ import Game.LambdaHack.Server.ItemRev
 data StateServer = StateServer
   { sdiscoKind    :: !DiscoveryKind     -- ^ full item kind discoveries data
   , sdiscoKindRev :: !DiscoveryKindRev  -- ^ reverse map, used for item creation
+  , suniqueSet    :: !UniqueSet         -- ^ already generated unique items
   , sdiscoEffect  :: !DiscoveryEffect   -- ^ full item effect&Co data
   , sitemSeedD    :: !ItemSeedDict  -- ^ map from item ids to item seeds
   , sitemRev      :: !ItemRev       -- ^ reverse id map, used for item creation
@@ -95,6 +97,7 @@ emptyStateServer =
   StateServer
     { sdiscoKind = EM.empty
     , sdiscoKindRev = EM.empty
+    , suniqueSet = ES.empty
     , sdiscoEffect = EM.empty
     , sitemSeedD = EM.empty
     , sitemRev = HM.empty
@@ -141,6 +144,7 @@ instance Binary StateServer where
   put StateServer{..} = do
     put sdiscoKind
     put sdiscoKindRev
+    put suniqueSet
     put sdiscoEffect
     put sitemSeedD
     put sitemRev
@@ -156,6 +160,7 @@ instance Binary StateServer where
   get = do
     sdiscoKind <- get
     sdiscoKindRev <- get
+    suniqueSet <- get
     sdiscoEffect <- get
     sitemSeedD <- get
     sitemRev <- get

@@ -151,6 +151,7 @@ featureToSuff feat =
   case feat of
     Fragile -> wrapInChevrons "fragile"
     Durable -> wrapInChevrons "durable"
+    Unique -> wrapInChevrons "unique"
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
     Identified -> ""
     Applicable -> ""

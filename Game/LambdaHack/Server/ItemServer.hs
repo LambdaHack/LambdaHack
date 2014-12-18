@@ -7,6 +7,7 @@ module Game.LambdaHack.Server.ItemServer
 
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import Data.Key (mapWithKeyM_)
 import Data.Maybe
@@ -24,6 +25,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.ItemRev
@@ -80,9 +82,18 @@ rollItem lid itemFreq = do
   cops <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoKindRev
+  uniqueSet <- getsServer suniqueSet
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
-  rndToAction $ newItem cops flavour discoRev itemFreq lid ldepth totalDepth
+  m4 <- rndToAction $ newItem cops flavour discoRev uniqueSet
+                              itemFreq lid ldepth totalDepth
+  case m4 of
+    Just (_, ItemFull{itemDisco=Just ItemDisco{itemKind, itemKindId}}, _, _) ->
+      when (IK.Unique `elem` IK.ifeature itemKind) $
+        modifyServer $ \ser ->
+          ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
+    _ -> return ()
+  return m4
 
 rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
                     => LevelId -> Freqs ItemKind -> Container -> Bool

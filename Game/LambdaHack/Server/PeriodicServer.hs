@@ -33,7 +33,6 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonServer
-import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ItemServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
@@ -71,13 +70,9 @@ addAnyActor actorFreq lid time mpos = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- contains the constant properties.
   cops <- getsState scops
-  flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoKindRev
-  totalDepth <- getsState stotalDepth
-  lvl@Level{ldepth} <- getLevel lid
+  lvl <- getLevel lid
   factionD <- getsState sfactionD
-  m4 <- rndToAction
-        $ newItem cops flavour discoRev actorFreq lid ldepth totalDepth
+  m4 <- rollItem lid actorFreq
   case m4 of
     Nothing -> return Nothing
     Just (itemKnown, trunkFull, seed, _) -> do
