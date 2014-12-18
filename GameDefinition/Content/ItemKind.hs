@@ -228,20 +228,20 @@ brassLantern = ItemKind
 
 gorget = ItemKind
   { isymbol  = symbolNecklace
-  , iname    = "gorget"
+  , iname    = "Old Gorget"
   , ifreq    = [("useful", 100)]
   , iflavour = zipFancy [BrCyan]
   , icount   = 1
-  , irarity  = [(4, 1), (10, 2)]
+  , irarity  = [(4, 3), (10, 3)]  -- weak, shallow
   , iverbHit = "whip"
   , iweight  = 30
   , iaspects = [ Periodic
                , Timeout $ (d 3 + 3 - dl 3) |*| 10
-               , AddArmorMelee 1
-               , AddArmorRanged 1 ]
+               , AddArmorMelee $ 2 + d 3
+               , AddArmorRanged $ 2 + d 3 ]
   , ieffects = [Recharging (RefillCalm 1)]
-  , ifeature = [ Durable, Precious, EqpSlot EqpSlotPeriodic "", Identified
-               , toVelocity 50 ]  -- not dense enough
+  , ifeature = [ Unique, Durable, Precious, EqpSlot EqpSlotPeriodic ""
+               , Identified, toVelocity 50 ]  -- not dense enough
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
   , ikit     = []
   }
@@ -301,16 +301,17 @@ necklace7 = necklace  -- TODO: teach AI to wear only for fight
 
 monocle = ItemKind
   { isymbol  = symbolRing
-  , iname    = "monocle"
+  , iname    = "Sharp Monocle"
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [White]
   , icount   = 1
-  , irarity  = [(5, 0), (10, 1)]
+  , irarity  = [(7, 3), (10, 3)]  -- medium weak, medium shallow
   , iverbHit = "rap"
   , iweight  = 50
-  , iaspects = [AddSight $ d 2, AddHurtMelee $ d 2 |*| 3]
+  , iaspects = [AddSight $ 1 + d 2, AddHurtMelee $ d 2 |*| 3]
   , ieffects = []
-  , ifeature = [Precious, Identified, Durable, EqpSlot EqpSlotAddSight ""]
+  , ifeature = [ Unique, Precious, Identified, Durable
+               , EqpSlot EqpSlotAddSight "" ]
   , idesc    = "Let's you better focus your weaker eye."
   , ikit     = []
   }
@@ -642,13 +643,14 @@ gloveGauntlet = gloveFencing
   , idesc    = "Long leather gauntlet covered in overlapping steel plates."
   }
 gloveJousting = gloveFencing
-  { iname    = "jousting gauntlet"
+  { iname    = "Tournament Gauntlet"
   , iflavour = zipFancy [BrRed]
   , irarity  = [(1, 3), (10, 3)]
   , iweight  = 500
   , iaspects = [ AddHurtMelee $ (dl 4 - 6) |*| 3
                , AddArmorMelee $ (2 + dl 2) |*| 5
                , AddArmorRanged $ (2 + dl 2) |*| 5 ]
+  , ifeature = [Unique] ++ ifeature gloveFencing
   , idesc    = "Rigid, steel, jousting handgear. If only you had a lance. And a horse."
   }
 
@@ -707,8 +709,9 @@ dagger = ItemKind
   , ikit     = []
   }
 daggerDropBestWeapon = dagger
-  { ifreq    = [("useful", 30)]
-  , irarity  = [(1, 1), (10, 2)]
+  { iname    = "Double Dagger"
+  , ifreq    = [("useful", 30)]
+  , irarity  = [(1, 2), (10, 4)]
   -- The timeout has to be small, so that the player can count on the effect
   -- occuring consistently in any longer fight. Otherwise, the effect will be
   -- absent in some important fights, leading to the feeling of bad luck,
@@ -719,6 +722,7 @@ daggerDropBestWeapon = dagger
   -- as soon as the item is equipped, or just on the first strike.
   , iaspects = iaspects dagger ++ [Timeout $ (d 3 + 4 - dl 3) |*| 2]
   , ieffects = ieffects dagger ++ [Recharging DropBestWeapon]
+  , ifeature = [Unique] ++ ifeature dagger
   , idesc    = "A double dagger that a focused fencer can use to catch and twist an opponent's blade occasionally."
   }
 hammer = ItemKind
@@ -738,17 +742,20 @@ hammer = ItemKind
   , ikit     = []
   }
 hammerParalyze = hammer
-  { ifreq    = [("useful", 30)]
-  , irarity  = [(4, 1), (10, 2)]
+  { iname    = "Concussion Hammer"
+  , ifreq    = [("useful", 30)]
+  , irarity  = [(4, 2), (10, 4)]
   , iaspects = iaspects hammer ++ [Timeout $ (d 2 + 3 - dl 2) |*| 2]
   , ieffects = ieffects hammer ++ [Recharging $ Paralyze 5]
+  , ifeature = [Unique] ++ ifeature hammer
   }
 hammerSpark = hammer
-  { iname    = "smithhammer"
+  { iname    = "Grand Smithhammer"
   , ifreq    = [("useful", 30)]
-  , irarity  = [(4, 1), (10, 2)]
+  , irarity  = [(4, 2), (10, 4)]
   , iaspects = iaspects hammer ++ [Timeout $ (d 4 + 4 - dl 4) |*| 2]
   , ieffects = ieffects hammer ++ [Recharging $ Explode "spark"]
+  , ifeature = [Unique] ++ ifeature hammer
   }
 sword = ItemKind
   { isymbol  = symbolEdged
@@ -767,19 +774,23 @@ sword = ItemKind
   , ikit     = []
   }
 swordImpress = sword
-  { ifreq    = [("useful", 30)]
-  , irarity  = [(3, 1), (10, 2)]
+  { iname    = "Master's Sword"
+  , ifreq    = [("useful", 30)]
+  , irarity  = [(3, 1), (10, 4)]
   , iaspects = iaspects sword ++ [Timeout $ (d 4 + 5 - dl 4) |*| 2]
   , ieffects = ieffects sword ++ [Recharging Impress]
   , idesc    = "A particularly well-balance blade, lending itself to impressive shows of fencing skill."
+  , ifeature = [Unique] ++ ifeature sword
   }
 swordNullify = sword
-  { ifreq    = [("useful", 30)]
-  , irarity  = [(3, 0), (10, 1)]
+  { iname    = "Gutting Sword"
+  , ifreq    = [("useful", 30)]
+  , irarity  = [(5, 1), (10, 4)]
   , iaspects = iaspects sword ++ [Timeout $ (d 4 + 5 - dl 4) |*| 2]
   , ieffects = ieffects sword
                ++ [Recharging $ DropItem COrgan "temporary conditions" True]
   , idesc    = "Cold, thin blade that pierces deeply and sends its victim into abrupt, sobering shock."
+  , ifeature = [Unique] ++ ifeature sword
   }
 halberd = ItemKind
   { isymbol  = symbolPolearm
@@ -798,12 +809,13 @@ halberd = ItemKind
   , ikit     = []
   }
 halberdPushActor = halberd
-  { iname    = "halberd"
+  { iname    = "Swiss Halberd"
   , ifreq    = [("useful", 30)]
-  , irarity  = [(7, 1), (10, 2)]
+  , irarity  = [(7, 1), (10, 4)]
   , iaspects = iaspects halberd ++ [Timeout $ (d 5 + 5 - dl 5) |*| 2]
   , ieffects = ieffects halberd ++ [Recharging (PushActor (ThrowMod 400 25))]
   , idesc    = "A versatile polearm, with great reach and leverage. Foes are held at a distance."
+  , ifeature = [Unique] ++ ifeature halberd
   }
 
 -- * Wands
