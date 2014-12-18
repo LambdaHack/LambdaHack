@@ -145,12 +145,12 @@ torsor = ItemKind
   , irarity  = [(9, 0), (10, 1000)]  -- unique
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 100, AddMaxCalm 100, AddSpeed 10
+  , iaspects = [ Unique, AddMaxHP 100, AddMaxCalm 100, AddSpeed 10
                , AddSkills $ EM.fromList
                    [(AbProject, 1), (AbApply, 1), (AbTrigger, -1)] ]
                    -- can't switch levels, a miniboss
   , ieffects = []
-  , ifeature = [Unique, Durable, Identified]
+  , ifeature = [Durable, Identified]
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
   , ikit     = [ ("right torsion", COrgan),  ("left torsion", COrgan)
                , ("pupil", COrgan), ("pupil", COrgan)
@@ -284,11 +284,11 @@ rhinoceros = ItemKind
   , irarity  = [(2, 0), (3, 1000), (4, 0)]  -- unique
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 60, AddMaxCalm 60, AddSpeed 25
+  , iaspects = [ Unique, AddMaxHP 60, AddMaxCalm 60, AddSpeed 25
                , AddSkills $ EM.insert AbTrigger (-1) animalSkillMalus ]
                    -- can't switch levels, a miniboss
   , ieffects = []
-  , ifeature = [Unique, Durable, Identified]
+  , ifeature = [Durable, Identified]
   , idesc    = "The last of its kind. Blind with rage. Charges at deadly speed."
   , ikit     = [ ("armored skin", COrgan), ("eye 2", COrgan)
                , ("horn", COrgan), ("snout", COrgan) ]

@@ -33,7 +33,7 @@ partItemN fullInfo n c _lid localTime itemFull =
     Nothing ->
       let flav = flavourToName $ jflavour $ itemBase itemFull
       in (MU.Text $ flav <+> genericName, "")
-    Just _ ->
+    Just iDisco ->
       let effTs = filter (not . T.null) $ textAllAE fullInfo c itemFull
           it1 = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
             Nothing -> []
@@ -50,7 +50,14 @@ partItemN fullInfo n c _lid localTime itemFull =
           ts = take n effTs
                ++ (if length effTs > n then ["(...)"] else [])
                ++ [timer]
-      in (MU.Text genericName, MU.Phrase $ map MU.Text ts)
+          capitalizeName = case iDisco of
+            ItemDisco{itemAE=Just ItemAspectEffect{jaspects}} ->
+              IK.Unique `elem` jaspects
+            _ -> False
+          capName = if capitalizeName
+                    then MU.Capitalize $ MU.Text genericName
+                    else MU.Text genericName
+      in (capName, MU.Phrase $ map MU.Text ts)
 
 -- | The part of speech describing the item.
 partItem :: Container -> LevelId -> Time -> ItemFull -> (MU.Part, MU.Part)

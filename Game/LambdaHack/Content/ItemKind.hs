@@ -107,7 +107,8 @@ instance Show TimerDice where
 -- | Aspects of items. Those that are named @Add*@ are additive
 -- (starting at 0) for all items wielded by an actor and they affect the actor.
 data Aspect a =
-    Periodic           -- ^ in equipment, activate as often as @Timeout@ permits
+    Unique             -- ^ at most one copy can ever be generated
+  | Periodic           -- ^ in equipment, activate as often as @Timeout@ permits
   | Timeout !a         -- ^ some effects will be disabled until item recharges
   | AddHurtMelee !a    -- ^ percentage damage bonus in melee
   | AddArmorMelee !a   -- ^ percentage armor bonus against melee
@@ -134,7 +135,6 @@ data ThrowMod = ThrowMod
 data Feature =
     Fragile                 -- ^ drop and break at target tile, even if no hit
   | Durable                 -- ^ don't break even when hitting or applying
-  | Unique                  -- ^ at most one copy can be randomly generated
   | ToThrow !ThrowMod       -- ^ parameters modifying a throw
   | Identified              -- ^ the item starts identified
   | Applicable              -- ^ AI and UI flag: consider applying
@@ -188,6 +188,7 @@ instance Binary EqpSlot
 -- TODO: Traversable?
 -- | Transform an aspect using a stateful function.
 aspectTrav :: Aspect a -> (a -> St.State s b) -> St.State s (Aspect b)
+aspectTrav Unique _ = return Unique
 aspectTrav Periodic _ = return Periodic
 aspectTrav (Timeout a) f = do
   b <- f a

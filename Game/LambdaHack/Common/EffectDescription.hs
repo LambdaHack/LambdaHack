@@ -132,6 +132,7 @@ aspectToSuff aspect f =
 rawAspectToSuff :: Aspect Text -> Text
 rawAspectToSuff aspect =
   case aspect of
+    Unique -> ""  -- marked by capital letters in name
     Periodic{} -> ""  -- printed specially
     Timeout{}  -> ""  -- printed specially
     AddMaxHP t -> wrapInParens $ t <+> "HP"
@@ -151,7 +152,6 @@ featureToSuff feat =
   case feat of
     Fragile -> wrapInChevrons "fragile"
     Durable -> wrapInChevrons "durable"
-    Unique -> wrapInChevrons "unique"
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
     Identified -> ""
     Applicable -> ""

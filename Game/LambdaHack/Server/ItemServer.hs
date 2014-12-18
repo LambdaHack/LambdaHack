@@ -88,8 +88,10 @@ rollItem lid itemFreq = do
   m4 <- rndToAction $ newItem cops flavour discoRev uniqueSet
                               itemFreq lid ldepth totalDepth
   case m4 of
-    Just (_, ItemFull{itemDisco=Just ItemDisco{itemKind, itemKindId}}, _, _) ->
-      when (IK.Unique `elem` IK.ifeature itemKind) $
+    Just (_, ItemFull{itemDisco=
+      Just ItemDisco{ itemKindId
+                    , itemAE=Just ItemAspectEffect{jaspects}}}, _, _) ->
+      when (IK.Unique `elem` jaspects) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
     _ -> return ()

@@ -103,6 +103,7 @@ organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b =
 aspectToBenefit :: Kind.COps -> Actor -> IK.Aspect Int -> Int
 aspectToBenefit _cops _b asp =
   case asp of
+    IK.Unique{} -> 0
     IK.Periodic{} -> 0
     IK.Timeout{} -> 0
     IK.AddMaxHP p -> p * 10
