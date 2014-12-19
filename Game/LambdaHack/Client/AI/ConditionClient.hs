@@ -226,7 +226,9 @@ condMeleeBadM aid = do
         activeItems <- activeItemsClient aid2
         return $! not $ hpTooLow b2 activeItems
   strongCloseFriends <- filterM strongActor closeFriends
-  let noFriendlyHelp = length closeFriends < 3 && null strongCloseFriends
+  let noFriendlyHelp = length closeFriends < 3
+                       && null strongCloseFriends
+                       && not (hpHuge b)  -- uniques, etc., should be aggresive
   return $ condNoUsableWeapon
            || noFriendlyHelp  -- still not getting friends' help
     -- no $!; keep it lazy

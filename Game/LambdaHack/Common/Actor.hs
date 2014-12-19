@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Actor
   , deltaSerious, deltaMild, xM, minusM, minusTwoM, oneM
   , bspeed, actorTemplate, timeShiftFromSpeed, braced, waitedLastTurn
   , actorDying, actorNewBorn, unoccupied
-  , hpTooLow, calmEnough, calmEnough10, hpEnough, hpEnough10
+  , hpTooLow, hpHuge, calmEnough, calmEnough10, hpEnough, hpEnough10
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
   , mapActorItems_, ppContainer, ppCStore, verbCStore
@@ -173,6 +173,9 @@ hpTooLow :: Actor -> [ItemFull] -> Bool
 hpTooLow b activeItems =
   let maxHP = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
   in bhp b <= oneM || 5 * bhp b < xM maxHP && bhp b < xM 10
+
+hpHuge :: Actor -> Bool
+hpHuge b = bhp b > xM 30
 
 calmEnough :: Actor -> [ItemFull] -> Bool
 calmEnough b activeItems =
