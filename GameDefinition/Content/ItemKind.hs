@@ -266,6 +266,7 @@ necklace1 = necklace
   { iaspects = [Unique, Timeout $ (d 3 + 4 - dl 3) |*| 10]
                ++ iaspects necklace
   , ieffects = [NoEffect "of Aromata", Recharging (RefillHP 1)]
+  , ifeature = Durable : ifeature necklace
   , idesc    = "A cord of freshly dried herbs and healing berries."
   }
 necklace2 = necklace
@@ -302,6 +303,7 @@ necklace7 = necklace  -- TODO: teach AI to wear only for fight
                , Recharging (InsertMove $ 1 + d 2)
                , Recharging (RefillHP (-1))
                , Recharging (RefillCalm (-1)) ]
+  , ifeature = Durable : ifeature necklace
   }
 
 -- * Non-periodic jewelry
@@ -372,7 +374,7 @@ ring6 = ring
   , iaspects = [Unique, AddSpeed $ 10 + d 10, AddMaxCalm $ - 20 - d 20]
   , ieffects = [ NoEffect "of Rush"
                , Explode "distortion" ]  -- strong magic
-  , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddSpeed ""]
+  , ifeature = ifeature ring ++ [Durable, EqpSlot EqpSlotAddSpeed ""]
   }
 
 -- * Exploding consumables, often intended to be thrown
