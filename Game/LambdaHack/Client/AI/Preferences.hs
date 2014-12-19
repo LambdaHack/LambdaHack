@@ -106,16 +106,16 @@ aspectToBenefit _cops _b asp =
     IK.Unique{} -> 0
     IK.Periodic{} -> 0
     IK.Timeout{} -> 0
-    IK.AddMaxHP p -> p * 10
-    IK.AddMaxCalm p -> p `divUp` 2
+    IK.AddMaxHP p -> p
+    IK.AddMaxCalm p -> p `div` 5
     IK.AddSpeed p -> p * 10000
     IK.AddSkills m -> 5 * sum (EM.elems m)
-    IK.AddHurtMelee p -> p `divUp` 3
+    IK.AddHurtMelee p -> p
     IK.AddHurtRanged p -> p `divUp` 5  -- TODO: should be summed with damage
     IK.AddArmorMelee p -> p `divUp` 5
     IK.AddArmorRanged p -> p `divUp` 10
     IK.AddSight p -> p * 10
-    IK.AddSmell p -> p * 2
+    IK.AddSmell p -> p * 10
     IK.AddLight p -> p * 10
 
 -- | Determine the total benefit from having an item in eqp or inv,
