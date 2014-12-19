@@ -76,6 +76,9 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
           timeoutAspect :: IK.Aspect a -> Bool
           timeoutAspect IK.Timeout{} = True
           timeoutAspect _ = False
+          noEffect :: IK.Effect -> Bool
+          noEffect IK.NoEffect{} = True
+          noEffect _ = False
           hurtEffect :: IK.Effect -> Bool
           hurtEffect (IK.Hurt _) = True
           hurtEffect _ = False
@@ -93,6 +96,7 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
           splitAE reduce_a aspects ppA effects ppE =
             let mperiodic = find periodicAspect aspects
                 mtimeout = find timeoutAspect aspects
+                mnoEffect = find noEffect effects
                 restAs = sort aspects
                 (hurtEs, restEs) = partition hurtEffect $ sort
                                    $ filter notDetail effects
@@ -125,7 +129,10 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
                     _ -> ""
                 onSmash = if T.null onSmashTs then ""
                           else "(on smash:" <+> onSmashTs <> ")"
-            in [periodicOrTimeout] ++ aes ++ [onSmash | fullInfo]
+                noEff = case mnoEffect of
+                  Just (IK.NoEffect t) -> [t]
+                  _ -> []
+            in noEff ++ [periodicOrTimeout] ++ aes ++ [onSmash | fullInfo]
           aets = case itemAE of
             Just ItemAspectEffect{jaspects, jeffects} ->
               splitAE tshow

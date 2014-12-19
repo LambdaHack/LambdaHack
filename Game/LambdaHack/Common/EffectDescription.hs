@@ -32,7 +32,7 @@ import Game.LambdaHack.Content.ItemKind
 effectToSuff :: Effect -> Text
 effectToSuff effect =
   case effect of
-    NoEffect t -> t
+    NoEffect t -> ""  -- printed specially
     Hurt dice -> wrapInParens (tshow dice)
     Burn p | p <= 0 -> assert `failure` effect
     Burn p -> wrapInParens (makePhrase [MU.CarWs p "burn"])
