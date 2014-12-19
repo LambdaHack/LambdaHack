@@ -41,9 +41,13 @@ failMsg msg = do
   stopPlayBack
   assert (not $ T.null msg) $ promptToSlideshow msg
 
+data ItemDialogState = INone | ISuitable | IAll | INoEnter
+  deriving (Show, Eq)
+
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
+-- Used e.g., for applying and projecting.
 getGroupItem :: MonadClientUI m
              => (ItemFull -> Bool)  -- ^ which items to consider suitable
              -> Text      -- ^ specific prompt for only suitable items
@@ -52,27 +56,8 @@ getGroupItem :: MonadClientUI m
              -> [CStore]  -- ^ legal containers after Calm taken into account
              -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 getGroupItem psuit prompt promptGeneric cLegalRaw cLegalAfterCalm = do
-  side <- getsClient sside
-  leader <- getLeaderUI
-  let aidNotEmpty store aid = do
-        bag <- getsState $ getCBag (CActor aid store)
-        return $! not $ EM.null bag
-      partyNotEmpty store = do
-        as <- getsState $ fidActorNotProjAssocs side
-        bs <- mapM (aidNotEmpty store . fst) as
-        return $! or bs
-  -- Don't display stores empty for all actors
-  cLegalNotEmpty <- filterM partyNotEmpty cLegalAfterCalm
-  -- Move a store that is empty for this actor to the back.
-  getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
-  let hasThisActor = not . EM.null . getCStoreBag
-      cLegal = case find hasThisActor cLegalAfterCalm of
-        Nothing -> cLegalNotEmpty
-        Just cThisActor -> cThisActor : delete cThisActor cLegalNotEmpty
-  soc <- getItem psuit (\_ _ _ -> prompt) (\_ _ _ -> promptGeneric)
-                 (map (CActor leader) cLegalRaw)
-                 (map (CActor leader) cLegal)
-                 True False INone
+  soc <- getFull psuit (\_ _ _ -> prompt) (\_ _ _ -> promptGeneric)
+                 cLegalRaw cLegalAfterCalm True False INone
   case soc of
     Left sli -> return $ Left sli
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
@@ -80,6 +65,7 @@ getGroupItem psuit prompt promptGeneric cLegalRaw cLegalAfterCalm = do
 
 -- | Let the human player choose any item from a list of items
 -- and let him specify the number of items.
+-- Used, e.g., for picking up and inventory manipulation.
 getAnyItems :: MonadClientUI m
             => MU.Part   -- ^ the verb describing the action
             -> [CStore]  -- ^ initial legal containers
@@ -89,11 +75,9 @@ getAnyItems :: MonadClientUI m
             -> Bool      -- ^ whether to ask for the number of items
             -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
 getAnyItems verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
-  leader <- getLeaderUI
   let prompt = makePhrase ["What to", verb]
-  soc <- getItem (const True) (\_ _ _ -> prompt) (\_ _ _ -> prompt)
-                 (map (CActor leader) cLegalRaw)
-                 (map (CActor leader) cLegalAfterCalm)
+  soc <- getFull (const True) (\_ _ _ -> prompt) (\_ _ _ -> prompt)
+                 cLegalRaw cLegalAfterCalm
                  askWhenLone True ISuitable
   case soc of
     Left _ -> return soc
@@ -107,6 +91,7 @@ getAnyItems verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
 
 -- | Display all items from a store and let the human player choose any
 -- or switch to any other store.
+-- Used, e.g., for viewing inventory and item descriptions.
 getStoreItem :: MonadClientUI m
              => (Actor -> [ItemFull] -> Container -> Text)
                                  -- ^ how to describe suitable items
@@ -125,8 +110,45 @@ getStoreItem prompt cInitial noEnter = do
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
     Right _ -> assert `failure` soc
 
-data ItemDialogState = INone | ISuitable | IAll | INoEnter
-  deriving (Show, Eq)
+-- | Let the human player choose a single, preferably suitable,
+-- item from a list of items. Don't display stores empty for all actors.
+-- Start with a non-empty store.
+getFull :: MonadClientUI m
+        => (ItemFull -> Bool)  -- ^ which items to consider suitable
+        -> (Actor -> [ItemFull] -> Container -> Text)
+                            -- ^ specific prompt for only suitable items
+        -> (Actor -> [ItemFull] -> Container -> Text)
+                            -- ^ generic prompt
+        -> [CStore]         -- ^ initial legal containers
+        -> [CStore]         -- ^ legal containers with Calm taken into account
+        -> Bool             -- ^ whether to ask, when the only item
+                            --   in the starting container is suitable
+        -> Bool             -- ^ whether to permit multiple items as a result
+        -> ItemDialogState  -- ^ the dialog state to start in
+        -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
+getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
+        askWhenLone permitMulitple initalState = do
+  side <- getsClient sside
+  leader <- getLeaderUI
+  let aidNotEmpty store aid = do
+        bag <- getsState $ getCBag (CActor aid store)
+        return $! not $ EM.null bag
+      partyNotEmpty store = do
+        as <- getsState $ fidActorNotProjAssocs side
+        bs <- mapM (aidNotEmpty store . fst) as
+        return $! or bs
+  -- Don't display stores empty for all actors.
+  cLegalNotEmpty <- filterM partyNotEmpty cLegalAfterCalm
+  -- Move the first store that is non-empty for this actor to the front, if any.
+  getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
+  let hasThisActor = not . EM.null . getCStoreBag
+      cLegal = case find hasThisActor cLegalAfterCalm of
+        Nothing -> cLegalNotEmpty
+        Just cThisActor -> cThisActor : delete cThisActor cLegalNotEmpty
+  getItem psuit prompt promptGeneric
+          (map (CActor leader) cLegalRaw)
+          (map (CActor leader) cLegal)
+          askWhenLone permitMulitple initalState
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
