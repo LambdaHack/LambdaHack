@@ -26,9 +26,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [dart, dart200, bolas, harpoon, net, jumpingPole, whetstone, woodenTorch, oilLamp, brassLantern, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, monocle, ring1, ring2, ring3, ring4, ring5, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, currency]
+  [dart, dart200, bolas, harpoon, net, jumpingPole, whetstone, woodenTorch, oilLamp, brassLantern, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, monocle, ring1, ring2, ring3, ring4, ring5, ring6, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, currency]
 
-dart,    dart200, bolas, harpoon, net, jumpingPole, whetstone, woodenTorch, oilLamp, brassLantern, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, monocle, ring1, ring2, ring3, ring4, ring5, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, currency :: ItemKind
+dart,    dart200, bolas, harpoon, net, jumpingPole, whetstone, woodenTorch, oilLamp, brassLantern, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, monocle, ring1, ring2, ring3, ring4, ring5, ring6, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, currency :: ItemKind
 
 necklace, ring, potion, flask, scroll, wand, gem :: ItemKind  -- generic templates
 
@@ -263,9 +263,10 @@ necklace = ItemKind
   , ikit     = []
   }
 necklace1 = necklace
-  { iaspects = (Timeout $ (d 3 + 4 - dl 3) |*| 10) : iaspects necklace
-  , ieffects = [Recharging (RefillHP 1)]
-  , idesc    = "A cord of dried herbs and healing berries."
+  { iaspects = [Unique, Timeout $ (d 3 + 4 - dl 3) |*| 10]
+               ++ iaspects necklace
+  , ieffects = [NoEffect "of Aromata", Recharging (RefillHP 1)]
+  , idesc    = "A cord of freshly dried herbs and healing berries."
   }
 necklace2 = necklace
   { irarity  = [(2, 0), (10, 1)]
@@ -284,7 +285,8 @@ necklace4 = necklace
   , ieffects = [Recharging (Teleport $ d 3 |*| 3)]
   }
 necklace5 = necklace
-  { iaspects = (Timeout $ (d 3 + 4 - dl 3) |*| 10) : iaspects necklace
+  { iaspects = [AddLight $ d 2, Timeout $ (d 3 + 4 - dl 3) |*| 10]
+               ++ iaspects necklace
   , ieffects = [Recharging (Teleport $ 12 + d 3 |*| 3)]
   }
 necklace6 = necklace
@@ -292,10 +294,14 @@ necklace6 = necklace
   , ieffects = [Recharging (PushActor (ThrowMod 100 50))]
   }
 necklace7 = necklace  -- TODO: teach AI to wear only for fight
-  { irarity  = [(4, 0), (10, 2)]
-  , iaspects = [AddSpeed $ d 2, Timeout $ (d 3 + 3 + dl 3) |*| 2]
+  { iaspects = [ Unique, AddMaxHP $ 5 + d 5
+               , AddArmorMelee 20, AddArmorRanged 20
+               , Timeout $ d 2 + 5 - dl 3 ]
                ++ iaspects necklace
-  , ieffects = [Recharging (RefillHP (-1))]
+  , ieffects = [ NoEffect "of Overdrive"
+               , Recharging (InsertMove $ 1 + d 2)
+               , Recharging (RefillHP (-1))
+               , Recharging (RefillCalm (-1)) ]
   }
 
 -- * Non-periodic jewelry
@@ -361,6 +367,13 @@ ring5 = ring  -- by the time it's found, probably no space in eqp
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddLight ""]
   , idesc    = "A sturdy ring with a large, shining stone."
   }
+ring6 = ring
+  { irarity  = [(10, 2)]
+  , iaspects = [Unique, AddSpeed $ 10 + d 10, AddMaxCalm $ - 20 - d 20]
+  , ieffects = [ NoEffect "of Rush"
+               , Explode "distortion" ]  -- strong magic
+  , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddSpeed ""]
+  }
 
 -- * Exploding consumables, often intended to be thrown
 
@@ -385,9 +398,9 @@ potion1 = potion
                , OnSmash (ApplyPerfume), OnSmash (Explode "fragrance") ]
   }
 potion2 = potion
-  { ifreq    = [("useful", 10)]  -- extremely rare
-  , irarity  = [(1, 1)]
-  , ieffects = [ NoEffect "of attraction", OnSmash (Explode "pheromone")]
+  { irarity  = [(6, 10), (10, 10)]
+  , iaspects = [Unique]
+  , ieffects = [NoEffect "of Attraction", OnSmash (Explode "pheromone")]
   }
 potion3 = potion
   { irarity  = [(1, 5), (10, 5)]
@@ -415,12 +428,18 @@ potion6 = potion
                                 , Explode "blast 20" ]) ]
   }
 potion7 = potion
-  { ieffects = [ DropItem COrgan "poisoned" True, RefillHP 1
+  { ieffects = [ DropItem COrgan "poisoned" True, OverfillHP 1
                , OnSmash (Explode "antidote mist") ]
   }
 potion8 = potion
-  { ieffects = [ DropItem COrgan "temporary conditions" True, RefillHP 2
+  { ieffects = [ DropItem COrgan "temporary conditions" True, OverfillHP 2
                , OnSmash (Explode "blast 10") ]
+  }
+potion9 = potion
+  { irarity  = [(10, 5)]
+  , iaspects = [Unique]
+  , ieffects = [ NoEffect "of Love", OverfillHP 50, Dominate
+               , OnSmash (Explode "healing mist 2") ]
   }
 
 -- * Exploding consumables, with temporary aspects
@@ -541,8 +560,10 @@ scroll = ItemKind
   , ikit     = []
   }
 scroll1 = scroll
-  { irarity  = [(3, 6), (10, 6)]
-  , ieffects = [CallFriend 1]
+  { irarity  = [(3, 10), (10, 10)]
+  , iaspects = [Unique]
+  , ieffects = [ NoEffect "of Reckless Beacon"
+               , CallFriend (1 + d 2), Summon standardSummon (1 + d 2) ]
   }
 scroll2 = scroll
   { irarity  = [(1, 7), (10, 5)]
@@ -554,16 +575,15 @@ scroll3 = scroll
   }
 scroll4 = scroll
   { ieffects = [OneOf [ Teleport $ d 3 |*| 3, RefillCalm 10, RefillCalm (-10)
-                      , InsertMove 3, Paralyze 10, Identify CGround ]]
+                      , InsertMove 3, Paralyze 5, Identify CGround ]]
   }
 scroll5 = scroll
   { irarity  = [(10, 15)]
-  , ieffects = [OneOf [ Summon standardSummon $ d 2
-                      , CallFriend (d 2), Ascend (-1), Ascend 1
-                      , RefillCalm 30, RefillCalm (-30)
+  , ieffects = [OneOf [ Summon standardSummon 1
+                      , CallFriend 1, Ascend (-1), Ascend 1
+                      , OverfillCalm 20, OverfillCalm (-20)
                       , CreateItem CGround "useful" TimerNone
                       , PolyItem CGround ]]
-               -- TODO: ask player: Escape 1
   }
 scroll6 = scroll
   { ieffects = [Teleport 5]
@@ -577,11 +597,17 @@ scroll8 = scroll
   }
 scroll9 = scroll
   { irarity  = [(1, 15)]
-  , ieffects = [NoEffect "scientific explanation", Identify CGround]  -- TODO: ask player: AskPlayer cstore eff?
+  , ieffects = [NoEffect "of scientific explanation", Identify CGround]  -- TODO: ask player: AskPlayer cstore eff?
   }
 scroll10 = scroll
   { irarity  = [(10, 10)]
   , ieffects = [PolyItem CGround]
+  }
+scroll11 = scroll
+  { irarity  = [(6, 10), (10, 10)]
+  , iaspects = [Unique]
+  , ieffects = [ NoEffect "of Prisoner Release"
+               , CallFriend (d 2) ]
   }
 
 standardSummon :: Freqs ItemKind
