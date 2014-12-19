@@ -8,9 +8,11 @@ module Game.LambdaHack.Server.ItemServer
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Function
 import qualified Data.HashMap.Strict as HM
-import Data.Key (mapWithKeyM_)
+import Data.List
 import Data.Maybe
+import Data.Ord
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
@@ -114,7 +116,7 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
 placeItemsInDungeon :: forall m. (MonadAtomic m, MonadServer m) => m ()
 placeItemsInDungeon = do
   Kind.COps{cotile} <- getsState scops
-  let initialItems lid (Level{lfloor, ltile, litemNum, lxsize, lysize}) = do
+  let initialItems (lid, Level{lfloor, ltile, litemNum, lxsize, lysize}) = do
         let factionDist = max lxsize lysize - 5
             placeItems :: [Point] -> Int -> m ()
             placeItems _ 0 = return ()
@@ -145,14 +147,22 @@ placeItemsInDungeon = do
               placeItems (pos : lfloorKeys) (n - 1)
         placeItems (EM.keys lfloor) litemNum
   dungeon <- getsState sdungeon
-  mapWithKeyM_ initialItems dungeon
+  -- Make sure items on easy levels are generated first, to avoid all
+  -- artifacts on deep levels.
+  let absLid = abs . fromEnum
+      fromEasyToHard = sortBy (comparing absLid `on` fst) $ EM.assocs dungeon
+  mapM_ initialItems fromEasyToHard
 
 embedItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()
 embedItemsInDungeon = do
-  let embedItems lid (Level{ltile}) =
+  let embedItems (lid, Level{ltile}) =
         PointArray.mapWithKeyM_A (embedItem lid) ltile
   dungeon <- getsState sdungeon
-  mapWithKeyM_ embedItems dungeon
+  -- Make sure items on easy levels are generated first, to avoid all
+  -- artifacts on deep levels.
+  let absLid = abs . fromEnum
+      fromEasyToHard = sortBy (comparing absLid `on` fst) $ EM.assocs dungeon
+  mapM_ embedItems fromEasyToHard
 
 fullAssocsServer :: MonadServer m
                  => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
