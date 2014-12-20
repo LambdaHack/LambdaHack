@@ -103,7 +103,7 @@ getStoreItem prompt cInitial noEnter = do
   let allStores = map (CActor leader) [CEqp, CInv, CSha, CGround]
       cLegalRaw = cInitial : delete cInitial allStores
       dialogState = if noEnter then INoEnter else ISuitable
-  soc <- getItem (const True) prompt prompt cLegalRaw cLegalRaw
+  soc <- getItem (const True) prompt prompt cLegalRaw
                  True False dialogState
   case soc of
     Left sli -> return $ Left sli
@@ -142,13 +142,19 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
   -- Move the first store that is non-empty for this actor to the front, if any.
   getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
   let hasThisActor = not . EM.null . getCStoreBag
-      cLegal = case find hasThisActor cLegalAfterCalm of
-        Nothing -> cLegalNotEmpty
-        Just cThisActor -> cThisActor : delete cThisActor cLegalNotEmpty
-  getItem psuit prompt promptGeneric
-          (map (CActor leader) cLegalRaw)
-          (map (CActor leader) cLegal)
-          askWhenLone permitMulitple initalState
+  case find hasThisActor cLegalAfterCalm of
+    Nothing ->
+      if isNothing (find hasThisActor cLegalRaw) then do
+        let contLegalRaw = map (CActor leader) cLegalRaw
+            tLegal = map (MU.Text . ppContainer) contLegalRaw
+            ppLegal = makePhrase [MU.WWxW "nor" tLegal]
+        failWith $ "no items" <+> ppLegal
+      else failSer ItemNotCalm
+    Just cThisActor -> do
+      let cLegal = cThisActor : delete cThisActor cLegalNotEmpty
+      getItem psuit prompt promptGeneric
+              (map (CActor leader) cLegal)
+              askWhenLone permitMulitple initalState
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
@@ -158,33 +164,26 @@ getItem :: MonadClientUI m
                             -- ^ specific prompt for only suitable items
         -> (Actor -> [ItemFull] -> Container -> Text)
                             -- ^ generic prompt
-        -> [Container]      -- ^ initial legal containers
         -> [Container]      -- ^ legal containers with Calm taken into account
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting container is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
         -> ItemDialogState  -- ^ the dialog state to start in
         -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
-getItem psuit prompt promptGeneric cLegalRaw cLegal askWhenLone permitMulitple
+getItem psuit prompt promptGeneric cLegal askWhenLone permitMulitple
         initalState = do
   leader <- getLeaderUI
   accessCBag <- getsState $ flip getCBag
   let storeAssocs = EM.assocs . accessCBag
       allAssocs = concatMap storeAssocs cLegal
-      rawAssocs = concatMap storeAssocs cLegalRaw
   mapM_ (updateItemSlot (Just leader)) $
     concatMap (EM.keys . accessCBag) cLegal
   case (cLegal, allAssocs) of
     ([cStart], [(iid, k)]) | not askWhenLone -> do
       itemToF <- itemToFullClient
       return $ Right ([(iid, itemToF iid k)], cStart)
-    (_ : _, _ : _) ->
+    _ ->
       transition psuit prompt promptGeneric cLegal permitMulitple initalState
-    _ -> if null rawAssocs then do
-           let tLegal = map (MU.Text . ppContainer) cLegalRaw
-               ppLegal = makePhrase [MU.WWxW "nor" tLegal]
-           failWith $ "no items" <+> ppLegal
-         else failSer ItemNotCalm
 
 data DefItemKey m = DefItemKey
   { defLabel  :: Text  -- ^ can be undefined if not @defCond@
