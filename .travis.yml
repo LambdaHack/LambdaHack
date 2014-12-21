@@ -136,7 +136,13 @@ script:
    cd ..
 
 # mine:
- - touch /tmp/stdtest.log;
-   (make test-travis || (tail -n 200 /tmp/stdtest.log ; exit 77));
+ - |
+   if [ ${GHCVER%.*} = "7.6" ]; then
+     touch /tmp/stdtest.log;
+     (make test-travis-medium || (tail -n 200 /tmp/stdtest.log ; exit 77));
+   else
+     touch /tmp/stdtest.log;
+     (make test-travis-medium-no-safari || (tail -n 200 /tmp/stdtest.log ; exit 77));
+   fi
 
 # EOF

@@ -70,7 +70,9 @@ bench: benchCampaign benchFrontendCampaign benchBattle benchFrontendBattle
 
 test-travis-short: test-short
 
-test-travis: test-short test-medium
+test-travis-medium: test-short test-medium
+
+test-travis-medium-no-safari: test-short test-medium-no-safari
 
 test-travis-long: test-short test-long
 
@@ -81,6 +83,8 @@ test: test-short test-medium test-long
 test-short: test-short-new test-short-load
 
 test-medium: testCampaign-medium testSkirmish-medium testAmbush-medium testBattle-medium testSafari-medium testPvP-medium testCoop-medium testDefense-medium
+
+test-medium-no-safari: testCampaign-medium testSkirmish-medium testAmbush-medium testBattle-medium testPvP-medium testCoop-medium testDefense-medium
 
 test-long: testCampaign-long testSkirmish-medium testAmbush-medium testBattle-long testSafari-long testPvP-medium testDefense-long
 
