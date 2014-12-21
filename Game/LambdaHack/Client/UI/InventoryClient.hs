@@ -234,7 +234,7 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
       keyDefs = filter (defCond . snd)
         [ (K.Char '?', DefItemKey
            { defLabel = "?"
-           , defCond = True
+           , defCond = bag /= bagSuit || itemDialogState == INoEnter
            , defAction = \_ -> case normalizeState itemDialogState of
                ISuitable | bag /= bagSuit ->
                  transition psuit prompt promptGeneric cCur cRest
