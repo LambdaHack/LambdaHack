@@ -200,7 +200,8 @@ are listed in the Main Menu, brought up by the `ESC` key.
 Game difficulty setting affects hitpoints at birth for any actors
 of any UI-using faction. For a person new to roguelikes, the Duel game mode
 offers a gentle introduction. The subsequent game modes gradually introduce
-squad combat, stealth, asymmetric battles and more game elements.
+squad combat, stealth, opportunity fire, asymmetric battles and more game
+elements.
 
                 keys           command
                 CTRL-x         save and exit

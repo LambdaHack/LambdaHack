@@ -11,9 +11,9 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, adventurer, blacksmith, forester, scientist, soldier, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, hornetSwarm, thornbush, geyser]
+  [warrior, adventurer, blacksmith, forester, scientist, soldier, sniper, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, hornetSwarm, thornbush, geyser]
 
-warrior,    adventurer, blacksmith, forester, scientist, soldier, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, hornetSwarm, thornbush, geyser :: ItemKind
+warrior,    adventurer, blacksmith, forester, scientist, soldier, sniper, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, hornetSwarm, thornbush, geyser :: ItemKind
 
 -- * Hunams
 
@@ -29,7 +29,6 @@ warrior = ItemKind
   , iaspects = [ AddMaxHP 60  -- partially from clothes and assumed first aid
                , AddMaxCalm 60, AddSpeed 20
                , AddSkills $ EM.fromList [(AbProject, 1), (AbApply, 1)]
-                   -- TODO: on a ring?
                , AddSight 3 ]  -- not via eyes, but feel, hearing, etc.
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -49,6 +48,16 @@ soldier = warrior
   { iname    = "soldier"
   , ifreq    = [("soldier", 100)]
   , ikit     = ikit warrior ++ [("starting weapon", CEqp)]
+  }
+sniper = warrior
+  { iname    = "sniper"
+  , ifreq    = [("sniper", 100)]
+  , ikit     = ikit warrior
+               ++ [ ("ring of opportunity sniper", CEqp)
+                  , ("any arrow", CInv), ("any arrow", CInv)
+                  , ("any arrow", CInv), ("any arrow", CInv)
+                  , ("flask", CInv), ("light source", CInv)
+                  , ("light source", CInv), ("light source", CInv) ]
   }
 
 clerk = warrior

@@ -146,10 +146,11 @@ rosterSkirmish = rosterDuel
                   , ("Purple Agda", "Horror Den") ] }
 
 rosterAmbush = rosterDuel
-  { rosterList = [ playerHero { fname = "Yellow Idris"
-                              , fentryLevel = -5 }
-                 , playerAntiHero { fname = "Blue Epigram"
-                                  , fentryLevel = -5 }
+  { rosterList = [ playerSniper { fname = "Yellow Idris"
+                                , finitialActors = 4
+                                , fentryLevel = -5 }
+                 , playerAntiSniper { fname = "Blue Epigram"
+                                    , fentryLevel = -5 }
                  , playerHorror {fentryLevel = -5} ]
   , rosterEnemy = [ ("Yellow Idris", "Blue Epigram")
                   , ("Yellow Idris", "Horror Den")
