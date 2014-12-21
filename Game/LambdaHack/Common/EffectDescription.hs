@@ -138,7 +138,11 @@ rawAspectToSuff aspect =
     AddMaxHP t -> wrapInParens $ t <+> "HP"
     AddMaxCalm t -> wrapInParens $ t <+> "Calm"
     AddSpeed t -> wrapInParens $ t <+> "speed"
-    AddSkills p -> wrapInParens $ "+" <+> T.pack (show $ EM.toList p)
+    AddSkills p ->
+      let skillToSuff (skill, bonus) =
+            (if bonus > 0 then "+" else "")
+            <> tshow bonus <+> tshow skill
+      in wrapInParens $ T.intercalate " " $ map skillToSuff $ EM.assocs p
     AddHurtMelee t -> wrapInParens $ t <> "% melee"
     AddHurtRanged  t -> wrapInParens $ t <> "% ranged"
     AddArmorMelee t -> "[" <> t <> "%]"
