@@ -101,9 +101,8 @@ getStoreItem :: MonadClientUI m
 getStoreItem prompt cInitial noEnter = do
   leader <- getLeaderUI
   let allStores = map (CActor leader) [CEqp, CInv, CSha, CGround]
-      cLegalRaw = cInitial : delete cInitial allStores
       dialogState = if noEnter then INoEnter else ISuitable
-  soc <- getItem (const True) prompt prompt cLegalRaw
+  soc <- getItem (const True) prompt prompt cInitial (delete cInitial allStores)
                  True False dialogState
   case soc of
     Left sli -> return $ Left sli
@@ -151,9 +150,9 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
     Just cThisActor -> do
       -- Don't display stores empty for all actors.
       cLegalNotEmpty <- filterM partyNotEmpty cLegalRaw
-      let cLegal = cThisActor : delete cThisActor cLegalNotEmpty
       getItem psuit prompt promptGeneric
-              (map (CActor leader) cLegal)
+              (CActor leader cThisActor)
+              (map (CActor leader) $ delete cThisActor cLegalNotEmpty)
               askWhenLone permitMulitple initalState
 
 -- | Let the human player choose a single, preferably suitable,
@@ -164,26 +163,29 @@ getItem :: MonadClientUI m
                             -- ^ specific prompt for only suitable items
         -> (Actor -> [ItemFull] -> Container -> Text)
                             -- ^ generic prompt
-        -> [Container]      -- ^ legal containers with Calm taken into account
+        -> Container        -- ^ first legal container
+        -> [Container]      -- ^ the rest of legal containers
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting container is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
         -> ItemDialogState  -- ^ the dialog state to start in
         -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
-getItem psuit prompt promptGeneric cLegal askWhenLone permitMulitple
+getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
         initalState = do
+  let cLegal = cCur : cRest
   leader <- getLeaderUI
   accessCBag <- getsState $ flip getCBag
   let storeAssocs = EM.assocs . accessCBag
       allAssocs = concatMap storeAssocs cLegal
   mapM_ (updateItemSlot (Just leader)) $
     concatMap (EM.keys . accessCBag) cLegal
-  case (cLegal, allAssocs) of
-    ([cStart], [(iid, k)]) | not askWhenLone -> do
+  case (cRest, allAssocs) of
+    ([], [(iid, k)]) | not askWhenLone -> do
       itemToF <- itemToFullClient
-      return $ Right ([(iid, itemToF iid k)], cStart)
+      return $ Right ([(iid, itemToF iid k)], cCur)
     _ ->
-      transition psuit prompt promptGeneric cLegal permitMulitple initalState
+      transition psuit prompt promptGeneric cCur cRest
+                 permitMulitple initalState
 
 data DefItemKey m = DefItemKey
   { defLabel  :: Text  -- ^ can be undefined if not @defCond@
@@ -192,18 +194,17 @@ data DefItemKey m = DefItemKey
   }
 
 transition :: forall m. MonadClientUI m
-           => (ItemFull -> Bool)  -- ^ which items to consider suitable
+           => (ItemFull -> Bool)
            -> (Actor -> [ItemFull] -> Container -> Text)
-                            -- ^ specific prompt for only suitable items
            -> (Actor -> [ItemFull] -> Container -> Text)
-                            -- ^ generic prompt
+           -> Container
            -> [Container]
            -> Bool
            -> ItemDialogState
            -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
-transition _ _ _ [] _ iDS = assert `failure` iDS
-transition psuit prompt promptGeneric cLegal@(cCur:cRest) permitMulitple
+transition psuit prompt promptGeneric cCur cRest permitMulitple
            itemDialogState = do
+  let cLegal = cCur : cRest
   (letterSlots, numberSlots) <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -237,14 +238,14 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) permitMulitple
            , defAction = \_ -> case normalizeState itemDialogState of
                INone ->
                  if EM.null bagSuit
-                 then transition psuit prompt promptGeneric cLegal
+                 then transition psuit prompt promptGeneric cCur cRest
                                  permitMulitple IAll
-                 else transition psuit prompt promptGeneric cLegal
+                 else transition psuit prompt promptGeneric cCur cRest
                                  permitMulitple ISuitable
                ISuitable | bag /= bagSuit ->
-                 transition psuit prompt promptGeneric cLegal
+                 transition psuit prompt promptGeneric cCur cRest
                             permitMulitple IAll
-               _ -> transition psuit prompt promptGeneric cLegal
+               _ -> transition psuit prompt promptGeneric cCur cRest
                                permitMulitple INone
            })
         , (K.Char '/', DefItemKey
@@ -252,15 +253,13 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) permitMulitple
            , defCond = length cLegal > 1
            , defAction = \_ -> do
                let calmE = calmEnough body activeItems
-                   newLegal = cRest ++ [cCur]
-                   cAfterCalm | calmE = newLegal
-                              | otherwise =
-                     case newLegal of
-                       c1@(CActor _ CSha) : c2 : rest -> c2 : c1 : rest
-                       [CActor _ CSha] -> assert `failure` cLegal
-                       _ -> newLegal
+                   (cCurAfterCalm, cRestAfterCalm) = case cRest ++ [cCur] of
+                     c1@(CActor _ CSha) : c2 : rest | calmE -> (c2, c1 : rest)
+                     [CActor _ CSha] | calmE -> assert `failure` cLegal
+                     c1 : rest -> (c1, rest)
+                     [] -> assert `failure` cLegal
                transition psuit prompt promptGeneric
-                          cAfterCalm permitMulitple
+                          cCurAfterCalm cRestAfterCalm permitMulitple
                           (normalizeState itemDialogState)
            })
         , (K.Char '*', DefItemKey
@@ -301,21 +300,23 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) permitMulitple
                let newC c = case c of
                      CActor _ cstore -> CActor newLeader cstore
                      _ -> c
-                   newLegal = map newC cLegal
+                   newCur = newC cCur
+                   newRest = map newC cRest
+                   newLegal = newRest ++ [newCur]
                accessCBag <- getsState $ flip getCBag
                mapM_ (updateItemSlot (Just newLeader)) $
                  concatMap (EM.keys . accessCBag) newLegal
                b <- getsState $ getActorBody newLeader
                newActiveItems <- activeItemsClient newLeader
                let calmE = calmEnough b newActiveItems
-                   cAfterCalm | calmE = newLegal
-                              | otherwise =
-                     case newLegal of
-                       c1@(CActor _ CSha) : c2 : rest -> c2 : c1 : rest
-                       [c1@(CActor _ CSha)] ->
-                         (CActor newLeader CGround) : c1 : []
-                       _ -> newLegal
-               transition psuit prompt promptGeneric cAfterCalm
+                   (cCurAfterCalm, cRestAfterCalm) = case newLegal of
+                     c1@(CActor _ CSha) : c2 : rest | calmE -> (c2, c1 : rest)
+                     [CActor _ CSha] | calmE ->
+                       (CActor newLeader CGround, newLegal)
+                     c1 : rest -> (c1, rest)
+                     [] -> assert `failure` cLegal
+               transition psuit prompt promptGeneric
+                          cCurAfterCalm cRestAfterCalm
                           permitMulitple itemDialogState
            })
         , (K.BackTab, DefItemKey
@@ -328,21 +329,23 @@ transition psuit prompt promptGeneric cLegal@(cCur:cRest) permitMulitple
                let newC c = case c of
                      CActor _ cstore -> CActor newLeader cstore
                      _ -> c
-                   newLegal = map newC cLegal
+                   newCur = newC cCur
+                   newRest = map newC cRest
+                   newLegal = newRest ++ [newCur]
                accessCBag <- getsState $ flip getCBag
                mapM_ (updateItemSlot (Just newLeader)) $
                  concatMap (EM.keys . accessCBag) newLegal
                b <- getsState $ getActorBody newLeader
                newActiveItems <- activeItemsClient newLeader
                let calmE = calmEnough b newActiveItems
-                   cAfterCalm | calmE = newLegal
-                              | otherwise =
-                     case newLegal of
-                       c1@(CActor _ CSha) : c2 : rest -> c2 : c1 : rest
-                       [c1@(CActor _ CSha)] ->
-                         (CActor newLeader CGround) : c1 : []
-                       _ -> newLegal
-               transition psuit prompt promptGeneric cAfterCalm
+                   (cCurAfterCalm, cRestAfterCalm) = case newLegal of
+                     c1@(CActor _ CSha) : c2 : rest | calmE -> (c2, c1 : rest)
+                     [CActor _ CSha] | calmE ->
+                       (CActor newLeader CGround, newLegal)
+                     c1 : rest -> (c1, rest)
+                     [] -> assert `failure` cLegal
+               transition psuit prompt promptGeneric
+                          cCurAfterCalm cRestAfterCalm
                           permitMulitple itemDialogState
            })
         ]
