@@ -250,12 +250,19 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
          then getAnyItems verb cLegalRaw cLegal False False
          else getAnyItems verb cLegalRaw cLegal True True
   case ggi of
-    Right (l, CActor _ fromCStore) -> do
-      l4 <- ret4 fromCStore l 0 []
-      return $! case l4 of
-        Left sli -> Left sli
-        Right [] -> assert `failure` ggi
-        Right lr -> Right $ ReqMoveItems lr
+    Right (l, CActor leader2 fromCStore) -> do
+      b2 <- getsState $ getActorBody leader2
+      activeItems2 <- activeItemsClient leader2
+      let calmE2 = calmEnough b2 activeItems2
+      -- This is not ideal, because the failure message comes late,
+      -- but it's simple and good enough.
+      if not calmE2 && destCStore == CSha then failSer ItemNotCalm
+      else do
+        l4 <- ret4 fromCStore l 0 []
+        return $! case l4 of
+          Left sli -> Left sli
+          Right [] -> assert `failure` ggi
+          Right lr -> Right $ ReqMoveItems lr
     Left slides -> return $ Left slides
     _ -> assert `failure` ggi
 
