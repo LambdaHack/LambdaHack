@@ -41,7 +41,7 @@ failMsg msg = do
   stopPlayBack
   assert (not $ T.null msg) $ promptToSlideshow msg
 
-data ItemDialogState = INone | ISuitable | IAll | INoEnter
+data ItemDialogState = ISuitable | IAll | INoEnter
   deriving (Show, Eq)
 
 -- | Let a human player choose any item from a given group.
@@ -57,7 +57,7 @@ getGroupItem :: MonadClientUI m
              -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 getGroupItem psuit prompt promptGeneric cLegalRaw cLegalAfterCalm = do
   soc <- getFull psuit (\_ _ _ -> prompt) (\_ _ _ -> promptGeneric)
-                 cLegalRaw cLegalAfterCalm True False INone
+                 cLegalRaw cLegalAfterCalm True False ISuitable
   case soc of
     Left sli -> return $ Left sli
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
@@ -225,7 +225,7 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
       bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
       suitableLetterSlots = EM.filter (`EM.member` bagSuit) letterSlots
       (autoDun, autoLvl) = autoDungeonLevel fact
-      normalizeState INoEnter = INone
+      normalizeState INoEnter = ISuitable
       normalizeState x = x
       enterSlots = if itemDialogState == IAll
                    then bagLetterSlots
@@ -236,17 +236,12 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
            { defLabel = "?"
            , defCond = True
            , defAction = \_ -> case normalizeState itemDialogState of
-               INone ->
-                 if EM.null bagSuit
-                 then transition psuit prompt promptGeneric cCur cRest
-                                 permitMulitple IAll
-                 else transition psuit prompt promptGeneric cCur cRest
-                                 permitMulitple ISuitable
                ISuitable | bag /= bagSuit ->
                  transition psuit prompt promptGeneric cCur cRest
                             permitMulitple IAll
-               _ -> transition psuit prompt promptGeneric cCur cRest
-                               permitMulitple INone
+               _ ->
+                 transition psuit prompt promptGeneric cCur cRest
+                            permitMulitple ISuitable
            })
         , (K.Char '/', DefItemKey
            { defLabel = "/"
@@ -332,7 +327,7 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
           IAll      -> (bagLetterSlots,
                         bag,
                         promptGeneric body activeItems cCur <+> ppCur <> ":")
-          _         -> (suitableLetterSlots,
+          INoEnter  -> (suitableLetterSlots,
                         EM.empty,
                         prompt body activeItems cCur <+> ppCur <> ":")
   io <- itemOverlay cCur (blid body) bagFiltered
