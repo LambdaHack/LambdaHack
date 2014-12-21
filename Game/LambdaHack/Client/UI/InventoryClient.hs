@@ -254,8 +254,9 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
            , defAction = \_ -> do
                let calmE = calmEnough body activeItems
                    (cCurAfterCalm, cRestAfterCalm) = case cRest ++ [cCur] of
-                     c1@(CActor _ CSha) : c2 : rest | calmE -> (c2, c1 : rest)
-                     [CActor _ CSha] | calmE -> assert `failure` cLegal
+                     c1@(CActor _ CSha) : c2 : rest | not calmE ->
+                       (c2, c1 : rest)
+                     [CActor _ CSha] | not calmE -> assert `failure` cLegal
                      c1 : rest -> (c1, rest)
                      [] -> assert `failure` cLegal
                transition psuit prompt promptGeneric
@@ -296,28 +297,9 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
            , defAction = \_ -> do
                err <- memberCycle False
                assert (err == mempty `blame` err) skip
-               newLeader <- getLeaderUI
-               let newC c = case c of
-                     CActor _ cstore -> CActor newLeader cstore
-                     _ -> c
-                   newCur = newC cCur
-                   newRest = map newC cRest
-                   newLegal = newRest ++ [newCur]
-               accessCBag <- getsState $ flip getCBag
-               mapM_ (updateItemSlot (Just newLeader)) $
-                 concatMap (EM.keys . accessCBag) newLegal
-               b <- getsState $ getActorBody newLeader
-               newActiveItems <- activeItemsClient newLeader
-               let calmE = calmEnough b newActiveItems
-                   (cCurAfterCalm, cRestAfterCalm) = case newLegal of
-                     c1@(CActor _ CSha) : c2 : rest | calmE -> (c2, c1 : rest)
-                     [CActor _ CSha] | calmE ->
-                       (CActor newLeader CGround, newLegal)
-                     c1 : rest -> (c1, rest)
-                     [] -> assert `failure` cLegal
+               (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                transition psuit prompt promptGeneric
-                          cCurAfterCalm cRestAfterCalm
-                          permitMulitple itemDialogState
+                          cCurUpd cRestUpd permitMulitple itemDialogState
            })
         , (K.BackTab, DefItemKey
            { defLabel = "SHIFT-TAB"
@@ -325,28 +307,9 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
            , defAction = \_ -> do
                err <- memberBack False
                assert (err == mempty `blame` err) skip
-               newLeader <- getLeaderUI
-               let newC c = case c of
-                     CActor _ cstore -> CActor newLeader cstore
-                     _ -> c
-                   newCur = newC cCur
-                   newRest = map newC cRest
-                   newLegal = newRest ++ [newCur]
-               accessCBag <- getsState $ flip getCBag
-               mapM_ (updateItemSlot (Just newLeader)) $
-                 concatMap (EM.keys . accessCBag) newLegal
-               b <- getsState $ getActorBody newLeader
-               newActiveItems <- activeItemsClient newLeader
-               let calmE = calmEnough b newActiveItems
-                   (cCurAfterCalm, cRestAfterCalm) = case newLegal of
-                     c1@(CActor _ CSha) : c2 : rest | calmE -> (c2, c1 : rest)
-                     [CActor _ CSha] | calmE ->
-                       (CActor newLeader CGround, newLegal)
-                     c1 : rest -> (c1, rest)
-                     [] -> assert `failure` cLegal
+               (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                transition psuit prompt promptGeneric
-                          cCurAfterCalm cRestAfterCalm
-                          permitMulitple itemDialogState
+                          cCurUpd cRestUpd permitMulitple itemDialogState
            })
         ]
       lettersDef :: DefItemKey m
@@ -374,6 +337,29 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
                         prompt body activeItems cCur <+> ppCur <> ":")
   io <- itemOverlay cCur (blid body) bagFiltered
   runDefItemKey keyDefs lettersDef io bagLetterSlots promptChosen
+
+legalWithUpdatedLeader :: MonadClientUI m
+                       => Container
+                       -> [Container]
+                       -> m (Container, [Container])
+legalWithUpdatedLeader cCur cRest = do
+  leader <- getLeaderUI
+  let newC c = case c of
+        CActor _oldLeader cstore -> CActor leader cstore
+        _ -> c
+      newLegal = map newC $ cCur : cRest
+  accessCBag <- getsState $ flip getCBag
+  mapM_ (updateItemSlot (Just leader)) $
+    concatMap (EM.keys . accessCBag) newLegal
+  b <- getsState $ getActorBody leader
+  activeItems <- activeItemsClient leader
+  let calmE = calmEnough b activeItems
+      legalAfterCalm = case newLegal of
+        c1@(CActor _ CSha) : c2 : rest | not calmE -> (c2, c1 : rest)
+        [CActor _ CSha] | not calmE -> (CActor leader CGround, newLegal)
+        c1 : rest -> (c1, rest)
+        [] -> assert `failure` (cCur, cRest)
+  return legalAfterCalm
 
 runDefItemKey :: MonadClientUI m
               => [(K.Key, DefItemKey m)]
