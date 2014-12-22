@@ -99,6 +99,7 @@ data Dice = Dice
   }
   deriving (Read, Eq, Ord, Generic)
 
+-- Read and Show should be inverses in this case.
 instance Show Dice where
   show Dice{..} = T.unpack $
     let rawScaled = nameFrequency diceLevel
@@ -169,6 +170,9 @@ _zl n = Dice (fromInteger 0) (zdieLevelSimple n) 1
 intToDice :: Int -> Dice
 intToDice = fromInteger . fromIntegral
 
+infixl 5 |*|
+-- | Scaling the dice, after all randomness is resolved, by a constant.
+-- Infix declaration ensures that @1 + 2 |*| 3@ parses as @(1 + 2) |*| 3@.
 (|*|) :: Dice -> Int -> Dice
 Dice dc1 dl1 ds1 |*| s2 = Dice dc1 dl1 (ds1 * s2)
 
