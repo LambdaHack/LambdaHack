@@ -224,15 +224,16 @@ pickup aid onlyWeapon = do
                    | otherwise = id
       prepareOne (oldN, l4) ((_, (k, _)), (iid, itemFull)) =
         -- TODO: instead of pickup to eqp and then move to inv, pickup to inv
-        let n = k + oldN
-            toCStore = if rsharedStash && calmE
-                          && goesIntoSha (itemBase itemFull)
-                       then CSha
-                       else if goesIntoInv (itemBase itemFull)
-                               || eqpOverfull b n
-                       then CInv
-                       else CEqp
-        in (n, (iid, k, CGround, toCStore) : l4)
+        let n = oldN + k
+            (newN, toCStore) =
+              if rsharedStash && calmE
+                 && goesIntoSha (itemBase itemFull)
+              then (oldN, CSha)
+              else if goesIntoInv (itemBase itemFull)
+                      || eqpOverfull b n
+              then (oldN, CInv)
+              else (n, CEqp)
+        in (newN, (iid, k, CGround, toCStore) : l4)
       (_, prepared) = foldl' prepareOne (0, []) $ filterWeapon benItemL
   return $! if null prepared
             then reject
