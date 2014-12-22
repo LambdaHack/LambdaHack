@@ -42,8 +42,8 @@ effectToBenefit cops b activeItems fact eff =
     IK.OverfillHP p ->
       let hpMax = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
       in if p > 0
-         then 11 * min p (max 1 $ fromIntegral $
-                          (xM hpMax - bhp b) `divUp` oneM)
+         then 11 * min p (max 1 $ fromIntegral
+                          $ (xM hpMax - bhp b) `divUp` oneM)
          else max (-99) (11 * p)
     IK.RefillCalm p ->
       let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
@@ -91,8 +91,9 @@ effectToBenefit cops b activeItems fact eff =
     IK.ApplyPerfume -> -10
     IK.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
     IK.OnSmash _ -> -10
-    IK.Recharging e -> effectToBenefit cops b activeItems fact e
-                           `divUp` 3  -- TODO: use Timeout
+    IK.Recharging e ->
+      -- Used, e.g., in @periodicBens@, which takes timeout into account, too.
+      effectToBenefit cops b activeItems fact e
     IK.Temporary _ -> 0
 
 -- TODO: calculating this for "temporary conditions" takes forever
@@ -141,10 +142,12 @@ totalUsefulness cops b activeItems fact itemFull =
                 Just timeout ->
                   map (\eff -> eff * 10 `divUp` timeout) periodicEffBens
             selfBens = aspBens ++ periodicBens
-            eqpSum = if not (null selfBens) && minimum selfBens < -10
-                                            && maximum selfBens > 10
+            selfSum = sum selfBens
+            eqpSum = if not (null selfBens)
+                        && (selfSum > 0 && minimum selfBens < -10
+                            || selfSum < 0 && maximum selfBens > 10)
                      then 0  -- significant mixed blessings out of AI control
-                     else sum selfBens
+                     else selfSum
             effSum = sum effBens
             isWeapon =
               isJust (strengthFromEqpSlot IK.EqpSlotWeapon itemFull)
