@@ -20,6 +20,7 @@ import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
@@ -89,6 +90,7 @@ data ReqFailure =
   | ApplyUnskilled
   | ApplyRead
   | ApplyOutOfReach
+  | ApplyCharging
   | ItemNothing
   | ItemNotCalm
   | NotCalmPrecious
@@ -122,6 +124,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   ApplyUnskilled -> False  -- unidentified skill items
   ApplyRead -> False  -- unidentified skill items
   ApplyOutOfReach -> True
+  ApplyCharging -> False  -- if aspects unknown, charging unknown
   ItemNothing -> True
   ItemNotCalm -> False  -- unidentified skill items
   NotCalmPrecious -> False  -- unidentified skill items
@@ -155,6 +158,7 @@ showReqFailure reqFailure = case reqFailure of
   ApplyUnskilled -> "unskilled actors cannot read"
   ApplyRead -> "to read an item requires activate skill 2"
   ApplyOutOfReach -> "cannot apply an item out of reach"
+  ApplyCharging -> "cannot apply an item that is still charging"
   ItemNothing -> "wasting time on void item manipulation"
   ItemNotCalm -> "you are too alarmed to sort through the shared stash"
   NotCalmPrecious -> "you are too alarmed to handle such an exquisite item"
@@ -209,19 +213,28 @@ permittedProject triggerSyms forced skill itemFull@ItemFull{itemBase}
               else jsymbol itemBase `elem` triggerSyms
         in hasEffects && permittedSlot
 
-permittedApply :: [Char] -> Int -> ItemFull -> Actor -> [ItemFull]
+permittedApply :: [Char] -> Time -> Int -> ItemFull -> Actor -> [ItemFull]
                -> Either ReqFailure Bool
-permittedApply triggerSyms skill itemFull@ItemFull{itemBase} b activeItems =
+permittedApply triggerSyms localTime skill itemFull@ItemFull{itemBase}
+               b activeItems =
   let calm10 = calmEnough10 b activeItems
   in if skill < 1 then Left ApplyUnskilled
-  else if jsymbol itemBase == '?'
-        && skill < 2 then Left ApplyRead
+  else if jsymbol itemBase == '?' && skill < 2 then Left ApplyRead
   else
-    let legal = permittedPrecious calm10 False itemFull
-    in case legal of
-      Left{} -> legal
-      Right False -> legal
-      Right True -> Right $
-        if ' ' `elem` triggerSyms
-        then IK.Applicable `elem` jfeature itemBase
-        else jsymbol itemBase `elem` triggerSyms
+    let it1 = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
+          Nothing -> []
+          Just timeout ->
+            let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
+                f startT = timeShift startT timeoutTurns > localTime
+            in filter f (itemTimer itemFull)
+        len = length it1
+    in if itemK itemFull == len then Left ApplyCharging
+    else
+      let legal = permittedPrecious calm10 False itemFull
+      in case legal of
+        Left{} -> legal
+        Right False -> legal
+        Right True -> Right $
+          if ' ' `elem` triggerSyms
+          then IK.Applicable `elem` jfeature itemBase
+          else jsymbol itemBase `elem` triggerSyms

@@ -431,9 +431,10 @@ reqApply aid iid cstore = assert (cstore /= CSha) $ do
       b <- getsState $ getActorBody aid
       activeItems <- activeItemsServer aid
       actorSk <- actorSkillsServer aid
+      localTime <- getsState $ getLocalTime (blid b)
       let skill = EM.findWithDefault 0 Ability.AbProject actorSk
           itemFull = itemToF iid kit
-          legal = permittedApply " " skill itemFull b activeItems
+          legal = permittedApply " " localTime skill itemFull b activeItems
       case legal of
         Left reqFail -> execFailure aid req reqFail
         Right _ -> applyItem aid iid cstore

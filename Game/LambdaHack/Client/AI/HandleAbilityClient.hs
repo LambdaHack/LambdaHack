@@ -601,14 +601,14 @@ applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
   actorSk <- actorSkillsClient aid
-  let skill = EM.findWithDefault 0 AbProject actorSk
-      q _ itemFull b activeItems =
-        either (const False) id
-        $ permittedApply " " skill itemFull b activeItems
-  benList <- benAvailableItems aid q [CEqp, CInv, CGround]
   b <- getsState $ getActorBody aid
-  organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b
   localTime <- getsState $ getLocalTime (blid b)
+  let skill = EM.findWithDefault 0 AbProject actorSk
+      q _ itemFull _ activeItems =
+        either (const False) id
+        $ permittedApply " " localTime skill itemFull b activeItems
+  benList <- benAvailableItems aid q [CEqp, CInv, CGround]
+  organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
           let getP (IK.RefillHP p) _ | p > 0 = True

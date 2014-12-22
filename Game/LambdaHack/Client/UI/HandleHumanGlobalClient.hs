@@ -368,15 +368,17 @@ applyHuman ts = do
   actorSk <- actorSkillsClient leader
   let skill = EM.findWithDefault 0 AbProject actorSk
   activeItems <- activeItemsClient leader
+  localTime <- getsState $ getLocalTime (blid b)
   let cLegal = [CGround, CInv, CEqp]
       (verb1, object1) = case ts of
         [] -> ("activate", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      p itemFull = permittedApply triggerSyms skill itemFull b activeItems
+      p itemFull = permittedApply triggerSyms localTime skill itemFull b activeItems
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What item to activate"
-  ggi <- getGroupItem (either (const False) id . p) prompt promptGeneric cLegal cLegal
+  ggi <- getGroupItem (either (const False) id . p)
+                      prompt promptGeneric cLegal cLegal
   case ggi of
     Right ((iid, itemFull), CActor _ fromCStore) ->
       case p itemFull of
