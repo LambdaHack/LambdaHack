@@ -34,22 +34,28 @@ effectToBenefit cops b activeItems fact eff =
     IK.RefillHP p ->
       let hpMax = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
       in if p > 0
-         then 1 + 10 * min p (fromIntegral $ (xM hpMax - bhp b) `divUp` oneM)
-         else max (-99) (10 * p)
+         -- TODO: when picking up, always deem valuable; when drinking, only if
+         -- HP not maxxed.
+         then 10 * min p (max 0 $ fromIntegral
+                          $ (xM hpMax - bhp b) `divUp` oneM)
+         else max (-99) (11 * p)
     IK.OverfillHP p ->
       let hpMax = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
       in if p > 0
-         then 2 + 10 * min p (fromIntegral $ (xM hpMax - bhp b) `divUp` oneM)
-         else max (-99) (10 * p)
+         then 11 * min p (max 1 $ fromIntegral $
+                          (xM hpMax - bhp b) `divUp` oneM)
+         else max (-99) (11 * p)
     IK.RefillCalm p ->
       let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
       in if p > 0
-         then 1 + min p (fromIntegral $ (xM calmMax - bcalm b) `divUp` oneM)
+         then min p (max 0 $ fromIntegral
+                     $ (xM calmMax - bcalm b) `divUp` oneM)
          else max (-20) p
     IK.OverfillCalm p ->
       let calmMax = sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
       in if p > 0
-         then 2 + min p (fromIntegral $ (xM calmMax - bcalm b) `divUp` oneM)
+         then min p (max 1 $ fromIntegral
+                     $ (xM calmMax - bcalm b) `divUp` oneM)
          else max (-20) p
     IK.Dominate -> -200
     IK.Impress -> -10
