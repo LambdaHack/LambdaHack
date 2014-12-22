@@ -292,7 +292,7 @@ vent = armoredSkin
   , ifreq    = [("vent", 100)]
   , icount   = 1
   , iverbHit = "menace"
-  , iaspects = [Periodic, Timeout $ (2 + d 4) |*| 5]
+  , iaspects = [Periodic, Timeout $ 2 + d 4 |*| 5]
   , ieffects = [Recharging (Explode "boiling water")]
   , idesc    = ""
   }
