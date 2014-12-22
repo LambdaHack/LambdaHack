@@ -150,6 +150,7 @@ rosterAmbush = rosterDuel
                                 , finitialActors = 4
                                 , fentryLevel = -5 }
                  , playerAntiSniper { fname = "Blue Epigram"
+                                    , finitialActors = 4
                                     , fentryLevel = -5 }
                  , playerHorror {fentryLevel = -5} ]
   , rosterEnemy = [ ("Yellow Idris", "Blue Epigram")
