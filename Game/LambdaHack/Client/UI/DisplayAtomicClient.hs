@@ -423,7 +423,8 @@ moveItemUI iid k aid cstore1 cstore2 = do
                   , partItemWs n c2 (blid b) localTime (itemToF iid kit)
                   , "\n" ]
       Nothing -> return ()
-  else itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
+  else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
+    itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
 
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Actor -> Maybe Status -> m ()
