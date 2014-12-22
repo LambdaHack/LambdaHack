@@ -26,7 +26,6 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
-import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 import System.Time
 
@@ -42,7 +41,6 @@ import Game.LambdaHack.Client.UI.Frontend as Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.ItemDescription
@@ -52,6 +50,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 
 -- | The information that is constant across a client playing session,
@@ -312,7 +311,7 @@ targetDesc target = do
       return (bname b, hpIndicator)
     Just (TEnemyPos _ lid p _) -> do
       let hotText = if lid == lidV
-                    then "hot spot" <+> (T.pack . show) p
+                    then "hot spot" <+> tshow p
                     else "a hot spot on level" <+> tshow (abs $ fromEnum lid)
       return (hotText, Nothing)
     Just (TPoint lid p) -> do
@@ -321,7 +320,7 @@ targetDesc target = do
         then do
           bag <- getsState $ getCBag (CFloor lid p)
           case EM.assocs bag of
-            [] -> return $! "exact spot" <+> (T.pack . show) p
+            [] -> return $! "exact spot" <+> tshow p
             [(iid, kit@(k, _))] -> do
               localTime <- getsState $ getLocalTime lid
               itemToF <- itemToFullClient
@@ -329,7 +328,7 @@ targetDesc target = do
               return $! makePhrase $ if k == 1
                                      then [name, stats]  -- "a sword" too wordy
                                      else [MU.CarWs k name, stats]
-            _ -> return $! "many items at" <+> (T.pack . show) p
+            _ -> return $! "many items at" <+> tshow p
         else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
       return (pointedText, Nothing)
     Just TVector{} ->
@@ -338,7 +337,7 @@ targetDesc target = do
         Just aid -> do
           tgtPos <- aidTgtToPos aid lidV target
           let invalidMsg = "an invalid relative shift"
-              validMsg p = "shift to" <+> (T.pack . show) p
+              validMsg p = "shift to" <+> tshow p
           return (maybe invalidMsg validMsg tgtPos, Nothing)
     Nothing -> return ("cursor location", Nothing)
 

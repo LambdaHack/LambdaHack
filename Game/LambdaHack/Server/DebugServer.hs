@@ -6,6 +6,7 @@ module Game.LambdaHack.Server.DebugServer
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Text.Show.Pretty as Show.Pretty
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
@@ -24,6 +25,9 @@ import Game.LambdaHack.Server.MonadServer
 -- and sent responseQs. Clients interleave and block non-deterministically
 -- so their logs would be harder to interpret.
 
+debugShow :: Show a => a -> Text
+debugShow = T.pack . Show.Pretty.ppShow
+
 debugResponseAI :: MonadServer m => ResponseAI -> m ()
 debugResponseAI cmd = case cmd of
   RespUpdAtomicAI cmdA@UpdPerception{} -> debugPlain cmd cmdA
@@ -33,7 +37,7 @@ debugResponseAI cmd = case cmd of
   RespQueryAI aid -> do
     d <- debugAid aid "RespQueryAI" cmd
     serverPrint d
-  RespPingAI -> serverPrint $ tshow cmd
+  RespPingAI -> serverPrint $ debugShow cmd
 
 debugResponseUI :: MonadServer m => ResponseUI -> m ()
 debugResponseUI cmd = case cmd of
@@ -43,19 +47,19 @@ debugResponseUI cmd = case cmd of
   RespUpdAtomicUI cmdA -> debugPretty cmd cmdA
   RespSfxAtomicUI sfx -> do
     ps <- posSfxAtomic sfx
-    serverPrint $ tshow (cmd, ps)
-  RespQueryUI -> serverPrint $ "RespQueryUI:" <+> tshow cmd
-  RespPingUI -> serverPrint $ tshow cmd
+    serverPrint $ debugShow (cmd, ps)
+  RespQueryUI -> serverPrint $ "RespQueryUI:" <+> debugShow cmd
+  RespPingUI -> serverPrint $ debugShow cmd
 
 debugPretty :: (MonadServer m, Show a) => a -> UpdAtomic -> m ()
 debugPretty cmd cmdA = do
   ps <- posUpdAtomic cmdA
-  serverPrint $ tshow (cmd, ps)
+  serverPrint $ debugShow (cmd, ps)
 
 debugPlain :: (MonadServer m, Show a) => a -> UpdAtomic -> m ()
 debugPlain cmd cmdA = do
   ps <- posUpdAtomic cmdA
-  serverPrint $ T.pack $ show (cmd, ps)  -- too large for pretty show
+  serverPrint $ T.pack $ show (cmd, ps)  -- too large for pretty printing
 
 debugRequestAI :: MonadServer m => ActorId -> RequestAI -> m ()
 debugRequestAI aid cmd = do
@@ -80,13 +84,13 @@ data DebugAid a = DebugAid
 debugAid :: (MonadStateRead m, Show a) => ActorId -> Text -> a -> m Text
 debugAid aid label cmd =
   if aid == toEnum (-1) then
-    return $ "Pong:" <+> tshow label <+> tshow cmd
+    return $ "Pong:" <+> debugShow label <+> debugShow cmd
   else do
     b <- getsState $ getActorBody aid
     time <- getsState $ getLocalTime (blid b)
-    return $! tshow DebugAid { label
-                             , cmd
-                             , lid = blid b
-                             , time
-                             , aid
-                             , faction = bfid b }
+    return $! debugShow DebugAid { label
+                                 , cmd
+                                 , lid = blid b
+                                 , time
+                                 , aid
+                                 , faction = bfid b }

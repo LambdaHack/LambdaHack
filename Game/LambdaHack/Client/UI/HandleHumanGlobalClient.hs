@@ -22,7 +22,6 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import Data.Monoid
-import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
@@ -606,7 +605,7 @@ tacticHuman = do
   let toT = if fromT == maxBound then minBound else succ fromT
   go <- displayMore ColorFull
         $ "Switching tactic to"
-          <+> T.pack (show toT)  -- tshow eats up parens
+          <+> tshow toT
           <> ". (This clears targets.)"
   if not go
     then failWith "Tactic change canceled."

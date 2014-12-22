@@ -10,7 +10,6 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
-import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
@@ -66,7 +65,7 @@ cmdAtomicFilterCli cmd = case cmd of
         let subject = ""  -- a hack, we we don't handle adverbs well
             verb = "turn into"
             msg = makeSentence [ "the", MU.Text $ TK.tname $ okind t
-                               , "at position", MU.Text $ T.pack $ show p
+                               , "at position", MU.Text $ tshow p
                                , "suddenly"  -- adverb
                                , MU.SubjectVerbSg subject verb
                                , MU.AW $ MU.Text $ TK.tname $ okind toTile ]

@@ -25,7 +25,6 @@ import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified NLP.Miniutter.English as MU
-import qualified Text.Show.Pretty as Show.Pretty
 
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Misc
@@ -36,9 +35,9 @@ infixr 6 <+>  -- TODO: not needed when we require a very new minimorph
 (<+>) :: Text -> Text -> Text
 (<+>) = (MU.<+>)
 
--- Pretty print and pack the result of @show@.
+-- Show and pack the result of @show@.
 tshow :: Show a => a -> Text
-tshow x = T.pack $ Show.Pretty.ppShow x
+tshow x = T.pack $ show x
 
 toWidth :: Int -> Text -> Text
 toWidth n x = T.take n (T.justifyLeft n ' ' x)

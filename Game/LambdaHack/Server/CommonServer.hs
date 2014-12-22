@@ -14,7 +14,9 @@ import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
+import qualified Text.Show.Pretty as Show.Pretty
 
 import Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -57,12 +59,14 @@ execFailure aid req failureSer = do
   let fid = bfid body
       msg = showReqFailure failureSer
       impossible = impossibleReqFailure failureSer
+      debugShow :: Show a => a -> Text
+      debugShow = T.pack . Show.Pretty.ppShow
       possiblyAlarm = if impossible
                       then debugPossiblyPrintAndExit
                       else debugPossiblyPrint
   possiblyAlarm $
     "execFailure:" <+> msg <> "\n"
-    <> tshow body <> "\n" <> tshow req
+    <> debugShow body <> "\n" <> debugShow req
   execSfxAtomic $ SfxMsgFid fid $ "Unexpected problem:" <+> msg <> "."
     -- TODO: --more--, but keep in history
 
