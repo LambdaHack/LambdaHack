@@ -57,7 +57,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- the client state is modified by the command.
 displayRespUpdAtomicUI :: MonadClientUI m
                        => Bool -> State -> StateClient -> UpdAtomic -> m ()
-displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
+displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> createActorUI aid body verbose "appear"
   UpdDestroyActor aid body _ -> do
@@ -112,7 +112,7 @@ displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
       _ -> return ()  -- seen recently (still has a slot assigned)
   UpdLoseItem{} -> skip
   -- Move actors and items.
-  UpdMoveActor aid _ _ -> lookAtMove aid
+  UpdMoveActor aid source target -> moveActor oldState aid source target
   UpdWaitActor aid _ -> when verbose $ aidVerbMU aid "wait"
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
@@ -370,6 +370,33 @@ destroyActorUI aid body verb verboseVerb verbose = do
   else when verbose $ actorVerbMU aid body verboseVerb
   modifyClient $ \cli -> cli {slastLost = ES.insert aid $ slastLost cli}
 
+moveActor :: MonadClientUI m => State -> ActorId -> Point -> Point -> m ()
+moveActor oldState aid source target = do
+  lookAtMove aid
+  body <- getsState $ getActorBody aid
+  when (bproj body) $ do
+    let oldpos = case EM.lookup aid $ sactorD oldState of
+          Nothing -> assert `failure` (sactorD oldState, aid)
+          Just b -> boldpos b
+    let ps = (oldpos, source, target)
+    animFrs <- animate (blid body) $ moveProj ps (bsymbol body) (bcolor body)
+    displayActorStart body animFrs
+
+displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
+displaceActorUI source target = do
+  sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
+  spart <- partActorLeader source sb
+  tpart <- partActorLeader target tb
+  let msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
+  msgAdd msg
+  when (bfid sb /= bfid tb) $ do
+    lookAtMove source
+    lookAtMove target
+  let ps = (bpos tb, bpos sb)
+  animFrs <- animate (blid sb) $ swapPlaces ps
+  displayActorStart sb animFrs
+
 moveItemUI :: MonadClientUI m
            => ItemId -> Int -> ActorId -> CStore -> CStore
            -> m ()
@@ -397,21 +424,6 @@ moveItemUI iid k aid cstore1 cstore2 = do
                   , "\n" ]
       Nothing -> return ()
   else itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
-
-displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
-displaceActorUI source target = do
-  sb <- getsState $ getActorBody source
-  tb <- getsState $ getActorBody target
-  spart <- partActorLeader source sb
-  tpart <- partActorLeader target tb
-  let msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
-  msgAdd msg
-  when (bfid sb /= bfid tb) $ do
-    lookAtMove source
-    lookAtMove target
-  let ps = (bpos tb, bpos sb)
-  animFrs <- animate (blid sb) $ swapPlaces ps
-  displayActorStart sb animFrs
 
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Actor -> Maybe Status -> m ()

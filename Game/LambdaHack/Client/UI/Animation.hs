@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.Animation
   ( SingleFrame(..), decodeLine, encodeLine
   , overlayOverlay
   , Animation, Frames, renderAnim, restrictAnim
-  , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, fadeout
+  , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, moveProj, fadeout
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -93,13 +93,13 @@ renderAnim lxsize lysize basicFrame (Animation anim) =
                  $ foldl' f [] (zip [lysize-1,lysize-2..0]
                                 $ reverse $ map decodeLine levelOld)
         in Just SingleFrame{..}  -- a thunk within Just
-  in Nothing : map (modifyFrame basicFrame) anim ++ [Nothing]
+  in map (modifyFrame basicFrame) anim
 
 blank :: Maybe AttrChar
 blank = Nothing
 
-coloredSymbol :: Color -> Char -> Maybe AttrChar
-coloredSymbol color symbol = Just $ AttrChar (Attr color defBG) symbol
+cSym :: Color -> Char -> Maybe AttrChar
+cSym color symbol = Just $ AttrChar (Attr color defBG) symbol
 
 mzipPairs :: (Point, Point) -> (Maybe AttrChar, Maybe AttrChar)
           -> [(Point, AttrChar)]
@@ -111,6 +111,13 @@ mzipPairs (p1, p2) (mattr1, mattr2) =
                       -- not the action.
                       [mzip (p1, mattr1)]
 
+mzipTriples :: (Point, Point, Point)
+            -> (Maybe AttrChar, Maybe AttrChar, Maybe AttrChar)
+            -> [(Point, AttrChar)]
+mzipTriples (p1, p2, p3) (mattr1, mattr2, mattr3) =
+  let mzip (pos, mattr) = fmap (\x -> (pos, x)) mattr
+  in catMaybes $ [mzip (p1, mattr1), mzip (p2, mattr2), mzip (p3, mattr3)]
+
 restrictAnim :: ES.EnumSet Point -> Animation -> Animation
 restrictAnim vis (Animation as) =
   let f imap =
@@ -118,69 +125,81 @@ restrictAnim vis (Animation as) =
           in if EM.null common then Nothing else Just common
   in Animation $ mapMaybe f as
 
+-- TODO: in all but moveProj duplicate first and/or last frame, if required,
+-- since they are no longer duplicated in renderAnim
+
 -- | Attack animation. A part of it also reused for self-damage and healing.
 twirlSplash :: (Point, Point) -> Color -> Color -> Animation
 twirlSplash poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
-  [ (blank                    , coloredSymbol BrCyan '\'')
-  , (blank                    , coloredSymbol BrYellow '^')
-  , (coloredSymbol c1      '/', coloredSymbol BrCyan '^')
-  , (coloredSymbol c1      '-', blank)
-  , (coloredSymbol c1      '\\',blank)
-  , (coloredSymbol c1      '|', blank)
-  , (coloredSymbol c2      '%', blank)
-  , (coloredSymbol c2      '/', blank)
+  [ (blank           , cSym BrCyan '\'')
+  , (blank           , cSym BrYellow '^')
+  , (cSym c1      '/', cSym BrCyan '^')
+  , (cSym c1      '-', blank)
+  , (cSym c1      '\\',blank)
+  , (cSym c1      '|', blank)
+  , (cSym c2      '%', blank)
+  , (cSym c2      '/', blank)
   ]
 
 -- | Attack that hits through a block.
 blockHit :: (Point, Point) -> Color -> Color -> Animation
 blockHit poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
-  [ (blank                    , coloredSymbol BrCyan '\'')
-  , (blank                    , coloredSymbol BrYellow '^')
-  , (blank                    , coloredSymbol BrCyan '^')
-  , (coloredSymbol BrBlue  '{', coloredSymbol BrYellow '\'')
-  , (coloredSymbol BrBlue  '{', blank)
-  , (coloredSymbol BrBlue  '}', blank)
-  , (coloredSymbol BrBlue  '}', blank)
-  , (coloredSymbol c1      '\\',blank)
-  , (coloredSymbol c1      '|', blank)
-  , (coloredSymbol c2      '%', blank)
-  , (coloredSymbol c2      '/', blank)
+  [ (blank           , cSym BrCyan '\'')
+  , (blank           , cSym BrYellow '^')
+  , (blank           , cSym BrCyan '^')
+  , (cSym BrBlue  '{', cSym BrYellow '\'')
+  , (cSym BrBlue  '{', blank)
+  , (cSym BrBlue  '}', blank)
+  , (cSym BrBlue  '}', blank)
+  , (cSym c1      '\\',blank)
+  , (cSym c1      '|', blank)
+  , (cSym c2      '%', blank)
+  , (cSym c2      '/', blank)
   ]
 
 -- | Attack that is blocked.
 blockMiss :: (Point, Point) -> Animation
 blockMiss poss = Animation $ map (EM.fromList . mzipPairs poss)
-  [ (blank                    , coloredSymbol BrCyan '\'')
-  , (coloredSymbol BrBlue  '{', coloredSymbol BrYellow '^')
-  , (coloredSymbol BrBlue  '{', blank)
-  , (coloredSymbol BrBlue  '}', blank)
-  , (coloredSymbol Blue    '}', blank)
+  [ (blank           , cSym BrCyan '\'')
+  , (cSym BrBlue  '{', cSym BrYellow '^')
+  , (cSym BrBlue  '{', blank)
+  , (cSym BrBlue  '}', blank)
+  , (cSym Blue    '}', blank)
   ]
 
 -- | Death animation for an organic body.
 deathBody :: Point -> Animation
 deathBody pos = Animation $ map (maybe EM.empty (EM.singleton pos))
-  [ coloredSymbol BrRed '\\'
-  , coloredSymbol BrRed '\\'
-  , coloredSymbol BrRed '|'
-  , coloredSymbol BrRed '|'
-  , coloredSymbol BrRed '%'
-  , coloredSymbol BrRed '%'
-  , coloredSymbol Red   '%'
-  , coloredSymbol Red   '%'
-  , coloredSymbol Red   '%'
-  , coloredSymbol Red   ';'
-  , coloredSymbol Red   ';'
-  , coloredSymbol Red   ','
+  [ cSym BrRed '\\'
+  , cSym BrRed '\\'
+  , cSym BrRed '|'
+  , cSym BrRed '|'
+  , cSym BrRed '%'
+  , cSym BrRed '%'
+  , cSym Red   '%'
+  , cSym Red   '%'
+  , cSym Red   '%'
+  , cSym Red   ';'
+  , cSym Red   ';'
+  , cSym Red   ','
   ]
 
 -- | Swap-places animation, both hostile and friendly.
 swapPlaces :: (Point, Point) -> Animation
 swapPlaces poss = Animation $ map (EM.fromList . mzipPairs poss)
-  [ (coloredSymbol BrMagenta 'o', coloredSymbol Magenta   'o')
-  , (coloredSymbol BrMagenta 'd', coloredSymbol Magenta   'p')
-  , (coloredSymbol Magenta   'p', coloredSymbol BrMagenta 'd')
-  , (coloredSymbol Magenta   'o', blank)
+  [ (cSym BrMagenta 'o', cSym Magenta   'o')
+  , (cSym BrMagenta 'd', cSym Magenta   'p')
+  , (cSym Magenta   'p', cSym BrMagenta 'd')
+  , (cSym Magenta   'o', blank)
+  ]
+
+moveProj :: (Point, Point, Point) -> Char -> Color.Color -> Animation
+moveProj poss symbol color = Animation $ map (EM.fromList . mzipTriples poss)
+  [ (cSym BrBlack '.', cSym color symbol  , cSym color '.')
+-- TODO; re-add when anims run at 30fps
+--  , (cSym BrBlack '.', cSym BrBlack symbol, cSym color symbol)
+--  , (cSym BrBlack '.', cSym BrBlack '.'   , cSym color symbol)
+  , (blank           , cSym BrBlack '.'   , cSym color symbol)
   ]
 
 fadeout :: Bool -> Bool -> Int -> X -> Y -> Rnd Animation
