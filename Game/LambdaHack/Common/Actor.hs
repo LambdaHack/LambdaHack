@@ -98,8 +98,9 @@ oneM = xM 1
 -- which monster is generated. How many and which monsters are generated
 -- will also depend on the cave kind used to build the level.
 monsterGenChance :: AbsDepth -> AbsDepth -> Int -> Int -> Rnd Bool
+monsterGenChance _ _ _ 0 = return False
 monsterGenChance (AbsDepth n) (AbsDepth depth) numMonsters actorCoeff =
-  assert (depth > 0)
+  assert (depth > 0 && n > 0)
   -- Mimics @castDice@. On level 1, First 2 monsters appear fast.
   $ let scaledDepth = 5 * n `div` depth
     in chance $ 1%(fromIntegral
