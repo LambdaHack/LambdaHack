@@ -11,8 +11,8 @@ env:
  - HPVER=7.6.3.vty
  - HPVER=7.8.3.gtk
  - HPVER=7.8.3.vty
- - HPVER=7.10.1.gtk
- - HPVER=7.10.1.vty
+# - HPVER=7.10.1.gtk
+# - HPVER=7.10.1.vty
  - HPVER=2014.2.0.0
  - HPVER=2013.2.0.0
  - HPVER=2012.4.0.0
