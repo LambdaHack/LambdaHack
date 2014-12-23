@@ -329,32 +329,36 @@ unEquipItems aid = do
                            , ( [(Int, (ItemId, ItemFull))]
                              , [(Int, (ItemId, ItemFull))] ) )
               -> [(ItemId, Int, CStore, CStore)]
-      improve fromCStore (slot, (bestInv, bestEqp)) =
-        case (bestInv, bestEqp) of
+      improve fromCStore (slot, (bestSha, bestEOrI)) =
+        case (bestSha, bestEOrI) of
           _ | not (toShare slot)
               && fromCStore == CEqp
               && not (eqpOverfull body 1) ->  -- keep one eqp slot empty
             []
-          (_, (vEqp, (iidEqp, _)) : _) | (toShare slot || fromCStore == CInv)
-                                         && getK bestEqp > 1
-                                         && betterThanInv vEqp bestInv ->
+          (_, (vEOrI, (iidEOrI, _)) : _) | (toShare slot || fromCStore == CInv)
+                                           && getK bestEOrI > 1
+                                           && betterThanSha vEOrI bestSha ->
             -- To share the best items with others, if they care.
-            [(iidEqp, getK bestEqp - 1, fromCStore, CSha)]
-          (_, _ : (vEqp, (iidEqp, _)) : _) | (toShare slot
-                                              || fromCStore == CInv)
-                                             && betterThanInv vEqp bestInv ->
+            [(iidEOrI, getK bestEOrI - 1, fromCStore, CSha)]
+          (_, _ : (vEOrI, (iidEOrI, _)) : _) | (toShare slot
+                                                || fromCStore == CInv)
+                                               && betterThanSha vEOrI bestSha ->
             -- To share the second best items with others, if they care.
-            [(iidEqp, getK bestEqp, fromCStore, CSha)]
-          (_, (vEqp, (_, _)) : _) | fromCStore == CEqp
-                                    && eqpOverfull body 1
-                                    && not (betterThanInv vEqp bestInv) ->
-            -- To make place in eqp for an item better than any ours.
-            [(fst $ snd $ last bestEqp, 1, fromCStore, CSha)]
+            [(iidEOrI, getK bestEOrI, fromCStore, CSha)]
+          (_, (vEOrI, (_, _)) : _) | eqpOverfull body 1
+                                     && if worseThanSha vEOrI bestSha
+                                        then fromCStore == CEqp
+                                        else fromCStore == CInv ->
+            -- To make place in eqp for an item better than any ours
+            -- or to remove from inv bad items that won't be equipped.
+            [(fst $ snd $ last bestEOrI, 1, fromCStore, CSha)]
           _ -> []
       getK [] = 0
       getK ((_, (_, itemFull)) : _) = itemK itemFull
-      betterThanInv _ [] = True
-      betterThanInv vEqp ((vInv, _) : _) = vEqp > vInv
+      betterThanSha _ [] = True
+      betterThanSha vEOrI ((vSha, _) : _) = vEOrI > vSha
+      worseThanSha _ [] = False
+      worseThanSha vEOrI ((vSha, _) : _) = vEOrI < vSha
       bestThree = bestByEqpSlot eqpAssocs invAssocs shaAssocs
       bInvSha = concatMap (improve CInv)
                 $ map (\((slot, _), (_, inv, sha)) ->
