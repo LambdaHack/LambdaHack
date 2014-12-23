@@ -103,14 +103,17 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
   -- TODO: factor out from here and newItem:
   let findInterval x1y1 [] = (x1y1, (11, 0))
       findInterval x1y1 ((x, y) : rest) =
-        if ld * 10 <= x * depth
+        if fromIntegral ld * 10 <= x * fromIntegral depth
         then (x1y1, (x, y))
         else findInterval (x, y) rest
       linearInterpolation dataset =
-        -- We assume @dataset@ is sorted and between 1 and 10 inclusive.
+        -- We assume @dataset@ is sorted and between 0 and 10.
         let ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
-        in y1 + (y2 - y1) * (ld * 10 - x1 * depth)
-           `divUp` ((x2 - x1) * depth)
+        in ceiling
+           $ fromIntegral y1
+             + fromIntegral (y2 - y1)
+               * (fromIntegral ld * 10 - x1 * fromIntegral depth)
+               / ((x2 - x1) * fromIntegral depth)
   let f placeGroup q p pk kind acc =
         let rarity = linearInterpolation (prarity kind)
         in (q * p * rarity, ((pk, kind), placeGroup)) : acc

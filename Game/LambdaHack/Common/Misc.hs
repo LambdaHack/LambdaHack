@@ -64,7 +64,7 @@ toGroupName = GroupName
 type Freqs a = [(GroupName a, Int)]
 
 -- | Rarity on given depths.
-type Rarity = [(Int, Int)]
+type Rarity = [(Double, Int)]
 
 validateRarity :: Rarity -> [Text]
 validateRarity rarity =
@@ -72,10 +72,10 @@ validateRarity rarity =
   in [ "rarity not sorted" | sortedRarity /= rarity ]
      ++ [ "rarity depth thresholds not unique"
         | nubBy ((==) `on` fst) sortedRarity /= sortedRarity ]
-     ++ [ "rarity depth not between 1 and 10"
+     ++ [ "rarity depth not between 0 and 10"
         | case (sortedRarity, reverse sortedRarity) of
             ((lowest, _) : _, (highest, _) : _) ->
-              lowest < 1 || highest > 10
+              lowest <= 0 || highest > 10
             _ -> False ]
 
 -- | @breturn b a = [a | b]@
