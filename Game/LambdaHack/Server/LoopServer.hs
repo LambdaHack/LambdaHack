@@ -206,11 +206,11 @@ handleActors lid = do
   factionD <- getsState sfactionD
   s <- getState
   let -- Actors of the same faction move together.
-      -- TODO: insert wrt the order, instead of sorting
-      isLeader (aid, b) = Just aid /= fmap fst (gleader (factionD EM.! bfid b))
       notDead (_, b) = if bproj b then bhp b >= 0 else bhp b > 0
+      notProj (_, b) = not $ bproj b
+      notLeader (aid, b) = Just aid /= fmap fst (gleader (factionD EM.! bfid b))
       order = Ord.comparing $
-        notDead &&& bfid . snd &&& isLeader &&& bsymbol . snd
+        notDead &&& notProj &&& bfid . snd &&& notLeader &&& bsymbol . snd
       (atime, as) = EM.findMin lprio
       ams = map (\a -> (a, getActorBody a s)) as
       mnext | EM.null lprio = Nothing  -- no actor alive, wait until it spawns
