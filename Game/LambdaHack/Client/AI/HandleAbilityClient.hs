@@ -313,16 +313,21 @@ unEquipItems aid = do
            then [(iidEqp, itemK itemEqp, CEqp, csha)]
            else []
       yieldUnneeded = concatMap yieldSingleUnneeded eqpAssocs
+      -- Don't share around items that are not critically needed and that
+      -- cumulate their effects well.
+      toShare IK.EqpSlotAddSkills{} = True
+      toShare IK.EqpSlotAddLight = True
+      toShare IK.EqpSlotWeapon = True
+      toShare _ = False
       improve :: CStore -> ( IK.EqpSlot
                            , ( [(Int, (ItemId, ItemFull))]
                              , [(Int, (ItemId, ItemFull))] ) )
               -> [(ItemId, Int, CStore, CStore)]
       improve fromCStore (slot, (bestInv, bestEqp)) =
         case (bestInv, bestEqp) of
-          _ | slot == IK.EqpSlotPeriodic
+          _ | not (toShare slot)
               && fromCStore == CEqp
               && not (eqpOverfull body 0) ->
-            -- Don't get rid of periodic items from eqp unless eqp full.
             []
           (_, (vEqp, (iidEqp, _)) : _) | getK bestEqp > 1
                                          && betterThanInv vEqp bestInv ->
