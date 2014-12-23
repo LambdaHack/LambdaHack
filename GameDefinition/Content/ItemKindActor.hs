@@ -215,7 +215,7 @@ gilaMonster = ItemKind
                , ("eye 4", COrgan), ("nostril", COrgan) ]
   }
 rattlesnake = ItemKind
-  { isymbol  = 'r'
+  { isymbol  = 's'
   , iname    = "rattlesnake"
   , ifreq    = [("animal", 100), ("horror", 100), ("mobile animal", 100)]
   , iflavour = zipPlain [Brown]

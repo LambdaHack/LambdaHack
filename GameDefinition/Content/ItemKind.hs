@@ -135,7 +135,7 @@ net = ItemKind
   , iverbHit = "entangle"
   , iweight  = 1000
   , iaspects = []
-  , ieffects = [ Impress, toOrganGameTurn "slow 10" (3 + d 3)
+  , ieffects = [ toOrganGameTurn "slow 10" (3 + d 3)
                , DropItem CEqp "torso armor" False ]
   , ifeature = [Identified]
   , idesc    = "A wide net with weights along the edges. Entangles armor and restricts movement."
@@ -651,8 +651,8 @@ armorLeather = ItemKind
   , iverbHit = "thud"
   , iweight  = 7000
   , iaspects = [ AddHurtMelee (-3)
-               , AddArmorMelee $ d 2 + dl 3 |*| 5
-               , AddArmorRanged $ d 2 + dl 3 |*| 5 ]
+               , AddArmorMelee $ 1 + d 2 + dl 2 |*| 5
+               , AddArmorRanged $ 1 + d 2 + dl 2 |*| 5 ]
   , ieffects = []
   , ifeature = [ toVelocity 30  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
@@ -665,8 +665,8 @@ armorMail = armorLeather
   , irarity  = [(6, 9), (10, 3)]
   , iweight  = 12000
   , iaspects = [ AddHurtMelee (-3)
-               , AddArmorMelee $ 1 + d 2 + dl 4 |*| 5
-               , AddArmorRanged $ 1 + d 2 + dl 4 |*| 5 ]
+               , AddArmorMelee $ 2 + d 2 + dl 3 |*| 5
+               , AddArmorRanged $ 2 + d 2 + dl 3 |*| 5 ]
   , idesc    = "A long shirt woven from iron rings. Discourages foes from attacking your torso, making it harder for them to land a blow."
   }
 gloveFencing = ItemKind
