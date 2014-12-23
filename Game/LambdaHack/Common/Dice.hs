@@ -3,7 +3,7 @@
 -- | Representation of dice for parameters scaled with current level depth.
 module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
-    Dice, diceConst, diceLevel, diceScale, (|*|)
+    Dice, diceConst, diceLevel, diceMult, (|*|)
   , d, ds, dl, intToDice
   , maxDice, minDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
@@ -95,22 +95,22 @@ zdieLevelSimple n = uniformFreq ("zl" <> tshow n) [0..n-1]
 data Dice = Dice
   { diceConst :: SimpleDice
   , diceLevel :: SimpleDice
-  , diceScale :: Int
+  , diceMult  :: Int
   }
   deriving (Read, Eq, Ord, Generic)
 
 -- Read and Show should be inverses in this case.
 instance Show Dice where
   show Dice{..} = T.unpack $
-    let rawScaled = nameFrequency diceLevel
-        scaled = if rawScaled == "0" then "" else rawScaled
-        signAndScaled = case T.uncons scaled of
+    let rawMult = nameFrequency diceLevel
+        scaled = if rawMult == "0" then "" else rawMult
+        signAndMult = case T.uncons scaled of
           Just ('-', _) -> scaled
           _ -> "+" <+> scaled
     in (if nameFrequency diceLevel == "0" then nameFrequency diceConst
         else if nameFrequency diceConst == "0" then scaled
-        else nameFrequency diceConst <+> signAndScaled)
-       <+> if diceScale == 1 then "" else "|*|" <+> tshow diceScale
+        else nameFrequency diceConst <+> signAndMult)
+       <+> if diceMult == 1 then "" else "|*|" <+> tshow diceMult
 
 instance Hashable Dice
 
@@ -151,9 +151,11 @@ instance Num Dice where
 affectBothDice :: (SimpleDice -> SimpleDice) -> Dice -> Dice
 affectBothDice f (Dice dc1 dl1 ds1) = Dice (f dc1) (f dl1) ds1
 
+-- | A single simple dice.
 d :: Int -> Dice
 d n = Dice (dieSimple n) (fromInteger 0) 1
 
+-- | Dice scaled with level.
 ds :: Int -> Dice
 ds n = Dice (fromInteger 0) (dieLevelSimple n) 1
 
@@ -171,7 +173,7 @@ intToDice :: Int -> Dice
 intToDice = fromInteger . fromIntegral
 
 infixl 5 |*|
--- | Scaling the dice, after all randomness is resolved, by a constant.
+-- | Multiplying the dice, after all randomness is resolved, by a constant.
 -- Infix declaration ensures that @1 + 2 |*| 3@ parses as @(1 + 2) |*| 3@.
 (|*|) :: Dice -> Int -> Dice
 Dice dc1 dl1 ds1 |*| s2 = Dice dc1 dl1 (ds1 * s2)
@@ -179,18 +181,18 @@ Dice dc1 dl1 ds1 |*| s2 = Dice dc1 dl1 (ds1 * s2)
 -- | Maximal value of dice. The scaled part taken assuming maximum level.
 -- Assumes the frequencies are not null.
 maxDice :: Dice -> Int
-maxDice Dice{..} = (maxFreq diceConst + maxFreq diceLevel) * diceScale
+maxDice Dice{..} = (maxFreq diceConst + maxFreq diceLevel) * diceMult
 
 -- | Minimal value of dice. The scaled part ignored.
 -- Assumes the frequencies are not null.
 minDice :: Dice -> Int
-minDice Dice{..} = minFreq diceConst * diceScale
+minDice Dice{..} = minFreq diceConst * diceMult
 
 -- | Mean value of dice. The scaled part taken assuming average level.
 -- Assumes the frequencies are not null.
 meanDice :: Dice -> Rational
-meanDice Dice{..} = meanFreq diceConst * fromIntegral diceScale
-                    + meanFreq diceLevel * fromIntegral diceScale * (1%2)
+meanDice Dice{..} = meanFreq diceConst * fromIntegral diceMult
+                    + meanFreq diceLevel * fromIntegral diceMult * (1%2)
 
 reduceDice :: Dice -> Maybe Int
 reduceDice de = if minDice de == maxDice de then Just (minDice de) else Nothing
