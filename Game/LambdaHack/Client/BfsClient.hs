@@ -32,6 +32,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Get cached BFS data and path or, if not stored, generate,
@@ -144,20 +145,25 @@ furthestKnown aid = do
 -- | Closest reachable unknown tile position, if any.
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
 closestUnknown aid = do
+  body <- getsState $ getActorBody aid
+  lvl@Level{lxsize, lysize} <- getLevel $ blid body
   bfs <- getCacheBfs aid
-  getMinIndex <- rndToAction $ oneOf [ PointArray.minIndexA
-                                     , PointArray.minLastIndexA ]
-  let closestPos = getMinIndex bfs
-      dist = bfs PointArray.! closestPos
+  let closestPoss = PointArray.minIndexesA bfs
+      dist = bfs PointArray.! head closestPoss
   if dist >= apartBfs then do
-    body <- getsState $ getActorBody aid
-    lvl <- getLevel $ blid body
     when (lclear lvl == lseen lvl) $ do  -- explored fully, mark it once for all
       assert (lclear lvl >= lseen lvl) skip
       modifyClient $ \cli ->
         cli {sexplored = ES.insert (blid body) (sexplored cli)}
     return Nothing
-  else return $ Just closestPos
+  else do
+    let unknownAround p =
+          let vic = vicinity lxsize lysize p
+              posUnknown pos = bfs PointArray.! pos < apartBfs
+              vicUnknown = filter posUnknown vic
+          in length vicUnknown
+        cmp = comparing unknownAround
+    return $ Just $ maximumBy cmp closestPoss
 
 -- TODO: this is costly, because target has to be changed every
 -- turn when walking along trail. But inverting the sort and going

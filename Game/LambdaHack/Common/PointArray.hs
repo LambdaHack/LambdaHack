@@ -3,7 +3,7 @@ module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateA, generateMA, sizeA
   , foldlA, ifoldlA, mapA, imapA, mapWithKeyM_A
-  , minIndexA, minLastIndexA, maxIndexA, maxLastIndexA, forceA
+  , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
   ) where
 
 import Control.Arrow ((***))
@@ -143,6 +143,18 @@ minLastIndexA Array{..} =
   $ avector
  where
   imin (i, x) (j, y) = i `seq` j `seq` if x >= y then (j, y) else (i, x)
+
+-- | Yield the point coordinates of all the minimum elements of the array.
+-- The array may not be empty.
+minIndexesA :: Enum c => Array c -> [Point]
+{-# INLINE minIndexesA #-}
+minIndexesA Array{..} =
+  map (punindex axsize)
+  $ Stream.foldl' imin [] . Stream.indexed . G.stream
+  $ avector
+ where
+  imin acc (i, x) = i `seq` if x == minE then i : acc else acc
+  minE = cnv $ U.minimum avector
 
 -- | Yield the point coordinates of the first maximum element of the array.
 -- The array may not be empty.
