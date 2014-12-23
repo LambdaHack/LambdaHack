@@ -253,17 +253,19 @@ equipItems aid = do
   condLightBetrays <- condLightBetraysM aid
   let improve :: CStore
               -> (Int, [(ItemId, Int, CStore, CStore)])
-              -> ([(Int, (ItemId, ItemFull))],
-                  [(Int, (ItemId, ItemFull))])
+              -> ( IK.EqpSlot
+                 , ( [(Int, (ItemId, ItemFull))]
+                   , [(Int, (ItemId, ItemFull))] ) )
               -> (Int, [(ItemId, Int, CStore, CStore)])
-      improve fromCStore (oldN, l4) (bestInv, bestEqp) =
+      improve fromCStore (oldN, l4) (slot, (bestInv, bestEqp)) =
         let n = 1 + oldN
         in case (bestInv, bestEqp) of
           ((_, (iidInv, _)) : _, []) | not (eqpOverfull body n) ->
             (n, (iidInv, 1, fromCStore, CEqp) : l4)
-          ((vInv, (iidInv, _)) : _, (vEqp, _) : _) | not (eqpOverfull body n)
-                                                     && vInv > vEqp ->
-            (n, (iidInv, 1, fromCStore, CEqp) : l4)
+          ((vInv, (iidInv, _)) : _, (vEqp, _) : _)
+            | not (eqpOverfull body n)
+              && (vInv > vEqp || not (toShare slot)) ->
+                (n, (iidInv, 1, fromCStore, CEqp) : l4)
           _ -> (n, l4)
       -- We filter out unneeded items. In particular, we ignore them in eqp
       -- when comparing to items we may want to equip. Anyway, the unneeded
@@ -274,15 +276,23 @@ equipItems aid = do
                                 (filter filterNeeded invAssocs)
                                 (filter filterNeeded shaAssocs)
       bEqpInv = foldl' (improve CInv) (0, [])
-                $ map (\(_, (eqp, inv, _)) -> (inv, eqp)) bestThree
+                $ map (\((slot, _), (eqp, inv, _)) ->
+                        (slot, (inv, eqp))) bestThree
       bEqpBoth | rsharedStash && calmE =
                    foldl' (improve CSha) bEqpInv
-                   $ map (\(_, (eqp, _, sha)) -> (sha, eqp)) bestThree
+                   $ map (\((slot, _), (eqp, _, sha)) ->
+                           (slot, (sha, eqp))) bestThree
                | otherwise = bEqpInv
       (_, prepared) = bEqpBoth
   return $! if null prepared
             then reject
             else returN "equipItems" $ ReqMoveItems prepared
+
+toShare :: IK.EqpSlot -> Bool
+toShare IK.EqpSlotAddSkills{} = True
+toShare IK.EqpSlotAddLight = True
+toShare IK.EqpSlotWeapon = True
+toShare _ = False
 
 unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed AbMoveItem))
@@ -315,10 +325,6 @@ unEquipItems aid = do
       yieldUnneeded = concatMap yieldSingleUnneeded eqpAssocs
       -- Don't share around items that are not critically needed and that
       -- cumulate their effects well.
-      toShare IK.EqpSlotAddSkills{} = True
-      toShare IK.EqpSlotAddLight = True
-      toShare IK.EqpSlotWeapon = True
-      toShare _ = False
       improve :: CStore -> ( IK.EqpSlot
                            , ( [(Int, (ItemId, ItemFull))]
                              , [(Int, (ItemId, ItemFull))] ) )
@@ -327,15 +333,23 @@ unEquipItems aid = do
         case (bestInv, bestEqp) of
           _ | not (toShare slot)
               && fromCStore == CEqp
-              && not (eqpOverfull body 0) ->
+              && not (eqpOverfull body 1) ->  -- keep one eqp slot empty
             []
-          (_, (vEqp, (iidEqp, _)) : _) | getK bestEqp > 1
+          (_, (vEqp, (iidEqp, _)) : _) | (toShare slot || fromCStore == CInv)
+                                         && getK bestEqp > 1
                                          && betterThanInv vEqp bestInv ->
             -- To share the best items with others, if they care.
             [(iidEqp, getK bestEqp - 1, fromCStore, CSha)]
-          (_, _ : (vEqp, (iidEqp, _)) : _) | betterThanInv vEqp bestInv ->
+          (_, _ : (vEqp, (iidEqp, _)) : _) | (toShare slot
+                                              || fromCStore == CInv)
+                                             && betterThanInv vEqp bestInv ->
             -- To share the second best items with others, if they care.
             [(iidEqp, getK bestEqp, fromCStore, CSha)]
+          (_, (vEqp, (_, _)) : _) | fromCStore == CEqp
+                                    && eqpOverfull body 1
+                                    && not (betterThanInv vEqp bestInv) ->
+            -- To make place in eqp for an item better than any ours.
+            [(fst $ snd $ last bestEqp, 1, fromCStore, CSha)]
           _ -> []
       getK [] = 0
       getK ((_, (_, itemFull)) : _) = itemK itemFull
