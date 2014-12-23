@@ -564,7 +564,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     b <- getsState $ getActorBody aid
     side <- getsClient sside
     let fid = bfid b
-    if bhp b <= 0 && not (bproj b) || bhp b < 0 then do
+    if bhp b <= 0 then do
       -- We assume the effect is the cause of incapacitation.
       let firstFall | fid == side && bproj b = "fall apart"
                     | fid == side = "fall down"
@@ -575,9 +575,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                     | bproj b = "be shattered into little pieces"
                     | otherwise = "be reduced to a bloody pulp"
       subject <- partActorLeader aid b
-      let deadPreviousTurn p = p < 0
-                               && (bhp b <= p && not (bproj b)
-                                   || bhp b < p)
+      let deadPreviousTurn p = p < 0 && bhp b <= p
           (deadBefore, verbDie) =
             case effect of
               IK.Hurt p | deadPreviousTurn (xM $ Dice.maxDice p) ->

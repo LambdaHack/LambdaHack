@@ -160,10 +160,8 @@ waitedLastTurn :: Actor -> Bool
 waitedLastTurn b = bwait b
 
 actorDying :: Actor -> Bool
-actorDying b = if bproj b
-               then bhp b < 0
-                    || maybe True (null . fst) (btrajectory b)
-               else bhp b <= 0
+actorDying b = bhp b <= 0
+               || bproj b && maybe True (null . fst) (btrajectory b)
 
 actorNewBorn :: Actor -> Bool
 actorNewBorn b = boldpos b == Point 0 0

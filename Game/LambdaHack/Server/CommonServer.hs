@@ -341,7 +341,7 @@ addProjectile source bpos rest iid (_, it) blid bfid btime isBlast = do
       tweakBody b = b { bsymbol = if isBlast then bsymbol b else '*'
                       , bcolor = if isBlast then bcolor b else Color.BrWhite
                       , bname
-                      , bhp = 0
+                      , bhp = 1
                       , bproj = True
                       , btrajectory = Just (trajectory, speed)
                       , beqp = EM.singleton iid (1, take 1 it)

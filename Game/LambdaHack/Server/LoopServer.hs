@@ -206,7 +206,7 @@ handleActors lid = do
   factionD <- getsState sfactionD
   s <- getState
   let -- Actors of the same faction move together.
-      notDead (_, b) = if bproj b then bhp b >= 0 else bhp b > 0
+      notDead (_, b) = not $ actorDying b
       notProj (_, b) = not $ bproj b
       notLeader (aid, b) = Just aid /= fmap fst (gleader (factionD EM.! bfid b))
       order = Ord.comparing $
@@ -221,23 +221,24 @@ handleActors lid = do
   case mnext of
     _ | quit -> return ()
     Nothing -> return ()
-    Just (aid, b) | maybe False (null .fst) (btrajectory b) && bproj b -> do
+    Just (aid, b) | maybe True (null . fst) (btrajectory b) && bproj b -> do
       -- A projectile drops to the ground due to obstacles or range.
       assert (bproj b) skip
       startActor aid
       dieSer aid b False
       handleActors lid
-    Just (aid, b) | bhp b < 0 && bproj b -> do
-      -- A projectile hits an actor. The carried item is destroyed.
-      startActor aid
-      dieSer aid b True
-      handleActors lid
-    Just (aid, b) | bhp b <= 0 && not (bproj b) -> do
-      -- An actor dies. Items drop to the ground
-      -- and possibly a new leader is elected.
-      startActor aid
-      dieSer aid b False
-      handleActors lid
+    Just (aid, b) | bhp b <= 0 ->
+      if bproj b then do
+        -- A projectile hits an actor. The carried item is destroyed.
+        startActor aid
+        dieSer aid b True
+        handleActors lid
+      else do
+        -- An actor dies. Items drop to the ground
+        -- and possibly a new leader is elected.
+        startActor aid
+        dieSer aid b False
+        handleActors lid
     Just (aid, body) -> do
       startActor aid
       let side = bfid body
