@@ -26,13 +26,13 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
 partItemN :: Bool -> Int -> Container -> LevelId -> Time -> ItemFull
-          -> (MU.Part, MU.Part)
+          -> (Bool, MU.Part, MU.Part)
 partItemN fullInfo n c _lid localTime itemFull =
   let genericName = jname $ itemBase itemFull
   in case itemDisco itemFull of
     Nothing ->
       let flav = flavourToName $ jflavour $ itemBase itemFull
-      in (MU.Text $ flav <+> genericName, "")
+      in (False, MU.Text $ flav <+> genericName, "")
     Just iDisco ->
       let effTs = filter (not . T.null) $ textAllAE fullInfo c itemFull
           it1 = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
@@ -50,17 +50,19 @@ partItemN fullInfo n c _lid localTime itemFull =
           ts = take n effTs
                ++ (if length effTs > n then ["(...)"] else [])
                ++ [timer]
-          capitalizeName = case iDisco of
+          isUnique aspects = IK.Unique `elem` aspects
+          unique = case iDisco of
             ItemDisco{itemAE=Just ItemAspectEffect{jaspects}} ->
-              IK.Unique `elem` jaspects
-            _ -> False
-          capName = if capitalizeName
+              isUnique jaspects
+            ItemDisco{itemKind} ->
+              isUnique $ IK.iaspects itemKind
+          capName = if unique
                     then MU.Capitalize $ MU.Text genericName
                     else MU.Text genericName
-      in (capName, MU.Phrase $ map MU.Text ts)
+      in (unique, capName, MU.Phrase $ map MU.Text ts)
 
 -- | The part of speech describing the item.
-partItem :: Container -> LevelId -> Time -> ItemFull -> (MU.Part, MU.Part)
+partItem :: Container -> LevelId -> Time -> ItemFull -> (Bool, MU.Part, MU.Part)
 partItem = partItemN False 4
 
 textAllAE :: Bool -> Container -> ItemFull -> [Text]
@@ -147,22 +149,26 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
 -- TODO: use kit
 partItemWs :: Int -> Container -> LevelId -> Time -> ItemFull -> MU.Part
 partItemWs count c lid localTime itemFull =
-  let (name, stats) = partItem c lid localTime itemFull
-  in MU.Phrase [MU.CarWs count name, stats]
+  let (unique, name, stats) = partItem c lid localTime itemFull
+  in if unique && count == 1
+     then MU.Phrase ["the", name, stats]
+     else MU.Phrase [MU.CarWs count name, stats]
 
 partItemAW :: Container -> LevelId -> Time -> ItemFull -> MU.Part
 partItemAW c lid localTime itemFull =
-  let (name, stats) = partItem c lid localTime itemFull
-  in MU.AW $ MU.Phrase [name, stats]
+  let (unique, name, stats) = partItem c lid localTime itemFull
+  in if unique
+     then MU.Phrase ["the", name, stats]
+     else MU.AW $ MU.Phrase [name, stats]
 
 partItemWownW :: MU.Part -> Container -> LevelId -> Time -> ItemFull -> MU.Part
 partItemWownW partA c lid localTime itemFull =
-  let (name, stats) = partItem c lid localTime itemFull
+  let (_, name, stats) = partItem c lid localTime itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
 itemDesc :: Container -> LevelId -> Time -> ItemFull -> Overlay
 itemDesc c lid localTime itemFull =
-  let (name, stats) = partItemN True 99 c lid localTime itemFull
+  let (_, name, stats) = partItemN True 99 c lid localTime itemFull
       nstats = makePhrase [name, stats]
       desc = case itemDisco itemFull of
         Nothing -> "This item is as unremarkable as can be."

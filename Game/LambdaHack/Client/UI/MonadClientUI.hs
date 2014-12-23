@@ -324,7 +324,7 @@ targetDesc target = do
             [(iid, kit@(k, _))] -> do
               localTime <- getsState $ getLocalTime lid
               itemToF <- itemToFullClient
-              let (name, stats) = partItem (CFloor lid p) lid localTime (itemToF iid kit)
+              let (_, name, stats) = partItem (CFloor lid p) lid localTime (itemToF iid kit)
               return $! makePhrase $ if k == 1
                                      then [name, stats]  -- "a sword" too wordy
                                      else [MU.CarWs k name, stats]

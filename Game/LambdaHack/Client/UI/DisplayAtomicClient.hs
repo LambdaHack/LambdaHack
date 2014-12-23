@@ -310,12 +310,12 @@ itemAidVerbMU aid verb iid ek cstore = do
               assert (n <= k `blame` (aid, verb, iid, cstore))
               $ partItemWs n c lid localTime itemFull
             Left Nothing ->
-              let (name, stats) = partItem c lid localTime itemFull
+              let (_, name, stats) = partItem c lid localTime itemFull
               in MU.Phrase [name, stats]
             Right n ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
               $ let itemSecret = itemNoDisco (itemBase itemFull, n)
-                    (secretName, secretAE) = partItem c lid localTime itemSecret
+                    (_, secretName, secretAE) = partItem c lid localTime itemSecret
                     name = MU.Phrase [secretName, secretAE]
                     nameList = if n == 1
                                then ["the", name]
@@ -520,16 +520,16 @@ discover lid p oldcli iid = do
   itemToF <- itemToFullClient
   let itemFull = itemToF iid (1, [])
       c = CFloor lid p
-      (knownName, knownAEText) = partItem c lid localTime itemFull
+      knownName = partItemAW c lid localTime itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
       itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
-      (secretName, secretAEText) = partItem c lid localTime itemSecret
+      (_, secretName, secretAEText) = partItem c lid localTime itemSecret
       msg = makeSentence
         [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
                                   "turn out to be"
-        , MU.AW $ MU.Phrase [knownName, knownAEText] ]
+        , knownName ]
       oldItemFull =
         itemToFull cops (sdiscoKind oldcli) (sdiscoEffect oldcli)
                    iid (itemBase itemFull) (1, [])
@@ -717,7 +717,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
               let itemSecret = itemNoDisco (itemBase, itemK)
-                  (secretName, secretAEText) = partItem (CActor aid cstore) (blid b) localTime itemSecret
+                  (_, secretName, secretAEText) = partItem (CActor aid cstore) (blid b) localTime itemSecret
                   subject = partActor b
                   verb = "repurpose"
                   store = MU.Text $ ppCStore cstore
