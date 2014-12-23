@@ -414,7 +414,16 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
         $ \(mk, (ikText, cstore)) -> do
     let container = CActor aid cstore
         itemFreq = [(ikText, 1)]
-    void $ rollAndRegisterItem lid itemFreq container False mk
+    mIidEtc <- rollAndRegisterItem lid itemFreq container False mk
+    case mIidEtc of
+      Nothing -> assert `failure` (lid, itemFreq, container, mk)
+      Just (_, (ItemFull{itemDisco=
+                  Just ItemDisco{itemAE=
+                  Just ItemAspectEffect{jeffects=_:_}}}, _)) ->
+        return ()  -- discover by use
+      Just (iid, _) -> do
+        seed <- getsServer $ (EM.! iid) . sitemSeedD
+        execUpdAtomic $ UpdDiscoverSeed (blid b) (bpos b) iid seed
   return $ Just aid
 
 -- Server has to pick a random weapon or it could leak item discovery
