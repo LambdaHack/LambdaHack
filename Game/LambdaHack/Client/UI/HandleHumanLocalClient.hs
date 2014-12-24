@@ -663,4 +663,19 @@ endTargetingMsg = do
 -- * MouseEvent
 
 mouseEventHuman :: MonadClientUI m => K.KM -> m Slideshow
-mouseEventHuman km = failMsg "never mind"  -- TODO
+mouseEventHuman km = case K.key km of
+  K.LeftButton newPos@Point{..} -> do
+    -- Left button press starts targeting and sets cursor.
+    lidV <- viewedLevel
+    Level{lxsize, lysize} <- getLevel lidV
+    if px < 0 || py < 0 || px >= lxsize || py >= lysize then
+      failMsg "never mind"
+    else do
+      bsAll <- getsState $ actorAssocs (const True) lidV
+      let scursor =
+            case find (\(_, m) -> bpos m == newPos) bsAll of
+              Just (im, _) -> TEnemy im True
+              Nothing -> TPoint lidV newPos
+      modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
+      doLook
+  _ -> failMsg "never mind"
