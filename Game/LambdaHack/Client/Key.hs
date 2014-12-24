@@ -192,11 +192,10 @@ moveBinding configVi configLaptop move run =
 mkKM :: String -> KM
 mkKM s = let mkKey sk =
                case keyTranslate sk of
-                 Unknown _ ->
-                   assert `failure` "unknown key" `twith` s
+                 Unknown _ -> assert `failure` "unknown key" `twith` s
                  key -> key
          in case s of
-           ('S':'H':'I':'F':'T':'-':rest) -> toKM Control (mkKey rest)
+           ('S':'H':'I':'F':'T':'-':rest) -> toKM Shift (mkKey rest)
            ('C':'T':'R':'L':'-':rest) -> toKM Control (mkKey rest)
            ('A':'L':'T':'-':rest) -> toKM Alt (mkKey rest)
            _ -> toKM NoModifier (mkKey s)

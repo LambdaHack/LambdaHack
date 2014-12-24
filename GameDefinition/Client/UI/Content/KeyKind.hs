@@ -178,6 +178,15 @@ standardKeys = KeyKind
       , ("CTRL-f", ([CmdDebug], GameRestart "safari"))
       , ("CTRL-e", ([CmdDebug], GameRestart "defense"))
       , ("CTRL-O", ([CmdDebug], DescribeItem COrgan))
-      , ("LeftButtonPress", ([CmdTgt], SetCursor))
-      ]
+      , ("LeftButtonPress",
+         ( [CmdMouse]
+         , Macro "go to pointer for 100 steps"
+                 ["SHIFT-MiddleButtonPress", "Return", "semicolon", "V"] ))
+      , ("MiddleButtonPress", ([CmdMouse], SetCursorEnemy))
+      , ("SHIFT-MiddleButtonPress", ([CmdMouse], SetCursorFloor))
+      , ("CTRL-MiddleButtonPress",
+         ([CmdMouse], Macro "" ["SHIFT-MiddleButtonPress"]))
+      -- Have more descriptions (and perhaps a popup) for Right than for Middle.
+      , ("RightButtonPress", ([CmdMouse], SetCursorEnemy))
+     ]
   }

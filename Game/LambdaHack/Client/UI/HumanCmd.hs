@@ -17,7 +17,7 @@ import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 data CmdCategory =
-    CmdMenu | CmdMove | CmdItem | CmdTgt | CmdAuto | CmdMeta
+    CmdMenu | CmdMove | CmdItem | CmdTgt | CmdAuto | CmdMeta | CmdMouse
   | CmdDebug | CmdMinimal
   deriving (Show, Read, Eq)
 
@@ -28,6 +28,7 @@ categoryDescription CmdItem = "Item use"
 categoryDescription CmdTgt = "Targeting"
 categoryDescription CmdAuto = "Automation"
 categoryDescription CmdMeta = "Assorted"
+categoryDescription CmdMouse = "Mouse"
 categoryDescription CmdDebug = "Debug"
 categoryDescription CmdMinimal = "Minimal cheat sheet for casual play"
 
@@ -82,7 +83,8 @@ data HumanCmd =
   | TgtClear
   | Cancel
   | Accept
-  | SetCursor
+  | SetCursorFloor
+  | SetCursorEnemy
   deriving (Show, Read, Eq, Ord)
 
 data Trigger =
@@ -171,7 +173,8 @@ cmdDescription cmd = case cmd of
   TgtClear    -> "clear target/cursor"
   Cancel      -> "cancel action, open Main Menu"
   Accept      -> "accept choice"
-  SetCursor   -> "set cursor to the pointer coordinates"
+  SetCursorFloor -> "set cursor to floor under pointer"
+  SetCursorEnemy -> "set cursor to enemy under pointer"
 
 triggerDescription :: [Trigger] -> Text
 triggerDescription [] = "trigger a thing"

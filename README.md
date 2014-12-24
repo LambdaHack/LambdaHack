@@ -68,7 +68,7 @@ location, which is `~/.LambdaHack/config.ui.ini` on Linux and
 or something else altogether) on Windows.
 
 Screen font can be changed and enlarged by uncommenting and editing
-the config file at its official location or by right-clicking
+the config file at its official location or by CTRL-right-clicking
 on the game window.
 
 If you use the numeric keypad, use the NumLock key on your keyboard

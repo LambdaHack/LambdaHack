@@ -163,32 +163,11 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   currentfont <- newIORef f
   sview `on` buttonPressEvent $ do
     but <- eventButton
-    case but of
-      LeftButton -> do
-        mods <- eventModifier
-        (wx, wy) <- eventCoordinates
-        liftIO $ do
-          -- We shouldn't pass on the click if the user has selected something.
-          hasSelection <- textBufferHasSelection tb
-          unless hasSelection $ do
-            (bx, by) <-
-              textViewWindowToBufferCoords sview TextWindowText
-                                           (round wx, round wy)
-            iter <- textViewGetIterAtLocation sview bx by
-            cx <- textIterGetLineOffset iter
-            cy <- textIterGetLine iter
-            -- Feedback and debug:
-            -- ie <- textIterCopy iter
-            -- textIterForwardChars ie 1
-            -- let invAttr = stags M.! Color.Attr Color.defBG Color.defFG
-            -- textBufferApplyTag tb invAttr iter ie
-            let !key = K.LeftButtonPress
-                !modifier = modifierTranslate mods  -- Shift included
-                !pointer = Point cx (cy - 1)
-            -- Store the mouse even coords in the keypress channel.
-            STM.atomically $ STM.writeTQueue schanKey K.KM{..}
-        return False  -- not to disable selection
-      RightButton -> liftIO $ do
+    (wx, wy) <- eventCoordinates
+    mods <- eventModifier
+    let !modifier = modifierTranslate mods  -- Shift included
+    liftIO $ do
+      when (but == RightButton && modifier == K.Control) $ do
         fsd <- fontSelectionDialogNew ("Choose font" :: String)
         cf  <- readIORef currentfont
         fds <- fontDescriptionToString cf
@@ -204,8 +183,29 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
               widgetModifyFont sview (Just fd)
             Nothing  -> return ()
         widgetDestroy fsd
-        return True
-      _ -> return False
+      -- We shouldn't pass on the click if the user has selected something.
+      hasSelection <- textBufferHasSelection tb
+      unless hasSelection $ do
+        (bx, by) <-
+          textViewWindowToBufferCoords sview TextWindowText
+                                       (round wx, round wy)
+        iter <- textViewGetIterAtLocation sview bx by
+        cx <- textIterGetLineOffset iter
+        cy <- textIterGetLine iter
+        -- Feedback and debug:
+        -- ie <- textIterCopy iter
+        -- textIterForwardChars ie 1
+        -- let invAttr = stags M.! Color.Attr Color.defBG Color.defFG
+        -- textBufferApplyTag tb invAttr iter ie
+        let !key = case but of
+              LeftButton -> K.LeftButtonPress
+              MiddleButton -> K.MiddleButtonPress
+              RightButton -> K.RightButtonPress
+              _ -> K.LeftButtonPress
+            !pointer = Point cx (cy - 1)
+        -- Store the mouse even coords in the keypress channel.
+        STM.atomically $ STM.writeTQueue schanKey K.KM{..}
+    return $! but == RightButton  -- not to disable selection
   -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
       white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
@@ -499,7 +499,8 @@ deadKey x = case x of
 modifierTranslate :: [Modifier] -> K.Modifier
 modifierTranslate mods =
   if Control `elem` mods then K.Control
-  else if Alt `elem` mods then K.Alt
+  else if any (`elem` mods)
+              [Meta, Super, Alt, Alt2, Alt3, Alt4, Alt5] then K.Alt
   else if Shift `elem` mods then K.Shift
   else K.NoModifier
 

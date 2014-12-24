@@ -12,7 +12,8 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
     -- * Commands specific to targeting
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman
   , tgtUnknownHuman, tgtItemHuman, tgtStairHuman, tgtAscendHuman
-  , epsIncrHuman, tgtClearHuman, cancelHuman, acceptHuman, setCursorHuman
+  , epsIncrHuman, tgtClearHuman, cancelHuman, acceptHuman
+  , setCursorFloorHuman, setCursorEnemyHuman
   ) where
 
 -- Cabal
@@ -660,23 +661,38 @@ endTargetingMsg = do
   subject <- partAidLeader leader
   msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
 
--- * SetCursor
+-- * SetCursorFloor
 
-setCursorHuman :: MonadClientUI m => K.KM -> m Slideshow
-setCursorHuman km = case K.key km of
-  K.LeftButtonPress -> do
-    let newPos@Point{..} = K.pointer km
-    -- Left button press starts targeting and sets cursor.
-    lidV <- viewedLevel
-    Level{lxsize, lysize} <- getLevel lidV
-    if px < 0 || py < 0 || px >= lxsize || py >= lysize then
-      failMsg "never mind"
-    else do
-      bsAll <- getsState $ actorAssocs (const True) lidV
-      let scursor =
-            case find (\(_, m) -> bpos m == newPos) bsAll of
-              Just (im, _) -> TEnemy im True
-              Nothing -> TPoint lidV newPos
-      modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
-      doLook
-  _ -> failMsg "never mind"
+setCursorFloorHuman :: MonadClientUI m => m Slideshow
+setCursorFloorHuman = do
+  km <- getsClient slastKM
+  let newPos@Point{..} = K.pointer km
+  -- Left button press starts targeting and sets cursor.
+  lidV <- viewedLevel
+  Level{lxsize, lysize} <- getLevel lidV
+  if px < 0 || py < 0 || px >= lxsize || py >= lysize then
+    failMsg "never mind"
+  else do
+    let scursor = TPoint lidV newPos
+    modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
+    doLook
+
+-- * SetCursorEnemy
+
+setCursorEnemyHuman :: MonadClientUI m => m Slideshow
+setCursorEnemyHuman = do
+  km <- getsClient slastKM
+  let newPos@Point{..} = K.pointer km
+  -- Left button press starts targeting and sets cursor.
+  lidV <- viewedLevel
+  Level{lxsize, lysize} <- getLevel lidV
+  if px < 0 || py < 0 || px >= lxsize || py >= lysize then
+    failMsg "never mind"
+  else do
+    bsAll <- getsState $ actorAssocs (const True) lidV
+    let scursor =
+          case find (\(_, m) -> bpos m == newPos) bsAll of
+            Just (im, _) -> TEnemy im True
+            Nothing -> TPoint lidV newPos
+    modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
+    doLook

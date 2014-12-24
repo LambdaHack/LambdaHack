@@ -94,7 +94,9 @@ promptGetKey frontKM frontFr = do
     _ -> do
       unless (null lastPlayOld) stopPlayBack  -- we can't continue playback
       writeConnFrontend FrontKey{..}
-      readConnFrontend
+      km <- readConnFrontend
+      modifyClient $ \cli -> cli {slastKM = km}
+      return km
   (seqCurrent, seqPrevious, k) <- getsClient slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)
   modifyClient $ \cli -> cli {slastRecord}

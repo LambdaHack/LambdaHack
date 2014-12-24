@@ -69,6 +69,7 @@ data StateClient = StateClient
   , sdiscoEffect :: !DiscoveryEffect  -- ^ remembered effects&Co of items
   , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom      :: !R.StdGen      -- ^ current random generator
+  , slastKM      :: !K.KM          -- ^ last issued key command
   , slastRecord  :: !LastRecord    -- ^ state of key sequence recording
   , slastPlay    :: ![K.KM]        -- ^ state of key sequence playback
   , slastLost    :: !(ES.EnumSet ActorId)
@@ -138,6 +139,7 @@ defStateClient shistory sreport _sside sisAI =
     , sdiscoEffect = EM.empty
     , sfper = EM.empty
     , srandom = R.mkStdGen 42  -- will be set later
+    , slastKM = K.escKM
     , slastRecord = ([], [], 0)
     , slastPlay = []
     , slastLost = ES.empty
@@ -255,6 +257,7 @@ instance Binary StateClient where
     let sbfsD = EM.empty
         sfper = EM.empty
         srandom = read g
+        slastKM = K.escKM
         slastRecord = ([], [], 0)
         slastPlay = []
         slastLost = ES.empty
