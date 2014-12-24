@@ -16,6 +16,7 @@ import GHC.Generics (Generic)
 import Prelude hiding (Left, Right)
 
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 
 -- | Frontend-independent datatype to represent keys.
@@ -39,6 +40,9 @@ data Key =
   | Home
   | KP !Char      -- ^ a keypad key for a character (digits and operators)
   | Char !Char    -- ^ a single printable character
+  | LeftButton !Point    -- ^ left mouse button press
+  | MiddleButton !Point  -- ^ middle mouse button press
+  | RightButton !Point   -- ^ right mouse button press
   | Unknown !Text -- ^ an unknown key, registered to warn the user
   deriving (Read, Ord, Eq, Generic)
 
@@ -62,7 +66,6 @@ instance Binary KM
 
 -- Common and terse names for keys.
 showKey :: Key -> Text
-showKey (Char c) = T.singleton c
 showKey Esc      = "ESC"
 showKey Return   = "RET"
 showKey Space    = "SPACE"
@@ -81,6 +84,10 @@ showKey Begin    = "BEGIN"
 showKey Insert   = "INSERT"
 showKey Delete   = "DELETE"
 showKey (KP c)   = "KEYPAD_" <> T.singleton c
+showKey (Char c) = T.singleton c
+showKey (LeftButton _) = "LEFT-BUTTON"
+showKey (MiddleButton _) = "MIDDLE-BUTTON"
+showKey (RightButton _) = "RIGHT-BUTTON"
 showKey (Unknown s) = s
 
 -- | Show a key with a modifier, if any.

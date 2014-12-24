@@ -33,6 +33,7 @@ import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.LQueue
+import Game.LambdaHack.Common.Point
 
 data FrameState =
     FPushed  -- frames stored in a queue, to be drawn in equal time intervals
@@ -162,6 +163,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
     but <- eventButton
     case but of
       LeftButton -> do
+        mods <- eventModifier
         (wx, wy) <- eventCoordinates
         liftIO $ do
           -- We shouldn't pass on the click if the user has selected something.
@@ -173,10 +175,15 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
             iter <- textViewGetIterAtLocation sview bx by
             cx <- textIterGetLineOffset iter
             cy <- textIterGetLine iter
-            ie <- textIterCopy iter
-            textIterForwardChars ie 1
-            let invAttr = stags M.! Color.Attr Color.defBG Color.defFG
-            textBufferApplyTag tb invAttr iter ie
+            -- Feedback and debug:
+            -- ie <- textIterCopy iter
+            -- textIterForwardChars ie 1
+            -- let invAttr = stags M.! Color.Attr Color.defBG Color.defFG
+            -- textBufferApplyTag tb invAttr iter ie
+            let !key = K.LeftButton $ Point cx (cy - 1)
+                !modifier = modifierTranslate mods
+            -- Store the mouse even coords in the keypress channel.
+            STM.atomically $ STM.writeTQueue schanKey K.KM{key, modifier}
         return False  -- not to disable selection
       RightButton -> liftIO $ do
         fsd <- fontSelectionDialogNew ("Choose font" :: String)
