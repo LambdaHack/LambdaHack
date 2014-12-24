@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
     -- * Commands specific to targeting
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman
   , tgtUnknownHuman, tgtItemHuman, tgtStairHuman, tgtAscendHuman
-  , epsIncrHuman, tgtClearHuman, cancelHuman, acceptHuman
+  , epsIncrHuman, tgtClearHuman, cancelHuman, acceptHuman, mouseEventHuman
   ) where
 
 -- Cabal
@@ -659,3 +659,8 @@ endTargetingMsg = do
   (targetMsg, _) <- targetDescLeader leader
   subject <- partAidLeader leader
   msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
+
+-- * MouseEvent
+
+mouseEventHuman :: MonadClientUI m => K.KM -> m Slideshow
+mouseEventHuman km = failMsg "never mind"  -- TODO

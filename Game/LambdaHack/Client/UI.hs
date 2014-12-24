@@ -121,7 +121,6 @@ humanCommand msgRunStop = do
           case M.lookup km bcmdMap of
             Just (_, _, cmd) -> do
               -- Query and clear the last command key.
-              stgtMode <- getsClient stgtMode
               modifyClient $ \cli -> cli
                 {swaitTimes = if swaitTimes cli > 0
                               then - swaitTimes cli
@@ -137,11 +136,23 @@ humanCommand msgRunStop = do
                   cmdHumanSem cmd
                 _ -> do
                   modifyClient $ \cli -> cli {sescAI = EscAINothing}
+                  stgtMode <- getsClient stgtMode
                   if km == K.escKM && isNothing stgtMode && isJust mover
                   then cmdHumanSem Clear
                   else cmdHumanSem cmd
-            Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
-                       in fmap Left $ promptToSlideshow msgKey
+            Nothing ->
+              -- Hard-wired reaction to mouse events.
+              case K.key km of
+                K.LeftButton _ -> do
+                  -- Query and clear the last command key.
+                  modifyClient $ \cli -> cli
+                    {swaitTimes = if swaitTimes cli > 0
+                                  then - swaitTimes cli
+                                  else 0}
+                  cmdHumanSem $ MouseEvent km
+                _ ->
+                  let msgKey = "unknown command <" <> K.showKM km <> ">"
+                  in fmap Left $ promptToSlideshow msgKey
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
         case abortOrCmd of
