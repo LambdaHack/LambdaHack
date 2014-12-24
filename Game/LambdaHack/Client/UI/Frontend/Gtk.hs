@@ -160,8 +160,25 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   currentfont <- newIORef f
   sview `on` buttonPressEvent $ do
     but <- eventButton
-    liftIO $ case but of
-      RightButton -> do
+    case but of
+      LeftButton -> do
+        (wx, wy) <- eventCoordinates
+        liftIO $ do
+          -- We shouldn't pass on the click if the user has selected something.
+          hasSelection <- textBufferHasSelection tb
+          unless hasSelection $ do
+            (bx, by) <-
+              textViewWindowToBufferCoords sview TextWindowText
+                                           (round wx, round wy)
+            iter <- textViewGetIterAtLocation sview bx by
+            cx <- textIterGetLineOffset iter
+            cy <- textIterGetLine iter
+            ie <- textIterCopy iter
+            textIterForwardChars ie 1
+            let invAttr = stags M.! Color.Attr Color.defBG Color.defFG
+            textBufferApplyTag tb invAttr iter ie
+        return False  -- not to disable selection
+      RightButton -> liftIO $ do
         fsd <- fontSelectionDialogNew ("Choose font" :: String)
         cf  <- readIORef currentfont
         fds <- fontDescriptionToString cf
@@ -474,15 +491,18 @@ modifierTranslate mods =
   if Control `elem` mods then K.Control else K.NoModifier
 
 doAttr :: DebugModeCli -> TextTag -> Color.Attr -> IO ()
-doAttr sdebugCli tt attr@Color.Attr{fg, bg}
-  | attr == Color.defAttr = return ()
-  | fg == Color.defFG = set tt $ extraAttr sdebugCli
-                                 ++ [textTagBackground := Color.colorToRGB bg]
-  | bg == Color.defBG = set tt $ extraAttr sdebugCli
-                                 ++ [textTagForeground := Color.colorToRGB fg]
-  | otherwise         = set tt $ extraAttr sdebugCli
-                                 ++ [ textTagForeground := Color.colorToRGB fg
-                                    , textTagBackground := Color.colorToRGB bg ]
+doAttr sdebugCli tt attr@Color.Attr{fg, bg} =
+  if attr == Color.defAttr then return ()
+  else if fg == Color.defFG then
+    set tt $ extraAttr sdebugCli
+             ++ [textTagBackground := Color.colorToRGB bg]
+  else if bg == Color.defBG then
+    set tt $ extraAttr sdebugCli
+             ++ [textTagForeground := Color.colorToRGB fg]
+  else
+    set tt $ extraAttr sdebugCli
+             ++ [ textTagForeground := Color.colorToRGB fg
+                , textTagBackground := Color.colorToRGB bg ]
 
 extraAttr :: DebugModeCli -> [AttrOp TextTag]
 extraAttr DebugModeCli{scolorIsBold} =
