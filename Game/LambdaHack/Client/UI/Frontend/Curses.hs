@@ -97,7 +97,7 @@ fpromptGetKey sess frame = do
   nextEvent
 
 keyTranslate :: C.Key -> K.KM
-keyTranslate e = (\(key, modifier) -> K.KM {..}) $
+keyTranslate e = (\(key, modifier) -> K.toKM modifier key) $
   case e of
     C.KeyChar '\ESC' -> (K.Esc,     K.NoModifier)
     C.KeyExit        -> (K.Esc,     K.NoModifier)

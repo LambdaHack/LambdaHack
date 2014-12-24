@@ -141,7 +141,9 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
 #else
     let !key = K.keyTranslate n
 #endif
-        !modifier = modifierTranslate mods
+        !modifier = let md = modifierTranslate mods
+                    in if md == K.Shift then K.NoModifier else md
+        !pointer = Point 0 0
         readAll = do
           res <- STM.atomically $ STM.tryReadTQueue schanKey
           when (isJust res) $ readAll
@@ -152,7 +154,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
           void $ tryPutMVar escMVar ()
           readAll
         -- Store the key in the channel.
-        STM.atomically $ STM.writeTQueue schanKey K.KM{key, modifier}
+        STM.atomically $ STM.writeTQueue schanKey K.KM{..}
       return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString $ fromMaybe "" sfont
@@ -180,10 +182,11 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
             -- textIterForwardChars ie 1
             -- let invAttr = stags M.! Color.Attr Color.defBG Color.defFG
             -- textBufferApplyTag tb invAttr iter ie
-            let !key = K.LeftButton $ Point cx (cy - 1)
-                !modifier = modifierTranslate mods
+            let !key = K.LeftButtonPress
+                !modifier = modifierTranslate mods  -- Shift included
+                !pointer = Point cx (cy - 1)
             -- Store the mouse even coords in the keypress channel.
-            STM.atomically $ STM.writeTQueue schanKey K.KM{key, modifier}
+            STM.atomically $ STM.writeTQueue schanKey K.KM{..}
         return False  -- not to disable selection
       RightButton -> liftIO $ do
         fsd <- fontSelectionDialogNew ("Choose font" :: String)
@@ -495,7 +498,10 @@ deadKey x = case x of
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: [Modifier] -> K.Modifier
 modifierTranslate mods =
-  if Control `elem` mods then K.Control else K.NoModifier
+  if Control `elem` mods then K.Control
+  else if Alt `elem` mods then K.Alt
+  else if Shift `elem` mods then K.Shift
+  else K.NoModifier
 
 doAttr :: DebugModeCli -> TextTag -> Color.Attr -> IO ()
 doAttr sdebugCli tt attr@Color.Attr{fg, bg} =

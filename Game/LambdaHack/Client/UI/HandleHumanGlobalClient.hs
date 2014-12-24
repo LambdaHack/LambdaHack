@@ -396,8 +396,8 @@ alterDirHuman ts = do
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
-      keys = zipWith K.KM (repeat K.NoModifier)
-                          (K.dirAllKey configVi configLaptop)
+      keys = zipWith K.toKM (repeat K.NoModifier)
+                            (K.dirAllKey configVi configLaptop)
       prompt = makePhrase ["What to", verb1 <> "? [movement key"]
   me <- displayChoiceUI prompt emptyOverlay keys
   case me of

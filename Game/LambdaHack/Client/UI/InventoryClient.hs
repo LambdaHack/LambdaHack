@@ -367,7 +367,7 @@ runDefItemKey keyDefs lettersDef io labelLetterSlots prompt = do
   let itemKeys =
         let slotKeys = map (K.Char . slotChar) (EM.keys labelLetterSlots)
             defKeys = map fst keyDefs
-        in zipWith K.KM (repeat K.NoModifier) $ slotKeys ++ defKeys
+        in zipWith K.toKM (repeat K.NoModifier) $ slotKeys ++ defKeys
       choice = let letterRange = defLabel lettersDef
                    letterLabel | T.null letterRange = []
                                | otherwise = [letterRange]
@@ -390,7 +390,7 @@ pickNumber askNumber kAll = do
         kbound = min 9 kAll
         kprompt = "Choose number [1-" <> tshow kbound
                   <> ", RET(" <> tDefault <> ")"
-        kkeys = zipWith K.KM (repeat K.NoModifier)
+        kkeys = zipWith K.toKM (repeat K.NoModifier)
                 $ map (K.Char . Char.intToDigit) [1..kbound]
                   ++ [K.Return]
     kkm <- displayChoiceUI kprompt emptyOverlay kkeys

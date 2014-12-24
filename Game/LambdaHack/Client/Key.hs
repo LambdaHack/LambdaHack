@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.Key
   ( Key(..), showKey, handleDir, dirAllKey
   , moveBinding, mkKM, keyTranslate
-  , Modifier(..), KM(..), showKM
+  , Modifier(..), KM(..), toKM, showKM
   , escKM, spaceKM, returnKM, pgupKM, pgdnKM
   ) where
 
@@ -40,9 +40,9 @@ data Key =
   | Home
   | KP !Char      -- ^ a keypad key for a character (digits and operators)
   | Char !Char    -- ^ a single printable character
-  | LeftButton !Point    -- ^ left mouse button press
-  | MiddleButton !Point  -- ^ middle mouse button press
-  | RightButton !Point   -- ^ right mouse button press
+  | LeftButtonPress    -- ^ left mouse button pressed
+  | MiddleButtonPress  -- ^ middle mouse button pressed
+  | RightButtonPress   -- ^ right mouse button pressed
   | Unknown !Text -- ^ an unknown key, registered to warn the user
   deriving (Read, Ord, Eq, Generic)
 
@@ -51,18 +51,25 @@ instance Binary Key
 -- | Our own encoding of modifiers. Incomplete.
 data Modifier =
     NoModifier
+  | Shift
   | Control
+  | Alt
   deriving (Read, Ord, Eq, Generic)
 
 instance Binary Modifier
 
-data KM = KM {modifier :: !Modifier, key :: !Key}
+data KM = KM { key      :: !Key
+             , modifier :: !Modifier
+             , pointer  :: !Point }
   deriving (Read, Ord, Eq, Generic)
 
 instance Show KM where
   show = T.unpack . showKM
 
 instance Binary KM
+
+toKM :: Modifier -> Key -> KM
+toKM modifier key = KM{pointer=Point 0 0, ..}
 
 -- Common and terse names for keys.
 showKey :: Key -> Text
@@ -85,30 +92,32 @@ showKey Insert   = "INSERT"
 showKey Delete   = "DELETE"
 showKey (KP c)   = "KEYPAD_" <> T.singleton c
 showKey (Char c) = T.singleton c
-showKey (LeftButton _) = "LEFT-BUTTON"
-showKey (MiddleButton _) = "MIDDLE-BUTTON"
-showKey (RightButton _) = "RIGHT-BUTTON"
+showKey LeftButtonPress = "LEFT-BUTTON-PRESS"
+showKey MiddleButtonPress = "MIDDLE-BUTTON-PRESS"
+showKey RightButtonPress = "RIGHT-BUTTON-PRESS"
 showKey (Unknown s) = s
 
 -- | Show a key with a modifier, if any.
 showKM :: KM -> Text
+showKM KM{modifier=Shift, key} = "SHIFT-" <> showKey key
 showKM KM{modifier=Control, key} = "CTRL-" <> showKey key
+showKM KM{modifier=Alt, key} = "ALT-" <> showKey key
 showKM KM{modifier=NoModifier, key} = showKey key
 
 escKM :: KM
-escKM = KM {modifier = NoModifier, key = Esc}
+escKM = toKM NoModifier Esc
 
 spaceKM :: KM
-spaceKM = KM {modifier = NoModifier, key = Space}
+spaceKM = toKM NoModifier Space
 
 returnKM :: KM
-returnKM = KM {modifier = NoModifier, key = Return}
+returnKM = toKM NoModifier Return
 
 pgupKM :: KM
-pgupKM = KM {modifier = NoModifier, key = PgUp}
+pgupKM = toKM NoModifier PgUp
 
 pgdnKM :: KM
-pgdnKM = KM {modifier = NoModifier, key = PgDn}
+pgdnKM = toKM NoModifier PgDn
 
 dirKeypadKey :: [Key]
 dirKeypadKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
@@ -171,9 +180,11 @@ moveBinding :: Bool -> Bool -> (Vector -> a) -> (Vector -> a)
 moveBinding configVi configLaptop move run =
   let assign f (km, dir) = (km, f dir)
       mapMove modifier keys =
-        map (assign move) (zip (zipWith KM (repeat modifier) keys) moves)
+        map (assign move) (zip
+          (zipWith toKM (repeat modifier) keys) moves)
       mapRun modifier keys =
-        map (assign run) (zip (zipWith KM (repeat modifier) keys) moves)
+        map (assign run) (zip
+          (zipWith toKM (repeat modifier) keys) moves)
   in mapMove NoModifier (dirMoveNoModifier configVi configLaptop)
      ++ mapRun NoModifier (dirRunNoModifier configVi configLaptop)
      ++ mapRun Control dirRunControl
@@ -185,8 +196,10 @@ mkKM s = let mkKey sk =
                    assert `failure` "unknown key" `twith` s
                  key -> key
          in case s of
-           ('C':'T':'R':'L':'-':rest) -> KM {key=mkKey rest, modifier=Control}
-           _ -> KM {key=mkKey s, modifier=NoModifier}
+           ('S':'H':'I':'F':'T':'-':rest) -> toKM Control (mkKey rest)
+           ('C':'T':'R':'L':'-':rest) -> toKM Control (mkKey rest)
+           ('A':'L':'T':'-':rest) -> toKM Alt (mkKey rest)
+           _ -> toKM NoModifier (mkKey s)
 
 -- | Translate key from a GTK string description to our internal key type.
 -- To be used, in particular, for the command bindings and macros
@@ -256,6 +269,9 @@ keyTranslate "KP_Insert"     = Insert
 keyTranslate "Delete"        = Delete
 keyTranslate "KP_Delete"     = Delete
 keyTranslate "KP_Enter"      = Return
+keyTranslate "LeftButtonPress" = LeftButtonPress
+keyTranslate "MiddleButtonPress" = MiddleButtonPress
+keyTranslate "RightButtonPress" = RightButtonPress
 keyTranslate ['K','P','_',c] = KP c
 keyTranslate [c]             = Char c
 keyTranslate s               = Unknown $ T.pack s

@@ -10,13 +10,13 @@ module Game.LambdaHack.Client.UI.Frontend.Vty
 
 import Control.Concurrent
 import Control.Concurrent.Async
+import qualified Control.Concurrent.STM as STM
 import qualified Control.Exception as Ex hiding (handle)
+import Control.Monad
 import Data.Default
+import Data.Maybe
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
-import qualified Control.Concurrent.STM as STM
-import Control.Monad
-import Data.Maybe
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
@@ -55,6 +55,7 @@ storeKeys sess@FrontendSession{..} = do
     EvKey n mods -> do
       let !key = keyTranslate n
           !modifier = modifierTranslate mods
+          !pointer = Point 0 0
           readAll = do
             res <- STM.atomically $ STM.tryReadTQueue schanKey
             when (isJust res) $ readAll
@@ -66,7 +67,7 @@ storeKeys sess@FrontendSession{..} = do
             readAll
         Nothing -> return ()
       -- Store the key in the channel.
-      STM.atomically $ STM.writeTQueue schanKey K.KM{key, modifier}
+      STM.atomically $ STM.writeTQueue schanKey K.KM{..}
     _ -> return ()
   storeKeys sess
 
@@ -143,7 +144,10 @@ keyTranslate n =
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: [Modifier] -> K.Modifier
 modifierTranslate mods =
-  if MCtrl `elem` mods then K.Control else K.NoModifier
+  if MCtrl `elem` mods then K.Control
+  else if MAlt `elem` mods then K.Alt
+  else if MShift `elem` mods then K.Shift
+  else K.NoModifier
 
 -- TODO: with vty 5.0 check if bold is still needed.
 -- A hack to get bright colors via the bold attribute. Depending on terminal

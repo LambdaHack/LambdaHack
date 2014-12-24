@@ -9,7 +9,6 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
-import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Actor (verbCStore)
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
@@ -83,7 +82,7 @@ data HumanCmd =
   | TgtClear
   | Cancel
   | Accept
-  | MouseEvent !K.KM
+  | SetCursor
   deriving (Show, Read, Eq, Ord)
 
 data Trigger =
@@ -172,7 +171,7 @@ cmdDescription cmd = case cmd of
   TgtClear    -> "clear target/cursor"
   Cancel      -> "cancel action, open Main Menu"
   Accept      -> "accept choice"
-  MouseEvent _ -> "react to a mouse event"
+  SetCursor   -> "set cursor to the pointer coordinates"
 
 triggerDescription :: [Trigger] -> Text
 triggerDescription [] = "trigger a thing"

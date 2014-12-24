@@ -6,6 +6,8 @@ module Game.LambdaHack.Client.UI.HandleHumanClient
 import Control.Applicative
 import Data.Monoid
 
+import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.HandleHumanGlobalClient
 import Game.LambdaHack.Client.UI.HandleHumanLocalClient
 import Game.LambdaHack.Client.UI.HumanCmd
@@ -82,7 +84,11 @@ cmdAction cmd = case cmd of
   TgtClear -> Left <$> tgtClearHuman
   Cancel -> Left <$> cancelHuman mainMenuHuman
   Accept -> Left <$> acceptHuman helpHuman
-  MouseEvent km -> Left <$> mouseEventHuman km
+  SetCursor -> do
+    (seqCurrent, _, _) <- getsClient slastRecord
+    case seqCurrent of
+      [] -> return (Left mempty)
+      km : _ -> Left <$> setCursorHuman km
 
 addNoSlides :: Monad m => m () -> m (SlideOrCmd RequestUI)
 addNoSlides cmdCli = cmdCli >> return (Left mempty)

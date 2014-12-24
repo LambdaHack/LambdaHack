@@ -28,8 +28,8 @@ import Game.LambdaHack.Common.State
 -- | A yes-no confirmation.
 getYesNo :: MonadClientUI m => SingleFrame -> m Bool
 getYesNo frame = do
-  let keys = [ K.KM {key=K.Char 'y', modifier=K.NoModifier}
-             , K.KM {key=K.Char 'n', modifier=K.NoModifier}
+  let keys = [ K.toKM K.NoModifier (K.Char 'y')
+             , K.toKM K.NoModifier (K.Char 'n')
              , K.escKM
              ]
   K.KM {key} <- promptGetKey keys frame

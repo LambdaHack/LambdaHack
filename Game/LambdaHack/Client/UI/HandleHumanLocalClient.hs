@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
     -- * Commands specific to targeting
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman
   , tgtUnknownHuman, tgtItemHuman, tgtStairHuman, tgtAscendHuman
-  , epsIncrHuman, tgtClearHuman, cancelHuman, acceptHuman, mouseEventHuman
+  , epsIncrHuman, tgtClearHuman, cancelHuman, acceptHuman, setCursorHuman
   ) where
 
 -- Cabal
@@ -660,11 +660,12 @@ endTargetingMsg = do
   subject <- partAidLeader leader
   msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
 
--- * MouseEvent
+-- * SetCursor
 
-mouseEventHuman :: MonadClientUI m => K.KM -> m Slideshow
-mouseEventHuman km = case K.key km of
-  K.LeftButton newPos@Point{..} -> do
+setCursorHuman :: MonadClientUI m => K.KM -> m Slideshow
+setCursorHuman km = case K.key km of
+  K.LeftButtonPress -> do
+    let newPos@Point{..} = K.pointer km
     -- Left button press starts targeting and sets cursor.
     lidV <- viewedLevel
     Level{lxsize, lysize} <- getLevel lidV

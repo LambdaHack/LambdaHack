@@ -42,6 +42,7 @@ import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
@@ -118,7 +119,7 @@ humanCommand msgRunStop = do
         abortOrCmd <- do
           -- Look up the key.
           Binding{bcmdMap} <- askBinding
-          case M.lookup km bcmdMap of
+          case M.lookup km{K.pointer=Point 0 0} bcmdMap of
             Just (_, _, cmd) -> do
               -- Query and clear the last command key.
               modifyClient $ \cli -> cli
@@ -140,19 +141,8 @@ humanCommand msgRunStop = do
                   if km == K.escKM && isNothing stgtMode && isJust mover
                   then cmdHumanSem Clear
                   else cmdHumanSem cmd
-            Nothing ->
-              -- Hard-wired reaction to mouse events.
-              case K.key km of
-                K.LeftButton _ -> do
-                  -- Query and clear the last command key.
-                  modifyClient $ \cli -> cli
-                    {swaitTimes = if swaitTimes cli > 0
-                                  then - swaitTimes cli
-                                  else 0}
-                  cmdHumanSem $ MouseEvent km
-                _ ->
-                  let msgKey = "unknown command <" <> K.showKM km <> ">"
-                  in fmap Left $ promptToSlideshow msgKey
+            Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
+                       in fmap Left $ promptToSlideshow msgKey
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
         case abortOrCmd of

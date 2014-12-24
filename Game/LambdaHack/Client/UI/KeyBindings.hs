@@ -34,8 +34,7 @@ stdBinding :: KeyKind  -- ^ default key bindings from the content
            -> Config   -- ^ game config
            -> Binding  -- ^ concrete binding
 stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
-  let heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
-                            , modifier=K.NoModifier }
+  let heroSelect k = ( K.toKM K.NoModifier (K.Char (Char.intToDigit k))
                      , ([CmdMeta], PickLeader k) )
       cmdWithHelp = rhumanCommands copsClient ++ configCommands
       cmdAll =
