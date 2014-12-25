@@ -69,11 +69,11 @@ standardKeys = KeyKind
                  ["'", "CTRL-question", "CTRL-colon", "'", "V"] ))
       , ("CTRL-X",
          ( [CmdMove]
-         , Macro "autoexplore 10 times"
+         , Macro "autoexplore 25 times"
                  ["'", "CTRL-question", "CTRL-colon", "'", "CTRL-V"] ))
       , ("R", ([CmdMove], Macro "rest (wait 100 times)"
                                 ["KP_Begin", "V"]))
-      , ("CTRL-R", ([CmdMove], Macro "rest (wait 10 times)"
+      , ("CTRL-R", ([CmdMove], Macro "rest (wait 25 times)"
                                      ["KP_Begin", "CTRL-V"]))
       , ("c", ([CmdMove], AlterDir
            [ AlterFeature { verb = "close"
@@ -158,7 +158,7 @@ standardKeys = KeyKind
       , ("v", ([CmdAuto], Repeat 1))
       , ("V", ([CmdAuto], Repeat 100))
       , ("CTRL-v", ([CmdAuto], Repeat 1000))
-      , ("CTRL-V", ([CmdAuto], Repeat 10))
+      , ("CTRL-V", ([CmdAuto], Repeat 25))
       , ("apostrophe", ([CmdAuto], Record))
       , ("CTRL-T", ([CmdAuto], Tactic))
       , ("CTRL-A", ([CmdAuto], Automate))
