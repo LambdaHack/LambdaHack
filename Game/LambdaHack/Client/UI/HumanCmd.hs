@@ -45,6 +45,7 @@ data HumanCmd =
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]
   | TriggerTile ![Trigger]
+  | RunOnceAhead
   | MoveOnceToCursor
   | RunOnceToCursor
   | ContinueToCursor
@@ -127,6 +128,7 @@ cmdDescription cmd = case cmd of
   Apply ts    -> triggerDescription ts
   AlterDir ts -> triggerDescription ts
   TriggerTile ts -> triggerDescription ts
+  RunOnceAhead -> "run once ahead"
   MoveOnceToCursor -> "move one step towards the cursor"
   RunOnceToCursor -> "run one step towards the cursor"
   ContinueToCursor -> "continue towards the cursor"

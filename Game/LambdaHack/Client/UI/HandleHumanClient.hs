@@ -43,6 +43,7 @@ cmdAction cmd = case cmd of
   Apply ts -> fmap ReqUITimed <$> applyHuman ts
   AlterDir ts -> fmap ReqUITimed <$> alterDirHuman ts
   TriggerTile ts -> fmap ReqUITimed <$> triggerTileHuman ts
+  RunOnceAhead -> fmap anyToUI <$> runOnceAheadHuman
   MoveOnceToCursor -> fmap anyToUI <$> moveOnceToCursorHuman
   RunOnceToCursor  -> fmap anyToUI <$> runOnceToCursorHuman
   ContinueToCursor -> fmap anyToUI <$> continueToCursorHuman

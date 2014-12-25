@@ -9,7 +9,8 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   ( -- * Commands that usually take time
     moveRunHuman, waitHuman, moveItemHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
-  , moveOnceToCursorHuman, runOnceToCursorHuman, continueToCursorHuman
+  , runOnceAheadHuman, moveOnceToCursorHuman
+  , runOnceToCursorHuman, continueToCursorHuman
     -- * Commands that never take time
   , gameRestartHuman, gameExitHuman, gameSaveHuman, tacticHuman, automateHuman
   ) where
@@ -99,7 +100,10 @@ moveRunHuman initialStep finalGoal run dir = do
                                       , runDist = 0
                                       , runStopMsg = Nothing
                                       , runInitDir = Just dir }
-            when run $ modifyClient $ \cli -> cli {srunning = Just runParams}
+                macroRun25 = ["CTRL-period", "CTRL-V"]
+            when run $ modifyClient $ \cli ->
+              cli { srunning = Just runParams
+                  , slastPlay = map K.mkKM macroRun25 ++ slastPlay cli }
             return $ Right runCmd
           Right runCmd ->
             -- Don't check @initialStep@ and @finalGoal@
@@ -522,6 +526,39 @@ guessTrigger _ fs@(TK.Cause (IK.Ascend k) : _) _ =
     else if k < 0 then "cannot descend"
     else assert `failure` fs
 guessTrigger _ _ _ = "never mind"
+
+-- * RunOnceAhead
+
+runOnceAheadHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+runOnceAheadHuman = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  leader <- getLeaderUI
+  srunning <- getsClient srunning
+  -- When running, stop if disturbed. If not running, let the human
+  -- player issue commands, until any command takes time.
+  case srunning of
+    Nothing -> return $ Left mempty
+    Just RunParams{runMembers}
+      | noRunWithMulti fact && runMembers /= [leader] -> do
+      stopPlayBack
+      Config{configRunStopMsgs} <- askConfig
+      if configRunStopMsgs
+      then failWith "Run stop: automatic leader change"
+      else return $ Left mempty
+    Just runParams -> do
+      runOutcome <- continueRun runParams
+      case runOutcome of
+        Left stopMsg -> do
+          stopPlayBack
+          Config{configRunStopMsgs} <- askConfig
+          if configRunStopMsgs
+          then failWith $ "Run stop:" <+> stopMsg
+          else return $ Left mempty
+        Right (paramNew, runCmd) -> do
+          modifyClient $ \cli -> cli {srunning = Just paramNew}
+          displayPush
+          return $! Right runCmd
 
 -- * MoveOnceToCursor
 

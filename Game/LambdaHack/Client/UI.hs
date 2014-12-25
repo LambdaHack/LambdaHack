@@ -28,7 +28,6 @@ import Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.DisplayAtomicClient
 import Game.LambdaHack.Client.UI.HandleHumanClient
@@ -36,7 +35,6 @@ import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
-import Game.LambdaHack.Client.UI.RunClient
 import Game.LambdaHack.Client.UI.StartupFrontendClient
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Faction
@@ -53,33 +51,7 @@ queryUI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let (leader, mtgt) = fromMaybe (assert `failure` fact) $ gleader fact
-  srunning <- getsClient srunning
-  -- When running, stop if disturbed. If not running, let the human
-  -- player issue commands, until any command takes time.
-  req <- case srunning of
-    Nothing -> humanCommand Nothing
-    Just RunParams{runMembers}
-      | noRunWithMulti fact && runMembers /= [leader] -> do
-      stopRunning
-      Config{configRunStopMsgs} <- askConfig
-      let msg = if configRunStopMsgs
-                then Just $ "Run stop: automatic leader change"
-                else Nothing
-      humanCommand msg
-    Just runParams -> do
-      runOutcome <- continueRun runParams
-      case runOutcome of
-        Left stopMsg -> do
-          stopRunning
-          Config{configRunStopMsgs} <- askConfig
-          let msg = if configRunStopMsgs
-                    then Just $ "Run stop:" <+> stopMsg
-                    else Nothing
-          humanCommand msg
-        Right (paramNew, runCmd) -> do
-          modifyClient $ \cli -> cli {srunning = Just paramNew}
-          displayPush
-          return $! anyToUI $ runCmd
+  req <- humanCommand
   leader2 <- getLeaderUI
   mtgt2 <- getsClient $ fmap fst . EM.lookup leader2 . stargetD
   if (leader2, mtgt2) /= (leader, mtgt)
@@ -88,9 +60,8 @@ queryUI = do
 
 -- | Determine and process the next human player command. The argument is
 -- the last stop message due to running, if any.
-humanCommand :: forall m. MonadClientUI m
-             => Maybe Msg -> m RequestUI
-humanCommand msgRunStop = do
+humanCommand :: forall m. MonadClientUI m => m RequestUI
+humanCommand = do
   -- For human UI we invalidate whole @sbfsD@ at the start of each
   -- UI player input, which is an overkill, but doesn't affects
   -- screensavers, because they are UI, but not human.
@@ -167,11 +138,7 @@ humanCommand msgRunStop = do
                 go <- getInitConfirms ColorFull [km] slides
                 return $! if go then Just (onBlank, last sli) else Nothing
             loop mLast
-  case msgRunStop of
-    Nothing -> loop Nothing
-    Just msg -> do
-      sli <- promptToSlideshow msg
-      loop $ Just (False, head . snd $ slideshow sli)
+  loop Nothing
 
 -- | Client signals to the server that it's still online, flushes frames
 -- (if needed) and sends some extra info.

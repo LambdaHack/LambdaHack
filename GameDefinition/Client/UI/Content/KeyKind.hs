@@ -180,6 +180,7 @@ standardKeys = KeyKind
       , ("CTRL-f", ([CmdDebug], GameRestart "safari"))
       , ("CTRL-e", ([CmdDebug], GameRestart "defense"))
       , ("CTRL-O", ([CmdDebug], DescribeItem COrgan))
+      , ("CTRL-period", ([CmdInternal], RunOnceAhead))
       , ("CTRL-semicolon", ([CmdInternal], RunOnceToCursor))
       , ("CTRL-colon", ([CmdInternal], ContinueToCursor))
       , ("LeftButtonPress",
