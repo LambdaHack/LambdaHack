@@ -667,7 +667,6 @@ setCursorFloorHuman :: MonadClientUI m => m Slideshow
 setCursorFloorHuman = do
   km <- getsClient slastKM
   let newPos@Point{..} = K.pointer km
-  -- Left button press starts targeting and sets cursor.
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
   if px < 0 || py < 0 || px >= lxsize || py >= lysize then
@@ -683,7 +682,6 @@ setCursorEnemyHuman :: MonadClientUI m => m Slideshow
 setCursorEnemyHuman = do
   km <- getsClient slastKM
   let newPos@Point{..} = K.pointer km
-  -- Left button press starts targeting and sets cursor.
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
   if px < 0 || py < 0 || px >= lxsize || py >= lysize then

@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   ( -- * Commands that usually take time
     moveRunHuman, waitHuman, moveItemHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
-  , stepToTargetHuman
+  , stepToTargetHuman, continueToTargetHuman
     -- * Commands that never take time
   , gameRestartHuman, gameExitHuman, gameSaveHuman, tacticHuman, automateHuman
   ) where
@@ -63,8 +63,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- * Move and Run
 
 moveRunHuman :: MonadClientUI m
-             => Bool -> Vector -> m (SlideOrCmd RequestAnyAbility)
-moveRunHuman run dir = do
+             => Bool -> Bool -> Bool -> Vector
+             -> m (SlideOrCmd RequestAnyAbility)
+moveRunHuman initialStep finalGoal run dir = do
   tgtMode <- getsClient stgtMode
   if isJust tgtMode then
     fmap Left $ moveCursorHuman dir (if run then 10 else 1)
@@ -100,20 +101,24 @@ moveRunHuman run dir = do
                                       , runInitDir = Just dir }
             when run $ modifyClient $ \cli -> cli {srunning = Just runParams}
             return $ Right runCmd
-          -- Any other command does ends the run immediately.
-          Right runCmd -> return $ Right runCmd
+          Right runCmd ->
+            -- Don't check @initialStep@ and @finalGoal@
+            -- and don't stop going to target: door opening is mundane enough.
+            return $ Right runCmd
         -- When running, the invisible actor is hit (not displaced!),
         -- so that running in the presence of roving invisible
         -- actors is equivalent to moving (with visible actors
         -- this is not a problem, since runnning stops early enough).
         -- TODO: stop running at invisible actor
-      [((target, _), _)] | run ->
+      [((target, _), _)] | run && initialStep ->
+        -- No @stopPlayBack@: initial displace is benign enough.
         -- Displacing requires accessibility, but it's checked later on.
         fmap RequestAnyAbility <$> displaceAid target
-      _ : _ : _ | run -> do
+      _ : _ : _ | run && initialStep -> do
         assert (all (bproj . snd . fst) tgts) skip
         failSer DisplaceProjectiles
-      ((target, tb), _) : _ -> do
+      ((target, tb), _) : _ | initialStep && finalGoal -> do
+        stopPlayBack  -- don't ever auto-repeat melee
         -- No problem if there are many projectiles at the spot. We just
         -- attack the first one.
         -- We always see actors from our own faction.
@@ -129,6 +134,7 @@ moveRunHuman run dir = do
         else
           -- Attacking does not require full access, adjacency is enough.
           fmap RequestAnyAbility <$> meleeAid target
+      _ : _ -> failWith "actor in the way"
 
 -- | Actor atttacks an enemy actor or his own projectile.
 meleeAid :: MonadClientUI m
@@ -520,10 +526,12 @@ guessTrigger _ _ _ = "never mind"
 -- * StepToTarget
 
 stepToTargetHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
-stepToTargetHuman = do
+stepToTargetHuman = goToTarget True
+
+goToTarget :: MonadClientUI m => Bool -> m (SlideOrCmd RequestAnyAbility)
+goToTarget initialStep = do
   tgtMode <- getsClient stgtMode
   -- Movement is legal only outside targeting mode.
-  -- TODO: use this command for something in targeting mode.
   if isJust tgtMode then failWith "cannot move in targeting mode"
   else do
     leader <- getLeaderUI
@@ -538,11 +546,13 @@ stepToTargetHuman = do
           Nothing -> failWith "no route to target"
           Just [] -> assert `failure` (leader, b, bpos b, c)
           Just (p1 : _) -> do
-            as <- getsState $ posToActors p1 (blid b)
-            if not $ null as then
-              failWith "actor in the path to target"
-            else
-              moveRunHuman False $ towards (bpos b) p1
+            let finalGoal = p1 == c
+            moveRunHuman initialStep finalGoal False $ towards (bpos b) p1
+
+-- * ContinueToTarget
+
+continueToTargetHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+continueToTargetHuman = goToTarget False
 
 -- * GameRestart; does not take time
 

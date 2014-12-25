@@ -45,6 +45,7 @@ data HumanCmd =
   | AlterDir    ![Trigger]
   | TriggerTile ![Trigger]
   | StepToTarget
+  | ContinueToTarget
     -- Below this line, commands do not take time.
   | GameRestart !(GroupName ModeKind)
   | GameExit
@@ -120,7 +121,8 @@ cmdDescription cmd = case cmd of
   Apply ts    -> triggerDescription ts
   AlterDir ts -> triggerDescription ts
   TriggerTile ts -> triggerDescription ts
-  StepToTarget -> "make one step towards the target"
+  StepToTarget -> "make initial step towards the target"
+  ContinueToTarget -> "continue towards the target"
 
   GameRestart t ->
     -- TODO: use mname for the game mode instead of t

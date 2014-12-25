@@ -475,7 +475,8 @@ triggerEffect aid tpos feats = do
 -- so that they are available in the first game too,
 -- not only in subsequent, restarted, games.
 reqGameRestart :: (MonadAtomic m, MonadServer m)
-               => ActorId -> GroupName ModeKind -> Int -> [(Int, (Text, Text))] -> m ()
+               => ActorId -> GroupName ModeKind -> Int -> [(Int, (Text, Text))]
+               -> m ()
 reqGameRestart aid groupName d configHeroNames = do
   modifyServer $ \ser ->
     ser {sdebugNxt = (sdebugNxt ser) { sdifficultySer = d

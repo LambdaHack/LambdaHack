@@ -54,21 +54,30 @@ standardKeys = KeyKind
                             , object = "10 levels"
                             , feature = TK.Cause (IK.Ascend (-10)) } ]))
       , ("semicolon", ([CmdMove], StepToTarget))
-      , ("colon", ([CmdMove], Macro "go to target for 100 steps"
-                                    ["semicolon", "V"]))
-      , ("CTRL-colon", ([CmdMove], Macro "go to target for 10 steps"
-                                         ["semicolon", "CTRL-V"]))
-      , ("x", ([CmdMove], Macro "explore the closest unknown spot"
-                                [ "BackSpace"
-                                , "CTRL-question", "semicolon", "V" ]))
-      , ("X", ([CmdMove], Macro "autoexplore 100 times"
-                                [ "BackSpace"
-                                , "'", "CTRL-question", "semicolon", "'"
-                                , "V" ]))
-      , ("CTRL-X", ([CmdMove], Macro "autoexplore 10 times"
-                                      [ "BackSpace"
-                                      , "'", "CTRL-question", "semicolon", "'"
-                                      , "CTRL-V" ]))
+      , ("CTRL-semicolon", ([CmdMove], ContinueToTarget))
+      , ("colon",
+         ( [CmdMove]
+         , Macro "go to target for 100 steps"
+                 ["semicolon", "CTRL-semicolon", "V"] ))
+      , ("CTRL-colon",
+         ( [CmdMove]
+         , Macro "go to target for 10 steps"
+                 ["semicolon", "CTRL-semicolon", "CTRL-V"] ))
+      , ("x",
+         ( [CmdMove]
+         , Macro "explore the closest unknown spot"
+                 [ "BackSpace", "CTRL-question"  -- no semicolon
+                 , "CTRL-semicolon", "V" ] ))
+      , ("X",
+         ( [CmdMove]
+         , Macro "autoexplore 100 times"
+                 [ "BackSpace", "CTRL-question"  -- no semicolon
+                 , "'", "CTRL-question", "CTRL-semicolon", "'", "V" ] ))
+      , ("CTRL-X",
+         ( [CmdMove]
+         , Macro "autoexplore 10 times"
+                 [ "BackSpace", "CTRL-question"  -- no semicolon
+                 , "'", "CTRL-question", "CTRL-semicolon", "'", "CTRL-V" ] ))
       , ("R", ([CmdMove], Macro "rest (wait 100 times)"
                                 ["KP_Begin", "V"]))
       , ("CTRL-R", ([CmdMove], Macro "rest (wait 10 times)"
@@ -181,12 +190,14 @@ standardKeys = KeyKind
       , ("LeftButtonPress",
          ( [CmdMouse]
          , Macro "go to pointer for 100 steps"
-                 ["SHIFT-MiddleButtonPress", "Return", "semicolon", "V"] ))
+                 [ "CTRL-MiddleButtonPress", "Return", "semicolon"
+                 , "CTRL-semicolon", "V" ] ))
       , ("MiddleButtonPress", ([CmdMouse], SetCursorEnemy))
-      , ("SHIFT-MiddleButtonPress", ([CmdMouse], SetCursorFloor))
-      , ("CTRL-MiddleButtonPress",
-         ([CmdMouse], Macro "" ["SHIFT-MiddleButtonPress"]))
+      , ("CTRL-MiddleButtonPress", ([CmdMouse], SetCursorFloor))
+      , ("SHIFT-MiddleButtonPress",
+         ([CmdMouse], Macro "" ["CTRL-MiddleButtonPress"]))
       -- Have more descriptions (and perhaps a popup) for Right than for Middle.
-      , ("RightButtonPress", ([CmdMouse], SetCursorEnemy))
+      , ("RightButtonPress",
+         ([CmdMouse], Macro "" ["CTRL-MiddleButtonPress"]))
      ]
   }

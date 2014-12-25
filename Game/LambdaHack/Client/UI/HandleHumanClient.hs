@@ -34,8 +34,8 @@ cmdHumanSem cmd = do
 cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd RequestUI)
 cmdAction cmd = case cmd of
   -- Global.
-  Move v -> fmap anyToUI <$> moveRunHuman False v
-  Run v -> fmap anyToUI <$> moveRunHuman True v
+  Move v -> fmap anyToUI <$> moveRunHuman True True False v
+  Run v -> fmap anyToUI <$> moveRunHuman True True True v
   Wait -> Right <$> fmap ReqUITimed waitHuman
   MoveItem cLegalRaw toCStore mverb _ auto ->
     fmap ReqUITimed <$> moveItemHuman cLegalRaw toCStore mverb auto
@@ -44,6 +44,7 @@ cmdAction cmd = case cmd of
   AlterDir ts -> fmap ReqUITimed <$> alterDirHuman ts
   TriggerTile ts -> fmap ReqUITimed <$> triggerTileHuman ts
   StepToTarget -> fmap anyToUI <$> stepToTargetHuman
+  ContinueToTarget -> fmap anyToUI <$> continueToTargetHuman
 
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman
