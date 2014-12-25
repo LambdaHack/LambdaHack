@@ -84,8 +84,8 @@ data HumanCmd =
   | TgtClear
   | Cancel
   | Accept
-  | SetCursorFloor
-  | SetCursorEnemy
+  | SetCursorFloor !Bool
+  | SetCursorEnemy !Bool
   deriving (Show, Read, Eq, Ord)
 
 data Trigger =
@@ -175,8 +175,10 @@ cmdDescription cmd = case cmd of
   TgtClear    -> "clear target/cursor"
   Cancel      -> "cancel action, open Main Menu"
   Accept      -> "accept choice"
-  SetCursorFloor -> "set cursor to floor under pointer"
-  SetCursorEnemy -> "set cursor to enemy under pointer"
+  SetCursorFloor False -> "set cursor to floor under pointer"
+  SetCursorFloor True -> "set cursor and describe floor under pointer"
+  SetCursorEnemy False -> "set cursor to enemy under pointer"
+  SetCursorEnemy True -> "set cursor and describe enemy under pointer"
 
 triggerDescription :: [Trigger] -> Text
 triggerDescription [] = "trigger a thing"

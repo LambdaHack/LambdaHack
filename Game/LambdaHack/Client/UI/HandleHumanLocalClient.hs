@@ -663,8 +663,8 @@ endTargetingMsg = do
 
 -- * SetCursorFloor
 
-setCursorFloorHuman :: MonadClientUI m => m Slideshow
-setCursorFloorHuman = do
+setCursorFloorHuman :: MonadClientUI m => Bool -> m Slideshow
+setCursorFloorHuman verbose = do
   km <- getsClient slastKM
   let newPos@Point{..} = K.pointer km
   lidV <- viewedLevel
@@ -674,12 +674,12 @@ setCursorFloorHuman = do
   else do
     let scursor = TPoint lidV newPos
     modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
-    doLook
+    if verbose then doLook else return mempty
 
 -- * SetCursorEnemy
 
-setCursorEnemyHuman :: MonadClientUI m => m Slideshow
-setCursorEnemyHuman = do
+setCursorEnemyHuman :: MonadClientUI m => Bool -> m Slideshow
+setCursorEnemyHuman verbose = do
   km <- getsClient slastKM
   let newPos@Point{..} = K.pointer km
   lidV <- viewedLevel
@@ -693,4 +693,4 @@ setCursorEnemyHuman = do
             Just (im, _) -> TEnemy im True
             Nothing -> TPoint lidV newPos
     modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
-    doLook
+    if verbose then doLook else return mempty

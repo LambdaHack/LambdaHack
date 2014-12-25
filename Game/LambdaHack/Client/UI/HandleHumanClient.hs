@@ -83,8 +83,8 @@ cmdAction cmd = case cmd of
   TgtClear -> Left <$> tgtClearHuman
   Cancel -> Left <$> cancelHuman mainMenuHuman
   Accept -> Left <$> acceptHuman helpHuman
-  SetCursorFloor -> Left <$> setCursorFloorHuman
-  SetCursorEnemy -> Left <$> setCursorEnemyHuman
+  SetCursorFloor verbose -> Left <$> setCursorFloorHuman verbose
+  SetCursorEnemy verbose -> Left <$> setCursorEnemyHuman verbose
 
 addNoSlides :: Monad m => m () -> m (SlideOrCmd RequestUI)
 addNoSlides cmdCli = cmdCli >> return (Left mempty)

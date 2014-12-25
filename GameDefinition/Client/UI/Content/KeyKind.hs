@@ -192,12 +192,10 @@ standardKeys = KeyKind
          , Macro "go to pointer for 100 steps"
                  [ "CTRL-MiddleButtonPress", "Return", "semicolon"
                  , "CTRL-semicolon", "V" ] ))
-      , ("MiddleButtonPress", ([CmdMouse], SetCursorEnemy))
-      , ("CTRL-MiddleButtonPress", ([CmdMouse], SetCursorFloor))
+      , ("MiddleButtonPress", ([CmdMouse], SetCursorEnemy False))
+      , ("CTRL-MiddleButtonPress", ([CmdMouse], SetCursorFloor False))
       , ("SHIFT-MiddleButtonPress",
          ([CmdMouse], Macro "" ["CTRL-MiddleButtonPress"]))
-      -- Have more descriptions (and perhaps a popup) for Right than for Middle.
-      , ("RightButtonPress",
-         ([CmdMouse], Macro "" ["CTRL-MiddleButtonPress"]))
+      , ("RightButtonPress", ([CmdMouse], SetCursorFloor True))
      ]
   }
