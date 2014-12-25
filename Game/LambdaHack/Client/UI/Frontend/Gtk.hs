@@ -132,6 +132,9 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   -- Fork the thread that periodically draws a frame from a queue, if any.
   aPoll <- async $ pollFramesAct sess `Ex.finally` postGUISync mainQuit
   link aPoll
+  let flushChanKey = do
+        res <- STM.atomically $ STM.tryReadTQueue schanKey
+        when (isJust res) $ flushChanKey
   -- Fill the keyboard channel.
   sview `on` keyPressEvent $ do
     n <- eventKeyName
@@ -144,15 +147,12 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
         !modifier = let md = modifierTranslate mods
                     in if md == K.Shift then K.NoModifier else md
         !pointer = dummyPoint
-        readAll = do
-          res <- STM.atomically $ STM.tryReadTQueue schanKey
-          when (isJust res) $ readAll
     liftIO $ do
       unless (deadKey n) $ do
         -- If ESC, also mark it specially and reset the key channel.
         when (key == K.Esc) $ do
           void $ tryPutMVar escMVar ()
-          readAll
+          flushChanKey
         -- Store the key in the channel.
         STM.atomically $ STM.writeTQueue schanKey K.KM{..}
       return True
@@ -162,6 +162,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   -- Prepare font chooser dialog.
   currentfont <- newIORef f
   sview `on` buttonPressEvent $ do
+    liftIO flushChanKey
     but <- eventButton
     (wx, wy) <- eventCoordinates
     mods <- eventModifier
