@@ -11,9 +11,11 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   , helpHuman, mainMenuHuman, macroHuman
     -- * Commands specific to targeting
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman
-  , tgtUnknownHuman, tgtItemHuman, tgtStairHuman, tgtAscendHuman
-  , epsIncrHuman, tgtClearHuman, cancelHuman, acceptHuman
-  , setCursorFloorHuman, setCursorEnemyHuman
+  , tgtAscendHuman, epsIncrHuman, tgtClearHuman
+  , cursorUnknownHuman, cursorItemHuman, cursorStairHuman
+  , cancelHuman, acceptHuman
+  , cursorPointerFloorHuman, cursorPointerEnemyHuman
+  , tgtPointerFloorHuman, tgtPointerEnemyHuman
   ) where
 
 -- Cabal
@@ -494,49 +496,6 @@ tgtEnemyHuman = do
   modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode lidV}
   doLook
 
--- * TgtUnknown
-
-tgtUnknownHuman :: MonadClientUI m => m Slideshow
-tgtUnknownHuman = do
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  mpos <- closestUnknown leader
-  case mpos of
-    Nothing -> failMsg "no more unknown spots left"
-    Just p -> do
-      let tgt = TPoint (blid b) p
-      modifyClient $ \cli -> cli {scursor = tgt}
-      doLook
-
--- * TgtItem
-
-tgtItemHuman :: MonadClientUI m => m Slideshow
-tgtItemHuman = do
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  items <- closestItems leader
-  case items of
-    [] -> failMsg "no more items remembered or visible"
-    (_, (p, _)) : _ -> do
-      let tgt = TPoint (blid b) p
-      modifyClient $ \cli -> cli {scursor = tgt}
-      doLook
-
--- * TgtStair
-
-tgtStairHuman :: MonadClientUI m => Bool -> m Slideshow
-tgtStairHuman up = do
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  stairs <- closestTriggers (Just up) False leader
-  case stairs of
-    [] -> failMsg $ "no stairs"
-                     <+> if up then "up" else "down"
-    p : _ -> do
-      let tgt = TPoint (blid b) p
-      modifyClient $ \cli -> cli {scursor = tgt}
-      doLook
-
 -- * TgtAscend
 
 -- | Change the displayed level in targeting mode to (at most)
@@ -610,6 +569,49 @@ tgtClearHuman = do
       modifyClient $ \cli -> cli {scursor}
       doLook
 
+-- * CursorUnknown
+
+cursorUnknownHuman :: MonadClientUI m => m Slideshow
+cursorUnknownHuman = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  mpos <- closestUnknown leader
+  case mpos of
+    Nothing -> failMsg "no more unknown spots left"
+    Just p -> do
+      let tgt = TPoint (blid b) p
+      modifyClient $ \cli -> cli {scursor = tgt}
+      doLook
+
+-- * CursorItem
+
+cursorItemHuman :: MonadClientUI m => m Slideshow
+cursorItemHuman = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  items <- closestItems leader
+  case items of
+    [] -> failMsg "no more items remembered or visible"
+    (_, (p, _)) : _ -> do
+      let tgt = TPoint (blid b) p
+      modifyClient $ \cli -> cli {scursor = tgt}
+      doLook
+
+-- * CursorStair
+
+cursorStairHuman :: MonadClientUI m => Bool -> m Slideshow
+cursorStairHuman up = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  stairs <- closestTriggers (Just up) False leader
+  case stairs of
+    [] -> failMsg $ "no stairs"
+                     <+> if up then "up" else "down"
+    p : _ -> do
+      let tgt = TPoint (blid b) p
+      modifyClient $ \cli -> cli {scursor = tgt}
+      doLook
+
 -- * Cancel
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
@@ -661,10 +663,10 @@ endTargetingMsg = do
   subject <- partAidLeader leader
   msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
 
--- * SetCursorFloor
+-- * CursorPointerFloor
 
-setCursorFloorHuman :: MonadClientUI m => Bool -> m Slideshow
-setCursorFloorHuman verbose = do
+cursorPointerFloorHuman :: MonadClientUI m => Bool -> m Slideshow
+cursorPointerFloorHuman verbose = do
   km <- getsClient slastKM
   let newPos@Point{..} = K.pointer km
   lidV <- viewedLevel
@@ -673,13 +675,14 @@ setCursorFloorHuman verbose = do
     failMsg "never mind"
   else do
     let scursor = TPoint lidV newPos
-    modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
+    modifyClient $ \cli -> cli {scursor}
+    when verbose $ modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode lidV}
     if verbose then doLook else return mempty
 
--- * SetCursorEnemy
+-- * CursorPointerEnemy
 
-setCursorEnemyHuman :: MonadClientUI m => Bool -> m Slideshow
-setCursorEnemyHuman verbose = do
+cursorPointerEnemyHuman :: MonadClientUI m => Bool -> m Slideshow
+cursorPointerEnemyHuman verbose = do
   km <- getsClient slastKM
   let newPos@Point{..} = K.pointer km
   lidV <- viewedLevel
@@ -692,5 +695,18 @@ setCursorEnemyHuman verbose = do
           case find (\(_, m) -> bpos m == newPos) bsAll of
             Just (im, _) -> TEnemy im True
             Nothing -> TPoint lidV newPos
-    modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
+    modifyClient $ \cli -> cli {scursor}
+    when verbose $ modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode lidV}
     if verbose then doLook else return mempty
+
+-- * TgtPointerFloor
+
+tgtPointerFloorHuman :: MonadClientUI m => m Slideshow
+tgtPointerFloorHuman =
+  cursorPointerFloorHuman True
+
+-- * TgtPointerEnemy
+
+tgtPointerEnemyHuman :: MonadClientUI m => m Slideshow
+tgtPointerEnemyHuman =
+  cursorPointerEnemyHuman True

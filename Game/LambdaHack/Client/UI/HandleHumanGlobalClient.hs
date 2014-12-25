@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   ( -- * Commands that usually take time
     moveRunHuman, waitHuman, moveItemHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
-  , stepToTargetHuman, continueToTargetHuman
+  , moveOnceToCursorHuman, runOnceToCursorHuman, continueToCursorHuman
     -- * Commands that never take time
   , gameRestartHuman, gameExitHuman, gameSaveHuman, tacticHuman, automateHuman
   ) where
@@ -523,36 +523,42 @@ guessTrigger _ fs@(TK.Cause (IK.Ascend k) : _) _ =
     else assert `failure` fs
 guessTrigger _ _ _ = "never mind"
 
--- * StepToTarget
+-- * MoveOnceToCursor
 
-stepToTargetHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
-stepToTargetHuman = goToTarget True
+moveOnceToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+moveOnceToCursorHuman = goToCursor True False
 
-goToTarget :: MonadClientUI m => Bool -> m (SlideOrCmd RequestAnyAbility)
-goToTarget initialStep = do
+goToCursor :: MonadClientUI m
+           => Bool -> Bool -> m (SlideOrCmd RequestAnyAbility)
+goToCursor initialStep run = do
   tgtMode <- getsClient stgtMode
   -- Movement is legal only outside targeting mode.
   if isJust tgtMode then failWith "cannot move in targeting mode"
   else do
     leader <- getLeaderUI
     b <- getsState $ getActorBody leader
-    tgtPos <- leaderTgtToPos
-    case tgtPos of
-      Nothing -> failWith "target not set"
-      Just c | c == bpos b -> failWith "target reached"
+    cursorPos <- cursorToPos
+    case cursorPos of
+      Nothing -> failWith "no leader"
+      Just c | c == bpos b -> failWith "cursor reached"
       Just c -> do
         (_, mpath) <- getCacheBfsAndPath leader c
         case mpath of
-          Nothing -> failWith "no route to target"
+          Nothing -> failWith "no route to cursor"
           Just [] -> assert `failure` (leader, b, bpos b, c)
           Just (p1 : _) -> do
             let finalGoal = p1 == c
-            moveRunHuman initialStep finalGoal False $ towards (bpos b) p1
+            moveRunHuman initialStep finalGoal run $ towards (bpos b) p1
 
--- * ContinueToTarget
+-- * RunOnceToCursor
 
-continueToTargetHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
-continueToTargetHuman = goToTarget False
+runOnceToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+runOnceToCursorHuman = goToCursor True True
+
+-- * ContinueToCursor
+
+continueToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+continueToCursorHuman = goToCursor False False
 
 -- * GameRestart; does not take time
 

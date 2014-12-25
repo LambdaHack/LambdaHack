@@ -18,7 +18,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 
 data CmdCategory =
     CmdMenu | CmdMove | CmdItem | CmdTgt | CmdAuto | CmdMeta | CmdMouse
-  | CmdDebug | CmdMinimal
+  | CmdInternal | CmdDebug | CmdMinimal
   deriving (Show, Read, Eq)
 
 categoryDescription :: CmdCategory -> Text
@@ -29,6 +29,7 @@ categoryDescription CmdTgt = "Targeting"
 categoryDescription CmdAuto = "Automation"
 categoryDescription CmdMeta = "Assorted"
 categoryDescription CmdMouse = "Mouse"
+categoryDescription CmdInternal = "Internal"
 categoryDescription CmdDebug = "Debug"
 categoryDescription CmdMinimal = "Minimal cheat sheet for casual play"
 
@@ -44,8 +45,9 @@ data HumanCmd =
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]
   | TriggerTile ![Trigger]
-  | StepToTarget
-  | ContinueToTarget
+  | MoveOnceToCursor
+  | RunOnceToCursor
+  | ContinueToCursor
     -- Below this line, commands do not take time.
   | GameRestart !(GroupName ModeKind)
   | GameExit
@@ -76,16 +78,18 @@ data HumanCmd =
   | MoveCursor !Vector !Int
   | TgtFloor
   | TgtEnemy
-  | TgtUnknown
-  | TgtItem
-  | TgtStair !Bool
   | TgtAscend !Int
   | EpsIncr !Bool
   | TgtClear
+  | CursorUnknown
+  | CursorItem
+  | CursorStair !Bool
   | Cancel
   | Accept
-  | SetCursorFloor !Bool
-  | SetCursorEnemy !Bool
+  | CursorPointerFloor
+  | CursorPointerEnemy
+  | TgtPointerFloor
+  | TgtPointerEnemy
   deriving (Show, Read, Eq, Ord)
 
 data Trigger =
@@ -105,7 +109,9 @@ noRemoteHumanCmd cmd = case cmd of
   MoveItem{}    -> True
   Apply{}       -> True
   AlterDir{}    -> True
-  StepToTarget  -> True
+  MoveOnceToCursor -> True
+  RunOnceToCursor  -> True
+  ContinueToCursor -> True
   _             -> False
 
 -- | Description of player commands.
@@ -121,8 +127,9 @@ cmdDescription cmd = case cmd of
   Apply ts    -> triggerDescription ts
   AlterDir ts -> triggerDescription ts
   TriggerTile ts -> triggerDescription ts
-  StepToTarget -> "make initial step towards the target"
-  ContinueToTarget -> "continue towards the target"
+  MoveOnceToCursor -> "move one step towards the cursor"
+  RunOnceToCursor -> "run one step towards the cursor"
+  ContinueToCursor -> "continue towards the cursor"
 
   GameRestart t ->
     -- TODO: use mname for the game mode instead of t
@@ -159,26 +166,26 @@ cmdDescription cmd = case cmd of
   MoveCursor v 1 -> "move cursor" <+> compassText v
   MoveCursor v k ->
     "move cursor up to" <+> tshow k <+> "steps" <+> compassText v
-  TgtFloor    -> "cycle targeting mode"
-  TgtEnemy    -> "target enemy"
-  TgtUnknown  -> "target the closest unknown spot"
-  TgtItem     -> "target the closest item"
-  TgtStair up -> "target the closest stairs" <+> if up then "up" else "down"
+  TgtFloor -> "cycle targeting mode"
+  TgtEnemy -> "target enemy"
   TgtAscend k | k == 1  -> "target next shallower level"
   TgtAscend k | k >= 2  -> "target" <+> tshow k    <+> "levels shallower"
   TgtAscend k | k == -1 -> "target next deeper level"
   TgtAscend k | k <= -2 -> "target" <+> tshow (-k) <+> "levels deeper"
   TgtAscend _ -> assert `failure` "void level change when targeting"
                         `twith` cmd
-  EpsIncr True  -> "swerve targeting line"
-  EpsIncr False -> "unswerve targeting line"
-  TgtClear    -> "clear target/cursor"
-  Cancel      -> "cancel action, open Main Menu"
-  Accept      -> "accept choice"
-  SetCursorFloor False -> "set cursor to floor under pointer"
-  SetCursorFloor True -> "set cursor and describe floor under pointer"
-  SetCursorEnemy False -> "set cursor to enemy under pointer"
-  SetCursorEnemy True -> "set cursor and describe enemy under pointer"
+  EpsIncr True   -> "swerve targeting line"
+  EpsIncr False  -> "unswerve targeting line"
+  TgtClear       -> "clear target/cursor"
+  CursorUnknown  -> "set cursor to the closest unknown spot"
+  CursorItem     -> "set cursor to the closest item"
+  CursorStair up -> "set cursor to the closest stairs" <+> if up then "up" else "down"
+  Cancel -> "cancel action, open Main Menu"
+  Accept -> "accept choice"
+  CursorPointerFloor -> "set cursor to floor under pointer"
+  CursorPointerEnemy -> "set cursor to enemy under pointer"
+  TgtPointerFloor -> "target floor under pointer"
+  TgtPointerEnemy -> "target enemy under pointer"
 
 triggerDescription :: [Trigger] -> Text
 triggerDescription [] = "trigger a thing"

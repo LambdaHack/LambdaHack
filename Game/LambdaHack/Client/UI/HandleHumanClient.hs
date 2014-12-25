@@ -43,8 +43,9 @@ cmdAction cmd = case cmd of
   Apply ts -> fmap ReqUITimed <$> applyHuman ts
   AlterDir ts -> fmap ReqUITimed <$> alterDirHuman ts
   TriggerTile ts -> fmap ReqUITimed <$> triggerTileHuman ts
-  StepToTarget -> fmap anyToUI <$> stepToTargetHuman
-  ContinueToTarget -> fmap anyToUI <$> continueToTargetHuman
+  MoveOnceToCursor -> fmap anyToUI <$> moveOnceToCursorHuman
+  RunOnceToCursor  -> fmap anyToUI <$> runOnceToCursorHuman
+  ContinueToCursor -> fmap anyToUI <$> continueToCursorHuman
 
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman
@@ -75,16 +76,18 @@ cmdAction cmd = case cmd of
   MoveCursor v k -> Left <$> moveCursorHuman v k
   TgtFloor -> Left <$> tgtFloorHuman
   TgtEnemy -> Left <$> tgtEnemyHuman
-  TgtUnknown -> Left <$> tgtUnknownHuman
-  TgtItem -> Left <$> tgtItemHuman
-  TgtStair up -> Left <$> tgtStairHuman up
   TgtAscend k -> Left <$> tgtAscendHuman k
   EpsIncr b -> Left <$> epsIncrHuman b
   TgtClear -> Left <$> tgtClearHuman
+  CursorUnknown -> Left <$> cursorUnknownHuman
+  CursorItem -> Left <$> cursorItemHuman
+  CursorStair up -> Left <$> cursorStairHuman up
   Cancel -> Left <$> cancelHuman mainMenuHuman
   Accept -> Left <$> acceptHuman helpHuman
-  SetCursorFloor verbose -> Left <$> setCursorFloorHuman verbose
-  SetCursorEnemy verbose -> Left <$> setCursorEnemyHuman verbose
+  CursorPointerFloor -> Left <$> cursorPointerFloorHuman False
+  CursorPointerEnemy -> Left <$> cursorPointerEnemyHuman False
+  TgtPointerFloor -> Left <$> tgtPointerFloorHuman
+  TgtPointerEnemy -> Left <$> tgtPointerEnemyHuman
 
 addNoSlides :: Monad m => m () -> m (SlideOrCmd RequestUI)
 addNoSlides cmdCli = cmdCli >> return (Left mempty)
