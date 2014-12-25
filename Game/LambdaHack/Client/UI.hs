@@ -84,9 +84,10 @@ humanCommand = do
           _ -> do
             let slastRecord = ([], seqCurrent ++ seqPrevious, k - 1)
             modifyClient $ \cli -> cli {slastRecord}
+        lastPlay <- getsClient slastPlay
         km <- getKeyOverlayCommand lastBlank over
         -- Messages shown, so update history and reset current report.
-        recordHistory
+        when (null lastPlay) recordHistory
         abortOrCmd <- do
           -- Look up the key.
           Binding{bcmdMap} <- askBinding

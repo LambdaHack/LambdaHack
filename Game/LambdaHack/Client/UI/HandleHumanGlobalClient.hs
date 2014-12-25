@@ -577,7 +577,7 @@ goToCursor initialStep run = do
     cursorPos <- cursorToPos
     case cursorPos of
       Nothing -> failWith "no leader"
-      Just c | c == bpos b -> failWith "cursor reached"
+      Just c | c == bpos b -> failWith "Cursor reached."
       Just c -> do
         (_, mpath) <- getCacheBfsAndPath leader c
         case mpath of
