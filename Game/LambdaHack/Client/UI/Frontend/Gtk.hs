@@ -143,7 +143,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
 #endif
         !modifier = let md = modifierTranslate mods
                     in if md == K.Shift then K.NoModifier else md
-        !pointer = Point 0 0
+        !pointer = dummyPoint
         readAll = do
           res <- STM.atomically $ STM.tryReadTQueue schanKey
           when (isJust res) $ readAll

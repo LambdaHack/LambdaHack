@@ -1,6 +1,6 @@
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Common.Point
-  ( X, Y, Point(..), maxLevelDimExponent
+  ( X, Y, Point(..), dummyPoint, maxLevelDimExponent
   , chessDist, euclidDistSq, adjacent, inside, bla, fromTo
   ) where
 
@@ -38,6 +38,9 @@ instance Binary Point where
 instance Enum Point where
   fromEnum = fromEnumPoint
   toEnum = toEnumPoint
+
+dummyPoint :: Point
+dummyPoint = Point (-10000) (-10000)
 
 -- | The maximum number of bits for level X and Y dimension (16).
 -- The value is chosen to support architectures with 32-bit Ints.

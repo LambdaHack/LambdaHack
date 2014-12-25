@@ -119,7 +119,7 @@ humanCommand msgRunStop = do
         abortOrCmd <- do
           -- Look up the key.
           Binding{bcmdMap} <- askBinding
-          case M.lookup km{K.pointer=Point 0 0} bcmdMap of
+          case M.lookup km{K.pointer=dummyPoint} bcmdMap of
             Just (_, _, cmd) -> do
               -- Query and clear the last command key.
               modifyClient $ \cli -> cli

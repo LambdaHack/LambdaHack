@@ -69,7 +69,7 @@ instance Show KM where
 instance Binary KM
 
 toKM :: Modifier -> Key -> KM
-toKM modifier key = KM{pointer=Point 0 0, ..}
+toKM modifier key = KM{pointer=dummyPoint, ..}
 
 -- Common and terse names for keys.
 showKey :: Key -> Text
