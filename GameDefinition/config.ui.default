@@ -34,7 +34,7 @@
 ; font = "Terminus,DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace normal normal normal normal 16"
 ; colorIsBold = True
 ; historyMax = 5000
-; maxFps = 15
+; maxFps = 30
 ; noAnim = False
 ; runStopMsgs = False
 [dummy]
