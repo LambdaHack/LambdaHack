@@ -20,6 +20,7 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Chosen
 import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Common.Point
 
 data FrontReq =
     FrontNormalFrame {frontFrame :: !SingleFrame}
@@ -63,7 +64,7 @@ promptGetKey :: RawFrontend -> [K.KM] -> SingleFrame -> IO K.KM
 promptGetKey fs [] frame = fpromptGetKey fs frame
 promptGetKey fs keys frame = do
   km <- fpromptGetKey fs frame
-  if km `elem` keys
+  if km{K.pointer=dummyPoint} `elem` keys
     then return km
     else promptGetKey fs keys frame
 
@@ -75,11 +76,12 @@ getConfirmGeneric autoYes fs clearKeys frame = do
     fdisplay fs True (Just frame)
     return $ Just True
   else do
-    let extraKeys = [K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM]
+    let extraKeys = [ K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM
+                    , K.leftButtonKM, K.rightButtonKM ]
     km <- promptGetKey fs (clearKeys ++ extraKeys) frame
     return $! if km == K.escKM
               then Nothing
-              else if km == K.pgupKM
+              else if km{K.pointer=dummyPoint} `elem` [K.pgupKM, K.leftButtonKM]
                    then Just False
                    else Just True
 

@@ -671,8 +671,9 @@ cursorPointerFloorHuman verbose = do
   let newPos@Point{..} = K.pointer km
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
-  if px < 0 || py < 0 || px >= lxsize || py >= lysize then
-    failMsg "never mind"
+  if px < 0 || py < 0 || px >= lxsize || py >= lysize then do
+    stopPlayBack
+    return mempty
   else do
     let scursor = TPoint lidV newPos
     modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
@@ -691,8 +692,9 @@ cursorPointerEnemyHuman verbose = do
   let newPos@Point{..} = K.pointer km
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
-  if px < 0 || py < 0 || px >= lxsize || py >= lysize then
-    failMsg "never mind"
+  if px < 0 || py < 0 || px >= lxsize || py >= lysize then do
+    stopPlayBack
+    return mempty
   else do
     bsAll <- getsState $ actorAssocs (const True) lidV
     let scursor =
