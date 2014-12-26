@@ -675,9 +675,13 @@ cursorPointerFloorHuman verbose = do
     failMsg "never mind"
   else do
     let scursor = TPoint lidV newPos
-    modifyClient $ \cli -> cli {scursor}
-    when verbose $ modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode lidV}
-    if verbose then doLook else return mempty
+    modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
+    if verbose then
+      doLook
+    else do
+      displayPush  -- flash the targeting line and path
+      modifyClient $ \cli -> cli {stgtMode = Nothing}
+      return mempty
 
 -- * CursorPointerEnemy
 
@@ -695,9 +699,13 @@ cursorPointerEnemyHuman verbose = do
           case find (\(_, m) -> bpos m == newPos) bsAll of
             Just (im, _) -> TEnemy im True
             Nothing -> TPoint lidV newPos
-    modifyClient $ \cli -> cli {scursor}
-    when verbose $ modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode lidV}
-    if verbose then doLook else return mempty
+    modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
+    if verbose then
+      doLook
+    else do
+      displayPush  -- flash the targeting line and path
+      modifyClient $ \cli -> cli {stgtMode = Nothing}
+      return mempty
 
 -- * TgtPointerFloor
 
