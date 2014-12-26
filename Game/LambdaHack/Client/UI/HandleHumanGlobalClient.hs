@@ -626,7 +626,7 @@ goToCursor initialStep run = do
       Nothing -> failWith "no leader"
       Just c | c == bpos b ->
         if initialStep
-        then failWith "Cursor already reached."
+        then return $ Right $ RequestAnyAbility ReqWait
         else do
           report <- getsClient sreport
           if nullReport report
