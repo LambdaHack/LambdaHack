@@ -90,6 +90,7 @@ continueRunDir params = case params of
                                  , "reveals that the" ]
         boring repLine = any (`BS.isInfixOf` repLine) boringMsgs
         -- TODO: use a regexp from the UI config instead
+        -- or have symbolic messages and pattern-match
         msgShown  = isJust $ findInReport (not . boring) sreport
     if msgShown then return $ Left "message shown"
     else do
@@ -205,7 +206,8 @@ checkAndRun aid dir = do
                         `notElem` map posHasItems rightPsLast
       check
         | not $ null actorsThere = return $ Left "actor in the way"
-                       -- Actor in possibly another direction tnan original.
+            -- Actor in possibly another direction tnan original.
+            -- (e.g., called from @tryTurning@).
         | terrainChangeLeft = return $ Left "terrain change on the left"
         | terrainChangeRight = return $ Left "terrain change on the right"
         | itemChangeLeft = return $ Left "item change on the left"

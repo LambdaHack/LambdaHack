@@ -11,7 +11,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , promptGetKey, getKeyOverlayCommand, getInitConfirms
   , displayFrame, displayDelay, displayFrames, displayActorStart, drawOverlay
     -- * Assorted primitives
-  , stopPlayBack, stopRunning, askConfig, askBinding
+  , stopPlayBack, askConfig, askBinding
   , syncFrames, setFrontAutoYes, tryTakeMVarSescMVar, scoreToSlideshow
   , getLeaderUI, getArenaUI, viewedLevel
   , targetDescLeader, targetDescCursor
@@ -92,7 +92,7 @@ promptGetKey frontKM frontFr = do
       modifyClient $ \cli -> cli {slastPlay = kms}
       return km
     _ -> do
-      unless (null lastPlayOld) stopPlayBack  -- we can't continue playback
+      stopPlayBack  -- we can't continue playback
       writeConnFrontend FrontKey{..}
       km <- readConnFrontend
       modifyClient $ \cli -> cli {slastKM = km}
@@ -186,10 +186,6 @@ stopPlayBack = do
                     in (seqCurrent, seqPrevious, 0)
     , swaitTimes = - swaitTimes cli
     }
-  stopRunning
-
-stopRunning :: MonadClientUI m => m ()
-stopRunning = do
   srunning <- getsClient srunning
   case srunning of
     Nothing -> return ()
@@ -203,7 +199,7 @@ stopRunning = do
       s <- getState
       when (memActor runLeader arena s && not (noRunWithMulti fact)) $
         modifyClient $ updateLeader runLeader s
-      modifyClient (\cli -> cli { srunning = Nothing })
+      modifyClient (\cli -> cli {srunning = Nothing})
 
 askConfig :: MonadClientUI m => m Config
 askConfig = getsSession sconfig

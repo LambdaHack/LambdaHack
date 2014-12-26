@@ -582,7 +582,9 @@ runOnceAheadHuman = do
   srunning <- getsClient srunning
   -- When running, stop if disturbed. If not running, stop at once.
   case srunning of
-    Nothing -> return $ Left mempty
+    Nothing -> do
+      stopPlayBack
+      return $ Left mempty
     Just RunParams{runMembers}
       | noRunWithMulti fact && runMembers /= [leader] -> do
       stopPlayBack
