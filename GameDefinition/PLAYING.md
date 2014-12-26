@@ -116,14 +116,13 @@ Below are the remaining keys for terrain exploration and alteration.
                 CTRL-<         ascend 10 levels
                 >              descend a level
                 CTRL->         descend 10 levels
-                ;              make one step towards the target
-                :              go to target for 100 steps
-                CTRL-:         go to target for 10 steps
+                ;              move one step towards the cursor
+                :              go to cursor for 100 steps
                 x              explore the closest unknown spot
                 X              autoexplore 100 times
-                CTRL-X         autoexplore 10 times
+                CTRL-X         autoexplore 25 times
                 R              rest (wait 100 times)
-                CTRL-R         rest (wait 10 times)
+                CTRL-R         rest (wait 25 times)
                 c              close door
 
 Item-use related keys are as follows.
@@ -161,10 +160,10 @@ of the screen. All targeting keys are listed below.
                 +              swerve targeting line
                 -              unswerve targeting line
                 BACKSPACE      clear target/cursor
-                CTRL-?         target the closest unknown spot
-                CTRL-I         target the closest item
-                CTRL-{         target the closest stairs up
-                CTRL-}         target the closest stairs down
+                CTRL-?         set cursor to the closest unknown spot
+                CTRL-I         set cursor to the closest item
+                CTRL-{         set cursor to the closest stairs up
+                CTRL-}         set cursor to the closest stairs down
 
 Here are the commands for automating the actions of one or more members
 of the team.
@@ -175,7 +174,7 @@ of the team.
                 v              voice again the recorded commands
                 V              voice the recorded commands 100 times
                 CTRL-v         voice the recorded commands 1000 times
-                CTRL-V         voice the recorded commands 10 times
+                CTRL-V         voice the recorded commands 25 times
                 '              start recording commands
                 CTRL-T         cycle tactic of non-leader team members (WIP)
                 CTRL-A         automate faction (ESC to retake control)
@@ -194,6 +193,15 @@ Assorted remaining keys and commands follow.
                 ESC            cancel action, open Main Menu
                 RET            accept choice
                 0--6           pick a new hero leader anywhere in the dungeon
+
+Mouse can be used to move party members and to set targets.
+
+                keys                command
+                LEFT-BUTTON         go to pointer for 100 steps
+                SHIFT-LEFT-BUTTON   run collectively to pointer for 100 steps
+                MIDDLE-BUTTON       set cursor to enemy under pointer
+                SHIFT-MIDDLE-BUTTON set cursor to floor under pointer
+                RIGHT-BUTTON        target enemy under pointer
 
 Commands for saving and exiting the current game, starting a new game, etc.,
 are listed in the Main Menu, brought up by the `ESC` key.

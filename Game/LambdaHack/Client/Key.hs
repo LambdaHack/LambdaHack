@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.Key
   ( Key(..), showKey, handleDir, dirAllKey
   , moveBinding, mkKM, keyTranslate
   , Modifier(..), KM(..), toKM, showKM
-  , escKM, spaceKM, returnKM, pgupKM, pgdnKM
+  , escKM, spaceKM, returnKM, pgupKM, pgdnKM, leftButtonKM, rightButtonKM
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -92,9 +92,9 @@ showKey Insert   = "INSERT"
 showKey Delete   = "DELETE"
 showKey (KP c)   = "KEYPAD_" <> T.singleton c
 showKey (Char c) = T.singleton c
-showKey LeftButtonPress = "LEFT-BUTTON-PRESS"
-showKey MiddleButtonPress = "MIDDLE-BUTTON-PRESS"
-showKey RightButtonPress = "RIGHT-BUTTON-PRESS"
+showKey LeftButtonPress = "LEFT-BUTTON"
+showKey MiddleButtonPress = "MIDDLE-BUTTON"
+showKey RightButtonPress = "RIGHT-BUTTON"
 showKey (Unknown s) = s
 
 -- | Show a key with a modifier, if any.
@@ -118,6 +118,12 @@ pgupKM = toKM NoModifier PgUp
 
 pgdnKM :: KM
 pgdnKM = toKM NoModifier PgDn
+
+leftButtonKM :: KM
+leftButtonKM = toKM NoModifier LeftButtonPress
+
+rightButtonKM :: KM
+rightButtonKM = toKM NoModifier RightButtonPress
 
 dirKeypadKey :: [Key]
 dirKeypadKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]

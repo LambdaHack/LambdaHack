@@ -103,23 +103,26 @@ keyHelp Binding{bcmdList} =
       , "For more playing instructions see file PLAYING.md."
       , "Press SPACE to clear the messages and see the map again."
       ]
-    fmt k h = T.justifyRight 72 ' '
-              $ T.justifyLeft 15 ' ' k
-                <> T.justifyLeft 48 ' ' h
+    fmt n k h = T.justifyRight 72 ' '
+                $ T.justifyLeft n ' ' k
+                  <> T.justifyLeft 48 ' ' h
     fmts s = " " <> T.justifyLeft 71 ' ' s
     minimalText = map fmts minimalBlurb
     movText = map fmts movBlurb
     minCatText = map fmts minCatBlurb
     categoryText = map fmts categoryBlurb
     lastText = map fmts lastBlurb
-    keyCaption = fmt "keys" "command"
     coImage :: K.KM -> [K.KM]
     coImage k = k : sort [ from
-                         | (from, (_, _, Macro _ [to])) <- bcmdList
-                         , K.mkKM to == k ]
+                         | (from, (_, cats, Macro _ [to])) <- bcmdList
+                         , K.mkKM to == k
+                         , any (`notElem` [CmdDebug, CmdInternal]) cats ]
     disp k = T.concat $ intersperse " and " $ map K.showKM $ coImage k
-    keys cat = [ fmt (disp k) h
-               | (k, (h, cats, _)) <- bcmdList, cat `elem` cats, h /= "" ]
+    keysN n cat = [ fmt n (disp k) h
+                  | (k, (h, cats, _)) <- bcmdList, cat `elem` cats, h /= "" ]
+    keyCaptionN n = fmt n "keys" "command"
+    keys = keysN 15
+    keyCaption = keyCaptionN 15
   in toSlideshow True
     [ [categoryDescription CmdMinimal
        <> ". [press SPACE to see all commands]"] ++ [""]
@@ -130,11 +133,13 @@ keyHelp Binding{bcmdList} =
     , [categoryDescription CmdMove <> ". [press SPACE to advance]"] ++ [""]
       ++ [keyCaption] ++ keys CmdMove ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdItem <> ". [press SPACE to advance]"] ++ [""]
-      ++ [keyCaption] ++ keys CmdItem ++ categoryText ++ [moreMsg]
+      ++ [keyCaptionN 10 ] ++ keysN 10 CmdItem ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdTgt <> ". [press SPACE to advance]"] ++ [""]
       ++ [keyCaption] ++ keys CmdTgt ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdAuto <> ". [press SPACE to advance]"] ++ [""]
       ++ [keyCaption] ++ keys CmdAuto ++ categoryText ++ [moreMsg]
-    , [categoryDescription CmdMeta <> "."] ++ [""]
-      ++ [keyCaption] ++ keys CmdMeta ++ lastText
+    , [categoryDescription CmdMeta <> ". [press SPACE to advance]"] ++ [""]
+      ++ [keyCaption] ++ keys CmdMeta ++ categoryText ++ [moreMsg]
+    , [categoryDescription CmdMouse <> "."] ++ [""]
+      ++ [keyCaptionN 20] ++ keysN 20 CmdMouse ++ lastText
     ]

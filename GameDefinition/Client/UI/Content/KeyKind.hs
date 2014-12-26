@@ -175,14 +175,7 @@ standardKeys = KeyKind
       , ("Escape", ([CmdMeta, CmdMinimal], Cancel))
       , ("Return", ([CmdMeta], Accept))
 
-      -- Debug and others not to display in help screens
-      , ("CTRL-s", ([CmdDebug], GameSave))
-      , ("CTRL-f", ([CmdDebug], GameRestart "safari"))
-      , ("CTRL-e", ([CmdDebug], GameRestart "defense"))
-      , ("CTRL-O", ([CmdDebug], DescribeItem COrgan))
-      , ("CTRL-period", ([CmdInternal], RunOnceAhead))
-      , ("CTRL-semicolon", ([CmdInternal], RunOnceToCursor))
-      , ("CTRL-colon", ([CmdInternal], ContinueToCursor))
+      -- Mouse
       , ("LeftButtonPress",
          ( [CmdMouse]
          , Macro "go to pointer for 100 steps"
@@ -193,12 +186,23 @@ standardKeys = KeyKind
          , Macro "run collectively to pointer for 100 steps"
                  [ "SHIFT-MiddleButtonPress", "CTRL-semicolon"
                  , "CTRL-colon", "V" ] ))
-      , ("CTRL-LeftButtonPress",
-         ([CmdMouse], Macro "" ["SHIFT-LeftButtonPress"]))
       , ("MiddleButtonPress", ([CmdMouse], CursorPointerEnemy))
       , ("SHIFT-MiddleButtonPress", ([CmdMouse], CursorPointerFloor))
       , ("CTRL-MiddleButtonPress",
-         ([CmdMouse], Macro "" ["SHIFT-MiddleButtonPress"]))
+         ([CmdInternal], Macro "" ["SHIFT-MiddleButtonPress"]))
       , ("RightButtonPress", ([CmdMouse], TgtPointerEnemy))
+
+      -- Debug and others not to display in help screens
+      , ("CTRL-s", ([CmdDebug], GameSave))
+      , ("CTRL-f", ([CmdDebug], GameRestart "safari"))
+      , ("CTRL-e", ([CmdDebug], GameRestart "defense"))
+      , ("CTRL-O", ([CmdDebug], DescribeItem COrgan))
+      , ("CTRL-period", ([CmdInternal], RunOnceAhead))
+      , ("CTRL-semicolon", ([CmdInternal], RunOnceToCursor))
+      , ("CTRL-colon", ([CmdInternal], ContinueToCursor))
+      , ("CTRL-LeftButtonPress",
+         ([CmdInternal], Macro "" ["SHIFT-LeftButtonPress"]))
+      , ("CTRL-MiddleButtonPress",
+         ([CmdInternal], Macro "" ["SHIFT-MiddleButtonPress"]))
      ]
   }
