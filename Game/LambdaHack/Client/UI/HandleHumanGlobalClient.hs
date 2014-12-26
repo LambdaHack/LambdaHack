@@ -623,7 +623,15 @@ goToCursor initialStep run = do
     cursorPos <- cursorToPos
     case cursorPos of
       Nothing -> failWith "no leader"
-      Just c | c == bpos b -> failWith "Cursor reached."
+      Just c | c == bpos b ->
+        if initialStep
+        then failWith "Cursor already reached."
+        else do
+          report <- getsClient sreport
+          if nullReport report
+          then return $ Left mempty
+          -- Mark that the messages are accumulated, not just from last move.
+          else failWith "Cursor now reached."
       Just c -> do
         (_, mpath) <- getCacheBfsAndPath leader c
         case mpath of
