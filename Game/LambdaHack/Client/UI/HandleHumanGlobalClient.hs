@@ -64,9 +64,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- * Move and Run
 
 moveRunHuman :: MonadClientUI m
-             => Bool -> Bool -> Bool -> Vector
+             => Bool -> Bool -> Bool -> Bool -> Vector
              -> m (SlideOrCmd RequestAnyAbility)
-moveRunHuman initialStep finalGoal run dir = do
+moveRunHuman initialStep finalGoal run runAhead dir = do
   tgtMode <- getsClient stgtMode
   if isJust tgtMode then
     fmap Left $ moveCursorHuman dir (if run then 10 else 1)
@@ -100,9 +100,12 @@ moveRunHuman initialStep finalGoal run dir = do
                                       , runInitial = True
                                       , runStopMsg = Nothing }
                 macroRun25 = ["CTRL-period", "CTRL-V"]
-            when run $ modifyClient $ \cli ->
-              cli { srunning = Just runParams
-                  , slastPlay = map K.mkKM macroRun25 ++ slastPlay cli }
+            when (initialStep && run) $ do
+              modifyClient $ \cli ->
+                cli {srunning = Just runParams}
+              when runAhead $
+                modifyClient $ \cli ->
+                  cli {slastPlay = map K.mkKM macroRun25 ++ slastPlay cli}
             return $ Right runCmd
           Right runCmd ->
             -- Don't check @initialStep@ and @finalGoal@
@@ -603,7 +606,6 @@ runOnceAheadHuman = do
           else return $ Left mempty
         Right (paramNew, runCmd) -> do
           modifyClient $ \cli -> cli {srunning = Just paramNew}
-          displayPush
           return $! Right runCmd
 
 -- * MoveOnceToCursor
@@ -633,13 +635,29 @@ goToCursor initialStep run = do
           -- Mark that the messages are accumulated, not just from last move.
           else failWith "Cursor now reached."
       Just c -> do
-        (_, mpath) <- getCacheBfsAndPath leader c
+        multiActorGoTo
+        newLeader <- getLeaderUI
+        nb <- getsState $ getActorBody newLeader
+        (_, mpath) <- getCacheBfsAndPath newLeader c
         case mpath of
           Nothing -> failWith "no route to cursor"
-          Just [] -> assert `failure` (leader, b, bpos b, c)
+          Just [] -> assert `failure` (newLeader, nb, bpos nb, c)
           Just (p1 : _) -> do
             let finalGoal = p1 == c
-            moveRunHuman initialStep finalGoal run $ towards (bpos b) p1
+            moveRunHuman initialStep finalGoal run False $ towards (bpos nb) p1
+
+multiActorGoTo :: MonadClientUI m => m ()
+multiActorGoTo = do
+  mparamOld <- getsClient srunning
+  case mparamOld of
+    Nothing -> return ()
+    Just RunParams{runMembers = []} -> assert `failure` mparamOld
+    Just paramOld@RunParams{runMembers = r : rs} -> do
+      let runMembersNew = rs ++ [r]
+          paramNew = paramOld {runMembers = runMembersNew}
+      s <- getState
+      modifyClient $ updateLeader r s
+      modifyClient $ \cli -> cli {srunning = Just paramNew}
 
 -- * RunOnceToCursor
 
@@ -649,7 +667,7 @@ runOnceToCursorHuman = goToCursor True True
 -- * ContinueToCursor
 
 continueToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
-continueToCursorHuman = goToCursor False False
+continueToCursorHuman = goToCursor False False{-irrelevant-}
 
 -- * GameRestart; does not take time
 
