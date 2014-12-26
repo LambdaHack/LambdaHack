@@ -39,17 +39,33 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Continue running in the given direction.
 continueRun :: MonadClient m
-            => RunParams -> m (Either Msg (RunParams, RequestAnyAbility))
-continueRun paramOld =
-  case paramOld of
-    RunParams{ runMembers = []
-             , runStopMsg = Just stopMsg } -> return $ Left stopMsg
-    RunParams{ runMembers = []
-             , runStopMsg = Nothing } -> assert `failure` paramOld
-    RunParams{ runLeader
-             , runMembers = r : rs
-             , runInitial
-             , runStopMsg } -> do
+            => LevelId -> RunParams
+            -> m (Either Msg RequestAnyAbility)
+continueRun arena paramOld = case paramOld of
+  RunParams{ runMembers = []
+           , runStopMsg = Just stopMsg } -> return $ Left stopMsg
+  RunParams{ runMembers = []
+           , runStopMsg = Nothing } ->
+    return $ Left "selected actors no longer there"
+  RunParams{ runLeader
+           , runMembers = r : rs
+           , runInitial
+           , runStopMsg } -> do
+    -- If runInitial and r == runLeader, it means the leader moves
+    -- again, after all other members, in step 0,
+    -- so we call continueRunDir with True to change direction once
+    -- and then unset runInitial.
+    let runInitialNew = runInitial && r /= runLeader
+        paramIni = paramOld {runInitial = runInitialNew}
+    onLevel <- getsState $ memActor r arena
+    onLevelLeader <- getsState $ memActor runLeader arena
+    if not onLevel then do
+      let paramNew = paramIni {runMembers = rs }
+      continueRun arena paramNew
+    else if not onLevelLeader then do
+      let paramNew = paramIni {runLeader = r}
+      continueRun arena paramNew
+    else do
       mdirOrRunStopMsgCurrent <- continueRunDir paramOld
       let runStopMsgCurrent =
             either Just (const Nothing) mdirOrRunStopMsgCurrent
@@ -57,20 +73,16 @@ continueRun paramOld =
           -- We check @runStopMsgNew@, because even if the current actor
           -- runs OK, we want to stop soon if some others had to stop.
           runMembersNew = if isJust runStopMsgNew then rs else rs ++ [r]
-          -- If runInitial and r == runLeader, it means the leader moves
-          -- again, after all other members, in step 0,
-          -- so we call continueRunDir with True to change direction once
-          -- and then unset runInitial.
-          runInitialNew = runInitial && r /= runLeader
-          paramNew = paramOld { runMembers = runMembersNew
-                              , runInitial = runInitialNew
+          paramNew = paramIni { runMembers = runMembersNew
                               , runStopMsg = runStopMsgNew }
       case mdirOrRunStopMsgCurrent of
-        Left _ -> continueRun paramNew  -- run all others undisturbed; one time
+        Left _ -> continueRun arena  paramNew
+                    -- run all others undisturbed; one time
         Right dir -> do
           s <- getState
           modifyClient $ updateLeader r s
-          return $ Right (paramNew, RequestAnyAbility $ ReqMove dir)
+          modifyClient $ \cli -> cli {srunning = Just paramNew}
+          return $ Right $ RequestAnyAbility $ ReqMove dir
       -- The potential invisible actor is hit. War is started without asking.
 
 -- | This function implements the actual logic of running. It checks if we

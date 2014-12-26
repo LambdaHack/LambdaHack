@@ -595,7 +595,8 @@ runOnceAheadHuman = do
       then failWith "Run stop: automatic leader change"
       else return $ Left mempty
     Just runParams -> do
-      runOutcome <- continueRun runParams
+      arena <- getArenaUI
+      runOutcome <- continueRun arena runParams
       case runOutcome of
         Left stopMsg -> do
           stopPlayBack
@@ -603,8 +604,7 @@ runOnceAheadHuman = do
           if configRunStopMsgs
           then failWith $ "Run stop:" <+> stopMsg
           else return $ Left mempty
-        Right (paramNew, runCmd) -> do
-          modifyClient $ \cli -> cli {srunning = Just paramNew}
+        Right runCmd ->
           return $! Right runCmd
 
 -- * MoveOnceToCursor
@@ -636,7 +636,13 @@ goToCursor initialStep run = do
       Just c -> do
         running <- getsClient srunning
         case running of
-          Just paramOld -> multiActorGoTo c paramOld
+          Just paramOld -> do
+            arena <- getArenaUI
+            runOutcome <- multiActorGoTo arena c paramOld
+            case runOutcome of
+              Left stopMsg -> failWith stopMsg
+              Right (finalGoal, dir) ->
+                moveRunHuman initialStep finalGoal run False dir
           Nothing -> do
             (_, mpath) <- getCacheBfsAndPath leader c
             case mpath of
@@ -647,40 +653,47 @@ goToCursor initialStep run = do
                     dir = towards (bpos b) p1
                 moveRunHuman initialStep finalGoal run False dir
 
-multiActorGoTo :: MonadClientUI m
-               => Point -> RunParams -> m (SlideOrCmd RequestAnyAbility)
-multiActorGoTo c paramOld = do
+multiActorGoTo :: MonadClient m
+               => LevelId -> Point -> RunParams
+               -> m (Either Msg (Bool, Vector))
+multiActorGoTo arena c paramOld = do
   case paramOld of
-    RunParams{runMembers = []} -> assert `failure` paramOld
+    RunParams{runMembers = []} ->
+      return $ Left "selected actors no longer there"
     RunParams{runMembers = r : rs, runWaiting} -> do
-      s <- getState
-      modifyClient $ updateLeader r s
-      let runMembersNew = rs ++ [r]
-          paramNew = paramOld { runMembers = runMembersNew
-                              , runWaiting = 0}
-      b <- getsState $ getActorBody r
-      (_, mpath) <- getCacheBfsAndPath r c
-      case mpath of
-        Nothing -> failWith "no route to cursor"
-        Just [] ->
-          -- This actor already at goal; will be caught in goToCursor.
-          return $ Left mempty
-        Just (p1 : _) -> do
-          let finalGoal = p1 == c
-              dir = towards (bpos b) p1
-              tpos = bpos b `shift` dir
-          arena <- getArenaUI
-          tgts <- getsState $ posToActors tpos arena
-          case tgts of
-            [] -> do
-              modifyClient $ \cli -> cli {srunning = Just paramNew}
-              moveRunHuman False finalGoal True False dir
-            [((target, _), _)] | target `elem` rs || runWaiting <= length rs ->
-              -- Let r wait until all others move. Mark it in runWaiting
-              -- to avoid cycles. When all wait for each other, fail.
-              multiActorGoTo c paramNew{runWaiting=runWaiting + 1}
-            _ ->
-              failWith "actor in the way"
+      onLevel <- getsState $ memActor r arena
+      if not onLevel then do
+        let paramNew = paramOld {runMembers = rs}
+        multiActorGoTo arena c paramNew
+      else do
+        s <- getState
+        modifyClient $ updateLeader r s
+        let runMembersNew = rs ++ [r]
+            paramNew = paramOld { runMembers = runMembersNew
+                                , runWaiting = 0}
+        b <- getsState $ getActorBody r
+        (_, mpath) <- getCacheBfsAndPath r c
+        case mpath of
+          Nothing -> return $ Left "no route to cursor"
+          Just [] ->
+            -- This actor already at goal; will be caught in goToCursor.
+            return $ Left ""
+          Just (p1 : _) -> do
+            let finalGoal = p1 == c
+                dir = towards (bpos b) p1
+                tpos = bpos b `shift` dir
+            tgts <- getsState $ posToActors tpos arena
+            case tgts of
+              [] -> do
+                modifyClient $ \cli -> cli {srunning = Just paramNew}
+                return $ Right (finalGoal, dir)
+              [((target, _), _)]
+                | target `elem` rs || runWaiting <= length rs ->
+                -- Let r wait until all others move. Mark it in runWaiting
+                -- to avoid cycles. When all wait for each other, fail.
+                multiActorGoTo arena c paramNew{runWaiting=runWaiting + 1}
+              _ ->
+                 return $ Left "actor in the way"
 
 -- * RunOnceToCursor
 
