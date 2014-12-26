@@ -671,7 +671,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           -- For subsequent messages use the proper name, never "you".
           let subject = partActor b
           if fid /= fidSource then do  -- before domination
-            if bcalm b == 0 then do -- sometimes only a coincidence, but nm
+            if bcalm b == 0 then do  -- sometimes only a coincidence, but nm
               aidVerbMU aid $ MU.Text "yield, under extreme pressure"
             else if fid == side then
               aidVerbMU aid $ MU.Text "black out, dominated by foes"
@@ -687,6 +687,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             let verb = "be now under"
             msgAdd $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
+          stopPlayBack
         IK.Impress{} ->
           actorVerbMU aid b
           $ if boldfid b /= bfid b
