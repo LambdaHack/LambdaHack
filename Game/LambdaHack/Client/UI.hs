@@ -58,8 +58,7 @@ queryUI = do
     then return $! ReqUILeader leader2 mtgt2 req
     else return $! req
 
--- | Determine and process the next human player command. The argument is
--- the last stop message due to running, if any.
+-- | Let the human player issue commands, until any command takes time.
 humanCommand :: forall m. MonadClientUI m => m RequestUI
 humanCommand = do
   -- For human UI we invalidate whole @sbfsD@ at the start of each

@@ -87,7 +87,7 @@ moveRunHuman initialStep finalGoal run dir = do
         -- succeeds much more often than subsequent turns, because we ignore
         -- most of the disturbances, since the player is mostly aware of them
         -- and still explicitly requests a run, knowing how it behaves.
-        runStopOrCmd <- moveRunAid leader dir
+        runStopOrCmd <- moveSearchAlterAid leader dir
         case runStopOrCmd of
           Left stopMsg -> failWith stopMsg
           Right runCmd@(RequestAnyAbility ReqMove{}) -> do
@@ -97,9 +97,8 @@ moveRunHuman initialStep finalGoal run dir = do
                              else ES.toList (ES.delete leader sel) ++ [leader]
                 runParams = RunParams { runLeader = leader
                                       , runMembers
-                                      , runDist = 0
-                                      , runStopMsg = Nothing
-                                      , runInitDir = Just dir }
+                                      , runInitial = True
+                                      , runStopMsg = Nothing }
                 macroRun25 = ["CTRL-period", "CTRL-V"]
             when run $ modifyClient $ \cli ->
               cli { srunning = Just runParams
@@ -205,6 +204,52 @@ displaceAid target = do
           return $ Right $ ReqDisplace target
         _ -> failSer DisplaceProjectiles
     else failSer DisplaceAccess
+
+-- | Actor moves or searches or alters. No visible actor at the position.
+moveSearchAlterAid :: MonadClient m
+                   => ActorId -> Vector -> m (Either Msg RequestAnyAbility)
+moveSearchAlterAid source dir = do
+  cops@Kind.COps{cotile} <- getsState scops
+  sb <- getsState $ getActorBody source
+  let lid = blid sb
+  lvl <- getLevel lid
+  let spos = bpos sb           -- source position
+      tpos = spos `shift` dir  -- target position
+      t = lvl `at` tpos
+      runStopOrCmd =
+        -- Movement requires full access.
+        if accessible cops lvl spos tpos then
+          -- The potential invisible actor is hit. War started without asking.
+          Right $ RequestAnyAbility $ ReqMove dir
+        -- No access, so search and/or alter the tile. Non-walkability is
+        -- not implied by the lack of access.
+        else if not (Tile.isWalkable cotile t)
+                && (not (knownLsecret lvl)
+                    || (isSecretPos lvl tpos  -- possible secrets here
+                        && (Tile.isSuspect cotile t  -- not yet searched
+                            || Tile.hideAs cotile t /= t))  -- search again
+                    || Tile.isOpenable cotile t
+                    || Tile.isClosable cotile t
+                    || Tile.isChangeable cotile t) then
+          if EM.member tpos $ lfloor lvl then
+            Left $ showReqFailure AlterBlockItem
+          else
+            Right $ RequestAnyAbility $ ReqAlter tpos Nothing
+            -- We don't use MoveSer, because we don't hit invisible actors.
+            -- The potential invisible actor, e.g., in a wall or in
+            -- an inaccessible doorway, is made known, taking a turn.
+            -- If server performed an attack for free
+            -- on the invisible actor anyway, the player (or AI)
+            -- would be tempted to repeatedly hit random walls
+            -- in hopes of killing a monster lurking within.
+            -- If the action had a cost, misclicks would incur the cost, too.
+            -- Right now the player may repeatedly alter tiles trying to learn
+            -- about invisible pass-wall actors, but when an actor detected,
+            -- it costs a turn and does not harm the invisible actors,
+            -- so it's not so tempting.
+       -- Ignore a known boring, not accessible tile.
+       else Left "never mind"
+  return $! runStopOrCmd
 
 -- * Wait
 
@@ -535,8 +580,7 @@ runOnceAheadHuman = do
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   srunning <- getsClient srunning
-  -- When running, stop if disturbed. If not running, let the human
-  -- player issue commands, until any command takes time.
+  -- When running, stop if disturbed. If not running, stop at once.
   case srunning of
     Nothing -> return $ Left mempty
     Just RunParams{runMembers}

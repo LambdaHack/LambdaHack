@@ -11,7 +11,7 @@
 -- Some things are never ignored, such as: enemies seen, imporant messages
 -- heard, solid tiles and actors in the way.
 module Game.LambdaHack.Client.UI.RunClient
-  ( continueRun, moveRunAid
+  ( continueRun
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -44,106 +44,34 @@ continueRun paramOld =
   case paramOld of
     RunParams{ runMembers = []
              , runStopMsg = Just stopMsg } -> return $ Left stopMsg
+    RunParams{ runMembers = []
+             , runStopMsg = Nothing } -> assert `failure` paramOld
     RunParams{ runLeader
              , runMembers = r : rs
-             , runDist = 0
-             , runStopMsg
-             , runInitDir = Just dir } ->
-      if r == runLeader then do
-        -- Start a many-actor run with distance 1, to prevent changing
-        -- direction on first turn, if the original direction is blocked.
-        -- We want our runners to keep formation.
-        let runDistNew = if null rs then 0 else 1
-        continueRun paramOld{runDist = runDistNew, runInitDir = Nothing}
-      else do
-        runOutcome <- continueRunDir r 0 (Just dir)
-        case runOutcome of
-          Left "" -> do  -- hack; means that zeroth step OK
-            runStopOrCmd <- moveRunAid r dir
-            let runMembersNew = if isJust runStopMsg then rs else rs ++ [r]
-                paramNew = paramOld {runMembers = runMembersNew}
-            case runStopOrCmd of
-              Left stopMsg -> assert `failure` (paramOld, stopMsg)
-              Right runCmd -> do
-                s <- getState
-                modifyClient $ updateLeader r s
-                return $ Right (paramNew, runCmd)
-          Left runStopMsgCurrent -> do
-            let runStopMsgNew = fromMaybe runStopMsgCurrent runStopMsg
-                paramNew = paramOld { runMembers = rs
-                                    , runStopMsg = Just runStopMsgNew }
-            continueRun paramNew
-          _ -> assert `failure` (paramOld, runOutcome)
-    RunParams{ runLeader
-             , runMembers = r : rs
-             , runDist
-             , runStopMsg
-             , runInitDir = Nothing } -> do
-      let runDistNew = if r == runLeader then runDist + 1 else runDist
-      mdirOrRunStopMsgCurrent <- continueRunDir r runDistNew Nothing
+             , runInitial
+             , runStopMsg } -> do
+      mdirOrRunStopMsgCurrent <- continueRunDir paramOld
       let runStopMsgCurrent =
             either Just (const Nothing) mdirOrRunStopMsgCurrent
           runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
           -- We check @runStopMsgNew@, because even if the current actor
           -- runs OK, we want to stop soon if some others had to stop.
           runMembersNew = if isJust runStopMsgNew then rs else rs ++ [r]
+          -- If runInitial and r == runLeader, it means the leader moves
+          -- again, after all other members, in step 0,
+          -- so we call continueRunDir with True to change direction once
+          -- and then unset runInitial.
+          runInitialNew = runInitial && r /= runLeader
           paramNew = paramOld { runMembers = runMembersNew
-                              , runDist = runDistNew
+                              , runInitial = runInitialNew
                               , runStopMsg = runStopMsgNew }
       case mdirOrRunStopMsgCurrent of
-        Left _ -> continueRun paramNew  -- run all undisturbed; only one time
+        Left _ -> continueRun paramNew  -- run all others undisturbed; one time
         Right dir -> do
           s <- getState
           modifyClient $ updateLeader r s
           return $ Right (paramNew, RequestAnyAbility $ ReqMove dir)
       -- The potential invisible actor is hit. War is started without asking.
-    _ -> assert `failure` paramOld
-
--- | Actor moves or searches or alters. No visible actor at the position.
-moveRunAid :: MonadClient m
-           => ActorId -> Vector -> m (Either Msg RequestAnyAbility)
-moveRunAid source dir = do
-  cops@Kind.COps{cotile} <- getsState scops
-  sb <- getsState $ getActorBody source
-  let lid = blid sb
-  lvl <- getLevel lid
-  let spos = bpos sb           -- source position
-      tpos = spos `shift` dir  -- target position
-      t = lvl `at` tpos
-      runStopOrCmd =
-        -- Movement requires full access.
-        if accessible cops lvl spos tpos then
-          -- The potential invisible actor is hit. War started without asking.
-          Right $ RequestAnyAbility $ ReqMove dir
-        -- No access, so search and/or alter the tile. Non-walkability is
-        -- not implied by the lack of access.
-        else if not (Tile.isWalkable cotile t)
-                && (not (knownLsecret lvl)
-                    || (isSecretPos lvl tpos  -- possible secrets here
-                        && (Tile.isSuspect cotile t  -- not yet searched
-                            || Tile.hideAs cotile t /= t))  -- search again
-                    || Tile.isOpenable cotile t
-                    || Tile.isClosable cotile t
-                    || Tile.isChangeable cotile t) then
-          if EM.member tpos $ lfloor lvl then
-            Left $ showReqFailure AlterBlockItem
-          else
-            Right $ RequestAnyAbility $ ReqAlter tpos Nothing
-            -- We don't use MoveSer, because we don't hit invisible actors.
-            -- The potential invisible actor, e.g., in a wall or in
-            -- an inaccessible doorway, is made known, taking a turn.
-            -- If server performed an attack for free
-            -- on the invisible actor anyway, the player (or AI)
-            -- would be tempted to repeatedly hit random walls
-            -- in hopes of killing a monster lurking within.
-            -- If the action had a cost, misclicks would incur the cost, too.
-            -- Right now the player may repeatedly alter tiles trying to learn
-            -- about invisible pass-wall actors, but when an actor detected,
-            -- it costs a turn and does not harm the invisible actors,
-            -- so it's not so tempting.
-       -- Ignore a known boring, not accessible tile.
-       else Left "never mind"
-  return $! runStopOrCmd
 
 -- | This function implements the actual logic of running. It checks if we
 -- have to stop running because something interesting cropped up,
@@ -151,46 +79,49 @@ moveRunAid source dir = do
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
 continueRunDir :: MonadClient m
-               => ActorId -> Int -> Maybe Vector -> m (Either Msg Vector)
-continueRunDir aid distLast mdir = do
-  sreport <- getsClient sreport -- TODO: check the message before it goes into history
-  let boringMsgs = map BS.pack [ "You hear a distant"
-                               , "reveals that the" ]
-      boring repLine = any (`BS.isInfixOf` repLine) boringMsgs
-      -- TODO: use a regexp from the UI config instead
-      msgShown  = isJust $ findInReport (not . boring) sreport
-  if msgShown then return $ Left "message shown"
-  else do
-    let maxDistance = 20
-    cops@Kind.COps{cotile} <- getsState scops
-    body <- getsState $ getActorBody aid
-    let lid = blid body
-    lvl <- getLevel lid
-    let posHere = bpos body
-        posLast = boldpos body
-        dirLast = posHere `vectorToFrom` posLast
-        dir = fromMaybe dirLast mdir
-        posThere = posHere `shift` dir
-    actorsThere <- getsState $ posToActors posThere lid
-    let openableLast = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
-        check
-          | not $ null actorsThere = return $ Left "actor in the way"
-                         -- don't displace actors, except with leader in step 1
-          | distLast >= maxDistance =
-              return $ Left $ "reached max run distance" <+> tshow maxDistance
-          | accessibleDir cops lvl posHere dir =
-              if distLast == 0
-              then return $ Left ""  -- hack; means that zeroth step OK
-              else checkAndRun aid dir
-          | distLast /= 1 = return $ Left "blocked"
-                            -- don't change direction, except in step 1
-          | openableLast = return $ Left "blocked by a closed door"
-                           -- the player may prefer to open the door
-          | otherwise =
-              -- Assume turning is permitted, because this is the start
-              -- of the run, so the situation is mostly known to the player
-              tryTurning aid
-    check
+               => RunParams -> m (Either Msg Vector)
+continueRunDir params = case params of
+  RunParams{ runMembers = [] } -> assert `failure` params
+  RunParams{ runLeader
+           , runMembers = aid : _
+           , runInitial } -> do
+    sreport <- getsClient sreport -- TODO: check the message before it goes into history
+    let boringMsgs = map BS.pack [ "You hear a distant"
+                                 , "reveals that the" ]
+        boring repLine = any (`BS.isInfixOf` repLine) boringMsgs
+        -- TODO: use a regexp from the UI config instead
+        msgShown  = isJust $ findInReport (not . boring) sreport
+    if msgShown then return $ Left "message shown"
+    else do
+      cops@Kind.COps{cotile} <- getsState scops
+      rbody <- getsState $ getActorBody runLeader
+      let rposHere = bpos rbody
+          rposLast = boldpos rbody
+          -- Match run-leader dir, because we want runners to keep formation.
+          dir = rposHere `vectorToFrom` rposLast
+      body <- getsState $ getActorBody aid
+      let lid = blid body
+      lvl <- getLevel lid
+      let posHere = bpos body
+          posThere = posHere `shift` dir
+      actorsThere <- getsState $ posToActors posThere lid
+      let openableLast = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
+          check
+            | not $ null actorsThere = return $ Left "actor in the way"
+                -- don't displace actors, except with leader in step 0
+            | accessibleDir cops lvl posHere dir =
+                if runInitial && aid /= runLeader
+                then return $ Right dir  -- zeroth step always OK
+                else checkAndRun aid dir
+            | not (runInitial && aid == runLeader) = return $ Left "blocked"
+                -- don't change direction, except in step 1 and by run-leader
+            | openableLast = return $ Left "blocked by a closed door"
+                -- the player may prefer to open the door
+            | otherwise =
+                -- Assume turning is permitted, because this is the start
+                -- of the run, so the situation is mostly known to the player
+                tryTurning aid
+      check
 
 tryTurning :: MonadClient m
            => ActorId -> m (Either Msg Vector)
@@ -274,7 +205,7 @@ checkAndRun aid dir = do
                         `notElem` map posHasItems rightPsLast
       check
         | not $ null actorsThere = return $ Left "actor in the way"
-                       -- Actor in possibly another direction tnat original.
+                       -- Actor in possibly another direction tnan original.
         | terrainChangeLeft = return $ Left "terrain change on the left"
         | terrainChangeRight = return $ Left "terrain change on the right"
         | itemChangeLeft = return $ Left "item change on the left"

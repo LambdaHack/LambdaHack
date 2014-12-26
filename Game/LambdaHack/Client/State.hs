@@ -102,10 +102,9 @@ newtype TgtMode = TgtMode { tgtLevelId :: LevelId }
 data RunParams = RunParams
   { runLeader  :: !ActorId         -- ^ the original leader from run start
   , runMembers :: ![ActorId]       -- ^ the list of actors that take part
-  , runDist    :: !Int             -- ^ distance of the run so far
-                                   --   (plus one, if multiple runners)
+  , runInitial :: !Bool            -- ^ initial run continuation by any
+                                   --   run participant, including run leader
   , runStopMsg :: !(Maybe Text)    -- ^ message with the next stop reason
-  , runInitDir :: !(Maybe Vector)  -- ^ the direction of the initial step
   }
   deriving (Show)
 
@@ -270,13 +269,11 @@ instance Binary RunParams where
   put RunParams{..} = do
     put runLeader
     put runMembers
-    put runDist
+    put runInitial
     put runStopMsg
-    put runInitDir
   get = do
     runLeader <- get
     runMembers <- get
-    runDist<- get
+    runInitial <- get
     runStopMsg <- get
-    runInitDir <- get
     return $! RunParams{..}
