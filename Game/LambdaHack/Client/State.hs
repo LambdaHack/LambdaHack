@@ -105,6 +105,7 @@ data RunParams = RunParams
   , runInitial :: !Bool            -- ^ initial run continuation by any
                                    --   run participant, including run leader
   , runStopMsg :: !(Maybe Text)    -- ^ message with the next stop reason
+  , runWaiting :: !Int             -- ^ waiting for others to move out of the way
   }
   deriving (Show)
 
@@ -271,9 +272,11 @@ instance Binary RunParams where
     put runMembers
     put runInitial
     put runStopMsg
+    put runWaiting
   get = do
     runLeader <- get
     runMembers <- get
     runInitial <- get
     runStopMsg <- get
+    runWaiting <- get
     return $! RunParams{..}

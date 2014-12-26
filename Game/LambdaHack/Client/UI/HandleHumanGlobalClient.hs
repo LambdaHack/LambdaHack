@@ -75,6 +75,31 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
     leader <- getLeaderUI
     sb <- getsState $ getActorBody leader
     fact <- getsState $ (EM.! bfid sb) . sfactionD
+    -- Start running in the given direction. The first turn of running
+    -- succeeds much more often than subsequent turns, because we ignore
+    -- most of the disturbances, since the player is mostly aware of them
+    -- and still explicitly requests a run, knowing how it behaves.
+    sel <- getsClient sselected
+    let runMembers = if noRunWithMulti fact
+                     then [leader]  -- TODO: warn?
+                     else ES.toList (ES.delete leader sel) ++ [leader]
+        runParams = RunParams { runLeader = leader
+                              , runMembers
+                              , runInitial = True
+                              , runStopMsg = Nothing
+                              , runWaiting = 0 }
+        macroRun25 = ["CTRL-period", "CTRL-V"]
+    when (initialStep && run) $ do
+      modifyClient $ \cli ->
+        cli {srunning = Just runParams}
+      when runAhead $
+        modifyClient $ \cli ->
+          cli {slastPlay = map K.mkKM macroRun25 ++ slastPlay cli}
+    -- When running, the invisible actor is hit (not displaced!),
+    -- so that running in the presence of roving invisible
+    -- actors is equivalent to moving (with visible actors
+    -- this is not a problem, since runnning stops early enough).
+    -- TODO: stop running at invisible actor
     let tpos = bpos sb `shift` dir
     -- We start by checking actors at the the target position,
     -- which gives a partial information (actors can be invisible),
@@ -83,39 +108,13 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
     tgts <- getsState $ posToActors tpos arena
     case tgts of
       [] -> do  -- move or search or alter
-        -- Start running in the given direction. The first turn of running
-        -- succeeds much more often than subsequent turns, because we ignore
-        -- most of the disturbances, since the player is mostly aware of them
-        -- and still explicitly requests a run, knowing how it behaves.
         runStopOrCmd <- moveSearchAlterAid leader dir
         case runStopOrCmd of
           Left stopMsg -> failWith stopMsg
-          Right runCmd@(RequestAnyAbility ReqMove{}) -> do
-            sel <- getsClient sselected
-            let runMembers = if noRunWithMulti fact
-                             then [leader]  -- TODO: warn?
-                             else ES.toList (ES.delete leader sel) ++ [leader]
-                runParams = RunParams { runLeader = leader
-                                      , runMembers
-                                      , runInitial = True
-                                      , runStopMsg = Nothing }
-                macroRun25 = ["CTRL-period", "CTRL-V"]
-            when (initialStep && run) $ do
-              modifyClient $ \cli ->
-                cli {srunning = Just runParams}
-              when runAhead $
-                modifyClient $ \cli ->
-                  cli {slastPlay = map K.mkKM macroRun25 ++ slastPlay cli}
-            return $ Right runCmd
           Right runCmd ->
             -- Don't check @initialStep@ and @finalGoal@
             -- and don't stop going to target: door opening is mundane enough.
             return $ Right runCmd
-        -- When running, the invisible actor is hit (not displaced!),
-        -- so that running in the presence of roving invisible
-        -- actors is equivalent to moving (with visible actors
-        -- this is not a problem, since runnning stops early enough).
-        -- TODO: stop running at invisible actor
       [((target, _), _)] | run && initialStep ->
         -- No @stopPlayBack@: initial displace is benign enough.
         -- Displacing requires accessibility, but it's checked later on.
@@ -635,29 +634,53 @@ goToCursor initialStep run = do
           -- Mark that the messages are accumulated, not just from last move.
           else failWith "Cursor now reached."
       Just c -> do
-        multiActorGoTo
-        newLeader <- getLeaderUI
-        nb <- getsState $ getActorBody newLeader
-        (_, mpath) <- getCacheBfsAndPath newLeader c
-        case mpath of
-          Nothing -> failWith "no route to cursor"
-          Just [] -> assert `failure` (newLeader, nb, bpos nb, c)
-          Just (p1 : _) -> do
-            let finalGoal = p1 == c
-            moveRunHuman initialStep finalGoal run False $ towards (bpos nb) p1
+        running <- getsClient srunning
+        case running of
+          Just paramOld -> multiActorGoTo c paramOld
+          Nothing -> do
+            (_, mpath) <- getCacheBfsAndPath leader c
+            case mpath of
+              Nothing -> failWith "no route to cursor"
+              Just [] -> assert `failure` (leader, b, c)
+              Just (p1 : _) -> do
+                let finalGoal = p1 == c
+                    dir = towards (bpos b) p1
+                moveRunHuman initialStep finalGoal run False dir
 
-multiActorGoTo :: MonadClientUI m => m ()
-multiActorGoTo = do
-  mparamOld <- getsClient srunning
-  case mparamOld of
-    Nothing -> return ()
-    Just RunParams{runMembers = []} -> assert `failure` mparamOld
-    Just paramOld@RunParams{runMembers = r : rs} -> do
-      let runMembersNew = rs ++ [r]
-          paramNew = paramOld {runMembers = runMembersNew}
+multiActorGoTo :: MonadClientUI m
+               => Point -> RunParams -> m (SlideOrCmd RequestAnyAbility)
+multiActorGoTo c paramOld = do
+  case paramOld of
+    RunParams{runMembers = []} -> assert `failure` paramOld
+    RunParams{runMembers = r : rs, runWaiting} -> do
       s <- getState
       modifyClient $ updateLeader r s
-      modifyClient $ \cli -> cli {srunning = Just paramNew}
+      let runMembersNew = rs ++ [r]
+          paramNew = paramOld { runMembers = runMembersNew
+                              , runWaiting = 0}
+      b <- getsState $ getActorBody r
+      (_, mpath) <- getCacheBfsAndPath r c
+      case mpath of
+        Nothing -> failWith "no route to cursor"
+        Just [] ->
+          -- This actor already at goal; will be caught in goToCursor.
+          return $ Left mempty
+        Just (p1 : _) -> do
+          let finalGoal = p1 == c
+              dir = towards (bpos b) p1
+              tpos = bpos b `shift` dir
+          arena <- getArenaUI
+          tgts <- getsState $ posToActors tpos arena
+          case tgts of
+            [] -> do
+              modifyClient $ \cli -> cli {srunning = Just paramNew}
+              moveRunHuman False finalGoal True False dir
+            [((target, _), _)] | target `elem` rs || runWaiting <= length rs ->
+              -- Let r wait until all others move. Mark it in runWaiting
+              -- to avoid cycles. When all wait for each other, fail.
+              multiActorGoTo c paramNew{runWaiting=runWaiting + 1}
+            _ ->
+              failWith "actor in the way"
 
 -- * RunOnceToCursor
 
