@@ -132,11 +132,16 @@ restrictAnim vis (Animation as) =
 twirlSplash :: (Point, Point) -> Color -> Color -> Animation
 twirlSplash poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
   [ (blank           , cSym BrCyan '\'')
+  , (blank           , cSym BrYellow '\'')
   , (blank           , cSym BrYellow '^')
-  , (cSym c1      '/', cSym BrCyan '^')
+  , (cSym c1      '\\',cSym BrCyan '^')
+  , (cSym c1      '|', cSym BrCyan '^')
+  , (cSym c1      '%', blank)
+  , (cSym c1      '/', blank)
   , (cSym c1      '-', blank)
   , (cSym c1      '\\',blank)
-  , (cSym c1      '|', blank)
+  , (cSym c2      '|', blank)
+  , (cSym c2      '%', blank)
   , (cSym c2      '%', blank)
   , (cSym c2      '/', blank)
   ]
@@ -145,15 +150,21 @@ twirlSplash poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
 blockHit :: (Point, Point) -> Color -> Color -> Animation
 blockHit poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
   [ (blank           , cSym BrCyan '\'')
+  , (blank           , cSym BrYellow '\'')
   , (blank           , cSym BrYellow '^')
   , (blank           , cSym BrCyan '^')
+  , (cSym BrBlue  '{', cSym BrCyan '\'')
   , (cSym BrBlue  '{', cSym BrYellow '\'')
-  , (cSym BrBlue  '{', blank)
+  , (cSym BrBlue  '{', cSym BrYellow '\'')
+  , (cSym BrBlue  '}', blank)
   , (cSym BrBlue  '}', blank)
   , (cSym BrBlue  '}', blank)
   , (cSym c1      '\\',blank)
   , (cSym c1      '|', blank)
-  , (cSym c2      '%', blank)
+  , (cSym c1      '/', blank)
+  , (cSym c1      '-', blank)
+  , (cSym c2      '\\',blank)
+  , (cSym c2      '|', blank)
   , (cSym c2      '/', blank)
   ]
 
@@ -161,9 +172,13 @@ blockHit poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
 blockMiss :: (Point, Point) -> Animation
 blockMiss poss = Animation $ map (EM.fromList . mzipPairs poss)
   [ (blank           , cSym BrCyan '\'')
-  , (cSym BrBlue  '{', cSym BrYellow '^')
+  , (blank           , cSym BrYellow '^')
+  , (cSym BrBlue  '{', cSym BrYellow '\'')
+  , (cSym BrBlue  '{', cSym BrCyan '\'')
   , (cSym BrBlue  '{', blank)
   , (cSym BrBlue  '}', blank)
+  , (cSym BrBlue  '}', blank)
+  , (cSym Blue    '}', blank)
   , (cSym Blue    '}', blank)
   ]
 
@@ -176,6 +191,16 @@ deathBody pos = Animation $ map (maybe EM.empty (EM.singleton pos))
   , cSym BrRed '|'
   , cSym BrRed '%'
   , cSym BrRed '%'
+  , cSym BrRed '-'
+  , cSym BrRed '-'
+  , cSym BrRed '\\'
+  , cSym BrRed '\\'
+  , cSym BrRed '|'
+  , cSym BrRed '|'
+  , cSym BrRed '%'
+  , cSym BrRed '%'
+  , cSym BrRed '%'
+  , cSym Red   '%'
   , cSym Red   '%'
   , cSym Red   '%'
   , cSym Red   '%'
@@ -189,6 +214,9 @@ swapPlaces :: (Point, Point) -> Animation
 swapPlaces poss = Animation $ map (EM.fromList . mzipPairs poss)
   [ (cSym BrMagenta 'o', cSym Magenta   'o')
   , (cSym BrMagenta 'd', cSym Magenta   'p')
+  , (cSym BrMagenta '.', cSym Magenta   'p')
+  , (cSym Magenta   'p', cSym Magenta   '.')
+  , (cSym Magenta   'p', cSym BrMagenta 'd')
   , (cSym Magenta   'p', cSym BrMagenta 'd')
   , (cSym Magenta   'o', blank)
   ]
@@ -196,9 +224,8 @@ swapPlaces poss = Animation $ map (EM.fromList . mzipPairs poss)
 moveProj :: (Point, Point, Point) -> Char -> Color.Color -> Animation
 moveProj poss symbol color = Animation $ map (EM.fromList . mzipTriples poss)
   [ (cSym BrBlack '.', cSym color symbol  , cSym color '.')
--- TODO; re-add when anims run at 30fps
 --  , (cSym BrBlack '.', cSym BrBlack symbol, cSym color symbol)
---  , (cSym BrBlack '.', cSym BrBlack '.'   , cSym color symbol)
+  , (cSym BrBlack '.', cSym BrBlack '.'   , cSym color symbol)
   , (blank           , cSym BrBlack '.'   , cSym color symbol)
   ]
 

@@ -5,7 +5,6 @@ module Game.LambdaHack.Client.UI.WidgetClient
   , animate, fadeOutOrIn
   ) where
 
-import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Monoid
