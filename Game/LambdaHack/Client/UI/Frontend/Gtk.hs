@@ -80,7 +80,7 @@ onQueue f FrontendSession{sframeState} = do
   case fs of
     FPushed{..} ->
       putMVar sframeState FPushed{fpushed = f fpushed, ..}
-    _ ->
+    FNone ->
       putMVar sframeState fs
 
 -- | The name of the frontend.
@@ -328,7 +328,7 @@ pollFramesAct sess@FrontendSession{sframeState, sdebugCli=DebugModeCli{..}} = do
           -- (otherwise it would change the state), so poll often.
           threadDelay $ microInSec `div` maxPolls maxFps
           pollFramesAct sess
-    _ -> do
+    FNone -> do
       putMVar sframeState fs
       -- Not in the Push state, so poll lazily to catch the next state change.
       -- The slow polling also gives the game logic a head start
@@ -366,14 +366,17 @@ pushFrame sess immediate rawFrame = do
       -- Frame sent, we may now safely release the queue lock.
       putMVar sframeState FNone
     FNone ->
-      -- Never start playing with an empty frame.
-      let fpushed = if isJust nextFrame
-                    then writeLQueue newLQueue nextFrame
-                    else newLQueue
-          fshown = dummyFrame
-      in putMVar sframeState FPushed{..}
+      putMVar sframeState
+      $ if isNothing nextFrame && anyFollowed
+        then fs  -- old news
+        else FPushed{ fpushed = writeLQueue newLQueue nextFrame
+                    , fshown = dummyFrame }
   case nextFrame of
-    Nothing -> putMVar slastFull (lastFrame, True)
+    Nothing -> putMVar slastFull (lastFrame, not (case fs of
+                                                    FNone -> True
+                                                    FPushed{} -> False
+                                                  && immediate
+                                                  && not anyFollowed))
     Just f  -> putMVar slastFull (f, False)
 
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
@@ -444,7 +447,7 @@ displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}, sescMVar}
         Nothing ->
           -- The queue is empty.
           return ()
-    _ ->
+    FNone ->
       -- Not in Push state to start with.
       return ()
 
