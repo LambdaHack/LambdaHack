@@ -680,7 +680,8 @@ cursorPointerFloorHuman verbose = do
     if verbose then
       doLook
     else do
-      displayPush  -- flash the targeting line and path
+      displayPush   -- flash the targeting line and path
+      displayDelay  -- for a bit longer
       modifyClient $ \cli -> cli {stgtMode = Nothing}
       return mempty
 
@@ -705,7 +706,8 @@ cursorPointerEnemyHuman verbose = do
     if verbose then
       doLook
     else do
-      displayPush  -- flash the targeting line and path
+      displayPush   -- flash the targeting line and path
+      displayDelay  -- for a bit longer
       modifyClient $ \cli -> cli {stgtMode = Nothing}
       return mempty
 
