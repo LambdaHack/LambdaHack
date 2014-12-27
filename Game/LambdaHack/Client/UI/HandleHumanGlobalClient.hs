@@ -158,11 +158,11 @@ meleeAid target = do
               | isAllied sfact (bfid tb) = do
                 go1 <- displayYesNo ColorBW
                          "You are bound by an alliance. Really attack?"
-                if not go1 then failWith "Attack canceled." else returnCmd
+                if not go1 then failWith "attack canceled" else returnCmd
               | otherwise = do
                 go2 <- displayYesNo ColorBW
                          "This attack will start a war. Are you sure?"
-                if not go2 then failWith "Attack canceled." else returnCmd
+                if not go2 then failWith "attack canceled" else returnCmd
       res
   -- Seeing the actor prevents altering a tile under it, but that
   -- does not limit the player, he just doesn't waste a turn
@@ -545,18 +545,18 @@ verifyTrigger leader feat = case feat of
       "This is the way out, but where would you go in this alien world?"
     else do
       go <- displayYesNo ColorFull "This is the way out. Really leave now?"
-      if not go then failWith "Game resumed."
+      if not go then failWith "game resumed"
       else do
         (_, total) <- getsState $ calculateTotal b
         if total == 0 then do
           -- The player can back off at each of these steps.
           go1 <- displayMore ColorBW
                    "Afraid of the challenge? Leaving so soon and empty-handed?"
-          if not go1 then failWith "Brave soul!"
+          if not go1 then failWith "brave soul!"
           else do
              go2 <- displayMore ColorBW
                      "Next time try to grab some loot before escape!"
-             if not go2 then failWith "Here's your chance!"
+             if not go2 then failWith "here's your chance!"
              else return $ Right ()
         else return $ Right ()
   _ -> return $ Right ()
@@ -592,7 +592,7 @@ runOnceAheadHuman = do
       stopPlayBack
       Config{configRunStopMsgs} <- askConfig
       if configRunStopMsgs
-      then failWith "Run stop: automatic leader change"
+      then failWith "run stop: automatic leader change"
       else return $ Left mempty
     Just runParams -> do
       arena <- getArenaUI
@@ -602,7 +602,7 @@ runOnceAheadHuman = do
           stopPlayBack
           Config{configRunStopMsgs} <- askConfig
           if configRunStopMsgs
-          then failWith $ "Run stop:" <+> stopMsg
+          then failWith $ "run stop:" <+> stopMsg
           else return $ Left mempty
         Right runCmd ->
           return $! Right runCmd
@@ -632,7 +632,7 @@ goToCursor initialStep run = do
           if nullReport report
           then return $ Left mempty
           -- Mark that the messages are accumulated, not just from last move.
-          else failWith "Cursor now reached."
+          else failWith "cursor now reached"
       Just c -> do
         running <- getsClient srunning
         case running of
@@ -661,7 +661,7 @@ multiActorGoTo :: MonadClient m
 multiActorGoTo arena c paramOld = do
   case paramOld of
     RunParams{runMembers = []} ->
-      return $ Left "Selected actors no longer there."
+      return $ Left "selected actors no longer there"
     RunParams{runMembers = r : rs, runWaiting} -> do
       onLevel <- getsState $ memActor r arena
       if not onLevel then do
@@ -676,7 +676,7 @@ multiActorGoTo arena c paramOld = do
         b <- getsState $ getActorBody r
         (_, mpath) <- getCacheBfsAndPath r c
         case mpath of
-          Nothing -> return $ Left "No route to cursor."
+          Nothing -> return $ Left "no route to cursor"
           Just [] ->
             -- This actor already at goal; will be caught in goToCursor.
             return $ Left ""
@@ -695,7 +695,7 @@ multiActorGoTo arena c paramOld = do
                 -- to avoid cycles. When all wait for each other, fail.
                 multiActorGoTo arena c paramNew{runWaiting=runWaiting + 1}
               _ ->
-                 return $ Left "Actor in the way."
+                 return $ Left "actor in the way"
 
 -- * RunOnceToCursor
 
@@ -727,8 +727,8 @@ gameRestartHuman t = do
       b2 <- displayYesNo ColorBW
               "Current progress will be lost! Really restart the game?"
       msg2 <- rndToAction $ oneOf
-                [ "Yea, would be a pity to leave them all to die."
-                , "Yea, a shame to get your own team stranded." ]
+                [ "yea, would be a pity to leave them all to die"
+                , "yea, a shame to get your own team stranded" ]
       if not b2 then failWith msg2
       else restart
 
@@ -741,7 +741,7 @@ gameExitHuman = do
     leader <- getLeaderUI
     DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
     return $ Right $ ReqUIGameExit leader sdifficultyCli
-  else failWith "Save and exit canceled."
+  else failWith "save and exit canceled"
 
 -- * GameSave; does not take time
 
@@ -771,7 +771,7 @@ tacticHuman = do
           <+> tshow toT
           <> ". (This clears targets.)"
   if not go
-    then failWith "Tactic change canceled."
+    then failWith "tactic change canceled"
     else return $ Right $ ReqUITactic toT
 
 -- * Automate; does not take time
@@ -785,5 +785,5 @@ automateHuman = do
   else do
     go <- displayMore ColorBW "Ceding control to AI (ESC to regain)."
     if not go
-      then failWith "Automation canceled."
+      then failWith "automation canceled"
       else return $ Right ReqUIAutomate

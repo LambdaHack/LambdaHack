@@ -418,7 +418,7 @@ memberCycle verbose = do
   let autoLvl = snd $ autoDungeonLevel fact
   case filter (\(_, b) -> blid b == blid body) hs of
     _ | autoLvl -> failMsg $ showReqFailure NoChangeLvlLeader
-    [] -> failMsg "Cannot pick any other member on this level."
+    [] -> failMsg "cannot pick any other member on this level"
     (np, b) : _ -> do
       success <- pickLeader verbose np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
@@ -434,7 +434,7 @@ memberBack verbose = do
   let autoDun = fst $ autoDungeonLevel fact
   case reverse hs of
     _ | autoDun -> failMsg $ showReqFailure NoChangeDunLeader
-    [] -> failMsg "No other member in the party."
+    [] -> failMsg "no other member in the party"
     (np, b) : _ -> do
       success <- pickLeader verbose np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip

@@ -87,7 +87,7 @@ pickLeaderHuman k = do
   let (autoDun, autoLvl) = autoDungeonLevel fact
   s <- getState
   case tryFindHeroK s side k of
-    Nothing -> failMsg "No such member of the party."
+    Nothing -> failMsg "no such member of the party"
     Just (aid, b) ->
       if blid b == arena && autoLvl
       then failMsg $ showReqFailure NoChangeLvlLeader
