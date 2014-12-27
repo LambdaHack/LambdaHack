@@ -1,7 +1,7 @@
 -- | Inventory management and party cycling.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( failMsg, getGroupItem, getAnyItems, getStoreItem
+  ( getGroupItem, getAnyItems, getStoreItem
   , memberCycle, memberBack, pickLeader
   ) where
 
@@ -35,11 +35,6 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
-
-failMsg :: MonadClientUI m => Msg -> m Slideshow
-failMsg msg = do
-  stopPlayBack
-  assert (not $ T.null msg) $ promptToSlideshow msg
 
 data ItemDialogState = ISuitable | IAll | INoEnter
   deriving (Show, Eq)

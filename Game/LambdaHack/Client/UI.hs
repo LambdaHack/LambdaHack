@@ -113,7 +113,7 @@ humanCommand = do
                   then cmdHumanSem Clear
                   else cmdHumanSem cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
-                       in fmap Left $ promptToSlideshow msgKey
+                       in failWith msgKey
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
         case abortOrCmd of

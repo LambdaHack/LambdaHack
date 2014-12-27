@@ -62,12 +62,12 @@ displayChoiceUI prompt ov keys = do
   (_, ovs) <- fmap slideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
   let legalKeys = [K.spaceKM, K.escKM]
         ++ keys
-      loop [] = fmap Left $ promptToSlideshow "never mind"
+      loop [] = fmap Left $ promptToSlideshow "*never mind*"
       loop (x : xs) = do
         frame <- drawOverlay False ColorFull x
         km@K.KM {..} <- promptGetKey legalKeys frame
         case key of
-          K.Esc -> fmap Left $ promptToSlideshow "never mind"
+          K.Esc -> fmap Left $ promptToSlideshow "*never mind*"
           K.Space -> loop xs
           _ -> return $ Right km
   loop ovs

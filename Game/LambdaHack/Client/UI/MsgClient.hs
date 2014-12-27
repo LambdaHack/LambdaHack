@@ -1,7 +1,7 @@
 -- | Client monad for interacting with a human through UI.
 module Game.LambdaHack.Client.UI.MsgClient
   ( msgAdd, msgReset, recordHistory
-  , SlideOrCmd, failWith, failSlides, failSer
+  , SlideOrCmd, failWith, failSlides, failSer, failMsg
   , lookAt, itemOverlay
   ) where
 
@@ -62,7 +62,8 @@ type SlideOrCmd a = Either Slideshow a
 failWith :: MonadClientUI m => Msg -> m (SlideOrCmd a)
 failWith msg = do
   stopPlayBack
-  assert (not $ T.null msg) $ fmap Left $ promptToSlideshow msg
+  let starMsg = "*" <> msg <> "*"
+  assert (not $ T.null msg) $ fmap Left $ promptToSlideshow starMsg
 
 failSlides :: MonadClientUI m => Slideshow -> m (SlideOrCmd a)
 failSlides slides = do
@@ -71,6 +72,12 @@ failSlides slides = do
 
 failSer :: MonadClientUI m => ReqFailure -> m (SlideOrCmd a)
 failSer = failWith . showReqFailure
+
+failMsg :: MonadClientUI m => Msg -> m Slideshow
+failMsg msg = do
+  stopPlayBack
+  let starMsg = "*" <> msg <> "*"
+  assert (not $ T.null msg) $ promptToSlideshow starMsg
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.
