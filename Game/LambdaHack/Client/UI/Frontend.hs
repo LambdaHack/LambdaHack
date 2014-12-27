@@ -25,8 +25,6 @@ import Game.LambdaHack.Common.Point
 data FrontReq =
     FrontNormalFrame {frontFrame :: !SingleFrame}
       -- ^ show a frame
-  | FrontRunningFrame {frontFrame :: !SingleFrame}
-      -- ^ show a frame in running mode (don't insert delay between frames)
   | FrontDelay
       -- ^ perform a single explicit delay
   | FrontKey {frontKM :: ![K.KM], frontFr :: !SingleFrame}
@@ -73,7 +71,7 @@ getConfirmGeneric :: Bool -> RawFrontend -> [K.KM] -> SingleFrame
 getConfirmGeneric autoYes fs clearKeys frame = do
   let DebugModeCli{sdisableAutoYes} = fdebugCli fs
   if autoYes && not sdisableAutoYes then do
-    fdisplay fs True (Just frame)
+    fdisplay fs (Just frame)
     return $ Just True
   else do
     let extraKeys = [ K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM
@@ -97,13 +95,10 @@ loopFrontend fs ChanFrontend{..} = loop False
     efr <- STM.atomically $ STM.readTQueue requestF
     case efr of
       FrontNormalFrame{..} -> do
-        fdisplay fs False (Just frontFrame)
-        loop autoYes
-      FrontRunningFrame{..} -> do
-        fdisplay fs True (Just frontFrame)
+        fdisplay fs (Just frontFrame)
         loop autoYes
       FrontDelay -> do
-        fdisplay fs False Nothing
+        fdisplay fs Nothing
         loop autoYes
       FrontKey{..} -> do
         km <- promptGetKey fs frontKM frontFr
@@ -119,7 +114,7 @@ loopFrontend fs ChanFrontend{..} = loop False
               case frs of
                 [] -> assert `failure` "null slides" `twith` frs
                 [x] -> do
-                  fdisplay fs False (Just x)
+                  fdisplay fs (Just x)
                   writeKM K.spaceKM
                 x : xs -> do
                   go <- getConfirmGeneric autoYes fs frontClear x

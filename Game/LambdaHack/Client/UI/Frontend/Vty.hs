@@ -74,11 +74,10 @@ storeKeys sess@FrontendSession{..} = do
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data
-         -> Bool
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
-fdisplay _ _ Nothing = return ()
-fdisplay FrontendSession{svty} _ (Just rawSF) =
+fdisplay _ Nothing = return ()
+fdisplay FrontendSession{svty} (Just rawSF) =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
       img = (foldr (<->) emptyImage
              . map (foldr (<|>) emptyImage
@@ -113,7 +112,7 @@ fsyncFrames _ = return ()
 -- | Display a prompt, wait for any key.
 fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 fpromptGetKey sess frame = do
-  fdisplay sess True $ Just frame
+  fdisplay sess $ Just frame
   nextKeyEvent sess
 
 -- TODO: Ctrl-Home and Ctrl-End are the same as Home and End on some terminals

@@ -26,7 +26,7 @@ frontendName :: String
 frontendName = Chosen.frontendName
 
 data RawFrontend = RawFrontend
-  { fdisplay      :: Bool -> Maybe SingleFrame -> IO ()
+  { fdisplay      :: Maybe SingleFrame -> IO ()
   , fpromptGetKey :: SingleFrame -> IO K.KM
   , fsyncFrames   :: IO ()
   , fescMVar      :: !(Maybe (MVar ()))
@@ -60,7 +60,7 @@ nullStartup fdebugCli cont =
   -- Std used to fork (async) the server thread, to avoid bound thread overhead.
   Std.startup fdebugCli $ \_ ->
     cont $ RawFrontend
-      { fdisplay = \_ _ -> return ()
+      { fdisplay = \_ -> return ()
       , fpromptGetKey = \_ -> return K.escKM
       , fsyncFrames = return ()
       , fescMVar = Nothing

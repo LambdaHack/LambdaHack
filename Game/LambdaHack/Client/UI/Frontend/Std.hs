@@ -39,11 +39,10 @@ startup sdebugCli k = do
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data
-         -> Bool
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
-fdisplay _ _ Nothing = return ()
-fdisplay _ _ (Just rawSF) =
+fdisplay _ Nothing = return ()
+fdisplay _ (Just rawSF) =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
       bs = map (BS.pack . map Color.acChar . decodeLine) sfLevel ++ [BS.empty]
   in mapM_ BS.putStrLn bs
@@ -63,7 +62,7 @@ fsyncFrames _ = return ()
 -- | Display a prompt, wait for any key.
 fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 fpromptGetKey sess frame = do
-  fdisplay sess True $ Just frame
+  fdisplay sess $ Just frame
   nextEvent
 
 keyTranslate :: Char -> K.KM

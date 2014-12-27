@@ -272,7 +272,7 @@ microInSec :: Int
 microInSec = 1000000
 
 defaultMaxFps :: Int
-defaultMaxFps = 15
+defaultMaxFps = 30
 
 -- | Poll the frame queue often and draw frames at fixed intervals.
 pollFramesWait :: FrontendSession -> ClockTime -> IO ()
@@ -339,8 +339,8 @@ pollFramesAct sess@FrontendSession{sframeState, sdebugCli=DebugModeCli{..}} = do
 
 -- | Add a game screen frame to the frame drawing channel, or show
 -- it ASAP if @immediate@ display is requested and the channel is empty.
-pushFrame :: FrontendSession -> Bool -> Bool -> Maybe SingleFrame -> IO ()
-pushFrame sess noDelay immediate rawFrame = do
+pushFrame :: FrontendSession -> Bool -> Maybe SingleFrame -> IO ()
+pushFrame sess immediate rawFrame = do
   let FrontendSession{sframeState, slastFull} = sess
   -- Full evaluation is done outside the mvar locks.
   let !frame = case rawFrame of
@@ -374,7 +374,7 @@ pushFrame sess noDelay immediate rawFrame = do
       in putMVar sframeState FPushed{..}
   case nextFrame of
     Nothing -> putMVar slastFull (lastFrame, True)
-    Just f  -> putMVar slastFull (f, noDelay)
+    Just f  -> putMVar slastFull (f, False)
 
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} rawSF =
@@ -415,10 +415,9 @@ trimFrameState sess@FrontendSession{sframeState} = do
 
 -- | Add a frame to be drawn.
 fdisplay :: FrontendSession    -- ^ frontend session data
-         -> Bool
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
-fdisplay sess noDelay = pushFrame sess noDelay False
+fdisplay sess = pushFrame sess False
 
 -- Display all queued frames, synchronously.
 displayAllFramesSync :: FrontendSession -> FrameState -> IO ()
@@ -461,7 +460,7 @@ fsyncFrames sess@FrontendSession{sframeState} = do
 fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 fpromptGetKey sess@FrontendSession{..}
               frame = do
-  pushFrame sess True True $ Just frame
+  pushFrame sess True $ Just frame
   km <- STM.atomically $ STM.readTQueue schanKey
   case km of
     K.KM{key=K.Space} ->

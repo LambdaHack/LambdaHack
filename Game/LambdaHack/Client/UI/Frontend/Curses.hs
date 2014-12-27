@@ -61,11 +61,10 @@ startup sdebugCli k = do
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data
-         -> Bool
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
-fdisplay _ _ Nothing = return ()
-fdisplay FrontendSession{..}  _ (Just rawSF) = do
+fdisplay _ Nothing = return ()
+fdisplay FrontendSession{..}  (Just rawSF) = do
   let SingleFrame{sfLevel} = overlayOverlay rawSF
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
@@ -93,7 +92,7 @@ fsyncFrames _ = return ()
 -- | Display a prompt, wait for any key.
 fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 fpromptGetKey sess frame = do
-  fdisplay sess True $ Just frame
+  fdisplay sess $ Just frame
   nextEvent
 
 keyTranslate :: C.Key -> K.KM

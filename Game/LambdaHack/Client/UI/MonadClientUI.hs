@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
     -- * Display and key input
   , ColorMode(..)
   , promptGetKey, getKeyOverlayCommand, getInitConfirms
-  , displayFrame, displayDelay, displayFrames, displayActorStart, drawOverlay
+  , displayFrame, displayDelay, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
   , syncFrames, setFrontAutoYes, tryTakeMVarSescMVar, scoreToSlideshow
@@ -86,7 +86,7 @@ promptGetKey frontKM frontFr = do
   lastPlayOld <- getsClient slastPlay
   km <- case lastPlayOld of
     km : kms | not escPressed && (null frontKM || km `elem` frontKM) -> do
-      displayFrame True $ Just frontFr
+      displayFrame $ Just frontFr
       -- Sync frames so that ESC doesn't skip frames.
       syncFrames
       modifyClient $ \cli -> cli {slastPlay = kms}
@@ -118,7 +118,7 @@ getInitConfirms dm frontClear slides = do
   case frontSlides of
     [] -> return True
     [x] -> do
-      displayFrame False $ Just x
+      displayFrame $ Just x
       return True
     _ -> do
       writeConnFrontend FrontSlides{..}
@@ -127,20 +127,15 @@ getInitConfirms dm frontClear slides = do
       -- block a ping and the ping would not see the ESC.
       return $! km /= K.escKM
 
-displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
-displayFrame isRunning mf = do
+displayFrame :: MonadClientUI m => Maybe SingleFrame -> m ()
+displayFrame mf = do
   let frame = case mf of
         Nothing -> FrontDelay
-        Just fr | isRunning -> FrontRunningFrame fr
         Just fr -> FrontNormalFrame fr
   writeConnFrontend frame
 
 displayDelay :: MonadClientUI m =>  m ()
 displayDelay = writeConnFrontend FrontDelay
-
--- | Push frames or delays to the frame queue.
-displayFrames :: MonadClientUI m => Frames -> m ()
-displayFrames = mapM_ (displayFrame False)
 
 -- | Push frames or delays to the frame queue. Additionally set @sdisplayed@.
 -- because animations not always happen after @SfxActorStart@ on the leader's
@@ -148,7 +143,7 @@ displayFrames = mapM_ (displayFrame False)
 -- and there could be melee and animations on that level at the same moment).
 displayActorStart :: MonadClientUI m => Actor -> Frames -> m ()
 displayActorStart b frs = do
-  mapM_ (displayFrame False) frs
+  mapM_ displayFrame frs
   let ageDisp displayed = EM.insert (blid b) (btime b) displayed
   modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
 

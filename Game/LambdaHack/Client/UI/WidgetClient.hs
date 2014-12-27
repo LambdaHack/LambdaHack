@@ -1,6 +1,6 @@
 -- | A set of widgets for UI clients.
 module Game.LambdaHack.Client.UI.WidgetClient
-  ( displayMore, displayYesNo, displayChoiceUI, displayPush, displayPushIfLid
+  ( displayMore, displayYesNo, displayChoiceUI, displayPush
   , promptToSlideshow, overlayToSlideshow, overlayToBlankSlideshow
   , animate, fadeOutOrIn
   ) where
@@ -80,23 +80,10 @@ displayChoiceUI prompt ov keys = do
 -- Only one screenful of the report is shown, the rest is ignored.
 displayPush :: MonadClientUI m => m ()
 displayPush = do
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
   sls <- promptToSlideshow ""
   let slide = head . snd $ slideshow sls
-      underAI = isAIFact fact
   frame <- drawOverlay False ColorFull slide
-  -- Visually speed up (by remving all empty frames) the show of the sequence
-  -- of the move frames if the player is running.
-  srunning <- getsClient srunning
-  lastPlay <- getsClient slastPlay
-  displayFrame (isJust srunning || not (null lastPlay) || underAI)
-               (Just frame)
-
-displayPushIfLid :: MonadClientUI m => LevelId -> m ()
-displayPushIfLid lid = do
-  arena <- getArenaUI
-  when (arena == lid) displayPush
+  displayFrame (Just frame)
 
 -- | The prompt is shown after the current message, but not added to history.
 -- This is useful, e.g., in targeting mode, not to spam history.
@@ -161,4 +148,4 @@ fadeOutOrIn out = do
   Level{lxsize, lysize} <- getLevel lid
   animMap <- rndToAction $ fadeout out topRight 2 lxsize lysize
   animFrs <- animate lid animMap
-  displayFrames animFrs
+  mapM_ displayFrame animFrs
