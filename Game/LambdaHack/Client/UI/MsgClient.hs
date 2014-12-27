@@ -125,10 +125,14 @@ itemOverlay :: MonadClient m
 itemOverlay c lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
-  (letterSlots, numberSlots) <- getsClient sslots
-  assert (all (`elem` EM.elems letterSlots ++ IM.elems numberSlots)
+  (letterSlots, numberSlots, organSlots) <- getsClient sslots
+  let isOrgan = case c of
+        CActor _ COrgan -> True
+        _ -> False
+      lSlots = if isOrgan then organSlots else letterSlots
+  assert (all (`elem` EM.elems lSlots ++ IM.elems numberSlots)
               (EM.keys bag)
-          `blame` (c, lid, bag, letterSlots, numberSlots)) skip
+          `blame` (c, lid, bag, lSlots, numberSlots)) skip
   let pr (l, iid) =
         case EM.lookup iid bag of
           Nothing -> Nothing
@@ -141,5 +145,5 @@ itemOverlay c lid bag = do
                                  , partItemWs k c lid localTime itemFull ]
                            <> " "
   return $! toOverlay $ mapMaybe pr
-    $ map (first Left) (EM.assocs letterSlots)
+    $ map (first Left) (EM.assocs lSlots)
       ++ (map (first Right) (IM.assocs numberSlots))

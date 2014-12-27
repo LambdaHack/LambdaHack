@@ -177,8 +177,8 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
   accessCBag <- getsState $ flip getCBag
   let storeAssocs = EM.assocs . accessCBag
       allAssocs = concatMap storeAssocs cLegal
-  mapM_ (updateItemSlot (Just leader)) $
-    concatMap (EM.keys . accessCBag) cLegal
+  mapM_ (\c -> mapM_ (updateItemSlot c (Just leader))
+                     (EM.keys $ accessCBag c)) cLegal
   case (cRest, allAssocs) of
     ([], [(iid, k)]) | not askWhenLone -> do
       itemToF <- itemToFullClient
@@ -205,7 +205,7 @@ transition :: forall m. MonadClientUI m
 transition psuit prompt promptGeneric cCur cRest permitMulitple
            itemDialogState = do
   let cLegal = cCur : cRest
-  (letterSlots, numberSlots) <- getsClient sslots
+  (letterSlots, numberSlots, organSlots) <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
@@ -221,9 +221,13 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
       getMultResult iids = (map getSingleResult iids, cCur)
       filterP iid kit = psuit $ itemToF iid kit
       bagSuit = EM.filterWithKey filterP bag
-      bagLetterSlots = EM.filter (`EM.member` bag) letterSlots
+      isOrgan = case cCur of
+        CActor _ COrgan -> True
+        _ -> False
+      lSlots = if isOrgan then organSlots else letterSlots
+      bagLetterSlots = EM.filter (`EM.member` bag) lSlots
       bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
-      suitableLetterSlots = EM.filter (`EM.member` bagSuit) letterSlots
+      suitableLetterSlots = EM.filter (`EM.member` bagSuit) lSlots
       (autoDun, autoLvl) = autoDungeonLevel fact
       normalizeState INoEnter = ISuitable
       normalizeState x = x
@@ -344,8 +348,8 @@ legalWithUpdatedLeader cCur cRest = do
         _ -> c
       newLegal = map newC $ cCur : cRest
   accessCBag <- getsState $ flip getCBag
-  mapM_ (updateItemSlot (Just leader)) $
-    concatMap (EM.keys . accessCBag) newLegal
+  mapM_ (\c -> mapM_ (updateItemSlot c (Just leader))
+                     (EM.keys $ accessCBag c)) newLegal
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
   let calmE = calmEnough b activeItems

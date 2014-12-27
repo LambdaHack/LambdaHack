@@ -35,7 +35,9 @@ instance Enum SlotChar where
   fromEnum (SlotChar x) = fromEnum x + if isUpper x then 1000 else 0
   toEnum e = SlotChar $ toEnum $ e - (if e > 1000 then 1000 else 0)
 
-type ItemSlots = (EM.EnumMap SlotChar ItemId, IM.IntMap ItemId)
+type ItemSlots = ( EM.EnumMap SlotChar ItemId
+                 , IM.IntMap ItemId
+                 , EM.EnumMap SlotChar ItemId )
 
 slotRange :: [SlotChar] -> Text
 slotRange ls =
@@ -63,10 +65,11 @@ allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z']
 
 -- | Assigns a slot to an item, for inclusion in the inventory or equipment
 -- of a hero. Tries to to use the requested slot, if any.
-assignSlot :: Item -> FactionId -> Maybe Actor -> ItemSlots -> SlotChar
-           -> State
+assignSlot :: Container -> Item -> FactionId -> Maybe Actor -> ItemSlots
+           -> SlotChar -> State
            -> Either SlotChar Int
-assignSlot item fid mbody (letterSlots, numberSlots) lastSlot s =
+assignSlot c item fid mbody (letterSlots, numberSlots, organSlots)
+           lastSlot s =
   if jsymbol item == '$'
   then Left $ SlotChar '$'
   else case free of
@@ -83,7 +86,10 @@ assignSlot item fid mbody (letterSlots, numberSlots) lastSlot s =
                   (\b -> getCBag (CFloor (blid b) (bpos b)) s)
                   mbody
   inBags = ES.unions $ map EM.keysSet [onPerson, onGroud]
-  f l = maybe True (`ES.notMember` inBags) $ EM.lookup l letterSlots
+  lSlots = case c of
+    CActor _ COrgan -> organSlots
+    _ -> letterSlots
+  f l = maybe True (`ES.notMember` inBags) $ EM.lookup l lSlots
   free = filter f candidates
   g l = maybe True (`ES.notMember` inBags) $ IM.lookup l numberSlots
   freeNumbers = filter g [0..]

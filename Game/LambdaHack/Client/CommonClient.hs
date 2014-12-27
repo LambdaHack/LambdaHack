@@ -22,7 +22,6 @@ import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -36,6 +35,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 
 -- | Get the current perception of a client.
@@ -174,25 +174,39 @@ maxActorSkillsClient aid = do
   activeItems <- activeItemsClient aid
   getsState $ maxActorSkills aid activeItems
 
-updateItemSlot :: MonadClient m => Maybe ActorId -> ItemId -> m ()
-updateItemSlot maid iid = do
-  slots@(letterSlots, numberSlots) <- getsClient sslots
-  case ( lookup iid $ map swap $ EM.assocs letterSlots
+updateItemSlot :: MonadClient m => Container -> Maybe ActorId -> ItemId -> m ()
+updateItemSlot c maid iid = do
+  slots@(letterSlots, numberSlots, organSlots) <- getsClient sslots
+  let isOrgan = case c of
+        CActor _ COrgan -> True
+        _ -> False
+      lSlots = if isOrgan then organSlots else letterSlots
+  case ( lookup iid $ map swap $ EM.assocs lSlots
        , lookup iid $ map swap $ IM.assocs numberSlots ) of
     (Nothing, Nothing) -> do
       side <- getsClient sside
       item <- getsState $ getItemBody iid
       lastSlot <- getsClient slastSlot
       mb <- maybe (return Nothing) (fmap Just . getsState . getActorBody) maid
-      el <- getsState $ assignSlot item side mb slots lastSlot
+      el <- getsState $ assignSlot c item side mb slots lastSlot
       case el of
         Left l ->
-          modifyClient $ \cli ->
-            cli { sslots = (EM.insert l iid letterSlots, numberSlots)
-                , slastSlot = max l (slastSlot cli) }
+          if isOrgan then
+            modifyClient $ \cli ->
+              cli { sslots = ( letterSlots
+                             , numberSlots
+                             , EM.insert l iid organSlots ) }
+          else
+            modifyClient $ \cli ->
+              cli { sslots = ( EM.insert l iid letterSlots
+                             , numberSlots
+                             , organSlots )
+                  , slastSlot = max l (slastSlot cli) }
         Right l ->
           modifyClient $ \cli ->
-            cli { sslots = (letterSlots, IM.insert l iid numberSlots) }
+            cli { sslots = ( letterSlots
+                           , IM.insert l iid numberSlots
+                           , organSlots) }
     _ -> return ()  -- slot already assigned; a letter or a number
 
 fullAssocsClient :: MonadClient m
