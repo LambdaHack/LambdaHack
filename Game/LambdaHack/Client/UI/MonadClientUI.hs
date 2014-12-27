@@ -92,7 +92,7 @@ promptGetKey frontKM frontFr = do
       modifyClient $ \cli -> cli {slastPlay = kms}
       return km
     _ -> do
-      stopPlayBack  -- we can't continue playback
+      stopPlayBack  -- we can't continue playback; wipe out old srunning
       writeConnFrontend FrontKey{..}
       km <- readConnFrontend
       modifyClient $ \cli -> cli {slastKM = km}
@@ -179,7 +179,7 @@ stopPlayBack = do
     { slastPlay = []
     , slastRecord = let (seqCurrent, seqPrevious, _) = slastRecord cli
                     in (seqCurrent, seqPrevious, 0)
-    , swaitTimes = - swaitTimes cli
+    , swaitTimes = - abs (swaitTimes cli)
     }
   srunning <- getsClient srunning
   case srunning of

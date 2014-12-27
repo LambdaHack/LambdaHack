@@ -636,14 +636,16 @@ goToCursor initialStep run = do
       Just c -> do
         running <- getsClient srunning
         case running of
-          Just paramOld -> do
+          -- Don't use running params from previous run or goto-cursor.
+          Just paramOld | not initialStep -> do
             arena <- getArenaUI
             runOutcome <- multiActorGoTo arena c paramOld
             case runOutcome of
               Left stopMsg -> failWith stopMsg
               Right (finalGoal, dir) ->
                 moveRunHuman initialStep finalGoal run False dir
-          Nothing -> do
+          _ -> do
+            assert (initialStep || not run) skip
             (_, mpath) <- getCacheBfsAndPath leader c
             case mpath of
               Nothing -> failWith "no route to cursor"
@@ -659,7 +661,7 @@ multiActorGoTo :: MonadClient m
 multiActorGoTo arena c paramOld = do
   case paramOld of
     RunParams{runMembers = []} ->
-      return $ Left "selected actors no longer there"
+      return $ Left "Selected actors no longer there."
     RunParams{runMembers = r : rs, runWaiting} -> do
       onLevel <- getsState $ memActor r arena
       if not onLevel then do
@@ -674,7 +676,7 @@ multiActorGoTo arena c paramOld = do
         b <- getsState $ getActorBody r
         (_, mpath) <- getCacheBfsAndPath r c
         case mpath of
-          Nothing -> return $ Left "no route to cursor"
+          Nothing -> return $ Left "No route to cursor."
           Just [] ->
             -- This actor already at goal; will be caught in goToCursor.
             return $ Left ""
@@ -693,7 +695,7 @@ multiActorGoTo arena c paramOld = do
                 -- to avoid cycles. When all wait for each other, fail.
                 multiActorGoTo arena c paramNew{runWaiting=runWaiting + 1}
               _ ->
-                 return $ Left "actor in the way"
+                 return $ Left "Actor in the way."
 
 -- * RunOnceToCursor
 
