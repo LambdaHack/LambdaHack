@@ -188,7 +188,7 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
 data DefItemKey m = DefItemKey
   { defLabel  :: Text  -- ^ can be undefined if not @defCond@
   , defCond   :: !Bool
-  , defAction :: K.Key -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
+  , defAction :: K.KM -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
   }
 
 transition :: forall m. MonadClientUI m
@@ -233,9 +233,9 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
       enterSlots = if itemDialogState == IAll
                    then bagLetterSlots
                    else suitableLetterSlots
-      keyDefs :: [(K.Key, DefItemKey m)]
+      keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd)
-        [ (K.Char '?', DefItemKey
+        [ (K.toKM K.NoModifier $ K.Char '?', DefItemKey
            { defLabel = "?"
            , defCond = bag /= bagSuit || itemDialogState == INoEnter
            , defAction = \_ -> case normalizeState itemDialogState of
@@ -246,7 +246,7 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
                  transition psuit prompt promptGeneric cCur cRest
                             permitMulitple ISuitable
            })
-        , (K.Char '/', DefItemKey
+        , (K.toKM K.NoModifier $ K.Char '/', DefItemKey
            { defLabel = "/"
            , defCond = length cLegal > 1
            , defAction = \_ -> do
@@ -261,13 +261,13 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
                           cCurAfterCalm cRestAfterCalm permitMulitple
                           (normalizeState itemDialogState)
            })
-        , (K.Char '*', DefItemKey
+        , (K.toKM K.NoModifier $ K.Char '*', DefItemKey
            { defLabel = "*"
            , defCond = permitMulitple && not (EM.null enterSlots)
            , defAction = \_ -> return $ Right
                                $ getMultResult $ EM.elems enterSlots
            })
-        , (K.Return, DefItemKey
+        , (K.toKM K.NoModifier $ K.Return, DefItemKey
            { defLabel = case EM.maxViewWithKey enterSlots of
                Nothing -> assert `failure` "no suitable items"
                                  `twith` enterSlots
@@ -279,7 +279,8 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
                                  `twith` enterSlots
                Just (iid, _) -> return $ Right $ getResult iid
            })
-        , (K.Char '0', DefItemKey  -- TODO: accept any number and pick the item
+        , (K.toKM K.NoModifier $ K.Char '0', DefItemKey
+           -- TODO: accept any number and pick the item
            { defLabel = "0"
            , defCond = not $ IM.null bagNumberSlots
            , defAction = \_ -> case IM.minView bagNumberSlots of
@@ -287,9 +288,10 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
                                  `twith` bagNumberSlots
                Just (iid, _) -> return $ Right $ getResult iid
            })
-        , (maybe K.Tab K.key $ M.lookup MemberCycle brevMap,
-           DefItemKey
-           { defLabel = "TAB"
+        , let km = fromMaybe (K.toKM K.NoModifier K.Tab)
+                   $ M.lookup MemberCycle brevMap
+          in (km, DefItemKey
+           { defLabel = K.showKM km
            , defCond = not (autoLvl
                             || null (filter (\(_, b) ->
                                                blid b == blid body) hs))
@@ -300,9 +302,10 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
                transition psuit prompt promptGeneric
                           cCurUpd cRestUpd permitMulitple itemDialogState
            })
-        , (maybe K.BackTab K.key $ M.lookup MemberBack brevMap,
-           DefItemKey
-           { defLabel = "SHIFT-TAB"
+        , let km = fromMaybe (K.toKM K.NoModifier K.Tab)
+                   $ M.lookup MemberBack brevMap
+          in (km, DefItemKey
+           { defLabel = K.showKM km
            , defCond = not (autoDun || null hs)
            , defAction = \_ -> do
                err <- memberBack False
@@ -316,7 +319,7 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
       lettersDef = DefItemKey
         { defLabel = slotRange $ EM.keys labelLetterSlots
         , defCond = True
-        , defAction = \key -> case key of
+        , defAction = \K.KM{key} -> case key of
             K.Char l -> case EM.lookup (SlotChar l) bagLetterSlots of
               Nothing -> assert `failure` "unexpected slot"
                                 `twith` (l, bagLetterSlots)
@@ -362,7 +365,7 @@ legalWithUpdatedLeader cCur cRest = do
   return legalAfterCalm
 
 runDefItemKey :: MonadClientUI m
-              => [(K.Key, DefItemKey m)]
+              => [(K.KM, DefItemKey m)]
               -> DefItemKey m
               -> Overlay
               -> EM.EnumMap SlotChar ItemId
@@ -372,7 +375,7 @@ runDefItemKey keyDefs lettersDef io labelLetterSlots prompt = do
   let itemKeys =
         let slotKeys = map (K.Char . slotChar) (EM.keys labelLetterSlots)
             defKeys = map fst keyDefs
-        in zipWith K.toKM (repeat K.NoModifier) $ slotKeys ++ defKeys
+        in zipWith K.toKM (repeat K.NoModifier) slotKeys ++ defKeys
       choice = let letterRange = defLabel lettersDef
                    letterLabel | T.null letterRange = []
                                | otherwise = [letterRange]
@@ -381,11 +384,10 @@ runDefItemKey keyDefs lettersDef io labelLetterSlots prompt = do
   akm <- displayChoiceUI (prompt <+> choice) io itemKeys
   case akm of
     Left slides -> failSlides slides
-    Right K.KM{..} -> do
-      assert (modifier == K.NoModifier) skip
-      case lookup key keyDefs of
-        Just keyDef -> defAction keyDef key
-        Nothing -> defAction lettersDef key
+    Right km -> do
+      case lookup km keyDefs of
+        Just keyDef -> defAction keyDef km
+        Nothing -> defAction lettersDef km
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (SlideOrCmd Int)
 pickNumber askNumber kAll = do
