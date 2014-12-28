@@ -12,6 +12,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Function
 import qualified Data.IntMap.Strict as IM
 import Data.List
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
@@ -23,6 +24,8 @@ import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.HumanCmd
+import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.WidgetClient
@@ -208,6 +211,7 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
   hs <- partyAfterLeader leader
   bag <- getsState $ getCBag cCur
   itemToF <- itemToFullClient
+  Binding{brevMap} <- askBinding
   let getSingleResult :: ItemId -> (ItemId, ItemFull)
       getSingleResult iid = (iid, itemToF iid (bag EM.! iid))
       getResult :: ItemId -> ([(ItemId, ItemFull)], Container)
@@ -283,7 +287,8 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
                                  `twith` bagNumberSlots
                Just (iid, _) -> return $ Right $ getResult iid
            })
-        , (K.Tab, DefItemKey
+        , (maybe K.Tab K.key $ M.lookup MemberCycle brevMap,
+           DefItemKey
            { defLabel = "TAB"
            , defCond = not (autoLvl
                             || null (filter (\(_, b) ->
@@ -295,7 +300,8 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
                transition psuit prompt promptGeneric
                           cCurUpd cRestUpd permitMulitple itemDialogState
            })
-        , (K.BackTab, DefItemKey
+        , (maybe K.BackTab K.key $ M.lookup MemberBack brevMap,
+           DefItemKey
            { defLabel = "SHIFT-TAB"
            , defCond = not (autoDun || null hs)
            , defAction = \_ -> do
