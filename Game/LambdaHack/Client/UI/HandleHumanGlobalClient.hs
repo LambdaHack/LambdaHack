@@ -398,7 +398,7 @@ projectEps ts tpos eps = do
           Left{} -> legal
           Right False -> legal
           Right True -> Right $ totalRange itemBase >= chessDist (bpos b) tpos
-      prompt = makePhrase ["What", object1, "to", verb1]
+      prompt = makePhrase ["What", object1, "(in range) to", verb1]
       promptGeneric = "What item to fling"
   ggi <- getGroupItem (either (const False) id . p) prompt promptGeneric cLegal cLegal
   case ggi of
