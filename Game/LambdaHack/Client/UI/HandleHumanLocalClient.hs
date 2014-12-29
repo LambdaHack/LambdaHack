@@ -6,7 +6,8 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
     gameDifficultyCycle
   , pickLeaderHuman, memberCycleHuman, memberBackHuman
   , describeItemHuman, allOwnedHuman
-  , selectActorHuman, selectNoneHuman, clearHuman, repeatHuman, recordHuman
+  , selectActorHuman, selectNoneHuman
+  , clearHuman, stopIfTgtModeHuman, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
   , helpHuman, mainMenuHuman, macroHuman
     -- * Commands specific to targeting
@@ -166,6 +167,13 @@ selectNoneHuman = do
 -- | Clear current messages, show the next screen if any.
 clearHuman :: Monad m => m ()
 clearHuman = return ()
+
+-- * StopIfTgtMode
+
+stopIfTgtModeHuman :: MonadClientUI m => m ()
+stopIfTgtModeHuman = do
+  tgtMode <- getsClient stgtMode
+  when (isJust tgtMode) stopPlayBack
 
 -- * Repeat
 
