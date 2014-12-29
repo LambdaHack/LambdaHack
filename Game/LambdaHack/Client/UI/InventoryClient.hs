@@ -325,13 +325,13 @@ transition psuit prompt promptGeneric cursor permitMulitple
         -- meaning in menus (just as left mouse button, BTW).
         , let km = fromMaybe (K.toKM K.NoModifier K.MiddleButtonPress)
                    $ M.lookup CursorPointerEnemy brevMap
-          in cursorEnemyDef (cursorPointerEnemy False) km
+          in cursorEnemyDef (cursorPointerEnemy False False) km
         , let km = fromMaybe (K.toKM K.Shift K.MiddleButtonPress)
                    $ M.lookup CursorPointerFloor brevMap
-          in cursorEnemyDef (cursorPointerFloor False) km
+          in cursorEnemyDef (cursorPointerFloor False False) km
         , let km = fromMaybe (K.toKM K.NoModifier K.RightButtonPress)
                    $ M.lookup TgtPointerEnemy brevMap
-          in cursorEnemyDef (cursorPointerEnemy True) km
+          in cursorEnemyDef (cursorPointerEnemy True True) km
         ]
       cursorEnemyDef cursorFun km =
         (km, DefItemKey
@@ -339,7 +339,8 @@ transition psuit prompt promptGeneric cursor permitMulitple
            , defCond = cursor
            , defAction = \_ -> do
                look <- cursorFun
-               -- assert (look == mempty `blame` look) skip
+               void $ getInitConfirms ColorFull []
+                    $ look <> toSlideshow False [[]]
                recCall cCur cRest itemDialogState
            })
       lettersDef :: DefItemKey m
@@ -510,8 +511,8 @@ pickLeader verbose aid = do
       when verbose $ msgAdd lookMsg
       return True
 
-cursorPointerFloor :: MonadClientUI m => Bool -> m Slideshow
-cursorPointerFloor verbose = do
+cursorPointerFloor :: MonadClientUI m => Bool -> Bool -> m Slideshow
+cursorPointerFloor verbose addMoreMsg = do
   km <- getsClient slastKM
   let newPos@Point{..} = K.pointer km
   lidV <- viewedLevel
@@ -523,14 +524,14 @@ cursorPointerFloor verbose = do
     let scursor = TPoint lidV newPos
     modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
     if verbose then
-      doLook
+      doLook addMoreMsg
     else do
       displayPush   -- flash the targeting line and path
       displayDelay  -- for a bit longer
       return mempty
 
-cursorPointerEnemy :: MonadClientUI m => Bool -> m Slideshow
-cursorPointerEnemy verbose = do
+cursorPointerEnemy :: MonadClientUI m => Bool -> Bool -> m Slideshow
+cursorPointerEnemy verbose addMoreMsg = do
   km <- getsClient slastKM
   let newPos@Point{..} = K.pointer km
   lidV <- viewedLevel
@@ -546,7 +547,7 @@ cursorPointerEnemy verbose = do
             Nothing -> TPoint lidV newPos
     modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
     if verbose then
-      doLook
+      doLook addMoreMsg
     else do
       displayPush   -- flash the targeting line and path
       displayDelay  -- for a bit longer
@@ -554,8 +555,8 @@ cursorPointerEnemy verbose = do
 
 -- | Perform look around in the current position of the cursor.
 -- Normally expects targeting mode and so that a leader is picked.
-doLook :: MonadClientUI m => m Slideshow
-doLook = do
+doLook :: MonadClientUI m => Bool -> m Slideshow
+doLook addMoreMsg = do
   Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
   let unknownId = ouniqGroup "unknown space"
   stgtMode <- getsClient stgtMode
@@ -597,6 +598,8 @@ doLook = do
               | otherwise = "you see"
       -- Show general info about current position.
       lookMsg <- lookAt True vis canSee p leader enemyMsg
+{- targeting is kind of a menu (or at least mode), so this is menu inside
+   a menu, which is messy, hence disabled until UI overhauled:
       -- Check if there's something lying around at current position.
       is <- getsState $ getCBag $ CFloor lidV p
       if EM.size is <= 2 then
@@ -604,10 +607,13 @@ doLook = do
       else do
         msgAdd lookMsg  -- TODO: do not add to history
         floorItemOverlay lidV p
+-}
+      promptToSlideshow $ lookMsg <+> if addMoreMsg then moreMsg else ""
+
 
 -- | Create a list of item names.
-floorItemOverlay :: MonadClientUI m => LevelId -> Point -> m Slideshow
-floorItemOverlay lid p = describeItemC (CFloor lid p) True
+_floorItemOverlay :: MonadClientUI m => LevelId -> Point -> m Slideshow
+_floorItemOverlay lid p = describeItemC (CFloor lid p) True
 
 describeItemC :: MonadClientUI m => Container -> Bool -> m Slideshow
 describeItemC c noEnter = do

@@ -336,7 +336,7 @@ moveCursorHuman dir n = do
           TVector{} -> TVector $ newPos `vectorToFrom` lpos
           _ -> TPoint lidV newPos
     modifyClient $ \cli -> cli {scursor = tgt}
-    doLook
+    doLook  False
 
 -- * TgtFloor
 
@@ -367,7 +367,7 @@ tgtFloorHuman = do
             Just (im, _) -> TEnemy im True
             Nothing -> TPoint lidV cursor
   modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode lidV}
-  doLook
+  doLook False
 
 -- * TgtEnemy
 
@@ -409,7 +409,7 @@ tgtEnemyHuman = do
         [] -> scursor  -- no seen foes in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
   modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode lidV}
-  doLook
+  doLook False
 
 -- * TgtAscend
 
@@ -443,13 +443,13 @@ tgtAscendHuman k = do
             then TPoint nln npos  -- already known as an exit, focus on it
             else scursorOld  -- unknown, do not reveal
       modifyClient $ \cli -> cli {scursor, stgtMode = Just (TgtMode nln)}
-      doLook
+      doLook False
     Nothing ->  -- no stairs in the right direction
       case ascendInBranch dungeon k lidV of
         [] -> failMsg "no more levels in this direction"
         nln : _ -> do
           modifyClient $ \cli -> cli {stgtMode = Just (TgtMode nln)}
-          doLook
+          doLook False
 
 -- * EpsIncr
 
@@ -482,7 +482,7 @@ tgtClearHuman = do
             TPoint{} -> TPoint (blid b) (bpos b)
             TVector{} -> TVector (Vector 0 0)
       modifyClient $ \cli -> cli {scursor}
-      doLook
+      doLook False
 
 -- * CursorUnknown
 
@@ -496,7 +496,7 @@ cursorUnknownHuman = do
     Just p -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
-      doLook
+      doLook False
 
 -- * CursorItem
 
@@ -510,7 +510,7 @@ cursorItemHuman = do
     (_, (p, _)) : _ -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
-      doLook
+      doLook False
 
 -- * CursorStair
 
@@ -525,7 +525,7 @@ cursorStairHuman up = do
     p : _ -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
-      doLook
+      doLook False
 
 -- * Cancel
 
@@ -582,7 +582,7 @@ endTargetingMsg = do
 
 cursorPointerFloorHuman :: MonadClientUI m => m ()
 cursorPointerFloorHuman = do
-  look <- cursorPointerFloor False
+  look <- cursorPointerFloor False False
   assert (look == mempty `blame` look) skip
   modifyClient $ \cli -> cli {stgtMode = Nothing}
 
@@ -590,16 +590,16 @@ cursorPointerFloorHuman = do
 
 cursorPointerEnemyHuman :: MonadClientUI m => m ()
 cursorPointerEnemyHuman = do
-  look <- cursorPointerEnemy False
+  look <- cursorPointerEnemy False False
   assert (look == mempty `blame` look) skip
   modifyClient $ \cli -> cli {stgtMode = Nothing}
 
 -- * TgtPointerFloor
 
 tgtPointerFloorHuman :: MonadClientUI m => m Slideshow
-tgtPointerFloorHuman = cursorPointerFloor True
+tgtPointerFloorHuman = cursorPointerFloor True False
 
 -- * TgtPointerEnemy
 
 tgtPointerEnemyHuman :: MonadClientUI m => m Slideshow
-tgtPointerEnemyHuman = cursorPointerEnemy True
+tgtPointerEnemyHuman = cursorPointerEnemy True False

@@ -108,8 +108,8 @@ lookAt detailed tilePrefix canSee pos aid msg = do
               _ | EM.size is <= 2 ->
                 makeSentence [ MU.SubjectVerbSg subject verb
                              , MU.WWandW $ map nWs $ EM.assocs is]
-              True -> "\n"
-              _ -> "Items here."
+-- disabled together with overlay in doLook              True -> "\n"
+              _ -> makeSentence [MU.Cardinal (EM.size is), "items here"]
       tile = lvl `at` pos
       obscured | knownLsecret lvl
                  && tile /= hideTile cops lvl pos = "partially obscured"
