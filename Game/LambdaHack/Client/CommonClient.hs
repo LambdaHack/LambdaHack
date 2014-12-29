@@ -12,7 +12,6 @@ import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
 import Data.Maybe
-import Data.Text (Text)
 import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 
@@ -29,6 +28,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -107,7 +107,7 @@ aidTgtToPos aid lidV tgt =
 -- because the target actor can be obscured by a glass wall
 -- or be out of sight range, but in weapon range.
 aidTgtAims :: MonadClient m
-           => ActorId -> LevelId -> Maybe Target -> m (Either Text Int)
+           => ActorId -> LevelId -> Maybe Target -> m (Either Msg Int)
 aidTgtAims aid lidV tgt = do
   oldEps <- getsClient seps
   case tgt of
@@ -122,8 +122,17 @@ aidTgtAims aid lidV tgt = do
           Nothing -> return $ Left "aiming line to the opponent blocked"
       else return $ Left "target opponent not on this level"
     Just TEnemyPos{} -> return $ Left "target opponent not visible"
-    Just TPoint{} -> return $ Right oldEps
-    Just TVector{} -> return $ Right oldEps
+    Just (TPoint lid _) ->
+      return $! if lid == lidV
+                then Right oldEps
+                else Left "target not on this level"
+    Just (TVector v) -> do
+      b <- getsState $ getActorBody aid
+      Level{lxsize, lysize} <- getLevel lidV
+      let shifted = shiftBounded lxsize lysize (bpos b) v
+      return $! if shifted == bpos b && v /= Vector 0 0
+                then Left "target translation is void"
+                else Right oldEps
     Nothing -> do
       scursor <- getsClient scursor
       aidTgtAims aid lidV $ Just scursor

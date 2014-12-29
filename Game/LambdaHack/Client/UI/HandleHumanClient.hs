@@ -85,8 +85,8 @@ cmdAction cmd = case cmd of
   CursorStair up -> Left <$> cursorStairHuman up
   Cancel -> Left <$> cancelHuman mainMenuHuman
   Accept -> Left <$> acceptHuman helpHuman
-  CursorPointerFloor -> Left <$> cursorPointerFloorHuman False
-  CursorPointerEnemy -> Left <$> cursorPointerEnemyHuman False
+  CursorPointerFloor -> addNoSlides cursorPointerFloorHuman
+  CursorPointerEnemy -> addNoSlides cursorPointerEnemyHuman
   TgtPointerFloor -> Left <$> tgtPointerFloorHuman
   TgtPointerEnemy -> Left <$> tgtPointerEnemyHuman
 

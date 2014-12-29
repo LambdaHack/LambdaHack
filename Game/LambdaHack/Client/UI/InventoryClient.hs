@@ -3,12 +3,14 @@
 module Game.LambdaHack.Client.UI.InventoryClient
   ( getGroupItem, getAnyItems, getStoreItem
   , memberCycle, memberBack, pickLeader
+  , cursorPointerFloor, cursorPointerEnemy, doLook, describeItemC
   ) where
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.Function
 import qualified Data.IntMap.Strict as IM
 import Data.List
@@ -33,11 +35,17 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemDescription
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Content.ItemKind as IK
 
 data ItemDialogState = ISuitable | IAll | INoEnter
   deriving (Show, Eq)
@@ -50,11 +58,12 @@ getGroupItem :: MonadClientUI m
              => (ItemFull -> Bool)  -- ^ which items to consider suitable
              -> Text      -- ^ specific prompt for only suitable items
              -> Text      -- ^ generic prompt
+             -> Bool      -- ^ whether to enable setting cursor with mouse
              -> [CStore]  -- ^ initial legal containers
              -> [CStore]  -- ^ legal containers after Calm taken into account
              -> m (SlideOrCmd ((ItemId, ItemFull), Container))
-getGroupItem psuit prompt promptGeneric cLegalRaw cLegalAfterCalm = do
-  soc <- getFull psuit (\_ _ _ -> prompt) (\_ _ _ -> promptGeneric)
+getGroupItem psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm = do
+  soc <- getFull psuit (\_ _ _ -> prompt) (\_ _ _ -> promptGeneric) cursor
                  cLegalRaw cLegalAfterCalm True False ISuitable
   case soc of
     Left sli -> return $ Left sli
@@ -74,7 +83,7 @@ getAnyItems :: MonadClientUI m
             -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
 getAnyItems verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
   let prompt = makePhrase ["What to", verb]
-  soc <- getFull (const True) (\_ _ _ -> prompt) (\_ _ _ -> prompt)
+  soc <- getFull (const True) (\_ _ _ -> prompt) (\_ _ _ -> prompt) False
                  cLegalRaw cLegalAfterCalm
                  askWhenLone True ISuitable
   case soc of
@@ -100,7 +109,8 @@ getStoreItem prompt cInitial noEnter = do
   leader <- getLeaderUI
   let allStores = map (CActor leader) [CEqp, CInv, CSha, CGround]
       dialogState = if noEnter then INoEnter else ISuitable
-  soc <- getItem (const True) prompt prompt cInitial (delete cInitial allStores)
+  soc <- getItem (const True) prompt prompt False cInitial
+                 (delete cInitial allStores)
                  True False dialogState
   case soc of
     Left sli -> return $ Left sli
@@ -116,6 +126,7 @@ getFull :: MonadClientUI m
                             -- ^ specific prompt for only suitable items
         -> (Actor -> [ItemFull] -> Container -> Text)
                             -- ^ generic prompt
+        -> Bool             -- ^ whether to enable setting cursor with mouse
         -> [CStore]         -- ^ initial legal containers
         -> [CStore]         -- ^ legal containers with Calm taken into account
         -> Bool             -- ^ whether to ask, when the only item
@@ -123,7 +134,7 @@ getFull :: MonadClientUI m
         -> Bool             -- ^ whether to permit multiple items as a result
         -> ItemDialogState  -- ^ the dialog state to start in
         -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
-getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
+getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
         askWhenLone permitMulitple initalState = do
   side <- getsClient sside
   leader <- getLeaderUI
@@ -148,7 +159,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
     Just cThisActor -> do
       -- Don't display stores empty for all actors.
       cLegalNotEmpty <- filterM partyNotEmpty cLegalRaw
-      getItem psuit prompt promptGeneric
+      getItem psuit prompt promptGeneric cursor
               (CActor leader cThisActor)
               (map (CActor leader) $ delete cThisActor cLegalNotEmpty)
               askWhenLone permitMulitple initalState
@@ -161,6 +172,7 @@ getItem :: MonadClientUI m
                             -- ^ specific prompt for only suitable items
         -> (Actor -> [ItemFull] -> Container -> Text)
                             -- ^ generic prompt
+        -> Bool             -- ^ whether to enable setting cursor with mouse
         -> Container        -- ^ first legal container
         -> [Container]      -- ^ the rest of legal containers
         -> Bool             -- ^ whether to ask, when the only item
@@ -168,7 +180,7 @@ getItem :: MonadClientUI m
         -> Bool             -- ^ whether to permit multiple items as a result
         -> ItemDialogState  -- ^ the dialog state to start in
         -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
-getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
+getItem psuit prompt promptGeneric cursor cCur cRest askWhenLone permitMulitple
         initalState = do
   let cLegal = cCur : cRest
   leader <- getLeaderUI
@@ -182,8 +194,8 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
       itemToF <- itemToFullClient
       return $ Right ([(iid, itemToF iid k)], cCur)
     _ ->
-      transition psuit prompt promptGeneric cCur cRest
-                 permitMulitple initalState
+      transition psuit prompt promptGeneric cursor permitMulitple
+                 cCur cRest initalState
 
 data DefItemKey m = DefItemKey
   { defLabel  :: Text  -- ^ can be undefined if not @defCond@
@@ -195,14 +207,16 @@ transition :: forall m. MonadClientUI m
            => (ItemFull -> Bool)
            -> (Actor -> [ItemFull] -> Container -> Text)
            -> (Actor -> [ItemFull] -> Container -> Text)
+           -> Bool
+           -> Bool
            -> Container
            -> [Container]
-           -> Bool
            -> ItemDialogState
            -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
-transition psuit prompt promptGeneric cCur cRest permitMulitple
-           itemDialogState = do
-  let cLegal = cCur : cRest
+transition psuit prompt promptGeneric cursor permitMulitple
+           cCur cRest itemDialogState = do
+  let recCall = transition psuit prompt promptGeneric cursor permitMulitple
+      cLegal = cCur : cRest
   (letterSlots, numberSlots, organSlots) <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -239,12 +253,8 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
            { defLabel = "?"
            , defCond = bag /= bagSuit || itemDialogState == INoEnter
            , defAction = \_ -> case normalizeState itemDialogState of
-               ISuitable | bag /= bagSuit ->
-                 transition psuit prompt promptGeneric cCur cRest
-                            permitMulitple IAll
-               _ ->
-                 transition psuit prompt promptGeneric cCur cRest
-                            permitMulitple ISuitable
+               ISuitable | bag /= bagSuit -> recCall cCur cRest IAll
+               _ -> recCall cCur cRest ISuitable
            })
         , (K.toKM K.NoModifier $ K.Char '/', DefItemKey
            { defLabel = "/"
@@ -257,9 +267,8 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
                      [CActor _ CSha] | not calmE -> assert `failure` cLegal
                      c1 : rest -> (c1, rest)
                      [] -> assert `failure` cLegal
-               transition psuit prompt promptGeneric
-                          cCurAfterCalm cRestAfterCalm permitMulitple
-                          (normalizeState itemDialogState)
+               recCall cCurAfterCalm cRestAfterCalm
+                       (normalizeState itemDialogState)
            })
         , (K.toKM K.NoModifier $ K.Char '*', DefItemKey
            { defLabel = "*"
@@ -299,8 +308,7 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
                err <- memberCycle False
                assert (err == mempty `blame` err) skip
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
-               transition psuit prompt promptGeneric
-                          cCurUpd cRestUpd permitMulitple itemDialogState
+               recCall cCurUpd cRestUpd itemDialogState
            })
         , let km = fromMaybe (K.toKM K.NoModifier K.Tab)
                    $ M.lookup MemberBack brevMap
@@ -311,10 +319,29 @@ transition psuit prompt promptGeneric cCur cRest permitMulitple
                err <- memberBack False
                assert (err == mempty `blame` err) skip
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
-               transition psuit prompt promptGeneric
-                          cCurUpd cRestUpd permitMulitple itemDialogState
+               recCall cCurUpd cRestUpd itemDialogState
            })
+        -- Only mouse for targeting, because keys (*, numpad) have a different
+        -- meaning in menus (just as left mouse button, BTW).
+        , let km = fromMaybe (K.toKM K.NoModifier K.MiddleButtonPress)
+                   $ M.lookup CursorPointerEnemy brevMap
+          in cursorEnemyDef (cursorPointerEnemy False) km
+        , let km = fromMaybe (K.toKM K.Shift K.MiddleButtonPress)
+                   $ M.lookup CursorPointerFloor brevMap
+          in cursorEnemyDef (cursorPointerFloor False) km
+        , let km = fromMaybe (K.toKM K.NoModifier K.RightButtonPress)
+                   $ M.lookup TgtPointerEnemy brevMap
+          in cursorEnemyDef (cursorPointerEnemy True) km
         ]
+      cursorEnemyDef cursorFun km =
+        (km, DefItemKey
+           { defLabel = K.showKM km
+           , defCond = cursor
+           , defAction = \_ -> do
+               look <- cursorFun
+               -- assert (look == mempty `blame` look) skip
+               recCall cCur cRest itemDialogState
+           })
       lettersDef :: DefItemKey m
       lettersDef = DefItemKey
         { defLabel = slotRange $ EM.keys labelLetterSlots
@@ -385,7 +412,7 @@ runDefItemKey keyDefs lettersDef io labelLetterSlots prompt = do
   case akm of
     Left slides -> failSlides slides
     Right km -> do
-      case lookup km keyDefs of
+      case lookup km{K.pointer=dummyPoint} keyDefs of
         Just keyDef -> defAction keyDef km
         Nothing -> defAction lettersDef km
 
@@ -482,3 +509,127 @@ pickLeader verbose aid = do
       lookMsg <- lookAt False "" True (bpos pbody) aid ""
       when verbose $ msgAdd lookMsg
       return True
+
+cursorPointerFloor :: MonadClientUI m => Bool -> m Slideshow
+cursorPointerFloor verbose = do
+  km <- getsClient slastKM
+  let newPos@Point{..} = K.pointer km
+  lidV <- viewedLevel
+  Level{lxsize, lysize} <- getLevel lidV
+  if px < 0 || py < 0 || px >= lxsize || py >= lysize then do
+    stopPlayBack
+    return mempty
+  else do
+    let scursor = TPoint lidV newPos
+    modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
+    if verbose then
+      doLook
+    else do
+      displayPush   -- flash the targeting line and path
+      displayDelay  -- for a bit longer
+      return mempty
+
+cursorPointerEnemy :: MonadClientUI m => Bool -> m Slideshow
+cursorPointerEnemy verbose = do
+  km <- getsClient slastKM
+  let newPos@Point{..} = K.pointer km
+  lidV <- viewedLevel
+  Level{lxsize, lysize} <- getLevel lidV
+  if px < 0 || py < 0 || px >= lxsize || py >= lysize then do
+    stopPlayBack
+    return mempty
+  else do
+    bsAll <- getsState $ actorAssocs (const True) lidV
+    let scursor =
+          case find (\(_, m) -> bpos m == newPos) bsAll of
+            Just (im, _) -> TEnemy im True
+            Nothing -> TPoint lidV newPos
+    modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
+    if verbose then
+      doLook
+    else do
+      displayPush   -- flash the targeting line and path
+      displayDelay  -- for a bit longer
+      return mempty
+
+-- | Perform look around in the current position of the cursor.
+-- Normally expects targeting mode and so that a leader is picked.
+doLook :: MonadClientUI m => m Slideshow
+doLook = do
+  Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
+  let unknownId = ouniqGroup "unknown space"
+  stgtMode <- getsClient stgtMode
+  case stgtMode of
+    Nothing -> return mempty
+    Just tgtMode -> do
+      leader <- getLeaderUI
+      let lidV = tgtLevelId tgtMode
+      lvl <- getLevel lidV
+      cursorPos <- cursorToPos
+      per <- getPerFid lidV
+      b <- getsState $ getActorBody leader
+      let p = fromMaybe (bpos b) cursorPos
+          canSee = ES.member p (totalVisible per)
+      inhabitants <- if canSee
+                     then getsState $ posToActors p lidV
+                     else return []
+      seps <- getsClient seps
+      mnewEps <- makeLine b p seps
+      itemToF <- itemToFullClient
+      let aims = isJust mnewEps
+          enemyMsg = case inhabitants of
+            [] -> ""
+            ((_, body), _) : rest ->
+                 -- Even if it's the leader, give his proper name, not 'you'.
+                 let subjects = map (partActor . snd . fst) inhabitants
+                     subject = MU.WWandW subjects
+                     verb = "be here"
+                     desc = if not (null rest)  -- many actors
+                            then ""
+                            else case itemDisco $ itemToF (btrunk body) (1, []) of
+                              Nothing -> ""
+                              Just ItemDisco{itemKind} -> IK.idesc itemKind
+                     pdesc = if desc == "" then "" else "(" <> desc <> ")"
+                 in makeSentence [MU.SubjectVerbSg subject verb] <+> pdesc
+          vis | lvl `at` p == unknownId = "that is"
+              | not canSee = "you remember"
+              | not aims = "you are aware of"
+              | otherwise = "you see"
+      -- Show general info about current position.
+      lookMsg <- lookAt True vis canSee p leader enemyMsg
+      -- Check if there's something lying around at current position.
+      is <- getsState $ getCBag $ CFloor lidV p
+      if EM.size is <= 2 then
+        promptToSlideshow lookMsg
+      else do
+        msgAdd lookMsg  -- TODO: do not add to history
+        floorItemOverlay lidV p
+
+-- | Create a list of item names.
+floorItemOverlay :: MonadClientUI m => LevelId -> Point -> m Slideshow
+floorItemOverlay lid p = describeItemC (CFloor lid p) True
+
+describeItemC :: MonadClientUI m => Container -> Bool -> m Slideshow
+describeItemC c noEnter = do
+  let subject body = partActor body
+      verbSha body activeItems = if calmEnough body activeItems
+                                 then "notice"
+                                 else "paw distractedly"
+      prompt body activeItems c2 = case c2 of
+        CActor _ CSha ->
+          makePhrase
+            [MU.Capitalize
+             $ MU.SubjectVerbSg (subject body) (verbSha body activeItems)]
+        CTrunk{} ->
+          makePhrase
+            [MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"]
+        _ ->
+          makePhrase
+            [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
+  ggi <- getStoreItem prompt c noEnter
+  case ggi of
+    Right ((_, itemFull), c2) -> do
+      lid2 <- getsState $ lidFromC c2
+      localTime <- getsState $ getLocalTime lid2
+      overlayToSlideshow "" $ itemDesc c2 lid2 localTime itemFull
+    Left slides -> return slides

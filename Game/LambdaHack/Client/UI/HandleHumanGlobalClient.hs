@@ -324,38 +324,49 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
 
 -- * Project
 
-projectHuman :: MonadClientUI m
+projectHuman :: forall m. MonadClientUI m
              => [Trigger] -> m (SlideOrCmd (RequestTimed AbProject))
 projectHuman ts = do
   leader <- getLeaderUI
-  tgtPos <- leaderTgtToPos
+  lidV <- viewedLevel
+  oldTgtMode <- getsClient stgtMode
+  -- Show the targeting line, temporarily.
+  modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode lidV}
+  -- Set cursor to the personal target, permanently.
   tgt <- getsClient $ getTarget leader
-  case tgtPos of
-    Nothing -> failWith "last target invalid"
-    Just pos -> do
-      -- Set cursor to the personal target, temporarily.
-      oldCursor <- getsClient scursor
-      modifyClient $ \cli -> cli {scursor = fromMaybe (scursor cli) tgt}
-      -- Show the targeting line, temporarily.
-      oldTgtMode <- getsClient stgtMode
-      lidV <- viewedLevel
-      modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode lidV}
-      canAim <- leaderTgtAims
-      oldEps <- getsClient seps
-      outcome <- case canAim of
-        Right newEps -> do
-          -- Modify @seps@,, temporarily.
-          modifyClient $ \cli -> cli {seps = newEps}
-          projectPos ts pos
+  modifyClient $ \cli -> cli {scursor = fromMaybe (scursor cli) tgt}
+  -- Let the user pick the item to fling.
+  let posFromCursor :: m (Either Msg Point)
+      posFromCursor = do
+        canAim <- aidTgtAims leader lidV Nothing
+        case canAim of
+          Right newEps -> do
+            -- Modify @seps@, permanently.
+            modifyClient $ \cli -> cli {seps = newEps}
+            mpos <- aidTgtToPos leader lidV Nothing
+            case mpos of
+              Nothing -> assert `failure` (tgt, leader, lidV)
+              Just pos -> do
+                munit <- projectCheck pos
+                case munit of
+                  Nothing -> return $ Right pos
+                  Just reqFail -> return $ Left $ showReqFailure reqFail
+          Left cause -> return $ Left cause
+  mitem <- projectItem ts posFromCursor
+  outcome <- case mitem of
+    Right (iid, fromCStore) -> do
+      mpos <- posFromCursor
+      case mpos of
+        Right pos -> do
+          eps <- getsClient seps
+          return $ Right $ ReqProject pos eps iid fromCStore
         Left cause -> failWith cause
-      modifyClient $ \cli -> cli { stgtMode = oldTgtMode
-                                 , scursor = oldCursor
-                                 , seps = oldEps }
-      return outcome
+    Left sli -> return $ Left sli
+  modifyClient $ \cli -> cli {stgtMode = oldTgtMode}
+  return outcome
 
-projectPos :: MonadClientUI m
-           => [Trigger] -> Point -> m (SlideOrCmd (RequestTimed AbProject))
-projectPos ts tpos = do
+projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
+projectCheck tpos = do
   Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI
   eps <- getsClient seps
@@ -364,48 +375,51 @@ projectPos ts tpos = do
       spos = bpos sb
   Level{lxsize, lysize} <- getLevel lid
   case bla lxsize lysize eps spos tpos of
-    Nothing -> failSer ProjectAimOnself
+    Nothing -> return $ Just ProjectAimOnself
     Just [] -> assert `failure` "project from the edge of level"
-                      `twith` (spos, tpos, sb, ts)
+                      `twith` (spos, tpos, sb)
     Just (pos : _) -> do
       lvl <- getLevel lid
       let t = lvl `at` pos
       if not $ Tile.isWalkable cotile t
-        then failSer ProjectBlockTerrain
+        then return $ Just ProjectBlockTerrain
         else do
           mab <- getsState $ posToActor pos lid
           if maybe True (bproj . snd . fst) mab
-          then projectEps ts tpos eps
-          else failSer ProjectBlockActor
+          then return Nothing
+          else return $ Just ProjectBlockActor
 
-projectEps :: MonadClientUI m
-           => [Trigger] -> Point -> Int
-           -> m (SlideOrCmd (RequestTimed AbProject))
-projectEps ts tpos eps = do
+projectItem :: MonadClientUI m
+            => [Trigger] -> m (Either Msg Point) -> m (SlideOrCmd (ItemId, CStore))
+projectItem ts posFromCursor = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorSk <- actorSkillsClient leader
   let skill = EM.findWithDefault 0 AbProject actorSk
   activeItems <- activeItemsClient leader
-  let cLegal = [CGround, CInv, CEqp]
+  mpos <- posFromCursor
+  let tpos = either (const $ bpos b) id $ mpos
+      cLegal = [CGround, CInv, CEqp]
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
       p itemFull@ItemFull{itemBase} =
-        let legal = permittedProject triggerSyms False skill itemFull b activeItems
+        let legal = permittedProject triggerSyms False skill
+                                     itemFull b activeItems
         in case legal of
           Left{} -> legal
           Right False -> legal
           Right True -> Right $ totalRange itemBase >= chessDist (bpos b) tpos
       prompt = makePhrase ["What", object1, "(in range) to", verb1]
       promptGeneric = "What item to fling"
-  ggi <- getGroupItem (either (const False) id . p) prompt promptGeneric cLegal cLegal
+  ggi <- getGroupItem (either (const False) id . p) prompt promptGeneric True
+                      cLegal cLegal
   case ggi of
     Right ((iid, itemFull), CActor _ fromCStore) ->
       case p itemFull of
         Left reqFail -> failSer reqFail
-        Right _ -> return $ Right $ ReqProject tpos eps iid fromCStore
+        Right _ -> return $ Right (iid, fromCStore)
     Left slides -> return $ Left slides
     _ -> assert `failure` ggi
 
@@ -434,7 +448,7 @@ applyHuman ts = do
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What item to activate"
   ggi <- getGroupItem (either (const False) id . p)
-                      prompt promptGeneric cLegal cLegal
+                      prompt promptGeneric False cLegal cLegal
   case ggi of
     Right ((iid, itemFull), CActor _ fromCStore) ->
       case p itemFull of

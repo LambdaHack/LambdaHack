@@ -50,14 +50,11 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemDescription
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
@@ -116,31 +113,6 @@ describeItemHuman :: MonadClientUI m => CStore -> m Slideshow
 describeItemHuman cstore = do
   leader <- getLeaderUI
   describeItemC (CActor leader cstore) False
-
-describeItemC :: MonadClientUI m => Container -> Bool -> m Slideshow
-describeItemC c noEnter = do
-  let subject body = partActor body
-      verbSha body activeItems = if calmEnough body activeItems
-                                 then "notice"
-                                 else "paw distractedly"
-      prompt body activeItems c2 = case c2 of
-        CActor _ CSha ->
-          makePhrase
-            [MU.Capitalize
-             $ MU.SubjectVerbSg (subject body) (verbSha body activeItems)]
-        CTrunk{} ->
-          makePhrase
-            [MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"]
-        _ ->
-          makePhrase
-            [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
-  ggi <- getStoreItem prompt c noEnter
-  case ggi of
-    Right ((_, itemFull), c2) -> do
-      lid2 <- getsState $ lidFromC c2
-      localTime <- getsState $ getLocalTime lid2
-      overlayToSlideshow "" $ itemDesc c2 lid2 localTime itemFull
-    Left slides -> return slides
 
 -- * AllOwned
 
@@ -365,63 +337,6 @@ moveCursorHuman dir n = do
           _ -> TPoint lidV newPos
     modifyClient $ \cli -> cli {scursor = tgt}
     doLook
-
--- | Perform look around in the current position of the cursor.
--- Normally expects targeting mode and so that a leader is picked.
-doLook :: MonadClientUI m => m Slideshow
-doLook = do
-  Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
-  let unknownId = ouniqGroup "unknown space"
-  stgtMode <- getsClient stgtMode
-  case stgtMode of
-    Nothing -> return mempty
-    Just tgtMode -> do
-      leader <- getLeaderUI
-      let lidV = tgtLevelId tgtMode
-      lvl <- getLevel lidV
-      cursorPos <- cursorToPos
-      per <- getPerFid lidV
-      b <- getsState $ getActorBody leader
-      let p = fromMaybe (bpos b) cursorPos
-          canSee = ES.member p (totalVisible per)
-      inhabitants <- if canSee
-                     then getsState $ posToActors p lidV
-                     else return []
-      seps <- getsClient seps
-      mnewEps <- makeLine b p seps
-      itemToF <- itemToFullClient
-      let aims = isJust mnewEps
-          enemyMsg = case inhabitants of
-            [] -> ""
-            ((_, body), _) : rest ->
-                 -- Even if it's the leader, give his proper name, not 'you'.
-                 let subjects = map (partActor . snd . fst) inhabitants
-                     subject = MU.WWandW subjects
-                     verb = "be here"
-                     desc = if not (null rest)  -- many actors
-                            then ""
-                            else case itemDisco $ itemToF (btrunk body) (1, []) of
-                              Nothing -> ""
-                              Just ItemDisco{itemKind} -> IK.idesc itemKind
-                     pdesc = if desc == "" then "" else "(" <> desc <> ")"
-                 in makeSentence [MU.SubjectVerbSg subject verb] <+> pdesc
-          vis | lvl `at` p == unknownId = "that is"
-              | not canSee = "you remember"
-              | not aims = "you are aware of"
-              | otherwise = "you see"
-      -- Show general info about current position.
-      lookMsg <- lookAt True vis canSee p leader enemyMsg
-      -- Check if there's something lying around at current position.
-      is <- getsState $ getCBag $ CFloor lidV p
-      if EM.size is <= 2 then
-        promptToSlideshow lookMsg
-      else do
-        msgAdd lookMsg  -- TODO: do not add to history
-        floorItemOverlay lidV p
-
--- | Create a list of item names.
-floorItemOverlay :: MonadClientUI m => LevelId -> Point -> m Slideshow
-floorItemOverlay lid p = describeItemC (CFloor lid p) True
 
 -- * TgtFloor
 
@@ -665,60 +580,26 @@ endTargetingMsg = do
 
 -- * CursorPointerFloor
 
-cursorPointerFloorHuman :: MonadClientUI m => Bool -> m Slideshow
-cursorPointerFloorHuman verbose = do
-  km <- getsClient slastKM
-  let newPos@Point{..} = K.pointer km
-  lidV <- viewedLevel
-  Level{lxsize, lysize} <- getLevel lidV
-  if px < 0 || py < 0 || px >= lxsize || py >= lysize then do
-    stopPlayBack
-    return mempty
-  else do
-    let scursor = TPoint lidV newPos
-    modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
-    if verbose then
-      doLook
-    else do
-      displayPush   -- flash the targeting line and path
-      displayDelay  -- for a bit longer
-      modifyClient $ \cli -> cli {stgtMode = Nothing}
-      return mempty
+cursorPointerFloorHuman :: MonadClientUI m => m ()
+cursorPointerFloorHuman = do
+  look <- cursorPointerFloor False
+  assert (look == mempty `blame` look) skip
+  modifyClient $ \cli -> cli {stgtMode = Nothing}
 
 -- * CursorPointerEnemy
 
-cursorPointerEnemyHuman :: MonadClientUI m => Bool -> m Slideshow
-cursorPointerEnemyHuman verbose = do
-  km <- getsClient slastKM
-  let newPos@Point{..} = K.pointer km
-  lidV <- viewedLevel
-  Level{lxsize, lysize} <- getLevel lidV
-  if px < 0 || py < 0 || px >= lxsize || py >= lysize then do
-    stopPlayBack
-    return mempty
-  else do
-    bsAll <- getsState $ actorAssocs (const True) lidV
-    let scursor =
-          case find (\(_, m) -> bpos m == newPos) bsAll of
-            Just (im, _) -> TEnemy im True
-            Nothing -> TPoint lidV newPos
-    modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
-    if verbose then
-      doLook
-    else do
-      displayPush   -- flash the targeting line and path
-      displayDelay  -- for a bit longer
-      modifyClient $ \cli -> cli {stgtMode = Nothing}
-      return mempty
+cursorPointerEnemyHuman :: MonadClientUI m => m ()
+cursorPointerEnemyHuman = do
+  look <- cursorPointerEnemy False
+  assert (look == mempty `blame` look) skip
+  modifyClient $ \cli -> cli {stgtMode = Nothing}
 
 -- * TgtPointerFloor
 
 tgtPointerFloorHuman :: MonadClientUI m => m Slideshow
-tgtPointerFloorHuman =
-  cursorPointerFloorHuman True
+tgtPointerFloorHuman = cursorPointerFloor True
 
 -- * TgtPointerEnemy
 
 tgtPointerEnemyHuman :: MonadClientUI m => m Slideshow
-tgtPointerEnemyHuman =
-  cursorPointerEnemyHuman True
+tgtPointerEnemyHuman = cursorPointerEnemy True
