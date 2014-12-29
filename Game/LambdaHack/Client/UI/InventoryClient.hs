@@ -55,7 +55,8 @@ data ItemDialogState = ISuitable | IAll | INoEnter
 -- as the player can override the choice.
 -- Used e.g., for applying and projecting.
 getGroupItem :: MonadClientUI m
-             => (ItemFull -> Bool)  -- ^ which items to consider suitable
+             => m (Either Msg (ItemFull -> Bool))
+                          -- ^ which items to consider suitable
              -> Text      -- ^ specific prompt for only suitable items
              -> Text      -- ^ generic prompt
              -> Bool      -- ^ whether to enable setting cursor with mouse
@@ -83,7 +84,8 @@ getAnyItems :: MonadClientUI m
             -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
 getAnyItems verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
   let prompt = makePhrase ["What to", verb]
-  soc <- getFull (const True) (\_ _ _ -> prompt) (\_ _ _ -> prompt) False
+  soc <- getFull (return $ Right $ const True)
+                 (\_ _ _ -> prompt) (\_ _ _ -> prompt) False
                  cLegalRaw cLegalAfterCalm
                  askWhenLone True ISuitable
   case soc of
@@ -109,7 +111,8 @@ getStoreItem prompt cInitial noEnter = do
   leader <- getLeaderUI
   let allStores = map (CActor leader) [CEqp, CInv, CSha, CGround]
       dialogState = if noEnter then INoEnter else ISuitable
-  soc <- getItem (const True) prompt prompt False cInitial
+  soc <- getItem (return $ Right $ const True)
+                 prompt prompt False cInitial
                  (delete cInitial allStores)
                  True False dialogState
   case soc of
@@ -121,7 +124,8 @@ getStoreItem prompt cInitial noEnter = do
 -- item from a list of items. Don't display stores empty for all actors.
 -- Start with a non-empty store.
 getFull :: MonadClientUI m
-        => (ItemFull -> Bool)  -- ^ which items to consider suitable
+        => m (Either Msg (ItemFull -> Bool))
+                            -- ^ which items to consider suitable
         -> (Actor -> [ItemFull] -> Container -> Text)
                             -- ^ specific prompt for only suitable items
         -> (Actor -> [ItemFull] -> Container -> Text)
@@ -167,7 +171,8 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
 getItem :: MonadClientUI m
-        => (ItemFull -> Bool)  -- ^ which items to consider suitable
+        => m (Either Msg (ItemFull -> Bool))
+                            -- ^ which items to consider suitable
         -> (Actor -> [ItemFull] -> Container -> Text)
                             -- ^ specific prompt for only suitable items
         -> (Actor -> [ItemFull] -> Container -> Text)
@@ -204,7 +209,7 @@ data DefItemKey m = DefItemKey
   }
 
 transition :: forall m. MonadClientUI m
-           => (ItemFull -> Bool)
+           => m (Either Msg (ItemFull -> Bool))
            -> (Actor -> [ItemFull] -> Container -> Text)
            -> (Actor -> [ItemFull] -> Container -> Text)
            -> Bool
@@ -226,13 +231,20 @@ transition psuit prompt promptGeneric cursor permitMulitple
   bag <- getsState $ getCBag cCur
   itemToF <- itemToFullClient
   Binding{brevMap} <- askBinding
+  mpsuit <- psuit  -- when throwing, this sets eps and checks cursor validity
+  psuitFun <- case mpsuit of
+    Left err -> do
+      slides <- promptToSlideshow $ err <+> moreMsg
+      void $ getInitConfirms ColorFull [] $ slides <> toSlideshow False [[]]
+      return $ const False
+    Right f -> return f  -- when throwing, this takes missile range into accout
   let getSingleResult :: ItemId -> (ItemId, ItemFull)
       getSingleResult iid = (iid, itemToF iid (bag EM.! iid))
       getResult :: ItemId -> ([(ItemId, ItemFull)], Container)
       getResult iid = ([getSingleResult iid], cCur)
       getMultResult :: [ItemId] -> ([(ItemId, ItemFull)], Container)
       getMultResult iids = (map getSingleResult iids, cCur)
-      filterP iid kit = psuit $ itemToF iid kit
+      filterP iid kit = psuitFun $ itemToF iid kit
       bagSuit = EM.filterWithKey filterP bag
       isOrgan = case cCur of
         CActor _ COrgan -> True
@@ -321,8 +333,9 @@ transition psuit prompt promptGeneric cursor permitMulitple
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall cCurUpd cRestUpd itemDialogState
            })
-        -- Only mouse for targeting, because keys (*, numpad) have a different
-        -- meaning in menus (just as left mouse button, BTW).
+        -- Only mouse for targeting, because keys (*, numpad)
+        -- have a different meaning in menus (just as left
+        -- mouse button, BTW).
         , let km = fromMaybe (K.toKM K.NoModifier K.MiddleButtonPress)
                    $ M.lookup CursorPointerEnemy brevMap
           in cursorEnemyDef (cursorPointerEnemy False False) km
@@ -362,7 +375,8 @@ transition psuit prompt promptGeneric cursor permitMulitple
                         prompt body activeItems cCur <+> ppCur <> ":")
           IAll      -> (bagLetterSlots,
                         bag,
-                        promptGeneric body activeItems cCur <+> ppCur <> ":")
+                        promptGeneric body activeItems cCur
+                        <+> ppCur <> ":")
           INoEnter  -> (suitableLetterSlots,
                         EM.empty,
                         prompt body activeItems cCur <+> ppCur <> ":")

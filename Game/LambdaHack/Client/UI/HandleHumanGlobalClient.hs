@@ -389,37 +389,55 @@ projectCheck tpos = do
           then return Nothing
           else return $ Just ProjectBlockActor
 
-projectItem :: MonadClientUI m
-            => [Trigger] -> m (Either Msg Point) -> m (SlideOrCmd (ItemId, CStore))
+projectItem :: forall m. MonadClientUI m
+            => [Trigger] -> m (Either Msg Point)
+            -> m (SlideOrCmd (ItemId, CStore))
 projectItem ts posFromCursor = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
+  activeItems <- activeItemsClient leader
   actorSk <- actorSkillsClient leader
   let skill = EM.findWithDefault 0 AbProject actorSk
-  activeItems <- activeItemsClient leader
-  mpos <- posFromCursor
-  let tpos = either (const $ bpos b) id $ mpos
       cLegal = [CGround, CInv, CEqp]
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      p itemFull@ItemFull{itemBase} =
-        let legal = permittedProject triggerSyms False skill
-                                     itemFull b activeItems
-        in case legal of
-          Left{} -> legal
-          Right False -> legal
-          Right True -> Right $ totalRange itemBase >= chessDist (bpos b) tpos
+      psuitReq :: m (Either Msg (ItemFull -> Either ReqFailure Bool))
+      psuitReq = do
+        mpos <- posFromCursor
+        case mpos of
+          Left err -> return $ Left err
+          Right pos -> return $ Right $ \itemFull@ItemFull{itemBase} -> do
+            let legal = permittedProject triggerSyms False skill
+                                         itemFull b activeItems
+            case legal of
+              Left{} -> legal
+              Right False -> legal
+              Right True ->
+                Right $ totalRange itemBase >= chessDist (bpos b) pos
+      psuit :: m (Either Msg (ItemFull -> Bool))
+      psuit = do
+        mpsuitReq <- psuitReq
+        case mpsuitReq of
+          Left err -> return $ Left err
+          Right psuitReqFun -> return $ Right $ \itemFull -> do
+            case psuitReqFun itemFull of
+              Left _ -> False
+              Right suit -> suit
       prompt = makePhrase ["What", object1, "(in range) to", verb1]
       promptGeneric = "What item to fling"
-  ggi <- getGroupItem (either (const False) id . p) prompt promptGeneric True
+  ggi <- getGroupItem psuit prompt promptGeneric True
                       cLegal cLegal
   case ggi of
-    Right ((iid, itemFull), CActor _ fromCStore) ->
-      case p itemFull of
-        Left reqFail -> failSer reqFail
-        Right _ -> return $ Right (iid, fromCStore)
+    Right ((iid, itemFull), CActor _ fromCStore) -> do
+      mpsuitReq <- psuitReq
+      case mpsuitReq of
+        Left err -> failWith err
+        Right psuitReqFun -> do
+          case psuitReqFun itemFull of
+            Left reqFail -> failSer reqFail
+            Right _ -> return $ Right (iid, fromCStore)
     Left slides -> return $ Left slides
     _ -> assert `failure` ggi
 
@@ -447,7 +465,7 @@ applyHuman ts = do
       p itemFull = permittedApply triggerSyms localTime skill itemFull b activeItems
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What item to activate"
-  ggi <- getGroupItem (either (const False) id . p)
+  ggi <- getGroupItem (return $ Right $ either (const False) id . p)
                       prompt promptGeneric False cLegal cLegal
   case ggi of
     Right ((iid, itemFull), CActor _ fromCStore) ->
