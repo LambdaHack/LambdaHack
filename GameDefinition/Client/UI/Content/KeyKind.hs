@@ -177,15 +177,9 @@ standardKeys = KeyKind
 
       -- Mouse
       , ("LeftButtonPress",
-         ( [CmdMouse]
-         , Macro "go to pointer for 100 steps"
-                 [ "SHIFT-MiddleButtonPress", "semicolon"
-                 , "CTRL-colon", "V" ] ))
+         ([CmdMouse], macroLeftButtonPress))
       , ("SHIFT-LeftButtonPress",
-         ( [CmdMouse]
-         , Macro "run collectively to pointer for 100 steps"
-                 [ "SHIFT-MiddleButtonPress", "CTRL-semicolon"
-                 , "CTRL-colon", "V" ] ))
+         ([CmdMouse], macroShiftLeftButtonPress))
       , ("MiddleButtonPress", ([CmdMouse], CursorPointerEnemy))
       , ("SHIFT-MiddleButtonPress", ([CmdMouse], CursorPointerFloor))
       , ("CTRL-MiddleButtonPress",

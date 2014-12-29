@@ -1,6 +1,7 @@
 -- | The type of key-command mappings to be used for the UI.
 module Game.LambdaHack.Client.UI.Content.KeyKind
   ( KeyKind(..)
+  , macroLeftButtonPress, macroShiftLeftButtonPress
   ) where
 
 import qualified Game.LambdaHack.Client.Key as K
@@ -11,3 +12,15 @@ data KeyKind = KeyKind
   { rhumanCommands :: ![(K.KM, ([CmdCategory], HumanCmd))]
                                    -- ^ default client UI commands
   }
+
+macroLeftButtonPress :: HumanCmd
+macroLeftButtonPress =
+  Macro "go to pointer for 100 steps"
+        [ "SHIFT-MiddleButtonPress", "semicolon"
+        , "CTRL-colon", "V" ]
+
+macroShiftLeftButtonPress :: HumanCmd
+macroShiftLeftButtonPress =
+  Macro "run collectively to pointer for 100 steps"
+        [ "SHIFT-MiddleButtonPress", "CTRL-semicolon"
+        , "CTRL-colon", "V" ]
