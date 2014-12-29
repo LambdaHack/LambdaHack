@@ -109,30 +109,35 @@ aidTgtToPos aid lidV tgt =
 aidTgtAims :: MonadClient m
            => ActorId -> LevelId -> Maybe Target -> m (Either Msg Int)
 aidTgtAims aid lidV tgt = do
-  oldEps <- getsClient seps
+  let findNewEps onlyFirst pos = do
+        oldEps <- getsClient seps
+        b <- getsState $ getActorBody aid
+        mnewEps <- makeLine onlyFirst b pos oldEps
+        case mnewEps of
+          Just newEps -> return $ Right newEps
+          Nothing ->
+            return $ Left
+                   $ if onlyFirst then "aiming blocked at the first step"
+                     else "aiming line to the target opponent blocked somewhere"
   case tgt of
     Just (TEnemy a _) -> do
       body <- getsState $ getActorBody a
       let pos = bpos body
-      b <- getsState $ getActorBody aid
-      if blid b == lidV then do
-        mnewEps <- makeLine b pos oldEps
-        case mnewEps of
-          Just newEps -> return $ Right newEps
-          Nothing -> return $ Left "aiming line to the opponent blocked"
-      else return $ Left "target opponent not on this level"
+      if blid body == lidV
+      then findNewEps False pos
+      else return $! Left "target opponent not on this level"
     Just TEnemyPos{} -> return $ Left "target opponent not visible"
-    Just (TPoint lid _) ->
-      return $! if lid == lidV
-                then Right oldEps
-                else Left "target not on this level"
+    Just (TPoint lid pos) ->
+      if lid == lidV
+      then findNewEps True pos
+      else return $! Left "target position not on this level"
     Just (TVector v) -> do
       b <- getsState $ getActorBody aid
       Level{lxsize, lysize} <- getLevel lidV
       let shifted = shiftBounded lxsize lysize (bpos b) v
-      return $! if shifted == bpos b && v /= Vector 0 0
-                then Left "target translation is void"
-                else Right oldEps
+      if shifted == bpos b && v /= Vector 0 0
+      then return $! Left "target translation is void"
+      else findNewEps True shifted
     Nothing -> do
       scursor <- getsClient scursor
       aidTgtAims aid lidV $ Just scursor
@@ -141,8 +146,8 @@ aidTgtAims aid lidV tgt = do
 -- an actor or obstacle. Starts searching with the given eps and returns
 -- the first found eps for which the number reaches the distance between
 -- actor and target position, or Nothing if none can be found.
-makeLine :: MonadClient m => Actor -> Point -> Int -> m (Maybe Int)
-makeLine body fpos epsOld = do
+makeLine :: MonadClient m => Bool -> Actor -> Point -> Int -> m (Maybe Int)
+makeLine onlyFirst body fpos epsOld = do
   cops@Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
   lvl@Level{lxsize, lysize} <- getLevel (blid body)
   bs <- getsState $ filter (not . bproj)
@@ -156,19 +161,25 @@ makeLine body fpos epsOld = do
               noActor p = all ((/= p) . bpos) bs || p == fpos
               accessU = all noActor blDist
                         && all (uncurry $ accessibleUnknown cops lvl) blZip
+              accessFirst | not onlyFirst = False
+                          | otherwise =
+                all noActor (take 1 blDist)
+                && all (uncurry $ accessibleUnknown cops lvl) (take 1 blZip)
               nUnknown = length $ filter ((== unknownId) . (lvl `at`)) blDist
-          in if accessU then - nUnknown else minBound
+          in if accessU then - nUnknown
+             else if accessFirst then -10000
+             else minBound
         Nothing -> assert `failure` (body, fpos, epsOld)
-      tryLines curEps (acc, _) | curEps >= epsOld + dist = acc
+      tryLines curEps (acc, _) | curEps == epsOld + dist = acc
       tryLines curEps (acc, bestScore) =
         let curScore = calcScore curEps
             newAcc = if curScore > bestScore
                      then (Just curEps, curScore)
                      else (acc, bestScore)
         in tryLines (curEps + 1) newAcc
-  return $! if dist <= 1
-            then Nothing  -- ProjectBlockActor, ProjectAimOnself
-            else tryLines epsOld (Nothing, minBound)
+  return $! if dist <= 0 then Nothing  -- ProjectAimOnself
+            else if calcScore epsOld > minBound then Just epsOld  -- keep old
+            else tryLines (epsOld + 1) (Nothing, minBound)  -- generate best
 
 actorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 actorSkillsClient aid = do

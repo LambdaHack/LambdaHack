@@ -566,7 +566,7 @@ projectItem aid = do
   seps <- getsClient seps
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
-      mnewEps <- makeLine b fpos seps
+      mnewEps <- makeLine False b fpos seps
       case mnewEps of
         Just newEps -> do
           actorSk <- actorSkillsClient aid

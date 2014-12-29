@@ -589,7 +589,7 @@ doLook addMoreMsg = do
                      then getsState $ posToActors p lidV
                      else return []
       seps <- getsClient seps
-      mnewEps <- makeLine b p seps
+      mnewEps <- makeLine False b p seps
       itemToF <- itemToFullClient
       let aims = isJust mnewEps
           enemyMsg = case inhabitants of
