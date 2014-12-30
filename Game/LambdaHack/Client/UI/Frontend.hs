@@ -29,7 +29,9 @@ data FrontReq =
       -- ^ perform a single explicit delay
   | FrontKey {frontKM :: ![K.KM], frontFr :: !SingleFrame}
       -- ^ flush frames, possibly show fadeout/fadein and ask for a keypress
-  | FrontSlides {frontClear :: ![K.KM], frontSlides :: ![SingleFrame]}
+  | FrontSlides { frontClear   :: ![K.KM]
+                , frontSlides  :: ![SingleFrame]
+                , frontFromTop :: !(Maybe Bool) }
       -- ^ show a whole slideshow without interleaving with other clients
   | FrontAutoYes !Bool
       -- ^ set the frontend option for auto-answering prompts
@@ -109,7 +111,7 @@ loopFrontend fs ChanFrontend{..} = loop False
         fsyncFrames fs
         writeKM K.spaceKM
         loop autoYes
-      FrontSlides{..} -> do
+      FrontSlides{..} -> do  -- TODO: use frontFromTop
         let displayFrs frs srf =
               case frs of
                 [] -> assert `failure` "null slides" `twith` frs

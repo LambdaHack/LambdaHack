@@ -54,12 +54,12 @@ data ColorMode =
 -- to the frontends to display separately or overlay over map,
 -- depending on the frontend.
 draw :: MonadClient m
-     => Bool -> ColorMode -> LevelId
+     => ColorMode -> LevelId
      -> Maybe Point -> Maybe Point
      -> Maybe (PointArray.Array BfsDistance, Maybe [Point])
      -> (Text, Maybe Text) -> (Text, Maybe Text) -> Overlay
      -> m SingleFrame
-draw sfBlank dm drawnLevelId cursorPos tgtPos bfsmpathRaw
+draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
      (cursorDesc, mcursorHP) (targetDesc, mtargetHP) sfTop = do
   cops <- getsState scops
   mleader <- getsClient _sleader
@@ -218,6 +218,7 @@ draw sfBlank dm drawnLevelId cursorPos tgtPos bfsmpathRaw
       sfLevel =  -- fully evaluated
         let f l y = let !line = fLine y in line : l
         in foldl' f [] [lysize-1,lysize-2..0]
+      sfBlank = False
   return $! SingleFrame{..}
 
 inverseVideo :: Color.Attr

@@ -65,14 +65,14 @@ humanCommand = do
   -- UI player input, which is an overkill, but doesn't affects
   -- screensavers, because they are UI, but not human.
   modifyClient $ \cli -> cli {sbfsD = EM.empty, slastLost = ES.empty}
-  let loop :: Maybe (Bool, Overlay) -> m RequestUI
+  let loop :: Maybe (Maybe Bool, Overlay) -> m RequestUI
       loop mover = do
         (lastBlank, over) <- case mover of
           Nothing -> do
             -- Display current state and keys if no slideshow or if interrupted.
             keys <- describeMainKeys
             sli <- promptToSlideshow keys
-            return (False, head . snd $! slideshow sli)
+            return (Nothing, head . snd $! slideshow sli)
           Just bLast ->
             -- (Re-)display the last slide while waiting for the next key.
             return bLast

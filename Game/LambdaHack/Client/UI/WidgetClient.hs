@@ -48,7 +48,7 @@ displayMore :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
   slides <- promptToSlideshow $ prompt <+> moreMsg
   -- Two frames drawn total (unless 'prompt' very long).
-  getInitConfirms dm [] $ slides <> toSlideshow False [[]]
+  getInitConfirms dm [] $ slides <> toSlideshow Nothing [[]]
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
@@ -153,7 +153,7 @@ overlayToSlideshow prompt overlay = do
   Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
   sreport <- getsClient sreport
   let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
-  return $! splitOverlay False (lysize + 1) msg overlay
+  return $! splitOverlay Nothing (lysize + 1) msg overlay
 
 msgPromptAI :: MonadClientUI m => m Msg
 msgPromptAI = do
@@ -162,11 +162,13 @@ msgPromptAI = do
   let underAI = isAIFact fact
   return $! if underAI then "[press ESC for Main Menu]" else ""
 
-overlayToBlankSlideshow :: MonadClientUI m => Msg -> Overlay -> m Slideshow
-overlayToBlankSlideshow prompt overlay = do
+overlayToBlankSlideshow :: MonadClientUI m
+                        => Bool -> Msg -> Overlay -> m Slideshow
+overlayToBlankSlideshow startAtTop prompt overlay = do
   lid <- getArenaUI
   Level{lysize} <- getLevel lid  -- TODO: screen length or viewLevel
-  return $! splitOverlay True (lysize + 3) (toOverlay [prompt]) overlay
+  return $! splitOverlay (Just startAtTop) (lysize + 3)
+                         (toOverlay [prompt]) overlay
 
 -- TODO: restrict the animation to 'per' before drawing.
 -- | Render animations on top of the current screen frame.
@@ -186,7 +188,7 @@ animate arena anim = do
   let over = renderReport (prependMsg promptAI sreport)
       topLineOnly = truncateToOverlay over
   basicFrame <-
-    draw False ColorFull arena cursorPos tgtPos
+    draw ColorFull arena cursorPos tgtPos
          bfsmpath cursorDesc tgtDesc topLineOnly
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $! if fromMaybe False snoAnim

@@ -123,7 +123,7 @@ keyHelp Binding{bcmdList} =
     keyCaptionN n = fmt n "keys" "command"
     keys = keysN 15
     keyCaption = keyCaptionN 15
-  in toSlideshow True
+  in toSlideshow (Just True)
     [ [categoryDescription CmdMinimal
        <> ". [press SPACE to see all commands]"] ++ [""]
       ++ minimalText

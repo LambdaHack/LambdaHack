@@ -224,7 +224,7 @@ historyHuman = do
         , "(this level:"
         , MU.Text (tshow turnsLocal) <> ")" ]
         <+> "Past messages:"
-  overlayToBlankSlideshow msg $ renderHistory history
+  overlayToBlankSlideshow False msg $ renderHistory history
 
 -- * MarkVision, MarkSmell, MarkSuspect
 
@@ -314,7 +314,7 @@ mainMenuHuman = do
         overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay" `twith` mainMenuArt
-    hd : tl -> overlayToBlankSlideshow hd (toOverlay tl)
+    hd : tl -> overlayToBlankSlideshow True hd (toOverlay tl)
                -- TODO: keys don't work if tl/=[]
 
 -- * Macro

@@ -235,7 +235,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
   psuitFun <- case mpsuit of
     Left err -> do
       slides <- promptToSlideshow $ err <+> moreMsg
-      void $ getInitConfirms ColorFull [] $ slides <> toSlideshow False [[]]
+      void $ getInitConfirms ColorFull [] $ slides <> toSlideshow Nothing [[]]
       return $ const False
     Right f -> return f  -- when throwing, this takes missile range into accout
   let getSingleResult :: ItemId -> (ItemId, ItemFull)
@@ -353,7 +353,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
            , defAction = \_ -> do
                look <- cursorFun
                void $ getInitConfirms ColorFull []
-                    $ look <> toSlideshow False [[]]
+                    $ look <> toSlideshow Nothing [[]]
                recCall cCur cRest itemDialogState
            })
       lettersDef :: DefItemKey m

@@ -180,8 +180,11 @@ lengthHistory (History rs) = length rs
 -- | Render history as many lines of text, wrapping if necessary.
 renderHistory :: History -> Overlay
 renderHistory (History h) =
-  let w = fst normalLevelBound + 1
-  in toOverlay $ concatMap (splitReportForHistory w) h
+  let (x, y) = normalLevelBound
+      screenLength = y + 2
+      reportLines = concatMap (splitReportForHistory (x + 1)) $ reverse h
+      padding = screenLength - length reportLines `mod` screenLength
+  in toOverlay $ replicate padding "" ++ reportLines
 
 splitReportForHistory :: X -> (Time, Report) -> [Text]
 splitReportForHistory w (time, r) =
@@ -233,7 +236,7 @@ toOverlay = let lxsize = fst normalLevelBound + 1  -- TODO
 -- | Split an overlay into a slideshow in which each overlay,
 -- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,
 -- fits on the screen wrt height (but lines may be too wide).
-splitOverlay :: Bool -> Y -> Overlay -> Overlay -> Slideshow
+splitOverlay :: Maybe Bool -> Y -> Overlay -> Overlay -> Slideshow
 splitOverlay onBlank yspace (Overlay msg) (Overlay ls) =
   let len = length msg
   in if len >= yspace
@@ -251,19 +254,19 @@ splitOverlay onBlank yspace (Overlay msg) (Overlay ls) =
 -- | A few overlays, displayed one by one upon keypress.
 -- When displayed, they are trimmed, not wrapped
 -- and any lines below the lower screen edge are not visible.
--- If the boolean flag is set, the overlay is displayed over a blank screen,
--- including the bottom lines.
-newtype Slideshow = Slideshow {slideshow :: (Bool, [Overlay])}
+-- If the first pair element is not @Nothing@, the overlay is displayed
+-- over a blank screen, including the bottom lines. The boolean flag
+-- then indicates whether to start at the topmost screenful or bottommost.
+newtype Slideshow = Slideshow {slideshow :: (Maybe Bool, [Overlay])}
   deriving (Show, Eq)
 
 instance Monoid Slideshow where
-  mempty = Slideshow (False, [])
-  mappend (Slideshow (b1, l1)) (Slideshow (b2, l2)) =
-    Slideshow (b1 || b2, l1 ++ l2)
+  mempty = Slideshow (Nothing, [])
+  mappend (Slideshow (b1, l1)) (Slideshow (_, l2)) = Slideshow (b1, l1 ++ l2)
 
 -- | Declare the list of raw overlays to be fit for display on the screen.
 -- In particular, current @Report@ is eiter empty or unimportant
 -- or contained in the overlays and if any vertical or horizontal
 -- trimming of the overlays happens, this is intended.
-toSlideshow :: Bool -> [[Text]] -> Slideshow
+toSlideshow :: Maybe Bool -> [[Text]] -> Slideshow
 toSlideshow onBlank l = Slideshow (onBlank, map toOverlay l)

@@ -103,9 +103,9 @@ promptGetKey frontKM frontFr = do
   return km
 
 -- | Display an overlay and wait for a human player command.
-getKeyOverlayCommand :: MonadClientUI m => Bool -> Overlay -> m K.KM
+getKeyOverlayCommand :: MonadClientUI m => Maybe Bool -> Overlay -> m K.KM
 getKeyOverlayCommand onBlank overlay = do
-  frame <- drawOverlay onBlank ColorFull overlay
+  frame <- drawOverlay (isJust onBlank) ColorFull overlay
   promptGetKey [] frame
 
 -- | Display a slideshow, awaiting confirmation for each slide except the last.
@@ -113,7 +113,8 @@ getInitConfirms :: MonadClientUI m
                 => ColorMode -> [K.KM] -> Slideshow -> m Bool
 getInitConfirms dm frontClear slides = do
   let (onBlank, ovs) = slideshow slides
-  frontSlides <- drawOverlays onBlank dm ovs
+      frontFromTop = onBlank
+  frontSlides <- drawOverlays (isJust onBlank) dm ovs
   -- The first two cases are optimizations:
   case frontSlides of
     [] -> return True
@@ -148,12 +149,13 @@ displayActorStart b frs = do
   modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
 
 -- | Draw the current level with the overlay on top.
-drawOverlay :: MonadClientUI m => Bool -> ColorMode -> Overlay -> m SingleFrame
+drawOverlay :: MonadClientUI m
+            => Bool -> ColorMode -> Overlay -> m SingleFrame
 drawOverlay sfBlank@True _ sfTop = do
   let sfLevel = []
       sfBottom = []
   return $! SingleFrame {..}
-drawOverlay sfBlank@False dm sfTop = do
+drawOverlay False dm sfTop = do
   lid <- viewedLevel
   mleader <- getsClient _sleader
   tgtPos <- leaderTgtToPos
@@ -163,7 +165,7 @@ drawOverlay sfBlank@False dm sfTop = do
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
   cursorDesc <- targetDescCursor
-  draw sfBlank dm lid cursorPos tgtPos bfsmpath cursorDesc tgtDesc sfTop
+  draw dm lid cursorPos tgtPos bfsmpath cursorDesc tgtDesc sfTop
 
 drawOverlays :: MonadClientUI m
              => Bool -> ColorMode -> [Overlay] -> m [SingleFrame]
@@ -207,7 +209,8 @@ askBinding = getsSession sbinding
 syncFrames :: MonadClientUI m => m ()
 syncFrames = do
   -- Hack.
-  writeConnFrontend FrontSlides{frontClear=[], frontSlides=[]}
+  writeConnFrontend
+    FrontSlides{frontClear=[], frontSlides=[], frontFromTop=Nothing}
   km <- readConnFrontend
   assert (km == K.spaceKM) skip
 
