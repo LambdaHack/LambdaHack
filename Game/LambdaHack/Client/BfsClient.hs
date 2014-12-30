@@ -249,9 +249,14 @@ closestTriggers onlyDir exploredToo aid = do
   let triggersAll = PointArray.ifoldlA f [] $ ltile lvl
       -- Don't target stairs under the actor. Most of the time they
       -- are blocked and stay so, so we seek other stairs, if any.
-      -- If no other stairs in this direction, let's wait here.
+      -- If no other stairs in this direction, let's wait here,
+      -- unless the actor has just returned via the very stairs.
       triggers | length triggersAll > 1 =
                  filter ((/= bpos body) . snd) triggersAll
+               | map snd triggersAll == [bpos body]
+                 && boldpos body == bpos body  -- probably used stairs last turn
+                 -- && boldlid body == lid2  -- in the opposite direction
+               = []  -- avoid trivial loops (pushing, being pushed, etc.)
                | otherwise = triggersAll
   case triggers of
     [] -> return []

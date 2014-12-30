@@ -293,7 +293,7 @@ targetStrategy oldLeader aid = do
                            -- We don't determine if the stairs are interesting
                            -- (this changes with time), but allow the actor
                            -- to reach them and then retarget, unless he can't
-                           -- trigger them in the first place.
+                           -- trigger them at all.
                            && (EM.findWithDefault 0 AbTrigger actorSk <= 0
                                || pos == bpos b
                                || not (Tile.isStair cotile t))
