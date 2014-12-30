@@ -127,8 +127,6 @@ install:
        cabal install -j2 -f-release -O2 -fno-ignore-asserts --only-dependencies;
        cabal configure -f-release -O2 -fno-ignore-asserts --enable-tests;
      fi;
-     cabal build -j2;
-     cabal test;
    else
      if [ ${GHCVER%.*} = "7.6" ]; then
        cabal install -fvty -j2 -frelease -O1 --only-dependencies;
@@ -137,9 +135,9 @@ install:
        cabal install -fvty -j2 -frelease -O2 -fno-ignore-asserts --only-dependencies;
        cabal configure -fvty -frelease -O2 -fno-ignore-asserts --enable-tests;
      fi;
-     cabal build -j2;
-     cabal test;
    fi
+ - cabal build -j2
+ - cabal test
 
 # - cabal install -j2 -O2 -frelease -fcurses --only-dependencies
 # - cabal configure -f-release -fcurses
