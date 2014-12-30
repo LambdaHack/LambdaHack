@@ -115,12 +115,8 @@ getInitConfirms dm frontClear slides = do
   let (onBlank, ovs) = slideshow slides
       frontFromTop = onBlank
   frontSlides <- drawOverlays (isJust onBlank) dm ovs
-  -- The first two cases are optimizations:
   case frontSlides of
     [] -> return True
-    [x] -> do
-      displayFrame $ Just x
-      return True
     _ -> do
       writeConnFrontend FrontSlides{..}
       km <- readConnFrontend

@@ -16,6 +16,7 @@ import Control.Monad
 import qualified Data.Text.IO as T
 import System.IO
 
+import Data.Maybe
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Chosen
@@ -111,22 +112,26 @@ loopFrontend fs ChanFrontend{..} = loop False
         fsyncFrames fs
         writeKM K.spaceKM
         loop autoYes
-      FrontSlides{..} -> do  -- TODO: use frontFromTop
+      FrontSlides{..} -> do
         let displayFrs frs srf =
               case frs of
                 [] -> assert `failure` "null slides" `twith` frs
-                [x] -> do
+                [x] | isNothing frontFromTop -> do
                   fdisplay fs (Just x)
                   writeKM K.spaceKM
                 x : xs -> do
                   go <- getConfirmGeneric autoYes fs frontClear x
                   case go of
                     Nothing -> writeKM K.escKM
-                    Just True -> displayFrs xs (x : srf)
+                    Just True -> case xs of
+                      [] -> displayFrs frs srf
+                      _ -> displayFrs xs (x : srf)
                     Just False -> case srf of
                       [] -> displayFrs frs srf
                       y : ys -> displayFrs (y : frs) ys
-        displayFrs frontSlides []
+        case (frontFromTop, reverse frontSlides) of
+          (Just False, r : rs) -> displayFrs [r] rs
+          _ -> displayFrs frontSlides []
         loop autoYes
       FrontAutoYes b ->
         loop b
