@@ -503,16 +503,17 @@ trigger aid fleeViaStairs = do
   lvl <- getLevel lid
   unexploredD <- unexploredDepth
   s <- getState
-  per <- getPerFid lid
-  let canSee = ES.member (bpos b) (totalVisible per)
-      unexploredCurrent = ES.notMember lid explored
+  let unexploredCurrent = ES.notMember lid explored
       allExplored = ES.size explored == EM.size dungeon
       t = lvl `at` bpos b
       feats = TK.tfeature $ okind t
       ben feat = case feat of
-        TK.Cause (IK.Ascend k) ->  -- change levels sensibly, in teams
-          let aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
-              easeDelta = abs (fromEnum lid) - abs (fromEnum lid + k)
+        TK.Cause (IK.Ascend k) -> do -- change levels sensibly, in teams
+          (lid2, pos2) <- getsState $ whereTo lid (bpos b) k . sdungeon
+          per <- getPerFid $ lid2
+          let canSee = ES.member (bpos b) (totalVisible per)
+              aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
+              easeDelta = abs (fromEnum lid) - abs (fromEnum lid2)
               unexpForth = unexploredD (signum k) lid
               unexpBack = unexploredD (- signum k) lid
               expBenefit =
@@ -530,9 +531,9 @@ trigger aid fleeViaStairs = do
                 else if lescape lvl
                 then 0  -- all explored, stay on the escape level
                 else 2  -- no escape anywhere, switch levels occasionally
-              (lid2, pos2) = whereTo lid (bpos b) k dungeon
               actorsThere = posToActors pos2 lid2 s
-          in if boldpos b == bpos b   -- probably used stairs last turn
+          return $!
+             if boldpos b == bpos b   -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction
              then 0  -- avoid trivial loops (pushing, being pushed, etc.)
              else let leaderless = fleaderMode (gplayer fact) == LeaderNull
@@ -543,16 +544,17 @@ trigger aid fleeViaStairs = do
                   in if fleeViaStairs
                      then 1000 * eben + 1  -- strongly prefer correct direction
                      else eben
-        TK.Cause ef@IK.Escape{} -> do  -- flee via this way, too
+        TK.Cause ef@IK.Escape{} -> return $  -- flee via this way, too
           -- Only some factions try to escape but they first explore all
           -- for high score.
           if not (fcanEscape $ gplayer fact) || not allExplored
           then 0
           else effectToBenefit cops b activeItems fact ef
         TK.Cause ef | not fleeViaStairs ->
-          effectToBenefit cops b activeItems fact ef
-        _ -> 0
-      benFeat = zip (map ben feats) feats
+          return $! effectToBenefit cops b activeItems fact ef
+        _ -> return 0
+  benFeats <- mapM ben feats
+  let benFeat = zip benFeats feats
   return $! liftFrequency $ toFreq "trigger"
          $ [ (benefit, ReqTrigger (Just feat))
            | (benefit, feat) <- benFeat
