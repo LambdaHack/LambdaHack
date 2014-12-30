@@ -561,10 +561,11 @@ trigger aid fleeViaStairs = do
 projectItem :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
 projectItem aid = do
   btarget <- getsClient $ getTarget aid
-  b@Actor{bpos} <- getsState $ getActorBody aid
+  b <- getsState $ getActorBody aid
   mfpos <- aidTgtToPos aid (blid b) btarget
   seps <- getsClient seps
   case (btarget, mfpos) of
+    (_, Just fpos) | chessDist (bpos b) fpos == 1 -> return reject
     (Just TEnemy{}, Just fpos) -> do
       mnewEps <- makeLine False b fpos seps
       case mnewEps of
@@ -596,7 +597,8 @@ projectItem aid = do
                     len = length it1
                     recharged = len < itemK
                     trange = totalRange itemBase
-                    bestRange = chessDist bpos fpos + 2  -- margin for fleeing
+                    bestRange =
+                      chessDist (bpos b) fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
                       10 + max 0 (10 - abs (trange - bestRange))
                     durableBonus = if IK.Durable `elem` jfeature itemBase
@@ -608,7 +610,7 @@ projectItem aid = do
                                Nothing -> -1  -- experiment if no options
                                Just (_, ben) -> ben
                            * (if recharged then 1 else 0)
-                in if benR < 0 && trange >= chessDist bpos fpos
+                in if benR < 0 && trange >= chessDist (bpos b) fpos
                    then Just ( -benR * rangeMult `div` 10
                              , ReqProject fpos newEps iid cstore )
                    else Nothing
