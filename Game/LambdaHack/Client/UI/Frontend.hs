@@ -69,22 +69,16 @@ promptGetKey fs keys frame = do
     then return km
     else promptGetKey fs keys frame
 
-getConfirmGeneric :: Bool -> RawFrontend -> [K.KM] -> SingleFrame
-                  -> IO (Maybe Bool)
+getConfirmGeneric :: Bool -> RawFrontend -> [K.KM] -> SingleFrame -> IO K.KM
 getConfirmGeneric autoYes fs clearKeys frame = do
   let DebugModeCli{sdisableAutoYes} = fdebugCli fs
   if autoYes && not sdisableAutoYes then do
     fdisplay fs (Just frame)
-    return $ Just True
+    return K.spaceKM
   else do
     let extraKeys = [ K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM
                     , K.leftButtonKM, K.rightButtonKM ]
-    km <- promptGetKey fs (clearKeys ++ extraKeys) frame
-    return $! if km == K.escKM
-              then Nothing
-              else if km{K.pointer=dummyPoint} `elem` [K.pgupKM, K.leftButtonKM]
-                   then Just False
-                   else Just True
+    promptGetKey fs (clearKeys ++ extraKeys) frame
 
 -- Read UI requests from the client and send them to the frontend,
 loopFrontend :: RawFrontend -> ChanFrontend -> IO ()
@@ -120,15 +114,18 @@ loopFrontend fs ChanFrontend{..} = loop False
                   fdisplay fs (Just x)
                   writeKM K.spaceKM
                 x : xs -> do
-                  go <- getConfirmGeneric autoYes fs frontClear x
-                  case go of
-                    Nothing -> writeKM K.escKM
-                    Just True -> case xs of
-                      [] -> displayFrs frs srf
-                      _ -> displayFrs xs (x : srf)
-                    Just False -> case srf of
-                      [] -> displayFrs frs srf
-                      y : ys -> displayFrs (y : frs) ys
+                  km <- getConfirmGeneric autoYes fs frontClear x
+                  let kmCanonical = km{K.pointer=dummyPoint}
+                  if kmCanonical == K.escKM then writeKM K.escKM
+                  else if kmCanonical `elem` [K.pgupKM, K.leftButtonKM]
+                       then case srf of
+                         [] -> displayFrs frs srf
+                         y : ys -> displayFrs (y : frs) ys
+                       else case xs of
+                         [] -> if kmCanonical == K.spaceKM
+                               then writeKM K.escKM  -- hack
+                               else displayFrs frs srf
+                         _ -> displayFrs xs (x : srf)
         case (frontFromTop, reverse frontSlides) of
           (Just False, r : rs) -> displayFrs [r] rs
           _ -> displayFrs frontSlides []
