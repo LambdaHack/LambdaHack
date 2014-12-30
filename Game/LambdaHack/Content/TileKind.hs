@@ -23,6 +23,9 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 -- | The type of kinds of terrain tiles. See @Tile.hs@ for explanation
 -- of the absence of a corresponding type @Tile@ that would hold
 -- particular concrete tiles in the dungeon.
+-- Note that tile names (and any other content names) should not be plural
+-- (that would lead to "a stairs"), so "road with cobblestones" is fine,
+-- but "granite cobblestones" is wrong.
 data TileKind = TileKind
   { tsymbol  :: !Char         -- ^ map symbol
   , tname    :: !Text         -- ^ short description

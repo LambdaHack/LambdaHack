@@ -271,7 +271,7 @@ floorRedLit = floorArenaLit
   , tfeature = Trail : tfeature floorArenaLit
   }
 floorBlueLit = floorRedLit
-  { tname    = "granite cobblestones"
+  { tname    = "cobblestone path"
   , tfreq    = [("trailLit", 100)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
