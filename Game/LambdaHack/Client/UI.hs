@@ -23,13 +23,11 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import Data.Maybe
-import qualified Data.Text as T
 
 import Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.DisplayAtomicClient
 import Game.LambdaHack.Client.UI.HandleHumanClient
@@ -142,53 +140,6 @@ humanCommand = do
                 return $! if go then Just (onBlank, last sli) else Nothing
             loop mLast
   loop Nothing
-
-describeMainKeys :: MonadClientUI m => m Msg
-describeMainKeys = do
-  stgtMode <- getsClient stgtMode
-  Binding{brevMap} <- askBinding
-  Config{configVi, configLaptop} <- askConfig
-  cursor <- getsClient scursor
-  let kmLeftButtonPress =
-        fromMaybe (K.toKM K.NoModifier K.LeftButtonPress)
-        $ M.lookup macroLeftButtonPress brevMap
-      kmEscape =
-        fromMaybe (K.toKM K.NoModifier K.Esc)
-        $ M.lookup Cancel brevMap
-      kmCtrlx =
-        fromMaybe (K.toKM K.Control (K.KP 'x'))
-        $ M.lookup GameExit brevMap
-      kmRightButtonPress =
-        fromMaybe (K.toKM K.NoModifier K.RightButtonPress)
-        $ M.lookup TgtPointerEnemy brevMap
-      kmReturn =
-        fromMaybe (K.toKM K.NoModifier K.Return)
-        $ M.lookup Accept brevMap
-      moveKeys =
-        if configVi then "hjklyubn, "
-        else if configLaptop then "uk8o79jl, "
-        else ""
-      tgtKind = case cursor of
-        TEnemy _ True -> "actor"
-        TEnemy _ False -> "enemy"
-        TEnemyPos _ _ _ True -> "actor"
-        TEnemyPos _ _ _ False -> "enemy"
-        TPoint{} -> "position"
-        TVector{} -> "vector"
-      keys | isNothing stgtMode =
-        "Explore with numpad or keys or mouse: ["
-        <> moveKeys
-        <> (T.intercalate ", " $ map K.showKM
-            $ [kmLeftButtonPress, kmCtrlx, kmEscape])
-        <> "]"
-           | otherwise =
-        "Target" <+> tgtKind <+> "with numpad or keys or mouse: ["
-        <> moveKeys
-        <> (T.intercalate ", " $ map K.showKM
-            $ [kmRightButtonPress, kmReturn, kmEscape])
-        <> "]"
-  report <- getsClient sreport
-  return $! if nullReport report then keys else ""
 
 -- | Client signals to the server that it's still online, flushes frames
 -- (if needed) and sends some extra info.

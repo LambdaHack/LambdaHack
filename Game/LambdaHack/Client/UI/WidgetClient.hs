@@ -1,20 +1,26 @@
 -- | A set of widgets for UI clients.
 module Game.LambdaHack.Client.UI.WidgetClient
-  ( displayMore, displayYesNo, displayChoiceUI, displayPush
+  ( displayMore, displayYesNo, displayChoiceUI, displayPush, describeMainKeys
   , promptToSlideshow, overlayToSlideshow, overlayToBlankSlideshow
   , animate, fadeOutOrIn
   ) where
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
+import qualified Data.Text as T
 
 import Game.LambdaHack.Client.BfsClient
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
+import Game.LambdaHack.Client.UI.Config
+import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.DrawClient
+import Game.LambdaHack.Client.UI.HumanCmd
+import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
@@ -77,12 +83,59 @@ displayChoiceUI prompt ov keys = do
 -- each time screen is refreshed.
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.
-displayPush :: MonadClientUI m => m ()
-displayPush = do
-  sls <- promptToSlideshow ""
+displayPush :: MonadClientUI m => Msg -> m ()
+displayPush prompt = do
+  sls <- promptToSlideshow prompt
   let slide = head . snd $ slideshow sls
   frame <- drawOverlay False ColorFull slide
   displayFrame (Just frame)
+
+describeMainKeys :: MonadClientUI m => m Msg
+describeMainKeys = do
+  stgtMode <- getsClient stgtMode
+  Binding{brevMap} <- askBinding
+  Config{configVi, configLaptop} <- askConfig
+  cursor <- getsClient scursor
+  let kmLeftButtonPress =
+        fromMaybe (K.toKM K.NoModifier K.LeftButtonPress)
+        $ M.lookup macroLeftButtonPress brevMap
+      kmEscape =
+        fromMaybe (K.toKM K.NoModifier K.Esc)
+        $ M.lookup Cancel brevMap
+      kmCtrlx =
+        fromMaybe (K.toKM K.Control (K.KP 'x'))
+        $ M.lookup GameExit brevMap
+      kmRightButtonPress =
+        fromMaybe (K.toKM K.NoModifier K.RightButtonPress)
+        $ M.lookup TgtPointerEnemy brevMap
+      kmReturn =
+        fromMaybe (K.toKM K.NoModifier K.Return)
+        $ M.lookup Accept brevMap
+      moveKeys =
+        if configVi then "hjklyubn, "
+        else if configLaptop then "uk8o79jl, "
+        else ""
+      tgtKind = case cursor of
+        TEnemy _ True -> "actor"
+        TEnemy _ False -> "enemy"
+        TEnemyPos _ _ _ True -> "actor"
+        TEnemyPos _ _ _ False -> "enemy"
+        TPoint{} -> "position"
+        TVector{} -> "vector"
+      keys | isNothing stgtMode =
+        "Explore with numpad or keys or mouse: ["
+        <> moveKeys
+        <> (T.intercalate ", " $ map K.showKM
+            $ [kmLeftButtonPress, kmCtrlx, kmEscape])
+        <> "]"
+           | otherwise =
+        "Target" <+> tgtKind <+> "with numpad or keys or mouse: ["
+        <> moveKeys
+        <> (T.intercalate ", " $ map K.showKM
+            $ [kmRightButtonPress, kmReturn, kmEscape])
+        <> "]"
+  report <- getsClient sreport
+  return $! if nullReport report then keys else ""
 
 -- | The prompt is shown after the current message, but not added to history.
 -- This is useful, e.g., in targeting mode, not to spam history.

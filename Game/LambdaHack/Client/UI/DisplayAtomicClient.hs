@@ -780,11 +780,12 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         mleader <- getsClient _sleader
         fact <- getsState $ (EM.! bfid b) . sfactionD
         let underAI = isAIFact fact
-        unless (Just aid == mleader && not underAI) $
+        unless (Just aid == mleader && not underAI) $ do
           -- Something new is gonna happen on this level (otherwise we'd send
           -- @UpdAgeLevel@ later on, with a larger time increment),
           -- so show crrent game state, before it changes.
-          displayPush
+          keys <- describeMainKeys
+          displayPush keys
 
 strike :: MonadClientUI m
        => ActorId -> ActorId -> ItemId -> HitAtomic -> m ()
