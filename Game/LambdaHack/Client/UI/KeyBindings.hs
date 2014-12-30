@@ -101,7 +101,7 @@ keyHelp Binding{bcmdList} =
     lastBlurb =
       [ ""
       , "For more playing instructions see file PLAYING.md."
-      , "Press SPACE to clear the messages and see the map again."
+      , "Press PGUP to return to previous pages or ESC to see the map again."
       ]
     fmt n k h = T.justifyRight 72 ' '
                 $ T.justifyLeft n ' ' k
@@ -140,6 +140,8 @@ keyHelp Binding{bcmdList} =
       ++ [keyCaption] ++ keys CmdAuto ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdMeta <> ". [press SPACE to advance]"] ++ [""]
       ++ [keyCaption] ++ keys CmdMeta ++ categoryText ++ [moreMsg]
-    , [categoryDescription CmdMouse <> "."] ++ [""]
-      ++ [keyCaptionN 20] ++ keysN 20 CmdMouse ++ lastText
+    , [categoryDescription CmdMouse
+       <> ". [press PGUP to see previous, ESC to cancel]"]
+      ++ [""]
+      ++ [keyCaptionN 20] ++ keysN 20 CmdMouse ++ lastText ++ [endMsg]
     ]

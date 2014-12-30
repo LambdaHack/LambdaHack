@@ -2,7 +2,7 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Common.Msg
   ( makePhrase, makeSentence
-  , Msg, (<>), (<+>), tshow, toWidth, moreMsg, yesnoMsg, truncateMsg
+  , Msg, (<>), (<+>), tshow, toWidth, moreMsg, endMsg, yesnoMsg, truncateMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg, prependMsg
   , splitReport, renderReport, findInReport, lastMsgOfReport
   , History, emptyHistory, lengthHistory, singletonHistory
@@ -54,6 +54,10 @@ type Msg = Text
 -- | The \"press something to see more\" mark.
 moreMsg :: Msg
 moreMsg = "--more--  "
+
+-- | The \"end of screenfuls of text\" mark.
+endMsg :: Msg
+endMsg = "--end--  "
 
 -- | The confirmation request message.
 yesnoMsg :: Msg
@@ -239,6 +243,10 @@ toOverlay = let lxsize = fst normalLevelBound + 1  -- TODO
 splitOverlay :: Maybe Bool -> Y -> Overlay -> Overlay -> Slideshow
 splitOverlay onBlank yspace (Overlay msg) (Overlay ls) =
   let len = length msg
+      endB = if onBlank == Just False
+             then [toScreenLine
+                   $ endMsg <> "[press PGUP to see previous, ESC to cancel]"]
+             else []
   in if len >= yspace
      then  -- no space left for @ls@
        Slideshow (onBlank, [Overlay $ take (yspace - 1) msg
@@ -246,7 +254,7 @@ splitOverlay onBlank yspace (Overlay msg) (Overlay ls) =
      else let splitO over =
                 let (pre, post) = splitAt (yspace - 1) $ msg ++ over
                 in if null (drop 1 post)  -- (don't call @length@ on @ls@)
-                   then [Overlay $ msg ++ over]  -- all fits on one screen
+                   then [Overlay $ msg ++ over ++ endB]  -- all fits on screen
                    else let rest = splitO post
                         in Overlay (pre ++ [toScreenLine moreMsg]) : rest
           in Slideshow (onBlank, splitO ls)
