@@ -47,7 +47,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
-data ItemDialogState = ISuitable | IAll | INoEnter
+data ItemDialogState = ISuitable | IAll | INoSuitable | INoAll
   deriving (Show, Eq)
 
 -- | Let a human player choose any item from a given group.
@@ -110,7 +110,7 @@ getStoreItem :: MonadClientUI m
 getStoreItem prompt cInitial noEnter = do
   leader <- getLeaderUI
   let allStores = map (CActor leader) [CEqp, CInv, CSha, CGround]
-      dialogState = if noEnter then INoEnter else ISuitable
+      dialogState = if noEnter then INoSuitable else ISuitable
   soc <- getItem (return $ Right $ const True)
                  prompt prompt False cInitial
                  (delete cInitial allStores)
@@ -254,7 +254,8 @@ transition psuit prompt promptGeneric cursor permitMulitple
       bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
       suitableLetterSlots = EM.filter (`EM.member` bagSuit) lSlots
       (autoDun, autoLvl) = autoDungeonLevel fact
-      normalizeState INoEnter = ISuitable
+      normalizeState INoSuitable = ISuitable
+      normalizeState INoAll = IAll
       normalizeState x = x
       enterSlots = if itemDialogState == IAll
                    then bagLetterSlots
@@ -263,9 +264,11 @@ transition psuit prompt promptGeneric cursor permitMulitple
       keyDefs = filter (defCond . snd)
         [ (K.toKM K.NoModifier $ K.Char '?', DefItemKey
            { defLabel = "?"
-           , defCond = bag /= bagSuit || itemDialogState == INoEnter
-           , defAction = \_ -> case normalizeState itemDialogState of
-               ISuitable | bag /= bagSuit -> recCall cCur cRest IAll
+           , defCond = True
+           , defAction = \_ -> case itemDialogState of
+               ISuitable -> recCall cCur cRest
+                            $ if bag == bagSuit then INoSuitable else IAll
+               IAll -> recCall cCur cRest INoAll
                _ -> recCall cCur cRest ISuitable
            })
         , (K.toKM K.NoModifier $ K.Char '/', DefItemKey
@@ -293,8 +296,8 @@ transition psuit prompt promptGeneric cursor permitMulitple
                Nothing -> assert `failure` "no suitable items"
                                  `twith` enterSlots
                Just ((l, _), _) -> "RET(" <> T.singleton (slotChar l) <> ")"
-           , defCond = not (EM.null enterSlots
-                            || itemDialogState == INoEnter)
+           , defCond = not (EM.null enterSlots)
+                       && itemDialogState `elem` [ISuitable, IAll]
            , defAction = \_ -> case EM.maxView enterSlots of
                Nothing -> assert `failure` "no suitable items"
                                  `twith` enterSlots
@@ -370,16 +373,20 @@ transition psuit prompt promptGeneric cursor permitMulitple
       ppCur = ppContainer cCur
       (labelLetterSlots, bagFiltered, promptChosen) =
         case itemDialogState of
-          ISuitable -> (suitableLetterSlots,
-                        bagSuit,
-                        prompt body activeItems cCur <+> ppCur <> ":")
-          IAll      -> (bagLetterSlots,
-                        bag,
-                        promptGeneric body activeItems cCur
-                        <+> ppCur <> ":")
-          INoEnter  -> (suitableLetterSlots,
-                        EM.empty,
-                        prompt body activeItems cCur <+> ppCur <> ":")
+          ISuitable   -> (suitableLetterSlots,
+                          bagSuit,
+                          prompt body activeItems cCur <+> ppCur <> ":")
+          IAll        -> (bagLetterSlots,
+                          bag,
+                          promptGeneric body activeItems cCur
+                          <+> ppCur <> ":")
+          INoSuitable -> (suitableLetterSlots,
+                          EM.empty,
+                          prompt body activeItems cCur <+> ppCur <> ":")
+          INoAll      -> (bagLetterSlots,
+                          EM.empty,
+                          promptGeneric body activeItems cCur
+                          <+> ppCur <> ":")
   io <- itemOverlay cCur (blid body) bagFiltered
   runDefItemKey keyDefs lettersDef io bagLetterSlots promptChosen
 
