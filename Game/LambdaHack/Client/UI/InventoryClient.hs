@@ -351,7 +351,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
         ]
       cursorEnemyDef cursorFun km =
         (km, DefItemKey
-           { defLabel = K.showKM km
+           { defLabel = "mouse"
            , defCond = cursor
            , defAction = \_ -> do
                look <- cursorFun
@@ -429,7 +429,7 @@ runDefItemKey keyDefs lettersDef io labelLetterSlots prompt = do
                    letterLabel | T.null letterRange = []
                                | otherwise = [letterRange]
                    keyLabels = letterLabel ++ map (defLabel . snd) keyDefs
-               in "[" <> T.intercalate ", " keyLabels
+               in "[" <> T.intercalate ", " (nub keyLabels)
   akm <- displayChoiceUI (prompt <+> choice) io itemKeys
   case akm of
     Left slides -> failSlides slides
