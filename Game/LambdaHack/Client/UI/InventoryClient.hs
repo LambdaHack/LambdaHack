@@ -264,7 +264,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
       keyDefs = filter (defCond . snd)
         [ (K.toKM K.NoModifier $ K.Char '?', DefItemKey
            { defLabel = "?"
-           , defCond = True
+           , defCond = not (EM.null bag)
            , defAction = \_ -> case itemDialogState of
                ISuitable -> recCall cCur cRest
                             $ if bag == bagSuit then INoSuitable else IAll
