@@ -59,7 +59,8 @@ initPer = do
 
 reinitGame :: (MonadAtomic m, MonadServer m) => m ()
 reinitGame = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{ coitem=Kind.Ops{okind}
+           , comode=Kind.Ops{opick} } <- getsState scops
   pers <- getsServer sper
   knowMap <- getsServer $ sknowMap . sdebugSer
   -- This state is quite small, fit for transmition to the client.
@@ -73,9 +74,11 @@ reinitGame = do
                in EM.filter f discoS
   sdebugCli <- getsServer $ sdebugCli . sdebugSer
   modeName <- getsServer $ sgameMode . sdebugSer
-  let gameMode = fromMaybe "starting" modeName
+  let gameModeName = fromMaybe "starting" modeName
+  modeKind <- rndToAction $ fromMaybe (assert `failure` gameModeName)
+                            <$> opick gameModeName (const True)
   broadcastUpdAtomic
-    $ \fid -> UpdRestart fid sdiscoKind (pers EM.! fid) defLocal sdebugCli gameMode
+    $ \fid -> UpdRestart fid sdiscoKind (pers EM.! fid) defLocal sdebugCli modeKind
   populateDungeon
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a

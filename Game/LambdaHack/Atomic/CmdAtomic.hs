@@ -24,7 +24,6 @@ import GHC.Generics (Generic)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -37,6 +36,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -100,7 +100,7 @@ data UpdAtomic =
   | UpdCoverSeed !LevelId !Point !ItemId !ItemSeed
   | UpdPerception !LevelId !Perception !Perception
   | UpdRestart
-      !FactionId !DiscoveryKind !FactionPers !State !DebugModeCli !(GroupName ModeKind)
+      !FactionId !DiscoveryKind !FactionPers !State !DebugModeCli !(Kind.Id ModeKind)
   | UpdRestartServer !State
   | UpdResume !FactionId !FactionPers
   | UpdResumeServer !State

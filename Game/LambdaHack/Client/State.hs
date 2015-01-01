@@ -27,8 +27,8 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
@@ -86,7 +86,7 @@ data StateClient = StateClient
   , scurDifficulty :: !Int         -- ^ current game difficulty level
   , sslots       :: !ItemSlots     -- ^ map from slots to items
   , slastSlot    :: !SlotChar      -- ^ last used slot
-  , sgameMode    :: !(GroupName ModeKind)  -- ^ current game mode
+  , sgameMode    :: !(Kind.Id ModeKind)  -- ^ current game mode
   , sescAI       :: !EscAI         -- ^ just canceled AI control with ESC
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
@@ -154,7 +154,7 @@ defStateClient shistory sreport _sside sisAI =
     , scurDifficulty = difficultyDefault
     , sslots = (EM.empty, IM.empty, EM.empty)
     , slastSlot = SlotChar 'a'
-    , sgameMode = "starting"
+    , sgameMode = toEnum 0
     , sescAI = EscAINothing
     , sdebugCli = defDebugModeCli
     }

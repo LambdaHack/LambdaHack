@@ -286,6 +286,6 @@ sumOrganEqpClient eqpSlot aid = do
 
 getModeClient :: MonadClient m => m ModeKind
 getModeClient = do
-  Kind.COps{comode=Kind.Ops{okind, ouniqGroup}} <- getsState scops
+  Kind.COps{comode=Kind.Ops{okind}} <- getsState scops
   t <- getsClient sgameMode
-  return $! okind $ ouniqGroup t
+  return $! okind t
