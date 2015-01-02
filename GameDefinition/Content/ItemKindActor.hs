@@ -105,7 +105,7 @@ fastEye = ItemKind
   , ikit     = [ ("tooth", COrgan), ("speed gland 10", COrgan)
                , ("lip", COrgan), ("lip", COrgan), ("vision 8", COrgan) ]
   }
-nose = ItemKind
+nose = ItemKind  -- depends solely on smell
   { isymbol  = 'n'
   , iname    = "point-free nose"
   , ifreq    = [("monster", 100), ("horror", 100)]
@@ -115,12 +115,11 @@ nose = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 20, AddMaxCalm 30, AddSpeed 18
-               , AddSkills $ EM.fromList [(AbProject, -1), (AbApply, -1)]
-               , AddSmell 3 ]  -- depends solely on smell
+               , AddSkills $ EM.fromList [(AbProject, -1), (AbApply, -1)] ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "No mouth, yet it devours everything around, constantly sniffing itself inward; pure movement structure, no constant point to focus one's maddened gaze on."
-  , ikit     = [("nose tip", COrgan), ("lip", COrgan)]
+  , ikit     = [("nose tip", COrgan), ("lip", COrgan), ("nostril", COrgan)]
   }
 elbow = ItemKind
   { isymbol  = 'e'
@@ -269,8 +268,7 @@ alligator = ItemKind
   , irarity  = [(10, 8)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 35, AddMaxCalm 60, AddSpeed 17
-               , AddArmorMelee 30, AddArmorRanged 30
+  , iaspects = [ AddMaxHP 40, AddMaxCalm 60, AddSpeed 17
                , AddSkills animalSkillMalus ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -328,12 +326,11 @@ thornbush = ItemKind
   , iaspects = [ AddMaxHP 20, AddMaxCalm 999, AddSpeed 20
                , AddSkills
                  $ EM.fromDistinctAscList (zip [minBound..maxBound] [-1, -1..])
-                   `addSkills` EM.fromList (zip [AbWait, AbMelee] [1, 1..])
-               , AddArmorMelee 50, AddArmorRanged 50 ]
+                   `addSkills` EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("thorn", COrgan)]
+  , ikit     = [("thorn", COrgan), ("armored skin", COrgan)]
   }
 geyser = ItemKind
   { isymbol  = 'g'
