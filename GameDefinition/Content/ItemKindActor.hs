@@ -28,12 +28,11 @@ warrior = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 60  -- partially from clothes and assumed first aid
                , AddMaxCalm 60, AddSpeed 20
-               , AddSkills $ EM.fromList [(AbProject, 1), (AbApply, 1)]
-               , AddSight 3 ]  -- not via eyes, but feel, hearing, etc.
+               , AddSkills $ EM.fromList [(AbProject, 1), (AbApply, 1)] ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("fist", COrgan), ("foot", COrgan), ("eye 4", COrgan)]
+  , ikit     = [("fist", COrgan), ("foot", COrgan), ("eye 5", COrgan)]
   }
 adventurer = warrior
   { iname    = "adventurer" }
@@ -84,8 +83,7 @@ eye = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 10, AddMaxCalm 60, AddSpeed 20
-               , AddSkills $ EM.fromList [(AbProject, 1), (AbApply, 1)]
-               , AddSight 4 ]
+               , AddSkills $ EM.fromList [(AbProject, 1), (AbApply, 1)] ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "Under your stare, it reduces to the bits that define its essence. Under introspection, the bits slow down and solidify into an arbitrary form again. It must be huge inside, for holographic principle to manifest so overtly."  -- holographic principle is an anachronism for XIX or most of XX century, but "the cosmological scale effects" is too weak
@@ -100,13 +98,12 @@ fastEye = ItemKind
   , irarity  = [(1, 3), (10, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 5, AddMaxCalm 60, AddSpeed 30
-               , AddSight 7 ]
+  , iaspects = [ AddMaxHP 5, AddMaxCalm 60, AddSpeed 30 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "Hungers but never eats. Bites but never swallows. Burrows its own image through, but never carries anything back."  -- rather weak: not about injective objects, but puny, concrete, injective functions  --- where's the madness in that?
   , ikit     = [ ("tooth", COrgan), ("speed gland 10", COrgan)
-               , ("lip", COrgan), ("lip", COrgan) ]
+               , ("lip", COrgan), ("lip", COrgan), ("vision 8", COrgan) ]
   }
 nose = ItemKind
   { isymbol  = 'n'
@@ -136,12 +133,12 @@ elbow = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 8, AddMaxCalm 90, AddSpeed 26
                , AddSkills
-                 $ EM.fromList [(AbProject, 1), (AbApply, 1), (AbMelee, -1)]
-               , AddSight 15 ]
+                 $ EM.fromList [(AbProject, 1), (AbApply, 1), (AbMelee, -1)] ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
   , ikit     = [ ("speed gland 4", COrgan), ("armored skin", COrgan)
+               , ("vision 14", COrgan)
                , ("any arrow", CInv), ("any arrow", CInv)
                , ("any arrow", CInv), ("any arrow", CInv) ]
   }
@@ -188,13 +185,12 @@ armadillo = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 35, AddMaxCalm 30, AddSpeed 18
-               , AddSkills $ EM.insert AbAlter (-1) animalSkillMalus
-               , AddSight 3 ]
+               , AddSkills $ EM.insert AbAlter (-1) animalSkillMalus ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("claw", COrgan), ("snout", COrgan), ("armored skin", COrgan)
-               , ("nostril", COrgan) ]
+               , ("nostril", COrgan), ("eye 2", COrgan) ]
   }
 gilaMonster = ItemKind
   { isymbol  = 'g'
@@ -206,13 +202,12 @@ gilaMonster = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 15, AddMaxCalm 60, AddSpeed 15
-               , AddSkills $ EM.insert AbAlter (-1) animalSkillMalus
-               , AddSight 3 ]
+               , AddSkills $ EM.insert AbAlter (-1) animalSkillMalus ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("venom tooth", COrgan), ("small claw", COrgan)
-               , ("eye 4", COrgan), ("nostril", COrgan) ]
+               , ("eye 5", COrgan), ("nostril", COrgan) ]
   }
 rattlesnake = ItemKind
   { isymbol  = 's'
@@ -224,13 +219,12 @@ rattlesnake = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 25, AddMaxCalm 60, AddSpeed 15
-               , AddSkills $ EM.insert AbAlter (-1) animalSkillMalus
-               , AddSight 3 ]
+               , AddSkills $ EM.insert AbAlter (-1) animalSkillMalus ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("venom fang", COrgan)
-               , ("eye 4", COrgan), ("nostril", COrgan) ]
+               , ("eye 5", COrgan), ("nostril", COrgan) ]
   }
 komodoDragon = ItemKind  -- bad hearing
   { isymbol  = 'k'
@@ -242,7 +236,7 @@ komodoDragon = ItemKind  -- bad hearing
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 40, AddMaxCalm 60, AddSpeed 16
-               , AddSkills animalSkillMalus, AddSight 3 ]
+               , AddSkills animalSkillMalus ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -260,11 +254,11 @@ hyena = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 20, AddMaxCalm 60, AddSpeed 30
-               , AddSkills animalSkillMalus, AddSight 3 ]
+               , AddSkills animalSkillMalus ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("jaw", COrgan), ("eye 4", COrgan), ("nostril", COrgan)]
+  , ikit     = [("jaw", COrgan), ("eye 5", COrgan), ("nostril", COrgan)]
   }
 alligator = ItemKind
   { isymbol  = 'a'
@@ -277,12 +271,12 @@ alligator = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 35, AddMaxCalm 60, AddSpeed 17
                , AddArmorMelee 30, AddArmorRanged 30
-               , AddSkills animalSkillMalus, AddSight 3 ]
+               , AddSkills animalSkillMalus ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("large jaw", COrgan), ("large tail", COrgan), ("claw", COrgan)
-               , ("armored skin", COrgan), ("eye 4", COrgan) ]
+               , ("armored skin", COrgan), ("eye 5", COrgan) ]
   }
 rhinoceros = ItemKind
   { isymbol  = 'R'
@@ -314,13 +308,13 @@ hornetSwarm = ItemKind
   , irarity  = [(5, 1), (10, 5)]
   , iverbHit = "thud"
   , iweight  = 1000
-  , iaspects = [ AddMaxHP 5, AddMaxCalm 60, AddSpeed 30, AddSight 2
+  , iaspects = [ AddMaxHP 5, AddMaxCalm 60, AddSpeed 30
                , AddSkills $ EM.insert AbAlter (-1) animalSkillMalus
                , AddArmorMelee 90, AddArmorRanged 90 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("sting", COrgan)]
+  , ikit     = [("sting", COrgan), ("vision 4", COrgan) ]
   }
 thornbush = ItemKind
   { isymbol  = 'b'
