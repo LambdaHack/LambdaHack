@@ -37,7 +37,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
@@ -99,8 +98,7 @@ data UpdAtomic =
   | UpdDiscoverSeed !LevelId !Point !ItemId !ItemSeed
   | UpdCoverSeed !LevelId !Point !ItemId !ItemSeed
   | UpdPerception !LevelId !Perception !Perception
-  | UpdRestart
-      !FactionId !DiscoveryKind !FactionPers !State !DebugModeCli !(Kind.Id ModeKind)
+  | UpdRestart !FactionId !DiscoveryKind !FactionPers !State !DebugModeCli
   | UpdRestartServer !State
   | UpdResume !FactionId !FactionPers
   | UpdResumeServer !State

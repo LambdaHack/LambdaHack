@@ -27,7 +27,6 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
@@ -36,7 +35,6 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ModeKind
 
 -- | Client state, belonging to a single faction.
 -- Some of the data, e.g, the history, carries over
@@ -86,7 +84,6 @@ data StateClient = StateClient
   , scurDifficulty :: !Int         -- ^ current game difficulty level
   , sslots       :: !ItemSlots     -- ^ map from slots to items
   , slastSlot    :: !SlotChar      -- ^ last used slot
-  , sgameMode    :: !(Kind.Id ModeKind)  -- ^ current game mode
   , sescAI       :: !EscAI         -- ^ just canceled AI control with ESC
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
@@ -154,7 +151,6 @@ defStateClient shistory sreport _sside sisAI =
     , scurDifficulty = difficultyDefault
     , sslots = (EM.empty, IM.empty, EM.empty)
     , slastSlot = SlotChar 'a'
-    , sgameMode = toEnum 0
     , sescAI = EscAINothing
     , sdebugCli = defDebugModeCli
     }
@@ -226,7 +222,6 @@ instance Binary StateClient where
     put scurDifficulty
     put sslots
     put slastSlot
-    put sgameMode
     put sdebugCli  -- TODO: this is overwritten at once
   get = do
     stgtMode <- get
@@ -252,7 +247,6 @@ instance Binary StateClient where
     scurDifficulty <- get
     sslots <- get
     slastSlot <- get
-    sgameMode <- get
     sdebugCli <- get
     let sbfsD = EM.empty
         sfper = EM.empty

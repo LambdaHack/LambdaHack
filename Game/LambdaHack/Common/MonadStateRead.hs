@@ -2,7 +2,7 @@
 -- player actions. Has no access to the the main action type.
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
-  , getLevel, nUI, posOfAid, factionCanEscape, factionLoots
+  , getLevel, nUI, posOfAid, factionCanEscape, factionLoots, getGameMode
   ) where
 
 import qualified Data.EnumMap.Strict as EM
@@ -10,6 +10,7 @@ import qualified Data.EnumMap.Strict as EM
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
@@ -48,3 +49,9 @@ factionLoots fid = do
       loots = any hasTreasure $ EM.elems dungeon
   canEscape <- factionCanEscape fid
   return $! canEscape && loots
+
+getGameMode :: MonadStateRead m => m ModeKind
+getGameMode = do
+  Kind.COps{comode=Kind.Ops{okind}} <- getsState scops
+  t <- getsState sgameModeId
+  return $! okind t

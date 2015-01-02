@@ -59,10 +59,10 @@ initPer = do
 
 reinitGame :: (MonadAtomic m, MonadServer m) => m ()
 reinitGame = do
-  Kind.COps{ coitem=Kind.Ops{okind}
-           , comode=Kind.Ops{opick} } <- getsState scops
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sper
   knowMap <- getsServer $ sknowMap . sdebugSer
+  sdebugCli <- getsServer $ sdebugCli . sdebugSer
   -- This state is quite small, fit for transmition to the client.
   -- The biggest part is content, which needs to be updated
   -- at this point to keep clients in sync with server improvements.
@@ -72,13 +72,8 @@ reinitGame = do
   discoS <- getsServer sdiscoKind
   let sdiscoKind = let f ik = IK.Identified `elem` IK.ifeature (okind ik)
                in EM.filter f discoS
-  sdebugCli <- getsServer $ sdebugCli . sdebugSer
-  modeName <- getsServer $ sgameMode . sdebugSer
-  let gameModeName = fromMaybe "starting" modeName
-  modeKind <- rndToAction $ fromMaybe (assert `failure` gameModeName)
-                            <$> opick gameModeName (const True)
   broadcastUpdAtomic
-    $ \fid -> UpdRestart fid sdiscoKind (pers EM.! fid) defLocal sdebugCli modeKind
+    $ \fid -> UpdRestart fid sdiscoKind (pers EM.! fid) defLocal sdebugCli
   populateDungeon
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
@@ -160,11 +155,11 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
   sheroNames <- getsServer sheroNames  -- copy over from previous game
   let gameMode = fromMaybe "starting" $ sgameMode sdebug
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
-                  DungeonGen.FreshDungeon)
+                  DungeonGen.FreshDungeon, Kind.Id ModeKind)
       rnd = do
-        modeKind <- fromMaybe (assert `failure` gameMode)
-                    <$> opick gameMode (const True)
-        let mode = okind modeKind
+        modeKindId <- fromMaybe (assert `failure` gameMode)
+                      <$> opick gameMode (const True)
+        let mode = okind modeKindId
             automatePS ps = ps {rosterList =
                                   map (automatePlayer True) $ rosterList ps}
             players = if sautomateAll sdebug
@@ -174,11 +169,11 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
         (sdiscoKind, sdiscoKindRev) <- serverDiscos cops
         freshDng <- DungeonGen.dungeonGen cops $ mcaves mode
         faction <- createFactions (DungeonGen.freshTotalDepth freshDng) players
-        return (faction, sflavour, sdiscoKind, sdiscoKindRev, freshDng)
-  let (faction, sflavour, sdiscoKind, sdiscoKindRev, DungeonGen.FreshDungeon{..}) =
+        return (faction, sflavour, sdiscoKind, sdiscoKindRev, freshDng, modeKindId)
+  let (faction, sflavour, sdiscoKind, sdiscoKindRev, DungeonGen.FreshDungeon{..}, modeKindId) =
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshTotalDepth
-                                faction cops scoreTable
+                                faction cops scoreTable modeKindId
       defSer = emptyStateServer { sstart, sallTime, sheroNames, srandom
                                 , srngs = RNGs (Just dungeonSeed)
                                                (Just srandom) }

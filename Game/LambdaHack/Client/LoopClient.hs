@@ -9,7 +9,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.HandleResponseClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
@@ -91,7 +90,7 @@ loopUI sdebugCli = do
   cmd1 <- receiveResponse
   case (restored, cmd1) of
     (True, RespUpdAtomicUI UpdResume{}) -> do
-      mode <- getModeClient
+      mode <- getGameMode
       msgAdd $ mdesc mode
       handleResponseUI cmd1
     (True, RespUpdAtomicUI UpdRestart{}) -> do

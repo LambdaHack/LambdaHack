@@ -3,7 +3,7 @@ module Game.LambdaHack.Common.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, stotalDepth, sactorD, sitemD, sfactionD, stime, scops, shigh
+  , sdungeon, stotalDepth, sactorD, sitemD, sfactionD, stime, scops, shigh, sgameModeId
     -- * State operations
   , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD
@@ -24,6 +24,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | View on game state. "Remembered" fields carry a subset of the info
@@ -38,6 +39,7 @@ data State = State
   , _stime       :: !Time         -- ^ global game time
   , _scops       :: Kind.COps     -- ^ remembered content
   , _shigh       :: !HighScore.ScoreTable  -- ^ high score table
+  , _sgameModeId :: !(Kind.Id ModeKind)  -- ^ current game mode
   }
   deriving (Show, Eq)
 
@@ -84,10 +86,10 @@ unknownTileMap unknownId outerId lxsize lysize =
   in unknownMap PointArray.// outerUpdate
 
 -- | Initial complete global game state.
-defStateGlobal :: Dungeon -> AbsDepth
-               -> FactionDict -> Kind.COps -> HighScore.ScoreTable
+defStateGlobal :: Dungeon -> AbsDepth -> FactionDict -> Kind.COps
+               -> HighScore.ScoreTable -> Kind.Id ModeKind
                -> State
-defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh =
+defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId =
   State
     { _sactorD = EM.empty
     , _sitemD = EM.empty
@@ -107,6 +109,7 @@ emptyState =
     , _stime = timeZero
     , _scops = undefined
     , _shigh = HighScore.empty
+    , _sgameModeId = toEnum 0  -- the initial value is unused
     }
 
 -- TODO: make lstair secret until discovered; use this later on for
@@ -177,6 +180,9 @@ scops = _scops
 shigh :: State -> HighScore.ScoreTable
 shigh = _shigh
 
+sgameModeId :: State -> Kind.Id ModeKind
+sgameModeId = _sgameModeId
+
 instance Binary State where
   put State{..} = do
     put _sdungeon
@@ -186,6 +192,7 @@ instance Binary State where
     put _sfactionD
     put _stime
     put _shigh
+    put _sgameModeId
   get = do
     _sdungeon <- get
     _stotalDepth <- get
@@ -194,5 +201,6 @@ instance Binary State where
     _sfactionD <- get
     _stime <- get
     _shigh <- get
+    _sgameModeId <- get
     let _scops = undefined  -- overwritten by recreated cops
     return $! State{..}

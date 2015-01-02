@@ -16,7 +16,6 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -28,6 +27,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 
 -- All functions here that take an atomic action are executed
@@ -140,7 +140,7 @@ posUpdAtomic cmd = case cmd of
   UpdDiscoverSeed lid p _ _ -> return $! PosSight lid [p]
   UpdCoverSeed lid p _ _ -> return $! PosSight lid [p]
   UpdPerception{} -> return PosNone
-  UpdRestart fid _ _ _ _ _ -> return $! PosFid fid
+  UpdRestart fid _ _ _ _ -> return $! PosFid fid
   UpdRestartServer _ -> return PosSer
   UpdResume fid _ -> return $! PosFid fid
   UpdResumeServer _ -> return PosSer

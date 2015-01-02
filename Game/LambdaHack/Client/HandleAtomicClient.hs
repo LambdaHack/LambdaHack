@@ -299,7 +299,7 @@ cmdAtomicSemCli cmd = case cmd of
   UpdDiscoverSeed lid p iid seed -> discoverSeed lid p iid seed
   UpdCoverSeed lid p iid seed -> coverSeed lid p iid seed
   UpdPerception lid outPer inPer -> perception lid outPer inPer
-  UpdRestart side sdiscoKind sfper _ sdebugCli sgameMode -> do
+  UpdRestart side sdiscoKind sfper _ sdebugCli -> do
     shistory <- getsClient shistory
     sreport <- getsClient sreport
     isAI <- getsClient sisAI
@@ -308,7 +308,6 @@ cmdAtomicSemCli cmd = case cmd of
                   , sfper
                   -- , sundo = [UpdAtomic cmd]
                   , scurDifficulty = sdifficultyCli sdebugCli
-                  , sgameMode
                   , sdebugCli }
   UpdResume _fid sfper -> modifyClient $ \cli -> cli {sfper}
   UpdKillExit _fid -> killExit
