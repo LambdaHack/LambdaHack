@@ -79,7 +79,7 @@ loopSer sdebug executorUI executorAI !cops = do
       let mrandom = case restored of
             Just (_, ser) -> Just $ srandom ser
             Nothing -> Nothing
-      s <- gameReset cops sdebug mrandom
+      s <- gameReset cops sdebug Nothing mrandom
       sdebugNxt <- initDebug cops sdebug
       let debugBarRngs = sdebugNxt {sdungeonRng = Nothing, smainRng = Nothing}
       modifyServer $ \ser -> ser { sdebugNxt = debugBarRngs
@@ -320,13 +320,13 @@ gameExit = do
                                   `twith` (persAccumulated, pers)) skip
 
 restartGame :: (MonadAtomic m, MonadServerReadRequest m)
-            => m () -> m () -> m ()
-restartGame updConn loop = do
+            => m () -> m () -> Maybe (GroupName ModeKind) ->  m ()
+restartGame updConn loop mgameMode = do
   tellGameClipPS
   cops <- getsState scops
   sdebugNxt <- getsServer sdebugNxt
   srandom <- getsServer srandom
-  s <- gameReset cops sdebugNxt $ Just srandom
+  s <- gameReset cops sdebugNxt mgameMode (Just srandom)
   let debugBarRngs = sdebugNxt {sdungeonRng = Nothing, smainRng = Nothing}
   modifyServer $ \ser -> ser { sdebugNxt = debugBarRngs
                              , sdebugSer = debugBarRngs }

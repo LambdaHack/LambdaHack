@@ -141,9 +141,10 @@ createFactions totalDepth players = do
   return $! warFs
 
 gameReset :: MonadServer m
-          => Kind.COps -> DebugModeSer -> Maybe R.StdGen -> m State
+          => Kind.COps -> DebugModeSer -> Maybe (GroupName ModeKind)
+          -> Maybe R.StdGen -> m State
 gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
-          sdebug mrandom = do
+          sdebug mGameMode mrandom = do
   dungeonSeed <- getSetGen $ sdungeonRng sdebug `mplus` mrandom
   srandom <- getSetGen $ smainRng sdebug `mplus` mrandom
   scoreTable <- if sfrontendNull $ sdebugCli sdebug then
@@ -153,7 +154,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
   sstart <- getsServer sstart  -- copy over from previous game
   sallTime <- getsServer sallTime  -- copy over from previous game
   sheroNames <- getsServer sheroNames  -- copy over from previous game
-  let gameMode = fromMaybe "starting" $ sgameMode sdebug
+  let gameMode = fromMaybe "starting" $ mGameMode `mplus` sgameMode sdebug
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
                   DungeonGen.FreshDungeon, Kind.Id ModeKind)
       rnd = do

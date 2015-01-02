@@ -16,6 +16,7 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.HandleEffectServer
 import Game.LambdaHack.Server.ItemServer
@@ -24,7 +25,8 @@ import Game.LambdaHack.Server.State
 
 -- | Continue or exit or restart the game.
 endOrLoop :: (MonadAtomic m, MonadServer m)
-          => m () -> m () -> m () -> m () -> m ()
+          => m () -> (Maybe (GroupName ModeKind) -> m ()) -> m () -> m ()
+          -> m ()
 endOrLoop loop restart gameExit gameSave = do
   factionD <- getsState sfactionD
   let inGame fact = case gquit fact of
@@ -49,11 +51,8 @@ endOrLoop loop restart gameExit gameSave = do
     modifyServer $ \ser -> ser {swriteSave = False}
     gameSave
   case (quitters, campers) of
-    (gameMode : _, _) -> do
-      modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser)
-                                                {sgameMode = Just gameMode}}
-      restart
-    _ | gameOver -> restart
+    (gameMode : _, _) -> restart $ Just gameMode
+    _ | gameOver -> restart Nothing
     ([], []) -> loop  -- continue current game
     ([], _ : _) -> gameExit  -- don't call @loop@, that is, quit the game loop
 
