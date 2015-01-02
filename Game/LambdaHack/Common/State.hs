@@ -38,7 +38,7 @@ data State = State
   , _sfactionD   :: !FactionDict  -- ^ remembered sides still in game
   , _stime       :: !Time         -- ^ global game time
   , _scops       :: Kind.COps     -- ^ remembered content
-  , _shigh       :: !HighScore.ScoreTable  -- ^ high score table
+  , _shigh       :: !HighScore.ScoreDict  -- ^ high score table
   , _sgameModeId :: !(Kind.Id ModeKind)  -- ^ current game mode
   }
   deriving (Show, Eq)
@@ -87,7 +87,7 @@ unknownTileMap unknownId outerId lxsize lysize =
 
 -- | Initial complete global game state.
 defStateGlobal :: Dungeon -> AbsDepth -> FactionDict -> Kind.COps
-               -> HighScore.ScoreTable -> Kind.Id ModeKind
+               -> HighScore.ScoreDict -> Kind.Id ModeKind
                -> State
 defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId =
   State
@@ -124,7 +124,7 @@ localFromGlobal State{..} =
       EM.map (\Level{..} ->
               unknownLevel _scops ldepth lxsize lysize ldesc lstair lclear
                            lsecret lhidden lescape)
-            _sdungeon
+             _sdungeon
     , ..
     }
 
@@ -177,7 +177,7 @@ stime = _stime
 scops :: State -> Kind.COps
 scops = _scops
 
-shigh :: State -> HighScore.ScoreTable
+shigh :: State -> HighScore.ScoreDict
 shigh = _shigh
 
 sgameModeId :: State -> Kind.Id ModeKind

@@ -2,7 +2,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | High score table operations.
 module Game.LambdaHack.Common.HighScore
-  ( ScoreTable, empty, register, showScore, getRecord, highSlideshow
+  ( ScoreDict, ScoreTable
+  , empty, register, showScore, getTable, getRecord, highSlideshow
 #ifdef EXPOSE_INTERNAL
   , ScoreRecord
 #endif
@@ -25,6 +26,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
+import Game.LambdaHack.Content.ModeKind (ModeKind)
 
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.
@@ -50,6 +52,16 @@ instance Binary ClockTime where
     return $! TOD cs cp
 
 instance Binary ScoreRecord
+
+-- | The list of scores, in decreasing order.
+newtype ScoreTable = ScoreTable [ScoreRecord]
+  deriving (Eq, Binary)
+
+instance Show ScoreTable where
+  show _ = "a score table"
+
+-- | A dictionary from game mode IDs to scores tables.
+type ScoreDict = EM.EnumMap (Kind.Id ModeKind) ScoreTable
 
 -- | Show a single high score, from the given ranking in the high score table.
 showScore :: (Int, ScoreRecord) -> [Text]
@@ -79,21 +91,18 @@ showScore (pos, score) =
        <> diffText <> "after" <+> tturns <+> "on" <+> curDate <> "."
      ]
 
+getTable :: Kind.Id ModeKind -> ScoreDict -> ScoreTable
+getTable gameModeId scoreDict =
+  fromMaybe (ScoreTable []) $ EM.lookup gameModeId scoreDict
+
 getRecord :: Int -> ScoreTable -> ScoreRecord
 getRecord pos (ScoreTable table) =
   fromMaybe (assert `failure` (pos, table))
   $ listToMaybe $ drop (pred pos) table
 
--- | The list of scores, in decreasing order.
-newtype ScoreTable = ScoreTable [ScoreRecord]
-  deriving (Eq, Binary)
-
-instance Show ScoreTable where
-  show _ = "a score table"
-
 -- | Empty score table
-empty :: ScoreTable
-empty = ScoreTable []
+empty :: ScoreDict
+empty = EM.empty
 
 -- | Insert a new score into the table, Return new table and the ranking.
 -- Make sure the table doesn't grow too large.
@@ -166,12 +175,13 @@ showCloseScores pos h height =
 -- | Generate a slideshow with the current and previous scores.
 highSlideshow :: ScoreTable -- ^ current score table
               -> Int        -- ^ position of the current score in the table
+              -> Text       -- ^ the name of the game mode
               -> Slideshow
-highSlideshow table pos =
+highSlideshow table pos gameModeName =
   let (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
       height = nlines `div` 3
       posStatus = status $ getRecord pos table
-      (subject, person, msgUnless) =
+      (efforts, person, msgUnless) =
         case stOutcome posStatus of
           Killed | stDepth posStatus <= 1 ->
             ("your short-lived struggle", MU.Sg3rd, "(no bonus)")
@@ -195,8 +205,9 @@ highSlideshow table pos =
              else "(bonus included)")
           Restart ->
             ("your abortive attempt", MU.Sg3rd, "(no bonus)")
+      subject =
+        makePhrase [efforts, "in", MU.Capitalize $ MU.Text $ gameModeName]
       msg = makeSentence
-        [ MU.SubjectVerb person MU.Yes subject "award you"
-        , MU.Ordinal pos, "place"
-        , msgUnless ]
+        [ MU.SubjectVerb person MU.Yes (MU.Text subject) "award you"
+        , MU.Ordinal pos, "place", msgUnless ]
   in toSlideshow Nothing $ map ([msg, "\n"] ++) $ showCloseScores pos table height

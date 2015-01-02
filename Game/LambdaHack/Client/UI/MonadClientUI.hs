@@ -230,13 +230,18 @@ scoreToSlideshow total status = do
   -- TODO: we should do this, and make sure we do that after server
   -- saved the updated score table, and not register, but read from it.
   -- Otherwise the score is not accurate, e.g., the number of victims.
-  table <- getsState shigh
+  scoreDict <- getsState shigh
+  gameModeId <- getsState sgameModeId
+  gameMode <- getGameMode
   time <- getsState stime
   date <- liftIO getClockTime
   scurDifficulty <- getsClient scurDifficulty
   factionD <- getsState sfactionD
   loots <- factionLoots fid
-  let showScore (ntable, pos) = HighScore.highSlideshow ntable pos
+  let table = HighScore.getTable gameModeId scoreDict
+      gameModeName = mname gameMode
+      showScore (ntable, pos) =
+        HighScore.highSlideshow ntable pos gameModeName
       diff | not $ fhasUI $ gplayer fact = difficultyDefault
            | otherwise = scurDifficulty
       theirVic (fi, fa) | isAtWar fact fi

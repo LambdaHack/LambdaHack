@@ -27,11 +27,11 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import System.Directory
+import System.Exit (exitFailure)
 import System.FilePath
 import System.IO
 import qualified System.Random as R
 import System.Time
-import System.Exit (exitFailure)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -102,8 +102,8 @@ dumpRngs = do
     hFlush stderr
 
 -- TODO: refactor wrt Game.LambdaHack.Common.Save
--- | Read the high scores table. Return the empty table if no file.
-restoreScore :: MonadServer m => Kind.COps -> m HighScore.ScoreTable
+-- | Read the high scores dictionary. Return the empty table if no file.
+restoreScore :: MonadServer m => Kind.COps -> m HighScore.ScoreDict
 restoreScore Kind.COps{corule} = do
   let stdRuleset = Kind.stdRuleset corule
       scoresFile = rscoresFile stdRuleset
@@ -142,7 +142,8 @@ registerScore status mbody fid = do
       scoresFile = rscoresFile stdRuleset
   dataDir <- liftIO appDataDir
   -- Re-read the table in case it's changed by a concurrent game.
-  table <- restoreScore cops
+  scoreDict <- restoreScore cops
+  gameModeId <- getsState sgameModeId
   time <- getsState stime
   date <- liftIO getClockTime
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
@@ -156,9 +157,10 @@ registerScore status mbody fid = do
           debugPossiblyPrint $ T.intercalate "\n"
           $ HighScore.showScore (pos, HighScore.getRecord pos ntable)
         else
-          if worthMentioning then
-            liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
-          else return ()
+          let nScoreDict = EM.insert gameModeId ntable scoreDict
+          in if worthMentioning then
+               liftIO $ encodeEOF path (nScoreDict :: HighScore.ScoreDict)
+             else return ()
       diff | not $ fhasUI $ gplayer fact = difficultyDefault
            | otherwise = sdifficultySer
       theirVic (fi, fa) | isAtWar fact fi
@@ -168,6 +170,7 @@ registerScore status mbody fid = do
       ourVic (fi, fa) | isAllied fact fi || fi == fid = Just $ gvictims fa
                       | otherwise = Nothing
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
+      table = HighScore.getTable gameModeId scoreDict
       registeredScore =
         HighScore.register table total time status date diff
                            (fname $ gplayer fact)
