@@ -13,7 +13,7 @@ module Game.LambdaHack.Common.ActorState
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, maxActorSkills, dispEnemy
   , fullAssocs, itemToFull, goesIntoInv, goesIntoSha, eqpOverfull
-  , storeFromC, lidFromC, aidFromC
+  , storeFromC, lidFromC, aidFromC, hasCharge
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -389,3 +389,14 @@ aidFromC CFloor{} = Nothing
 aidFromC CEmbed{} = Nothing
 aidFromC (CActor aid _) = Just aid
 aidFromC CTrunk{} = Nothing
+
+hasCharge :: Time -> ItemFull -> Bool
+hasCharge localTime itemFull@ItemFull{..} =
+  let it1 = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
+        Nothing -> []
+        Just timeout ->
+          let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
+              pending startT = timeShift startT timeoutTurns > localTime
+          in filter pending itemTimer
+      len = length it1
+  in len < itemK

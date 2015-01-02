@@ -586,18 +586,8 @@ projectItem aid = do
               coeff CEqp = 1
               coeff CInv = 1
               coeff CSha = undefined  -- banned
-              fRanged ((mben, (_, cstore)), (iid, itemFull@ItemFull{..})) =
-                let it1 = case strengthFromEqpSlot IK.EqpSlotTimeout
-                                                   itemFull of
-                      Nothing -> []
-                      Just timeout ->
-                        let timeoutTurns =
-                              timeDeltaScale (Delta timeTurn) timeout
-                            pending startT =
-                              timeShift startT timeoutTurns > localTime
-                        in filter pending itemTimer
-                    len = length it1
-                    recharged = len < itemK
+              fRanged ((mben, (_, cstore)), (iid, itemFull@ItemFull{itemBase})) =
+                let recharged = hasCharge localTime itemFull
                     trange = totalRange itemBase
                     bestRange =
                       chessDist (bpos b) fpos + 2  -- margin for fleeing
@@ -651,15 +641,8 @@ applyItem aid applyGroup = do
       coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = undefined  -- banned
-      fTool ((mben, (_, cstore)), (iid, itemFull@ItemFull{..})) =
-        let it1 = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
-              Nothing -> []
-              Just timeout ->
-                let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-                    pending startT = timeShift startT timeoutTurns > localTime
-                in filter pending itemTimer
-            len = length it1
-            recharged = len < itemK
+      fTool ((mben, (_, cstore)), (iid, itemFull@ItemFull{itemBase})) =
+        let recharged = hasCharge localTime itemFull
             durableBonus = if IK.Durable `elem` jfeature itemBase
                            then 5  -- we keep it after use
                            else 1

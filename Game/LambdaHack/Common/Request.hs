@@ -14,6 +14,7 @@ import Data.Text (Text)
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -220,21 +221,13 @@ permittedApply triggerSyms localTime skill itemFull@ItemFull{itemBase}
   let calm10 = calmEnough10 b activeItems
   in if skill < 1 then Left ApplyUnskilled
   else if jsymbol itemBase == '?' && skill < 2 then Left ApplyRead
-  else
-    let it1 = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
-          Nothing -> []
-          Just timeout ->
-            let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-                f startT = timeShift startT timeoutTurns > localTime
-            in filter f (itemTimer itemFull)
-        len = length it1
-    in if itemK itemFull == len then Left ApplyCharging
-    else
-      let legal = permittedPrecious calm10 False itemFull
-      in case legal of
-        Left{} -> legal
-        Right False -> legal
-        Right True -> Right $
-          if ' ' `elem` triggerSyms
-          then IK.Applicable `elem` jfeature itemBase
-          else jsymbol itemBase `elem` triggerSyms
+  else if not $ hasCharge localTime itemFull
+       then Left ApplyCharging
+       else let legal = permittedPrecious calm10 False itemFull
+            in case legal of
+              Left{} -> legal
+              Right False -> legal
+              Right True -> Right $
+                if ' ' `elem` triggerSyms
+                then IK.Applicable `elem` jfeature itemBase
+                else jsymbol itemBase `elem` triggerSyms
