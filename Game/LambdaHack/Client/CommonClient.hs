@@ -263,15 +263,15 @@ pickWeaponClient source target = do
   let allAssocs = eqpAssocs ++ bodyAssocs
       calm10 = calmEnough10 sb $ map snd allAssocs
       forced = assert (not $ bproj sb) False
-      legalPrecious = either (const False) id . permittedPrecious calm10 forced
+      permitted = permittedPrecious calm10 forced
+      preferredPrecious = either (const False) id . permitted
       strongest = strongestSlotNoFilter IK.EqpSlotWeapon allAssocs
-      strongestLegal = filter (legalPrecious . snd . snd) strongest
-  case strongestLegal of
+      strongestPreferred = filter (preferredPrecious . snd . snd) strongest
+  case strongestPreferred of
     _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> return []
     [] -> return []
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
-      -- TODO: pick the item according to the frequency of its kind.
       (iid, _) <- rndToAction $ oneOf maxIis
       -- Prefer COrgan, to hint to the player to trash the equivalent CEqp item.
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp

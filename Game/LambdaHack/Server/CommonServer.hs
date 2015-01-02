@@ -454,10 +454,9 @@ pickWeaponServer source = do
         [] -> strongestLegal
   case best of
     [] -> return Nothing
-    iis -> do
-      let is = map snd iis
-      -- TODO: pick the item according to the frequency of its kind.
-      (iid, _) <- rndToAction $ oneOf is
+    iis@((maxS, _) : _) -> do
+      let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
+      (iid, _) <- rndToAction $ oneOf maxIis
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $ Just (iid, cstore)
 
