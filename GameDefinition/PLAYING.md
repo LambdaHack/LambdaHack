@@ -132,6 +132,7 @@ Item-use related keys are as follows.
                 P              describe backpack inventory of the leader
                 S              describe the shared party stash
                 G              describe items on the ground
+                @              describe organs
                 A              describe all owned items
                 g and ,        get an item
                 d              drop an item

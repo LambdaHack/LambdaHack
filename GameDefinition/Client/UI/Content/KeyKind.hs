@@ -100,6 +100,7 @@ standardKeys = KeyKind
       , ("P", ([CmdItem], DescribeItem CInv))
       , ("S", ([CmdItem], DescribeItem CSha))
       , ("G", ([CmdItem], DescribeItem CGround))
+      , ("@", ([CmdItem], DescribeItem COrgan))
       , ("A", ([CmdItem], AllOwned))
       , ("g", ([CmdItem, CmdMinimal],
                MoveItem [CGround] CEqp (Just "get") "an item" True))
@@ -190,7 +191,6 @@ standardKeys = KeyKind
       , ("CTRL-s", ([CmdDebug], GameSave))
       , ("CTRL-f", ([CmdDebug], GameRestart "safari"))
       , ("CTRL-e", ([CmdDebug], GameRestart "defense"))
-      , ("CTRL-O", ([CmdDebug], DescribeItem COrgan))
       , ("CTRL-period", ([CmdInternal], RunOnceAhead))
       , ("CTRL-semicolon", ([CmdInternal], RunOnceToCursor))
       , ("CTRL-colon", ([CmdInternal], ContinueToCursor))

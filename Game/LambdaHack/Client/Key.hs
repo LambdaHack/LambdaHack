@@ -236,6 +236,7 @@ keyTranslate "bracketright"  = Char ']'
 keyTranslate "braceleft"     = Char '{'
 keyTranslate "braceright"    = Char '}'
 keyTranslate "ampersand"     = Char '&'
+keyTranslate "at"            = Char '@'
 keyTranslate "apostrophe"    = Char '\''
 keyTranslate "Escape"        = Esc
 keyTranslate "Return"        = Return
