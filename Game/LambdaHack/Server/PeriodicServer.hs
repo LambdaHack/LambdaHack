@@ -75,8 +75,8 @@ addAnyActor actorFreq lid time mpos = do
   m4 <- rollItem lid actorFreq
   case m4 of
     Nothing -> return Nothing
-    Just (itemKnown, trunkFull, seed, _) -> do
-      let ik = maybe (assert `failure` trunkFull) itemKind $ itemDisco trunkFull
+    Just (itemKnown, trunkFull, itemDisco, seed, _) -> do
+      let ik = itemKind itemDisco
           freqNames = map fst $ IK.ifreq ik
           f fact = fgroup (gplayer fact)
           factNames = map f $ EM.elems factionD

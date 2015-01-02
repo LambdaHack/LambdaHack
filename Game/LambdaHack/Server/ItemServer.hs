@@ -13,6 +13,7 @@ import qualified Data.HashMap.Strict as HM
 import Data.List
 import Data.Maybe
 import Data.Ord
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
@@ -22,6 +23,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
@@ -79,7 +81,8 @@ embedItem lid pos tk = do
 
 rollItem :: (MonadAtomic m, MonadServer m)
          => LevelId -> Freqs ItemKind
-         -> m (Maybe (ItemKnown, ItemFull, ItemSeed, GroupName ItemKind))
+         -> m (Maybe ( ItemKnown, ItemFull, ItemDisco
+                     , ItemSeed, GroupName ItemKind ))
 rollItem lid itemFreq = do
   cops <- getsState scops
   flavour <- getsServer sflavour
@@ -87,28 +90,33 @@ rollItem lid itemFreq = do
   uniqueSet <- getsServer suniqueSet
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
-  m4 <- rndToAction $ newItem cops flavour discoRev uniqueSet
+  m5 <- rndToAction $ newItem cops flavour discoRev uniqueSet
                               itemFreq lid ldepth totalDepth
-  case m4 of
-    Just (_, ItemFull{itemDisco=
-      Just ItemDisco{ itemKindId
-                    , itemAE=Just ItemAspectEffect{jaspects}}}, _, _) ->
+  case m5 of
+    Just (_, _, ItemDisco{ itemKindId
+                         , itemAE=Just ItemAspectEffect{jaspects}}, _, _) ->
       when (IK.Unique `elem` jaspects) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
     _ -> return ()
-  return m4
+  return m5
 
 rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
                     => LevelId -> Freqs ItemKind -> Container -> Bool
                     -> Maybe Int
                     -> m (Maybe (ItemId, (ItemFull, GroupName ItemKind)))
 rollAndRegisterItem lid itemFreq container verbose mk = do
-  m4 <- rollItem lid itemFreq
-  case m4 of
+  m5 <- rollItem lid itemFreq
+  case m5 of
     Nothing -> return Nothing
-    Just (itemKnown, itemFullRaw, seed, itemGroup) -> do
-      let itemFull = itemFullRaw {itemK = fromMaybe (itemK itemFullRaw) mk}
+    Just (itemKnown, itemFullRaw, itemDisco, seed, itemGroup) -> do
+      let item = itemBase itemFullRaw
+          trunkName = makePhrase [MU.WownW (MU.Text $ jname item) "trunk"]
+          itemTrunk = if null $ IK.ikit $ itemKind itemDisco
+                      then item
+                      else item {jname = trunkName}
+          itemFull = itemFullRaw { itemK = fromMaybe (itemK itemFullRaw) mk
+                                 , itemBase = itemTrunk }
       iid <- registerItem (itemBase itemFull) itemKnown seed
                           (itemK itemFull) container verbose
       return $ Just (iid, (itemFull, itemGroup))

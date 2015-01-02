@@ -72,7 +72,8 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
 -- | Generate an item based on level.
 newItem :: Kind.COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
         -> Freqs ItemKind -> LevelId -> AbsDepth -> AbsDepth
-        -> Rnd (Maybe (ItemKnown, ItemFull, ItemSeed, GroupName ItemKind))
+        -> Rnd (Maybe ( ItemKnown, ItemFull, ItemDisco
+                      , ItemSeed, GroupName ItemKind ))
 newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         flavour discoRev uniqueSet itemFreq jlid
         ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) = do
@@ -104,11 +105,13 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
     let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
         itemK = max 1 itemN
         itemTimer = []
-        itemDisco = Just ItemDisco {itemKindId, itemKind, itemAE = Just iae}
+        itemDiscoData = ItemDisco {itemKindId, itemKind, itemAE = Just iae}
+        itemDisco = Just itemDiscoData
         iae = seedToAspectsEffects seed itemKind ldepth totalDepth
         itemFull = ItemFull {..}
     return $ Just ( (jkindIx itemBase, iae)
                   , itemFull
+                  , itemDiscoData
                   , seed
                   , itemGroup )
 

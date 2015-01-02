@@ -725,10 +725,10 @@ effectCreateItem target store grp tim = do
   let c = CActor target store
   bagBefore <- getsState $ getCBag c
   let litemFreq = [(grp, 1)]
-  m4 <- rollItem (blid tb) litemFreq
-  let (itemKnown, itemFull, seed, _) = case m4 of
+  m5 <- rollItem (blid tb) litemFreq
+  let (itemKnown, itemFull, _, seed, _) = case m5 of
         Nothing -> assert `failure` (blid tb, litemFreq, c)
-        Just i4 -> i4
+        Just i5 -> i5
   itemRev <- getsServer sitemRev
   let mquant = case HM.lookup itemKnown itemRev of
         Nothing -> Nothing
