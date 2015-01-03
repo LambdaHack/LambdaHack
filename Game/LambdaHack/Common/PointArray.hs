@@ -2,7 +2,7 @@
 module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateA, generateMA, sizeA
-  , foldlA, ifoldlA, mapA, imapA, unsafeSetA, mapWithKeyM_A
+  , foldlA, ifoldlA, mapA, imapA, unsafeSetA, unsafeUpdateA, mapWithKeyM_A
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
   ) where
 
@@ -60,6 +60,14 @@ punindex xsize n = let (y, x) = n `quotRem` xsize
 {-# INLINE (//) #-}
 (//) Array{..} l = let v = avector U.// map (pindex axsize *** cnv) l
                    in Array{avector = v, ..}
+
+unsafeUpdateA :: Enum c => Array c -> [(Point, c)] -> Array c
+{-# INLINE unsafeUpdateA #-}
+unsafeUpdateA Array{..} l = unsafeDupablePerformIO $ do
+  vThawed <- U.unsafeThaw avector
+  mapM_ (\(p, c) -> VM.write vThawed (pindex axsize p) (cnv c)) l
+  vFrozen <- U.unsafeFreeze vThawed
+  return $! Array{avector = vFrozen, ..}
 
 -- | Create an array from a replicated element.
 replicateA :: Enum c => X -> Y -> c -> Array c

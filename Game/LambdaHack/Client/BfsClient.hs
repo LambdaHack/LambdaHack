@@ -65,7 +65,6 @@ getCacheBfsAndPath aid target = do
                                  (sbfsD cli)}
         return (bfs, mpath)
   mbfs <- getsClient $ EM.lookup aid . sbfsD
-  modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}
   case mbfs of
     Just (True, bfs, targetOld, sepsOld, mpath)
       -- TODO: hack: in screensavers this is not always ensured, so check here:

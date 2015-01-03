@@ -36,7 +36,7 @@ minKnownBfs = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
 apartBfs :: BfsDistance
 apartBfs = pred minKnownBfs
 
--- TODO: costly; peephole optimize, optmize BFS, don't call so often
+-- TODO: costly; use a ring buffer instead of the lists, don't call so often
 -- | Fill out the given BFS array.
 fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
         -> (Point -> Point -> Bool)       -- ^ is a move from unknown legal
@@ -71,7 +71,7 @@ fillBfs isEnterable passUnknown origin aInitial =
                   (mvsK, mvsU) = foldl' fKnown ([], []) moves
                   upd = zip mvsK (repeat distance)
                         ++ zip mvsU (repeat distCompl)
-                  !a3 = a2 PointArray.// upd
+                  !a3 = PointArray.unsafeUpdateA a2 upd
               in (mvsK ++ succK2, mvsU ++ succU2, a3)
             processUnknown (succU2, a2) pos =
               let fUnknown lU move =
@@ -83,7 +83,7 @@ fillBfs isEnterable passUnknown origin aInitial =
                        else lU
                   mvsU = foldl' fUnknown [] moves
                   upd = zip mvsU (repeat distCompl)
-                  !a3 = a2 PointArray.// upd
+                  !a3 = PointArray.unsafeUpdateA a2 upd
               in (mvsU ++ succU2, a3)
             (succU4, !a4) = foldl' processUnknown ([], a) predU
             (succK6, succU6, !a6) = foldl' processKnown ([], succU4, a4) predK
@@ -92,9 +92,8 @@ fillBfs isEnterable passUnknown origin aInitial =
            else if distance == predMaxKnownBfs  -- wasting one Known slot
                 then a6  -- too far
                 else bfs (succ distance) succK6 succU6 a6
-  in PointArray.forceA  -- no more modifications of this array
-     $ bfs (succ minKnownBfs) [origin] []
-           (aInitial PointArray.// [(origin, minKnownBfs)])
+  in bfs (succ minKnownBfs) [origin] []
+         (PointArray.unsafeUpdateA aInitial [(origin, minKnownBfs)])
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
 -- to determine a few really different paths and compare them,
