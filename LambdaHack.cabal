@@ -272,7 +272,7 @@ library
     cpp-options:      -DEXPOSE_INTERNAL
 
   if flag(release) {
-    cpp-options:      -DEXPOSE_INTERNAL
+    cpp-options:      -DEXPOSE_INTERNAL -DNO_EXPENSIVE_ASSERTIONS
 -- 7.6.3 has broken -O2, apparently
     if impl(ghc > 7.8)
       ghc-options:      -O2 -fno-ignore-asserts

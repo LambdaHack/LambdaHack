@@ -1,8 +1,12 @@
+{-# LANGUAGE CPP #-}
 -- | DFOV (Digital Field of View) implemented according to specification at <http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation>.
 -- This fast version of the algorithm, based on "PFOV", has AFAIK
 -- never been described nor implemented before.
 module Game.LambdaHack.Server.Fov.Digital
-  ( scan, dline, dsteeper, intersect, debugSteeper, debugLine
+  ( scan
+#ifdef EXPOSE_INTERNAL
+  , dline, dsteeper, intersect, debugSteeper, debugLine
+#endif
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -80,14 +84,21 @@ dline :: Bump -> Bump -> Line
 {-# INLINE dline #-}
 dline p1 p2 =
   let line = Line p1 p2
-  in assert (uncurry blame $ debugLine line) line
+  in
+#ifndef NO_EXPENSIVE_ASSERTIONS
+    assert (uncurry blame $ debugLine line)
+#endif
+      line
 
 -- | Compare steepness of @(p1, f)@ and @(p2, f)@.
 -- Debug: Verify that the results of 2 independent checks are equal.
 dsteeper :: Bump -> Bump -> Bump -> Bool
 {-# INLINE dsteeper #-}
 dsteeper f p1 p2 =
-  assert (res == debugSteeper f p1 p2) res
+#ifndef NO_EXPENSIVE_ASSERTIONS
+  assert (res == debugSteeper f p1 p2)
+#endif
+    res
  where res = steeper f p1 p2
 
 -- | The X coordinate, represented as a fraction, of the intersection of
@@ -96,7 +107,9 @@ dsteeper f p1 p2 =
 intersect :: Line -> Distance -> (Int, Int)
 {-# INLINE intersect #-}
 intersect (Line (B x y) (B xf yf)) d =
+#ifndef NO_EXPENSIVE_ASSERTIONS
   assert (allB (>= 0) [y, yf])
+#endif
     ((d - y)*(xf - x) + x*(yf - y), yf - y)
 {-
 Derivation of the formula:

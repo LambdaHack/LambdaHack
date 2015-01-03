@@ -6,7 +6,7 @@ module Game.LambdaHack.Server.Fov
   ( dungeonPerception, fidLidPerception
   , PersLit, litInDungeon
 #ifdef EXPOSE_INTERNAL
-  , PerceptionLit, ActorEqpBody
+  , PerceptionReachable(..), PerceptionLit(..), ActorEqpBody
 #endif
   ) where
 
