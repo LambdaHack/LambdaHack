@@ -45,7 +45,7 @@ targetStrategy oldLeader aid = do
   let stdRuleset = Kind.stdRuleset corule
       nearby = rnearby stdRuleset
   itemToF <- itemToFullClient
-  modifyClient $ \cli -> cli { sbfsD = EM.delete aid (sbfsD cli)
+  modifyClient $ \cli -> cli { sbfsD = invalidateBfs aid (sbfsD cli)
                              , seps = seps cli + 773 }  -- randomize paths
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid

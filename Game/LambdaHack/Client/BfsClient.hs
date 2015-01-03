@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, TupleSections #-}
 -- | Breadth first search and realted algorithms using the client monad.
 module Game.LambdaHack.Client.BfsClient
-  ( getCacheBfsAndPath, getCacheBfs, accessCacheBfs
+  ( invalidateBfs, getCacheBfsAndPath, getCacheBfs, accessCacheBfs
   , unexploredDepth, closestUnknown, closestSuspect, closestSmell, furthestKnown
   , closestTriggers, closestItems, closestFoes
   ) where
@@ -35,6 +35,17 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind (TileKind)
 
+invalidateBfs :: ActorId
+              -> (EM.EnumMap ActorId
+                        ( Bool, PointArray.Array BfsDistance
+                        , Point, Int, Maybe [Point]) )
+              -> (EM.EnumMap ActorId
+                        ( Bool, PointArray.Array BfsDistance
+                        , Point, Int, Maybe [Point]) )
+invalidateBfs =
+  EM.adjust
+    (\(_, bfs, target, seps, mpath) -> (False, bfs, target, seps, mpath))
+
 -- | Get cached BFS data and path or, if not stored, generate,
 -- store and return. Due to laziness, they are not calculated until needed.
 getCacheBfsAndPath :: forall m. MonadClient m
@@ -50,11 +61,13 @@ getCacheBfsAndPath aid target = do
       pathAndStore bfs = do
         let mpath = findPathBfs isEnterable passUnknown origin target seps bfs
         modifyClient $ \cli ->
-          cli {sbfsD = EM.insert aid (bfs, target, seps, mpath) (sbfsD cli)}
+          cli {sbfsD = EM.insert aid (True, bfs, target, seps, mpath)
+                                 (sbfsD cli)}
         return (bfs, mpath)
   mbfs <- getsClient $ EM.lookup aid . sbfsD
+  modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}
   case mbfs of
-    Just (bfs, targetOld, sepsOld, mpath)
+    Just (True, bfs, targetOld, sepsOld, mpath)
       -- TODO: hack: in screensavers this is not always ensured, so check here:
       | bfs PointArray.! bpos b == succ apartBfs ->
       if targetOld == target && sepsOld == seps
@@ -62,7 +75,11 @@ getCacheBfsAndPath aid target = do
       else pathAndStore bfs
     _ -> do
       Level{lxsize, lysize} <- getLevel $ blid b
-      let vInitial = PointArray.replicateA lxsize lysize apartBfs
+      let vInitial = case mbfs of
+            Just (_, bfsInvalid, _, _, _) ->  -- TODO: we should verify size
+              PointArray.unsafeSetA apartBfs bfsInvalid
+            _ ->
+              PointArray.replicateA lxsize lysize apartBfs
           bfs = fillBfs isEnterable passUnknown origin vInitial
       pathAndStore bfs
 
@@ -71,8 +88,8 @@ getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
 getCacheBfs aid = do
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
-    Just (bfs, _, _, _) -> return bfs
-    Nothing -> fmap fst $ getCacheBfsAndPath aid (Point 0 0)
+    Just (True, bfs, _, _, _) -> return bfs
+    _ -> fmap fst $ getCacheBfsAndPath aid (Point 0 0)
 
 condBFS :: MonadClient m
         => ActorId

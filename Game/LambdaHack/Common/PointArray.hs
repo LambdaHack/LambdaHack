@@ -2,7 +2,7 @@
 module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateA, generateMA, sizeA
-  , foldlA, ifoldlA, mapA, imapA, mapWithKeyM_A
+  , foldlA, ifoldlA, mapA, imapA, unsafeSetA, mapWithKeyM_A
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
   ) where
 
@@ -13,6 +13,8 @@ import Data.Vector.Binary ()
 import qualified Data.Vector.Fusion.Stream as Stream
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
+import qualified Data.Vector.Unboxed.Mutable as VM
+import System.IO.Unsafe (unsafeDupablePerformIO)
 
 import Game.LambdaHack.Common.Point
 
@@ -116,6 +118,17 @@ imapA :: (Enum c, Enum d) => (Point -> c -> d) -> Array c -> Array d
 imapA f Array{..} =
   let v = U.imap (\n c -> cnv $ f (punindex axsize n) (cnv c)) avector
   in Array{avector = v, ..}
+
+-- | Set all elements to the given value, in place.
+unsafeSetA :: Enum c => c -> Array c -> Array c
+{-# INLINE unsafeSetA #-}
+unsafeSetA c Array{..} = unsafeDupablePerformIO $ do
+  vThawed <- U.unsafeThaw avector
+  VM.set vThawed (cnv c)
+  vFrozen <- U.unsafeFreeze vThawed
+  return $! Array{avector = vFrozen, ..}
+-- too conservative:
+--   Array{avector = U.modify (\v -> VM.set v (cnv c)) avector, ..}
 
 -- | Map monadically over an array (function applied to each element
 -- and its index) and ignore the results.

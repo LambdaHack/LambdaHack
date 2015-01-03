@@ -12,6 +12,7 @@ import Data.Ord
 
 import Game.LambdaHack.Client.AI.ConditionClient
 import Game.LambdaHack.Client.AI.PickTargetClient
+import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -68,7 +69,7 @@ pickActorToMove refreshTarget oldAid = do
                       Nothing -> return $! TEnemy leader True
                       Just (tgtLeader, _) -> return tgtLeader
                   modifyClient $ \cli ->
-                    cli { sbfsD = EM.delete oldAid (sbfsD cli)
+                    cli { sbfsD = invalidateBfs oldAid (sbfsD cli)
                         , seps = seps cli + 773 }  -- randomize paths
                   mpath <- createPath oldAid tgtLeader
                   let tgtMPath = maybe (tgtLeader, Nothing)
