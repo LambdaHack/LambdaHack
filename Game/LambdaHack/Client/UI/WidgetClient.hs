@@ -92,6 +92,9 @@ displayPush prompt = do
 
 describeMainKeys :: MonadClientUI m => m Msg
 describeMainKeys = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  let underAI = isAIFact fact
   stgtMode <- getsClient stgtMode
   Binding{brevMap} <- askBinding
   Config{configVi, configLaptop} <- askConfig
@@ -122,7 +125,8 @@ describeMainKeys = do
         TEnemyPos _ _ _ False -> "enemy"
         TPoint{} -> "position"
         TVector{} -> "vector"
-      keys | isNothing stgtMode =
+      keys | underAI = ""
+           | isNothing stgtMode =
         "Explore with numpad or keys or mouse: ["
         <> moveKeys
         <> (T.intercalate ", " $ map K.showKM
