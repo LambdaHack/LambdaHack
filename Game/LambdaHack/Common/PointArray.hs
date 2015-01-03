@@ -8,13 +8,13 @@ module Game.LambdaHack.Common.PointArray
 
 import Control.Arrow ((***))
 import Control.Monad
+import Control.Monad.ST.Strict
 import Data.Binary
 import Data.Vector.Binary ()
 import qualified Data.Vector.Fusion.Stream as Stream
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
-import System.IO.Unsafe (unsafeDupablePerformIO)
 
 import Game.LambdaHack.Common.Point
 
@@ -63,7 +63,7 @@ punindex xsize n = let (y, x) = n `quotRem` xsize
 
 unsafeUpdateA :: Enum c => Array c -> [(Point, c)] -> Array c
 {-# INLINE unsafeUpdateA #-}
-unsafeUpdateA Array{..} l = unsafeDupablePerformIO $ do
+unsafeUpdateA Array{..} l = runST $ do
   vThawed <- U.unsafeThaw avector
   mapM_ (\(p, c) -> VM.write vThawed (pindex axsize p) (cnv c)) l
   vFrozen <- U.unsafeFreeze vThawed
@@ -130,7 +130,7 @@ imapA f Array{..} =
 -- | Set all elements to the given value, in place.
 unsafeSetA :: Enum c => c -> Array c -> Array c
 {-# INLINE unsafeSetA #-}
-unsafeSetA c Array{..} = unsafeDupablePerformIO $ do
+unsafeSetA c Array{..} = runST $ do
   vThawed <- U.unsafeThaw avector
   VM.set vThawed (cnv c)
   vFrozen <- U.unsafeFreeze vThawed
