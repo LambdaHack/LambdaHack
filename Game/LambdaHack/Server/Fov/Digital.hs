@@ -5,7 +5,7 @@
 module Game.LambdaHack.Server.Fov.Digital
   ( scan
 #ifdef EXPOSE_INTERNAL
-  , dline, dsteeper, intersect, debugSteeper, debugLine
+  , dline, dsteeper, intersect, _debugSteeper, _debugLine
 #endif
   ) where
 
@@ -85,8 +85,8 @@ dline :: Bump -> Bump -> Line
 dline p1 p2 =
   let line = Line p1 p2
   in
-#ifndef NO_EXPENSIVE_ASSERTIONS
-    assert (uncurry blame $ debugLine line)
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+    assert (uncurry blame $ _debugLine line)
 #endif
       line
 
@@ -95,8 +95,8 @@ dline p1 p2 =
 dsteeper :: Bump -> Bump -> Bump -> Bool
 {-# INLINE dsteeper #-}
 dsteeper f p1 p2 =
-#ifndef NO_EXPENSIVE_ASSERTIONS
-  assert (res == debugSteeper f p1 p2)
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+  assert (res == _debugSteeper f p1 p2)
 #endif
     res
  where res = steeper f p1 p2
@@ -107,7 +107,7 @@ dsteeper f p1 p2 =
 intersect :: Line -> Distance -> (Int, Int)
 {-# INLINE intersect #-}
 intersect (Line (B x y) (B xf yf)) d =
-#ifndef NO_EXPENSIVE_ASSERTIONS
+#ifdef WITH_EXPENSIVE_ASSERTIONS
   assert (allB (>= 0) [y, yf])
 #endif
     ((d - y)*(xf - x) + x*(yf - y), yf - y)
@@ -143,18 +143,18 @@ cordinates coincide with the Bump coordinates, unlike in PFOV.
 -- | Debug functions for DFOV:
 
 -- | Debug: calculate steeper for DFOV in another way and compare results.
-debugSteeper :: Bump -> Bump -> Bump -> Bool
-{-# INLINE debugSteeper #-}
-debugSteeper f@(B _xf yf) p1@(B _x1 y1) p2@(B _x2 y2) =
+_debugSteeper :: Bump -> Bump -> Bump -> Bool
+{-# INLINE _debugSteeper #-}
+_debugSteeper f@(B _xf yf) p1@(B _x1 y1) p2@(B _x2 y2) =
   assert (allB (>= 0) [yf, y1, y2]) $
   let (n1, k1) = intersect (Line p1 f) 0
       (n2, k2) = intersect (Line p2 f) 0
   in n1 * k2 >= k1 * n2
 
 -- | Debug: check if a view border line for DFOV is legal.
-debugLine :: Line -> (Bool, String)
-{-# INLINE debugLine #-}
-debugLine line@(Line (B x1 y1) (B x2 y2))
+_debugLine :: Line -> (Bool, String)
+{-# INLINE _debugLine #-}
+_debugLine line@(Line (B x1 y1) (B x2 y2))
   | not (allB (>= 0) [y1, y2]) =
       (False, "negative coordinates: " ++ show line)
   | y1 == y2 && x1 == x2 =

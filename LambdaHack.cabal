@@ -83,6 +83,11 @@ flag expose_internal
   default:            False
   manual:             True
 
+flag with_expensive_assertions
+  description:        turn on expensive assertions of well-tested code
+  default:            False
+  manual:             True
+
 flag release
   description:        prepare for a release (expose, optimize, etc.)
   default:            False
@@ -271,8 +276,11 @@ library
   if flag(expose_internal)
     cpp-options:      -DEXPOSE_INTERNAL
 
+  if flag(with_expensive_assertions)
+    cpp-options:      -DWITH_EXPENSIVE_ASSERTIONS
+
   if flag(release) {
-    cpp-options:      -DEXPOSE_INTERNAL -DNO_EXPENSIVE_ASSERTIONS
+    cpp-options:      -DEXPOSE_INTERNAL
 -- 7.6.3 has broken -O2, apparently
     if impl(ghc > 7.8)
       ghc-options:      -O2 -fno-ignore-asserts
