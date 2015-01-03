@@ -49,6 +49,7 @@ strengthAspectMaybe f itemFull =
     xs -> assert `failure` (xs, itemFull)
 
 strengthEffect :: (Effect -> [b]) -> ItemFull -> [b]
+{-# INLINE strengthEffect #-}
 strengthEffect f itemFull =
   case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->

@@ -122,22 +122,18 @@ condBlocksFriendsM aid = do
 -- | Require the actor stands over a weapon.
 condFloorWeaponM :: MonadClient m => ActorId -> m Bool
 condFloorWeaponM aid = do
-  b <- getsState $ getActorBody aid
-  localTime <- getsState $ getLocalTime (blid b)
   floorAssocs <- fullAssocsClient aid [CGround]
   -- We do consider OFF weapons, because e.g., enemies might have turned
   -- them off or they can be wrong for other party members, but are OK for us.
-  let lootIsWeapon = not $ null $ strongestMelee localTime floorAssocs
+  let lootIsWeapon = any (isMelee . snd) floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
 -- | Check whether the actor has no weapon in equipment.
 condNoEqpWeaponM :: MonadClient m => ActorId -> m Bool
 condNoEqpWeaponM aid = do
-  b <- getsState $ getActorBody aid
-  localTime <- getsState $ getLocalTime (blid b)
   allAssocs <- fullAssocsClient aid [CEqp]
   -- We do not consider OFF weapons, because they apparently are not good.
-  return $ null $ strongestMelee localTime allAssocs
+  return $ all (not . isMelee . snd) allAssocs
     -- keep it lazy
 
 -- | Require that the actor can project any items.
