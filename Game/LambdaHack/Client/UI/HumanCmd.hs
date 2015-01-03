@@ -171,7 +171,7 @@ cmdDescription cmd = case cmd of
   MoveCursor v k ->
     "move cursor up to" <+> tshow k <+> "steps" <+> compassText v
   TgtFloor -> "cycle targeting mode"
-  TgtEnemy -> "target enemy"
+  TgtEnemy -> "select enemy"
   TgtAscend k | k == 1  -> "target next shallower level"
   TgtAscend k | k >= 2  -> "target" <+> tshow k    <+> "levels shallower"
   TgtAscend k | k == -1 -> "target next deeper level"
@@ -188,8 +188,8 @@ cmdDescription cmd = case cmd of
   Accept -> "accept choice"
   CursorPointerFloor -> "set cursor to floor under pointer"
   CursorPointerEnemy -> "set cursor to enemy under pointer"
-  TgtPointerFloor -> "target floor under pointer"
-  TgtPointerEnemy -> "target enemy under pointer"
+  TgtPointerFloor -> "enter targeting mode and describe a tile"
+  TgtPointerEnemy -> "enter targeting mode and describe an enemy"
 
 triggerDescription :: [Trigger] -> Text
 triggerDescription [] = "trigger a thing"

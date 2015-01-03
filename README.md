@@ -118,13 +118,14 @@ Compatibility notes
 The current code was tested with GHC 7.6 and 7.8,
 but should also work with other GHC versions, with minor modifications.
 
-If you are using the terminal frontends, numerical keypad may not work
+If you are using a terminal frontend, numeric keypad may not work
 correctly depending on versions of the libraries, terminfo and terminal
 emulators. The curses frontend is not fully supported due to the limitations
-of the curses library. With the vty frontend run in an xterm,
+of the curses library. With the vty frontend started in an xterm,
 CTRL-keypad keys for running seem to work OK, but on rxvt they do not.
 Laptop (uk8o79jl) and Vi keys (hjklyubn, if enabled in config.ui.ini)
-should work everywhere regardless. GTK works fine, too.
+should work everywhere regardless. GTK works fine, too, both with
+numeric keypad and with mouse.
 
 
 Testing and debugging

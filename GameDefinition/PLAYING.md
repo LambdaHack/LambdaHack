@@ -39,7 +39,7 @@ HP (hit points, health). At the end, the personal target of the leader
 is described, in this case a basilisk monster, with hit points drawn as a bar.
 
 Weapon damage and other item stats are displayed using the dice notation `XdY`.
-which means X rolls of Y-sided dice. A variant denoted 'XdsY' is additionally
+which means X rolls of Y-sided dice. A variant denoted `XdsY` is additionally
 scaled by the level depth in proportion to the maximal dungeon depth.
 
 The second status line describes the current dungeon location in relation
@@ -49,7 +49,7 @@ to the party.
 
 First comes the depth of the current level and its name.
 Then the percentage of its explorable tiles already seen by the heroes.
-The 'cursor' is the common target of the whole party,
+The 'cursor' is the common focus of the whole party,
 directly manipulated with movement keys in the targeting mode.
 At the end comes the length of the shortest path from the leader
 to the cursor position and the straight-line distance between the two points.
@@ -80,10 +80,10 @@ during a single game, its layout is the same.
 Commands
 --------
 
-You move throughout the level using the numerical keypad (left diagram)
-or its compact laptop replacement (middle) or Vi text editor keys
-(right, also known as "Rogue-like keys", which have to be enabled
-in config.ui.ini).
+You move throughout the level using the left mouse button or the numeric
+keypad (left diagram) or its compact laptop replacement (middle)
+or Vi text editor keys (right, also known as "Rogue-like keys",
+which have to be enabled in config.ui.ini).
 
                 7 8 9          7 8 9          y k u
                  \|/            \|/            \|/
@@ -91,14 +91,15 @@ in config.ui.ini).
                  /|\            /|\            /|\
                 1 2 3          j k l          b j n
 
-In targeting mode the keys above move the targeting cursor. In normal mode,
-`SHIFT` (or `CTRL`) and a movement key make the current party leader
+In targeting mode the keys above (or mouse buttons)
+move the targeting cursor. In normal mode, `SHIFT` (or `CTRL`)
+and a movement key make the current party leader
 (and currently selected party members, if any) run in the indicated
 direction, until anything of interest is spotted.
-The '5', 'i' and '.' keys consume a turn and make you brace for combat,
+The `5`, `i` and `.` keys consume a turn and make you brace for combat,
 which reduces any damage taken for a turn and makes it impossible
 for foes to displace you. You displace enemies or friends by bumping
-into them with SHIFT (or CTRL).
+into them with `SHIFT` (or `CTRL`).
 
 Melee, searching for secret doors, looting and opening closed doors
 can be done by bumping into a monster, a wall and a door, respectively.
@@ -107,7 +108,7 @@ Few commands other than movement, 'g'etting an item from the floor,
 Some are provided only as specialized versions of more general commands
 or as building blocks for more complex convenience commands,
 e.g., the autoexplore command (key `X`) could be defined
-by the player as a macro using `BACKSPACE`, `CTRL-?`, `;` and `V`.
+by the player as a macro using `CTRL-?`, `:` and `V`.
 
 Below are the remaining keys for terrain exploration and alteration.
 
@@ -147,16 +148,18 @@ Item-use related keys are as follows.
                 z              zap wand
 
 To make a ranged attack, as in the last few commands above,
-you need to set your target first (however, initial target is set
-automatically as soon as a monster comes into view). Once in targeting mode,
-you can move the targeting cursor with arrow keys and switch focus
-among enemies with `*` (or among friends, projectiles and enemies, depending
-on targeting mode toggled by `/`). The details of the shared cursor position
-and of the personal target are described in the status lines, at the bottom
-of the screen. All targeting keys are listed below.
+you may need to set your cursor first with the middle mouse button
+(note however, that cursor position is also set automatically as soon
+as a monster comes into view). You can also enter detailed targetting
+mode with the right mouse button or with the `*` key that selects enemies
+or the `/` key that marks a tile. You move the targeting cursor
+with direction keys and assign a personal target with `RET`. The details
+of the shared cursor position and of the personal target are described
+in the status lines, at the bottom of the screen. All targeting keys
+are listed below.
 
                 keys           command
-                KEYPAD_* and \ target enemy
+                KEYPAD_* and \ select enemy
                 /              cycle targeting mode
                 +              swerve targeting line
                 -              unswerve targeting line
@@ -195,14 +198,15 @@ Assorted remaining keys and commands follow.
                 RET            accept choice
                 0--6           pick a new hero leader anywhere in the dungeon
 
-Mouse can be used to move party members and to set targets.
+Mouse pointer and buttons can move party members and set the targeting cursor.
+As with movement keys, `CTRL` can here be used interchangeably with `SHIFT`.
 
                 keys                command
                 LEFT-BUTTON         go to pointer for 100 steps
                 SHIFT-LEFT-BUTTON   run collectively to pointer for 100 steps
                 MIDDLE-BUTTON       set cursor to enemy under pointer
                 SHIFT-MIDDLE-BUTTON set cursor to floor under pointer
-                RIGHT-BUTTON        target enemy under pointer
+                RIGHT-BUTTON        enter targeting mode and describe an enemy
 
 Commands for saving and exiting the current game, starting a new game, etc.,
 are listed in the Main Menu, brought up by the `ESC` key.

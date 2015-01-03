@@ -90,6 +90,14 @@ continueRun arena paramOld = case paramOld of
 -- it ajusts the direction given by the vector if we reached
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
+--
+-- Note that while goto-cursor commands ignore items on the way,
+-- here we stop wnenever we touch an item. Running is more cautious
+-- to compensate that the player cannot specify the end-point of running.
+-- It's also more suited to open, already explored terrain. Goto-cursor
+-- works better with unknown terrain, e.g., it stops whenever an item
+-- is spotted, but then ignores the item, leaving it to the player
+-- to mark the item position as a goal of the next goto.
 continueRunDir :: MonadClient m
                => RunParams -> m (Either Msg Vector)
 continueRunDir params = case params of

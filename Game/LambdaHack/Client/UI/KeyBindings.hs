@@ -55,8 +55,8 @@ keyHelp :: Binding -> Slideshow
 keyHelp Binding{bcmdList} =
   let
     minimalBlurb =
-      [ "Move throughout a level with numerical keypad or, optionally, other keys."
-      , "Run ahead (until anything disturbs you) with SHIFT (or CTRL) and a key."
+      [ "Walk throughout a level with numeric keypad or, optionally, other keys."
+      , "Run (until anything disturbs you) with mouse or SHIFT (or CTRL) and a key."
       , ""
       , "               7 8 9          7 8 9          y k u"
       , "                \\|/            \\|/            \\|/"
@@ -72,10 +72,10 @@ keyHelp Binding{bcmdList} =
       , "Press SPACE to see detailed descriptions of all commands."
       ]
     movBlurb =
-      [ "Move throughout a level with numerical keypad (left diagram)"
+      [ "Walk throughout a level with numeric keypad (left diagram)"
       , "or its compact laptop replacement (middle) or Vi text editor keys"
       , "(right, also known as \"Rogue-like keys\"; can be enabled in config.ui.ini)."
-      , "Run ahead, until anything disturbs you, with SHIFT (or CTRL) and a key."
+      , "Run, until disturbed, with left mouse button or SHIFT (or CTRL) and a key."
       , ""
       , "               7 8 9          7 8 9          y k u"
       , "                \\|/            \\|/            \\|/"
@@ -83,7 +83,7 @@ keyHelp Binding{bcmdList} =
       , "                /|\\            /|\\            /|\\"
       , "               1 2 3          j k l          b j n"
       , ""
-      , "In targeting mode the very same keys move the targeting cursor."
+      , "In targeting mode the same keys (or mouse) move the targeting cursor."
       , "Press '5' or 'i' or '.' to wait, bracing for blows, which reduces"
       , "any damage taken and makes it impossible for foes to displace you."
       , "You displace enemies or friends by bumping into them with SHIFT (or CTRL)."
