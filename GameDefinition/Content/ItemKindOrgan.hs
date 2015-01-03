@@ -131,7 +131,7 @@ lip = fist
   , ifreq    = [("lip", 10)]
   , icount   = 2
   , iverbHit = "lap"
-  , ieffects = [Hurt (2 * d 1), DropItem COrgan "keen-smelling" True]  -- TODO: decrease Hurt, but use
+  , ieffects = [Hurt (1 * d 1), DropItem COrgan "keen-smelling" True]
   , idesc    = ""
   }
 torsionRight = fist
@@ -189,7 +189,7 @@ venomTooth = fist
   , icount   = 2
   , iverbHit = "bite"
   , iaspects = [Timeout $ 5 + d 3]
-  , ieffects = [ Hurt (3 * d 1)
+  , ieffects = [ Hurt (2 * d 1)
                , Recharging (toOrganGameTurn "slow 10" (3 + d 3)) ]
   , idesc    = ""
   }
@@ -201,7 +201,7 @@ venomFang = fist
   , icount   = 2
   , iverbHit = "bite"
   , iaspects = [Timeout $ 7 + d 5]
-  , ieffects = [ Hurt (3 * d 1)
+  , ieffects = [ Hurt (2 * d 1)
                , Recharging (toOrganNone "poisoned") ]
   , idesc    = ""
   }
@@ -220,7 +220,7 @@ pupil = fist
   , icount   = 1
   , iverbHit = "gaze at"
   , iaspects = [AddSight 10, Timeout $ 5 + d 5]
-  , ieffects = [Hurt (3 * d 1), Recharging (DropItem COrgan "temporary conditions" True)]  -- TODO: decrease Hurt, but use
+  , ieffects = [Hurt (2 * d 1), Recharging (DropItem COrgan "temporary conditions" True)]
   , idesc    = ""
   }
 
