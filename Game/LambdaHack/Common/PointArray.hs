@@ -2,7 +2,8 @@
 module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateA, generateMA, sizeA
-  , foldlA, ifoldlA, mapA, imapA, unsafeSetA, unsafeUpdateA, mapWithKeyM_A
+  , foldlA, ifoldlA, mapA, imapA, mapWithKeyM_A
+  , safeSetA, unsafeSetA, unsafeUpdateA
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
   ) where
 
@@ -135,8 +136,12 @@ unsafeSetA c Array{..} = runST $ do
   VM.set vThawed (cnv c)
   vFrozen <- U.unsafeFreeze vThawed
   return $! Array{avector = vFrozen, ..}
--- too conservative:
---   Array{avector = U.modify (\v -> VM.set v (cnv c)) avector, ..}
+
+-- | Set all elements to the given value, in place, if possible.
+safeSetA :: Enum c => c -> Array c -> Array c
+{-# INLINE safeSetA #-}
+safeSetA c Array{..} =
+  Array{avector = U.modify (\v -> VM.set v (cnv c)) avector, ..}
 
 -- | Map monadically over an array (function applied to each element
 -- and its index) and ignore the results.

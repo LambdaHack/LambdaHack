@@ -76,7 +76,10 @@ getCacheBfsAndPath aid target = do
       Level{lxsize, lysize} <- getLevel $ blid b
       let vInitial = case mbfs of
             Just (_, bfsInvalid, _, _, _) ->  -- TODO: we should verify size
-              PointArray.unsafeSetA apartBfs bfsInvalid
+              -- We need to use the safe set, because previous values
+              -- of the BFS array for the actor can be stuck unevaluated
+              -- in thunks and we are not allowed to overwrite them.
+              PointArray.safeSetA apartBfs bfsInvalid
             _ ->
               PointArray.replicateA lxsize lysize apartBfs
           bfs = fillBfs isEnterable passUnknown origin vInitial

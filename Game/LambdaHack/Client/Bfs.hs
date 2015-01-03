@@ -38,6 +38,9 @@ apartBfs = pred minKnownBfs
 
 -- TODO: costly; use a ring buffer instead of the lists, don't call so often
 -- | Fill out the given BFS array.
+-- Unsafe @PointArray@ operations are OK here, because the intermediate
+-- values of the vector don't leak anywhere outside nor are kept unevaluated
+-- and so they can't be overwritten by the unsafe side-effect.
 fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
         -> (Point -> Point -> Bool)       -- ^ is a move from unknown legal
         -> Point                          -- ^ starting position
