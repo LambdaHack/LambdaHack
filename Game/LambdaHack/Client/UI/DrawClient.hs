@@ -293,9 +293,11 @@ drawLeaderDamage width = do
                    (T.unpack t)
   stats <- case mleader of
     Just leader -> do
+      b <- getsState $ getActorBody leader
+      localTime <- getsState $ getLocalTime (blid b)
       allAssocs <- fullAssocsClient leader [CEqp, COrgan]
       let activeItems = map snd allAssocs
-          damage = case strongestSlotNoFilter IK.EqpSlotWeapon allAssocs of
+          damage = case strongestMelee localTime allAssocs of
             (_, (_, itemFull)) : _->
               let getD :: IK.Effect -> Maybe Dice.Dice -> Maybe Dice.Dice
                   getD (IK.Hurt dice) _ = Just dice

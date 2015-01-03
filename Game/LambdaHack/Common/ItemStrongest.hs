@@ -2,7 +2,8 @@
 -- No operation in this module involves the state or any of our custom monads.
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
-    strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
+    strengthMelee, strongestMelee, isMelee
+  , strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
   , strengthToThrow, strengthEqpSlot, strengthFromEqpSlot
   , strongestSlotNoFilter, strongestSlot, sumSlotNoFilter, sumSkills
     -- * Assorted
@@ -62,8 +63,8 @@ strengthFeature f item = concatMap f (jfeature item)
 
 -- Simplification: does not take into account effects inside @Recharging@,
 -- because @Hurt@, etc., are unlikely to have a timeout.
-strengthMelee :: ItemFull -> Maybe Int
-strengthMelee itemFull =
+strengthMelee :: Time -> ItemFull -> Maybe Int
+strengthMelee localTime itemFull =
   let durable = Durable `elem` jfeature (itemBase itemFull)
       p (Hurt d) = [floor (Dice.meanDice d)]
       p (Burn k) = [k]
@@ -83,6 +84,20 @@ strengthMelee itemFull =
   in if psum == 0
      then Nothing
      else Just $ bonusExtraEffects + psum + if durable then 100 else 0
+
+strongestMelee :: Time -> [(ItemId, ItemFull)]
+               -> [(Int, (ItemId, ItemFull))]
+strongestMelee localTime is =
+  let f = strengthMelee localTime
+      g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> (f itemFull)
+  in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
+
+isMelee :: ItemFull -> Bool
+isMelee =
+  let p (Hurt d) = [floor (Dice.meanDice d)]
+      p (Burn k) = [k]
+      p _ = []
+  in not . null . strengthEffect p
 
 -- Called only by the server, so 999 is OK.
 strengthOnSmash :: ItemFull -> [Effect]
@@ -243,7 +258,6 @@ strengthFromEqpSlot eqpSlot =
     EqpSlotAddSight -> strengthAddSight
     EqpSlotAddSmell -> strengthAddSmell
     EqpSlotAddLight -> strengthAddLight
-    EqpSlotWeapon -> strengthMelee
 
 strongestSlotNoFilter :: EqpSlot -> [(ItemId, ItemFull)]
                       -> [(Int, (ItemId, ItemFull))]
@@ -262,7 +276,7 @@ strongestSlot eqpSlot is =
   in strongestSlotNoFilter eqpSlot slotIs
 
 sumSlotNoFilter :: EqpSlot -> [ItemFull] -> Int
-sumSlotNoFilter eqpSlot is = assert (eqpSlot /= EqpSlotWeapon) $  -- no 999
+sumSlotNoFilter eqpSlot is =
   let f = strengthFromEqpSlot eqpSlot
       g itemFull = (* itemK itemFull) <$> f itemFull
   in sum $ mapMaybe g is

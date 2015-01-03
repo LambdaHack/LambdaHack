@@ -260,12 +260,13 @@ pickWeaponClient source target = do
   bodyAssocs <- fullAssocsClient source [COrgan]
   actorSk <- actorSkillsClient source
   sb <- getsState $ getActorBody source
+  localTime <- getsState $ getLocalTime (blid sb)
   let allAssocs = eqpAssocs ++ bodyAssocs
       calm10 = calmEnough10 sb $ map snd allAssocs
       forced = assert (not $ bproj sb) False
       permitted = permittedPrecious calm10 forced
       preferredPrecious = either (const False) id . permitted
-      strongest = strongestSlotNoFilter IK.EqpSlotWeapon allAssocs
+      strongest = strongestMelee localTime allAssocs
       strongestPreferred = filter (preferredPrecious . snd . snd) strongest
   case strongestPreferred of
     _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> return []

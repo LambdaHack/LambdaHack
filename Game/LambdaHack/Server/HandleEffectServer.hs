@@ -956,12 +956,13 @@ sendFlyingVector source target modePush = do
 effectDropBestWeapon :: (MonadAtomic m, MonadServer m)
                      => m () -> ActorId -> m Bool
 effectDropBestWeapon execSfx target = do
+  tb <- getsState $ getActorBody target
   allAssocs <- fullAssocsServer target [CEqp]
-  case strongestSlotNoFilter IK.EqpSlotWeapon allAssocs of
+  localTime <- getsState $ getLocalTime (blid tb)
+  case strongestMelee localTime allAssocs of
     (_, (iid, _)) : _ -> do
-      b <- getsState $ getActorBody target
-      let kit = beqp b EM.! iid
-      dropCStoreItem CEqp target b False iid kit
+      let kit = beqp tb EM.! iid
+      dropCStoreItem CEqp target tb False iid kit
       execSfx
       return True
     [] ->

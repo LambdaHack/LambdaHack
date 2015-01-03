@@ -158,7 +158,6 @@ data EqpSlot =
   | EqpSlotAddSight
   | EqpSlotAddSmell
   | EqpSlotAddLight
-  | EqpSlotWeapon
   deriving (Show, Eq, Ord, Generic)
 
 instance Hashable Effect

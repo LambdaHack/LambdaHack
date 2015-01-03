@@ -217,9 +217,7 @@ pickup aid onlyWeapon = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
   let calmE = calmEnough b activeItems
-      isWeapon (_, (_, itemFull)) =
-        maybe False ((== IK.EqpSlotWeapon) . fst)
-        $ strengthEqpSlot $ itemBase itemFull
+      isWeapon (_, (_, itemFull)) = isMelee itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
       prepareOne (oldN, l4) ((_, (k, _)), (iid, itemFull)) =
@@ -289,10 +287,8 @@ equipItems aid = do
             else returN "equipItems" $ ReqMoveItems prepared
 
 toShare :: IK.EqpSlot -> Bool
-toShare IK.EqpSlotAddSkills{} = True
-toShare IK.EqpSlotAddLight = True
-toShare IK.EqpSlotWeapon = True
-toShare _ = False
+toShare IK.EqpSlotPeriodic = False
+toShare _ = True
 
 unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed AbMoveItem))

@@ -436,6 +436,7 @@ pickWeaponServer source = do
   bodyAssocs <- fullAssocsServer source [COrgan]
   actorSk <- actorSkillsServer source
   sb <- getsState $ getActorBody source
+  localTime <- getsState $ getLocalTime (blid sb)
   -- For projectiles we need to accept even items without any effect,
   -- so that the projectile dissapears and NoEffect feedback is produced.
   let allAssocs = eqpAssocs ++ bodyAssocs
@@ -444,7 +445,7 @@ pickWeaponServer source = do
       permitted = permittedPrecious calm10 forced
       legalPrecious = either (const False) (const True) . permitted
       preferredPrecious = either (const False) id . permitted
-      strongest = strongestSlotNoFilter IK.EqpSlotWeapon allAssocs
+      strongest = strongestMelee localTime allAssocs
       strongestLegal = filter (legalPrecious . snd . snd) strongest
       strongestPreferred = filter (preferredPrecious . snd . snd) strongestLegal
       best = case strongestPreferred of

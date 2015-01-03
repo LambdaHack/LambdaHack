@@ -5,7 +5,6 @@ module Game.LambdaHack.Client.AI.Preferences
 
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -149,8 +148,7 @@ totalUsefulness cops b activeItems fact itemFull =
                      then 0  -- significant mixed blessings out of AI control
                      else selfSum
             effSum = sum effBens
-            isWeapon =
-              isJust (strengthFromEqpSlot IK.EqpSlotWeapon itemFull)
+            isWeapon = isMelee itemFull
             totalSum = if goesIntoInv $ itemBase itemFull
                        then effSum
                        else if isWeapon && effSum < 0
