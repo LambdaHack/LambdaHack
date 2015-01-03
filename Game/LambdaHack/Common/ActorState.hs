@@ -409,9 +409,9 @@ strengthMelee :: Time -> ItemFull -> Maybe Int
 strengthMelee localTime itemFull =
   let durable = IK.Durable `elem` jfeature (itemBase itemFull)
       recharged = hasCharge localTime itemFull
-      p (IK.Hurt d) = [floor (Dice.meanDice d)]
+      p (IK.Hurt d) = [Dice.meanDice d]
       p (IK.Burn k) = [k]
-      p (IK.Recharging (IK.Hurt d)) | recharged = [floor (Dice.meanDice d)]
+      p (IK.Recharging (IK.Hurt d)) | recharged = [Dice.meanDice d]
       p (IK.Recharging (IK.Burn k)) | recharged = [k]
       p _ = []
       hasExtraEffects = case itemDisco itemFull of
@@ -439,7 +439,7 @@ strongestMelee localTime is =
 
 isMelee :: ItemFull -> Bool
 isMelee =
-  let p (IK.Hurt d) = [floor (Dice.meanDice d)]
-      p (IK.Burn k) = [k]
+  let p (IK.Hurt _) = [0 :: Int]
+      p (IK.Burn _) = [0]
       p _ = []
   in not . null . strengthEffect p

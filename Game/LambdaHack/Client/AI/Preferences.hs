@@ -27,7 +27,7 @@ effectToBenefit cops b activeItems fact eff =
   let dungeonDweller = not $ fcanEscape $ gplayer fact
   in case eff of
     IK.NoEffect _ -> 0
-    IK.Hurt d -> -(min 99 $ round (10 * Dice.meanDice d))
+    IK.Hurt d -> -(min 99 $ 10 * Dice.meanDice d)
     IK.Burn p -> -15 * p           -- usually splash damage, etc.
     IK.Explode _ -> -10
     IK.RefillHP p ->
@@ -58,15 +58,15 @@ effectToBenefit cops b activeItems fact eff =
          else max (-20) p
     IK.Dominate -> -200
     IK.Impress -> -10
-    IK.CallFriend d -> round $ 20 * Dice.meanDice d
+    IK.CallFriend d -> 20 * Dice.meanDice d
     IK.Summon{} | dungeonDweller -> 1 -- probably summons friends or crazies
     IK.Summon{} -> 0                  -- probably generates enemies
     IK.Ascend{} -> 1               -- change levels sensibly, in teams
     IK.Escape{} -> 10000           -- AI wants to win; spawners to guard
-    IK.Paralyze d ->  round $ -20 * Dice.meanDice d
-    IK.InsertMove d -> round $ 50 * Dice.meanDice d
+    IK.Paralyze d -> -20 * Dice.meanDice d
+    IK.InsertMove d -> 50 * Dice.meanDice d
     IK.Teleport d ->
-      let p = round $ Dice.meanDice d
+      let p = Dice.meanDice d
       in if p <= 9 then 10  -- blink to shoot at foe
          else if p <= 19 then 1  -- neither escape nor repositioning
          else -5 * p  -- get rid of the foe
@@ -98,7 +98,7 @@ effectToBenefit cops b activeItems fact eff =
 -- TODO: calculating this for "temporary conditions" takes forever
 organBenefit :: GroupName ItemKind -> Kind.COps -> Actor -> (Int, Int)
 organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b =
-  let travA x = St.evalState (IK.aspectTrav x (return . round . Dice.meanDice)) ()
+  let travA x = St.evalState (IK.aspectTrav x (return . Dice.meanDice)) ()
       f p _ kind (sacc, pacc) =
         let paspect asp = p * aspectToBenefit cops b (travA asp)
         in ( sacc + sum (map paspect $ IK.iaspects kind)
@@ -160,7 +160,7 @@ totalUsefulness cops b activeItems fact itemFull =
       Just $ ben jeffects jaspects
     Just ItemDisco{itemKind=IK.ItemKind{iaspects, ieffects}} ->
       let travA x =
-            St.evalState (IK.aspectTrav x (return . round . Dice.meanDice))
+            St.evalState (IK.aspectTrav x (return . Dice.meanDice))
                          ()
           jaspects = map travA iaspects
       in Just $ ben ieffects jaspects

@@ -18,7 +18,6 @@ import Data.Binary
 import qualified Data.Char as Char
 import Data.Hashable (Hashable)
 import qualified Data.IntMap.Strict as IM
-import Data.Ratio
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple
@@ -188,11 +187,11 @@ maxDice Dice{..} = (maxFreq diceConst + maxFreq diceLevel) * diceMult
 minDice :: Dice -> Int
 minDice Dice{..} = minFreq diceConst * diceMult
 
--- | Mean value of dice. The scaled part taken assuming average level.
+-- | Mean value of dice. The level-dependent part is taken assuming
+-- the highest level, because that's where the game is the hardest.
 -- Assumes the frequencies are not null.
-meanDice :: Dice -> Rational
-meanDice Dice{..} = meanFreq diceConst * fromIntegral diceMult
-                    + meanFreq diceLevel * fromIntegral diceMult * (1%2)
+meanDice :: Dice -> Int
+meanDice Dice{..} = diceMult * (meanFreq diceConst + meanFreq diceLevel)
 
 reduceDice :: Dice -> Maybe Int
 reduceDice de =
@@ -217,5 +216,5 @@ minDiceXY :: DiceXY -> (Int, Int)
 minDiceXY (DiceXY x y) = (minDice x, minDice y)
 
 -- | Mean value of DiceXY.
-meanDiceXY :: DiceXY -> (Rational, Rational)
+meanDiceXY :: DiceXY -> (Int, Int)
 meanDiceXY (DiceXY x y) = (meanDice x, meanDice y)

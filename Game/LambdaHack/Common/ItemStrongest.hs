@@ -36,7 +36,7 @@ strengthAspect f itemFull =
     Just ItemDisco{itemKind=ItemKind{iaspects}} ->
       -- Approximation. For some effects lower values are better,
       -- so we can't put 999 here (and for summation, this is wrong).
-      let trav x = St.evalState (aspectTrav x (return . round . Dice.meanDice))
+      let trav x = St.evalState (aspectTrav x (return . Dice.meanDice))
                                 ()
       in concatMap f $ map trav iaspects
     Nothing -> []

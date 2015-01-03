@@ -19,11 +19,11 @@ import Control.Monad
 import Data.Binary
 import Data.Foldable (Foldable)
 import Data.Hashable (Hashable)
-import Data.Ratio
 import Data.Text (Text)
 import Data.Traversable (Traversable)
 import GHC.Generics (Generic)
 
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 
 -- TODO: do not expose runFrequency
@@ -107,21 +107,27 @@ setFreq (Frequency xs name) x n =
 
 -- | Test if the frequency distribution is empty.
 nullFreq :: Frequency a -> Bool
+{-# INLINE nullFreq #-}
 nullFreq (Frequency fs _) = null fs
 
 maxFreq :: (Show a, Ord a) => Frequency a -> a
+{-# INLINE maxFreq #-}
 maxFreq fr@(Frequency xs _) = case xs of
   [] -> assert `failure` fr
-  ys -> maximum $ map snd ys
+  _ -> maximum $ map snd xs
 
 minFreq :: (Show a, Ord a) => Frequency a -> a
+{-# INLINE minFreq #-}
 minFreq fr@(Frequency xs _) = case xs of
   [] -> assert `failure` fr
-  ys -> minimum $ map snd ys
+  _ -> minimum $ map snd xs
 
-meanFreq :: (Show a, Integral a) => Frequency a -> Rational
+-- | Average value of an @Int@ distribution, rounded up to avoid truncating
+-- it in the other code higher up, which would equate 1d0 with 1d1.
+meanFreq :: Frequency Int -> Int
+{-# INLINE meanFreq #-}
 meanFreq fr@(Frequency xs _) = case xs of
   [] -> assert `failure` fr
-  ys -> let sumX = sum [ fromIntegral p * x | (p, x) <- ys ]
-            sumP = sum $ map fst ys
-        in if sumX == 0 then 0 else fromIntegral sumX % fromIntegral sumP
+  _ -> let sumX = sum [ p * x | (p, x) <- xs ]
+           sumP = sum $ map fst xs
+       in sumX `divUp` sumP
