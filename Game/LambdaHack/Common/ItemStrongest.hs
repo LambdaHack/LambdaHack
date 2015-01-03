@@ -2,9 +2,8 @@
 -- No operation in this module involves the state or any of our custom monads.
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
-    strengthMelee, strongestMelee, isMelee
-  , strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
-  , strengthToThrow, strengthEqpSlot, strengthFromEqpSlot
+    strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
+  , strengthToThrow, strengthEqpSlot, strengthFromEqpSlot, strengthEffect
   , strongestSlotNoFilter, strongestSlot, sumSlotNoFilter, sumSkills
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
@@ -60,44 +59,6 @@ strengthEffect f itemFull =
 
 strengthFeature :: (Feature -> [b]) -> Item -> [b]
 strengthFeature f item = concatMap f (jfeature item)
-
--- Simplification: does not take into account effects inside @Recharging@,
--- because @Hurt@, etc., are unlikely to have a timeout.
-strengthMelee :: Time -> ItemFull -> Maybe Int
-strengthMelee localTime itemFull =
-  let durable = Durable `elem` jfeature (itemBase itemFull)
-      p (Hurt d) = [floor (Dice.meanDice d)]
-      p (Burn k) = [k]
-      p _ = []
-      hasExtraEffects = case itemDisco itemFull of
-        Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
-          any (\ef -> null $ p ef) jeffects
-        Just ItemDisco{itemKind=ItemKind{ieffects}} ->
-          any (\ef -> null $ p ef) ieffects
-        Nothing -> False
-      -- We assume extra weapon effects are usually useful and so such
-      -- weapons are preferred over weapons with the same power, by default.
-      -- If the player doesn't like a particular weapon's extra effect,
-      -- he has to manage this manually.
-      bonusExtraEffects = if hasExtraEffects then 1 else 0
-      psum = sum (strengthEffect p itemFull)
-  in if psum == 0
-     then Nothing
-     else Just $ bonusExtraEffects + psum + if durable then 100 else 0
-
-strongestMelee :: Time -> [(ItemId, ItemFull)]
-               -> [(Int, (ItemId, ItemFull))]
-strongestMelee localTime is =
-  let f = strengthMelee localTime
-      g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> (f itemFull)
-  in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
-
-isMelee :: ItemFull -> Bool
-isMelee =
-  let p (Hurt d) = [floor (Dice.meanDice d)]
-      p (Burn k) = [k]
-      p _ = []
-  in not . null . strengthEffect p
 
 -- Called only by the server, so 999 is OK.
 strengthOnSmash :: ItemFull -> [Effect]

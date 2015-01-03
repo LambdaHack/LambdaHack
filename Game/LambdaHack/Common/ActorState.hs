@@ -14,17 +14,21 @@ module Game.LambdaHack.Common.ActorState
   , actorInAmbient, actorSkills, maxActorSkills, dispEnemy
   , fullAssocs, itemToFull, goesIntoInv, goesIntoSha, eqpOverfull
   , storeFromC, lidFromC, aidFromC, hasCharge
+  , strengthMelee, strongestMelee, isMelee
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
 import Data.List
 import Data.Maybe
+import qualified Data.Ord as Ord
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -400,3 +404,42 @@ hasCharge localTime itemFull@ItemFull{..} =
           in filter pending itemTimer
       len = length it1
   in len < itemK
+
+strengthMelee :: Time -> ItemFull -> Maybe Int
+strengthMelee localTime itemFull =
+  let durable = IK.Durable `elem` jfeature (itemBase itemFull)
+      recharged = hasCharge localTime itemFull
+      p (IK.Hurt d) = [floor (Dice.meanDice d)]
+      p (IK.Burn k) = [k]
+      p (IK.Recharging (IK.Hurt d)) | recharged = [floor (Dice.meanDice d)]
+      p (IK.Recharging (IK.Burn k)) | recharged = [k]
+      p _ = []
+      hasExtraEffects = case itemDisco itemFull of
+        Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
+          any (\ef -> null $ p ef) jeffects
+        Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}} ->
+          any (\ef -> null $ p ef) ieffects
+        Nothing -> False
+      -- We assume extra weapon effects are useful and so such
+      -- weapons are preferred over weapons with no effects.
+      -- If the player doesn't like a particular weapon's extra effect,
+      -- he has to manage this manually.
+      bonusExtraEffects = if hasExtraEffects then 100 else 0
+      psum = sum (strengthEffect p itemFull)
+  in if psum == 0
+     then Nothing
+     else Just $ bonusExtraEffects + psum + if durable then 1000 else 0
+
+strongestMelee :: Time -> [(ItemId, ItemFull)]
+               -> [(Int, (ItemId, ItemFull))]
+strongestMelee localTime is =
+  let f = strengthMelee localTime
+      g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> (f itemFull)
+  in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
+
+isMelee :: ItemFull -> Bool
+isMelee =
+  let p (IK.Hurt d) = [floor (Dice.meanDice d)]
+      p (IK.Burn k) = [k]
+      p _ = []
+  in not . null . strengthEffect p
