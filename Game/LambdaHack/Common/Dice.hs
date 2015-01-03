@@ -195,7 +195,9 @@ meanDice Dice{..} = meanFreq diceConst * fromIntegral diceMult
                     + meanFreq diceLevel * fromIntegral diceMult * (1%2)
 
 reduceDice :: Dice -> Maybe Int
-reduceDice de = if minDice de == maxDice de then Just (minDice de) else Nothing
+reduceDice de =
+  let minD = minDice de
+  in if minD == maxDice de then Just minD else Nothing
 
 -- | Dice for rolling a pair of integer parameters pertaining to,
 -- respectively, the X and Y cartesian 2D coordinates.

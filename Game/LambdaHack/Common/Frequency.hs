@@ -29,6 +29,7 @@ import Game.LambdaHack.Common.Msg
 -- TODO: do not expose runFrequency
 -- | The frequency distribution type. Not normalized (operations may
 -- or may not group the same elements and sum their frequencies).
+-- However, elements with zero frequency are removed upon construction.
 --
 -- The @Eq@ instance compares raw representations, not relative,
 -- normalized frequencies, so operations don't need to preserve
@@ -84,9 +85,9 @@ uniformFreq name l = Frequency (map (\x -> (1, x)) l) name
 -- | Takes a name and a list of frequencies and items
 -- into the frequency distribution.
 toFreq :: Text -> [(Int, a)] -> Frequency a
-toFreq = flip Frequency
+toFreq name l = Frequency (filter ((> 0 ) . fst) l) name
 
--- | Scale frequecy distribution, multiplying it
+-- | Scale frequency distribution, multiplying it
 -- by a positive integer constant.
 scaleFreq :: Show a => Int -> Frequency a -> Frequency a
 scaleFreq n (Frequency xs name) =
@@ -100,27 +101,27 @@ renameFreq newName fr = fr {nameFrequency = newName}
 -- | Set frequency of an element.
 setFreq :: Eq a => Frequency a -> a -> Int -> Frequency a
 setFreq (Frequency xs name) x n =
-  let f (_, y) | y == x = (n, x)
-      f my = my
-  in Frequency (map f xs) name
+  let xsNew = (if n <= 0 then [(n, x)] else [])
+              ++ filter ((/= x) . snd) xs
+  in Frequency xsNew name
 
 -- | Test if the frequency distribution is empty.
 nullFreq :: Frequency a -> Bool
-nullFreq (Frequency fs _) = all (<= 0) $ map fst fs
+nullFreq (Frequency fs _) = null fs
 
 maxFreq :: (Show a, Ord a) => Frequency a -> a
-maxFreq fr@(Frequency xs _) = case filter ((> 0 ) . fst) xs of
+maxFreq fr@(Frequency xs _) = case xs of
   [] -> assert `failure` fr
   ys -> maximum $ map snd ys
 
 minFreq :: (Show a, Ord a) => Frequency a -> a
-minFreq fr@(Frequency xs _) = case filter ((> 0 ) . fst) xs of
+minFreq fr@(Frequency xs _) = case xs of
   [] -> assert `failure` fr
   ys -> minimum $ map snd ys
 
 meanFreq :: (Show a, Integral a) => Frequency a -> Rational
-meanFreq fr@(Frequency xs _) = case filter ((> 0 ) . fst) xs of
+meanFreq fr@(Frequency xs _) = case xs of
   [] -> assert `failure` fr
-  ys -> let sumP = sum $ map fst ys
-            sumX = sum [ fromIntegral p * x | (p, x) <- ys ]
+  ys -> let sumX = sum [ fromIntegral p * x | (p, x) <- ys ]
+            sumP = sum $ map fst ys
         in if sumX == 0 then 0 else fromIntegral sumX % fromIntegral sumP
