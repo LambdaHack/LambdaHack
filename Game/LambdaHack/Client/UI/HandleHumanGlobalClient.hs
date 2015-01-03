@@ -151,8 +151,8 @@ meleeAid target = do
   sfact <- getsState $ (EM.! bfid sb) . sfactionD
   mel <- pickWeaponClient leader target
   case mel of
-    [] -> failWith "nothing to melee with"
-    wp : _ -> do
+    Nothing -> failWith "nothing to melee with"
+    Just wp -> do
       let returnCmd = return $ Right wp
           res | bproj tb || isAtWar sfact (bfid tb) = returnCmd
               | isAllied sfact (bfid tb) = do

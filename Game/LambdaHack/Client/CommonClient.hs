@@ -254,7 +254,8 @@ itemToFullClient = do
 -- Client has to choose the weapon based on its partial knowledge,
 -- because if server chose it, it would leak item discovery information.
 pickWeaponClient :: MonadClient m
-                 => ActorId -> ActorId -> m [RequestTimed Ability.AbMelee]
+                 => ActorId -> ActorId
+                 -> m (Maybe (RequestTimed Ability.AbMelee))
 pickWeaponClient source target = do
   eqpAssocs <- fullAssocsClient source [CEqp]
   bodyAssocs <- fullAssocsClient source [COrgan]
@@ -269,14 +270,14 @@ pickWeaponClient source target = do
       strongest = strongestMelee localTime allAssocs
       strongestPreferred = filter (preferredPrecious . snd . snd) strongest
   case strongestPreferred of
-    _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> return []
-    [] -> return []
+    _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> return Nothing
+    [] -> return Nothing
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
       (iid, _) <- rndToAction $ oneOf maxIis
       -- Prefer COrgan, to hint to the player to trash the equivalent CEqp item.
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
-      return $! [ReqMelee target iid cstore]
+      return $ Just $ ReqMelee target iid cstore
 
 sumOrganEqpClient :: MonadClient m
                   => IK.EqpSlot -> ActorId -> m Int

@@ -73,7 +73,8 @@ actionStrategy aid = do
   condOnTriggerable <- condOnTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoEqpWeapon <- condNoEqpWeaponM aid
-  condNoUsableWeapon <- null <$> pickWeaponClient aid aid
+  allAssocs <- fullAssocsClient aid [COrgan, CEqp]
+  let condNoUsableWeapon = all (not . isMelee . snd) allAssocs
   condFloorWeapon <- condFloorWeaponM aid
   condCanProject <- condCanProjectM aid
   condNotCalmEnough <- condNotCalmEnoughM aid
@@ -456,7 +457,7 @@ meleeBlocker aid = do
                     && EM.findWithDefault 0 AbMove actorSk > 0  -- blocked move
                     && bhp body2 < bhp b)  -- respect power
             then do
-              mel <- pickWeaponClient aid aid2
+              mel <- maybeToList <$> pickWeaponClient aid aid2
               return $! liftFrequency $ uniformFreq "melee in the way" mel
             else return reject
         Nothing -> return reject
@@ -472,7 +473,7 @@ meleeAny aid = do
   let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
   mels <- mapM (pickWeaponClient aid . fst) adjFoes
       -- TODO: prioritize somehow
-  let freq = uniformFreq "melee adjacent" $ concat mels
+  let freq = uniformFreq "melee adjacent" $ catMaybes mels
   return $! liftFrequency freq
 
 -- TODO: take charging status into account
@@ -832,16 +833,16 @@ moveOrRunAid run source dir = do
       else do
         wps <- pickWeaponClient source target
         case wps of
-          [] -> return Nothing
-          wp : _ -> return $! Just $ RequestAnyAbility wp
+          Nothing -> return Nothing
+          Just wp -> return $! Just $ RequestAnyAbility wp
     ((target, _), _) : _ -> do  -- can be a foe, as well as friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
       -- Attacking does not require full access, adjacency is enough.
       wps <- pickWeaponClient source target
       case wps of
-        [] -> return Nothing
-        wp : _ -> return $! Just $ RequestAnyAbility wp
+        Nothing -> return Nothing
+        Just wp -> return $! Just $ RequestAnyAbility wp
     [] -> do  -- move or search or alter
       if accessible cops lvl spos tpos then
         -- Movement requires full access.

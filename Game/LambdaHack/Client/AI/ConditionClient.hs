@@ -215,8 +215,9 @@ condMeleeBadM :: MonadClient m => ActorId -> m Bool
 condMeleeBadM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  condNoUsableWeapon <- null <$> pickWeaponClient aid aid
-  let friendlyFid fid = fid == bfid b || isAllied fact fid
+  allAssocs <- fullAssocsClient aid [COrgan, CEqp]
+  let condNoUsableWeapon = all (not . isMelee . snd) allAssocs
+      friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
   let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
                        in dist < 3 && dist > 0
