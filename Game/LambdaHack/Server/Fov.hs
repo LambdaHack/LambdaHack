@@ -10,14 +10,10 @@ module Game.LambdaHack.Server.Fov
 #endif
   ) where
 
-import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Lazy as EML
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Function
-import Data.List
 import Data.Maybe
-import Data.Ord
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -145,25 +141,17 @@ litInDungeon fovMode s ser =
   let cops@Kind.COps{cotile} = scops s
       itemsInActors :: Level -> EM.EnumMap FactionId ActorEqpBody
       itemsInActors lvl =
-        let asLid = map (\aid -> (aid, getActorBody aid s))
-                    $ concat $ EM.elems $ lprio lvl
-            asGrouped = groupBy ((==) `on` (bfid . snd))
-                        $ sortBy (comparing (bfid . snd)) asLid
-            bodyFid :: [(ActorId, Actor)] -> (FactionId, ActorEqpBody)
-            bodyFid [] = assert `failure` asGrouped
-            bodyFid asFid@((_, bFid) : _) =
-              let fid = bfid bFid
-                  eqpBody (aid, b) =
-                    let is = map snd
-                             $ fullAssocs cops
-                                          (sdiscoKind ser) (sdiscoEffect ser)
-                                          aid [COrgan, CEqp] s
-                        sight = sumSlotNoFilter IK.EqpSlotAddSight is
-                        smell = sumSlotNoFilter IK.EqpSlotAddSmell is
-                        light = sumSlotNoFilter IK.EqpSlotAddLight is
-                    in ((aid, b), (sight, smell, light))
-              in (fid, map eqpBody asFid)
-        in EM.fromDistinctAscList $ map bodyFid asGrouped
+        let processActor aid =
+              let b = getActorBody aid s
+                  is = map snd
+                       $ fullAssocs cops (sdiscoKind ser) (sdiscoEffect ser)
+                                    aid [COrgan, CEqp] s
+                  sight = sumSlotNoFilter IK.EqpSlotAddSight is
+                  smell = sumSlotNoFilter IK.EqpSlotAddSmell is
+                  light = sumSlotNoFilter IK.EqpSlotAddLight is
+              in (bfid b, [((aid, b), (sight, smell, light))])
+            asLid = map processActor $ concat $ EM.elems $ lprio lvl
+        in EM.fromListWith (++) asLid
       lightOnFloor :: Level -> [(Point, (Int, Int, Int))]
       lightOnFloor lvl =
         let iToFull (iid, (item, kit)) =
