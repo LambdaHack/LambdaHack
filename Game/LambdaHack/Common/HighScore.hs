@@ -93,7 +93,7 @@ showScore (pos, score) =
 
 getTable :: Kind.Id ModeKind -> ScoreDict -> ScoreTable
 getTable gameModeId scoreDict =
-  fromMaybe (ScoreTable []) $ EM.lookup gameModeId scoreDict
+  EM.findWithDefault (ScoreTable []) gameModeId scoreDict
 
 getRecord :: Int -> ScoreTable -> ScoreRecord
 getRecord pos (ScoreTable table) =

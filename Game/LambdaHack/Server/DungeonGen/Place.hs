@@ -146,8 +146,8 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
                   | otherwise = xlegend EM.! c
       interior = case pfence kr of
         FNone | not dnight -> EM.mapWithKey digDay cmap
-        _ -> let lookupLegend x = fromMaybe (assert `failure` (qlegend, x))
-                                  $ EM.lookup x xlegend
+        _ -> let lookupLegend x =
+                   EM.findWithDefault (assert `failure` (qlegend, x)) x xlegend
              in EM.map lookupLegend cmap
       tmap = EM.union interior fence
   return (tmap, place)

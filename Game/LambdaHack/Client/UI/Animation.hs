@@ -84,7 +84,7 @@ renderAnim lxsize lysize basicFrame (Animation anim) =
         let fLine y lineOld =
               let f l (x, acOld) =
                     let pos = Point x y
-                        !ac = fromMaybe acOld $ EM.lookup pos am
+                        !ac = EM.findWithDefault acOld pos am
                     in ac : l
               in foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
             sfLevel =  -- fully evaluated inside

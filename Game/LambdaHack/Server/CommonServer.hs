@@ -96,10 +96,10 @@ resetLitInDungeon = do
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
 getPerFid fid lid = do
   pers <- getsServer sper
-  let fper = fromMaybe (assert `failure` "no perception for faction"
-                               `twith` (lid, fid)) $ EM.lookup fid pers
-      per = fromMaybe (assert `failure` "no perception for level"
-                              `twith` (lid, fid)) $ EM.lookup lid fper
+  let failFact = assert `failure` "no perception for faction" `twith` (lid, fid)
+      fper = EM.findWithDefault failFact fid pers
+      failLvl = assert `failure` "no perception for level" `twith` (lid, fid)
+      per = EM.findWithDefault failLvl lid fper
   return $! per
 
 -- We don't provide ActorId, because the actor can be dead and then, e.g.,

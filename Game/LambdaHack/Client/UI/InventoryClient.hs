@@ -312,8 +312,8 @@ transition psuit prompt promptGeneric cursor permitMulitple
                                  `twith` bagNumberSlots
                Just (iid, _) -> return $ Right $ getResult iid
            })
-        , let km = fromMaybe (K.toKM K.NoModifier K.Tab)
-                   $ M.lookup MemberCycle brevMap
+        , let km = M.findWithDefault (K.toKM K.NoModifier K.Tab)
+                                     MemberCycle brevMap
           in (km, DefItemKey
            { defLabel = K.showKM km
            , defCond = not (autoLvl
@@ -325,8 +325,8 @@ transition psuit prompt promptGeneric cursor permitMulitple
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall cCurUpd cRestUpd itemDialogState
            })
-        , let km = fromMaybe (K.toKM K.NoModifier K.Tab)
-                   $ M.lookup MemberBack brevMap
+        , let km = M.findWithDefault (K.toKM K.NoModifier K.Tab)
+                                     MemberBack brevMap
           in (km, DefItemKey
            { defLabel = K.showKM km
            , defCond = not (autoDun || null hs)
@@ -339,14 +339,14 @@ transition psuit prompt promptGeneric cursor permitMulitple
         -- Only mouse for targeting, because keys (*, numpad)
         -- have a different meaning in menus (just as left
         -- mouse button, BTW).
-        , let km = fromMaybe (K.toKM K.NoModifier K.MiddleButtonPress)
-                   $ M.lookup CursorPointerEnemy brevMap
+        , let km = M.findWithDefault (K.toKM K.NoModifier K.MiddleButtonPress)
+                                     CursorPointerEnemy brevMap
           in cursorEnemyDef (cursorPointerEnemy False False) km
-        , let km = fromMaybe (K.toKM K.Shift K.MiddleButtonPress)
-                   $ M.lookup CursorPointerFloor brevMap
+        , let km = M.findWithDefault (K.toKM K.Shift K.MiddleButtonPress)
+                                     CursorPointerFloor brevMap
           in cursorEnemyDef (cursorPointerFloor False False) km
-        , let km = fromMaybe (K.toKM K.NoModifier K.RightButtonPress)
-                   $ M.lookup TgtPointerEnemy brevMap
+        , let km = M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
+                                     TgtPointerEnemy brevMap
           in cursorEnemyDef (cursorPointerEnemy True True) km
         ]
       cursorEnemyDef cursorFun km =

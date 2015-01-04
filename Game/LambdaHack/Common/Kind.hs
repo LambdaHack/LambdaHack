@@ -10,7 +10,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ix as Ix
 import Data.List
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.ContentDef
@@ -65,8 +64,8 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
                      , n > 0 ]
             f m (cgroup, nik) = M.insertWith (++) cgroup [nik] m
         in foldl' f M.empty tuples
-      okind i = fromMaybe (assert `failure` "no kind" `twith` (i, kindMap))
-                $ EM.lookup i kindMap
+      okind i = let assFail = assert `failure` "no kind" `twith` (i, kindMap)
+                in EM.findWithDefault assFail i kindMap
       correct a = not (T.null (getName a)) && all ((> 0) . snd) (getFreq a)
       singleOffenders = [ (offences, a)
                         | a <- content,
@@ -82,9 +81,9 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
      Ops
        { okind
        , ouniqGroup = \cgroup ->
-           let freq = fromMaybe (assert `failure` "no unique group"
-                                        `twith` (cgroup, kindFreq))
-                      $ M.lookup cgroup kindFreq
+           let freq = let assFail = assert `failure` "no unique group"
+                                          `twith` (cgroup, kindFreq)
+                      in M.findWithDefault assFail cgroup kindFreq
            in case freq of
              [(n, (i, _))] | n > 0 -> i
              l -> assert `failure` "not unique" `twith` (l, cgroup, kindFreq)

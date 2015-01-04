@@ -13,7 +13,6 @@ import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int32)
-import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Point
@@ -97,8 +96,8 @@ moveTexts = ["NW", "N", "NE", "E", "SE", "S", "SW", "W"]
 
 compassText :: Vector -> Text
 compassText v = let m = EM.fromList $ zip moves moveTexts
-                in fromMaybe (assert `failure` "not a unit vector"
-                                     `twith` v) $ EM.lookup v m
+                    assFail = assert `failure` "not a unit vector" `twith` v
+                in EM.findWithDefault assFail v m
 
 -- | Vectors of all cardinal direction unit moves, clockwise, starting north.
 movesCardinal :: [Vector]

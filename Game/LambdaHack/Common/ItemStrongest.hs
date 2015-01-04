@@ -123,7 +123,7 @@ strengthAllAddSkills =
 
 strengthAddSkills :: Ability.Ability -> ItemFull -> Maybe Int
 strengthAddSkills ab =
-  let p (AddSkills a) = [fromMaybe 0 $ EM.lookup ab a]
+  let p (AddSkills a) = [EM.findWithDefault 0 ab a]
       p _ = []
   in strengthAspectMaybe p
 

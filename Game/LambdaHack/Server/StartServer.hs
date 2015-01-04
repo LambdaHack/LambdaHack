@@ -229,7 +229,7 @@ populateDungeon = do
             if not $ fhasNumbers $ gplayer fact3
             then recruitActors [p] lid ntime fid3
             else do
-              let hNames = fromMaybe [] $ EM.lookup fid3 sheroNames
+              let hNames = EM.findWithDefault [] fid3 sheroNames
               maid <- addHero fid3 p lid hNames (Just n) ntime
               case maid of
                 Nothing -> return False

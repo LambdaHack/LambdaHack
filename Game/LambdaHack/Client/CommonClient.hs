@@ -41,9 +41,9 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 getPerFid :: MonadClient m => LevelId -> m Perception
 getPerFid lid = do
   fper <- getsClient sfper
-  return $! fromMaybe (assert `failure` "no perception at given level"
-                              `twith` (lid, fper))
-                      $ EM.lookup lid fper
+  let assFail = assert `failure` "no perception at given level"
+                       `twith` (lid, fper)
+  return $! EM.findWithDefault assFail lid fper
 
 -- | The part of speech describing the actor or "you" if a leader
 -- of the client's faction. The actor may be not present in the dungeon.

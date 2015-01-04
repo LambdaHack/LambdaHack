@@ -90,8 +90,8 @@ actorRegularList p lid s = map snd $ actorRegularAssocs p lid s
 
 getItemBody :: ItemId -> State -> Item
 getItemBody iid s =
-  fromMaybe (assert `failure` "item body not found"
-                    `twith` (iid, s)) $ EM.lookup iid $ sitemD s
+  let assFail = assert `failure` "item body not found" `twith` (iid, s)
+  in EM.findWithDefault assFail iid $ sitemD s
 
 bagAssocs :: State -> ItemBag -> [(ItemId, Item)]
 bagAssocs s bag =
@@ -230,8 +230,8 @@ whereTo lid pos k dungeon = assert (k /= 0) $
 -- | Gets actor body from the current level. Error if not found.
 getActorBody :: ActorId -> State -> Actor
 getActorBody aid s =
-  fromMaybe (assert `failure` "body not found" `twith` (aid, s))
-  $ EM.lookup aid $ sactorD s
+  let assFail = assert `failure` "body not found" `twith` (aid, s)
+  in EM.findWithDefault assFail aid $ sactorD s
 
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =

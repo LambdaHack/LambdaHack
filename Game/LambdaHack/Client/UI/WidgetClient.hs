@@ -100,20 +100,17 @@ describeMainKeys = do
   Config{configVi, configLaptop} <- askConfig
   cursor <- getsClient scursor
   let kmLeftButtonPress =
-        fromMaybe (K.toKM K.NoModifier K.LeftButtonPress)
-        $ M.lookup macroLeftButtonPress brevMap
+        M.findWithDefault (K.toKM K.NoModifier K.LeftButtonPress)
+                          macroLeftButtonPress brevMap
       kmEscape =
-        fromMaybe (K.toKM K.NoModifier K.Esc)
-        $ M.lookup Cancel brevMap
+        M.findWithDefault (K.toKM K.NoModifier K.Esc) Cancel brevMap
       kmCtrlx =
-        fromMaybe (K.toKM K.Control (K.KP 'x'))
-        $ M.lookup GameExit brevMap
+        M.findWithDefault (K.toKM K.Control (K.KP 'x')) GameExit brevMap
       kmRightButtonPress =
-        fromMaybe (K.toKM K.NoModifier K.RightButtonPress)
-        $ M.lookup TgtPointerEnemy brevMap
+        M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
+                          TgtPointerEnemy brevMap
       kmReturn =
-        fromMaybe (K.toKM K.NoModifier K.Return)
-        $ M.lookup Accept brevMap
+        M.findWithDefault (K.toKM K.NoModifier K.Return) Accept brevMap
       moveKeys =
         if configVi then "hjklyubn, "
         else if configLaptop then "uk8o79jl, "
