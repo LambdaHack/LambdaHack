@@ -73,6 +73,8 @@ getCacheBfsAndPath aid target = do
       then return (bfs, mpath)
       else pathAndStore bfs
     _ -> do
+      -- Reduce the number of pointers to @bfsInvalid@, to help @safeSetA@.
+      modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}
       Level{lxsize, lysize} <- getLevel $ blid b
       let vInitial = case mbfs of
             Just (_, bfsInvalid, _, _, _) ->  -- TODO: we should verify size
