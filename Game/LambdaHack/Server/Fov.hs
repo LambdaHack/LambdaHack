@@ -13,22 +13,20 @@ module Game.LambdaHack.Server.Fov
 import qualified Data.EnumMap.Lazy as EML
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.List
 import Data.Maybe
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Fov.Common
 import qualified Game.LambdaHack.Server.Fov.Digital as Digital
@@ -139,30 +137,26 @@ litByItems Kind.COps{cotile} blockers fovMode lvl allItems =
 litInDungeon :: FovMode -> State -> StateServer -> PersLit
 litInDungeon fovMode s ser =
   let cops@Kind.COps{cotile} = scops s
+      processIid (sightAcc, smellAcc, lightAcc) (iid, (k, _)) =
+        let (sight, smell, light) =
+              EM.findWithDefault (0, 0, 0) iid $ sItemFovCache ser
+        in ( k * sight + sightAcc
+           , k * smell + smellAcc
+           , k * light + lightAcc )
+      processBag bag acc = foldl' processIid acc $ EM.assocs bag
       itemsInActors :: Level -> EM.EnumMap FactionId ActorEqpBody
       itemsInActors lvl =
         let processActor aid =
               let b = getActorBody aid s
-                  is = map snd
-                       $ fullAssocs cops (sdiscoKind ser) (sdiscoEffect ser)
-                                    aid [COrgan, CEqp] s
-                  sight = sumSlotNoFilter IK.EqpSlotAddSight is
-                  smell = sumSlotNoFilter IK.EqpSlotAddSmell is
-                  light = sumSlotNoFilter IK.EqpSlotAddLight is
-              in (bfid b, [((aid, b), (sight, smell, light))])
+                  sslOrgan = processBag (borgan b) (0, 0, 0)
+                  ssl = processBag (beqp b) sslOrgan
+              in (bfid b, [((aid, b), ssl)])
             asLid = map processActor $ concat $ EM.elems $ lprio lvl
         in EM.fromListWith (++) asLid
       lightOnFloor :: Level -> [(Point, (Int, Int, Int))]
       lightOnFloor lvl =
-        let iToFull (iid, (item, kit)) =
-              itemToFull cops (sdiscoKind ser) (sdiscoEffect ser) iid item kit
-            processPos (p, bag) =
-              let is =  map iToFull $ bagAssocsK s bag
-                  sight = sumSlotNoFilter IK.EqpSlotAddSight is
-                  smell = sumSlotNoFilter IK.EqpSlotAddSmell is
-                  light = sumSlotNoFilter IK.EqpSlotAddLight is
-              in (p, (sight, smell, light))
-        in map processPos $ EM.assocs $ lfloor lvl  -- lembed are covered
+        let processPos (p, bag) = (p, processBag bag (0, 0, 0) )
+        in map processPos $ EM.assocs $ lfloor lvl  -- lembed are hidden
       -- Note that an actor can be blind or a projectile,
       -- in which case he doesn't see his own light
       -- (but others, from his or other factions, possibly do).
