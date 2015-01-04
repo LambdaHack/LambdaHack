@@ -744,8 +744,7 @@ effectCreateItem target store grp tim = do
     _ -> do
       -- Multiple such items, so it's a periodic poison, etc., so just stack,
       -- or no such items at all, so create some.
-      iid <- registerItem (itemBase itemFull) itemKnown seed
-                          (itemK itemFull) c True
+      iid <- registerItem itemFull itemKnown seed (itemK itemFull) c True
       unless (tim == IK.TimerNone) $ do
         bagAfter <- getsState $ getCBag c
         localTime <- getsState $ getLocalTime (blid tb)

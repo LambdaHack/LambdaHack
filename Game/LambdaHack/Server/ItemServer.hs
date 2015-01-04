@@ -19,6 +19,7 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -37,25 +38,31 @@ import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
 registerItem :: (MonadAtomic m, MonadServer m)
-             => Item -> ItemKnown -> ItemSeed -> Int -> Container -> Bool
+             => ItemFull -> ItemKnown -> ItemSeed -> Int -> Container -> Bool
              -> m ItemId
-registerItem item itemKnown@(_, iae) seed k container verbose = do
+registerItem itemFull itemKnown@(_, iae) seed k container verbose = do
   itemRev <- getsServer sitemRev
   let cmd = if verbose then UpdCreateItem else UpdSpotItem
   case HM.lookup itemKnown itemRev of
     Just iid -> do
       -- TODO: try to avoid this case for createItems,
       -- to make items more interesting
-      execUpdAtomic $ cmd iid item (k, []) container
+      execUpdAtomic $ cmd iid (itemBase itemFull) (k, []) container
       return iid
     Nothing -> do
+      let sight = fromMaybe 0 $ strengthFromEqpSlot IK.EqpSlotAddSight itemFull
+          smell = fromMaybe 0 $ strengthFromEqpSlot IK.EqpSlotAddSmell itemFull
+          light = fromMaybe 0 $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
+          ssl = (sight, smell, light)
       icounter <- getsServer sicounter
       modifyServer $ \ser ->
-        ser { sicounter = succ icounter
-            , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
+        ser { sdiscoEffect = EM.insert icounter iae (sdiscoEffect ser)
             , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
-            , sdiscoEffect = EM.insert icounter iae (sdiscoEffect ser)}
-      execUpdAtomic $ cmd icounter item (k, []) container
+            , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
+            , sItemFovCache = if ssl == (0, 0, 0) then sItemFovCache ser
+                              else EM.insert icounter ssl (sItemFovCache ser)
+            , sicounter = succ icounter }
+      execUpdAtomic $ cmd icounter (itemBase itemFull) (k, []) container
       return $! icounter
 
 createLevelItem :: (MonadAtomic m, MonadServer m)
@@ -117,7 +124,7 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
                       else item {jname = trunkName}
           itemFull = itemFullRaw { itemK = fromMaybe (itemK itemFullRaw) mk
                                  , itemBase = itemTrunk }
-      iid <- registerItem (itemBase itemFull) itemKnown seed
+      iid <- registerItem itemFull itemKnown seed
                           (itemK itemFull) container verbose
       return $ Just (iid, (itemFull, itemGroup))
 

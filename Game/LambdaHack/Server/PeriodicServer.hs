@@ -95,9 +95,8 @@ addAnyActor actorFreq lid time mpos = do
           rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fid
           rndToAction rollPos
       let container = (CTrunk fid lid pos)
-      trunkId <-
-        registerItem (itemBase trunkFull) itemKnown seed
-                     (itemK trunkFull) container False
+      trunkId <- registerItem trunkFull itemKnown seed
+                              (itemK trunkFull) container False
       addActorIid trunkId trunkFull False fid pos lid id "it" time
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
