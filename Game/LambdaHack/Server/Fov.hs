@@ -22,7 +22,6 @@ import Data.Ord
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -51,7 +50,7 @@ newtype PerceptionLit = PerceptionLit
     {plit :: ES.EnumSet Point}
   deriving Show
 
-type ActorEqpBody = [((ActorId, Actor), [ItemFull])]
+type ActorEqpBody = [((ActorId, Actor), (Int, Int, Int))]
 
 type PersLit = EML.EnumMap LevelId ( PerceptionLit
                                    , EM.EnumMap FactionId ActorEqpBody
@@ -70,12 +69,10 @@ levelPerception cops litHere actorEqpBody blockers
       totalReachable = PerceptionReachable $ concatMap ourR ours
       pAndVicinity p = p : vicinity lxsize lysize p
       -- All actors feel adjacent positions, even dark (for easy exploration).
-      noctoBodies = map (\aEB@((_, b), _) -> (pAndVicinity (bpos b), aEB)) ours
+      noctoBodies = map (\((_, b), ssl) -> (pAndVicinity (bpos b), ssl)) ours
       nocto = concat $ map fst noctoBodies
       ptotal = visibleOnLevel cops totalReachable litHere nocto lvl
-      canSmellAround (_, allAssocs) =
-        let radius = sumSlotNoFilter IK.EqpSlotAddSmell allAssocs
-        in radius >= 2
+      canSmellAround (_sight, smell, _light) = smell >= 2
       -- TODO: handle smell radius < 2, that is only under the actor
       -- TODO: filter out tiles that are solid and so can't hold smell.
       psmell = PerceptionVisible $ ES.fromList
@@ -122,29 +119,25 @@ visibleOnLevel Kind.COps{cotile}
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
 reachableFromActor :: PointArray.Array Bool -> FovMode
-                   -> ((ActorId, Actor), [ItemFull])
+                   -> ((ActorId, Actor), (Int, Int, Int))
                    -> PerceptionReachable
-reachableFromActor blockers fovMode ((_, body), allItems) =
-  let sumSight = sumSlotNoFilter IK.EqpSlotAddSight allItems
-      radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) sumSight
+reachableFromActor blockers fovMode ((_, body), (sight, _smell, _light)) =
+  let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) sight
   in PerceptionReachable $ fullscan blockers fovMode radius (bpos body)
 
 -- | Compute all lit positions on a level, whether lit by actors or floor items.
 -- Note that an actor can be blind or a projectile, in which case he doesn't see
 -- his own light (but others, from his or other factions, possibly do).
 litByItems :: Kind.COps -> PointArray.Array Bool -> FovMode -> Level
-           -> [(Point, [ItemFull])]
+           -> [(Point, (Int, Int, Int))]
            -> PerceptionLit
 litByItems Kind.COps{cotile} blockers fovMode lvl allItems =
-  let litPos :: (Point, [ItemFull]) -> [Point]
-      litPos (p, is) =
-        let radius = sumSlotNoFilter IK.EqpSlotAddLight is
-            scan = fullscan blockers fovMode radius p
-            -- Optimization: filter out positions already having ambient light.
-            opt = filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos) scan
-        in opt
+  let litPos :: (Point, (Int, Int, Int)) -> [Point]
+      litPos (p, (_sight, _smell, light)) = fullscan blockers fovMode light p
       litAll = concatMap litPos allItems
-  in PerceptionLit $ ES.fromList litAll
+      -- Optimization: filter out positions already having ambient light.
+      filterAmbient = filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos)
+  in PerceptionLit $ ES.fromList $ filterAmbient litAll
 
 -- | Compute all lit positions in the dungeon
 litInDungeon :: FovMode -> State -> StateServer -> PersLit
@@ -161,17 +154,26 @@ litInDungeon fovMode s ser =
             bodyFid asFid@((_, bFid) : _) =
               let fid = bfid bFid
                   eqpBody (aid, b) =
-                    ( (aid, b)
-                    , map snd $ fullAssocs cops (sdiscoKind ser) (sdiscoEffect ser)
-                                           aid [COrgan, CEqp] s )
+                    let is = map snd
+                             $ fullAssocs cops
+                                          (sdiscoKind ser) (sdiscoEffect ser)
+                                          aid [COrgan, CEqp] s
+                        sight = sumSlotNoFilter IK.EqpSlotAddSight is
+                        smell = sumSlotNoFilter IK.EqpSlotAddSmell is
+                        light = sumSlotNoFilter IK.EqpSlotAddLight is
+                    in ((aid, b), (sight, smell, light))
               in (fid, map eqpBody asFid)
         in EM.fromDistinctAscList $ map bodyFid asGrouped
-      itemsOnFloor :: Level -> [(Point, [ItemFull])]
-      itemsOnFloor lvl =
+      lightOnFloor :: Level -> [(Point, (Int, Int, Int))]
+      lightOnFloor lvl =
         let iToFull (iid, (item, kit)) =
               itemToFull cops (sdiscoKind ser) (sdiscoEffect ser) iid item kit
             processPos (p, bag) =
-              (p, map iToFull $ bagAssocsK s bag)
+              let is =  map iToFull $ bagAssocsK s bag
+                  sight = sumSlotNoFilter IK.EqpSlotAddSight is
+                  smell = sumSlotNoFilter IK.EqpSlotAddSmell is
+                  light = sumSlotNoFilter IK.EqpSlotAddLight is
+              in (p, (sight, smell, light))
         in map processPos $ EM.assocs $ lfloor lvl  -- lembed are covered
       -- Note that an actor can be blind or a projectile,
       -- in which case he doesn't see his own light
@@ -189,10 +191,13 @@ litInDungeon fovMode s ser =
             -- and actors are born/move/die. Actually, do this for PersLit.
             blockingActors = mapMaybe blockFromBody allBodies
             blockers = blockingTiles PointArray.// blockingActors
-            actorItems = map (\((_, b), iis) -> (bpos b, iis)) allBodies
-            floorItems = itemsOnFloor lvl
-            allItems = floorItems ++ actorItems
-        in (litByItems cops blockers fovMode lvl allItems, bodyMap, blockers)
+            actorLights = map (\((_, b), sl) -> (bpos b, sl)) allBodies
+            floorLights = lightOnFloor lvl
+            -- If there is light both on the floor and carried by actor,
+            -- only the stronger light is taken into account.
+            -- This is rare, so no point optimizing away the double computation.
+            allLights = floorLights ++ actorLights
+        in (litByItems cops blockers fovMode lvl allLights, bodyMap, blockers)
       litLvl (lid, lvl) = (lid, litOnLevel lvl)
   in EML.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
 
