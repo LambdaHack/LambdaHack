@@ -60,20 +60,22 @@ levelPerception cops litHere actorEqpBody blockers
   let -- Dying actors included, to let them see their own demise.
       ourR = preachable . reachableFromActor blockers fovMode
       totalReachable = PerceptionReachable $ concatMap ourR actorEqpBody
-      pAndVicinity p = p : vicinity lxsize lysize p
       -- All non-projectile actors feel adjacent positions,
       -- even dark (for easy exploration). Projectiles rely on cameras.
       -- Projectiles also can't smell.
-      ours = filter (not . bproj . fst) actorEqpBody
-      nocto = concatMap (\(b, _) -> pAndVicinity (bpos b)) ours
+      pAndVicinity p = p : vicinity lxsize lysize p
+      gatherVicinities = concatMap (pAndVicinity . bpos . fst)
+      nocteurs = filter (not . bproj . fst) actorEqpBody
+      nocto = gatherVicinities nocteurs
       ptotal = visibleOnLevel cops totalReachable litHere nocto lvl
       -- TODO: handle smell radius < 2, that is only under the actor
-      -- TODO: filter out tiles that are solid and so can't hold smell.
       -- Projectiles can potentially smell, too.
       canSmellAround (_sight, smell, _light) = smell >= 2
       smellers = filter (canSmellAround . snd) actorEqpBody
-      smells = concatMap (\(b, _) -> pAndVicinity (bpos b)) smellers
-      psmell = PerceptionVisible $ ES.fromList smells
+      smells = gatherVicinities smellers
+      -- No smell stored in walls and under other actors.
+      canHoldSmell p = not $ blockers PointArray.! p
+      psmell = PerceptionVisible $ ES.fromList $ filter canHoldSmell smells
   in Perception ptotal psmell
 
 -- | Calculate faction's perception of a level based on the lit tiles cache.
