@@ -736,8 +736,11 @@ displaceTowards aid source target = do
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
         case mtgtMPath of
           Just (tgt, Just (p : q : rest, (goal, len)))
-            | q == source && p == target -> do
-              let newTgt = Just (tgt, Just (q : rest, (goal, len - 1)))
+            | q == source && p == target
+              || waitedLastTurn b2 -> do
+              let newTgt = if q == source && p == target
+                           then Just (tgt, Just (q : rest, (goal, len - 1)))
+                           else Nothing
               modifyClient $ \cli ->
                 cli {stargetD = EM.alter (const $ newTgt) aid (stargetD cli)}
               return $! returN "displace friend" $ target `vectorToFrom` source
