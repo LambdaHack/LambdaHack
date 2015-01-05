@@ -125,37 +125,41 @@ reachableFromActor clearPs fovMode (body, (sight, _smell, _light)) =
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or floor items. Note that an actor can be blind, in which case he doesn't see
 -- his own light (but others, from his or other factions, possibly do).
-litByItems :: PointArray.Array Bool -> FovMode
-           -> [(Point, (Int, Int, Int))]
+litByItems :: PointArray.Array Bool -> FovMode -> [(Point, Int)]
            -> PerceptionDynamicLit
 litByItems clearPs fovMode allItems =
-  let litPos :: (Point, (Int, Int, Int)) -> [Point]
-      litPos (p, (_sight, _smell, light)) = fullscan clearPs fovMode light p
+  let litPos :: (Point, Int) -> [Point]
+      litPos (p, light) = fullscan clearPs fovMode light p
   in PerceptionDynamicLit $ concatMap litPos allItems
 
 -- | Compute all lit positions in the dungeon
 litInDungeon :: FovMode -> State -> StateServer -> PersLit
 litInDungeon fovMode s ser =
   let Kind.COps{cotile} = scops s
-      processIid (sightAcc, smellAcc, lightAcc) (iid, (k, _)) =
+      processIid3 (sightAcc, smellAcc, lightAcc) (iid, (k, _)) =
         let (sight, smell, light) =
               EM.findWithDefault (0, 0, 0) iid $ sItemFovCache ser
         in ( k * sight + sightAcc
            , k * smell + smellAcc
            , k * light + lightAcc )
-      processBag bag acc = foldl' processIid acc $ EM.assocs bag
+      processBag3 bag acc = foldl' processIid3 acc $ EM.assocs bag
       itemsInActors :: Level -> EM.EnumMap FactionId ActorEqpBody
       itemsInActors lvl =
         let processActor aid =
               let b = getActorBody aid s
-                  sslOrgan = processBag (borgan b) (0, 0, 0)
-                  ssl = processBag (beqp b) sslOrgan
+                  sslOrgan = processBag3 (borgan b) (0, 0, 0)
+                  ssl = processBag3 (beqp b) sslOrgan
               in (bfid b, [(b, ssl)])
             asLid = map processActor $ concat $ EM.elems $ lprio lvl
         in EM.fromListWith (++) asLid
-      lightOnFloor :: Level -> [(Point, (Int, Int, Int))]
+      processIid lightAcc (iid, (k, _)) =
+        let (_sight, _smell, light) =
+              EM.findWithDefault (0, 0, 0) iid $ sItemFovCache ser
+        in k * light + lightAcc
+      processBag bag acc = foldl' processIid acc $ EM.assocs bag
+      lightOnFloor :: Level -> [(Point, Int)]
       lightOnFloor lvl =
-        let processPos (p, bag) = (p, processBag bag (0, 0, 0) )
+        let processPos (p, bag) = (p, processBag bag 0)
         in map processPos $ EM.assocs $ lfloor lvl  -- lembed are hidden
       -- Note that an actor can be blind or a projectile,
       -- in which case he doesn't see his own light
@@ -174,7 +178,7 @@ litInDungeon fovMode s ser =
             blockingActors = mapMaybe blockFromBody allBodies
             clearPs = clearTiles PointArray.// blockingActors
             litTiles = PointArray.mapA (Tile.isLit cotile) ltile
-            actorLights = map (\(b, sl) -> (bpos b, sl)) allBodies
+            actorLights = map (\(b, (_, _, light)) -> (bpos b, light)) allBodies
             floorLights = lightOnFloor lvl
             -- If there is light both on the floor and carried by actor,
             -- only the stronger light is taken into account.
