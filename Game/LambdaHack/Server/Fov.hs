@@ -6,7 +6,7 @@ module Game.LambdaHack.Server.Fov
   ( dungeonPerception, fidLidPerception
   , PersLit, litInDungeon
 #ifdef EXPOSE_INTERNAL
-  , PerceptionReachable(..), PerceptionLit(..), ActorEqpBody
+  , PerceptionReachable(..), PerceptionDynamicLit(..), ActorEqpBody
 #endif
   ) where
 
@@ -42,8 +42,8 @@ newtype PerceptionReachable = PerceptionReachable
 
 -- | All positions lit by dynamic lights on a level. Shared by all factions.
 -- The list may contain (many) repetitions.
-newtype PerceptionLit = PerceptionLit
-    {plit :: [Point]}
+newtype PerceptionDynamicLit = PerceptionDynamicLit
+    {pdynamicLit :: [Point]}
   deriving Show
 
 type ActorEqpBody = [(Actor, (Int, Int, Int))]
@@ -57,10 +57,10 @@ levelPerception :: ActorEqpBody
                 -> PointArray.Array Bool -> PointArray.Array Bool
                 -> FovMode -> Level
                 -> Perception
-levelPerception actorEqpBody blockers lits
+levelPerception actorEqpBody clearPs litPs
                 fovMode Level{lxsize, lysize} =
   let -- Dying actors included, to let them see their own demise.
-      ourR = preachable . reachableFromActor blockers fovMode
+      ourR = preachable . reachableFromActor clearPs fovMode
       totalReachable = PerceptionReachable $ concatMap ourR actorEqpBody
       -- All non-projectile actors feel adjacent positions,
       -- even dark (for easy exploration). Projectiles rely on cameras.
@@ -69,14 +69,14 @@ levelPerception actorEqpBody blockers lits
       gatherVicinities = concatMap (pAndVicinity . bpos . fst)
       nocteurs = filter (not . bproj . fst) actorEqpBody
       nocto = gatherVicinities nocteurs
-      ptotal = visibleOnLevel totalReachable lits nocto
+      ptotal = visibleOnLevel totalReachable litPs nocto
       -- TODO: handle smell radius < 2, that is only under the actor
       -- Projectiles can potentially smell, too.
       canSmellAround (_sight, smell, _light) = smell >= 2
       smellers = filter (canSmellAround . snd) actorEqpBody
       smells = gatherVicinities smellers
       -- No smell stored in walls and under other actors.
-      canHoldSmell p = not $ blockers PointArray.! p
+      canHoldSmell p = clearPs PointArray.! p
       psmell = PerceptionVisible $ ES.fromList $ filter canHoldSmell smells
   in Perception ptotal psmell
 
@@ -85,9 +85,9 @@ fidLidPerception :: FovMode -> PersLit
                  -> FactionId -> LevelId -> Level
                  -> Perception
 fidLidPerception fovMode persLit fid lid lvl =
-  let (bodyMap, blockers, lits) = persLit EML.! lid
+  let (bodyMap, clearPs, litPs) = persLit EML.! lid
       actorEqpBody = EM.findWithDefault [] fid bodyMap
-  in levelPerception actorEqpBody blockers lits fovMode lvl
+  in levelPerception actorEqpBody clearPs litPs fovMode lvl
 
 -- | Calculate perception of a faction.
 factionPerception :: FovMode -> PersLit -> FactionId -> State -> FactionPers
@@ -109,8 +109,8 @@ dungeonPerception fovMode s ser =
 visibleOnLevel :: PerceptionReachable
                -> PointArray.Array Bool -> [Point]
                -> PerceptionVisible
-visibleOnLevel PerceptionReachable{preachable} lits nocto =
-  let isVisible = (lits PointArray.!)
+visibleOnLevel PerceptionReachable{preachable} litPs nocto =
+  let isVisible = (litPs PointArray.!)
   in PerceptionVisible $ ES.fromList $ nocto ++ filter isVisible preachable
 
 -- | Compute positions reachable by the actor. Reachable are all fields
@@ -118,20 +118,20 @@ visibleOnLevel PerceptionReachable{preachable} lits nocto =
 reachableFromActor :: PointArray.Array Bool -> FovMode
                    -> (Actor, (Int, Int, Int))
                    -> PerceptionReachable
-reachableFromActor blockers fovMode (body, (sight, _smell, _light)) =
+reachableFromActor clearPs fovMode (body, (sight, _smell, _light)) =
   let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) sight
-  in PerceptionReachable $ fullscan blockers fovMode radius (bpos body)
+  in PerceptionReachable $ fullscan clearPs fovMode radius (bpos body)
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or floor items. Note that an actor can be blind, in which case he doesn't see
 -- his own light (but others, from his or other factions, possibly do).
 litByItems :: PointArray.Array Bool -> FovMode
            -> [(Point, (Int, Int, Int))]
-           -> PerceptionLit
-litByItems blockers fovMode allItems =
+           -> PerceptionDynamicLit
+litByItems clearPs fovMode allItems =
   let litPos :: (Point, (Int, Int, Int)) -> [Point]
-      litPos (p, (_sight, _smell, light)) = fullscan blockers fovMode light p
-  in PerceptionLit $ concatMap litPos allItems
+      litPos (p, (_sight, _smell, light)) = fullscan clearPs fovMode light p
+  in PerceptionDynamicLit $ concatMap litPos allItems
 
 -- | Compute all lit positions in the dungeon
 litInDungeon :: FovMode -> State -> StateServer -> PersLit
@@ -166,13 +166,13 @@ litInDungeon fovMode s ser =
       litOnLevel lvl@Level{ltile} =
         let bodyMap = itemsInActors lvl
             allBodies = concat $ EM.elems bodyMap
-            blockingTiles = PointArray.mapA (Tile.isClear cotile) ltile
+            clearTiles = PointArray.mapA (Tile.isClear cotile) ltile
             blockFromBody (b, _) =
               if bproj b then Nothing else Just (bpos b, False)
             -- TODO: keep it in server state and update when tiles change
             -- and actors are born/move/die. Actually, do this for PersLit.
             blockingActors = mapMaybe blockFromBody allBodies
-            blockers = blockingTiles PointArray.// blockingActors
+            clearPs = clearTiles PointArray.// blockingActors
             litTiles = PointArray.mapA (Tile.isLit cotile) ltile
             actorLights = map (\(b, sl) -> (bpos b, sl)) allBodies
             floorLights = lightOnFloor lvl
@@ -180,9 +180,9 @@ litInDungeon fovMode s ser =
             -- only the stronger light is taken into account.
             -- This is rare, so no point optimizing away the double computation.
             allLights = floorLights ++ actorLights
-            litItems = plit $ litByItems blockers fovMode allLights
-            lits = litTiles PointArray.// map (\p -> (p, True)) litItems
-        in (bodyMap, blockers, lits)
+            litDynamic = pdynamicLit $ litByItems clearPs fovMode allLights
+            litPs = litTiles PointArray.// map (\p -> (p, True)) litDynamic
+        in (bodyMap, clearPs, litPs)
       litLvl (lid, lvl) = (lid, litOnLevel lvl)
   in EML.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
 
@@ -195,7 +195,7 @@ fullscan :: PointArray.Array Bool  -- ^ the array with non-clear points
          -> Int        -- ^ scanning radius
          -> Point      -- ^ position of the spectator
          -> [Point]
-fullscan blockers fovMode radius spectatorPos =
+fullscan clearPs fovMode radius spectatorPos =
   if radius <= 0 then []
   else if radius == 1 then [spectatorPos]
   else spectatorPos : case fovMode of
@@ -208,7 +208,7 @@ fullscan blockers fovMode radius spectatorPos =
  where
   isCl :: Point -> Bool
   {-# INLINE isCl #-}
-  isCl = (blockers PointArray.!)
+  isCl = (clearPs PointArray.!)
 
   -- This function is cheap, so no problem it's called twice
   -- for each point: once with @isCl@, once via @concatMap@.
