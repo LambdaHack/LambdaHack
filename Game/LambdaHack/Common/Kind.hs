@@ -82,7 +82,7 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
        { okind
        , ouniqGroup = \cgroup ->
            let freq = let assFail = assert `failure` "no unique group"
-                                          `twith` (cgroup, kindFreq)
+                                           `twith` (cgroup, kindFreq)
                       in M.findWithDefault assFail cgroup kindFreq
            in case freq of
              [(n, (i, _))] | n > 0 -> i
