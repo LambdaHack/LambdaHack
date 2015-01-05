@@ -87,6 +87,7 @@ chessDistVector (Vector x y) = max (abs x) (abs y)
 -- | Vectors of all unit moves in the chessboard metric,
 -- clockwise, starting north-west.
 moves :: [Vector]
+{-# NOINLINE moves #-}
 moves =
   map (uncurry Vector)
     [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
@@ -112,9 +113,16 @@ vicinity :: X -> Y   -- ^ limit the search to this area
          -> Point    -- ^ position to find neighbours of
          -> [Point]
 vicinity lxsize lysize p =
+  if inside p (1, 1, lxsize - 2, lysize - 2)
+  then vicinityUnsafe p
+  else [ res | dxy <- moves
+             , let res = shift p dxy
+             , inside res (0, 0, lxsize - 1, lysize - 1) ]
+
+vicinityUnsafe :: Point -> [Point]
+vicinityUnsafe p =
   [ res | dxy <- moves
-        , let res = shift p dxy
-        , inside res (0, 0, lxsize - 1, lysize - 1) ]
+        , let res = shift p dxy ]
 
 -- | All (4 at most) cardinal direction neighbours of a point within an area.
 vicinityCardinal :: X -> Y   -- ^ limit the search to this area
