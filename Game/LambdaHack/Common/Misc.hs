@@ -41,6 +41,7 @@ normalLevelBound = (79, 20)
 infixl 7 `divUp`
 -- | Integer division, rounding up.
 divUp :: Integral a => a -> a -> a
+{-# INLINE divUp #-}
 divUp n k = (n + k - 1) `div` k
 
 -- If ever needed, we can use a symbol table here, since content
