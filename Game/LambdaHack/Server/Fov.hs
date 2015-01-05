@@ -65,14 +65,15 @@ levelPerception cops litHere actorEqpBody blockers
       -- even dark (for easy exploration). Projectiles rely on cameras.
       -- Projectiles also can't smell.
       ours = filter (not . bproj . fst) actorEqpBody
-      noctoBodies = map (\(b, ssl) -> (pAndVicinity (bpos b), ssl)) ours
-      nocto = concat $ map fst noctoBodies
+      nocto = concatMap (\(b, _) -> pAndVicinity (bpos b)) ours
       ptotal = visibleOnLevel cops totalReachable litHere nocto lvl
-      canSmellAround (_sight, smell, _light) = smell >= 2
       -- TODO: handle smell radius < 2, that is only under the actor
       -- TODO: filter out tiles that are solid and so can't hold smell.
-      psmell = PerceptionVisible $ ES.fromList
-               $ concat $ map fst $ filter (canSmellAround . snd) noctoBodies
+      -- Projectiles can potentially smell, too.
+      canSmellAround (_sight, smell, _light) = smell >= 2
+      smellers = filter (canSmellAround . snd) actorEqpBody
+      smells = concatMap (\(b, _) -> pAndVicinity (bpos b)) smellers
+      psmell = PerceptionVisible $ ES.fromList smells
   in Perception ptotal psmell
 
 -- | Calculate faction's perception of a level based on the lit tiles cache.
