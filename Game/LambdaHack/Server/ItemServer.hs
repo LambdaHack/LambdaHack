@@ -50,16 +50,19 @@ registerItem itemFull itemKnown@(_, iae) seed k container verbose = do
       execUpdAtomic $ cmd iid (itemBase itemFull) (k, []) container
       return iid
     Nothing -> do
-      let sight = fromMaybe 0 $ strengthFromEqpSlot IK.EqpSlotAddSight itemFull
-          smell = fromMaybe 0 $ strengthFromEqpSlot IK.EqpSlotAddSmell itemFull
-          light = fromMaybe 0 $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
-          ssl = (sight, smell, light)
+      let fovSight = fromMaybe 0
+                     $ strengthFromEqpSlot IK.EqpSlotAddSight itemFull
+          fovSmell = fromMaybe 0
+                     $ strengthFromEqpSlot IK.EqpSlotAddSmell itemFull
+          fovLight = fromMaybe 0
+                     $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
+          ssl = FovCache3{..}
       icounter <- getsServer sicounter
       modifyServer $ \ser ->
         ser { sdiscoEffect = EM.insert icounter iae (sdiscoEffect ser)
             , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
-            , sItemFovCache = if ssl == (0, 0, 0) then sItemFovCache ser
+            , sItemFovCache = if ssl == emptyFovCache3 then sItemFovCache ser
                               else EM.insert icounter ssl (sItemFovCache ser)
             , sicounter = succ icounter }
       execUpdAtomic $ cmd icounter (itemBase itemFull) (k, []) container
@@ -198,7 +201,8 @@ itemToFullServer = do
   discoKind <- getsServer sdiscoKind
   discoEffect <- getsServer sdiscoEffect
   s <- getState
-  let itemToF iid = itemToFull cops discoKind discoEffect iid (getItemBody iid s)
+  let itemToF iid =
+        itemToFull cops discoKind discoEffect iid (getItemBody iid s)
   return itemToF
 
 -- | Mapping over actor's items from a give store.

@@ -2,7 +2,7 @@
 module Game.LambdaHack.Server.State
   ( StateServer(..), emptyStateServer
   , DebugModeSer(..), defDebugModeSer
-  , RNGs(..)
+  , RNGs(..), FovCache3(..), emptyFovCache3
   ) where
 
 import Data.Binary
@@ -35,7 +35,7 @@ data StateServer = StateServer
   , sdiscoEffect  :: !DiscoveryEffect   -- ^ full item effect&Co data
   , sitemSeedD    :: !ItemSeedDict  -- ^ map from item ids to item seeds
   , sitemRev      :: !ItemRev       -- ^ reverse id map, used for item creation
-  , sItemFovCache :: !(EM.EnumMap ItemId (Int, Int, Int))
+  , sItemFovCache :: !(EM.EnumMap ItemId FovCache3)
                                     -- ^ (sight, smell, light) aspect bonus
                                     --   of the item; zeroes if not in the map
   , sflavour      :: !FlavourMap    -- ^ association of flavour to items
@@ -58,6 +58,16 @@ data StateServer = StateServer
   , sdebugNxt     :: !DebugModeSer  -- ^ debugging mode for the next game
   }
   deriving (Show)
+
+data FovCache3 = FovCache3
+  { fovSight :: !Int
+  , fovSmell :: !Int
+  , fovLight :: !Int
+  }
+  deriving (Show, Eq)
+
+emptyFovCache3 :: FovCache3
+emptyFovCache3 = FovCache3 0 0 0
 
 -- | Debug commands. See 'Server.debugArgs' for the descriptions.
 data DebugModeSer = DebugModeSer
@@ -188,6 +198,17 @@ instance Binary StateServer where
         sallTime = timeZero
         sdebugNxt = defDebugModeSer  -- TODO: here difficulty level, etc. from the last session is wiped out
     return $! StateServer{..}
+
+instance Binary FovCache3 where
+  put FovCache3{..} = do
+    put fovSight
+    put fovSmell
+    put fovLight
+  get = do
+    fovSight <- get
+    fovSmell <- get
+    fovLight <- get
+    return $! FovCache3{..}
 
 instance Binary DebugModeSer where
   put DebugModeSer{..} = do

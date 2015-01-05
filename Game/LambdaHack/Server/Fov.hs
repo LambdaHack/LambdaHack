@@ -46,7 +46,7 @@ newtype PerceptionDynamicLit = PerceptionDynamicLit
     {pdynamicLit :: [Point]}
   deriving Show
 
-type ActorEqpBody = [(Actor, (Int, Int, Int))]
+type ActorEqpBody = [(Actor, FovCache3)]
 
 type PersLit = EML.EnumMap LevelId ( EM.EnumMap FactionId ActorEqpBody
                                    , PointArray.Array Bool
@@ -72,7 +72,7 @@ levelPerception actorEqpBody clearPs litPs
       ptotal = visibleOnLevel totalReachable litPs nocto
       -- TODO: handle smell radius < 2, that is only under the actor
       -- Projectiles can potentially smell, too.
-      canSmellAround (_sight, smell, _light) = smell >= 2
+      canSmellAround FovCache3{fovSmell} = fovSmell >= 2
       smellers = filter (canSmellAround . snd) actorEqpBody
       smells = gatherVicinities smellers
       -- No smell stored in walls and under other actors.
@@ -115,11 +115,10 @@ visibleOnLevel PerceptionReachable{preachable} litPs nocto =
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
-reachableFromActor :: PointArray.Array Bool -> FovMode
-                   -> (Actor, (Int, Int, Int))
+reachableFromActor :: PointArray.Array Bool -> FovMode -> (Actor, FovCache3)
                    -> PerceptionReachable
-reachableFromActor clearPs fovMode (body, (sight, _smell, _light)) =
-  let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) sight
+reachableFromActor clearPs fovMode (body, FovCache3{fovSight}) =
+  let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) fovSight
   in PerceptionReachable $ fullscan clearPs fovMode radius (bpos body)
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
@@ -136,26 +135,26 @@ litByItems clearPs fovMode allItems =
 litInDungeon :: FovMode -> State -> StateServer -> PersLit
 litInDungeon fovMode s ser =
   let Kind.COps{cotile} = scops s
-      processIid3 (sightAcc, smellAcc, lightAcc) (iid, (k, _)) =
-        let (sight, smell, light) =
-              EM.findWithDefault (0, 0, 0) iid $ sItemFovCache ser
-        in ( k * sight + sightAcc
-           , k * smell + smellAcc
-           , k * light + lightAcc )
+      processIid3 (FovCache3 sightAcc smellAcc lightAcc) (iid, (k, _)) =
+        let FovCache3{..} =
+              EM.findWithDefault emptyFovCache3 iid $ sItemFovCache ser
+        in FovCache3 (k * fovSight + sightAcc)
+                     (k * fovSmell + smellAcc)
+                     (k * fovLight + lightAcc)
       processBag3 bag acc = foldl' processIid3 acc $ EM.assocs bag
       itemsInActors :: Level -> EM.EnumMap FactionId ActorEqpBody
       itemsInActors lvl =
         let processActor aid =
               let b = getActorBody aid s
-                  sslOrgan = processBag3 (borgan b) (0, 0, 0)
+                  sslOrgan = processBag3 (borgan b) emptyFovCache3
                   ssl = processBag3 (beqp b) sslOrgan
               in (bfid b, [(b, ssl)])
             asLid = map processActor $ concat $ EM.elems $ lprio lvl
         in EM.fromListWith (++) asLid
       processIid lightAcc (iid, (k, _)) =
-        let (_sight, _smell, light) =
-              EM.findWithDefault (0, 0, 0) iid $ sItemFovCache ser
-        in k * light + lightAcc
+        let FovCache3{fovLight} =
+              EM.findWithDefault emptyFovCache3 iid $ sItemFovCache ser
+        in k * fovLight + lightAcc
       processBag bag acc = foldl' processIid acc $ EM.assocs bag
       lightOnFloor :: Level -> [(Point, Int)]
       lightOnFloor lvl =
@@ -178,7 +177,8 @@ litInDungeon fovMode s ser =
             blockingActors = mapMaybe blockFromBody allBodies
             clearPs = clearTiles PointArray.// blockingActors
             litTiles = PointArray.mapA (Tile.isLit cotile) ltile
-            actorLights = map (\(b, (_, _, light)) -> (bpos b, light)) allBodies
+            actorLights = map (\(b, FovCache3{fovLight}) -> (bpos b, fovLight))
+                              allBodies
             floorLights = lightOnFloor lvl
             -- If there is light both on the floor and carried by actor,
             -- only the stronger light is taken into account.
