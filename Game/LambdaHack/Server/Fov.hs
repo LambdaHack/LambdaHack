@@ -44,7 +44,7 @@ newtype PerceptionLit = PerceptionLit
     {plit :: ES.EnumSet Point}
   deriving Show
 
-type ActorEqpBody = [((ActorId, Actor), (Int, Int, Int))]
+type ActorEqpBody = [(Actor, (Int, Int, Int))]
 
 type PersLit = EML.EnumMap LevelId ( PerceptionLit
                                    , EM.EnumMap FactionId ActorEqpBody
@@ -64,8 +64,8 @@ levelPerception cops litHere actorEqpBody blockers
       -- All non-projectile actors feel adjacent positions,
       -- even dark (for easy exploration). Projectiles rely on cameras.
       -- Projectiles also can't smell.
-      ours = filter (not . bproj . snd . fst) actorEqpBody
-      noctoBodies = map (\((_, b), ssl) -> (pAndVicinity (bpos b), ssl)) ours
+      ours = filter (not . bproj . fst) actorEqpBody
+      noctoBodies = map (\(b, ssl) -> (pAndVicinity (bpos b), ssl)) ours
       nocto = concat $ map fst noctoBodies
       ptotal = visibleOnLevel cops totalReachable litHere nocto lvl
       canSmellAround (_sight, smell, _light) = smell >= 2
@@ -115,9 +115,9 @@ visibleOnLevel Kind.COps{cotile}
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
 reachableFromActor :: PointArray.Array Bool -> FovMode
-                   -> ((ActorId, Actor), (Int, Int, Int))
+                   -> (Actor, (Int, Int, Int))
                    -> PerceptionReachable
-reachableFromActor blockers fovMode ((_, body), (sight, _smell, _light)) =
+reachableFromActor blockers fovMode (body, (sight, _smell, _light)) =
   let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) sight
   in PerceptionReachable $ fullscan blockers fovMode radius (bpos body)
 
@@ -152,7 +152,7 @@ litInDungeon fovMode s ser =
               let b = getActorBody aid s
                   sslOrgan = processBag (borgan b) (0, 0, 0)
                   ssl = processBag (beqp b) sslOrgan
-              in (bfid b, [((aid, b), ssl)])
+              in (bfid b, [(b, ssl)])
             asLid = map processActor $ concat $ EM.elems $ lprio lvl
         in EM.fromListWith (++) asLid
       lightOnFloor :: Level -> [(Point, (Int, Int, Int))]
@@ -169,13 +169,13 @@ litInDungeon fovMode s ser =
         let bodyMap = itemsInActors lvl
             allBodies = concat $ EM.elems bodyMap
             blockingTiles = PointArray.mapA (Tile.isClear cotile) ltile
-            blockFromBody ((_, b), _) =
+            blockFromBody (b, _) =
               if bproj b then Nothing else Just (bpos b, False)
             -- TODO: keep it in server state and update when tiles change
             -- and actors are born/move/die. Actually, do this for PersLit.
             blockingActors = mapMaybe blockFromBody allBodies
             blockers = blockingTiles PointArray.// blockingActors
-            actorLights = map (\((_, b), sl) -> (bpos b, sl)) allBodies
+            actorLights = map (\(b, sl) -> (bpos b, sl)) allBodies
             floorLights = lightOnFloor lvl
             -- If there is light both on the floor and carried by actor,
             -- only the stronger light is taken into account.
