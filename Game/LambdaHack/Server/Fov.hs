@@ -39,7 +39,7 @@ newtype PerceptionReachable = PerceptionReachable
     {preachable :: [Point]}
   deriving Show
 
--- | All lit positions on a level.
+-- | All lit positions on a level. These are shared by all factions.
 newtype PerceptionLit = PerceptionLit
     {plit :: ES.EnumSet Point}
   deriving Show
@@ -58,11 +58,13 @@ levelPerception :: Kind.COps
 levelPerception cops litHere actorEqpBody blockers
                 fovMode lvl@Level{lxsize, lysize} =
   let -- Dying actors included, to let them see their own demise.
-      ours = filter (not . bproj . snd . fst) actorEqpBody
       ourR = preachable . reachableFromActor blockers fovMode
-      totalReachable = PerceptionReachable $ concatMap ourR ours
+      totalReachable = PerceptionReachable $ concatMap ourR actorEqpBody
       pAndVicinity p = p : vicinity lxsize lysize p
-      -- All actors feel adjacent positions, even dark (for easy exploration).
+      -- All non-projectile actors feel adjacent positions,
+      -- even dark (for easy exploration). Projectiles rely on cameras.
+      -- Projectiles also can't smell.
+      ours = filter (not . bproj . snd . fst) actorEqpBody
       noctoBodies = map (\((_, b), ssl) -> (pAndVicinity (bpos b), ssl)) ours
       nocto = concat $ map fst noctoBodies
       ptotal = visibleOnLevel cops totalReachable litHere nocto lvl
