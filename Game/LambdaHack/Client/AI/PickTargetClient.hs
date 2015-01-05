@@ -140,7 +140,7 @@ targetStrategy oldLeader aid = do
       setPath :: Target -> m (Strategy (Target, Maybe PathEtc))
       setPath tgt = do
         mpath <- createPath aid tgt
-        return $! returN "pickNewTarget"
+        return $! returN "setPath"
                $ maybe (tgt, Nothing) (\(t, p) -> (t, Just p)) mpath
       pickNewTarget :: m (Strategy (Target, Maybe PathEtc))
       pickNewTarget = do
@@ -223,6 +223,7 @@ targetStrategy oldLeader aid = do
               _ -> True
         modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
+      isStuck = waitedLastTurn b && canMoveFact fact (oldLeader == aid)
       updateTgt :: Target -> PathEtc
                 -> m (Strategy (Target, Maybe PathEtc))
       updateTgt oldTgt updatedPath@(_, (_, len)) = case oldTgt of
@@ -262,6 +263,13 @@ targetStrategy oldLeader aid = do
                else return $! returN "TEnemyPos" (oldTgt, Just updatedPath)
         _ | not $ null nearbyFoes ->
           pickNewTarget  -- prefer close foes to anything
+        TPoint lid pos | ftactic (gplayer fact)
+                         `elem` [TBlock, TRoam, TPatrol] -> do
+          if lid /= blid b  -- wrong level
+             || pos == bpos b
+             || isStuck
+          then pickNewTarget
+          else return $! returN "updateTgt ftactic" (oldTgt, Just updatedPath)
         TPoint lid pos -> do
           let allExplored = ES.size explored == EM.size dungeon
           bag <- getsState $ getCBag $ CFloor lid pos
@@ -302,12 +310,9 @@ targetStrategy oldLeader aid = do
                            -- if the actor is stuck (waits, though could move;
                            -- or has zeroed individual moving skill,
                            -- but then should change targets often anyway).
-                           && let isStuck =
-                                    waitedLastTurn b
-                                    && canMoveFact fact (oldLeader == aid)
-                              in pos == bpos b
-                                 || isStuck
-                                 || not allExplored
+                           && (pos == bpos b
+                               || isStuck
+                               || not allExplored)
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, Just updatedPath)
         TVector{} | len > 1 ->
