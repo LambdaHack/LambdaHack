@@ -436,7 +436,8 @@ isMelee itemFull =
   let p IK.Hurt{} = True
       p IK.Burn{} = True
       p _ = False
-  in case itemDisco itemFull of
+      durable = IK.Durable `elem` jfeature (itemBase itemFull)
+  in durable && case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
       any p jeffects
     Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}} ->

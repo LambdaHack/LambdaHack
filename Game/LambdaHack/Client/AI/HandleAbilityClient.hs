@@ -590,7 +590,9 @@ projectItem aid = do
                                Nothing -> -1  -- experiment if no options
                                Just (_, ben) -> ben
                            * (if recharged then 1 else 0)
-                in if benR < 0 && trange >= chessDist (bpos b) fpos
+                in if not (isMelee itemFull)
+                      && benR < 0
+                      && trange >= chessDist (bpos b) fpos
                    then Just ( -benR * rangeMult `div` 10
                              , ReqProject fpos newEps iid cstore )
                    else Nothing
