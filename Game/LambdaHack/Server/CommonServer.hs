@@ -77,11 +77,10 @@ resetFidPerception :: MonadServer m
                    => PersLit -> FactionId -> LevelId
                    -> m Perception
 resetFidPerception persLit fid lid = do
-  cops <- getsState scops
   sfovMode <- getsServer $ sfovMode . sdebugSer
   lvl <- getLevel lid
   let fovMode = fromMaybe Digital sfovMode
-      per = fidLidPerception cops fovMode persLit fid lid lvl
+      per = fidLidPerception fovMode persLit fid lid lvl
       upd = EM.adjust (EM.adjust (const per) lid) fid
   modifyServer $ \ser2 -> ser2 {sper = upd (sper ser2)}
   return $! per
