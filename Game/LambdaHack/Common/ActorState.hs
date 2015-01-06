@@ -246,6 +246,7 @@ getCBag c s = case c of
                   $ lembed (sdungeon s EM.! lid)
   CActor aid cstore -> getActorBag aid cstore s
   CTrunk fid _ _ -> sharedAllOwnedFid False fid s
+  CStats{} -> EM.empty
 
 getActorBag :: ActorId -> CStore -> State -> ItemBag
 {-# INLINE getActorBag #-}
@@ -379,6 +380,7 @@ storeFromC c = case c of
   CEmbed{} -> CGround
   CActor _ cstore -> cstore
   CTrunk{} -> CGround
+  CStats{} -> CGround  -- needed to decide display mode in textAllAE
 
 -- | Determine the dungeon level of the container. If the item is in a shared
 -- stash, the level depends on which actor asks.
@@ -387,12 +389,14 @@ lidFromC (CFloor lid _) _ = lid
 lidFromC (CEmbed lid _) _ = lid
 lidFromC (CActor aid _) s = blid $ getActorBody aid s
 lidFromC (CTrunk _ lid _) _ = lid
+lidFromC c@CStats{} _ = assert `failure` c
 
 aidFromC :: Container -> Maybe ActorId
 aidFromC CFloor{} = Nothing
 aidFromC CEmbed{} = Nothing
 aidFromC (CActor aid _) = Just aid
 aidFromC CTrunk{} = Nothing
+aidFromC c@CStats{} = assert `failure` c
 
 hasCharge :: Time -> ItemFull -> Bool
 hasCharge localTime itemFull@ItemFull{..} =

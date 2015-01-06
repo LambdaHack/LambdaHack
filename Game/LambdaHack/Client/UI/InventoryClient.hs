@@ -114,10 +114,10 @@ getStoreItem :: MonadClientUI m
 getStoreItem prompt cInitial noEnter = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  let trunkC = CTrunk (bfid b) (blid b) (bpos b)
-      allCs = map (CActor leader) [CEqp, CInv, CSha]
-              ++ [trunkC]
+  let allCs = map (CActor leader) [CEqp, CInv, CSha]
+              ++ [CTrunk (bfid b) (blid b) (bpos b)]
               ++ map (CActor leader) [CGround, COrgan]
+              ++ [CStats leader]
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
@@ -440,6 +440,7 @@ legalWithUpdatedLeader cCur cRest = do
   leader <- getLeaderUI
   let newC c = case c of
         CActor _oldLeader cstore -> CActor leader cstore
+        CStats _oldLeader -> CStats leader
         _ -> c
       newLegal = map newC $ cCur : cRest
   accessCBag <- getsState $ flip getCBag
@@ -816,6 +817,10 @@ describeItemC c noEnter = do
         CTrunk{} ->
           makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"]
+        CStats{} ->
+          makePhrase
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "estimate"
+            , MU.WownW (MU.Text $ bpronoun body) "strenghts" ]
         _ ->
           makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]

@@ -201,6 +201,7 @@ singleContainer (CActor aid _) = do
   (lid, p) <- posOfAid aid
   return $! PosSight lid [p]
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
+singleContainer c@CStats{} = assert `failure` c
 
 -- | Determines if a command resets FOV.
 --

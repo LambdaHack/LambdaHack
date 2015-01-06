@@ -66,6 +66,7 @@ insertItemContainer iid kit c = case c of
   CEmbed lid pos -> insertItemEmbed iid kit lid pos
   CActor aid store -> insertItemActor iid kit aid store
   CTrunk{} -> return ()
+  CStats{} -> assert `failure` c
 
 -- New @kit@ lands at the front of the list.
 insertItemFloor :: MonadStateWrite m
@@ -130,6 +131,7 @@ deleteItemContainer iid k c = case c of
   CEmbed lid pos -> deleteItemEmbed iid k lid pos
   CActor aid store -> deleteItemActor iid k aid store
   CTrunk{} -> return ()
+  CStats{} -> assert `failure` c
 
 deleteItemFloor :: MonadStateWrite m
                 => ItemId -> Int -> LevelId -> Point -> m ()
