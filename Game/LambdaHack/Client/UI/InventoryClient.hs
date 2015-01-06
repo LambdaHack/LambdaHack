@@ -113,11 +113,17 @@ getStoreItem :: MonadClientUI m
              -> m (SlideOrCmd ((ItemId, ItemFull), Container))
 getStoreItem prompt cInitial noEnter = do
   leader <- getLeaderUI
-  let allStores = map (CActor leader) [CEqp, CInv, CSha, CGround]
+  b <- getsState $ getActorBody leader
+  let trunkC = CTrunk (bfid b) (blid b) (bpos b)
+      allCs = map (CActor leader) [CEqp, CInv, CSha]
+              ++ [trunkC]
+              ++ map (CActor leader) [CGround, COrgan]
+      (pre, rest) = break (== cInitial) allCs
+      post = dropWhile (== cInitial) rest
+      remCs = post ++ pre
       dialogState = if noEnter then INoSuitable else ISuitable
   soc <- getItem (return $ Right $ const True)
-                 prompt prompt False cInitial
-                 (delete cInitial allStores)
+                 prompt prompt False cInitial remCs
                  True False dialogState
   case soc of
     Left sli -> return $ Left sli
@@ -167,9 +173,12 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
     Just cThisActor -> do
       -- Don't display stores empty for all actors.
       cLegalNotEmpty <- filterM partyNotEmpty cLegalRaw
-      getItem psuit prompt promptGeneric cursor
-              (CActor leader cThisActor)
-              (map (CActor leader) $ delete cThisActor cLegalNotEmpty)
+      let cInitial = (CActor leader cThisActor)
+          allCs = map (CActor leader) $ delete cThisActor cLegalNotEmpty
+          (pre, rest) = break (== cInitial) allCs
+          post = dropWhile (== cInitial) rest
+          remCs = post ++ pre
+      getItem psuit prompt promptGeneric cursor cInitial remCs
               askWhenLone permitMulitple initalState
 
 -- | Let the human player choose a single, preferably suitable,
