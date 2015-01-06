@@ -130,10 +130,10 @@ Item-use related keys are as follows.
 
                 keys           command
                 E              describe equipment of the leader
-                P              describe backpack inventory of the leader
+                P              describe inventory pack of the leader
                 S              describe the shared party stash
                 G              describe items on the ground
-                @              describe organs
+                @              describe organs of the leader
                 A              describe all owned items
                 g and ,        get an item
                 d              drop an item

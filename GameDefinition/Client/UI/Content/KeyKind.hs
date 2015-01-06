@@ -109,7 +109,7 @@ standardKeys = KeyKind
       , ("e", ([CmdItem], MoveItem [CGround, CInv, CSha] CEqp
                                    Nothing "an item" False))
       , ("p", ([CmdItem], MoveItem [CGround, CEqp, CSha] CInv
-                                   Nothing "an item into inventory backpack"
+                                   Nothing "an item into inventory"
                                    False))
       , ("s", ([CmdItem], MoveItem [CGround, CInv, CEqp] CSha
                                    Nothing "and share an item" False))
