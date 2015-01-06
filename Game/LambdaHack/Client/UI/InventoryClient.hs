@@ -3,7 +3,8 @@
 module Game.LambdaHack.Client.UI.InventoryClient
   ( getGroupItem, getAnyItems, getStoreItem
   , memberCycle, memberBack, pickLeader
-  , cursorPointerFloor, cursorPointerEnemy, doLook, describeItemC
+  , cursorPointerFloor, cursorPointerEnemy, moveCursorHuman, epsIncrHuman
+  , doLook, describeItemC
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -45,6 +46,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 data ItemDialogState = ISuitable | IAll | INoSuitable | INoAll
@@ -261,7 +263,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
                    then bagLetterSlots
                    else suitableLetterSlots
       keyDefs :: [(K.KM, DefItemKey m)]
-      keyDefs = filter (defCond . snd)
+      keyDefs = filter (defCond . snd) $
         [ (K.toKM K.NoModifier $ K.Char '?', DefItemKey
            { defLabel = "?"
            , defCond = not (EM.null bag)
@@ -349,6 +351,12 @@ transition psuit prompt promptGeneric cursor permitMulitple
                                      TgtPointerEnemy brevMap
           in cursorEnemyDef (cursorPointerEnemy True True) km
         ]
+        ++ [ let km = M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
+                                        (EpsIncr b) brevMap
+             in cursorEnemyDef (epsIncrHuman b) km
+           | b <- [True, False]
+           ]
+        ++ arrows
       cursorEnemyDef cursorFun km =
         (km, DefItemKey
            { defLabel = "mouse"
@@ -359,6 +367,23 @@ transition psuit prompt promptGeneric cursor permitMulitple
                     $ look <> toSlideshow Nothing [[]]
                recCall cCur cRest itemDialogState
            })
+      cursorMoveDef (km, (_, cmd)) =
+        (km, DefItemKey
+           { defLabel = "mouse"  -- a tiny hack, is squashed
+           , defCond = cursor
+           , defAction = \_ -> do
+               _look <- cmd
+               -- void $ getInitConfirms ColorFull []
+               --      $ look <> toSlideshow Nothing [[]]
+               recCall cCur cRest itemDialogState
+           })
+      arrows =
+        let kCmds = K.moveBinding False False
+                                  (\v -> ( [CmdMove]
+                                         , fmap Left $ moveCursorHuman v 1 ))
+                                  (\v -> ( [CmdMove]
+                                         , fmap Left $ moveCursorHuman v 10 ))
+        in map cursorMoveDef kCmds
       lettersDef :: DefItemKey m
       lettersDef = DefItemKey
         { defLabel = slotRange $ EM.keys labelLetterSlots
@@ -575,6 +600,37 @@ cursorPointerEnemy verbose addMoreMsg = do
       displayPush keys  -- flash the targeting line and path
       displayDelay  -- for a bit longer
       return mempty
+
+-- | Move the cursor. Assumes targeting mode.
+moveCursorHuman :: MonadClientUI m => Vector -> Int -> m Slideshow
+moveCursorHuman dir n = do
+  leader <- getLeaderUI
+  stgtMode <- getsClient stgtMode
+  let lidV = maybe (assert `failure` leader) tgtLevelId stgtMode
+  Level{lxsize, lysize} <- getLevel lidV
+  lpos <- getsState $ bpos . getActorBody leader
+  scursor <- getsClient scursor
+  cursorPos <- cursorToPos
+  let cpos = fromMaybe lpos cursorPos
+      shiftB pos = shiftBounded lxsize lysize pos dir
+      newPos = iterate shiftB cpos !! n
+  if newPos == cpos then failMsg "never mind"
+  else do
+    let tgt = case scursor of
+          TVector{} -> TVector $ newPos `vectorToFrom` lpos
+          _ -> TPoint lidV newPos
+    modifyClient $ \cli -> cli {scursor = tgt}
+    doLook False
+
+-- | Tweak the @eps@ parameter of the targeting digital line.
+epsIncrHuman :: MonadClientUI m => Bool -> m Slideshow
+epsIncrHuman b = do
+  stgtMode <- getsClient stgtMode
+  if isJust stgtMode
+    then do
+      modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
+      return mempty
+    else failMsg "never mind"  -- no visual feedback, so no sense
 
 -- | Perform look around in the current position of the cursor.
 -- Normally expects targeting mode and so that a leader is picked.

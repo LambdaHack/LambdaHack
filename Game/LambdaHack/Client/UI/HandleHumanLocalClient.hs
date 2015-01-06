@@ -325,26 +325,7 @@ macroHuman kms =
 
 -- * MoveCursor
 
--- | Move the cursor. Assumes targeting mode.
-moveCursorHuman :: MonadClientUI m => Vector -> Int -> m Slideshow
-moveCursorHuman dir n = do
-  leader <- getLeaderUI
-  stgtMode <- getsClient stgtMode
-  let lidV = maybe (assert `failure` leader) tgtLevelId stgtMode
-  Level{lxsize, lysize} <- getLevel lidV
-  lpos <- getsState $ bpos . getActorBody leader
-  scursor <- getsClient scursor
-  cursorPos <- cursorToPos
-  let cpos = fromMaybe lpos cursorPos
-      shiftB pos = shiftBounded lxsize lysize pos dir
-      newPos = iterate shiftB cpos !! n
-  if newPos == cpos then failMsg "never mind"
-  else do
-    let tgt = case scursor of
-          TVector{} -> TVector $ newPos `vectorToFrom` lpos
-          _ -> TPoint lidV newPos
-    modifyClient $ \cli -> cli {scursor = tgt}
-    doLook  False
+-- in InventoryClient
 
 -- * TgtFloor
 
@@ -461,15 +442,7 @@ tgtAscendHuman k = do
 
 -- * EpsIncr
 
--- | Tweak the @eps@ parameter of the targeting digital line.
-epsIncrHuman :: MonadClientUI m => Bool -> m Slideshow
-epsIncrHuman b = do
-  stgtMode <- getsClient stgtMode
-  if isJust stgtMode
-    then do
-      modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
-      return mempty
-    else failMsg "never mind"  -- no visual feedback, so no sense
+-- in InventoryClient
 
 -- * TgtClear
 
