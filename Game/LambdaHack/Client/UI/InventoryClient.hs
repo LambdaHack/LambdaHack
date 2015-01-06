@@ -810,6 +810,9 @@ describeItemC c noEnter = do
           makePhrase
             [MU.Capitalize
              $ MU.SubjectVerbSg (subject body) (verbSha body activeItems)]
+        CActor _ COrgan ->
+          makePhrase
+            [MU.Capitalize $ MU.SubjectVerbSg (subject body) "feel"]
         CTrunk{} ->
           makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"]
