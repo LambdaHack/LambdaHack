@@ -3,7 +3,8 @@
 module Game.LambdaHack.Client.UI.InventoryClient
   ( getGroupItem, getAnyItems, getStoreItem
   , memberCycle, memberBack, pickLeader
-  , cursorPointerFloor, cursorPointerEnemy, moveCursorHuman, epsIncrHuman
+  , cursorPointerFloor, cursorPointerEnemy
+  , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman, epsIncrHuman, tgtClearHuman
   , doLook, describeItemC
   ) where
 
@@ -18,6 +19,7 @@ import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
+import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -338,52 +340,47 @@ transition psuit prompt promptGeneric cursor permitMulitple
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall cCurUpd cRestUpd itemDialogState
            })
-        -- Only mouse for targeting, because keys (*, numpad)
-        -- have a different meaning in menus (just as left
-        -- mouse button, BTW).
-        , let km = M.findWithDefault (K.toKM K.NoModifier K.MiddleButtonPress)
-                                     CursorPointerEnemy brevMap
-          in cursorEnemyDef (cursorPointerEnemy False False) km
-        , let km = M.findWithDefault (K.toKM K.Shift K.MiddleButtonPress)
-                                     CursorPointerFloor brevMap
-          in cursorEnemyDef (cursorPointerFloor False False) km
-        , let km = M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
-                                     TgtPointerEnemy brevMap
-          in cursorEnemyDef (cursorPointerEnemy True True) km
+        , let km = M.findWithDefault (K.toKM K.NoModifier (K.Char '/'))
+                                     TgtFloor brevMap
+          in cursorCmdDef False km tgtFloorHuman
+        , let km = M.findWithDefault (K.toKM K.NoModifier (K.KP '*'))
+                                     TgtEnemy brevMap
+          in cursorCmdDef False km tgtEnemyHuman
         ]
-        ++ [ let km = M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
+        ++ [ let plusMinus = K.Char $ if b then '+' else '-'
+                 km = M.findWithDefault (K.toKM K.NoModifier plusMinus)
                                         (EpsIncr b) brevMap
-             in cursorEnemyDef (epsIncrHuman b) km
+             in cursorCmdDef False km (epsIncrHuman b)
            | b <- [True, False]
            ]
         ++ arrows
-      cursorEnemyDef cursorFun km =
+        ++ [
+          let km = M.findWithDefault (K.toKM K.NoModifier K.MiddleButtonPress)
+                                     CursorPointerEnemy brevMap
+          in cursorCmdDef False km (cursorPointerEnemy False False)
+        , let km = M.findWithDefault (K.toKM K.Shift K.MiddleButtonPress)
+                                     CursorPointerFloor brevMap
+          in cursorCmdDef False km (cursorPointerFloor False False)
+        , let km = M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
+                                     TgtPointerEnemy brevMap
+          in cursorCmdDef True km (cursorPointerEnemy True True)
+        ]
+      cursorCmdDef verbose km cmd =
         (km, DefItemKey
-           { defLabel = "mouse"
+           { defLabel = "numpad, mouse"
            , defCond = cursor
            , defAction = \_ -> do
-               look <- cursorFun
-               void $ getInitConfirms ColorFull []
-                    $ look <> toSlideshow Nothing [[]]
-               recCall cCur cRest itemDialogState
-           })
-      cursorMoveDef (km, (_, cmd)) =
-        (km, DefItemKey
-           { defLabel = "mouse"  -- a tiny hack, is squashed
-           , defCond = cursor
-           , defAction = \_ -> do
-               _look <- cmd
-               -- void $ getInitConfirms ColorFull []
-               --      $ look <> toSlideshow Nothing [[]]
+               look <- cmd
+               when verbose $
+                 void $ getInitConfirms ColorFull []
+                      $ look <> toSlideshow Nothing [[]]
                recCall cCur cRest itemDialogState
            })
       arrows =
         let kCmds = K.moveBinding False False
-                                  (\v -> ( [CmdMove]
-                                         , fmap Left $ moveCursorHuman v 1 ))
-                                  (\v -> ( [CmdMove]
-                                         , fmap Left $ moveCursorHuman v 10 ))
-        in map cursorMoveDef kCmds
+                                  (\v -> moveCursorHuman v 1)
+                                  (\v -> moveCursorHuman v 10)
+        in map (uncurry $ cursorCmdDef False) kCmds
       lettersDef :: DefItemKey m
       lettersDef = DefItemKey
         { defLabel = slotRange $ EM.keys labelLetterSlots
@@ -622,6 +619,75 @@ moveCursorHuman dir n = do
     modifyClient $ \cli -> cli {scursor = tgt}
     doLook False
 
+-- | Cycle targeting mode. Do not change position of the cursor,
+-- switch among things at that position.
+tgtFloorHuman :: MonadClientUI m => m Slideshow
+tgtFloorHuman = do
+  lidV <- viewedLevel
+  leader <- getLeaderUI
+  lpos <- getsState $ bpos . getActorBody leader
+  cursorPos <- cursorToPos
+  scursor <- getsClient scursor
+  stgtMode <- getsClient stgtMode
+  bsAll <- getsState $ actorAssocs (const True) lidV
+  let cursor = fromMaybe lpos cursorPos
+      tgt = case scursor of
+        _ | isNothing stgtMode ->  -- first key press: keep target
+          scursor
+        TEnemy a True -> TEnemy a False
+        TEnemy{} -> TPoint lidV cursor
+        TEnemyPos{} -> TPoint lidV cursor
+        TPoint{} -> TVector $ cursor `vectorToFrom` lpos
+        TVector{} ->
+          -- For projectiles, we pick here the first that would be picked
+          -- by '*', so that all other projectiles on the tile come next,
+          -- without any intervening actors from other tiles.
+          case find (\(_, m) -> Just (bpos m) == cursorPos) bsAll of
+            Just (im, _) -> TEnemy im True
+            Nothing -> TPoint lidV cursor
+  modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode lidV}
+  doLook False
+
+tgtEnemyHuman :: MonadClientUI m => m Slideshow
+tgtEnemyHuman = do
+  lidV <- viewedLevel
+  leader <- getLeaderUI
+  lpos <- getsState $ bpos . getActorBody leader
+  cursorPos <- cursorToPos
+  scursor <- getsClient scursor
+  stgtMode <- getsClient stgtMode
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  bsAll <- getsState $ actorAssocs (const True) lidV
+  let ordPos (_, b) = (chessDist lpos $ bpos b, bpos b)
+      dbs = sortBy (comparing ordPos) bsAll
+      pickUnderCursor =  -- switch to the enemy under cursor, if any
+        let i = fromMaybe (-1)
+                $ findIndex ((== cursorPos) . Just . bpos . snd) dbs
+        in splitAt i dbs
+      (permitAnyActor, (lt, gt)) = case scursor of
+            TEnemy a permit | isJust stgtMode ->  -- pick next enemy
+              let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
+              in (permit, splitAt (i + 1) dbs)
+            TEnemy a permit ->  -- first key press, retarget old enemy
+              let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
+              in (permit, splitAt i dbs)
+            TEnemyPos _ _ _ permit -> (permit, pickUnderCursor)
+            _ -> (False, pickUnderCursor)  -- the sensible default is only-foes
+      gtlt = gt ++ lt
+      isEnemy b = isAtWar fact (bfid b)
+                  && not (bproj b)
+      lf = filter (isEnemy . snd) gtlt
+      tgt | permitAnyActor = case gtlt of
+        (a, _) : _ -> TEnemy a True
+        [] -> scursor  -- no actors in sight, stick to last target
+          | otherwise = case lf of
+        (a, _) : _ -> TEnemy a False
+        [] -> scursor  -- no seen foes in sight, stick to last target
+  -- Register the chosen enemy, to pick another on next invocation.
+  modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode lidV}
+  doLook False
+
 -- | Tweak the @eps@ parameter of the targeting digital line.
 epsIncrHuman :: MonadClientUI m => Bool -> m Slideshow
 epsIncrHuman b = do
@@ -631,6 +697,25 @@ epsIncrHuman b = do
       modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
       return mempty
     else failMsg "never mind"  -- no visual feedback, so no sense
+
+tgtClearHuman :: MonadClientUI m => m Slideshow
+tgtClearHuman = do
+  leader <- getLeaderUI
+  tgt <- getsClient $ getTarget leader
+  case tgt of
+    Just _ -> do
+      modifyClient $ updateTarget leader (const Nothing)
+      return mempty
+    Nothing -> do
+      scursorOld <- getsClient scursor
+      b <- getsState $ getActorBody leader
+      let scursor = case scursorOld of
+            TEnemy _ permit -> TEnemy leader permit
+            TEnemyPos _ _ _ permit -> TEnemy leader permit
+            TPoint{} -> TPoint (blid b) (bpos b)
+            TVector{} -> TVector (Vector 0 0)
+      modifyClient $ \cli -> cli {scursor}
+      doLook False
 
 -- | Perform look around in the current position of the cursor.
 -- Normally expects targeting mode and so that a leader is picked.

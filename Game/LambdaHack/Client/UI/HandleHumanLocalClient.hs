@@ -30,7 +30,6 @@ import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
-import Data.Ord
 import qualified Data.Text as T
 import Data.Version
 import Game.LambdaHack.Client.UI.Frontend (frontendName)
@@ -56,12 +55,10 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -329,76 +326,11 @@ macroHuman kms =
 
 -- * TgtFloor
 
--- | Cycle targeting mode. Do not change position of the cursor,
--- switch among things at that position.
-tgtFloorHuman :: MonadClientUI m => m Slideshow
-tgtFloorHuman = do
-  lidV <- viewedLevel
-  leader <- getLeaderUI
-  lpos <- getsState $ bpos . getActorBody leader
-  cursorPos <- cursorToPos
-  scursor <- getsClient scursor
-  stgtMode <- getsClient stgtMode
-  bsAll <- getsState $ actorAssocs (const True) lidV
-  let cursor = fromMaybe lpos cursorPos
-      tgt = case scursor of
-        _ | isNothing stgtMode ->  -- first key press: keep target
-          scursor
-        TEnemy a True -> TEnemy a False
-        TEnemy{} -> TPoint lidV cursor
-        TEnemyPos{} -> TPoint lidV cursor
-        TPoint{} -> TVector $ cursor `vectorToFrom` lpos
-        TVector{} ->
-          -- For projectiles, we pick here the first that would be picked
-          -- by '*', so that all other projectiles on the tile come next,
-          -- without any intervening actors from other tiles.
-          case find (\(_, m) -> Just (bpos m) == cursorPos) bsAll of
-            Just (im, _) -> TEnemy im True
-            Nothing -> TPoint lidV cursor
-  modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode lidV}
-  doLook False
+-- in InventoryClient
 
 -- * TgtEnemy
 
-tgtEnemyHuman :: MonadClientUI m => m Slideshow
-tgtEnemyHuman = do
-  lidV <- viewedLevel
-  leader <- getLeaderUI
-  lpos <- getsState $ bpos . getActorBody leader
-  cursorPos <- cursorToPos
-  scursor <- getsClient scursor
-  stgtMode <- getsClient stgtMode
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  bsAll <- getsState $ actorAssocs (const True) lidV
-  let ordPos (_, b) = (chessDist lpos $ bpos b, bpos b)
-      dbs = sortBy (comparing ordPos) bsAll
-      pickUnderCursor =  -- switch to the enemy under cursor, if any
-        let i = fromMaybe (-1)
-                $ findIndex ((== cursorPos) . Just . bpos . snd) dbs
-        in splitAt i dbs
-      (permitAnyActor, (lt, gt)) = case scursor of
-            TEnemy a permit | isJust stgtMode ->  -- pick next enemy
-              let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
-              in (permit, splitAt (i + 1) dbs)
-            TEnemy a permit ->  -- first key press, retarget old enemy
-              let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
-              in (permit, splitAt i dbs)
-            TEnemyPos _ _ _ permit -> (permit, pickUnderCursor)
-            _ -> (False, pickUnderCursor)  -- the sensible default is only-foes
-      gtlt = gt ++ lt
-      isEnemy b = isAtWar fact (bfid b)
-                  && not (bproj b)
-      lf = filter (isEnemy . snd) gtlt
-      tgt | permitAnyActor = case gtlt of
-        (a, _) : _ -> TEnemy a True
-        [] -> scursor  -- no actors in sight, stick to last target
-          | otherwise = case lf of
-        (a, _) : _ -> TEnemy a False
-        [] -> scursor  -- no seen foes in sight, stick to last target
-  -- Register the chosen enemy, to pick another on next invocation.
-  modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode lidV}
-  doLook False
+-- in InventoryClient
 
 -- * TgtAscend
 
@@ -446,24 +378,7 @@ tgtAscendHuman k = do
 
 -- * TgtClear
 
-tgtClearHuman :: MonadClientUI m => m Slideshow
-tgtClearHuman = do
-  leader <- getLeaderUI
-  tgt <- getsClient $ getTarget leader
-  case tgt of
-    Just _ -> do
-      modifyClient $ updateTarget leader (const Nothing)
-      return mempty
-    Nothing -> do
-      scursorOld <- getsClient scursor
-      b <- getsState $ getActorBody leader
-      let scursor = case scursorOld of
-            TEnemy _ permit -> TEnemy leader permit
-            TEnemyPos _ _ _ permit -> TEnemy leader permit
-            TPoint{} -> TPoint (blid b) (bpos b)
-            TVector{} -> TVector (Vector 0 0)
-      modifyClient $ \cli -> cli {scursor}
-      doLook False
+-- in InventoryClient
 
 -- * CursorUnknown
 
