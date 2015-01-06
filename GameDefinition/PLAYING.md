@@ -151,8 +151,8 @@ To make a ranged attack, as in the last few commands above,
 you may need to set your cursor first with the middle mouse button
 (note however, that cursor position is also set automatically as soon
 as a monster comes into view). You can also enter detailed targetting
-mode with the right mouse button or with the `*` key that selects enemies
-or the `/` key that marks a tile. You move the targeting cursor
+mode with the right mouse button or with the `*` numpad key that selects
+enemies or the `/` numpad key that marks a tile. You move the targeting cursor
 with direction keys and assign a personal target with `RET`. The details
 of the shared cursor position and of the personal target are described
 in the status lines, at the bottom of the screen. All targeting keys
@@ -160,7 +160,7 @@ are listed below.
 
                 keys           command
                 KEYPAD_* and \ select enemy
-                /              cycle targeting mode
+                KEYPAD_/ and | cycle targeting mode
                 +              swerve targeting line
                 -              unswerve targeting line
                 BACKSPACE      clear target/cursor
@@ -247,8 +247,8 @@ or aid escape.
 
 Flinging a missile at a target wounds it, consuming the weapon in the process.
 You may propel any item in your equipment, inventory and on the ground
-(press `?` to see appropriate items in a menu and press it again
-for a non-standard choice). Only items of a few kinds inflict any damage,
+(by default you only see the appropriate items in menus,
+press `?` to see all items). Only items of a few kinds inflict any damage,
 but some have other effects. Whenever the monster's or hero's hit points
 reach zero, the combatant dies. When the last hero dies, the game ends
 in defeat.
