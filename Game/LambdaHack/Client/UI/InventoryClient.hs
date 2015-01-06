@@ -354,6 +354,9 @@ transition psuit prompt promptGeneric cursor permitMulitple
               km = M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
                                      hackyCmd brevMap
           in cursorCmdDef False km tgtEnemyHuman
+        , let km = M.findWithDefault (K.toKM K.NoModifier K.BackSpace)
+                                     TgtClear brevMap
+          in cursorCmdDef False km tgtClearHuman
         ]
         ++ [ let plusMinus = K.Char $ if b then '+' else '-'
                  km = M.findWithDefault (K.toKM K.NoModifier plusMinus)
