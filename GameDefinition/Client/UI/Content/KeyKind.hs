@@ -144,7 +144,8 @@ standardKeys = KeyKind
       -- Targeting
       , ("KP_Multiply", ([CmdTgt, CmdMinimal], TgtEnemy))
       , ("backslash", ([CmdTgt], Macro "" ["KP_Multiply"]))
-      , ("slash", ([CmdTgt], TgtFloor))
+      , ("KP_Divide", ([CmdTgt], TgtFloor))
+      , ("bar", ([CmdTgt], Macro "" ["KP_Divide"]))
       , ("plus", ([CmdTgt], EpsIncr True))
       , ("minus", ([CmdTgt], EpsIncr False))
       , ("BackSpace", ([CmdTgt], TgtClear))

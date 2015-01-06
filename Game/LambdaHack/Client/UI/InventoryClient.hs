@@ -340,11 +340,19 @@ transition psuit prompt promptGeneric cursor permitMulitple
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall cCurUpd cRestUpd itemDialogState
            })
-        , let km = M.findWithDefault (K.toKM K.NoModifier (K.Char '/'))
+        , let km = M.findWithDefault (K.toKM K.NoModifier (K.KP '/'))
                                      TgtFloor brevMap
           in cursorCmdDef False km tgtFloorHuman
+        , let hackyCmd = Macro "" ["KP_Divide"]  -- no numpad, but arrows enough
+              km = M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
+                                     hackyCmd brevMap
+          in cursorCmdDef False km tgtEnemyHuman
         , let km = M.findWithDefault (K.toKM K.NoModifier (K.KP '*'))
                                      TgtEnemy brevMap
+          in cursorCmdDef False km tgtEnemyHuman
+        , let hackyCmd = Macro "" ["KP_Multiply"]  -- no numpad, but arrows OK
+              km = M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
+                                     hackyCmd brevMap
           in cursorCmdDef False km tgtEnemyHuman
         ]
         ++ [ let plusMinus = K.Char $ if b then '+' else '-'
