@@ -238,6 +238,7 @@ keyTranslate "braceleft"     = Char '{'
 keyTranslate "braceright"    = Char '}'
 keyTranslate "ampersand"     = Char '&'
 keyTranslate "at"            = Char '@'
+keyTranslate "asciitilde"    = Char '~'
 keyTranslate "apostrophe"    = Char '\''
 keyTranslate "Escape"        = Esc
 keyTranslate "Return"        = Return

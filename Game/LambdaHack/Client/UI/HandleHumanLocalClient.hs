@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   ( -- * Assorted commands
     gameDifficultyCycle
   , pickLeaderHuman, memberCycleHuman, memberBackHuman
-  , describeItemHuman, allOwnedHuman
+  , describeItemHuman, allOwnedHuman, statsSummaryHuman
   , selectActorHuman, selectNoneHuman
   , clearHuman, stopIfTgtModeHuman, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
@@ -120,6 +120,14 @@ allOwnedHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   describeItemC (CTrunk (bfid b) (blid b) (bpos b)) False
+
+-- * StatsSummary
+
+-- | Display the summary of stats of the leader.
+statsSummaryHuman :: MonadClientUI m => m Slideshow
+statsSummaryHuman = do
+  leader <- getLeaderUI
+  describeItemC (CStats leader) False
 
 -- * SelectActor
 

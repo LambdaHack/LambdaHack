@@ -61,6 +61,7 @@ cmdAction cmd = case cmd of
   MemberBack -> Left <$> memberBackHuman
   DescribeItem cstore -> Left <$> describeItemHuman cstore
   AllOwned -> Left <$> allOwnedHuman
+  StatsSummary -> Left <$> statsSummaryHuman
   SelectActor -> Left <$> selectActorHuman
   SelectNone -> addNoSlides selectNoneHuman
   Clear -> addNoSlides clearHuman

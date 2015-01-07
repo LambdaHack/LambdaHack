@@ -63,6 +63,7 @@ data HumanCmd =
   | MemberBack
   | DescribeItem !CStore
   | AllOwned
+  | StatsSummary
   | SelectActor
   | SelectNone
   | Clear
@@ -152,6 +153,7 @@ cmdDescription cmd = case cmd of
   DescribeItem CInv -> "describe inventory pack of the leader"
   DescribeItem CSha -> "describe the shared party stash"
   AllOwned    -> "describe all owned items"
+  StatsSummary -> "show the stats summary of the leader"
   SelectActor -> "select (or deselect) a party member"
   SelectNone  -> "deselect (or select) all on the level"
   Clear       -> "clear messages"
