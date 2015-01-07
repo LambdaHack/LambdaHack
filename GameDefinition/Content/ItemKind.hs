@@ -748,12 +748,12 @@ buckler = ItemKind
   }
 shield = buckler
   { iname    = "shield"
-  , irarity  = [(7, 5)]
+  , irarity  = [(8, 3)]
   , iflavour = zipPlain [Green]
   , iweight  = 3000
   , iaspects = [ AddArmorMelee 80
                , AddHurtMelee (-70)
-               , Timeout $ d 3 + 6 - dl 3 |*| 2 ]
+               , Timeout $ d 6 + 6 - dl 6 |*| 2 ]
   , ieffects = [Hurt (1 * d 1), Recharging (PushActor (ThrowMod 400 50))]
   , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]

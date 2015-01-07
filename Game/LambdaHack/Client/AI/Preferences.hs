@@ -113,14 +113,14 @@ aspectToBenefit _cops _b asp =
     IK.Unique{} -> 0
     IK.Periodic{} -> 0
     IK.Timeout{} -> 0
-    IK.AddMaxHP p -> p
-    IK.AddMaxCalm p -> p `div` 5
-    IK.AddSpeed p -> p * 10000
-    IK.AddSkills m -> 5 * sum (EM.elems m)
     IK.AddHurtMelee p -> p
     IK.AddHurtRanged p -> p `divUp` 5  -- TODO: should be summed with damage
     IK.AddArmorMelee p -> p `divUp` 5
     IK.AddArmorRanged p -> p `divUp` 10
+    IK.AddMaxHP p -> p
+    IK.AddMaxCalm p -> p `div` 5
+    IK.AddSpeed p -> p * 10000
+    IK.AddSkills m -> 5 * sum (EM.elems m)
     IK.AddSight p -> p * 10
     IK.AddSmell p -> p * 10
     IK.AddLight p -> p * 10
@@ -143,18 +143,20 @@ totalUsefulness cops b activeItems fact itemFull =
                   map (\eff -> eff * 10 `divUp` timeout) periodicEffBens
             selfBens = aspBens ++ periodicBens
             selfSum = sum selfBens
-            eqpSum = if not (null selfBens)
-                        && (selfSum > 0 && minimum selfBens < -10
-                            || selfSum < 0 && maximum selfBens > 10)
-                     then 0  -- significant mixed blessings out of AI control
-                     else selfSum
+            mixedBlessing =
+              not (null selfBens)
+              && (selfSum > 0 && minimum selfBens < -10
+                  || selfSum < 0 && maximum selfBens > 10)
             effSum = sum effBens
             isWeapon = isMelee itemFull
             totalSum = if goesIntoInv itemFull
                        then effSum
+                       else if mixedBlessing
+                       then 0  -- significant mixed blessings out of AI control
                        else if isWeapon && effSum < 0
-                            then - effSum + eqpSum
-                            else eqpSum
+                       then - effSum + selfSum
+                       else selfSum  -- if the weapon heals the enemy, it
+                                     -- won't be used but can be equipped
         in (totalSum, effSum)
   in case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
