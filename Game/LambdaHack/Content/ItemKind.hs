@@ -54,7 +54,7 @@ data Effect =
     -- Ordinary effects.
     NoEffect !Text
   | Hurt !Dice.Dice
-  | Burn !Int  -- Dice.Dice? generalize to other elements? ignite terrain?
+  | Burn !Dice.Dice  -- TODO: generalize to other elements? ignite terrain?
   | Explode !(GroupName ItemKind)
                           -- ^ explode, producing this group of blasts
   | RefillHP !Int

@@ -267,7 +267,7 @@ pickWeaponClient source target = do
       forced = assert (not $ bproj sb) False
       permitted = permittedPrecious calm10 forced
       preferredPrecious = either (const False) id . permitted
-      strongest = strongestMelee localTime allAssocs
+      strongest = strongestMelee True localTime allAssocs
       strongestPreferred = filter (preferredPrecious . snd . snd) strongest
   case strongestPreferred of
     _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> return Nothing

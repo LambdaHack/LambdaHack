@@ -409,8 +409,8 @@ hasCharge localTime itemFull@ItemFull{..} =
       len = length it1
   in len < itemK
 
-strengthMelee :: Time -> ItemFull -> Maybe Int
-strengthMelee localTime itemFull =
+strengthMelee :: Bool -> Time -> ItemFull -> Maybe Int
+strengthMelee effectBonus localTime itemFull =
   let durable = IK.Durable `elem` jfeature (itemBase itemFull)
       recharged = hasCharge localTime itemFull
       -- We assume extra weapon effects are useful and so such
@@ -418,20 +418,21 @@ strengthMelee localTime itemFull =
       -- If the player doesn't like a particular weapon's extra effect,
       -- he has to manage this manually.
       p (IK.Hurt d) = [Dice.meanDice d]
-      p (IK.Burn k) = [k]
+      p (IK.Burn d) = [Dice.meanDice d]
       p IK.NoEffect{} = []
       p IK.OnSmash{} = []
-      p IK.Recharging{} = [100 | recharged]
+      p IK.Recharging{} = [100 | recharged && effectBonus]
       p IK.Temporary{} = []
-      p _ = [100]
+      p _ = [100 | effectBonus]
       psum = sum (strengthEffect p itemFull)
   in if psum == 0
      then Nothing
      else Just $ psum + if durable then 1000 else 0
 
-strongestMelee :: Time -> [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestMelee localTime is =
-  let f = strengthMelee localTime
+strongestMelee :: Bool -> Time -> [(ItemId, ItemFull)]
+               -> [(Int, (ItemId, ItemFull))]
+strongestMelee effectBonus localTime is =
+  let f = strengthMelee effectBonus localTime
       g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> (f itemFull)
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
 

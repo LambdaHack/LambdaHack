@@ -27,8 +27,9 @@ effectToBenefit cops b activeItems fact eff =
   let dungeonDweller = not $ fcanEscape $ gplayer fact
   in case eff of
     IK.NoEffect _ -> 0
-    IK.Hurt d -> -(min 99 $ 10 * Dice.meanDice d)
-    IK.Burn p -> -15 * p           -- usually splash damage, etc.
+    IK.Hurt d -> -(min 100 $ 10 * Dice.meanDice d)
+    IK.Burn d -> -(min 150 $ 15 * Dice.meanDice d)
+                   -- often splash damage, etc.
     IK.Explode _ -> -10
     IK.RefillHP p ->
       let hpMax = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems

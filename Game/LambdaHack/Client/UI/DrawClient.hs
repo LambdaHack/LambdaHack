@@ -297,10 +297,11 @@ drawLeaderDamage width = do
       localTime <- getsState $ getLocalTime (blid b)
       allAssocs <- fullAssocsClient leader [CEqp, COrgan]
       let activeItems = map snd allAssocs
-          damage = case strongestMelee localTime allAssocs of
-            (_, (_, itemFull)) : _->
+          damage = case strongestMelee False localTime allAssocs of
+            (_strength, (_, itemFull)) : _->  -- TODO: use _strength
               let getD :: IK.Effect -> Maybe Dice.Dice -> Maybe Dice.Dice
-                  getD (IK.Hurt dice) _ = Just dice
+                  getD (IK.Hurt dice) acc = Just $ dice + fromMaybe 0 acc
+                  getD (IK.Burn dice) acc = Just $ dice + fromMaybe 0 acc
                   getD _ acc = acc
                   mdice = case itemDisco itemFull of
                     Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->

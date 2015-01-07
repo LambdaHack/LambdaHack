@@ -27,7 +27,7 @@ burningOil n = ItemKind
   , iverbHit = "burn"
   , iweight  = 1
   , iaspects = [AddLight 2]
-  , ieffects = [ Burn (n `div` 2)
+  , ieffects = [ Burn (intToDice $ n `div` 2)
                , Paralyze (intToDice $ n `div` 2) ]  -- tripping on oil
   , ifeature = [ toVelocity (min 100 $ n * 7)
                , Fragile, Identified ]

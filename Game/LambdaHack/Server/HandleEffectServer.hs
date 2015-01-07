@@ -212,7 +212,7 @@ effectSem source target iid recharged effect = do
   case effect of
     IK.NoEffect _ -> return False
     IK.Hurt nDm -> effectHurt nDm source target False
-    IK.Burn p -> effectBurn execSfx p source target
+    IK.Burn nDm -> effectBurn execSfx nDm source target
     IK.Explode t -> effectExplode execSfx t target
     IK.RefillHP p -> effectRefillHP False execSfx p source target
     IK.OverfillHP p -> effectRefillHP True execSfx p source target
@@ -309,9 +309,10 @@ halveCalm target = do
 
 -- Damage from both impact and fire. Modified by armor.
 effectBurn :: (MonadAtomic m, MonadServer m)
-           => m () -> Int -> ActorId -> ActorId
+           => m () -> Dice.Dice -> ActorId -> ActorId
            -> m Bool
-effectBurn execSfx power source target = assert (power > 0) $ do
+effectBurn execSfx nDm source target = do
+  power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   void $ effectHurt (Dice.intToDice power) source target True
   execSfx
   return True
@@ -958,7 +959,7 @@ effectDropBestWeapon execSfx target = do
   tb <- getsState $ getActorBody target
   allAssocs <- fullAssocsServer target [CEqp]
   localTime <- getsState $ getLocalTime (blid tb)
-  case strongestMelee localTime allAssocs of
+  case strongestMelee False localTime allAssocs of
     (_, (iid, _)) : _ -> do
       let kit = beqp tb EM.! iid
       dropCStoreItem CEqp target tb False iid kit

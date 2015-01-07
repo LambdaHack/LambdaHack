@@ -34,8 +34,8 @@ effectToSuff effect =
   case effect of
     NoEffect _ -> ""  -- printed specially
     Hurt dice -> wrapInParens (tshow dice)
-    Burn p | p <= 0 -> assert `failure` effect
-    Burn p -> wrapInParens (makePhrase [MU.CarWs p "burn"])
+    Burn d -> wrapInParens (tshow d
+                            <+> if d > 1 then "burns" else "burn")
     Explode t -> "of" <+> tshow t <+> "explosion"
     RefillHP p | p > 0 ->
       "of limited healing" <+> wrapInParens (affixBonus p)
