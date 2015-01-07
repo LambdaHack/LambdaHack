@@ -26,6 +26,7 @@ data Ability =
 -- skill level in particular abilities.
 type Skills = EM.EnumMap Ability Int
 
+-- @EM.empty@ gives a wrong result in the maxSkills operation
 zeroSkills :: Skills
 zeroSkills = EM.fromDistinctAscList $ zip [minBound..maxBound] (repeat 0)
 

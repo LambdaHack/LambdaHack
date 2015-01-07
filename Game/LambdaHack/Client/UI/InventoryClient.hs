@@ -473,7 +473,7 @@ statsOverlay aid = do
                               $ "ability" <+> tshow ability
                             , MU.Text t ]
               <> "  "
-            valueText = tshow $ 1 + EM.findWithDefault 0 ability skills
+            valueText = tshow $ EM.findWithDefault 0 ability skills
         in fullText valueText
       abilityList = [minBound..maxBound]
   return $! toOverlay $ map prSlot slotList ++ map prAbility abilityList

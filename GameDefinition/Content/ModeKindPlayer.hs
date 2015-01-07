@@ -54,7 +54,7 @@ playerAntiSniper = playerSniper
 playerCivilian = Player
   { fname = "Civilian Crowd"
   , fgroup = "civilian"
-  , fskillsOther = unitSkills  -- not coordinated by any leadership
+  , fskillsOther = zeroSkills  -- not coordinated by any leadership
   , fcanEscape = False
   , fneverEmpty = True
   , fhasNumbers = False
@@ -69,7 +69,7 @@ playerCivilian = Player
 playerMonster = Player
   { fname = "Monster Hive"
   , fgroup = "monster"
-  , fskillsOther = unitSkills
+  , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
   , fhasNumbers = False
@@ -91,7 +91,7 @@ playerAntiMonster = playerMonster
 playerAnimal = Player
   { fname = "Animal Kingdom"
   , fgroup = "animal"
-  , fskillsOther = unitSkills
+  , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
   , fhasNumbers = False
@@ -115,7 +115,7 @@ playerMobileAnimal = playerAnimal
 playerHorror = Player
   { fname = "Horror Den"
   , fgroup = "horror"
-  , fskillsOther = unitSkills
+  , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
   , fhasNumbers = False
@@ -127,14 +127,14 @@ playerHorror = Player
   , fhasUI = False
   }
 
-minusHundred, meleeAdjacent, _meleeAndRanged :: Skills
+minusTen, meleeAdjacent, _meleeAndRanged :: Skills
 
--- To make sure weak items can't override move-only-leader, etc.
-minusHundred = EM.fromList $ zip [minBound..maxBound] [-100, -100..]
+-- To make sure only a lot of weak items can override move-only-leader, etc.
+minusTen = EM.fromList $ zip [minBound..maxBound] [-10, -10..]
 
-meleeAdjacent = addSkills minusHundred
-                $ EM.fromList $ zip [AbWait, AbMelee] [101, 101..]
+meleeAdjacent = addSkills minusTen
+                $ EM.fromList $ zip [AbWait, AbMelee] [10, 10..]
 
 -- Melee and reaction fire.
-_meleeAndRanged = addSkills minusHundred
-                  $ EM.fromList $ zip [AbWait, AbMelee, AbProject] [101, 101..]
+_meleeAndRanged = addSkills minusTen
+                  $ EM.fromList $ zip [AbWait, AbMelee, AbProject] [10, 10..]

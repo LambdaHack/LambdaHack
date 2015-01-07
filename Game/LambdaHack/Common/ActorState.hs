@@ -310,7 +310,7 @@ actorSkills mleader aid activeItems s =
   let body = getActorBody aid s
       fact = (EM.! bfid body) . sfactionD $ s
       factionSkills
-        | Just aid == mleader = Ability.unitSkills
+        | Just aid == mleader = Ability.zeroSkills
         | otherwise = fskillsOther $ gplayer fact
       itemSkills = sumSkills activeItems
   in itemSkills `Ability.addSkills` factionSkills
@@ -319,7 +319,7 @@ maxActorSkills :: ActorId -> [ItemFull] -> State -> Ability.Skills
 maxActorSkills aid activeItems s =
   let body = getActorBody aid s
       fact = (EM.! bfid body) . sfactionD $ s
-      factionSkills = Ability.maxSkills Ability.unitSkills
+      factionSkills = Ability.maxSkills Ability.zeroSkills
                                         (fskillsOther $ gplayer fact)
       itemSkills = sumSkills activeItems
   in itemSkills `Ability.addSkills` factionSkills
