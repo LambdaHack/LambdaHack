@@ -216,16 +216,16 @@ pickup aid onlyWeapon = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
   let calmE = calmEnough b activeItems
-      isWeapon (_, (_, itemFull)) = isMelee itemFull
+      isWeapon (_, (_, itemFull)) = isMeleeEqp itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
       prepareOne (oldN, l4) ((_, (k, _)), (iid, itemFull)) =
         -- TODO: instead of pickup to eqp and then move to inv, pickup to inv
         let n = oldN + k
             (newN, toCStore) =
-              if calmE && goesIntoSha (itemBase itemFull)
+              if calmE && goesIntoSha itemFull
               then (oldN, CSha)
-              else if goesIntoInv (itemBase itemFull)
+              else if goesIntoInv itemFull
                       || eqpOverfull b n
               then (oldN, CInv)
               else (n, CEqp)
@@ -581,7 +581,8 @@ projectItem aid = do
                       chessDist (bpos b) fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
                       10 + max 0 (10 - abs (trange - bestRange))
-                    durableBonus = if IK.Durable `elem` jfeature itemBase
+                    durable = IK.Durable `elem` jfeature itemBase
+                    durableBonus = if durable
                                    then 2  -- we or foes keep it after the throw
                                    else 1
                     benR = durableBonus
@@ -590,7 +591,8 @@ projectItem aid = do
                                Nothing -> -1  -- experiment if no options
                                Just (_, ben) -> ben
                            * (if recharged then 1 else 0)
-                in if not (isMelee itemFull)
+                in if -- Durable weapon is usually too useful for melee.
+                      not (isMeleeEqp itemFull)
                       && benR < 0
                       && trange >= chessDist (bpos b) fpos
                    then Just ( -benR * rangeMult `div` 10

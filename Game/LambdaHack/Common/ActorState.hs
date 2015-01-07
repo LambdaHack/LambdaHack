@@ -14,7 +14,7 @@ module Game.LambdaHack.Common.ActorState
   , actorInAmbient, actorSkills, maxActorSkills, dispEnemy
   , fullAssocs, itemToFull, goesIntoInv, goesIntoSha, eqpOverfull
   , storeFromC, lidFromC, aidFromC, hasCharge
-  , strongestMelee, isMelee
+  , strongestMelee, isMelee, isMeleeEqp
   ) where
 
 import Control.Applicative
@@ -363,11 +363,15 @@ itemToFull Kind.COps{coitem=Kind.Ops{okind}}
                                          , itemAE = EM.lookup iid discoEffect }
   in ItemFull {..}
 
-goesIntoInv :: Item -> Bool
-goesIntoInv item = isNothing $ strengthEqpSlot item
+-- Non-durable item that hurts doesn't go into equipment by default,
+-- but if it is in equipment, it's used for melee nevertheless, e.g., thorns.
+goesIntoInv :: ItemFull -> Bool
+goesIntoInv itemFull = not (isJust (strengthEqpSlot $ itemBase itemFull)
+                            || isMeleeEqp itemFull)
 
-goesIntoSha :: Item -> Bool
-goesIntoSha item = IK.Precious `elem` jfeature item && goesIntoInv item
+goesIntoSha :: ItemFull -> Bool
+goesIntoSha itemFull = IK.Precious `elem` jfeature (itemBase itemFull)
+                       && goesIntoInv itemFull
 
 eqpOverfull :: Actor -> Int -> Bool
 eqpOverfull b n = let size = sum $ map fst $ EM.elems $ beqp b
@@ -425,7 +429,7 @@ strengthMelee effectBonus localTime itemFull =
       p IK.Temporary{} = []
       p _ = [100 | effectBonus]
       psum = sum (strengthEffect p itemFull)
-  in if psum == 0
+  in if not (isMelee itemFull) || psum == 0
      then Nothing
      else Just $ psum + if durable then 1000 else 0
 
@@ -441,10 +445,15 @@ isMelee itemFull =
   let p IK.Hurt{} = True
       p IK.Burn{} = True
       p _ = False
-      durable = IK.Durable `elem` jfeature (itemBase itemFull)
-  in durable && case itemDisco itemFull of
+  in case itemDisco itemFull of
     Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
       any p jeffects
     Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}} ->
       any p ieffects
     Nothing -> False
+
+-- Melee weapon so good (durable) that goes into equipment by default.
+isMeleeEqp :: ItemFull -> Bool
+isMeleeEqp itemFull =
+  let durable = IK.Durable `elem` jfeature (itemBase itemFull)
+  in isMelee itemFull && durable

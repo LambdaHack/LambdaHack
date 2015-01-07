@@ -290,9 +290,9 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
               ret4 fromCStore rest n ((iid, k, fromCStore, toCStore) : acc)
         if cLegalRaw == [CGround]  -- normal pickup
         then case destCStore of
-          CEqp | calmE && goesIntoSha (itemBase itemFull) ->
+          CEqp | calmE && goesIntoSha itemFull ->
             retRec CSha
-          CEqp | goesIntoInv (itemBase itemFull) ->
+          CEqp | goesIntoInv itemFull ->
             retRec CInv
           CEqp | eqpOverfull b n -> do
             msgAdd $ "Warning:" <+> showReqFailure EqpOverfull <> "."

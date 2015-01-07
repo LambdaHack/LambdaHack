@@ -150,7 +150,7 @@ totalUsefulness cops b activeItems fact itemFull =
                      else selfSum
             effSum = sum effBens
             isWeapon = isMelee itemFull
-            totalSum = if goesIntoInv $ itemBase itemFull
+            totalSum = if goesIntoInv itemFull
                        then effSum
                        else if isWeapon && effSum < 0
                             then - effSum + eqpSum

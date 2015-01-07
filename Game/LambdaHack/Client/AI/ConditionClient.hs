@@ -119,22 +119,18 @@ condBlocksFriendsM aid = do
           _ -> False
   return $ any blocked ours  -- keep it lazy
 
--- | Require the actor stands over a weapon.
+-- | Require the actor stands over a weapon that would be auto-equipped.
 condFloorWeaponM :: MonadClient m => ActorId -> m Bool
 condFloorWeaponM aid = do
   floorAssocs <- fullAssocsClient aid [CGround]
-  -- We do consider OFF weapons, because e.g., enemies might have turned
-  -- them off or they can be wrong for other party members, but are OK for us.
-  let lootIsWeapon = any (isMelee . snd) floorAssocs
+  let lootIsWeapon = any (isMeleeEqp . snd) floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
 -- | Check whether the actor has no weapon in equipment.
 condNoEqpWeaponM :: MonadClient m => ActorId -> m Bool
 condNoEqpWeaponM aid = do
   allAssocs <- fullAssocsClient aid [CEqp]
-  -- We do not consider OFF weapons, because they apparently are not good.
-  return $ all (not . isMelee . snd) allAssocs
-    -- keep it lazy
+  return $ all (not . isMelee . snd) allAssocs  -- keep it lazy
 
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => ActorId -> m Bool

@@ -298,7 +298,7 @@ drawLeaderDamage width = do
       allAssocs <- fullAssocsClient leader [CEqp, COrgan]
       let activeItems = map snd allAssocs
           damage = case strongestMelee False localTime allAssocs of
-            (_strength, (_, itemFull)) : _->  -- TODO: use _strength
+            (_average, (_, itemFull)) : _->
               let getD :: IK.Effect -> Maybe Dice.Dice -> Maybe Dice.Dice
                   getD (IK.Hurt dice) acc = Just $ dice + fromMaybe 0 acc
                   getD (IK.Burn dice) acc = Just $ dice + fromMaybe 0 acc
