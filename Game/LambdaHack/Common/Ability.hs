@@ -50,7 +50,7 @@ instance Show Ability where
   show AbMoveItem = "manage items"
   show AbProject = "fling"
   show AbApply = "activate"
-  show AbTrigger = "trigger tile"
+  show AbTrigger = "trigger floor"
 
 instance Binary Ability where
   put = putWord8 . toEnum . fromEnum

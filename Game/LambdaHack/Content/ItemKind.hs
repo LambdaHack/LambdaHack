@@ -5,7 +5,7 @@ module Game.LambdaHack.Content.ItemKind
   , Effect(..), TimerDice(..)
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
-  , aspectTrav
+  , slotName, aspectTrav
   , toVelocity, toLinger, toOrganGameTurn, toOrganActorTurn, toOrganNone
   , validateSingleItemKind, validateAllItemKind
   ) where
@@ -183,6 +183,21 @@ instance Binary ThrowMod
 instance Binary Feature
 
 instance Binary EqpSlot
+
+slotName :: EqpSlot -> Text
+slotName EqpSlotPeriodic = "periodicity"
+slotName EqpSlotTimeout = "timeout"
+slotName EqpSlotAddHurtMelee = "to melee damage"
+slotName EqpSlotAddArmorMelee = "melee armor"
+slotName EqpSlotAddHurtRanged = "to ranged damage"
+slotName EqpSlotAddArmorRanged = "ranged armor"
+slotName EqpSlotAddMaxHP = "max HP"
+slotName EqpSlotAddMaxCalm = "max Calm"
+slotName EqpSlotAddSpeed = "speed"
+slotName EqpSlotAddSkills{} = "skills"
+slotName EqpSlotAddSight = "sight radius"
+slotName EqpSlotAddSmell = "smell radius"
+slotName EqpSlotAddLight = "light radius"
 
 -- TODO: Traversable?
 -- | Transform an aspect using a stateful function.

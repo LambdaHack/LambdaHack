@@ -34,11 +34,13 @@ import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.WidgetClient
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -417,20 +419,61 @@ transition psuit prompt promptGeneric cursor permitMulitple
         case itemDialogState of
           ISuitable   -> (suitableLetterSlots,
                           bagSuit,
-                          prompt body activeItems cCur <+> ppCur <> ":")
+                          (prompt body activeItems cCur <+> ppCur)
+                          <> ":")
           IAll        -> (bagLetterSlots,
                           bag,
-                          promptGeneric body activeItems cCur
-                          <+> ppCur <> ":")
+                          (promptGeneric body activeItems cCur <+> ppCur)
+                          <> ":")
           INoSuitable -> (suitableLetterSlots,
                           EM.empty,
-                          prompt body activeItems cCur <+> ppCur <> ":")
+                          (prompt body activeItems cCur <+> ppCur)
+                          <> ":")
           INoAll      -> (bagLetterSlots,
                           EM.empty,
-                          promptGeneric body activeItems cCur
-                          <+> ppCur <> ":")
-  io <- itemOverlay cCur (blid body) bagFiltered
+                          (promptGeneric body activeItems cCur <+> ppCur)
+                          <> ":")
+  io <- case cCur of
+    CStats{} -> statsOverlay leader -- TODO: describe each stat when selected
+    _ -> itemOverlay cCur (blid body) bagFiltered
   runDefItemKey keyDefs lettersDef io bagLetterSlots promptChosen
+
+statsOverlay :: MonadClient m => ActorId -> m Overlay
+statsOverlay aid = do
+  activeAssocs <- fullAssocsClient aid [CEqp, COrgan]
+  let activeItems = map snd activeAssocs
+      prSlot :: IK.EqpSlot -> Text
+      prSlot eqpSlot =
+        let fullText t =
+              makePhrase [ MU.Text $ T.justifyLeft 22 ' ' $ IK.slotName eqpSlot
+                         , MU.Text t ]
+              <> " "
+            valueText = tshow $ sumSlotNoFilter eqpSlot activeItems
+        in fullText valueText
+      slotList =  -- TODO:  [IK.EqpSlotAddHurtMelee..IK.EqpSlotAddLight]
+        [ IK.EqpSlotAddHurtMelee
+        , IK.EqpSlotAddArmorMelee
+        , IK.EqpSlotAddHurtRanged
+        , IK.EqpSlotAddArmorRanged
+        , IK.EqpSlotAddMaxHP
+        , IK.EqpSlotAddMaxCalm
+        , IK.EqpSlotAddSpeed
+        , IK.EqpSlotAddSight
+        , IK.EqpSlotAddSmell
+        , IK.EqpSlotAddLight
+        ]
+      skills = sumSkills activeItems
+      prAbility :: Ability.Ability -> Text
+      prAbility ability =
+        let fullText t =
+              makePhrase [ MU.Text $ T.justifyLeft 22 ' '
+                           $ "ability" <+> tshow ability
+                         , MU.Text t ]
+              <> " "
+            valueText = tshow $ 1 + EM.findWithDefault 0 ability skills
+        in fullText valueText
+      abilityList = [minBound..maxBound]
+  return $! toOverlay $ map prSlot slotList ++ map prAbility abilityList
 
 legalWithUpdatedLeader :: MonadClientUI m
                        => Container
