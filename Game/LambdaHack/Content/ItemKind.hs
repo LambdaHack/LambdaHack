@@ -111,8 +111,8 @@ data Aspect a =
   | Periodic           -- ^ in equipment, activate as often as @Timeout@ permits
   | Timeout !a         -- ^ some effects will be disabled until item recharges
   | AddHurtMelee !a    -- ^ percentage damage bonus in melee
-  | AddArmorMelee !a   -- ^ percentage armor bonus against melee
   | AddHurtRanged !a   -- ^ percentage damage bonus in ranged
+  | AddArmorMelee !a   -- ^ percentage armor bonus against melee
   | AddArmorRanged !a  -- ^ percentage armor bonus against ranged
   | AddMaxHP !a        -- ^ maximal hp
   | AddMaxCalm !a      -- ^ maximal calm

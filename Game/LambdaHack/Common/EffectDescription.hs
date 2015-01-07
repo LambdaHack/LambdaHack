@@ -135,6 +135,10 @@ rawAspectToSuff aspect =
     Unique -> ""  -- marked by capital letters in name
     Periodic{} -> ""  -- printed specially
     Timeout{}  -> ""  -- printed specially
+    AddHurtMelee t -> wrapInParens $ t <> "% melee"
+    AddHurtRanged  t -> wrapInParens $ t <> "% ranged"
+    AddArmorMelee t -> "[" <> t <> "%]"
+    AddArmorRanged t -> "{" <> t <> "%}"
     AddMaxHP t -> wrapInParens $ t <+> "HP"
     AddMaxCalm t -> wrapInParens $ t <+> "Calm"
     AddSpeed t -> wrapInParens $ t <+> "speed"
@@ -143,10 +147,6 @@ rawAspectToSuff aspect =
             (if bonus > 0 then "+" else "")
             <> tshow bonus <+> tshow skill
       in wrapInParens $ T.intercalate " " $ map skillToSuff $ EM.assocs p
-    AddHurtMelee t -> wrapInParens $ t <> "% melee"
-    AddHurtRanged  t -> wrapInParens $ t <> "% ranged"
-    AddArmorMelee t -> "[" <> t <> "%]"
-    AddArmorRanged t -> "{" <> t <> "%}"
     AddSight t -> wrapInParens $ t <+> "sight"
     AddSmell t -> wrapInParens $ t <+> "smell"
     AddLight t -> wrapInParens $ t <+> "light"

@@ -442,34 +442,37 @@ statsOverlay :: MonadClient m => ActorId -> m Overlay
 statsOverlay aid = do
   activeAssocs <- fullAssocsClient aid [CEqp, COrgan]
   let activeItems = map snd activeAssocs
-      prSlot :: IK.EqpSlot -> Text
-      prSlot eqpSlot =
+      prSlot :: (IK.EqpSlot, Text -> Text) -> Text
+      prSlot (eqpSlot, f) =
         let fullText t =
-              makePhrase [ MU.Text $ T.justifyLeft 22 ' ' $ IK.slotName eqpSlot
-                         , MU.Text t ]
-              <> " "
-            valueText = tshow $ sumSlotNoFilter eqpSlot activeItems
+              "    "
+              <> makePhrase [ MU.Text $ T.justifyLeft 22 ' '
+                                      $ IK.slotName eqpSlot
+                            , MU.Text t ]
+              <> "  "
+            valueText = f $ tshow $ sumSlotNoFilter eqpSlot activeItems
         in fullText valueText
       slotList =  -- TODO:  [IK.EqpSlotAddHurtMelee..IK.EqpSlotAddLight]
-        [ IK.EqpSlotAddHurtMelee
-        , IK.EqpSlotAddArmorMelee
-        , IK.EqpSlotAddHurtRanged
-        , IK.EqpSlotAddArmorRanged
-        , IK.EqpSlotAddMaxHP
-        , IK.EqpSlotAddMaxCalm
-        , IK.EqpSlotAddSpeed
-        , IK.EqpSlotAddSight
-        , IK.EqpSlotAddSmell
-        , IK.EqpSlotAddLight
+        [ (IK.EqpSlotAddHurtMelee, \t -> t <> "%")
+        -- TODO: not applicable right now, IK.EqpSlotAddHurtRanged
+        , (IK.EqpSlotAddArmorMelee, \t -> "[" <> t <> "%]")
+        , (IK.EqpSlotAddArmorRanged, \t -> "{" <> t <> "%}")
+        , (IK.EqpSlotAddMaxHP, \t -> t)
+        , (IK.EqpSlotAddMaxCalm, \t -> t)
+        , (IK.EqpSlotAddSpeed, \t -> t <> "m/10s")
+        , (IK.EqpSlotAddSight, \t -> t <> "m")
+        , (IK.EqpSlotAddSmell, \t -> t <> "m")
+        , (IK.EqpSlotAddLight, \t -> t <> "m")
         ]
       skills = sumSkills activeItems
       prAbility :: Ability.Ability -> Text
       prAbility ability =
         let fullText t =
-              makePhrase [ MU.Text $ T.justifyLeft 22 ' '
-                           $ "ability" <+> tshow ability
-                         , MU.Text t ]
-              <> " "
+              "    "
+              <> makePhrase [ MU.Text $ T.justifyLeft 22 ' '
+                              $ "ability" <+> tshow ability
+                            , MU.Text t ]
+              <> "  "
             valueText = tshow $ 1 + EM.findWithDefault 0 ability skills
         in fullText valueText
       abilityList = [minBound..maxBound]

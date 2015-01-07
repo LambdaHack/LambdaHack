@@ -150,7 +150,7 @@ itemOverlay c lid bag = do
                 -- symbol = jsymbol $ itemBase itemFull
             in Just $ makePhrase [ slotLabel l, "-"  -- MU.String [symbol]
                                  , partItemWs k c lid localTime itemFull ]
-                           <> " "
+                           <> "  "
   return $! toOverlay $ mapMaybe pr
     $ map (first Left) (EM.assocs lSlots)
       ++ (map (first Right) (IM.assocs numberSlots))
