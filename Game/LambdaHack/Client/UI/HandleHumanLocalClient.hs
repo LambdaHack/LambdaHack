@@ -108,26 +108,19 @@ memberBackHuman = memberBack True
 
 -- | Display items from a given container store and describe the chosen one.
 describeItemHuman :: MonadClientUI m => CStore -> m Slideshow
-describeItemHuman cstore = do
-  leader <- getLeaderUI
-  describeItemC (CActor leader cstore) False
+describeItemHuman cstore = describeItemC (MStore cstore) False
 
 -- * AllOwned
 
 -- | Display the sum of equipments and inventory of the whole party.
 allOwnedHuman :: MonadClientUI m => m Slideshow
-allOwnedHuman = do
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  describeItemC (CTrunk (bfid b) (blid b) (bpos b)) False
+allOwnedHuman = describeItemC MOwned False
 
 -- * StatsSummary
 
 -- | Display the summary of stats of the leader.
 statsSummaryHuman :: MonadClientUI m => m Slideshow
-statsSummaryHuman = do
-  leader <- getLeaderUI
-  describeItemC (CStats leader) False
+statsSummaryHuman = describeItemC MStats False
 
 -- * SelectActor
 

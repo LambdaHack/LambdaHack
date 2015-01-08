@@ -193,11 +193,11 @@ maxActorSkillsClient aid = do
   activeItems <- activeItemsClient aid
   getsState $ maxActorSkills aid activeItems
 
-updateItemSlot :: MonadClient m => Container -> Maybe ActorId -> ItemId -> m ()
+updateItemSlot :: MonadClient m => CStore -> Maybe ActorId -> ItemId -> m ()
 updateItemSlot c maid iid = do
   slots@(letterSlots, numberSlots, organSlots) <- getsClient sslots
   let isOrgan = case c of
-        CActor _ COrgan -> True
+        COrgan -> True
         _ -> False
       lSlots = if isOrgan then organSlots else letterSlots
   case ( lookup iid $ map swap $ EM.assocs lSlots

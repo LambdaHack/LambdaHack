@@ -306,7 +306,8 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
          then getAnyItems verb cLegalRaw cLegal False False
          else getAnyItems verb cLegalRaw cLegal True True
   case ggi of
-    Right (l, CActor leader2 fromCStore) -> do
+    Right (l, MStore fromCStore) -> do
+      leader2 <- getLeaderUI
       b2 <- getsState $ getActorBody leader2
       activeItems2 <- activeItemsClient leader2
       let calmE2 = calmEnough b2 activeItems2
@@ -430,7 +431,7 @@ projectItem ts posFromCursor = do
   ggi <- getGroupItem psuit prompt promptGeneric True
                       cLegal cLegal
   case ggi of
-    Right ((iid, itemFull), CActor _ fromCStore) -> do
+    Right ((iid, itemFull), MStore fromCStore) -> do
       mpsuitReq <- psuitReq
       case mpsuitReq of
         Left err -> failWith err
@@ -468,7 +469,7 @@ applyHuman ts = do
   ggi <- getGroupItem (return $ Right $ either (const False) id . p)
                       prompt promptGeneric False cLegal cLegal
   case ggi of
-    Right ((iid, itemFull), CActor _ fromCStore) ->
+    Right ((iid, itemFull), MStore fromCStore) ->
       case p itemFull of
         Left reqFail -> failSer reqFail
         Right _ -> return $ Right $ ReqApply iid fromCStore

@@ -1,7 +1,8 @@
 -- | Inventory management and party cycling.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( getGroupItem, getAnyItems, getStoreItem
+  ( ItemDialogMode(..)
+  , getGroupItem, getAnyItems, getStoreItem
   , memberCycle, memberBack, pickLeader
   , cursorPointerFloor, cursorPointerEnemy
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman, epsIncrHuman, tgtClearHuman
@@ -53,8 +54,28 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
+data ItemDialogMode = MStore CStore | MOwned | MStats
+  deriving (Show, Eq)
+
 data ItemDialogState = ISuitable | IAll | INoSuitable | INoAll
   deriving (Show, Eq)
+
+ppItemDialogMode :: ItemDialogMode -> Text
+ppItemDialogMode (MStore cstore) = ppCStore cstore
+ppItemDialogMode MOwned = "in our possession"
+ppItemDialogMode MStats = ""  -- defined elsewhere, to use bpronoun
+
+storeFromMode :: ItemDialogMode -> CStore
+storeFromMode c = case c of
+  MStore cstore -> cstore
+  MOwned -> CGround  -- needed to decide display mode in textAllAE
+  MStats -> CGround  -- needed to decide display mode in textAllAE
+
+accessModeBag :: ActorId -> State -> ItemDialogMode -> ItemBag
+accessModeBag leader s (MStore cstore) = getActorBag leader cstore s
+accessModeBag leader s MOwned = let fid = bfid $ getActorBody leader s
+                                in sharedAllOwnedFid False fid s
+accessModeBag _ _ MStats = EM.empty
 
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -66,9 +87,9 @@ getGroupItem :: MonadClientUI m
              -> Text      -- ^ specific prompt for only suitable items
              -> Text      -- ^ generic prompt
              -> Bool      -- ^ whether to enable setting cursor with mouse
-             -> [CStore]  -- ^ initial legal containers
-             -> [CStore]  -- ^ legal containers after Calm taken into account
-             -> m (SlideOrCmd ((ItemId, ItemFull), Container))
+             -> [CStore]  -- ^ initial legal modes
+             -> [CStore]  -- ^ legal modes after Calm taken into account
+             -> m (SlideOrCmd ((ItemId, ItemFull), ItemDialogMode))
 getGroupItem psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm = do
   soc <- getFull psuit (\_ _ _ -> prompt) (\_ _ _ -> promptGeneric) cursor
                  cLegalRaw cLegalAfterCalm True False ISuitable
@@ -82,12 +103,12 @@ getGroupItem psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm = do
 -- Used, e.g., for picking up and inventory manipulation.
 getAnyItems :: MonadClientUI m
             => MU.Part   -- ^ the verb describing the action
-            -> [CStore]  -- ^ initial legal containers
-            -> [CStore]  -- ^ legal containers after Calm taken into account
+            -> [CStore]  -- ^ initial legal modes
+            -> [CStore]  -- ^ legal modes after Calm taken into account
             -> Bool      -- ^ whether to ask, when the only item
-                         --   in the starting container is suitable
+                         --   in the starting mode is suitable
             -> Bool      -- ^ whether to ask for the number of items
-            -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
+            -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
 getAnyItems verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
   let prompt = makePhrase ["What to", verb]
   soc <- getFull (return $ Right $ const True)
@@ -108,18 +129,16 @@ getAnyItems verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
 -- or switch to any other store.
 -- Used, e.g., for viewing inventory and item descriptions.
 getStoreItem :: MonadClientUI m
-             => (Actor -> [ItemFull] -> Container -> Text)
+             => (Actor -> [ItemFull] -> ItemDialogMode -> Text)
                                  -- ^ how to describe suitable items
-             -> Container        -- ^ initial container
+             -> ItemDialogMode   -- ^ initial mode
              -> Bool             -- ^ whether Enter should be disabled
-             -> m (SlideOrCmd ((ItemId, ItemFull), Container))
+             -> m (SlideOrCmd ((ItemId, ItemFull), ItemDialogMode))
 getStoreItem prompt cInitial noEnter = do
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  let allCs = map (CActor leader) [CEqp, CInv, CSha]
-              ++ [CTrunk (bfid b) (blid b) (bpos b)]
-              ++ map (CActor leader) [CGround, COrgan]
-              ++ [CStats leader]
+  let allCs = map MStore [CEqp, CInv, CSha]
+              ++ [MOwned]
+              ++ map MStore [CGround, COrgan]
+              ++ [MStats]
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
@@ -138,18 +157,18 @@ getStoreItem prompt cInitial noEnter = do
 getFull :: MonadClientUI m
         => m (Either Msg (ItemFull -> Bool))
                             -- ^ which items to consider suitable
-        -> (Actor -> [ItemFull] -> Container -> Text)
+        -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
                             -- ^ specific prompt for only suitable items
-        -> (Actor -> [ItemFull] -> Container -> Text)
+        -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
                             -- ^ generic prompt
         -> Bool             -- ^ whether to enable setting cursor with mouse
-        -> [CStore]         -- ^ initial legal containers
-        -> [CStore]         -- ^ legal containers with Calm taken into account
+        -> [CStore]         -- ^ initial legal modes
+        -> [CStore]         -- ^ legal modes with Calm taken into account
         -> Bool             -- ^ whether to ask, when the only item
-                            --   in the starting container is suitable
+                            --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
         -> ItemDialogState  -- ^ the dialog state to start in
-        -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
+        -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
 getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
         askWhenLone permitMulitple initalState = do
   side <- getsClient sside
@@ -167,16 +186,16 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
   case find hasThisActor cLegalAfterCalm of
     Nothing ->
       if isNothing (find hasThisActor cLegalRaw) then do
-        let contLegalRaw = map (CActor leader) cLegalRaw
-            tLegal = map (MU.Text . ppContainer) contLegalRaw
+        let contLegalRaw = map MStore cLegalRaw
+            tLegal = map (MU.Text . ppItemDialogMode) contLegalRaw
             ppLegal = makePhrase [MU.WWxW "nor" tLegal]
         failWith $ "no items" <+> ppLegal
       else failSer ItemNotCalm
     Just cThisActor -> do
       -- Don't display stores empty for all actors.
       cLegalNotEmpty <- filterM partyNotEmpty cLegalRaw
-      let cInitial = (CActor leader cThisActor)
-          allCs = map (CActor leader) $ delete cThisActor cLegalNotEmpty
+      let cInitial = MStore cThisActor
+          allCs = map MStore $ delete cThisActor cLegalNotEmpty
           (pre, rest) = break (== cInitial) allCs
           post = dropWhile (== cInitial) rest
           remCs = post ++ pre
@@ -188,27 +207,26 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
 getItem :: MonadClientUI m
         => m (Either Msg (ItemFull -> Bool))
                             -- ^ which items to consider suitable
-        -> (Actor -> [ItemFull] -> Container -> Text)
+        -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
                             -- ^ specific prompt for only suitable items
-        -> (Actor -> [ItemFull] -> Container -> Text)
+        -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
                             -- ^ generic prompt
         -> Bool             -- ^ whether to enable setting cursor with mouse
-        -> Container        -- ^ first legal container
-        -> [Container]      -- ^ the rest of legal containers
+        -> ItemDialogMode   -- ^ first legal mode
+        -> [ItemDialogMode] -- ^ the rest of legal modes
         -> Bool             -- ^ whether to ask, when the only item
-                            --   in the starting container is suitable
+                            --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
         -> ItemDialogState  -- ^ the dialog state to start in
-        -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
+        -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
 getItem psuit prompt promptGeneric cursor cCur cRest askWhenLone permitMulitple
         initalState = do
   let cLegal = cCur : cRest
   leader <- getLeaderUI
-  accessCBag <- getsState $ flip getCBag
+  accessCBag <- getsState $ accessModeBag leader
   let storeAssocs = EM.assocs . accessCBag
       allAssocs = concatMap storeAssocs cLegal
-  mapM_ (\c -> mapM_ (updateItemSlot c (Just leader))
-                     (EM.keys $ accessCBag c)) cLegal
+  updateAllSlots leader cLegal
   case (cRest, allAssocs) of
     ([], [(iid, k)]) | not askWhenLone -> do
       itemToF <- itemToFullClient
@@ -217,22 +235,28 @@ getItem psuit prompt promptGeneric cursor cCur cRest askWhenLone permitMulitple
       transition psuit prompt promptGeneric cursor permitMulitple
                  cCur cRest initalState
 
+updateAllSlots :: MonadClient m => ActorId -> [ItemDialogMode] -> m ()
+updateAllSlots leader cs = do
+  s <- getState
+  mapM_ (\c -> mapM_ (updateItemSlot (storeFromMode c) (Just leader))
+                     (EM.keys $ accessModeBag leader s c)) cs
+
 data DefItemKey m = DefItemKey
   { defLabel  :: Text  -- ^ can be undefined if not @defCond@
   , defCond   :: !Bool
-  , defAction :: K.KM -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
+  , defAction :: K.KM -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
   }
 
 transition :: forall m. MonadClientUI m
            => m (Either Msg (ItemFull -> Bool))
-           -> (Actor -> [ItemFull] -> Container -> Text)
-           -> (Actor -> [ItemFull] -> Container -> Text)
+           -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
+           -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
            -> Bool
            -> Bool
-           -> Container
-           -> [Container]
+           -> ItemDialogMode
+           -> [ItemDialogMode]
            -> ItemDialogState
-           -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
+           -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
 transition psuit prompt promptGeneric cursor permitMulitple
            cCur cRest itemDialogState = do
   let recCall = transition psuit prompt promptGeneric cursor permitMulitple
@@ -243,7 +267,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
   activeItems <- activeItemsClient leader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
-  bag <- getsState $ getCBag cCur
+  bag <- getsState $ \s -> accessModeBag leader s cCur
   itemToF <- itemToFullClient
   Binding{brevMap} <- askBinding
   mpsuit <- psuit  -- when throwing, this sets eps and checks cursor validity
@@ -255,14 +279,14 @@ transition psuit prompt promptGeneric cursor permitMulitple
     Right f -> return f  -- when throwing, this takes missile range into accout
   let getSingleResult :: ItemId -> (ItemId, ItemFull)
       getSingleResult iid = (iid, itemToF iid (bag EM.! iid))
-      getResult :: ItemId -> ([(ItemId, ItemFull)], Container)
+      getResult :: ItemId -> ([(ItemId, ItemFull)], ItemDialogMode)
       getResult iid = ([getSingleResult iid], cCur)
-      getMultResult :: [ItemId] -> ([(ItemId, ItemFull)], Container)
+      getMultResult :: [ItemId] -> ([(ItemId, ItemFull)], ItemDialogMode)
       getMultResult iids = (map getSingleResult iids, cCur)
       filterP iid kit = psuitFun $ itemToF iid kit
       bagSuit = EM.filterWithKey filterP bag
       isOrgan = case cCur of
-        CActor _ COrgan -> True
+        MStore COrgan -> True
         _ -> False
       lSlots = if isOrgan then organSlots else letterSlots
       bagLetterSlots = EM.filter (`EM.member` bag) lSlots
@@ -292,9 +316,9 @@ transition psuit prompt promptGeneric cursor permitMulitple
            , defAction = \_ -> do
                let calmE = calmEnough body activeItems
                    (cCurAfterCalm, cRestAfterCalm) = case cRest ++ [cCur] of
-                     c1@(CActor _ CSha) : c2 : rest | not calmE ->
+                     c1@(MStore CSha) : c2 : rest | not calmE ->
                        (c2, c1 : rest)
-                     [CActor _ CSha] | not calmE -> assert `failure` cLegal
+                     [MStore CSha] | not calmE -> assert `failure` cLegal
                      c1 : rest -> (c1, rest)
                      [] -> assert `failure` cLegal
                recCall cCurAfterCalm cRestAfterCalm
@@ -414,7 +438,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
               Just iid -> return $ Right $ getResult iid
             _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
-      ppCur = ppContainer cCur
+      ppCur = ppItemDialogMode cCur
       (labelLetterSlots, bagFiltered, promptChosen) =
         case itemDialogState of
           ISuitable   -> (suitableLetterSlots,
@@ -434,8 +458,8 @@ transition psuit prompt promptGeneric cursor permitMulitple
                           (promptGeneric body activeItems cCur <+> ppCur)
                           <> ":")
   io <- case cCur of
-    CStats{} -> statsOverlay leader -- TODO: describe each stat when selected
-    _ -> itemOverlay (storeFromC cCur) (blid body) bagFiltered
+    MStats -> statsOverlay leader -- TODO: describe each stat when selected
+    _ -> itemOverlay (storeFromMode cCur) (blid body) bagFiltered
   runDefItemKey keyDefs lettersDef io bagLetterSlots promptChosen
 
 statsOverlay :: MonadClient m => ActorId -> m Overlay
@@ -479,25 +503,19 @@ statsOverlay aid = do
   return $! toOverlay $ map prSlot slotList ++ map prAbility abilityList
 
 legalWithUpdatedLeader :: MonadClientUI m
-                       => Container
-                       -> [Container]
-                       -> m (Container, [Container])
+                       => ItemDialogMode
+                       -> [ItemDialogMode]
+                       -> m (ItemDialogMode, [ItemDialogMode])
 legalWithUpdatedLeader cCur cRest = do
   leader <- getLeaderUI
-  let newC c = case c of
-        CActor _oldLeader cstore -> CActor leader cstore
-        CStats _oldLeader -> CStats leader
-        _ -> c
-      newLegal = map newC $ cCur : cRest
-  accessCBag <- getsState $ flip getCBag
-  mapM_ (\c -> mapM_ (updateItemSlot c (Just leader))
-                     (EM.keys $ accessCBag c)) newLegal
+  let newLegal = cCur : cRest  -- not updated in any way yet
+  updateAllSlots leader newLegal
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
   let calmE = calmEnough b activeItems
       legalAfterCalm = case newLegal of
-        c1@(CActor _ CSha) : c2 : rest | not calmE -> (c2, c1 : rest)
-        [CActor _ CSha] | not calmE -> (CActor leader CGround, newLegal)
+        c1@(MStore CSha) : c2 : rest | not calmE -> (c2, c1 : rest)
+        [MStore CSha] | not calmE -> (MStore CGround, newLegal)
         c1 : rest -> (c1, rest)
         [] -> assert `failure` (cCur, cRest)
   return legalAfterCalm
@@ -508,7 +526,7 @@ runDefItemKey :: MonadClientUI m
               -> Overlay
               -> EM.EnumMap SlotChar ItemId
               -> Text
-              -> m (SlideOrCmd ([(ItemId, ItemFull)], Container))
+              -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
 runDefItemKey keyDefs lettersDef io labelLetterSlots prompt = do
   let itemKeys =
         let slotKeys = map (K.Char . slotChar) (EM.keys labelLetterSlots)
@@ -844,26 +862,26 @@ doLook addMoreMsg = do
 
 -- | Create a list of item names.
 _floorItemOverlay :: MonadClientUI m => LevelId -> Point -> m Slideshow
-_floorItemOverlay lid p = describeItemC (CFloor lid p) True
+_floorItemOverlay _lid _p = describeItemC (MOwned {-CFloor lid p-}) True
 
-describeItemC :: MonadClientUI m => Container -> Bool -> m Slideshow
+describeItemC :: MonadClientUI m => ItemDialogMode -> Bool -> m Slideshow
 describeItemC c noEnter = do
   let subject body = partActor body
       verbSha body activeItems = if calmEnough body activeItems
                                  then "notice"
                                  else "paw distractedly"
       prompt body activeItems c2 = case c2 of
-        CActor _ CSha ->
+        MStore CSha ->
           makePhrase
             [MU.Capitalize
              $ MU.SubjectVerbSg (subject body) (verbSha body activeItems)]
-        CActor _ COrgan ->
+        MStore COrgan ->
           makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg (subject body) "feel"]
-        CTrunk{} ->
+        MOwned ->
           makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"]
-        CStats{} ->
+        MStats ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "estimate"
             , MU.WownW (MU.Text $ bpronoun body) "strenghts" ]
@@ -873,16 +891,9 @@ describeItemC c noEnter = do
   ggi <- getStoreItem prompt c noEnter
   case ggi of
     Right ((_, itemFull), c2) -> do
-      lid2 <- getsState $ lidFromC c2
-      localTime <- getsState $ getLocalTime lid2
-      overlayToSlideshow "" $ itemDesc (storeFromC2 c2) lid2 localTime itemFull
+      leader <- getLeaderUI
+      b <- getsState $ getActorBody leader
+      localTime <- getsState $ getLocalTime (blid b)
+      overlayToSlideshow ""
+        $ itemDesc (storeFromMode c2) (blid b) localTime itemFull
     Left slides -> return slides
-
--- TODO
-storeFromC2 :: Container -> CStore
-storeFromC2 c = case c of
-  CFloor{} -> CGround
-  CEmbed{} -> CGround
-  CActor _ cstore -> cstore
-  CTrunk{} -> CGround
-  CStats{} -> CGround  -- needed to decide display mode in textAllAE

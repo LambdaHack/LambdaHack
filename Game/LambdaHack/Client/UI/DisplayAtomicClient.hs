@@ -76,11 +76,11 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
         itemAidVerbMU aid verb iid (Left Nothing) COrgan
       CActor aid store -> do
         when (store == CGround) $
-          updateItemSlotSide (CActor aid CGround) aid iid
+          updateItemSlotSide CGround aid iid
         itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
       CEmbed{} -> return ()
       CFloor{} -> do
-        updateItemSlot c Nothing iid
+        updateItemSlot CGround Nothing iid
         itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
       CTrunk{} -> return ()
       CStats{} -> assert `failure` c
@@ -98,11 +98,11 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
          , lookup iid $ map swap $ IM.assocs numberSlots ) of
       (Nothing, Nothing) -> do
         case c of
-          CActor aid CGround -> updateItemSlotSide c aid iid
+          CActor aid CGround -> updateItemSlotSide CGround aid iid
           CActor{} -> return ()
           CEmbed{} -> return ()
           CFloor lid p -> do
-            updateItemSlot c Nothing iid
+            updateItemSlot CGround Nothing iid
             scursorOld <- getsClient scursor
             case scursorOld of
               TEnemy{} -> return ()  -- probably too important to overwrite
@@ -242,13 +242,13 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   UpdRecordHistory _ -> recordHistory
 
 updateItemSlotSide :: MonadClient m
-                   => Container -> ActorId -> ItemId -> m ()
-updateItemSlotSide c aid iid = do
+                   => CStore -> ActorId -> ItemId -> m ()
+updateItemSlotSide store aid iid = do
   side <- getsClient sside
   b <- getsState $ getActorBody aid
   if bfid b == side
-  then updateItemSlot c (Just aid) iid
-  else updateItemSlot c Nothing iid
+  then updateItemSlot store (Just aid) iid
+  else updateItemSlot store Nothing iid
 
 lookAtMove :: MonadClientUI m => ActorId -> m ()
 lookAtMove aid = do
@@ -406,8 +406,7 @@ moveItemUI :: MonadClientUI m
            -> m ()
 moveItemUI iid k aid cstore1 cstore2 = do
   let verb = verbCStore cstore2
-  when (cstore2 == CGround) $
-    updateItemSlotSide (CActor aid CGround) aid iid
+  when (cstore2 == CGround) $ updateItemSlotSide CGround aid iid
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let underAI = isAIFact fact
@@ -487,8 +486,7 @@ quitFactionUI fid mbody toSt = do
                           <+> moreMsg
             if EM.null bag then return (mempty, 0)
             else do
-              let container = (CFloor (blid b) (bpos b))
-              mapM_ (updateItemSlot container Nothing) $ EM.keys bag
+              mapM_ (updateItemSlot CGround Nothing) $ EM.keys bag
               io <- itemOverlay CGround (blid b) bag
               sli <- overlayToSlideshow itemMsg io
               return (sli, tot)

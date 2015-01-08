@@ -65,7 +65,7 @@ allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z']
 
 -- | Assigns a slot to an item, for inclusion in the inventory or equipment
 -- of a hero. Tries to to use the requested slot, if any.
-assignSlot :: Container -> Item -> FactionId -> Maybe Actor -> ItemSlots
+assignSlot :: CStore -> Item -> FactionId -> Maybe Actor -> ItemSlots
            -> SlotChar -> State
            -> Either SlotChar Int
 assignSlot c item fid mbody (letterSlots, numberSlots, organSlots)
@@ -87,7 +87,7 @@ assignSlot c item fid mbody (letterSlots, numberSlots, organSlots)
                   mbody
   inBags = ES.unions $ map EM.keysSet [onPerson, onGroud]
   lSlots = case c of
-    CActor _ COrgan -> organSlots
+    COrgan -> organSlots
     _ -> letterSlots
   f l = maybe True (`ES.notMember` inBags) $ EM.lookup l lSlots
   free = filter f candidates
