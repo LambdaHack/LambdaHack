@@ -399,7 +399,7 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
       bonusHP = fromIntegral $ (diffHP - hp) `divUp` oneM
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
       bsymbol = jsymbol itemBase
-      bname = jname itemBase
+      bname = IK.iname trunkKind
       bcolor = flavourToColor $ jflavour itemBase
       b = actorTemplate trunkId bsymbol bname bpronoun bcolor diffHP calm
                         pos lid time bfid
