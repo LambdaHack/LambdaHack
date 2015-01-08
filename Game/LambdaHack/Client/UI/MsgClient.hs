@@ -102,7 +102,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   let verb = MU.Text $ if pos == bpos b
                        then "stand on"
                        else if canSee then "notice" else "remember"
-  let nWs (iid, kit@(k, _)) = partItemWs k (CFloor lidV pos) lidV localTime (itemToF iid kit)
+  let nWs (iid, kit@(k, _)) = partItemWs k CGround lidV localTime (itemToF iid kit)
       isd = case detailed of
               _ | EM.size is == 0 -> ""
               _ | EM.size is <= 2 ->
@@ -128,13 +128,13 @@ lookAt detailed tilePrefix canSee pos aid msg = do
 
 -- | Create a list of item names.
 itemOverlay :: MonadClient m
-            => Container -> LevelId -> ItemBag -> m Overlay
+            => CStore -> LevelId -> ItemBag -> m Overlay
 itemOverlay c lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   (letterSlots, numberSlots, organSlots) <- getsClient sslots
   let isOrgan = case c of
-        CActor _ COrgan -> True
+        COrgan -> True
         _ -> False
       lSlots = if isOrgan then organSlots else letterSlots
   assert (all (`elem` EM.elems lSlots ++ IM.elems numberSlots)

@@ -435,7 +435,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
                           <> ":")
   io <- case cCur of
     CStats{} -> statsOverlay leader -- TODO: describe each stat when selected
-    _ -> itemOverlay cCur (blid body) bagFiltered
+    _ -> itemOverlay (storeFromC cCur) (blid body) bagFiltered
   runDefItemKey keyDefs lettersDef io bagLetterSlots promptChosen
 
 statsOverlay :: MonadClient m => ActorId -> m Overlay
@@ -875,5 +875,14 @@ describeItemC c noEnter = do
     Right ((_, itemFull), c2) -> do
       lid2 <- getsState $ lidFromC c2
       localTime <- getsState $ getLocalTime lid2
-      overlayToSlideshow "" $ itemDesc c2 lid2 localTime itemFull
+      overlayToSlideshow "" $ itemDesc (storeFromC2 c2) lid2 localTime itemFull
     Left slides -> return slides
+
+-- TODO
+storeFromC2 :: Container -> CStore
+storeFromC2 c = case c of
+  CFloor{} -> CGround
+  CEmbed{} -> CGround
+  CActor _ cstore -> cstore
+  CTrunk{} -> CGround
+  CStats{} -> CGround  -- needed to decide display mode in textAllAE

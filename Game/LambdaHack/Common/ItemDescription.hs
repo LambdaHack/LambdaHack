@@ -10,7 +10,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.EffectDescription
@@ -25,7 +24,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 -- TODO: remove _lid if still unused after some time
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
-partItemN :: Bool -> Int -> Container -> LevelId -> Time -> ItemFull
+partItemN :: Bool -> Int -> CStore -> LevelId -> Time -> ItemFull
           -> (Bool, MU.Part, MU.Part)
 partItemN fullInfo n c _lid localTime itemFull =
   let genericName = jname $ itemBase itemFull
@@ -62,11 +61,11 @@ partItemN fullInfo n c _lid localTime itemFull =
       in (unique, capName, MU.Phrase $ map MU.Text ts)
 
 -- | The part of speech describing the item.
-partItem :: Container -> LevelId -> Time -> ItemFull -> (Bool, MU.Part, MU.Part)
+partItem :: CStore -> LevelId -> Time -> ItemFull -> (Bool, MU.Part, MU.Part)
 partItem = partItemN False 4
 
-textAllAE :: Bool -> Container -> ItemFull -> [Text]
-textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
+textAllAE :: Bool -> CStore -> ItemFull -> [Text]
+textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
   let features | fullInfo = map featureToSuff $ sort $ jfeature itemBase
                | otherwise = []
   in case itemDisco of
@@ -87,7 +86,6 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
           notDetail :: IK.Effect -> Bool
           notDetail IK.Explode{} = fullInfo
           notDetail _ = True
-          cstore = storeFromC c
           active = cstore `elem` [CEqp, COrgan]
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
           splitAE :: (Num a, Show a, Ord a)
@@ -147,26 +145,26 @@ textAllAE fullInfo c ItemFull{itemBase, itemDisco} =
       in aets ++ features
 
 -- TODO: use kit
-partItemWs :: Int -> Container -> LevelId -> Time -> ItemFull -> MU.Part
+partItemWs :: Int -> CStore -> LevelId -> Time -> ItemFull -> MU.Part
 partItemWs count c lid localTime itemFull =
   let (unique, name, stats) = partItem c lid localTime itemFull
   in if unique && count == 1
      then MU.Phrase ["the", name, stats]
      else MU.Phrase [MU.CarWs count name, stats]
 
-partItemAW :: Container -> LevelId -> Time -> ItemFull -> MU.Part
+partItemAW :: CStore -> LevelId -> Time -> ItemFull -> MU.Part
 partItemAW c lid localTime itemFull =
   let (unique, name, stats) = partItem c lid localTime itemFull
   in if unique
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
 
-partItemWownW :: MU.Part -> Container -> LevelId -> Time -> ItemFull -> MU.Part
+partItemWownW :: MU.Part -> CStore -> LevelId -> Time -> ItemFull -> MU.Part
 partItemWownW partA c lid localTime itemFull =
   let (_, name, stats) = partItem c lid localTime itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
-itemDesc :: Container -> LevelId -> Time -> ItemFull -> Overlay
+itemDesc :: CStore -> LevelId -> Time -> ItemFull -> Overlay
 itemDesc c lid localTime itemFull =
   let (_, name, stats) = partItemN True 99 c lid localTime itemFull
       nstats = makePhrase [name, stats]

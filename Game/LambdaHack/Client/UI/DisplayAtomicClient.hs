@@ -285,7 +285,7 @@ itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
-  let subject = partItemWs k c lid localTime (itemToF iid kit)
+  let subject = partItemWs k (storeFromC c) lid localTime (itemToF iid kit)
       msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
@@ -298,28 +298,28 @@ itemAidVerbMU :: MonadClientUI m
               -> ItemId -> Either (Maybe Int) Int -> CStore
               -> m ()
 itemAidVerbMU aid verb iid ek cstore = do
-  let c = CActor aid cstore
-  bag <- getsState $ getCBag c
+  bag <- getsState $ getActorBag aid cstore
   -- The item may no longer be in @c@, but it was
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (aid, verb, iid, cstore)
     Just kit@(k, _) -> do
       itemToF <- itemToFullClient
-      lid <- getsState $ lidFromC c
+      body <- getsState $ getActorBody aid
+      let lid = blid body
       localTime <- getsState $ getLocalTime lid
       subject <- partAidLeader aid
       let itemFull = itemToF iid kit
           object = case ek of
             Left (Just n) ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
-              $ partItemWs n c lid localTime itemFull
+              $ partItemWs n cstore lid localTime itemFull
             Left Nothing ->
-              let (_, name, stats) = partItem c lid localTime itemFull
+              let (_, name, stats) = partItem cstore lid localTime itemFull
               in MU.Phrase [name, stats]
             Right n ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
               $ let itemSecret = itemNoDisco (itemBase itemFull, n)
-                    (_, secretName, secretAE) = partItem c lid localTime itemSecret
+                    (_, secretName, secretAE) = partItem cstore lid localTime itemSecret
                     name = MU.Phrase [secretName, secretAE]
                     nameList = if n == 1
                                then ["the", name]
@@ -417,15 +417,14 @@ moveItemUI iid k aid cstore1 cstore2 = do
     localTime <- getsState $ getLocalTime (blid b)
     itemToF <- itemToFullClient
     (letterSlots, _, _) <- getsClient sslots
-    let c2 = CActor aid cstore2
-    bag <- getsState $ getCBag c2
+    bag <- getsState $ getActorBag aid cstore2
     let kit@(n, _) = bag EM.! iid
     case lookup iid $ map swap $ EM.assocs letterSlots of
       Just l -> msgAdd $ makePhrase
                   [ "\n"
                   , slotLabel $ Left l
                   , "-"
-                  , partItemWs n c2 (blid b) localTime (itemToF iid kit)
+                  , partItemWs n cstore2 (blid b) localTime (itemToF iid kit)
                   , "\n" ]
       Nothing -> return ()
   else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
@@ -490,7 +489,7 @@ quitFactionUI fid mbody toSt = do
             else do
               let container = (CFloor (blid b) (bpos b))
               mapM_ (updateItemSlot container Nothing) $ EM.keys bag
-              io <- itemOverlay container (blid b) bag
+              io <- itemOverlay CGround (blid b) bag
               sli <- overlayToSlideshow itemMsg io
               return (sli, tot)
       (itemSlides, total) <- case mbody of
@@ -520,18 +519,17 @@ quitFactionUI fid mbody toSt = do
 
 discover :: MonadClientUI m
          => LevelId -> Point -> StateClient -> ItemId -> m ()
-discover lid p oldcli iid = do
+discover lid _p oldcli iid = do
   cops <- getsState scops
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   let itemFull = itemToF iid (1, [])
-      c = CFloor lid p
-      knownName = partItemAW c lid localTime itemFull
+      knownName = partItemAW CGround lid localTime itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
       itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
-      (_, secretName, secretAEText) = partItem c lid localTime itemSecret
+      (_, secretName, secretAEText) = partItem CGround lid localTime itemSecret
       msg = makeSentence
         [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
                                   "turn out to be"
@@ -541,7 +539,7 @@ discover lid p oldcli iid = do
                    iid (itemBase itemFull) (1, [])
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
-  when (textAllAE False c itemFull /= textAllAE False c oldItemFull) $
+  when (textAllAE False CGround itemFull /= textAllAE False CGround oldItemFull) $
     msgAdd msg
 
 -- * RespSfxAtomicUI
@@ -722,7 +720,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
               let itemSecret = itemNoDisco (itemBase, itemK)
-                  (_, secretName, secretAEText) = partItem (CActor aid cstore) (blid b) localTime itemSecret
+                  (_, secretName, secretAEText) = partItem cstore (blid b) localTime itemSecret
                   subject = partActor b
                   verb = "repurpose"
                   store = MU.Text $ ppCStore cstore
@@ -807,10 +805,10 @@ strike source target iid hitStatus = assert (source /= target) $ do
       isOrgan = iid `EM.member` borgan sb
       partItemChoice =
         if isOrgan
-        then partItemWownW spronoun (CActor source COrgan) (blid sb) localTime
+        then partItemWownW spronoun COrgan (blid sb) localTime
         -- The @CEqp@ store may be fake, but it results in an item description
         -- for an active item, which is the right one for a weapon.
-        else partItemAW (CActor source CEqp) (blid sb) localTime
+        else partItemAW CEqp (blid sb) localTime
       msg HitClear = makeSentence $
         [MU.SubjectVerbSg spart verb, tpart]
         ++ if bproj sb

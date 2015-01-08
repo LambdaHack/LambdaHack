@@ -862,9 +862,8 @@ effectIdentify iidId fid storeInitial target = do
             -- also to prevent sending any other UpdDiscover.
             let ided = IK.Identified `elem` IK.ifeature itemKind
                 itemSecret = itemNoAE itemFull
-                c = CActor target store
-                statsObvious = textAllAE False c itemFull
-                               == textAllAE False c itemSecret
+                statsObvious = textAllAE False store itemFull
+                               == textAllAE False store itemSecret
             if ided && statsObvious
               then tryFull store rest
               else do
