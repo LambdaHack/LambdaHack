@@ -48,7 +48,7 @@ newtype ItemSeed = ItemSeed Int
 
 data ItemAspectEffect = ItemAspectEffect
   { jaspects :: ![Aspect Int]  -- ^ the aspects of the item
-  , jeffects :: ![Effect]      -- ^ the effects when activated
+  , jeffects :: ![Effect]      -- ^ the effects when applied
   }
   deriving (Show, Eq, Generic)
 

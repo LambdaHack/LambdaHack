@@ -145,7 +145,7 @@ endClip arenas = do
   when (clipN `mod` leadLevelClips == 0) leadLevelSwitch
   if clipMod == 1 then do
     -- Periodic activation only once per turn, for speed, but on all arenas.
-    mapM_ activatePeriodicLevel arenas
+    mapM_ applyPeriodicLevel arenas
     -- Add monsters each turn, not each clip.
     -- Do this on only one of the arenas to prevent micromanagement,
     -- e.g., spreading leaders across levels to bump monster generation.
@@ -165,10 +165,10 @@ endClip arenas = do
   else return True
 
 -- | Trigger periodic items for all actors on the given level.
-activatePeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
-activatePeriodicLevel lid = do
+applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
+applyPeriodicLevel lid = do
   discoEffect <- getsServer sdiscoEffect
-  let activatePeriodicItem c aid iid =
+  let applyPeriodicItem c aid iid =
         case EM.lookup iid discoEffect of
           Just ItemAspectEffect{jeffects, jaspects} ->
             if IK.Periodic `elem` jaspects then do
@@ -183,15 +183,15 @@ activatePeriodicLevel lid = do
             else
               return ()
           _ -> assert `failure` (lid, aid, c, iid)
-      activatePeriodicCStore aid cstore = do
+      applyPeriodicCStore aid cstore = do
         let c = CActor aid cstore
         bag <- getsState $ getCBag c
-        mapM_ (activatePeriodicItem c aid) $ EM.keys bag
-      activatePeriodicActor aid = do
-        activatePeriodicCStore aid COrgan
-        activatePeriodicCStore aid CEqp
+        mapM_ (applyPeriodicItem c aid) $ EM.keys bag
+      applyPeriodicActor aid = do
+        applyPeriodicCStore aid COrgan
+        applyPeriodicCStore aid CEqp
   allActors <- getsState $ actorRegularAssocs (const True) lid
-  mapM_ (\(aid, _) -> activatePeriodicActor aid) allActors
+  mapM_ (\(aid, _) -> applyPeriodicActor aid) allActors
 
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less or equal to the end of current cut-off.

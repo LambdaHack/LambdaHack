@@ -156,10 +156,10 @@ showReqFailure reqFailure = case reqFailure of
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"
   EqpOverfull -> "cannot equip any more items"
-  ApplyUnskilled -> "unskilled actors cannot activate items"
+  ApplyUnskilled -> "unskilled actors cannot apply items"
   ApplyRead -> "activating this kind of items requires skill level 2"
-  ApplyOutOfReach -> "cannot activate an item out of reach"
-  ApplyCharging -> "cannot activate an item that is still charging"
+  ApplyOutOfReach -> "cannot apply an item out of reach"
+  ApplyCharging -> "cannot apply an item that is still charging"
   ItemNothing -> "wasting time on void item manipulation"
   ItemNotCalm -> "you are too alarmed to sort through the shared stash"
   NotCalmPrecious -> "you are too alarmed to handle such an exquisite item"
@@ -173,7 +173,7 @@ showReqFailure reqFailure = case reqFailure of
   NoChangeDunLeader -> "no manual level change for your team"
   NoChangeLvlLeader -> "no manual leader change for your team"
 
--- The item should not be activated nor thrown because it's too delicate
+-- The item should not be applied nor thrown because it's too delicate
 -- to operate when not calm or becuse it's too precious to identify by use.
 permittedPrecious :: Bool -> Bool -> ItemFull -> Either ReqFailure Bool
 permittedPrecious calm10 forced itemFull =

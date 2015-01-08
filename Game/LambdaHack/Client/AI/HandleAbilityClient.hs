@@ -657,7 +657,7 @@ applyItem aid applyGroup = do
             benR = case mben of
                      Nothing -> 0
                        -- experimenting is fun, but it's better to risk
-                       -- foes' skin than ours -- TODO: when {activated}
+                       -- foes' skin than ours -- TODO: when {applied}
                        -- is implemented, enable this for items too heavy,
                        -- etc. for throwing
                      Just (_, ben) -> ben

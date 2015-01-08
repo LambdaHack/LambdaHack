@@ -141,10 +141,10 @@ Item-use related keys are as follows.
                 e              equip an item
                 p              pack an item into inventory backpack
                 s              stash and share an item
-                a              activate applicable item
+                a              apply item
                 q              quaff potion
                 r              read scroll
-                f              fling projectable item
+                f              fling item
                 t              throw missile
                 z              zap wand
 

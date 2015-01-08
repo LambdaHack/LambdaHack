@@ -52,7 +52,7 @@ import Game.LambdaHack.Server.State
 applyItem :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> CStore -> m ()
 applyItem aid iid cstore = do
-  execSfxAtomic $ SfxActivate aid iid cstore
+  execSfxAtomic $ SfxApply aid iid cstore
   let c = CActor aid cstore
   itemEffectAndDestroy aid aid iid c
 
@@ -970,7 +970,7 @@ effectDropBestWeapon execSfx target = do
 
 -- ** ActivateInv
 
--- | Activate all activable items with the given symbol
+-- | Activate all items with the given symbol
 -- in the target actor's equipment (there's no variant that activates
 -- a random one, to avoid the incentive for carrying garbage).
 -- Only one item of each stack is activated (and possibly consumed).

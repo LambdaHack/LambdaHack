@@ -50,7 +50,7 @@ instance Show Ability where
   show AbWait = "wait"
   show AbMoveItem = "manage items"
   show AbProject = "fling"
-  show AbApply = "activate"
+  show AbApply = "apply"
   show AbTrigger = "trigger floor"
 
 instance Binary Ability where

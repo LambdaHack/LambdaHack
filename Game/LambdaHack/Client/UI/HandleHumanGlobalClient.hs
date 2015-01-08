@@ -459,7 +459,7 @@ applyHuman ts = do
   localTime <- getsState $ getLocalTime (blid b)
   let cLegal = [CGround, CInv, CEqp]
       (verb1, object1) = case ts of
-        [] -> ("activate", "item")
+        [] -> ("apply", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
       p itemFull = permittedApply triggerSyms localTime skill itemFull b activeItems

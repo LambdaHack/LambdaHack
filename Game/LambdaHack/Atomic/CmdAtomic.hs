@@ -116,7 +116,7 @@ data SfxAtomic =
   | SfxRecoil !ActorId !ActorId !ItemId !HitAtomic
   | SfxProject !ActorId !ItemId !CStore
   | SfxCatch !ActorId !ItemId !CStore
-  | SfxActivate !ActorId !ItemId !CStore
+  | SfxApply !ActorId !ItemId !CStore
   | SfxCheck !ActorId !ItemId !CStore
   | SfxTrigger !ActorId !Point !TK.Feature
   | SfxShun !ActorId !Point !TK.Feature
@@ -195,8 +195,8 @@ undoSfxAtomic cmd = case cmd of
   SfxRecoil source target iid b -> SfxStrike source target iid b
   SfxProject aid iid cstore -> SfxCatch aid iid cstore
   SfxCatch aid iid cstore -> SfxProject aid iid cstore
-  SfxActivate aid iid cstore -> SfxCheck aid iid cstore
-  SfxCheck aid iid cstore -> SfxActivate aid iid cstore
+  SfxApply aid iid cstore -> SfxCheck aid iid cstore
+  SfxCheck aid iid cstore -> SfxApply aid iid cstore
   SfxTrigger aid p feat -> SfxShun aid p feat
   SfxShun aid p feat -> SfxTrigger aid p feat
   SfxEffect{} -> cmd  -- not ideal?

@@ -116,7 +116,7 @@ standardKeys = KeyKind
       , ("s", ([CmdItem], MoveItem [CGround, CInv, CEqp] CSha
                                    Nothing "and share an item" False))
       , ("a", ([CmdItem, CmdMinimal], Apply
-           [ ApplyItem { verb = "activate"
+           [ ApplyItem { verb = "apply"
                        , object = "item"
                        , symbol = ' ' }
            , ApplyItem { verb = "quaff"

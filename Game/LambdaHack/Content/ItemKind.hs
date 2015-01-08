@@ -108,7 +108,7 @@ instance Show TimerDice where
 -- (starting at 0) for all items wielded by an actor and they affect the actor.
 data Aspect a =
     Unique             -- ^ at most one copy can ever be generated
-  | Periodic           -- ^ in equipment, activate as often as @Timeout@ permits
+  | Periodic           -- ^ in equipment, apply as often as @Timeout@ permits
   | Timeout !a         -- ^ some effects will be disabled until item recharges
   | AddHurtMelee !a    -- ^ percentage damage bonus in melee
   | AddHurtRanged !a   -- ^ percentage damage bonus in ranged

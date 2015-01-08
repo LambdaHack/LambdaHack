@@ -558,10 +558,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     itemAidVerbMU aid "aim" iid (Left $ Just 1) cstore
   SfxCatch aid iid cstore ->
     itemAidVerbMU aid "catch" iid (Left $ Just 1) cstore
-  SfxActivate aid iid cstore ->
-    itemAidVerbMU aid "activate" iid (Left $ Just 1) cstore
+  SfxApply aid iid cstore ->
+    itemAidVerbMU aid "apply" iid (Left $ Just 1) cstore
   SfxCheck aid iid cstore ->
-    itemAidVerbMU aid "deactivate" iid (Left $ Just 1) cstore
+    itemAidVerbMU aid "deapply" iid (Left $ Just 1) cstore
   SfxTrigger aid _p _feat ->
     when verbose $ aidVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->
