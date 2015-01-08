@@ -90,7 +90,6 @@ data Container =
   | CEmbed !LevelId !Point
   | CActor !ActorId !CStore
   | CTrunk !FactionId !LevelId !Point   -- ^ for bootstrapping actor bodies
-  | CStats !ActorId  -- ^ for the stats summary display screen
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Container

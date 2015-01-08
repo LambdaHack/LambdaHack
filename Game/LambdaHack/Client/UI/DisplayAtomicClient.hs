@@ -82,8 +82,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
       CFloor{} -> do
         updateItemSlot CGround Nothing iid
         itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
-      CTrunk{} -> return ()
-      CStats{} -> assert `failure` c
+      CTrunk{} -> assert `failure` c
     stopPlayBack
   UpdDestroyItem iid _ kit c -> itemVerbMU iid kit "disappear" c
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
@@ -111,7 +110,6 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
             itemVerbMU iid kit "be spotted" c
             stopPlayBack
           CTrunk{} -> return ()
-          CStats{} -> assert `failure` c
       _ -> return ()  -- seen recently (still has a slot assigned)
   UpdLoseItem{} -> skip
   -- Move actors and items.

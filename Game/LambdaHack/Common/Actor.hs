@@ -216,8 +216,7 @@ ppContainer :: Container -> Text
 ppContainer CFloor{} = "nearby"
 ppContainer CEmbed{} = "embedded nearby"
 ppContainer (CActor _ cstore) = ppCStore cstore
-ppContainer CTrunk{} = "in our possession"
-ppContainer CStats{} = ""  -- defined elsewhere, to use bpronoun
+ppContainer c@CTrunk{} = assert `failure` c
 
 ppCStore :: CStore -> Text
 ppCStore CGround = "on the ground"
