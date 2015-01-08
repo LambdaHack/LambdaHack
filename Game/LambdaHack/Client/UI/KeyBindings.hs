@@ -54,26 +54,9 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
 keyHelp :: Binding -> Slideshow
 keyHelp Binding{bcmdList} =
   let
-    minimalBlurb =
-      [ "Walk throughout a level with numeric keypad or, optionally, other keys."
-      , "Run (until anything disturbs you) with mouse or SHIFT (or CTRL) and a key."
-      , ""
-      , "               7 8 9          7 8 9          y k u"
-      , "                \\|/            \\|/            \\|/"
-      , "               4-5-6          u-i-o          h-.-l"
-      , "                /|\\            /|\\            /|\\"
-      , "               1 2 3          j k l          b j n"
-      , ""
-      , "Interact with the dungeon using the following basic commands."
-      , ""
-      ]
-    minCatBlurb =
-      [ ""
-      , "Press SPACE to see detailed descriptions of all commands."
-      ]
     movBlurb =
-      [ "Walk throughout a level with numeric keypad (left diagram)"
-      , "or its compact laptop replacement (middle) or Vi text editor keys"
+      [ "Walk throughout a level with mouse or numeric keypad (left diagram)"
+      , "or its compact laptop replacement (middle) or the Vi text editor keys"
       , "(right, also known as \"Rogue-like keys\"; can be enabled in config.ui.ini)."
       , "Run, until disturbed, with left mouse button or SHIFT (or CTRL) and a key."
       , ""
@@ -84,7 +67,7 @@ keyHelp Binding{bcmdList} =
       , "               1 2 3          j k l          b j n"
       , ""
       , "In targeting mode the same keys (or mouse) move the targeting cursor."
-      , "Press '5' or 'i' or '.' to wait, bracing for blows, which reduces"
+      , "Press 'KEYPAD_5' or 'i' or '.' to wait, bracing for blows, which reduces"
       , "any damage taken and makes it impossible for foes to displace you."
       , "You displace enemies or friends by bumping into them with SHIFT (or CTRL)."
       , ""
@@ -92,7 +75,19 @@ keyHelp Binding{bcmdList} =
       , "The best item to attack with is automatically chosen from among"
       , "weapons in your personal equipment and your unwounded organs."
       , ""
-      , "Press SPACE to see command descriptions."
+      , "Press SPACE to see the minimal command set."
+      ]
+    minimalBlurb =
+      [ "The following minimal command set let's you accomplish anything in the game,"
+      , "though not neccessarily in the fewest number of keystrokes."
+      , "Most of the other commands are shorthands, defined as macros."
+      , "(with the exception of the advanced commands for setting non-default"
+      , "tactics and targets for your autonomous henchmen, if you have any.)"
+      , ""
+      ]
+    casualEndBlurb =
+      [ ""
+      , "Press SPACE to see the detailed descriptions of all commands."
       ]
     categoryBlurb =
       [ ""
@@ -103,13 +98,14 @@ keyHelp Binding{bcmdList} =
       , "For more playing instructions see file PLAYING.md."
       , "Press PGUP to return to previous pages or ESC to see the map again."
       ]
+    casualDescription = "Minimal cheat sheet for casual play"
     fmt n k h = T.justifyRight 72 ' '
                 $ T.justifyLeft n ' ' k
                   <> T.justifyLeft 48 ' ' h
     fmts s = " " <> T.justifyLeft 71 ' ' s
-    minimalText = map fmts minimalBlurb
     movText = map fmts movBlurb
-    minCatText = map fmts minCatBlurb
+    minimalText = map fmts minimalBlurb
+    casualEndText = map fmts casualEndBlurb
     categoryText = map fmts categoryBlurb
     lastText = map fmts lastBlurb
     coImage :: K.KM -> [K.KM]
@@ -124,12 +120,11 @@ keyHelp Binding{bcmdList} =
     keys = keysN 15
     keyCaption = keyCaptionN 15
   in toSlideshow (Just True)
-    [ [categoryDescription CmdMinimal
-       <> ". [press SPACE to see all commands]"] ++ [""]
-      ++ minimalText
-      ++ [keyCaption] ++ keys CmdMinimal ++ minCatText ++ [moreMsg]
-    , ["Movement. [press SPACE to advance]"] ++ [""]
+    [ [casualDescription <+> "(1/2). [press SPACE to see more]"] ++ [""]
       ++ movText ++ [moreMsg]
+    , [casualDescription <+> "(2/2). [press SPACE to see all commands]"] ++ [""]
+      ++ minimalText
+      ++ [keyCaption] ++ keys CmdMinimal ++ casualEndText ++ [moreMsg]
     , [categoryDescription CmdMove <> ". [press SPACE to advance]"] ++ [""]
       ++ [keyCaption] ++ keys CmdMove ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdItem <> ". [press SPACE to advance]"] ++ [""]
@@ -141,7 +136,6 @@ keyHelp Binding{bcmdList} =
     , [categoryDescription CmdMeta <> ". [press SPACE to advance]"] ++ [""]
       ++ [keyCaption] ++ keys CmdMeta ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdMouse
-       <> ". [press PGUP to see previous, ESC to cancel]"]
-      ++ [""]
+       <> ". [press PGUP to see previous, ESC to cancel]"] ++ [""]
       ++ [keyCaptionN 20] ++ keysN 20 CmdMouse ++ lastText ++ [endMsg]
     ]

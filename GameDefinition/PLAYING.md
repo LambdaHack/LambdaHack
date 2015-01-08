@@ -129,11 +129,11 @@ Below are the remaining keys for terrain exploration and alteration.
 Item-use related keys are as follows.
 
                 keys           command
-                E              describe equipment of the leader
-                P              describe inventory pack of the leader
-                S              describe the shared party stash
+                E              manage equipment of the leader
+                P              manage inventory pack of the leader
+                S              manage the shared party stash
                 A              describe all owned items
-                G              describe items on the ground
+                G              manage items on the ground
                 @              describe organs of the leader
                 ~              show the stats summary of the leader
                 g and ,        get an item
@@ -149,15 +149,18 @@ Item-use related keys are as follows.
                 z              zap wand
 
 To make a ranged attack, as in the last few commands above,
-you may need to set your cursor first with the middle mouse button
-(note however, that cursor position is also set automatically as soon
-as a monster comes into view). You can also enter detailed targetting
-mode with the right mouse button or with the `*` numpad key that selects
-enemies or the `/` numpad key that marks a tile. You move the targeting cursor
-with direction keys and assign a personal target with `RET`. The details
-of the shared cursor position and of the personal target are described
-in the status lines, at the bottom of the screen. All targeting keys
-are listed below.
+you may want to set your cursor first with the middle mouse button.
+The preparation is not mandatory, because the cursor is set automatically
+as soon as a monster comes into view and can still be adjusted while
+in the missile choice menu. If you want full control, e.g., to assign
+targets to autonomous snipers from your team, you can enter
+the detailed targetting mode with the right mouse button or with
+the `*` numpad key that selects enemies or the `/` numpad key that
+marks a tile. You can move the targeting cursor with direction keys
+and assign a personal target to the leader with `RET`.
+The details of the shared cursor position and of the personal target
+are described in the status lines, at the bottom of the screen.
+All targeting keys are listed below.
 
                 keys           command
                 KEYPAD_* and \ select enemy
