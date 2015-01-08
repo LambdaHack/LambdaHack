@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Misc
   ( -- * Game object identifiers
     FactionId, LevelId, AbsDepth(..), ActorId
     -- * Item containers
-  , Container(..), CStore(..)
+  , Container(..), CStore(..), ItemDialogMode(..)
     -- * Assorted
   , normalLevelBound, divUp, GroupName, toGroupName, Freqs, breturn
   , serverSaveName, Rarity, validateRarity, Tactic(..)
@@ -105,6 +105,9 @@ data CStore =
 instance Binary CStore
 
 instance Hashable CStore
+
+data ItemDialogMode = MStore CStore | MOwned | MStats
+  deriving (Show, Read, Eq, Ord)
 
 -- | A unique identifier of a faction in a game.
 newtype FactionId = FactionId Int

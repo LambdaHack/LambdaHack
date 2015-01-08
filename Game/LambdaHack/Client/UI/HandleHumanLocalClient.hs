@@ -4,8 +4,7 @@
 module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   ( -- * Assorted commands
     gameDifficultyCycle
-  , pickLeaderHuman, memberCycleHuman, memberBackHuman
-  , describeItemHuman, allOwnedHuman, statsSummaryHuman
+  , pickLeaderHuman, memberCycleHuman, memberBackHuman, describeItemHuman
   , selectActorHuman, selectNoneHuman
   , clearHuman, stopIfTgtModeHuman, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
@@ -107,20 +106,8 @@ memberBackHuman = memberBack True
 -- * DescribeItem
 
 -- | Display items from a given container store and describe the chosen one.
-describeItemHuman :: MonadClientUI m => CStore -> m Slideshow
-describeItemHuman cstore = describeItemC (MStore cstore) False
-
--- * AllOwned
-
--- | Display the sum of equipments and inventory of the whole party.
-allOwnedHuman :: MonadClientUI m => m Slideshow
-allOwnedHuman = describeItemC MOwned False
-
--- * StatsSummary
-
--- | Display the summary of stats of the leader.
-statsSummaryHuman :: MonadClientUI m => m Slideshow
-statsSummaryHuman = describeItemC MStats False
+describeItemHuman :: MonadClientUI m => ItemDialogMode -> m Slideshow
+describeItemHuman mode = describeItemC mode False
 
 -- * SelectActor
 

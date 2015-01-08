@@ -1,8 +1,7 @@
 -- | Inventory management and party cycling.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( ItemDialogMode(..)
-  , getGroupItem, getAnyItems, getStoreItem
+  ( getGroupItem, getAnyItems, getStoreItem
   , memberCycle, memberBack, pickLeader
   , cursorPointerFloor, cursorPointerEnemy
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman, epsIncrHuman, tgtClearHuman
@@ -53,9 +52,6 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-
-data ItemDialogMode = MStore CStore | MOwned | MStats
-  deriving (Show, Eq)
 
 data ItemDialogState = ISuitable | IAll | INoSuitable | INoAll
   deriving (Show, Eq)
