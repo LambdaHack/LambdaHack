@@ -103,7 +103,7 @@ standardKeys = KeyKind
       , ("A", ([CmdItem], AllOwned))
       , ("G", ([CmdItem], DescribeItem CGround))
       , ("@", ([CmdItem], DescribeItem COrgan))
-      , ("asciitilde", ([CmdItem], StatsSummary))
+      , ("exclam", ([CmdItem], StatsSummary))
       , ("g", ([CmdItem, CmdMinimal],
                MoveItem [CGround] CEqp (Just "get") "an item" True))
       , ("d", ([CmdItem], MoveItem [CEqp, CInv, CSha] CGround

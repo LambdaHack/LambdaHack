@@ -135,7 +135,7 @@ Item-use related keys are as follows.
                 A              describe all owned items
                 G              manage items on the ground
                 @              describe organs of the leader
-                ~              show the stats summary of the leader
+                !              show the stats summary of the leader
                 g and ,        get an item
                 d              drop an item
                 e              equip an item
