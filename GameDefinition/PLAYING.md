@@ -155,7 +155,7 @@ as soon as a monster comes into view and can still be adjusted while
 in the missile choice menu. If you want full control, e.g., to assign
 targets to autonomous snipers from your team, you can enter
 the detailed targetting mode with the right mouse button or with
-the `*` numpad key that selects enemies or the `/` numpad key that
+the `*` keypad key that selects enemies or the `/` keypad key that
 marks a tile. You can move the targeting cursor with direction keys
 and assign a personal target to the leader with `RET`.
 The details of the shared cursor position and of the personal target

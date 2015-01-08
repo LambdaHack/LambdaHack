@@ -354,14 +354,14 @@ transition psuit prompt promptGeneric cursor permitMulitple
         , let km = M.findWithDefault (K.toKM K.NoModifier (K.KP '/'))
                                      TgtFloor brevMap
           in cursorCmdDef False km tgtFloorHuman
-        , let hackyCmd = Macro "" ["KP_Divide"]  -- no numpad, but arrows enough
+        , let hackyCmd = Macro "" ["KP_Divide"]  -- no keypad, but arrows enough
               km = M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
                                      hackyCmd brevMap
           in cursorCmdDef False km tgtEnemyHuman
         , let km = M.findWithDefault (K.toKM K.NoModifier (K.KP '*'))
                                      TgtEnemy brevMap
           in cursorCmdDef False km tgtEnemyHuman
-        , let hackyCmd = Macro "" ["KP_Multiply"]  -- no numpad, but arrows OK
+        , let hackyCmd = Macro "" ["KP_Multiply"]  -- no keypad, but arrows OK
               km = M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
                                      hackyCmd brevMap
           in cursorCmdDef False km tgtEnemyHuman
@@ -389,7 +389,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
         ]
       cursorCmdDef verbose km cmd =
         (km, DefItemKey
-           { defLabel = "numpad, mouse"
+           { defLabel = "keypad, mouse"
            , defCond = cursor
            , defAction = \_ -> do
                look <- cmd

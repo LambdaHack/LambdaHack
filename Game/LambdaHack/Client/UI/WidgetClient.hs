@@ -124,13 +124,13 @@ describeMainKeys = do
         TVector{} -> "vector"
       keys | underAI = ""
            | isNothing stgtMode =
-        "Explore with numpad or keys or mouse: ["
+        "Explore with keypad or keys or mouse: ["
         <> moveKeys
         <> (T.intercalate ", " $ map K.showKM
             $ [kmLeftButtonPress, kmCtrlx, kmEscape])
         <> "]"
            | otherwise =
-        "Target" <+> tgtKind <+> "with numpad or keys or mouse: ["
+        "Target" <+> tgtKind <+> "with keypad or keys or mouse: ["
         <> moveKeys
         <> (T.intercalate ", " $ map K.showKM
             $ [kmRightButtonPress, kmReturn, kmEscape])
