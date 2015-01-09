@@ -353,7 +353,8 @@ transition psuit prompt promptGeneric cursor permitMulitple
                                      MemberCycle brevMap
           in (km, DefItemKey
            { defLabel = K.showKM km
-           , defCond = not (autoLvl
+           , defCond = not (cCur == MOwned
+                            || autoLvl
                             || null (filter (\(_, b) ->
                                                blid b == blid body) hs))
            , defAction = \_ -> do
@@ -362,11 +363,11 @@ transition psuit prompt promptGeneric cursor permitMulitple
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall cCurUpd cRestUpd itemDialogState
            })
-        , let km = M.findWithDefault (K.toKM K.NoModifier K.Tab)
+        , let km = M.findWithDefault (K.toKM K.NoModifier K.BackTab)
                                      MemberBack brevMap
           in (km, DefItemKey
            { defLabel = K.showKM km
-           , defCond = not (autoDun || null hs)
+           , defCond = not (cCur == MOwned || autoDun || null hs)
            , defAction = \_ -> do
                err <- memberBack False
                assert (err == mempty `blame` err) skip
