@@ -89,12 +89,6 @@ standardKeys = KeyKind
                           , object = "door"
                           , feature = TK.CloseTo "horizontal closed door Dark" }
            ]))
-      , ("CTRL-KP_Begin", ([CmdMove], Macro "" ["KP_Begin"]))
-      , ("period", ([CmdMove], Macro "" ["KP_Begin"]))
-      , ("KP_5", ([CmdMove], Macro "" ["KP_Begin"]))
-      , ("CTRL-KP_5", ([CmdMove], Macro "" ["KP_Begin"]))
-      , ("i", ([CmdMove], Macro "" ["KP_Begin"]))
-      , ("I", ([CmdMove], Macro "" ["KP_Begin"]))
 
       -- Item use
       , ("E", ([CmdItem, CmdMinimal], DescribeItem $ MStore CEqp))
