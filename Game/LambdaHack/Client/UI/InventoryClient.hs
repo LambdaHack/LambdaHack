@@ -895,12 +895,23 @@ describeItemC c noEnter = do
     Right ((iid, itemFull), c2) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
+      activeItems <- activeItemsClient leader
+      let calmE = calmEnough b activeItems
       localTime <- getsState $ getLocalTime (blid b)
       let io = itemDesc (storeFromMode c2) (blid b) localTime itemFull
       case c2 of
+        MStore CSha | not calmE ->
+          Left <$> overlayToSlideshow "Not enough calm to take items from the shared stash, but here's the description." io
         MStore fromCStore -> do
           let prompt2 = "Where to move the item?"
-              choice = "['e'quipment, inventory 'p'ack, 's'tash, 'g'round"
+              fstores :: [(K.Key, (CStore, Text))]
+              fstores =
+                filter ((/= fromCStore) . fst . snd) $
+                  [ (K.Char 'e', (CEqp, "'e'quipment"))
+                  , (K.Char 'i', (CInv, "inventory 'p'ack")) ]
+                  ++ [ (K.Char 's', (CSha, "shared 's'tash")) | calmE ]
+                  ++ [ (K.Char 'g', (CGround, "'g'round")) ]
+              choice = "[" <> T.intercalate ", " (map (snd . snd) fstores)
               keys = zipWith K.toKM (repeat K.NoModifier) (map K.Char "epsg")
           akm <- displayChoiceUI (prompt2 <+> choice) io keys
           case akm of
@@ -912,12 +923,9 @@ describeItemC c noEnter = do
                 Right k -> do
                   let lr toCStore = return $ Right $ ReqMoveItems
                                     $ [(iid, k, fromCStore, toCStore)]
-                  case K.key km of
-                    K.Char 'e' -> lr CEqp
-                    K.Char 'p' -> lr CInv
-                    K.Char 's' -> lr CSha
-                    K.Char 'g' -> lr CGround
-                    _ -> return $ Left mempty
+                  case lookup (K.key km) fstores of
+                    Just (store, _) -> lr store
+                    Nothing -> return $ Left mempty
         MOwned ->
           -- We can't move items from MOwned, because different copies may come
           -- from different stores and we can't guess player's intentions.
