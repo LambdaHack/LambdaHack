@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.ActorState
   , actorAssocsLvl, actorAssocs, actorList
   , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList
   , bagAssocs, bagAssocsK, calculateTotal
-  , mergeItemQuant, sharedAllOwned, sharedAllOwnedFid
+  , mergeItemQuant, sharedAllOwned, sharedAllOwnedFid, findIid
   , getCBag, getActorBag, getBodyActorBag, getActorAssocs
   , nearbyFreePoints, whereTo, getCarriedAssocs
   , posToActors, posToActor, getItemBody, memActor, getActorBody
@@ -176,6 +176,18 @@ sharedAllOwnedFid organs fid s =
   in EM.unionsWith mergeItemQuant
      $ map binv bs ++ map beqp bs ++ [shaBag]
        ++ if organs then map borgan bs else []
+
+findIid :: ActorId -> FactionId -> ItemId -> State -> [(Actor, CStore)]
+findIid leader fid iid s =
+  let actors = fidActorNotProjAssocs fid s
+      itemsOfActor (aid, b) =
+        let itemsOfCStore store =
+              let bag = getBodyActorBag b store s
+              in map (\iid2 -> (iid2, (b, store))) (EM.keys bag)
+            stores = [CInv, CEqp] ++ if aid == leader then [CSha] else []
+        in concatMap itemsOfCStore stores
+      items = concatMap itemsOfActor actors
+  in map snd $ filter ((== iid) . fst) items
 
 -- | Price an item, taking count into consideration.
 itemPrice :: (Item, Int) -> Int

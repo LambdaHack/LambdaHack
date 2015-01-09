@@ -927,9 +927,15 @@ describeItemC c noEnter = do
                   case lookup (K.key km) fstores of
                     Just (store, _) -> lr store
                     Nothing -> return $ Left mempty
-        MOwned ->
+        MOwned -> do
           -- We can't move items from MOwned, because different copies may come
           -- from different stores and we can't guess player's intentions.
-          Left <$> overlayToSlideshow "The item is in equipment of actor X." io
+          found <- getsState $ findIid leader (bfid b) iid
+          assert (not (null found) `blame` ggi) skip
+          let ppLoc (_, CSha) = MU.Text $ ppCStore CSha <+> "of the party"
+              ppLoc (b2, store) = MU.Text $ ppCStore store <+> "of" <+> bname b2
+              foundTexts = map ppLoc found
+              prompt2 = makeSentence ["The item is", MU.WWandW foundTexts]
+          Left <$> overlayToSlideshow prompt2 io
         MStats -> assert `failure` ggi
     Left slides -> return $ Left slides
