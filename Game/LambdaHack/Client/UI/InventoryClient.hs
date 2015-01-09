@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 -- | Inventory management and party cycling.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
@@ -8,6 +9,7 @@ module Game.LambdaHack.Client.UI.InventoryClient
   , doLook, describeItemC
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.Char as Char
@@ -536,7 +538,7 @@ runDefItemKey keyDefs lettersDef io labelLetterSlots prompt = do
   akm <- displayChoiceUI (prompt <+> choice) io itemKeys
   case akm of
     Left slides -> failSlides slides
-    Right km -> do
+    Right km ->
       case lookup km{K.pointer=dummyPoint} keyDefs of
         Just keyDef -> defAction keyDef km
         Nothing -> defAction lettersDef km
@@ -857,10 +859,14 @@ doLook addMoreMsg = do
 
 
 -- | Create a list of item names.
-_floorItemOverlay :: MonadClientUI m => LevelId -> Point -> m Slideshow
+_floorItemOverlay :: MonadClientUI m
+                  => LevelId -> Point
+                  -> m (SlideOrCmd (RequestTimed Ability.AbMoveItem))
 _floorItemOverlay _lid _p = describeItemC (MOwned {-CFloor lid p-}) True
 
-describeItemC :: MonadClientUI m => ItemDialogMode -> Bool -> m Slideshow
+describeItemC :: MonadClientUI m
+              => ItemDialogMode -> Bool
+              -> m (SlideOrCmd (RequestTimed Ability.AbMoveItem))
 describeItemC c noEnter = do
   let subject body = partActor body
       verbSha body activeItems = if calmEnough body activeItems
@@ -886,10 +892,35 @@ describeItemC c noEnter = do
             [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
   ggi <- getStoreItem prompt c noEnter
   case ggi of
-    Right ((_, itemFull), c2) -> do
+    Right ((iid, itemFull), c2) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       localTime <- getsState $ getLocalTime (blid b)
-      overlayToSlideshow ""
-        $ itemDesc (storeFromMode c2) (blid b) localTime itemFull
-    Left slides -> return slides
+      let io = itemDesc (storeFromMode c2) (blid b) localTime itemFull
+      case c2 of
+        MStore fromCStore -> do
+          let prompt2 = "Where to move the item?"
+              choice = "['e'quipment, inventory 'p'ack, 's'tash, 'g'round"
+              keys = zipWith K.toKM (repeat K.NoModifier) (map K.Char "epsg")
+          akm <- displayChoiceUI (prompt2 <+> choice) io keys
+          case akm of
+            Left slides -> failSlides slides
+            Right km -> do
+              socK <- pickNumber True $ itemK itemFull
+              case socK of
+                Left slides -> return $ Left slides
+                Right k -> do
+                  let lr toCStore = return $ Right $ ReqMoveItems
+                                    $ [(iid, k, fromCStore, toCStore)]
+                  case K.key km of
+                    K.Char 'e' -> lr CEqp
+                    K.Char 'p' -> lr CInv
+                    K.Char 's' -> lr CSha
+                    K.Char 'g' -> lr CGround
+                    _ -> return $ Left mempty
+        MOwned ->
+          -- We can't move items from MOwned, because different copies may come
+          -- from different stores and we can't guess player's intentions.
+          Left <$> overlayToSlideshow "The item is in equipment of actor X." io
+        MStats -> assert `failure` ggi
+    Left slides -> return $ Left slides

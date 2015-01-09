@@ -7,7 +7,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   ( -- * Commands that usually take time
-    moveRunHuman, waitHuman, moveItemHuman
+    moveRunHuman, waitHuman, moveItemHuman, describeItemHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , runOnceAheadHuman, moveOnceToCursorHuman
   , runOnceToCursorHuman, continueToCursorHuman
@@ -322,6 +322,13 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
           Right lr -> Right $ ReqMoveItems lr
     Left slides -> return $ Left slides
     _ -> assert `failure` ggi
+
+-- * DescribeItem
+
+-- | Display items from a given container store and describe the chosen one.
+describeItemHuman :: MonadClientUI m
+                  => ItemDialogMode -> m (SlideOrCmd (RequestTimed AbMoveItem))
+describeItemHuman mode = describeItemC mode False
 
 -- * Project
 

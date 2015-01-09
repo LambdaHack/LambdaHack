@@ -4,7 +4,7 @@
 module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   ( -- * Assorted commands
     gameDifficultyCycle
-  , pickLeaderHuman, memberCycleHuman, memberBackHuman, describeItemHuman
+  , pickLeaderHuman, memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman
   , clearHuman, stopIfTgtModeHuman, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
@@ -51,7 +51,6 @@ import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
@@ -102,12 +101,6 @@ memberCycleHuman = memberCycle True
 -- | Switches current member to the previous in the whole dungeon, wrapping.
 memberBackHuman :: MonadClientUI m => m Slideshow
 memberBackHuman = memberBack True
-
--- * DescribeItem
-
--- | Display items from a given container store and describe the chosen one.
-describeItemHuman :: MonadClientUI m => ItemDialogMode -> m Slideshow
-describeItemHuman mode = describeItemC mode False
 
 -- * SelectActor
 

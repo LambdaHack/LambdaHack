@@ -41,6 +41,7 @@ data HumanCmd =
   | Run !Vector
   | Wait
   | MoveItem ![CStore] !CStore !(Maybe MU.Part) !MU.Part !Bool
+  | DescribeItem !ItemDialogMode
   | Project     ![Trigger]
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]
@@ -61,7 +62,6 @@ data HumanCmd =
   | PickLeader !Int
   | MemberCycle
   | MemberBack
-  | DescribeItem !ItemDialogMode
   | SelectActor
   | SelectNone
   | Clear
@@ -124,6 +124,13 @@ cmdDescription cmd = case cmd of
   MoveItem _ store2 mverb object _ ->
     let verb = fromMaybe (MU.Text $ verbCStore store2) mverb
     in makePhrase [verb, object]
+  DescribeItem (MStore CGround) -> "manage items on the ground"
+  DescribeItem (MStore COrgan) -> "describe organs of the leader"
+  DescribeItem (MStore CEqp) -> "manage equipment of the leader"
+  DescribeItem (MStore CInv) -> "manage inventory pack of the leader"
+  DescribeItem (MStore CSha) -> "manage the shared party stash"
+  DescribeItem MOwned -> "describe all owned items"
+  DescribeItem MStats -> "show the stats summary of the leader"
   Project ts  -> triggerDescription ts
   Apply ts    -> triggerDescription ts
   AlterDir ts -> triggerDescription ts
@@ -145,13 +152,6 @@ cmdDescription cmd = case cmd of
   PickLeader{} -> "pick leader"
   MemberCycle -> "cycle among party members on the level"
   MemberBack  -> "cycle among all party members"
-  DescribeItem (MStore CGround) -> "manage items on the ground"
-  DescribeItem (MStore COrgan) -> "describe organs of the leader"
-  DescribeItem (MStore CEqp) -> "manage equipment of the leader"
-  DescribeItem (MStore CInv) -> "manage inventory pack of the leader"
-  DescribeItem (MStore CSha) -> "manage the shared party stash"
-  DescribeItem MOwned -> "describe all owned items"
-  DescribeItem MStats -> "show the stats summary of the leader"
   SelectActor -> "select (or deselect) a party member"
   SelectNone  -> "deselect (or select) all on the level"
   Clear       -> "clear messages"
