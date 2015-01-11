@@ -76,8 +76,7 @@ getConfirmGeneric autoYes fs clearKeys frame = do
     fdisplay fs (Just frame)
     return K.spaceKM
   else do
-    let extraKeys = [ K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM
-                    , K.leftButtonKM, K.rightButtonKM ]
+    let extraKeys = [ K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM ]
     promptGetKey fs (clearKeys ++ extraKeys) frame
 
 -- Read UI requests from the client and send them to the frontend,
@@ -117,7 +116,7 @@ loopFrontend fs ChanFrontend{..} = loop False
                   km <- getConfirmGeneric autoYes fs frontClear x
                   let kmCanonical = km{K.pointer=dummyPoint}
                   if kmCanonical == K.escKM then writeKM K.escKM
-                  else if kmCanonical `elem` [K.pgupKM, K.leftButtonKM]
+                  else if kmCanonical == K.pgupKM
                        then case srf of
                          [] -> displayFrs frs srf
                          y : ys -> displayFrs (y : frs) ys
