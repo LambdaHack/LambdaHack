@@ -419,7 +419,7 @@ cancelHuman h = do
 targetReject :: MonadClientUI m => m Slideshow
 targetReject = do
   modifyClient $ \cli -> cli {stgtMode = Nothing}
-  failMsg "targeting canceled"
+  failMsg "aiming canceled"
 
 -- * Accept
 

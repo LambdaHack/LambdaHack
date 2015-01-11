@@ -13,8 +13,8 @@ while tirelessly chasing the elusive heroes by sight, sound and smell.
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
 and literary imagination. To be honest, a lot of imagination is required
-for this rudimentary game, even though it is playable and winnable.
-Contributions are welcome.
+for this rudimentary set of scenarios, even though they are playable
+and winnable. Contributions are welcome.
 
 
 Heroes
@@ -32,34 +32,36 @@ which in its most complex form may look as follows.
 
 The line starts with the list of party members (unless only one member
 resides on the currently displayed level) and the shortened name of the team.
-Then comes the damage of the leader's weapon (but regardless of the figures,
-each attack inflicts at least 1 damage), then his current and maximum
-Calm (composure, focus, attentiveness), then his current and maximum
-HP (hit points, health). At the end, the personal target of the leader
-is described, in this case a basilisk monster, with hit points drawn as a bar.
-
-Weapon damage and other item stats are displayed using the dice notation `XdY`.
-which means X rolls of Y-sided dice. A variant denoted `XdsY` is additionally
+Then comes the damage of the leader's weapon with the highest damage dice,
+then his current and maximum Calm (composure, focus, attentiveness), then
+his current and maximum HP (hit points, health). At the end, the personal
+target of the leader is described, in this case a basilisk monster,
+with hit points drawn as a bar. Weapon damage and other item stats
+are displayed using the dice notation `XdY`, which means X rolls
+of Y-sided dice. A variant denoted `XdsY` is additionally
 scaled by the level depth in proportion to the maximal dungeon depth.
+Read more about combat resolution in section 'Monsters' below.
 
 The second status line describes the current dungeon location in relation
 to the party.
 
-    5  Lofty hall   [33% seen] Cursor: exact spot (71,12)  p15 l10
+    5  Lofty hall   [33% seen] Xhair: exact spot (71,12)  p15 l10
 
 First comes the depth of the current level and its name.
 Then the percentage of its explorable tiles already seen by the heroes.
-The 'cursor' is the common focus of the whole party,
-directly manipulated with movement keys in the targeting mode.
-At the end comes the length of the shortest path from the leader
-to the cursor position and the straight-line distance between the two points.
+The 'Xhair' (meaning 'crosshair') is the common focus of the whole party,
+denoted on the map by a white box and directly manipulated with movement keys
+in aiming mode. At the end of the status line comes the length of the shortest
+path from the leader to the crosshair position and the straight-line distance
+between the two points.
 
 
 Dungeon
 -------
 
-The dungeon of the campaign mode game consists of 10 levels and each level
-consists of a large number of tiles. The basic tile kinds are as follows.
+The dungeon of any particular scenario may consists of one or many
+levels and each level consists of a large number of tiles.
+The basic tile kinds are as follows.
 
                dungeon terrain type               on-screen symbol
                ground                             .
@@ -80,7 +82,7 @@ during a single game, its layout is the same.
 Commands
 --------
 
-You move throughout the level using the left mouse button or the numeric
+You walk throughout a level using the left mouse button or the numeric
 keypad (left diagram) or its compact laptop replacement (middle)
 or Vi text editor keys (right, also known as "Rogue-like keys",
 which have to be enabled in config.ui.ini).
@@ -91,12 +93,12 @@ which have to be enabled in config.ui.ini).
                  /|\            /|\            /|\
                 1 2 3          j k l          b j n
 
-In targeting mode the keys above (or mouse buttons)
-move the targeting cursor. In normal mode, `SHIFT` (or `CTRL`)
-and a movement key make the current party leader
-(and currently selected party members, if any) run in the indicated
-direction, until anything of interest is spotted.
-The `5`, `i` and `.` keys consume a turn and make you brace for combat,
+In aiming mode the same keys (or the middle and right mouse buttons)
+move the crosshair (the white box). In normal mode, `SHIFT`
+(or `CTRL`) and a movement key make the current party leader
+(and the currently selected party members, if any) run in the indicated
+direction, until anything of interest is spotted. The '5` keypad key
+and the `i` and `.` keys consume a turn and make you brace for combat,
 which reduces any damage taken for a turn and makes it impossible
 for foes to displace you. You displace enemies or friends by bumping
 into them with `SHIFT` (or `CTRL`).
@@ -110,124 +112,63 @@ or as building blocks for more complex convenience commands,
 e.g., the autoexplore command (key `X`) could be defined
 by the player as a macro using `CTRL-?`, `:` and `V`.
 
-Below are the remaining keys for terrain exploration and alteration.
+The following minimal command set lets you accomplish almost anything
+in the game, though not necessarily with the fewest number of keystrokes.
+The full list of commands can be seen in the in-game help.
 
-                keys           command
-                <              ascend a level
-                CTRL-<         ascend 10 levels
-                >              descend a level
-                CTRL->         descend 10 levels
-                ;              move one step towards the cursor
-                :              go to cursor for 100 steps
-                x              explore the closest unknown spot
-                X              autoexplore 100 times
-                CTRL-X         autoexplore 25 times
-                R              rest (wait 100 times)
-                CTRL-R         rest (wait 25 times)
-                c              close door
+         keys           command
+         <              ascend a level
+         >              descend a level
+         c              close door
+         E              manage equipment of the leader
+         g and ,        get items
+         a              apply an item
+         f              fling an item
+         +              swerve the aiming line
+         D              display player diary
+         T              toggle suspect terrain display
+         SHIFT-TAB      cycle among all party members
+         ESC            cancel action, open Main Menu
 
-Item-use related keys are as follows.
+The only activity not possible with the commands above is the management
+of non-leader party members. The defaults should usually suffice,
+especially if your non-leader heroes can only melee or wait
+and none has found the equipment the enables opportunity fire.
+However, If you need it, you can manually set the party tactics
+with `CTRL-T` and you can assign individual targets to party members
+using the aiming and targeting commands listed below.
 
-                keys           command
-                E              manage equipment of the leader
-                P              manage inventory pack of the leader
-                S              manage the shared party stash
-                A              describe all owned items
-                G              manage items on the ground
-                @              describe organs of the leader
-                !              show the stats summary of the leader
-                g and ,        get an item
-                d              drop an item
-                e              equip an item
-                p              pack an item into inventory backpack
-                s              stash and share an item
-                a              apply item
-                q              quaff potion
-                r              read scroll
-                f              fling item
-                t              throw missile
-                z              zap wand
+         keys           command
+         KEYPAD_* and \ aim at an enemy
+         KEYPAD_/ and | cycle aiming styles
+         +              swerve the aiming line
+         -              unswerve the aiming line
+         CTRL-?         set crosshair to the closest unknown spot
+         CTRL-I         set crosshair to the closest item
+         CTRL-{         set crosshair to the closest stairs up
+         CTRL-}         set crosshair to the closest stairs down
+         BACKSPACE      reset target/crosshair
+         RET and INSERT accept target/choice
 
-To make a ranged attack, as in the last few commands above,
-you may want to set your cursor first with the middle mouse button.
-The preparation is not mandatory, because the cursor is set automatically
+For ranged attacks, setting the crosshair or individual targets
+beforehand is not mandatory, because the crosshair is set automatically
 as soon as a monster comes into view and can still be adjusted while
-in the missile choice menu. If you want full control, e.g., to assign
-targets to autonomous snipers from your team, you can enter
-the detailed targetting mode with the right mouse button or with
+in the missile choice menu. However, if you want to assign persistent
+personal targets or just to inspect the dungeon map closely, you can enter
+the detailed aiming mode with the right mouse button or with
 the `*` keypad key that selects enemies or the `/` keypad key that
-marks a tile. You can move the targeting cursor with direction keys
+marks a tile. You can move the aiming crosshair with direction keys
 and assign a personal target to the leader with `RET`.
-The details of the shared cursor position and of the personal target
+The details of the shared crosshair position and of the personal target
 are described in the status lines, at the bottom of the screen.
-All targeting keys are listed below.
-
-                keys           command
-                KEYPAD_* and \ select enemy
-                KEYPAD_/ and | cycle targeting mode
-                +              swerve targeting line
-                -              unswerve targeting line
-                BACKSPACE      clear target/cursor
-                CTRL-?         set cursor to the closest unknown spot
-                CTRL-I         set cursor to the closest item
-                CTRL-{         set cursor to the closest stairs up
-                CTRL-}         set cursor to the closest stairs down
-
-Here are the commands for automating the actions of one or more members
-of the team.
-
-                keys           command
-                =              select (or deselect) a party member
-                _              deselect (or select) all on the level
-                v              voice again the recorded commands
-                V              voice the recorded commands 100 times
-                CTRL-v         voice the recorded commands 1000 times
-                CTRL-V         voice the recorded commands 25 times
-                '              start recording commands
-                CTRL-T         cycle tactic of non-leader team members (WIP)
-                CTRL-A         automate faction (ESC to retake control)
-
-Assorted remaining keys and commands follow.
-
-                keys           command
-                ?              display help
-                D              display player diary
-                T              mark suspect terrain
-                Z              mark visible zone
-                C              mark smell clues
-                TAB            cycle among party members on the level
-                SHIFT-TAB      cycle among all party members
-                SPACE          clear messages
-                ESC            cancel action, open Main Menu
-                RET            accept choice
-                0--6           pick a new hero leader anywhere in the dungeon
-
-Mouse pointer and buttons can move party members and set the targeting cursor.
-As with movement keys, `CTRL` can here be used interchangeably with `SHIFT`.
-
-                keys                command
-                LEFT-BUTTON         go to pointer for 100 steps
-                SHIFT-LEFT-BUTTON   run collectively to pointer for 100 steps
-                MIDDLE-BUTTON       set cursor to enemy under pointer
-                SHIFT-MIDDLE-BUTTON set cursor to floor under pointer
-                RIGHT-BUTTON        enter targeting mode and describe an enemy
 
 Commands for saving and exiting the current game, starting a new game, etc.,
 are listed in the Main Menu, brought up by the `ESC` key.
 Game difficulty setting affects hitpoints at birth for any actors
-of any UI-using faction. For a person new to roguelikes, the Duel game mode
+of any UI-using faction. For a person new to roguelikes, the Duel scenario
 offers a gentle introduction. The subsequent game modes gradually introduce
-squad combat, stealth, opportunity fire, asymmetric battles and more game
-elements.
-
-                keys           command
-                CTRL-x         save and exit
-                CTRL-u         new Duel game
-                CTRL-k         new Skirmish game
-                CTRL-m         new Ambush game
-                CTRL-b         new Battle game
-                CTRL-a         new Campaign game
-                CTRL-d         cycle next game difficulty
+squad combat, stealth, opportunity fire, asymmetric battles and more
+gameplay elements.
 
 
 Monsters
@@ -240,36 +181,50 @@ and take care to move one at a time, monsters don't care about each other
 and all move at once, sometimes brutally colliding by accident.
 
 When the hero bumps into a monster or a monster attacks the hero,
-melee combat occurs. The best equipped weapon or the best fighting organ
-of each opponent is taken into account for calculating damage.
-The damage the current hero can potentially inflict is displayed
-at the bottom of the screen, but the actual damage depends also
-on the monster's armor. Heroes and monsters running into one another
+melee combat occurs. Heroes and monsters running into one another
 (with the `SHIFT` key) do not inflict damage, but change places.
 This gives the opponent a free blow, but can improve the tactical situation
-or aid escape.
+or aid escape. In some circumstances actors are immune to the displacing,
+e.g., when both parties form a continuous front-line.
 
-Flinging a missile at a target wounds it, consuming the weapon in the process.
+In melee combat, the best equipped weapon (or the best fighting organ)
+of each opponent is taken into account for determining the damage
+and any extra effects of the blow. If a recharged weapon with a non-trivial
+effect is in the equipment, it is chosen for combat. Otherwise combat
+involves the weapon with the highest raw damage dice (the same as displayed
+at bottommost status line).
+
+To determine the damage dealt, the outcome of the weapon's damage dice roll
+is multiplied by the melee damage bonus (summed from the equipped items
+of the attacker) minus the melee armor modifier of the defender.
+Regardless of the calculation, each attack inflicts at least 1 damage.
+The current leader's melee bonus, armor strength and other detailed
+stats can be viewed via the `!` command.
+
+In ranged combat, the missile is assumed to be attacking the defender
+in melee, using itself as the weapon, but the ranged melee bonus
+and the ranged armor modifier are taken into account for calculations.
 You may propel any item in your equipment, inventory and on the ground
 (by default you only see the appropriate items in menus,
 press `?` to see all items). Only items of a few kinds inflict any damage,
-but some have other effects. Whenever the monster's or hero's hit points
-reach zero, the combatant dies. When the last hero dies, the game ends
-in defeat.
+but some have other effects.
+
+Whenever the monster's or hero's hit points reach zero, the combatant dies.
+When the last hero dies, the scenario ends in defeat.
 
 
 On Winning and Dying
 --------------------
 
-You win the game if you escape the dungeon alive or, in game modes with
-no exit opportunity, if you eliminate all opposition. In the former case,
-your score is based on the gold and precious gems you've plundered,
-plus a bonus based on the number of heroes you lost. In the latter case,
-your score is based on the number of turns you spent overcoming your foes
-and, as a bonus, the number of enemies you've subdued.
+You win the scenario if you escape the dungeon alive or, in scenarios with
+no exit locations, if you eliminate all opposition. In the former case,
+your score is based on the gold and precious gems you've plundered.
+In the latter case, your score is based on the number of turns you spent
+overcoming your foes (the quicker the victory, the better; the slower
+the demise, the better). Bonus points, based on the number of heroes
+that were lost, are awarded if you win.
 
-If all your heroes fall, you are awarded a score for your valiant deeds,
-but no winning bonus. When, invariably, a new foolhardy party
-of adventurers storms the dungeon, they start from a new entrance,
-with no experience and no equipment, and new, undaunted enemies
-bar their way.
+If all your heroes fall, you will invariably see a new foolhardy party
+of adventurers clamoring to be led into the dungeon. They start
+their conquest from a new entrance, with no experience and no equipment,
+and new, undaunted enemies bar their way. Lead them wisely!

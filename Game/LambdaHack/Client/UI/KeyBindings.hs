@@ -75,8 +75,8 @@ keyHelp Binding{bcmdList} =
       , "                /|\\            /|\\            /|\\"
       , "               1 2 3          j k l          b j n"
       , ""
-      , "In targeting mode the same keys (or mouse) move the targeting cursor."
-      , "Press 'KEYPAD_5' or 'i' or '.' to wait, bracing for blows, which reduces"
+      , "In aiming mode the same keys (or mouse) move the crosshair (the white box)."
+      , "Press 'KEYPAD_5' (or 'i' or '.') to wait, bracing for blows, which reduces"
       , "any damage taken and makes it impossible for foes to displace you."
       , "You displace enemies or friends by bumping into them with SHIFT (or CTRL)."
       , ""
@@ -87,11 +87,11 @@ keyHelp Binding{bcmdList} =
       , "Press SPACE to see the minimal command set."
       ]
     minimalBlurb =
-      [ "The following minimal command set let's you accomplish anything in the game,"
-      , "though not neccessarily in the fewest number of keystrokes."
-      , "Most of the other commands are shorthands, defined as macros."
-      , "(with the exception of the advanced commands for setting non-default"
-      , "tactics and targets for your autonomous henchmen, if you have any.)"
+      [ "The following minimal command set lets you accomplish anything in the game,"
+      , "though not neccessarily with the fewest number of keystrokes."
+      , "Most of the other commands are shorthands, defined as macros"
+      , "(with the exception of the advanced commands for assigning non-default"
+      , "tactics and targets to your autonomous henchmen, if you have any)."
       , ""
       ]
     casualEndBlurb =
@@ -134,7 +134,8 @@ keyHelp Binding{bcmdList} =
     , [casualDescription <+> "(2/2). [press SPACE to see all commands]"] ++ [""]
       ++ minimalText
       ++ [keyCaption] ++ keys CmdMinimal ++ casualEndText ++ [moreMsg]
-    , [categoryDescription CmdMove <> ". [press SPACE to advance]"] ++ [""]
+    , ["All terrain exploration and alteration commands"
+       <> ". [press SPACE to advance]"] ++ [""]
       ++ [keyCaption] ++ keys CmdMove ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdItem <> ". [press SPACE to advance]"] ++ [""]
       ++ [keyCaptionN 10 ] ++ keysN 10 CmdItem ++ categoryText ++ [moreMsg]

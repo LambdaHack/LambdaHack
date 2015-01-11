@@ -130,7 +130,7 @@ describeMainKeys = do
             $ [kmLeftButtonPress, kmCtrlx, kmEscape])
         <> "]"
            | otherwise =
-        "Target" <+> tgtKind <+> "with keypad or keys or mouse: ["
+        "Aim" <+> tgtKind <+> "with keypad or keys or mouse: ["
         <> moveKeys
         <> (T.intercalate ", " $ map K.showKM
             $ [kmRightButtonPress, kmReturn, kmEscape])

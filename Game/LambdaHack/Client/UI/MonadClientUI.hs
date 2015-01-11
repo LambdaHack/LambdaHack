@@ -336,7 +336,7 @@ targetDesc target = do
           let invalidMsg = "an invalid relative shift"
               validMsg p = "shift to" <+> tshow p
           return (maybe invalidMsg validMsg tgtPos, Nothing)
-    Nothing -> return ("cursor location", Nothing)
+    Nothing -> return ("crosshair location", Nothing)
 
 targetDescLeader :: MonadClientUI m => ActorId -> m (Text, Maybe Text)
 targetDescLeader leader = do

@@ -25,7 +25,7 @@ categoryDescription :: CmdCategory -> Text
 categoryDescription CmdMenu = "Main Menu"
 categoryDescription CmdMove = "Terrain exploration and alteration"
 categoryDescription CmdItem = "Item use"
-categoryDescription CmdTgt = "Targeting"
+categoryDescription CmdTgt = "Aiming and targeting"
 categoryDescription CmdAuto = "Automation"
 categoryDescription CmdMeta = "Assorted"
 categoryDescription CmdMouse = "Mouse"
@@ -136,9 +136,9 @@ cmdDescription cmd = case cmd of
   AlterDir ts -> triggerDescription ts
   TriggerTile ts -> triggerDescription ts
   RunOnceAhead -> "run once ahead"
-  MoveOnceToCursor -> "move one step towards the cursor"
-  RunOnceToCursor -> "run one step towards the cursor"
-  ContinueToCursor -> "continue towards the cursor"
+  MoveOnceToCursor -> "move one step towards the crosshair"
+  RunOnceToCursor -> "run one step towards the crosshair"
+  ContinueToCursor -> "continue towards the crosshair"
 
   GameRestart t ->
     -- TODO: use mname for the game mode instead of t
@@ -155,41 +155,41 @@ cmdDescription cmd = case cmd of
   SelectActor -> "select (or deselect) a party member"
   SelectNone  -> "deselect (or select) all on the level"
   Clear       -> "clear messages"
-  StopIfTgtMode -> "stop playback if in target mode"
+  StopIfTgtMode -> "stop playback if in aiming mode"
   Repeat 1    -> "voice again the recorded commands"
   Repeat n    -> "voice the recorded commands" <+> tshow n <+> "times"
   Record      -> "start recording commands"
   History     -> "display player diary"
-  MarkVision  -> "mark visible zone"
-  MarkSmell   -> "mark smell clues"
-  MarkSuspect -> "mark suspect terrain"
+  MarkVision  -> "toggle visible zone display"
+  MarkSmell   -> "toggle smell clues display"
+  MarkSuspect -> "toggle suspect terrain display"
   Help        -> "display help"
   MainMenu    -> "display the Main Menu"
   Macro t _   -> t
 
-  MoveCursor v 1 -> "move cursor" <+> compassText v
+  MoveCursor v 1 -> "move crosshair" <+> compassText v
   MoveCursor v k ->
-    "move cursor up to" <+> tshow k <+> "steps" <+> compassText v
-  TgtFloor -> "cycle targeting mode"
-  TgtEnemy -> "select enemy"
-  TgtAscend k | k == 1  -> "target next shallower level"
-  TgtAscend k | k >= 2  -> "target" <+> tshow k    <+> "levels shallower"
-  TgtAscend k | k == -1 -> "target next deeper level"
-  TgtAscend k | k <= -2 -> "target" <+> tshow (-k) <+> "levels deeper"
-  TgtAscend _ -> assert `failure` "void level change when targeting"
+    "move crosshair up to" <+> tshow k <+> "steps" <+> compassText v
+  TgtFloor -> "cycle aiming styles"
+  TgtEnemy -> "aim at an enemy"
+  TgtAscend k | k == 1  -> "aim at next shallower level"
+  TgtAscend k | k >= 2  -> "aim at" <+> tshow k    <+> "levels shallower"
+  TgtAscend k | k == -1 -> "aim at next deeper level"
+  TgtAscend k | k <= -2 -> "aim at" <+> tshow (-k) <+> "levels deeper"
+  TgtAscend _ -> assert `failure` "void level change when aiming"
                         `twith` cmd
-  EpsIncr True   -> "swerve targeting line"
-  EpsIncr False  -> "unswerve targeting line"
-  TgtClear       -> "clear target/cursor"
-  CursorUnknown  -> "set cursor to the closest unknown spot"
-  CursorItem     -> "set cursor to the closest item"
-  CursorStair up -> "set cursor to the closest stairs" <+> if up then "up" else "down"
+  EpsIncr True   -> "swerve the aiming line"
+  EpsIncr False  -> "unswerve the aiming line"
+  TgtClear       -> "reset target/crosshair"
+  CursorUnknown  -> "set crosshair to the closest unknown spot"
+  CursorItem     -> "set crosshair to the closest item"
+  CursorStair up -> "set crosshair to the closest stairs" <+> if up then "up" else "down"
   Cancel -> "cancel action, open Main Menu"
-  Accept -> "accept choice"
-  CursorPointerFloor -> "set cursor to floor under pointer"
-  CursorPointerEnemy -> "set cursor to enemy under pointer"
-  TgtPointerFloor -> "enter targeting mode and describe a tile"
-  TgtPointerEnemy -> "enter targeting mode and describe an enemy"
+  Accept -> "accept target/choice"
+  CursorPointerFloor -> "set crosshair to floor under pointer"
+  CursorPointerEnemy -> "set crosshair to enemy under pointer"
+  TgtPointerFloor -> "enter aiming mode and describe a tile"
+  TgtPointerEnemy -> "enter aiming mode and describe an enemy"
 
 triggerDescription :: [Trigger] -> Text
 triggerDescription [] = "trigger a thing"

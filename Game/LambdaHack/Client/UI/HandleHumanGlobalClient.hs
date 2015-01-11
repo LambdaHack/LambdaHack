@@ -657,7 +657,7 @@ goToCursor :: MonadClientUI m
 goToCursor initialStep run = do
   tgtMode <- getsClient stgtMode
   -- Movement is legal only outside targeting mode.
-  if isJust tgtMode then failWith "cannot move in targeting mode"
+  if isJust tgtMode then failWith "cannot move in aiming mode"
   else do
     leader <- getLeaderUI
     b <- getsState $ getActorBody leader
@@ -672,7 +672,7 @@ goToCursor initialStep run = do
           if nullReport report
           then return $ Left mempty
           -- Mark that the messages are accumulated, not just from last move.
-          else failWith "cursor now reached"
+          else failWith "crosshair now reached"
       Just c -> do
         running <- getsClient srunning
         case running of
@@ -688,7 +688,7 @@ goToCursor initialStep run = do
             assert (initialStep || not run) skip
             (_, mpath) <- getCacheBfsAndPath leader c
             case mpath of
-              Nothing -> failWith "no route to cursor"
+              Nothing -> failWith "no route to crosshair"
               Just [] -> assert `failure` (leader, b, c)
               Just (p1 : _) -> do
                 let finalGoal = p1 == c
@@ -716,7 +716,7 @@ multiActorGoTo arena c paramOld = do
         b <- getsState $ getActorBody r
         (_, mpath) <- getCacheBfsAndPath r c
         case mpath of
-          Nothing -> return $ Left "no route to cursor"
+          Nothing -> return $ Left "no route to crosshair"
           Just [] ->
             -- This actor already at goal; will be caught in goToCursor.
             return $ Left ""

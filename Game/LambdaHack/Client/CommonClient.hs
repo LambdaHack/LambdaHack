@@ -117,25 +117,25 @@ aidTgtAims aid lidV tgt = do
           Nothing ->
             return $ Left
                    $ if onlyFirst then "aiming blocked at the first step"
-                     else "aiming line to the target opponent blocked somewhere"
+                     else "aiming line to the opponent blocked somewhere"
   case tgt of
     Just (TEnemy a _) -> do
       body <- getsState $ getActorBody a
       let pos = bpos body
       if blid body == lidV
       then findNewEps False pos
-      else return $! Left "target opponent not on this level"
-    Just TEnemyPos{} -> return $ Left "target opponent not visible"
+      else return $! Left "selected opponent not on this level"
+    Just TEnemyPos{} -> return $ Left "selected opponent not visible"
     Just (TPoint lid pos) ->
       if lid == lidV
       then findNewEps True pos
-      else return $! Left "target position not on this level"
+      else return $! Left "selected position not on this level"
     Just (TVector v) -> do
       b <- getsState $ getActorBody aid
       Level{lxsize, lysize} <- getLevel lidV
       let shifted = shiftBounded lxsize lysize (bpos b) v
       if shifted == bpos b && v /= Vector 0 0
-      then return $! Left "target translation is void"
+      then return $! Left "selected translation is void"
       else findNewEps True shifted
     Nothing -> do
       scursor <- getsClient scursor
