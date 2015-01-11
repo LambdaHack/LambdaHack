@@ -463,9 +463,11 @@ transition psuit prompt promptGeneric cursor permitMulitple
 
 statsOverlay :: MonadClient m => ActorId -> m Overlay
 statsOverlay aid = do
+  b <- getsState $ getActorBody aid
   activeAssocs <- fullAssocsClient aid [CEqp, COrgan]
-  let activeItems = map snd activeAssocs
-      prSlot :: (IK.EqpSlot, Text -> Text) -> Text
+  let block n = n + if braced b then 50 else 0
+      activeItems = map snd activeAssocs
+      prSlot :: (IK.EqpSlot, Int -> Text) -> Text
       prSlot (eqpSlot, f) =
         let fullText t =
               "    "
@@ -473,19 +475,19 @@ statsOverlay aid = do
                                       $ IK.slotName eqpSlot
                             , MU.Text t ]
               <> "  "
-            valueText = f $ tshow $ sumSlotNoFilter eqpSlot activeItems
+            valueText = f $ sumSlotNoFilter eqpSlot activeItems
         in fullText valueText
       slotList =  -- TODO:  [IK.EqpSlotAddHurtMelee..IK.EqpSlotAddLight]
-        [ (IK.EqpSlotAddHurtMelee, \t -> t <> "%")
+        [ (IK.EqpSlotAddHurtMelee, \t -> tshow t <> "%")
         -- TODO: not applicable right now, IK.EqpSlotAddHurtRanged
-        , (IK.EqpSlotAddArmorMelee, \t -> "[" <> t <> "%]")
-        , (IK.EqpSlotAddArmorRanged, \t -> "{" <> t <> "%}")
-        , (IK.EqpSlotAddMaxHP, \t -> t)
-        , (IK.EqpSlotAddMaxCalm, \t -> t)
-        , (IK.EqpSlotAddSpeed, \t -> t <> "m/10s")
-        , (IK.EqpSlotAddSight, \t -> t <> "m")
-        , (IK.EqpSlotAddSmell, \t -> t <> "m")
-        , (IK.EqpSlotAddLight, \t -> t <> "m")
+        , (IK.EqpSlotAddArmorMelee, \t -> "[" <> tshow (block t) <> "%]")
+        , (IK.EqpSlotAddArmorRanged, \t -> "{" <> tshow (block t) <> "%}")
+        , (IK.EqpSlotAddMaxHP, \t -> tshow t)
+        , (IK.EqpSlotAddMaxCalm, \t -> tshow t)
+        , (IK.EqpSlotAddSpeed, \t -> tshow t <> "m/10s")
+        , (IK.EqpSlotAddSight, \t -> tshow t <> "m")
+        , (IK.EqpSlotAddSmell, \t -> tshow t <> "m")
+        , (IK.EqpSlotAddLight, \t -> tshow t <> "m")
         ]
       skills = sumSkills activeItems
       prAbility :: Ability.Ability -> Text
