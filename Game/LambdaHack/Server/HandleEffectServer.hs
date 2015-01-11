@@ -259,10 +259,9 @@ effectHurt nDm source target silent = do
   hpMax <- sumOrganEqpServer IK.EqpSlotAddMaxHP target
   n <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   hurtBonus <- armorHurtBonus source target
-  let block = braced tb
-      mult = (100 + hurtBonus) * (if block then 50 else 100)
+  let mult = 100 + hurtBonus
       rawDeltaHP = - (max oneM  -- at least 1 HP taken
-                          (fromIntegral mult * xM n `divUp` (100 * 100)))
+                          (fromIntegral mult * xM n `divUp` 100))
       serious = source /= target && not (bproj tb)
       deltaHP | serious = -- if HP overfull, at least cut back to max HP
                           min rawDeltaHP (xM hpMax - bhp tb)
@@ -284,11 +283,15 @@ armorHurtBonus source target = do
   sactiveItems <- activeItemsServer source
   tactiveItems <- activeItemsServer target
   sb <- getsState $ getActorBody source
-  return $! if bproj sb
-            then sumSlotNoFilter IK.EqpSlotAddHurtRanged sactiveItems
-                 - sumSlotNoFilter IK.EqpSlotAddArmorRanged tactiveItems
-            else sumSlotNoFilter IK.EqpSlotAddHurtMelee sactiveItems
-                 - sumSlotNoFilter IK.EqpSlotAddArmorMelee tactiveItems
+  tb <- getsState $ getActorBody target
+  let itemBonus =
+        if bproj sb
+        then sumSlotNoFilter IK.EqpSlotAddHurtRanged sactiveItems
+             - sumSlotNoFilter IK.EqpSlotAddArmorRanged tactiveItems
+        else sumSlotNoFilter IK.EqpSlotAddHurtMelee sactiveItems
+             - sumSlotNoFilter IK.EqpSlotAddArmorMelee tactiveItems
+      block = braced tb
+  return $! itemBonus - if block then 50 else 0
 
 halveCalm :: (MonadAtomic m, MonadServer m)
           => ActorId -> m ()

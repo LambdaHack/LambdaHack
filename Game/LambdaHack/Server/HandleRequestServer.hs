@@ -194,11 +194,9 @@ reqMelee source target iid cstore = do
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
     hurtBonus <- armorHurtBonus source target
-    let isFightImpaired = hurtBonus <= -10
-        block = braced tb
-        hitA = if block && isFightImpaired
+    let hitA = if hurtBonus <= -50  -- e.g., braced and no hit bonus
                then HitBlock 2
-               else if block || isFightImpaired
+               else if hurtBonus <= -10  -- low bonus vs armor
                     then HitBlock 1
                     else HitClear
     execSfxAtomic $ SfxStrike source target iid hitA
