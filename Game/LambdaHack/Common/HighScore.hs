@@ -142,10 +142,7 @@ register table total time status@Status{stOutcome} date difficulty gplayerName
                 -- Up to 1000 points for surviving long, so up to 10000 turns.
                 else min 1000
                      $ sqrt $ fromIntegral survival
-      pBonus =
-        if loots
-        then max 0 (1000 - 100 * sum (EM.elems ourVictims))
-        else 1000 + 100 * sum (EM.elems theirVictims)
+      pBonus = max 0 (1000 - 100 * sum (EM.elems ourVictims))
       pSum :: Double
       pSum = if stOutcome `elem` [Conquer, Escape]
              then pBase + fromIntegral pBonus
