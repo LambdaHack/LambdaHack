@@ -290,9 +290,6 @@ transition psuit prompt promptGeneric cursor permitMulitple
       bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
       suitableLetterSlots = EM.filter (`EM.member` bagSuit) lSlots
       (autoDun, autoLvl) = autoDungeonLevel fact
-      normalizeState INoSuitable = ISuitable
-      normalizeState INoAll = IAll
-      normalizeState x = x
       enterSlots = if itemDialogState == IAll
                    then bagLetterSlots
                    else suitableLetterSlots
@@ -301,11 +298,11 @@ transition psuit prompt promptGeneric cursor permitMulitple
         [ (K.toKM K.NoModifier $ K.Char '?', DefItemKey
            { defLabel = "?"
            , defCond = not (EM.null bag)
-           , defAction = \_ -> case itemDialogState of
-               ISuitable -> recCall cCur cRest
-                            $ if bag == bagSuit then INoSuitable else IAll
-               IAll -> recCall cCur cRest INoAll
-               _ -> recCall cCur cRest ISuitable
+           , defAction = \_ -> recCall cCur cRest $! case itemDialogState of
+               INoSuitable -> if EM.null bagSuit then IAll else ISuitable
+               ISuitable -> IAll
+               IAll -> if EM.null bag then INoSuitable else INoAll
+               INoAll -> INoSuitable
            })
         , (K.toKM K.NoModifier $ K.Char '/', DefItemKey
            { defLabel = "/"
@@ -318,8 +315,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
                      [MStore CSha] | not calmE -> assert `failure` cLegal
                      c1 : rest -> (c1, rest)
                      [] -> assert `failure` cLegal
-               recCall cCurAfterCalm cRestAfterCalm
-                       (normalizeState itemDialogState)
+               recCall cCurAfterCalm cRestAfterCalm itemDialogState
            })
         , (K.toKM K.NoModifier $ K.Char '*', DefItemKey
            { defLabel = "*"
@@ -411,7 +407,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
       cursorCmdDef verbose km cmd =
         (km, DefItemKey
            { defLabel = "keypad, mouse"
-           , defCond = cursor
+           , defCond = cursor && EM.null bagFiltered
            , defAction = \_ -> do
                look <- cmd
                when verbose $

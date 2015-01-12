@@ -205,8 +205,8 @@ In ranged combat, the missile is assumed to be attacking the defender
 in melee, using itself as the weapon, but the ranged melee bonus
 and the ranged armor modifier are taken into account for calculations.
 You may propel any item in your equipment, inventory and on the ground
-(by default you only see the appropriate items in menus,
-press `?` to see all items). Only items of a few kinds inflict any damage,
+(by default you are offered only the appropriate items; press `?`
+to cycle item menu modes). Only items of a few kinds inflict any damage,
 but some have other effects.
 
 Whenever the monster's or hero's hit points reach zero, the combatant dies.
