@@ -66,17 +66,27 @@ displayChoiceUI :: MonadClientUI m
                 => Msg -> Overlay -> [K.KM] -> m (Either Slideshow K.KM)
 displayChoiceUI prompt ov keys = do
   (_, ovs) <- fmap slideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
-  let legalKeys = [K.spaceKM, K.escKM]
-        ++ keys
-      loop [] = fmap Left $ promptToSlideshow "*never mind*"
-      loop (x : xs) = do
-        frame <- drawOverlay False ColorFull x
-        km@K.KM {..} <- promptGetKey legalKeys frame
-        case key of
-          K.Esc -> fmap Left $ promptToSlideshow "*never mind*"
-          K.Space -> loop xs
-          _ -> return $ Right km
-  loop ovs
+  let extraKeys = [K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM]
+      legalKeys = keys ++ extraKeys
+      loop frs srf =
+        case frs of
+          [] -> fmap Left $ promptToSlideshow "*never mind*"
+          x : xs -> do
+            frame <- drawOverlay False ColorFull x
+            km@K.KM{..} <- promptGetKey legalKeys frame
+            case key of
+              K.Esc -> fmap Left $ promptToSlideshow "*never mind*"
+              K.PgUp -> case srf of
+                [] -> loop frs srf
+                y : ys -> loop (y : frs) ys
+              K.Space -> case xs of
+                [] -> fmap Left $ promptToSlideshow "*never mind*"
+                _ -> loop xs (x : srf)
+              K.PgDn -> case xs of
+                [] -> loop frs srf
+                _ -> loop xs (x : srf)
+              _ -> return $ Right km
+  loop ovs []
 
 -- TODO: if more slides, don't take head, but do as in getInitConfirms,
 -- but then we have to clear the messages or they get redisplayed

@@ -76,7 +76,7 @@ getConfirmGeneric autoYes fs clearKeys frame = do
     fdisplay fs (Just frame)
     return K.spaceKM
   else do
-    let extraKeys = [ K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM ]
+    let extraKeys = [K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM]
     promptGetKey fs (clearKeys ++ extraKeys) frame
 
 -- Read UI requests from the client and send them to the frontend,
@@ -113,18 +113,18 @@ loopFrontend fs ChanFrontend{..} = loop False
                   fdisplay fs (Just x)
                   writeKM K.spaceKM
                 x : xs -> do
-                  km <- getConfirmGeneric autoYes fs frontClear x
-                  let kmCanonical = km{K.pointer=dummyPoint}
-                  if kmCanonical == K.escKM then writeKM K.escKM
-                  else if kmCanonical == K.pgupKM
-                       then case srf of
-                         [] -> displayFrs frs srf
-                         y : ys -> displayFrs (y : frs) ys
-                       else case xs of
-                         [] -> if kmCanonical == K.spaceKM
-                               then writeKM K.escKM  -- hack
-                               else displayFrs frs srf
-                         _ -> displayFrs xs (x : srf)
+                  K.KM{..} <- getConfirmGeneric autoYes fs frontClear x
+                  case key of
+                    K.Esc -> writeKM K.escKM
+                    K.PgUp -> case srf of
+                      [] -> displayFrs frs srf
+                      y : ys -> displayFrs (y : frs) ys
+                    K.Space -> case xs of
+                      [] -> writeKM K.escKM  -- hack
+                      _ -> displayFrs xs (x : srf)
+                    _ -> case xs of  -- K.PgDn and any other permitted key
+                      [] -> displayFrs frs srf
+                      _ -> displayFrs xs (x : srf)
         case (frontFromTop, reverse frontSlides) of
           (Just False, r : rs) -> displayFrs [r] rs
           _ -> displayFrs frontSlides []
