@@ -89,8 +89,9 @@ getGroupItem :: MonadClientUI m
              -> [CStore]  -- ^ legal modes after Calm taken into account
              -> m (SlideOrCmd ((ItemId, ItemFull), ItemDialogMode))
 getGroupItem psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm = do
+  let dialogState = if cursor then INoSuitable else ISuitable
   soc <- getFull psuit (\_ _ _ -> prompt) (\_ _ _ -> promptGeneric) cursor
-                 cLegalRaw cLegalAfterCalm True False ISuitable
+                 cLegalRaw cLegalAfterCalm True False dialogState
   case soc of
     Left sli -> return $ Left sli
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
