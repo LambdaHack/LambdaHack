@@ -285,22 +285,22 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
       ret4 _ [] _ acc = return $ Right acc
       ret4 fromCStore ((iid, itemFull) : rest) oldN acc = do
         let k = itemK itemFull
-            n = k + oldN
             retRec toCStore =
-              ret4 fromCStore rest n ((iid, k, fromCStore, toCStore) : acc)
+              let n = oldN + if toCStore == CEqp then k else 0
+              in ret4 fromCStore rest n ((iid, k, fromCStore, toCStore) : acc)
         if cLegalRaw == [CGround]  -- normal pickup
         then case destCStore of
           CEqp | calmE && goesIntoSha itemFull ->
             retRec CSha
           CEqp | goesIntoInv itemFull ->
             retRec CInv
-          CEqp | eqpOverfull b n -> do
+          CEqp | eqpOverfull b (oldN + k) -> do
             msgAdd $ "Warning:" <+> showReqFailure EqpOverfull <> "."
             retRec CInv
           _ ->
             retRec destCStore
         else case destCStore of
-          CEqp | eqpOverfull b n -> failSer EqpOverfull
+          CEqp | eqpOverfull b (oldN + k) -> failSer EqpOverfull
           _ -> retRec destCStore
   ggi <- if auto
          then getAnyItems verb cLegalRaw cLegal False False

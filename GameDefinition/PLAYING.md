@@ -122,8 +122,8 @@ The full list of commands can be seen in the in-game help.
          c              close door
          E              manage equipment of the leader
          g and ,        get items
-         a              apply an item
-         f              fling an item
+         a              apply consumable
+         f              fling projectile
          +              swerve the aiming line
          D              display player diary
          T              toggle suspect terrain display
