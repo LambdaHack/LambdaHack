@@ -9,6 +9,8 @@ module Game.LambdaHack.Common.Misc
     -- * Assorted
   , normalLevelBound, divUp, GroupName, toGroupName, Freqs, breturn
   , serverSaveName, Rarity, validateRarity, Tactic(..)
+    -- * Backward compatibility
+  , isRight
   ) where
 
 import Control.Monad
@@ -155,6 +157,12 @@ instance Show Tactic where
 instance Binary Tactic
 
 instance Hashable Tactic
+
+-- TODO: remove me when we no longer suppoert GHC 7.6.*
+isRight :: Either a b -> Bool
+isRight e = case e of
+  Right{} -> True
+  Left{} -> False
 
 -- Data.Binary
 
