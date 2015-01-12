@@ -61,7 +61,7 @@ data ItemDialogState = ISuitable | IAll | INoSuitable | INoAll
 ppItemDialogMode :: ItemDialogMode -> (Text, Text)
 ppItemDialogMode (MStore cstore) = ppCStore cstore
 ppItemDialogMode MOwned = ("in", "our possession")
-ppItemDialogMode MStats = ("", "")  -- defined elsewhere, to use bpronoun
+ppItemDialogMode MStats = ("among", "strenghts")
 
 ppItemDialogModeIn :: ItemDialogMode -> Text
 ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t
@@ -871,26 +871,40 @@ describeItemC c = do
       verbSha body activeItems = if calmEnough body activeItems
                                  then "notice"
                                  else "paw distractedly"
-      promptCase body activeItems c2 = case c2 of
+      promptCase body activeItems c2 =
+        let (tIn, t) = ppItemDialogMode c2
+        in case c2 of
+        MStore CGround ->  -- TODO: variant for actors without (unwounded) feet
+          makePhrase
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "notice"
+            , MU.Text "at"
+            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text "feet" ]
         MStore CSha ->
           makePhrase
-            [MU.Capitalize
-             $ MU.SubjectVerbSg (subject body) (verbSha body activeItems)]
+            [ MU.Capitalize
+              $ MU.SubjectVerbSg (subject body) (verbSha body activeItems)
+            , MU.Text tIn
+            , MU.Text t ]
         MStore COrgan ->
           makePhrase
-            [MU.Capitalize $ MU.SubjectVerbSg (subject body) "feel"]
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "feel"
+            , MU.Text tIn
+            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
         MOwned ->
           makePhrase
-            [MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"]
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"
+            , MU.Text tIn
+            , MU.Text t ]
         MStats ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "estimate"
-            , MU.WownW (MU.Text $ bpronoun body) "strenghts" ]
+            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
         _ ->
           makePhrase
-            [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"
+            , MU.Text tIn
+            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
       prompt body activeItems c2 = promptCase body activeItems c2
-                                   <+> ppItemDialogModeIn c2
   ggi <- getStoreItem prompt c
   case ggi of
     Right ((iid, itemFull), c2) -> do

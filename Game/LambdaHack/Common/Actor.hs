@@ -221,7 +221,7 @@ ppContainer c@CTrunk{} = assert `failure` c
 
 ppCStore :: CStore -> (Text, Text)
 ppCStore CGround = ("on", "the ground")
-ppCStore COrgan = ("", "among organs")
+ppCStore COrgan = ("among", "organs")
 ppCStore CEqp = ("in", "equipment")
 ppCStore CInv = ("in", "inventory")
 ppCStore CSha = ("in", "shared stash")
