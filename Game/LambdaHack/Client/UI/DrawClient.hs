@@ -180,7 +180,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
              in fits <> ellipsis
       cursorText =
         let n = widthTgt - T.length pathCsr - 8
-        in (if isJust stgtMode then "xhair>" else "Xhair:")
+        in (if isJust stgtMode then "x-hair>" else "X-hair:")
            <+> trimTgtDesc n cursorDesc
       cursorGap = T.replicate (widthTgt - T.length pathCsr
                                         - T.length cursorText) " "

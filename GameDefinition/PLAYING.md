@@ -45,11 +45,11 @@ Read more about combat resolution in section 'Monsters' below.
 The second status line describes the current dungeon location in relation
 to the party.
 
-    5  Lofty hall   [33% seen] Xhair: exact spot (71,12)  p15 l10
+    5  Lofty hall   [33% seen] X-hair: exact spot (71,12)  p15 l10
 
 First comes the depth of the current level and its name.
 Then the percentage of its explorable tiles already seen by the heroes.
-The 'Xhair' (meaning 'crosshair') is the common focus of the whole party,
+The 'X-hair' (meaning 'crosshair') is the common focus of the whole party,
 denoted on the map by a white box and directly manipulated with movement keys
 in aiming mode. At the end of the status line comes the length of the shortest
 path from the leader to the crosshair position and the straight-line distance
