@@ -111,30 +111,30 @@ standardKeys = KeyKind
                                    Nothing "and share items" False))
       , ("a", ([CmdItem, CmdMinimal], Apply
            [ ApplyItem { verb = "apply"
-                       , object = "an item"
+                       , object = "item"
                        , symbol = ' ' }
            , ApplyItem { verb = "quaff"
-                       , object = "a potion"
+                       , object = "potion"
                        , symbol = '!' }
            , ApplyItem { verb = "read"
-                       , object = "a scroll"
+                       , object = "scroll"
                        , symbol = '?' }
            ]))
       , ("q", ([CmdItem], Apply [ApplyItem { verb = "quaff"
-                                           , object = "a potion"
+                                           , object = "potion"
                                            , symbol = '!' }]))
       , ("r", ([CmdItem], Apply [ApplyItem { verb = "read"
-                                           , object = "a scroll"
+                                           , object = "scroll"
                                            , symbol = '?' }]))
       , ("f", ([CmdItem, CmdMinimal], Project
            [ApplyItem { verb = "fling"
                       , object = "an item"
                       , symbol = ' ' }]))
       , ("t", ([CmdItem], Project [ApplyItem { verb = "throw"
-                                             , object = "a missile"
+                                             , object = "missile"
                                              , symbol = '|' }]))
       , ("z", ([CmdItem], Project [ApplyItem { verb = "zap"
-                                             , object = "a wand"
+                                             , object = "wand"
                                              , symbol = '/' }]))
 
       -- Targeting
