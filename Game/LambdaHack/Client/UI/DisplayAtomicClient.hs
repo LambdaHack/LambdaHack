@@ -719,7 +719,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                   (_, secretName, secretAEText) = partItem cstore (blid b) localTime itemSecret
                   subject = partActor b
                   verb = "repurpose"
-                  store = MU.Text $ ppCStore cstore
+                  store = MU.Text $ ppCStoreIn cstore
               msgAdd $ makeSentence
                 [ MU.SubjectVerbSg subject verb
                 , "the", secretName, secretAEText, store ]
@@ -730,7 +730,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             (_, ItemFull{..}) : _ -> do
               let subject = partActor b
                   verb = "inspect"
-                  store = MU.Text $ ppCStore cstore
+                  store = MU.Text $ ppCStoreIn cstore
               msgAdd $ makeSentence
                 [ MU.SubjectVerbSg subject verb
                 , "an item", store ]

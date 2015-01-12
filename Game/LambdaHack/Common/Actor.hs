@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.Actor
   , hpTooLow, hpHuge, calmEnough, calmEnough10, hpEnough, hpEnough10
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
-  , mapActorItems_, ppContainer, ppCStore, verbCStore
+  , mapActorItems_, ppContainer, ppCStore, ppCStoreIn, verbCStore
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -27,6 +27,7 @@ import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
@@ -215,15 +216,18 @@ mapActorItems_ f Actor{binv, beqp, borgan} = do
 ppContainer :: Container -> Text
 ppContainer CFloor{} = "nearby"
 ppContainer CEmbed{} = "embedded nearby"
-ppContainer (CActor _ cstore) = ppCStore cstore
+ppContainer (CActor _ cstore) = ppCStoreIn cstore
 ppContainer c@CTrunk{} = assert `failure` c
 
-ppCStore :: CStore -> Text
-ppCStore CGround = "on the ground"
-ppCStore COrgan = "among organs"
-ppCStore CEqp = "in equipment"
-ppCStore CInv = "in inventory"
-ppCStore CSha = "in shared stash"
+ppCStore :: CStore -> (Text, Text)
+ppCStore CGround = ("on", "the ground")
+ppCStore COrgan = ("", "among organs")
+ppCStore CEqp = ("in", "equipment")
+ppCStore CInv = ("in", "inventory")
+ppCStore CSha = ("in", "shared stash")
+
+ppCStoreIn :: CStore -> Text
+ppCStoreIn c = let (tIn, t) = ppCStore c in tIn <+> t
 
 verbCStore :: CStore -> Text
 verbCStore CGround = "drop"

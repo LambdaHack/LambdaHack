@@ -58,10 +58,16 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 data ItemDialogState = ISuitable | IAll | INoSuitable | INoAll
   deriving (Show, Eq)
 
-ppItemDialogMode :: ItemDialogMode -> Text
+ppItemDialogMode :: ItemDialogMode -> (Text, Text)
 ppItemDialogMode (MStore cstore) = ppCStore cstore
-ppItemDialogMode MOwned = "in our possession"
-ppItemDialogMode MStats = ""  -- defined elsewhere, to use bpronoun
+ppItemDialogMode MOwned = ("in", "our possession")
+ppItemDialogMode MStats = ("", "")  -- defined elsewhere, to use bpronoun
+
+ppItemDialogModeIn :: ItemDialogMode -> Text
+ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t
+
+ppItemDialogModeFrom :: ItemDialogMode -> Text
+ppItemDialogModeFrom c = let (_tIn, t) = ppItemDialogMode c in "from" <+> t
 
 storeFromMode :: ItemDialogMode -> CStore
 storeFromMode c = case c of
@@ -91,9 +97,9 @@ getGroupItem :: MonadClientUI m
 getGroupItem psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm = do
   let dialogState = if cursor then INoSuitable else ISuitable
   soc <- getFull psuit
-                 (\_ _ cCur -> prompt <+> ppItemDialogMode cCur)
-                 (\_ _ cCur -> promptGeneric <+> ppItemDialogMode cCur) cursor
-                 cLegalRaw cLegalAfterCalm True False dialogState
+                 (\_ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
+                 (\_ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
+                 cursor cLegalRaw cLegalAfterCalm True False dialogState
   case soc of
     Left sli -> return $ Left sli
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
@@ -112,7 +118,7 @@ getAnyItems :: MonadClientUI m
             -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
 getAnyItems verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
   let prompt _ _ cCur =
-        makePhrase ["What to", verb, MU.Text $ ppItemDialogMode cCur]
+        makePhrase ["What to", verb, MU.Text $ ppItemDialogModeFrom cCur]
   soc <- getFull (return $ Right $ const True)
                  prompt prompt False
                  cLegalRaw cLegalAfterCalm
@@ -187,7 +193,7 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
     Nothing ->
       if isNothing (find hasThisActor cLegalRaw) then do
         let contLegalRaw = map MStore cLegalRaw
-            tLegal = map (MU.Text . ppItemDialogMode) contLegalRaw
+            tLegal = map (MU.Text . ppItemDialogModeIn) contLegalRaw
             ppLegal = makePhrase [MU.WWxW "nor" tLegal]
         failWith $ "no items" <+> ppLegal
       else failSer ItemNotCalm
@@ -884,7 +890,7 @@ describeItemC c = do
           makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
       prompt body activeItems c2 = promptCase body activeItems c2
-                                   <+> ppItemDialogMode c2
+                                   <+> ppItemDialogModeIn c2
   ggi <- getStoreItem prompt c
   case ggi of
     Right ((iid, itemFull), c2) -> do
@@ -926,8 +932,8 @@ describeItemC c = do
           -- from different stores and we can't guess player's intentions.
           found <- getsState $ findIid leader (bfid b) iid
           assert (not (null found) `blame` ggi) skip
-          let ppLoc (_, CSha) = MU.Text $ ppCStore CSha <+> "of the party"
-              ppLoc (b2, store) = MU.Text $ ppCStore store <+> "of" <+> bname b2
+          let ppLoc (_, CSha) = MU.Text $ ppCStoreIn CSha <+> "of the party"
+              ppLoc (b2, store) = MU.Text $ ppCStoreIn store <+> "of" <+> bname b2
               foundTexts = map ppLoc found
               prompt2 = makeSentence ["The item is", MU.WWandW foundTexts]
           Left <$> overlayToSlideshow prompt2 io

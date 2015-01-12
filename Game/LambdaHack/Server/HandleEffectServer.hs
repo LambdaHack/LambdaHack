@@ -827,7 +827,7 @@ effectPolyItem execSfx cstore target = do
       tb <- getsState $ getActorBody target
       execSfxAtomic $ SfxMsgFid (bfid tb) $
         "The purpose of repurpose cannot be availed without an item"
-        <+> ppCStore cstore <> "."
+        <+> ppCStoreIn cstore <> "."
       -- TODO: identify the scroll, but don't use up.
       return True
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of

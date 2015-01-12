@@ -101,8 +101,8 @@ effectToSuff effect =
       let grpText = tshow grp
           hitText = if hit then "smash" else "drop"
       in "of" <+> hitText <+> grpText  -- TMI: <+> ppCStore store
-    PolyItem store -> "of repurpose" <+> ppCStore store
-    Identify store -> "of identify starting" <+> ppCStore store
+    PolyItem store -> "of repurpose" <+> ppCStoreIn store
+    Identify store -> "of identify starting" <+> ppCStoreIn store
     SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
     PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
     PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod
