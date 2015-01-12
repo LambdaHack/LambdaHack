@@ -90,7 +90,9 @@ getGroupItem :: MonadClientUI m
              -> m (SlideOrCmd ((ItemId, ItemFull), ItemDialogMode))
 getGroupItem psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm = do
   let dialogState = if cursor then INoSuitable else ISuitable
-  soc <- getFull psuit (\_ _ _ -> prompt) (\_ _ _ -> promptGeneric) cursor
+  soc <- getFull psuit
+                 (\_ _ cCur -> prompt <+> ppItemDialogMode cCur)
+                 (\_ _ cCur -> promptGeneric <+> ppItemDialogMode cCur) cursor
                  cLegalRaw cLegalAfterCalm True False dialogState
   case soc of
     Left sli -> return $ Left sli
@@ -109,9 +111,10 @@ getAnyItems :: MonadClientUI m
             -> Bool      -- ^ whether to ask for the number of items
             -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
 getAnyItems verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
-  let prompt = makePhrase ["What to", verb]
+  let prompt _ _ cCur =
+        makePhrase ["What to", verb, MU.Text $ ppItemDialogMode cCur]
   soc <- getFull (return $ Right $ const True)
-                 (\_ _ _ -> prompt) (\_ _ _ -> prompt) False
+                 prompt prompt False
                  cLegalRaw cLegalAfterCalm
                  askWhenLone True ISuitable
   case soc of
@@ -431,25 +434,20 @@ transition psuit prompt promptGeneric cursor permitMulitple
               Just iid -> return $ Right $ getResult iid
             _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
-      ppCur = ppItemDialogMode cCur
       (labelLetterSlots, bagFiltered, promptChosen) =
         case itemDialogState of
           ISuitable   -> (suitableLetterSlots,
                           bagSuit,
-                          (prompt body activeItems cCur <+> ppCur)
-                          <> ":")
+                          prompt body activeItems cCur <> ":")
           IAll        -> (bagLetterSlots,
                           bag,
-                          (promptGeneric body activeItems cCur <+> ppCur)
-                          <> ":")
+                          promptGeneric body activeItems cCur <> ":")
           INoSuitable -> (suitableLetterSlots,
                           EM.empty,
-                          (prompt body activeItems cCur <+> ppCur)
-                          <> ":")
+                          prompt body activeItems cCur <> ":")
           INoAll      -> (bagLetterSlots,
                           EM.empty,
-                          (promptGeneric body activeItems cCur <+> ppCur)
-                          <> ":")
+                          promptGeneric body activeItems cCur <> ":")
   io <- case cCur of
     MStats -> statsOverlay leader -- TODO: describe each stat when selected
     _ -> itemOverlay (storeFromMode cCur) (blid body) bagFiltered
@@ -867,7 +865,7 @@ describeItemC c = do
       verbSha body activeItems = if calmEnough body activeItems
                                  then "notice"
                                  else "paw distractedly"
-      prompt body activeItems c2 = case c2 of
+      promptCase body activeItems c2 = case c2 of
         MStore CSha ->
           makePhrase
             [MU.Capitalize
@@ -885,6 +883,8 @@ describeItemC c = do
         _ ->
           makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
+      prompt body activeItems c2 = promptCase body activeItems c2
+                                   <+> ppItemDialogMode c2
   ggi <- getStoreItem prompt c
   case ggi of
     Right ((iid, itemFull), c2) -> do
