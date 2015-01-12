@@ -123,9 +123,11 @@ correctly depending on versions of the libraries, terminfo and terminal
 emulators. The curses frontend is not fully supported due to the limitations
 of the curses library. With the vty frontend started in an xterm,
 CTRL-keypad keys for running seem to work OK, but on rxvt they do not.
-Laptop (uk8o79jl) and Vi keys (hjklyubn, if enabled in config.ui.ini)
-should work everywhere regardless. GTK works fine, too, both with
-numeric keypad and with mouse.
+The commands that require pressing CTRL and SHIFT together won't
+work either, but fortunately they are not crucial to gameplay.
+For movement, laptop (uk8o79jl) and Vi keys (hjklyubn, if enabled
+in config.ui.ini) should work everywhere. GTK works fine, too, both
+with numeric keypad and with mouse.
 
 
 Testing and debugging
