@@ -434,7 +434,7 @@ projectItem ts posFromCursor = do
               Left _ -> False
               Right suit -> suit
       prompt = makePhrase ["What", object1, "to", verb1]
-      promptGeneric = "All items"
+      promptGeneric = "What to fling"
   ggi <- getGroupItem psuit prompt promptGeneric True
                       cLegal cLegal
   case ggi of
@@ -470,9 +470,10 @@ applyHuman ts = do
         [] -> ("apply", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      p itemFull = permittedApply triggerSyms localTime skill itemFull b activeItems
+      p itemFull =
+        permittedApply triggerSyms localTime skill itemFull b activeItems
       prompt = makePhrase ["What", object1, "to", verb1]
-      promptGeneric = "All items"
+      promptGeneric = "What to apply"
   ggi <- getGroupItem (return $ Right $ either (const False) id . p)
                       prompt promptGeneric False cLegal cLegal
   case ggi of

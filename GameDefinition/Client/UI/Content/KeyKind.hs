@@ -111,7 +111,7 @@ standardKeys = KeyKind
                                    Nothing "and share items" False))
       , ("a", ([CmdItem, CmdMinimal], Apply
            [ ApplyItem { verb = "apply"
-                       , object = "item"
+                       , object = "consumable"
                        , symbol = ' ' }
            , ApplyItem { verb = "quaff"
                        , object = "potion"
@@ -128,7 +128,7 @@ standardKeys = KeyKind
                                            , symbol = '?' }]))
       , ("f", ([CmdItem, CmdMinimal], Project
            [ApplyItem { verb = "fling"
-                      , object = "an item"
+                      , object = "projectile"
                       , symbol = ' ' }]))
       , ("t", ([CmdItem], Project [ApplyItem { verb = "throw"
                                              , object = "missile"
