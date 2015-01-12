@@ -75,6 +75,7 @@ displayChoiceUI prompt ov keys = do
             frame <- drawOverlay False ColorFull x
             km@K.KM{..} <- promptGetKey legalKeys frame
             case key of
+              _ | km `elem` keys -> return $ Right km  -- km can be PgUp, etc.
               K.Esc -> fmap Left $ promptToSlideshow "*never mind*"
               K.PgUp -> case srf of
                 [] -> loop frs srf
@@ -82,10 +83,9 @@ displayChoiceUI prompt ov keys = do
               K.Space -> case xs of
                 [] -> fmap Left $ promptToSlideshow "*never mind*"
                 _ -> loop xs (x : srf)
-              K.PgDn -> case xs of
+              _ -> case xs of  -- K.PgDn and any other permitted key
                 [] -> loop frs srf
                 _ -> loop xs (x : srf)
-              _ -> return $ Right km
   loop ovs []
 
 -- TODO: if more slides, don't take head, but do as in getInitConfirms,
