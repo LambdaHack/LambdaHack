@@ -19,6 +19,7 @@ module Game.LambdaHack.Client.UI
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
+import Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
@@ -65,15 +66,15 @@ humanCommand = do
   -- UI player input, which is an overkill, but doesn't affects
   -- screensavers, because they are UI, but not human.
   modifyClient $ \cli -> cli {sbfsD = EM.empty, slastLost = ES.empty}
-  let loop :: Maybe (Maybe Bool, Overlay) -> m RequestUI
+  let loop :: Either Bool (Maybe Bool, Overlay) -> m RequestUI
       loop mover = do
         (lastBlank, over) <- case mover of
-          Nothing -> do
+          Left b -> do
             -- Display current state and keys if no slideshow or if interrupted.
-            keys <- describeMainKeys
+            keys <- if b then describeMainKeys else return ""
             sli <- promptToSlideshow keys
             return (Nothing, head . snd $! slideshow sli)
-          Just bLast ->
+          Right bLast ->
             -- (Re-)display the last slide while waiting for the next key.
             return bLast
         (seqCurrent, seqPrevious, k) <- getsClient slastRecord
@@ -110,7 +111,7 @@ humanCommand = do
                 _ -> do
                   modifyClient $ \cli -> cli {sescAI = EscAINothing}
                   stgtMode <- getsClient stgtMode
-                  if km == K.escKM && isNothing stgtMode && isJust mover
+                  if km == K.escKM && isNothing stgtMode && isRight mover
                   then cmdHumanSem Clear
                   else cmdHumanSem cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
@@ -127,19 +128,21 @@ humanCommand = do
             -- Analyse the obtained slides.
             let (onBlank, sli) = slideshow slides
             mLast <- case sli of
-              [] -> return Nothing
+              [] -> do
+                stgtMode <- getsClient stgtMode
+                return $ Left $ isJust stgtMode || km == K.escKM
               [sLast] ->
                 -- Avoid displaying the single slide twice.
-                return $ Just (onBlank, sLast)
+                return $ Right (onBlank, sLast)
               _ -> do
                 -- Show, one by one, all slides, awaiting confirmation
                 -- for all but the last one (which is displayed twice, BTW).
                 -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
                 go <- getInitConfirms ColorFull [km] slides
-                return $! if go then Just (onBlank, last sli) else Nothing
+                return $! if go then Right (onBlank, last sli) else Left True
             loop mLast
-  loop Nothing
+  loop $ Left False
 
 -- | Client signals to the server that it's still online, flushes frames
 -- (if needed) and sends some extra info.

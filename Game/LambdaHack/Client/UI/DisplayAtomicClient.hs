@@ -780,8 +780,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           -- Something new is gonna happen on this level (otherwise we'd send
           -- @UpdAgeLevel@ later on, with a larger time increment),
           -- so show crrent game state, before it changes.
-          keys <- describeMainKeys
-          displayPush keys
+          displayPush ""
 
 strike :: MonadClientUI m
        => ActorId -> ActorId -> ItemId -> HitAtomic -> m ()

@@ -116,12 +116,12 @@ describeMainKeys = do
         else if configLaptop then "uk8o79jl, "
         else ""
       tgtKind = case cursor of
-        TEnemy _ True -> "actor"
-        TEnemy _ False -> "enemy"
-        TEnemyPos _ _ _ True -> "actor"
-        TEnemyPos _ _ _ False -> "enemy"
-        TPoint{} -> "position"
-        TVector{} -> "vector"
+        TEnemy _ True -> "at actor"
+        TEnemy _ False -> "at enemy"
+        TEnemyPos _ _ _ True -> "at actor"
+        TEnemyPos _ _ _ False -> "at enemy"
+        TPoint{} -> "at position"
+        TVector{} -> "with a vector"
       keys | underAI = ""
            | isNothing stgtMode =
         "Explore with keypad or keys or mouse: ["

@@ -651,12 +651,11 @@ cursorPointerFloor verbose addMoreMsg = do
     return mempty
   else do
     let scursor = TPoint lidV newPos
-    keys <- describeMainKeys  -- describe before tgt mode set
     modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
     if verbose then
       doLook addMoreMsg
     else do
-      displayPush keys  -- flash the targeting line and path
+      displayPush ""  -- flash the targeting line and path
       displayDelay  -- for a bit longer
       return mempty
 
@@ -675,12 +674,11 @@ cursorPointerEnemy verbose addMoreMsg = do
           case find (\(_, m) -> bpos m == newPos) bsAll of
             Just (im, _) -> TEnemy im True
             Nothing -> TPoint lidV newPos
-    keys <- describeMainKeys  -- describe before tgt mode set
     modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
     if verbose then
       doLook addMoreMsg
     else do
-      displayPush keys  -- flash the targeting line and path
+      displayPush ""  -- flash the targeting line and path
       displayDelay  -- for a bit longer
       return mempty
 
