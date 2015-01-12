@@ -125,6 +125,7 @@ keyHelp Binding{bcmdList} =
     disp k = T.concat $ intersperse " and " $ map K.showKM $ coImage k
     keysN n cat = [ fmt n (disp k) h
                   | (k, (h, cats, _)) <- bcmdList, cat `elem` cats, h /= "" ]
+    -- TODO: measure the longest key sequence and set the caption automatically
     keyCaptionN n = fmt n "keys" "command"
     keys = keysN 15
     keyCaption = keyCaptionN 15

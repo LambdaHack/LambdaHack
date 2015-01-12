@@ -59,7 +59,7 @@ Screen and keyboard configuration
 ---------------------------------
 
 The game UI can be configured via a config file.
-The commented out version of this file with the default settings is in
+The commented out version of the file with default settings is in
 [GameDefinition/config.ui.default](GameDefinition/config.ui.default).
 When the game is run for the first time, the file is copied to the official
 location, which is `~/.LambdaHack/config.ui.ini` on Linux and
@@ -73,12 +73,13 @@ on the game window.
 
 If you use the numeric keypad, use the NumLock key on your keyboard
 to toggle the game keyboard mode. With NumLock off, you walk with the numeric
-keys and run with Shift (or Control) and the keys. When you turn NumLock on,
+keys and run with Shift (or Control) and the keys. This mode is probably
+the best if you use mouse for running. When you turn NumLock on,
 the reversed key setup enforces good playing habits by setting as the default
 the run command (which automatically stops at threats, keeping you safe)
 and requiring Shift for the error-prone step by step walking.
 
-If you don't have a numeric keypad, you can use laptop keys (uk8o79jl)
+If you don't have the numeric keypad, you can use laptop keys (uk8o79jl)
 or you can enable the Vi keys (aka roguelike keys) in the config file.
 
 
@@ -134,7 +135,7 @@ Testing and debugging
 ---------------------
 
 The [Makefile](Makefile) contains many sample test commands.
-Many tests that use the screensaver game modes (AI vs. AI)
+Numerous tests that use the screensaver game modes (AI vs. AI)
 and the dumb `stdout` frontend are gathered in `make test`.
 Of these, travis runs `test-travis-*` on each push to the repo.
 Test commands with prefix `frontend` start AI vs. AI games
@@ -158,8 +159,8 @@ touch the topmost UI layer).
     hpc markup --hpcdir=dist/hpc/mix/LambdaHack-xxx/ LambdaHack
 
 Note that debug option `--stopAfter` is required to cleanly terminate
-any automated test that is used to gather HPC info, because HPC needs
-a clean exit (to save data files).
+any automated test. This is needed to gather any HPC info, because HPC
+requires a clean exit to save data files.
 
 
 Further information

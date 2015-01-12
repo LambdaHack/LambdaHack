@@ -40,7 +40,7 @@ with hit points drawn as a bar. Weapon damage and other item stats
 are displayed using the dice notation `XdY`, which means X rolls
 of Y-sided dice. A variant denoted `XdsY` is additionally
 scaled by the level depth in proportion to the maximal dungeon depth.
-Read more about combat resolution in section 'Monsters' below.
+You can read more about combat resolution in section Monsters below.
 
 The second status line describes the current dungeon location in relation
 to the party.
@@ -50,7 +50,7 @@ to the party.
 First comes the depth of the current level and its name.
 Then the percentage of its explorable tiles already seen by the heroes.
 The 'X-hair' (meaning 'crosshair') is the common focus of the whole party,
-denoted on the map by a white box and directly manipulated with movement keys
+denoted on the map by a white box and manipulated with movement keys
 in aiming mode. At the end of the status line comes the length of the shortest
 path from the leader to the crosshair position and the straight-line distance
 between the two points.
@@ -97,7 +97,7 @@ In aiming mode the same keys (or the middle and right mouse buttons)
 move the crosshair (the white box). In normal mode, `SHIFT`
 (or `CTRL`) and a movement key make the current party leader
 (and the currently selected party members, if any) run in the indicated
-direction, until anything of interest is spotted. The '5` keypad key
+direction, until anything of interest is spotted. The `5` keypad key
 and the `i` and `.` keys consume a turn and make you brace for combat,
 which reduces any damage taken for a turn and makes it impossible
 for foes to displace you. You displace enemies or friends by bumping
