@@ -328,7 +328,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
 -- | Display items from a given container store and describe the chosen one.
 describeItemHuman :: MonadClientUI m
                   => ItemDialogMode -> m (SlideOrCmd (RequestTimed AbMoveItem))
-describeItemHuman mode = describeItemC mode False
+describeItemHuman mode = describeItemC mode
 
 -- * Project
 

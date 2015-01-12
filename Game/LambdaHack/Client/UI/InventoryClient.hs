@@ -130,9 +130,8 @@ getStoreItem :: MonadClientUI m
              => (Actor -> [ItemFull] -> ItemDialogMode -> Text)
                                  -- ^ how to describe suitable items
              -> ItemDialogMode   -- ^ initial mode
-             -> Bool             -- ^ whether Enter should be disabled
              -> m (SlideOrCmd ((ItemId, ItemFull), ItemDialogMode))
-getStoreItem prompt cInitial noEnter = do
+getStoreItem prompt cInitial = do
   let allCs = map MStore [CEqp, CInv, CSha]
               ++ [MOwned]
               ++ map MStore [CGround, COrgan]
@@ -140,10 +139,9 @@ getStoreItem prompt cInitial noEnter = do
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
-      dialogState = if noEnter then INoSuitable else ISuitable
   soc <- getItem (return $ Right $ const True)
                  prompt prompt False cInitial remCs
-                 True False dialogState
+                 True False ISuitable
   case soc of
     Left sli -> return $ Left sli
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
@@ -328,13 +326,12 @@ transition psuit prompt promptGeneric cursor permitMulitple
            , defAction = \_ -> return $ Right
                                $ getMultResult $ EM.elems enterSlots
            })
-        , (K.toKM K.NoModifier $ K.Return, DefItemKey
+        , (K.toKM K.NoModifier K.Return, DefItemKey
            { defLabel = case EM.maxViewWithKey enterSlots of
                Nothing -> assert `failure` "no suitable items"
                                  `twith` enterSlots
                Just ((l, _), _) -> "RET(" <> T.singleton (slotChar l) <> ")"
            , defCond = not (EM.null enterSlots)
-                       && itemDialogState `elem` [ISuitable, IAll]
            , defAction = \_ -> case EM.maxView enterSlots of
                Nothing -> assert `failure` "no suitable items"
                                  `twith` enterSlots
@@ -863,12 +860,12 @@ doLook addMoreMsg = do
 _floorItemOverlay :: MonadClientUI m
                   => LevelId -> Point
                   -> m (SlideOrCmd (RequestTimed Ability.AbMoveItem))
-_floorItemOverlay _lid _p = describeItemC (MOwned {-CFloor lid p-}) True
+_floorItemOverlay _lid _p = describeItemC (MOwned {-CFloor lid p-})
 
 describeItemC :: MonadClientUI m
-              => ItemDialogMode -> Bool
+              => ItemDialogMode
               -> m (SlideOrCmd (RequestTimed Ability.AbMoveItem))
-describeItemC c noEnter = do
+describeItemC c = do
   let subject body = partActor body
       verbSha body activeItems = if calmEnough body activeItems
                                  then "notice"
@@ -891,7 +888,7 @@ describeItemC c noEnter = do
         _ ->
           makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
-  ggi <- getStoreItem prompt c noEnter
+  ggi <- getStoreItem prompt c
   case ggi of
     Right ((iid, itemFull), c2) -> do
       leader <- getLeaderUI
