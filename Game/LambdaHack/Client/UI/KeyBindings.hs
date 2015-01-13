@@ -127,8 +127,8 @@ keyHelp Binding{bcmdList} =
                   | (k, (h, cats, _)) <- bcmdList, cat `elem` cats, h /= "" ]
     -- TODO: measure the longest key sequence and set the caption automatically
     keyCaptionN n = fmt n "keys" "command"
-    keys = keysN 15
-    keyCaption = keyCaptionN 15
+    keys = keysN 16
+    keyCaption = keyCaptionN 16
   in toSlideshow (Just True)
     [ [casualDescription <+> "(1/2). [press SPACE to see more]"] ++ [""]
       ++ movText ++ [moreMsg]
@@ -137,9 +137,9 @@ keyHelp Binding{bcmdList} =
       ++ [keyCaption] ++ keys CmdMinimal ++ casualEndText ++ [moreMsg]
     , ["All terrain exploration and alteration commands"
        <> ". [press SPACE to advance]"] ++ [""]
-      ++ [keyCaption] ++ keys CmdMove ++ categoryText ++ [moreMsg]
+      ++ [keyCaptionN 10] ++ keysN 10 CmdMove ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdItem <> ". [press SPACE to advance]"] ++ [""]
-      ++ [keyCaptionN 10 ] ++ keysN 10 CmdItem ++ categoryText ++ [moreMsg]
+      ++ [keyCaptionN 10] ++ keysN 10 CmdItem ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdTgt <> ". [press SPACE to advance]"] ++ [""]
       ++ [keyCaption] ++ keys CmdTgt ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdAuto <> ". [press SPACE to advance]"] ++ [""]
@@ -148,5 +148,5 @@ keyHelp Binding{bcmdList} =
       ++ [keyCaption] ++ keys CmdMeta ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdMouse
        <> ". [press PGUP to see previous, ESC to cancel]"] ++ [""]
-      ++ [keyCaptionN 20] ++ keysN 20 CmdMouse ++ lastText ++ [endMsg]
+      ++ [keyCaptionN 21] ++ keysN 21 CmdMouse ++ lastText ++ [endMsg]
     ]
