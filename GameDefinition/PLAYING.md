@@ -107,60 +107,61 @@ Melee, searching for secret doors, looting and opening closed doors
 can be done by bumping into a monster, a wall and a door, respectively.
 Few commands other than movement, 'g'etting an item from the floor,
 'a'pplying an item and 'f'linging an item are necessary for casual play.
-Some are provided only as specialized versions of more general commands
-or as building blocks for more complex convenience commands,
+Some are provided only as specialized versions of the more general
+commands or as building blocks for more complex convenience macros,
 e.g., the autoexplore command (key `X`) could be defined
 by the player as a macro using `CTRL-?`, `:` and `V`.
 
 The following minimal command set lets you accomplish almost anything
 in the game, though not necessarily with the fewest number of keystrokes.
-The full list of commands can be seen in the in-game help.
+The full list of commands can be seen in the in-game help accessible
+from the Main Menu.
 
-         keys           command
-         <              ascend a level
-         >              descend a level
-         c              close door
-         E              manage equipment of the leader
-         g and ,        get items
-         a              apply consumable
-         f              fling projectile
-         +              swerve the aiming line
-         D              display player diary
-         T              toggle suspect terrain display
-         SHIFT-TAB      cycle among all party members
-         ESC            cancel action, open Main Menu
+        keys            command
+        <               ascend a level
+        >               descend a level
+        c               close door
+        E               manage equipment of the leader
+        g and ,         get items
+        a               apply consumable
+        f               fling projectile
+        +               swerve the aiming line
+        D               display player diary
+        T               toggle suspect terrain display
+        SHIFT-TAB       cycle among all party members
+        ESC             cancel action, open Main Menu
 
 The only activity not possible with the commands above is the management
 of non-leader party members. The defaults should usually suffice,
 especially if your non-leader heroes can only melee or wait
-and none has found the equipment the enables opportunity fire.
-However, If you need it, you can manually set the party tactics
-with `CTRL-T` and you can assign individual targets to party members
+and none have found the equipment that enables opportunity fire.
+If there's a need, you can manually set party tactics with `CTRL-T`
+and you can assign individual targets to party members
 using the aiming and targeting commands listed below.
 
-         keys           command
-         KEYPAD_* and \ aim at an enemy
-         KEYPAD_/ and | cycle aiming styles
-         +              swerve the aiming line
-         -              unswerve the aiming line
-         CTRL-?         set crosshair to the closest unknown spot
-         CTRL-I         set crosshair to the closest item
-         CTRL-{         set crosshair to the closest stairs up
-         CTRL-}         set crosshair to the closest stairs down
-         BACKSPACE      reset target/crosshair
-         RET and INSERT accept target/choice
+        keys            command
+        KEYPAD_* and \  aim at an enemy
+        KEYPAD_/ and |  cycle aiming styles
+        +               swerve the aiming line
+        -               unswerve the aiming line
+        CTRL-?          set crosshair to the closest unknown spot
+        CTRL-I          set crosshair to the closest item
+        CTRL-{          set crosshair to the closest stairs up
+        CTRL-}          set crosshair to the closest stairs down
+        BACKSPACE       reset target/crosshair
+        RET and INSERT  accept target/choice
 
 For ranged attacks, setting the crosshair or individual targets
 beforehand is not mandatory, because the crosshair is set automatically
 as soon as a monster comes into view and can still be adjusted while
 in the missile choice menu. However, if you want to assign persistent
-personal targets or just to inspect the dungeon map closely, you can enter
+personal targets or just inspect the dungeon map closely, you can enter
 the detailed aiming mode with the right mouse button or with
 the `*` keypad key that selects enemies or the `/` keypad key that
 marks a tile. You can move the aiming crosshair with direction keys
 and assign a personal target to the leader with `RET`.
 The details of the shared crosshair position and of the personal target
-are described in the status lines, at the bottom of the screen.
+are described in the status lines at the bottom of the screen.
 
 Commands for saving and exiting the current game, starting a new game, etc.,
 are listed in the Main Menu, brought up by the `ESC` key.
@@ -198,16 +199,16 @@ To determine the damage dealt, the outcome of the weapon's damage dice roll
 is multiplied by the melee damage bonus (summed from the equipped items
 of the attacker) minus the melee armor modifier of the defender.
 Regardless of the calculation, each attack inflicts at least 1 damage.
-The current leader's melee bonus, armor strength and other detailed
+The current leader's melee bonus, armor modifier and other detailed
 stats can be viewed via the `!` command.
 
 In ranged combat, the missile is assumed to be attacking the defender
-in melee, using itself as the weapon, but the ranged melee bonus
+in melee, using itself as the weapon, but the ranged damage bonus
 and the ranged armor modifier are taken into account for calculations.
 You may propel any item in your equipment, inventory and on the ground
 (by default you are offered only the appropriate items; press `?`
 to cycle item menu modes). Only items of a few kinds inflict any damage,
-but some have other effects.
+but some have other effects, beneficial, detrimental or mixed.
 
 Whenever the monster's or hero's hit points reach zero, the combatant dies.
 When the last hero dies, the scenario ends in defeat.
