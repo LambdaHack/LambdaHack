@@ -344,44 +344,43 @@ reqMoveItem aid (iid, k, fromCStore, toCStore) = do
   activeItems <- activeItemsServer aid
   let fromC = CActor aid fromCStore
       toC = CActor aid toCStore
-  bagBefore <- getsState $ getCBag toC
-  let moveItem = do
-        when (fromCStore == CGround) $ do
-          seed <- getsServer $ (EM.! iid) . sitemSeedD
-          execUpdAtomic $ UpdDiscoverSeed (blid b) (bpos b) iid seed
-        upds <- generalMoveItem iid k fromC toC
-        mapM_ execUpdAtomic upds
       req = ReqMoveItems [(iid, k, fromCStore, toCStore)]
+      calmE = calmEnough b activeItems
+  bagBefore <- getsState $ getCBag toC
   if k < 1 || fromCStore == toCStore then execFailure aid req ItemNothing
   else if toCStore == CEqp
           && eqpOverfull b k then execFailure aid req EqpOverfull
-  else if fromCStore /= CSha && toCStore /= CSha then moveItem
+  else if (fromCStore == CSha || toCStore == CSha)
+          && not calmE then execFailure aid req ItemNotCalm
   else do
-    if calmEnough b activeItems then moveItem
-    else execFailure aid req ItemNotCalm
-  -- Reset timeout for equipped periodic items.
-  when (toCStore `elem` [CEqp, COrgan]
-        && fromCStore `notElem` [CEqp, COrgan]) $ do
-    localTime <- getsState $ getLocalTime (blid b)
-    discoEffect <- getsServer sdiscoEffect
-    mrndTimeout <- rndToAction $ computeRndTimeout localTime discoEffect iid
-    let beforeIt = case iid `EM.lookup` bagBefore of
-          Nothing -> []  -- no such items before move
-          Just (_, it2) -> it2
-    -- The moved item set (not the whole stack) has its timeout
-    -- reset to a random value between timeout and twice timeout.
-    -- This prevents micromanagement via swapping items in and out of eqp
-    -- and via exact prediction of first timeout after equip.
-    case mrndTimeout of
-      Just rndT -> do
-        bagAfter <- getsState $ getCBag toC
-        let afterIt = case iid `EM.lookup` bagAfter of
-              Nothing -> assert `failure` (iid, bagAfter, toC)
-              Just (_, it2) -> it2
-            resetIt = beforeIt ++ replicate k rndT
-        when (afterIt /= resetIt) $
-          execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
-      Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
+    when (fromCStore == CGround) $ do
+      seed <- getsServer $ (EM.! iid) . sitemSeedD
+      execUpdAtomic $ UpdDiscoverSeed (blid b) (bpos b) iid seed
+    upds <- generalMoveItem iid k fromC toC
+    mapM_ execUpdAtomic upds
+    -- Reset timeout for equipped periodic items.
+    when (toCStore `elem` [CEqp, COrgan]
+          && fromCStore `notElem` [CEqp, COrgan]) $ do
+      localTime <- getsState $ getLocalTime (blid b)
+      discoEffect <- getsServer sdiscoEffect
+      mrndTimeout <- rndToAction $ computeRndTimeout localTime discoEffect iid
+      let beforeIt = case iid `EM.lookup` bagBefore of
+            Nothing -> []  -- no such items before move
+            Just (_, it2) -> it2
+      -- The moved item set (not the whole stack) has its timeout
+      -- reset to a random value between timeout and twice timeout.
+      -- This prevents micromanagement via swapping items in and out of eqp
+      -- and via exact prediction of first timeout after equip.
+      case mrndTimeout of
+        Just rndT -> do
+          bagAfter <- getsState $ getCBag toC
+          let afterIt = case iid `EM.lookup` bagAfter of
+                Nothing -> assert `failure` (iid, bagAfter, toC)
+                Just (_, it2) -> it2
+              resetIt = beforeIt ++ replicate k rndT
+          when (afterIt /= resetIt) $
+            execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
+        Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
 
 computeRndTimeout :: Time -> DiscoveryEffect -> ItemId -> Rnd (Maybe Time)
 computeRndTimeout localTime discoEffect iid = do
