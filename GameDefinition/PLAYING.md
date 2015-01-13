@@ -42,7 +42,7 @@ of Y-sided dice. A variant denoted `XdsY` is additionally
 scaled by the level depth in proportion to the maximal dungeon depth.
 You can read more about combat resolution in section Monsters below.
 
-The second status line describes the current dungeon location in relation
+The second status line describes the current level in relation
 to the party.
 
     5  Lofty hall   [33% seen] X-hair: exact spot (71,12)  p15 l10
@@ -155,7 +155,7 @@ For ranged attacks, setting the crosshair or individual targets
 beforehand is not mandatory, because the crosshair is set automatically
 as soon as a monster comes into view and can still be adjusted while
 in the missile choice menu. However, if you want to assign persistent
-personal targets or just inspect the dungeon map closely, you can enter
+personal targets or just inspect the level map closely, you can enter
 the detailed aiming mode with the right mouse button or with
 the `*` keypad key that selects enemies or the `/` keypad key that
 marks a tile. You can move the aiming crosshair with direction keys

@@ -1,7 +1,8 @@
 -- | Server operations performed periodically in the game loop
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicServer
-  ( spawnMonster, addAnyActor, dominateFidSfx, advanceTime, leadLevelSwitch
+  ( spawnMonster, addAnyActor, dominateFidSfx
+  , advanceTime, managePerTurn, leadLevelSwitch
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -182,22 +183,28 @@ dominateFid fid target = do
     -- Focus on the dominated actor, by making him a leader.
     execUpdAtomic $ UpdLeadFaction fid mleaderOld (Just (target, Nothing))
 
--- | Advance the move time for the given actor, check if he's dominated
--- and update his calm. We don't update calm once per game turn
--- (even though it would make fast actors less overpowered),
--- beucase the effects of close enemies would sometimes manifest only after
--- a couple of player turns (or perhaps never at all, if the player and enemy
--- move away before that moment). A side effect is that under peaceful
--- circumstances, non-max calm cases a consistent regeneration UI indicator
--- to be displayed each turn (not every few turns).
+-- | Advance the move time for the given actor
 advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 advanceTime aid = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsServer aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
   let t = ticksPerMeter $ bspeed b activeItems
   execUpdAtomic $ UpdAgeActor aid t
+
+-- | Check if the given actor is dominated and update his calm.
+-- We don't update calm once per game turn (even though
+-- it would make fast actors less overpowered),
+-- beucase the effects of close enemies would sometimes manifest only after
+-- a couple of player turns (or perhaps never at all, if the player and enemy
+-- move away before that moment). A side effect is that under peaceful
+-- circumstances, non-max calm causes a consistent Calm regeneration
+-- UI indicator to be displayed each turn (not every few turns).
+managePerTurn :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+managePerTurn aid = do
+  b <- getsState $ getActorBody aid
   unless (bproj b) $ do
+    activeItems <- activeItemsServer aid
+    fact <- getsState $ (EM.! bfid b) . sfactionD
     dominated <-
       if bcalm b == 0
          && boldfid b /= bfid b

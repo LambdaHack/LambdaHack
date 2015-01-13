@@ -284,8 +284,12 @@ handleActors lid = do
         -- for the old leader, but otherwise his time is undisturbed.
         -- He is able to move normally in the same turn, immediately
         -- after the new leader completes his move.
+        -- Warning: when the action is performed on the server,
+        -- the time of the actor is different than when client prepared that
+        -- action, so any client checks involving time should discount this.
         maybe skip advanceTime aidNew
         action
+        maybe skip managePerTurn aidNew
       else do
         -- Clear messages in the UI client (if any), if the actor
         -- is a leader (which happens when a UI client is fully
@@ -302,6 +306,7 @@ handleActors lid = do
         -- AI always takes time and so doesn't loop.
         advanceTime aidNew
         action
+        managePerTurn aidNew
       handleActors lid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
