@@ -13,6 +13,7 @@ import qualified Data.EnumSet as ES
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple (swap)
@@ -197,7 +198,9 @@ populateDungeon = do
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` "empty dungeon" `twith` dungeon
-      needInitialCrew = filter ((> 0 ) . finitialActors . gplayer . snd)
+      -- Sorting, to keep games from similar game modes mutually reproducible.
+      needInitialCrew = sortBy (comparing $ fname . gplayer . snd)
+                        $ filter ((> 0 ) . finitialActors . gplayer . snd)
                         $ EM.assocs factionD
       getEntryLevel (_, fact) =
         max minD $ min maxD $ toEnum $ fentryLevel $ gplayer fact
@@ -205,21 +208,23 @@ populateDungeon = do
       initialActors lid = do
         lvl <- getLevel lid
         let arenaFactions = filter ((== lid) . getEntryLevel) needInitialCrew
-            representsAlliance (fid2, fact2) =
-              not $ any (\(fid3, _) -> fid3 < fid2
-                                       && isAllied fact2 fid3) arenaFactions
+            indexff (fid, _) = findIndex ((== fid) . fst) arenaFactions
+            representsAlliance ff2@(_, fact2) =
+              not $ any (\ff3@(fid3, _) ->
+                           indexff ff3 < indexff ff2
+                           && isAllied fact2 fid3) arenaFactions
             arenaAlliances = filter representsAlliance arenaFactions
-            placeAlliance ((fid3, _), ppos) =
+            placeAlliance ((fid3, _), ppos, timeOffset) =
               mapM_ (\(fid4, fact4) ->
                       if isAllied fact4 fid3 || fid4 == fid3
-                      then placeActors lid ((fid4, fact4), ppos)
+                      then placeActors lid ((fid4, fact4), ppos, timeOffset)
                       else return ()) arenaFactions
         entryPoss <- rndToAction
                      $ findEntryPoss cops lvl (length arenaAlliances)
-        mapM_ placeAlliance $ zip arenaAlliances entryPoss
-      placeActors lid ((fid3, fact3), ppos) = do
+        mapM_ placeAlliance $ zip3 arenaAlliances entryPoss [0..]
+      placeActors lid ((fid3, fact3), ppos, timeOffset) = do
         time <- getsState $ getLocalTime lid
-        let nmult = 1 + fromEnum fid3 `mod` 4  -- always positive
+        let nmult = 1 + timeOffset `mod` 4
             ntime = timeShift time (timeDeltaScale (Delta timeClip) nmult)
             validTile t = not $ Tile.hasFeature cotile TK.NoActor t
         psFree <- getsState $ nearbyFreePoints validTile ppos lid

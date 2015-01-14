@@ -115,6 +115,8 @@ emptyState =
 -- TODO: make lstair secret until discovered; use this later on for
 -- goUp in targeting mode (land on stairs of on the same location up a level
 -- if this set of stsirs is unknown).
+-- TODO: RNG should be secret, too, but we also want it to be deterministic,
+-- to aid in bug replication
 -- | Local state created by removing secret information from global
 -- state components.
 localFromGlobal :: State -> State

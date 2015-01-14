@@ -232,11 +232,11 @@ rosterCoop = Roster
                  , ("Green", "Leaderless Monster Hive") ] }
 
 rosterDefense = Roster
-  { rosterList = [ playerAntiMonster
-                 , playerAntiHero {fname = "Yellow"}
+  { rosterList = [ playerAntiHero
+                 , playerAntiMonster
                  , playerAnimal ]
-  , rosterEnemy = [ ("Yellow", "Monster Hive")
-                  , ("Yellow", "Animal Kingdom") ]
+  , rosterEnemy = [ ("Adventurer Party", "Monster Hive")
+                  , ("Adventurer Party", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
 

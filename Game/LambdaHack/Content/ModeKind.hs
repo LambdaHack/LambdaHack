@@ -59,7 +59,7 @@ data Player a = Player
   , fhasUI         :: !Bool        -- ^ does the faction have a UI client
                                    --   (for control or passive observation)
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 instance Binary a => Binary (Player a)
 
@@ -68,7 +68,7 @@ data LeaderMode =
     LeaderNull  -- ^ faction can have no leader, is whole under AI control
   | LeaderAI AutoLeader -- ^ leader under AI control
   | LeaderUI AutoLeader -- ^ leader under UI control, assumes @fhasUI@
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 instance Binary LeaderMode
 
@@ -90,7 +90,7 @@ data AutoLeader = AutoLeader
       --   if the flag is @False@, server still does a subset
       --   of the automatic switching, but the client is permitted to do more
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 instance Binary AutoLeader
 

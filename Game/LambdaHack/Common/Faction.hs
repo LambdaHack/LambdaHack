@@ -43,7 +43,7 @@ data Faction = Faction
   , gsha     :: !ItemBag         -- ^ faction's shared inventory
   , gvictims :: !(EM.EnumMap (Kind.Id ItemKind) Int)  -- ^ members killed
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- | Diplomacy states. Higher overwrite lower in case of assymetric content.
 data Diplomacy =
@@ -82,7 +82,7 @@ data Target =
     -- ^ last seen position of the targeted actor
   | TPoint !LevelId !Point  -- ^ target a concrete spot
   | TVector !Vector         -- ^ target position relative to actor
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- | Tell whether the faction consists of summoned horrors only.
 --
