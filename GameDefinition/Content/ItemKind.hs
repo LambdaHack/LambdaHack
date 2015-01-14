@@ -450,7 +450,7 @@ potion4 = potion
   , ieffects = [RefillHP 10, OnSmash (Explode "healing mist 2")]
   }
 potion5 = potion
-  { ieffects = [ OneOf [Impress, DropBestWeapon, RefillHP 5, Burn 3]
+  { ieffects = [ OneOf [Impress, DropBestWeapon, RefillHP 7, Burn 3]
                , OnSmash (OneOf [ Explode "healing mist"
                                 , Explode "wounding mist"
                                 , Explode "fragrance"
@@ -458,26 +458,28 @@ potion5 = potion
   }
 potion6 = potion
   { irarity  = [(3, 3), (10, 6)]
-  , ieffects = [ OneOf [ Dominate, DropBestWeapon, RefillHP 20, Burn 9
-                       , InsertMove 4 ]
+  , ieffects = [ Impress
+               , OneOf [ RefillCalm (-60), DropBestWeapon
+                       , OverfillHP 20, Burn 9, InsertMove 4 ]
                , OnSmash (OneOf [ Explode "healing mist 2"
-                                , Explode "healing mist 2"
-                                , Explode "pheromone"
+                                , Explode "calming mist"
+                                , Explode "distressing odor"
                                 , Explode "distortion"  -- outlier, OK
                                 , Explode "blast 20" ]) ]
   }
 potion7 = potion
-  { ieffects = [ DropItem COrgan "poisoned" True, OverfillHP 1
+  { ieffects = [ DropItem COrgan "poisoned" True, OverfillCalm 2
                , OnSmash (Explode "antidote mist") ]
   }
 potion8 = potion
-  { ieffects = [ DropItem COrgan "temporary conditions" True, OverfillHP 2
+  { ieffects = [ DropItem COrgan "temporary conditions" True, OverfillCalm 5
                , OnSmash (Explode "blast 10") ]
   }
 potion9 = potion
   { irarity  = [(10, 5)]
   , iaspects = [Unique]
-  , ieffects = [ NoEffect "of Love", OverfillHP 50, Dominate
+  , ieffects = [ NoEffect "of Love", OverfillHP 60
+               , Impress, OverfillCalm (-60)
                , OnSmash (Explode "healing mist 2") ]
   }
 
@@ -533,6 +535,7 @@ flask6 = flask
   { ieffects = [ NoEffect "of lethargy brew"
                , toOrganGameTurn "slow 10" (20 + d 5)
                , toOrganNone "regenerating"
+               , OverfillCalm 5
                , OnSmash (Explode "slowness spray") ]
   }
 flask7 = flask  -- sight can be reduced from Calm, drunk, etc.
@@ -577,7 +580,7 @@ flask13 = flask
                , toOrganNone "slow resistant"
                , OnSmash (Explode "anti-slow mist") ]
   }
-flask14 = flask  -- but not flask of Calm depletion, since Calm reduced often
+flask14 = flask
   { irarity  = [(10, 5)]
   , ieffects = [ NoEffect "of poison resistance"
                , toOrganNone "poison resistant"
@@ -617,16 +620,17 @@ scroll3 = scroll
   , ieffects = [Ascend (-1)]
   }
 scroll4 = scroll
-  { ieffects = [OneOf [ Teleport $ d 3 * 3, RefillCalm 10, RefillCalm (-10)
+  { ieffects = [OneOf [ Teleport $ d 3 * 3, RefillCalm 5, RefillCalm (-5)
                       , InsertMove 3, Paralyze 5, Identify CGround ]]
   }
 scroll5 = scroll
   { irarity  = [(10, 15)]
-  , ieffects = [OneOf [ Summon standardSummon 1
-                      , CallFriend 1, Ascend (-1), Ascend 1
-                      , OverfillCalm 20, OverfillCalm (-20)
-                      , CreateItem CGround "useful" TimerNone
-                      , PolyItem CGround ]]
+  , ieffects = [ Impress
+               , OneOf [ Summon standardSummon 1
+                       , CallFriend 1, Ascend (-1), Ascend 1
+                       , OverfillCalm 5, OverfillCalm (-60)
+                       , CreateItem CGround "useful" TimerNone
+                       , PolyItem CGround ] ]
   }
 scroll6 = scroll
   { ieffects = [Teleport 5]
@@ -640,7 +644,8 @@ scroll8 = scroll
   }
 scroll9 = scroll
   { irarity  = [(1, 15)]
-  , ieffects = [NoEffect "of scientific explanation", Identify CGround]  -- TODO: ask player: AskPlayer cstore eff?
+  , ieffects = [ NoEffect "of scientific explanation"
+               , Identify CGround, OverfillCalm 5 ]  -- TODO: ask player: AskPlayer cstore eff?
   }
 scroll10 = scroll
   { irarity  = [(10, 10)]
