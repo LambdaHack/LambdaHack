@@ -116,7 +116,7 @@ cmdAtomicFilterCli cmd = case cmd of
                [UpdAlterSmell lid p msml fromSm, cmd]
              else
                [cmd]
-  UpdDiscover lid p iid _ seed -> do
+  UpdDiscover fid lid p iid _ seed -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -127,9 +127,9 @@ cmdAtomicFilterCli cmd = case cmd of
             discoEffect <- getsClient sdiscoEffect
             if iid `EM.member` discoEffect
               then return []
-              else return [UpdDiscoverSeed lid p iid seed]
+              else return [UpdDiscoverSeed fid lid p iid seed]
           else return [cmd]
-  UpdCover lid p iid ik _ -> do
+  UpdCover fid lid p iid ik _ -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -141,8 +141,8 @@ cmdAtomicFilterCli cmd = case cmd of
             discoEffect <- getsClient sdiscoEffect
             if iid `EM.notMember` discoEffect
               then return [cmd]
-              else return [UpdCoverKind lid p iid ik]
-  UpdDiscoverKind _ _ iid _ -> do
+              else return [UpdCoverKind fid lid p iid ik]
+  UpdDiscoverKind _ _ _ iid _ -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -151,7 +151,7 @@ cmdAtomicFilterCli cmd = case cmd of
         if jkindIx item `EM.notMember` discoKind
         then return []
         else return [cmd]
-  UpdCoverKind _ _ iid _ -> do
+  UpdCoverKind _ _ _ iid _ -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -160,7 +160,7 @@ cmdAtomicFilterCli cmd = case cmd of
         if jkindIx item `EM.notMember` discoKind
         then return []
         else return [cmd]
-  UpdDiscoverSeed _ _ iid _ -> do
+  UpdDiscoverSeed _ _ _ iid _ -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -173,7 +173,7 @@ cmdAtomicFilterCli cmd = case cmd of
           if iid `EM.member` discoEffect
             then return []
             else return [cmd]
-  UpdCoverSeed _ _ iid _ -> do
+  UpdCoverSeed _ _ _ iid _ -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -288,16 +288,16 @@ cmdAtomicSemCli cmd = case cmd of
       cli { stargetD = case (mtgt, mleader) of
               (Just tgt, Just leader) -> EM.singleton leader tgt
               _ -> EM.empty }
-  UpdDiscover lid p iid ik seed -> do
+  UpdDiscover _ lid p iid ik seed -> do
     discoverKind lid p iid ik
     discoverSeed lid p iid seed
-  UpdCover lid p iid ik seed -> do
+  UpdCover _ lid p iid ik seed -> do
     coverSeed lid p iid seed
     coverKind lid p iid ik
-  UpdDiscoverKind lid p iid ik -> discoverKind lid p iid ik
-  UpdCoverKind lid p iid ik -> coverKind lid p iid ik
-  UpdDiscoverSeed lid p iid seed -> discoverSeed lid p iid seed
-  UpdCoverSeed lid p iid seed -> coverSeed lid p iid seed
+  UpdDiscoverKind _ lid p iid ik -> discoverKind lid p iid ik
+  UpdCoverKind _ lid p iid ik -> coverKind lid p iid ik
+  UpdDiscoverSeed _ lid p iid seed -> discoverSeed lid p iid seed
+  UpdCoverSeed _ lid p iid seed -> coverSeed lid p iid seed
   UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sdiscoKind sfper _ sdebugCli -> do
     shistory <- getsClient shistory

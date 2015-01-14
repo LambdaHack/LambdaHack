@@ -355,7 +355,7 @@ reqMoveItem aid (iid, k, fromCStore, toCStore) = do
   else do
     when (fromCStore == CGround) $ do
       seed <- getsServer $ (EM.! iid) . sitemSeedD
-      execUpdAtomic $ UpdDiscoverSeed (blid b) (bpos b) iid seed
+      execUpdAtomic $ UpdDiscoverSeed (bfid b) (blid b) (bpos b) iid seed
     upds <- generalMoveItem iid k fromC toC
     mapM_ execUpdAtomic upds
     -- Reset timeout for equipped periodic items.

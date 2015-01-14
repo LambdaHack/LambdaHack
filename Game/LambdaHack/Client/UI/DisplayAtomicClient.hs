@@ -213,11 +213,11 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   -- Assorted.
   UpdTimeItem{} -> skip
   UpdAgeGame{} -> skip
-  UpdDiscover lid p iid _ _ -> discover lid p oldStateClient iid
+  UpdDiscover _ lid p iid _ _ -> discover lid p oldStateClient iid
   UpdCover{} -> skip  -- don't spam when doing undo
-  UpdDiscoverKind lid p iid _ -> discover lid p oldStateClient iid
+  UpdDiscoverKind _ lid p iid _ -> discover lid p oldStateClient iid
   UpdCoverKind{} -> skip  -- don't spam when doing undo
-  UpdDiscoverSeed lid p iid _ -> discover lid p oldStateClient iid
+  UpdDiscoverSeed _ lid p iid _ -> discover lid p oldStateClient iid
   UpdCoverSeed{} -> skip  -- don't spam when doing undo
   UpdPerception{} -> skip
   UpdRestart fid _ _ _ _ -> do

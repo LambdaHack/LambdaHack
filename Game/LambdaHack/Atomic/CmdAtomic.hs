@@ -91,12 +91,13 @@ data UpdAtomic =
   -- Assorted.
   | UpdTimeItem !ItemId !Container !ItemTimer !ItemTimer
   | UpdAgeGame !(Delta Time) ![LevelId]
-  | UpdDiscover !LevelId !Point !ItemId !(Kind.Id ItemKind) !ItemSeed
-  | UpdCover !LevelId !Point !ItemId !(Kind.Id ItemKind) !ItemSeed
-  | UpdDiscoverKind !LevelId !Point !ItemId !(Kind.Id ItemKind)
-  | UpdCoverKind !LevelId !Point !ItemId !(Kind.Id ItemKind)
-  | UpdDiscoverSeed !LevelId !Point !ItemId !ItemSeed
-  | UpdCoverSeed !LevelId !Point !ItemId !ItemSeed
+  | UpdDiscover
+      !FactionId !LevelId !Point !ItemId !(Kind.Id ItemKind) !ItemSeed
+  | UpdCover !FactionId !LevelId !Point !ItemId !(Kind.Id ItemKind) !ItemSeed
+  | UpdDiscoverKind !FactionId !LevelId !Point !ItemId !(Kind.Id ItemKind)
+  | UpdCoverKind !FactionId !LevelId !Point !ItemId !(Kind.Id ItemKind)
+  | UpdDiscoverSeed !FactionId !LevelId !Point !ItemId !ItemSeed
+  | UpdCoverSeed !FactionId !LevelId !Point !ItemId !ItemSeed
   | UpdPerception !LevelId !Perception !Perception
   | UpdRestart !FactionId !DiscoveryKind !FactionPers !State !DebugModeCli
   | UpdRestartServer !State
@@ -173,12 +174,12 @@ undoUpdAtomic cmd = case cmd of
   UpdLoseSmell lid sms -> Just $ UpdSpotSmell lid sms
   UpdTimeItem iid c fromIt toIt -> Just $ UpdTimeItem iid c toIt fromIt
   UpdAgeGame delta lids -> Just $ UpdAgeGame (timeDeltaReverse delta) lids
-  UpdDiscover lid p iid ik seed -> Just $ UpdCover lid p iid ik seed
-  UpdCover lid p iid ik seed -> Just $ UpdDiscover lid p iid ik seed
-  UpdDiscoverKind lid p iid ik -> Just $ UpdCoverKind lid p iid ik
-  UpdCoverKind lid p iid ik -> Just $ UpdDiscoverKind lid p iid ik
-  UpdDiscoverSeed lid p iid seed -> Just $ UpdCoverSeed lid p iid seed
-  UpdCoverSeed lid p iid seed -> Just $ UpdDiscoverSeed lid p iid seed
+  UpdDiscover fid lid p iid ik seed -> Just $ UpdCover fid lid p iid ik seed
+  UpdCover fid lid p iid ik seed -> Just $ UpdDiscover fid lid p iid ik seed
+  UpdDiscoverKind fid lid p iid ik -> Just $ UpdCoverKind fid lid p iid ik
+  UpdCoverKind fid lid p iid ik -> Just $ UpdDiscoverKind fid lid p iid ik
+  UpdDiscoverSeed fid lid p iid seed -> Just $ UpdCoverSeed fid lid p iid seed
+  UpdCoverSeed fid lid p iid seed -> Just $ UpdDiscoverSeed fid lid p iid seed
   UpdPerception lid outPer inPer -> Just $ UpdPerception lid inPer outPer
   UpdRestart{} -> Just cmd  -- here history ends; change direction
   UpdRestartServer{} -> Just cmd  -- here history ends; change direction
