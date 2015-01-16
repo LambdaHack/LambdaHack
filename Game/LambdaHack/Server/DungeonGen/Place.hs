@@ -120,7 +120,7 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
       g (placeGroup, q) = ofoldrGroup placeGroup (f placeGroup q) []
       placeFreq = concatMap g cplaceFreq
       checkedFreq = filter (\(_, ((_, kind), _)) -> placeCheck r kind) placeFreq
-      freq = toFreq ("buildPlace ('" <> tshow ld <> ")") checkedFreq
+      freq = toFreq ("buildPlace" <+> tshow (map fst checkedFreq)) checkedFreq
   assert (not (nullFreq freq) `blame` (placeFreq, checkedFreq, r)) skip
   ((qkind, kr), _) <- frequency freq
   let qFFloor = if dark then darkCorTile else litCorTile
