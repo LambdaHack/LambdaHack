@@ -34,7 +34,7 @@ mkRoom :: (X, Y)    -- ^ minimum size
        -> Rnd Area
 mkRoom (xm, ym) (xM, yM) area = do
   let (x0, y0, x1, y1) = fromArea area
-  assert (xm <= x1 - x0 + 1 && ym <= y1 - y0 + 1) skip
+  let !_A = assert (xm <= x1 - x0 + 1 && ym <= y1 - y0 + 1) ()
   let aW = (xm, ym, min xM (x1 - x0 + 1), min yM (y1 - y0 + 1))
       areaW = fromMaybe (assert `failure` aW) $ toArea aW
   Point xW yW <- xyInArea areaW  -- roll size
@@ -140,9 +140,9 @@ connectPlaces (sa, so) (ta, to) = do
       (_, _, sox1, soy1) = fromArea so
       (tx0, ty0, _, _) = fromArea ta
       (tox0, toy0, _, _) = fromArea to
-  assert (sx1 <= tx0  || sy1 <= ty0  `blame` (sa, ta)) skip
-  assert (sx1 <= sox1 || sy1 <= soy1 `blame` (sa, so)) skip
-  assert (tx0 >= tox0 || ty0 >= toy0 `blame` (ta, to)) skip
+  let !_A = assert (sx1 <= tx0  || sy1 <= ty0  `blame` (sa, ta)) ()
+  let !_A = assert (sx1 <= sox1 || sy1 <= soy1 `blame` (sa, so)) ()
+  let !_A = assert (tx0 >= tox0 || ty0 >= toy0 `blame` (ta, to)) ()
   let trim area =
         let (x0, y0, x1, y1) = fromArea area
             trim4 (v0, v1) | v1 - v0 < 6 = (v0, v1)

@@ -54,7 +54,7 @@ handleRequestAI fid aid cmd = case cmd of
   ReqAILeader aidNew mtgtNew cmd2 -> do
     switchLeader fid aidNew mtgtNew
     handleRequestAI fid aidNew cmd2
-  ReqAIPong -> return (aid, skip)
+  ReqAIPong -> return (aid, return ())
 
 -- | The semantics of server commands. The resulting actor id
 -- is of the actor that carried out the request. @Nothing@ means
@@ -75,7 +75,7 @@ handleRequestUI fid cmd = case cmd of
   ReqUIGameSave -> return (Nothing, reqGameSave)
   ReqUITactic toT -> return (Nothing, reqTactic fid toT)
   ReqUIAutomate -> return (Nothing, reqAutomate fid)
-  ReqUIPong _ -> return (Nothing, skip)
+  ReqUIPong _ -> return (Nothing, return ())
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
                    => ActorId -> RequestTimed a -> m ()
@@ -97,12 +97,12 @@ switchLeader fid aidNew mtgtNew = do
   bPre <- getsState $ getActorBody aidNew
   let mleader = gleader fact
       actorChanged = fmap fst mleader /= Just aidNew
-  assert (Just (aidNew, mtgtNew) /= mleader
-          && not (bproj bPre)
-          `blame` (aidNew, mtgtNew, bPre, fid, fact)) skip
-  assert (bfid bPre == fid
-          `blame` "client tries to move other faction actors"
-          `twith` (aidNew, mtgtNew, bPre, fid, fact)) skip
+  let !_A = assert (Just (aidNew, mtgtNew) /= mleader
+                    && not (bproj bPre)
+                    `blame` (aidNew, mtgtNew, bPre, fid, fact)) ()
+  let !_A = assert (bfid bPre == fid
+                    `blame` "client tries to move other faction actors"
+                    `twith` (aidNew, mtgtNew, bPre, fid, fact)) ()
   let (autoDun, autoLvl) = autoDungeonLevel fact
   arena <- case mleader of
     Nothing -> return $! blid bPre
@@ -316,7 +316,7 @@ reqAlter source tpos mfeat = do
             -- Search, in case some actors (of other factions?)
             -- don't know this tile.
             execUpdAtomic $ UpdSearchTile source tpos freshClientTile serverTile
-          maybe skip changeTo $ listToMaybe groupsToAlterTo
+          maybe (return ()) changeTo $ listToMaybe groupsToAlterTo
             -- TODO: pick another, if the first one void
           -- Perform an effect, if any permitted.
           void $ triggerEffect source tpos feats
@@ -409,7 +409,7 @@ reqProject :: (MonadAtomic m, MonadServer m)
 reqProject source tpxy eps iid cstore = assert (cstore /= CSha) $ do
   mfail <- projectFail source tpxy eps iid cstore False
   let req = ReqProject tpxy eps iid cstore
-  maybe skip (execFailure source req) mfail
+  maybe (return ()) (execFailure source req) mfail
 
 -- * ReqApply
 

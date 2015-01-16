@@ -89,7 +89,7 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
         _ -> []
       len = length it1
       recharged = len < k
-  assert (len <= k `blame` (kitK, source, target, iid, c)) skip
+  let !_A = assert (len <= k `blame` (kitK, source, target, iid, c)) ()
   -- If there is no Timeout, but there are Recharging,
   -- then such effects are disabled whenever the item is affected
   -- by a Discharge attack (TODO).
@@ -369,11 +369,11 @@ effectExplode execSfx cgroup target = do
   forM_ [101..201] $ \k100 -> do
     bag2 <- getsState $ beqp . getActorBody target
     let mn2 = EM.lookup iid bag2
-    maybe skip (projectN k100) mn2
+    maybe (return ()) (projectN k100) mn2
   bag3 <- getsState $ beqp . getActorBody target
   let mn3 = EM.lookup iid bag3
-  maybe skip (\kit -> execUpdAtomic
-                      $ UpdLoseItem iid itemBase kit container) mn3
+  maybe (return ()) (\kit -> execUpdAtomic
+                             $ UpdLoseItem iid itemBase kit container) mn3
   execSfx
   return True  -- we avoid verifying that at least one projectile got off
 
@@ -596,7 +596,7 @@ switchLevels2 ::(MonadAtomic m, MonadServer m)
 switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
   let lidOld = blid bOld
       side = bfid bOld
-  assert (lidNew /= lidOld `blame` "stairs looped" `twith` lidNew) skip
+  let !_A = assert (lidNew /= lidOld `blame` "stairs looped" `twith` lidNew) ()
   -- Sync the actor time with the level time.
   timeOld <- getsState $ getLocalTime lidOld
   timeLastActive <- getsState $ getLocalTime lidNew
@@ -720,11 +720,11 @@ effectCreateItem target store grp tim = do
     IK.TimerNone -> return $ Delta timeZero
     IK.TimerGameTurn nDm -> do
       k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
-      assert (k >= 0) skip
+      let !_A = assert (k >= 0) ()
       return $! timeDeltaScale (Delta timeTurn) k
     IK.TimerActorTurn nDm -> do
       k <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
-      assert (k >= 0) skip
+      let !_A = assert (k >= 0) ()
       activeItems <- activeItemsServer target
       let actorTurn = ticksPerMeter $ bspeed tb activeItems
       return $! timeDeltaScale actorTurn k
@@ -1045,6 +1045,6 @@ effectTemporary :: (MonadAtomic m, MonadServer m)
 effectTemporary execSfx source iid = do
   bag <- getsState $ getCBag $ CActor source COrgan
   case iid `EM.lookup` bag of
-    Just _ -> skip  -- still some copies left of a multi-copy tmp item
+    Just _ -> return ()  -- still some copies left of a multi-copy tmp item
     Nothing -> execSfx  -- last copy just destroyed
   return True

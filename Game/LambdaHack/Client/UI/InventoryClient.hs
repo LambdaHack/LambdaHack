@@ -362,7 +362,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
                                                blid b == blid body) hs))
            , defAction = \_ -> do
                err <- memberCycle False
-               assert (err == mempty `blame` err) skip
+               let !_A = assert (err == mempty `blame` err) ()
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall cCurUpd cRestUpd itemDialogState
            })
@@ -373,7 +373,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
            , defCond = not (cCur == MOwned || autoDun || null hs)
            , defAction = \_ -> do
                err <- memberBack False
-               assert (err == mempty `blame` err) skip
+               let !_A = assert (err == mempty `blame` err) ()
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall cCurUpd cRestUpd itemDialogState
            })
@@ -579,7 +579,7 @@ memberCycle verbose = do
     [] -> failMsg "cannot pick any other member on this level"
     (np, b) : _ -> do
       success <- pickLeader verbose np
-      assert (success `blame` "same leader" `twith` (leader, np, b)) skip
+      let !_A = assert (success `blame` "same leader" `twith` (leader, np, b)) ()
       return mempty
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
@@ -595,7 +595,7 @@ memberBack verbose = do
     [] -> failMsg "no other member in the party"
     (np, b) : _ -> do
       success <- pickLeader verbose np
-      assert (success `blame` "same leader" `twith` (leader, np, b)) skip
+      let !_A = assert (success `blame` "same leader" `twith` (leader, np, b)) ()
       return mempty
 
 partyAfterLeader :: MonadStateRead m => ActorId -> m [(ActorId, Actor)]
@@ -620,8 +620,9 @@ pickLeader verbose aid = do
     then return False -- already picked
     else do
       pbody <- getsState $ getActorBody aid
-      assert (not (bproj pbody) `blame` "projectile chosen as the leader"
-                                `twith` (aid, pbody)) skip
+      let !_A = assert (not (bproj pbody)
+                        `blame` "projectile chosen as the leader"
+                        `twith` (aid, pbody)) ()
       -- Even if it's already the leader, give his proper name, not 'you'.
       let subject = partActor pbody
       when verbose $ msgAdd $ makeSentence [subject, "picked as a leader"]
@@ -945,7 +946,7 @@ describeItemC c = do
           -- We can't move items from MOwned, because different copies may come
           -- from different stores and we can't guess player's intentions.
           found <- getsState $ findIid leader (bfid b) iid
-          assert (not (null found) `blame` ggi) skip
+          let !_A = assert (not (null found) `blame` ggi) ()
           let ppLoc (_, CSha) = MU.Text $ ppCStoreIn CSha <+> "of the party"
               ppLoc (b2, store) = MU.Text $ ppCStoreIn store <+> "of" <+> bname b2
               foundTexts = map ppLoc found

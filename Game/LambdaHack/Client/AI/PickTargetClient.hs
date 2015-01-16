@@ -72,14 +72,14 @@ targetStrategy oldLeader aid = do
                then Just (tgt, (q : rest, (goal, len - 1)))  -- step along path
                else Nothing  -- veered off the path
         ([p], (goal, _)) -> do
-          assert (p == goal `blame` (aid, b, mtgtMPath)) skip
+          let !_A = assert (p == goal `blame` (aid, b, mtgtMPath)) ()
           if bpos b == p then
             Just (tgt, path)  -- goal reached; stay there picking up items
           else
             Nothing  -- somebody pushed us off the goal; let's target again
         ([], _) -> assert `failure` (aid, b, mtgtMPath)
     Nothing -> return Nothing  -- no target assigned yet
-  assert (not $ bproj b) skip  -- would work, but is probably a bug
+  let !_A = assert (not $ bproj b) ()  -- would work, but is probably a bug
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   dungeon <- getsState sdungeon

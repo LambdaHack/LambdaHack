@@ -173,7 +173,7 @@ closestUnknown aid = do
       dist = bfs PointArray.! head closestPoss
   if dist >= apartBfs then do
     when (lclear lvl == lseen lvl) $ do  -- explored fully, mark it once for all
-      assert (lclear lvl >= lseen lvl) skip
+      let !_A = assert (lclear lvl >= lseen lvl) ()
       modifyClient $ \cli ->
         cli {sexplored = ES.insert (blid body) (sexplored cli)}
     return Nothing

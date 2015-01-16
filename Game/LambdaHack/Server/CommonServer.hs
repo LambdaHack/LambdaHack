@@ -121,7 +121,7 @@ revealItems mfid mbody = do
         let ourSide = maybe True (== bfid b) mfid
         when (ourSide && Just b /= mbody) $ mapActorItems_ (discover b) b
   mapDungeonActors_ f dungeon
-  maybe skip (\b -> mapActorItems_ (discover b) b) mbody
+  maybe (return ()) (\b -> mapActorItems_ (discover b) b) mbody
 
 moveStores :: (MonadAtomic m, MonadServer m)
            => ActorId -> CStore -> CStore -> m ()
@@ -133,7 +133,7 @@ moveStores aid fromStore toStore = do
 quitF :: (MonadAtomic m, MonadServer m)
       => Maybe Actor -> Status -> FactionId -> m ()
 quitF mbody status fid = do
-  assert (maybe True ((fid ==) . bfid) mbody) skip
+  let !_A = assert (maybe True ((fid ==) . bfid) mbody) ()
   fact <- getsState $ (EM.! fid) . sfactionD
   let oldSt = gquit fact
   case fmap stOutcome $ oldSt of

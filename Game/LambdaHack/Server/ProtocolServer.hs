@@ -219,5 +219,5 @@ updateConn executorUI executorAI = do
         -- even if UI usage changes, but it works OK thanks to UI faction
         -- clients distinguished by positive FactionId numbers.
         forkAI fid connAI  -- AI clients always needed, e.g., for auto-explore
-        maybe skip (forkUI fid) connUI
+        maybe (return ()) (forkUI fid) connUI
   liftIO $ mapWithKeyM_ forkClient toSpawn

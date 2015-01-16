@@ -111,15 +111,15 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
             stopPlayBack
           CTrunk{} -> return ()
       _ -> return ()  -- seen recently (still has a slot assigned)
-  UpdLoseItem{} -> skip
+  UpdLoseItem{} -> return ()
   -- Move actors and items.
   UpdMoveActor aid source target -> moveActor oldState aid source target
   UpdWaitActor aid _ -> when verbose $ aidVerbMU aid "wait"
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
   -- Change actor attributes.
-  UpdAgeActor{} -> skip
-  UpdRefillHP _ 0 -> skip
+  UpdAgeActor{} -> return ()
+  UpdRefillHP _ 0 -> return ()
   UpdRefillHP aid n -> do
     when verbose $
       aidVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
@@ -142,9 +142,9 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
         when (null closeFoes) $ do  -- obvious where the feeling comes from
           aidVerbMU aid "hear something"
           msgDuplicateScrap
-  UpdOldFidActor{} -> skip
-  UpdTrajectory{} -> skip
-  UpdColorActor{} -> skip
+  UpdOldFidActor{} -> return ()
+  UpdTrajectory{} -> return ()
+  UpdColorActor{} -> return ()
   -- Change faction attributes.
   UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt
   UpdLeadFaction fid (Just (source, _)) (Just (target, _)) -> do
@@ -169,7 +169,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
           -- TODO: report when server changes spawner's leader;
           -- perhaps don't switch _sleader in HandleAtomicClient,
           -- compare here and switch here? too hacky? fails for AI?
-  UpdLeadFaction{} -> skip
+  UpdLeadFaction{} -> return ()
   UpdDiplFaction fid1 fid2 _ toDipl -> do
     name1 <- getsState $ gname . (EM.! fid1) . sfactionD
     name2 <- getsState $ gname . (EM.! fid2) . sfactionD
@@ -178,11 +178,11 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
         showDipl Alliance = "allied"
         showDipl War = "at war"
     msgAdd $ name1 <+> "and" <+> name2 <+> "are now" <+> showDipl toDipl <> "."
-  UpdTacticFaction{} -> skip
+  UpdTacticFaction{} -> return ()
   UpdAutoFaction fid b -> do
     side <- getsClient sside
     when (fid == side) $ setFrontAutoYes b
-  UpdRecordKill{} -> skip
+  UpdRecordKill{} -> return ()
   -- Alter map.
   UpdAlterTile{} -> when verbose $ return ()  -- TODO: door opens
   UpdAlterClear _ k -> msgAdd $ if k > 0
@@ -204,22 +204,22 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
                            , "a hidden"
                            , MU.Text $ TK.tname $ okind toTile ]
     msgAdd msg
-  UpdLearnSecrets{} -> skip
-  UpdSpotTile{} -> skip
-  UpdLoseTile{} -> skip
-  UpdAlterSmell{} -> skip
-  UpdSpotSmell{} -> skip
-  UpdLoseSmell{} -> skip
+  UpdLearnSecrets{} -> return ()
+  UpdSpotTile{} -> return ()
+  UpdLoseTile{} -> return ()
+  UpdAlterSmell{} -> return ()
+  UpdSpotSmell{} -> return ()
+  UpdLoseSmell{} -> return ()
   -- Assorted.
-  UpdTimeItem{} -> skip
-  UpdAgeGame{} -> skip
+  UpdTimeItem{} -> return ()
+  UpdAgeGame{} -> return ()
   UpdDiscover _ lid p iid _ _ -> discover lid p oldStateClient iid
-  UpdCover{} -> skip  -- don't spam when doing undo
+  UpdCover{} -> return ()  -- don't spam when doing undo
   UpdDiscoverKind _ lid p iid _ -> discover lid p oldStateClient iid
-  UpdCoverKind{} -> skip  -- don't spam when doing undo
+  UpdCoverKind{} -> return ()  -- don't spam when doing undo
   UpdDiscoverSeed _ lid p iid _ -> discover lid p oldStateClient iid
-  UpdCoverSeed{} -> skip  -- don't spam when doing undo
-  UpdPerception{} -> skip
+  UpdCoverSeed{} -> return ()  -- don't spam when doing undo
+  UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ -> do
     mode <- getGameMode
     msgAdd $ "New game started in" <+> mname mode <+> "mode." <+> mdesc mode
@@ -229,12 +229,12 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
     when (lengthHistory history > 1) $ fadeOutOrIn False
     fact <- getsState $ (EM.! fid) . sfactionD
     setFrontAutoYes $ isAIFact fact
-  UpdRestartServer{} -> skip
+  UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
     fact <- getsState $ (EM.! fid) . sfactionD
     setFrontAutoYes $ isAIFact fact
-  UpdResumeServer{} -> skip
-  UpdKillExit{} -> skip
+  UpdResumeServer{} -> return ()
+  UpdKillExit{} -> return ()
   UpdWriteSave -> when verbose $ msgAdd "Saving backup."
   UpdMsgAll msg -> msgAdd msg
   UpdRecordHistory _ -> recordHistory
@@ -593,14 +593,14 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         displayActorStart b animDie
     else case effect of
         IK.NoEffect t -> msgAdd $ "Nothing happens." <+> t
-        IK.Hurt{} -> skip  -- avoid spam; SfxStrike just sent
+        IK.Hurt{} -> return ()  -- avoid spam; SfxStrike just sent
         IK.Burn{} ->
           if fid == side then
             actorVerbMU aid b "feel burned"
           else
             actorVerbMU aid b "look burned"
-        IK.Explode{} -> skip  -- lots of visual feedback
-        IK.RefillHP p | p == 1 -> skip  -- no spam from regeneration
+        IK.Explode{} -> return ()  -- lots of visual feedback
+        IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
         IK.RefillHP p | p > 0 -> do
           if fid == side then
             actorVerbMU aid b "feel healthier"
@@ -609,7 +609,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
           displayActorStart b animFrs
-        IK.RefillHP p | p == -1 -> skip  -- no spam from poison
+        IK.RefillHP p | p == -1 -> return ()  -- no spam from poison
         IK.RefillHP _ -> do
           if fid == side then
             actorVerbMU aid b "feel wounded"
@@ -634,7 +634,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs
-        IK.RefillCalm p | p == 1 -> skip  -- no spam from regen items
+        IK.RefillCalm p | p == 1 -> return ()  -- no spam from regen items
         IK.RefillCalm p | p > 0 -> do
           if fid == side then
             actorVerbMU aid b "feel calmer"
@@ -695,18 +695,18 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               "get refocused by the fragrant moisture"
             else
               "inhale the sweet smell that weakens resolve and erodes loyalty"
-        IK.CallFriend{} -> skip
-        IK.Summon{} -> skip
+        IK.CallFriend{} -> return ()
+        IK.Summon{} -> return ()
         IK.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"
         IK.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
         IK.Ascend{} -> assert `failure` sfx
-        IK.Escape{} -> skip
+        IK.Escape{} -> return ()
         IK.Paralyze{} -> actorVerbMU aid b "be paralyzed"
         IK.InsertMove{} -> actorVerbMU aid b "act with extreme speed"
         IK.Teleport t | t > 9 -> actorVerbMU aid b "teleport"
         IK.Teleport{} -> actorVerbMU aid b "blink"
-        IK.CreateItem{} -> skip
-        IK.DropItem COrgan _ True -> skip
+        IK.CreateItem{} -> return ()
+        IK.DropItem COrgan _ True -> return ()
         IK.DropItem _ _ False -> actorVerbMU aid b "be stripped"  -- TODO
         IK.DropItem _ _ True -> actorVerbMU aid b "be violently stripped"
         IK.PolyItem cstore -> do
@@ -738,10 +738,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.PushActor{} -> actorVerbMU aid b "be pushed"
         IK.PullActor{} -> actorVerbMU aid b "be pulled"
         IK.DropBestWeapon -> actorVerbMU aid b "be disarmed"
-        IK.ActivateInv{} -> skip
+        IK.ActivateInv{} -> return ()
         IK.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
-        IK.OneOf{} -> skip
+        IK.OneOf{} -> return ()
         IK.OnSmash{} -> assert `failure` sfx
         IK.Recharging{} -> assert `failure` sfx
         IK.Temporary t -> actorVerbMU aid b $ MU.Text t

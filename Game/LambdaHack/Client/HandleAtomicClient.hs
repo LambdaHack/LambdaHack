@@ -233,15 +233,15 @@ cmdAtomicFilterCli cmd = case cmd of
     -- TODO: these assertions are probably expensive
     psActor <- mapM posUpdAtomic outActor
     -- Verify that we forget only previously seen actors.
-    assert (allB seenOld psActor) skip
+    let !_A = assert (allB seenOld psActor) ()
     -- Verify that we forget only currently invisible actors.
-    assert (allB (not . seenNew) psActor) skip
+    let !_A = assert (allB (not . seenNew) psActor) ()
     let inTileSmell = inFloor ++ inEmbed ++ inSmell
     psItemSmell <- mapM posUpdAtomic inTileSmell
     -- Verify that we forget only previously invisible items and smell.
-    assert (allB (not . seenOld) psItemSmell) skip
+    let !_A = assert (allB (not . seenOld) psItemSmell) ()
     -- Verify that we forget only currently seen items and smell.
-    assert (allB seenNew psItemSmell) skip
+    let !_A = assert (allB seenNew psItemSmell) ()
     return $! cmd : outActor ++ inTileSmell
   _ -> return [cmd]
 
@@ -268,9 +268,10 @@ cmdAtomicSemCli cmd = case cmd of
     side <- getsClient sside
     when (side == fid) $ do
       mleader <- getsClient _sleader
-      assert (mleader == fmap fst source  -- somebody changed the leader for us
-              || mleader == fmap fst target  -- we changed the leader ourselves
-              `blame` "unexpected leader" `twith` (cmd, mleader)) skip
+      let !_A = assert (mleader == fmap fst source  -- somebody changed the leader for us
+                        || mleader == fmap fst target  -- we changed the leader ourselves
+                        `blame` "unexpected leader"
+                        `twith` (cmd, mleader)) ()
       modifyClient $ \cli -> cli {_sleader = fmap fst target}
       case target of
         Nothing -> return ()

@@ -362,7 +362,7 @@ pushFrame sess immediate rawFrame = do
         else FPushed{fpushed = writeLQueue fpushed nextFrame, ..}
     FNone | immediate -> do
       -- If the frame not repeated, draw it.
-      maybe skip (postGUIAsync . output sess) nextFrame
+      maybe (return ()) (postGUIAsync . output sess) nextFrame
       -- Frame sent, we may now safely release the queue lock.
       putMVar sframeState FNone
     FNone ->
@@ -410,7 +410,7 @@ trimFrameState sess@FrontendSession{sframeState} = do
                           then Nothing  -- no sense repeating
                           else Just frame
           -- Draw the last frame ASAP.
-          maybe skip (postGUIAsync . output sess) nextFrame
+          maybe (return ()) (postGUIAsync . output sess) nextFrame
         Nothing -> return ()
     FNone -> return ()
   -- Wipe out the frame queue. Release the lock.

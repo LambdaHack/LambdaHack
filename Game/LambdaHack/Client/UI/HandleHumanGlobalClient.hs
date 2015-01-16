@@ -120,7 +120,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
         -- Displacing requires accessibility, but it's checked later on.
         fmap RequestAnyAbility <$> displaceAid target
       _ : _ : _ | run && initialStep -> do
-        assert (all (bproj . snd . fst) tgts) skip
+        let !_A = assert (all (bproj . snd . fst) tgts) ()
         failSer DisplaceProjectiles
       ((target, tb), _) : _ | initialStep && finalGoal -> do
         stopPlayBack  -- don't ever auto-repeat melee
@@ -133,8 +133,8 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
           else do
             -- Select adjacent actor by bumping into him. Takes no time.
             success <- pickLeader True target
-            assert (success `blame` "bump self"
-                            `twith` (leader, target, tb)) skip
+            let !_A = assert (success `blame` "bump self"
+                                      `twith` (leader, target, tb)) ()
             return $ Left mempty
         else
           -- Attacking does not require full access, adjacency is enough.
@@ -267,7 +267,7 @@ moveItemHuman :: MonadClientUI m
               => [CStore] -> CStore -> (Maybe MU.Part) -> Bool
               -> m (SlideOrCmd (RequestTimed AbMoveItem))
 moveItemHuman cLegalRaw destCStore mverb auto = do
-  assert (destCStore `notElem` cLegalRaw) skip
+  let !_A = assert (destCStore `notElem` cLegalRaw) ()
   let verb = fromMaybe (MU.Text $ verbCStore destCStore) mverb
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -686,7 +686,7 @@ goToCursor initialStep run = do
               Right (finalGoal, dir) ->
                 moveRunHuman initialStep finalGoal run False dir
           _ -> do
-            assert (initialStep || not run) skip
+            let !_A = assert (initialStep || not run) ()
             (_, mpath) <- getCacheBfsAndPath leader c
             case mpath of
               Nothing -> failWith "no route to crosshair"

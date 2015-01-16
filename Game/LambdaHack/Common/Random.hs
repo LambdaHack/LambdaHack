@@ -77,8 +77,9 @@ chance r = do
 -- Note that at the first level, the scaled dice are always ignored.
 castDice :: AbsDepth -> AbsDepth -> Dice.Dice -> Rnd Int
 castDice (AbsDepth n) (AbsDepth depth) dice = do
-  assert (n >= 0 && n <= depth `blame` "invalid depth for dice rolls"
-                               `twith` (n, depth)) skip
+  let !_A = assert (n >= 0 && n <= depth
+                    `blame` "invalid depth for dice rolls"
+                    `twith` (n, depth)) ()
   dc <- frequency $ Dice.diceConst dice
   dl <- frequency $ Dice.diceLevel dice
   return $! (dc + (dl * max 0 (n - 1)) `div` max 1 (depth - 1))

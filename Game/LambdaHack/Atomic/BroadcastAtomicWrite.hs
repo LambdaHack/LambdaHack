@@ -71,13 +71,13 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
   let atomicPsBroken = zip atomicBroken psBroken
   -- TODO: assert also that the sum of psBroken is equal to ps
   -- TODO: with deep equality these assertions can be expensive. Optimize.
-  assert (case ps of
-            PosSight{} -> True
-            PosFidAndSight{} -> True
-            PosFidAndSer (Just _) _ -> True
-            _ -> not resets
-                 && (null atomicBroken
-                     || atomicBroken == [atomic])) skip
+  let !_A = assert (case ps of
+                      PosSight{} -> True
+                      PosFidAndSight{} -> True
+                      PosFidAndSer (Just _) _ -> True
+                      _ -> not resets
+                    && (null atomicBroken
+                        || atomicBroken == [atomic])) ()
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
   -- Update lights in the dungeon. This is lazy, may not be needed or partially.
@@ -129,9 +129,9 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
                 -- TODO: these assertions are probably expensive
                 psRem <- mapM posUpdAtomic remember
                 -- Verify that we remember only currently seen things.
-                assert (allB seenNew psRem) skip
+                let !_A = assert (allB seenNew psRem) ()
                 -- Verify that we remember only new things.
-                assert (allB (not . seenOld) psRem) skip
+                let !_A = assert (allB (not . seenOld) psRem) ()
                 mapM_ (sendA fid) remember
               anySend lid fid perOld perNew
         else anySend lid fid perOld perOld

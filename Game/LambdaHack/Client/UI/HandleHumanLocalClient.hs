@@ -335,7 +335,7 @@ tgtAscendHuman k = do
   case rightStairs of
     Just cpos -> do  -- stairs, in the right direction
       (nln, npos) <- getsState $ whereTo lidV cpos k . sdungeon
-      assert (nln /= lidV `blame` "stairs looped" `twith` nln) skip
+      let !_A = assert (nln /= lidV `blame` "stairs looped" `twith` nln) ()
       nlvl <- getLevel nln
       -- Do not freely reveal the other end of the stairs.
       let ascDesc (TK.Cause (IK.Ascend _)) = True
@@ -460,7 +460,7 @@ endTargetingMsg = do
 cursorPointerFloorHuman :: MonadClientUI m => m ()
 cursorPointerFloorHuman = do
   look <- cursorPointerFloor False False
-  assert (look == mempty `blame` look) skip
+  let !_A = assert (look == mempty `blame` look) ()
   modifyClient $ \cli -> cli {stgtMode = Nothing}
 
 -- * CursorPointerEnemy
@@ -468,7 +468,7 @@ cursorPointerFloorHuman = do
 cursorPointerEnemyHuman :: MonadClientUI m => m ()
 cursorPointerEnemyHuman = do
   look <- cursorPointerEnemy False False
-  assert (look == mempty `blame` look) skip
+  let !_A = assert (look == mempty `blame` look) ()
   modifyClient $ \cli -> cli {stgtMode = Nothing}
 
 -- * TgtPointerFloor

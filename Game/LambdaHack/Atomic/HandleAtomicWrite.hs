@@ -89,7 +89,7 @@ handleUpdAtomic cmd = case cmd of
   UpdDiscoverSeed{} -> return ()
   UpdCoverSeed{} -> return ()
   UpdPerception _ outPer inPer ->
-    assert (not (nullPer outPer && nullPer inPer)) skip
+    assert (not (nullPer outPer && nullPer inPer)) (return ())
   UpdRestart _ _ _ s _ -> updRestart s
   UpdRestartServer s -> updRestartServer s
   UpdResume{} -> return ()
@@ -146,8 +146,8 @@ updDestroyActor aid body ais = do
   -- that do not appear anywhere else, for simplicity and speed.
   itemD <- getsState sitemD
   let match (iid, item) = itemsMatch (itemD EM.! iid) item
-  assert (allB match ais `blame` "destroyed actor items not found"
-                         `twith` (aid, body, ais, itemD)) skip
+  let !_A = assert (allB match ais `blame` "destroyed actor items not found"
+                    `twith` (aid, body, ais, itemD)) ()
   -- Remove actor from @sactorD@.
   let f Nothing = assert `failure` "actor already removed" `twith` (aid, body)
       f (Just b) = assert (b == body `blame` "inconsistent destroyed actor body"
@@ -184,25 +184,27 @@ updDestroyItem iid item (k, _) c = assert (k > 0) $ do
   -- It's incredibly costly and not noticeable for the player.
   -- However, assert the item is registered in @sitemD@.
   itemD <- getsState sitemD
-  assert ((case iid `EM.lookup` itemD of
-             Nothing -> False
-             Just item0 -> itemsMatch item0 item)
-           `blame` "item already removed"
-           `twith` (iid, item, itemD)) skip
+  let !_A = assert ((case iid `EM.lookup` itemD of
+                        Nothing -> False
+                        Just item0 -> itemsMatch item0 item)
+                    `blame` "item already removed"
+                    `twith` (iid, item, itemD)) ()
   deleteItemContainer iid k c
 
 updMoveActor :: MonadStateWrite m => ActorId -> Point -> Point -> m ()
 updMoveActor aid fromP toP = assert (fromP /= toP) $ do
   b <- getsState $ getActorBody aid
-  assert (fromP == bpos b `blame` "unexpected moved actor position"
-                          `twith` (aid, fromP, toP, bpos b, b)) skip
+  let !_A = assert (fromP == bpos b
+                    `blame` "unexpected moved actor position"
+                    `twith` (aid, fromP, toP, bpos b, b)) ()
   updateActor aid $ \body -> body {bpos = toP, boldpos = fromP}
 
 updWaitActor :: MonadStateWrite m => ActorId -> Bool -> m ()
 updWaitActor aid toWait = do
   b <- getsState $ getActorBody aid
-  assert (toWait /= bwait b `blame` "unexpected waited actor time"
-                            `twith` (aid, toWait, bwait b, b)) skip
+  let !_A = assert (toWait /= bwait b
+                    `blame` "unexpected waited actor time"
+                    `twith` (aid, toWait, bwait b, b)) ()
   updateActor aid $ \body -> body {bwait = toWait}
 
 updDisplaceActor :: MonadStateWrite m => ActorId -> ActorId -> m ()
@@ -267,27 +269,30 @@ updTrajectory :: MonadStateWrite m
               -> m ()
 updTrajectory aid fromT toT = assert (fromT /= toT) $ do
   body <- getsState $ getActorBody aid
-  assert (fromT == btrajectory body `blame` "unexpected actor trajectory"
-                                    `twith` (aid, fromT, toT, body)) skip
+  let !_A = assert (fromT == btrajectory body
+                    `blame` "unexpected actor trajectory"
+                    `twith` (aid, fromT, toT, body)) ()
   updateActor aid $ \b -> b {btrajectory = toT}
 
 updColorActor :: MonadStateWrite m
               => ActorId -> Color.Color -> Color.Color -> m ()
 updColorActor aid fromCol toCol = assert (fromCol /= toCol) $ do
   body <- getsState $ getActorBody aid
-  assert (fromCol == bcolor body `blame` "unexpected actor color"
-                                 `twith` (aid, fromCol, toCol, body)) skip
+  let !_A = assert (fromCol == bcolor body
+                    `blame` "unexpected actor color"
+                    `twith` (aid, fromCol, toCol, body)) ()
   updateActor aid $ \b -> b {bcolor = toCol}
 
 updQuitFaction :: MonadStateWrite m
                => FactionId -> Maybe Actor -> Maybe Status -> Maybe Status
                -> m ()
 updQuitFaction fid mbody fromSt toSt = do
-  assert (fromSt /= toSt `blame` (fid, mbody, fromSt, toSt)) skip
-  assert (maybe True ((fid ==) . bfid) mbody) skip
+  let !_A = assert (fromSt /= toSt `blame` (fid, mbody, fromSt, toSt)) ()
+  let !_A = assert (maybe True ((fid ==) . bfid) mbody) ()
   fact <- getsState $ (EM.! fid) . sfactionD
-  assert (fromSt == gquit fact `blame` "unexpected actor quit status"
-                               `twith` (fid, fromSt, toSt, fact)) skip
+  let !_A = assert (fromSt == gquit fact
+                    `blame` "unexpected actor quit status"
+                    `twith` (fid, fromSt, toSt, fact)) ()
   let adj fa = fa {gquit = toSt}
   updateFaction fid adj
 
@@ -299,14 +304,14 @@ updLeadFaction :: MonadStateWrite m
                -> m ()
 updLeadFaction fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
-  assert (fleaderMode (gplayer fact) /= LeaderNull) skip
+  let !_A = assert (fleaderMode (gplayer fact) /= LeaderNull) ()
     -- @PosNone@ ensures this
   mtb <- getsState $ \s -> flip getActorBody s . fst <$> target
-  assert (maybe True (not . bproj) mtb
-          `blame` (fid, source, target, mtb, fact)) skip
-  assert (source == gleader fact
-          `blame` "unexpected actor leader"
-          `twith` (fid, source, target, mtb, fact)) skip
+  let !_A = assert (maybe True (not . bproj) mtb
+                    `blame` (fid, source, target, mtb, fact)) ()
+  let !_A = assert (source == gleader fact
+                    `blame` "unexpected actor leader"
+                    `twith` (fid, source, target, mtb, fact)) ()
   let adj fa = fa {gleader = target}
   updateFaction fid adj
 
@@ -316,10 +321,10 @@ updDiplFaction fid1 fid2 fromDipl toDipl =
   assert (fid1 /= fid2 && fromDipl /= toDipl) $ do
     fact1 <- getsState $ (EM.! fid1) . sfactionD
     fact2 <- getsState $ (EM.! fid2) . sfactionD
-    assert (fromDipl == EM.findWithDefault Unknown fid2 (gdipl fact1)
-            && fromDipl == EM.findWithDefault Unknown fid1 (gdipl fact2)
-            `blame` "unexpected actor diplomacy status"
-            `twith` (fid1, fid2, fromDipl, toDipl, fact1, fact2)) skip
+    let !_A = assert (fromDipl == EM.findWithDefault Unknown fid2 (gdipl fact1)
+                      && fromDipl == EM.findWithDefault Unknown fid1 (gdipl fact2)
+                      `blame` "unexpected actor diplomacy status"
+                      `twith` (fid1, fid2, fromDipl, toDipl, fact1, fact2)) ()
     let adj fid fact = fact {gdipl = EM.insert fid toDipl (gdipl fact)}
     updateFaction fid1 (adj fid2)
     updateFaction fid2 (adj fid1)
@@ -343,7 +348,7 @@ updTacticFaction fid toT fromT = do
 updRecordKill :: MonadStateWrite m => ActorId -> Kind.Id ItemKind -> Int -> m ()
 updRecordKill aid ikind k = do
   b <- getsState $ getActorBody aid
-  assert (not (bproj b) `blame` (aid, b)) skip
+  let !_A = assert (not (bproj b) `blame` (aid, b))
   let alterKind mn = let n = fromMaybe 0 mn + k
                      in if n == 0 then Nothing else Just n
       adjFact fact = fact {gvictims = EM.alter alterKind ikind
@@ -458,7 +463,7 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
   bag <- getsState $ getCBag c
   case iid `EM.lookup` bag of
     Just (k, it) -> do
-      assert (fromIt == it `blame` (k, it, iid, c, fromIt, toIt)) skip
+      let !_A = assert (fromIt == it `blame` (k, it, iid, c, fromIt, toIt)) ()
       deleteItemContainer iid k c
       insertItemContainer iid (k, toIt) c
     Nothing -> assert `failure` (bag, iid, c, fromIt, toIt)

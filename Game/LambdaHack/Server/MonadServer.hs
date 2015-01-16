@@ -129,7 +129,7 @@ restoreScore Kind.COps{corule} = do
 registerScore :: MonadServer m => Status -> Maybe Actor -> FactionId -> m ()
 registerScore status mbody fid = do
   cops@Kind.COps{corule} <- getsState scops
-  assert (maybe True ((fid ==) . bfid) mbody) skip
+  let !_A = assert (maybe True ((fid ==) . bfid) mbody) ()
   fact <- getsState $ (EM.! fid) . sfactionD
   total <- case mbody of
     Just body -> getsState $ snd . calculateTotal body

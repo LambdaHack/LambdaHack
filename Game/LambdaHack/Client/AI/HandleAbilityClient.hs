@@ -728,7 +728,7 @@ displaceTowards :: MonadClient m
 displaceTowards aid source target = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
-  assert (source == bpos b && adjacent source target) skip
+  let !_A = assert (source == bpos b && adjacent source target) ()
   lvl <- getLevel $ blid b
   if boldpos b /= target -- avoid trivial loops
      && accessible cops lvl source target then do  -- DisplaceAccess
@@ -780,7 +780,7 @@ moveTowards :: MonadClient m
 moveTowards aid source target goal relaxed = do
   cops@Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody aid
-  assert (source == bpos b && adjacent source target) skip
+  let !_A = assert (source == bpos b && adjacent source target) ()
   lvl <- getLevel $ blid b
   fact <- getsState $ (EM.! bfid b) . sfactionD
   friends <- getsState $ actorList (not . isAtWar fact) $ blid b

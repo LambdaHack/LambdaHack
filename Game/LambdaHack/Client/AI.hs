@@ -56,10 +56,12 @@ refreshTarget :: MonadClient m
               -> m (Maybe ((ActorId, Actor), (Target, PathEtc)))
 refreshTarget oldLeader (aid, body) = do
   side <- getsClient sside
-  assert (bfid body == side `blame` "AI tries to move an enemy actor"
-                            `twith` (aid, body, side)) skip
-  assert (not (bproj body) `blame` "AI gets to manually move its projectiles"
-                           `twith` (aid, body, side)) skip
+  let !_A = assert (bfid body == side
+                    `blame` "AI tries to move an enemy actor"
+                    `twith` (aid, body, side)) ()
+  let !_A = assert (not (bproj body)
+                    `blame` "AI gets to manually move its projectiles"
+                    `twith` (aid, body, side)) ()
   stratTarget <- targetStrategy oldLeader aid
   tgtMPath <-
     if nullStrategy stratTarget then
@@ -87,10 +89,12 @@ refreshTarget oldLeader (aid, body) = do
 pickAction :: MonadClient m => (ActorId, Actor) -> m RequestAnyAbility
 pickAction (aid, body) = do
   side <- getsClient sside
-  assert (bfid body == side `blame` "AI tries to move enemy actor"
-                            `twith` (aid, bfid body, side)) skip
-  assert (not (bproj body) `blame` "AI gets to manually move its projectiles"
-                           `twith` (aid, bfid body, side)) skip
+  let !_A = assert (bfid body == side
+                    `blame` "AI tries to move enemy actor"
+                    `twith` (aid, bfid body, side)) ()
+  let !_A = assert (not (bproj body)
+                    `blame` "AI gets to manually move its projectiles"
+                    `twith` (aid, bfid body, side)) ()
   stratAction <- actionStrategy aid
   -- Run the AI: chose an action from those given by the AI strategy.
   rndToAction $ frequency $ bestVariant stratAction

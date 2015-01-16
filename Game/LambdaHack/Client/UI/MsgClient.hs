@@ -137,9 +137,9 @@ itemOverlay c lid bag = do
         COrgan -> True
         _ -> False
       lSlots = if isOrgan then organSlots else letterSlots
-  assert (all (`elem` EM.elems lSlots ++ IM.elems numberSlots)
-              (EM.keys bag)
-          `blame` (c, lid, bag, lSlots, numberSlots)) skip
+  let !_A = assert (all (`elem` EM.elems lSlots ++ IM.elems numberSlots)
+                        (EM.keys bag)
+                    `blame` (c, lid, bag, lSlots, numberSlots)) ()
   let pr (l, iid) =
         case EM.lookup iid bag of
           Nothing -> Nothing

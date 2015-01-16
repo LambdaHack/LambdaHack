@@ -327,7 +327,7 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
         return $! np : nps
       stairPoss = fst lstair ++ snd lstair
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
-  assert (k > 0 && factionDist > 0) skip
+  let !_A = assert (k > 0 && factionDist > 0) ()
   case k of
     1 -> tryFind stairPoss k
     2 -> -- Make sure the first faction's pos is not chosen in the middle.

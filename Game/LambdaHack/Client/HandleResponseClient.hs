@@ -4,8 +4,6 @@ module Game.LambdaHack.Client.HandleResponseClient
   ( handleResponseAI, handleResponseUI
   ) where
 
-import Control.Exception.Assert.Sugar
-
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.AI
 import Game.LambdaHack.Client.HandleAtomicClient
@@ -19,7 +17,7 @@ import Game.LambdaHack.Common.Response
 
 storeUndo :: MonadClient m => CmdAtomic -> m ()
 storeUndo _atomic =
-  maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
+  maybe (return ()) (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
     $ Nothing   -- TODO: undoCmdAtomic atomic
 
 handleResponseAI :: (MonadAtomic m, MonadClientWriteRequest RequestAI m)

@@ -208,7 +208,8 @@ syncFrames = do
   writeConnFrontend
     FrontSlides{frontClear=[], frontSlides=[], frontFromTop=Nothing}
   km <- readConnFrontend
-  assert (km == K.spaceKM) skip
+  let !_A = assert (km == K.spaceKM) ()
+  return ()
 
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
 setFrontAutoYes b = writeConnFrontend $ FrontAutoYes b

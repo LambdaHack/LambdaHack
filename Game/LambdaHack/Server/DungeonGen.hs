@@ -15,7 +15,6 @@ import qualified Data.IntMap.Strict as IM
 import Data.List
 import Data.Maybe
 
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -26,6 +25,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -164,7 +164,7 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
                      (False, False) -> assert `failure` st
   (stairsUp1, stairsDown1, stairsUpDown1) <-
     makeStairs False (ln == maxD) (ln == minD) ([], [], [])
-  assert (null stairsUp1) skip
+  let !_A = assert (null stairsUp1) ()
   let nstairUpLeft = nstairUp - length stairsUpDown1
   (stairsUp2, stairsDown2, stairsUpDown2) <-
     foldM (\sts _ -> makeStairs True (ln == maxD) (ln == minD) sts)
@@ -177,7 +177,7 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
              (stairsUp2, stairsDown2, stairsUpDown2))
     else return (stairsUp2, stairsDown2, stairsUpDown2)
   let stairsUpAndUpDown = stairsUp ++ stairsUpDown
-  assert (length stairsUpAndUpDown == nstairUp) skip
+  let !_A = assert (length stairsUpAndUpDown == nstairUp) ()
   let stairsTotal = stairsUpAndUpDown ++ stairsDown
       posTotal = nub $ sort $ map fst stairsTotal
   epos <- placeStairs cops cmap kc posTotal
@@ -280,6 +280,6 @@ dungeonGen cops caves = do
         let nstairDown = length $ snd $ lstair lvl
         return $ (nstairDown, (ln, lvl) : l)
   (nstairUpLast, levels) <- foldM gen (0, []) $ reverse $ IM.assocs caves
-  assert (nstairUpLast == 0) skip
+  let !_A = assert (nstairUpLast == 0) ()
   let freshDungeon = EM.fromList levels
   return $! FreshDungeon{..}

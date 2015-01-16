@@ -108,7 +108,7 @@ loopSer sdebug executorUI executorAI !cops = do
         factionD <- getsState sfactionD
         marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
-        assert (not $ null arenas) skip  -- game over not caught earlier
+        let !_A = assert (not $ null arenas) ()  -- game over not caught earlier
         mapM_ handleActors arenas
         quit <- getsServer squit
         if quit then do
@@ -223,7 +223,7 @@ handleActors lid = do
     Nothing -> return ()
     Just (aid, b) | maybe True (null . fst) (btrajectory b) && bproj b -> do
       -- A projectile drops to the ground due to obstacles or range.
-      assert (bproj b) skip
+      let !_A = assert (bproj b) ()
       startActor aid
       dieSer aid b False
       handleActors lid
@@ -276,7 +276,7 @@ handleActors lid = do
         let hasWait (ReqUITimed ReqWait{}) = True
             hasWait (ReqUILeader _ _ cmd) = hasWait cmd
             hasWait _ = False
-        maybe skip (setBWait (hasWait cmdS)) aidNew
+        maybe (return ()) (setBWait (hasWait cmdS)) aidNew
         -- Advance time once, after the leader switched perhaps many times.
         -- Sometimes this may result in a double move of the new leader,
         -- followed by a double pause. Or a fractional variant of that.
@@ -287,9 +287,9 @@ handleActors lid = do
         -- Warning: when the action is performed on the server,
         -- the time of the actor is different than when client prepared that
         -- action, so any client checks involving time should discount this.
-        maybe skip advanceTime aidNew
+        maybe (return ()) advanceTime aidNew
         action
-        maybe skip managePerTurn aidNew
+        maybe (return ()) managePerTurn aidNew
       else do
         -- Clear messages in the UI client (if any), if the actor
         -- is a leader (which happens when a UI client is fully
@@ -321,8 +321,10 @@ gameExit = do
   fovMode <- getsServer $ sfovMode . sdebugSer
   ser <- getServer
   pers <- getsState $ \s -> dungeonPerception (fromMaybe Digital fovMode) s ser
-  assert (persAccumulated == pers `blame` "wrong accumulated perception"
-                                  `twith` (persAccumulated, pers)) skip
+  let !_A = assert (persAccumulated == pers
+                    `blame` "wrong accumulated perception"
+                    `twith` (persAccumulated, pers)) ()
+  return ()
 
 restartGame :: (MonadAtomic m, MonadServerReadRequest m)
             => m () -> m () -> Maybe (GroupName ModeKind) ->  m ()
@@ -399,7 +401,7 @@ setTrajectory aid = do
                                           (Just (lv, speed))
           return True
     Just ([], _) -> do  -- non-projectile actor stops flying
-      assert (not $ bproj b) skip
+      let !_A = assert (not $ bproj b) ()
       execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
       return False
     _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)
