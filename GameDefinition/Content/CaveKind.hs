@@ -16,9 +16,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleCaveKind
   , validateAll = validateAllCaveKind
   , content =
-      [rogue, arena, empty, noise, battle, skirmish, ambush, safari1, safari2, safari3]
+      [rogue, arena, empty, noise, battle, skirmish, ambush, safari1, safari2, safari3, boardgame]
   }
-rogue,        arena, empty, noise, battle, skirmish, ambush, safari1, safari2, safari3 :: CaveKind
+rogue,        arena, empty, noise, battle, skirmish, ambush, safari1, safari2, safari3, boardgame :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -179,3 +179,34 @@ ambush = rogue  -- lots of lights, to give a chance to snipe
 safari1 = ambush {cfreq = [("caveSafari1", 1)]}
 safari2 = battle {cfreq = [("caveSafari2", 1)]}
 safari3 = skirmish {cfreq = [("caveSafari3", 1)]}
+boardgame = CaveKind
+  { csymbol       = 'B'
+  , cname         = "A boardgame"
+  , cfreq         = [("caveBoardgame", 1)]
+  , cxsize        = fst normalLevelBound + 1
+  , cysize        = snd normalLevelBound + 1
+  , cgrid         = DiceXY 1 1
+  , cminPlaceSize = DiceXY 10 10
+  , cmaxPlaceSize = DiceXY 10 10
+  , cdarkChance   = 0
+  , cnightChance  = 0
+  , cauxConnects  = 0
+  , cmaxVoid      = 0
+  , cminStairDist = 0
+  , cdoorChance   = 0
+  , copenChance   = 0
+  , chidden       = 0
+  , cactorCoeff   = 0
+  , cactorFreq    = []
+  , citemNum      = 0
+  , citemFreq     = []
+  , cplaceFreq    = [("boardgame", 1)]
+  , cpassable     = False
+  , cdefTile        = "fillerWall"
+  , cdarkCorTile    = "floorCorridorDark"
+  , clitCorTile     = "floorCorridorLit"
+  , cfillerTile     = "fillerWall"
+  , couterFenceTile = "basic outer fence"
+  , clegendDarkTile = "legendDark"
+  , clegendLitTile  = "legendLit"
+  }

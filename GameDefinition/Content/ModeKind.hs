@@ -16,9 +16,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content =
-      [campaign, duel, skirmish, ambush, battle, safari, pvp, coop, defense, screensaver]
+      [campaign, duel, skirmish, ambush, battle, safari, pvp, coop, defense, screensaver, boardgame]
   }
-campaign,        duel, skirmish, ambush, battle, safari, pvp, coop, defense, screensaver :: ModeKind
+campaign,        duel, skirmish, ambush, battle, safari, pvp, coop, defense, screensaver, boardgame :: ModeKind
 
 campaign = ModeKind
   { msymbol = 'a'
@@ -111,8 +111,17 @@ screensaver = safari
       }
   }
 
+boardgame = ModeKind
+  { msymbol = 'g'
+  , mname   = "boardgame"
+  , mfreq   = [("boardgame", 1)]
+  , mroster = rosterBoardgame
+  , mcaves  = cavesBoardgame
+  , mdesc   = "Small room, no exits. Who will prevail?"
+  }
 
-rosterCampaign, rosterDuel, rosterSkirmish, rosterAmbush, rosterBattle, rosterSafari, rosterPvP, rosterCoop, rosterDefense :: Roster
+
+rosterCampaign, rosterDuel, rosterSkirmish, rosterAmbush, rosterBattle, rosterSafari, rosterPvP, rosterCoop, rosterDefense, rosterBoardgame:: Roster
 
 rosterCampaign = Roster
   { rosterList = [ playerHero
@@ -239,8 +248,20 @@ rosterDefense = Roster
                   , ("Adventurer Party", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
+rosterBoardgame = Roster
+  { rosterList = [ playerHero { fname = "Blue"
+                              , fentryLevel = -3
+                              , finitialActors = 6 }
+                 , playerAntiHero { fname = "Red"
+                                  , fentryLevel = -3
+                                  , finitialActors = 6 }
+                 , playerHorror ]
+  , rosterEnemy = [ ("Blue", "Red")
+                  , ("Blue", "Horror Den")
+                  , ("Red", "Horror Den") ]
+  , rosterAlly = [] }
 
-cavesCampaign, cavesSkirmish, cavesAmbush, cavesBattle, cavesSafari :: Caves
+cavesCampaign, cavesSkirmish, cavesAmbush, cavesBattle, cavesSafari, cavesBoardgame :: Caves
 
 cavesCampaign = IM.fromList
                 $ [ (-1, ("caveRogue", Just True))
@@ -258,3 +279,5 @@ cavesBattle = IM.fromList [(-5, ("caveBattle", Nothing))]
 cavesSafari = IM.fromList [ (-4, ("caveSafari1", Nothing))
                           , (-7, ("caveSafari2", Nothing))
                           , (-10, ("caveSafari3", Just False)) ]
+
+cavesBoardgame = IM.fromList [(-3, ("caveBoardgame", Nothing))]

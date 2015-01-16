@@ -265,14 +265,14 @@ floorArenaShade = floorActorLit
   }
 floorRedLit = floorArenaLit
   { tname    = "brick pavement"
-  , tfreq    = [("trailLit", 30)]
+  , tfreq    = [("trailLit", 30), ("trailChessLit", 30)]
   , tcolor   = BrRed
   , tcolor2  = Red
   , tfeature = Trail : tfeature floorArenaLit
   }
 floorBlueLit = floorRedLit
   { tname    = "cobblestone path"
-  , tfreq    = [("trailLit", 100)]
+  , tfreq    = [("trailLit", 100), ("trailChessLit", 70)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   }

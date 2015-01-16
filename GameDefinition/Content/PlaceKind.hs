@@ -12,9 +12,9 @@ cdefs = ContentDef
   , validateSingle = validateSinglePlaceKind
   , validateAll = validateAllPlaceKind
   , content =
-      [rect, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3]
+      [rect, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, boardgame]
   }
-rect,        ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3 :: PlaceKind
+rect,        ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, boardgame :: PlaceKind
 
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
@@ -214,4 +214,24 @@ treeShade3 = treeShade
                , "sOs"
                , "XXs"
                ]
+  }
+boardgame = PlaceKind
+  { psymbol  = 'b'
+  , pname    = "boardgame"
+  , pfreq    = [("boardgame", 1)]
+  , prarity  = [(1, 1)]
+  , pcover   = CVerbatim
+  , pfence   = FNone
+  , ptopLeft = [ "----------"
+               , "|.b.b.b.b|"
+               , "|b.b.b.b.|"
+               , "|.b.b.b.b|"
+               , "|b.b.b.b.|"
+               , "|.b.b.b.b|"
+               , "|b.b.b.b.|"
+               , "|.b.b.b.b|"
+               , "|b.b.b.b.|"
+               , "----------"
+               ]
+  , poverride = [('b', "trailChessLit")]
   }

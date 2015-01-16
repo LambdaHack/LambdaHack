@@ -188,6 +188,7 @@ standardKeys = KeyKind
       , ("CTRL-s", ([CmdDebug], GameSave))
       , ("CTRL-f", ([CmdDebug], GameRestart "safari"))
       , ("CTRL-e", ([CmdDebug], GameRestart "defense"))
+      , ("CTRL-g", ([CmdDebug], GameRestart "boardgame"))
       , ("CTRL-period", ([CmdInternal], RunOnceAhead))
       , ("CTRL-semicolon", ([CmdInternal], RunOnceToCursor))
       , ("CTRL-colon", ([CmdInternal], ContinueToCursor))
