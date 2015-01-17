@@ -37,7 +37,7 @@ import Game.LambdaHack.Content.ModeKind
 handleCmdAtomicServer :: forall m. MonadStateWrite m
                       => PosAtomic -> CmdAtomic -> m ()
 handleCmdAtomicServer posAtomic atomic =
-  when (seenAtomicSer posAtomic) $ do
+  when (seenAtomicSer posAtomic) $
 --    storeUndo atomic
     handleCmdAtomic atomic
 
@@ -76,8 +76,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
                       PosFidAndSight{} -> True
                       PosFidAndSer (Just _) _ -> True
                       _ -> not resets
-                    && (null atomicBroken
-                        || atomicBroken == [atomic])) ()
+                   `blame` (ps, resets)) ()
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
   -- Update lights in the dungeon. This is lazy, may not be needed or partially.
@@ -85,7 +84,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI =
         when (fhasUI $ gplayer $ factionD EM.! fid) $ doSendUpdateUI fid cmdUI
-      sendAI fid cmdAI = doSendUpdateAI fid cmdAI
+      sendAI = doSendUpdateAI
       sendA fid cmd = do
         sendUI fid $ RespUpdAtomicUI cmd
         sendAI fid $ RespUpdAtomicAI cmd
