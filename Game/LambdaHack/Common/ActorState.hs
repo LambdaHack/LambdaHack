@@ -184,7 +184,7 @@ findIid leader fid iid s =
         let itemsOfCStore store =
               let bag = getBodyActorBag b store s
               in map (\iid2 -> (iid2, (b, store))) (EM.keys bag)
-            stores = [CInv, CEqp] ++ if aid == leader then [CSha] else []
+            stores = [CInv, CEqp] ++ [CSha | aid == leader]
         in concatMap itemsOfCStore stores
       items = concatMap itemsOfActor actors
   in map snd $ filter ((== iid) . fst) items
@@ -247,7 +247,7 @@ getActorBody aid s =
 
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =
-  bagAssocs s $ EM.unionsWith (const) [binv b, beqp b, borgan b]
+  bagAssocs s $ EM.unionsWith const [binv b, beqp b, borgan b]
 
 getCBag :: Container -> State -> ItemBag
 {-# INLINE getCBag #-}
@@ -302,7 +302,7 @@ regenCalmDelta b activeItems s =
       -- Worry actor by enemies felt (even if not seen)
       -- on the level within 3 steps.
       fact = (EM.! bfid b) . sfactionD $ s
-      allFoes = actorRegularList (isAtWar fact) (blid b) $ s
+      allFoes = actorRegularList (isAtWar fact) (blid b) s
       isHeard body = not (waitedLastTurn body)
                      && chessDist (bpos b) (bpos body) <= 3
       noisyFoes = filter isHeard allFoes
@@ -445,7 +445,7 @@ strongestMelee :: Bool -> Time -> [(ItemId, ItemFull)]
                -> [(Int, (ItemId, ItemFull))]
 strongestMelee effectBonus localTime is =
   let f = strengthMelee effectBonus localTime
-      g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> (f itemFull)
+      g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> f itemFull
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
 
 isMelee :: ItemFull -> Bool

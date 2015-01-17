@@ -43,7 +43,7 @@ cmdAtomicFilterCli :: MonadClient m => UpdAtomic -> m [UpdAtomic]
 cmdAtomicFilterCli cmd = case cmd of
   UpdMoveActor aid _ toP -> do
     cmdSml <- deleteSmell aid toP
-    return $ [cmd] ++ cmdSml
+    return $ cmd : cmdSml
   UpdDisplaceActor source target -> do
     bs <- getsState $ getActorBody source
     bt <- getsState $ getActorBody target
@@ -90,9 +90,7 @@ cmdAtomicFilterCli cmd = case cmd of
   UpdLearnSecrets aid fromS _toS -> do
     b <- getsState $ getActorBody aid
     lvl <- getLevel $ blid b
-    return $! if lsecret lvl == fromS
-              then [cmd]  -- secrets revealed now
-              else []  -- secrets already revealed previously
+    return $! [cmd | lsecret lvl == fromS]  -- secrets not revealed previously
   UpdSpotTile lid ts -> do
     Kind.COps{cotile} <- getsState scops
     lvl <- getLevel lid

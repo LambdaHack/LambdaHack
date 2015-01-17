@@ -4,6 +4,7 @@ module Game.LambdaHack.Client.AI.PickTargetClient
   ) where
 
 import Control.Applicative
+import Control.Arrow
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -140,8 +141,7 @@ targetStrategy oldLeader aid = do
       setPath :: Target -> m (Strategy (Target, Maybe PathEtc))
       setPath tgt = do
         mpath <- createPath aid tgt
-        return $! returN "setPath"
-               $ maybe (tgt, Nothing) (\(t, p) -> (t, Just p)) mpath
+        return $! returN "setPath" $ maybe (tgt, Nothing) (second Just) mpath
       pickNewTarget :: m (Strategy (Target, Maybe PathEtc))
       pickNewTarget = do
         -- TODO: for foes, items, etc. consider a few nearby, not just one
@@ -205,9 +205,9 @@ targetStrategy oldLeader aid = do
                                   [] -> do
                                     getDistant <-
                                       rndToAction $ oneOf
-                                      $ [fmap (: []) . furthestKnown]
-                                        ++ [ closestTriggers Nothing True
-                                           | EM.size dungeon > 1 ]
+                                      $ (fmap (: []) . furthestKnown)
+                                        : [ closestTriggers Nothing True
+                                          | EM.size dungeon > 1 ]
                                     kpos <- getDistant aid
                                     case kpos of
                                       [] -> return reject
@@ -251,20 +251,20 @@ targetStrategy oldLeader aid = do
                         (oldTgt, Just ( bpos b : path
                                       , (p, fromMaybe (assert `failure` mpath)
                                             $ accessBfs bfs p) ))
-        TEnemyPos _ lid p permit ->
+        TEnemyPos _ lid p permit
           -- Chase last position even if foe hides or dies,
           -- to find his companions, loot, etc.
-          if lid /= blid b  -- wrong level
-             || chessDist (bpos b) p >= nearby  -- too far and not visible
-             || permit  -- never follow a friend more than 1 step
-          then pickNewTarget
-          else if p == bpos b
-               then tellOthersNothingHere p
-               else return $! returN "TEnemyPos" (oldTgt, Just updatedPath)
+          | lid /= blid b  -- wrong level
+            || chessDist (bpos b) p >= nearby  -- too far and not visible
+            || permit  -- never follow a friend more than 1 step
+            -> pickNewTarget
+          | p == bpos b -> tellOthersNothingHere p
+          | otherwise ->
+              return $! returN "TEnemyPos" (oldTgt, Just updatedPath)
         _ | not $ null nearbyFoes ->
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos | ftactic (gplayer fact)
-                         `elem` [TBlock, TRoam, TPatrol] -> do
+                         `elem` [TBlock, TRoam, TPatrol] ->
           if lid /= blid b  -- wrong level
              || pos == bpos b
              || isStuck

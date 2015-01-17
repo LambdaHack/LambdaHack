@@ -83,9 +83,8 @@ embedItem lid pos tk = do
       causes = Tile.causeEffects cotile tk
       -- TODO: unack this, e.g., by turning each Cause into Embed
       itemFreq = zip embeds (repeat 1)
-                 ++ if not (null causes) && null embeds
-                    then [("hero", 1)]  -- hack: the bag, not item, is relevant
-                    else []
+                 ++ -- Hack: the bag, not item, is relevant.
+                    [("hero", 1) |  not (null causes) && null embeds]
       container = CEmbed lid pos
   void $ rollAndRegisterItem lid itemFreq container False Nothing
 
@@ -142,7 +141,7 @@ placeItemsInDungeon = do
               let dist p = minimum $ maxBound : map (chessDist p) lfloorKeys
               pos <- rndToAction $ findPosTry 100 ltile
                    (\_ t -> Tile.isWalkable cotile t
-                            && (not $ Tile.hasFeature cotile TK.NoItem t))
+                            && not (Tile.hasFeature cotile TK.NoItem t))
                    [ \p t -> Tile.hasFeature cotile TK.OftenItem t
                              && dist p > factionDist `div` 5
                    , \p t -> Tile.hasFeature cotile TK.OftenItem t
@@ -174,7 +173,7 @@ placeItemsInDungeon = do
 embedItemsInDungeon :: (MonadAtomic m, MonadServer m) => m ()
 embedItemsInDungeon = do
   let embedItems (lid, Level{ltile}) =
-        PointArray.mapWithKeyM_A (embedItem lid) ltile
+        PointArray.mapWithKeyMA (embedItem lid) ltile
   dungeon <- getsState sdungeon
   -- Make sure items on easy levels are generated first, to avoid all
   -- artifacts on deep levels.

@@ -12,6 +12,7 @@ module Game.LambdaHack.Server.HandleRequestServer
   ( handleRequestAI, handleRequestUI, reqMove
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -194,11 +195,11 @@ reqMelee source target iid cstore = do
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
     hurtBonus <- armorHurtBonus source target
-    let hitA = if hurtBonus <= -50  -- e.g., braced and no hit bonus
-               then HitBlock 2
-               else if hurtBonus <= -10  -- low bonus vs armor
-                    then HitBlock 1
-                    else HitClear
+    let hitA | hurtBonus <= -50  -- e.g., braced and no hit bonus
+               = HitBlock 2
+             | hurtBonus <= -10  -- low bonus vs armor
+               = HitBlock 1
+             | otherwise = HitClear
     execSfxAtomic $ SfxStrike source target iid hitA
     -- Deduct a hitpoint for a pierce of a projectile
     -- or due to a hurled actor colliding with another or a wall.
@@ -260,7 +261,7 @@ reqDisplace source target = do
           addSmell source
           addSmell target
         _ -> execFailure source req DisplaceProjectiles
-    else do
+    else
       -- Client foolishly tries to displace an actor without access.
       execFailure source req DisplaceAccess
 
@@ -285,8 +286,8 @@ reqAlter source tpos mfeat = do
         freshClientTile = hideTile cops lvl tpos
         changeTo tgroup = do
           -- No @SfxAlter@, because the effect is obvious (e.g., opened door).
-          toTile <- rndToAction $ fmap (fromMaybe $ assert `failure` tgroup)
-                                  $ opick tgroup (const True)
+          toTile <- rndToAction $ (fromMaybe $ assert `failure` tgroup)
+                                  <$> opick tgroup (const True)
           unless (toTile == serverTile) $ do
             execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
             case (Tile.isExplorable cotile serverTile,
@@ -309,10 +310,10 @@ reqAlter source tpos mfeat = do
     if null groupsToAlterTo && serverTile == freshClientTile then
       -- Neither searching nor altering possible; silly client.
       execFailure source req AlterNothing
-    else do
+    else
       if EM.notMember tpos $ lfloor lvl then
         if unoccupied as tpos then do
-          when (serverTile /= freshClientTile) $ do
+          when (serverTile /= freshClientTile) $
             -- Search, in case some actors (of other factions?)
             -- don't know this tile.
             execUpdAtomic $ UpdSearchTile source tpos freshClientTile serverTile
@@ -335,7 +336,7 @@ reqWait _ = return ()
 
 reqMoveItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> [(ItemId, Int, CStore, CStore)] -> m ()
-reqMoveItems aid l = mapM_ (reqMoveItem aid) l
+reqMoveItems aid = mapM_ (reqMoveItem aid)
 
 reqMoveItem :: (MonadAtomic m, MonadServer m)
             => ActorId -> (ItemId, Int, CStore, CStore) -> m ()
@@ -388,7 +389,7 @@ computeRndTimeout localTime discoEffect iid = do
       timeoutAspect (IK.Timeout t) = Just t
       timeoutAspect _ = Nothing
   case EM.lookup iid discoEffect of
-    Just ItemAspectEffect{jaspects} -> do
+    Just ItemAspectEffect{jaspects} ->
       case mapMaybe timeoutAspect jaspects of
         [t] | IK.Periodic `elem` jaspects -> do
           rndT <- randomR (0, t)

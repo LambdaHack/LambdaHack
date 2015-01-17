@@ -88,7 +88,7 @@ tryCopyDataFiles dataDir pathsDataFile files =
           Just pathsDataIn -> do
             let pathsDataOut = dataDir </> fout
             bOut <- doesFileExist pathsDataOut
-            when (not bOut) $
+            unless bOut $
               Ex.handle (\(_ :: Ex.IOException) -> return ())
                         (copyFile pathsDataIn pathsDataOut)
   in mapM_ cpFile files

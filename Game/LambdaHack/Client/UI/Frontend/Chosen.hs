@@ -36,7 +36,7 @@ data RawFrontend = RawFrontend
 chosenStartup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
 chosenStartup fdebugCli cont =
   Chosen.startup fdebugCli $ \fs ->
-    cont $ RawFrontend
+    cont RawFrontend
       { fdisplay = Chosen.fdisplay fs
       , fpromptGetKey = Chosen.fpromptGetKey fs
       , fsyncFrames = Chosen.fsyncFrames fs
@@ -47,7 +47,7 @@ chosenStartup fdebugCli cont =
 stdStartup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
 stdStartup fdebugCli cont =
   Std.startup fdebugCli $ \fs ->
-    cont $ RawFrontend
+    cont RawFrontend
       { fdisplay = Std.fdisplay fs
       , fpromptGetKey = Std.fpromptGetKey fs
       , fsyncFrames = Std.fsyncFrames fs
@@ -59,7 +59,7 @@ nullStartup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
 nullStartup fdebugCli cont =
   -- Std used to fork (async) the server thread, to avoid bound thread overhead.
   Std.startup fdebugCli $ \_ ->
-    cont $ RawFrontend
+    cont RawFrontend
       { fdisplay = \_ -> return ()
       , fpromptGetKey = \_ -> return K.escKM
       , fsyncFrames = return ()

@@ -67,11 +67,11 @@ liftA2AdditiveName :: Text
                    -> SimpleDice -> SimpleDice -> SimpleDice
 liftA2AdditiveName name f fra frb =
   let frRes = liftA2 f fra frb
-      nameRes =
-        if nameFrequency fra == "0" then
+      nameRes
+        | nameFrequency fra == "0" =
           (if name == "+" then "" else name) <+> nameFrequency frb
-        else if nameFrequency frb == "0" then nameFrequency fra
-        else nameFrequency fra <+> name <+> nameFrequency frb
+        | nameFrequency frb == "0" = nameFrequency fra
+        | otherwise = nameFrequency fra <+> name <+> nameFrequency frb
   in renameFreq nameRes frRes
 
 dieSimple :: Int -> SimpleDice
@@ -145,28 +145,28 @@ instance Num Dice where
   negate = affectBothDice negate
   abs = affectBothDice abs
   signum = affectBothDice signum
-  fromInteger n = Dice (fromInteger n) (fromInteger 0) 1
+  fromInteger n = Dice (fromInteger n) 0 1
 
 affectBothDice :: (SimpleDice -> SimpleDice) -> Dice -> Dice
 affectBothDice f (Dice dc1 dl1 ds1) = Dice (f dc1) (f dl1) ds1
 
 -- | A single simple dice.
 d :: Int -> Dice
-d n = Dice (dieSimple n) (fromInteger 0) 1
+d n = Dice (dieSimple n) 0 1
 
 -- | Dice scaled with level.
 ds :: Int -> Dice
-ds n = Dice (fromInteger 0) (dieLevelSimple n) 1
+ds n = Dice 0 (dieLevelSimple n) 1
 
 dl :: Int -> Dice
 dl = ds
 
 -- Not exposed to save on documentation.
 _z :: Int -> Dice
-_z n = Dice (zdieSimple n) (fromInteger 0) 1
+_z n = Dice (zdieSimple n) 0 1
 
 _zl :: Int -> Dice
-_zl n = Dice (fromInteger 0) (zdieLevelSimple n) 1
+_zl n = Dice 0 (zdieLevelSimple n) 1
 
 intToDice :: Int -> Dice
 intToDice = fromInteger . fromIntegral

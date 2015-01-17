@@ -199,16 +199,17 @@ fullscan :: PointArray.Array Bool  -- ^ the array with non-clear points
          -> Int        -- ^ scanning radius
          -> Point      -- ^ position of the spectator
          -> [Point]
-fullscan clearPs fovMode radius spectatorPos =
-  if radius <= 0 then []
-  else if radius == 1 then [spectatorPos]
-  else spectatorPos : case fovMode of
-    Shadow ->
-      concatMap (\tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
-    Permissive ->
-      concatMap (\tr -> map tr (Permissive.scan (isCl . tr))) tr4
-    Digital ->
-      concatMap (\tr -> map tr (Digital.scan (radius - 1) (isCl . tr))) tr4
+fullscan clearPs fovMode radius spectatorPos
+  | radius <= 0 = []
+  | radius == 1 = [spectatorPos]
+  | otherwise =
+    spectatorPos : case fovMode of
+      Shadow ->
+        concatMap (\tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
+      Permissive ->
+        concatMap (\tr -> map tr (Permissive.scan (isCl . tr))) tr4
+      Digital ->
+        concatMap (\tr -> map tr (Digital.scan (radius - 1) (isCl . tr))) tr4
  where
   isCl :: Point -> Bool
   {-# INLINE isCl #-}

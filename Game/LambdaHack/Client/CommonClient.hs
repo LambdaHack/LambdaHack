@@ -124,18 +124,18 @@ aidTgtAims aid lidV tgt = do
       let pos = bpos body
       if blid body == lidV
       then findNewEps False pos
-      else return $! Left "selected opponent not on this level"
+      else return $ Left "selected opponent not on this level"
     Just TEnemyPos{} -> return $ Left "selected opponent not visible"
     Just (TPoint lid pos) ->
       if lid == lidV
       then findNewEps True pos
-      else return $! Left "selected position not on this level"
+      else return $ Left "selected position not on this level"
     Just (TVector v) -> do
       b <- getsState $ getActorBody aid
       Level{lxsize, lysize} <- getLevel lidV
       let shifted = shiftBounded lxsize lysize (bpos b) v
       if shifted == bpos b && v /= Vector 0 0
-      then return $! Left "selected translation is void"
+      then return $ Left "selected translation is void"
       else findNewEps True shifted
     Nothing -> do
       scursor <- getsClient scursor

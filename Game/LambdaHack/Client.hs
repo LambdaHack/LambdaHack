@@ -40,7 +40,5 @@ exeFrontend :: ( MonadAtomic m, MonadClientUI m
                -> (FactionId -> chanServerAI -> IO ())
                -> IO ())
             -> IO ()
-exeFrontend executorUI executorAI copsClient cops sdebugCli exeServer =
-  srtFrontend (executorUI . loopUI)
-              (executorAI . loopAI)
-              copsClient cops sdebugCli exeServer
+exeFrontend executorUI executorAI = srtFrontend (executorUI . loopUI)
+                                                (executorAI . loopAI)

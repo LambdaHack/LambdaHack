@@ -5,6 +5,7 @@ module Game.LambdaHack.Client.UI.WidgetClient
   , animate, fadeOutOrIn
   ) where
 
+import Control.Applicative
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -65,23 +66,23 @@ displayYesNo dm prompt = do
 displayChoiceUI :: MonadClientUI m
                 => Msg -> Overlay -> [K.KM] -> m (Either Slideshow K.KM)
 displayChoiceUI prompt ov keys = do
-  (_, ovs) <- fmap slideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
+  (_, ovs) <- slideshow <$> overlayToSlideshow (prompt <> ", ESC]") ov
   let extraKeys = [K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM]
       legalKeys = keys ++ extraKeys
       loop frs srf =
         case frs of
-          [] -> fmap Left $ promptToSlideshow "*never mind*"
+          [] -> Left <$> promptToSlideshow "*never mind*"
           x : xs -> do
             frame <- drawOverlay False ColorFull x
             km@K.KM{..} <- promptGetKey legalKeys frame
             case key of
               _ | km `elem` keys -> return $ Right km  -- km can be PgUp, etc.
-              K.Esc -> fmap Left $ promptToSlideshow "*never mind*"
+              K.Esc -> Left <$> promptToSlideshow "*never mind*"
               K.PgUp -> case srf of
                 [] -> loop frs srf
                 y : ys -> loop (y : frs) ys
               K.Space -> case xs of
-                [] -> fmap Left $ promptToSlideshow "*never mind*"
+                [] -> Left <$> promptToSlideshow "*never mind*"
                 _ -> loop xs (x : srf)
               _ -> case xs of  -- K.PgDn and any other permitted key
                 [] -> loop frs srf
@@ -121,10 +122,9 @@ describeMainKeys = do
                           TgtPointerEnemy brevMap
       kmReturn =
         M.findWithDefault (K.toKM K.NoModifier K.Return) Accept brevMap
-      moveKeys =
-        if configVi then "hjklyubn, "
-        else if configLaptop then "uk8o79jl, "
-        else ""
+      moveKeys | configVi = "hjklyubn, "
+               | configLaptop = "uk8o79jl, "
+               | otherwise = ""
       tgtKind = case cursor of
         TEnemy _ True -> "at actor"
         TEnemy _ False -> "at enemy"
@@ -136,14 +136,14 @@ describeMainKeys = do
            | isNothing stgtMode =
         "Explore with keypad or keys or mouse: ["
         <> moveKeys
-        <> (T.intercalate ", " $ map K.showKM
-            $ [kmLeftButtonPress, kmCtrlx, kmEscape])
+        <> T.intercalate ", "
+             (map K.showKM [kmLeftButtonPress, kmCtrlx, kmEscape])
         <> "]"
            | otherwise =
         "Aim" <+> tgtKind <+> "with keypad or keys or mouse: ["
         <> moveKeys
-        <> (T.intercalate ", " $ map K.showKM
-            $ [kmRightButtonPress, kmReturn, kmEscape])
+        <> T.intercalate ", "
+             (map K.showKM [kmRightButtonPress, kmReturn, kmEscape])
         <> "]"
   report <- getsClient sreport
   return $! if nullReport report then keys else ""
@@ -191,7 +191,7 @@ animate arena anim = do
   tgtPos <- leaderTgtToPos
   cursorPos <- cursorToPos
   let anyPos = fromMaybe (Point 0 0) cursorPos
-      pathFromLeader leader = fmap Just $ getCacheBfsAndPath leader anyPos
+      pathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
   cursorDesc <- targetDescCursor

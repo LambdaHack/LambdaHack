@@ -18,6 +18,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , leaderTgtToPos, leaderTgtAims, cursorToPos
   ) where
 
+import Control.Applicative
 import Control.Concurrent
 import Control.Concurrent.STM
 import Control.Exception.Assert.Sugar
@@ -141,7 +142,7 @@ displayDelay = writeConnFrontend FrontDelay
 displayActorStart :: MonadClientUI m => Actor -> Frames -> m ()
 displayActorStart b frs = do
   mapM_ displayFrame frs
-  let ageDisp displayed = EM.insert (blid b) (btime b) displayed
+  let ageDisp = EM.insert (blid b) (btime b)
   modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
 
 -- | Draw the current level with the overlay on top.
@@ -157,7 +158,7 @@ drawOverlay False dm sfTop = do
   tgtPos <- leaderTgtToPos
   cursorPos <- cursorToPos
   let anyPos = fromMaybe (Point 0 0) cursorPos
-      pathFromLeader leader = fmap Just $ getCacheBfsAndPath leader anyPos
+      pathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
   cursorDesc <- targetDescCursor

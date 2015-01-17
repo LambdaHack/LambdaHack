@@ -164,7 +164,7 @@ dirRunNoModifier configVi configLaptop =
 dirRunControl :: [Key]
 dirRunControl = dirKeypadKey
                 ++ dirKeypadShiftKey
-                ++ (map Char dirKeypadShiftChar)
+                ++ map Char dirKeypadShiftChar
 
 dirAllKey :: Bool -> Bool -> [Key]
 dirAllKey configVi configLaptop =
@@ -186,11 +186,9 @@ moveBinding :: Bool -> Bool -> (Vector -> a) -> (Vector -> a)
 moveBinding configVi configLaptop move run =
   let assign f (km, dir) = (km, f dir)
       mapMove modifier keys =
-        map (assign move) (zip
-          (zipWith toKM (repeat modifier) keys) moves)
+        map (assign move) (zip (map (toKM modifier) keys) moves)
       mapRun modifier keys =
-        map (assign run) (zip
-          (zipWith toKM (repeat modifier) keys) moves)
+        map (assign run) (zip (map (toKM modifier) keys) moves)
   in mapMove NoModifier (dirMoveNoModifier configVi configLaptop)
      ++ mapRun NoModifier (dirRunNoModifier configVi configLaptop)
      ++ mapRun Control dirRunControl

@@ -108,7 +108,7 @@ seedToAspectsEffects :: ItemSeed -> ItemKind -> AbsDepth -> AbsDepth
                      -> ItemAspectEffect
 seedToAspectsEffects (ItemSeed itemSeed) kind ldepth totalDepth =
   let castD = castDice ldepth totalDepth
-      rollA = mapM (flip aspectTrav castD) (iaspects kind)
+      rollA = mapM (`aspectTrav` castD) (iaspects kind)
       jaspects = St.evalState rollA (mkStdGen itemSeed)
       jeffects = ieffects kind
   in ItemAspectEffect{..}

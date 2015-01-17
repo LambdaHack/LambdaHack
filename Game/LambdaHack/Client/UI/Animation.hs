@@ -116,7 +116,7 @@ mzipTriples :: (Point, Point, Point)
             -> [(Point, AttrChar)]
 mzipTriples (p1, p2, p3) (mattr1, mattr2, mattr3) =
   let mzip (pos, mattr) = fmap (\x -> (pos, x)) mattr
-  in catMaybes $ [mzip (p1, mattr1), mzip (p2, mattr2), mzip (p3, mattr3)]
+  in catMaybes [mzip (p1, mattr1), mzip (p2, mattr2), mzip (p3, mattr3)]
 
 restrictAnim :: ES.EnumSet Point -> Animation -> Animation
 restrictAnim vis (Animation as) =

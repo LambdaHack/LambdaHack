@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 -- | Representation of probabilities and random computations.
 module Game.LambdaHack.Common.Random
   ( -- * The @Rng@ monad

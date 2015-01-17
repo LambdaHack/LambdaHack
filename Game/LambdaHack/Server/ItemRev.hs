@@ -9,6 +9,7 @@ module Game.LambdaHack.Server.ItemRev
   , FlavourMap, emptyFlavourMap, dungeonFlavourMap
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
@@ -44,7 +45,7 @@ serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldrWithKey}} = do
       shuffle [] = return []
       shuffle l = do
         x <- oneOf l
-        fmap (x :) $ shuffle (delete x l)
+        (x :) <$> shuffle (delete x l)
   shuffled <- shuffle ixs
   let f ik _ (ikMap, ikRev, ix : rest) =
         (EM.insert ix ik ikMap, EM.insert ik ix ikRev, rest)

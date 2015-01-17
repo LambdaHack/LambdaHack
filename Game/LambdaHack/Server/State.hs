@@ -9,7 +9,6 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
-import Data.List
 import Data.Text (Text)
 import qualified System.Random as R
 import System.Time
@@ -102,7 +101,7 @@ instance Show RNGs where
                        dungeonRandomGenerator
                , maybe "" (\gen -> "--setMainRng \"" ++ show gen ++ "\"")
                        startingRandomGenerator ]
-    in intercalate " " args
+    in unwords args
 
 -- | Initial, empty game server state.
 emptyStateServer :: StateServer

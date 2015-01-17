@@ -15,7 +15,6 @@ import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Exception as Ex hiding (handle)
-import Control.Exception.Assert.Sugar
 import Control.Monad
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as BS
@@ -102,7 +101,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
   ttt <- textTagTableNew
-  stags <- fmap M.fromList $
+  stags <- M.fromList <$>
              mapM (\ ak -> do
                       tt <- textTagNew Nothing
                       textTagTableAdd ttt tt
@@ -117,7 +116,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   textViewSetEditable sview False
   textViewSetCursorVisible sview False
   -- Set up the channel for keyboard input.
-  schanKey <- STM.atomically $ STM.newTQueue
+  schanKey <- STM.atomically STM.newTQueue
   -- Set up the frame state.
   let frameState = FNone
   -- Create the session record.
@@ -134,7 +133,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   link aPoll
   let flushChanKey = do
         res <- STM.atomically $ STM.tryReadTQueue schanKey
-        when (isJust res) $ flushChanKey
+        when (isJust res) flushChanKey
   -- Fill the keyboard channel.
   sview `on` keyPressEvent $ do
     n <- eventKeyName
@@ -500,31 +499,27 @@ deadKey x = case x of
 
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: [Modifier] -> K.Modifier
-modifierTranslate mods =
-  if Control `elem` mods then K.Control
-  else if any (`elem` mods)
-              [Meta, Super, Alt, Alt2, Alt3, Alt4, Alt5] then K.Alt
-  else if Shift `elem` mods then K.Shift
-  else K.NoModifier
+modifierTranslate mods
+  | Control `elem` mods = K.Control
+  | any (`elem` mods) [Meta, Super, Alt, Alt2, Alt3, Alt4, Alt5] = K.Alt
+  | Shift `elem` mods = K.Shift
+  | otherwise = K.NoModifier
 
 doAttr :: DebugModeCli -> TextTag -> Color.Attr -> IO ()
-doAttr sdebugCli tt attr@Color.Attr{fg, bg} =
-  if attr == Color.defAttr then return ()
-  else if fg == Color.defFG then
+doAttr sdebugCli tt attr@Color.Attr{fg, bg}
+  | attr == Color.defAttr = return ()
+  | fg == Color.defFG =
     set tt $ extraAttr sdebugCli
              ++ [textTagBackground := Color.colorToRGB bg]
-  else if bg == Color.defBG then
+  | bg == Color.defBG =
     set tt $ extraAttr sdebugCli
              ++ [textTagForeground := Color.colorToRGB fg]
-  else
+  | otherwise =
     set tt $ extraAttr sdebugCli
              ++ [ textTagForeground := Color.colorToRGB fg
                 , textTagBackground := Color.colorToRGB bg ]
 
 extraAttr :: DebugModeCli -> [AttrOp TextTag]
 extraAttr DebugModeCli{scolorIsBold} =
-  if scolorIsBold == Just True
-  then [ textTagWeight := fromEnum WeightBold
+  [textTagWeight := fromEnum WeightBold | scolorIsBold == Just True]
 --     , textTagStretch := StretchUltraExpanded
-       ]
-  else []

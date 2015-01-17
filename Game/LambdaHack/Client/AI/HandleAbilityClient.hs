@@ -193,13 +193,13 @@ actionStrategy aid = do
       checkAction (abts, _, cond) = cond && all abInSkill abts
       sumS abAction = do
         let as = filter checkAction abAction
-        strats <- sequence $ map (\(_, m, _) -> m) as
+        strats <- mapM (\(_, m, _) -> m) as
         return $! msum strats
       sumF abFreq = do
         let as = filter checkAction abFreq
-        strats <- sequence $ map (\(_, m, _) -> m) as
+        strats <- mapM (\(_, m, _) -> m) as
         return $! msum strats
-      combineDistant as = fmap liftFrequency $ sumF as
+      combineDistant as = liftFrequency <$> sumF as
   sumPrefix <- sumS prefix
   comDistant <- combineDistant distant
   sumSuffix <- sumS suffix
@@ -222,13 +222,10 @@ pickup aid onlyWeapon = do
       prepareOne (oldN, l4) ((_, (k, _)), (iid, itemFull)) =
         -- TODO: instead of pickup to eqp and then move to inv, pickup to inv
         let n = oldN + k
-            (newN, toCStore) =
-              if calmE && goesIntoSha itemFull
-              then (oldN, CSha)
-              else if goesIntoInv itemFull
-                      || eqpOverfull b n
-              then (oldN, CInv)
-              else (n, CEqp)
+            (newN, toCStore)
+              | calmE && goesIntoSha itemFull = (oldN, CSha)
+              | goesIntoInv itemFull || eqpOverfull b n = (oldN, CInv)
+              | otherwise = (n, CEqp)
         in (newN, (iid, k, CGround, toCStore) : l4)
       (_, prepared) = foldl' prepareOne (0, []) $ filterWeapon benItemL
   return $! if null prepared
@@ -385,7 +382,7 @@ bestByEqpSlot eqpAssocs invAssocs shaAssocs =
       shaMap = M.map (\g -> ([], [], g)) $ groupByEqpSlot shaAssocs
       appendThree (g1, g2, g3) (h1, h2, h3) = (g1 ++ h1, g2 ++ h2, g3 ++ h3)
       eqpInvShaMap = M.unionsWith appendThree [eqpMap, invMap, shaMap]
-      bestSingle eqpSlot g = strongestSlot eqpSlot g
+      bestSingle = strongestSlot
       bestThree (eqpSlot, _) (g1, g2, g3) = (bestSingle eqpSlot g1,
                                              bestSingle eqpSlot g2,
                                              bestSingle eqpSlot g3)
@@ -438,9 +435,9 @@ meleeBlocker aid = do
     Just (_, Just (_ : q : _, (goal, _))) -> do
       -- We prefer the goal (e.g., when no accessible, but adjacent),
       -- but accept @q@ even if it's only a blocking enemy position.
-      let maim = if adjacent (bpos b) goal then Just goal
-                 else if adjacent (bpos b) q then Just q
-                 else Nothing  -- MeleeDistant
+      let maim | adjacent (bpos b) goal = Just goal
+               | adjacent (bpos b) q = Just q
+               | otherwise = Nothing  -- MeleeDistant
       mBlocker <- case maim of
         Nothing -> return Nothing
         Just aim -> getsState $ posToActor aim (blid b)
@@ -498,27 +495,23 @@ trigger aid fleeViaStairs = do
       ben feat = case feat of
         TK.Cause (IK.Ascend k) -> do -- change levels sensibly, in teams
           (lid2, pos2) <- getsState $ whereTo lid (bpos b) k . sdungeon
-          per <- getPerFid $ lid2
+          per <- getPerFid lid2
           let canSee = ES.member (bpos b) (totalVisible per)
               aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
               easeDelta = abs (fromEnum lid) - abs (fromEnum lid2)
               unexpForth = unexploredD (signum k) lid
               unexpBack = unexploredD (- signum k) lid
-              expBenefit =
-                if aimless
-                then 100  -- faction is not exploring, so switch at will
-                else if unexploredCurrent
-                then 0  -- don't leave the level until explored
-                else if unexpForth
-                then if easeDelta > 0  -- alway try as easy level as possible
-                        || not unexpBack  -- no other choice for exploration
-                     then 1000 * abs easeDelta
-                     else 0
-                else if unexpBack
-                then 0  -- wait for stairs in the opposite direciton
-                else if lescape lvl
-                then 0  -- all explored, stay on the escape level
-                else 2  -- no escape anywhere, switch levels occasionally
+              expBenefit
+                | aimless = 100  -- faction is not exploring, so switch at will
+                | unexploredCurrent = 0  -- don't leave level until explored
+                | unexpForth =
+                    if easeDelta > 0  -- alway try as easy level as possible
+                       || not unexpBack  -- no other choice for exploration
+                    then 1000 * abs easeDelta
+                    else 0
+                | unexpBack = 0  -- wait for stairs in the opposite direciton
+                | lescape lvl = 0  -- all explored, stay on the escape level
+                | otherwise = 2  -- no escape, switch levels occasionally
               actorsThere = posToActors pos2 lid2 s
           return $!
              if boldpos b == bpos b   -- probably used stairs last turn
@@ -544,9 +537,9 @@ trigger aid fleeViaStairs = do
   benFeats <- mapM ben feats
   let benFeat = zip benFeats feats
   return $! liftFrequency $ toFreq "trigger"
-         $ [ (benefit, ReqTrigger (Just feat))
-           | (benefit, feat) <- benFeat
-           , benefit > 0 ]
+    [ (benefit, ReqTrigger (Just feat))
+    | (benefit, feat) <- benFeat
+    , benefit > 0 ]
 
 projectItem :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
 projectItem aid = do
@@ -653,7 +646,7 @@ applyItem aid applyGroup = do
               -- common and easy to drop organ, etc.
               let newGrps = strengthDropOrgan itemFull
                   hasDropOrgan = not $ null newGrps
-              in hasDropOrgan && null (intersect newGrps oldGrps)
+              in hasDropOrgan && null (newGrps `intersect` oldGrps)
             benR = case mben of
                      Nothing -> 0
                        -- experimenting is fun, but it's better to risk
@@ -666,10 +659,8 @@ applyItem aid applyGroup = do
                    * (if not dropOrganVoid then 1 else 0)
                    * durableBonus
                    * coeff cstore
-        in if itemLegal itemFull
-           then if benR > 0
-                then Just (benR, ReqApply iid cstore)
-                else Nothing
+        in if itemLegal itemFull && benR > 0
+           then Just (benR, ReqApply iid cstore)
            else Nothing
       benTool = mapMaybe fTool benList
   return $! liftFrequency $ toFreq "applyItem" benTool
@@ -746,7 +737,7 @@ displaceTowards aid source target = do
                            then Just (tgt, Just (q : rest, (goal, len - 1)))
                            else Nothing
               modifyClient $ \cli ->
-                cli {stargetD = EM.alter (const $ newTgt) aid (stargetD cli)}
+                cli {stargetD = EM.alter (const newTgt) aid (stargetD cli)}
               return $! returN "displace friend" $ target `vectorToFrom` source
           Just _ -> return reject
           Nothing -> do
@@ -850,7 +841,7 @@ moveOrRunAid run source dir = do
       case wps of
         Nothing -> return Nothing
         Just wp -> return $! Just $ RequestAnyAbility wp
-    [] -> do  -- move or search or alter
+    [] ->  -- move or search or alter
       if accessible cops lvl spos tpos then
         -- Movement requires full access.
         return $! Just $ RequestAnyAbility $ ReqMove dir

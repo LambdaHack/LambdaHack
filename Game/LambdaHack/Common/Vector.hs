@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Basic operations on 2D vectors represented in an efficient,
 -- but not unique, way.
 module Game.LambdaHack.Common.Vector
@@ -47,11 +46,9 @@ toEnumVector :: Int -> Vector
 {-# INLINE toEnumVector #-}
 toEnumVector n =
   let (y, x) = n `quotRem` (2 ^ maxLevelDimExponent)
-      (vx, vy) = if x > maxVectorDim
-                 then (x - 2 ^ maxLevelDimExponent, y + 1)
-                 else if x < - maxVectorDim
-                      then (x + 2 ^ maxLevelDimExponent, y - 1)
-                      else (x, y)
+      (vx, vy) | x > maxVectorDim = (x - 2 ^ maxLevelDimExponent, y + 1)
+               | x < - maxVectorDim = (x + 2 ^ maxLevelDimExponent, y - 1)
+               | otherwise = (x, y)
   in Vector{..}
 
 -- | Tells if a vector has length 1 in the chessboard metric.

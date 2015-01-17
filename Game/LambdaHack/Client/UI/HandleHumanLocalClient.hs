@@ -81,14 +81,14 @@ pickLeaderHuman k = do
   s <- getState
   case tryFindHeroK s side k of
     Nothing -> failMsg "no such member of the party"
-    Just (aid, b) ->
-      if blid b == arena && autoLvl
-      then failMsg $ showReqFailure NoChangeLvlLeader
-      else if autoDun
-      then failMsg $ showReqFailure NoChangeDunLeader
-      else do
-        void $ pickLeader True aid
-        return mempty
+    Just (aid, b)
+      | blid b == arena && autoLvl ->
+          failMsg $ showReqFailure NoChangeLvlLeader
+      | autoDun ->
+          failMsg $ showReqFailure NoChangeDunLeader
+      | otherwise -> do
+          void $ pickLeader True aid
+          return mempty
 
 -- * MemberCycle
 

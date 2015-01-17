@@ -133,7 +133,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
                     && (elem pos0 bl || elem pos0 shiftedBTrajectory) ->
                   ('*', atttrOnPathOrLine)  -- line takes precedence over path
                 _ | isJust stgtMode
-                    && (maybe False (elem pos0) mpath) ->
+                    && maybe False (elem pos0) mpath ->
                   (';', Color.defAttr {Color.fg = fgOnPathOrLine})
                 Just (aid, m) -> viewActor aid m
                 _ | smarkSmell && sml > ltime ->
@@ -265,12 +265,12 @@ drawLeaderStatus waitT width = do
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
           slashPick = slashes !! (max 0 (waitT - 1) `mod` length slashes)
-          checkDelta ResDelta{..} =
-            if resCurrentTurn < 0 || resPreviousTurn < 0
-            then addColor Color.BrRed  -- alarming news have priority
-            else if resCurrentTurn > 0 || resPreviousTurn > 0
-                 then addColor Color.BrGreen
-                 else addAttr  -- only if nothing at all noteworthy
+          checkDelta ResDelta{..}
+            | resCurrentTurn < 0 || resPreviousTurn < 0
+              = addColor Color.BrRed  -- alarming news have priority
+            | resCurrentTurn > 0 || resPreviousTurn > 0
+              = addColor Color.BrGreen
+            | otherwise = addAttr  -- only if nothing at all noteworthy
           calmAddAttr = checkDelta calmDelta
           darkPick | darkL   = "."
                    | otherwise = ":"
@@ -333,22 +333,21 @@ drawSelected drawnLevelId width = do
   selected <- getsClient sselected
   side <- getsClient sside
   s <- getState
-  let viewOurs (aid, Actor{bsymbol, bcolor, bhp})
-        | otherwise =
-          let cattr = Color.defAttr {Color.fg = bcolor}
-              sattr
-               | Just aid == mleader = inverseVideo
-               | ES.member aid selected =
-                   -- TODO: in the future use a red rectangle instead
-                   -- of background and mark them on the map, too;
-                   -- also, perhaps blink all selected on the map,
-                   -- when selection changes
-                   if bcolor /= Color.Blue
-                   then cattr {Color.bg = Color.Blue}
-                   else cattr {Color.bg = Color.Magenta}
-               | otherwise = cattr
-          in ( (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
-             , Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%' )
+  let viewOurs (aid, Actor{bsymbol, bcolor, bhp}) =
+        let cattr = Color.defAttr {Color.fg = bcolor}
+            sattr
+             | Just aid == mleader = inverseVideo
+             | ES.member aid selected =
+                 -- TODO: in the future use a red rectangle instead
+                 -- of background and mark them on the map, too;
+                 -- also, perhaps blink all selected on the map,
+                 -- when selection changes
+                 if bcolor /= Color.Blue
+                 then cattr {Color.bg = Color.Blue}
+                 else cattr {Color.bg = Color.Magenta}
+             | otherwise = cattr
+        in ( (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
+           , Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%' )
       ours = filter (not . bproj . snd)
              $ actorAssocs (== side) drawnLevelId s
       maxViewed = width - 2

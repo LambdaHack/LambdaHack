@@ -5,6 +5,7 @@ module Game.LambdaHack.Client.UI.MsgClient
   , lookAt, itemOverlay
   ) where
 
+import Control.Applicative
 import Control.Arrow (first)
 import Control.Exception.Assert.Sugar
 import Control.Monad
@@ -63,7 +64,7 @@ failWith :: MonadClientUI m => Msg -> m (SlideOrCmd a)
 failWith msg = do
   stopPlayBack
   let starMsg = "*" <> msg <> "*"
-  assert (not $ T.null msg) $ fmap Left $ promptToSlideshow starMsg
+  assert (not $ T.null msg) $ Left <$> promptToSlideshow starMsg
 
 failSlides :: MonadClientUI m => Slideshow -> m (SlideOrCmd a)
 failSlides slides = do
@@ -153,4 +154,4 @@ itemOverlay c lid bag = do
                            <> "  "
   return $! toOverlay $ mapMaybe pr
     $ map (first Left) (EM.assocs lSlots)
-      ++ (map (first Right) (IM.assocs numberSlots))
+      ++ map (first Right) (IM.assocs numberSlots)

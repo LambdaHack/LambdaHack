@@ -57,7 +57,7 @@ endOrLoop loop restart gameExit gameSave = do
     ([], _ : _) -> gameExit  -- don't call @loop@, that is, quit the game loop
 
 dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> Actor -> Bool -> m ()
-dieSer aid b hit = do
+dieSer aid b hit =
   -- TODO: clients don't see the death of their last standing actor;
   --       modify Draw.hs and Client.hs to handle that
   if bproj b then do

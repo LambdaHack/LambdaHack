@@ -41,13 +41,11 @@ partItemN fullInfo n c _lid localTime itemFull =
                   f startT = timeShift startT timeoutTurns > localTime
               in filter f (itemTimer itemFull)
           len = length it1
-          timer = if len == 0
-                  then ""
-                  else if itemK itemFull == 1 && len == 1
-                  then "(charging)"
-                  else "(" <> tshow len <+> "charging" <> ")"
+          timer | len == 0 = ""
+                | itemK itemFull == 1 && len == 1 = "(charging)"
+                | otherwise = "(" <> tshow len <+> "charging" <> ")"
           ts = take n effTs
-               ++ (if length effTs > n then ["(...)"] else [])
+               ++ ["(...)" | length effTs > n]
                ++ [timer]
           isUnique aspects = IK.Unique `elem` aspects
           unique = case iDisco of
@@ -139,7 +137,7 @@ textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
                       jaspects aspectToSuffix
                       jeffects effectToSuffix
             Nothing ->
-              splitAE (\d -> maybe "?" tshow $ Dice.reduceDice d)
+              splitAE (maybe "?" tshow . Dice.reduceDice)
                       (IK.iaspects itemKind) kindAspectToSuffix
                       (IK.ieffects itemKind) kindEffectToSuffix
       in aets ++ features
@@ -178,7 +176,7 @@ itemDesc c lid localTime itemFull =
         else (tshow weight, "g")
       ln = abs $ fromEnum $ jlid (itemBase itemFull)
       colorSymbol = uncurry (flip Color.AttrChar) (viewItem $ itemBase itemFull)
-      f color = Color.AttrChar Color.defAttr color
+      f = Color.AttrChar Color.defAttr
       lxsize = fst normalLevelBound + 1  -- TODO
       blurb =
         "D"  -- dummy

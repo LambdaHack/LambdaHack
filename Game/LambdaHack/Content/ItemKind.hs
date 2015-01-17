@@ -265,12 +265,12 @@ validateSingleItemKind ItemKind{..} =
          periodicAspect Periodic = True
          periodicAspect _ = False
          ps = filter periodicAspect iaspects
-     in if length ps > 1 then ["more than one Periodic specification"] else []
+     in ["more than one Periodic specification" | length ps > 1]
   ++ let timeoutAspect :: Aspect a -> Bool
          timeoutAspect Timeout{} = True
          timeoutAspect _ = False
          ts = filter timeoutAspect iaspects
-     in if length ts > 1 then ["more than one Timeout specification"] else []
+     in ["more than one Timeout specification" | length ts > 1]
 
 -- TODO: if "treasure" stays wired-in, assure there are some treasure items
 -- TODO: (spans multiple contents) check that there is at least one item

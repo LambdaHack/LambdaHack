@@ -76,7 +76,7 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
      assert (null singleOffenders `blame` "some content items not valid"
                                   `twith` singleOffenders) $
      assert (null allOffences `blame` "the content set not valid"
-                              `twith` (allOffences, content)) $
+                              `twith` (allOffences, content))
      -- By this point 'content' can be GCd.
      Ops
        { okind
@@ -100,8 +100,7 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
                     frequency [ i | (i, k) <- kindFreq M.! cgroup, p k ]
                     -}
              _ -> return Nothing
-       , ofoldrWithKey = \f z -> foldr (\(i, a) -> f i a) z
-                                 $ EM.assocs kindMap
+       , ofoldrWithKey = \f z -> foldr (uncurry f) z $ EM.assocs kindMap
        , ofoldrGroup = \cgroup f z ->
            case M.lookup cgroup kindFreq of
              Just freq -> foldr (\(p, (i, a)) -> f p i a) z freq

@@ -120,7 +120,7 @@ restoreScore Kind.COps{corule} = do
         handler e = do
           let msg = "High score restore failed. The error message is:"
                     <+> (T.unwords . T.lines) (tshow e)
-          delayPrint $ msg
+          delayPrint msg
           return Nothing
     either handler return res
   maybe (return HighScore.empty) return mscore
@@ -158,9 +158,8 @@ registerScore status mbody fid = do
           $ HighScore.showScore (pos, HighScore.getRecord pos ntable)
         else
           let nScoreDict = EM.insert gameModeId ntable scoreDict
-          in if worthMentioning then
+          in when (worthMentioning) $
                liftIO $ encodeEOF path (nScoreDict :: HighScore.ScoreDict)
-             else return ()
       diff | not $ fhasUI $ gplayer fact = difficultyDefault
            | otherwise = sdifficultySer
       theirVic (fi, fa) | isAtWar fact fi
@@ -266,4 +265,4 @@ getSetGen :: MonadServer m
           -> m R.StdGen
 getSetGen mrng = case mrng of
   Just rnd -> return rnd
-  Nothing -> liftIO $ R.newStdGen
+  Nothing -> liftIO R.newStdGen

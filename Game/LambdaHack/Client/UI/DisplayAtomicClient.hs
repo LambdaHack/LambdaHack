@@ -95,7 +95,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
     (letterSlots, numberSlots, _) <- getsClient sslots
     case ( lookup iid $ map swap $ EM.assocs letterSlots
          , lookup iid $ map swap $ IM.assocs numberSlots ) of
-      (Nothing, Nothing) -> do
+      (Nothing, Nothing) ->
         case c of
           CActor aid CGround -> updateItemSlotSide CGround aid iid
           CActor{} -> return ()
@@ -352,7 +352,7 @@ createActorUI aid body verbose verb = do
     actorVerbMU aid body verb
   when (bfid body /= side) $ do
     fact <- getsState $ (EM.! bfid body) . sfactionD
-    when (not (bproj body) && isAtWar fact side) $ do
+    when (not (bproj body) && isAtWar fact side) $
       -- Target even if nobody can aim at the enemy. Let's home in on him
       -- and then we can aim or melee. We set permit to False, because it's
       -- technically very hard to check aimability here, because we are
@@ -366,7 +366,7 @@ destroyActorUI :: MonadClientUI m
                => ActorId -> Actor -> MU.Part -> MU.Part -> Bool -> m ()
 destroyActorUI aid body verb verboseVerb verbose = do
   side <- getsClient sside
-  if (bfid body == side && bhp body <= 0 && not (bproj body)) then do
+  if bfid body == side && bhp body <= 0 && not (bproj body) then do
     actorVerbMU aid body verb
     void $ displayMore ColorBW ""
   else when verbose $ actorVerbMU aid body verboseVerb
@@ -409,7 +409,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let underAI = isAIFact fact
   mleader <- getsClient _sleader
-  if (cstore1 == CGround && Just aid == mleader && not underAI) then do
+  if cstore1 == CGround && Just aid == mleader && not underAI then do
     itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
     localTime <- getsState $ getLocalTime (blid b)
     itemToF <- itemToFullClient
@@ -671,7 +671,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           -- For subsequent messages use the proper name, never "you".
           let subject = partActor b
           if fid /= fidSource then do  -- before domination
-            if bcalm b == 0 then do  -- sometimes only a coincidence, but nm
+            if bcalm b == 0 then  -- sometimes only a coincidence, but nm
               aidVerbMU aid $ MU.Text "yield, under extreme pressure"
             else if fid == side then
               aidVerbMU aid $ MU.Text "black out, dominated by foes"
@@ -766,7 +766,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             || btime b >= timeShiftFromSpeed b activeItems timeCutOff
             || actorNewBorn b
             || actorDying b) $ do
-        let ageDisp displayed = EM.insert arena (btime b) displayed
+        let ageDisp = EM.insert arena (btime b)
         modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
         -- If considerable time passed, show delay.
         let delta = btime b `timeDeltaToFrom` timeCutOff
@@ -776,7 +776,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         mleader <- getsClient _sleader
         fact <- getsState $ (EM.! bfid b) . sfactionD
         let underAI = isAIFact fact
-        unless (Just aid == mleader && not underAI) $ do
+        unless (Just aid == mleader && not underAI) $
           -- Something new is gonna happen on this level (otherwise we'd send
           -- @UpdAgeLevel@ later on, with a larger time increment),
           -- so show crrent game state, before it changes.

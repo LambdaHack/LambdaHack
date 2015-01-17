@@ -124,7 +124,7 @@ condFloorWeaponM :: MonadClient m => ActorId -> m Bool
 condFloorWeaponM aid = do
   floorAssocs <- fullAssocsClient aid [CGround]
   let lootIsWeapon = any (isMeleeEqp . snd) floorAssocs
-  return $ lootIsWeapon  -- keep it lazy
+  return lootIsWeapon  -- keep it lazy
 
 -- | Check whether the actor has no weapon in equipment.
 condNoEqpWeaponM :: MonadClient m => ActorId -> m Bool
@@ -259,14 +259,14 @@ fleeList panic aid = do
              | otherwise = minimum $ map (chessDist p) posFoes
       dVic = map (dist &&& id) myVic
       -- Flee, if possible. Access required.
-      accVic = filter (accessibleHere . snd) $ dVic
+      accVic = filter (accessibleHere . snd) dVic
       gtVic = filter ((> dist (bpos b)) . fst) accVic
       -- At least don't get closer to enemies, but don't stay adjacent.
       eqVic = filter (\(d, _) -> d == dist (bpos b) && d > 1) accVic
-      rewardPath (d, p) =
-        if p `elem` tgtPath then Just (9 * d, p)
-        else if any (\q -> chessDist p q == 1) tgtPath then Just (d, p)
-        else Nothing
+      rewardPath (d, p)
+        | p `elem` tgtPath = Just (9 * d, p)
+        | any (\q -> chessDist p q == 1) tgtPath = Just (d, p)
+        | otherwise = Nothing
       goodVic = mapMaybe rewardPath gtVic
                 ++ filter ((`elem` tgtPath) . snd) eqVic
       pathVic = goodVic ++ if panic then accVic \\ goodVic else []

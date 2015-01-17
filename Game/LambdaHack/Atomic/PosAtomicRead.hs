@@ -325,7 +325,7 @@ seenAtomicSer posAtomic =
 generalMoveItem :: MonadStateRead m
                 => ItemId -> Int -> Container -> Container
                 -> m [UpdAtomic]
-generalMoveItem iid k c1 c2 = do
+generalMoveItem iid k c1 c2 =
   case (c1, c2) of
     (CActor aid1 cstore1, CActor aid2 cstore2) | aid1 == aid2 ->
       return [UpdMoveItem iid k aid1 cstore1 cstore2]

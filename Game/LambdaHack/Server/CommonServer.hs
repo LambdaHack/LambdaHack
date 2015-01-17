@@ -136,7 +136,7 @@ quitF mbody status fid = do
   let !_A = assert (maybe True ((fid ==) . bfid) mbody) ()
   fact <- getsState $ (EM.! fid) . sfactionD
   let oldSt = gquit fact
-  case fmap stOutcome $ oldSt of
+  case stOutcome <$> oldSt of
     Just Killed -> return ()    -- Do not overwrite in case
     Just Defeated -> return ()  -- many things happen in 1 turn.
     Just Conquer -> return ()
@@ -157,7 +157,7 @@ deduceQuits body status = do
   let fid = bfid body
       mapQuitF statusF fids = mapM_ (quitF Nothing statusF) $ delete fid fids
   quitF (Just body) status fid
-  let inGameOutcome (_, fact) = case fmap stOutcome $ gquit fact of
+  let inGameOutcome (_, fact) = case stOutcome <$> gquit fact of
         Just Killed -> False
         Just Defeated -> False
         Just Restart -> False  -- effectively, commits suicide

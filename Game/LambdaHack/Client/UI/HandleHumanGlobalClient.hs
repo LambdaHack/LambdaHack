@@ -69,7 +69,7 @@ moveRunHuman :: MonadClientUI m
 moveRunHuman initialStep finalGoal run runAhead dir = do
   tgtMode <- getsClient stgtMode
   if isJust tgtMode then
-    fmap Left $ moveCursorHuman dir (if run then 10 else 1)
+    Left <$> moveCursorHuman dir (if run then 10 else 1)
   else do
     arena <- getArenaUI
     leader <- getLeaderUI
@@ -202,8 +202,7 @@ displaceAid target = do
       tgts <- getsState $ posToActors tpos lid
       case tgts of
         [] -> assert `failure` (leader, sb, target, tb)
-        [_] -> do
-          return $ Right $ ReqDisplace target
+        [_] -> return $ Right $ ReqDisplace target
         _ -> failSer DisplaceProjectiles
     else failSer DisplaceAccess
 
@@ -218,25 +217,25 @@ moveSearchAlterAid source dir = do
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
-      runStopOrCmd =
+      runStopOrCmd
         -- Movement requires full access.
-        if accessible cops lvl spos tpos then
-          -- The potential invisible actor is hit. War started without asking.
-          Right $ RequestAnyAbility $ ReqMove dir
+        | accessible cops lvl spos tpos =
+            -- A potential invisible actor is hit. War started without asking.
+            Right $ RequestAnyAbility $ ReqMove dir
         -- No access, so search and/or alter the tile. Non-walkability is
         -- not implied by the lack of access.
-        else if not (Tile.isWalkable cotile t)
+        | not (Tile.isWalkable cotile t)
                 && (not (knownLsecret lvl)
                     || (isSecretPos lvl tpos  -- possible secrets here
                         && (Tile.isSuspect cotile t  -- not yet searched
                             || Tile.hideAs cotile t /= t))  -- search again
                     || Tile.isOpenable cotile t
                     || Tile.isClosable cotile t
-                    || Tile.isChangeable cotile t) then
-          if EM.member tpos $ lfloor lvl then
-            Left $ showReqFailure AlterBlockItem
-          else
-            Right $ RequestAnyAbility $ ReqAlter tpos Nothing
+                    || Tile.isChangeable cotile t)
+          = if EM.member tpos $ lfloor lvl then
+              Left $ showReqFailure AlterBlockItem
+            else
+              Right $ RequestAnyAbility $ ReqAlter tpos Nothing
             -- We don't use MoveSer, because we don't hit invisible actors.
             -- The potential invisible actor, e.g., in a wall or in
             -- an inaccessible doorway, is made known, taking a turn.
@@ -249,8 +248,8 @@ moveSearchAlterAid source dir = do
             -- about invisible pass-wall actors, but when an actor detected,
             -- it costs a turn and does not harm the invisible actors,
             -- so it's not so tempting.
-       -- Ignore a known boring, not accessible tile.
-       else Left "never mind"
+        -- Ignore a known boring, not accessible tile.
+        | otherwise = Left "never mind"
   return $! runStopOrCmd
 
 -- * Wait
@@ -264,7 +263,7 @@ waitHuman = do
 -- * MoveItem
 
 moveItemHuman :: MonadClientUI m
-              => [CStore] -> CStore -> (Maybe MU.Part) -> Bool
+              => [CStore] -> CStore -> Maybe MU.Part -> Bool
               -> m (SlideOrCmd (RequestTimed AbMoveItem))
 moveItemHuman cLegalRaw destCStore mverb auto = do
   let !_A = assert (destCStore `notElem` cLegalRaw) ()
@@ -273,11 +272,9 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
   let calmE = calmEnough b activeItems
-      cLegal = if calmE
-               then cLegalRaw
-               else if destCStore == CSha
-                    then []
-                    else delete CSha cLegalRaw
+      cLegal | calmE = cLegalRaw
+             | destCStore == CSha =[]
+             | otherwise = delete CSha cLegalRaw
       ret4 :: MonadClientUI m
            => CStore -> [(ItemId, ItemFull)]
            -> Int -> [(ItemId, Int, CStore, CStore)]
@@ -328,7 +325,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
 -- | Display items from a given container store and describe the chosen one.
 describeItemHuman :: MonadClientUI m
                   => ItemDialogMode -> m (SlideOrCmd (RequestTimed AbMoveItem))
-describeItemHuman mode = describeItemC mode
+describeItemHuman = describeItemC
 
 -- * Project
 
@@ -429,7 +426,7 @@ projectItem ts posFromCursor = do
         mpsuitReq <- psuitReq
         case mpsuitReq of
           Left err -> return $ Left err
-          Right psuitReqFun -> return $ Right $ \itemFull -> do
+          Right psuitReqFun -> return $ Right $ \itemFull ->
             case psuitReqFun itemFull of
               Left _ -> False
               Right suit -> suit
@@ -442,7 +439,7 @@ projectItem ts posFromCursor = do
       mpsuitReq <- psuitReq
       case mpsuitReq of
         Left err -> failWith err
-        Right psuitReqFun -> do
+        Right psuitReqFun ->
           case psuitReqFun itemFull of
             Left reqFail -> failSer reqFail
             Right _ -> return $ Right (iid, fromCStore)
@@ -494,13 +491,12 @@ alterDirHuman ts = do
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
-      keys = zipWith K.toKM (repeat K.NoModifier)
-                            (K.dirAllKey configVi configLaptop)
+      keys = map (K.toKM K.NoModifier) (K.dirAllKey configVi configLaptop)
       prompt = makePhrase ["What to", verb1 <> "? [movement key"]
   me <- displayChoiceUI prompt emptyOverlay keys
   case me of
     Left slides -> failSlides slides
-    Right e -> K.handleDir configVi configLaptop e (flip alterTile ts)
+    Right e -> K.handleDir configVi configLaptop e (`alterTile` ts)
                                                    (failWith "never mind")
 
 -- | Player tries to alter a tile using a feature.
@@ -548,7 +544,7 @@ triggerTileHuman ts = do
         mk = getK ts
     case mk of
       Nothing -> failWith "never mind"
-      Just k -> fmap Left $ tgtAscendHuman k
+      Just k -> Left <$> tgtAscendHuman k
   else triggerTile ts
 
 -- | Player tries to trigger a tile using a feature.
@@ -646,7 +642,7 @@ runOnceAheadHuman = do
           then failWith $ "run stop:" <+> stopMsg
           else return $ Left mempty
         Right runCmd ->
-          return $! Right runCmd
+          return $ Right runCmd
 
 -- * MoveOnceToCursor
 
@@ -699,7 +695,7 @@ goToCursor initialStep run = do
 multiActorGoTo :: MonadClient m
                => LevelId -> Point -> RunParams
                -> m (Either Msg (Bool, Vector))
-multiActorGoTo arena c paramOld = do
+multiActorGoTo arena c paramOld =
   case paramOld of
     RunParams{runMembers = []} ->
       return $ Left "selected actors no longer there"

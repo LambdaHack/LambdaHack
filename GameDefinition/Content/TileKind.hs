@@ -300,7 +300,7 @@ makeDark k = let darkText :: GroupName TileKind -> GroupName TileKind
                  darkFeat (HideAs t) = Just $ HideAs $ darkText t
                  darkFeat (RevealAs t) = Just $ RevealAs $ darkText t
                  darkFeat OftenItem = Nothing  -- items not common in the dark
-                 darkFeat feat = Just $ feat
+                 darkFeat feat = Just feat
              in k { tfreq    = darkFrequency
                   , tfeature = Dark : mapMaybe darkFeat (tfeature k)
                   }

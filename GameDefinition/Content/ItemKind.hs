@@ -291,7 +291,7 @@ necklace1 = necklace
 necklace2 = necklace
   { irarity  = [(2, 0), (10, 1)]
   , iaspects = (Timeout $ d 3 + 3 - dl 3 |*| 10) : iaspects necklace
-  , ieffects = [ Recharging (Impress)
+  , ieffects = [ Recharging Impress
                , Recharging (DropItem COrgan "temporary conditions" True)
                , Recharging (Summon [("mobile animal", 1)] $ 1 + dl 2)
                , Recharging (Explode "waste") ]
@@ -432,7 +432,7 @@ potion = ItemKind
   }
 potion1 = potion
   { ieffects = [ NoEffect "of rose water", Impress
-               , OnSmash (ApplyPerfume), OnSmash (Explode "fragrance") ]
+               , OnSmash ApplyPerfume, OnSmash (Explode "fragrance") ]
   }
 potion2 = potion
   { irarity  = [(6, 10), (10, 10)]

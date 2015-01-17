@@ -84,7 +84,7 @@ showScore (pos, score) =
       diff = difficulty score
       diffText | diff == difficultyDefault = ""
                | otherwise = "difficulty" <+> tshow diff <> ", "
-      tturns = makePhrase $ [MU.CarWs turns "turn"]
+      tturns = makePhrase [MU.CarWs turns "turn"]
   in [ tpos <> "." <+> tscore <+> gplayerName score
        <+> died <> "," <+> victims <> ","
      , "            "
@@ -92,8 +92,7 @@ showScore (pos, score) =
      ]
 
 getTable :: Kind.Id ModeKind -> ScoreDict -> ScoreTable
-getTable gameModeId scoreDict =
-  EM.findWithDefault (ScoreTable []) gameModeId scoreDict
+getTable = EM.findWithDefault (ScoreTable [])
 
 getRecord :: Int -> ScoreTable -> ScoreRecord
 getRecord pos (ScoreTable table) =
@@ -159,7 +158,7 @@ tshowable :: ScoreTable -> Int -> Int -> [Text]
 tshowable (ScoreTable table) start height =
   let zipped    = zip [1..] table
       screenful = take height . drop (start - 1) $ zipped
-  in (intercalate ["\n"] $ map showScore screenful) ++ [moreMsg]
+  in intercalate ["\n"] (map showScore screenful) ++ [moreMsg]
 
 -- | Produce a couple of renderings of the high scores table.
 showCloseScores :: Int -> ScoreTable -> Int -> [[Text]]
@@ -203,7 +202,7 @@ highSlideshow table pos gameModeName =
           Restart ->
             ("your abortive attempt", MU.Sg3rd, "(no bonus)")
       subject =
-        makePhrase [efforts, "in", MU.Capitalize $ MU.Text $ gameModeName]
+        makePhrase [efforts, "in", MU.Capitalize $ MU.Text gameModeName]
       msg = makeSentence
         [ MU.SubjectVerb person MU.Yes (MU.Text subject) "award you"
         , MU.Ordinal pos, "place", msgUnless ]

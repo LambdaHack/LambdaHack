@@ -164,7 +164,7 @@ featureToSuff feat =
     Tactic tactics -> "overrides tactics to" <+> tshow tactics
 
 effectToSuffix :: Effect -> Text
-effectToSuffix effect = effectToSuff effect
+effectToSuffix = effectToSuff
 
 aspectToSuffix :: Aspect Int -> Text
 aspectToSuffix aspect = aspectToSuff aspect affixBonus

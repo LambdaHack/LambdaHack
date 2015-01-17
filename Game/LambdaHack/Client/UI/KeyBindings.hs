@@ -56,7 +56,7 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   in Binding
   { bcmdMap = M.fromList $ map (second mkDescribed) cmdAll
   , bcmdList = map (second mkDescribed) cmdWithHelp
-  , brevMap = M.fromList $ map swap $ map (second snd) cmdAll
+  , brevMap = M.fromList $ map (swap . second snd) cmdAll
   }
 
 -- | Produce a set of help screens from the key bindings.

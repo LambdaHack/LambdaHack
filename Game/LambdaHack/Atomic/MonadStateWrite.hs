@@ -165,19 +165,19 @@ deleteItemActor iid k aid cstore = case cstore of
     deleteItemSha iid k (bfid b)
 
 deleteItemBody :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
-deleteItemBody iid k aid = do
+deleteItemBody iid k aid =
   updateActor aid $ \b -> b {borgan = rmFromBag k iid (borgan b) }
 
 deleteItemEqp :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
-deleteItemEqp iid k aid = do
+deleteItemEqp iid k aid =
   updateActor aid $ \b -> b {beqp = rmFromBag k iid (beqp b)}
 
 deleteItemInv :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
-deleteItemInv iid k aid = do
+deleteItemInv iid k aid =
   updateActor aid $ \b -> b {binv = rmFromBag k iid (binv b)}
 
 deleteItemSha :: MonadStateWrite m => ItemId -> Int -> FactionId -> m ()
-deleteItemSha iid k fid = do
+deleteItemSha iid k fid =
   updateFaction fid $ \fact -> fact {gsha = rmFromBag k iid (gsha fact)}
 
 -- Removing the part of the kit from the front of the list,

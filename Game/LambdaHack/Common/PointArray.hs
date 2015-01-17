@@ -2,7 +2,7 @@
 module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateA, generateMA, sizeA
-  , foldlA, ifoldlA, mapA, imapA, mapWithKeyM_A
+  , foldlA, ifoldlA, mapA, imapA, mapWithKeyMA
   , safeSetA, unsafeSetA, unsafeUpdateA
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
   ) where
@@ -145,10 +145,10 @@ safeSetA c Array{..} =
 
 -- | Map monadically over an array (function applied to each element
 -- and its index) and ignore the results.
-mapWithKeyM_A :: Enum c => Monad m
+mapWithKeyMA :: Enum c => Monad m
               => (Point -> c -> m ()) -> Array c -> m ()
-{-# INLINE mapWithKeyM_A #-}
-mapWithKeyM_A f Array{..} =
+{-# INLINE mapWithKeyMA #-}
+mapWithKeyMA f Array{..} =
   U.ifoldl' (\a n c -> a >> f (punindex axsize n) (cnv c))
             (return ())
             avector

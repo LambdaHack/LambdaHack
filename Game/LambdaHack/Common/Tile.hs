@@ -25,6 +25,7 @@ module Game.LambdaHack.Common.Tile
 #endif
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import qualified Data.Array.Unboxed as A
 import Data.Maybe
@@ -80,16 +81,14 @@ hasFeature Kind.Ops{okind} f t = kindHasFeature f (okind t)
 -- Essential for efficiency of "FOV", hence tabulated.
 isClear :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isClear #-}
-isClear Kind.Ops{ospeedup = Just TileSpeedup{isClearTab}} =
-  \k -> accessTab isClearTab k
+isClear Kind.Ops{ospeedup = Just TileSpeedup{isClearTab}} = accessTab isClearTab
 isClear cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile is lit on its own.
 -- Essential for efficiency of "Perception", hence tabulated.
 isLit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isLit #-}
-isLit Kind.Ops{ospeedup = Just TileSpeedup{isLitTab}} =
-  \k -> accessTab isLitTab k
+isLit Kind.Ops{ospeedup = Just TileSpeedup{isLitTab}} = accessTab isLitTab
 isLit cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether actors can walk into a tile.
@@ -97,7 +96,7 @@ isLit cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 isWalkable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isWalkable #-}
 isWalkable Kind.Ops{ospeedup = Just TileSpeedup{isWalkableTab}} =
-  \k -> accessTab isWalkableTab k
+  accessTab isWalkableTab
 isWalkable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether actors can walk into a tile, perhaps opening a door first,
@@ -106,15 +105,14 @@ isWalkable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 isPassable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isPassable #-}
 isPassable Kind.Ops{ospeedup = Just TileSpeedup{isPassableTab}} =
-  \k -> accessTab isPassableTab k
+  accessTab isPassableTab
 isPassable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile is a door, open or closed.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isDoor :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isDoor #-}
-isDoor Kind.Ops{ospeedup = Just TileSpeedup{isDoorTab}} =
-  \k -> accessTab isDoorTab k
+isDoor Kind.Ops{ospeedup = Just TileSpeedup{isDoorTab}} = accessTab isDoorTab
 isDoor cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile is suspect.
@@ -122,7 +120,7 @@ isDoor cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 isSuspect :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isSuspect #-}
 isSuspect Kind.Ops{ospeedup = Just TileSpeedup{isSuspectTab}} =
-  \k -> accessTab isSuspectTab k
+  accessTab isSuspectTab
 isSuspect cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile kind (specified by its id) has a ChangeTo feature.
@@ -130,7 +128,7 @@ isSuspect cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 isChangeable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isChangeable #-}
 isChangeable Kind.Ops{ospeedup = Just TileSpeedup{isChangeableTab}} =
-  \k -> accessTab isChangeableTab k
+  accessTab isChangeableTab
 isChangeable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether one can easily explore a tile, possibly finding a treasure
@@ -193,8 +191,8 @@ openTo Kind.Ops{okind, opick} t = do
     [] -> return t
     groups -> do
       grp <- oneOf groups
-      fmap (fromMaybe $ assert `failure` grp)
-        $ opick grp (const True)
+      (fromMaybe $ assert `failure` grp)
+        <$> opick grp (const True)
 
 closeTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 closeTo Kind.Ops{okind, opick} t = do
@@ -204,8 +202,8 @@ closeTo Kind.Ops{okind, opick} t = do
     [] -> return t
     groups -> do
       grp <- oneOf groups
-      fmap (fromMaybe $ assert `failure` grp)
-        $ opick grp (const True)
+      (fromMaybe $ assert `failure` grp)
+        <$> opick grp (const True)
 
 embedItems :: Kind.Ops TileKind -> Kind.Id TileKind -> [GroupName ItemKind]
 embedItems Kind.Ops{okind} t =
@@ -227,8 +225,8 @@ revealAs Kind.Ops{okind, opick} t = do
     [] -> return t
     groups -> do
       grp <- oneOf groups
-      fmap (fromMaybe $ assert `failure` grp)
-        $ opick grp (const True)
+      (fromMaybe $ assert `failure` grp)
+        <$> opick grp (const True)
 
 hideAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 hideAs Kind.Ops{okind, ouniqGroup} t =

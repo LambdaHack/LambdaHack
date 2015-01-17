@@ -4,6 +4,7 @@ module Game.LambdaHack.Server.DungeonGen.Place
   ( TileMapEM, Place(..), placeCheck, buildFenceRnd, buildPlace
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
@@ -97,8 +98,8 @@ buildPlace cops@Kind.COps{ cotile=Kind.Ops{opick=opick}
                          , coplace=Kind.Ops{ofoldrGroup} }
            CaveKind{..} dnight darkCorTile litCorTile
            ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) r = do
-  qFWall <- fmap (fromMaybe $ assert `failure` cfillerTile)
-                 $ opick cfillerTile (const True)
+  qFWall <- fromMaybe (assert `failure` cfillerTile)
+            <$> opick cfillerTile (const True)
   dark <- chanceDice ldepth totalDepth cdarkChance
   -- TODO: factor out from here and newItem:
   let findInterval x1y1 [] = (x1y1, (11, 0))
@@ -173,8 +174,8 @@ ooverride :: Kind.COps -> [(Char, GroupName TileKind)]
 ooverride Kind.COps{cotile=Kind.Ops{opick}} poverride =
   let getLegend (s, cgroup) acc = do
         m <- acc
-        tk <- fmap (fromMaybe $ assert `failure` (cgroup, s))
-              $ opick cgroup (const True)  -- tile symbol ignored
+        tk <- fromMaybe (assert `failure` (cgroup, s))
+              <$> opick cgroup (const True)  -- tile symbol ignored
         return $! EM.insert s tk m
       legend = foldr getLegend (return EM.empty) poverride
   in legend
@@ -196,8 +197,8 @@ buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
         let isCorner x y = x `elem` [x0-1, x1+1] && y `elem` [y0-1, y1+1]
             tileGroup | isCorner xf yf = "basic outer fence"
                       | otherwise = couterFenceTile
-        fenceId <- fmap (fromMaybe $ assert `failure` tileGroup)
-                   $ opick tileGroup (const True)
+        fenceId <- fromMaybe (assert `failure` tileGroup)
+                   <$> opick tileGroup (const True)
         return (Point xf yf, fenceId)
       pointList = [ (x, y) | x <- [x0-1, x1+1], y <- [y0..y1] ]
                   ++ [ (x, y) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
@@ -219,8 +220,7 @@ tilePlace area pl@PlaceKind{..} =
       (dx, dy) = assert (xwidth >= dxcorner && ywidth >= length ptopLeft
                          `blame` (area, pl))
                         (xwidth, ywidth)
-      fromX (x2, y2) =
-        zipWith (\x y -> Point x y) [x2..] (repeat y2)
+      fromX (x2, y2) = map (`Point` y2) [x2..]
       fillInterior :: (forall a. Int -> [a] -> [a]) -> [(Point, Char)]
       fillInterior f =
         let tileInterior (y, row) =

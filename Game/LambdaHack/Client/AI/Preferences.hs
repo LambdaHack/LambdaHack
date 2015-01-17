@@ -74,7 +74,7 @@ effectToBenefit cops b activeItems fact eff =
     IK.CreateItem COrgan grp _ ->  -- TODO: use the timeout
       let (total, count) = organBenefit grp cops b
       in total `divUp` count  -- average over all matching grp; rarities ignored
-    IK.CreateItem _ _ _ -> 30
+    IK.CreateItem{} -> 30
     IK.DropItem COrgan grp True ->  -- calculated for future use, general pickup
       let (total, _) = organBenefit grp cops b
       in - total  -- sum over all matching grp; simplification: rarities ignored
@@ -149,13 +149,12 @@ totalUsefulness cops b activeItems fact itemFull =
                   || selfSum < 0 && maximum selfBens > 10)
             effSum = sum effBens
             isWeapon = isMelee itemFull
-            totalSum = if goesIntoInv itemFull
-                       then effSum
-                       else if mixedBlessing
-                       then 0  -- significant mixed blessings out of AI control
-                       else if isWeapon && effSum < 0
-                       then - effSum + selfSum
-                       else selfSum  -- if the weapon heals the enemy, it
+            totalSum
+              | goesIntoInv itemFull = effSum
+              | mixedBlessing =
+                  0  -- significant mixed blessings out of AI control
+              | isWeapon && effSum < 0 = - effSum + selfSum
+              | otherwise = selfSum  -- if the weapon heals the enemy, it
                                      -- won't be used but can be equipped
         in (totalSum, effSum)
   in case itemDisco itemFull of

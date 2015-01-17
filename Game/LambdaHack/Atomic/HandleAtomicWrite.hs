@@ -257,7 +257,7 @@ updRefillCalm aid n =
       }
 
 updOldFidActor :: MonadStateWrite m => ActorId -> FactionId -> FactionId -> m ()
-updOldFidActor aid fromFid toFid = assert (fromFid /= toFid) $ do
+updOldFidActor aid fromFid toFid = assert (fromFid /= toFid) $
   updateActor aid $ \b ->
     assert (boldfid b == fromFid `blame` (aid, fromFid, toFid, b))
     $ b {boldfid = toFid}

@@ -42,7 +42,7 @@ frontendName = "vty"
 startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
 startup sdebugCli k = do
   svty <- mkVty def
-  schanKey <- STM.atomically $ STM.newTQueue
+  schanKey <- STM.atomically STM.newTQueue
   escMVar <- newEmptyMVar
   let sess = FrontendSession{sescMVar = Just escMVar, ..}
   void $ async $ storeKeys sess
@@ -59,10 +59,10 @@ storeKeys sess@FrontendSession{..} = do
           !pointer = dummyPoint
           readAll = do
             res <- STM.atomically $ STM.tryReadTQueue schanKey
-            when (isJust res) $ readAll
+            when (isJust res) readAll
       -- If ESC, also mark it specially and reset the key channel.
       case sescMVar of
-        Just escMVar -> do
+        Just escMVar ->
           when (key == K.Esc) $ do
             void $ tryPutMVar escMVar ()
             readAll
@@ -143,11 +143,11 @@ keyTranslate n =
 
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: [Modifier] -> K.Modifier
-modifierTranslate mods =
-  if MCtrl `elem` mods then K.Control
-  else if MAlt `elem` mods then K.Alt
-  else if MShift `elem` mods then K.Shift
-  else K.NoModifier
+modifierTranslate mods
+  | MCtrl `elem` mods = K.Control
+  | MAlt `elem` mods = K.Alt
+  | MShift `elem` mods = K.Shift
+  | otherwise = K.NoModifier
 
 -- TODO: with vty 5.0 check if bold is still needed.
 -- A hack to get bright colors via the bold attribute. Depending on terminal

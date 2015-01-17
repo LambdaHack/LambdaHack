@@ -358,8 +358,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
            { defLabel = K.showKM km
            , defCond = not (cCur == MOwned
                             || autoLvl
-                            || null (filter (\(_, b) ->
-                                               blid b == blid body) hs))
+                            || not (any (\(_, b) -> blid b == blid body) hs))
            , defAction = \_ -> do
                err <- memberCycle False
                let !_A = assert (err == mempty `blame` err) ()
@@ -426,8 +425,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
            })
       arrows =
         let kCmds = K.moveBinding False False
-                                  (\v -> moveCursorHuman v 1)
-                                  (\v -> moveCursorHuman v 10)
+                                  (`moveCursorHuman` 1) (`moveCursorHuman` 10)
         in map (uncurry $ cursorCmdDef False) kCmds
       lettersDef :: DefItemKey m
       lettersDef = DefItemKey
@@ -480,8 +478,8 @@ statsOverlay aid = do
         -- TODO: not applicable right now, IK.EqpSlotAddHurtRanged
         , (IK.EqpSlotAddArmorMelee, \t -> "[" <> tshow (block t) <> "%]")
         , (IK.EqpSlotAddArmorRanged, \t -> "{" <> tshow (block t) <> "%}")
-        , (IK.EqpSlotAddMaxHP, \t -> tshow t)
-        , (IK.EqpSlotAddMaxCalm, \t -> tshow t)
+        , (IK.EqpSlotAddMaxHP, tshow)
+        , (IK.EqpSlotAddMaxCalm, tshow)
         , (IK.EqpSlotAddSpeed, \t -> tshow t <> "m/10s")
         , (IK.EqpSlotAddSight, \t -> tshow t <> "m")
         , (IK.EqpSlotAddSmell, \t -> tshow t <> "m")
@@ -530,7 +528,7 @@ runDefItemKey keyDefs lettersDef io labelLetterSlots prompt = do
   let itemKeys =
         let slotKeys = map (K.Char . slotChar) (EM.keys labelLetterSlots)
             defKeys = map fst keyDefs
-        in zipWith K.toKM (repeat K.NoModifier) slotKeys ++ defKeys
+        in map (K.toKM K.NoModifier) slotKeys ++ defKeys
       choice = let letterRange = defLabel lettersDef
                    letterLabel | T.null letterRange = []
                                | otherwise = [letterRange]
@@ -552,7 +550,7 @@ pickNumber askNumber kAll = do
         kbound = min 9 kAll
         kprompt = "Choose number [1-" <> tshow kbound
                   <> ", RET(" <> tDefault <> ")"
-        kkeys = zipWith K.toKM (repeat K.NoModifier)
+        kkeys = map (K.toKM K.NoModifier)
                 $ map (K.Char . Char.intToDigit) [1..kbound]
                   ++ [K.Return]
     kkm <- displayChoiceUI kprompt emptyOverlay kkeys
@@ -862,17 +860,17 @@ doLook addMoreMsg = do
 _floorItemOverlay :: MonadClientUI m
                   => LevelId -> Point
                   -> m (SlideOrCmd (RequestTimed Ability.AbMoveItem))
-_floorItemOverlay _lid _p = describeItemC (MOwned {-CFloor lid p-})
+_floorItemOverlay _lid _p = describeItemC MOwned {-CFloor lid p-}
 
 describeItemC :: MonadClientUI m
               => ItemDialogMode
               -> m (SlideOrCmd (RequestTimed Ability.AbMoveItem))
 describeItemC c = do
-  let subject body = partActor body
+  let subject = partActor
       verbSha body activeItems = if calmEnough body activeItems
                                  then "notice"
                                  else "paw distractedly"
-      promptCase body activeItems c2 =
+      prompt body activeItems c2 =
         let (tIn, t) = ppItemDialogMode c2
         in case c2 of
         MStore CGround ->  -- TODO: variant for actors without (unwounded) feet
@@ -905,7 +903,6 @@ describeItemC c = do
             [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"
             , MU.Text tIn
             , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
-      prompt body activeItems c2 = promptCase body activeItems c2
   ggi <- getStoreItem prompt c
   case ggi of
     Right ((iid, itemFull), c2) -> do
@@ -928,7 +925,7 @@ describeItemC c = do
                   ++ [ (K.Char 's', (CSha, "shared 's'tash")) | calmE ]
                   ++ [ (K.Char 'g', (CGround, "'g'round")) ]
               choice = "[" <> T.intercalate ", " (map (snd . snd) fstores)
-              keys = zipWith K.toKM (repeat K.NoModifier) (map K.Char "epsg")
+              keys = map (K.toKM K.NoModifier . K.Char) "epsg"
           akm <- displayChoiceUI (prompt2 <+> choice) io keys
           case akm of
             Left slides -> failSlides slides
@@ -938,7 +935,7 @@ describeItemC c = do
                 Left slides -> return $ Left slides
                 Right k -> do
                   let lr toCStore = return $ Right $ ReqMoveItems
-                                    $ [(iid, k, fromCStore, toCStore)]
+                                     [(iid, k, fromCStore, toCStore)]
                   case lookup (K.key km) fstores of
                     Just (store, _) -> lr store
                     Nothing -> return $ Left mempty

@@ -17,6 +17,7 @@ module Game.LambdaHack.Atomic.CmdAtomic
   , undoUpdAtomic, undoSfxAtomic, undoCmdAtomic
   ) where
 
+import Control.Applicative
 import Data.Binary
 import Data.Int (Int64)
 import GHC.Generics (Generic)
@@ -121,7 +122,7 @@ data SfxAtomic =
   | SfxCheck !ActorId !ItemId !CStore
   | SfxTrigger !ActorId !Point !TK.Feature
   | SfxShun !ActorId !Point !TK.Feature
-  | SfxEffect !FactionId !ActorId !(IK.Effect)
+  | SfxEffect !FactionId !ActorId !IK.Effect
   | SfxMsgFid !FactionId !Msg
   | SfxMsgAll !Msg
   | SfxActorStart !ActorId
@@ -206,5 +207,5 @@ undoSfxAtomic cmd = case cmd of
   SfxActorStart{} -> cmd
 
 undoCmdAtomic :: CmdAtomic -> Maybe CmdAtomic
-undoCmdAtomic (UpdAtomic cmd) = fmap UpdAtomic $ undoUpdAtomic cmd
+undoCmdAtomic (UpdAtomic cmd) = UpdAtomic <$> undoUpdAtomic cmd
 undoCmdAtomic (SfxAtomic sfx) = Just $ SfxAtomic $ undoSfxAtomic sfx

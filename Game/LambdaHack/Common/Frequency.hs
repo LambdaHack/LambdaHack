@@ -101,8 +101,7 @@ renameFreq newName fr = fr {nameFrequency = newName}
 -- | Set frequency of an element.
 setFreq :: Eq a => Frequency a -> a -> Int -> Frequency a
 setFreq (Frequency xs name) x n =
-  let xsNew = (if n <= 0 then [(n, x)] else [])
-              ++ filter ((/= x) . snd) xs
+  let xsNew = [(n, x) | n <= 0] ++ filter ((/= x) . snd) xs
   in Frequency xsNew name
 
 -- | Test if the frequency distribution is empty.

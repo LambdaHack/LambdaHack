@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.BfsClient
   , closestTriggers, closestItems, closestFoes
   ) where
 
+import Control.Applicative
 import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
 import Control.Monad
@@ -36,12 +37,12 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind (TileKind)
 
 invalidateBfs :: ActorId
-              -> (EM.EnumMap ActorId
-                        ( Bool, PointArray.Array BfsDistance
-                        , Point, Int, Maybe [Point]) )
-              -> (EM.EnumMap ActorId
-                        ( Bool, PointArray.Array BfsDistance
-                        , Point, Int, Maybe [Point]) )
+              -> EM.EnumMap ActorId
+                   ( Bool, PointArray.Array BfsDistance
+                   , Point, Int, Maybe [Point])
+              -> EM.EnumMap ActorId
+                   ( Bool, PointArray.Array BfsDistance
+                   , Point, Int, Maybe [Point])
 invalidateBfs =
   EM.adjust
     (\(_, bfs, target, seps, mpath) -> (False, bfs, target, seps, mpath))
@@ -93,7 +94,7 @@ getCacheBfs aid = do
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
     Just (True, bfs, _, _, _) -> return bfs
-    _ -> fmap fst $ getCacheBfsAndPath aid (Point 0 0)
+    _ -> fst <$> getCacheBfsAndPath aid (Point 0 0)
 
 condBFS :: MonadClient m
         => ActorId
@@ -116,7 +117,7 @@ condBFS aid = do
   let unknownId = ouniqGroup "unknown space"
       chAccess = checkAccess cops lvl
       canOpenDoors = EM.findWithDefault 0 Ability.AbAlter actorSk > 0
-      chDoorAccess = if canOpenDoors then [checkDoorAccess cops lvl] else []
+      chDoorAccess = [checkDoorAccess cops lvl | canOpenDoors]
       conditions = catMaybes $ chAccess : chDoorAccess
       -- Legality of move from a known tile, assuming doors freely openable.
       isEnterable :: Point -> Point -> MoveLegal
@@ -302,7 +303,7 @@ unexploredDepth = do
   return unexploredD
 
 -- | Closest (wrt paths) items and changeable tiles (e.g., item caches).
-closestItems :: MonadClient m => ActorId -> m ([(Int, (Point, Maybe ItemBag))])
+closestItems :: MonadClient m => ActorId -> m [(Int, (Point, Maybe ItemBag))]
 closestItems aid = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
@@ -323,7 +324,7 @@ closestItems aid = do
 -- | Closest (wrt paths) enemy actors.
 closestFoes :: MonadClient m
             => [(ActorId, Actor)] -> ActorId -> m [(Int, (ActorId, Actor))]
-closestFoes foes aid = do
+closestFoes foes aid =
   case foes of
     [] -> return []
     _ -> do

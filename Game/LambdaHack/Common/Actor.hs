@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Actors in the game: heroes, monsters, etc. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Common.Actor
@@ -105,8 +104,8 @@ monsterGenChance (AbsDepth n) (AbsDepth depth) numMonsters actorCoeff =
   -- Mimics @castDice@. On level 1, First 2 monsters appear fast.
   $ let scaledDepth = 5 * n `div` depth
     in chance $ 1%(fromIntegral
-                   $ (10 * actorCoeff * (numMonsters - scaledDepth))
-                     `max` actorCoeff)
+                     ((10 * actorCoeff * (numMonsters - scaledDepth))
+                      `max` actorCoeff))
 
 -- | The part of speech describing the actor.
 partActor :: Actor -> MU.Part
@@ -154,11 +153,11 @@ timeShiftFromSpeed b activeItems time =
 
 -- | Whether an actor is braced for combat this clip.
 braced :: Actor -> Bool
-braced b = bwait b
+braced = bwait
 
 -- | The actor waited last turn.
 waitedLastTurn :: Actor -> Bool
-waitedLastTurn b = bwait b
+waitedLastTurn = bwait
 
 actorDying :: Actor -> Bool
 actorDying b = bhp b <= 0
@@ -167,7 +166,7 @@ actorDying b = bhp b <= 0
 actorNewBorn :: Actor -> Bool
 actorNewBorn b = boldpos b == Point 0 0
                  && not (waitedLastTurn b)
-                 && not (btime b < timeTurn)
+                 && btime b >= timeTurn
 
 hpTooLow :: Actor -> [ItemFull] -> Bool
 hpTooLow b activeItems =

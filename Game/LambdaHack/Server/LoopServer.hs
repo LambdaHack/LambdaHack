@@ -73,7 +73,7 @@ loopSer sdebug executorUI executorAI !cops = do
       execUpdAtomic $ UpdResumeServer $ updateCOps setCurrentCops sRaw
       -- We dump RNG seeds here, in case the game wasn't run
       -- with --dumpInitRngs previously and we need to seeds.
-      when (sdumpInitRngs sdebug) $ dumpRngs
+      when (sdumpInitRngs sdebug) dumpRngs
     _ -> do  -- Starting the first new game for this savefile.
       -- Set up commandline debug mode
       let mrandom = case restored of
@@ -97,7 +97,7 @@ loopSer sdebug executorUI executorAI !cops = do
   -- Run the leader and other actors moves. Eventually advance the time
   -- and repeat.
   let loop = do
-        let factionArena fact = do
+        let factionArena fact =
               case gleader fact of
                -- Even spawners and horrors need an active arena
                -- for their leader, or they start clogging stairs.
@@ -128,8 +128,7 @@ endClip arenas = do
   let stdRuleset = Kind.stdRuleset corule
       writeSaveClips = rwriteSaveClips stdRuleset
       leadLevelClips = rleadLevelClips stdRuleset
-      ageProcessed lid processed =
-        EM.insertWith absoluteTimeAdd lid timeClip processed
+      ageProcessed lid = EM.insertWith absoluteTimeAdd lid timeClip
       ageServer lid ser = ser {sprocessed = ageProcessed lid $ sprocessed ser}
   mapM_ (modifyServer . ageServer) arenas
   execUpdAtomic $ UpdAgeGame (Delta timeClip) arenas
@@ -171,7 +170,7 @@ applyPeriodicLevel lid = do
   let applyPeriodicItem c aid iid =
         case EM.lookup iid discoEffect of
           Just ItemAspectEffect{jeffects, jaspects} ->
-            if IK.Periodic `elem` jaspects then do
+            when (IK.Periodic `elem` jaspects) $ do
               -- Check if the item is still in the bag (previous items act!).
               bag <- getsState $ getCBag c
               case iid `EM.lookup` bag of
@@ -180,8 +179,6 @@ applyPeriodicLevel lid = do
                   -- In periodic activation, consider *only* recharging effects.
                   effectAndDestroy aid aid iid c True
                                    (allRecharging jeffects) jaspects kit
-            else
-              return ()
           _ -> assert `failure` (lid, aid, c, iid)
       applyPeriodicCStore aid cstore = do
         let c = CActor aid cstore
@@ -383,7 +380,7 @@ setTrajectory aid = do
                                       (Just ([], speed))
         return $ not $ bproj b  -- projectiles must vanish soon
   case btrajectory b of
-    Just ((d : lv), speed) ->
+    Just (d : lv, speed) ->
       if not $ accessibleDir cops lvl (bpos b) d
       then clearTrajectory speed
       else do

@@ -132,8 +132,8 @@ fromTo (Point x0 y0) (Point x1 y1) =
        | z0 <= z1  = [z0..z1]
        | otherwise = [z0,z0-1..z1]
      result
-       | x0 == x1 = map (\ y -> Point x0 y) (fromTo1 y0 y1)
-       | y0 == y1 = map (\ x -> Point x y0) (fromTo1 x0 x1)
+       | x0 == x1 = map (Point x0) (fromTo1 y0 y1)
+       | y0 == y1 = map (`Point` y0) (fromTo1 x0 x1)
        | otherwise = assert `failure` "diagonal fromTo"
                             `twith` ((x0, y0), (x1, y1))
  in result

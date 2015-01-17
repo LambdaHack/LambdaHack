@@ -19,14 +19,14 @@ import Game.LambdaHack.Common.Request
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the leader).
 cmdHumanSem :: MonadClientUI m => HumanCmd -> m (SlideOrCmd RequestUI)
-cmdHumanSem cmd = do
+cmdHumanSem cmd =
   if noRemoteHumanCmd cmd then do
     -- If in targeting mode, check if the current level is the same
     -- as player level and refuse performing the action otherwise.
     arena <- getArenaUI
     lidV <- viewedLevel
-    if (arena /= lidV) then
-      failWith $ "command disabled on a remote level, press ESC to switch back"
+    if arena /= lidV then
+      failWith "command disabled on a remote level, press ESC to switch back"
     else cmdAction cmd
   else cmdAction cmd
 

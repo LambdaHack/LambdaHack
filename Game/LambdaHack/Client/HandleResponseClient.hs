@@ -18,7 +18,7 @@ import Game.LambdaHack.Common.Response
 storeUndo :: MonadClient m => CmdAtomic -> m ()
 storeUndo _atomic =
   maybe (return ()) (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
-    $ Nothing   -- TODO: undoCmdAtomic atomic
+    Nothing   -- TODO: undoCmdAtomic atomic
 
 handleResponseAI :: (MonadAtomic m, MonadClientWriteRequest RequestAI m)
                  => ResponseAI -> m ()

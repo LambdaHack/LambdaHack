@@ -339,8 +339,9 @@ effectExplode execSfx cgroup target = do
         -- from the source. Otherwise, e.g., the points on cardinal
         -- and diagonal lines from the source would be more common.
         let fuzz = 2 + (k100 `xor` (itemK * n)) `mod` 9
-            k = if itemK >= 8 && n < 8 then 0
-                else if n < 8 && n >= 4 then 4 else n
+            k | itemK >= 8 && n < 8 = 0
+              | n < 8 && n >= 4 = 4
+              | otherwise = n
             psAll =
               [ Point (x - 12) $ y + fuzz
               , Point (x + 12) $ y - fuzz
@@ -608,7 +609,7 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
       computeNewTimeout :: ItemQuant -> ItemQuant
       computeNewTimeout (k, it) = (k, map shiftByDelta it)
       setTimeout :: ItemBag -> ItemBag
-      setTimeout bag = EM.map computeNewTimeout bag
+      setTimeout = EM.map computeNewTimeout
       bNew = bOld { blid = lidNew
                   , btime = shiftByDelta $ btime bOld
                   , bpos = posNew
@@ -695,12 +696,12 @@ effectTeleport execSfx nDm target = do
              && (not (dMinMax 9 p)  -- don't loop, very rare
                  || not (Tile.hasFeature cotile TK.NoActor t)
                     && unoccupied as p))
-    [ dist $ 1
+    [ dist 1
     , dist $ 1 + range `div` 9
     , dist $ 1 + range `div` 7
     , dist $ 1 + range `div` 5
-    , dist $ 5
-    , dist $ 7
+    , dist 5
+    , dist 7
     ]
   if not (dMinMax 9 tpos) then
     return False  -- very rare
@@ -732,9 +733,8 @@ effectCreateItem target store grp tim = do
   bagBefore <- getsState $ getCBag c
   let litemFreq = [(grp, 1)]
   m5 <- rollItem (blid tb) litemFreq
-  let (itemKnown, itemFull, _, seed, _) = case m5 of
-        Nothing -> assert `failure` (blid tb, litemFreq, c)
-        Just i5 -> i5
+  let (itemKnown, itemFull, _, seed, _) =
+        fromMaybe (assert `failure` (blid tb, litemFreq, c)) m5
   itemRev <- getsServer sitemRev
   let mquant = case HM.lookup itemKnown itemRev of
         Nothing -> Nothing
@@ -755,9 +755,9 @@ effectCreateItem target store grp tim = do
         bagAfter <- getsState $ getCBag c
         localTime <- getsState $ getLocalTime (blid tb)
         let newTimer = localTime `timeShift` delta
-            (afterK, afterIt) = case iid `EM.lookup` bagAfter of
-              Nothing -> assert `failure` (iid, bagAfter, c)
-              Just kit -> kit
+            (afterK, afterIt) =
+              fromMaybe (assert `failure` (iid, bagAfter, c))
+                        (iid `EM.lookup` bagAfter)
             newIt = replicate afterK newTimer
         when (afterIt /= newIt) $
           execUpdAtomic $ UpdTimeItem iid c afterIt newIt
@@ -787,7 +787,7 @@ effectDropItem execSfx store grp hit target = do
   if null is
     then return False
     else do
-      mapM_ (\(iid, kit) -> dropCStoreItem store target b hit iid kit) is
+      mapM_ (uncurry (dropCStoreItem store target b hit)) is
       unless (store == COrgan) execSfx
       return True
 
@@ -931,7 +931,7 @@ sendFlyingVector :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> Maybe Bool -> m Vector
 sendFlyingVector source target modePush = do
   sb <- getsState $ getActorBody source
-  if source == target then do
+  if source == target then
     if boldpos sb == bpos sb then rndToAction $ do
       z <- randomR (-10, 10)
       oneOf [Vector 10 z, Vector (-10) z, Vector z 10, Vector z (-10)]
@@ -980,7 +980,7 @@ effectDropBestWeapon execSfx target = do
 -- Only one item of each stack is activated (and possibly consumed).
 effectActivateInv :: (MonadAtomic m, MonadServer m)
                   => m () -> ActorId -> Char -> m Bool
-effectActivateInv execSfx target symbol = do
+effectActivateInv execSfx target symbol =
   effectTransformEqp execSfx target symbol CInv $ \iid _ ->
     applyItem target iid CInv
 

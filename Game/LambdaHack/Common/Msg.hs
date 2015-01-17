@@ -212,7 +212,7 @@ lastReportOfHistory (History hist) = case hist of
 type ScreenLine = U.Vector Int32
 
 toScreenLine :: Text -> ScreenLine
-toScreenLine t = let f c = AttrChar defAttr c
+toScreenLine t = let f = AttrChar defAttr
                  in encodeLine $ map f $ T.unpack t
 
 encodeLine :: [AttrChar] -> ScreenLine
@@ -235,7 +235,7 @@ truncateToOverlay msg = toOverlay [msg]
 
 toOverlay :: [Text] -> Overlay
 toOverlay = let lxsize = fst normalLevelBound + 1  -- TODO
-            in Overlay . map toScreenLine . map (truncateMsg lxsize)
+            in Overlay . map (toScreenLine . truncateMsg lxsize)
 
 -- | Split an overlay into a slideshow in which each overlay,
 -- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,
@@ -243,10 +243,9 @@ toOverlay = let lxsize = fst normalLevelBound + 1  -- TODO
 splitOverlay :: Maybe Bool -> Y -> Overlay -> Overlay -> Slideshow
 splitOverlay onBlank yspace (Overlay msg) (Overlay ls) =
   let len = length msg
-      endB = if onBlank == Just False
-             then [toScreenLine
-                   $ endMsg <> "[press PGUP to see previous, ESC to cancel]"]
-             else []
+      endB = [ toScreenLine
+               $ endMsg <> "[press PGUP to see previous, ESC to cancel]"
+             | onBlank == Just False ]
   in if len >= yspace
      then  -- no space left for @ls@
        Slideshow (onBlank, [Overlay $ take (yspace - 1) msg

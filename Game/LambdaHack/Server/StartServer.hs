@@ -182,7 +182,7 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
   putServer defSer
   when (sbenchmark $ sdebugCli sdebug) resetGameStart
   modifyServer $ \ser -> ser {sdiscoKind, sdiscoKindRev, sflavour}
-  when (sdumpInitRngs sdebug) $ dumpRngs
+  when (sdumpInitRngs sdebug) dumpRngs
   return $! defState
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.
@@ -216,9 +216,9 @@ populateDungeon = do
             arenaAlliances = filter representsAlliance arenaFactions
             placeAlliance ((fid3, _), ppos, timeOffset) =
               mapM_ (\(fid4, fact4) ->
-                      if isAllied fact4 fid3 || fid4 == fid3
-                      then placeActors lid ((fid4, fact4), ppos, timeOffset)
-                      else return ()) arenaFactions
+                      when (isAllied fact4 fid3 || fid4 == fid3) $
+                        placeActors lid ((fid4, fact4), ppos, timeOffset))
+                    arenaFactions
         entryPoss <- rndToAction
                      $ findEntryPoss cops lvl (length arenaAlliances)
         mapM_ placeAlliance $ zip3 arenaAlliances entryPoss [0..]
@@ -313,7 +313,7 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
       tryFind ps n = do
         np <- findPosTry 1000 ltile  -- try really hard, for skirmish fairness
                 (\_ t -> Tile.isWalkable cotile t
-                         && (not $ Tile.hasFeature cotile TK.NoActor t))
+                         && not (Tile.hasFeature cotile TK.NoActor t))
                 [ dist ps $ factionDist `div` 2
                 , dist ps $ factionDist `div` 3
                 , const (Tile.hasFeature cotile TK.OftenActor)
@@ -325,7 +325,7 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
                 ]
         nps <- tryFind (np : ps) (n - 1)
         return $! np : nps
-      stairPoss = fst lstair ++ snd lstair
+      stairPoss = uncurry (++) lstair
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
   let !_A = assert (k > 0 && factionDist > 0) ()
   case k of

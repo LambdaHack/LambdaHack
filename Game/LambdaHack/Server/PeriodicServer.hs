@@ -95,7 +95,7 @@ addAnyActor actorFreq lid time mpos = do
         Nothing -> do
           rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fid
           rndToAction rollPos
-      let container = (CTrunk fid lid pos)
+      let container = CTrunk fid lid pos
       trunkId <- registerItem trunkFull itemKnown seed
                               (itemK trunkFull) container False
       addActorIid trunkId trunkFull False fid pos lid id "it" time
@@ -230,7 +230,7 @@ leadLevelSwitch = do
                             LeaderAI _ -> True
                             LeaderUI _ -> False
       flipFaction fact | not $ canSwitch fact = return ()
-      flipFaction fact = do
+      flipFaction fact =
         case gleader fact of
           Nothing -> return ()
           Just (leader, _) -> do
@@ -258,7 +258,7 @@ leadLevelSwitch = do
               let freqList = [ (k, (lid, a))
                              | (lid, itemN, (a, _) : rest) <- ours
                              , not leaderStuck || lid /= blid body
-                             , let len = 1 + (min 10 $ length rest)
+                             , let len = 1 + min 10 (length rest)
                                    k = 1000000 `div` (3 * itemN + len) ]
               unless (null freqList) $ do
                 (lid, a) <- rndToAction $ frequency

@@ -3,6 +3,7 @@ module Game.LambdaHack.Server.DungeonGen.Cave
   ( Cave(..), buildCave
   ) where
 
+import Control.Applicative
 import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
 import Control.Monad
@@ -80,7 +81,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
              || couterFenceTile /= "basic outer fence" = subFullArea
            | otherwise = fullArea
       gs = grid lgrid area
-  (addedConnects, voidPlaces) <- do
+  (addedConnects, voidPlaces) <-
     if gx * gy > 1 then do
        let fractionOfPlaces r = round $ r * fromIntegral (gx * gy)
            cauxNum = fractionOfPlaces cauxConnects
@@ -98,16 +99,16 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                      let innerArea = fromMaybe (assert `failure` (i, r))
                                      $ shrink r
                      r' <- if i `elem` voidPlaces
-                           then fmap Left $ mkVoidRoom innerArea
-                           else fmap Right $ mkRoom minPlaceSize
+                           then Left <$> mkVoidRoom innerArea
+                           else Right <$> mkRoom minPlaceSize
                                                     maxPlaceSize innerArea
                      return (i, r')) gs
   fence <- buildFenceRnd cops couterFenceTile subFullArea
   dnight <- chanceDice ldepth totalDepth cnightChance
-  darkCorTile <- fmap (fromMaybe $ assert `failure` cdarkCorTile)
-                 $ opick cdarkCorTile (const True)
-  litCorTile <- fmap (fromMaybe $ assert `failure` clitCorTile)
-                $ opick clitCorTile (const True)
+  darkCorTile <- fromMaybe (assert `failure` cdarkCorTile)
+                 <$> opick cdarkCorTile (const True)
+  litCorTile <- fromMaybe (assert `failure` clitCorTile)
+                <$> opick clitCorTile (const True)
   let pickedCorTile = if dnight then darkCorTile else litCorTile
       addPl (m, pls, qls) (i, Left r) = return (m, pls, (i, Left r) : qls)
       addPl (m, pls, qls) (i, Right r) = do
@@ -116,7 +117,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         return (EM.union tmap m, place : pls, (i, Right (r, place)) : qls)
   (lplaces, dplaces, qplaces0) <- foldM addPl (fence, [], []) places0
   connects <- connectGrid lgrid
-  let allConnects = union connects addedConnects  -- no duplicates
+  let allConnects = connects `union` addedConnects  -- no duplicates
       qplaces = M.fromList qplaces0
   cs <- mapM (\(p0, p1) -> do
                 let shrinkPlace (r, Place{qkind}) =

@@ -225,7 +225,7 @@ strongestSlotNoFilter :: EqpSlot -> [(ItemId, ItemFull)]
                       -> [(Int, (ItemId, ItemFull))]
 strongestSlotNoFilter eqpSlot is =
   let f = strengthFromEqpSlot eqpSlot
-      g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> (f itemFull)
+      g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> f itemFull
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
 
 strongestSlot :: EqpSlot -> [(ItemId, ItemFull)]
@@ -245,7 +245,7 @@ sumSlotNoFilter eqpSlot is =
 
 sumSkills :: [ItemFull] -> Ability.Skills
 sumSkills is =
-  let g itemFull = (Ability.scaleSkills (itemK itemFull))
+  let g itemFull = Ability.scaleSkills (itemK itemFull)
                    <$> strengthAllAddSkills itemFull
   in foldr Ability.addSkills Ability.zeroSkills $ mapMaybe g is
 
@@ -266,21 +266,21 @@ unknownMelee =
 
 allRecharging :: [Effect] -> [Effect]
 allRecharging effs =
-  let getRechargingEffect :: Effect -> Maybe (Effect)
+  let getRechargingEffect :: Effect -> Maybe Effect
       getRechargingEffect e@Recharging{} = Just e
       getRechargingEffect _ = Nothing
   in mapMaybe getRechargingEffect effs
 
 stripRecharging :: [Effect] -> [Effect]
 stripRecharging effs =
-  let getRechargingEffect :: Effect -> Maybe (Effect)
+  let getRechargingEffect :: Effect -> Maybe Effect
       getRechargingEffect (Recharging e) = Just e
       getRechargingEffect _ = Nothing
   in mapMaybe getRechargingEffect effs
 
 stripOnSmash :: [Effect] -> [Effect]
 stripOnSmash effs =
-  let getOnSmashEffect :: Effect -> Maybe (Effect)
+  let getOnSmashEffect :: Effect -> Maybe Effect
       getOnSmashEffect (OnSmash e) = Just e
       getOnSmashEffect _ = Nothing
   in mapMaybe getOnSmashEffect effs

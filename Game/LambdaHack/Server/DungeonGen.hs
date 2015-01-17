@@ -8,6 +8,7 @@ module Game.LambdaHack.Server.DungeonGen
 #endif
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -95,7 +96,7 @@ placeStairs Kind.COps{cotile} cmap CaveKind{..} ps = do
     (\p t -> Tile.isWalkable cotile t
              && not (Tile.hasFeature cotile TK.NoActor t)
              && dist 0 p t)  -- can't overwrite stairs with other stairs
-    [ dist $ cminStairDist
+    [ dist cminStairDist
     , dist $ cminStairDist `div` 2
     , dist $ cminStairDist `div` 4
     , const $ Tile.hasFeature cotile TK.OftenActor
@@ -114,23 +115,23 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
       fitArea pos = inside pos . fromArea . qarea
       findLegend pos = maybe clegendLitTile qlegend
                        $ find (fitArea pos) dplaces
-      hasEscape p t = Tile.kindHasFeature (TK.Cause $ IK.Escape p) t
+      hasEscape p = Tile.kindHasFeature (TK.Cause $ IK.Escape p)
       ascendable  = Tile.kindHasFeature $ TK.Cause (IK.Ascend 1)
       descendable = Tile.kindHasFeature $ TK.Cause (IK.Ascend (-1))
-      nightCond kt = (not (Tile.kindHasFeature TK.Clear kt)
-                      || (if dnight then id else not)
-                            (Tile.kindHasFeature TK.Dark kt))
+      nightCond kt = not (Tile.kindHasFeature TK.Clear kt)
+                     || (if dnight then id else not)
+                           (Tile.kindHasFeature TK.Dark kt)
       dcond kt = (cpassable
                   || not (Tile.kindHasFeature TK.Walkable kt))
                  && nightCond kt
-      pickDefTile = fmap (fromMaybe $ assert `failure` cdefTile)
-                    $ opick cdefTile dcond
+      pickDefTile = (fromMaybe $ assert `failure` cdefTile)
+                    <$> opick cdefTile dcond
       wcond kt = Tile.kindHasFeature TK.Walkable kt
                  && nightCond kt
       mpickWalkable =
         if cpassable
-        then Just $ fmap (fromMaybe $ assert `failure` cdefTile)
-                  $ opick cdefTile wcond
+        then Just $ (fromMaybe $ assert `failure` cdefTile)
+                    <$> opick cdefTile wcond
         else Nothing
   cmap <- convertTileMaps cops pickDefTile mpickWalkable cxsize cysize dmap
   -- We keep two-way stairs separately, in the last component.
@@ -146,14 +147,14 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
           return (up, down, upDown)
         else do
           let cond tk = (if moveUp then ascendable tk else descendable tk)
-                        && (if noAsc then not (ascendable tk) else True)
-                        && (if noDesc then not (descendable tk) else True)
+                        && (not noAsc || not (ascendable tk))
+                        && (not noDesc || not (descendable tk))
               stairsCur = up ++ down ++ upDown
               posCur = nub $ sort $ map fst stairsCur
           spos <- placeStairs cops cmap kc posCur
           let legend = findLegend spos
-          stairId <- fmap (fromMaybe $ assert `failure` legend)
-                     $ opick legend cond
+          stairId <- (fromMaybe $ assert `failure` legend)
+                     <$> opick legend cond
           let st = (spos, stairId)
               asc = ascendable $ okind stairId
               desc = descendable $ okind stairId
@@ -172,9 +173,9 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
           [1 .. nstairUpLeft]
   -- If only a single tile of up-and-down stairs, add one more stairs down.
   (stairsUp, stairsDown, stairsUpDown) <-
-    if length (stairsUp2 ++ stairsDown2) == 0
-    then (makeStairs False True (ln == minD)
-             (stairsUp2, stairsDown2, stairsUpDown2))
+    if null (stairsUp2 ++ stairsDown2)
+    then makeStairs False True (ln == minD)
+           (stairsUp2, stairsDown2, stairsUpDown2)
     else return (stairsUp2, stairsDown2, stairsUpDown2)
   let stairsUpAndUpDown = stairsUp ++ stairsUpDown
   let !_A = assert (length stairsUpAndUpDown == nstairUp) ()
@@ -247,8 +248,8 @@ findGenerator :: Kind.COps -> LevelId -> LevelId -> LevelId -> AbsDepth -> Int
 findGenerator cops ln minD maxD totalDepth nstairUp
               (genName, escapeFeature) = do
   let Kind.COps{cocave=Kind.Ops{opick}} = cops
-  ci <- fmap (fromMaybe $ assert `failure` genName)
-        $ opick genName (const True)
+  ci <- (fromMaybe $ assert `failure` genName)
+        <$> opick genName (const True)
   -- A simple rule for now: level at level @ln@ has depth (difficulty) @abs ln@.
   let ldepth = AbsDepth $ abs $ fromEnum ln
   cave <- buildCave cops ldepth totalDepth ci
@@ -278,7 +279,7 @@ dungeonGen cops caves = do
         lvl <- findGenerator cops ln minId maxId freshTotalDepth nstairUp caveTB
         -- nstairUp for the next level is nstairDown for the current level
         let nstairDown = length $ snd $ lstair lvl
-        return $ (nstairDown, (ln, lvl) : l)
+        return (nstairDown, (ln, lvl) : l)
   (nstairUpLast, levels) <- foldM gen (0, []) $ reverse $ IM.assocs caves
   let !_A = assert (nstairUpLast == 0) ()
   let freshDungeon = EM.fromList levels

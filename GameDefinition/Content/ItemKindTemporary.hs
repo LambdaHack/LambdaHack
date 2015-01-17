@@ -56,20 +56,20 @@ tmpDrunk = tmpAs "drunk" [ AddHurtMelee 30  -- fury
 tmpRegenerating =
   let tmp = tmpAs "regenerating" []
   in tmp { icount = 7 + d 5
-         , ieffects = [Recharging (RefillHP 1)] ++ ieffects tmp
+         , ieffects = Recharging (RefillHP 1) : ieffects tmp
          }
 tmpPoisoned =
   let tmp = tmpAs "poisoned" []
   in tmp { icount = 7 + d 5
-         , ieffects = [Recharging (RefillHP (-1))] ++ ieffects tmp
+         , ieffects = Recharging (RefillHP (-1)) : ieffects tmp
          }
 tmpSlow10Resistant =
   let tmp = tmpAs "slow resistant" []
   in tmp { icount = 7 + d 5
-         , ieffects = [Recharging (DropItem COrgan "slow 10" True)] ++ ieffects tmp
+         , ieffects = Recharging (DropItem COrgan "slow 10" True) : ieffects tmp
          }
 tmpPoisonResistant =
   let tmp = tmpAs "poison resistant" []
   in tmp { icount = 7 + d 5
-         , ieffects = [Recharging (DropItem COrgan "poisoned" True)] ++ ieffects tmp
+         , ieffects = Recharging (DropItem COrgan "poisoned" True) : ieffects tmp
          }

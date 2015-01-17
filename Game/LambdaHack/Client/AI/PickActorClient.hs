@@ -3,6 +3,8 @@ module Game.LambdaHack.Client.AI.PickActorClient
   ( pickActorToMove
   ) where
 
+import Control.Applicative
+import Control.Arrow
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -64,7 +66,7 @@ pickActorToMove refreshTarget oldAid = do
                 else do
                   -- Copy over the leader's target, if any, or follow his bpos.
                   tgtLeader <- do
-                    mtgt <- getsClient $ (EM.lookup leader) . stargetD
+                    mtgt <- getsClient $ EM.lookup leader . stargetD
                     case mtgt of
                       Nothing -> return $! TEnemy leader True
                       Just (tgtLeader, _) -> return tgtLeader
@@ -72,8 +74,8 @@ pickActorToMove refreshTarget oldAid = do
                     cli { sbfsD = invalidateBfs oldAid (sbfsD cli)
                         , seps = seps cli + 773 }  -- randomize paths
                   mpath <- createPath oldAid tgtLeader
-                  let tgtMPath = maybe (tgtLeader, Nothing)
-                                       (\(tgt, p) -> (tgt, Just p)) mpath
+                  let tgtMPath =
+                        maybe (tgtLeader, Nothing) (second Just) mpath
                   modifyClient $ \cli ->
                     cli {stargetD = EM.alter (const $ Just tgtMPath)
                                              oldAid (stargetD cli)}
@@ -99,7 +101,7 @@ pickActorToMove refreshTarget oldAid = do
       -- the old leader, if he is among the best candidates
       -- (to make the AI appear more human-like and easier to observe).
       -- TODO: this also takes melee into account, but not shooting.
-      oursTgt <- fmap catMaybes $ mapM (refreshTarget oldAid) ours
+      oursTgt <- catMaybes <$> mapM (refreshTarget oldAid) ours
       let actorWeak ((aid, body), _) = do
             activeItems <- activeItemsClient aid
             condMeleeBad <- condMeleeBadM aid
@@ -161,7 +163,7 @@ pickActorToMove refreshTarget oldAid = do
             if targetTEnemy our then
               -- TODO: take weapon, walk and fight speed, etc. into account
               ( d + if targetBlocked our then 2 else 0  -- possible delay, hacky
-              , - 10 * (fromIntegral $ bhp b `div` (10 * oneM))
+              , - 10 * fromIntegral (bhp b `div` (10 * oneM))
               , aid /= oldAid )
             else
               -- Keep proper formation, not too dense, not to sparse.

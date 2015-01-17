@@ -103,7 +103,7 @@ restoreGame name copies pathsDataFile = do
       handler e = do
         let msg = "Restore failed. The error message is:"
                   <+> (T.unwords . T.lines) (tshow e)
-        delayPrint $ msg
+        delayPrint msg
         return Nothing
   either handler return res
 

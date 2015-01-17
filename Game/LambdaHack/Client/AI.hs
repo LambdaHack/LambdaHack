@@ -81,7 +81,7 @@ refreshTarget oldLeader (aid, body) = do
           <> "\nHandleAI target:"   <+> tshow tgtMPath
 --  trace _debug skip
   modifyClient $ \cli ->
-    cli {stargetD = EM.alter (const $ tgtMPath) aid (stargetD cli)}
+    cli {stargetD = EM.alter (const tgtMPath) aid (stargetD cli)}
   return $! case tgtMPath of
     Just (tgt, Just pathEtc) -> Just ((aid, body), (tgt, pathEtc))
     _ -> Nothing
