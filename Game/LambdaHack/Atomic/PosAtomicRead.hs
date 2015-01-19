@@ -33,8 +33,8 @@ import Game.LambdaHack.Content.ModeKind
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
 
--- | The type representing visibility of actions to factions,
--- based on the position of the action, etc.
+-- | The type representing visibility of atomic commands to factions,
+-- based on the position of the command, etc.
 data PosAtomic =
     PosSight !LevelId ![Point]  -- ^ whomever sees all the positions, notices
   | PosFidAndSight ![FactionId] !LevelId ![Point]
@@ -47,7 +47,8 @@ data PosAtomic =
   | PosNone                     -- ^ never broadcasted, but sent manually
   deriving (Show, Eq)
 
--- | Produce the positions where the action takes place.
+-- | Produce the positions where the atomic update takes place.
+--
 -- The goal of the mechanics: client should not get significantly
 -- more information by looking at the atomic commands he is able to see
 -- than by looking at the state changes they enact. E.g., @UpdDisplaceActor@
@@ -302,6 +303,8 @@ loudUpdAtomic local fid cmd = do
                                 , MU.AW $ MU.Phrase $ distant ++ [sound] ]
   return $! hear <$> msound
 
+-- | Given the client, it's perception and an atomic command, determine
+-- if the client notices the command.
 seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
 seenAtomicCli knowEvents fid per posAtomic =
   case posAtomic of
@@ -322,6 +325,7 @@ seenAtomicSer posAtomic =
     PosNone -> False
     _ -> True
 
+-- | Generate the atomic updates that jointly perform a given item move.
 generalMoveItem :: MonadStateRead m
                 => ItemId -> Int -> Container -> Container
                 -> m [UpdAtomic]

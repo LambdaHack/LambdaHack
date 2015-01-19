@@ -75,7 +75,7 @@ instance MonadServerReadRequest SerImplementation where
     SerImplementation $ modify $ \serS -> serS {serDict = s}
   liftIO       = SerImplementation . IO.liftIO
 
--- | The game-state semantics of atomic game commands
+-- | The game-state semantics of atomic commands
 -- as computed on the server.
 instance MonadAtomic SerImplementation where
   execAtomic = handleAndBroadcastServer

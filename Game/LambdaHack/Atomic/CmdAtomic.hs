@@ -41,14 +41,17 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
+-- | Abstract syntax of atomic commands, that is, atomic game state
+-- transformations.
 data CmdAtomic =
-    UpdAtomic !UpdAtomic
-  | SfxAtomic !SfxAtomic
+    UpdAtomic !UpdAtomic  -- ^ atomic updates
+  | SfxAtomic !SfxAtomic  -- ^ atomic special effects
   deriving (Show, Eq, Generic)
 
 instance Binary CmdAtomic
 
--- | Abstract syntax of atomic commands.
+-- | Abstract syntax of atomic updates, that is, atomic commands
+-- that really change the state.
 data UpdAtomic =
   -- Create/destroy actors and items.
     UpdCreateActor !ActorId !Actor ![(ItemId, Item)]
@@ -112,7 +115,8 @@ data UpdAtomic =
 
 instance Binary UpdAtomic
 
--- | Abstract syntax of atomic special effects.
+-- | Abstract syntax of atomic special effects, that is, atomic commands
+-- that only display special effects and not change the state.
 data SfxAtomic =
     SfxStrike !ActorId !ActorId !ItemId !HitAtomic
   | SfxRecoil !ActorId !ActorId !ItemId !HitAtomic
@@ -130,6 +134,7 @@ data SfxAtomic =
 
 instance Binary SfxAtomic
 
+-- | Determine if a strike special effect should include a blocking animation.
 data HitAtomic = HitClear | HitBlock !Int
   deriving (Show, Eq, Generic)
 

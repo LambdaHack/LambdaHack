@@ -1,4 +1,4 @@
--- | Atomic game state transformations. TODO: haddocks.
+-- | Atomic game state transformations.
 --
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.

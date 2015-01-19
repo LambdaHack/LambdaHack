@@ -136,7 +136,8 @@ actionStrategy aid = do
         , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> equipItems aid  -- doesn't take long, very useful if safe
                                 -- only if calm enough, so high priority
-          , not condAnyFoeAdj && not condDesirableFloorItem ) ]
+          , not condAnyFoeAdj && not condDesirableFloorItem )
+        ]
       distant :: [([Ability], m (Frequency RequestAnyAbility), Bool)]
       distant =
         [ ( [AbProject]  -- for high-value target, shoot even in melee
@@ -155,7 +156,8 @@ actionStrategy aid = do
             $ chase aid True
           , (condTgtEnemyPresent || condTgtEnemyRemembered)
             && not condDesirableFloorItem
-            && not condNoUsableWeapon ) ]
+            && not condNoUsableWeapon )
+        ]
       suffix =
         [ ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> pickup aid False
@@ -186,7 +188,8 @@ actionStrategy aid = do
             -- Wait until friends sidestep; ensures strategy is never empty.
             -- TODO: try to switch leader away before that (we already
             -- switch him afterwards)
-          , True ) ]
+          , True )
+        ]
       -- TODO: don't msum not to evaluate until needed
       abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
       checkAction :: ([Ability], m a, Bool) -> Bool

@@ -41,7 +41,7 @@ data CliState resp req = CliState
   , cliSession :: SessionUI     -- ^ UI setup data, empty for AI clients
   }
 
--- | Server state transformation monad.
+-- | Client state transformation monad.
 newtype CliImplementation resp req a =
     CliImplementation {runCliImplementation :: StateT (CliState resp req) IO a}
   deriving (Monad, Functor, Applicative)
@@ -84,6 +84,8 @@ instance MonadClientWriteRequest req (CliImplementation resp req) where
     ChanServer{requestS} <- gets cliDict
     IO.liftIO $ atomically . writeTQueue requestS $ scmd
 
+-- | The game-state semantics of atomic commands
+-- as computed on the client.
 instance MonadAtomic (CliImplementation resp req) where
   execAtomic = handleCmdAtomic
 
