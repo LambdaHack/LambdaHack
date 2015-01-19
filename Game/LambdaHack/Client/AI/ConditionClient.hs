@@ -3,6 +3,7 @@
 module Game.LambdaHack.Client.AI.ConditionClient
   ( condTgtEnemyPresentM
   , condTgtEnemyRememberedM
+  , condTgtEnemyAdjFriendM
   , condAnyFoeAdjM
   , condHpTooLowM
   , condOnTriggerableM
@@ -66,6 +67,20 @@ condTgtEnemyRememberedM aid = do
   return $! case btarget of
     Just (TEnemyPos _ lid _ permit) | lid == blid b -> not permit
     _ -> False
+
+-- | Require that the target enemy is adjacent to at least one friend.
+condTgtEnemyAdjFriendM :: MonadClient m => ActorId -> m Bool
+condTgtEnemyAdjFriendM aid = do
+  btarget <- getsClient $ getTarget aid
+  case btarget of
+    Just (TEnemy enemy _) -> do
+      be <- getsState $ getActorBody enemy
+      b <- getsState $ getActorBody aid
+      fact <- getsState $ (EM.! bfid b) . sfactionD
+      let friendlyFid fid = fid == bfid b || isAllied fact fid
+      friends <- getsState $ actorRegularList friendlyFid (blid b)
+      return $ any (adjacent (bpos be) . bpos) friends  -- keep it lazy
+    _ -> return False
 
 -- | Require that any non-dying foe is adjacent.
 condAnyFoeAdjM :: MonadStateRead m => ActorId -> m Bool
@@ -225,7 +240,9 @@ condMeleeBadM aid = do
   let noFriendlyHelp = length closeFriends < 3
                        && null strongCloseFriends
                        && not (hpHuge b)  -- uniques, etc., should be aggresive
+  actorSk <- actorSkillsClient aid
   return $ condNoUsableWeapon
+           || EM.findWithDefault 0 Ability.AbMelee actorSk <= 0
            || noFriendlyHelp  -- still not getting friends' help
     -- no $!; keep it lazy
 

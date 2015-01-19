@@ -67,6 +67,7 @@ actionStrategy aid = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   condTgtEnemyPresent <- condTgtEnemyPresentM aid
   condTgtEnemyRemembered <- condTgtEnemyRememberedM aid
+  condTgtEnemyAdjFriend <- condTgtEnemyAdjFriendM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
   threatDistL <- threatDistList aid
   condHpTooLow <- condHpTooLowM aid
@@ -119,7 +120,8 @@ actionStrategy aid = do
             && not condOnTriggerable && not condDesirableFloorItem )
         , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> pickup aid True
-          , condNoEqpWeapon && condFloorWeapon && not condHpTooLow )
+          , condNoEqpWeapon && condFloorWeapon && not condHpTooLow
+            && EM.findWithDefault 0 AbMelee actorSk > 0 )
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeBlocker aid  -- only melee target or blocker
           , condAnyFoeAdj
@@ -146,16 +148,19 @@ actionStrategy aid = do
           , condTgtEnemyPresent && condCanProject && not condOnTriggerable )
         , ( [AbApply]
           , stratToFreq 2 $ (toAny :: ToAny AbApply)
-            <$> applyItem aid ApplyAll  -- use any option or scroll
+            <$> applyItem aid ApplyAll  -- use any potion or scroll
           , (condTgtEnemyPresent || condThreatNearby)  -- can affect enemies
             && not condOnTriggerable )
         , ( [AbMove]
-          , stratToFreq (if not condTgtEnemyPresent || condMeleeBad
-                         then 1
+          , stratToFreq (if not condTgtEnemyPresent
+                         then 3  -- if enemy only remembered, investigate anyway
+                         else if condTgtEnemyAdjFriend
+                         then 1000  -- friends probably pummeled, go to help
                          else 100)
             $ chase aid True
           , (condTgtEnemyPresent || condTgtEnemyRemembered)
             && not condDesirableFloorItem
+            && EM.findWithDefault 0 AbMelee actorSk > 0
             && not condNoUsableWeapon )
         ]
       suffix =
