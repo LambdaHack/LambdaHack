@@ -922,10 +922,12 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
               (trajectory, (speed, _)) =
                 computeTrajectory weight throwVelocity throwLinger path
               ts = Just (trajectory, speed)
-          unless (btrajectory tb == ts) $
-            execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
-          execSfx
-          return True
+          if btrajectory tb == ts || throwVelocity <= 0 || throwLinger <= 0
+            then return False
+            else do
+              execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
+              execSfx
+              return True
 
 sendFlyingVector :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> Maybe Bool -> m Vector

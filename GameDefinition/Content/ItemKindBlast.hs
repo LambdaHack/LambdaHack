@@ -49,7 +49,7 @@ explosionBlast n = ItemKind
   , iweight  = 1
   , iaspects = [AddLight $ intToDice n]
   , ieffects = [Impress, RefillHP (- n `div` 2)]
-               ++ [DropBestWeapon | n > 2]
+               ++ [PushActor (ThrowMod (100 * (n `div` 5)) 50)]
                ++ [DropItem COrgan "temporary conditions" True | n >= 10]
   , ifeature = [Fragile, toLinger 10, Identified]
   , idesc    = ""
@@ -70,7 +70,8 @@ firecracker n = ItemKind
   , iweight  = 1
   , iaspects = [AddLight $ intToDice $ n `div` 2]
   , ieffects = [Impress]
-               ++ [ Burn 1 | n > 5 ]
+               ++ [ Burn 1 | n >= 7 ]
+               ++ [ DropBestWeapon | n >= 5]
                ++ [ OnSmash (Explode $ toGroupName
                              $ "firecracker" <+> tshow (n - 1))
                   | n > 2 ]

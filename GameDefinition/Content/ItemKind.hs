@@ -180,7 +180,7 @@ pupilItem = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [Red]
   , icount   = 1
-  , irarity  = [(3, 3)]
+  , irarity  = [(3, 2)]
   , iverbHit = "gaze at"
   , iweight  = 100
   , iaspects = [AddSight 10, AddLight 2, Periodic, Timeout $ 1 + d 2]
@@ -746,7 +746,7 @@ buckler = ItemKind
                , AddHurtMelee (-30)
                , Timeout $ d 3 + 3 - dl 3 |*| 2 ]
   , ieffects = [Hurt (1 * d 1), Recharging (PushActor (ThrowMod 200 50))]
-  , ifeature = [ toVelocity 30  -- unwieldy to throw and blunt
+  , ifeature = [ toVelocity 40  -- unwieldy to throw
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
   , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
   , ikit     = []
@@ -760,7 +760,7 @@ shield = buckler
                , AddHurtMelee (-70)
                , Timeout $ d 6 + 6 - dl 6 |*| 2 ]
   , ieffects = [Hurt (1 * d 1), Recharging (PushActor (ThrowMod 400 50))]
-  , ifeature = [ toVelocity 20  -- unwieldy to throw and blunt
+  , ifeature = [ toVelocity 30  -- unwieldy to throw
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
   , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
