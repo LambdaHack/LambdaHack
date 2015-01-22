@@ -11,9 +11,9 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, adventurer, blacksmith, forester, scientist, soldier, sniper, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, hornetSwarm, thornbush, geyser]
+  [warrior, adventurer, blacksmith, forester, scientist, soldier, sniper, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyser, geyserArsenic, geyserSulfur]
 
-warrior,    adventurer, blacksmith, forester, scientist, soldier, sniper, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, hornetSwarm, thornbush, geyser :: ItemKind
+warrior,    adventurer, blacksmith, forester, scientist, soldier, sniper, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyser, geyserArsenic, geyserSulfur :: ItemKind
 
 -- * Hunams
 
@@ -303,6 +303,24 @@ rhinoceros = ItemKind
 
 -- * Non-animal animals
 
+beeSwarm = ItemKind
+  { isymbol  = 'b'
+  , iname    = "bee swarm"
+  , ifreq    = [("animal", 100), ("horror", 100), ("mobile animal", 100)]
+  , iflavour = zipPlain [Brown]
+  , icount   = 1
+  , irarity  = [(5, 2), (10, 3)]
+  , iverbHit = "thud"
+  , iweight  = 1000
+  , iaspects = [ AddMaxHP 5, AddMaxCalm 60, AddSpeed 30
+               , AddSkills $ EM.singleton AbAlter (-1)
+               , AddArmorMelee 90, AddArmorRanged 90 ]
+  , ieffects = []
+  , ifeature = [Durable, Identified]
+  , idesc    = ""
+  , ikit     = [ ("bee sting", COrgan), ("vision 4", COrgan)
+               , ("insect mortality", COrgan), ("animal brain", COrgan) ]
+  }
 hornetSwarm = ItemKind
   { isymbol  = 'h'
   , iname    = "hornet swarm"
@@ -319,10 +337,10 @@ hornetSwarm = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("sting", COrgan), ("vision 4", COrgan)
-               , ("animal brain", COrgan) ]
+               , ("insect mortality", COrgan), ("animal brain", COrgan) ]
   }
 thornbush = ItemKind
-  { isymbol  = 'b'
+  { isymbol  = 't'
   , iname    = "thornbush"
   , ifreq    = [("animal", 100)]
   , iflavour = zipPlain [Brown]
@@ -340,8 +358,8 @@ thornbush = ItemKind
 geyser = ItemKind
   { isymbol  = 'g'
   , iname    = "geyser"
-  , ifreq    = [("animal", 100)]
-  , iflavour = zipPlain [White]
+  , ifreq    = [("animal", 50), ("immobileVents", 50)]
+  , iflavour = zipPlain [Blue]
   , icount   = 1
   , irarity  = [(5, 2), (10, 1)]
   , iverbHit = "thud"
@@ -352,5 +370,38 @@ geyser = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("vent", COrgan), ("fissure", COrgan)]
+  , ikit     = [("ventBoiling", COrgan), ("fissure", COrgan)]
+  }
+geyserArsenic = ItemKind
+  { isymbol  = 'g'
+  , iname    = "arsenic geyser"
+  , ifreq    = [("animal", 50), ("immobileVents", 50)]
+  , iflavour = zipPlain [Cyan]
+  , icount   = 1
+  , irarity  = [(5, 2), (10, 1)]
+  , iverbHit = "thud"
+  , iweight  = 80000
+  , iaspects = [ AddMaxHP 10, AddMaxCalm 999, AddSpeed 5
+               , AddSkills $ EM.fromList (zip [AbWait, AbMelee] [1, 1..])
+               , AddArmorMelee 80, AddArmorRanged 80 ]
+  , ieffects = []
+  , ifeature = [Durable, Identified]
+  , idesc    = ""
+  , ikit     = [("ventArsenic", COrgan), ("fissure", COrgan)]
+  }
+geyserSulfur = ItemKind
+  { isymbol  = 'g'
+  , iname    = "sulfur geyser"
+  , ifreq    = [("animal", 100), ("immobileVents", 100)]
+  , iflavour = zipPlain [BrYellow]  -- exception, animal with bright color
+  , icount   = 1
+  , irarity  = [(5, 2), (10, 2)]
+  , iverbHit = "thud"
+  , iweight  = 80000
+  , iaspects = [ AddMaxHP 50, AddMaxCalm 999, AddSpeed 5
+               , AddSkills $ EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
+  , ieffects = []
+  , ifeature = [Durable, Identified]
+  , idesc    = ""
+  , ikit     = [("ventSulfur", COrgan), ("fissure", COrgan)]
   }
