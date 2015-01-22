@@ -370,7 +370,7 @@ geyser = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("ventBoiling", COrgan), ("fissure", COrgan)]
+  , ikit     = [("boiling vent", COrgan), ("fissure", COrgan)]
   }
 geyserArsenic = ItemKind
   { isymbol  = 'g'
@@ -387,7 +387,7 @@ geyserArsenic = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("ventArsenic", COrgan), ("fissure", COrgan)]
+  , ikit     = [("arsenic vent", COrgan), ("fissure", COrgan)]
   }
 geyserSulfur = ItemKind
   { isymbol  = 'g'
@@ -395,7 +395,7 @@ geyserSulfur = ItemKind
   , ifreq    = [("animal", 100), ("immobileVents", 100)]
   , iflavour = zipPlain [BrYellow]  -- exception, animal with bright color
   , icount   = 1
-  , irarity  = [(5, 2), (10, 2)]
+  , irarity  = [(5, 2), (10, 1)]
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 50, AddMaxCalm 999, AddSpeed 5
@@ -403,5 +403,5 @@ geyserSulfur = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("ventSulfur", COrgan), ("fissure", COrgan)]
+  , ikit     = [("sulfur vent", COrgan), ("fissure", COrgan)]
   }

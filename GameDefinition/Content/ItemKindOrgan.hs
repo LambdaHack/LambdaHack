@@ -13,9 +13,9 @@ import Game.LambdaHack.Content.ItemKind
 
 organs :: [ItemKind]
 organs =
-  [fist, foot, claw, smallClaw, snout, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, fissure, insectMortality, beeSting, sting, venomTooth, venomFang, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision6, vision8, vision10, vision12, vision14, vision16, nostril, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, ventBoiling, ventArsenic, ventSulfur, bonusHP]
+  [fist, foot, claw, smallClaw, snout, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, fissure, insectMortality, beeSting, sting, venomTooth, venomFang, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision6, vision8, vision10, vision12, vision14, vision16, nostril, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, boilingVent, arsenicVent, sulfurVent, bonusHP]
 
-fist,    foot, claw, smallClaw, snout, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, fissure, insectMortality, beeSting, sting, venomTooth, venomFang, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision6, vision8, vision10, vision12, vision14, vision16, nostril, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, ventBoiling, ventArsenic, ventSulfur, bonusHP :: ItemKind
+fist,    foot, claw, smallClaw, snout, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, fissure, insectMortality, beeSting, sting, venomTooth, venomFang, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision6, vision8, vision10, vision12, vision14, vision16, nostril, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, boilingVent, arsenicVent, sulfurVent, bonusHP :: ItemKind
 
 -- Weapons
 
@@ -345,9 +345,9 @@ speedGland4 = speedGland 4
 speedGland6 = speedGland 6
 speedGland8 = speedGland 8
 speedGland10 = speedGland 10
-ventBoiling = armoredSkin
+boilingVent = armoredSkin
   { iname    = "vent"
-  , ifreq    = [("ventBoiling", 100)]
+  , ifreq    = [("boiling vent", 100)]
   , iflavour = zipPlain [Blue]
   , icount   = 1
   , iverbHit = "menace"
@@ -355,16 +355,16 @@ ventBoiling = armoredSkin
   , ieffects = [Recharging (Explode "boiling water")]
   , idesc    = ""
   }
-ventArsenic = ventBoiling
+arsenicVent = boilingVent
   { iname    = "vent"
-  , ifreq    = [("ventArsenic", 100)]
+  , ifreq    = [("arsenic vent", 100)]
   , iflavour = zipPlain [Cyan]
   , iaspects = [Periodic, Timeout $ d 2 |*| 5]
   , ieffects = [Recharging (Explode "weakness mist")]
   }
-ventSulfur = ventBoiling
+sulfurVent = boilingVent
   { iname    = "vent"
-  , ifreq    = [("ventSulfur", 100)]
+  , ifreq    = [("sulfur vent", 100)]
   , iflavour = zipPlain [BrYellow]
   , iaspects = [Periodic, Timeout $ d 3 + 2]
   , ieffects = [ Recharging (Explode "healing mist")
