@@ -47,7 +47,7 @@ tmpDefenseless = tmpAs "defenseless" [ AddArmorMelee (-30)
 tmpFast20 = tmpAs "fast 20" [AddSpeed 20]
 tmpSlow10 = tmpAs "slow 10" [AddSpeed (-10)]
 tmpFarSighted = tmpAs "far-sighted" [AddSight 5]
-tmpKeenSmelling = tmpAs "keen-smelling" [AddSmell 1]
+tmpKeenSmelling = tmpAs "keen-smelling" [AddSmell 2]
 tmpDrunk = tmpAs "drunk" [ AddHurtMelee 30  -- fury
                          , AddArmorMelee (-20)
                          , AddArmorRanged (-20)

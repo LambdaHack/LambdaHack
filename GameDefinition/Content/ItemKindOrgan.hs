@@ -304,7 +304,7 @@ nostril = armoredSkin
   , ifreq    = [("nostril", 100)]
   , icount   = 2
   , iverbHit = "snuff"
-  , iaspects = [AddSmell 1]
+  , iaspects = [AddSmell 2]
   , idesc    = ""
   }
 

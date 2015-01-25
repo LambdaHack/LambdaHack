@@ -81,7 +81,7 @@ embedItem lid pos tk = do
   Kind.COps{cotile} <- getsState scops
   let embeds = Tile.embedItems cotile tk
       causes = Tile.causeEffects cotile tk
-      -- TODO: unack this, e.g., by turning each Cause into Embed
+      -- TODO: unhack this, e.g., by turning each Cause into Embed
       itemFreq = zip embeds (repeat 1)
                  ++ -- Hack: the bag, not item, is relevant.
                     [("hero", 1) |  not (null causes) && null embeds]
