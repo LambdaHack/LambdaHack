@@ -124,71 +124,72 @@ insertItemSha iid kit fid = do
   updateFaction fid $ \fact -> fact {gsha = upd (gsha fact)}
 
 deleteItemContainer :: MonadStateWrite m
-                    => ItemId -> Int -> Container -> m ()
-deleteItemContainer iid k c = case c of
-  CFloor lid pos -> deleteItemFloor iid k lid pos
-  CEmbed lid pos -> deleteItemEmbed iid k lid pos
-  CActor aid store -> deleteItemActor iid k aid store
+                    => ItemId -> ItemQuant -> Container -> m ()
+deleteItemContainer iid kit c = case c of
+  CFloor lid pos -> deleteItemFloor iid kit lid pos
+  CEmbed lid pos -> deleteItemEmbed iid kit lid pos
+  CActor aid store -> deleteItemActor iid kit aid store
   CTrunk{} -> assert `failure` c
 
 deleteItemFloor :: MonadStateWrite m
-                => ItemId -> Int -> LevelId -> Point -> m ()
-deleteItemFloor iid k lid pos =
+                => ItemId -> ItemQuant -> LevelId -> Point -> m ()
+deleteItemFloor iid kit lid pos =
   let rmFromFloor (Just bag) =
-        let nbag = rmFromBag k iid bag
+        let nbag = rmFromBag kit iid bag
         in if EM.null nbag then Nothing else Just nbag
       rmFromFloor Nothing = assert `failure` "item already removed"
-                                   `twith` (iid, k, lid, pos)
+                                   `twith` (iid, kit, lid, pos)
   in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
 
 deleteItemEmbed :: MonadStateWrite m
-                => ItemId -> Int -> LevelId -> Point -> m ()
-deleteItemEmbed iid k lid pos =
+                => ItemId -> ItemQuant -> LevelId -> Point -> m ()
+deleteItemEmbed iid kit lid pos =
   let rmFromFloor (Just bag) =
-        let nbag = rmFromBag k iid bag
+        let nbag = rmFromBag kit iid bag
         in if EM.null nbag then Nothing else Just nbag
       rmFromFloor Nothing = assert `failure` "item already removed"
-                                   `twith` (iid, k, lid, pos)
+                                   `twith` (iid, kit, lid, pos)
   in updateLevel lid $ updateEmbed $ EM.alter rmFromFloor pos
 
 deleteItemActor :: MonadStateWrite m
-                => ItemId -> Int -> ActorId -> CStore -> m ()
-deleteItemActor iid k aid cstore = case cstore of
+                => ItemId -> ItemQuant -> ActorId -> CStore -> m ()
+deleteItemActor iid kit aid cstore = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
-    deleteItemFloor iid k (blid b) (bpos b)
-  COrgan -> deleteItemBody iid k aid
-  CEqp -> deleteItemEqp iid k aid
-  CInv -> deleteItemInv iid k aid
+    deleteItemFloor iid kit (blid b) (bpos b)
+  COrgan -> deleteItemBody iid kit aid
+  CEqp -> deleteItemEqp iid kit aid
+  CInv -> deleteItemInv iid kit aid
   CSha -> do
     b <- getsState $ getActorBody aid
-    deleteItemSha iid k (bfid b)
+    deleteItemSha iid kit (bfid b)
 
-deleteItemBody :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
-deleteItemBody iid k aid =
-  updateActor aid $ \b -> b {borgan = rmFromBag k iid (borgan b) }
+deleteItemBody :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
+deleteItemBody iid kit aid =
+  updateActor aid $ \b -> b {borgan = rmFromBag kit iid (borgan b) }
 
-deleteItemEqp :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
-deleteItemEqp iid k aid =
-  updateActor aid $ \b -> b {beqp = rmFromBag k iid (beqp b)}
+deleteItemEqp :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
+deleteItemEqp iid kit aid =
+  updateActor aid $ \b -> b {beqp = rmFromBag kit iid (beqp b)}
 
-deleteItemInv :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
-deleteItemInv iid k aid =
-  updateActor aid $ \b -> b {binv = rmFromBag k iid (binv b)}
+deleteItemInv :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
+deleteItemInv iid kit aid =
+  updateActor aid $ \b -> b {binv = rmFromBag kit iid (binv b)}
 
-deleteItemSha :: MonadStateWrite m => ItemId -> Int -> FactionId -> m ()
-deleteItemSha iid k fid =
-  updateFaction fid $ \fact -> fact {gsha = rmFromBag k iid (gsha fact)}
+deleteItemSha :: MonadStateWrite m => ItemId -> ItemQuant -> FactionId -> m ()
+deleteItemSha iid kit fid =
+  updateFaction fid $ \fact -> fact {gsha = rmFromBag kit iid (gsha fact)}
 
 -- Removing the part of the kit from the front of the list,
 -- so that @DestroyItem kit (CreateItem kit x) == x@.
-rmFromBag :: Int -> ItemId -> ItemBag -> ItemBag
-rmFromBag k iid bag =
+rmFromBag :: ItemQuant -> ItemId -> ItemBag -> ItemBag
+rmFromBag kit@(k, rmIt) iid bag =
   let rfb Nothing = assert `failure` "rm from empty slot" `twith` (k, iid, bag)
       rfb (Just (n, it)) =
         case compare n k of
           LT -> assert `failure` "rm more than there is"
-                       `twith` (n, k, iid, bag)
+                       `twith` (n, kit, iid, bag)
           EQ -> Nothing
-          GT -> Just (n - k, drop k it)
+          GT -> assert (rmIt == take k it `blame` (n, kit, iid, bag))
+                $ Just (n - k, drop k it)
   in EM.alter rfb iid bag

@@ -69,8 +69,8 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
         psBroken <- mapM posSfxAtomic atomicBroken
         return (ps, False, map SfxAtomic atomicBroken, psBroken)
   let atomicPsBroken = zip atomicBroken psBroken
-  -- TODO: assert also that the sum of psBroken is equal to ps
-  -- TODO: with deep equality these assertions can be expensive. Optimize.
+  -- TODO: assert also that the sum of psBroken is equal to ps;
+  -- with deep equality these assertions can be expensive; optimize.
   let !_A = assert (case ps of
                       PosSight{} -> True
                       PosFidAndSight{} -> True
@@ -125,7 +125,6 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
                 let remember = atomicRemember lid inPer sOld
                     seenNew = seenAtomicCli False fid perNew
                     seenOld = seenAtomicCli False fid perOld
-                -- TODO: these assertions are probably expensive
                 psRem <- mapM posUpdAtomic remember
                 -- Verify that we remember only currently seen things.
                 let !_A = assert (allB seenNew psRem) ()

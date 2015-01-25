@@ -175,11 +175,10 @@ updCreateItem iid item kit@(k, _) c = assert (k > 0) $ do
   modifyState $ updateItemD $ EM.insertWith f iid item
   insertItemContainer iid kit c
 
--- TODO: verify kit
 -- | Destroy some copies (possibly not all) of an item.
 updDestroyItem :: MonadStateWrite m
                => ItemId -> Item -> ItemQuant -> Container -> m ()
-updDestroyItem iid item (k, _) c = assert (k > 0) $ do
+updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
   -- It's incredibly costly and not noticeable for the player.
   -- However, assert the item is registered in @sitemD@.
@@ -189,7 +188,7 @@ updDestroyItem iid item (k, _) c = assert (k > 0) $ do
                         Just item0 -> itemsMatch item0 item)
                     `blame` "item already removed"
                     `twith` (iid, item, itemD)) ()
-  deleteItemContainer iid k c
+  deleteItemContainer iid kit c
 
 updMoveActor :: MonadStateWrite m => ActorId -> Point -> Point -> m ()
 updMoveActor aid fromP toP = assert (fromP /= toP) $ do
@@ -222,7 +221,7 @@ updMoveItem iid k aid c1 c2 = assert (k > 0 && c1 /= c2) $ do
   case iid `EM.lookup` bag of
     Nothing -> assert `failure` (iid, k, aid, c1, c2)
     Just (_, it) -> do
-      deleteItemActor iid k aid c1
+      deleteItemActor iid (k, take k it) aid c1
       insertItemActor iid (k, take k it) aid c2
 
 -- TODO: optimize (a single call to updatePrio is enough)
@@ -464,7 +463,7 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
   case iid `EM.lookup` bag of
     Just (k, it) -> do
       let !_A = assert (fromIt == it `blame` (k, it, iid, c, fromIt, toIt)) ()
-      deleteItemContainer iid k c
+      deleteItemContainer iid (k, fromIt) c
       insertItemContainer iid (k, toIt) c
     Nothing -> assert `failure` (bag, iid, c, fromIt, toIt)
 
