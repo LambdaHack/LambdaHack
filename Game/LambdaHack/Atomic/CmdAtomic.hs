@@ -51,7 +51,9 @@ data CmdAtomic =
 instance Binary CmdAtomic
 
 -- | Abstract syntax of atomic updates, that is, atomic commands
--- that really change the state.
+-- that really change the state. Most of them are an encoding of a game
+-- state diff, though they also carry some intentional hints
+-- that help clients determine whether and how to communicate them to players.
 data UpdAtomic =
   -- Create/destroy actors and items.
     UpdCreateActor !ActorId !Actor ![(ItemId, Item)]
@@ -116,7 +118,7 @@ data UpdAtomic =
 instance Binary UpdAtomic
 
 -- | Abstract syntax of atomic special effects, that is, atomic commands
--- that only display special effects and not change the state.
+-- that only display special effects and don't change the state.
 data SfxAtomic =
     SfxStrike !ActorId !ActorId !ItemId !HitAtomic
   | SfxRecoil !ActorId !ActorId !ItemId !HitAtomic
@@ -134,7 +136,7 @@ data SfxAtomic =
 
 instance Binary SfxAtomic
 
--- | Determine if a strike special effect should include a blocking animation.
+-- | Determine if a strike special effect should depict a block of an attack.
 data HitAtomic = HitClear | HitBlock !Int
   deriving (Show, Eq, Generic)
 

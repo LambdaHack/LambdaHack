@@ -5,6 +5,7 @@ module Game.LambdaHack.Common.HighScore
   ( ScoreDict, ScoreTable
   , empty, register, showScore, getTable, getRecord, highSlideshow
 #ifdef EXPOSE_INTERNAL
+    -- * Internal operations
   , ScoreRecord
 #endif
   ) where

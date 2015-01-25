@@ -7,6 +7,7 @@
 module Game.LambdaHack.SampleImplementation.SampleMonadClient
   ( executorCli
 #ifdef EXPOSE_INTERNAL
+    -- * Internal operations
   , CliImplementation
 #endif
   ) where

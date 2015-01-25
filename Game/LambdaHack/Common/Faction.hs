@@ -9,6 +9,7 @@ module Game.LambdaHack.Common.Faction
   , isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff
 #ifdef EXPOSE_INTERNAL
+    -- * Internal operations
   , Dipl
 #endif
   ) where

@@ -13,6 +13,7 @@ module Game.LambdaHack.Client.UI
     -- * Operations exposed for LoopClient
   , ColorMode(..), displayMore, msgAdd
 #ifdef EXPOSE_INTERNAL
+    -- * Internal operations
   , humanCommand
 #endif
   ) where
@@ -59,7 +60,7 @@ queryUI = do
     then return $! ReqUILeader leader2 mtgt2 req
     else return $! req
 
--- | Let the human player issue commands, until any command takes time.
+-- | Let the human player issue commands until any command takes time.
 humanCommand :: forall m. MonadClientUI m => m RequestUI
 humanCommand = do
   -- For human UI we invalidate whole @sbfsD@ at the start of each

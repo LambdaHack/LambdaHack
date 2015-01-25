@@ -18,6 +18,7 @@ module Game.LambdaHack.Server.ProtocolServer
     -- * Assorted
   , killAllClients, childrenServer, updateConn
 #ifdef EXPOSE_INTERNAL
+    -- * Internal operations
   , ConnServerFaction
 #endif
   ) where

@@ -86,7 +86,7 @@ data DebugModeSer = DebugModeSer
   , sdumpInitRngs  :: !Bool
   , ssavePrefixSer :: !(Maybe String)
   , sdbgMsgSer     :: !Bool
-  , sdebugCli      :: !DebugModeCli
+  , sdebugCli      :: !DebugModeCli  -- ^ client debug parameters
   }
   deriving Show
 

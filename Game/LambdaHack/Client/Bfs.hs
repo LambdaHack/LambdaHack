@@ -1,10 +1,10 @@
 {-# LANGUAGE CPP, GeneralizedNewtypeDeriving #-}
 -- | Breadth first search algorithms.
 module Game.LambdaHack.Client.Bfs
-  ( -- * Public API
-    BfsDistance, MoveLegal(..), apartBfs
+  ( BfsDistance, MoveLegal(..), apartBfs
   , fillBfs, findPathBfs, accessBfs
 #ifdef EXPOSE_INTERNAL
+    -- * Internal operations
   , minKnownBfs
 #endif
   ) where

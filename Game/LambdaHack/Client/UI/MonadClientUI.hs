@@ -57,7 +57,7 @@ import Game.LambdaHack.Content.ModeKind
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,
 -- but is completely disregarded and reset when a new playing session starts.
--- Auxiliary AI and computer player clients have no @sfs@ nor @sbinding@.
+-- This includes a frontend session and keybinding info.
 data SessionUI = SessionUI
   { schanF   :: !ChanFrontend       -- ^ connection with the frontend
   , sbinding :: !Binding            -- ^ binding of keys to commands
@@ -65,6 +65,7 @@ data SessionUI = SessionUI
   , sconfig  :: !Config
   }
 
+-- | The monad that gives the client access to UI operations.
 class MonadClient m => MonadClientUI m where
   getsSession  :: (SessionUI -> a) -> m a
   liftIO       :: IO a -> m a

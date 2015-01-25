@@ -3,12 +3,12 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic
-  ( -- * Re-exported from MonadAtomic
+  ( -- * Re-exported from "Game.LambdaHack.Atomic.MonadAtomic"
     MonadAtomic(..)
   , broadcastUpdAtomic, broadcastSfxAtomic
-    -- * Re-exported from CmdAtomic
+    -- * Re-exported from "Game.LambdaHack.Atomic.CmdAtomic"
   , CmdAtomic(..), UpdAtomic(..), SfxAtomic(..), HitAtomic(..)
-    -- * Re-exported from PosAtomicRead
+    -- * Re-exported from "Game.LambdaHack.Atomic.PosAtomicRead"
   , PosAtomic(..), posUpdAtomic, posSfxAtomic, seenAtomicCli, generalMoveItem
   ) where
 

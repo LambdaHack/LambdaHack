@@ -2,9 +2,9 @@
 -- | Ways for the client to use AI to produce server requests, based on
 -- the client's view of the game state.
 module Game.LambdaHack.Client.AI
-  ( -- * Public API
-    queryAI, pongAI
+  ( queryAI, pongAI
 #ifdef EXPOSE_INTERNAL
+    -- * Internal operations
   , refreshTarget, pickAction
 #endif
   ) where
@@ -51,9 +51,12 @@ queryAI oldAid = do
 pongAI :: MonadClient m => m RequestAI
 pongAI = return ReqAIPong
 
+-- | Verify and possibly change the target of an actor. This function both
+-- updates the target in the client state and returns the new target explicitly.
 refreshTarget :: MonadClient m
-              => ActorId -> (ActorId, Actor)
-              -> m (Maybe ((ActorId, Actor), (Target, PathEtc)))
+              => ActorId           -- ^ the leader of the party last turn
+              -> (ActorId, Actor)  -- ^ the actor to refresh
+              -> m (Maybe (Target, PathEtc))
 refreshTarget oldLeader (aid, body) = do
   side <- getsClient sside
   let !_A = assert (bfid body == side
@@ -83,9 +86,10 @@ refreshTarget oldLeader (aid, body) = do
   modifyClient $ \cli ->
     cli {stargetD = EM.alter (const tgtMPath) aid (stargetD cli)}
   return $! case tgtMPath of
-    Just (tgt, Just pathEtc) -> Just ((aid, body), (tgt, pathEtc))
+    Just (tgt, Just pathEtc) -> Just (tgt, pathEtc)
     _ -> Nothing
 
+-- | Pick an action the actor will perfrom this turn.
 pickAction :: MonadClient m => (ActorId, Actor) -> m RequestAnyAbility
 pickAction (aid, body) = do
   side <- getsClient sside

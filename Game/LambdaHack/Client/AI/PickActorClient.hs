@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Semantics of most 'ResponseAI' client commands.
 module Game.LambdaHack.Client.AI.PickActorClient
   ( pickActorToMove
@@ -35,7 +36,7 @@ import Game.LambdaHack.Content.ModeKind
 
 pickActorToMove :: MonadClient m
                 => (ActorId -> (ActorId, Actor)
-                    -> m (Maybe ((ActorId, Actor), (Target, PathEtc))))
+                    -> m (Maybe (Target, PathEtc)))
                 -> ActorId
                 -> m (ActorId, Actor)
 pickActorToMove refreshTarget oldAid = do
@@ -101,7 +102,10 @@ pickActorToMove refreshTarget oldAid = do
       -- the old leader, if he is among the best candidates
       -- (to make the AI appear more human-like and easier to observe).
       -- TODO: this also takes melee into account, but not shooting.
-      oursTgt <- catMaybes <$> mapM (refreshTarget oldAid) ours
+      let refresh aidBody = do
+            mtgt <- refreshTarget oldAid aidBody
+            return $! (aidBody,) <$> mtgt
+      oursTgt <- catMaybes <$> mapM refresh ours
       let actorWeak ((aid, body), _) = do
             activeItems <- activeItemsClient aid
             condMeleeBad <- condMeleeBadM aid

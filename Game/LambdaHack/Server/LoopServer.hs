@@ -43,14 +43,17 @@ import Game.LambdaHack.Server.ProtocolServer
 import Game.LambdaHack.Server.StartServer
 import Game.LambdaHack.Server.State
 
--- | Start a game session. Loop, communicating with clients.
+-- | Start a game session, including the clients, and then loop,
+-- communicating with the clients.
 loopSer :: (MonadAtomic m, MonadServerReadRequest m)
-        => DebugModeSer
+        => Kind.COps  -- ^ game content
+        -> DebugModeSer  -- ^ server debug parameters
         -> (FactionId -> ChanServer ResponseUI RequestUI -> IO ())
+             -- ^ the code to run for UI clients
         -> (FactionId -> ChanServer ResponseAI RequestAI -> IO ())
-        -> Kind.COps
+             -- ^ the code to run for AI clients
         -> m ()
-loopSer sdebug executorUI executorAI !cops = do
+loopSer cops sdebug executorUI executorAI = do
   -- Recover states and launch clients.
   let updConn = updateConn executorUI executorAI
   restored <- tryRestore cops sdebug

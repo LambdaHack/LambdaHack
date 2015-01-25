@@ -9,6 +9,7 @@ module Game.LambdaHack.Common.Dice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
   , DiceXY(..), maxDiceXY, minDiceXY, meanDiceXY
 #ifdef EXPOSE_INTERNAL
+    -- * Internal operations
   , SimpleDice
 #endif
   ) where

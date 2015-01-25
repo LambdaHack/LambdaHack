@@ -5,6 +5,7 @@
 module Game.LambdaHack.Server.Fov.Digital
   ( scan
 #ifdef EXPOSE_INTERNAL
+    -- * Internal operations
   , dline, dsteeper, intersect, _debugSteeper, _debugLine
 #endif
   ) where

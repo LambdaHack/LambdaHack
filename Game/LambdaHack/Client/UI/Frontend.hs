@@ -1,7 +1,7 @@
 -- | Display game data on the screen and receive user input
 -- using one of the available raw frontends and derived operations.
 module Game.LambdaHack.Client.UI.Frontend
-  ( -- * Connection types.
+  ( -- * Connection types
     FrontReq(..), ChanFrontend(..)
     -- * Re-exported part of the raw frontend
   , frontendName
@@ -23,6 +23,7 @@ import Game.LambdaHack.Client.UI.Frontend.Chosen
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Point
 
+-- | The instructions sent by clients to the raw frontend over a channel.
 data FrontReq =
     FrontNormalFrame {frontFrame :: !SingleFrame}
       -- ^ show a frame
@@ -46,8 +47,12 @@ data ChanFrontend = ChanFrontend
   , requestF  :: !(STM.TQueue FrontReq)
   }
 
-startupF :: DebugModeCli
-         -> (Maybe (MVar ()) -> (ChanFrontend -> IO ()) -> IO ())
+-- | Initialize the frontend and apply the given continuation to the results
+-- of the initialization.
+startupF :: DebugModeCli  -- ^ debug settings
+         -> (Maybe (MVar ())
+             -> (ChanFrontend -> IO ())
+             -> IO ())  -- ^ continuation
          -> IO ()
 startupF dbg cont =
   (if sfrontendNull dbg then nullStartup

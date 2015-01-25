@@ -34,7 +34,8 @@ import Game.LambdaHack.Content.ModeKind
 -- in the state just before the action is executed.
 
 -- | The type representing visibility of atomic commands to factions,
--- based on the position of the command, etc.
+-- based on the position of the command, etc. Note that the server
+-- sees and smells all positions.
 data PosAtomic =
     PosSight !LevelId ![Point]  -- ^ whomever sees all the positions, notices
   | PosFidAndSight ![FactionId] !LevelId ![Point]
@@ -49,10 +50,16 @@ data PosAtomic =
 
 -- | Produce the positions where the atomic update takes place.
 --
--- The goal of the mechanics: client should not get significantly
--- more information by looking at the atomic commands he is able to see
--- than by looking at the state changes they enact. E.g., @UpdDisplaceActor@
--- in a black room, with one actor carrying a 0-radius light would not be
+-- The goal of the mechanics is to ensure the commands don't carry
+-- significantly more information than their corresponding state diffs would.
+-- In other words, the atomic commands involving the positions seen by a client
+-- should convey similar information as the client would get by directly
+-- observing the changes the commands enact on the visible portion of server
+-- game state. The client is then free to change its copy of game state
+-- accordingly or not --- it only partially reflects reality anyway.
+--
+-- E.g., @UpdDisplaceActor@ in a black room,
+-- with one actor carrying a 0-radius light would not be
 -- distinguishable by looking at the state (or the screen) from @UpdMoveActor@
 -- of the illuminated actor, hence such @UpdDisplaceActor@ should not be
 -- observable, but @UpdMoveActor@ should be (or the former should be perceived

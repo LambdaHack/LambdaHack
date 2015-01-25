@@ -6,11 +6,14 @@
 module Game.LambdaHack.SampleImplementation.SampleMonadServer
   ( executorSer
 #ifdef EXPOSE_INTERNAL
+    -- * Internal operations
   , SerImplementation
 #endif
   ) where
 
 import Control.Applicative
+import Control.Concurrent
+import qualified Control.Exception as Ex
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
@@ -24,6 +27,7 @@ import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Thread
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolServer
@@ -91,7 +95,7 @@ handleAndBroadcastServer atomic = do
 
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: SerImplementation () -> IO ()
-executorSer m =
+executorSer m = do
   let saveFile (_, ser) =
         fromMaybe "save" (ssavePrefixSer (sdebugSer ser))
         <.> saveName
@@ -102,4 +106,14 @@ executorSer m =
                    , serDict = EM.empty
                    , serToSave
                    }
-  in Save.wrapInSaves saveFile exe
+      exeWithSaves = Save.wrapInSaves saveFile exe
+  -- Wait for clients to exit even in case of server crash
+  -- (or server and client crash), which gives them time to save
+  -- and report their own inconsistencies, if any.
+  -- TODO: send them a message to tell users "server crashed"
+  -- and then wait for them to exit normally.
+  Ex.handle (\(ex :: Ex.SomeException) -> do
+               threadDelay 100000  -- let clients report their errors
+               Ex.throw ex)  -- crash eventually, which kills clients
+            exeWithSaves
+  waitForChildren childrenServer  -- no crash, wait for clients indefinitely

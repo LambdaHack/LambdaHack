@@ -19,20 +19,22 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
 
--- | Wire together game content, the main loop of game clients,
+-- | Wire together game content, the main loops of game clients,
 -- the main game loop assigned to this frontend (possibly containing
 -- the server loop, if the whole game runs in one process),
 -- UI config and the definitions of game commands.
 srtFrontend :: (DebugModeCli -> SessionUI -> State -> StateClient
                 -> chanServerUI
-                -> IO ())
+                -> IO ())    -- ^ UI main loop
             -> (DebugModeCli -> SessionUI -> State -> StateClient
                 -> chanServerAI
-                -> IO ())
-            -> KeyKind -> Kind.COps -> DebugModeCli
+                -> IO ())    -- ^ AI main loop
+            -> KeyKind       -- ^ key and command content
+            -> Kind.COps     -- ^ game content
+            -> DebugModeCli  -- ^ client debug parameters
             -> ((FactionId -> chanServerUI -> IO ())
                -> (FactionId -> chanServerAI -> IO ())
-               -> IO ())
+               -> IO ())     -- ^ frontend main loop
             -> IO ()
 srtFrontend executorUI executorAI
             copsClient cops sdebugCli exeServer = do

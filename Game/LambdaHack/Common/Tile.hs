@@ -21,6 +21,7 @@ module Game.LambdaHack.Common.Tile
   , openTo, closeTo, embedItems, causeEffects, revealAs, hideAs
   , isOpenable, isClosable, isChangeable, isEscape, isStair, ascendTo
 #ifdef EXPOSE_INTERNAL
+    -- * Internal operations
   , TileSpeedup(..), Tab, createTab, accessTab
 #endif
   ) where

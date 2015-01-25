@@ -45,6 +45,7 @@ initCli sdebugCli putSt = do
         Nothing -> return ()
       return False
 
+-- | The main game loop for an AI client.
 loopAI :: ( MonadAtomic m
           , MonadClientReadResponse ResponseAI m
           , MonadClientWriteRequest RequestAI m )
@@ -76,6 +77,7 @@ loopAI sdebugCli = do
     quit <- getsClient squit
     unless quit loop
 
+-- | The main game loop for a UI client.
 loopUI :: ( MonadClientUI m
           , MonadAtomic m
           , MonadClientReadResponse ResponseUI m

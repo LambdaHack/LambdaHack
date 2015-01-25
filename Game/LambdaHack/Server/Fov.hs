@@ -6,7 +6,8 @@ module Game.LambdaHack.Server.Fov
   ( dungeonPerception, fidLidPerception
   , PersLit, litInDungeon
 #ifdef EXPOSE_INTERNAL
-  , PerceptionReachable(..), PerceptionDynamicLit(..), ActorEqpBody
+    -- * Internal operations
+  , PerceptionReachable(..), PerceptionDynamicLit(..)
 #endif
   ) where
 
@@ -46,14 +47,14 @@ newtype PerceptionDynamicLit = PerceptionDynamicLit
     {pdynamicLit :: [Point]}
   deriving Show
 
-type ActorEqpBody = [(Actor, FovCache3)]
-
-type PersLit = EML.EnumMap LevelId ( EM.EnumMap FactionId ActorEqpBody
+-- | The cache of FOV information for a level, such as sight, smell
+-- and light radiuses for each actor and bitmaps of clear and lit positions.
+type PersLit = EML.EnumMap LevelId ( EM.EnumMap FactionId [(Actor, FovCache3)]
                                    , PointArray.Array Bool
                                    , PointArray.Array Bool )
 
 -- | Calculate faction's perception of a level.
-levelPerception :: ActorEqpBody
+levelPerception :: [(Actor, FovCache3)]
                 -> PointArray.Array Bool -> PointArray.Array Bool
                 -> FovMode -> Level
                 -> Perception
@@ -131,7 +132,7 @@ litByItems clearPs fovMode allItems =
       litPos (p, light) = fullscan clearPs fovMode light p
   in PerceptionDynamicLit $ concatMap litPos allItems
 
--- | Compute all lit positions in the dungeon
+-- | Compute all lit positions in the dungeon.
 litInDungeon :: FovMode -> State -> StateServer -> PersLit
 litInDungeon fovMode s ser =
   let Kind.COps{cotile} = scops s
@@ -142,7 +143,7 @@ litInDungeon fovMode s ser =
                      (k * fovSmell + smellAcc)
                      (k * fovLight + lightAcc)
       processBag3 bag acc = foldl' processIid3 acc $ EM.assocs bag
-      itemsInActors :: Level -> EM.EnumMap FactionId ActorEqpBody
+      itemsInActors :: Level -> EM.EnumMap FactionId [(Actor, FovCache3)]
       itemsInActors lvl =
         let processActor aid =
               let b = getActorBody aid s
@@ -163,7 +164,7 @@ litInDungeon fovMode s ser =
       -- Note that an actor can be blind or a projectile,
       -- in which case he doesn't see his own light
       -- (but others, from his or other factions, possibly do).
-      litOnLevel :: Level -> ( EM.EnumMap FactionId ActorEqpBody
+      litOnLevel :: Level -> ( EM.EnumMap FactionId [(Actor, FovCache3)]
                              , PointArray.Array Bool
                              , PointArray.Array Bool )
       litOnLevel lvl@Level{ltile} =
