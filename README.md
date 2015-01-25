@@ -59,7 +59,7 @@ Screen and keyboard configuration
 ---------------------------------
 
 The game UI can be configured via a config file.
-The commented out version of the file with default settings is in
+A file with the default settings, the same as built into the binary, is in
 [GameDefinition/config.ui.default](GameDefinition/config.ui.default).
 When the game is run for the first time, the file is copied to the official
 location, which is `~/.LambdaHack/config.ui.ini` on Linux and
@@ -67,9 +67,8 @@ location, which is `~/.LambdaHack/config.ui.ini` on Linux and
 (or `C:\Documents And Settings\user\Application Data\LambdaHack\config.ui.ini`
 or something else altogether) on Windows.
 
-Screen font can be changed and enlarged by uncommenting and editing
-the config file at its official location or by CTRL-right-clicking
-on the game window.
+Screen font can be changed and enlarged by editing the config file
+at its official location or by CTRL-right-clicking on the game window.
 
 If you use the numeric keypad, use the NumLock key on your keyboard
 to toggle the game keyboard mode. With NumLock off, you walk with the numeric

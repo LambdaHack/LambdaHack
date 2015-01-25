@@ -1,40 +1,40 @@
-; ; This is a commented out copy of the default UI settings config file
-; ; that is embedded in the game binary. A user config file can override
-; ; these options. Option names are case-sensitive and only ';' for comments
-; ; is permitted.
-; ;
-; ; The game looks for the config file at the same path where saved games
-; ; directory is located. E.g. on Linux the file is at
-; ; ~/.LambdaHack/config.ui.ini
-; ; and on Windows it can be at
-; ; C:\Documents And Settings\user\Application Data\LambdaHack\config.ui.ini
-; ; or at
-; ; C:\Users\<username>\AppData\Roaming\LambdaHack\config.ui.ini
-; ; or elsewhere.
+; This is a copy of the default UI settings config file
+; that is embedded in the game binary. A user config file can override
+; these options. Option names are case-sensitive and only ';' for comments
+; is permitted.
+;
+; The game looks for the config file at the same path where saved games
+; directory is located. E.g. on Linux the file is at
+; ~/.LambdaHack/config.ui.ini
+; and on Windows it can be at
+; C:\Documents And Settings\user\Application Data\LambdaHack\config.ui.ini
+; or at
+; C:\Users\<username>\AppData\Roaming\LambdaHack\config.ui.ini
+; or elsewhere.
 
-; [extra_commands]
-; ; A handy shorthand with Vi keys
-; Macro_1 = ("comma", ([CmdItem], Macro "" ["g"]))
-; ; Angband compatibility (accept target)
-; Macro_2 = ("KP_Insert", ([CmdMeta], Macro "" ["Return"]))
+[extra_commands]
+; A handy shorthand with Vi keys
+Macro_1 = ("comma", ([CmdItem], Macro "" ["g"]))
+; Angband compatibility (accept target)
+Macro_2 = ("KP_Insert", ([CmdMeta], Macro "" ["Return"]))
 
-; [hero_names]
-; HeroName_0 = ("Haskell Alvin", "he")
-; HeroName_1 = ("Alonzo Barkley", "he")
-; HeroName_2 = ("Ines Galenti", "she")
-; HeroName_3 = ("Ernst Abraham", "he")
-; HeroName_4 = ("Samuel Saunders", "he")
-; HeroName_5 = ("Roger Robin", "he")
-; HeroName_6 = ("Christopher Flatt", "he")
+[hero_names]
+HeroName_0 = ("Haskell Alvin", "he")
+HeroName_1 = ("Alonzo Barkley", "he")
+HeroName_2 = ("Ines Galenti", "she")
+HeroName_3 = ("Ernst Abraham", "he")
+HeroName_4 = ("Samuel Saunders", "he")
+HeroName_5 = ("Roger Robin", "he")
+HeroName_6 = ("Christopher Flatt", "he")
 
-; [ui]
-; movementViKeys_hjklyubn = False
-; movementLaptopKeys_uk8o79jl = True
-; ; Monospace fonts that have fixed size regardless of boldness (on some OSes)
-; font = "Terminus,DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace normal normal normal normal 16"
-; colorIsBold = True
-; historyMax = 5000
-; maxFps = 30
-; noAnim = False
-; runStopMsgs = False
-[dummy]
+[ui]
+movementViKeys_hjklyubn = False
+movementLaptopKeys_uk8o79jl = True
+; Monospace fonts that have fixed size regardless of boldness (on some OSes)
+font = "Terminus,DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace normal normal normal normal 16"
+;font = "Terminus,DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace normal normal normal normal 20"
+colorIsBold = True
+historyMax = 5000
+maxFps = 30
+noAnim = False
+runStopMsgs = False

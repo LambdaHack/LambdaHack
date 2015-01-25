@@ -90,8 +90,7 @@ mkConfig :: Kind.COps -> IO Config
 mkConfig Kind.COps{corule} = do
   let stdRuleset = Kind.stdRuleset corule
       cfgUIName = rcfgUIName stdRuleset
-      commentsUIDefault = init $ map (drop 2) $ lines $ rcfgUIDefault stdRuleset  -- TODO: init is a hack until Ini accepts empty files
-      sUIDefault = unlines commentsUIDefault
+      sUIDefault = rcfgUIDefault stdRuleset
       cfgUIDefault = either (assert `failure`) id $ Ini.parse sUIDefault
   dataDir <- appDataDir
   let userPath = dataDir </> cfgUIName <.> "ini"
