@@ -190,6 +190,7 @@ rmFromBag kit@(k, rmIt) iid bag =
           LT -> assert `failure` "rm more than there is"
                        `twith` (n, kit, iid, bag)
           EQ -> Nothing
-          GT -> assert (rmIt == take k it `blame` (n, kit, iid, bag))
+          GT -> assert (rmIt == take k it
+                        `blame` (rmIt, take k it, n, kit, iid, bag))
                 $ Just (n - k, drop k it)
   in EM.alter rfb iid bag

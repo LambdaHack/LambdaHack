@@ -99,8 +99,10 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
     _ ->
       -- TODO: if has timeout and not recharged, report failure
       return it1
-  when (it /= it2 && mtimeout /= Just (IK.Timeout 0)) $
-    execUpdAtomic $ UpdTimeItem iid c it it2
+  it3 <- if it /= it2 && mtimeout /= Just (IK.Timeout 0) then do
+           execUpdAtomic $ UpdTimeItem iid c it it2
+           return it2
+         else return it
   -- If the activation is not periodic, trigger at least the effects
   -- that are not recharging and so don't depend on @recharged@.
   when (not periodic || recharged) $ do
@@ -119,7 +121,7 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
     item <- getsState $ getItemBody iid
     let durable = IK.Durable `elem` jfeature item
         imperishable = durable || periodic && isNothing mtmp
-        kit = if isNothing mtmp || periodic then (1, take 1 it2) else (k, it2)
+        kit = if isNothing mtmp || periodic then (1, take 1 it3) else (k, it3)
     unless imperishable $
       execUpdAtomic $ UpdLoseItem iid item kit c
     -- At this point, the item is potentially no longer in container @c@,
