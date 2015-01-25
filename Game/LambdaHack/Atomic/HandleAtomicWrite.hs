@@ -224,14 +224,28 @@ updMoveItem iid k aid c1 c2 = assert (k > 0 && c1 /= c2) $ do
       deleteItemActor iid (k, take k it) aid c1
       insertItemActor iid (k, take k it) aid c2
 
--- TODO: optimize (a single call to updatePrio is enough)
+-- This is equaivalent to (but much cheaper than) updDestroyActor
+-- followed by updCreateActor.
 updAgeActor :: MonadStateWrite m => ActorId -> Delta Time -> m ()
 updAgeActor aid delta = assert (delta /= Delta timeZero) $ do
   body <- getsState $ getActorBody aid
-  ais <- getsState $ getCarriedAssocs body
-  updDestroyActor aid body ais
   let newBody = body {btime = timeShift (btime body) delta}
-  updCreateActor aid newBody ais
+      -- Remove actor from @sprio@ at old time.
+      rmPrio Nothing = assert `failure` "actor already removed"
+                              `twith` (aid, body)
+      rmPrio (Just l) = assert (aid `elem` l `blame` "actor already removed"
+                                             `twith` (aid, body, l))
+                        $ let l2 = delete aid l
+                          in if null l2 then Nothing else Just l2
+      -- Add actor to @sprio@ at new time.
+      addPrio Nothing = Just [aid]
+      addPrio (Just l) = assert (aid `notElem` l `blame` "actor already added"
+                                                 `twith` (aid, body, l))
+                         $ Just $ aid : l
+      updPrio = EM.alter addPrio (btime newBody) . EM.alter rmPrio (btime body)
+  updateLevel (blid body) $ updatePrio updPrio
+  -- Modify actor body in @sactorD@.
+  modifyState $ updateActorD $ EM.insert aid newBody
 
 updRefillHP :: MonadStateWrite m => ActorId -> Int64 -> m ()
 updRefillHP aid n =
