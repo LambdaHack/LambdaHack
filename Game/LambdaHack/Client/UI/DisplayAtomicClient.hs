@@ -565,7 +565,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     side <- getsClient sside
     let fid = bfid b
     if bhp b <= 0 then do
-      -- We assume the effect is the cause of incapacitation.
+      -- We assume the effect is the cause of incapacitation, but in case
+      -- of projectile, to reduce spam, we verify with @canKill@.
       let firstFall | fid == side && bproj b = "fall apart"
                     | fid == side = "fall down"
                     | bproj b = "break up"
@@ -574,17 +575,21 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                     | fid == side = "be stomped flat"
                     | bproj b = "be shattered into little pieces"
                     | otherwise = "be reduced to a bloody pulp"
-      subject <- partActorLeader aid b
-      let deadPreviousTurn p = p < 0 && bhp b <= p
-          (deadBefore, verbDie) =
+          deadPreviousTurn p = p < 0 && bhp b <= p
+          (canKill, deadBefore, verbDie) =
             case effect of
               IK.Hurt p | deadPreviousTurn (xM $ Dice.maxDice p) ->
-                (True, hurtExtra)
-              IK.RefillHP p | deadPreviousTurn (xM p) -> (True, hurtExtra)
-              IK.OverfillHP p | deadPreviousTurn (xM p) -> (True, hurtExtra)
-              _ -> (False, firstFall)
-          msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
-      msgAdd msgDie
+                (p < 0, True, hurtExtra)
+              IK.RefillHP p | deadPreviousTurn (xM p) ->
+                (p < 0, True, hurtExtra)
+              IK.OverfillHP p | deadPreviousTurn (xM p) ->
+                (p < 0, True, hurtExtra)
+              IK.Burn p | deadPreviousTurn (xM $ Dice.maxDice p) ->
+                (p < 0, True, hurtExtra)
+              _ -> (False, False, firstFall)
+      subject <- partActorLeader aid b
+      let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
+      when (canKill || not (bproj b)) $ msgAdd msgDie
       when (fid == side && not (bproj b)) $ do
         animDie <- if deadBefore
                    then animate (blid b)

@@ -215,8 +215,8 @@ effectSem source target iid recharged effect = do
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
   case effect of
     IK.NoEffect _ -> return False
-    IK.Hurt nDm -> effectHurt nDm source target False
-    IK.Burn nDm -> effectBurn execSfx nDm source target
+    IK.Hurt nDm -> effectHurt nDm source target IK.RefillHP
+    IK.Burn nDm -> effectBurn nDm source target
     IK.Explode t -> effectExplode execSfx t target
     IK.RefillHP p -> effectRefillHP False execSfx p source target
     IK.OverfillHP p -> effectRefillHP True execSfx p source target
@@ -255,9 +255,9 @@ effectSem source target iid recharged effect = do
 
 -- Modified by armor. Can, exceptionally, add HP.
 effectHurt :: (MonadAtomic m, MonadServer m)
-           => Dice.Dice -> ActorId -> ActorId -> Bool
+           => Dice.Dice -> ActorId -> ActorId -> (Int -> IK.Effect)
            -> m Bool
-effectHurt nDm source target silent = do
+effectHurt nDm source target verboseEffectConstructor = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   hpMax <- sumOrganEqpServer IK.EqpSlotAddMaxHP target
@@ -274,10 +274,12 @@ effectHurt nDm source target silent = do
   -- Damage the target.
   execUpdAtomic $ UpdRefillHP target deltaHP
   when serious $ halveCalm target
-  unless silent $ execSfxAtomic $ SfxEffect (bfid sb) target $
+  execSfxAtomic $ SfxEffect (bfid sb) target $
     if source == target
-    then IK.RefillHP deltaDiv  -- no SfxStrike, so treat as any heal/wound
-    else IK.Hurt (Dice.intToDice deltaDiv)  -- SfxStrike sent, avoid spam
+    then verboseEffectConstructor deltaDiv
+           -- no SfxStrike, so treat as any heal/wound
+    else IK.Hurt (Dice.intToDice deltaDiv)
+           -- SfxStrike already sent, avoid spam
   return True
 
 armorHurtBonus :: (MonadAtomic m, MonadServer m)
@@ -316,13 +318,10 @@ halveCalm target = do
 
 -- Damage from both impact and fire. Modified by armor.
 effectBurn :: (MonadAtomic m, MonadServer m)
-           => m () -> Dice.Dice -> ActorId -> ActorId
+           => Dice.Dice -> ActorId -> ActorId
            -> m Bool
-effectBurn execSfx nDm source target = do
-  power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
-  void $ effectHurt (Dice.intToDice power) source target True
-  execSfx
-  return True
+effectBurn nDm source target =
+  effectHurt nDm source target (\p -> IK.Burn $ Dice.intToDice p)
 
 -- ** Explode
 
