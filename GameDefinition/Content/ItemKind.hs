@@ -282,7 +282,8 @@ necklace = ItemKind
   , ikit     = []
   }
 necklace1 = necklace
-  { iaspects = [Unique, Timeout $ d 3 + 4 - dl 3 |*| 10]
+  { ifreq    = [("treasure", 100)]
+  , iaspects = [Unique, Timeout $ d 3 + 4 - dl 3 |*| 10]
                ++ iaspects necklace
   , ieffects = [NoEffect "of Aromata", Recharging (RefillHP 1)]
   , ifeature = Durable : ifeature necklace
@@ -314,7 +315,8 @@ necklace6 = necklace
   , ieffects = [Recharging (PushActor (ThrowMod 100 50))]
   }
 necklace7 = necklace  -- TODO: teach AI to wear only for fight
-  { iaspects = [ Unique, AddMaxHP $ 5 + d 5
+  { ifreq    = [("treasure", 100)]
+  , iaspects = [ Unique, AddMaxHP $ 5 + d 5
                , AddArmorMelee 20, AddArmorRanged 20
                , Timeout $ d 2 + 5 - dl 3 ]
                ++ iaspects necklace
@@ -330,7 +332,7 @@ necklace7 = necklace  -- TODO: teach AI to wear only for fight
 sightSharpening = ItemKind
   { isymbol  = symbolRing
   , iname    = "Sharp Monocle"
-  , ifreq    = [("useful", 100)]
+  , ifreq    = [("treasure", 100)]
   , iflavour = zipPlain [White]
   , icount   = 1
   , irarity  = [(7, 3), (10, 3)]  -- medium weak, medium shallow
@@ -389,7 +391,8 @@ ring5 = ring  -- by the time it's found, probably no space in eqp
   , idesc    = "A sturdy ring with a large, shining stone."
   }
 ring6 = ring
-  { irarity  = [(10, 2)]
+  { ifreq    = [("treasure", 100)]
+  , irarity  = [(10, 2)]
   , iaspects = [Unique, AddSpeed $ 10 + d 10, AddMaxCalm $ - 20 - d 20]
   , ieffects = [ NoEffect "of Rush"
                , Explode "distortion" ]  -- strong magic
@@ -439,7 +442,8 @@ potion1 = potion
                , OnSmash ApplyPerfume, OnSmash (Explode "fragrance") ]
   }
 potion2 = potion
-  { irarity  = [(6, 10), (10, 10)]
+  { ifreq    = [("treasure", 100)]
+  , irarity  = [(6, 10), (10, 10)]
   , iaspects = [Unique]
     -- No effect, always explodes, which is fine, because effects if other
     -- potions sometimes don't get triggered either.
@@ -481,7 +485,8 @@ potion8 = potion
                , OnSmash (Explode "blast 10") ]
   }
 potion9 = potion
-  { irarity  = [(10, 5)]
+  { ifreq    = [("treasure", 100)]
+  , irarity  = [(10, 5)]
   , iaspects = [Unique]
   , ieffects = [ NoEffect "of Love", OverfillHP 60
                , Impress, OverfillCalm (-60)
@@ -612,7 +617,7 @@ scroll = ItemKind
   , ikit     = []
   }
 scroll1 = scroll
-  { irarity  = [(3, 10), (10, 10)]
+  { irarity  = [(3, 10), (10, 10)]  -- mixed blessing, so available early
   , iaspects = [Unique]
   , ieffects = [ NoEffect "of Reckless Beacon"
                , CallFriend (1 + d 2), Summon standardSummon (1 + d 2) ]
@@ -659,7 +664,8 @@ scroll10 = scroll
                , PolyItem CGround, OverfillCalm (-5) ]  -- disturbing
   }
 scroll11 = scroll
-  { irarity  = [(6, 10), (10, 10)]
+  { ifreq    = [("treasure", 100)]
+  , irarity  = [(6, 10), (10, 10)]
   , iaspects = [Unique]
   , ieffects = [NoEffect "of Prisoner Release", CallFriend (d 2)]
   }
@@ -791,7 +797,7 @@ dagger = ItemKind
   }
 daggerDropBestWeapon = dagger
   { iname    = "Double Dagger"
-  , ifreq    = [("useful", 30)]
+  , ifreq    = [("treasure", 30)]
   , irarity  = [(1, 2), (10, 4)]
   -- The timeout has to be small, so that the player can count on the effect
   -- occuring consistently in any longer fight. Otherwise, the effect will be
@@ -823,14 +829,14 @@ hammer = ItemKind
   }
 hammerParalyze = hammer
   { iname    = "Concussion Hammer"
-  , ifreq    = [("useful", 30)]
+  , ifreq    = [("treasure", 30)]
   , irarity  = [(4, 2), (10, 4)]
   , iaspects = [Unique, Timeout $ d 2 + 3 - dl 2 |*| 2]
   , ieffects = ieffects hammer ++ [Recharging $ Paralyze 5]
   }
 hammerSpark = hammer
   { iname    = "Grand Smithhammer"
-  , ifreq    = [("useful", 30)]
+  , ifreq    = [("treasure", 30)]
   , irarity  = [(4, 2), (10, 4)]
   , iaspects = [Unique, Timeout $ d 4 + 4 - dl 4 |*| 2]
   , ieffects = ieffects hammer ++ [Recharging $ Explode "spark"]
@@ -853,7 +859,7 @@ sword = ItemKind
   }
 swordImpress = sword
   { iname    = "Master's Sword"
-  , ifreq    = [("useful", 30)]
+  , ifreq    = [("treasure", 30)]
   , irarity  = [(3, 1), (10, 4)]
   , iaspects = [Unique, Timeout $ d 4 + 5 - dl 4 |*| 2]
   , ieffects = ieffects sword ++ [Recharging Impress]
@@ -861,7 +867,7 @@ swordImpress = sword
   }
 swordNullify = sword
   { iname    = "Gutting Sword"
-  , ifreq    = [("useful", 30)]
+  , ifreq    = [("treasure", 30)]
   , irarity  = [(5, 1), (10, 4)]
   , iaspects = [Unique, Timeout $ d 4 + 5 - dl 4 |*| 2]
   , ieffects = ieffects sword
@@ -886,7 +892,7 @@ halberd = ItemKind
   }
 halberdPushActor = halberd
   { iname    = "Swiss Halberd"
-  , ifreq    = [("useful", 30)]
+  , ifreq    = [("treasure", 30)]
   , irarity  = [(7, 1), (10, 4)]
   , iaspects = [Unique, Timeout $ d 5 + 5 - dl 5 |*| 2]
   , ieffects = ieffects halberd ++ [Recharging (PushActor (ThrowMod 400 25))]
