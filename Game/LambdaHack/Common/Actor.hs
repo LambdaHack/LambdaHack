@@ -171,7 +171,7 @@ actorNewBorn b = boldpos b == Point 0 0
 hpTooLow :: Actor -> [ItemFull] -> Bool
 hpTooLow b activeItems =
   let maxHP = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
-  in bhp b <= oneM || 5 * bhp b < xM maxHP && bhp b < xM 10
+  in bhp b <= oneM || 5 * bhp b < xM maxHP && bhp b <= xM 10
 
 hpHuge :: Actor -> Bool
 hpHuge b = bhp b > xM 30
@@ -182,15 +182,15 @@ calmEnough b activeItems =
   in 2 * xM calmMax <= 3 * bcalm b
 
 calmEnough10 :: Actor -> [ItemFull] -> Bool
-calmEnough10 b activeItems = calmEnough b activeItems && bcalm b >= xM 10
+calmEnough10 b activeItems = calmEnough b activeItems && bcalm b > xM 10
 
 hpEnough :: Actor -> [ItemFull] -> Bool
 hpEnough b activeItems =
   let hpMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
-  in 2 * xM hpMax <= 3 * bhp b
+  in xM hpMax <= 3 * bhp b
 
 hpEnough10 :: Actor -> [ItemFull] -> Bool
-hpEnough10 b activeItems = hpEnough b activeItems && bhp b >= xM 10
+hpEnough10 b activeItems = hpEnough b activeItems && bhp b > xM 10
 
 -- | Checks for the presence of actors in a position.
 -- Does not check if the tile is walkable.

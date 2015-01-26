@@ -460,12 +460,12 @@ effectCallFriend nDm source target = do
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   activeItems <- activeItemsServer source
-  let legal = source == target
-              && hpEnough10 sb activeItems  -- prevent spam from regen wimps
-  if not legal then return False
+  if source /= target then return False
+  else if not $ hpEnough10 sb activeItems then do
+    execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough HP to activate."
+    return False
   else do
-    let hpMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
-        deltaHP = - xM hpMax `div` 3
+    let deltaHP = - xM 10
     execUpdAtomic $ UpdRefillHP source deltaHP
     let validTile t = not $ Tile.hasFeature cotile TK.NoActor t
         lid = blid sb
@@ -486,11 +486,12 @@ effectSummon recursiveCall actorFreq nDm source target = do
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   activeItems <- activeItemsServer source
-  let legal = source == target && (bproj sb || calmEnough10 sb activeItems)
-  if not legal then return False
+  if source /= target then return False
+  else if not $ calmEnough10 sb activeItems then do
+    execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough Calm to activate."
+    return False
   else do
-    let calmMax = max 1 $ sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
-        deltaCalm = - xM calmMax `div` 3
+    let deltaCalm = - xM 10
     unless (bproj sb) $ execUpdAtomic $ UpdRefillCalm source deltaCalm
     let validTile t = not $ Tile.hasFeature cotile TK.NoActor t
     ps <- getsState $ nearbyFreePoints validTile (bpos sb) (blid sb)
