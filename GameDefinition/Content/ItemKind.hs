@@ -412,6 +412,10 @@ ring8 = ring
   , ifeature = ifeature ring ++ [EqpSlot (EqpSlotAddSkills AbProject) ""]
   }
 
+-- * Consumables. Of these, let only the @OneOf@ items have effects
+-- that sometimes don't get triggered (but in this case,
+-- repetition suffices to ID them anyway).
+
 -- * Exploding consumables, often intended to be thrown
 
 potion = ItemKind
@@ -431,7 +435,7 @@ potion = ItemKind
   , ikit     = []
   }
 potion1 = potion
-  { ieffects = [ NoEffect "of rose water", Impress
+  { ieffects = [ NoEffect "of rose water", Impress, RefillCalm (-3)
                , OnSmash ApplyPerfume, OnSmash (Explode "fragrance") ]
   }
 potion2 = potion
@@ -439,7 +443,8 @@ potion2 = potion
   , iaspects = [Unique]
     -- No effect, always explodes, which is fine, because effects if other
     -- potions sometimes don't get triggered either.
-  , ieffects = [NoEffect "of Attraction", OnSmash (Explode "pheromone")]
+  , ieffects = [ NoEffect "of Attraction", Impress, OverfillCalm (-20)
+               , OnSmash (Explode "pheromone") ]
   }
 potion3 = potion
   { irarity  = [(1, 5), (10, 5)]
@@ -480,7 +485,8 @@ potion9 = potion
   , iaspects = [Unique]
   , ieffects = [ NoEffect "of Love", OverfillHP 60
                , Impress, OverfillCalm (-60)
-               , OnSmash (Explode "healing mist 2") ]
+               , OnSmash (Explode "healing mist 2")
+               , OnSmash (Explode "pheromone") ]
   }
 
 -- * Exploding consumables, with temporary aspects
@@ -649,13 +655,13 @@ scroll9 = scroll
   }
 scroll10 = scroll
   { irarity  = [(10, 10)]
-  , ieffects = [PolyItem CGround]
+  , ieffects = [ NoEffect "transfiguration"
+               , PolyItem CGround, OverfillCalm (-5) ]  -- disturbing
   }
 scroll11 = scroll
   { irarity  = [(6, 10), (10, 10)]
   , iaspects = [Unique]
-  , ieffects = [ NoEffect "of Prisoner Release"
-               , CallFriend (d 2) ]
+  , ieffects = [NoEffect "of Prisoner Release", CallFriend (d 2)]
   }
 
 standardSummon :: Freqs ItemKind
