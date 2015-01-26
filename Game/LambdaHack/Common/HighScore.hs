@@ -193,12 +193,12 @@ highSlideshow table pos gameModeName =
           Conquer ->
             ("your ruthless victory", MU.Sg3rd,
              if pos <= height
-             then "among the greatest heroes"
+             then "among the best"  -- "greatest heroes" doesn't fit
              else "(bonus included)")
           Escape ->
             ("your dashing coup", MU.Sg3rd,
              if pos <= height
-             then "among the greatest heroes"
+             then "among the best"
              else "(bonus included)")
           Restart ->
             ("your abortive attempt", MU.Sg3rd, "(no bonus)")
