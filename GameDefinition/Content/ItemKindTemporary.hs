@@ -12,9 +12,9 @@ import Game.LambdaHack.Content.ItemKind
 
 temporaries :: [ItemKind]
 temporaries =
-  [tmpStrengthened, tmpWeakened, tmpProtected, tmpDefenseless, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant]
+  [tmpStrengthened, tmpWeakened, tmpProtected, tmpVulnerable, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant]
 
-tmpStrengthened,    tmpWeakened, tmpProtected, tmpDefenseless, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant :: ItemKind
+tmpStrengthened,    tmpWeakened, tmpProtected, tmpVulnerable, tmpFast20, tmpSlow10, tmpFarSighted, tmpKeenSmelling, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant :: ItemKind
 
 -- The @name@ is be used in item description, so it should be an adjective
 -- describing the temporary set of aspects.
@@ -42,8 +42,8 @@ tmpStrengthened = tmpAs "strengthened" [AddHurtMelee 20]
 tmpWeakened = tmpAs "weakened" [AddHurtMelee (-20)]
 tmpProtected = tmpAs "protected" [ AddArmorMelee 30
                                  , AddArmorRanged 30 ]
-tmpDefenseless = tmpAs "defenseless" [ AddArmorMelee (-30)
-                                     , AddArmorRanged (-30) ]
+tmpVulnerable = tmpAs "defenseless" [ AddArmorMelee (-30)
+                                    , AddArmorRanged (-30) ]
 tmpFast20 = tmpAs "fast 20" [AddSpeed 20]
 tmpSlow10 = tmpAs "slow 10" [AddSpeed (-10)]
 tmpFarSighted = tmpAs "far-sighted" [AddSight 5]

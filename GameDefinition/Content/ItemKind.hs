@@ -28,9 +28,9 @@ cdefs = ContentDef
 
 items :: [ItemKind]
 items =
-  [dart, dart200, bolas, harpoon, net, jumpingPole, whetstone, pupilItem, woodenTorch, oilLamp, brassLantern, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, monocle, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency]
+  [dart, dart200, paralizingProj, harpoon, net, jumpingPole, sharpeningTool, seeingItem, light1, light2, light3, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency]
 
-dart,    dart200, bolas, harpoon, net, jumpingPole, whetstone, pupilItem, woodenTorch, oilLamp, brassLantern, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, monocle, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency :: ItemKind
+dart,    dart200, paralizingProj, harpoon, net, jumpingPole, sharpeningTool, seeingItem, light1, light2, light3, gorget, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, sightSharpening, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, dagger, daggerDropBestWeapon, hammer, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberdPushActor, wand1, wand2, gem1, gem2, gem3, gem4, currency :: ItemKind
 
 necklace, ring, potion, flask, scroll, wand, gem :: ItemKind  -- generic templates
 
@@ -95,7 +95,7 @@ dart200 = ItemKind
 
 -- * Exotic thrown weapons
 
-bolas = ItemKind
+paralizingProj = ItemKind
   { isymbol  = symbolProjectile
   , iname    = "bolas set"
   , ifreq    = [("useful", 100)]
@@ -159,7 +159,7 @@ jumpingPole = ItemKind
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
   , ikit     = []
   }
-whetstone = ItemKind
+sharpeningTool = ItemKind
   { isymbol  = symbolTool
   , iname    = "whetstone"
   , ifreq    = [("useful", 100)]
@@ -174,7 +174,7 @@ whetstone = ItemKind
   , idesc    = "A portable sharpening stone that lets you fix your weapons between or even during fights, without the need to set up camp, fish out tools and assemble a proper sharpening workshop."
   , ikit     = []
   }
-pupilItem = ItemKind
+seeingItem = ItemKind
   { isymbol  = '%'
   , iname    = "pupil"
   , ifreq    = [("useful", 100)]
@@ -194,7 +194,7 @@ pupilItem = ItemKind
 
 -- * Lights
 
-woodenTorch = ItemKind
+light1 = ItemKind
   { isymbol  = symbolLight
   , iname    = "wooden torch"
   , ifreq    = [("useful", 100), ("light source", 100)]
@@ -210,7 +210,7 @@ woodenTorch = ItemKind
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady glow."
   , ikit     = []
   }
-oilLamp = ItemKind
+light2 = ItemKind
   { isymbol  = symbolLight
   , iname    = "oil lamp"
   , ifreq    = [("useful", 100), ("light source", 100)]
@@ -226,7 +226,7 @@ oilLamp = ItemKind
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
   , ikit     = []
   }
-brassLantern = ItemKind
+light3 = ItemKind
   { isymbol  = symbolLight
   , iname    = "brass lantern"
   , ifreq    = [("useful", 100), ("light source", 100)]
@@ -327,7 +327,7 @@ necklace7 = necklace  -- TODO: teach AI to wear only for fight
 
 -- * Non-periodic jewelry
 
-monocle = ItemKind
+sightSharpening = ItemKind
   { isymbol  = symbolRing
   , iname    = "Sharp Monocle"
   , ifreq    = [("useful", 100)]

@@ -10,9 +10,9 @@ import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]
 blasts =
-  [burningOil2, burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalm, defenseQuestion, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray]
+  [burningOil2, burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalm, vulnerabilityBalm, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray]
 
-burningOil2,    burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalm, defenseQuestion, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray :: ItemKind
+burningOil2,    burningOil3, burningOil4, explosionBlast2, explosionBlast10, explosionBlast20, firecracker2, firecracker3, firecracker4, firecracker5, firecracker6, firecracker7, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, waste, glassPiece, smoke, boilingWater, glue, spark, mistAntiSlow, mistAntidote, mistStrength, mistWeakness, protectingBalm, vulnerabilityBalm, hasteSpray, slownessSpray, eyeDrop, smellyDroplet, whiskeySpray :: ItemKind
 
 -- * Parameterized immediate effect blasts
 
@@ -390,7 +390,7 @@ protectingBalm = ItemKind
   , idesc    = ""
   , ikit     = []
   }
-defenseQuestion = ItemKind
+vulnerabilityBalm = ItemKind
   { isymbol  = '\''
   , iname    = "PhD defense question"
   , ifreq    = [("PhD defense question", 1)]

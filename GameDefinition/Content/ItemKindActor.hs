@@ -11,9 +11,9 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, adventurer, blacksmith, forester, scientist, soldier, sniper, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyser, geyserArsenic, geyserSulfur]
+  [warrior, warrior2, warrior3, warrior4, warrior5, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyser, geyserArsenic, geyserSulfur]
 
-warrior,    adventurer, blacksmith, forester, scientist, soldier, sniper, clerk, hairdresser, lawyer, peddler, taxCollector, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyser, geyserArsenic, geyserSulfur :: ItemKind
+warrior,    warrior2, warrior3, warrior4, warrior5, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyser, geyserArsenic, geyserSulfur :: ItemKind
 
 -- * Hunams
 
@@ -35,13 +35,13 @@ warrior = ItemKind
   , ikit     = [ ("fist", COrgan), ("foot", COrgan), ("eye 5", COrgan)
                , ("sapient brain", COrgan) ]
   }
-adventurer = warrior
-  { iname    = "adventurer" }
-blacksmith = warrior
+warrior2 = warrior
+  { iname    = "warrior2" }
+warrior3 = warrior
   { iname    = "blacksmith" }
-forester = warrior
+warrior4 = warrior
   { iname    = "forester" }
-scientist = warrior
+warrior5 = warrior
   { iname    = "scientist" }
 
 soldier = warrior
@@ -60,16 +60,16 @@ sniper = warrior
                   , ("light source", CInv), ("light source", CInv) ]
   }
 
-clerk = warrior
+civilian = warrior
   { iname    = "clerk"
   , ifreq    = [("civilian", 100)] }
-hairdresser = clerk
+civilian2 = civilian
   { iname    = "hairdresser" }
-lawyer = clerk
+civilian3 = civilian
   { iname    = "lawyer" }
-peddler = clerk
+civilian4 = civilian
   { iname    = "peddler" }
-taxCollector = clerk
+civilian5 = civilian
   { iname    = "tax collector" }
 
 -- * Monsters
