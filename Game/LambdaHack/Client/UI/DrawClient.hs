@@ -351,8 +351,6 @@ drawSelected drawnLevelId width = do
       ours = filter (not . bproj . snd)
              $ actorAssocs (== side) drawnLevelId s
       maxViewed = width - 2
-      -- Don't show anything if the only actor on the level is the leader.
-      -- He's clearly highlighted on the level map, anyway.
       star = let sattr = case ES.size selected of
                    0 -> Color.defAttr {Color.fg = Color.BrBlack}
                    n | n == length ours ->
@@ -362,8 +360,10 @@ drawSelected drawnLevelId width = do
              in Color.AttrChar sattr char
       viewed = take maxViewed $ sort $ map viewOurs ours
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
+      -- Don't show anything if the only actor in the dungeon is the leader.
+      -- He's clearly highlighted on the level map, anyway.
       allOurs = filter ((== side) . bfid) $ EM.elems $ sactorD s
-      party = if length allOurs <= 1
+      party = if length allOurs == 1 && length ours == 1 || length ours == 0
               then []
               else [star] ++ map snd viewed ++ addAttr " "
   return $! party
