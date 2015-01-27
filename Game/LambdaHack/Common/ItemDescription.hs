@@ -38,8 +38,8 @@ partItemN fullInfo n c _lid localTime itemFull =
             Nothing -> []
             Just timeout ->
               let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-                  f startT = timeShift startT timeoutTurns > localTime
-              in filter f (itemTimer itemFull)
+                  charging startT = timeShift startT timeoutTurns > localTime
+              in filter charging (itemTimer itemFull)
           len = length it1
           timer | len == 0 = ""
                 | itemK itemFull == 1 && len == 1 = "(charging)"

@@ -35,7 +35,8 @@ strengthAspect f itemFull =
       concatMap f jaspects
     Just ItemDisco{itemKind=ItemKind{iaspects}} ->
       -- Approximation. For some effects lower values are better,
-      -- so we can't put 999 here (and for summation, this is wrong).
+      -- so we just offer the mean of the dice. This is also correct
+      -- for summation, on average.
       let trav x = St.evalState (aspectTrav x (return . Dice.meanDice))
                                 ()
       in concatMap f $ map trav iaspects
@@ -61,7 +62,6 @@ strengthEffect f itemFull =
 strengthFeature :: (Feature -> [b]) -> Item -> [b]
 strengthFeature f item = concatMap f (jfeature item)
 
--- Called only by the server, so 999 is OK.
 strengthOnSmash :: ItemFull -> [Effect]
 strengthOnSmash =
   let p (OnSmash eff) = [eff]

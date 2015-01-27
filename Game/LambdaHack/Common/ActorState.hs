@@ -413,11 +413,11 @@ aidFromC c@CTrunk{} = assert `failure` c
 hasCharge :: Time -> ItemFull -> Bool
 hasCharge localTime itemFull@ItemFull{..} =
   let it1 = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
-        Nothing -> []
+        Nothing -> []  -- if item not IDed, assume no timeout, to ID by use
         Just timeout ->
           let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-              pending startT = timeShift startT timeoutTurns > localTime
-          in filter pending itemTimer
+              charging startT = timeShift startT timeoutTurns > localTime
+          in filter charging itemTimer
       len = length it1
   in len < itemK
 
@@ -433,6 +433,9 @@ strengthMelee effectBonus localTime itemFull =
       p (IK.Burn d) = [Dice.meanDice d]
       p IK.NoEffect{} = []
       p IK.OnSmash{} = []
+      -- We assume the weapon is still worth using, even if some effects
+      -- are charging; in particular, we assume Hurt or Burn are not
+      -- under Recharging.
       p IK.Recharging{} = [100 | recharged && effectBonus]
       p IK.Temporary{} = []
       p _ = [100 | effectBonus]

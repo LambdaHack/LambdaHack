@@ -84,8 +84,8 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
   let it1 = case mtimeout of
         Just (IK.Timeout timeout) ->
           let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-              pending startT = timeShift startT timeoutTurns > localTime
-          in filter pending it
+              charging startT = timeShift startT timeoutTurns > localTime
+          in filter charging it
         _ -> []
       len = length it1
       recharged = len < k

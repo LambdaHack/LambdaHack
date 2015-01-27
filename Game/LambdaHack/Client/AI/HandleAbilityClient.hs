@@ -575,7 +575,12 @@ projectItem aid = do
               coeff CEqp = 1
               coeff CInv = 1
               coeff CSha = undefined  -- banned
-              fRanged ((mben, (_, cstore)), (iid, itemFull@ItemFull{itemBase})) =
+              fRanged ( (mben, (_, cstore))
+                      , (iid, itemFull@ItemFull{itemBase}) ) =
+                -- We assume if the item has a timeout, most effects are under
+                -- Recharging, so no point projecting if not recharged.
+                -- This is not an obvious assumption, so recharging is not
+                -- included in permittedProject and can be tweaked here easily.
                 let recharged = hasCharge localTime itemFull
                     trange = totalRange itemBase
                     bestRange =
@@ -635,8 +640,7 @@ applyItem aid applyGroup = do
       coeff CInv = 1
       coeff CSha = undefined  -- banned
       fTool ((mben, (_, cstore)), (iid, itemFull@ItemFull{itemBase})) =
-        let recharged = hasCharge localTime itemFull
-            durableBonus = if IK.Durable `elem` jfeature itemBase
+        let durableBonus = if IK.Durable `elem` jfeature itemBase
                            then 5  -- we keep it after use
                            else 1
             oldGrps = map (toGroupName . jname) organs
@@ -662,7 +666,6 @@ applyItem aid applyGroup = do
                        -- is implemented, enable this for items too heavy,
                        -- etc. for throwing
                      Just (_, ben) -> ben
-                   * (if recharged then 1 else 0)  -- wait until can be used
                    * (if not createOrganAgain then 1 else 0)
                    * (if not dropOrganVoid then 1 else 0)
                    * durableBonus

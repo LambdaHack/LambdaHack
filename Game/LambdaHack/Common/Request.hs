@@ -221,6 +221,8 @@ permittedApply triggerSyms localTime skill itemFull@ItemFull{itemBase}
   let calm10 = calmEnough10 b activeItems
   in if skill < 1 then Left ApplyUnskilled
   else if jsymbol itemBase == '?' && skill < 2 then Left ApplyRead
+  -- We assume if the item has a timeout, all or most of interesting effects
+  -- are under Recharging, so no point activating if not recharged.
   else if not $ hasCharge localTime itemFull
        then Left ApplyCharging
        else let legal = permittedPrecious calm10 False itemFull
