@@ -158,6 +158,9 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString $ fromMaybe "" sfont
   widgetModifyFont sview (Just f)
+  liftIO $ do
+    textViewSetLeftMargin sview 3
+    textViewSetRightMargin sview 3
   -- Prepare font chooser dialog.
   currentfont <- newIORef f
   sview `on` buttonPressEvent $ do
@@ -192,11 +195,6 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
         iter <- textViewGetIterAtLocation sview bx by
         cx <- textIterGetLineOffset iter
         cy <- textIterGetLine iter
-        -- Feedback and debug:
-        -- ie <- textIterCopy iter
-        -- textIterForwardChars ie 1
-        -- let invAttr = stags M.! Color.Attr Color.defBG Color.defFG
-        -- textBufferApplyTag tb invAttr iter ie
         let !key = case but of
               LeftButton -> K.LeftButtonPress
               MiddleButton -> K.MiddleButtonPress
