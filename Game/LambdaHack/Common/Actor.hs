@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.Actor
   , hpTooLow, hpHuge, calmEnough, calmEnough10, hpEnough, hpEnough10
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
-  , mapActorItems_, ppContainer, ppCStore, ppCStoreIn, verbCStore
+  , mapActorItems_, keySelected, ppContainer, ppCStore, ppCStoreIn, verbCStore
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -211,6 +211,10 @@ mapActorItems_ :: Monad m => (ItemId -> ItemQuant -> m a) -> Actor -> m ()
 mapActorItems_ f Actor{binv, beqp, borgan} = do
   let is = EM.assocs beqp ++ EM.assocs binv ++ EM.assocs borgan
   mapM_ (uncurry f) is
+
+keySelected :: (ActorId, Actor) -> (Bool, Bool, Char, Color.Color, ActorId)
+keySelected (aid, Actor{bsymbol, bcolor, bhp}) =
+  (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
 
 ppContainer :: Container -> Text
 ppContainer CFloor{} = "nearby"

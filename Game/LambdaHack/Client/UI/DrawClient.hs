@@ -11,6 +11,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.IntMap.Strict as IM
 import Data.List
 import Data.Maybe
+import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -336,18 +337,17 @@ drawSelected drawnLevelId width = do
   let viewOurs (aid, Actor{bsymbol, bcolor, bhp}) =
         let cattr = Color.defAttr {Color.fg = bcolor}
             sattr
-             | Just aid == mleader = inverseVideo
-             | ES.member aid selected =
-                 -- TODO: in the future use a red rectangle instead
-                 -- of background and mark them on the map, too;
-                 -- also, perhaps blink all selected on the map,
-                 -- when selection changes
-                 if bcolor /= Color.Blue
-                 then cattr {Color.bg = Color.Blue}
-                 else cattr {Color.bg = Color.Magenta}
-             | otherwise = cattr
-        in ( (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
-           , Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%' )
+              | Just aid == mleader = inverseVideo
+              | ES.member aid selected =
+                  -- TODO: in the future use a red rectangle instead
+                  -- of background and mark them on the map, too;
+                  -- also, perhaps blink all selected on the map,
+                  -- when selection changes
+                  if bcolor /= Color.Blue
+                  then cattr {Color.bg = Color.Blue}
+                  else cattr {Color.bg = Color.Magenta}
+              | otherwise = cattr
+        in Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%'
       ours = filter (not . bproj . snd)
              $ actorAssocs (== side) drawnLevelId s
       maxViewed = width - 2
@@ -358,14 +358,15 @@ drawSelected drawnLevelId width = do
                    _ -> Color.defAttr
                  char = if length ours > maxViewed then '$' else '*'
              in Color.AttrChar sattr char
-      viewed = take maxViewed $ sort $ map viewOurs ours
+      viewed = map viewOurs $ take maxViewed
+               $ sortBy (comparing keySelected) ours
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       -- Don't show anything if the only actor in the dungeon is the leader.
       -- He's clearly highlighted on the level map, anyway.
       allOurs = filter ((== side) . bfid) $ EM.elems $ sactorD s
       party = if length allOurs == 1 && length ours == 1 || length ours == 0
               then []
-              else [star] ++ map snd viewed ++ addAttr " "
+              else [star] ++ viewed ++ addAttr " "
   return $! party
 
 drawPlayerName :: MonadClient m => Int -> m [Color.AttrChar]

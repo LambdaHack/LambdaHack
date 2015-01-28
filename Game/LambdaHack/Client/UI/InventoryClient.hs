@@ -15,7 +15,6 @@ import Control.Monad
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Function
 import qualified Data.IntMap.Strict as IM
 import Data.List
 import qualified Data.Map.Strict as M
@@ -600,11 +599,9 @@ partyAfterLeader :: MonadStateRead m => ActorId -> m [(ActorId, Actor)]
 partyAfterLeader leader = do
   faction <- getsState $ bfid . getActorBody leader
   allA <- getsState $ EM.assocs . sactorD
-  s <- getState
-  let hs9 = mapMaybe (tryFindHeroK s faction) [0..9]
-      factionA = filter (\(_, body) ->
+  let factionA = filter (\(_, body) ->
         not (bproj body) && bfid body == faction) allA
-      hs = hs9 ++ deleteFirstsBy ((==) `on` fst) factionA hs9
+      hs = sortBy (comparing keySelected) factionA
       i = fromMaybe (-1) $ findIndex ((== leader) . fst) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
   return $! gt ++ lt
