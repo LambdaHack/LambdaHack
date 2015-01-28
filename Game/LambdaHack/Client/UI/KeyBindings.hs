@@ -107,6 +107,9 @@ keyHelp Binding{bcmdList} =
       , "For more playing instructions see file PLAYING.md."
       , "Press PGUP to return to previous pages or ESC to see the map again."
       ]
+    pickLeaderDescription =
+      [ fmt 16 "0, 1, ... 6" "pick a particular actor as the new leader"
+      ]
     casualDescription = "Minimal cheat sheet for casual play"
     fmt n k h = T.justifyRight 72 ' '
                 $ T.justifyLeft n ' ' k
@@ -145,7 +148,8 @@ keyHelp Binding{bcmdList} =
     , [categoryDescription CmdAuto <> ". [press SPACE to advance]"] ++ [""]
       ++ [keyCaption] ++ keys CmdAuto ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdMeta <> ". [press SPACE to advance]"] ++ [""]
-      ++ [keyCaption] ++ keys CmdMeta ++ categoryText ++ [moreMsg]
+      ++ [keyCaption] ++ keys CmdMeta ++ pickLeaderDescription
+      ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdMouse
        <> ". [press PGUP to see previous, ESC to cancel]"] ++ [""]
       ++ [keyCaptionN 21] ++ keysN 21 CmdMouse ++ lastText ++ [endMsg]
