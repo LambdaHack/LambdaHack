@@ -66,6 +66,7 @@ data HumanCmd =
   | SelectNone
   | Clear
   | StopIfTgtMode
+  | SelectWithPointer
   | Repeat !Int
   | Record
   | History
@@ -156,6 +157,7 @@ cmdDescription cmd = case cmd of
   SelectNone  -> "deselect (or select) all on the level"
   Clear       -> "clear messages"
   StopIfTgtMode -> "stop playback if in aiming mode"
+  SelectWithPointer -> "select actors if pointer over actor list"
   Repeat 1    -> "voice again the recorded commands"
   Repeat n    -> "voice the recorded commands" <+> tshow n <+> "times"
   Record      -> "start recording commands"

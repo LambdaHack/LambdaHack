@@ -5,8 +5,8 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   ( -- * Assorted commands
     gameDifficultyCycle
   , pickLeaderHuman, memberCycleHuman, memberBackHuman
-  , selectActorHuman, selectNoneHuman
-  , clearHuman, stopIfTgtModeHuman, repeatHuman, recordHuman
+  , selectActorHuman, selectNoneHuman, clearHuman
+  , stopIfTgtModeHuman, selectWithPointer, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
   , helpHuman, mainMenuHuman, macroHuman
     -- * Commands specific to targeting
@@ -54,6 +54,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -115,9 +116,13 @@ memberBackHuman = memberBack True
 
 -- TODO: make the message (and for selectNoneHuman, pickLeader, etc.)
 -- optional, since they have a clear representation in the UI elsewhere.
-selectActorHuman :: MonadClientUI m => m Slideshow
+selectActorHuman :: MonadClientUI m => m ()
 selectActorHuman = do
   leader <- getLeaderUI
+  selectAidHuman leader
+
+selectAidHuman :: MonadClientUI m => ActorId -> m ()
+selectAidHuman leader = do
   body <- getsState $ getActorBody leader
   wasMemeber <- getsClient $ ES.member leader . sselected
   let upd = if wasMemeber
@@ -128,7 +133,6 @@ selectActorHuman = do
   msgAdd $ makeSentence [subject, if wasMemeber
                                   then "deselected"
                                   else "selected"]
-  return mempty
 
 -- * SelectNone
 
@@ -161,6 +165,26 @@ stopIfTgtModeHuman :: MonadClientUI m => m ()
 stopIfTgtModeHuman = do
   tgtMode <- getsClient stgtMode
   when (isJust tgtMode) stopPlayBack
+
+-- * SelectWithPointer
+
+selectWithPointer:: MonadClientUI m => m ()
+selectWithPointer = do
+  km <- getsClient slastKM
+  let Point{..} = K.pointer km
+  lidV <- viewedLevel
+  Level{lysize} <- getLevel lidV
+  side <- getsClient sside
+  ours <- getsState $ filter (not . bproj . snd)
+                      . actorAssocs (== side) lidV
+  -- Select even if no space in status line for the actor's symbol.
+  let viewed = sortBy (comparing keySelected) ours
+  when (py == lysize + 1 && px <= length viewed && px >= 0) $ do
+    if px == 0 then
+      selectNoneHuman
+    else
+      selectAidHuman $ fst $ viewed !! (px - 1)
+    stopPlayBack
 
 -- * Repeat
 

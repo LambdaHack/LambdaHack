@@ -16,11 +16,13 @@ data KeyKind = KeyKind
 macroLeftButtonPress :: HumanCmd
 macroLeftButtonPress =
   Macro "go to pointer for 100 steps"
-        [ "ALT-space", "SHIFT-MiddleButtonPress", "semicolon"
+        [ "ALT-space", "ALT-minus"
+        , "SHIFT-MiddleButtonPress", "semicolon"
         , "CTRL-colon", "V" ]
 
 macroShiftLeftButtonPress :: HumanCmd
 macroShiftLeftButtonPress =
   Macro "run collectively to pointer for 100 steps"
-        [ "ALT-space", "SHIFT-MiddleButtonPress", "CTRL-semicolon"
+        [ "ALT-space"
+        , "SHIFT-MiddleButtonPress", "CTRL-semicolon"
         , "CTRL-colon", "V" ]
