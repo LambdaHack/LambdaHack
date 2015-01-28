@@ -29,6 +29,7 @@ import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
+import Data.Ord
 import qualified Data.Text as T
 import Data.Version
 import Game.LambdaHack.Client.UI.Frontend (frontendName)
@@ -77,9 +78,17 @@ pickLeaderHuman k = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   arena <- getArenaUI
-  let (autoDun, autoLvl) = autoDungeonLevel fact
-  s <- getState
-  case tryFindHeroK s side k of
+  mhero <- getsState $ tryFindHeroK side k
+  allA <- getsState $ EM.assocs . sactorD
+  let mactor = let factionA = filter (\(_, body) ->
+                     not (bproj body) && bfid body == side) allA
+                   hs = sortBy (comparing keySelected) factionA
+               in case drop k hs of
+                 [] -> Nothing
+                 aidb : _ -> Just aidb
+      mchoice = mhero `mplus` mactor
+      (autoDun, autoLvl) = autoDungeonLevel fact
+  case mchoice of
     Nothing -> failMsg "no such member of the party"
     Just (aid, b)
       | blid b == arena && autoLvl ->

@@ -333,7 +333,9 @@ drawSelected drawnLevelId width = do
   mleader <- getsClient _sleader
   selected <- getsClient sselected
   side <- getsClient sside
-  s <- getState
+  allOurs <- getsState $ filter ((== side) . bfid) . EM.elems . sactorD
+  ours <- getsState $ filter (not . bproj . snd)
+                      . actorAssocs (== side) drawnLevelId
   let viewOurs (aid, Actor{bsymbol, bcolor, bhp}) =
         let cattr = Color.defAttr {Color.fg = bcolor}
             sattr
@@ -348,8 +350,6 @@ drawSelected drawnLevelId width = do
                   else cattr {Color.bg = Color.Magenta}
               | otherwise = cattr
         in Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%'
-      ours = filter (not . bproj . snd)
-             $ actorAssocs (== side) drawnLevelId s
       maxViewed = width - 2
       star = let sattr = case ES.size selected of
                    0 -> Color.defAttr {Color.fg = Color.BrBlack}
@@ -363,7 +363,6 @@ drawSelected drawnLevelId width = do
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       -- Don't show anything if the only actor in the dungeon is the leader.
       -- He's clearly highlighted on the level map, anyway.
-      allOurs = filter ((== side) . bfid) $ EM.elems $ sactorD s
       party = if length allOurs == 1 && length ours == 1 || length ours == 0
               then []
               else [star] ++ viewed ++ addAttr " "

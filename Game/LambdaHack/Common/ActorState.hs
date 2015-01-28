@@ -204,8 +204,8 @@ tryFindActor :: State -> (Actor -> Bool) -> Maybe (ActorId, Actor)
 tryFindActor s p =
   find (p . snd) $ EM.assocs $ sactorD s
 
-tryFindHeroK :: State -> FactionId -> Int -> Maybe (ActorId, Actor)
-tryFindHeroK s fact k =
+tryFindHeroK :: FactionId -> Int -> State -> Maybe (ActorId, Actor)
+tryFindHeroK fact k s =
   let c | k == 0          = '@'
         | k > 0 && k < 10 = Char.intToDigit k
         | otherwise       = assert `failure` "no digit" `twith` k
