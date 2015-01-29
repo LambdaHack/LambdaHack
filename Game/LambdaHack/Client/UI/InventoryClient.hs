@@ -910,7 +910,15 @@ describeItemC c = do
       localTime <- getsState $ getLocalTime (blid b)
       let io = itemDesc (storeFromMode c2) (blid b) localTime itemFull
       case c2 of
-        MStore CSha | not calmE ->
+        MStore COrgan -> do
+          let symbol = jsymbol (itemBase itemFull)
+              blurb | symbol == '+' = "drop temporary effects"
+                    | otherwise = "amputate organs"
+          -- TODO: also forbid on the server, except in special cases.
+          Left <$> overlayToSlideshow ("Can't"
+                                       <+> blurb
+                                       <> ", but here's the description.") io
+        MStore CSha | not calmE -> do
           Left <$> overlayToSlideshow "Not enough calm to take items from the shared stash, but here's the description." io
         MStore fromCStore -> do
           let prompt2 = "Where to move the item?"

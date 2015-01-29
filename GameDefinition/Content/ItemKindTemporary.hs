@@ -20,7 +20,7 @@ tmpStrengthened,    tmpWeakened, tmpProtected, tmpVulnerable, tmpFast20, tmpSlow
 -- describing the temporary set of aspects.
 tmpAs :: Text -> [Aspect Dice] -> ItemKind
 tmpAs name aspects = ItemKind
-  { isymbol  = '.'
+  { isymbol  = '+'
   , iname    = name
   , ifreq    = [(toGroupName name, 1), ("temporary conditions", 1)]
   , iflavour = zipPlain [BrWhite]
