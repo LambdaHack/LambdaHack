@@ -375,7 +375,8 @@ itemToFull Kind.COps{coitem=Kind.Ops{okind}}
   in ItemFull {..}
 
 -- Non-durable item that hurts doesn't go into equipment by default,
--- but if it is in equipment, it's used for melee nevertheless, e.g., thorns.
+-- but if it is in equipment or among organs, it's used for melee
+-- nevertheless, e.g., thorns.
 goesIntoInv :: ItemFull -> Bool
 goesIntoInv itemFull = not (isJust (strengthEqpSlot $ itemBase itemFull)
                             || isMeleeEqp itemFull)
