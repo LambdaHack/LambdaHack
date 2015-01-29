@@ -714,6 +714,10 @@ effectTeleport execSfx nDm target = do
 
 -- ** CreateItem
 
+-- TODO: if the items is created not on the ground, perhaps it should
+-- be IDed, so that there are no rings with unkown max Calm bonus
+-- leading to attempts to do illegal actions (which the server then catches).
+-- This is in analogy to picking item from the ground, whereas it's IDed.
 effectCreateItem :: (MonadAtomic m, MonadServer m)
                   => ActorId -> CStore -> GroupName ItemKind -> IK.TimerDice
                   -> m Bool

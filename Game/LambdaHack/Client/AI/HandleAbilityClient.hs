@@ -223,6 +223,13 @@ pickup aid onlyWeapon = do
   benItemL <- benGroundItems aid
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
+  -- This calmE is outdated when one of the items increases max Calm
+  -- (e.g., in pickup, which handles many items at once), but this is OK,
+  -- the server accepts item movement based on calm at the start, not end
+  -- or in the middle.
+  -- The calmE is inaccurate also if an item not IDed, but that's intended
+  -- and the server will ignore and warn (and content may avoid that,
+  -- e.g., making all rings identified)
   let calmE = calmEnough b activeItems
       isWeapon (_, (_, itemFull)) = isMeleeEqp itemFull
       filterWeapon | onlyWeapon = filter isWeapon

@@ -336,17 +336,21 @@ reqWait _ = return ()
 
 reqMoveItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> [(ItemId, Int, CStore, CStore)] -> m ()
-reqMoveItems aid = mapM_ (reqMoveItem aid)
-
-reqMoveItem :: (MonadAtomic m, MonadServer m)
-            => ActorId -> (ItemId, Int, CStore, CStore) -> m ()
-reqMoveItem aid (iid, k, fromCStore, toCStore) = do
+reqMoveItems aid l = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsServer aid
+  -- Server accepts item movement based on calm at the start, not end
+  -- or in the middle, to avoid interrupted or partially ignored commands.
+  let calmE = calmEnough b activeItems
+  mapM_ (reqMoveItem aid calmE) l
+
+reqMoveItem :: (MonadAtomic m, MonadServer m)
+            => ActorId -> Bool -> (ItemId, Int, CStore, CStore) -> m ()
+reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
+  b <- getsState $ getActorBody aid
   let fromC = CActor aid fromCStore
       toC = CActor aid toCStore
       req = ReqMoveItems [(iid, k, fromCStore, toCStore)]
-      calmE = calmEnough b activeItems
   bagBefore <- getsState $ getCBag toC
   if k < 1 || fromCStore == toCStore then execFailure aid req ItemNothing
   else if toCStore == CEqp
