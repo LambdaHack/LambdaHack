@@ -30,8 +30,11 @@ which in its most complex form may look as follows.
 
     *@12 Adventurer  4d1+5% Calm: 20/60 HP: 33/50 Target: basilisk  [**___]
 
-The line starts with the list of party members (unless only one member
-resides on the currently displayed level) and the shortened name of the team.
+The line starts with the list of party members (unless there's only one member)
+and the shortened name of the team. Clicking on the list selects heroes and
+the selected run together when `SHIFT`-direction or `SHIFT`-left mouse button
+are pressed.
+
 Then comes the damage of the leader's weapon with the highest damage dice,
 then his current and maximum Calm (composure, focus, attentiveness), then
 his current and maximum HP (hit points, health). At the end, the personal
