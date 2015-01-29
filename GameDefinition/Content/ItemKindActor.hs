@@ -162,8 +162,8 @@ torsor = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
-  , ikit     = [ ("right torsion", COrgan),  ("left torsion", COrgan)
-               , ("pupil", COrgan), ("pupil", COrgan)
+  , ikit     = [ ("right torsion", COrgan), ("left torsion", COrgan)
+               , ("pupil", COrgan)
                , ("gem", CInv), ("gem", CInv), ("gem", CInv), ("gem", CInv)
                , ("sapient brain", COrgan) ]
   }
