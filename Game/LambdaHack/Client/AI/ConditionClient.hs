@@ -17,6 +17,7 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , condLightBetraysM
   , benAvailableItems
   , benGroundItems
+  , desirableItem
   , threatDistList
   , fleeList
   ) where
@@ -209,17 +210,29 @@ benGroundItems :: MonadClient m
 benGroundItems aid = do
   b <- getsState $ getActorBody aid
   canEscape <- factionCanEscape (bfid b)
-  let -- A hack to prevent monsters from picking up treasure.
-      preciousWithoutSlot item =
-        IK.Precious `elem` jfeature item  -- risk from treasure hunters
-        && isNothing (strengthEqpSlot item)  -- unlikely to be useful
-      desirableItem use ItemFull{itemBase} _ _
-        | canEscape = use /= Just 0
-                      || IK.Precious `elem` jfeature itemBase
-        | otherwise = use /= Just 0
-                      && not (isNothing use  -- needs resources to id
-                              && preciousWithoutSlot itemBase)
-  benAvailableItems aid desirableItem [CGround]
+  benAvailableItems aid (\use itemFull _ _ ->
+                           desirableItem canEscape use itemFull) [CGround]
+
+desirableItem :: Bool -> Maybe Int -> ItemFull -> Bool
+desirableItem canEsc use itemFull =
+  let item = itemBase itemFull
+      freq = case itemDisco itemFull of
+        Nothing -> []
+        Just ItemDisco{itemKind} -> IK.ifreq itemKind
+  in if canEsc
+     then use /= Just 0
+          || IK.Precious `elem` jfeature item
+     else
+       -- A hack to prevent monsters from picking up unidentified treasure.
+       let preciousWithoutSlot =
+             IK.Precious `elem` jfeature item  -- risk from treasure hunters
+             && isNothing (strengthEqpSlot item)  -- unlikely to be useful
+       in use /= Just 0
+          && not (isNothing use  -- needs resources to id
+                  && preciousWithoutSlot)
+          -- TODO: terrible hack for the identified healing gems and normal
+          -- gems identified with a scroll
+          && maybe True (<= 0) (lookup "gem" freq)
 
 -- | Require the actor is in a bad position to melee or can't melee at all.
 condMeleeBadM :: MonadClient m => ActorId -> m Bool

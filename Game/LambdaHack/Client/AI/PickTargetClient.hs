@@ -22,8 +22,6 @@ import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -84,7 +82,6 @@ targetStrategy oldLeader aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   dungeon <- getsState sdungeon
-  itemD <- getsState sitemD
   -- We assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorSk <- maxActorSkillsClient aid
@@ -116,24 +113,12 @@ targetStrategy oldLeader aid = do
         targetableMelee body || targetableRangedOrSpecial body
       nearbyFoes = filter (targetableEnemy . snd) allFoes
       unknownId = ouniqGroup "unknown space"
-      itemUsefulness iid k =
-        fst <$> totalUsefulness cops b activeItems fact (itemToF iid k)
-      -- TODO: factor out from here and benGroundItems
-      desirableItem iid item k
-        | canEscape = itemUsefulness iid k /= Just 0
-                        || IK.Precious `elem` jfeature item
-        | otherwise =
-            let use = itemUsefulness iid k
-                -- A hack to prevent monsters from picking up treasure.
-                preciousWithoutSlot item2 =
-                  IK.Precious `elem` jfeature item2  -- risk from treasure hunters
-                  && isNothing (strengthEqpSlot item2)  -- unlikely to be useful
-            in use /= Just 0
-               && not (isNothing use  -- needs resources to id
-                       && preciousWithoutSlot item)
+      itemUsefulness itemFull =
+        fst <$> totalUsefulness cops b activeItems fact itemFull
       desirableBag bag = any (\(iid, k) ->
-                               desirableItem iid (itemD EM.! iid) k)
-                         $ EM.assocs bag
+        let itemFull = itemToF iid k
+            use = itemUsefulness itemFull
+        in desirableItem canEscape use itemFull) $ EM.assocs bag
       desirable (_, (_, Nothing)) = True
       desirable (_, (_, Just bag)) = desirableBag bag
       -- TODO: make more common when weak ranged foes preferred, etc.
