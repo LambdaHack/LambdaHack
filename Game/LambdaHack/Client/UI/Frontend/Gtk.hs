@@ -199,7 +199,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
         (bx, by) <-
           textViewWindowToBufferCoords sview TextWindowText
                                        (round wx, round wy)
-        iter <- textViewGetIterAtLocation sview bx by
+        (iter, _) <- textViewGetIterAtPosition sview bx by
         cx <- textIterGetLineOffset iter
         cy <- textIterGetLine iter
         let !key = case but of
