@@ -163,6 +163,9 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
     textViewSetRightMargin sview 3
   -- Prepare font chooser dialog.
   currentfont <- newIORef f
+  Just display <- displayGetDefault
+  -- TODO: change cursor depending on targeting mode, etc.; hard
+  cursor <- cursorNewForDisplay display Tcross  -- Target Crosshair Arrow
   sview `on` buttonPressEvent $ do
     liftIO flushChanKey
     but <- eventButton
@@ -189,6 +192,10 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
       -- We shouldn't pass on the click if the user has selected something.
       hasSelection <- textBufferHasSelection tb
       unless hasSelection $ do
+        mdrawWin <- displayGetWindowAtPointer display
+        let setCursor (drawWin, _, _) =
+              drawWindowSetCursor drawWin (Just cursor)
+        maybe (return ()) setCursor mdrawWin
         (bx, by) <-
           textViewWindowToBufferCoords sview TextWindowText
                                        (round wx, round wy)
