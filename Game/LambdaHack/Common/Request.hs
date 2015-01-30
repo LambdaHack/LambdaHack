@@ -149,7 +149,7 @@ showReqFailure reqFailure = case reqFailure of
   DisplaceProjectiles -> "trying to displace multiple projectiles"
   DisplaceDying -> "trying to displace a dying foe"
   DisplaceBraced -> "trying to displace a braced foe"
-  DisplaceImmobile -> "trying to displace an immoblie foe"
+  DisplaceImmobile -> "trying to displace an immobile foe"
   DisplaceSupported -> "trying to displace a supported foe"
   AlterDistant -> "trying to alter a distant tile"
   AlterBlockActor -> "blocked by an actor"

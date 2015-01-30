@@ -705,15 +705,15 @@ displaceFoe aid = do
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
-  let accessibleHere = accessible cops lvl $ bpos b  -- DisplaceAccess
-      displaceable body =  -- DisplaceAccess, DisplaceDying, DisplaceSupported
-        accessibleHere (bpos body)
-        && adjacent (bpos body) (bpos b)
+  let accessibleHere = accessible cops lvl $ bpos b
+      displaceable body =  -- DisplaceAccess
+        adjacent (bpos body) (bpos b) && accessibleHere (bpos body)
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrHere = nFriends b + 1
       qualifyActor (aid2, body2) = do
         activeItems <- activeItemsClient aid2
         dEnemy <- getsState $ dispEnemy aid aid2 activeItems
+          -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
         let nFr = nFriends body2
         return $! if displaceable body2 && dEnemy && nFr < nFrHere
           then Just (nFr * nFr, bpos body2 `vectorToFrom` bpos b)
@@ -764,7 +764,7 @@ displaceTowards aid source target = do
             dEnemy <- getsState $ dispEnemy aid aid2 activeItems
             if not (isAtWar tfact (bfid b)) || dEnemy then
               return $! returN "displace other" $ target `vectorToFrom` source
-            else return reject  -- DisplaceDying, DisplaceSupported
+            else return reject  -- DisplaceDying, etc.
       _ -> return reject  -- DisplaceProjectiles or trying to displace leader
   else return reject
 
@@ -843,7 +843,7 @@ moveOrRunAid run source dir = do
       if boldpos sb /= tpos -- avoid trivial Displace loops
          && accessible cops lvl spos tpos -- DisplaceAccess
          && (not (isAtWar tfact (bfid sb))
-             || dEnemy)  -- DisplaceDying, DisplaceSupported
+             || dEnemy)  -- DisplaceDying, etc.
       then
         return $! Just $ RequestAnyAbility $ ReqDisplace target
       else do

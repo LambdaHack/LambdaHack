@@ -252,7 +252,7 @@ reqDisplace source target = do
     case mweapon of
       Nothing -> reqWait source
       Just (wp, cstore)  -> reqMelee source target wp cstore
-        -- DisplaceDying, DisplaceSupported
+        -- DisplaceDying, etc.
   else do
     let lid = blid sb
     lvl <- getLevel lid
