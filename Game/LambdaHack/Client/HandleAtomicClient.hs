@@ -31,7 +31,6 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.ItemKind (ItemKind)
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * RespUpdAtomicAI
@@ -41,15 +40,6 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- of commands kept for each command received.
 cmdAtomicFilterCli :: MonadClient m => UpdAtomic -> m [UpdAtomic]
 cmdAtomicFilterCli cmd = case cmd of
-  UpdMoveActor aid _ toP -> do
-    cmdSml <- deleteSmell aid toP
-    return $ cmd : cmdSml
-  UpdDisplaceActor source target -> do
-    bs <- getsState $ getActorBody source
-    bt <- getsState $ getActorBody target
-    cmdSource <- deleteSmell source (bpos bt)
-    cmdTarget <- deleteSmell target (bpos bs)
-    return $ [cmd] ++ cmdSource ++ cmdTarget
   UpdAlterTile lid p fromTile toTile -> do
     Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
     lvl <- getLevel lid
@@ -104,16 +94,6 @@ cmdAtomicFilterCli cmd = case cmd of
                                  || t /= Tile.hideAs cotile tClient)
         newTs = filter notKnown ts
     return $! if null newTs then [] else [UpdSpotTile lid newTs]
-  UpdAlterSmell lid p fromSm _toSm -> do
-    lvl <- getLevel lid
-    let msml = EM.lookup p $ lsmell lvl
-    return $ if msml /= fromSm then
-               -- Revert to the server smell before server command executes.
-               -- This is needed due to our hacky removal of traversed smells
-               -- in @deleteSmell@.
-               [UpdAlterSmell lid p msml fromSm, cmd]
-             else
-               [cmd]
   UpdDiscover fid lid p iid _ seed -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
@@ -242,17 +222,6 @@ cmdAtomicFilterCli cmd = case cmd of
     let !_A = assert (allB seenNew psItemSmell) ()
     return $! cmd : outActor ++ inTileSmell
   _ -> return [cmd]
-
-deleteSmell :: MonadClient m => ActorId -> Point -> m [UpdAtomic]
-deleteSmell aid pos = do
-  b <- getsState $ getActorBody aid
-  smellRadius <- sumOrganEqpClient IK.EqpSlotAddSmell aid
-  if smellRadius <= 0 then return []
-  else do
-    lvl <- getLevel $ blid b
-    let msml = EM.lookup pos $ lsmell lvl
-    return $
-      maybe [] (\sml -> [UpdAlterSmell (blid b) pos (Just sml) Nothing]) msml
 
 -- | Effect of atomic actions on client state is calculated
 -- in the global state before the command is executed.

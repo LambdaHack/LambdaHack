@@ -121,22 +121,27 @@ switchLeader fid aidNew mtgtNew = do
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour
 -- and then remove the efficiency hack below that only heroes leave smell
 -- | Add a smell trace for the actor to the level. For now, only heroes
--- leave smell.
+-- leave smell. If smell already there and the actor can smell, remove smell.
 addSmell :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 addSmell aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   smellRadius <- sumOrganEqpServer IK.EqpSlotAddSmell aid
-  -- TODO: right now only humans leave smell and content should not
-  -- give humans the ability to smell (dominated monsters are rare enough).
-  -- In the future smells should be marked by the faction that left them
-  -- and actors shold only follow enemy smells.
-  unless (bproj b || not (fhasGender $ gplayer fact) || smellRadius > 0) $ do
+  let dumbMonster = not (fhasGender $ gplayer fact) && smellRadius <= 0
+  unless (bproj b || dumbMonster) $ do
+    -- TODO: right now only humans leave smell and content should not
+    -- give humans the ability to smell (dominated monsters are rare enough).
+    -- In the future smells should be marked by the faction that left them
+    -- and actors shold only follow enemy smells.
     time <- getsState $ getLocalTime $ blid b
     lvl <- getLevel $ blid b
     let oldS = EM.lookup (bpos b) . lsmell $ lvl
         newTime = timeShift time smellTimeout
-    execUpdAtomic $ UpdAlterSmell (blid b) (bpos b) oldS (Just newTime)
+        newS = if smellRadius > 0
+               then Nothing       -- smelling monster or hero
+               else Just newTime  -- hero
+    when (oldS /= newS) $
+      execUpdAtomic $ UpdAlterSmell (blid b) (bpos b) oldS newS
 
 -- | Actor moves or attacks.
 -- Note that client may not be able to see an invisible monster
@@ -258,8 +263,6 @@ reqDisplace source target = do
         [] -> assert `failure` (source, sb, target, tb)
         [_] -> do
           execUpdAtomic $ UpdDisplaceActor source target
-          addSmell source
-          addSmell target
         _ -> execFailure source req DisplaceProjectiles
     else
       -- Client foolishly tries to displace an actor without access.
