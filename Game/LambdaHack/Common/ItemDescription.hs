@@ -130,7 +130,9 @@ textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
                 noEff = case mnoEffect of
                   Just (IK.NoEffect t) -> [t]
                   _ -> []
-            in noEff ++ [periodicOrTimeout] ++ aes ++ [onSmash | fullInfo]
+            in noEff ++ if fullInfo || null noEff
+                        then [periodicOrTimeout] ++ aes ++ [onSmash | fullInfo]
+                        else []
           aets = case itemAE of
             Just ItemAspectEffect{jaspects, jeffects} ->
               splitAE tshow
