@@ -257,6 +257,7 @@ equipItems aid = do
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
+  condAnyFoeAdj <- condAnyFoeAdjM aid
   condLightBetrays <- condLightBetraysM aid
   let improve :: CStore
               -> (Int, [(ItemId, Int, CStore, CStore)])
@@ -278,7 +279,8 @@ equipItems aid = do
       -- when comparing to items we may want to equip. Anyway, the unneeded
       -- items should be removed in yieldUnneeded earlier or soon after.
       filterNeeded (_, itemFull) =
-        not $ unneeded cops condLightBetrays body activeItems fact itemFull
+        not $ unneeded cops condAnyFoeAdj condLightBetrays
+                       body activeItems fact itemFull
       bestThree = bestByEqpSlot (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded invAssocs)
                                 (filter filterNeeded shaAssocs)
@@ -310,6 +312,7 @@ unEquipItems aid = do
   eqpAssocs <- fullAssocsClient aid [CEqp]
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
+  condAnyFoeAdj <- condAnyFoeAdjM aid
   condLightBetrays <- condLightBetraysM aid
       -- Here AI hides from the human player the Ring of Speed And Bleeding,
       -- which is a bit harsh, but fair. However any subsequent such
@@ -321,7 +324,8 @@ unEquipItems aid = do
         let csha = if calmE then CSha else CInv
         in if harmful cops body activeItems fact itemEqp
            then [(iidEqp, itemK itemEqp, CEqp, CInv)]
-           else if hinders condLightBetrays body activeItems itemEqp
+           else if hinders condAnyFoeAdj condLightBetrays
+                           body activeItems itemEqp
            then [(iidEqp, itemK itemEqp, CEqp, csha)]
            else []
       yieldUnneeded = concatMap yieldSingleUnneeded eqpAssocs
@@ -403,21 +407,23 @@ bestByEqpSlot eqpAssocs invAssocs shaAssocs =
                                              bestSingle eqpSlot g3)
   in M.assocs $ M.mapWithKey bestThree eqpInvShaMap
 
-hinders :: Bool -> Actor -> [ItemFull] -> ItemFull -> Bool
-hinders condLightBetrays body activeItems itemFull =
-  -- Fast actors want to hide in darkness to ambush opponents and want
-  -- to hit hard for the short span they get to survive melee.
-  (bspeed body activeItems > speedNormal
-   && (isJust (strengthFromEqpSlot IK.EqpSlotAddLight itemFull)
-       || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtMelee
-                                               itemFull)
-       || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtRanged
-                                               itemFull)))
-  -- Distressed actors want to hide in the dark.
-  || (let heavilyDistressed =  -- actor hit by a proj or similarly distressed
-            deltaSerious (bcalmDelta body)
-      in condLightBetrays && heavilyDistressed
-         && isJust (strengthFromEqpSlot IK.EqpSlotAddLight itemFull))
+-- TODO: also take into account dynamic lights *not* wielded by the actor
+hinders :: Bool -> Bool -> Actor -> [ItemFull] -> ItemFull -> Bool
+hinders condAnyFoeAdj condLightBetrays body activeItems itemFull =
+  let itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
+  in -- Fast actors want to hide in darkness to ambush opponents and want
+     -- to hit hard for the short span they get to survive melee.
+     bspeed body activeItems > speedNormal
+     && (iitemLit
+         || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtMelee
+                                                 itemFull)
+         || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtRanged
+                                                 itemFull))
+     -- Distressed actors want to hide in the dark.
+     || let heavilyDistressed =  -- actor hit by a proj or similarly distressed
+              deltaSerious (bcalmDelta body)
+        in heavilyDistressed && condLightBetrays && not condAnyFoeAdj
+           && itemLit
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
   -- (friends close, only one enemy close)
@@ -433,11 +439,12 @@ harmful cops body activeItems fact itemFull =
   maybe False (\(u, _) -> u <= 0)
     (totalUsefulness cops body activeItems fact itemFull)
 
-unneeded :: Kind.COps -> Bool -> Actor -> [ItemFull] -> Faction -> ItemFull
+unneeded :: Kind.COps -> Bool -> Bool -> Actor
+         -> [ItemFull] -> Faction -> ItemFull
          -> Bool
-unneeded cops condLightBetrays body activeItems fact itemFull =
+unneeded cops condAnyFoeAdj condLightBetrays body activeItems fact itemFull =
   harmful cops body activeItems fact itemFull
-  || hinders condLightBetrays body activeItems itemFull
+  || hinders condAnyFoeAdj condLightBetrays body activeItems itemFull
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))
