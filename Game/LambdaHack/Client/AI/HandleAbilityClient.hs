@@ -414,7 +414,7 @@ hinders condAnyFoeAdj condLightBetrays body activeItems itemFull =
   in -- Fast actors want to hide in darkness to ambush opponents and want
      -- to hit hard for the short span they get to survive melee.
      bspeed body activeItems > speedNormal
-     && (iitemLit
+     && (itemLit
          || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtMelee
                                                  itemFull)
          || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtRanged
@@ -445,6 +445,9 @@ unneeded :: Kind.COps -> Bool -> Bool -> Actor
 unneeded cops condAnyFoeAdj condLightBetrays body activeItems fact itemFull =
   harmful cops body activeItems fact itemFull
   || hinders condAnyFoeAdj condLightBetrays body activeItems itemFull
+  || let calm10 = calmEnough10 body activeItems  -- unneeded risk
+         itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
+     in itemLit && not calm10
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))
