@@ -52,7 +52,7 @@ homepage:      http://github.com/LambdaHack/LambdaHack
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD3
 license-file:  LICENSE
-tested-with:   GHC == 7.6.3, GHC == 7.8
+tested-with:   GHC == 7.6, GHC == 7.8
 data-files:    GameDefinition/config.ui.default, GameDefinition/scores
                GameDefinition/PLAYING.md, README.md, LICENSE, CREDITS,
                CHANGELOG.md

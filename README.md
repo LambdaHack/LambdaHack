@@ -115,9 +115,6 @@ use Cabal flags, e.g,
 Compatibility notes
 -------------------
 
-The current code was tested with GHC 7.6 and 7.8,
-but should also work with other GHC versions, with minor modifications.
-
 If you are using a terminal frontend, numeric keypad may not work
 correctly depending on versions of the libraries, terminfo and terminal
 emulators. The curses frontend is not fully supported due to the limitations
