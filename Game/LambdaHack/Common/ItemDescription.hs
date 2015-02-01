@@ -34,16 +34,18 @@ partItemN fullInfo n c _lid localTime itemFull =
       in (False, MU.Text $ flav <+> genericName, "")
     Just iDisco ->
       let effTs = filter (not . T.null) $ textAllAE fullInfo c itemFull
-          it1 = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
-            Nothing -> []
+          (toutN, it1) = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
+            Nothing -> (0, [])
             Just timeout ->
               let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
                   charging startT = timeShift startT timeoutTurns > localTime
-              in filter charging (itemTimer itemFull)
+              in (timeout, filter charging (itemTimer itemFull))
           len = length it1
+          chargingAdj | toutN == 0 = "temporary"
+                      | otherwise = "charging"
           timer | len == 0 = ""
-                | itemK itemFull == 1 && len == 1 = "(charging)"
-                | otherwise = "(" <> tshow len <+> "charging" <> ")"
+                | itemK itemFull == 1 && len == 1 = "(" <> chargingAdj <> ")"
+                | otherwise = "(" <> tshow len <+> chargingAdj <> ")"
           ts = take n effTs
                ++ ["(...)" | length effTs > n]
                ++ [timer]

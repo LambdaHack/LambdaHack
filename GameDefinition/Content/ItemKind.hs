@@ -951,11 +951,11 @@ gem3 = gem
   { irarity  = [(6, 0), (10, 20)]
   }
 gem4 = gem
-  { iname    = "elixir of youth"
+  { iname    = "elixir"
   , iflavour = zipPlain [BrYellow]
   , irarity  = [(1, 0), (2, 10), (10, 20)]
   , iaspects = []
-  , ieffects = [OverfillCalm 5, OverfillHP 15]
+  , ieffects = [NoEffect "of youth", OverfillCalm 5, OverfillHP 15]
   , ifeature = [Identified, Precious]  -- TODO: only for humans
   , idesc    = "A crystal vial of amber liquid, supposedly granting eternal youth and fetching 100 gold per piece. The main effect seems to be mild euphoria, but it admittedly heals minor ailments rather well."
   }

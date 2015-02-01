@@ -36,7 +36,7 @@ warrior = ItemKind
                , ("sapient brain", COrgan) ]
   }
 warrior2 = warrior
-  { iname    = "warrior2" }
+  { iname    = "adventurer" }
 warrior3 = warrior
   { iname    = "blacksmith" }
 warrior4 = warrior

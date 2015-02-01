@@ -92,7 +92,7 @@ effectToSuff effect =
       "of teleport" <+> wrapInParens (tshow dice <+> "steps")
     CreateItem COrgan grp tim ->
       let stime = if tim == TimerNone then "" else "for" <+> tshow tim <> ":"
-      in "of keep" <+> stime <+> tshow grp
+      in "(keep" <+> stime <+> tshow grp <> ")"
     CreateItem _ grp _ ->
       let object = if grp == "useful" then "" else tshow grp
       in "of" <+> object <+> "uncovering"
