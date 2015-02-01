@@ -928,7 +928,8 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
               (trajectory, (speed, _)) =
                 computeTrajectory weight throwVelocity throwLinger path
               ts = Just (trajectory, speed)
-          if btrajectory tb == ts || throwVelocity <= 0 || throwLinger <= 0
+          if null trajectory || btrajectory tb == ts
+             || throwVelocity <= 0 || throwLinger <= 0
             then return False
             else do
               execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts

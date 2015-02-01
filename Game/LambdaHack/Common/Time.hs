@@ -203,4 +203,4 @@ rangeFromSpeed (Speed v) = fromIntegral $ v `div` sInMs
 rangeFromSpeedAndLinger :: Speed -> Int -> Int
 rangeFromSpeedAndLinger speed linger =
   let range = rangeFromSpeed speed
-  in linger * range `div` 100
+  in linger * range `divUp` 100
