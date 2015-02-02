@@ -17,6 +17,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Hashable (Hashable)
 import qualified Data.Ix as Ix
 import Data.Text (Text)
+import Data.Traversable (traverse)
 import GHC.Generics (Generic)
 import System.Random (mkStdGen)
 
@@ -108,7 +109,7 @@ seedToAspectsEffects :: ItemSeed -> ItemKind -> AbsDepth -> AbsDepth
                      -> ItemAspectEffect
 seedToAspectsEffects (ItemSeed itemSeed) kind ldepth totalDepth =
   let castD = castDice ldepth totalDepth
-      rollA = mapM (`aspectTrav` castD) (iaspects kind)
+      rollA = mapM (traverse castD) (iaspects kind)
       jaspects = St.evalState rollA (mkStdGen itemSeed)
       jeffects = ieffects kind
   in ItemAspectEffect{..}

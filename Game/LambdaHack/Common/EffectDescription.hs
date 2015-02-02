@@ -6,7 +6,6 @@ module Game.LambdaHack.Common.EffectDescription
   ) where
 
 import Control.Exception.Assert.Sugar
-import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -125,10 +124,6 @@ tmodToSuff verb ThrowMod{..} =
   in if vSuff == "" && tSuff == "" then ""
      else verb <+> "with" <+> vSuff <+> tSuff
 
-aspectToSuff :: Show a => Aspect a -> (a -> Text) -> Text
-aspectToSuff aspect f =
-  rawAspectToSuff $ St.evalState (aspectTrav aspect $ return . f) ()
-
 rawAspectToSuff :: Aspect Text -> Text
 rawAspectToSuff aspect =
   case aspect of
@@ -167,7 +162,7 @@ effectToSuffix :: Effect -> Text
 effectToSuffix = effectToSuff
 
 aspectToSuffix :: Aspect Int -> Text
-aspectToSuffix aspect = aspectToSuff aspect affixBonus
+aspectToSuffix = rawAspectToSuff . fmap affixBonus
 
 affixBonus :: Int -> Text
 affixBonus p = case compare p 0 of
@@ -190,4 +185,4 @@ kindEffectToSuffix :: Effect -> Text
 kindEffectToSuffix = effectToSuffix
 
 kindAspectToSuffix :: Aspect Dice.Dice -> Text
-kindAspectToSuffix aspect = aspectToSuff aspect affixDice
+kindAspectToSuffix = rawAspectToSuff . fmap affixDice

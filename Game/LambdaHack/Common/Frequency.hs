@@ -18,6 +18,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
 import Data.Foldable (Foldable)
+import qualified Data.Foldable as F
 import Data.Hashable (Hashable)
 import Data.Text (Text)
 import Data.Traversable (Traversable)
@@ -109,17 +110,13 @@ nullFreq :: Frequency a -> Bool
 {-# INLINE nullFreq #-}
 nullFreq (Frequency fs _) = null fs
 
-maxFreq :: (Show a, Ord a) => Frequency a -> a
+maxFreq :: Ord a => Frequency a -> a
 {-# INLINE maxFreq #-}
-maxFreq fr@(Frequency xs _) = case xs of
-  [] -> assert `failure` fr
-  _ -> maximum $ map snd xs
+maxFreq = F.maximum
 
-minFreq :: (Show a, Ord a) => Frequency a -> a
+minFreq :: Ord a => Frequency a -> a
 {-# INLINE minFreq #-}
-minFreq fr@(Frequency xs _) = case xs of
-  [] -> assert `failure` fr
-  _ -> minimum $ map snd xs
+minFreq = F.minimum
 
 -- | Average value of an @Int@ distribution, rounded up to avoid truncating
 -- it in the other code higher up, which would equate 1d0 with 1d1.

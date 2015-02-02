@@ -5,19 +5,18 @@ module Game.LambdaHack.Content.ItemKind
   , Effect(..), TimerDice(..)
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
-  , slotName, aspectTrav
+  , slotName
   , toVelocity, toLinger, toOrganGameTurn, toOrganActorTurn, toOrganNone
   , validateSingleItemKind, validateAllItemKind
   ) where
 
-import qualified Control.Monad.State as St
 import Data.Binary
 import Data.Foldable (Foldable)
 import Data.Hashable (Hashable)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Traversable (Traversable, traverse)
+import Data.Traversable (Traversable)
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
@@ -200,10 +199,6 @@ slotName EqpSlotAddSkills{} = "skills"
 slotName EqpSlotAddSight = "sight radius"
 slotName EqpSlotAddSmell = "smell radius"
 slotName EqpSlotAddLight = "light radius"
-
--- | Transform an aspect using a stateful function.
-aspectTrav :: Aspect a -> (a -> St.State s b) -> St.State s (Aspect b)
-aspectTrav aspect f = traverse f aspect
 
 toVelocity :: Int -> Feature
 toVelocity n = ToThrow $ ThrowMod n 100

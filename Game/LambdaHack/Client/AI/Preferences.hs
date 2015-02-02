@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.AI.Preferences
   ( totalUsefulness, effectToBenefit
   ) where
 
-import qualified Control.Monad.State as St
+import Control.Applicative
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Common.Actor
@@ -99,9 +99,8 @@ effectToBenefit cops b activeItems fact eff =
 -- TODO: calculating this for "temporary conditions" takes forever
 organBenefit :: GroupName ItemKind -> Kind.COps -> Actor -> (Int, Int)
 organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b =
-  let travA x = St.evalState (IK.aspectTrav x (return . Dice.meanDice)) ()
-      f p _ kind (sacc, pacc) =
-        let paspect asp = p * aspectToBenefit cops b (travA asp)
+  let f p _ kind (sacc, pacc) =
+        let paspect asp = p * aspectToBenefit cops b (Dice.meanDice <$> asp)
         in ( sacc + sum (map paspect $ IK.iaspects kind)
            , pacc + p )
   in ofoldrGroup t f (0, 0)
@@ -161,9 +160,6 @@ totalUsefulness cops b activeItems fact itemFull =
     Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
       Just $ ben jeffects jaspects
     Just ItemDisco{itemKind=IK.ItemKind{iaspects, ieffects}} ->
-      let travA x =
-            St.evalState (IK.aspectTrav x (return . Dice.meanDice))
-                         ()
-          jaspects = map travA iaspects
+      let jaspects = map (fmap Dice.meanDice) iaspects
       in Just $ ben ieffects jaspects
     _ -> Nothing

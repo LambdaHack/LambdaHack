@@ -12,7 +12,6 @@ module Game.LambdaHack.Common.ItemStrongest
 
 import Control.Applicative
 import Control.Exception.Assert.Sugar
-import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
@@ -37,9 +36,7 @@ strengthAspect f itemFull =
       -- Approximation. For some effects lower values are better,
       -- so we just offer the mean of the dice. This is also correct
       -- for summation, on average.
-      let trav x = St.evalState (aspectTrav x (return . Dice.meanDice))
-                                ()
-      in concatMap f $ map trav iaspects
+      concatMap f $ map (fmap Dice.meanDice) iaspects
     Nothing -> []
 
 strengthAspectMaybe :: Show b => (Aspect Int -> [b]) -> ItemFull -> Maybe b
