@@ -527,7 +527,8 @@ effectAscend recursiveCall execSfx k aid = do
   let lid1 = blid b1
       pos1 = bpos b1
   (lid2, pos2) <- getsState $ whereTo lid1 pos1 k . sdungeon
-  if lid2 == lid1 && pos2 == pos1 then do
+  if braced b1 then return False  -- braced actors immune to translocation
+  else if lid2 == lid1 && pos2 == pos1 then do
     execSfxAtomic $ SfxMsgFid (bfid b1) "No more levels in this direction."
     recursiveCall $ IK.Teleport 30  -- powerful teleport
   else do
@@ -705,7 +706,8 @@ effectTeleport execSfx nDm target = do
     , dist 5
     , dist 7
     ]
-  if not (dMinMax 9 tpos) then
+  if braced b then return False  -- braced actors immune to translocation
+  else if not (dMinMax 9 tpos) then
     return False  -- very rare
   else do
     execUpdAtomic $ UpdMoveActor target spos tpos
@@ -913,7 +915,8 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   lvl@Level{lxsize, lysize} <- getLevel (blid tb)
   let eps = 0
       fpos = bpos tb `shift` v
-  case bla lxsize lysize eps (bpos tb) fpos of
+  if braced tb then return False  -- braced actors immune to translocation
+  else case bla lxsize lysize eps (bpos tb) fpos of
     Nothing -> assert `failure` (fpos, tb)
     Just [] -> assert `failure` "projecting from the edge of level"
                       `twith` (fpos, tb)
