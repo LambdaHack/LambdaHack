@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE DeriveFoldable, DeriveTraversable, TupleSections #-}
 -- | AI strategies to direct actors not controlled directly by human players.
 -- No operation in this module involves the 'State' or 'Action' type.
 module Game.LambdaHack.Client.AI.Strategy
@@ -8,8 +8,10 @@ module Game.LambdaHack.Client.AI.Strategy
 
 import Control.Applicative
 import Control.Monad
+import Data.Foldable (Foldable)
 import Data.Maybe
 import Data.Text (Text)
+import Data.Traversable (Traversable)
 
 import Game.LambdaHack.Common.Frequency as Frequency
 import Game.LambdaHack.Common.Msg
@@ -17,7 +19,7 @@ import Game.LambdaHack.Common.Msg
 -- | A strategy is a choice of (non-empty) frequency tables
 -- of possible actions.
 newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
-  deriving Show
+  deriving (Show, Foldable, Traversable)
 
 -- | Strategy is a monad. TODO: Can we write this as a monad transformer?
 instance Monad Strategy where
@@ -98,6 +100,7 @@ renameStrategy newName (Strategy fs) = Strategy $ map (renameFreq newName) fs
 returN :: Text -> a -> Strategy a
 returN name x = Strategy $ return $! uniformFreq name [x]
 
+-- TODO: express with traverse?
 mapStrategyM :: Monad m => (a -> m (Maybe b)) -> Strategy a -> m (Strategy b)
 mapStrategyM f s = do
   let mapFreq freq = do

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor, DeriveGeneric #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable #-}
 -- | The type of kinds of weapons, treasure, organs, blasts and actors.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..)
@@ -12,10 +12,12 @@ module Game.LambdaHack.Content.ItemKind
 
 import qualified Control.Monad.State as St
 import Data.Binary
+import Data.Foldable (Foldable)
 import Data.Hashable (Hashable)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Traversable (Traversable, traverse)
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
@@ -121,7 +123,7 @@ data Aspect a =
   | AddSight !a        -- ^ FOV radius, where 1 means a single tile
   | AddSmell !a        -- ^ smell radius, where 1 means a single tile
   | AddLight !a        -- ^ light radius, where 1 means a single tile
-  deriving (Show, Read, Eq, Ord, Generic, Functor)
+  deriving (Show, Read, Eq, Ord, Generic, Functor, Foldable, Traversable)
 
 -- | Parameters modifying a throw. Not additive and don't start at 0.
 data ThrowMod = ThrowMod
@@ -199,45 +201,9 @@ slotName EqpSlotAddSight = "sight radius"
 slotName EqpSlotAddSmell = "smell radius"
 slotName EqpSlotAddLight = "light radius"
 
--- TODO: Traversable?
 -- | Transform an aspect using a stateful function.
 aspectTrav :: Aspect a -> (a -> St.State s b) -> St.State s (Aspect b)
-aspectTrav Unique _ = return Unique
-aspectTrav Periodic _ = return Periodic
-aspectTrav (Timeout a) f = do
-  b <- f a
-  return $! Timeout b
-aspectTrav (AddMaxHP a) f = do
-  b <- f a
-  return $! AddMaxHP b
-aspectTrav (AddMaxCalm a) f = do
-  b <- f a
-  return $! AddMaxCalm b
-aspectTrav (AddSpeed a) f = do
-  b <- f a
-  return $! AddSpeed b
-aspectTrav (AddSkills as) _ = return $! AddSkills as
-aspectTrav (AddHurtMelee a) f = do
-  b <- f a
-  return $! AddHurtMelee b
-aspectTrav (AddHurtRanged a) f = do
-  b <- f a
-  return $! AddHurtRanged b
-aspectTrav (AddArmorMelee a) f = do
-  b <- f a
-  return $! AddArmorMelee b
-aspectTrav (AddArmorRanged a) f = do
-  b <- f a
-  return $! AddArmorRanged b
-aspectTrav (AddSight a) f = do
-  b <- f a
-  return $! AddSight b
-aspectTrav (AddSmell a) f = do
-  b <- f a
-  return $! AddSmell b
-aspectTrav (AddLight a) f = do
-  b <- f a
-  return $! AddLight b
+aspectTrav aspect f = traverse f aspect
 
 toVelocity :: Int -> Feature
 toVelocity n = ToThrow $ ThrowMod n 100
