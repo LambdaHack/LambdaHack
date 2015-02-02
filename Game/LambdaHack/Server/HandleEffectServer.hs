@@ -1035,8 +1035,14 @@ effectOneOf :: (MonadAtomic m, MonadServer m)
             -> [IK.Effect]
             -> m Bool
 effectOneOf recursiveCall l = do
-  ef <- rndToAction $ oneOf l
-  recursiveCall ef
+  let call1 = do
+        ef <- rndToAction $ oneOf l
+        recursiveCall ef
+      call99 = replicate 99 call1
+      f callNext result = do
+        b <- result
+        if b then return True else callNext
+  foldr f (return False) call99
 
 -- ** Recharging
 
