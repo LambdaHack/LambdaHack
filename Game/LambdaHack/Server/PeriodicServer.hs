@@ -136,7 +136,7 @@ dominateFidSfx fid target = do
     then do
       tb <- getsState $ getActorBody target
       let execSfx = execSfxAtomic
-                    $ SfxEffect (boldfid tb) target IK.Dominate
+                    $ SfxEffect (bfidImpressed tb) target IK.Dominate
       execSfx
       dominateFid fid target
       execSfx
@@ -159,7 +159,7 @@ dominateFid fid target = do
   calmMax <- sumOrganEqpServer IK.EqpSlotAddMaxCalm target
   execUpdAtomic $ UpdLoseActor target tb ais
   let bNew = tb { bfid = fid
-                , boldfid = bfid tb
+                , bfidImpressed = bfid tb
                 , bcalm = max 0 $ xM calmMax `div` 2 }
   execUpdAtomic $ UpdSpotActor target bNew ais
   let discoverSeed (iid, _) = do
@@ -202,10 +202,10 @@ managePerTurn aid = do
     fact <- getsState $ (EM.! bfid b) . sfactionD
     dominated <-
       if bcalm b == 0
-         && boldfid b /= bfid b
+         && bfidImpressed b /= bfid b
          && fleaderMode (gplayer fact) /= LeaderNull
               -- animals never Calm-dominated
-      then dominateFidSfx (boldfid b) aid
+      then dominateFidSfx (bfidImpressed b) aid
       else return False
     unless dominated $ do
       newCalmDelta <- getsState $ regenCalmDelta b activeItems

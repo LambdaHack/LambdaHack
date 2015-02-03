@@ -442,11 +442,11 @@ effectImpress :: (MonadAtomic m, MonadServer m)
 effectImpress execSfx source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  if boldfid tb == bfid sb || bproj tb then
+  if bfidImpressed tb == bfid sb || bproj tb then
     return False
   else do
     execSfx
-    execUpdAtomic $ UpdOldFidActor target (boldfid tb) (bfid sb)
+    execUpdAtomic $ UpdFidImpressedActor target (bfidImpressed tb) (bfid sb)
     return True
 
 -- ** CallFriend

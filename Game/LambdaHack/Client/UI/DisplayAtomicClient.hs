@@ -142,7 +142,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
         when (null closeFoes) $ do  -- obvious where the feeling comes from
           aidVerbMU aid "hear something"
           msgDuplicateScrap
-  UpdOldFidActor{} -> return ()
+  UpdFidImpressedActor{} -> return ()
   UpdTrajectory{} -> return ()
   UpdColorActor{} -> return ()
   -- Change faction attributes.
@@ -695,7 +695,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           stopPlayBack
         IK.Impress{} ->
           actorVerbMU aid b
-          $ if boldfid b /= bfid b
+          $ if bfidImpressed b /= bfid b
             then
               "get refocused by the fragrant moisture"
             else

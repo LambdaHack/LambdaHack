@@ -60,7 +60,8 @@ handleUpdAtomic cmd = case cmd of
   UpdAgeActor aid t -> updAgeActor aid t
   UpdRefillHP aid n -> updRefillHP aid n
   UpdRefillCalm aid n -> updRefillCalm aid n
-  UpdOldFidActor aid fromFid toFid -> updOldFidActor aid fromFid toFid
+  UpdFidImpressedActor aid fromFid toFid ->
+    updFidImpressedActor aid fromFid toFid
   UpdTrajectory aid fromT toT -> updTrajectory aid fromT toT
   UpdColorActor aid fromCol toCol -> updColorActor aid fromCol toCol
   UpdQuitFaction fid mbody fromSt toSt -> updQuitFaction fid mbody fromSt toSt
@@ -269,11 +270,11 @@ updRefillCalm aid n =
                         else oldD {resCurrentTurn = resCurrentTurn oldD + n}
       }
 
-updOldFidActor :: MonadStateWrite m => ActorId -> FactionId -> FactionId -> m ()
-updOldFidActor aid fromFid toFid = assert (fromFid /= toFid) $
+updFidImpressedActor :: MonadStateWrite m => ActorId -> FactionId -> FactionId -> m ()
+updFidImpressedActor aid fromFid toFid = assert (fromFid /= toFid) $
   updateActor aid $ \b ->
-    assert (boldfid b == fromFid `blame` (aid, fromFid, toFid, b))
-    $ b {boldfid = toFid}
+    assert (bfidImpressed b == fromFid `blame` (aid, fromFid, toFid, b))
+    $ b {bfidImpressed = toFid}
 
 updTrajectory :: MonadStateWrite m
               => ActorId
@@ -366,7 +367,7 @@ updRecordKill aid ikind k = do
                      in if n == 0 then Nothing else Just n
       adjFact fact = fact {gvictims = EM.alter alterKind ikind
                                       $ gvictims fact}
-  updateFaction (bfid b) adjFact
+  updateFaction (bfidOriginal b) adjFact
 
 -- | Alter an attribute (actually, the only, the defining attribute)
 -- of a visible tile. This is similar to e.g., @UpdTrajectory@.

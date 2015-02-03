@@ -73,7 +73,7 @@ data UpdAtomic =
   | UpdAgeActor !ActorId !(Delta Time)
   | UpdRefillHP !ActorId !Int64
   | UpdRefillCalm !ActorId !Int64
-  | UpdOldFidActor !ActorId !FactionId !FactionId
+  | UpdFidImpressedActor !ActorId !FactionId !FactionId
   | UpdTrajectory !ActorId !(Maybe ([Vector], Speed)) !(Maybe ([Vector], Speed))
   | UpdColorActor !ActorId !Color.Color !Color.Color
   -- Change faction attributes.
@@ -159,7 +159,8 @@ undoUpdAtomic cmd = case cmd of
   UpdAgeActor aid delta -> Just $ UpdAgeActor aid (timeDeltaReverse delta)
   UpdRefillHP aid n -> Just $ UpdRefillHP aid (-n)
   UpdRefillCalm aid n -> Just $ UpdRefillCalm aid (-n)
-  UpdOldFidActor aid fromFid toFid -> Just $ UpdOldFidActor aid toFid fromFid
+  UpdFidImpressedActor aid fromFid toFid ->
+    Just $ UpdFidImpressedActor aid toFid fromFid
   UpdTrajectory aid fromT toT -> Just $ UpdTrajectory aid toT fromT
   UpdColorActor aid fromCol toCol -> Just $ UpdColorActor aid toCol fromCol
   UpdQuitFaction fid mb fromSt toSt -> Just $ UpdQuitFaction fid mb toSt fromSt

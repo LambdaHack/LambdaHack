@@ -107,7 +107,7 @@ posUpdAtomic cmd = case cmd of
   UpdAgeActor aid _ -> singleAid aid
   UpdRefillHP aid _ -> singleAid aid
   UpdRefillCalm aid _ -> singleAid aid
-  UpdOldFidActor aid _ _ -> singleAid aid
+  UpdFidImpressedActor aid _ _ -> singleAid aid
   UpdTrajectory aid _ _ -> singleAid aid
   UpdColorActor aid _ _ -> singleAid aid
   UpdQuitFaction{} -> return PosAll
