@@ -126,27 +126,25 @@ register :: ScoreTable  -- ^ old table
          -> (Bool, (ScoreTable, Int))
 register table total time status@Status{stOutcome} date difficulty gplayerName
          ourVictims theirVictims loots =
-  let pBase =
+  let victory = stOutcome `elem` [Conquer, Escape]
+      pBase =
         if loots
-        -- Heroes rejoice in loot and mourn their victims.
+        -- Heroes rejoice in loot.
         then fromIntegral total
-        -- Spawners or skirmishers get no bonus from loot and no malus
-        -- from loses, but try to kill opponents fast and blodily,
-        -- or at least hold up for long and incur heavy losses.
+        -- Spawners or skirmishers get no points from loot, but try to kill
+        -- all opponents fast or at least hold up for long.
         else let turnsSpent = timeFitUp time timeTurn
-                 speedup = max 0 $ 1000000 - 100 * turnsSpent
-                 survival = 100 * turnsSpent
-             in if stOutcome `elem` [Conquer, Escape]
-                -- Up to 1000 points for quick victory, so up to 10000 turns.
-                then sqrt $ fromIntegral speedup
-                -- Up to 1000 points for surviving long, so up to 10000 turns.
-                else min 1000
-                     $ sqrt $ fromIntegral survival
+                 -- Up to 2000 points for victory, so up to 10000 turns matter.
+                 speedup = 1000 + max 0 (1000000 - 100 * turnsSpent)
+                 -- Up to 1000 points for surviving long, so up to 10000 turns.
+                 survival = min 1000000 $ 100 * turnsSpent
+             in sqrt $ fromIntegral $ if victory then speedup else survival
+      -- All kinds of faction mourn their victims, until they lose count.
+      -- At which point it doesn't even matter for looting factions
+      -- if they win or not.
       pBonus = max 0 (1000 - 100 * sum (EM.elems ourVictims))
       pSum :: Double
-      pSum = if stOutcome `elem` [Conquer, Escape]
-             then pBase + fromIntegral pBonus
-             else pBase
+      pSum = pBase + if victory then fromIntegral pBonus else 0
       points = (ceiling :: Double -> Int)
                $ pSum * 1.5 ^^ (- (difficultyCoeff difficulty))
       negTime = absoluteTimeNegate time
