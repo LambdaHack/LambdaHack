@@ -221,6 +221,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   UpdCoverSeed{} -> return ()  -- don't spam when doing undo
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ -> do
+    void $ tryTakeMVarSescMVar  -- clear ESC-pressed from end of previous game
     mode <- getGameMode
     msgAdd $ "New game started in" <+> mname mode <+> "mode." <+> mdesc mode
     -- TODO: use a vertical animation instead, e.g., roll down,
