@@ -110,7 +110,7 @@ pickActorToMove refreshTarget oldAid = do
             activeItems <- activeItemsClient aid
             condMeleeBad <- condMeleeBadM aid
             threatDistL <- threatDistList aid
-            fleeL <- fleeList False aid
+            fleeL <- fleeList 1 aid
             let condThreatAdj =
                   not $ null $ takeWhile ((== 1) . fst) threatDistL
                 condFastThreatAdj =

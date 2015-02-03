@@ -271,7 +271,7 @@ condLightBetraysM aid = do
             && actorEqpShines  -- but actor betrayed by his equipped light
 
 -- | Produce a list of acceptable adjacent points to flee to.
-fleeList :: MonadClient m => Bool -> ActorId -> m [(Int, Point)]
+fleeList :: MonadClient m => Int -> ActorId -> m [(Int, Point)]
 fleeList panic aid = do
   cops <- getsState scops
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -299,5 +299,7 @@ fleeList panic aid = do
         | otherwise = Nothing
       goodVic = mapMaybe rewardPath gtVic
                 ++ filter ((`elem` tgtPath) . snd) eqVic
-      pathVic = goodVic ++ if panic then accVic \\ goodVic else []
+      pathVic = if panic >= 3 then accVic
+                else if panic >= 2 then gtVic ++ eqVic
+                else goodVic
   return pathVic  -- keep it lazy, until other conditions verify danger

@@ -81,15 +81,15 @@ actionStrategy aid = do
   condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
-  fleeL <- fleeList False aid
-  panicFleeL <- fleeList True aid
+  fleeL <- fleeList 1 aid
+  panic2FleeL <- fleeList 2 aid
+  panic3FleeL <- fleeList 3 aid
   let condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= nearby) . fst) threatDistL
       speed1_5 = speedScale (3%2) (bspeed body activeItems)
       condFastThreatAdj = any (\(_, (_, b)) -> bspeed b activeItems > speed1_5)
                           $ takeWhile ((== 1) . fst) threatDistL
-      condCanFlee = not (null fleeL || condFastThreatAdj)
   actorSk <- actorSkillsClient aid
   let stratToFreq :: MonadStateRead m
                   => Int -> m (Strategy RequestAnyAbility)
@@ -113,7 +113,8 @@ actionStrategy aid = do
                 || condMeleeBad && condThreatAdj) )
         , ( [AbMove]
           , flee aid fleeL
-          , condMeleeBad && condThreatAdj && condCanFlee )
+          , condMeleeBad && condThreatAtHand
+            && not condFastThreatAdj && not (null fleeL) )
         , ( [AbDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
           , condBlocksFriends && condAnyFoeAdj
@@ -166,29 +167,43 @@ actionStrategy aid = do
       suffix =
         [ ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> pickup aid False
-          , True )  -- unconditionally, e.g., to give to other party members
+          , not condThreatAtHand )  -- e.g., to give to other party members
         , ( [AbMove]
           , flee aid fleeL
-          , condMeleeBad && (condNotCalmEnough && condThreatNearby
-                             || condThreatAtHand)
-            && condCanFlee )
+          , condMeleeBad && condThreatNearby
+            && not condFastThreatAdj && not (null fleeL)
+            && (condNotCalmEnough
+                || condThreatAtHand) )
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeAny aid  -- avoid getting damaged for naught
           , condAnyFoeAdj )
         , ( [AbMove]
             -- TODO: forget old target (e.g., tile), to start shooting,
             -- unless can't shoot, etc.
-          , flee aid panicFleeL  -- panic mode; chasing would be pointless
-          , condMeleeBad && condThreatNearby && (condNotCalmEnough
-                                                 || condThreatAtHand
-                                                 || condNoUsableWeapon) )
+          , flee aid panic2FleeL  -- panic mode; chasing would be pointless
+          , condMeleeBad && condThreatNearby
+            && not condFastThreatAdj && not (null panic2FleeL)
+            && null fleeL
+            && (condNotCalmEnough
+                || condThreatAtHand
+                || condNoUsableWeapon) )
+        , ( [AbMove]
+          , flee aid panic3FleeL  -- ultimate panic mode
+          , condMeleeBad && condThreatNearby
+            && not condFastThreatAdj && not (null panic3FleeL)
+            && null panic2FleeL
+            && (condNotCalmEnough
+                || condThreatAtHand
+                || condNoUsableWeapon) )
         , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> unEquipItems aid  -- late, because better to throw than unequip
-          , True )
+          , not condThreatAtHand )
         , ( [AbMove]
           , chase aid False
-          , True )
-        , ( [AbWait], (toAny :: ToAny AbWait)
+          , not (condMeleeBad && condThreatAtHand) )  -- don't step into a trap
+        ]
+      fallback =
+        [ ( [AbWait], (toAny :: ToAny AbWait)
             <$> waitBlockNow
             -- Wait until friends sidestep; ensures strategy is never empty.
             -- TODO: try to switch leader away before that (we already
@@ -211,7 +226,8 @@ actionStrategy aid = do
   sumPrefix <- sumS prefix
   comDistant <- combineDistant distant
   sumSuffix <- sumS suffix
-  return $! sumPrefix .| comDistant .| sumSuffix
+  sumFallback <- sumS fallback
+  return $! sumPrefix .| comDistant .| sumSuffix .| sumFallback
 
 -- | A strategy to always just wait.
 waitBlockNow :: MonadClient m => m (Strategy (RequestTimed AbWait))
