@@ -128,7 +128,8 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
     when (Just aid == mleader) $ do
       b <- getsState $ getActorBody aid
       hpMax <- sumOrganEqpClient IK.EqpSlotAddMaxHP aid
-      when (bhp b == xM hpMax && hpMax > 0) $ do
+      when (bhp b >= xM hpMax && hpMax > 0
+            && resCurrentTurn (bhpDelta b) > 0) $ do
         actorVerbMU aid b "recover your health fully"
         stopPlayBack
   UpdRefillCalm aid calmDelta ->
