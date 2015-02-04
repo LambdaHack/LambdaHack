@@ -428,12 +428,12 @@ projectItem ts posFromCursor = do
               Right False -> legal
               Right True ->
                 Right $ totalRange itemBase >= chessDist (bpos b) pos
-      psuit :: m (Either Msg (ItemFull -> Bool))
+      psuit :: m Suitability
       psuit = do
         mpsuitReq <- psuitReq
         case mpsuitReq of
-          Left err -> return $ Left err
-          Right psuitReqFun -> return $ Right $ \itemFull ->
+          Left err -> return $ SuitsNothing err
+          Right psuitReqFun -> return $ SuitsSomething $ \itemFull ->
             case psuitReqFun itemFull of
               Left _ -> False
               Right suit -> suit
@@ -478,7 +478,7 @@ applyHuman ts = do
         permittedApply triggerSyms localTime skill itemFull b activeItems
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What to apply"
-  ggi <- getGroupItem (return $ Right $ either (const False) id . p)
+  ggi <- getGroupItem (return $ SuitsSomething $ either (const False) id . p)
                       prompt promptGeneric False cLegal cLegal
   case ggi of
     Right ((iid, itemFull), MStore fromCStore) ->

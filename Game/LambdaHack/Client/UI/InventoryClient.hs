@@ -2,7 +2,8 @@
 -- | Inventory management and party cycling.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( getGroupItem, getAnyItems, getStoreItem
+  ( Suitability(..)
+  , getGroupItem, getAnyItems, getStoreItem
   , memberCycle, memberBack, pickLeader
   , cursorPointerFloor, cursorPointerEnemy
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman, epsIncrHuman, tgtClearHuman
@@ -85,7 +86,7 @@ accessModeBag _ _ MStats = EM.empty
 -- as the player can override the choice.
 -- Used e.g., for applying and projecting.
 getGroupItem :: MonadClientUI m
-             => m (Either Msg (ItemFull -> Bool))
+             => m Suitability
                           -- ^ which items to consider suitable
              -> Text      -- ^ specific prompt for only suitable items
              -> Text      -- ^ generic prompt
@@ -118,7 +119,7 @@ getAnyItems :: MonadClientUI m
 getAnyItems verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
   let prompt _ _ cCur =
         makePhrase ["What to", verb, MU.Text $ ppItemDialogModeFrom cCur]
-  soc <- getFull (return $ Right $ const True)
+  soc <- getFull (return SuitsEverything)
                  prompt prompt False
                  cLegalRaw cLegalAfterCalm
                  askWhenLone True ISuitable
@@ -148,7 +149,7 @@ getStoreItem prompt cInitial = do
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
-  soc <- getItem (return $ Right $ const True)
+  soc <- getItem (return SuitsEverything)
                  prompt prompt False cInitial remCs
                  True False ISuitable
   case soc of
@@ -160,7 +161,7 @@ getStoreItem prompt cInitial = do
 -- item from a list of items. Don't display stores empty for all actors.
 -- Start with a non-empty store.
 getFull :: MonadClientUI m
-        => m (Either Msg (ItemFull -> Bool))
+        => m Suitability
                             -- ^ which items to consider suitable
         -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
                             -- ^ specific prompt for only suitable items
@@ -210,7 +211,7 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
 getItem :: MonadClientUI m
-        => m (Either Msg (ItemFull -> Bool))
+        => m Suitability
                             -- ^ which items to consider suitable
         -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
                             -- ^ specific prompt for only suitable items
@@ -252,8 +253,13 @@ data DefItemKey m = DefItemKey
   , defAction :: K.KM -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
   }
 
+data Suitability =
+    SuitsEverything
+  | SuitsNothing Msg
+  | SuitsSomething (ItemFull -> Bool)
+
 transition :: forall m. MonadClientUI m
-           => m (Either Msg (ItemFull -> Bool))
+           => m Suitability
            -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
            -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
            -> Bool
@@ -276,12 +282,14 @@ transition psuit prompt promptGeneric cursor permitMulitple
   itemToF <- itemToFullClient
   Binding{brevMap} <- askBinding
   mpsuit <- psuit  -- when throwing, this sets eps and checks cursor validity
-  psuitFun <- case mpsuit of
-    Left err -> do
+  (suitsEverything, psuitFun) <- case mpsuit of
+    SuitsEverything -> return (True, const True)
+    SuitsNothing err -> do
       slides <- promptToSlideshow $ err <+> moreMsg
       void $ getInitConfirms ColorFull [] $ slides <> toSlideshow Nothing [[]]
-      return $ const False
-    Right f -> return f  -- when throwing, this takes missile range into accout
+      return (False, const False)
+    -- When throwing, this function takes missile range into accout.
+    SuitsSomething f -> return (False, f)
   let getSingleResult :: ItemId -> (ItemId, ItemFull)
       getSingleResult iid = (iid, itemToF iid (bag EM.! iid))
       getResult :: ItemId -> ([(ItemId, ItemFull)], ItemDialogMode)
@@ -299,10 +307,10 @@ transition psuit prompt promptGeneric cursor permitMulitple
       suitableLetterSlots = EM.filter (`EM.member` bagSuit) lSlots
       suitableNumberSlots = IM.filter (`EM.member` bagSuit) numberSlots
       (autoDun, autoLvl) = autoDungeonLevel fact
-      enterSlots = if itemDialogState == IAll
+      enterSlots = if itemDialogState `elem` [IAll, INoAll]
                    then bagLetterSlots
                    else suitableLetterSlots
-      enterNumberSlots = if itemDialogState == IAll
+      enterNumberSlots = if itemDialogState `elem` [IAll, INoAll]
                          then bagNumberSlots
                          else suitableNumberSlots
       keyDefs :: [(K.KM, DefItemKey m)]
@@ -310,11 +318,11 @@ transition psuit prompt promptGeneric cursor permitMulitple
         [ (K.toKM K.NoModifier $ K.Char '?', DefItemKey
            { defLabel = "?"
            , defCond = not (EM.null bag)
-           , defAction = \_ -> recCall cCur cRest $! case itemDialogState of
+           , defAction = \_ -> recCall cCur cRest $ case itemDialogState of
                INoSuitable -> if EM.null bagSuit then IAll else ISuitable
-               ISuitable -> IAll
+               ISuitable -> if suitsEverything then INoAll else IAll
                IAll -> if EM.null bag then INoSuitable else INoAll
-               INoAll -> INoSuitable
+               INoAll -> if suitsEverything then ISuitable else INoSuitable
            })
         , (K.toKM K.NoModifier $ K.Char '/', DefItemKey
            { defLabel = "/"
