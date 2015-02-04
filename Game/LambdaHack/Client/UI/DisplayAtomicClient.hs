@@ -721,9 +721,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           case allAssocs of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
+              subject <- partActorLeader aid b
               let itemSecret = itemNoDisco (itemBase, itemK)
                   (_, secretName, secretAEText) = partItem cstore (blid b) localTime itemSecret
-                  subject = partActor b
                   verb = "repurpose"
                   store = MU.Text $ ppCStoreIn cstore
               msgAdd $ makeSentence
@@ -734,8 +734,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           case allAssocs of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
-              let subject = partActor b
-                  verb = "inspect"
+              subject <- partActorLeader aid b
+              let verb = "inspect"
                   store = MU.Text $ ppCStoreIn cstore
               msgAdd $ makeSentence
                 [ MU.SubjectVerbSg subject verb
