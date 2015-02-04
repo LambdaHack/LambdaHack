@@ -233,7 +233,7 @@ effectSem source target iid recharged effect = do
     IK.Teleport p -> effectTeleport execSfx p target
     IK.CreateItem store grp tim -> effectCreateItem target store grp tim
     IK.DropItem store grp hit -> effectDropItem execSfx store grp hit target
-    IK.PolyItem cstore -> effectPolyItem execSfx cstore target
+    IK.PolyItem cstore -> effectPolyItem execSfx (bfid sb) cstore target
     IK.Identify cstore -> effectIdentify iid (bfid sb) cstore target
     IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target Nothing
@@ -829,8 +829,8 @@ dropCStoreItem store aid b hit iid kit@(k, _) = do
 -- ** PolyItem
 
 effectPolyItem :: (MonadAtomic m, MonadServer m)
-               => m () -> CStore -> ActorId -> m Bool
-effectPolyItem execSfx cstore target = do
+               => m () -> FactionId -> CStore -> ActorId -> m Bool
+effectPolyItem execSfx fid cstore target = do
   tb <- getsState $ getActorBody target
   allAssocs <- fullAssocsServer target [cstore]
   case allAssocs of
@@ -841,7 +841,7 @@ effectPolyItem execSfx cstore target = do
       -- TODO: identify the scroll, but don't use up.
       return True
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
-      Just ItemDisco{itemKind} -> do
+      Just ItemDisco{..} -> do
         discoEffect <- getsServer sdiscoEffect
         let maxCount = Dice.maxDice $ IK.icount itemKind
             aspects = jaspects $ discoEffect EM.! iid
@@ -852,10 +852,12 @@ effectPolyItem execSfx cstore target = do
           -- TODO: identify the scroll, but don't use up.
           return True
         else if IK.Unique `elem` aspects then do
+          -- TODO: mark with {unique}, if not IDed
           execSfxAtomic $ SfxMsgFid (bfid tb) $
             "Unique items can't be repurposed."
           return True
         else do
+          identifyIid iid fid cstore target itemKindId
           let c = CActor target cstore
               kit = (maxCount, take maxCount itemTimer)
           execUpdAtomic $ UpdDestroyItem iid itemBase kit c
@@ -872,26 +874,20 @@ effectIdentify :: (MonadAtomic m, MonadServer m)
 effectIdentify iidId fid storeInitial target = do
   let tryFull store as = case as of
         [] -> return False
-        (iid, itemFull@ItemFull{..}) : rest -> case itemDisco of
-          _ | iid == iidId -> tryFull store rest  -- don't id itself
-          Just ItemDisco{..} -> do
-            -- TODO: use this (but faster, via traversing effects with 999)
-            -- also to prevent sending any other UpdDiscover.
-            let ided = IK.Identified `elem` IK.ifeature itemKind
-                itemSecret = itemNoAE itemFull
-                statsObvious = textAllAE False store itemFull
-                               == textAllAE False store itemSecret
-            if ided && statsObvious
-              then tryFull store rest
-              else do
-                let effect = IK.Identify store  -- the real store, not initial
-                execSfxAtomic $ SfxEffect fid target effect  -- a cheat
-                tb <- getsState $ getActorBody target
-                seed <- getsServer $ (EM.! iid) . sitemSeedD
-                execUpdAtomic $
-                  UpdDiscover (bfid tb) (blid tb) (bpos tb) iid itemKindId seed
-                return True
-          _ -> assert `failure` (store, target, iid, itemFull)
+        (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
+        (iid, itemFull@ItemFull{itemDisco=Just ItemDisco{..}}) : rest -> do
+          -- TODO: use this (but faster, via traversing effects with 999?)
+          -- also to prevent sending any other UpdDiscover.
+          let ided = IK.Identified `elem` IK.ifeature itemKind
+              itemSecret = itemNoAE itemFull
+              statsObvious = textAllAE False store itemFull
+                             == textAllAE False store itemSecret
+          if ided && statsObvious
+            then tryFull store rest
+            else do
+              identifyIid iid fid store target itemKindId
+              return True
+        _ -> assert `failure` (store, as)
       tryStore stores = case stores of
         [] -> return False
         store : rest -> do
@@ -900,6 +896,17 @@ effectIdentify iidId fid storeInitial target = do
           if go then return True else tryStore rest
       storesSorted = storeInitial : delete storeInitial [CGround, CInv, CEqp]
   tryStore storesSorted
+
+identifyIid :: (MonadAtomic m, MonadServer m)
+            => ItemId -> FactionId -> CStore -> ActorId -> Kind.Id ItemKind
+            -> m ()
+identifyIid iid fid store target itemKindId = do
+  let effect = IK.Identify store  -- the real store, not initial
+  execSfxAtomic $ SfxEffect fid target effect  -- a cheat
+  tb <- getsState $ getActorBody target
+  seed <- getsServer $ (EM.! iid) . sitemSeedD
+  execUpdAtomic $
+    UpdDiscover (bfid tb) (blid tb) (bpos tb) iid itemKindId seed
 
 -- ** SendFlying
 
