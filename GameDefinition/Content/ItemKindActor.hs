@@ -230,7 +230,7 @@ rattlesnake = ItemKind
                , ("eye 5", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
   }
-komodoDragon = ItemKind  -- bad hearing
+komodoDragon = ItemKind  -- bad hearing; regeneration makes it very powerful
   { isymbol  = 'k'
   , iname    = "Komodo dragon"
   , ifreq    = [("animal", 100), ("horror", 100), ("mobile animal", 100)]

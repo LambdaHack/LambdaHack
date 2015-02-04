@@ -97,6 +97,9 @@ actionStrategy aid = do
       stratToFreq scale mstrat = do
         st <- mstrat
         return $! scaleFreq scale $ bestVariant st  -- TODO: flatten instead?
+      -- Order matters within the list, because it's summed with .| after
+      -- filtering. Also, the results of prefix, distant and suffix
+      -- are summed with .| at the end.
       prefix, suffix :: [([Ability], m (Strategy RequestAnyAbility), Bool)]
       prefix =
         [ ( [AbApply], (toAny :: ToAny AbApply)
@@ -141,6 +144,7 @@ actionStrategy aid = do
                                 -- only if calm enough, so high priority
           , not condAnyFoeAdj && not condDesirableFloorItem )
         ]
+      -- Order doesn't matter, scaling does.
       distant :: [([Ability], m (Frequency RequestAnyAbility), Bool)]
       distant =
         [ ( [AbProject]  -- for high-value target, shoot even in melee
@@ -164,14 +168,14 @@ actionStrategy aid = do
             && EM.findWithDefault 0 AbMelee actorSk > 0
             && not condNoUsableWeapon )
         ]
+      -- Order matters again.
       suffix =
         [ ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> pickup aid False
           , not condThreatAtHand )  -- e.g., to give to other party members
         , ( [AbMove]
           , flee aid fleeL
-          , condMeleeBad && condThreatNearby
-            && not condFastThreatAdj && not (null fleeL)
+          , condMeleeBad && condThreatNearby && not condFastThreatAdj
             && (condNotCalmEnough
                 || condThreatAtHand) )
         , ( [AbMelee], (toAny :: ToAny AbMelee)
@@ -181,27 +185,22 @@ actionStrategy aid = do
             -- TODO: forget old target (e.g., tile), to start shooting,
             -- unless can't shoot, etc.
           , flee aid panic2FleeL  -- panic mode; chasing would be pointless
-          , condMeleeBad && condThreatNearby
-            && not condFastThreatAdj && not (null panic2FleeL)
-            && null fleeL
+          , condMeleeBad && condThreatNearby && not condFastThreatAdj
             && (condNotCalmEnough
                 || condThreatAtHand
                 || condNoUsableWeapon) )
         , ( [AbMove]
-          , flee aid panic3FleeL  -- ultimate panic mode
-          , condMeleeBad && condThreatNearby
-            && not condFastThreatAdj && not (null panic3FleeL)
-            && null panic2FleeL
+          , flee aid panic3FleeL  -- ultimate panic mode, runs into foes
+          , condMeleeBad && condThreatNearby && not condFastThreatAdj
             && (condNotCalmEnough
                 || condThreatAtHand
                 || condNoUsableWeapon) )
         , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> unEquipItems aid  -- late, because better to throw than unequip
-          , not condThreatAtHand )
+          , True )
         , ( [AbMove]
           , chase aid False
-          , not (condMeleeBad && condThreatAtHand)  -- don't step into a trap
-            || condNotCalmEnough )  -- unless shot or otherwise stressed
+          , True )
         ]
       fallback =
         [ ( [AbWait], (toAny :: ToAny AbWait)
@@ -214,7 +213,7 @@ actionStrategy aid = do
       -- TODO: don't msum not to evaluate until needed
       abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
       checkAction :: ([Ability], m a, Bool) -> Bool
-      checkAction (abts, _, cond) = cond && all abInSkill abts
+      checkAction (abts, _, cond) = all abInSkill abts && cond
       sumS abAction = do
         let as = filter checkAction abAction
         strats <- mapM (\(_, m, _) -> m) as
