@@ -831,10 +831,10 @@ dropCStoreItem store aid b hit iid kit@(k, _) = do
 effectPolyItem :: (MonadAtomic m, MonadServer m)
                => m () -> CStore -> ActorId -> m Bool
 effectPolyItem execSfx cstore target = do
+  tb <- getsState $ getActorBody target
   allAssocs <- fullAssocsServer target [cstore]
   case allAssocs of
     [] -> do
-      tb <- getsState $ getActorBody target
       execSfxAtomic $ SfxMsgFid (bfid tb) $
         "The purpose of repurpose cannot be availed without an item"
         <+> ppCStoreIn cstore <> "."
@@ -842,21 +842,25 @@ effectPolyItem execSfx cstore target = do
       return True
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
       Just ItemDisco{itemKind} -> do
+        discoEffect <- getsServer sdiscoEffect
         let maxCount = Dice.maxDice $ IK.icount itemKind
-        if itemK >= maxCount
-        then do
-          let c = CActor target cstore
-              kit = (maxCount, take maxCount itemTimer)
-          execUpdAtomic $ UpdDestroyItem iid itemBase kit c
-          execSfx
-          effectCreateItem target cstore "useful" IK.TimerNone
-        else do
-          tb <- getsState $ getActorBody target
+            aspects = jaspects $ discoEffect EM.! iid
+        if itemK < maxCount then do
           execSfxAtomic $ SfxMsgFid (bfid tb) $
             "The purpose of repurpose is served by" <+> tshow maxCount
             <+> "pieces of this item, not by" <+> tshow itemK <> "."
           -- TODO: identify the scroll, but don't use up.
           return True
+        else if IK.Unique `elem` aspects then do
+          execSfxAtomic $ SfxMsgFid (bfid tb) $
+            "Unique items can't be repurposed."
+          return True
+        else do
+          let c = CActor target cstore
+              kit = (maxCount, take maxCount itemTimer)
+          execUpdAtomic $ UpdDestroyItem iid itemBase kit c
+          execSfx
+          effectCreateItem target cstore "useful" IK.TimerNone
       _ -> assert `failure` (cstore, target, iid, itemFull)
 
 -- ** Identify
