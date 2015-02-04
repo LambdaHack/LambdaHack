@@ -297,10 +297,14 @@ transition psuit prompt promptGeneric cursor permitMulitple
       bagLetterSlots = EM.filter (`EM.member` bag) lSlots
       bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
       suitableLetterSlots = EM.filter (`EM.member` bagSuit) lSlots
+      suitableNumberSlots = IM.filter (`EM.member` bagSuit) numberSlots
       (autoDun, autoLvl) = autoDungeonLevel fact
       enterSlots = if itemDialogState == IAll
                    then bagLetterSlots
                    else suitableLetterSlots
+      enterNumberSlots = if itemDialogState == IAll
+                         then bagNumberSlots
+                         else suitableNumberSlots
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
         [ (K.toKM K.NoModifier $ K.Char '?', DefItemKey
@@ -327,16 +331,22 @@ transition psuit prompt promptGeneric cursor permitMulitple
            })
         , (K.toKM K.NoModifier $ K.Char '*', DefItemKey
            { defLabel = "*"
-           , defCond = permitMulitple && not (EM.null enterSlots)
-           , defAction = \_ -> return $ Right
-                               $ getMultResult $ EM.elems enterSlots
+           , defCond = permitMulitple
+                       && not (EM.null enterSlots && IM.null enterNumberSlots)
+           , defAction = \_ ->
+               let eslots = EM.elems enterSlots ++ IM.elems enterNumberSlots
+               in return $ Right $ getMultResult eslots
            })
         , (K.toKM K.NoModifier K.Return, DefItemKey
-           { defLabel = case EM.maxViewWithKey enterSlots of
-               Nothing -> assert `failure` "no suitable items"
-                                 `twith` enterSlots
-               Just ((l, _), _) -> "RET(" <> T.singleton (slotChar l) <> ")"
-           , defCond = not (EM.null enterSlots)
+           { defLabel =
+               let c = case ( EM.maxViewWithKey enterSlots
+                            , IM.maxViewWithKey enterNumberSlots ) of
+                     (Nothing, Nothing) -> assert `failure` "no suitable items"
+                                                  `twith` enterSlots
+                     (Just ((l, _), _), _) -> slotChar l
+                     (Nothing, Just ((_n, _), _)) -> '0'
+               in "RET(" <> T.singleton c <> ")"
+           , defCond = not (EM.null enterSlots && IM.null enterNumberSlots)
            , defAction = \_ -> case EM.maxView enterSlots of
                Nothing -> assert `failure` "no suitable items"
                                  `twith` enterSlots
@@ -345,10 +355,10 @@ transition psuit prompt promptGeneric cursor permitMulitple
         , (K.toKM K.NoModifier $ K.Char '0', DefItemKey
            -- TODO: accept any number and pick the item
            { defLabel = "0"
-           , defCond = not $ IM.null bagNumberSlots
-           , defAction = \_ -> case IM.minView bagNumberSlots of
+           , defCond = not $ IM.null labelNumberSlots
+           , defAction = \_ -> case IM.minView labelNumberSlots of
                Nothing -> assert `failure` "no numbered items"
-                                 `twith` bagNumberSlots
+                                 `twith` labelNumberSlots
                Just (iid, _) -> return $ Right $ getResult iid
            })
         , let km = M.findWithDefault (K.toKM K.NoModifier K.Tab)
@@ -437,18 +447,22 @@ transition psuit prompt promptGeneric cursor permitMulitple
               Just iid -> return $ Right $ getResult iid
             _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
-      (labelLetterSlots, bagFiltered, promptChosen) =
+      (labelLetterSlots, labelNumberSlots, bagFiltered, promptChosen) =
         case itemDialogState of
           ISuitable   -> (suitableLetterSlots,
+                          suitableNumberSlots,
                           bagSuit,
                           prompt body activeItems cCur <> ":")
           IAll        -> (bagLetterSlots,
+                          bagNumberSlots,
                           bag,
                           promptGeneric body activeItems cCur <> ":")
           INoSuitable -> (suitableLetterSlots,
+                          suitableNumberSlots,
                           EM.empty,
                           prompt body activeItems cCur <> ":")
           INoAll      -> (bagLetterSlots,
+                          bagNumberSlots,
                           EM.empty,
                           promptGeneric body activeItems cCur <> ":")
   io <- case cCur of
