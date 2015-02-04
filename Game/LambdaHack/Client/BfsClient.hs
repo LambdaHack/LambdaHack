@@ -253,11 +253,11 @@ closestTriggers onlyDir exploredToo aid = do
       f acc p t =
         if Tile.isWalkable cotile t && not (null $ Tile.causeEffects cotile t)
         then if exploredToo
-             then (1, p) : acc  -- direction irrelevant
+             then (0, p) : acc  -- direction irrelevant
              else case Tile.ascendTo cotile t of
                [] ->
-                 -- Escape (or guard) after exploring, for high score, etc.
-                 if allExplored then (1, p) : acc else acc
+                 -- Escape (or guard) only after exploring, for high score, etc.
+                 if exploredToo && allExplored then (9999, p) : acc else acc
                l ->
                  let g k = k > 0
                            && onlyDir /= Just False
@@ -268,7 +268,7 @@ closestTriggers onlyDir exploredToo aid = do
                            && unexploredD (-1) lid
                  in map (,p) (filter g l) ++ acc
         else acc
-  let triggersAll = PointArray.ifoldlA f [] $ ltile lvl
+      triggersAll = PointArray.ifoldlA f [] $ ltile lvl
       -- Don't target stairs under the actor. Most of the time they
       -- are blocked and stay so, so we seek other stairs, if any.
       -- If no other stairs in this direction, let's wait here,
@@ -286,8 +286,7 @@ closestTriggers onlyDir exploredToo aid = do
       bfs <- getCacheBfs aid
       -- Prefer stairs to easier levels.
       let mix (k, p) dist = ((abs (fromEnum lid + k), dist), p)
-          ds = mapMaybe (\(k, p) -> fmap (mix (k, p)) (accessBfs bfs p))
-                        triggers
+          ds = mapMaybe (\(k, p) -> mix (k, p) <$> accessBfs bfs p) triggers
       return $! map snd $ sortBy (comparing fst) ds
 
 unexploredDepth :: MonadClient m => m (Int -> LevelId -> Bool)
