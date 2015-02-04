@@ -625,10 +625,11 @@ scroll = ItemKind
   , ikit     = []
   }
 scroll1 = scroll
-  { irarity  = [(3, 10), (10, 10)]  -- mixed blessing, so available early
+  { ifreq    = [("treasure", 100)]
+  , irarity  = [(5, 10), (10, 10)]  -- mixed blessing, so available early
   , iaspects = [Unique]
   , ieffects = [ NoEffect "of Reckless Beacon"
-               , CallFriend (1 + d 2), Summon standardSummon (1 + d 2) ]
+               , CallFriend (d 2), Summon standardSummon (2 + d 2) ]
   }
 scroll2 = scroll
   { irarity  = []
