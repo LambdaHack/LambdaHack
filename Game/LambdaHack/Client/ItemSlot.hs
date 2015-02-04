@@ -61,7 +61,7 @@ slotRange ls =
                 | otherwise      = T.pack [slotChar c, '-', slotChar d]
 
 allSlots :: [SlotChar]
-allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z']
+allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z'] ++ ['1'..'9']
 
 -- | Assigns a slot to an item, for inclusion in the inventory or equipment
 -- of a hero. Tries to to use the requested slot, if any.
