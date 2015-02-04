@@ -200,7 +200,8 @@ actionStrategy aid = do
           , not condThreatAtHand )
         , ( [AbMove]
           , chase aid False
-          , not (condMeleeBad && condThreatAtHand) )  -- don't step into a trap
+          , not (condMeleeBad && condThreatAtHand)  -- don't step into a trap
+            || condNotCalmEnough )  -- unless shot or otherwise stressed
         ]
       fallback =
         [ ( [AbWait], (toAny :: ToAny AbWait)
