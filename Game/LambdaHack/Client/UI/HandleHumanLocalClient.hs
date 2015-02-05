@@ -50,6 +50,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
@@ -428,11 +429,10 @@ cursorStairHuman :: MonadClientUI m => Bool -> m Slideshow
 cursorStairHuman up = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  stairs <- closestTriggers (Just up) False leader
-  case stairs of
-    [] -> failMsg $ "no stairs"
-                     <+> if up then "up" else "down"
-    p : _ -> do
+  stairs <- closestTriggers (Just up) leader
+  case maxFreq stairs of
+    Nothing -> failMsg $ "no stairs" <+> if up then "up" else "down"
+    Just p -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
       doLook False

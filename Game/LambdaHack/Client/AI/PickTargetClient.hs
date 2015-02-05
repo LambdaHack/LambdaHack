@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.AI.PickTargetClient
 import Control.Applicative
 import Control.Arrow
 import Control.Exception.Assert.Sugar
+import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
@@ -22,6 +23,7 @@ import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -97,7 +99,8 @@ targetStrategy oldLeader aid = do
   canEscape <- factionCanEscape (bfid b)
   explored <- getsClient sexplored
   smellRadius <- sumOrganEqpClient IK.EqpSlotAddSmell aid
-  let canSmell = smellRadius > 0
+  let allExplored = ES.size explored == EM.size dungeon
+      canSmell = smellRadius > 0
       meleeNearby | canEscape = nearby `div` 2  -- not aggresive
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
@@ -179,26 +182,29 @@ targetStrategy oldLeader aid = do
                           [] -> do
                             ctriggers <-
                               if EM.findWithDefault 0 AbTrigger actorSk > 0
-                              then closestTriggers Nothing False aid
-                              else return []
-                            case ctriggers of
-                              [] -> do
-                                -- All stones turned, time to win or die.
-                                afoes <- closestFoes allFoes aid
-                                case afoes of
-                                  (_, (aid2, _)) : _ ->
-                                    setPath $ TEnemy aid2 False
-                                  [] -> do
-                                    getDistant <-
-                                      rndToAction $ oneOf
-                                      $ (fmap (: []) . furthestKnown)
-                                        : [ closestTriggers Nothing True
-                                          | EM.size dungeon > 1 ]
-                                    kpos <- getDistant aid
-                                    case kpos of
-                                      [] -> return reject
-                                      p : _ -> setPath $ TPoint (blid b) p
-                              p : _ -> setPath $ TPoint (blid b) p
+                                 && not allExplored
+                              then closestTriggers Nothing aid
+                              else return mzero
+                            if nullFreq ctriggers then do
+                              -- All stones turned, time to win or die.
+                              afoes <- closestFoes allFoes aid
+                              case afoes of
+                                (_, (aid2, _)) : _ ->
+                                  setPath $ TEnemy aid2 False
+                                [] -> do
+                                  getDistant <-
+                                    rndToAction $ oneOf
+                                    $ (fmap return . furthestKnown)
+                                      : [ closestTriggers Nothing
+                                        | EM.size dungeon > 1 ]
+                                  pFreq <- getDistant aid
+                                  if nullFreq pFreq then return reject
+                                  else do
+                                    p <- rndToAction $ frequency pFreq
+                                    setPath $ TPoint (blid b) p
+                            else do
+                              p <- rndToAction $ frequency ctriggers
+                              setPath $ TPoint (blid b) p
                           p : _ -> setPath $ TPoint (blid b) p
                       Just p -> setPath $ TPoint (blid b) p
                   (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
@@ -257,7 +263,6 @@ targetStrategy oldLeader aid = do
           then pickNewTarget
           else return $! returN "updateTgt ftactic" (oldTgt, Just updatedPath)
         TPoint lid pos -> do
-          let allExplored = ES.size explored == EM.size dungeon
           bag <- getsState $ getCBag $ CFloor lid pos
           if lid /= blid b  -- wrong level
              -- Below we check the target could not be picked again in

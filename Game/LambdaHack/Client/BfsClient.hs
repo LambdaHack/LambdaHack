@@ -23,6 +23,7 @@ import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -237,10 +238,8 @@ closestSuspect aid = do
 -- TODO: We assume linear dungeon in @unexploredD@,
 -- because otherwise we'd need to calculate shortest paths in a graph, etc.
 -- | Closest (wrt paths) triggerable open tiles.
--- The second argument can ever be true only if there's
--- no escape from the dungeon.
-closestTriggers :: MonadClient m => Maybe Bool -> Bool -> ActorId -> m [Point]
-closestTriggers onlyDir exploredToo aid = do
+closestTriggers :: MonadClient m => Maybe Bool -> ActorId -> m (Frequency Point)
+closestTriggers onlyDir aid = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   let lid = blid body
@@ -252,14 +251,17 @@ closestTriggers onlyDir exploredToo aid = do
       f :: [(Int, Point)] -> Point -> Kind.Id TileKind -> [(Int, Point)]
       f acc p t =
         if Tile.isWalkable cotile t && not (null $ Tile.causeEffects cotile t)
-        then if exploredToo
-             then (0, p) : acc  -- direction irrelevant
-             else case Tile.ascendTo cotile t of
-               [] ->
-                 -- Escape (or guard) only after exploring, for high score, etc.
-                 if exploredToo && allExplored then (9999, p) : acc else acc
-               l ->
-                 let g k = k > 0
+        then case Tile.ascendTo cotile t of
+          [] ->
+            -- Escape (or guard) only after exploring, for high score, etc.
+            if allExplored
+            then (9999999, p) : acc  -- all from that level congregate here
+            else acc
+          l ->
+            if allExplored
+            -- Direction irrelevant; wander randomly until stumbling upon exit.
+            then (0, p) : acc
+            else let g k = k > 0
                            && onlyDir /= Just False
                            && unexploredD 1 lid
                            ||
@@ -281,13 +283,15 @@ closestTriggers onlyDir exploredToo aid = do
                = []  -- avoid trivial loops (pushing, being pushed, etc.)
                | otherwise = triggersAll
   case triggers of
-    [] -> return []
+    [] -> return mzero
+    _ | allExplored ->  -- distance also irrelevant, to ensure random wandering
+      return $! toFreq "closestTriggers when allExplored" triggers
     _ -> do
       bfs <- getCacheBfs aid
-      -- Prefer stairs to easier levels.
-      let mix (k, p) dist = ((abs (fromEnum lid + k), dist), p)
+      -- Prefer stairs to easier levels (unless explored), especially deep down.
+      let mix (k, p) dist = ((20 * abs (fromEnum lid + k) + dist), p)
           ds = mapMaybe (\(k, p) -> mix (k, p) <$> accessBfs bfs p) triggers
-      return $! map snd $ sortBy (comparing fst) ds
+      return $! toFreq "closestTriggers" ds
 
 unexploredDepth :: MonadClient m => m (Int -> LevelId -> Bool)
 unexploredDepth = do

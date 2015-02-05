@@ -19,6 +19,7 @@ import Data.Binary
 import qualified Data.Char as Char
 import Data.Hashable (Hashable)
 import qualified Data.IntMap.Strict as IM
+import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple
@@ -179,20 +180,20 @@ infixl 5 |*|
 Dice dc1 dl1 ds1 |*| s2 = Dice dc1 dl1 (ds1 * s2)
 
 -- | Maximal value of dice. The scaled part taken assuming maximum level.
--- Assumes the frequencies are not null.
 maxDice :: Dice -> Int
-maxDice Dice{..} = (maxFreq diceConst + maxFreq diceLevel) * diceMult
+maxDice Dice{..} = (fromMaybe 0 (maxFreq diceConst)
+                    + fromMaybe 0 (maxFreq diceLevel))
+                   * diceMult
 
 -- | Minimal value of dice. The scaled part ignored.
--- Assumes the frequencies are not null.
 minDice :: Dice -> Int
-minDice Dice{..} = minFreq diceConst * diceMult
+minDice Dice{..} = fromMaybe 0 (minFreq diceConst) * diceMult
 
 -- | Mean value of dice. The level-dependent part is taken assuming
 -- the highest level, because that's where the game is the hardest.
 -- Assumes the frequencies are not null.
 meanDice :: Dice -> Int
-meanDice Dice{..} = diceMult * (meanFreq diceConst + meanFreq diceLevel)
+meanDice Dice{..} = (meanFreq diceConst + meanFreq diceLevel) * diceMult
 
 reduceDice :: Dice -> Maybe Int
 reduceDice de =

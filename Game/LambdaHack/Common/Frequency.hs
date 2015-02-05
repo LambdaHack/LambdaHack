@@ -110,13 +110,13 @@ nullFreq :: Frequency a -> Bool
 {-# INLINE nullFreq #-}
 nullFreq (Frequency fs _) = null fs
 
-maxFreq :: Ord a => Frequency a -> a
+maxFreq :: Ord a => Frequency a -> Maybe a
 {-# INLINE maxFreq #-}
-maxFreq = F.maximum
+maxFreq fr = if nullFreq fr then Nothing else Just $ F.maximum fr
 
-minFreq :: Ord a => Frequency a -> a
+minFreq :: Ord a => Frequency a -> Maybe a
 {-# INLINE minFreq #-}
-minFreq = F.minimum
+minFreq fr = if nullFreq fr then Nothing else Just $ F.minimum fr
 
 -- | Average value of an @Int@ distribution, rounded up to avoid truncating
 -- it in the other code higher up, which would equate 1d0 with 1d1.
