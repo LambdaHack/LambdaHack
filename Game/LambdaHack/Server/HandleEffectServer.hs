@@ -233,8 +233,8 @@ effectSem source target iid recharged effect = do
     IK.Teleport p -> effectTeleport execSfx p target
     IK.CreateItem store grp tim -> effectCreateItem target store grp tim
     IK.DropItem store grp hit -> effectDropItem execSfx store grp hit target
-    IK.PolyItem cstore -> effectPolyItem execSfx (bfid sb) cstore target
-    IK.Identify cstore -> effectIdentify iid (bfid sb) cstore target
+    IK.PolyItem -> effectPolyItem execSfx target
+    IK.Identify -> effectIdentify execSfx iid target
     IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target Nothing
     IK.PushActor tmod ->
@@ -828,16 +828,17 @@ dropCStoreItem store aid b hit iid kit@(k, _) = do
 
 -- ** PolyItem
 
+-- TODO: ask player for an item
 effectPolyItem :: (MonadAtomic m, MonadServer m)
-               => m () -> FactionId -> CStore -> ActorId -> m Bool
-effectPolyItem execSfx fid cstore target = do
+               => m () -> ActorId -> m Bool
+effectPolyItem execSfx target = do
   tb <- getsState $ getActorBody target
-  allAssocs <- fullAssocsServer target [cstore]
+  allAssocs <- fullAssocsServer target [CGround]
   case allAssocs of
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid tb) $
         "The purpose of repurpose cannot be availed without an item"
-        <+> ppCStoreIn cstore <> "."
+        <+> ppCStoreIn CGround <> "."
       -- TODO: identify the scroll, but don't use up.
       return True
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
@@ -857,22 +858,26 @@ effectPolyItem execSfx fid cstore target = do
             "Unique items can't be repurposed."
           return True
         else do
-          identifyIid iid fid cstore target itemKindId
-          let c = CActor target cstore
+          identifyIid execSfx iid target itemKindId
+          let c = CActor target CGround
               kit = (maxCount, take maxCount itemTimer)
           execUpdAtomic $ UpdDestroyItem iid itemBase kit c
           execSfx
-          effectCreateItem target cstore "useful" IK.TimerNone
-      _ -> assert `failure` (cstore, target, iid, itemFull)
+          effectCreateItem target CGround "useful" IK.TimerNone
+      _ -> assert `failure` (target, iid, itemFull)
 
 -- ** Identify
 
 -- TODO: ask player for an item, because server doesn't know which
 -- is already identified, it only knows which cannot ever be.
+-- Perhaps refill Calm only when id successfull and scroll consumed,
+-- id the scroll anyway. Explain the Calm gain: "your most pressing
+-- existential concerns are answered scientifitically".
 effectIdentify :: (MonadAtomic m, MonadServer m)
-               => ItemId -> FactionId -> CStore -> ActorId -> m Bool
-effectIdentify iidId fid storeInitial target = do
+               => m () -> ItemId -> ActorId -> m Bool
+effectIdentify execSfx iidId target = do
   let tryFull store as = case as of
+        -- TODO: identify the scroll, but don't use up.
         [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
         (iid, itemFull@ItemFull{itemDisco=Just ItemDisco{..}}) : rest -> do
@@ -885,7 +890,7 @@ effectIdentify iidId fid storeInitial target = do
           if ided && statsObvious
             then tryFull store rest
             else do
-              identifyIid iid fid store target itemKindId
+              identifyIid execSfx iid target itemKindId
               return True
         _ -> assert `failure` (store, as)
       tryStore stores = case stores of
@@ -894,15 +899,13 @@ effectIdentify iidId fid storeInitial target = do
           allAssocs <- fullAssocsServer target [store]
           go <- tryFull store allAssocs
           if go then return True else tryStore rest
-      storesSorted = storeInitial : delete storeInitial [CGround, CInv, CEqp]
-  tryStore storesSorted
+  tryStore [CGround]
 
 identifyIid :: (MonadAtomic m, MonadServer m)
-            => ItemId -> FactionId -> CStore -> ActorId -> Kind.Id ItemKind
+            => m () -> ItemId -> ActorId -> Kind.Id ItemKind
             -> m ()
-identifyIid iid fid store target itemKindId = do
-  let effect = IK.Identify store  -- the real store, not initial
-  execSfxAtomic $ SfxEffect fid target effect  -- a cheat
+identifyIid execSfx iid target itemKindId = do
+  execSfx
   tb <- getsState $ getActorBody target
   seed <- getsServer $ (EM.! iid) . sitemSeedD
   execUpdAtomic $

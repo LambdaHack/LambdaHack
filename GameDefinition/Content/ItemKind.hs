@@ -641,7 +641,7 @@ scroll3 = scroll
   }
 scroll4 = scroll
   { ieffects = [OneOf [ Teleport $ d 3 * 3, RefillCalm 5, RefillCalm (-5)
-                      , InsertMove 3, Paralyze 5, Identify CGround ]]
+                      , InsertMove 3, Paralyze 5, Identify ]]
   }
 scroll5 = scroll
   { irarity  = [(10, 15)]
@@ -650,7 +650,7 @@ scroll5 = scroll
                        , CallFriend 1, Ascend (-1), Ascend 1
                        , RefillCalm 5, RefillCalm (-60)
                        , CreateItem CGround "useful" TimerNone
-                       , PolyItem CGround ] ]
+                       , PolyItem ] ]
   }
 scroll6 = scroll
   { ieffects = [Teleport 5]
@@ -665,12 +665,12 @@ scroll8 = scroll
 scroll9 = scroll
   { irarity  = [(1, 15)]
   , ieffects = [ NoEffect "of scientific explanation"
-               , Identify CGround, OverfillCalm 3 ]  -- TODO: ask player: AskPlayer cstore eff?
+               , Identify, OverfillCalm 3 ]
   }
 scroll10 = scroll
   { irarity  = [(10, 10)]
   , ieffects = [ NoEffect "transfiguration"
-               , PolyItem CGround, Explode "firecracker 7" ]
+               , PolyItem, Explode "firecracker 7" ]
   }
 scroll11 = scroll
   { ifreq    = [("treasure", 100)]

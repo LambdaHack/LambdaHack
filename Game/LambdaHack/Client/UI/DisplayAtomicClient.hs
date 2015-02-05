@@ -716,28 +716,28 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.DropItem COrgan _ True -> return ()
         IK.DropItem _ _ False -> actorVerbMU aid b "be stripped"  -- TODO
         IK.DropItem _ _ True -> actorVerbMU aid b "be violently stripped"
-        IK.PolyItem cstore -> do
+        IK.PolyItem -> do
           localTime <- getsState $ getLocalTime $ blid b
-          allAssocs <- fullAssocsClient aid [cstore]
+          allAssocs <- fullAssocsClient aid [CGround]
           case allAssocs of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
               subject <- partActorLeader aid b
               let itemSecret = itemNoDisco (itemBase, itemK)
-                  (_, secretName, secretAEText) = partItem cstore (blid b) localTime itemSecret
+                  (_, secretName, secretAEText) = partItem CGround (blid b) localTime itemSecret
                   verb = "repurpose"
-                  store = MU.Text $ ppCStoreIn cstore
+                  store = MU.Text $ ppCStoreIn CGround
               msgAdd $ makeSentence
                 [ MU.SubjectVerbSg subject verb
                 , "the", secretName, secretAEText, store ]
-        IK.Identify cstore -> do  -- here cstore is the real location
-          allAssocs <- fullAssocsClient aid [cstore]
+        IK.Identify -> do
+          allAssocs <- fullAssocsClient aid [CGround]
           case allAssocs of
             [] -> return ()  -- invisible items?
             (_, ItemFull{..}) : _ -> do
               subject <- partActorLeader aid b
               let verb = "inspect"
-                  store = MU.Text $ ppCStoreIn cstore
+                  store = MU.Text $ ppCStoreIn CGround
               msgAdd $ makeSentence
                 [ MU.SubjectVerbSg subject verb
                 , "an item", store ]

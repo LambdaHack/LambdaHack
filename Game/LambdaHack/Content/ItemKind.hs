@@ -76,8 +76,8 @@ data Effect =
                           --   the store with the given random timer
   | DropItem !CStore !(GroupName ItemKind) !Bool
                           -- ^ @DropItem CGround x True@ means stomp on items
-  | PolyItem !CStore
-  | Identify !CStore
+  | PolyItem
+  | Identify
   | SendFlying !ThrowMod
   | PushActor !ThrowMod
   | PullActor !ThrowMod

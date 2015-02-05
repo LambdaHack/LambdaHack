@@ -80,8 +80,8 @@ effectToBenefit cops b activeItems fact eff =
       in - total  -- sum over all matching grp; simplification: rarities ignored
     IK.DropItem _ _ False -> -15
     IK.DropItem _ _ True -> -30
-    IK.PolyItem _ -> 0  -- AI would loop
-    IK.Identify _ -> 1  -- not higher, or AI would loop
+    IK.PolyItem -> 0  -- AI can't estimate item desirability vs average
+    IK.Identify -> 0  -- AI doesn't know how to use
     IK.SendFlying _ -> -10  -- but useful on self sometimes, too
     IK.PushActor _ -> -10  -- but useful on self sometimes, too
     IK.PullActor _ -> -10

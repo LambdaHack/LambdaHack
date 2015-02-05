@@ -11,7 +11,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
@@ -100,8 +99,8 @@ effectToSuff effect =
       let grpText = tshow grp
           hitText = if hit then "smash" else "drop"
       in "of" <+> hitText <+> grpText  -- TMI: <+> ppCStore store
-    PolyItem store -> "of repurpose" <+> ppCStoreIn store
-    Identify store -> "of identify starting" <+> ppCStoreIn store
+    PolyItem -> "of repurpose on the ground"
+    Identify -> "of identify on the ground"
     SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
     PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
     PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod
