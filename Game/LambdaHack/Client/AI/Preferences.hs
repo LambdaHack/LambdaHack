@@ -30,7 +30,7 @@ effectToBenefit cops b activeItems fact eff =
     IK.Hurt d -> -(min 100 $ 10 * Dice.meanDice d)
     IK.Burn d -> -(min 150 $ 15 * Dice.meanDice d)
                    -- often splash damage, etc.
-    IK.Explode _ -> -10
+    IK.Explode _ -> 0  -- depends on explosion
     IK.RefillHP p ->
       let hpMax = sumSlotNoFilter IK.EqpSlotAddMaxHP activeItems
       in if p > 0
@@ -88,7 +88,7 @@ effectToBenefit cops b activeItems fact eff =
     IK.DropBestWeapon -> -50
     IK.ActivateInv ' ' -> -100
     IK.ActivateInv _ -> -50
-    IK.ApplyPerfume -> -10
+    IK.ApplyPerfume -> 0  -- depends on the smell sense of friends and foes
     IK.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
     IK.OnSmash _ -> -10
     IK.Recharging e ->

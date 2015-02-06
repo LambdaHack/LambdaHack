@@ -13,9 +13,9 @@ import Game.LambdaHack.Content.ItemKind
 
 organs :: [ItemKind]
 organs =
-  [fist, foot, claw, smallClaw, snout, smallJaw, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, fissure, insectMortality, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision6, vision8, vision10, vision12, vision14, vision16, nostril, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP]
+  [fist, foot, claw, smallClaw, snout, smallJaw, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, fissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision6, vision8, vision10, vision12, vision14, vision16, nostril, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP]
 
-fist,    foot, claw, smallClaw, snout, smallJaw, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, fissure, insectMortality, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision6, vision8, vision10, vision12, vision14, vision16, nostril, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP :: ItemKind
+fist,    foot, claw, smallClaw, snout, smallJaw, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, fissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision6, vision8, vision10, vision12, vision14, vision16, nostril, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP :: ItemKind
 
 -- Weapons
 
@@ -185,15 +185,6 @@ fissure = fist
   , ieffects = [Burn 1]
   , idesc    = ""
   }
-insectMortality = fist
-  { iname    = "insect mortality"
-  , ifreq    = [("insect mortality", 100)]
-  , icount   = 1
-  , iverbHit = "age"
-  , iaspects = [Periodic, Timeout $ 40 + d 10]
-  , ieffects = [Recharging (RefillHP (-1))]
-  , idesc    = ""
-  }
 beeSting = fist
   { iname    = "bee sting"
   , ifreq    = [("bee sting", 100)]
@@ -328,6 +319,15 @@ nostril = armoredSkin
 
 -- * Assorted
 
+insectMortality = fist
+  { iname    = "insect mortality"
+  , ifreq    = [("insect mortality", 100)]
+  , icount   = 1
+  , iverbHit = "age"
+  , iaspects = [Periodic, Timeout $ 40 + d 10]
+  , ieffects = [Recharging (RefillHP (-1))]
+  , idesc    = ""
+  }
 sapientBrain = armoredSkin
   { iname    = "sapient brain"
   , ifreq    = [("sapient brain", 100)]
@@ -363,12 +363,12 @@ speedGland4 = speedGland 4
 speedGland6 = speedGland 6
 speedGland8 = speedGland 8
 speedGland10 = speedGland 10
-scentGland = armoredSkin  -- TODO: cone attack, 3m away
+scentGland = armoredSkin  -- TODO: cone attack, 3m away, project? apply?
   { iname    = "scent gland"
   , ifreq    = [("scent gland", 100)]
   , icount   = 2
   , iverbHit = "spray at"
-  , iaspects = [Timeout $ d 3 |*| 5 ]
+  , iaspects = [Periodic, Timeout $ d 3 |*| 5 ]
   , ieffects = [ Recharging (Explode "distressing odor")
                , Recharging ApplyPerfume ]
   , idesc    = ""
