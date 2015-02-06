@@ -1,6 +1,6 @@
 -- | Descripitons of items.
 module Game.LambdaHack.Common.ItemDescription
-  ( partItemN, partItem, partItemWs, partItemAW, partItemWownW
+  ( partItemN, partItem, partItemWs, partItemAW, partItemMediumAW, partItemWownW
   , itemDesc, textAllAE, viewItem
   ) where
 
@@ -24,7 +24,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 -- TODO: remove _lid if still unused after some time
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
-partItemN :: Bool -> Int -> CStore -> LevelId -> Time -> ItemFull
+partItemN :: Int -> Int -> CStore -> LevelId -> Time -> ItemFull
           -> (Bool, MU.Part, MU.Part)
 partItemN fullInfo n c _lid localTime itemFull =
   let genericName = jname $ itemBase itemFull
@@ -62,11 +62,11 @@ partItemN fullInfo n c _lid localTime itemFull =
 
 -- | The part of speech describing the item.
 partItem :: CStore -> LevelId -> Time -> ItemFull -> (Bool, MU.Part, MU.Part)
-partItem = partItemN False 4
+partItem = partItemN 4 4
 
-textAllAE :: Bool -> CStore -> ItemFull -> [Text]
+textAllAE :: Int -> CStore -> ItemFull -> [Text]
 textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
-  let features | fullInfo = map featureToSuff $ sort $ jfeature itemBase
+  let features | fullInfo >= 9 = map featureToSuff $ sort $ jfeature itemBase
                | otherwise = []
   in case itemDisco of
     Nothing -> features
@@ -84,7 +84,7 @@ textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
           hurtEffect (IK.Hurt _) = True
           hurtEffect _ = False
           notDetail :: IK.Effect -> Bool
-          notDetail IK.Explode{} = fullInfo
+          notDetail IK.Explode{} = fullInfo >= 6
           notDetail _ = True
           active = cstore `elem` [CEqp, COrgan]
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
@@ -132,8 +132,9 @@ textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
                 noEff = case mnoEffect of
                   Just (IK.NoEffect t) -> [t]
                   _ -> []
-            in noEff ++ if fullInfo || null noEff
-                        then [periodicOrTimeout] ++ aes ++ [onSmash | fullInfo]
+            in noEff ++ if fullInfo >= 5 || fullInfo >= 2 && null noEff
+                        then [periodicOrTimeout] ++ aes
+                             ++ [onSmash | fullInfo >= 7]
                         else []
           aets = case itemAE of
             Just ItemAspectEffect{jaspects, jeffects} ->
@@ -161,6 +162,13 @@ partItemAW c lid localTime itemFull =
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
 
+partItemMediumAW :: CStore -> LevelId -> Time -> ItemFull -> MU.Part
+partItemMediumAW c lid localTime itemFull =
+  let (unique, name, stats) = partItemN 5 100 c lid localTime itemFull
+  in if unique
+     then MU.Phrase ["the", name, stats]
+     else MU.AW $ MU.Phrase [name, stats]
+
 partItemWownW :: MU.Part -> CStore -> LevelId -> Time -> ItemFull -> MU.Part
 partItemWownW partA c lid localTime itemFull =
   let (_, name, stats) = partItem c lid localTime itemFull
@@ -168,7 +176,7 @@ partItemWownW partA c lid localTime itemFull =
 
 itemDesc :: CStore -> LevelId -> Time -> ItemFull -> Overlay
 itemDesc c lid localTime itemFull =
-  let (_, name, stats) = partItemN True 99 c lid localTime itemFull
+  let (_, name, stats) = partItemN 10 100 c lid localTime itemFull
       nstats = makePhrase [name, stats]
       desc = case itemDisco itemFull of
         Nothing -> "This item is as unremarkable as can be."

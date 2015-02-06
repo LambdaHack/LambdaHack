@@ -522,7 +522,7 @@ discover lid _p oldcli iid = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   let itemFull = itemToF iid (1, [])
-      knownName = partItemAW CGround lid localTime itemFull
+      knownName = partItemMediumAW CGround lid localTime itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
@@ -537,7 +537,7 @@ discover lid _p oldcli iid = do
                    iid (itemBase itemFull) (1, [])
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
-  when (textAllAE False CGround itemFull /= textAllAE False CGround oldItemFull) $
+  when (textAllAE 7 CGround itemFull /= textAllAE 7 CGround oldItemFull) $
     msgAdd msg
 
 -- * RespSfxAtomicUI

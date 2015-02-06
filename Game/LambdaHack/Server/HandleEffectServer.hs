@@ -885,8 +885,8 @@ effectIdentify execSfx iidId target = do
           -- also to prevent sending any other UpdDiscover.
           let ided = IK.Identified `elem` IK.ifeature itemKind
               itemSecret = itemNoAE itemFull
-              statsObvious = textAllAE False store itemFull
-                             == textAllAE False store itemSecret
+              statsObvious = textAllAE 7 store itemFull
+                             == textAllAE 7 store itemSecret
           if ided && statsObvious
             then tryFull store rest
             else do
