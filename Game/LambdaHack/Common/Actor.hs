@@ -103,8 +103,8 @@ monsterGenChance :: AbsDepth -> AbsDepth -> Int -> Int -> Rnd Bool
 monsterGenChance _ _ _ 0 = return False
 monsterGenChance (AbsDepth n) (AbsDepth depth) numMonsters actorCoeff =
   assert (depth > 0 && n > 0)
-  -- Mimics @castDice@. On level 1, First 2 monsters appear fast.
-  $ let scaledDepth = 5 * n `div` depth
+  -- Mimics @castDice@. On level 2, first 2 monsters appear fast.
+  $ let scaledDepth = n `div` 2
     in chance $ 1%(fromIntegral
                      ((10 * actorCoeff * (numMonsters - scaledDepth))
                       `max` actorCoeff))
