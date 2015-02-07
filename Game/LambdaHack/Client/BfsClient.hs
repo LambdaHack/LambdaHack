@@ -23,6 +23,7 @@ import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -112,6 +113,12 @@ condBFS aid = do
   -- and leader change is very rare.
   actorSk <- maxActorSkillsClient aid
   lvl <- getLevel $ blid b
+  smarkSuspect <- getsClient smarkSuspect
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let underAI = isAIFact fact
+      enterSuspect = smarkSuspect || underAI
+      isPassable | enterSuspect = Tile.isPassable
+                 | otherwise = Tile.isPassableNoSuspect
   -- We treat doors as an open tile and don't add an extra step for opening
   -- the doors, because other actors open and use them, too,
   -- so it's amortized. We treat unknown tiles specially.
@@ -131,7 +138,7 @@ condBFS aid = do
            then if not (Tile.isSuspect cotile st) && allOK
                 then MoveToUnknown
                 else MoveBlocked
-           else if Tile.isPassable cotile tt
+           else if isPassable cotile tt
                    && not (Tile.isChangeable cotile st)  -- takes time to change
                    && allOK
                 then MoveToOpen

@@ -16,7 +16,8 @@
 module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, hasFeature
-  , isClear, isLit, isWalkable, isPassableKind, isPassable, isDoor, isSuspect
+  , isClear, isLit, isWalkable
+  , isPassable, isPassableNoSuspect, isDoor, isSuspect
   , isExplorable, lookSimilar, speedup
   , openTo, closeTo, embedItems, causeEffects, revealAs, hideAs
   , isOpenable, isClosable, isChangeable, isEscape, isStair, ascendTo
@@ -47,13 +48,14 @@ type SmellTime = Time
 type instance Kind.Speedup TileKind = TileSpeedup
 
 data TileSpeedup = TileSpeedup
-  { isClearTab      :: !Tab
-  , isLitTab        :: !Tab
-  , isWalkableTab   :: !Tab
-  , isPassableTab   :: !Tab
-  , isDoorTab       :: !Tab
-  , isSuspectTab    :: !Tab
-  , isChangeableTab :: !Tab
+  { isClearTab             :: !Tab
+  , isLitTab               :: !Tab
+  , isWalkableTab          :: !Tab
+  , isPassableTab          :: !Tab
+  , isPassableNoSuspectTab :: !Tab
+  , isDoorTab              :: !Tab
+  , isSuspectTab           :: !Tab
+  , isChangeableTab        :: !Tab
   }
 
 newtype Tab = Tab (A.UArray (Kind.Id TileKind) Bool)
@@ -109,6 +111,17 @@ isPassable Kind.Ops{ospeedup = Just TileSpeedup{isPassableTab}} =
   accessTab isPassableTab
 isPassable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
+-- | Whether actors can walk into a tile, perhaps opening a door first,
+-- perhaps a hidden door.
+-- Essential for efficiency of pathfinding, hence tabulated.
+isPassableNoSuspect :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+{-# INLINE isPassableNoSuspect #-}
+isPassableNoSuspect Kind.Ops{ospeedup =
+                               Just TileSpeedup{isPassableNoSuspectTab}} =
+  accessTab isPassableNoSuspectTab
+isPassableNoSuspect cotile =
+  assert `failure` "no speedup" `twith` Kind.obounds cotile
+
 -- | Whether a tile is a door, open or closed.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isDoor :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
@@ -162,7 +175,8 @@ speedup allClear cotile =
                                $ kindHasFeature TK.Clear
       isLitTab = createTab cotile $ not . kindHasFeature TK.Dark
       isWalkableTab = createTab cotile $ kindHasFeature TK.Walkable
-      isPassableTab = createTab cotile isPassableKind
+      isPassableTab = createTab cotile $ isPassableKind True
+      isPassableNoSuspectTab = createTab cotile $ isPassableKind False
       isDoorTab = createTab cotile $ \tk ->
         let getTo TK.OpenTo{} = True
             getTo TK.CloseTo{} = True
@@ -175,12 +189,12 @@ speedup allClear cotile =
         in any getTo $ TK.tfeature tk
   in TileSpeedup {..}
 
-isPassableKind :: TileKind -> Bool
-isPassableKind tk =
+isPassableKind :: Bool -> TileKind -> Bool
+isPassableKind passSuspect tk =
   let getTo TK.Walkable = True
       getTo TK.OpenTo{} = True
       getTo TK.ChangeTo{} = True  -- can change to passable and may have loot
-      getTo TK.Suspect = True
+      getTo TK.Suspect | passSuspect = True
       getTo _ = False
   in any getTo $ TK.tfeature tk
 
