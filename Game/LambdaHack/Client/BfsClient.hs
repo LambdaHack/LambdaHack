@@ -260,7 +260,7 @@ closestTriggers onlyDir aid = do
           l ->
             if allExplored
             -- Direction irrelevant; wander randomly until stumbling upon exit.
-            then (0, p) : acc
+            then (1, p) : acc
             else let g k = k > 0
                            && onlyDir /= Just False
                            && unexploredD 1 lid
@@ -275,13 +275,7 @@ closestTriggers onlyDir aid = do
       -- are blocked and stay so, so we seek other stairs, if any.
       -- If no other stairs in this direction, let's wait here,
       -- unless the actor has just returned via the very stairs.
-      triggers | length triggersAll > 1 =
-                 filter ((/= bpos body) . snd) triggersAll
-               | map snd triggersAll == [bpos body]
-                 && boldpos body == bpos body  -- probably used stairs last turn
-                 -- && boldlid body == lid2  -- in the opposite direction
-               = []  -- avoid trivial loops (pushing, being pushed, etc.)
-               | otherwise = triggersAll
+      triggers = filter ((/= bpos body) . snd) triggersAll
   case triggers of
     [] -> return mzero
     _ | allExplored ->  -- distance also irrelevant, to ensure random wandering

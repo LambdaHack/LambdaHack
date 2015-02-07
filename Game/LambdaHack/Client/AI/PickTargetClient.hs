@@ -192,13 +192,10 @@ targetStrategy oldLeader aid = do
                                 (_, (aid2, _)) : _ ->
                                   setPath $ TEnemy aid2 False
                                 [] -> do
-                                  getDistant <-
-                                    rndToAction $ oneOf
-                                    $ (fmap return . furthestKnown)
-                                      : [ closestTriggers Nothing
-                                        | EM.size dungeon > 1 ]
-                                  pFreq <- getDistant aid
-                                  if nullFreq pFreq then return reject
+                                  pFreq <- closestTriggers Nothing aid
+                                  if nullFreq pFreq then do
+                                    furthest <- furthestKnown aid
+                                    setPath $ TPoint (blid b) furthest
                                   else do
                                     p <- rndToAction $ frequency pFreq
                                     setPath $ TPoint (blid b) p
