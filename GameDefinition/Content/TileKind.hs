@@ -207,7 +207,7 @@ stairsDownLit = TileKind
   }
 escapeUpLit = TileKind
   { tsymbol  = '<'
-  , tname    = "exit trapdoor up"
+  , tname    = "exit hatch up"
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
