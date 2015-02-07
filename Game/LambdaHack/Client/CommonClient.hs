@@ -10,7 +10,6 @@ module Game.LambdaHack.Client.CommonClient
 
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.IntMap.Strict as IM
 import Data.Maybe
 import Data.Tuple
 import qualified NLP.Miniutter.English as MU
@@ -195,37 +194,28 @@ maxActorSkillsClient aid = do
 
 updateItemSlot :: MonadClient m => CStore -> Maybe ActorId -> ItemId -> m ()
 updateItemSlot c maid iid = do
-  slots@(letterSlots, numberSlots, organSlots) <- getsClient sslots
+  slots@(itemSlots, organSlots) <- getsClient sslots
   let isOrgan = case c of
         COrgan -> True
         _ -> False
-      lSlots = if isOrgan then organSlots else letterSlots
-  case ( lookup iid $ map swap $ EM.assocs lSlots
-       , lookup iid $ map swap $ IM.assocs numberSlots ) of
-    (Nothing, Nothing) -> do
+      lSlots = if isOrgan then organSlots else itemSlots
+  case lookup iid $ map swap $ EM.assocs lSlots of
+    Nothing -> do
       side <- getsClient sside
       item <- getsState $ getItemBody iid
       lastSlot <- getsClient slastSlot
       mb <- maybe (return Nothing) (fmap Just . getsState . getActorBody) maid
-      el <- getsState $ assignSlot c item side mb slots lastSlot
-      case el of
-        Left l ->
-          if isOrgan then
-            modifyClient $ \cli ->
-              cli { sslots = ( letterSlots
-                             , numberSlots
-                             , EM.insert l iid organSlots ) }
-          else
-            modifyClient $ \cli ->
-              cli { sslots = ( EM.insert l iid letterSlots
-                             , numberSlots
-                             , organSlots )
-                  , slastSlot = max l (slastSlot cli) }
-        Right l ->
-          modifyClient $ \cli ->
-            cli { sslots = ( letterSlots
-                           , IM.insert l iid numberSlots
-                           , organSlots) }
+      l <- getsState $ assignSlot c item side mb slots lastSlot
+      let updateLastSlot ls = if slotPrefix l == 0 then max l ls else ls
+      if isOrgan then
+        modifyClient $ \cli ->
+          cli { sslots = ( itemSlots
+                         , EM.insert l iid organSlots ) }
+      else
+        modifyClient $ \cli ->
+          cli { sslots = ( EM.insert l iid itemSlots
+                         , organSlots )
+              , slastSlot = updateLastSlot $ slastSlot cli }
     _ -> return ()  -- slot already assigned; a letter or a number
 
 fullAssocsClient :: MonadClient m

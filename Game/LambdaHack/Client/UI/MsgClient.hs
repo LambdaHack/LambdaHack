@@ -6,11 +6,9 @@ module Game.LambdaHack.Client.UI.MsgClient
   ) where
 
 import Control.Applicative
-import Control.Arrow (first)
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.IntMap.Strict as IM
 import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
@@ -133,14 +131,13 @@ itemOverlay :: MonadClient m
 itemOverlay c lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
-  (letterSlots, numberSlots, organSlots) <- getsClient sslots
+  (itemSlots, organSlots) <- getsClient sslots
   let isOrgan = case c of
         COrgan -> True
         _ -> False
-      lSlots = if isOrgan then organSlots else letterSlots
-  let !_A = assert (all (`elem` EM.elems lSlots ++ IM.elems numberSlots)
-                        (EM.keys bag)
-                    `blame` (c, lid, bag, lSlots, numberSlots)) ()
+      lSlots = if isOrgan then organSlots else itemSlots
+  let !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
+                    `blame` (c, lid, bag, lSlots)) ()
   let pr (l, iid) =
         case EM.lookup iid bag of
           Nothing -> Nothing
@@ -152,6 +149,4 @@ itemOverlay c lid bag = do
             in Just $ makePhrase [ slotLabel l, "-"  -- MU.String [symbol]
                                  , partItemWs k c lid localTime itemFull ]
                            <> "  "
-  return $! toOverlay $ mapMaybe pr
-    $ map (first Left) (EM.assocs lSlots)
-      ++ map (first Right) (IM.assocs numberSlots)
+  return $! toOverlay $ mapMaybe pr $ EM.assocs lSlots

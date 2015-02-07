@@ -11,7 +11,6 @@ import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntMap.Strict as IM
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -149,8 +148,8 @@ defStateClient shistory sreport _sside sisAI =
     , smarkSmell = True
     , smarkSuspect = False
     , scurDifficulty = difficultyDefault
-    , sslots = (EM.empty, IM.empty, EM.empty)
-    , slastSlot = SlotChar 'a'
+    , sslots = (EM.empty, EM.empty)
+    , slastSlot = SlotChar 0 'a'
     , sescAI = EscAINothing
     , sdebugCli = defDebugModeCli
     }

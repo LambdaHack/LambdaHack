@@ -7,13 +7,14 @@ module Game.LambdaHack.Client.ItemSlot
   ) where
 
 import Data.Binary
+import Data.Bits (shiftL, shiftR)
 import Data.Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntMap.Strict as IM
 import Data.List
 import Data.Maybe
 import Data.Monoid
+import Data.Ord (comparing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -25,24 +26,33 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.State
 
-newtype SlotChar = SlotChar {slotChar :: Char}
-  deriving (Show, Eq, Binary)
+data SlotChar = SlotChar {slotPrefix :: Int, slotChar :: Char}
+  deriving (Show, Eq)
 
 instance Ord SlotChar where
-  compare x y = compare (fromEnum x) (fromEnum y)
+  compare = comparing fromEnum
+
+instance Binary SlotChar where
+  put = put . fromEnum
+  get = fmap toEnum get
 
 instance Enum SlotChar where
-  fromEnum (SlotChar x) = fromEnum x + if isUpper x then 1000 else 0
-  toEnum e = SlotChar $ toEnum $ e - (if e > 1000 then 1000 else 0)
+  fromEnum (SlotChar n c) =
+    ord c + (if isUpper c then 100 else 0) + shiftL n 8
+  toEnum e =
+    let n = shiftR e 8
+        c0 = e - shiftL n 8
+        c100 = c0 - if c0 > 150 then 100 else 0
+    in SlotChar n (chr c100)
 
 type ItemSlots = ( EM.EnumMap SlotChar ItemId
-                 , IM.IntMap ItemId
                  , EM.EnumMap SlotChar ItemId )
 
-slotRange :: [SlotChar] -> Text
-slotRange ls =
-  sectionBy (sort ls) Nothing
+slotRange :: Int -> [SlotChar] -> Text
+slotRange n ls =
+  sectionBy (sort $ filter hasPrefix ls) Nothing
  where
+  hasPrefix x = slotPrefix x == n
   succSlot c d = ord (slotChar d) - ord (slotChar c) == 1
   succ2Slot c d = ord (slotChar d) - ord (slotChar c) == 2
 
@@ -60,25 +70,26 @@ slotRange ls =
                                           , slotChar d ]
                 | otherwise      = T.pack [slotChar c, '-', slotChar d]
 
-allSlots :: [SlotChar]
-allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z'] ++ ['1'..'9']
+allSlots :: Int -> [SlotChar]
+allSlots n = map (SlotChar n) $ ['a'..'z'] ++ ['A'..'Z']
+
+allZeroSlots :: [SlotChar]
+allZeroSlots = allSlots 0
 
 -- | Assigns a slot to an item, for inclusion in the inventory or equipment
 -- of a hero. Tries to to use the requested slot, if any.
 assignSlot :: CStore -> Item -> FactionId -> Maybe Actor -> ItemSlots
            -> SlotChar -> State
-           -> Either SlotChar Int
-assignSlot c item fid mbody (letterSlots, numberSlots, organSlots)
-           lastSlot s =
+           -> SlotChar
+assignSlot c item fid mbody (itemSlots, organSlots) lastSlot s =
   if jsymbol item == '$'
-  then Left $ SlotChar '$'
-  else case free of
-    freeChar : _ -> Left freeChar
-    [] -> Right $ head freeNumbers
+  then SlotChar 0 '$'
+  else head free
  where
-  candidates = take (length allSlots)
-               $ drop (1 + fromJust (elemIndex lastSlot allSlots))
-               $ cycle allSlots
+  candidatesZero = take (length allZeroSlots)
+                   $ drop (1 + fromMaybe 0 (elemIndex lastSlot allZeroSlots))
+                   $ cycle allZeroSlots
+  candidates = candidatesZero ++ concat [allSlots n | n <- [1..]]
   onPerson = maybe (sharedAllOwnedFid True fid s)
                    (\body -> sharedAllOwned True body s)
                    mbody
@@ -88,12 +99,11 @@ assignSlot c item fid mbody (letterSlots, numberSlots, organSlots)
   inBags = ES.unions $ map EM.keysSet [onPerson, onGroud]
   lSlots = case c of
     COrgan -> organSlots
-    _ -> letterSlots
+    _ -> itemSlots
   f l = maybe True (`ES.notMember` inBags) $ EM.lookup l lSlots
   free = filter f candidates
-  g l = maybe True (`ES.notMember` inBags) $ IM.lookup l numberSlots
-  freeNumbers = filter g [0..]
 
-slotLabel :: Either SlotChar Int -> MU.Part
-slotLabel (Left c) = MU.String [slotChar c]
-slotLabel Right{} = "0"
+slotLabel :: SlotChar -> MU.Part
+slotLabel x = MU.String
+              $ (if slotPrefix x == 0 then [] else show $ slotPrefix x)
+                ++ [slotChar x]

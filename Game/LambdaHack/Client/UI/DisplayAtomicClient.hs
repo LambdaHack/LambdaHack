@@ -7,7 +7,6 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntMap.Strict as IM
 import Data.Maybe
 import Data.Monoid
 import Data.Tuple
@@ -92,10 +91,9 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
     -- We assign slots to all items visible on the floor,
     -- but some of the slots are later on recycled and then
     -- we report spotting the items again.
-    (letterSlots, numberSlots, _) <- getsClient sslots
-    case ( lookup iid $ map swap $ EM.assocs letterSlots
-         , lookup iid $ map swap $ IM.assocs numberSlots ) of
-      (Nothing, Nothing) ->
+    (itemSlots, _) <- getsClient sslots
+    case lookup iid $ map swap $ EM.assocs itemSlots of
+      Nothing ->
         case c of
           CActor aid CGround -> updateItemSlotSide CGround aid iid
           CActor{} -> return ()
@@ -415,13 +413,13 @@ moveItemUI iid k aid cstore1 cstore2 = do
     itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
     localTime <- getsState $ getLocalTime (blid b)
     itemToF <- itemToFullClient
-    (letterSlots, _, _) <- getsClient sslots
+    (itemSlots, _) <- getsClient sslots
     bag <- getsState $ getActorBag aid cstore2
     let kit@(n, _) = bag EM.! iid
-    case lookup iid $ map swap $ EM.assocs letterSlots of
+    case lookup iid $ map swap $ EM.assocs itemSlots of
       Just l -> msgAdd $ makePhrase
                   [ "\n"
-                  , slotLabel $ Left l
+                  , slotLabel l
                   , "-"
                   , partItemWs n cstore2 (blid b) localTime (itemToF iid kit)
                   , "\n" ]

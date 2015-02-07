@@ -13,10 +13,10 @@ module Game.LambdaHack.Client.UI.InventoryClient
 import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
+import Data.Char (intToDigit)
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntMap.Strict as IM
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -239,7 +239,7 @@ getItem psuit prompt promptGeneric cursor cCur cRest askWhenLone permitMulitple
       return $ Right ([(iid, itemToF iid k)], cCur)
     _ ->
       transition psuit prompt promptGeneric cursor permitMulitple
-                 cCur cRest initalState
+                 0 cCur cRest initalState
 
 updateAllSlots :: MonadClient m => ActorId -> [ItemDialogMode] -> m ()
 updateAllSlots leader cs = do
@@ -264,15 +264,16 @@ transition :: forall m. MonadClientUI m
            -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
            -> Bool
            -> Bool
+           -> Int
            -> ItemDialogMode
            -> [ItemDialogMode]
            -> ItemDialogState
            -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
 transition psuit prompt promptGeneric cursor permitMulitple
-           cCur cRest itemDialogState = do
+           numPrefix cCur cRest itemDialogState = do
   let recCall = transition psuit prompt promptGeneric cursor permitMulitple
       cLegal = cCur : cRest
-  (letterSlots, numberSlots, organSlots) <- getsClient sslots
+  (itemSlots, organSlots) <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
@@ -301,24 +302,20 @@ transition psuit prompt promptGeneric cursor permitMulitple
       isOrgan = case cCur of
         MStore COrgan -> True
         _ -> False
-      lSlots = if isOrgan then organSlots else letterSlots
-      bagLetterSlots = EM.filter (`EM.member` bag) lSlots
-      bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
-      suitableLetterSlots = EM.filter (`EM.member` bagSuit) lSlots
-      suitableNumberSlots = IM.filter (`EM.member` bagSuit) numberSlots
+      lSlots = if isOrgan then organSlots else itemSlots
+      bagItemSlots = EM.filter (`EM.member` bag) lSlots
+      suitableItemSlots = EM.filter (`EM.member` bagSuit) lSlots
       (autoDun, autoLvl) = autoDungeonLevel fact
       enterSlots = if itemDialogState `elem` [IAll, INoAll]
-                   then bagLetterSlots
-                   else suitableLetterSlots
-      enterNumberSlots = if itemDialogState `elem` [IAll, INoAll]
-                         then bagNumberSlots
-                         else suitableNumberSlots
+                   then bagItemSlots
+                   else suitableItemSlots
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
         [ (K.toKM K.NoModifier $ K.Char '?', DefItemKey
            { defLabel = "?"
            , defCond = not (EM.null bag)
-           , defAction = \_ -> recCall cCur cRest $ case itemDialogState of
+           , defAction = \_ -> recCall numPrefix cCur cRest
+                               $ case itemDialogState of
                INoSuitable -> if EM.null bagSuit then IAll else ISuitable
                ISuitable -> if suitsEverything then INoAll else IAll
                IAll -> if EM.null bag then INoSuitable else INoAll
@@ -335,38 +332,26 @@ transition psuit prompt promptGeneric cursor permitMulitple
                      [MStore CSha] | not calmE -> assert `failure` cLegal
                      c1 : rest -> (c1, rest)
                      [] -> assert `failure` cLegal
-               recCall cCurAfterCalm cRestAfterCalm itemDialogState
+               recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
            })
         , (K.toKM K.NoModifier $ K.Char '*', DefItemKey
            { defLabel = "*"
-           , defCond = permitMulitple
-                       && not (EM.null enterSlots && IM.null enterNumberSlots)
+           , defCond = permitMulitple && not (EM.null enterSlots)
            , defAction = \_ ->
-               let eslots = EM.elems enterSlots ++ IM.elems enterNumberSlots
+               let eslots = EM.elems enterSlots
                in return $ Right $ getMultResult eslots
            })
         , (K.toKM K.NoModifier K.Return, DefItemKey
            { defLabel =
-               let c = case ( EM.maxViewWithKey enterSlots
-                            , IM.maxViewWithKey enterNumberSlots ) of
-                     (Nothing, Nothing) -> assert `failure` "no suitable items"
+               let c = case EM.maxViewWithKey enterSlots of
+                     Nothing -> assert `failure` "no suitable items"
                                                   `twith` enterSlots
-                     (Just ((l, _), _), _) -> slotChar l
-                     (Nothing, Just ((_n, _), _)) -> '0'
+                     Just ((l, _), _) -> slotChar l
                in "RET(" <> T.singleton c <> ")"
-           , defCond = not (EM.null enterSlots && IM.null enterNumberSlots)
+           , defCond = not $ EM.null enterSlots
            , defAction = \_ -> case EM.maxView enterSlots of
                Nothing -> assert `failure` "no suitable items"
                                  `twith` enterSlots
-               Just (iid, _) -> return $ Right $ getResult iid
-           })
-        , (K.toKM K.NoModifier $ K.Char '0', DefItemKey
-           -- TODO: accept any number and pick the item
-           { defLabel = "0"
-           , defCond = not $ IM.null labelNumberSlots
-           , defAction = \_ -> case IM.minView labelNumberSlots of
-               Nothing -> assert `failure` "no numbered items"
-                                 `twith` labelNumberSlots
                Just (iid, _) -> return $ Right $ getResult iid
            })
         , let km = M.findWithDefault (K.toKM K.NoModifier K.Tab)
@@ -380,7 +365,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
                err <- memberCycle False
                let !_A = assert (err == mempty `blame` err) ()
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
-               recCall cCurUpd cRestUpd itemDialogState
+               recCall numPrefix cCurUpd cRestUpd itemDialogState
            })
         , let km = M.findWithDefault (K.toKM K.NoModifier K.BackTab)
                                      MemberBack brevMap
@@ -391,7 +376,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
                err <- memberBack False
                let !_A = assert (err == mempty `blame` err) ()
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
-               recCall cCurUpd cRestUpd itemDialogState
+               recCall numPrefix cCurUpd cRestUpd itemDialogState
            })
         , let km = M.findWithDefault (K.toKM K.NoModifier (K.KP '/'))
                                      TgtFloor brevMap
@@ -411,6 +396,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
                                      TgtClear brevMap
           in cursorCmdDef False km tgtClearHuman
         ]
+        ++ numberPrefixes
         ++ [ let plusMinus = K.Char $ if b then '+' else '-'
                  km = M.findWithDefault (K.toKM K.NoModifier plusMinus)
                                         (EpsIncr b) brevMap
@@ -429,6 +415,14 @@ transition psuit prompt promptGeneric cursor permitMulitple
                                      TgtPointerEnemy brevMap
           in cursorCmdDef True km (cursorPointerEnemy True True)
         ]
+      prefixCmdDef d =
+        (K.toKM K.NoModifier $ K.Char (intToDigit d), DefItemKey
+           { defLabel = ""
+           , defCond = True
+           , defAction = \_ ->
+               recCall (10 * numPrefix + d) cCur cRest itemDialogState
+           })
+      numberPrefixes = map prefixCmdDef [0..9]
       cursorCmdDef verbose km cmd =
         (km, DefItemKey
            { defLabel = "keypad, mouse"
@@ -438,7 +432,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
                when verbose $
                  void $ getInitConfirms ColorFull []
                       $ look <> toSlideshow Nothing [[]]
-               recCall cCur cRest itemDialogState
+               recCall numPrefix cCur cRest itemDialogState
            })
       arrows =
         let kCmds = K.moveBinding False False
@@ -446,37 +440,33 @@ transition psuit prompt promptGeneric cursor permitMulitple
         in map (uncurry $ cursorCmdDef False) kCmds
       lettersDef :: DefItemKey m
       lettersDef = DefItemKey
-        { defLabel = slotRange $ EM.keys labelLetterSlots
+        { defLabel = slotRange numPrefix $ EM.keys labelItemSlots
         , defCond = True
         , defAction = \K.KM{key} -> case key of
-            K.Char l -> case EM.lookup (SlotChar l) bagLetterSlots of
+            K.Char l -> case EM.lookup (SlotChar numPrefix l) bagItemSlots of
               Nothing -> assert `failure` "unexpected slot"
-                                `twith` (l, bagLetterSlots)
+                                `twith` (l, bagItemSlots)
               Just iid -> return $ Right $ getResult iid
             _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
-      (labelLetterSlots, labelNumberSlots, bagFiltered, promptChosen) =
+      (labelItemSlots, bagFiltered, promptChosen) =
         case itemDialogState of
-          ISuitable   -> (suitableLetterSlots,
-                          suitableNumberSlots,
+          ISuitable   -> (suitableItemSlots,
                           bagSuit,
                           prompt body activeItems cCur <> ":")
-          IAll        -> (bagLetterSlots,
-                          bagNumberSlots,
+          IAll        -> (bagItemSlots,
                           bag,
                           promptGeneric body activeItems cCur <> ":")
-          INoSuitable -> (suitableLetterSlots,
-                          suitableNumberSlots,
+          INoSuitable -> (suitableItemSlots,
                           EM.empty,
                           prompt body activeItems cCur <> ":")
-          INoAll      -> (bagLetterSlots,
-                          bagNumberSlots,
+          INoAll      -> (bagItemSlots,
                           EM.empty,
                           promptGeneric body activeItems cCur <> ":")
   io <- case cCur of
     MStats -> statsOverlay leader -- TODO: describe each stat when selected
     _ -> itemOverlay (storeFromMode cCur) (blid body) bagFiltered
-  runDefItemKey keyDefs lettersDef io bagLetterSlots promptChosen
+  runDefItemKey keyDefs lettersDef io bagItemSlots promptChosen
 
 statsOverlay :: MonadClient m => ActorId -> m Overlay
 statsOverlay aid = do
@@ -545,9 +535,9 @@ runDefItemKey :: MonadClientUI m
               -> EM.EnumMap SlotChar ItemId
               -> Text
               -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
-runDefItemKey keyDefs lettersDef io labelLetterSlots prompt = do
+runDefItemKey keyDefs lettersDef io labelItemSlots prompt = do
   let itemKeys =
-        let slotKeys = map (K.Char . slotChar) (EM.keys labelLetterSlots)
+        let slotKeys = map (K.Char . slotChar) (EM.keys labelItemSlots)
             defKeys = map fst keyDefs
         in map (K.toKM K.NoModifier) slotKeys ++ defKeys
       choice = let letterRange = defLabel lettersDef

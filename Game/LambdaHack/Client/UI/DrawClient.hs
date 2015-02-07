@@ -8,7 +8,6 @@ module Game.LambdaHack.Client.UI.DrawClient
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntMap.Strict as IM
 import Data.List
 import Data.Maybe
 import Data.Ord
@@ -96,11 +95,9 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
         let tile = lvl `at` pos0
             tk = tokind tile
             floorBag = EM.findWithDefault EM.empty pos0 $ lfloor lvl
-            (letterSlots, numberSlots, _) = sslots cli
-            bagLetterSlots = EM.filter (`EM.member` floorBag) letterSlots
-            bagNumberSlots = IM.filter (`EM.member` floorBag) numberSlots
-            floorIids = reverse (EM.elems bagLetterSlots)
-                        ++ IM.elems bagNumberSlots
+            (itemSlots, _) = sslots cli
+            bagItemSlots = EM.filter (`EM.member` floorBag) itemSlots
+            floorIids = reverse (EM.elems bagItemSlots)
                         ++ EM.keys floorBag
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeDeltaToFrom` ltime
