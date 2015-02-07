@@ -90,6 +90,8 @@ actionStrategy aid = do
       speed1_5 = speedScale (3%2) (bspeed body activeItems)
       condFastThreatAdj = any (\(_, (_, b)) -> bspeed b activeItems > speed1_5)
                           $ takeWhile ((== 1) . fst) threatDistL
+      heavilyDistressed =  -- actor hit by a proj or similarly distressed
+        deltaSerious (bcalmDelta body)
   actorSk <- actorSkillsClient aid
   let stratToFreq :: MonadStateRead m
                   => Int -> m (Strategy RequestAnyAbility)
@@ -186,6 +188,7 @@ actionStrategy aid = do
             -- unless can't shoot, etc.
           , flee aid panic2FleeL  -- panic mode; chasing would be pointless
           , condMeleeBad && condThreatNearby && not condFastThreatAdj
+            && not heavilyDistressed  -- don't run in circles if shot at
             && (condNotCalmEnough
                 || condThreatAtHand
                 || condNoUsableWeapon) )

@@ -293,13 +293,14 @@ fleeList panic aid = do
       gtVic = filter ((> dist (bpos b)) . fst) accVic
       -- At least don't get closer to enemies, but don't stay adjacent.
       eqVic = filter (\(d, _) -> d == dist (bpos b) && d > 1) accVic
+      nonIncrVic = gtVic ++ eqVic
       rewardPath (d, p)
         | p `elem` tgtPath = Just (9 * d, p)
         | any (\q -> chessDist p q == 1) tgtPath = Just (d, p)
         | otherwise = Nothing
       goodVic = mapMaybe rewardPath gtVic
                 ++ filter ((`elem` tgtPath) . snd) eqVic
-      pathVic = if panic >= 3 then accVic
-                else if panic >= 2 then gtVic ++ eqVic
+      pathVic = if panic >= 3 then accVic \\ nonIncrVic
+                else if panic >= 2 then nonIncrVic \\ goodVic
                 else goodVic
   return pathVic  -- keep it lazy, until other conditions verify danger
