@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.ActorState
   , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList
   , bagAssocs, bagAssocsK, calculateTotal
   , mergeItemQuant, sharedAllOwned, sharedAllOwnedFid, findIid
-  , getCBag, getActorBag, getBodyActorBag, getActorAssocs
+  , getCBag, getActorBag, getBodyActorBag, mapActorItems_, getActorAssocs
   , nearbyFreePoints, whereTo, getCarriedAssocs, getCarriedIidCStore
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
@@ -282,6 +282,17 @@ getBodyActorBag b cstore s =
     CEqp -> beqp b
     CInv -> binv b
     CSha -> gsha $ sfactionD s EM.! bfid b
+
+mapActorItems_ :: Monad m
+               => Bool -> (CStore -> ItemId -> ItemQuant -> m a) -> Actor
+               -> State
+               -> m ()
+mapActorItems_ sharedToo f b s = do
+  let sts = (if sharedToo then id else delete CSha) [minBound, maxBound]
+      g cstore = do
+        let bag = getBodyActorBag b cstore s
+        mapM_ (uncurry $ f cstore) $ EM.assocs bag
+  mapM_ g sts
 
 getActorAssocs :: ActorId -> CStore -> State -> [(ItemId, Item)]
 getActorAssocs aid cstore s = bagAssocs s $ getActorBag aid cstore s

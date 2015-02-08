@@ -628,7 +628,7 @@ effectEscape target = do
   if not (fcanEscape $ gplayer fact) || bproj b then
     return False
   else do
-    deduceQuits b $ Status Escape (fromEnum $ blid b) Nothing
+    deduceQuits fid Nothing $ Status Escape (fromEnum $ blid b) Nothing
     return True
 
 -- ** Paralyze

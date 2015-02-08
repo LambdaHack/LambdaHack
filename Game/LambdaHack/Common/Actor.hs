@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.Actor
   , hpTooLow, hpHuge, calmEnough, calmEnough10, hpEnough, hpEnough10
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
-  , mapActorItems_, keySelected, ppContainer, ppCStore, ppCStoreIn, verbCStore
+  , keySelected, ppContainer, ppCStore, ppCStoreIn, verbCStore
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -209,11 +209,6 @@ type ActorDict = EM.EnumMap ActorId Actor
 
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)
-
-mapActorItems_ :: Monad m => (ItemId -> ItemQuant -> m a) -> Actor -> m ()
-mapActorItems_ f Actor{binv, beqp, borgan} = do
-  let is = EM.assocs beqp ++ EM.assocs binv ++ EM.assocs borgan
-  mapM_ (uncurry f) is
 
 keySelected :: (ActorId, Actor) -> (Bool, Bool, Char, Color.Color, ActorId)
 keySelected (aid, Actor{bsymbol, bcolor, bhp}) =

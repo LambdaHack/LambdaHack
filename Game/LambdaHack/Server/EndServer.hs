@@ -73,7 +73,7 @@ dieSer aid b hit =
     dropAllItems aid b False
     b2 <- getsState $ getActorBody aid
     execUpdAtomic $ UpdDestroyActor aid b2 []
-    deduceKilled b
+    deduceKilled b2 (Just b2)
 
 -- | Drop all actor's items.
 dropAllItems :: (MonadAtomic m, MonadServer m)
