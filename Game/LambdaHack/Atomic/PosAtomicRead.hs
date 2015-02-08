@@ -160,18 +160,22 @@ posUpdAtomic cmd = case cmd of
 -- | Produce the positions where the atomic special effect takes place.
 posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic
 posSfxAtomic cmd = case cmd of
-  SfxStrike source target _ _ -> do
+  SfxStrike _ _ _ CSha _ ->  -- shared stash is private
+    return PosNone  -- TODO: PosSerAndFidIfSight; but probably never used
+  SfxStrike source target _ _ _ -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
     return $! assert (slid == tlid) $ PosSight slid [sp, tp]
-  SfxRecoil source target _ _ -> do
+  SfxRecoil _ _ _ CSha _ ->  -- shared stash is private
+    return PosNone  -- TODO: PosSerAndFidIfSight; but probably never used
+  SfxRecoil source target _ _ _ -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
     return $! assert (slid == tlid) $ PosSight slid [sp, tp]
-  SfxProject aid _ _ -> singleAid aid
-  SfxCatch aid _ _ -> singleAid aid
-  SfxApply aid _ _ -> singleAid aid
-  SfxCheck aid _ _ -> singleAid aid
+  SfxProject aid _ cstore -> singleContainer $ CActor aid cstore
+  SfxCatch aid _ cstore -> singleContainer $ CActor aid cstore
+  SfxApply aid _ cstore -> singleContainer $ CActor aid cstore
+  SfxCheck aid _ cstore -> singleContainer $ CActor aid cstore
   SfxTrigger aid p _ -> do
     (lid, pa) <- posOfAid aid
     return $! PosSight lid [pa, p]
@@ -281,7 +285,7 @@ breakUpdAtomic cmd = case cmd of
 -- | Decompose an atomic special effect.
 breakSfxAtomic :: MonadStateRead m => SfxAtomic -> m [SfxAtomic]
 breakSfxAtomic cmd = case cmd of
-  SfxStrike source target _ _ -> do
+  SfxStrike source target _ _ _ -> do
     -- Hack: make a fight detectable even if one of combatants not visible.
     sb <- getsState $ getActorBody source
     return $! [ SfxEffect (bfid sb) source (IK.RefillCalm (-1))

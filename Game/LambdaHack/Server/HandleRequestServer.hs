@@ -205,7 +205,7 @@ reqMelee source target iid cstore = do
              | hurtBonus <= -10  -- low bonus vs armor
                = HitBlock 1
              | otherwise = HitClear
-    execSfxAtomic $ SfxStrike source target iid hitA
+    execSfxAtomic $ SfxStrike source target iid cstore hitA
     -- Deduct a hitpoint for a pierce of a projectile
     -- or due to a hurled actor colliding with another or a wall.
     case btrajectory sb of

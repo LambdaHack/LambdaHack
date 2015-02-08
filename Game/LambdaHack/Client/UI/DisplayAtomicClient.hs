@@ -543,8 +543,8 @@ discover lid _p oldcli iid = do
 -- | Display special effects (text, animation) sent to the client.
 displayRespSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
 displayRespSfxAtomicUI verbose sfx = case sfx of
-  SfxStrike source target iid b -> strike source target iid b
-  SfxRecoil source target _ _ -> do
+  SfxStrike source target iid cstore b -> strike source target iid cstore b
+  SfxRecoil source target _ _ _ -> do
     spart <- partAidLeader source
     tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
@@ -788,8 +788,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           displayPush ""
 
 strike :: MonadClientUI m
-       => ActorId -> ActorId -> ItemId -> HitAtomic -> m ()
-strike source target iid hitStatus = assert (source /= target) $ do
+       => ActorId -> ActorId -> ItemId -> CStore -> HitAtomic -> m ()
+strike source target iid cstore hitStatus = assert (source /= target) $ do
   itemToF <- itemToFullClient
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -806,9 +806,7 @@ strike source target iid hitStatus = assert (source /= target) $ do
       partItemChoice =
         if isOrgan
         then partItemWownW spronoun COrgan (blid sb) localTime
-        -- The @CEqp@ store may be fake, but it results in an item description
-        -- for an active item, which is the right one for a weapon.
-        else partItemAW CEqp (blid sb) localTime
+        else partItemAW cstore (blid sb) localTime
       msg HitClear = makeSentence $
         [MU.SubjectVerbSg spart verb, tpart]
         ++ if bproj sb

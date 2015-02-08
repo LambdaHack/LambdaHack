@@ -120,8 +120,8 @@ instance Binary UpdAtomic
 -- | Abstract syntax of atomic special effects, that is, atomic commands
 -- that only display special effects and don't change the state.
 data SfxAtomic =
-    SfxStrike !ActorId !ActorId !ItemId !HitAtomic
-  | SfxRecoil !ActorId !ActorId !ItemId !HitAtomic
+    SfxStrike !ActorId !ActorId !ItemId !CStore !HitAtomic
+  | SfxRecoil !ActorId !ActorId !ItemId !CStore !HitAtomic
   | SfxProject !ActorId !ItemId !CStore
   | SfxCatch !ActorId !ItemId !CStore
   | SfxApply !ActorId !ItemId !CStore
@@ -201,8 +201,8 @@ undoUpdAtomic cmd = case cmd of
 
 undoSfxAtomic :: SfxAtomic -> SfxAtomic
 undoSfxAtomic cmd = case cmd of
-  SfxStrike source target iid b -> SfxRecoil source target iid b
-  SfxRecoil source target iid b -> SfxStrike source target iid b
+  SfxStrike source target iid cstore b -> SfxRecoil source target iid cstore b
+  SfxRecoil source target iid cstore b -> SfxStrike source target iid cstore b
   SfxProject aid iid cstore -> SfxCatch aid iid cstore
   SfxCatch aid iid cstore -> SfxProject aid iid cstore
   SfxApply aid iid cstore -> SfxCheck aid iid cstore
