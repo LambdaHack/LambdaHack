@@ -212,16 +212,16 @@ effectSem source target iid recharged effect = do
     IK.Dominate -> effectDominate recursiveCall source target
     IK.Impress -> effectImpress execSfx source target
     IK.CallFriend p -> effectCallFriend p source target
-    IK.Summon freqs p -> effectSummon recursiveCall freqs p source target
-    IK.Ascend p -> effectAscend recursiveCall execSfx p target
-    IK.Escape{} -> effectEscape target
+    IK.Summon freqs p -> effectSummon freqs p source target
+    IK.Ascend p -> effectAscend recursiveCall execSfx p source target
+    IK.Escape{} -> effectEscape source target
     IK.Paralyze p -> effectParalyze execSfx p target
     IK.InsertMove p -> effectInsertMove execSfx p target
-    IK.Teleport p -> effectTeleport execSfx p target
+    IK.Teleport p -> effectTeleport execSfx p source target
     IK.CreateItem store grp tim -> effectCreateItem target store grp tim
     IK.DropItem store grp hit -> effectDropItem execSfx store grp hit target
-    IK.PolyItem -> effectPolyItem execSfx target
-    IK.Identify -> effectIdentify execSfx iid target
+    IK.PolyItem -> effectPolyItem execSfx source target
+    IK.Identify -> effectIdentify execSfx iid source target
     IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target Nothing
     IK.PushActor tmod ->
@@ -364,7 +364,7 @@ effectExplode execSfx cgroup target = do
   maybe (return ()) (\kit -> execUpdAtomic
                              $ UpdLoseItem iid itemBase kit container) mn3
   execSfx
-  return True  -- we avoid verifying that at least one projectile got off
+  return True  -- we neglect verifying that at least one projectile got off
 
 -- ** RefillHP
 
@@ -418,6 +418,8 @@ effectDominate recursiveCall source target = do
   if bproj tb then
     return False
   else if bfid tb == bfid sb then
+    -- Dominate is rather on projectiles than on items, so alternate effect
+    -- is useful to avoid boredom if domination can't happen.
     recursiveCall IK.Impress
   else
     dominateFidSfx (bfid sb) target
@@ -447,7 +449,9 @@ effectCallFriend nDm source target = do
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   activeItems <- activeItemsServer source
-  if source /= target then return False
+  if source /= target then do
+    execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough focus to activate."
+    return False  -- too hard to tell, e.g., why failed
   else if not $ hpEnough10 sb activeItems then do
     execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough HP to activate."
     return False
@@ -463,17 +467,18 @@ effectCallFriend nDm source target = do
 -- ** Summon
 
 effectSummon :: (MonadAtomic m, MonadServer m)
-             => (IK.Effect -> m Bool)
-             -> Freqs ItemKind -> Dice.Dice
+             => Freqs ItemKind -> Dice.Dice
              -> ActorId -> ActorId
              -> m Bool
-effectSummon recursiveCall actorFreq nDm source target = do
+effectSummon actorFreq nDm source target = do
   -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   activeItems <- activeItemsServer source
-  if source /= target then return False
+  if source /= target then do
+    execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough focus to activate."
+    return False  -- too hard to tell, e.g., why failed
   else if not $ calmEnough10 sb activeItems then do
     execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough Calm to activate."
     return False
@@ -489,9 +494,7 @@ effectSummon recursiveCall actorFreq nDm source target = do
     bs <- forM (take power ps) $ \p -> do
       maid <- addAnyActor actorFreq (blid sb) afterTime (Just p)
       case maid of
-        Nothing ->
-          -- Don't make this item useless.
-          recursiveCall (IK.CallFriend 1)
+        Nothing -> return False  -- actorFreq is null; content writers...
         Just aid -> do
           b <- getsState $ getActorBody aid
           mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
@@ -506,26 +509,31 @@ effectSummon recursiveCall actorFreq nDm source target = do
 -- Note that projectiles can be teleported, too, for extra fun.
 effectAscend :: (MonadAtomic m, MonadServer m)
              => (IK.Effect -> m Bool)
-             -> m () -> Int -> ActorId
+             -> m () -> Int -> ActorId -> ActorId
              -> m Bool
-effectAscend recursiveCall execSfx k aid = do
-  b1 <- getsState $ getActorBody aid
+effectAscend recursiveCall execSfx k source target = do
+  b1 <- getsState $ getActorBody target
   ais1 <- getsState $ getCarriedAssocs b1
   let lid1 = blid b1
       pos1 = bpos b1
   (lid2, pos2) <- getsState $ whereTo lid1 pos1 k . sdungeon
-  if braced b1 then return False  -- braced actors immune to translocation
+  sb <- getsState $ getActorBody source
+  if braced b1 then do
+    execSfxAtomic $ SfxMsgFid (bfid sb)
+                              "Braced actors are immune to translocation."
+    return False
   else if lid2 == lid1 && pos2 == pos1 then do
-    execSfxAtomic $ SfxMsgFid (bfid b1) "No more levels in this direction."
+    execSfxAtomic $ SfxMsgFid (bfid sb) "No more levels in this direction."
+    -- We keep it useful even in shallow dungeons.
     recursiveCall $ IK.Teleport 30  -- powerful teleport
   else do
-    let switch1 = void $ switchLevels1 ((aid, b1), ais1)
+    let switch1 = void $ switchLevels1 ((target, b1), ais1)
         switch2 = do
           -- Make the initiator of the stair move the leader,
           -- to let him clear the stairs for others to follow.
-          let mlead = Just aid
+          let mlead = Just target
           -- Move the actor to where the inhabitants were, if any.
-          switchLevels2 lid2 pos2 ((aid, b1), ais1) mlead
+          switchLevels2 lid2 pos2 ((target, b1), ais1) mlead
           -- Verify only one non-projectile actor on every tile.
           !_ <- getsState $ posToActors pos1 lid1  -- assertion is inside
           !_ <- getsState $ posToActors pos2 lid2  -- assertion is inside
@@ -619,13 +627,18 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
 -- ** Escape
 
 -- | The faction leaves the dungeon.
-effectEscape :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
-effectEscape target = do
+effectEscape :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m Bool
+effectEscape source target = do
   -- Obvious effect, nothing announced.
+  sb <- getsState $ getActorBody source
   b <- getsState $ getActorBody target
   let fid = bfid b
   fact <- getsState $ (EM.! fid) . sfactionD
-  if not (fcanEscape $ gplayer fact) || bproj b then
+  if bproj b then
+    return False
+  else if not (fcanEscape $ gplayer fact) then do
+    execSfxAtomic $ SfxMsgFid (bfid sb)
+                              "This faction doesn't want to escape outside."
     return False
   else do
     deduceQuits fid Nothing $ Status Escape (fromEnum $ blid b) Nothing
@@ -669,10 +682,11 @@ effectInsertMove execSfx nDm target = do
 -- | Teleport the target actor.
 -- Note that projectiles can be teleported, too, for extra fun.
 effectTeleport :: (MonadAtomic m, MonadServer m)
-               => m () -> Dice.Dice -> ActorId -> m Bool
-effectTeleport execSfx nDm target = do
+               => m () -> Dice.Dice -> ActorId -> ActorId -> m Bool
+effectTeleport execSfx nDm source target = do
   Kind.COps{cotile} <- getsState scops
   range <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
+  sb <- getsState $ getActorBody source
   b <- getsState $ getActorBody target
   Level{ltile} <- getLevel (blid b)
   as <- getsState $ actorList (const True) (blid b)
@@ -693,9 +707,13 @@ effectTeleport execSfx nDm target = do
     , dist 5
     , dist 7
     ]
-  if braced b then return False  -- braced actors immune to translocation
-  else if not (dMinMax 9 tpos) then
-    return False  -- very rare
+  if braced b then do
+    execSfxAtomic $ SfxMsgFid (bfid sb)
+                              "Braced actors are immune to translocation."
+    return False
+  else if not (dMinMax 9 tpos) then do  -- very rare
+    execSfxAtomic $ SfxMsgFid (bfid sb) "Translocation not possible."
+    return False
   else do
     execUpdAtomic $ UpdMoveActor target spos tpos
     execSfx
@@ -817,35 +835,31 @@ dropCStoreItem store aid b hit iid kit@(k, _) = do
 
 -- TODO: ask player for an item
 effectPolyItem :: (MonadAtomic m, MonadServer m)
-               => m () -> ActorId -> m Bool
-effectPolyItem execSfx target = do
-  tb <- getsState $ getActorBody target
+               => m () -> ActorId -> ActorId -> m Bool
+effectPolyItem execSfx source target = do
+  sb <- getsState $ getActorBody source
   let cstore = CGround
-      fid = bfid tb
   allAssocs <- fullAssocsServer target [cstore]
   case allAssocs of
     [] -> do
-      execSfxAtomic $ SfxMsgFid fid $
+      execSfxAtomic $ SfxMsgFid (bfid sb) $
         "The purpose of repurpose cannot be availed without an item"
         <+> ppCStoreIn cstore <> "."
-      -- TODO: identify the scroll, but don't use up.
-      return True
+      return False
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
       Just ItemDisco{..} -> do
         discoEffect <- getsServer sdiscoEffect
         let maxCount = Dice.maxDice $ IK.icount itemKind
             aspects = jaspects $ discoEffect EM.! iid
         if itemK < maxCount then do
-          execSfxAtomic $ SfxMsgFid fid $
+          execSfxAtomic $ SfxMsgFid (bfid sb) $
             "The purpose of repurpose is served by" <+> tshow maxCount
             <+> "pieces of this item, not by" <+> tshow itemK <> "."
-          -- TODO: identify the scroll, but don't use up.
-          return True
+          return False
         else if IK.Unique `elem` aspects then do
-          -- TODO: mark with {unique}, if not IDed
-          execSfxAtomic $ SfxMsgFid fid $
+          execSfxAtomic $ SfxMsgFid (bfid sb) $
             "Unique items can't be repurposed."
-          return True
+          return False
         else do
           let c = CActor target cstore
               kit = (maxCount, take maxCount itemTimer)
@@ -863,11 +877,16 @@ effectPolyItem execSfx target = do
 -- id the scroll anyway. Explain the Calm gain: "your most pressing
 -- existential concerns are answered scientifitically".
 effectIdentify :: (MonadAtomic m, MonadServer m)
-               => m () -> ItemId -> ActorId -> m Bool
-effectIdentify execSfx iidId target = do
+               => m () -> ItemId -> ActorId -> ActorId -> m Bool
+effectIdentify execSfx iidId source target = do
+  sb <- getsState $ getActorBody source
   let tryFull store as = case as of
         -- TODO: identify the scroll, but don't use up.
-        [] -> return False
+        [] -> do
+          let (tIn, t) = ppCStore store
+              msg = "Nothing to identify" <+> tIn <+> t <> "."
+          execSfxAtomic $ SfxMsgFid (bfid sb) msg
+          return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
         (iid, itemFull@ItemFull{itemDisco=Just ItemDisco{..}}) : rest -> do
           -- TODO: use this (but faster, via traversing effects with 999?)
@@ -897,8 +916,7 @@ identifyIid :: (MonadAtomic m, MonadServer m)
 identifyIid execSfx iid c itemKindId = do
   execSfx
   seed <- getsServer $ (EM.! iid) . sitemSeedD
-  execUpdAtomic $
-    UpdDiscover c iid itemKindId seed
+  execUpdAtomic $ UpdDiscover c iid itemKindId seed
 
 -- ** SendFlying
 
@@ -914,11 +932,15 @@ effectSendFlying :: (MonadAtomic m, MonadServer m)
 effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   v <- sendFlyingVector source target modePush
   Kind.COps{cotile} <- getsState scops
+  sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   lvl@Level{lxsize, lysize} <- getLevel (blid tb)
   let eps = 0
       fpos = bpos tb `shift` v
-  if braced tb then return False  -- braced actors immune to translocation
+  if braced tb then do
+    execSfxAtomic $ SfxMsgFid (bfid sb)
+                              "Braced actors are immune to translocation."
+    return False
   else case bla lxsize lysize eps (bpos tb) fpos of
     Nothing -> assert `failure` (fpos, tb)
     Just [] -> assert `failure` "projecting from the edge of level"
@@ -936,7 +958,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
               ts = Just (trajectory, speed)
           if null trajectory || btrajectory tb == ts
              || throwVelocity <= 0 || throwLinger <= 0
-            then return False
+            then return False  -- e.g., actor is too heavy; OK
             else do
               execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
               execSfx
