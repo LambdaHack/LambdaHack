@@ -280,7 +280,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
   -- e.g., making all rings identified)
   let calmE = calmEnough b activeItems
       cLegal | calmE = cLegalRaw
-             | destCStore == CSha =[]
+             | destCStore == CSha = []
              | otherwise = delete CSha cLegalRaw
       ret4 :: MonadClientUI m
            => CStore -> [(ItemId, ItemFull)]
@@ -410,7 +410,7 @@ projectItem ts posFromCursor = do
   activeItems <- activeItemsClient leader
   actorSk <- actorSkillsClient leader
   let skill = EM.findWithDefault 0 AbProject actorSk
-      cLegal = [CGround, CInv, CEqp]
+      cLegal = [CGround, CInv, CEqp, CSha]
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
@@ -469,7 +469,7 @@ applyHuman ts = do
   let skill = EM.findWithDefault 0 AbProject actorSk
   activeItems <- activeItemsClient leader
   localTime <- getsState $ getLocalTime (blid b)
-  let cLegal = [CGround, CInv, CEqp]
+  let cLegal = [CGround, CInv, CEqp, CSha]
       (verb1, object1) = case ts of
         [] -> ("apply", "item")
         tr : _ -> (verb tr, object tr)

@@ -414,7 +414,7 @@ reqProject :: (MonadAtomic m, MonadServer m)
            -> ItemId     -- ^ the item to be projected
            -> CStore     -- ^ whether the items comes from floor or inventory
            -> m ()
-reqProject source tpxy eps iid cstore = assert (cstore /= CSha) $ do
+reqProject source tpxy eps iid cstore = do
   mfail <- projectFail source tpxy eps iid cstore False
   let req = ReqProject tpxy eps iid cstore
   maybe (return ()) (execFailure source req) mfail
@@ -426,7 +426,7 @@ reqApply :: (MonadAtomic m, MonadServer m)
          -> ItemId   -- ^ the item to be applied
          -> CStore   -- ^ the location of the item
          -> m ()
-reqApply aid iid cstore = assert (cstore /= CSha) $ do
+reqApply aid iid cstore = do
   let req = ReqApply iid cstore
   bag <- getsState $ getActorBag aid cstore
   case EM.lookup iid bag of

@@ -99,6 +99,8 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
     _ ->
       -- TODO: if has timeout and not recharged, report failure
       return it1
+  -- We use up the charge even if eventualy every effect fizzles. Tough luck.
+  -- At least we don't destroy the item in such case. Also, we ID it regardless.
   it3 <- if it /= it2 && mtimeout /= Just (IK.Timeout 0) then do
            execUpdAtomic $ UpdTimeItem iid c it it2
            return it2
