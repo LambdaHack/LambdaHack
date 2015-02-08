@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Operations on the 'Actor' type that need the 'State' type,
 -- but not the 'Action' type.
 -- TODO: Document an export list after it's rewritten according to #17.
@@ -8,7 +9,7 @@ module Game.LambdaHack.Common.ActorState
   , bagAssocs, bagAssocsK, calculateTotal
   , mergeItemQuant, sharedAllOwned, sharedAllOwnedFid, findIid
   , getCBag, getActorBag, getBodyActorBag, getActorAssocs
-  , nearbyFreePoints, whereTo, getCarriedAssocs
+  , nearbyFreePoints, whereTo, getCarriedAssocs, getCarriedIidCStore
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, maxActorSkills, dispEnemy
@@ -248,6 +249,12 @@ getActorBody aid s =
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =
   bagAssocs s $ EM.unionsWith const [binv b, beqp b, borgan b]
+
+getCarriedIidCStore :: Actor -> [(ItemId, CStore)]
+getCarriedIidCStore b =
+  let bagCarried (cstore, bag) = map (,cstore) $ EM.keys bag
+  in concatMap bagCarried
+               [(CInv, binv b), (CEqp, beqp b), (COrgan, borgan b)]
 
 getCBag :: Container -> State -> ItemBag
 {-# INLINE getCBag #-}

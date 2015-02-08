@@ -212,11 +212,11 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   -- Assorted.
   UpdTimeItem{} -> return ()
   UpdAgeGame{} -> return ()
-  UpdDiscover _ lid p iid _ _ -> discover lid p oldStateClient iid
+  UpdDiscover c iid _ _ -> discover c oldStateClient iid
   UpdCover{} -> return ()  -- don't spam when doing undo
-  UpdDiscoverKind _ lid p iid _ -> discover lid p oldStateClient iid
+  UpdDiscoverKind c iid _ -> discover c oldStateClient iid
   UpdCoverKind{} -> return ()  -- don't spam when doing undo
-  UpdDiscoverSeed _ lid p iid _ -> discover lid p oldStateClient iid
+  UpdDiscoverSeed c iid _ -> discover c oldStateClient iid
   UpdCoverSeed{} -> return ()  -- don't spam when doing undo
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ -> do
@@ -514,18 +514,20 @@ quitFactionUI fid mbody toSt = do
     _ -> return ()
 
 discover :: MonadClientUI m
-         => LevelId -> Point -> StateClient -> ItemId -> m ()
-discover lid _p oldcli iid = do
+         => Container -> StateClient -> ItemId -> m ()
+discover c oldcli iid = do
+  let cstore = storeFromC c
+  lid <- getsState $ lidFromC c
   cops <- getsState scops
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   let itemFull = itemToF iid (1, [])
-      knownName = partItemMediumAW CGround lid localTime itemFull
+      knownName = partItemMediumAW cstore lid localTime itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
       itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
-      (_, secretName, secretAEText) = partItem CGround lid localTime itemSecret
+      (_, secretName, secretAEText) = partItem cstore lid localTime itemSecret
       msg = makeSentence
         [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
                                   "turn out to be"
@@ -535,7 +537,7 @@ discover lid _p oldcli iid = do
                    iid (itemBase itemFull) (1, [])
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
-  when (textAllAE 7 CGround itemFull /= textAllAE 7 CGround oldItemFull) $
+  when (textAllAE 7 cstore itemFull /= textAllAE 7 cstore oldItemFull) $
     msgAdd msg
 
 -- * RespSfxAtomicUI

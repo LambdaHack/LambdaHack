@@ -141,12 +141,12 @@ posUpdAtomic cmd = case cmd of
     return $! PosSmell lid ps
   UpdTimeItem _ c _ _ -> singleContainer c
   UpdAgeGame _ _ -> return PosAll
-  UpdDiscover fid lid p _ _ _ -> return $! PosFidAndSight [fid] lid [p]
-  UpdCover fid lid p _ _ _ -> return $! PosFidAndSight [fid] lid [p]
-  UpdDiscoverKind fid lid p _ _ -> return $! PosFidAndSight [fid] lid [p]
-  UpdCoverKind fid lid p _ _ -> return $! PosFidAndSight [fid] lid [p]
-  UpdDiscoverSeed fid lid p _ _ -> return $! PosFidAndSight [fid] lid [p]
-  UpdCoverSeed fid lid p _ _ -> return $! PosFidAndSight [fid] lid [p]
+  UpdDiscover c _ _ _ -> singleContainer c
+  UpdCover c _ _ _ -> singleContainer c
+  UpdDiscoverKind c _ _ -> singleContainer c
+  UpdCoverKind c _ _ -> singleContainer c
+  UpdDiscoverSeed c _ _ -> singleContainer c
+  UpdCoverSeed c _ _ -> singleContainer c
   UpdPerception{} -> return PosNone
   UpdRestart fid _ _ _ _ -> return $! PosFid fid
   UpdRestartServer _ -> return PosSer

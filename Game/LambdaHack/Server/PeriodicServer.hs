@@ -162,10 +162,12 @@ dominateFid fid target = do
                 , bfidImpressed = bfid tb
                 , bcalm = max 0 $ xM calmMax `div` 2 }
   execUpdAtomic $ UpdSpotActor target bNew ais
-  let discoverSeed (iid, _) = do
+  let discoverSeed (iid, cstore) = do
         seed <- getsServer $ (EM.! iid) . sitemSeedD
-        execUpdAtomic $ UpdDiscoverSeed fid (blid tb) (bpos tb) iid seed
-  mapM_ discoverSeed ais
+        let c = CActor target cstore
+        execUpdAtomic $ UpdDiscoverSeed c iid seed
+      aic = getCarriedIidCStore tb
+  mapM_ discoverSeed aic
   mleaderOld <- getsState $ gleader . (EM.! fid) . sfactionD
   -- Keep the leader if he is on stairs. We don't want to clog stairs.
   keepLeader <- case mleaderOld of

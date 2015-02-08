@@ -126,7 +126,7 @@ effectAndDestroy source target iid c periodic effs aspects kitK@(k, it) = do
       execUpdAtomic $ UpdLoseItem iid item kit c
     -- At this point, the item is potentially no longer in container @c@,
     -- so we don't pass @c@ along.
-    triggered <- itemEffectDisco source target iid recharged periodic effs
+    triggered <- itemEffectDisco source target iid c recharged periodic effs
     -- If none of item's effects was performed, we try to recreate the item.
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
@@ -157,18 +157,16 @@ itemEffectCause aid tpos ef = do
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
 itemEffectDisco :: (MonadAtomic m, MonadServer m)
-                => ActorId -> ActorId -> ItemId -> Bool -> Bool
+                => ActorId -> ActorId -> ItemId -> Container -> Bool -> Bool
                 -> [IK.Effect]
                 -> m Bool
-itemEffectDisco source target iid recharged periodic effs = do
+itemEffectDisco source target iid c recharged periodic effs = do
   discoKind <- getsServer sdiscoKind
   item <- getsState $ getItemBody iid
   case EM.lookup (jkindIx item) discoKind of
     Just itemKindId -> do
-      tbPre <- getsState $ getActorBody target
       seed <- getsServer $ (EM.! iid) . sitemSeedD
-      execUpdAtomic $ UpdDiscover (bfid tbPre) (blid tbPre) (bpos tbPre)
-                                  iid itemKindId seed
+      execUpdAtomic $ UpdDiscover c iid itemKindId seed
       itemEffect source target iid recharged periodic effs
     _ -> assert `failure` (source, target, iid, item)
 
@@ -822,12 +820,14 @@ effectPolyItem :: (MonadAtomic m, MonadServer m)
                => m () -> ActorId -> m Bool
 effectPolyItem execSfx target = do
   tb <- getsState $ getActorBody target
-  allAssocs <- fullAssocsServer target [CGround]
+  let cstore = CGround
+      fid = bfid tb
+  allAssocs <- fullAssocsServer target [cstore]
   case allAssocs of
     [] -> do
-      execSfxAtomic $ SfxMsgFid (bfid tb) $
+      execSfxAtomic $ SfxMsgFid fid $
         "The purpose of repurpose cannot be availed without an item"
-        <+> ppCStoreIn CGround <> "."
+        <+> ppCStoreIn cstore <> "."
       -- TODO: identify the scroll, but don't use up.
       return True
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
@@ -836,23 +836,23 @@ effectPolyItem execSfx target = do
         let maxCount = Dice.maxDice $ IK.icount itemKind
             aspects = jaspects $ discoEffect EM.! iid
         if itemK < maxCount then do
-          execSfxAtomic $ SfxMsgFid (bfid tb) $
+          execSfxAtomic $ SfxMsgFid fid $
             "The purpose of repurpose is served by" <+> tshow maxCount
             <+> "pieces of this item, not by" <+> tshow itemK <> "."
           -- TODO: identify the scroll, but don't use up.
           return True
         else if IK.Unique `elem` aspects then do
           -- TODO: mark with {unique}, if not IDed
-          execSfxAtomic $ SfxMsgFid (bfid tb) $
+          execSfxAtomic $ SfxMsgFid fid $
             "Unique items can't be repurposed."
           return True
         else do
-          identifyIid execSfx iid target itemKindId
-          let c = CActor target CGround
+          let c = CActor target cstore
               kit = (maxCount, take maxCount itemTimer)
+          identifyIid execSfx iid c itemKindId
           execUpdAtomic $ UpdDestroyItem iid itemBase kit c
           execSfx
-          effectCreateItem target CGround "useful" IK.TimerNone
+          effectCreateItem target cstore "useful" IK.TimerNone
       _ -> assert `failure` (target, iid, itemFull)
 
 -- ** Identify
@@ -879,7 +879,8 @@ effectIdentify execSfx iidId target = do
           if ided && statsObvious
             then tryFull store rest
             else do
-              identifyIid execSfx iid target itemKindId
+              let c = CActor target store
+              identifyIid execSfx iid c itemKindId
               return True
         _ -> assert `failure` (store, as)
       tryStore stores = case stores of
@@ -891,14 +892,13 @@ effectIdentify execSfx iidId target = do
   tryStore [CGround]
 
 identifyIid :: (MonadAtomic m, MonadServer m)
-            => m () -> ItemId -> ActorId -> Kind.Id ItemKind
+            => m () -> ItemId -> Container -> Kind.Id ItemKind
             -> m ()
-identifyIid execSfx iid target itemKindId = do
+identifyIid execSfx iid c itemKindId = do
   execSfx
-  tb <- getsState $ getActorBody target
   seed <- getsServer $ (EM.! iid) . sitemSeedD
   execUpdAtomic $
-    UpdDiscover (bfid tb) (blid tb) (bpos tb) iid itemKindId seed
+    UpdDiscover c iid itemKindId seed
 
 -- ** SendFlying
 
