@@ -166,21 +166,10 @@ itemEffectDisco source target iid recharged periodic effs = do
   case EM.lookup (jkindIx item) discoKind of
     Just itemKindId -> do
       tbPre <- getsState $ getActorBody target
-      triggered <- itemEffect source target iid recharged periodic effs
-      -- The effect fires up, so the item gets identified, if seen
-      -- (the item was at the source actor's position, so his old position
-      -- is given, since the actor and/or the item may be moved by the effect;
-      -- we'd need to track not only position of atomic commands and factions,
-      -- but also which items they relate to, to be fully accurate).
-      when triggered $ do
-        seed <- getsServer $ (EM.! iid) . sitemSeedD
-        -- Not giving a container to UpdDiscover, because the actor
-        -- from the container can be dead, etc.
-        -- The FactionId argument ensures discovery even if the actor
-        -- dead, dominated or teleported.
-        execUpdAtomic $ UpdDiscover (bfid tbPre) (blid tbPre) (bpos tbPre)
-                                    iid itemKindId seed
-      return triggered
+      seed <- getsServer $ (EM.! iid) . sitemSeedD
+      execUpdAtomic $ UpdDiscover (bfid tbPre) (blid tbPre) (bpos tbPre)
+                                  iid itemKindId seed
+      itemEffect source target iid recharged periodic effs
     _ -> assert `failure` (source, target, iid, item)
 
 itemEffect :: (MonadAtomic m, MonadServer m)
