@@ -209,8 +209,8 @@ effectSem source target iid recharged effect = do
     IK.Explode t -> effectExplode execSfx t target
     IK.RefillHP p -> effectRefillHP False execSfx p source target
     IK.OverfillHP p -> effectRefillHP True execSfx p source target
-    IK.RefillCalm p -> effectRefillCalm False execSfx p target
-    IK.OverfillCalm p -> effectRefillCalm True execSfx p target
+    IK.RefillCalm p -> effectRefillCalm False execSfx p source target
+    IK.OverfillCalm p -> effectRefillCalm True execSfx p source target
     IK.Dominate -> effectDominate recursiveCall source target
     IK.Impress -> effectImpress execSfx source target
     IK.CallFriend p -> effectCallFriend p source target
@@ -378,9 +378,9 @@ effectRefillHP overfill execSfx power source target = do
   hpMax <- sumOrganEqpServer IK.EqpSlotAddMaxHP target
   let overMax | overfill = xM hpMax * 10  -- arbitrary limit to scumming
               | otherwise = xM hpMax
-      serious = overfill && source /= target && not (bproj tb)
+      serious = not (bproj tb) && source /= target && power > 1
       deltaHP | power > 0 = min (xM power) (max 0 $ overMax - bhp tb)
-              | serious = -- if HP overfull, at least cut back to max HP
+              | serious = -- if overfull, at least cut back to max
                           min (xM power) (xM hpMax - bhp tb)
               | otherwise = xM power
   if deltaHP == 0
@@ -394,13 +394,17 @@ effectRefillHP overfill execSfx power source target = do
 -- ** RefillCalm
 
 effectRefillCalm ::  (MonadAtomic m, MonadServer m)
-           => Bool -> m () -> Int -> ActorId -> m Bool
-effectRefillCalm overfill execSfx power target = do
+                 => Bool -> m () -> Int -> ActorId -> ActorId -> m Bool
+effectRefillCalm overfill execSfx power source target = do
   tb <- getsState $ getActorBody target
   calmMax <- sumOrganEqpServer IK.EqpSlotAddMaxCalm target
   let overMax | overfill = xM calmMax * 10  -- arbitrary limit to scumming
               | otherwise = xM calmMax
-  let deltaCalm = min (xM power) (max 0 $ overMax - bcalm tb)
+      serious = not (bproj tb) && source /= target && power > 1
+      deltaCalm | power > 0 = min (xM power) (max 0 $ overMax - bcalm tb)
+                | serious = -- if overfull, at least cut back to max
+                            min (xM power) (xM calmMax - bcalm tb)
+                | otherwise = xM power
   if deltaCalm == 0
     then return False
     else do

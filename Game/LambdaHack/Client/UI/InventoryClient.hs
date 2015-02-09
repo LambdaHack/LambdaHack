@@ -924,7 +924,7 @@ describeItemC c = do
       case c2 of
         MStore COrgan -> do
           let symbol = jsymbol (itemBase itemFull)
-              blurb | symbol == '+' = "drop temporary effects"
+              blurb | symbol == '+' = "drop temporary conditions"
                     | otherwise = "amputate organs"
           -- TODO: also forbid on the server, except in special cases.
           Left <$> overlayToSlideshow ("Can't"
