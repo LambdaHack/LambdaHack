@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
@@ -83,6 +84,7 @@ data StateClient = StateClient
   , scurDifficulty :: !Int         -- ^ current game difficulty level
   , sslots       :: !ItemSlots     -- ^ map from slots to items
   , slastSlot    :: !SlotChar      -- ^ last used slot
+  , slastStore   :: !CStore        -- ^ last used store
   , sescAI       :: !EscAI         -- ^ just canceled AI control with ESC
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
@@ -150,6 +152,7 @@ defStateClient shistory sreport _sside sisAI =
     , scurDifficulty = difficultyDefault
     , sslots = (EM.empty, EM.empty)
     , slastSlot = SlotChar 0 'a'
+    , slastStore = CInv
     , sescAI = EscAINothing
     , sdebugCli = defDebugModeCli
     }
@@ -221,6 +224,7 @@ instance Binary StateClient where
     put scurDifficulty
     put sslots
     put slastSlot
+    put slastStore
     put sdebugCli  -- TODO: this is overwritten at once
   get = do
     stgtMode <- get
@@ -246,6 +250,7 @@ instance Binary StateClient where
     scurDifficulty <- get
     sslots <- get
     slastSlot <- get
+    slastStore <- get
     sdebugCli <- get
     let sbfsD = EM.empty
         sfper = EM.empty
