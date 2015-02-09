@@ -967,6 +967,13 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
             then return False  -- e.g., actor is too heavy; OK
             else do
               execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
+              -- Give the actor one extra turn and also let the push start ASAP.
+              -- So, if the push lasts one (his) turn, he will not lose
+              -- any turn of movement (but he may need to retrace the push).
+              activeItems <- activeItemsServer target
+              let tpm = ticksPerMeter $ bspeed sb activeItems
+                  delta = timeDeltaScale tpm (-1)
+              execUpdAtomic $ UpdAgeActor target delta
               execSfx
               return True
 
