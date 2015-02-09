@@ -484,19 +484,21 @@ statsOverlay aid = do
               <> "  "
             valueText = f $ sumSlotNoFilter eqpSlot activeItems
         in fullText valueText
+      -- Some values can be negative, for others 0 is equivalent but shorter.
       slotList =  -- TODO:  [IK.EqpSlotAddHurtMelee..IK.EqpSlotAddLight]
         [ (IK.EqpSlotAddHurtMelee, \t -> tshow t <> "%")
         -- TODO: not applicable right now, IK.EqpSlotAddHurtRanged
         , (IK.EqpSlotAddArmorMelee, \t -> "[" <> tshow (block t) <> "%]")
         , (IK.EqpSlotAddArmorRanged, \t -> "{" <> tshow (block t) <> "%}")
-        , (IK.EqpSlotAddMaxHP, tshow)
-        , (IK.EqpSlotAddMaxCalm, tshow)
-        , (IK.EqpSlotAddSpeed, \t -> tshow t <> "m/10s")
-        , (IK.EqpSlotAddSight, \t -> tshow t <> "m")
-        , (IK.EqpSlotAddSmell, \t -> tshow t <> "m")
-        , (IK.EqpSlotAddLight, \t -> tshow t <> "m")
+        , (IK.EqpSlotAddMaxHP, \t -> tshow $ max 0 t)
+        , (IK.EqpSlotAddMaxCalm, \t -> tshow $ max 0 t)
+        , (IK.EqpSlotAddSpeed, \t -> tshow (max 0 t) <> "m/10s")
+        , (IK.EqpSlotAddSight, \t -> tshow (max 0 t) <> "m")
+        , (IK.EqpSlotAddSmell, \t -> tshow (max 0 t) <> "m")
+        , (IK.EqpSlotAddLight, \t -> tshow (max 0 t) <> "m")
         ]
       skills = sumSkills activeItems
+      -- TODO: are negative total skills meaningful?
       prAbility :: Ability.Ability -> Text
       prAbility ability =
         let fullText t =
