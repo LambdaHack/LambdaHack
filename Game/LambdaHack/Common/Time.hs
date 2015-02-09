@@ -186,11 +186,10 @@ speedFromWeight weight velocityPercent =
       -- We round down to the nearest multiple of 2M (unless the speed
       -- is very low), to ensure both turns of flight cover the same distance
       -- and that the speed matches the distance traveled exactly.
-      multiple2M = sInMs * if v > 2 * sInMs
-                           then 2 * (v `div` (2 * sInMs))
-                           else v `div` sInMs
-      minimumSpeed = if mpMs == minimalSpeed then minimalSpeed else sInMs
-  in Speed $ max minimumSpeed multiple2M
+      multiple2M = if v > 2 * sInMs
+                   then 2 * sInMs * (v `div` (2 * sInMs))
+                   else v
+  in Speed $ max minimalSpeed multiple2M
 
 -- | Calculate maximum range in meters of a projectile from its speed.
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Item-statistics>.

@@ -221,9 +221,8 @@ handleActors lid = do
   case mnext of
     _ | quit -> return ()
     Nothing -> return ()
-    Just (aid, b) | maybe True (null . fst) (btrajectory b) && bproj b -> do
+    Just (aid, b) | bproj b && maybe True (null . fst) (btrajectory b) -> do
       -- A projectile drops to the ground due to obstacles or range.
-      let !_A = assert (bproj b) ()
       startActor aid
       dieSer aid b False
       handleActors lid
@@ -266,8 +265,10 @@ handleActors lid = do
             when (hasWait /= bwait bPre) $
               execUpdAtomic $ UpdWaitActor aidNew hasWait
       if isJust $ btrajectory body then do
-        timed <- setTrajectory aid
-        when timed $ advanceTime aid
+        setTrajectory aid
+        b2 <- getsState $ getActorBody aid
+        unless (bproj b2 && maybe True (null . fst) (btrajectory b2)) $
+          advanceTime aid
       else if queryUI then do
         cmdS <- sendQueryUI side aid
         -- TODO: check that the command is legal first, report and reject,
@@ -370,38 +371,30 @@ writeSaveAll uiRequested = do
 -- Not advancing time forces dead projectiles to be destroyed ASAP.
 -- Otherwise, with some timings, it can stay on the game map dead,
 -- blocking path of human-controlled actors and alarming the hapless human.
-setTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
+setTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 setTrajectory aid = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
-  let clearTrajectory speed = do
+  case btrajectory b of
+    Just (d : lv, speed) ->
+      if not $ accessibleDir cops lvl (bpos b) d
+      then do
         -- Lose HP due to bumping into an obstacle.
         execUpdAtomic $ UpdRefillHP aid minusM
         execUpdAtomic $ UpdTrajectory aid
                                       (btrajectory b)
                                       (Just ([], speed))
-        return $ not $ bproj b  -- projectiles must vanish soon
-  case btrajectory b of
-    Just (d : lv, speed) ->
-      if not $ accessibleDir cops lvl (bpos b) d
-      then clearTrajectory speed
       else do
         when (bproj b && null lv) $ do
           let toColor = Color.BrBlack
           when (bcolor b /= toColor) $
             execUpdAtomic $ UpdColorActor aid (bcolor b) toColor
-        reqMove aid d  -- hit clears trajectory of non-projectiles
+        reqMove aid d  -- hit clears trajectory of non-projectiles in reqMelee
         b2 <- getsState $ getActorBody aid
-        if actorDying b2 then return $ not $ bproj b  -- don't clear trajectory
-        else do
-          unless (maybe False (null . fst) (btrajectory b2)) $
-            execUpdAtomic $ UpdTrajectory aid
-                                          (btrajectory b2)
-                                          (Just (lv, speed))
-          return True
+        unless (btrajectory b2 == Just (lv, speed)) $  -- cleared in reqMelee
+          execUpdAtomic $ UpdTrajectory aid (btrajectory b2) (Just (lv, speed))
     Just ([], _) -> do  -- non-projectile actor stops flying
       let !_A = assert (not $ bproj b) ()
       execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-      return False
     _ -> assert `failure` "Nothing trajectory" `twith` (aid, b)
