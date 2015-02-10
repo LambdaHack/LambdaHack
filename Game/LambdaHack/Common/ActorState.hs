@@ -164,19 +164,21 @@ sharedOrgan body s =
      $ map borgan $ if null bs then [body] else bs
 
 sharedAllOwned :: Bool -> Actor -> State -> ItemBag
-sharedAllOwned organs body s =
+sharedAllOwned onlyOrgans body s =
   let shaBag = gsha $ sfactionD s EM.! bfid body
   in EM.unionsWith mergeItemQuant
-     $ [sharedEqp body s, sharedInv body s, shaBag]
-       ++ [sharedOrgan body s | organs]
+     $ if onlyOrgans
+       then [sharedOrgan body s]
+       else [sharedEqp body s, sharedInv body s, shaBag]
 
 sharedAllOwnedFid :: Bool -> FactionId -> State -> ItemBag
-sharedAllOwnedFid organs fid s =
+sharedAllOwnedFid onlyOrgans fid s =
   let shaBag = gsha $ sfactionD s EM.! fid
       bs = fidActorNotProjList fid s
   in EM.unionsWith mergeItemQuant
-     $ map binv bs ++ map beqp bs ++ [shaBag]
-       ++ if organs then map borgan bs else []
+     $ if onlyOrgans
+       then map borgan bs
+       else map binv bs ++ map beqp bs ++ [shaBag]
 
 findIid :: ActorId -> FactionId -> ItemId -> State -> [(Actor, CStore)]
 findIid leader fid iid s =

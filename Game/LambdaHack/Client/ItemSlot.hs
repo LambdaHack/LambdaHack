@@ -81,25 +81,24 @@ allZeroSlots = allSlots 0
 assignSlot :: CStore -> Item -> FactionId -> Maybe Actor -> ItemSlots
            -> SlotChar -> State
            -> SlotChar
-assignSlot c item fid mbody (itemSlots, organSlots) lastSlot s =
+assignSlot store item fid mbody (itemSlots, organSlots) lastSlot s =
   if jsymbol item == '$'
   then SlotChar 0 '$'
   else head free
  where
+  onlyOrgans = store == COrgan
   candidatesZero = take (length allZeroSlots)
                    $ drop (1 + fromMaybe 0 (elemIndex lastSlot allZeroSlots))
                    $ cycle allZeroSlots
   candidates = candidatesZero ++ concat [allSlots n | n <- [1..]]
-  onPerson = maybe (sharedAllOwnedFid True fid s)
-                   (\body -> sharedAllOwned True body s)
+  onPerson = maybe (sharedAllOwnedFid onlyOrgans fid s)
+                   (\body -> sharedAllOwned onlyOrgans body s)
                    mbody
   onGroud = maybe EM.empty
                   (\b -> getCBag (CFloor (blid b) (bpos b)) s)
                   mbody
   inBags = ES.unions $ map EM.keysSet [onPerson, onGroud]
-  lSlots = case c of
-    COrgan -> organSlots
-    _ -> itemSlots
+  lSlots = if onlyOrgans  then organSlots else itemSlots
   f l = maybe True (`ES.notMember` inBags) $ EM.lookup l lSlots
   free = filter f candidates
 
