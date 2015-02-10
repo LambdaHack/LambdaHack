@@ -96,10 +96,10 @@ assignSlot store item fid mbody (itemSlots, organSlots) lastSlot s =
   onPerson = maybe (sharedAllOwnedFid onlyOrgans fid s)
                    (\body -> sharedAllOwned onlyOrgans body s)
                    mbody
-  onGroud = maybe EM.empty
-                  (\b -> getCBag (CFloor (blid b) (bpos b)) s)
-                  mbody
-  inBags = ES.unions $ map EM.keysSet [onPerson, onGroud]
+  onGround = maybe EM.empty  -- only consider floor under the acting actor
+                   (\b -> getCBag (CFloor (blid b) (bpos b)) s)
+                   mbody
+  inBags = ES.unions $ map EM.keysSet $ onPerson : [ onGround | not onlyOrgans]
   lSlots = if onlyOrgans  then organSlots else itemSlots
   f l = maybe True (`ES.notMember` inBags) $ EM.lookup l lSlots
   free = filter f candidates
