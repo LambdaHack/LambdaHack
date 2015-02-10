@@ -195,7 +195,14 @@ maxActorSkillsClient aid = do
 updateItemSlot :: MonadClient m => CStore -> Maybe ActorId -> ItemId -> m ()
 updateItemSlot store maid iid = do
   slots@(itemSlots, organSlots) <- getsClient sslots
-  let lSlots = if store == COrgan then organSlots else itemSlots
+  let onlyOrgans = store == COrgan
+      lSlots = if onlyOrgans then organSlots else itemSlots
+      incrementPrefix m l iid2 = EM.insert l iid2 $
+        case EM.lookup l m of
+          Nothing -> m
+          Just iidOld ->
+            let lNew = SlotChar (slotPrefix l + 1) (slotChar l)
+            in incrementPrefix m lNew iidOld
   case lookup iid $ map swap $ EM.assocs lSlots of
     Nothing -> do
       side <- getsClient sside
@@ -203,13 +210,13 @@ updateItemSlot store maid iid = do
       lastSlot <- getsClient slastSlot
       mb <- maybe (return Nothing) (fmap Just . getsState . getActorBody) maid
       l <- getsState $ assignSlot store item side mb slots lastSlot
-      if store == COrgan then
+      if onlyOrgans then
         modifyClient $ \cli ->
           cli { sslots = ( itemSlots
-                         , EM.insert l iid organSlots ) }
+                         , incrementPrefix organSlots l iid ) }
       else
         modifyClient $ \cli ->
-          cli { sslots = ( EM.insert l iid itemSlots
+          cli { sslots = ( incrementPrefix itemSlots l iid
                          , organSlots )
               , slastSlot = l
               , slastStore = store }
