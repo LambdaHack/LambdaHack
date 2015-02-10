@@ -86,10 +86,12 @@ assignSlot store item fid mbody (itemSlots, organSlots) lastSlot s =
   then SlotChar 0 '$'
   else head free
  where
+  offset = if slotPrefix lastSlot /= 0
+           then 0
+           else 1 + fromMaybe 0 (elemIndex lastSlot allZeroSlots)
   onlyOrgans = store == COrgan
   candidatesZero = take (length allZeroSlots)
-                   $ drop (1 + fromMaybe 0 (elemIndex lastSlot allZeroSlots))
-                   $ cycle allZeroSlots
+                   $ drop offset $ cycle allZeroSlots
   candidates = candidatesZero ++ concat [allSlots n | n <- [1..]]
   onPerson = maybe (sharedAllOwnedFid onlyOrgans fid s)
                    (\body -> sharedAllOwned onlyOrgans body s)
