@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.ActorState
   , actorAssocsLvl, actorAssocs, actorList
   , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList
   , bagAssocs, bagAssocsK, calculateTotal
-  , mergeItemQuant, sharedAllOwned, sharedAllOwnedFid, findIid
+  , mergeItemQuant, sharedAllOwnedFid, findIid
   , getCBag, getActorBag, getBodyActorBag, mapActorItems_, getActorAssocs
   , nearbyFreePoints, whereTo, getCarriedAssocs, getCarriedIidCStore
   , posToActors, posToActor, getItemBody, memActor, getActorBody
@@ -138,7 +138,7 @@ nearbyFreePoints f start lid s =
 -- | Calculate loot's worth for a faction of a given actor.
 calculateTotal :: Actor -> State -> (ItemBag, Int)
 calculateTotal body s =
-  let bag = sharedAllOwned False body s
+  let bag = sharedAllOwned body s
       items = map (\(iid, (k, _)) -> (getItemBody iid s, k)) $ EM.assocs bag
   in (bag, sum $ map itemPrice items)
 
@@ -157,19 +157,11 @@ sharedEqp body s =
   in EM.unionsWith mergeItemQuant
      $ map beqp $ if null bs then [body] else bs
 
-sharedOrgan :: Actor -> State -> ItemBag
-sharedOrgan body s =
-  let bs = fidActorNotProjList (bfid body) s
-  in EM.unionsWith mergeItemQuant
-     $ map borgan $ if null bs then [body] else bs
-
-sharedAllOwned :: Bool -> Actor -> State -> ItemBag
-sharedAllOwned onlyOrgans body s =
+sharedAllOwned :: Actor -> State -> ItemBag
+sharedAllOwned body s =
   let shaBag = gsha $ sfactionD s EM.! bfid body
   in EM.unionsWith mergeItemQuant
-     $ if onlyOrgans
-       then [sharedOrgan body s]
-       else [sharedEqp body s, sharedInv body s, shaBag]
+     $ [sharedEqp body s, sharedInv body s, shaBag]
 
 sharedAllOwnedFid :: Bool -> FactionId -> State -> ItemBag
 sharedAllOwnedFid onlyOrgans fid s =

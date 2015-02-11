@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.ItemSlot
   , allSlots, slotLabel, slotRange, assignSlot
   ) where
 
+import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Bits (shiftL, shiftR)
 import Data.Char
@@ -82,9 +83,10 @@ assignSlot :: CStore -> Item -> FactionId -> Maybe Actor -> ItemSlots
            -> SlotChar -> State
            -> SlotChar
 assignSlot store item fid mbody (itemSlots, organSlots) lastSlot s =
-  if jsymbol item == '$'
-  then SlotChar 0 '$'
-  else head free
+  assert (maybe True (\b -> bfid b == fid) mbody)
+  $ if jsymbol item == '$'
+    then SlotChar 0 '$'
+    else head free
  where
   offset = if slotPrefix lastSlot /= 0
            then 0
@@ -93,10 +95,8 @@ assignSlot store item fid mbody (itemSlots, organSlots) lastSlot s =
   candidatesZero = take (length allZeroSlots)
                    $ drop offset $ cycle allZeroSlots
   candidates = candidatesZero ++ concat [allSlots n | n <- [1..]]
-  onPerson = maybe (sharedAllOwnedFid onlyOrgans fid s)
-                   (\body -> sharedAllOwned onlyOrgans body s)
-                   mbody
-  onGround = maybe EM.empty  -- only consider floor under the acting actor
+  onPerson = sharedAllOwnedFid onlyOrgans fid s
+  onGround = maybe EM.empty  -- consider floor only under the acting actor
                    (\b -> getCBag (CFloor (blid b) (bpos b)) s)
                    mbody
   inBags = ES.unions $ map EM.keysSet $ onPerson : [ onGround | not onlyOrgans]
