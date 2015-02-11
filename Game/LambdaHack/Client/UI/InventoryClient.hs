@@ -207,13 +207,8 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
       -- The last used store goes before even the nonempty store,
       -- unless it's not legal.
       lastStore <- getsClient slastStore
-      (modeFirst, modeRest) <-
-        if lastStore `elem` cLegalAfterCalm then
-          return $! breakStores lastStore
-        else do
-          -- Reset last slot, because we failed to switch to last store.
-          modifyClient $ \cli -> cli { slastSlot = SlotChar 0 '@' }
-          return $! breakStores cThisActor
+      let (modeFirst, modeRest) = breakStores $
+            if lastStore `elem` cLegalAfterCalm then lastStore else cThisActor
       getItem psuit prompt promptGeneric cursor modeFirst modeRest
               askWhenLone permitMulitple (map MStore $ cLegal) initalState
 
@@ -284,7 +279,6 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
   hs <- partyAfterLeader leader
   bag <- getsState $ \s -> accessModeBag leader s cCur
   lastSlot <- getsClient slastSlot
-  lastStore <- getsClient slastStore
   itemToF <- itemToFullClient
   Binding{brevMap} <- askBinding
   mpsuit <- psuit  -- when throwing, this sets eps and checks cursor validity
@@ -352,8 +346,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
            { defLabel =
                let l = makePhrase [slotLabel lastSlot]
                in "RET(" <> l <> ")"
-           , defCond = MStore lastStore == cCur
-                       && lastSlot `EM.member` bagItemSlots
+           , defCond = lastSlot `EM.member` bagItemSlots
            , defAction = \_ -> case EM.lookup lastSlot bagItemSlots of
                Nothing -> assert `failure` "no default item"
                                  `twith` lastSlot
