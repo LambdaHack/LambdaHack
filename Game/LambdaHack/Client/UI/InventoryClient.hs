@@ -292,9 +292,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
       getMultResult iids = (map getSingleResult iids, cCur)
       filterP iid kit = psuitFun $ itemToF iid kit
       bagSuit = EM.filterWithKey filterP bag
-      isOrgan = case cCur of
-        MStore COrgan -> True
-        _ -> False
+      isOrgan = cCur == MStore COrgan
       lSlots = if isOrgan then organSlots else itemSlots
       bagItemSlots = EM.filter (`EM.member` bag) lSlots
       suitableItemSlots = EM.filter (`EM.member` bagSuit) lSlots

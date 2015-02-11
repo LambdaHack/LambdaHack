@@ -97,8 +97,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
             floorBag = EM.findWithDefault EM.empty pos0 $ lfloor lvl
             (itemSlots, _) = sslots cli
             bagItemSlots = EM.filter (`EM.member` floorBag) itemSlots
-            floorIids = reverse (EM.elems bagItemSlots)
-                        ++ EM.keys floorBag
+            floorIids = EM.elems bagItemSlots  -- first slot will be shown
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeDeltaToFrom` ltime
             viewActor aid Actor{bsymbol, bcolor, bhp, bproj}

@@ -132,9 +132,7 @@ itemOverlay c lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   (itemSlots, organSlots) <- getsClient sslots
-  let isOrgan = case c of
-        COrgan -> True
-        _ -> False
+  let isOrgan = c == COrgan
       lSlots = if isOrgan then organSlots else itemSlots
   let !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (c, lid, bag, lSlots)) ()
@@ -148,5 +146,5 @@ itemOverlay c lid bag = do
                 -- symbol = jsymbol $ itemBase itemFull
             in Just $ makePhrase [ slotLabel l, "-"  -- MU.String [symbol]
                                  , partItemWs k c lid localTime itemFull ]
-                           <> "  "
+                      <> "  "
   return $! toOverlay $ mapMaybe pr $ EM.assocs lSlots
