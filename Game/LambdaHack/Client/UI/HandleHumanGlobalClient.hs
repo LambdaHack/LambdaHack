@@ -286,7 +286,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
            => CStore -> [(ItemId, ItemFull)]
            -> Int -> [(ItemId, Int, CStore, CStore)]
            -> m (Either Slideshow [(ItemId, Int, CStore, CStore)])
-      ret4 _ [] _ acc = return $ Right acc
+      ret4 _ [] _ acc = return $ Right $ reverse acc
       ret4 fromCStore ((iid, itemFull) : rest) oldN acc = do
         let k = itemK itemFull
             retRec toCStore =
