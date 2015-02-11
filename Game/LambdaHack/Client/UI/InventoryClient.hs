@@ -540,9 +540,8 @@ runDefItemKey keyDefs lettersDef io labelItemSlots prompt = do
             defKeys = map fst keyDefs
         in map (K.toKM K.NoModifier) slotKeys ++ defKeys
       choice = let letterRange = defLabel lettersDef
-                   letterLabel | T.null letterRange = []
-                               | otherwise = [letterRange]
-                   keyLabels = letterLabel ++ map (defLabel . snd) keyDefs
+                   keyLabelsRaw = letterRange : map (defLabel . snd) keyDefs
+                   keyLabels = filter (not . T.null) keyLabelsRaw
                in "[" <> T.intercalate ", " (nub keyLabels)
   akm <- displayChoiceUI (prompt <+> choice) io itemKeys
   case akm of
