@@ -66,7 +66,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   UpdCreateItem iid _ kit c -> do
     case c of
       CActor aid store -> do
-        updateItemSlotSide store aid iid
+        l <- updateItemSlotSide store aid iid
         case store of
           COrgan -> do
             let verb =
@@ -78,9 +78,16 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
             itemAidVerbMU aid verb iid (Left Nothing) COrgan
           _ -> do
             itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
+            side <- getsClient sside
+            b <- getsState $ getActorBody aid
+            when (bfid b == side) $
+              modifyClient $ \cli -> cli { slastSlot = l
+                                         , slastStore = store }
       CEmbed{} -> return ()
       CFloor{} -> do
-        updateItemSlot CGround Nothing iid
+        -- If you want an item to be assigned to @slastSlot@, create it
+        -- in @CActor aid CGround@, not in @CFloor@.
+        void $ updateItemSlot CGround Nothing iid
         itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
       CTrunk{} -> assert `failure` c
     stopPlayBack
@@ -93,10 +100,12 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
     case lookup iid $ map swap $ EM.assocs itemSlots of
       Nothing ->  -- never seen or would have a slot
         case c of
-          CActor aid store -> updateItemSlotSide store aid iid
+          CActor aid store ->
+            -- Enemy actor fetching an item from shared stash, most probably.
+            void $ updateItemSlotSide store aid iid
           CEmbed{} -> return ()
           CFloor lid p -> do
-            updateItemSlot CGround Nothing iid
+            void $ updateItemSlot CGround Nothing iid
             scursorOld <- getsClient scursor
             case scursorOld of
               TEnemy{} -> return ()  -- probably too important to overwrite
@@ -118,7 +127,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   UpdRefillHP aid n -> do
     when verbose $
       aidVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
-                              <+> tshow (abs $ n `divUp` oneM) <> "HP"
+                                <+> tshow (abs $ n `divUp` oneM) <> "HP"
     mleader <- getsClient _sleader
     when (Just aid == mleader) $ do
       b <- getsState $ getActorBody aid
@@ -237,7 +246,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   UpdRecordHistory _ -> recordHistory
 
 updateItemSlotSide :: MonadClient m
-                   => CStore -> ActorId -> ItemId -> m ()
+                   => CStore -> ActorId -> ItemId -> m SlotChar
 updateItemSlotSide store aid iid = do
   side <- getsClient sside
   b <- getsState $ getActorBody aid
@@ -338,7 +347,7 @@ msgDuplicateScrap = do
 createActorUI :: MonadClientUI m
               => ActorId -> Actor -> Bool -> MU.Part -> m ()
 createActorUI aid body verbose verb = do
-  mapM_ (\(iid, store) -> updateItemSlotSide store aid iid)
+  mapM_ (\(iid, store) -> void $ updateItemSlotSide store aid iid)
         (getCarriedIidCStore body)
   side <- getsClient sside
   -- Don't spam if the actor was already visible (but, e.g., on a tile that is
@@ -407,23 +416,28 @@ moveItemUI iid k aid cstore1 cstore2 = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let underAI = isAIFact fact
   mleader <- getsClient _sleader
-  if cstore1 == CGround && Just aid == mleader && not underAI then do
-    itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
-    localTime <- getsState $ getLocalTime (blid b)
-    itemToF <- itemToFullClient
-    (itemSlots, _) <- getsClient sslots
-    bag <- getsState $ getActorBag aid cstore2
-    let kit@(n, _) = bag EM.! iid
-    case lookup iid $ map swap $ EM.assocs itemSlots of
-      Just l -> msgAdd $ makePhrase
-                  [ "\n"
-                  , slotLabel l
-                  , "-"
-                  , partItemWs n cstore2 (blid b) localTime (itemToF iid kit)
-                  , "\n" ]
-      Nothing -> assert `failure` (iid, itemToF iid kit)
-  else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
-    itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
+  bag <- getsState $ getActorBag aid cstore2
+  let kit@(n, _) = bag EM.! iid
+  itemToF <- itemToFullClient
+  (itemSlots, _) <- getsClient sslots
+  case lookup iid $ map swap $ EM.assocs itemSlots of
+    Just l -> do
+      side <- getsClient sside
+      when (bfid b == side) $
+        modifyClient $ \cli -> cli { slastSlot = l
+                                   , slastStore = cstore2 }
+      if cstore1 == CGround && Just aid == mleader && not underAI then do
+        itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
+        localTime <- getsState $ getLocalTime (blid b)
+        msgAdd $ makePhrase
+                   [ "\n"
+                   , slotLabel l
+                   , "-"
+                   , partItemWs n cstore2 (blid b) localTime (itemToF iid kit)
+                   , "\n" ]
+      else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
+        itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
+    Nothing -> assert `failure` (iid, itemToF iid kit)
 
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Actor -> Maybe Status -> m ()
@@ -547,11 +561,13 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     spart <- partAidLeader source
     tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
-  SfxProject aid iid cstore ->
+  SfxProject aid iid cstore -> do
+    setLastSlot aid iid cstore
     itemAidVerbMU aid "aim" iid (Left $ Just 1) cstore
   SfxCatch aid iid cstore ->
     itemAidVerbMU aid "catch" iid (Left $ Just 1) cstore
-  SfxApply aid iid cstore ->
+  SfxApply aid iid cstore -> do
+    setLastSlot aid iid cstore
     itemAidVerbMU aid "apply" iid (Left $ Just 1) cstore
   SfxCheck aid iid cstore ->
     itemAidVerbMU aid "deapply" iid (Left $ Just 1) cstore
@@ -785,6 +801,19 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           -- @UpdAgeLevel@ later on, with a larger time increment),
           -- so show crrent game state, before it changes.
           displayPush ""
+
+setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
+setLastSlot aid iid cstore = do
+  side <- getsClient sside
+  b <- getsState $ getActorBody aid
+  bag <- getsState $ getActorBag aid cstore
+  -- The applying/projectile actor is ours and some items are left in the stack.
+  when (bfid b == side && iid `EM.member` bag) $ do
+    (itemSlots, _) <- getsClient sslots
+    case lookup iid $ map swap $ EM.assocs itemSlots of
+      Just l -> modifyClient $ \cli -> cli { slastSlot = l
+                                           , slastStore = cstore }
+      Nothing -> assert `failure` (iid, cstore, aid, b)
 
 strike :: MonadClientUI m
        => ActorId -> ActorId -> ItemId -> CStore -> HitAtomic -> m ()

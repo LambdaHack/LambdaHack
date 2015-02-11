@@ -192,7 +192,8 @@ maxActorSkillsClient aid = do
   activeItems <- activeItemsClient aid
   getsState $ maxActorSkills aid activeItems
 
-updateItemSlot :: MonadClient m => CStore -> Maybe ActorId -> ItemId -> m ()
+updateItemSlot :: MonadClient m
+               => CStore -> Maybe ActorId -> ItemId -> m SlotChar
 updateItemSlot store maid iid = do
   slots@(itemSlots, organSlots) <- getsClient sslots
   let onlyOrgans = store == COrgan
@@ -210,17 +211,13 @@ updateItemSlot store maid iid = do
       lastSlot <- getsClient slastSlot
       mb <- maybe (return Nothing) (fmap Just . getsState . getActorBody) maid
       l <- getsState $ assignSlot store item side mb slots lastSlot
-      if onlyOrgans then
-        modifyClient $ \cli ->
-          cli { sslots = ( itemSlots
-                         , incrementPrefix organSlots l iid ) }
-      else
-        modifyClient $ \cli ->
-          cli { sslots = ( incrementPrefix itemSlots l iid
-                         , organSlots )
-              , slastSlot = l
-              , slastStore = store }
-    _ -> return ()  -- slot already assigned; a letter or a number
+      let newSlots | onlyOrgans = ( itemSlots
+                                  , incrementPrefix organSlots l iid )
+                   | otherwise =  ( incrementPrefix itemSlots l iid
+                                  , organSlots )
+      modifyClient $ \cli -> cli {sslots = newSlots}
+      return l
+    Just l -> return l  -- slot already assigned; a letter or a number
 
 fullAssocsClient :: MonadClient m
                  => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
