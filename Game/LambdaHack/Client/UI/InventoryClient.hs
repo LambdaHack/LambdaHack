@@ -293,15 +293,17 @@ transition psuit prompt promptGeneric cursor permitMulitple
       filterP iid kit = psuitFun $ itemToF iid kit
       bagSuit = EM.filterWithKey filterP bag
       isOrgan = cCur == MStore COrgan
+      lSlots = if isOrgan then organSlots else itemSlots
       hasPrefix x _ = slotPrefix x == numPrefix
-      lSlots = EM.filterWithKey hasPrefix
-               $ if isOrgan then organSlots else itemSlots
-      bagItemSlots = EM.filter (`EM.member` bag) lSlots
-      suitableItemSlots = EM.filter (`EM.member` bagSuit) lSlots
+      bagItemSlotsAll = EM.filter (`EM.member` bag) lSlots
+      bagItemSlots = EM.filterWithKey hasPrefix bagItemSlotsAll
+      suitableItemSlotsAll = EM.filter (`EM.member` bagSuit) lSlots
+      suitableItemSlots = EM.filterWithKey hasPrefix suitableItemSlotsAll
       (autoDun, autoLvl) = autoDungeonLevel fact
-      enterSlots = if itemDialogState `elem` [IAll, INoAll]
-                   then bagItemSlots
-                   else suitableItemSlots
+      enterSlots = EM.empty :: EM.EnumMap SlotChar ItemId  -- TODO
+      multipleSlots = if itemDialogState `elem` [IAll, INoAll]
+                      then bagItemSlotsAll
+                      else suitableItemSlotsAll
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
         [ (K.toKM K.NoModifier $ K.Char '?', DefItemKey
@@ -329,9 +331,9 @@ transition psuit prompt promptGeneric cursor permitMulitple
            })
         , (K.toKM K.NoModifier $ K.Char '*', DefItemKey
            { defLabel = "*"
-           , defCond = permitMulitple && not (EM.null enterSlots)
+           , defCond = permitMulitple && not (EM.null multipleSlots)
            , defAction = \_ ->
-               let eslots = EM.elems enterSlots
+               let eslots = EM.elems multipleSlots
                in return $ Right $ getMultResult eslots
            })
         , (K.toKM K.NoModifier K.Return, DefItemKey
