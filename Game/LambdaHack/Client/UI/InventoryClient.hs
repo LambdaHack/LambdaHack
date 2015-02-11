@@ -293,7 +293,9 @@ transition psuit prompt promptGeneric cursor permitMulitple
       filterP iid kit = psuitFun $ itemToF iid kit
       bagSuit = EM.filterWithKey filterP bag
       isOrgan = cCur == MStore COrgan
-      lSlots = if isOrgan then organSlots else itemSlots
+      hasPrefix x _ = slotPrefix x == numPrefix
+      lSlots = EM.filterWithKey hasPrefix
+               $ if isOrgan then organSlots else itemSlots
       bagItemSlots = EM.filter (`EM.member` bag) lSlots
       suitableItemSlots = EM.filter (`EM.member` bagSuit) lSlots
       (autoDun, autoLvl) = autoDungeonLevel fact
@@ -431,7 +433,7 @@ transition psuit prompt promptGeneric cursor permitMulitple
         in map (uncurry $ cursorCmdDef False) kCmds
       lettersDef :: DefItemKey m
       lettersDef = DefItemKey
-        { defLabel = slotRange numPrefix $ EM.keys labelItemSlots
+        { defLabel = slotRange $ EM.keys labelItemSlots
         , defCond = True
         , defAction = \K.KM{key} -> case key of
             K.Char l -> case EM.lookup (SlotChar numPrefix l) bagItemSlots of

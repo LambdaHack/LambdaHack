@@ -49,11 +49,10 @@ instance Enum SlotChar where
 type ItemSlots = ( EM.EnumMap SlotChar ItemId
                  , EM.EnumMap SlotChar ItemId )
 
-slotRange :: Int -> [SlotChar] -> Text
-slotRange n ls =
-  sectionBy (sort $ filter hasPrefix ls) Nothing
+slotRange :: [SlotChar] -> Text
+slotRange ls =
+  sectionBy (sort ls) Nothing
  where
-  hasPrefix x = slotPrefix x == n
   succSlot c d = ord (slotChar d) - ord (slotChar c) == 1
   succ2Slot c d = ord (slotChar d) - ord (slotChar c) == 2
 
