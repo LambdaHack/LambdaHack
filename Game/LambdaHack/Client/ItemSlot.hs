@@ -13,7 +13,6 @@ import Data.Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
-import Data.Maybe
 import Data.Monoid
 import Data.Ord (comparing)
 import Data.Text (Text)
@@ -85,11 +84,9 @@ assignSlot store item fid mbody (itemSlots, organSlots) lastSlot s =
   assert (maybe True (\b -> bfid b == fid) mbody)
   $ if jsymbol item == '$'
     then SlotChar 0 '$'
-    else head free
+    else head $ fresh ++ free
  where
-  offset = if slotPrefix lastSlot /= 0
-           then 0
-           else 1 + fromMaybe 0 (elemIndex lastSlot allZeroSlots)
+  offset = maybe 0 (+1) (elemIndex lastSlot allZeroSlots)
   onlyOrgans = store == COrgan
   candidatesZero = take (length allZeroSlots)
                    $ drop offset $ cycle allZeroSlots
@@ -102,6 +99,8 @@ assignSlot store item fid mbody (itemSlots, organSlots) lastSlot s =
   lSlots = if onlyOrgans  then organSlots else itemSlots
   f l = maybe True (`ES.notMember` inBags) $ EM.lookup l lSlots
   free = filter f candidates
+  g l = slotPrefix l <= slotPrefix lastSlot && l `EM.notMember` lSlots
+  fresh = filter g free
 
 slotLabel :: SlotChar -> MU.Part
 slotLabel x = MU.String
