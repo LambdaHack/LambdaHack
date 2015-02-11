@@ -88,8 +88,8 @@ assignSlot store item fid mbody (itemSlots, organSlots) lastSlot s =
  where
   offset = maybe 0 (+1) (elemIndex lastSlot allZeroSlots)
   onlyOrgans = store == COrgan
-  candidatesZero = take (length allZeroSlots)
-                   $ drop offset $ cycle allZeroSlots
+  len0 = length allZeroSlots
+  candidatesZero = take len0 $ drop offset $ cycle allZeroSlots
   candidates = candidatesZero ++ concat [allSlots n | n <- [1..]]
   onPerson = sharedAllOwnedFid onlyOrgans fid s
   onGround = maybe EM.empty  -- consider floor only under the acting actor
@@ -99,8 +99,8 @@ assignSlot store item fid mbody (itemSlots, organSlots) lastSlot s =
   lSlots = if onlyOrgans  then organSlots else itemSlots
   f l = maybe True (`ES.notMember` inBags) $ EM.lookup l lSlots
   free = filter f candidates
-  g l = slotPrefix l <= slotPrefix lastSlot && l `EM.notMember` lSlots
-  fresh = filter g free
+  g l = l `EM.notMember` lSlots
+  fresh = filter g $ take ((slotPrefix lastSlot + 1) * len0) candidates
 
 slotLabel :: SlotChar -> MU.Part
 slotLabel x = MU.String
