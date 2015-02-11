@@ -283,6 +283,8 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
   bag <- getsState $ \s -> accessModeBag leader s cCur
+  lastSlot <- getsClient slastSlot
+  lastStore <- getsClient slastStore
   itemToF <- itemToFullClient
   Binding{brevMap} <- askBinding
   mpsuit <- psuit  -- when throwing, this sets eps and checks cursor validity
@@ -310,7 +312,6 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
       suitableItemSlotsAll = EM.filter (`EM.member` bagSuit) lSlots
       suitableItemSlots = EM.filterWithKey hasPrefix suitableItemSlotsAll
       (autoDun, autoLvl) = autoDungeonLevel fact
-      enterSlots = EM.empty :: EM.EnumMap SlotChar ItemId  -- TODO
       multipleSlots = if itemDialogState `elem` [IAll, INoAll]
                       then bagItemSlotsAll
                       else suitableItemSlotsAll
@@ -349,16 +350,14 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
            })
         , (K.toKM K.NoModifier K.Return, DefItemKey
            { defLabel =
-               let c = case EM.maxViewWithKey enterSlots of
-                     Nothing -> assert `failure` "no suitable items"
-                                                  `twith` enterSlots
-                     Just ((l, _), _) -> slotChar l
-               in "RET(" <> T.singleton c <> ")"
-           , defCond = not $ EM.null enterSlots
-           , defAction = \_ -> case EM.maxView enterSlots of
-               Nothing -> assert `failure` "no suitable items"
-                                 `twith` enterSlots
-               Just (iid, _) -> return $ Right $ getResult iid
+               let l = makePhrase [slotLabel lastSlot]
+               in "RET(" <> l <> ")"
+           , defCond = MStore lastStore == cCur
+                       && lastSlot `EM.member` bagItemSlots
+           , defAction = \_ -> case EM.lookup lastSlot bagItemSlots of
+               Nothing -> assert `failure` "no default item"
+                                 `twith` lastSlot
+               Just iid -> return $ Right $ getResult iid
            })
         , let km = M.findWithDefault (K.toKM K.NoModifier K.Tab)
                                      MemberCycle brevMap
