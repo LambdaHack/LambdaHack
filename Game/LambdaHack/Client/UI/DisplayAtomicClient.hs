@@ -806,9 +806,7 @@ setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do
   side <- getsClient sside
   b <- getsState $ getActorBody aid
-  bag <- getsState $ getActorBag aid cstore
-  -- The applying/projectile actor is ours and some items are left in the stack.
-  when (bfid b == side && iid `EM.member` bag) $ do
+  when (bfid b == side) $ do
     (itemSlots, _) <- getsClient sslots
     case lookup iid $ map swap $ EM.assocs itemSlots of
       Just l -> modifyClient $ \cli -> cli { slastSlot = l
