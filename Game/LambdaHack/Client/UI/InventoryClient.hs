@@ -151,7 +151,7 @@ getStoreItem prompt cInitial = do
       remCs = post ++ pre
   soc <- getItem (return SuitsEverything)
                  prompt prompt False cInitial remCs
-                 True False ISuitable
+                 True False (cInitial:remCs) ISuitable
   case soc of
     Left sli -> return $ Left sli
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
@@ -199,14 +199,23 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
       else failSer ItemNotCalm
     Just cThisActor -> do
       -- Don't display stores empty for all actors.
-      cLegalNotEmpty <- filterM partyNotEmpty cLegalRaw
-      let cInitial = MStore cThisActor
-          allCs = map MStore $ delete cThisActor cLegalNotEmpty
-          (pre, rest) = break (== cInitial) allCs
-          post = dropWhile (== cInitial) rest
-          remCs = post ++ pre
-      getItem psuit prompt promptGeneric cursor cInitial remCs
-              askWhenLone permitMulitple initalState
+      cLegal <- filterM partyNotEmpty cLegalRaw
+      let breakStores cInit =
+            let (pre, rest) = break (== cInit) cLegal
+                post = dropWhile (== cInit) rest
+            in (MStore cInit, map MStore $ post ++ pre)
+      -- The last used store goes before even the nonempty store,
+      -- unless it's not legal.
+      lastStore <- getsClient slastStore
+      (modeFirst, modeRest) <-
+        if lastStore `elem` cLegalAfterCalm then
+          return $! breakStores lastStore
+        else do
+          -- Reset last slot, because we failed to switch to last store.
+          modifyClient $ \cli -> cli { slastSlot = SlotChar 0 '@' }
+          return $! breakStores cThisActor
+      getItem psuit prompt promptGeneric cursor modeFirst modeRest
+              askWhenLone permitMulitple (map MStore $ cLegal) initalState
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
@@ -218,26 +227,26 @@ getItem :: MonadClientUI m
         -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
                             -- ^ generic prompt
         -> Bool             -- ^ whether to enable setting cursor with mouse
-        -> ItemDialogMode   -- ^ first legal mode
-        -> [ItemDialogMode] -- ^ the rest of legal modes
+        -> ItemDialogMode   -- ^ first mode, legal or not
+        -> [ItemDialogMode] -- ^ the (rest of) legal modes
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
+        -> [ItemDialogMode] -- ^ all legal modes
         -> ItemDialogState  -- ^ the dialog state to start in
         -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
 getItem psuit prompt promptGeneric cursor cCur cRest askWhenLone permitMulitple
-        initalState = do
-  let cLegal = cCur : cRest
+        cLegal initalState = do
   leader <- getLeaderUI
   accessCBag <- getsState $ accessModeBag leader
   let storeAssocs = EM.assocs . accessCBag
-      allAssocs = concatMap storeAssocs cLegal
+      allAssocs = concatMap storeAssocs (cCur : cRest)
   case (cRest, allAssocs) of
     ([], [(iid, k)]) | not askWhenLone -> do
       itemToF <- itemToFullClient
       return $ Right ([(iid, itemToF iid k)], cCur)
     _ ->
-      transition psuit prompt promptGeneric cursor permitMulitple
+      transition psuit prompt promptGeneric cursor permitMulitple cLegal
                  0 cCur cRest initalState
 
 data DefItemKey m = DefItemKey
@@ -257,15 +266,16 @@ transition :: forall m. MonadClientUI m
            -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
            -> Bool
            -> Bool
+           -> [ItemDialogMode]
            -> Int
            -> ItemDialogMode
            -> [ItemDialogMode]
            -> ItemDialogState
            -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
-transition psuit prompt promptGeneric cursor permitMulitple
+transition psuit prompt promptGeneric cursor permitMulitple cLegal
            numPrefix cCur cRest itemDialogState = do
-  let recCall = transition psuit prompt promptGeneric cursor permitMulitple
-      cLegal = cCur : cRest
+  let recCall =
+        transition psuit prompt promptGeneric cursor permitMulitple cLegal
   (itemSlots, organSlots) <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -318,15 +328,16 @@ transition psuit prompt promptGeneric cursor permitMulitple
            })
         , (K.toKM K.NoModifier $ K.Char '/', DefItemKey
            { defLabel = "/"
-           , defCond = length cLegal > 1
+           , defCond = not $ null cRest
            , defAction = \_ -> do
                let calmE = calmEnough body activeItems
-                   (cCurAfterCalm, cRestAfterCalm) = case cRest ++ [cCur] of
+                   mcCur = filter (`elem` cLegal) [cCur]
+                   (cCurAfterCalm, cRestAfterCalm) = case cRest ++ mcCur of
                      c1@(MStore CSha) : c2 : rest | not calmE ->
                        (c2, c1 : rest)
-                     [MStore CSha] | not calmE -> assert `failure` cLegal
+                     [MStore CSha] | not calmE -> assert `failure` cRest
                      c1 : rest -> (c1, rest)
-                     [] -> assert `failure` cLegal
+                     [] -> assert `failure` cRest
                recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
            })
         , (K.toKM K.NoModifier $ K.Char '*', DefItemKey
