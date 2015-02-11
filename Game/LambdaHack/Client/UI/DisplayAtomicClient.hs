@@ -65,18 +65,19 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
     when (bfid body == side && not (bproj body)) stopPlayBack
   UpdCreateItem iid _ kit c -> do
     case c of
-      CActor aid COrgan -> do
-        let verb =
-              MU.Text $ "become" <+> case fst kit of
-                                       1 -> ""
-                                       k -> tshow k <> "-fold"
-        -- This describes all such items already among organs,
-        -- which is useful, because it shows "charging".
-        itemAidVerbMU aid verb iid (Left Nothing) COrgan
       CActor aid store -> do
-        when (store == CGround) $
-          updateItemSlotSide CGround aid iid
-        itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
+        updateItemSlotSide store aid iid
+        case store of
+          COrgan -> do
+            let verb =
+                  MU.Text $ "become" <+> case fst kit of
+                                           1 -> ""
+                                           k -> tshow k <> "-fold"
+            -- This describes all such items already among organs,
+            -- which is useful, because it shows "charging".
+            itemAidVerbMU aid verb iid (Left Nothing) COrgan
+          _ -> do
+            itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
       CEmbed{} -> return ()
       CFloor{} -> do
         updateItemSlot CGround Nothing iid
@@ -88,15 +89,11 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   UpdLoseActor aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
   UpdSpotItem iid _ kit c -> do
-    -- We assign slots to all items visible on the floor,
-    -- but some of the slots are later on recycled and then
-    -- we report spotting the items again.
     (itemSlots, _) <- getsClient sslots
     case lookup iid $ map swap $ EM.assocs itemSlots of
-      Nothing ->
+      Nothing ->  -- never seen or would have a slot
         case c of
-          CActor aid CGround -> updateItemSlotSide CGround aid iid
-          CActor{} -> return ()
+          CActor aid store -> updateItemSlotSide store aid iid
           CEmbed{} -> return ()
           CFloor lid p -> do
             updateItemSlot CGround Nothing iid
@@ -108,7 +105,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
             itemVerbMU iid kit "be spotted" c
             stopPlayBack
           CTrunk{} -> return ()
-      _ -> return ()  -- seen recently (still has a slot assigned)
+      _ -> return ()  -- seen already (has a slot assigned)
   UpdLoseItem{} -> return ()
   -- Move actors and items.
   UpdMoveActor aid source target -> moveActor oldState aid source target
@@ -341,6 +338,8 @@ msgDuplicateScrap = do
 createActorUI :: MonadClientUI m
               => ActorId -> Actor -> Bool -> MU.Part -> m ()
 createActorUI aid body verbose verb = do
+  mapM_ (\(iid, store) -> updateItemSlotSide store aid iid)
+        (getCarriedIidCStore body)
   side <- getsClient sside
   -- Don't spam if the actor was already visible (but, e.g., on a tile that is
   -- invisible this turn (in that case move is broken down to lose+spot)
@@ -404,7 +403,6 @@ moveItemUI :: MonadClientUI m
            -> m ()
 moveItemUI iid k aid cstore1 cstore2 = do
   let verb = verbCStore cstore2
-  when (cstore2 == CGround) $ updateItemSlotSide CGround aid iid
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let underAI = isAIFact fact
@@ -423,7 +421,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
                   , "-"
                   , partItemWs n cstore2 (blid b) localTime (itemToF iid kit)
                   , "\n" ]
-      Nothing -> return ()
+      Nothing -> assert `failure` (iid, itemToF iid kit)
   else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
     itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
 
@@ -484,7 +482,6 @@ quitFactionUI fid mbody toSt = do
                           <+> moreMsg
             if EM.null bag then return (mempty, 0)
             else do
-              mapM_ (updateItemSlot CGround Nothing) $ EM.keys bag
               io <- itemOverlay CGround (blid b) bag
               sli <- overlayToSlideshow itemMsg io
               return (sli, tot)

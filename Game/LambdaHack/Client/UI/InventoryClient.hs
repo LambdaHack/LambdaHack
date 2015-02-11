@@ -232,7 +232,6 @@ getItem psuit prompt promptGeneric cursor cCur cRest askWhenLone permitMulitple
   accessCBag <- getsState $ accessModeBag leader
   let storeAssocs = EM.assocs . accessCBag
       allAssocs = concatMap storeAssocs cLegal
-  updateAllSlots leader cLegal
   case (cRest, allAssocs) of
     ([], [(iid, k)]) | not askWhenLone -> do
       itemToF <- itemToFullClient
@@ -240,12 +239,6 @@ getItem psuit prompt promptGeneric cursor cCur cRest askWhenLone permitMulitple
     _ ->
       transition psuit prompt promptGeneric cursor permitMulitple
                  0 cCur cRest initalState
-
-updateAllSlots :: MonadClient m => ActorId -> [ItemDialogMode] -> m ()
-updateAllSlots leader cs = do
-  s <- getState
-  mapM_ (\c -> mapM_ (updateItemSlot (storeFromMode c) (Just leader))
-                     (EM.keys $ accessModeBag leader s c)) cs
 
 data DefItemKey m = DefItemKey
   { defLabel  :: Text  -- ^ can be undefined if not @defCond@
@@ -519,7 +512,6 @@ legalWithUpdatedLeader :: MonadClientUI m
 legalWithUpdatedLeader cCur cRest = do
   leader <- getLeaderUI
   let newLegal = cCur : cRest  -- not updated in any way yet
-  updateAllSlots leader newLegal
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
   let calmE = calmEnough b activeItems
