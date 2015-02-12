@@ -204,11 +204,29 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
             let (pre, rest) = break (== cInit) cLegal
                 post = dropWhile (== cInit) rest
             in (MStore cInit, map MStore $ post ++ pre)
-      -- The last used store goes before even the nonempty store,
-      -- unless it's not legal.
+      -- The last used store may go before even the first nonempty store.
       lastStore <- getsClient slastStore
-      let (modeFirst, modeRest) = breakStores $
-            if lastStore `elem` cLegalAfterCalm then lastStore else cThisActor
+      firstStore <-
+        if lastStore `notElem` cLegalAfterCalm
+        then return cThisActor
+        else do
+          (itemSlots, organSlots) <- getsClient sslots
+          let lSlots = if lastStore == COrgan then organSlots else itemSlots
+          lastSlot <- getsClient slastSlot
+          case EM.lookup lastSlot lSlots of
+            Nothing -> return cThisActor
+            Just lastIid -> case EM.lookup lastIid $ getCStoreBag lastStore of
+              Nothing -> return cThisActor
+              Just kit -> do
+                itemToF <- itemToFullClient
+                let lastItemFull = itemToF lastIid kit
+                mpsuit <- psuit
+                let lastSuits = case mpsuit of
+                      SuitsEverything -> True
+                      SuitsNothing _ -> False
+                      SuitsSomething f -> f lastItemFull
+                return $! if lastSuits then lastStore else cThisActor
+      let (modeFirst, modeRest) = breakStores firstStore
       getItem psuit prompt promptGeneric cursor modeFirst modeRest
               askWhenLone permitMulitple (map MStore $ cLegal) initalState
 
