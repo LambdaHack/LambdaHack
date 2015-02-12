@@ -369,13 +369,21 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                in return $ Right $ getMultResult eslots
            })
         , (K.toKM K.NoModifier K.Return, DefItemKey
-           { defLabel =
-               let l = makePhrase [slotLabel lastSlot]
-               in "RET(" <> l <> ")"
+           { defLabel = if lastSlot `EM.member` bagItemSlots
+                        then let l = makePhrase [slotLabel lastSlot]
+                             in "RET(" <> l <> ")"
+                        else "RET"
            , defCond = lastSlot `EM.member` bagItemSlots
+                       || not (EM.null labelItemSlots)
            , defAction = \_ -> case EM.lookup lastSlot bagItemSlots of
-               Nothing -> assert `failure` "no default item"
-                                 `twith` lastSlot
+               Nothing -> case EM.minViewWithKey labelItemSlots of
+                 Nothing -> assert `failure` "labelItemSlots empty"
+                                   `twith` labelItemSlots
+                 Just ((l, _), _) -> do
+                   modifyClient $ \cli ->
+                     cli { slastSlot = l
+                         , slastStore = storeFromMode cCur }
+                   recCall numPrefix cCur cRest itemDialogState
                Just iid -> return $ Right $ getResult iid
            })
         , let km = M.findWithDefault (K.toKM K.NoModifier K.Tab)
