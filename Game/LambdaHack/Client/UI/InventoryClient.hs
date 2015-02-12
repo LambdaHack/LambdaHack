@@ -186,19 +186,32 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
         as <- getsState $ fidActorNotProjAssocs side
         bs <- mapM (aidNotEmpty store . fst) as
         return $! or bs
-  -- Move the first store that is non-empty for this actor to the front, if any.
+  mpsuit <- psuit
+  let psuitFun = case mpsuit of
+        SuitsEverything -> const True
+        SuitsNothing _ -> const False
+        SuitsSomething f -> f
+  -- Move the first store that is non-empty for suitable items for this actor
+  -- to the front, if any.
   getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
   let hasThisActor = not . EM.null . getCStoreBag
-  case find hasThisActor cLegalAfterCalm of
-    Nothing ->
+  case filter hasThisActor cLegalAfterCalm of
+    [] ->
       if isNothing (find hasThisActor cLegalRaw) then do
         let contLegalRaw = map MStore cLegalRaw
             tLegal = map (MU.Text . ppItemDialogModeIn) contLegalRaw
             ppLegal = makePhrase [MU.WWxW "nor" tLegal]
         failWith $ "no items" <+> ppLegal
       else failSer ItemNotCalm
-    Just cThisActor -> do
-      -- Don't display stores empty for all actors.
+    haveThis@(headThisActor : _) -> do
+      itemToF <- itemToFullClient
+      let suitsThisActor store =
+            let bag = getCStoreBag store
+            in any (\(iid, kit) -> psuitFun $ itemToF iid kit) $ EM.assocs bag
+          cThisActor = case find suitsThisActor haveThis of
+            Nothing -> headThisActor
+            Just cSuits -> cSuits
+      -- Don't display stores totally empty for all actors.
       cLegal <- filterM partyNotEmpty cLegalRaw
       let breakStores cInit =
             let (pre, rest) = break (== cInit) cLegal
@@ -218,13 +231,8 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
             Just lastIid -> case EM.lookup lastIid $ getCStoreBag lastStore of
               Nothing -> return cThisActor
               Just kit -> do
-                itemToF <- itemToFullClient
                 let lastItemFull = itemToF lastIid kit
-                mpsuit <- psuit
-                let lastSuits = case mpsuit of
-                      SuitsEverything -> True
-                      SuitsNothing _ -> False
-                      SuitsSomething f -> f lastItemFull
+                    lastSuits = psuitFun lastItemFull
                 return $! if lastSuits then lastStore else cThisActor
       let (modeFirst, modeRest) = breakStores firstStore
       getItem psuit prompt promptGeneric cursor modeFirst modeRest
