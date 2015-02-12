@@ -208,8 +208,8 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
       let suitsThisActor store =
             let bag = getCStoreBag store
             in any (\(iid, kit) -> psuitFun $ itemToF iid kit) $ EM.assocs bag
-          cThisActor = case find suitsThisActor haveThis of
-            Nothing -> headThisActor
+          cThisActor cDef = case find suitsThisActor haveThis of
+            Nothing -> cDef
             Just cSuits -> cSuits
       -- Don't display stores totally empty for all actors.
       cLegal <- filterM partyNotEmpty cLegalRaw
@@ -221,19 +221,19 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
       lastStore <- getsClient slastStore
       firstStore <-
         if lastStore `notElem` cLegalAfterCalm
-        then return cThisActor
+        then return $! cThisActor headThisActor
         else do
           (itemSlots, organSlots) <- getsClient sslots
           let lSlots = if lastStore == COrgan then organSlots else itemSlots
           lastSlot <- getsClient slastSlot
           case EM.lookup lastSlot lSlots of
-            Nothing -> return cThisActor
+            Nothing -> return $! cThisActor headThisActor
             Just lastIid -> case EM.lookup lastIid $ getCStoreBag lastStore of
-              Nothing -> return cThisActor
+              Nothing -> return $! cThisActor headThisActor
               Just kit -> do
                 let lastItemFull = itemToF lastIid kit
                     lastSuits = psuitFun lastItemFull
-                return $! if lastSuits then lastStore else cThisActor
+                return $! if lastSuits then lastStore else cThisActor lastStore
       let (modeFirst, modeRest) = breakStores firstStore
       getItem psuit prompt promptGeneric cursor modeFirst modeRest
               askWhenLone permitMulitple (map MStore $ cLegal) initalState
