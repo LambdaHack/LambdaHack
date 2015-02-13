@@ -93,7 +93,8 @@ addAnyActor actorFreq lid time mpos = do
       pos <- case mpos of
         Just pos -> return pos
         Nothing -> do
-          rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fid
+          fact <- getsState $ (EM.! fid) . sfactionD
+          rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fact
           rndToAction rollPos
       let container = CTrunk fid lid pos
       trunkId <- registerItem trunkFull itemKnown seed
@@ -101,16 +102,15 @@ addAnyActor actorFreq lid time mpos = do
       addActorIid trunkId trunkFull False fid pos lid id "it" time
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
-             -> LevelId -> Level -> FactionId -> State
+             -> LevelId -> Level -> Faction -> State
              -> Rnd Point
 rollSpawnPos Kind.COps{cotile} visible
-             lid Level{ltile, lxsize, lysize} fid s = do
-  let factionDist = max lxsize lysize - 5
-      inhabitants = actorList (/= fid) lid s  -- projectiles can have cameras
+             lid Level{ltile} fact s = do
+  let inhabitants = actorRegularList (isAtWar fact) lid s
       as = actorList (const True) lid s
       isLit = Tile.isLit cotile
-      distantAtLeast d p _ =
-        all (\b -> chessDist (bpos b) p > d) inhabitants
+      distantSo df p _ =
+        all (\b -> df $ chessDist (bpos b) p) inhabitants
   -- Not considering TK.OftenActor, because monsters emerge from hidden ducts,
   -- which are easier to hide in crampy corridors that lit halls.
   findPosTry 100 ltile
@@ -118,12 +118,11 @@ rollSpawnPos Kind.COps{cotile} visible
               && not (Tile.hasFeature cotile TK.NoActor t)
               && unoccupied as p)
     [ \_ t -> not (isLit t)  -- no such tiles on some maps
-    , distantAtLeast factionDist
-    , distantAtLeast $ factionDist `div` 2
-    , distantAtLeast $ factionDist `div` 4
-    , distantAtLeast $ factionDist `div` 6
-    , \p _ -> not $ p `ES.member` visible
-    , distantAtLeast 3  -- otherwise a fast actor can walk and hit in one turn
+    , distantSo (<= 10)  -- try to harass enemies
+    , distantSo (>= 5)   -- but leave room for yourself for ranged combat
+    , distantSo (<= 20)  -- but applying pressure is more important
+    , \p _ -> not (p `ES.member` visible)  -- surprise and believability
+    , distantSo (>= 3)  -- otherwise fast actor can approach and hit in one turn
     ]
 
 dominateFidSfx :: (MonadAtomic m, MonadServer m)
