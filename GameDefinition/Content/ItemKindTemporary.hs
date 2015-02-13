@@ -27,7 +27,7 @@ tmpAs name aspects = ItemKind
   , icount   = 1
   , irarity  = [(1, 1)]
   , iverbHit = "affect"
-  , iweight  = 1
+  , iweight  = 0
   , iaspects = [Periodic, Timeout 0]  -- activates and vanishes soon,
                                       -- depending on initial timer setting
                ++ aspects

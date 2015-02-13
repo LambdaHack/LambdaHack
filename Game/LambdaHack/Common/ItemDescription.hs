@@ -185,7 +185,9 @@ itemDesc c lid localTime itemFull =
       (scaledWeight, unitWeight) =
         if weight > 1000
         then (tshow $ fromIntegral weight / (1000 :: Double), "kg")
-        else (tshow weight, "g")
+        else if weight > 0
+        then (tshow weight, "g")
+        else ("", "")
       ln = abs $ fromEnum $ jlid (itemBase itemFull)
       colorSymbol = uncurry (flip Color.AttrChar) (viewItem $ itemBase itemFull)
       f = Color.AttrChar Color.defAttr
