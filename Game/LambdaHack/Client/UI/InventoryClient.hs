@@ -525,7 +525,9 @@ statsOverlay aid = do
         , (IK.EqpSlotAddMaxHP, \t -> tshow $ max 0 t)
         , (IK.EqpSlotAddMaxCalm, \t -> tshow $ max 0 t)
         , (IK.EqpSlotAddSpeed, \t -> tshow (max 0 t) <> "m/10s")
-        , (IK.EqpSlotAddSight, \t -> tshow (max 0 t) <> "m")
+        , (IK.EqpSlotAddSight, \t ->
+            tshow (max 0 $ min (fromIntegral $ bcalm b `div` (5 * oneM)) t)
+            <> "m")
         , (IK.EqpSlotAddSmell, \t -> tshow (max 0 t) <> "m")
         , (IK.EqpSlotAddLight, \t -> tshow (max 0 t) <> "m")
         ]
