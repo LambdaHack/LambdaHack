@@ -107,7 +107,7 @@ monsterGenChance (AbsDepth n) (AbsDepth depth) numMonsters actorCoeff =
   $ let scaledDepth = n `div` 2
     in chance $ 1%(fromIntegral
                      ((10 * actorCoeff * (numMonsters - scaledDepth))
-                      `max` actorCoeff))
+                      `max` 1))
 
 -- | The part of speech describing the actor.
 partActor :: Actor -> MU.Part
