@@ -82,6 +82,7 @@ textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
           noEffect _ = False
           hurtEffect :: IK.Effect -> Bool
           hurtEffect (IK.Hurt _) = True
+          hurtEffect (IK.Burn _) = True
           hurtEffect _ = False
           notDetail :: IK.Effect -> Bool
           notDetail IK.Explode{} = fullInfo >= 6
@@ -100,10 +101,9 @@ textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
                 restAs = sort aspects
                 (hurtEs, restEs) = partition hurtEffect $ sort
                                    $ filter notDetail effects
-                aes = map ppE hurtEs
-                      ++ if active
-                         then map ppA restAs ++ map ppE restEs
-                         else map ppE restEs ++ map ppA restAs
+                aes = if active
+                      then map ppA restAs ++ map ppE restEs
+                      else map ppE restEs ++ map ppA restAs
                 rechargingTs = T.intercalate (T.singleton ' ')
                                $ filter (not . T.null)
                                $ map ppE $ stripRecharging restEs
@@ -133,9 +133,9 @@ textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
                   Just (IK.NoEffect t) -> [t]
                   _ -> []
             in noEff ++ if fullInfo >= 5 || fullInfo >= 2 && null noEff
-                        then [periodicOrTimeout] ++ aes
+                        then [periodicOrTimeout] ++ map ppE hurtEs ++ aes
                              ++ [onSmash | fullInfo >= 7]
-                        else []
+                        else map ppE hurtEs
           aets = case itemAE of
             Just ItemAspectEffect{jaspects, jeffects} ->
               splitAE tshow
