@@ -446,6 +446,7 @@ effectImpress execSfx source target = do
 
 -- ** CallFriend
 
+-- Note that the Calm expended doesn't depend on the number of actors called.
 effectCallFriend :: (MonadAtomic m, MonadServer m)
                    => Dice.Dice -> ActorId -> ActorId
                    -> m Bool
@@ -456,10 +457,11 @@ effectCallFriend nDm source target = do
   sb <- getsState $ getActorBody source
   activeItems <- activeItemsServer source
   if source /= target then do
-    execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough focus to activate."
+    execSfxAtomic $ SfxMsgFid (bfid sb) "Cannot call aid for somebody else."
     return False  -- too hard to tell, e.g., why failed
   else if not $ hpEnough10 sb activeItems then do
-    execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough HP to activate."
+    unless (bproj sb) $
+      execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough HP to call aid."
     return False
   else do
     let deltaHP = - xM 10
@@ -472,6 +474,7 @@ effectCallFriend nDm source target = do
 
 -- ** Summon
 
+-- Note that the Calm expended doesn't depend on the number of actors summoned.
 effectSummon :: (MonadAtomic m, MonadServer m)
              => Freqs ItemKind -> Dice.Dice
              -> ActorId -> ActorId
@@ -483,10 +486,11 @@ effectSummon actorFreq nDm source target = do
   sb <- getsState $ getActorBody source
   activeItems <- activeItemsServer source
   if source /= target then do
-    execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough focus to activate."
+    unless (bproj sb) $
+      execSfxAtomic $ SfxMsgFid (bfid sb) "Cannot summon for somebody else."
     return False  -- too hard to tell, e.g., why failed
   else if not $ calmEnough10 sb activeItems then do
-    execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough Calm to activate."
+    execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough Calm to summon."
     return False
   else do
     let deltaCalm = - xM 10
