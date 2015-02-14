@@ -201,7 +201,7 @@ griffonVulture = ItemKind
   , irarity  = [(1, 5)]
   , iverbHit = "thud"
   , iweight  = 13000
-  , iaspects = [ AddMaxHP 12, AddMaxCalm 30, AddSpeed 20
+  , iaspects = [ AddMaxHP 12, AddMaxCalm 60, AddSpeed 20
                , AddSkills $ EM.singleton AbAlter (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
