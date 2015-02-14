@@ -58,14 +58,12 @@ levelPerception :: [(Actor, FovCache3)]
                 -> PointArray.Array Bool -> PointArray.Array Bool
                 -> FovMode -> Level
                 -> Perception
-levelPerception actorEqpBody clearPs litPs
-                fovMode Level{lxsize, lysize} =
+levelPerception actorEqpBody clearPs litPs fovMode Level{lxsize, lysize} =
   let -- Dying actors included, to let them see their own demise.
       ourR = preachable . reachableFromActor clearPs fovMode
       totalReachable = PerceptionReachable $ concatMap ourR actorEqpBody
       -- All non-projectile actors feel adjacent positions,
       -- even dark (for easy exploration). Projectiles rely on cameras.
-      -- Projectiles also can't smell.
       pAndVicinity p = p : vicinity lxsize lysize p
       gatherVicinities = concatMap (pAndVicinity . bpos . fst)
       nocteurs = filter (not . bproj . fst) actorEqpBody
@@ -161,7 +159,7 @@ litInDungeon fovMode s ser =
       lightOnFloor lvl =
         let processPos (p, bag) = (p, processBag bag 0)
         in map processPos $ EM.assocs $ lfloor lvl  -- lembed are hidden
-      -- Note that an actor can be blind or a projectile,
+      -- Note that an actor can be blind,
       -- in which case he doesn't see his own light
       -- (but others, from his or other factions, possibly do).
       litOnLevel :: Level -> ( EM.EnumMap FactionId [(Actor, FovCache3)]

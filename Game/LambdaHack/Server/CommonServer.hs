@@ -298,8 +298,7 @@ projectFail source tpxy eps iid cstore isBlast = do
                   if not $ maybe True (bproj . snd . fst) mab
                     then if isBlast && bproj sb then do
                            -- Hit the blocking actor.
-                           projectBla source spos (pos:rest) iid cstore
-                                      isBlast
+                           projectBla source spos (pos:rest) iid cstore isBlast
                            return Nothing
                          else return $ Just ProjectBlockActor
                     else do

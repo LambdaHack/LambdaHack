@@ -180,14 +180,14 @@ seeingItem = ItemKind
   , ifreq    = [("useful", 100)]
   , iflavour = zipPlain [Red]
   , icount   = 1
-  , irarity  = [(3, 2)]
+  , irarity  = [(10, 1)]
   , iverbHit = "gaze at"
   , iweight  = 100
-  , iaspects = [AddSight 10, AddLight 2, Periodic, Timeout $ 1 + d 2]
+  , iaspects = [ AddSight 10, AddMaxCalm 60, AddLight 2
+               , Periodic, Timeout $ 1 + d 2 ]
   , ieffects = [ Recharging (toOrganNone "poisoned")
                , Recharging (Summon [("monster", 1)] 1) ]
-  , ifeature = [ Identified, Fragile
-               , toVelocity 70 ]  -- slimy
+  , ifeature = [Identified]
   , idesc    = "A slimy, dilated green pupil torn out from some giant eye. Clear and focused, as if still alive."
   , ikit     = []
   }
