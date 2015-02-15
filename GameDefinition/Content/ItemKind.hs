@@ -303,12 +303,11 @@ necklace3 = necklace
   }
 necklace4 = necklace
   { iaspects = (Timeout $ d 4 + 4 - dl 4 |*| 2) : iaspects necklace
-  , ieffects = [Recharging (Teleport $ d 3 * 3)]
+  , ieffects = [Recharging (Teleport $ d 2 * 3)]
   }
 necklace5 = necklace
-  { iaspects = [AddLight $ d 2, Timeout $ d 3 + 4 - dl 3 |*| 10]
-               ++ iaspects necklace
-  , ieffects = [Recharging (Teleport $ 12 + d 3 * 3)]
+  { iaspects = (Timeout $ d 3 + 4 - dl 3 |*| 10) : iaspects necklace
+  , ieffects = [Recharging (Teleport $ 14 + d 3 * 3)]
   }
 necklace6 = necklace
   { iaspects = (Timeout $ d 4 |*| 10) : iaspects necklace
