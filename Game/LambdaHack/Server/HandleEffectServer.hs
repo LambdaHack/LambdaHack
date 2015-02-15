@@ -214,7 +214,7 @@ effectSem source target iid recharged effect = do
     IK.Dominate -> effectDominate recursiveCall source target
     IK.Impress -> effectImpress execSfx source target
     IK.CallFriend p -> effectCallFriend p source target
-    IK.Summon freqs p -> effectSummon freqs p source target
+    IK.Summon freqs p -> effectSummon freqs p source
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target
     IK.Escape{} -> effectEscape source target
     IK.Paralyze p -> effectParalyze execSfx p target
@@ -476,20 +476,15 @@ effectCallFriend nDm source target = do
 
 -- Note that the Calm expended doesn't depend on the number of actors summoned.
 effectSummon :: (MonadAtomic m, MonadServer m)
-             => Freqs ItemKind -> Dice.Dice
-             -> ActorId -> ActorId
+             => Freqs ItemKind -> Dice.Dice -> ActorId
              -> m Bool
-effectSummon actorFreq nDm source target = do
+effectSummon actorFreq nDm source = do
   -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   activeItems <- activeItemsServer source
-  if source /= target then do
-    unless (bproj sb) $
-      execSfxAtomic $ SfxMsgFid (bfid sb) "Cannot summon for somebody else."
-    return False  -- too hard to tell, e.g., why failed
-  else if not $ calmEnough10 sb activeItems then do
+  if not $ calmEnough10 sb activeItems then do
     execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough Calm to summon."
     return False
   else do
