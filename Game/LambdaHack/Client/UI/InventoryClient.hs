@@ -303,7 +303,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
   activeItems <- activeItemsClient leader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
-  bag <- getsState $ \s -> accessModeBag leader s cCur
+  bagAll <- getsState $ \s -> accessModeBag leader s cCur
   lastSlot <- getsClient slastSlot
   itemToF <- itemToFullClient
   Binding{brevMap} <- askBinding
@@ -317,20 +317,29 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
     -- When throwing, this function takes missile range into accout.
     SuitsSomething f -> return (False, f)
   let getSingleResult :: ItemId -> (ItemId, ItemFull)
-      getSingleResult iid = (iid, itemToF iid (bag EM.! iid))
+      getSingleResult iid = (iid, itemToF iid (bagAll EM.! iid))
       getResult :: ItemId -> ([(ItemId, ItemFull)], ItemDialogMode)
       getResult iid = ([getSingleResult iid], cCur)
       getMultResult :: [ItemId] -> ([(ItemId, ItemFull)], ItemDialogMode)
       getMultResult iids = (map getSingleResult iids, cCur)
       filterP iid kit = psuitFun $ itemToF iid kit
-      bagSuit = EM.filterWithKey filterP bag
+      bagAllSuit = EM.filterWithKey filterP bagAll
       isOrgan = cCur == MStore COrgan
       lSlots = if isOrgan then organSlots else itemSlots
+      bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
+      -- Could be generalized to 1 if prefix 1x exists, etc., but too rare.
+      hasPrefixOpen x _ = numPrefix `elem` [0, slotPrefix x]
+      bagItemSlotsOpen = EM.filterWithKey hasPrefixOpen bagItemSlotsAll
       hasPrefix x _ = slotPrefix x == numPrefix
-      bagItemSlotsAll = EM.filter (`EM.member` bag) lSlots
-      bagItemSlots = EM.filterWithKey hasPrefix bagItemSlotsAll
-      suitableItemSlotsAll = EM.filter (`EM.member` bagSuit) lSlots
-      suitableItemSlots = EM.filterWithKey hasPrefix suitableItemSlotsAll
+      bagItemSlots = EM.filterWithKey hasPrefix bagItemSlotsOpen
+      bag = EM.fromList $ map (\iid -> (iid, bagAll EM.! iid))
+                              (EM.elems bagItemSlotsOpen)
+      suitableItemSlotsAll = EM.filter (`EM.member` bagAllSuit) lSlots
+      suitableItemSlotsOpen =
+        EM.filterWithKey hasPrefixOpen suitableItemSlotsAll
+      suitableItemSlots = EM.filterWithKey hasPrefix suitableItemSlotsOpen
+      bagSuit = EM.fromList $ map (\iid -> (iid, bagAllSuit EM.! iid))
+                                  (EM.elems suitableItemSlotsOpen)
       (autoDun, autoLvl) = autoDungeonLevel fact
       multipleSlots = if itemDialogState `elem` [IAll, INoAll]
                       then bagItemSlotsAll
@@ -374,11 +383,11 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                              in "RET(" <> l <> ")"
                         else "RET"
            , defCond = lastSlot `EM.member` bagItemSlotsAll
-                       || not (EM.null labelItemSlots)
+                       || not (EM.null labelItemSlotsOpen)
            , defAction = \_ -> case EM.lookup lastSlot bagItemSlotsAll of
-               Nothing -> case EM.minViewWithKey labelItemSlots of
-                 Nothing -> assert `failure` "labelItemSlots empty"
-                                   `twith` labelItemSlots
+               Nothing -> case EM.minViewWithKey labelItemSlotsOpen of
+                 Nothing -> assert `failure` "labelItemSlotsOpen empty"
+                                   `twith` labelItemSlotsOpen
                  Just ((l, _), _) -> do
                    modifyClient $ \cli ->
                      cli { slastSlot = l
@@ -481,18 +490,22 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
               Just iid -> return $ Right $ getResult iid
             _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
-      (labelItemSlots, bagFiltered, promptChosen) =
+      (labelItemSlotsOpen, labelItemSlots, bagFiltered, promptChosen) =
         case itemDialogState of
-          ISuitable   -> (suitableItemSlots,
+          ISuitable   -> (suitableItemSlotsOpen,
+                          suitableItemSlots,
                           bagSuit,
                           prompt body activeItems cCur <> ":")
-          IAll        -> (bagItemSlots,
+          IAll        -> (bagItemSlotsOpen,
+                          bagItemSlots,
                           bag,
                           promptGeneric body activeItems cCur <> ":")
-          INoSuitable -> (suitableItemSlots,
+          INoSuitable -> (suitableItemSlotsOpen,
+                          suitableItemSlots,
                           EM.empty,
                           prompt body activeItems cCur <> ":")
-          INoAll      -> (bagItemSlots,
+          INoAll      -> (bagItemSlotsOpen,
+                          bagItemSlots,
                           EM.empty,
                           promptGeneric body activeItems cCur <> ":")
   io <- case cCur of
