@@ -657,11 +657,12 @@ scroll8 = scroll
   , ieffects = [InsertMove $ 1 + d 2 + dl 2]
   }
 scroll9 = scroll  -- TODO: remove Calm when server can tell if anything IDed
-  { irarity  = [(1, 15)]
+  { irarity  = [(1, 15), (10, 10)]
   , ieffects = [ NoEffect "of scientific explanation"
                , Identify, OverfillCalm 3 ]
   }
 scroll10 = scroll  -- TODO: firecracker only if an item really polymorphed?
+                   -- But currently server can't tell.
   { irarity  = [(10, 10)]
   , ieffects = [ NoEffect "transfiguration"
                , PolyItem, Explode "firecracker 7" ]
