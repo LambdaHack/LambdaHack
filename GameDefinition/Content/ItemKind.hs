@@ -400,7 +400,8 @@ ring5 = ring  -- by the time it's found, probably no space in eqp
 ring6 = ring
   { ifreq    = [("treasure", 100)]
   , irarity  = [(10, 2)]
-  , iaspects = [Unique, AddSpeed $ 10 + d 10, AddMaxCalm $ - 20 - d 20]
+  , iaspects = [ Unique, AddSpeed $ 3 + d 4
+               , AddMaxCalm $ - 20 - d 20, AddMaxHP $ - 20 - d 20 ]
   , ieffects = [NoEffect "of Rush"]  -- no explosion, because Durable
   , ifeature = ifeature ring ++ [Durable, EqpSlot EqpSlotAddSpeed ""]
   }
