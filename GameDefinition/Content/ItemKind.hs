@@ -290,7 +290,8 @@ necklace1 = necklace
   , idesc    = "A cord of freshly dried herbs and healing berries."
   }
 necklace2 = necklace
-  { irarity  = [(2, 0), (10, 1)]
+  { ifreq    = [("treasure", 100)]  -- just too nasty to call it useful
+  , irarity  = [(10, 1)]
   , iaspects = (Timeout $ d 3 + 3 - dl 3 |*| 10) : iaspects necklace
   , ieffects = [ Recharging Impress
                , Recharging (DropItem COrgan "temporary conditions" True)
@@ -958,7 +959,7 @@ gem3 = gem
 gem4 = gem
   { iname    = "elixir"
   , iflavour = zipPlain [BrYellow]
-  , irarity  = [(1, 0), (2, 10), (10, 20)]
+  , irarity  = [(1, 10), (10, 20)]
   , iaspects = []
   , ieffects = [NoEffect "of youth", OverfillCalm 5, OverfillHP 15]
   , ifeature = [Identified, Precious]  -- TODO: only for humans
@@ -970,7 +971,7 @@ currency = ItemKind
   , ifreq    = [("treasure", 100), ("currency", 1)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 10 + d 20 + dl 20
-  , irarity  = [(1, 0), (2, 15), (5, 25), (10, 10)]
+  , irarity  = [(1, 15), (5, 25), (10, 10)]
   , iverbHit = "tap"
   , iweight  = 31
   , iaspects = []

@@ -16,9 +16,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleCaveKind
   , validateAll = validateAllCaveKind
   , content =
-      [rogue, arena, empty, noise, battle, skirmish, ambush, safari1, safari2, safari3, boardgame]
+      [rogue, arena, empty, noise, shallow1rogue, battle, skirmish, ambush, safari1, safari2, safari3, boardgame]
   }
-rogue,        arena, empty, noise, battle, skirmish, ambush, safari1, safari2, safari3, boardgame :: CaveKind
+rogue,        arena, empty, noise, shallow1rogue, battle, skirmish, ambush, safari1, safari2, safari3, boardgame :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -38,7 +38,7 @@ rogue = CaveKind
   , copenChance   = 1%10
   , chidden       = 8
   , cactorCoeff   = 15  -- the maze requires time to explore
-  , cactorFreq    = [("monster", 50), ("animal", 50)]
+  , cactorFreq    = [("monster", 40), ("animal", 60)]
   , citemNum      = 10 * d 2
   , citemFreq     = [("useful", 50), ("treasure", 50)]
   , cplaceFreq    = [("rogue", 100)]
@@ -54,7 +54,7 @@ rogue = CaveKind
 arena = rogue
   { csymbol       = 'A'
   , cname         = "Underground library"
-  , cfreq         = [("campaign random", 30), ("caveArena", 1)]
+  , cfreq         = [("campaign random", 50), ("caveArena", 1)]
   , cgrid         = DiceXY (2 * d 2) (2 * d 2)
   , cminPlaceSize = DiceXY (2 * d 2 + 3) 4
   , cdarkChance   = d 80 + dl 60
@@ -73,7 +73,7 @@ arena = rogue
 empty = rogue
   { csymbol       = 'E'
   , cname         = "Tall cavern"
-  , cfreq         = [("campaign random", 20), ("caveEmpty", 1)]
+  , cfreq         = [("caveEmpty", 1)]
   , cgrid         = DiceXY (d 2 + 1) 1
   , cminPlaceSize = DiceXY 10 10
   , cmaxPlaceSize = DiceXY 24 12
@@ -94,7 +94,7 @@ empty = rogue
 noise = rogue
   { csymbol       = 'N'
   , cname         = "Leaky, burrowed sediment"
-  , cfreq         = [("campaign random", 10), ("caveNoise", 1)]
+  , cfreq         = [("campaign random", 20), ("caveNoise", 1)]
   , cgrid         = DiceXY (2 + d 2) 3
   , cminPlaceSize = DiceXY 12 5
   , cmaxPlaceSize = DiceXY 24 12
@@ -110,6 +110,15 @@ noise = rogue
   , cdefTile      = "noiseSet"
   , cdarkCorTile  = "floorArenaDark"
   , clitCorTile   = "floorArenaLit"
+  }
+shallow1rogue = rogue
+  { csymbol       = 'D'
+  , cname         = "Entrance to the dungeon"
+  , cfreq         = [("shallow random 1", 100)]
+  , cdarkChance   = 0
+  , cactorFreq    = filter ((/= "monster") . fst) $ cactorFreq rogue
+  , citemNum      = 15 * d 2  -- lure them in with loot
+  , citemFreq     = filter ((/= "treasure") . fst) $ citemFreq rogue
   }
 battle = rogue  -- few lights and many solids, to help the less numerous heroes
   { csymbol       = 'B'

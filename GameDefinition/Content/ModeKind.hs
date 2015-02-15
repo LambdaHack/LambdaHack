@@ -264,7 +264,7 @@ rosterBoardgame = Roster
 cavesCampaign, cavesSkirmish, cavesAmbush, cavesBattle, cavesSafari, cavesBoardgame :: Caves
 
 cavesCampaign = IM.fromList
-                $ [ (-1, ("caveRogue", Just True))
+                $ [ (-1, ("shallow random 1", Just True))
                   , (-2, ("caveRogue", Nothing))
                   , (-3, ("caveEmpty", Nothing)) ]
                   ++ zip [-4, -5..(-9)] (repeat ("campaign random", Nothing))
