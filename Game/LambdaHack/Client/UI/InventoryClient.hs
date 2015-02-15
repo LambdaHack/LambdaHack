@@ -369,13 +369,13 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                in return $ Right $ getMultResult eslots
            })
         , (K.toKM K.NoModifier K.Return, DefItemKey
-           { defLabel = if lastSlot `EM.member` bagItemSlots
+           { defLabel = if lastSlot `EM.member` bagItemSlotsAll
                         then let l = makePhrase [slotLabel lastSlot]
                              in "RET(" <> l <> ")"
                         else "RET"
-           , defCond = lastSlot `EM.member` bagItemSlots
+           , defCond = lastSlot `EM.member` bagItemSlotsAll
                        || not (EM.null labelItemSlots)
-           , defAction = \_ -> case EM.lookup lastSlot bagItemSlots of
+           , defAction = \_ -> case EM.lookup lastSlot bagItemSlotsAll of
                Nothing -> case EM.minViewWithKey labelItemSlots of
                  Nothing -> assert `failure` "labelItemSlots empty"
                                    `twith` labelItemSlots
