@@ -101,10 +101,10 @@ oneM = xM 1
 -- will also depend on the cave kind used to build the level.
 monsterGenChance :: AbsDepth -> AbsDepth -> Int -> Int -> Rnd Bool
 monsterGenChance _ _ _ 0 = return False
-monsterGenChance (AbsDepth n) (AbsDepth depth) numSpawnedCoeff actorCoeff =
-  assert (depth > 0 && n > 0)
-  -- Mimics @castDice@. On level 2, first 2 monsters appear fast.
-  $ let scaledDepth = n `div` 2
+monsterGenChance (AbsDepth n) (AbsDepth totalDepth) numSpawnedCoeff actorCoeff =
+  assert (totalDepth > 0 && n > 0)
+  -- Mimics @castDice@. On level 5/10, first 6 monsters appear fast.
+  $ let scaledDepth = n * 10 `div` totalDepth
     in chance $ 1%(fromIntegral
                      ((10 * actorCoeff * (numSpawnedCoeff - scaledDepth))
                       `max` 1))

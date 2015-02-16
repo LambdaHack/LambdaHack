@@ -52,6 +52,7 @@ spawnMonster lid = do
   -- then fcanEscape and fneverEmpty make sense for spawning factions
   Level{ldepth, lactorCoeff, lactorFreq} <- getLevel lid
   lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup lid . snumSpawned
+  -- Heroes have to endure two lvl-sized waves of spawners upon entering lvl.
   let numSpawnedCoeff = length spawns + lvlSpawned `div` 2
   rc <- rndToAction
         $ monsterGenChance ldepth totalDepth numSpawnedCoeff lactorCoeff
