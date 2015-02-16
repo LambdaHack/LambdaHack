@@ -40,6 +40,7 @@ data StateServer = StateServer
   , sflavour      :: !FlavourMap    -- ^ association of flavour to items
   , sacounter     :: !ActorId       -- ^ stores next actor index
   , sicounter     :: !ItemId        -- ^ stores next item index
+  , snumSpawned   :: !(EM.EnumMap LevelId Int)
   , sprocessed    :: !(EM.EnumMap LevelId Time)
                                     -- ^ actors are processed up to this time
   , sundo         :: ![CmdAtomic]   -- ^ atomic commands performed to date
@@ -117,6 +118,7 @@ emptyStateServer =
     , sflavour = emptyFlavourMap
     , sacounter = toEnum 0
     , sicounter = toEnum 0
+    , snumSpawned = EM.empty
     , sprocessed = EM.empty
     , sundo = []
     , sper = EM.empty
@@ -165,6 +167,7 @@ instance Binary StateServer where
     put sflavour
     put sacounter
     put sicounter
+    put snumSpawned
     put sprocessed
     put sundo
     put (show srandom)
@@ -182,6 +185,7 @@ instance Binary StateServer where
     sflavour <- get
     sacounter <- get
     sicounter <- get
+    snumSpawned <- get
     sprocessed <- get
     sundo <- get
     g <- get

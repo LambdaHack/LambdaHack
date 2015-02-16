@@ -101,12 +101,12 @@ oneM = xM 1
 -- will also depend on the cave kind used to build the level.
 monsterGenChance :: AbsDepth -> AbsDepth -> Int -> Int -> Rnd Bool
 monsterGenChance _ _ _ 0 = return False
-monsterGenChance (AbsDepth n) (AbsDepth depth) numMonsters actorCoeff =
+monsterGenChance (AbsDepth n) (AbsDepth depth) numSpawnedCoeff actorCoeff =
   assert (depth > 0 && n > 0)
   -- Mimics @castDice@. On level 2, first 2 monsters appear fast.
   $ let scaledDepth = n `div` 2
     in chance $ 1%(fromIntegral
-                     ((10 * actorCoeff * (numMonsters - scaledDepth))
+                     ((10 * actorCoeff * (numSpawnedCoeff - scaledDepth))
                       `max` 1))
 
 -- | The part of speech describing the actor.

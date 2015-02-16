@@ -51,9 +51,13 @@ spawnMonster lid = do
   -- TODO: eliminate the defeated and victorious faction from lactorFreq;
   -- then fcanEscape and fneverEmpty make sense for spawning factions
   Level{ldepth, lactorCoeff, lactorFreq} <- getLevel lid
+  lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup lid . snumSpawned
+  let numSpawnedCoeff = length spawns + lvlSpawned `div` 2
   rc <- rndToAction
-        $ monsterGenChance ldepth totalDepth (length spawns) lactorCoeff
+        $ monsterGenChance ldepth totalDepth numSpawnedCoeff lactorCoeff
   when rc $ do
+    modifyServer $ \ser ->
+      ser {snumSpawned = EM.insert lid (lvlSpawned + 1) $ snumSpawned ser}
     time <- getsState $ getLocalTime lid
     maid <- addAnyActor lactorFreq lid time Nothing
     case maid of
