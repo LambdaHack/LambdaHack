@@ -214,7 +214,7 @@ effectSem source target iid recharged effect = do
     IK.Dominate -> effectDominate recursiveCall source target
     IK.Impress -> effectImpress execSfx source target
     IK.CallFriend p -> effectCallFriend p source target
-    IK.Summon freqs p -> effectSummon freqs p source
+    IK.Summon freqs p -> effectSummon freqs p source target
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target
     IK.Escape{} -> effectEscape source target
     IK.Paralyze p -> effectParalyze execSfx p target
@@ -455,49 +455,57 @@ effectCallFriend nDm source target = do
   Kind.COps{cotile} <- getsState scops
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
-  activeItems <- activeItemsServer source
-  if source /= target then do
-    execSfxAtomic $ SfxMsgFid (bfid sb) "Cannot call aid for somebody else."
-    return False  -- too hard to tell, e.g., why failed
-  else if not $ hpEnough10 sb activeItems then do
-    unless (bproj sb) $
-      execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough HP to call aid."
+  tb <- getsState $ getActorBody target
+  activeItems <- activeItemsServer target
+  if not $ hpEnough10 tb activeItems then do
+    unless (bproj tb) $ do
+      let subject = partActor tb
+          verb = "lack enough HP to call aid"
+          msg = makeSentence [MU.SubjectVerbSg subject verb]
+      execSfxAtomic $ SfxMsgFid (bfid sb) msg
     return False
   else do
     let deltaHP = - xM 10
-    execUpdAtomic $ UpdRefillHP source deltaHP
+    execUpdAtomic $ UpdRefillHP target deltaHP
     let validTile t = not $ Tile.hasFeature cotile TK.NoActor t
-        lid = blid sb
-    ps <- getsState $ nearbyFreePoints validTile (bpos sb) lid
-    time <- getsState $ getLocalTime lid
-    recruitActors (take power ps) lid time (bfid sb)
+    ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
+    time <- getsState $ getLocalTime (blid tb)
+    -- We call target's friends so that AI monsters that test by throwing
+    -- don't waste artifacts very valuable for heroes. Heroes should rather
+    -- not test scrolls by throwing.
+    recruitActors (take power ps) (blid tb) time (bfid tb)
 
 -- ** Summon
 
 -- Note that the Calm expended doesn't depend on the number of actors summoned.
 effectSummon :: (MonadAtomic m, MonadServer m)
-             => Freqs ItemKind -> Dice.Dice -> ActorId
+             => Freqs ItemKind -> Dice.Dice -> ActorId -> ActorId
              -> m Bool
-effectSummon actorFreq nDm source = do
+effectSummon actorFreq nDm source target = do
   -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
-  activeItems <- activeItemsServer source
-  if not $ calmEnough10 sb activeItems then do
-    execSfxAtomic $ SfxMsgFid (bfid sb) "Not enough Calm to summon."
+  tb <- getsState $ getActorBody target
+  activeItems <- activeItemsServer target
+  if not $ calmEnough10 tb activeItems then do
+    unless (bproj tb) $ do
+      let subject = partActor tb
+          verb = "lack enough Calm to summon"
+          msg = makeSentence [MU.SubjectVerbSg subject verb]
+      execSfxAtomic $ SfxMsgFid (bfid sb) msg
     return False
   else do
     let deltaCalm = - xM 10
-    unless (bproj sb) $ execUpdAtomic $ UpdRefillCalm source deltaCalm
+    unless (bproj tb) $ execUpdAtomic $ UpdRefillCalm target deltaCalm
     let validTile t = not $ Tile.hasFeature cotile TK.NoActor t
-    ps <- getsState $ nearbyFreePoints validTile (bpos sb) (blid sb)
-    localTime <- getsState $ getLocalTime (blid sb)
+    ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
+    localTime <- getsState $ getLocalTime (blid tb)
     -- Make sure summoned actors start acting after the summoner.
-    let sourceTime = timeShift localTime $ ticksPerMeter $ bspeed sb activeItems
-        afterTime = timeShift sourceTime $ Delta timeClip
+    let targetTime = timeShift localTime $ ticksPerMeter $ bspeed tb activeItems
+        afterTime = timeShift targetTime $ Delta timeClip
     bs <- forM (take power ps) $ \p -> do
-      maid <- addAnyActor actorFreq (blid sb) afterTime (Just p)
+      maid <- addAnyActor actorFreq (blid tb) afterTime (Just p)
       case maid of
         Nothing -> return False  -- actorFreq is null; content writers...
         Just aid -> do
@@ -970,7 +978,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
               -- So, if the push lasts one (his) turn, he will not lose
               -- any turn of movement (but he may need to retrace the push).
               activeItems <- activeItemsServer target
-              let tpm = ticksPerMeter $ bspeed sb activeItems
+              let tpm = ticksPerMeter $ bspeed tb activeItems
                   delta = timeDeltaScale tpm (-1)
               execUpdAtomic $ UpdAgeActor target delta
               execSfx
