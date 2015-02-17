@@ -371,6 +371,8 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
           && fromCStore `notElem` [CEqp, COrgan]) $ do
       localTime <- getsState $ getLocalTime (blid b)
       discoEffect <- getsServer sdiscoEffect
+      -- The first recharging period after pick up is random,
+      -- between 1 and 2 standard timeouts of the item.
       mrndTimeout <- rndToAction $ computeRndTimeout localTime discoEffect iid
       let beforeIt = case iid `EM.lookup` bagBefore of
             Nothing -> []  -- no such items before move

@@ -763,7 +763,8 @@ buckler = ItemKind
   , iaspects = [ AddArmorMelee 40
                , AddHurtMelee (-30)
                , Timeout $ d 3 + 3 - dl 3 |*| 2 ]
-  , ieffects = [Hurt (1 * d 1), Recharging (PushActor (ThrowMod 200 50))]
+  , ieffects = [ Hurt (1 * d 1)  -- to display xdy everywhre in Hurt
+               , Recharging (PushActor (ThrowMod 200 50)) ]
   , ifeature = [ toVelocity 40  -- unwieldy to throw
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
   , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."

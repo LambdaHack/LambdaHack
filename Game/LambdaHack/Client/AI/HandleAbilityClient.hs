@@ -46,7 +46,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 type ToAny a = Strategy (RequestTimed a) -> Strategy RequestAnyAbility
@@ -59,9 +58,6 @@ toAny strat = RequestAnyAbility <$> strat
 actionStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy RequestAnyAbility)
 actionStrategy aid = do
-  Kind.COps{corule} <- getsState scops
-  let stdRuleset = Kind.stdRuleset corule
-      nearby = rnearby stdRuleset
   body <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
@@ -74,19 +70,20 @@ actionStrategy aid = do
   condOnTriggerable <- condOnTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoEqpWeapon <- condNoEqpWeaponM aid
-  allAssocs <- fullAssocsClient aid [COrgan, CEqp]
-  let condNoUsableWeapon = all (not . isMelee . snd) allAssocs
+  let condNoUsableWeapon = all (not . isMelee) activeItems
   condFloorWeapon <- condFloorWeaponM aid
   condCanProject <- condCanProjectM aid
   condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
+  aInAmbient <- getsState $ actorInAmbient body
   fleeL <- fleeList 1 aid
   panic2FleeL <- fleeList 2 aid
   panic3FleeL <- fleeList 3 aid
-  let condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
+  let actorShines = sumSlotNoFilter IK.EqpSlotAddLight activeItems > 0
+      condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
-      condThreatNearby = not $ null $ takeWhile ((<= nearby) . fst) threatDistL
+      condThreatNearby = not $ null $ takeWhile ((<= 7) . fst) threatDistL
       speed1_5 = speedScale (3%2) (bspeed body activeItems)
       condFastThreatAdj = any (\(_, (_, b)) -> bspeed b activeItems > speed1_5)
                           $ takeWhile ((== 1) . fst) threatDistL
@@ -164,7 +161,8 @@ actionStrategy aid = do
                          else if condTgtEnemyAdjFriend
                          then 1000  -- friends probably pummeled, go to help
                          else 100)
-            $ chase aid True
+            $ chase aid True (condMeleeBad && condThreatNearby
+                              && not aInAmbient && not actorShines)
           , (condTgtEnemyPresent || condTgtEnemyRemembered)
             && not condDesirableFloorItem
             && EM.findWithDefault 0 AbMelee actorSk > 0
@@ -195,6 +193,7 @@ actionStrategy aid = do
         , ( [AbMove]
           , flee aid panic3FleeL  -- ultimate panic mode, runs into foes
           , condMeleeBad && condThreatNearby && not condFastThreatAdj
+            && not heavilyDistressed  -- don't run in circles if shot at
             && (condNotCalmEnough
                 || condThreatAtHand
                 || condNoUsableWeapon) )
@@ -202,7 +201,9 @@ actionStrategy aid = do
             <$> unEquipItems aid  -- late, because better to throw than unequip
           , True )
         , ( [AbMove]
-          , chase aid False
+          , chase aid False (condTgtEnemyPresent
+                             && condMeleeBad && condThreatNearby
+                             && not aInAmbient && not actorShines)
           , True )
         ]
       fallback =
@@ -797,13 +798,17 @@ displaceTowards aid source target = do
       _ -> return reject  -- DisplaceProjectiles or trying to displace leader
   else return reject
 
-chase :: MonadClient m => ActorId -> Bool -> m (Strategy RequestAnyAbility)
-chase aid doDisplace = do
+chase :: MonadClient m
+      => ActorId -> Bool -> Bool -> m (Strategy RequestAnyAbility)
+chase aid doDisplace avoidAmbient = do
+  Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+  lvl <- getLevel $ blid body
+  let isAmbient pos = Tile.isLit cotile (lvl `at` pos)
   str <- case mtgtMPath of
-    Just (_, Just (p : q : _, (goal, _))) ->
+    Just (_, Just (p : q : _, (goal, _))) | not $ avoidAmbient && isAmbient q ->
       -- With no leader, the goal is vague, so permit arbitrary detours.
       moveTowards aid p q goal (fleaderMode (gplayer fact) == LeaderNull)
     _ -> return reject  -- goal reached

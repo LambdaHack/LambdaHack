@@ -266,7 +266,7 @@ condLightBetraysM aid = do
   b <- getsState $ getActorBody aid
   eqpItems <- map snd <$> fullAssocsClient aid [CEqp]
   let actorEqpShines = sumSlotNoFilter IK.EqpSlotAddLight eqpItems > 0
-  aInAmbient<- getsState $ actorInAmbient b
+  aInAmbient <- getsState $ actorInAmbient b
   return $! not aInAmbient     -- tile is dark, so actor could hide
             && actorEqpShines  -- but actor betrayed by his equipped light
 
