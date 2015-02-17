@@ -139,7 +139,7 @@ placeItemsInDungeon = do
             placeItems _ 0 = return ()
             placeItems lfloorKeys n = do
               let dist p = minimum $ maxBound : map (chessDist p) lfloorKeys
-              pos <- rndToAction $ findPosTry 100 ltile
+              pos <- rndToAction $ findPosTry 500 ltile
                    (\_ t -> Tile.isWalkable cotile t
                             && not (Tile.hasFeature cotile TK.NoItem t))
                    [ \p t -> Tile.hasFeature cotile TK.OftenItem t

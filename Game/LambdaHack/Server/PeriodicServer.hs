@@ -118,7 +118,7 @@ rollSpawnPos Kind.COps{cotile} visible
         all (\b -> df $ chessDist (bpos b) p) inhabitants
   -- Not considering TK.OftenActor, because monsters emerge from hidden ducts,
   -- which are easier to hide in crampy corridors that lit halls.
-  findPosTry 100 ltile
+  findPosTry 500 ltile
     ( \p t -> Tile.isWalkable cotile t
               && not (Tile.hasFeature cotile TK.NoActor t)
               && unoccupied as p)
