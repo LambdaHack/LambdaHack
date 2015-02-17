@@ -88,7 +88,6 @@ targetStrategy oldLeader aid = do
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorSk <- maxActorSkillsClient aid
   condCanProject <- condCanProjectM aid
-  condMeleeBad <- condMeleeBadM aid
   condHpTooLow <- condHpTooLowM aid
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
@@ -99,19 +98,23 @@ targetStrategy oldLeader aid = do
   canEscape <- factionCanEscape (bfid b)
   explored <- getsClient sexplored
   smellRadius <- sumOrganEqpClient IK.EqpSlotAddSmell aid
-  let allExplored = ES.size explored == EM.size dungeon
+  allAssocs <- fullAssocsClient aid [COrgan, CEqp]
+  let condNoUsableWeapon = all (not . isMelee . snd) allAssocs
+      allExplored = ES.size explored == EM.size dungeon
       canSmell = smellRadius > 0
       meleeNearby | canEscape = nearby `div` 2  -- not aggresive
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
       targetableMelee body =
-        chessDist (bpos body) (bpos b) < meleeNearby
-        && not condMeleeBad
+        let attacksFriends = any (adjacent (bpos body) . bpos) friends
+            n = if attacksFriends then rangedNearby else meleeNearby
+        in chessDist (bpos body) (bpos b) < n
+           && not condNoUsableWeapon
+           && EM.findWithDefault 0 AbMelee actorSk > 0
+           && not (hpTooLow b activeItems)
       targetableRangedOrSpecial body =
         chessDist (bpos body) (bpos b) < rangedNearby
-        && (condCanProject
-            || hpTooLow body activeItems  -- easy prey
-            || any (adjacent (bpos body) . bpos) friends)  -- attacks friends!
+        && condCanProject
       targetableEnemy body =
         targetableMelee body || targetableRangedOrSpecial body
       nearbyFoes = filter (targetableEnemy . snd) allFoes
