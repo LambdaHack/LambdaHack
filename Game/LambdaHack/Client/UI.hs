@@ -64,8 +64,9 @@ queryUI = do
 humanCommand :: forall m. MonadClientUI m => m RequestUI
 humanCommand = do
   -- For human UI we invalidate whole @sbfsD@ at the start of each
-  -- UI player input, which is an overkill, but doesn't affects
-  -- screensavers, because they are UI, but not human.
+  -- UI player input that start a player move, which is an overkill,
+  -- but doesn't slow screensavers, because they are UI,
+  -- but not human.
   modifyClient $ \cli -> cli {sbfsD = EM.empty, slastLost = ES.empty}
   let loop :: Either Bool (Maybe Bool, Overlay) -> m RequestUI
       loop mover = do
