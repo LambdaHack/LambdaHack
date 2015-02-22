@@ -77,10 +77,9 @@ actionStrategy aid = do
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
   aInAmbient <- getsState $ actorInAmbient body
-  fleeL <- fleeList 1 aid
-  panic2FleeL <- fleeList 2 aid
-  panic3FleeL <- fleeList 3 aid
-  let actorShines = sumSlotNoFilter IK.EqpSlotAddLight activeItems > 0
+  (fleeL, badVic) <- fleeList aid
+  let panicFleeL = fleeL ++ badVic
+      actorShines = sumSlotNoFilter IK.EqpSlotAddLight activeItems > 0
       condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= 7) . fst) threatDistL
@@ -165,7 +164,7 @@ actionStrategy aid = do
             $ chase aid True (condMeleeBad && condThreatNearby
                               && not aInAmbient && not actorShines)
           , (condTgtEnemyPresent || condTgtEnemyRemembered)
-            && not condDesirableFloorItem
+            && not (condDesirableFloorItem && not condThreatAtHand)
             && abInSkill AbMelee
             && not condNoUsableWeapon )
         ]
@@ -176,41 +175,29 @@ actionStrategy aid = do
           , not condThreatAtHand )  -- e.g., to give to other party members
         , ( [AbMove]
           , flee aid fleeL
-          , condMeleeBad && condThreatNearby && not condFastThreatAdj
-            && (condNotCalmEnough
-                || condThreatAtHand) )
+          , condMeleeBad && not condFastThreatAdj
+            -- Don't keep fleeing if was recently shot at or meleed.
+            && not (condNotCalmEnough
+                    && abInSkill AbMelee
+                    && not condNoUsableWeapon)
+            && condThreatAtHand )
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeAny aid  -- avoid getting damaged for naught
           , condAnyFoeAdj )
         , ( [AbMove]
-            -- TODO: forget old target (e.g., tile), to start shooting,
-            -- unless can't shoot, etc.
-          , flee aid panic2FleeL  -- panic mode; chasing would be pointless
-          , condMeleeBad && condThreatNearby && not condFastThreatAdj
-            && not heavilyDistressed  -- don't run in circles if shot at
-            && (condNotCalmEnough
-                || condThreatAtHand
-                || not (abInSkill AbMelee)
-                || condNoUsableWeapon) )
-        , ( [AbMove]
-          , flee aid panic3FleeL  -- ultimate panic mode, runs into foes
-          , condMeleeBad && condThreatNearby && not condFastThreatAdj
-            && not heavilyDistressed  -- don't run in circles if shot at
-            && (condNotCalmEnough
-                || condThreatAtHand
-                || not (abInSkill AbMelee)
-                || condNoUsableWeapon) )
+          , flee aid panicFleeL  -- ultimate panic mode, displaces foes
+          , condAnyFoeAdj )
         , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> unEquipItems aid  -- late, because better to throw than unequip
           , True )
         , ( [AbMove]
-          , chase aid False (condTgtEnemyPresent
-                             -- don't keep hiding in darkness if shot at
-                             && not (heavilyDistressed
-                                     && abInSkill AbMelee
-                                     && not condNoUsableWeapon)
-                             && condMeleeBad && condThreatNearby
-                             && not aInAmbient && not actorShines)
+          , chase aid True (condTgtEnemyPresent
+                            -- Don't keep hiding in darkness if hit right now.
+                            && not (heavilyDistressed
+                                    && abInSkill AbMelee
+                                    && not condNoUsableWeapon)
+                            && condMeleeBad && condThreatNearby
+                            && not aInAmbient && not actorShines)
           , True )
         ]
       fallback =

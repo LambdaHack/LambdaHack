@@ -271,11 +271,13 @@ condLightBetraysM aid = do
             && actorEqpShines  -- but actor betrayed by his equipped light
 
 -- | Produce a list of acceptable adjacent points to flee to.
-fleeList :: MonadClient m => Int -> ActorId -> m [(Int, Point)]
-fleeList panic aid = do
+fleeList :: MonadClient m => ActorId -> m ([(Int, Point)], [(Int, Point)])
+fleeList aid = do
   cops <- getsState scops
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   let tgtPath = case mtgtMPath of  -- prefer fleeing along the path to target
+        Just (TEnemy{}, _) -> []  -- don't flee towards an enemy
+        Just (TEnemyPos{}, _) -> []
         Just (_, Just (_ : path, _)) -> path
         _ -> []
   b <- getsState $ getActorBody aid
@@ -291,16 +293,13 @@ fleeList panic aid = do
       -- Flee, if possible. Access required.
       accVic = filter (accessibleHere . snd) dVic
       gtVic = filter ((> dist (bpos b)) . fst) accVic
-      -- At least don't get closer to enemies, but don't stay adjacent.
-      eqVic = filter (\(d, _) -> d == dist (bpos b) && d > 1) accVic
-      nonIncrVic = gtVic ++ eqVic
-      rewardPath (d, p)
-        | p `elem` tgtPath = Just (9 * d, p)
-        | any (\q -> chessDist p q == 1) tgtPath = Just (d, p)
-        | otherwise = Nothing
-      goodVic = mapMaybe rewardPath gtVic
-                ++ filter ((`elem` tgtPath) . snd) eqVic
-      pathVic = if panic >= 3 then accVic \\ nonIncrVic
-                else if panic >= 2 then nonIncrVic \\ goodVic
-                else goodVic
-  return pathVic  -- keep it lazy, until other conditions verify danger
+      eqVic = filter ((== dist (bpos b)) . fst) accVic
+      ltVic = filter ((< dist (bpos b)) . fst) accVic
+      rewardPath mult (d, p)
+        | p `elem` tgtPath = (100 * mult * d, p)
+        | any (\q -> chessDist p q == 1) tgtPath = (10 * mult * d, p)
+        | otherwise = (mult * d, p)
+      goodVic = map (rewardPath 100) gtVic
+                ++ map (rewardPath 10) eqVic
+      badVic = map (rewardPath 1) ltVic
+  return (goodVic, badVic)  -- keep it lazy
