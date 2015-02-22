@@ -90,7 +90,8 @@ actionStrategy aid = do
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
   actorSk <- actorSkillsClient aid
-  let stratToFreq :: MonadStateRead m
+  let abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
+      stratToFreq :: MonadStateRead m
                   => Int -> m (Strategy RequestAnyAbility)
                   -> m (Frequency RequestAnyAbility)
       stratToFreq scale mstrat = do
@@ -124,11 +125,11 @@ actionStrategy aid = do
         , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> pickup aid True
           , condNoEqpWeapon && condFloorWeapon && not condHpTooLow
-            && EM.findWithDefault 0 AbMelee actorSk > 0 )
+            && abInSkill AbMelee )
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeBlocker aid  -- only melee target or blocker
           , condAnyFoeAdj
-            || EM.findWithDefault 0 AbDisplace actorSk <= 0
+            || not (abInSkill AbDisplace)
                  -- melee friends, not displace
                && fleaderMode (gplayer fact) == LeaderNull  -- not restrained
                && (condTgtEnemyPresent || condTgtEnemyRemembered) )  -- excited
@@ -165,7 +166,7 @@ actionStrategy aid = do
                               && not aInAmbient && not actorShines)
           , (condTgtEnemyPresent || condTgtEnemyRemembered)
             && not condDesirableFloorItem
-            && EM.findWithDefault 0 AbMelee actorSk > 0
+            && abInSkill AbMelee
             && not condNoUsableWeapon )
         ]
       -- Order matters again.
@@ -189,6 +190,7 @@ actionStrategy aid = do
             && not heavilyDistressed  -- don't run in circles if shot at
             && (condNotCalmEnough
                 || condThreatAtHand
+                || not (abInSkill AbMelee)
                 || condNoUsableWeapon) )
         , ( [AbMove]
           , flee aid panic3FleeL  -- ultimate panic mode, runs into foes
@@ -196,12 +198,17 @@ actionStrategy aid = do
             && not heavilyDistressed  -- don't run in circles if shot at
             && (condNotCalmEnough
                 || condThreatAtHand
+                || not (abInSkill AbMelee)
                 || condNoUsableWeapon) )
         , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> unEquipItems aid  -- late, because better to throw than unequip
           , True )
         , ( [AbMove]
           , chase aid False (condTgtEnemyPresent
+                             -- don't keep hiding in darkness if shot at
+                             && not (heavilyDistressed
+                                     && abInSkill AbMelee
+                                     && not condNoUsableWeapon)
                              && condMeleeBad && condThreatNearby
                              && not aInAmbient && not actorShines)
           , True )
@@ -215,7 +222,6 @@ actionStrategy aid = do
           , True )
         ]
       -- TODO: don't msum not to evaluate until needed
-      abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
       checkAction :: ([Ability], m a, Bool) -> Bool
       checkAction (abts, _, cond) = all abInSkill abts && cond
       sumS abAction = do
