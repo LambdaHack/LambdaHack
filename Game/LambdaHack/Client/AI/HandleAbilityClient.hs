@@ -285,6 +285,7 @@ equipItems aid = do
   shaAssocs <- fullAssocsClient aid [CSha]
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condLightBetrays <- condLightBetraysM aid
+  condTgtEnemyPresent <- condTgtEnemyPresentM aid
   let improve :: CStore
               -> (Int, [(ItemId, Int, CStore, CStore)])
               -> ( IK.EqpSlot
@@ -305,7 +306,7 @@ equipItems aid = do
       -- when comparing to items we may want to equip. Anyway, the unneeded
       -- items should be removed in yieldUnneeded earlier or soon after.
       filterNeeded (_, itemFull) =
-        not $ unneeded cops condAnyFoeAdj condLightBetrays
+        not $ unneeded cops condAnyFoeAdj condLightBetrays condTgtEnemyPresent
                        body activeItems fact itemFull
       bestThree = bestByEqpSlot (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded invAssocs)
@@ -340,6 +341,7 @@ unEquipItems aid = do
   shaAssocs <- fullAssocsClient aid [CSha]
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condLightBetrays <- condLightBetraysM aid
+  condTgtEnemyPresent <- condTgtEnemyPresentM aid
       -- Here AI hides from the human player the Ring of Speed And Bleeding,
       -- which is a bit harsh, but fair. However any subsequent such
       -- rings will not be picked up at all, so the human player
@@ -350,7 +352,7 @@ unEquipItems aid = do
         let csha = if calmE then CSha else CInv
         in if harmful cops body activeItems fact itemEqp
            then [(iidEqp, itemK itemEqp, CEqp, CInv)]
-           else if hinders condAnyFoeAdj condLightBetrays
+           else if hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
                            body activeItems itemEqp
            then [(iidEqp, itemK itemEqp, CEqp, csha)]
            else []
@@ -434,8 +436,9 @@ bestByEqpSlot eqpAssocs invAssocs shaAssocs =
   in M.assocs $ M.mapWithKey bestThree eqpInvShaMap
 
 -- TODO: also take into account dynamic lights *not* wielded by the actor
-hinders :: Bool -> Bool -> Actor -> [ItemFull] -> ItemFull -> Bool
-hinders condAnyFoeAdj condLightBetrays body activeItems itemFull =
+hinders :: Bool -> Bool -> Bool -> Actor -> [ItemFull] -> ItemFull -> Bool
+hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
+        body activeItems itemFull =
   let itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
   in -- Fast actors want to hide in darkness to ambush opponents and want
      -- to hit hard for the short span they get to survive melee.
@@ -445,10 +448,12 @@ hinders condAnyFoeAdj condLightBetrays body activeItems itemFull =
                                                  itemFull)
          || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtRanged
                                                  itemFull))
-     -- Distressed actors want to hide in the dark.
+     -- In the presence of enemies (seen, or unseen but distressing)
+     -- actors want to hide in the dark.
      || let heavilyDistressed =  -- actor hit by a proj or similarly distressed
               deltaSerious (bcalmDelta body)
-        in heavilyDistressed && condLightBetrays && not condAnyFoeAdj
+        in (heavilyDistressed || condTgtEnemyPresent)
+           && condLightBetrays && not condAnyFoeAdj
            && itemLit
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
@@ -465,12 +470,14 @@ harmful cops body activeItems fact itemFull =
   maybe False (\(u, _) -> u <= 0)
     (totalUsefulness cops body activeItems fact itemFull)
 
-unneeded :: Kind.COps -> Bool -> Bool -> Actor
-         -> [ItemFull] -> Faction -> ItemFull
+unneeded :: Kind.COps -> Bool -> Bool -> Bool
+         -> Actor -> [ItemFull] -> Faction -> ItemFull
          -> Bool
-unneeded cops condAnyFoeAdj condLightBetrays body activeItems fact itemFull =
+unneeded cops condAnyFoeAdj condLightBetrays condTgtEnemyPresent
+         body activeItems fact itemFull =
   harmful cops body activeItems fact itemFull
-  || hinders condAnyFoeAdj condLightBetrays body activeItems itemFull
+  || hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
+             body activeItems itemFull
   || let calm10 = calmEnough10 body activeItems  -- unneeded risk
          itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
      in itemLit && not calm10
