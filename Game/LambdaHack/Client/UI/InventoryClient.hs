@@ -233,7 +233,10 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
               Just kit -> do
                 let lastItemFull = itemToF lastIid kit
                     lastSuits = psuitFun lastItemFull
-                return $! if lastSuits then lastStore else cThisActor lastStore
+                    cLast = cThisActor lastStore
+                return $! if lastSuits && cLast /= CGround
+                          then lastStore
+                          else cLast
       let (modeFirst, modeRest) = breakStores firstStore
       getItem psuit prompt promptGeneric cursor modeFirst modeRest
               askWhenLone permitMulitple (map MStore $ cLegal) initalState
@@ -304,6 +307,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
+  lastStore <- getsClient slastStore
   lastSlot <- getsClient slastSlot
   itemToF <- itemToFullClient
   Binding{brevMap} <- askBinding
@@ -377,15 +381,17 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                let eslots = EM.elems multipleSlots
                in return $ Right $ getMultResult eslots
            })
-        , (K.toKM K.NoModifier K.Return, DefItemKey
-           { defLabel = if lastSlot `EM.member` bagItemSlotsAll
+        , let noGround = cCur /= MStore CGround || lastStore == CGround
+          in (K.toKM K.NoModifier K.Return, DefItemKey
+           { defLabel = if lastSlot `EM.member` bagItemSlotsAll && noGround
                         then let l = makePhrase [slotLabel lastSlot]
                              in "RET(" <> l <> ")"
                         else "RET"
            , defCond = lastSlot `EM.member` bagItemSlotsAll
                        || not (EM.null labelItemSlotsOpen)
            , defAction = \_ -> case EM.lookup lastSlot bagItemSlotsAll of
-               Nothing -> case EM.minViewWithKey labelItemSlotsOpen of
+               Just iid | noGround -> return $ Right $ getResult iid
+               _ -> case EM.minViewWithKey labelItemSlotsOpen of
                  Nothing -> assert `failure` "labelItemSlotsOpen empty"
                                    `twith` labelItemSlotsOpen
                  Just ((l, _), _) -> do
@@ -393,7 +399,6 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                      cli { slastSlot = l
                          , slastStore = storeFromMode cCur }
                    recCall numPrefix cCur cRest itemDialogState
-               Just iid -> return $ Right $ getResult iid
            })
         , let km = M.findWithDefault (K.toKM K.NoModifier K.Tab)
                                      MemberCycle brevMap
