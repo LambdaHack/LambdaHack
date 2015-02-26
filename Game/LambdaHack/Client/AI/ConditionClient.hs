@@ -299,7 +299,7 @@ fleeList aid = do
         | p `elem` tgtPath = (100 * mult * d, p)
         | any (\q -> chessDist p q == 1) tgtPath = (10 * mult * d, p)
         | otherwise = (mult * d, p)
-      goodVic = map (rewardPath 100) gtVic
-                ++ map (rewardPath 10) eqVic
+      goodVic = map (rewardPath 10000) gtVic
+                ++ map (rewardPath 100) eqVic
       badVic = map (rewardPath 1) ltVic
   return (goodVic, badVic)  -- keep it lazy
