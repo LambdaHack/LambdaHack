@@ -140,10 +140,13 @@ displayDelay = writeConnFrontend FrontDelay
 -- because animations not always happen after @SfxActorStart@ on the leader's
 -- level (e.g., death can lead to leader change to another level mid-turn,
 -- and there could be melee and animations on that level at the same moment).
+-- We use @getLocalTime@, because actor's time is advanced at this point,
+-- so it's way to high and @getLocalTime@ is close enough.
 displayActorStart :: MonadClientUI m => Actor -> Frames -> m ()
 displayActorStart b frs = do
   mapM_ displayFrame frs
-  let ageDisp = EM.insert (blid b) (btime b)
+  localTime <- getsState $ getLocalTime (blid b)
+  let ageDisp = EM.insert (blid b) localTime
   modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
 
 -- | Draw the current level with the overlay on top.

@@ -772,7 +772,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     b <- getsState $ getActorBody aid
     activeItems <- activeItemsClient aid
     when (blid b == arena) $ do
-      -- If time clip has passed since any actor advanced level time
+      -- If time clip has passed since any actor advanced @timeCutOff@
       -- or if the actor is so fast that he was capable of already moving
       -- this clip (for simplicity, we don't check if he actually did)
       -- or if the actor is newborn or is about to die,

@@ -222,22 +222,19 @@ handleActors lid = do
     _ | quit -> return ()
     Nothing -> return ()
     Just (aid, b) | bproj b && maybe True (null . fst) (btrajectory b) -> do
-      -- A projectile drops to the ground due to obstacles or range.
       startActor aid
+      -- A projectile drops to the ground due to obstacles or range.
+      -- The carried item is not destroyed, but drops to the ground.
       dieSer aid b False
       handleActors lid
-    Just (aid, b) | bhp b <= 0 ->
-      if bproj b then do
-        -- A projectile hits an actor. The carried item is destroyed.
-        startActor aid
-        dieSer aid b True
-        handleActors lid
-      else do
-        -- An actor dies. Items drop to the ground
-        -- and possibly a new leader is elected.
-        startActor aid
-        dieSer aid b False
-        handleActors lid
+    Just (aid, b) | bhp b <= 0 -> do
+      startActor aid
+      -- If @b@ is a projectile and it hits an actor,
+      -- the carried item is destroyed and that's all.
+      -- Otherwise, an actor dies, items drop to the ground
+      -- and possibly a new leader is elected.
+      dieSer aid b (bproj b)
+      handleActors lid
     Just (aid, body) -> do
       startActor aid
       let side = bfid body
