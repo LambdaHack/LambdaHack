@@ -350,14 +350,6 @@ createActorUI aid body verbose verb = do
   mapM_ (\(iid, store) -> void $ updateItemSlotSide store aid iid)
         (getCarriedIidCStore body)
   side <- getsClient sside
-  -- Don't spam if the actor was already visible (but, e.g., on a tile that is
-  -- invisible this turn (in that case move is broken down to lose+spot)
-  -- or on a distant tile, via teleport while the observer teleported, too).
-  lastLost <- getsClient slastLost
-  when (ES.notMember aid lastLost
-        && (bfid body /= side
-            && not (bproj body) || verbose)) $
-    actorVerbMU aid body verb
   when (bfid body /= side) $ do
     fact <- getsState $ (EM.! bfid body) . sfactionD
     when (not (bproj body) && isAtWar fact side) $
@@ -368,6 +360,17 @@ createActorUI aid body verbose verb = do
       -- into account.
       modifyClient $ \cli -> cli {scursor = TEnemy aid False}
     stopPlayBack
+  -- Don't spam if the actor was already visible (but, e.g., on a tile that is
+  -- invisible this turn (in that case move is broken down to lose+spot)
+  -- or on a distant tile, via teleport while the observer teleported, too).
+  lastLost <- getsClient slastLost
+  when (ES.notMember aid lastLost
+        && (bfid body /= side
+            && not (bproj body) || verbose)) $ do
+    actorVerbMU aid body verb
+    animFrs <- animate (blid body)
+               $ actorX (bpos body) (bsymbol body) (bcolor body)
+    displayActorStart body animFrs
   lookAtMove aid
 
 destroyActorUI :: MonadClientUI m

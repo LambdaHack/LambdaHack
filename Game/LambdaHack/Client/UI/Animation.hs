@@ -4,7 +4,8 @@ module Game.LambdaHack.Client.UI.Animation
   ( SingleFrame(..), decodeLine, encodeLine
   , overlayOverlay
   , Animation, Frames, renderAnim, restrictAnim
-  , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, moveProj, fadeout
+  , twirlSplash, blockHit, blockMiss, deathBody, actorX
+  , swapPlaces, moveProj, fadeout
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -207,6 +208,18 @@ deathBody pos = Animation $ map (maybe EM.empty (EM.singleton pos))
   , cSym Red   ';'
   , cSym Red   ';'
   , cSym Red   ','
+  ]
+
+-- | Mark actor location animation.
+actorX :: Point -> Char -> Color.Color -> Animation
+actorX pos symbol color = Animation $ map (maybe EM.empty (EM.singleton pos))
+  [ cSym BrRed 'X'
+  , cSym BrRed 'X'
+  , cSym BrRed symbol
+  , cSym color symbol
+  , cSym color symbol
+  , cSym color symbol
+  , cSym color symbol
   ]
 
 -- | Swap-places animation, both hostile and friendly.
