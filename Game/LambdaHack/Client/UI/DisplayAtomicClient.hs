@@ -770,36 +770,38 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxActorStart aid -> do
     arena <- getArenaUI
     b <- getsState $ getActorBody aid
-    activeItems <- activeItemsClient aid
+--    activeItems <- activeItemsClient aid
     when (blid b == arena) $ do
       -- If time clip has passed since any actor advanced @timeCutOff@
-      -- or if the actor is so fast that he was capable of already moving
-      -- this clip (for simplicity, we don't check if he actually did)
+--TODO      -- or if the actor is so fast that he was capable of already moving
+--          -- this clip (for simplicity, we don't check if he actually did)
       -- or if the actor is newborn or is about to die,
       -- we end the frame early, before his current move.
       -- In the result, he moves at most once per frame, and thanks to this,
       -- his multiple moves are not collapsed into one frame.
       -- If the actor changes his speed this very clip, the test can faii,
       -- but it's rare and results in a minor UI issue, so we don't care.
+      localTime <- getsState $ getLocalTime (blid b)
       timeCutOff <- getsClient $ EM.findWithDefault timeZero arena . sdisplayed
-      when (btime b >= timeShift timeCutOff (Delta timeClip)
-            || btime b >= timeShiftFromSpeed b activeItems timeCutOff
+      when (localTime >= timeShift timeCutOff (Delta timeClip)
+--TODO            || btime b >= timeShiftFromSpeed b activeItems timeCutOff
             || actorNewBorn b
             || actorDying b) $ do
-        let ageDisp = EM.insert arena (btime b)
-        modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
-        -- If considerable time passed, show delay.
-        let delta = btime b `timeDeltaToFrom` timeCutOff
-        when (delta > Delta timeClip) displayDelay
         -- If key will be requested, don't show the frame, because during
         -- the request extra message may be shown, so the other frame is better.
         mleader <- getsClient _sleader
         fact <- getsState $ (EM.! bfid b) . sfactionD
         let underAI = isAIFact fact
-        unless (Just aid == mleader && not underAI) $
+        unless (Just aid == mleader && not underAI) $ do
           -- Something new is gonna happen on this level (otherwise we'd send
           -- @UpdAgeLevel@ later on, with a larger time increment),
           -- so show crrent game state, before it changes.
+          -- If considerable time passed, show delay.
+          let delta = localTime `timeDeltaToFrom` timeCutOff
+          when (delta > Delta timeClip && not (bproj b)) $ do
+            displayDelay
+            let ageDisp = EM.insert arena localTime
+            modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
           displayPush ""
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()

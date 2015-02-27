@@ -236,7 +236,6 @@ handleActors lid = do
       dieSer aid b (bproj b)
       handleActors lid
     Just (aid, body) -> do
-      startActor aid
       let side = bfid body
           fact = factionD EM.! side
           mleader = gleader fact
@@ -305,6 +304,7 @@ handleActors lid = do
         advanceTime aidNew
         action
         managePerTurn aidNew
+      startActor aid
       handleActors lid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()

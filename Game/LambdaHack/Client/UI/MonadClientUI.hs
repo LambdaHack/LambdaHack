@@ -51,6 +51,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 
@@ -84,6 +85,17 @@ writeConnFrontend efr = do
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey frontKM frontFr = do
+  -- Assume we display the arena when we prompt for a key and possibly
+  -- insert a delay and reset cutoff.
+  arena <- getArenaUI
+  localTime <- getsState $ getLocalTime arena
+  -- No delay, because this is before the UI actor acts. Ideally the frame
+  -- would not be changed either.
+  -- However, set sdisplayed so that there's no extra delay after the actor
+  -- acts either, because waiting for the key introduces enough delay.
+  -- Or this is running, etc., which we want fast.
+  let ageDisp = EM.insert arena localTime
+  modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
   escPressed <- tryTakeMVarSescMVar  -- this also clears the ESC-pressed marker
   lastPlayOld <- getsClient slastPlay
   km <- case lastPlayOld of
@@ -134,20 +146,23 @@ displayFrame mf = do
   writeConnFrontend frame
 
 displayDelay :: MonadClientUI m =>  m ()
-displayDelay = writeConnFrontend FrontDelay
+displayDelay = sequence_ $ replicate 4 $ writeConnFrontend FrontDelay
 
 -- | Push frames or delays to the frame queue. Additionally set @sdisplayed@.
 -- because animations not always happen after @SfxActorStart@ on the leader's
 -- level (e.g., death can lead to leader change to another level mid-turn,
 -- and there could be melee and animations on that level at the same moment).
--- We use @getLocalTime@, because actor's time is advanced at this point,
--- so it's way to high and @getLocalTime@ is close enough.
+-- Insert delays, so that the animations don't look rushed.
 displayActorStart :: MonadClientUI m => Actor -> Frames -> m ()
 displayActorStart b frs = do
-  mapM_ displayFrame frs
+  timeCutOff <- getsClient $ EM.findWithDefault timeZero (blid b) . sdisplayed
   localTime <- getsState $ getLocalTime (blid b)
-  let ageDisp = EM.insert (blid b) localTime
-  modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
+  let delta = localTime `timeDeltaToFrom` timeCutOff
+  when (delta > Delta timeClip && not (bproj b)) $ do
+    displayDelay
+    let ageDisp = EM.insert (blid b) localTime
+    modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
+  mapM_ displayFrame frs
 
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadClientUI m

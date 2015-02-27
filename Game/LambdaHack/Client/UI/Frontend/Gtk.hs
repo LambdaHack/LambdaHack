@@ -361,7 +361,7 @@ pushFrame sess immediate rawFrame = do
   case fs of
     FPushed{..} ->
       putMVar sframeState
-      $ if isNothing nextFrame && anyFollowed
+      $ if isNothing nextFrame && anyFollowed && isJust rawFrame
         then fs  -- old news
         else FPushed{fpushed = writeLQueue fpushed nextFrame, ..}
     FNone | immediate -> do
@@ -371,7 +371,7 @@ pushFrame sess immediate rawFrame = do
       putMVar sframeState FNone
     FNone ->
       putMVar sframeState
-      $ if isNothing nextFrame && anyFollowed
+      $ if isNothing nextFrame && anyFollowed && isJust rawFrame
         then fs  -- old news
         else FPushed{ fpushed = writeLQueue newLQueue nextFrame
                     , fshown = dummyFrame }
