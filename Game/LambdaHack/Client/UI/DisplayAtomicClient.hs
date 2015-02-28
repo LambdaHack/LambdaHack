@@ -617,11 +617,14 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     else case effect of
         IK.NoEffect t -> msgAdd $ "Nothing happens." <+> t
         IK.Hurt{} -> return ()  -- avoid spam; SfxStrike just sent
-        IK.Burn{} ->
+        IK.Burn{} -> do
           if fid == side then
             actorVerbMU aid b "feel burned"
           else
             actorVerbMU aid b "look burned"
+          let ps = (bpos b, bpos b)
+          animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
+          displayActorStart b animFrs
         IK.Explode{} -> return ()  -- lots of visual feedback
         IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
         IK.RefillHP p | p > 0 -> do
