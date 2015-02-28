@@ -81,8 +81,8 @@ actionStrategy aid = do
   let panicFleeL = fleeL ++ badVic
       actorShines = sumSlotNoFilter IK.EqpSlotAddLight activeItems > 0
       condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
-      condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
-      condThreatNearby = not $ null $ takeWhile ((<= 7) . fst) threatDistL
+      condThreatAtHand = not $ null $ takeWhile ((<= 3) . fst) threatDistL
+      condThreatNearby = not $ null $ takeWhile ((<= 9) . fst) threatDistL
       speed1_5 = speedScale (3%2) (bspeed body activeItems)
       condFastThreatAdj = any (\(_, (_, b)) -> bspeed b activeItems > speed1_5)
                           $ takeWhile ((== 1) . fst) threatDistL
@@ -113,10 +113,6 @@ actionStrategy aid = do
             && ((condNotCalmEnough || condHpTooLow)
                 && condThreatNearby && not condTgtEnemyPresent
                 || condMeleeBad && condThreatAdj) )
-        , ( [AbMove]
-          , flee aid fleeL
-          , condMeleeBad && condThreatAtHand
-            && not condFastThreatAdj && not (null fleeL) )
         , ( [AbDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
           , condBlocksFriends && condAnyFoeAdj
@@ -128,13 +124,20 @@ actionStrategy aid = do
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeBlocker aid  -- only melee target or blocker
           , condAnyFoeAdj
-            || not (abInSkill AbDisplace)
-                 -- melee friends, not displace
+            || not (abInSkill AbDisplace)  -- melee friends, not displace
                && fleaderMode (gplayer fact) == LeaderNull  -- not restrained
-               && (condTgtEnemyPresent || condTgtEnemyRemembered) )  -- excited
+               && condTgtEnemyPresent )  -- excited
         , ( [AbTrigger], (toAny :: ToAny AbTrigger)
             <$> trigger aid False
           , condOnTriggerable && not condDesirableFloorItem )
+        , ( [AbMove]
+          , flee aid fleeL
+          , condMeleeBad && not condFastThreatAdj
+            -- Don't keep fleeing if was just shot at or meleed.
+            && not (heavilyDistressed
+                    && abInSkill AbMelee
+                    && not condNoUsableWeapon)
+            && condThreatAtHand )
         , ( [AbDisplace]  -- prevents some looping movement
           , displaceBlocker aid  -- fires up only when path blocked
           , not condDesirableFloorItem )
@@ -173,14 +176,6 @@ actionStrategy aid = do
         [ ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> pickup aid False
           , not condThreatAtHand )  -- e.g., to give to other party members
-        , ( [AbMove]
-          , flee aid fleeL
-          , condMeleeBad && not condFastThreatAdj
-            -- Don't keep fleeing if was recently shot at or meleed.
-            && not (condNotCalmEnough
-                    && abInSkill AbMelee
-                    && not condNoUsableWeapon)
-            && condThreatAtHand )
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeAny aid  -- avoid getting damaged for naught
           , condAnyFoeAdj )
