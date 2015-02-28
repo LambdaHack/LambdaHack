@@ -799,12 +799,16 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           -- Something new is gonna happen on this level (otherwise we'd send
           -- @UpdAgeLevel@ later on, with a larger time increment),
           -- so show crrent game state, before it changes.
-          -- If considerable time passed, show delay.
+          -- If considerable time passed, show delay. TODO: do this more
+          -- accurately --- check if, eg., projectiles generated enough
+          -- frames to cover the delay and if not, add here, too.
+          -- Right now, if even one projectile flies, the whole 4-clip delay
+          -- is skipped.
           let delta = localTime `timeDeltaToFrom` timeCutOff
-          when (delta > Delta timeClip && not (bproj b)) $ do
+          when (delta > Delta timeClip && not (bproj b))
             displayDelay
-            let ageDisp = EM.insert arena localTime
-            modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
+          let ageDisp = EM.insert arena localTime
+          modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
           displayPush ""
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()

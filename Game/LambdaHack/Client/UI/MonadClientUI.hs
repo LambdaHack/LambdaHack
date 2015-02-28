@@ -158,10 +158,10 @@ displayActorStart b frs = do
   timeCutOff <- getsClient $ EM.findWithDefault timeZero (blid b) . sdisplayed
   localTime <- getsState $ getLocalTime (blid b)
   let delta = localTime `timeDeltaToFrom` timeCutOff
-  when (delta > Delta timeClip && not (bproj b)) $ do
+  when (delta > Delta timeClip && not (bproj b))
     displayDelay
-    let ageDisp = EM.insert (blid b) localTime
-    modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
+  let ageDisp = EM.insert (blid b) localTime
+  modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
   mapM_ displayFrame frs
 
 -- | Draw the current level with the overlay on top.
