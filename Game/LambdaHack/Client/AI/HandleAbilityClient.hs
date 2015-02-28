@@ -133,10 +133,10 @@ actionStrategy aid = do
         , ( [AbMove]
           , flee aid fleeL
           , condMeleeBad && not condFastThreatAdj
-            -- Don't keep fleeing if was just shot at or meleed.
+            -- Don't keep fleeing if was just hit, unless can't melee at all.
             && not (heavilyDistressed
-                    || abInSkill AbMelee
-                       && not condNoUsableWeapon)
+                    && abInSkill AbMelee
+                    && not condNoUsableWeapon)
             && condThreatAtHand )
         , ( [AbDisplace]  -- prevents some looping movement
           , displaceBlocker aid  -- fires up only when path blocked
@@ -187,10 +187,11 @@ actionStrategy aid = do
           , True )
         , ( [AbMove]
           , chase aid True (condTgtEnemyPresent
-                            -- Don't keep hiding in darkness if hit right now.
+                            -- Don't keep hiding in darkness if hit right now,
+                            -- unless can't melee at all.
                             && not (heavilyDistressed
-                                    || abInSkill AbMelee
-                                       && not condNoUsableWeapon)
+                                    && abInSkill AbMelee
+                                    && not condNoUsableWeapon)
                             && condMeleeBad && condThreatNearby
                             && not aInAmbient && not actorShines)
           , True )
