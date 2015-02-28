@@ -304,7 +304,8 @@ handleActors lid = do
         advanceTime aidNew
         action
         managePerTurn aidNew
-      startActor aid
+      b3 <- getsState $ getActorBody aid
+      unless (waitedLastTurn b3) $ startActor aid
       handleActors lid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
