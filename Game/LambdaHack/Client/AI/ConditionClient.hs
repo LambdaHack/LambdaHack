@@ -238,13 +238,23 @@ desirableItem canEsc use itemFull =
 condMeleeBadM :: MonadClient m => ActorId -> m Bool
 condMeleeBadM aid = do
   b <- getsState $ getActorBody aid
+  btarget <- getsClient $ getTarget aid
+  mtgtPos <- aidTgtToPos aid (blid b) btarget
+  condTgtEnemyPresent <- condTgtEnemyPresentM aid
+  condTgtEnemyRemembered <- condTgtEnemyRememberedM aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allAssocs <- fullAssocsClient aid [COrgan, CEqp]
   let condNoUsableWeapon = all (not . isMelee . snd) allAssocs
       friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
   let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
-                       in dist < 3 && dist > 0
+                       in dist > 0 && (dist < 3 || approaching b2)
+      -- 3 is the condThreatAtHand distance that AI keeps when alone.
+      approaching = case mtgtPos of
+        Just tgtPos | condTgtEnemyPresent || condTgtEnemyRemembered ->
+          \b1 -> chessDist (bpos b1) tgtPos <= 3
+                 && chessDist (bpos b) tgtPos <= 3
+        _ -> const False
       closeFriends = filter (closeEnough . snd) friends
       strongActor (aid2, b2) = do
         activeItems <- activeItemsClient aid2
