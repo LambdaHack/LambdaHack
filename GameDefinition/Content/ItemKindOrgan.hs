@@ -126,7 +126,8 @@ lash = fist
   , ifreq    = [("lash", 100)]
   , icount   = 1
   , iverbHit = "lash"
-  , ieffects = [Hurt (3 * d 1), DropItem COrgan "far-sighted" True]
+  , iaspects = [Timeout $ 3 + d 3]
+  , ieffects = [Hurt (3 * d 1), Recharging $ DropItem COrgan "far-sighted" True]
   , idesc    = ""
   }
 noseTip = fist
@@ -142,7 +143,9 @@ lip = fist
   , ifreq    = [("lip", 10)]
   , icount   = 2
   , iverbHit = "lap"
-  , ieffects = [Hurt (1 * d 1), DropItem COrgan "keen-smelling" True]
+  , iaspects = [Timeout $ 3 + d 3]
+  , ieffects = [ Hurt (1 * d 1)
+               , Recharging $ DropItem COrgan "keen-smelling" True ]
   , idesc    = ""
   }
 torsionRight = fist
@@ -232,7 +235,7 @@ screechingBeak = armoredSkin
   , iverbHit = "peck"
   , iaspects = [Timeout $ 5 + d 5]
   , ieffects = [ Recharging (Summon [("scavenger", 1)] $ 1 + dl 2)
-               , Hurt (1 * d 2)
+               , Hurt (2 * d 1)
                ]
   , idesc    = ""
   }
@@ -251,7 +254,10 @@ pupil = fist
   , icount   = 1
   , iverbHit = "gaze at"
   , iaspects = [AddSight 10, Timeout $ 5 + d 5]
-  , ieffects = [Hurt (2 * d 1), Recharging (DropItem COrgan "temporary conditions" True)]
+  , ieffects = [ Hurt (1 * d 1)
+               , Recharging (DropItem COrgan "temporary conditions" True)
+               , Recharging $ RefillHP (-2)
+               ]
   , idesc    = ""
   }
 

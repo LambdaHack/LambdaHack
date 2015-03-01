@@ -817,7 +817,8 @@ daggerDropBestWeapon = dagger
   -- let's make it really large, for the effect to occur only once in a fight:
   -- as soon as the item is equipped, or just on the first strike.
   , iaspects = [Unique, Timeout $ d 3 + 4 - dl 3 |*| 2]
-  , ieffects = ieffects dagger ++ [Recharging DropBestWeapon]
+  , ieffects = ieffects dagger
+               ++ [Recharging DropBestWeapon, Recharging $ RefillCalm (-3)]
   , idesc    = "A double dagger that a focused fencer can use to catch and twist an opponent's blade occasionally."
   }
 hammer = ItemKind
@@ -880,7 +881,8 @@ swordNullify = sword
   , irarity  = [(5, 1), (10, 4)]
   , iaspects = [Unique, Timeout $ d 4 + 5 - dl 4 |*| 2]
   , ieffects = ieffects sword
-               ++ [Recharging $ DropItem COrgan "temporary conditions" True]
+               ++ [ Recharging $ DropItem COrgan "temporary conditions" True
+                  , Recharging $ RefillHP (-2) ]
   , idesc    = "Cold, thin blade that pierces deeply and sends its victim into abrupt, sobering shock."
   }
 halberd = ItemKind
