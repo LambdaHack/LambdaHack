@@ -482,11 +482,13 @@ potion6 = potion
                                 , Explode "blast 20" ]) ]
   }
 potion7 = potion
-  { ieffects = [ DropItem COrgan "poisoned" True
+  { irarity  = [(1, 15), (10, 5)]
+  , ieffects = [ DropItem COrgan "poisoned" True
                , OnSmash (Explode "antidote mist") ]
   }
 potion8 = potion
-  { ieffects = [ DropItem COrgan "temporary conditions" True
+  { irarity  = [(1, 5), (10, 15)]
+  , ieffects = [ DropItem COrgan "temporary conditions" True
                , OnSmash (Explode "blast 10") ]
   }
 potion9 = potion
