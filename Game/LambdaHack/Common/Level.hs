@@ -76,7 +76,7 @@ data Level = Level
   , lsmell      :: !SmellMap   -- ^ remembered smells on the level
   , ldesc       :: !Text       -- ^ level description
   , lstair      :: !([Point], [Point])
-                               -- ^ destinations of (up, down) stairs
+                               -- ^ positions of (up, down) stairs
   , lseen       :: !Int        -- ^ currently remembered clear tiles
   , lclear      :: !Int        -- ^ total number of initially clear tiles
   , ltime       :: !Time       -- ^ date of the last activity on the level

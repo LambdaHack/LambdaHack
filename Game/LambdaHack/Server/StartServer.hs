@@ -198,8 +198,10 @@ populateDungeon = do
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` "empty dungeon" `twith` dungeon
+      -- Players that escape go first to be started over stairs, if possible.
+      valuePlayer pl = (not $ fcanEscape pl, fname pl)
       -- Sorting, to keep games from similar game modes mutually reproducible.
-      needInitialCrew = sortBy (comparing $ fname . gplayer . snd)
+      needInitialCrew = sortBy (comparing $ valuePlayer . gplayer . snd)
                         $ filter ((> 0 ) . finitialActors . gplayer . snd)
                         $ EM.assocs factionD
       getEntryLevel (_, fact) =
@@ -304,7 +306,8 @@ addHero bfid ppos lid heroNames mNumber time = do
   addActor groupName bfid ppos lid tweakBody pronoun time
 
 -- | Find starting postions for all factions. Try to make them distant
--- from each other. If only one faction, also move it away from any stairs.
+-- from each other. Place as many of the initial factions, as possible,
+-- over stairs.
 findEntryPoss :: Kind.COps -> Level -> Int -> Rnd [Point]
 findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
   let factionDist = max lxsize lysize - 5
@@ -325,15 +328,18 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
                 ]
         nps <- tryFind (np : ps) (n - 1)
         return $! np : nps
-      stairPoss = uncurry (++) lstair
+      stairPoss = nub $ sort $ uncurry (++) lstair
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
   let !_A = assert (k > 0 && factionDist > 0) ()
-  case k of
-    1 -> tryFind stairPoss k
+      onStairs = take k stairPoss
+      nk = k - length onStairs
+  found <- case nk of
+    0 -> return []
+    1 -> tryFind onStairs nk
     2 -> -- Make sure the first faction's pos is not chosen in the middle.
-         tryFind [middlePos] k
-    _ | k > 2 -> tryFind [] k
-    _ -> assert `failure` k
+         tryFind (if null onStairs then [middlePos] else onStairs) nk
+    _ -> tryFind onStairs nk
+  return $! onStairs ++ found
 
 initDebug :: MonadStateRead m => Kind.COps -> DebugModeSer -> m DebugModeSer
 initDebug Kind.COps{corule} sdebugSer = do
