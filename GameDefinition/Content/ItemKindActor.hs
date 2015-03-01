@@ -448,10 +448,10 @@ geyserSulfur = ItemKind
   , ifreq    = [("animal", 100), ("immobileVents", 100)]
   , iflavour = zipPlain [BrYellow]  -- exception, animal with bright color
   , icount   = 1
-  , irarity  = [(2, 0), (3, 2), (4, 0)]  -- unique
+  , irarity  = [(5, 2), (10, 1)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ Unique, AddMaxHP 100, AddMaxCalm 999, AddSpeed 5
+  , iaspects = [ AddMaxHP 50, AddMaxCalm 999, AddSpeed 5
                , AddSkills $ EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
