@@ -432,6 +432,7 @@ projectItem ts posFromCursor = do
       psuit = do
         mpsuitReq <- psuitReq
         case mpsuitReq of
+          -- If target invalid, no item is considered a (suitable) missile.
           Left err -> return $ SuitsNothing err
           Right psuitReqFun -> return $ SuitsSomething $ \itemFull ->
             case psuitReqFun itemFull of

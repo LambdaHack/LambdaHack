@@ -383,6 +383,8 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
            })
         , let noGround = cCur /= MStore CGround || lastStore == CGround
           in (K.toKM K.NoModifier K.Return, DefItemKey
+           -- The RET(_) item is shown regardless if it's suitable, because
+           -- it may be in a different store and so not on the screen anyway.
            { defLabel = if lastSlot `EM.member` bagItemSlotsAll && noGround
                         then let l = makePhrase [slotLabel lastSlot]
                              in "RET(" <> l <> ")"
