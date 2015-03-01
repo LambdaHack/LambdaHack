@@ -95,11 +95,12 @@ addAnyActor actorFreq lid time mpos = do
       pers <- getsServer sper
       let allPers = ES.unions $ map (totalVisible . (EM.! lid))
                     $ EM.elems $ EM.delete fid pers  -- expensive :(
+          mobile = any (`elem` freqNames) ["civilian", "horror"]
       pos <- case mpos of
         Just pos -> return pos
         Nothing -> do
           fact <- getsState $ (EM.! fid) . sfactionD
-          rollPos <- getsState $ rollSpawnPos cops allPers lid lvl fact
+          rollPos <- getsState $ rollSpawnPos cops allPers mobile lid lvl fact
           rndToAction rollPos
       let container = CTrunk fid lid pos
       trunkId <- registerItem trunkFull itemKnown seed
@@ -107,28 +108,40 @@ addAnyActor actorFreq lid time mpos = do
       addActorIid trunkId trunkFull False fid pos lid id "it" time
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
-             -> LevelId -> Level -> Faction -> State
+             -> Bool -> LevelId -> Level -> Faction -> State
              -> Rnd Point
 rollSpawnPos Kind.COps{cotile} visible
-             lid Level{ltile} fact s = do
+             mobile lid Level{ltile, lxsize, lysize} fact s = do
   let inhabitants = actorRegularList (isAtWar fact) lid s
       as = actorList (const True) lid s
       isLit = Tile.isLit cotile
       distantSo df p _ =
         all (\b -> df $ chessDist (bpos b) p) inhabitants
+      middlePos = Point (lxsize `div` 2) (lysize `div` 2)
+      distantMiddle d p _ = chessDist p middlePos < d
+      condList | mobile =
+        [ \_ t -> not (isLit t) -- no such tiles on some maps
+        , distantSo (<= 10)  -- try to harass enemies
+        , distantSo (>= 5)   -- but leave room for yourself for ranged combat
+        , distantSo (<= 20)  -- but applying pressure is more important
+        ]
+               | otherwise =
+        [ distantMiddle 5
+        , distantMiddle 10
+        , distantMiddle 20
+        , distantMiddle 50
+        , distantMiddle 100
+        ]
   -- Not considering TK.OftenActor, because monsters emerge from hidden ducts,
   -- which are easier to hide in crampy corridors that lit halls.
-  findPosTry 500 ltile
+  findPosTry (if mobile then 500 else 100) ltile
     ( \p t -> Tile.isWalkable cotile t
               && not (Tile.hasFeature cotile TK.NoActor t)
               && unoccupied as p)
-    [ \_ t -> not (isLit t)  -- no such tiles on some maps
-    , distantSo (<= 10)  -- try to harass enemies
-    , distantSo (>= 5)   -- but leave room for yourself for ranged combat
-    , distantSo (<= 20)  -- but applying pressure is more important
-    , \p _ -> not (p `ES.member` visible)  -- surprise and believability
-    , distantSo (>= 3)  -- otherwise fast actor can approach and hit in one turn
-    ]
+    (condList
+     ++ [ \p _ -> not (p `ES.member` visible)  -- surprise and believability
+        , distantSo (>= 3)  -- otherwise fast actor approach and hit in one turn
+        ])
 
 dominateFidSfx :: (MonadAtomic m, MonadServer m)
                => FactionId -> ActorId -> m Bool
