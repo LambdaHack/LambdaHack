@@ -869,17 +869,17 @@ moveOrRunAid run source dir = do
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
       activeItems <- activeItemsClient target
       dEnemy <- getsState $ dispEnemy source target activeItems
-      if boldpos sb /= tpos -- avoid trivial Displace loops
-         && accessible cops lvl spos tpos -- DisplaceAccess
-         && (not (isAtWar tfact (bfid sb))
-             || dEnemy)  -- DisplaceDying, etc.
-      then
-        return $! Just $ RequestAnyAbility $ ReqDisplace target
-      else do
+      if boldpos sb == tpos && not (waitedLastTurn sb)  -- avoid Displace loops
+         || not (accessible cops lvl spos tpos) -- DisplaceAccess
+      then return Nothing
+      else if isAtWar tfact (bfid sb) && not dEnemy  -- DisplaceDying, etc.
+      then do
         wps <- pickWeaponClient source target
         case wps of
           Nothing -> return Nothing
           Just wp -> return $! Just $ RequestAnyAbility wp
+      else do
+        return $! Just $ RequestAnyAbility $ ReqDisplace target
     ((target, _), _) : _ -> do  -- can be a foe, as well as friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
