@@ -28,7 +28,6 @@ import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -251,8 +250,9 @@ closestTriggers onlyDir aid = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   let lid = blid body
-  lvl@Level{lxsize, lysize} <- getLevel lid
+  lvl <- getLevel lid
   dungeon <- getsState sdungeon
+  let escape = any lescape $ EM.elems dungeon
   explored <- getsClient sexplored
   unexploredD <- unexploredDepth
   let allExplored = ES.size explored == EM.size dungeon
@@ -262,20 +262,21 @@ closestTriggers onlyDir aid = do
         then case Tile.ascendTo cotile t of
           [] ->
             -- Escape (or guard) only after exploring, for high score, etc.
-            if allExplored
+            if isNothing onlyDir && allExplored
             then (9999999, p) : acc  -- all from that level congregate here
             else acc
           l ->
-            if allExplored
-            -- Direction irrelevant; wander randomly until stumbling upon exit.
-            then (1, p) : acc
-            else let g k = k > 0
-                           && onlyDir /= Just False
-                           && unexploredD 1 lid
-                           ||
-                           k < 0
-                           && onlyDir /= Just True
-                           && unexploredD (-1) lid
+            if not escape && allExplored
+            -- Direction irrelevant; wander randomly.
+            then map (,p) l ++ acc
+            else let g k =
+                       let easier = signum k /= signum (fromEnum lid)
+                           unexpForth = unexploredD (signum k) lid
+                           unexpBack = unexploredD (- signum k) lid
+                           aiCond = if unexpForth
+                                    then easier || not unexpBack
+                                    else not unexpBack && not (lescape lvl)
+                       in maybe aiCond (\d -> d == (k > 0)) onlyDir
                  in map (,p) (filter g l) ++ acc
         else acc
       triggersAll = PointArray.ifoldlA f [] $ ltile lvl
@@ -286,16 +287,20 @@ closestTriggers onlyDir aid = do
       triggers = filter ((/= bpos body) . snd) triggersAll
   case triggers of
     [] -> return mzero
-    _ | allExplored ->  -- distance also irrelevant, to ensure random wandering
+    _ | isNothing onlyDir && not escape && allExplored ->
+      -- Distance also irrelevant, to ensure random wandering.
       return $! toFreq "closestTriggers when allExplored" triggers
     _ -> do
       bfs <- getCacheBfs aid
-      -- Prefer stairs to easier levels (unless explored).
-      AbsDepth totalDepth <- getsState stotalDepth
+      -- Prefer stairs to easier levels.
+      -- If exactly one escape, these stairs will all be in one direction.
       let mix (k, p) dist =
-            let depthDelta = totalDepth - abs (fromEnum lid + k)
-                distDelta = max lxsize lysize - dist
-            in ((1000 * depthDelta * depthDelta + distDelta * distDelta), p)
+            let easier = signum k /= signum (fromEnum lid)
+                depthDelta = if easier then 2 else 1
+                distDelta = fromEnum (maxBound :: BfsDistance)
+                            - fromEnum apartBfs
+                            - dist
+            in (depthDelta * distDelta * distDelta, p)
           ds = mapMaybe (\(k, p) -> mix (k, p) <$> accessBfs bfs p) triggers
       return $! toFreq "closestTriggers" ds
 

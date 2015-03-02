@@ -432,9 +432,9 @@ cursorStairHuman up = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   stairs <- closestTriggers (Just up) leader
-  case maxFreq stairs of
-    Nothing -> failMsg $ "no stairs" <+> if up then "up" else "down"
-    Just p -> do
+  case reverse $ sort $ runFrequency stairs of
+    [] -> failMsg $ "no stairs" <+> if up then "up" else "down"
+    (_, p) : _ -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
       doLook False

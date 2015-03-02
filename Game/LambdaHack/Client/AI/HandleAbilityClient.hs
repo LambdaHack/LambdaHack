@@ -538,16 +538,16 @@ trigger aid fleeViaStairs = do
           per <- getPerFid lid2
           let canSee = ES.member (bpos b) (totalVisible per)
               aimless = ftactic (gplayer fact) `elem` [TRoam, TPatrol]
-              easeDelta = abs (fromEnum lid) - abs (fromEnum lid2)
+              easier = signum k /= signum (fromEnum lid)
               unexpForth = unexploredD (signum k) lid
               unexpBack = unexploredD (- signum k) lid
               expBenefit
                 | aimless = 100  -- faction is not exploring, so switch at will
                 | unexploredCurrent = 0  -- don't leave level until explored
                 | unexpForth =
-                    if easeDelta > 0  -- alway try as easy level as possible
+                    if easier  -- alway try as easy level as possible
                        || not unexpBack  -- no other choice for exploration
-                    then 1000 * abs easeDelta
+                    then 1000
                     else 0
                 | unexpBack = 0  -- wait for stairs in the opposite direciton
                 | lescape lvl = 0  -- all explored, stay on the escape level

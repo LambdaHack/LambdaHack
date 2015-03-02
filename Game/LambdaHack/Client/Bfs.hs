@@ -33,6 +33,8 @@ minKnownBfs :: BfsDistance
 minKnownBfs = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
 
 -- | The distance value that denote no legal path between points.
+-- The next value is the minimal distance value assigned to paths
+-- that don't enter any unknown tiles.
 apartBfs :: BfsDistance
 apartBfs = pred minKnownBfs
 
