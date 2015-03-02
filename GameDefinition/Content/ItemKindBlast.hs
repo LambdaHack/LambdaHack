@@ -99,7 +99,7 @@ fragrance = ItemKind
   , iweight  = 1
   , iaspects = []
   , ieffects = [Impress]
-  , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
+  , ifeature = [ ToThrow $ ThrowMod 28 20  -- 2 steps, one turn
                , Fragile, Identified ]
   , idesc    = ""
   , ikit     = []
@@ -227,7 +227,7 @@ waste = ItemKind
   , iweight  = 50
   , iaspects = []
   , ieffects = [RefillHP (-1)]
-  , ifeature = [ ToThrow $ ThrowMod 28 50
+  , ifeature = [ ToThrow $ ThrowMod 28 20  -- 2 steps, one turn
                , Fragile, Identified ]
   , idesc    = ""
   , ikit     = []
