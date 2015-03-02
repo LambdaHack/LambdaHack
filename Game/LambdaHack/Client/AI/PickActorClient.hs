@@ -107,7 +107,7 @@ pickActorToMove refreshTarget oldAid = do
             mtgt <- refreshTarget oldAid aidBody
             return $! (aidBody,) <$> mtgt
       oursTgt <- catMaybes <$> mapM refresh ours
-      let actorWeak ((aid, body), _) = do
+      let actorVulnerable ((aid, body), _) = do
             activeItems <- activeItemsClient aid
             condMeleeBad <- condMeleeBadM aid
             threatDistL <- threatDistList aid
@@ -115,22 +115,21 @@ pickActorToMove refreshTarget oldAid = do
             actorSk <- actorSkillsClient aid
             let abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
                 condNoUsableWeapon = all (not . isMelee) activeItems
-                condThreatAtHand =
-                  not $ null $ takeWhile ((<= 3) . fst) threatDistL
+                canMelee = abInSkill AbMelee && not condNoUsableWeapon
+                condCanFlee = not (null fleeL)
+                condThreatAtHandVeryClose =
+                  let f = if canMelee then (== 2) else (<= 2)
+                  in not $ null $ takeWhile (f . fst) threatDistL
                 condFastThreatAdj =
                   any (\(_, (_, b)) ->
                          bspeed b activeItems > bspeed body activeItems)
                   $ takeWhile ((== 1) . fst) threatDistL
-                condCanFlee = not (null fleeL)
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
-            return $! if condThreatAtHand
+            return $! if condThreatAtHandVeryClose
                       then condCanFlee && condMeleeBad && not condFastThreatAdj
-                           && not (heavilyDistressed
-                                   && abInSkill AbMelee
-                                   && not condNoUsableWeapon)
-                           && condThreatAtHand
+                           && not (heavilyDistressed && canMelee)
                       else heavilyDistressed  -- shot at
                         -- TODO: modify when reaction fire is possible
           actorHearning (_, (TEnemyPos{}, (_, (_, d)))) | d <= 2 =
@@ -144,16 +143,20 @@ pickActorToMove refreshTarget oldAid = do
           -- AI has to be prudent and not lightly waste leader for meleeing,
           -- even if his target is distant
           actorMeleeing ((aid, _), _) = condAnyFoeAdjM aid
-      oursWeak <- filterM actorWeak oursTgt
-      oursStrong <- filterM (fmap not . actorWeak) oursTgt  -- TODO: partitionM
-      oursMeleeing <- filterM actorMeleeing oursStrong
-      oursNotMeleeing <- filterM (fmap not . actorMeleeing) oursStrong
+          actorMeleeBad ((aid, _), _) = condMeleeBadM aid
+      oursVulnerable <- filterM actorVulnerable oursTgt
+      oursSafe <- filterM (fmap not . actorVulnerable) oursTgt
+        -- TODO: partitionM
+      oursMeleeing <- filterM actorMeleeing oursSafe
+      oursNotMeleeing <- filterM (fmap not . actorMeleeing) oursSafe
       oursHearing <- filterM actorHearning oursNotMeleeing
       oursNotHearing <- filterM (fmap not . actorHearning) oursNotMeleeing
+      oursMeleeBad <- filterM actorMeleeBad oursNotHearing
+      oursNotMeleeBad <- filterM (fmap not . actorMeleeBad) oursNotHearing
       let targetTEnemy (_, (TEnemy{}, _)) = True
           targetTEnemy (_, (TEnemyPos{}, _)) = True
           targetTEnemy _ = False
-          (oursTEnemy, oursOther) = partition targetTEnemy oursNotHearing
+          (oursTEnemy, oursOther) = partition targetTEnemy oursNotMeleeBad
           -- These are not necessarily stuck (perhaps can go around),
           -- but their current path is blocked by friends.
           targetBlocked our@((_aid, _b), (_tgt, (path, _etc))) =
@@ -167,7 +170,8 @@ pickActorToMove refreshTarget oldAid = do
 -- so far we only detect blocked and only in Other mode
 --             && not (aid == oldAid && waitedLastTurn b time)  -- not stuck
 -- this only prevents staying stuck
-          (oursBlocked, oursPos) = partition targetBlocked oursOther
+          (oursBlocked, oursPos) =
+            partition targetBlocked $ oursOther ++ oursMeleeBad
           -- Lower overhead is better.
           overheadOurs :: ((ActorId, Actor), (Target, PathEtc))
                        -> (Int, Int, Bool)
@@ -221,13 +225,13 @@ pickActorToMove refreshTarget oldAid = do
             not (adjacent (bpos b) goal) -- not in melee range already
             && goodGeneric our
           goodTEnemy our = goodGeneric our
-          oursWeakGood = filter goodTEnemy oursWeak
+          oursVulnerableGood = filter goodTEnemy oursVulnerable
           oursTEnemyGood = filter goodTEnemy oursTEnemy
           oursPosGood = filter goodGeneric oursPos
           oursMeleeingGood = filter goodGeneric oursMeleeing
           oursHearingGood = filter goodTEnemy oursHearing
           oursBlockedGood = filter goodGeneric oursBlocked
-          candidates = [ sortOurs oursWeakGood
+          candidates = [ sortOurs oursVulnerableGood
                        , sortOurs oursTEnemyGood
                        , sortOurs oursPosGood
                        , sortOurs oursMeleeingGood
