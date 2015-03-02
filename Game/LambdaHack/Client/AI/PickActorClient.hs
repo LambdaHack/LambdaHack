@@ -19,6 +19,7 @@ import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -111,19 +112,26 @@ pickActorToMove refreshTarget oldAid = do
             condMeleeBad <- condMeleeBadM aid
             threatDistL <- threatDistList aid
             (fleeL, _) <- fleeList aid
-            let condThreatAdj =
-                  not $ null $ takeWhile ((== 1) . fst) threatDistL
+            actorSk <- actorSkillsClient aid
+            let abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
+                condNoUsableWeapon = all (not . isMelee) activeItems
+                condThreatAtHand =
+                  not $ null $ takeWhile ((<= 3) . fst) threatDistL
                 condFastThreatAdj =
                   any (\(_, (_, b)) ->
                          bspeed b activeItems > bspeed body activeItems)
                   $ takeWhile ((== 1) . fst) threatDistL
-                condCanFlee = not (null fleeL || condFastThreatAdj)
+                condCanFlee = not (null fleeL)
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
-            return $! if condThreatAdj
-                      then condMeleeBad && condCanFlee
-                      else heavilyDistressed
+            return $! if condThreatAtHand
+                      then condCanFlee && condMeleeBad && not condFastThreatAdj
+                           && not (heavilyDistressed
+                                   && abInSkill AbMelee
+                                   && not condNoUsableWeapon)
+                           && condThreatAtHand
+                      else heavilyDistressed  -- shot at
                         -- TODO: modify when reaction fire is possible
           actorHearning (_, (TEnemyPos{}, (_, (_, d)))) | d <= 2 =
             return False  -- noise probably due to fleeing target
