@@ -217,6 +217,15 @@ strengthFromEqpSlot eqpSlot =
     EqpSlotAddSight -> strengthAddSight
     EqpSlotAddSmell -> strengthAddSmell
     EqpSlotAddLight -> strengthAddLight
+    EqpSlotWeapon -> strengthMelee
+
+strengthMelee :: ItemFull -> Maybe Int
+strengthMelee itemFull =
+  let p (Hurt d) = [Dice.meanDice d]
+      p (Burn d) = [Dice.meanDice d]
+      p _ = []
+      psum = sum (strengthEffect p itemFull)
+  in if psum == 0 then Nothing else Just psum
 
 strongestSlotNoFilter :: EqpSlot -> [(ItemId, ItemFull)]
                       -> [(Int, (ItemId, ItemFull))]

@@ -159,6 +159,7 @@ data EqpSlot =
   | EqpSlotAddSight
   | EqpSlotAddSmell
   | EqpSlotAddLight
+  | EqpSlotWeapon  -- ^ a hack exclusively for AI that shares weapons
   deriving (Show, Eq, Ord, Generic)
 
 instance Hashable Effect
@@ -199,6 +200,7 @@ slotName EqpSlotAddSkills{} = "skills"
 slotName EqpSlotAddSight = "sight radius"
 slotName EqpSlotAddSmell = "smell radius"
 slotName EqpSlotAddLight = "light radius"
+slotName EqpSlotWeapon = "weapon damage"
 
 toVelocity :: Int -> Feature
 toVelocity n = ToThrow $ ThrowMod n 100
