@@ -68,8 +68,9 @@ effectToBenefit cops b activeItems fact eff =
     IK.InsertMove d -> 50 * Dice.meanDice d
     IK.Teleport d ->
       let p = Dice.meanDice d
-      in if p <= 8 then 1  -- blink to shoot at foe
-         else if p <= 18 then 0  -- neither escape nor repositioning
+      in if p <= 8  -- blink to shoot at foe
+            && dungeonDweller  -- non-dwellers have to explore and escape ASAP
+         then 1
          else -p  -- get rid of the foe
     IK.CreateItem COrgan grp _ ->  -- TODO: use the timeout
       let (total, count) = organBenefit grp cops b
