@@ -255,12 +255,16 @@ condMeleeBadM aid = do
       factNames = map (fgroup . gplayer) friendlyFacts
       spawnerOnLvl = any (`elem` freqNames) factNames
       closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
-                       in dist > 0 && (dist < 3 || approaching b2)
+                       in dist > 0 && (dist <= 2 && not tgtAtHand
+                                       || approaching b2)
       -- 3 is the condThreatAtHand distance that AI keeps when alone.
+      tgtAtHand = case mtgtPos of
+        Just tgtPos | condTgtEnemyPresent || condTgtEnemyRemembered ->
+          chessDist (bpos b) tgtPos <= 3
+        _ -> False
       approaching = case mtgtPos of
         Just tgtPos | condTgtEnemyPresent || condTgtEnemyRemembered ->
           \b1 -> chessDist (bpos b1) tgtPos <= 3
-                 && chessDist (bpos b) tgtPos <= 3
         _ -> const False
       closeFriends = filter (closeEnough . snd) friends
       strongActor (aid2, b2) = do
