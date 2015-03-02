@@ -515,7 +515,6 @@ meleeAny aid = do
   return $! liftFrequency freq
 
 -- TODO: take charging status into account
--- Fast monsters don't pay enough attention to features.
 trigger :: MonadClient m
         => ActorId -> Bool -> m (Strategy (RequestTimed AbTrigger))
 trigger aid fleeViaStairs = do

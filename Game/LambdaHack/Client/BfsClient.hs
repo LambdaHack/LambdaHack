@@ -28,6 +28,7 @@ import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -250,7 +251,7 @@ closestTriggers onlyDir aid = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   let lid = blid body
-  lvl <- getLevel lid
+  lvl@Level{lxsize, lysize} <- getLevel lid
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   unexploredD <- unexploredDepth
@@ -289,8 +290,12 @@ closestTriggers onlyDir aid = do
       return $! toFreq "closestTriggers when allExplored" triggers
     _ -> do
       bfs <- getCacheBfs aid
-      -- Prefer stairs to easier levels (unless explored), especially deep down.
-      let mix (k, p) dist = ((20 * abs (fromEnum lid + k) + dist), p)
+      -- Prefer stairs to easier levels (unless explored).
+      AbsDepth totalDepth <- getsState stotalDepth
+      let mix (k, p) dist =
+            let depthDelta = totalDepth - abs (fromEnum lid + k)
+                distDelta = max lxsize lysize - dist
+            in ((1000 * depthDelta * depthDelta + distDelta * distDelta), p)
           ds = mapMaybe (\(k, p) -> mix (k, p) <$> accessBfs bfs p) triggers
       return $! toFreq "closestTriggers" ds
 
