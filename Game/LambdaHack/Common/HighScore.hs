@@ -27,7 +27,8 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.ModeKind (ModeKind)
+import Game.LambdaHack.Content.ModeKind (HiCondPoly, HiIndeterminant (..),
+                                         ModeKind, Outcome (..))
 
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.
@@ -122,31 +123,26 @@ register :: ScoreTable  -- ^ old table
          -> Text        -- ^ name of the faction's gplayer
          -> EM.EnumMap (Kind.Id ItemKind) Int  -- ^ allies lost
          -> EM.EnumMap (Kind.Id ItemKind) Int  -- ^ foes killed
-         -> Bool        -- ^ whether the faction fights against spawners
+         -> HiCondPoly
          -> (Bool, (ScoreTable, Int))
 register table total time status@Status{stOutcome} date difficulty gplayerName
-         ourVictims theirVictims loots =
-  let victory = stOutcome `elem` [Conquer, Escape]
-      pBase =
-        if loots
-        -- Heroes rejoice in loot.
-        then fromIntegral total
-        -- Spawners or skirmishers get no points from loot, but try to kill
-        -- all opponents fast or at least hold up for long.
-        else let turnsSpent = timeFitUp time timeTurn
-                 -- Up to 2000 points for victory, so up to 10000 turns matter.
-                 speedup = 1000 + max 0 (1000000 - 100 * turnsSpent)
-                 -- Up to 1000 points for surviving long, so up to 10000 turns.
-                 survival = min 1000000 $ 100 * turnsSpent
-             in sqrt $ fromIntegral $ if victory then speedup else survival
-      -- All kinds of faction mourn their victims, until they lose count.
-      -- At which point it doesn't even matter for looting factions
-      -- if they win or not.
-      pBonus = max 0 (1000 - 100 * sum (EM.elems ourVictims))
-      pSum :: Double
-      pSum = pBase + if victory then fromIntegral pBonus else 0
+         ourVictims theirVictims hiCondPoly =
+  let turnsSpent = fromIntegral $ timeFitUp time timeTurn
+      hiInValue (hi, c) = case hi of
+        HiConst -> c
+        HiLoot -> c * fromIntegral total
+        HiBlitz -> -- Up to 1000 points, so up to 10000 turns matter.
+                   sqrt $ max 0 (1000000 - c * turnsSpent)
+        HiSurvival -> -- Up to 1000 for surviving long, so up to 10000 matter.
+                      sqrt $ min 1000000 $ c * turnsSpent
+        HiKill -> c * fromIntegral (sum (EM.elems theirVictims))
+        HiLoss -> c * fromIntegral (sum (EM.elems ourVictims))
+      hiPolynomialValue = sum . map hiInValue
+      niSummandValue (hiPoly, outcomes) =
+        if stOutcome `elem` outcomes then hiPolynomialValue hiPoly else 0
+      hiCondValue = sum . map niSummandValue
       points = (ceiling :: Double -> Int)
-               $ pSum * 1.5 ^^ (- (difficultyCoeff difficulty))
+               $ hiCondValue hiCondPoly * 1.5 ^^ (- (difficultyCoeff difficulty))
       negTime = absoluteTimeNegate time
       score = ScoreRecord{..}
   in (points > 0, insertPos score table)

@@ -5,9 +5,11 @@ module Content.ModeKindPlayer
   , playerMonster, playerMobileMonster, playerAntiMonster
   , playerAnimal, playerMobileAnimal
   , playerHorror
+  , hiHero, hiDweller
   ) where
 
 import qualified Data.EnumMap.Strict as EM
+import Data.List
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Dice
@@ -22,6 +24,7 @@ playerHero = Player
   , fskillsOther = meleeAdjacent
   , fcanEscape = True
   , fneverEmpty = True
+  , fhiCondPoly = hiHero
   , fhasNumbers = True
   , fhasGender = True
   , ftactic = TExplore
@@ -57,6 +60,7 @@ playerCivilian = Player
   , fskillsOther = zeroSkills  -- not coordinated by any leadership
   , fcanEscape = False
   , fneverEmpty = True
+  , fhiCondPoly = []
   , fhasNumbers = False
   , fhasGender = True
   , ftactic = TPatrol
@@ -72,6 +76,7 @@ playerMonster = Player
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
+  , fhiCondPoly = hiDweller
   , fhasNumbers = False
   , fhasGender = False
   , ftactic = TExplore
@@ -94,6 +99,7 @@ playerAnimal = Player
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
+  , fhiCondPoly = []
   , fhasNumbers = False
   , fhasGender = False
   , ftactic = TRoam  -- can't pick up, so no point exploring
@@ -118,6 +124,7 @@ playerHorror = Player
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
+  , fhiCondPoly = []
   , fhasNumbers = False
   , fhasGender = False
   , ftactic = TPatrol  -- disoriented
@@ -126,6 +133,25 @@ playerHorror = Player
   , fleaderMode = LeaderNull
   , fhasUI = False
   }
+
+hiHero, hiDweller :: HiCondPoly
+
+-- Heroes rejoice in loot.
+hiHero = [ ( [(HiLoot, 1)]
+           , [minBound, maxBound] )
+         , ( [(HiConst, 1000), (HiLoss, -100)]
+           , [Conquer, Escape] ) ]
+
+-- Spawners or skirmishers get no points from loot, but try to kill
+-- all opponents fast or at least hold up for long.
+hiDweller = [ ( [(HiConst, 1000)]  -- no loot
+                , [Conquer, Escape] )
+              , ( [(HiConst, 1000), (HiLoss, -100)]
+                , [Conquer, Escape] )
+              , ( [(HiBlitz, -100)]
+                , [Conquer, Escape] )
+              , ( [(HiSurvival, 100)]
+                , [minBound, maxBound] \\ [Conquer, Escape] ) ]
 
 minusTen, meleeAdjacent, _meleeAndRanged :: Skills
 

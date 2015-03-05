@@ -258,7 +258,6 @@ scoreToSlideshow total status = do
   date <- liftIO getClockTime
   scurDifficulty <- getsClient scurDifficulty
   factionD <- getsState sfactionD
-  loots <- factionLoots fid
   let table = HighScore.getTable gameModeId scoreDict
       gameModeName = mname gameMode
       showScore (ntable, pos) =
@@ -275,7 +274,8 @@ scoreToSlideshow total status = do
       (worthMentioning, rScore) =
         HighScore.register table total time status date diff
                            (fname $ gplayer fact)
-                           ourVictims theirVictims loots
+                           ourVictims theirVictims
+                           (fhiCondPoly $ gplayer fact)
   return $! if worthMentioning then showScore rScore else mempty
 
 getLeaderUI :: MonadClientUI m => m ActorId

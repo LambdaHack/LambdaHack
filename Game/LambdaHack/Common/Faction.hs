@@ -2,7 +2,7 @@
 -- | Factions taking part in the game: e.g., two human players controlling
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
-  ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
+  ( FactionId, FactionDict, Faction(..), Diplomacy(..), Status(..)
   , Target(..)
   , isHorrorFact
   , canMoveFact, noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
@@ -55,16 +55,6 @@ data Diplomacy =
   deriving (Show, Eq, Ord, Enum)
 
 type Dipl = EM.EnumMap FactionId Diplomacy
-
--- | Outcome of a game.
-data Outcome =
-    Killed    -- ^ the faction was eliminated
-  | Defeated  -- ^ the faction lost the game in another way
-  | Camping   -- ^ game is supended
-  | Conquer   -- ^ the player won by eliminating all rivals
-  | Escape    -- ^ the player escaped the dungeon alive
-  | Restart   -- ^ game is restarted
-  deriving (Show, Eq, Ord, Enum)
 
 -- | Current game status.
 data Status = Status
@@ -178,10 +168,6 @@ instance Binary Faction where
     return $! Faction{..}
 
 instance Binary Diplomacy where
-  put = putWord8 . toEnum . fromEnum
-  get = fmap (toEnum . fromEnum) getWord8
-
-instance Binary Outcome where
   put = putWord8 . toEnum . fromEnum
   get = fmap (toEnum . fromEnum) getWord8
 

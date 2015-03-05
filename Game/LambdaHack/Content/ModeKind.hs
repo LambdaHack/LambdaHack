@@ -2,6 +2,7 @@
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
   ( Caves, Roster(..), Player(..), ModeKind(..), LeaderMode(..), AutoLeader(..)
+  , Outcome(..), HiIndeterminant(..), HiCondPoly
   , validateSingleModeKind, validateAllModeKind
   ) where
 
@@ -43,6 +44,30 @@ data Roster = Roster
   }
   deriving (Show, Eq)
 
+-- | Outcome of a game.
+data Outcome =
+    Killed    -- ^ the faction was eliminated
+  | Defeated  -- ^ the faction lost the game in another way
+  | Camping   -- ^ game is supended
+  | Conquer   -- ^ the player won by eliminating all rivals
+  | Escape    -- ^ the player escaped the dungeon alive
+  | Restart   -- ^ game is restarted
+  deriving (Show, Eq, Ord, Bounded, Generic)
+
+instance Binary Outcome
+
+data HiIndeterminant = HiConst | HiLoot | HiBlitz | HiSurvival | HiKill | HiLoss
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary HiIndeterminant
+
+type HiPolynomial = [(HiIndeterminant, Double)]
+
+type HiSummand = (HiPolynomial, [Outcome])
+
+-- | Conditional polynomial representing score calculation for this player.
+type HiCondPoly = [HiSummand]
+
 -- | Properties of a particular player.
 data Player a = Player
   { fname          :: !Text        -- ^ name of the player
@@ -50,6 +75,7 @@ data Player a = Player
   , fskillsOther   :: !Skills      -- ^ skills of the other actors
   , fcanEscape     :: !Bool        -- ^ the player can escape the dungeon
   , fneverEmpty    :: !Bool        -- ^ the faction declared killed if no actors
+  , fhiCondPoly    :: !HiCondPoly  -- ^ score polynomial for the player
   , fhasNumbers    :: !Bool        -- ^ whether actors have numbers, not symbols
   , fhasGender     :: !Bool        -- ^ whether actors have gender
   , ftactic        :: !Tactic      -- ^ members behave according to this tactic

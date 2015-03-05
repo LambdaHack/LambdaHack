@@ -133,9 +133,11 @@ rosterCampaign = Roster
 
 rosterDuel = Roster
   { rosterList = [ playerHero { fname = "White Recursive"
+                              , fhiCondPoly = hiDweller
                               , fentryLevel = -3
                               , finitialActors = 1 }
                  , playerAntiHero { fname = "Red Iterative"
+                                  , fhiCondPoly = hiDweller
                                   , fentryLevel = -3
                                   , finitialActors = 1 }
                  , playerHorror ]
@@ -146,8 +148,10 @@ rosterDuel = Roster
 
 rosterSkirmish = rosterDuel
   { rosterList = [ playerHero { fname = "White Haskell"
+                              , fhiCondPoly = hiDweller
                               , fentryLevel = -3 }
                  , playerAntiHero { fname = "Purple Agda"
+                                  , fhiCondPoly = hiDweller
                                   , fentryLevel = -3 }
                  , playerHorror ]
   , rosterEnemy = [ ("White Haskell", "Purple Agda")
@@ -156,24 +160,27 @@ rosterSkirmish = rosterDuel
 
 rosterAmbush = rosterDuel
   { rosterList = [ playerSniper { fname = "Yellow Idris"
-                                , finitialActors = 4
-                                , fentryLevel = -5 }
+                                , fhiCondPoly = hiDweller
+                                , fentryLevel = -5
+                                , finitialActors = 4 }
                  , playerAntiSniper { fname = "Blue Epigram"
-                                    , finitialActors = 4
-                                    , fentryLevel = -5 }
+                                    , fhiCondPoly = hiDweller
+                                    , fentryLevel = -5
+                                    , finitialActors = 4 }
                  , playerHorror {fentryLevel = -5} ]
   , rosterEnemy = [ ("Yellow Idris", "Blue Epigram")
                   , ("Yellow Idris", "Horror Den")
                   , ("Blue Epigram", "Horror Den") ] }
 
 rosterBattle = Roster
-  { rosterList = [ playerSoldier { finitialActors = 5
-                                 , fentryLevel = -5 }
-                 , playerMobileMonster { finitialActors = 35
-                                       , fentryLevel = -5
+  { rosterList = [ playerSoldier { fhiCondPoly = hiDweller
+                                 , fentryLevel = -5
+                                 , finitialActors = 5 }
+                 , playerMobileMonster { fentryLevel = -5
+                                       , finitialActors = 35
                                        , fneverEmpty = True }
-                 , playerMobileAnimal { finitialActors = 30
-                                      , fentryLevel = -5
+                 , playerMobileAnimal { fentryLevel = -5
+                                      , finitialActors = 30
                                       , fneverEmpty = True } ]
   , rosterEnemy = [ ("Armed Adventurer Party", "Monster Hive")
                   , ("Armed Adventurer Party", "Animal Kingdom") ]
@@ -212,8 +219,10 @@ rosterSafari = Roster
 
 rosterPvP = Roster
   { rosterList = [ playerHero { fname = "Red"
+                              , fhiCondPoly = hiDweller
                               , fentryLevel = -3 }
                  , playerHero { fname = "Blue"
+                              , fhiCondPoly = hiDweller
                               , fentryLevel = -3 }
                  , playerHorror ]
   , rosterEnemy = [ ("Red", "Blue")
@@ -250,9 +259,11 @@ rosterDefense = Roster
 
 rosterBoardgame = Roster
   { rosterList = [ playerHero { fname = "Blue"
+                              , fhiCondPoly = hiDweller
                               , fentryLevel = -3
                               , finitialActors = 6 }
                  , playerAntiHero { fname = "Red"
+                                  , fhiCondPoly = hiDweller
                                   , fentryLevel = -3
                                   , finitialActors = 6 }
                  , playerHorror ]
