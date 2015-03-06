@@ -89,6 +89,7 @@ targetStrategy oldLeader aid = do
   actorSk <- maxActorSkillsClient aid
   condCanProject <- condCanProjectM aid
   condHpTooLow <- condHpTooLowM aid
+  condNoEqpWeapon <- condNoEqpWeaponM aid
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
   -- TODO: refine all this when some actors specialize in ranged attacks
@@ -100,6 +101,7 @@ targetStrategy oldLeader aid = do
   smellRadius <- sumOrganEqpClient IK.EqpSlotAddSmell aid
   allAssocs <- fullAssocsClient aid [COrgan, CEqp]
   let condNoUsableWeapon = all (not . isMelee . snd) allAssocs
+      lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
       canSmell = smellRadius > 0
       meleeNearby | canEscape = nearby `div` 2  -- not aggresive
@@ -148,6 +150,12 @@ targetStrategy oldLeader aid = do
                      else return []
             case smpos of
               [] -> do
+               ctriggersEarly <-
+                 if EM.findWithDefault 0 AbTrigger actorSk > 0
+                    && not condNoEqpWeapon
+                 then closestTriggers Nothing aid
+                 else return mzero
+               if nullFreq ctriggersEarly then do
                 citems <- if EM.findWithDefault 0 AbMoveItem actorSk > 0
                           then closestItems aid
                           else return []
@@ -172,7 +180,6 @@ targetStrategy oldLeader aid = do
                       ( TVector v
                       , Just (bpos b : path, (last path, length path)) )
                   [] -> do
-                    let lidExplored = ES.member (blid b) explored
                     upos <- if lidExplored
                             then return Nothing
                             else closestUnknown aid
@@ -208,6 +215,9 @@ targetStrategy oldLeader aid = do
                           p : _ -> setPath $ TPoint (blid b) p
                       Just p -> setPath $ TPoint (blid b) p
                   (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
+               else do
+                 p <- rndToAction $ frequency ctriggersEarly
+                 setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
       tellOthersNothingHere pos = do
         let f (tgt, _) = case tgt of
@@ -278,7 +288,7 @@ targetStrategy oldLeader aid = do
                     || let sml = EM.findWithDefault timeZero pos (lsmell lvl)
                        in sml <= ltime lvl)
                 && let t = lvl `at` pos
-                   in if ES.notMember lid explored
+                   in if not lidExplored
                       then t /= unknownId  -- closestUnknown
                            && not (Tile.isSuspect cotile t)  -- closestSuspect
                       else  -- closestTriggers

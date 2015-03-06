@@ -245,17 +245,22 @@ closestSuspect aid = do
 -- TODO: We assume linear dungeon in @unexploredD@,
 -- because otherwise we'd need to calculate shortest paths in a graph, etc.
 -- | Closest (wrt paths) triggerable open tiles.
+-- The level the actor is on is either explored or the actor already
+-- has a weapon equipped, so no need to explore further, he tries to find
+-- enemies on other levels.
 closestTriggers :: MonadClient m => Maybe Bool -> ActorId -> m (Frequency Point)
 closestTriggers onlyDir aid = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
+  explored <- getsClient sexplored
   let lid = blid body
   lvl <- getLevel lid
   dungeon <- getsState sdungeon
   let escape = any lescape $ EM.elems dungeon
-  explored <- getsClient sexplored
   unexploredD <- unexploredDepth
   let allExplored = ES.size explored == EM.size dungeon
+      -- If lid not explored, aid equips a weapon and so can leave level.
+      lidExplored = ES.member (blid body) explored
       f :: [(Int, Point)] -> Point -> Kind.Id TileKind -> [(Int, Point)]
       f acc p t =
         if Tile.isWalkable cotile t && not (null $ Tile.causeEffects cotile t)
@@ -274,8 +279,10 @@ closestTriggers onlyDir aid = do
                            unexpForth = unexploredD (signum k) lid
                            unexpBack = unexploredD (- signum k) lid
                            aiCond = if unexpForth
-                                    then easier || not unexpBack
-                                    else not unexpBack && not (lescape lvl)
+                                    then easier
+                                         || not unexpBack && lidExplored
+                                    else not unexpBack && lidExplored
+                                         && not (lescape lvl)
                        in maybe aiCond (\d -> d == (k > 0)) onlyDir
                  in map (,p) (filter g l) ++ acc
         else acc

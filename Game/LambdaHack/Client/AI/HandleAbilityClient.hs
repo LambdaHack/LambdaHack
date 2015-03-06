@@ -77,8 +77,10 @@ actionStrategy aid = do
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
   aInAmbient <- getsState $ actorInAmbient body
+  explored <- getsClient sexplored
   (fleeL, badVic) <- fleeList aid
-  let panicFleeL = fleeL ++ badVic
+  let lidExplored = ES.member (blid body) explored
+      panicFleeL = fleeL ++ badVic
       actorShines = sumSlotNoFilter IK.EqpSlotAddLight activeItems > 0
       condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 3) . fst) threatDistL
@@ -129,7 +131,9 @@ actionStrategy aid = do
                && condTgtEnemyPresent )  -- excited
         , ( [AbTrigger], (toAny :: ToAny AbTrigger)
             <$> trigger aid False
-          , condOnTriggerable && not condDesirableFloorItem )
+          , condOnTriggerable && not condDesirableFloorItem
+            && (lidExplored || not condNoEqpWeapon)
+            && not condTgtEnemyPresent )
         , ( [AbMove]
           , flee aid fleeL
           , condMeleeBad && not condFastThreatAdj
@@ -515,6 +519,14 @@ meleeAny aid = do
   return $! liftFrequency freq
 
 -- TODO: take charging status into account
+-- TODO: make sure the stairs are specifically targetted and not
+-- an item on them, etc., so that we don't leave level if items visible.
+-- When invalidating target, make sure the stairs should really be taken.
+-- | The level the actor is on is either explored or the actor already
+-- has a weapon equipped, so no need to explore further, he tries to find
+-- enemies on other levels.
+-- We don't verify the stairs are targeted by the actor, but at least
+-- the actor doesn't target a visible enemy at this point.
 trigger :: MonadClient m
         => ActorId -> Bool -> m (Strategy (RequestTimed AbTrigger))
 trigger aid fleeViaStairs = do
@@ -528,7 +540,7 @@ trigger aid fleeViaStairs = do
   lvl <- getLevel lid
   unexploredD <- unexploredDepth
   s <- getState
-  let unexploredCurrent = ES.notMember lid explored
+  let lidExplored = ES.member lid explored
       allExplored = ES.size explored == EM.size dungeon
       t = lvl `at` bpos b
       feats = TK.tfeature $ okind t
@@ -543,12 +555,13 @@ trigger aid fleeViaStairs = do
               unexpBack = unexploredD (- signum k) lid
               expBenefit
                 | aimless = 100  -- faction is not exploring, so switch at will
-                | unexploredCurrent = 0  -- don't leave level until explored
                 | unexpForth =
                     if easier  -- alway try as easy level as possible
-                       || not unexpBack  -- no other choice for exploration
+                       || not unexpBack
+                          && lidExplored -- no other choice for exploration
                     then 1000
                     else 0
+                | not lidExplored = 0  -- fully explore current
                 | unexpBack = 0  -- wait for stairs in the opposite direciton
                 | lescape lvl = 0  -- all explored, stay on the escape level
                 | otherwise = 2  -- no escape, switch levels occasionally
