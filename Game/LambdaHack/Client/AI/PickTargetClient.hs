@@ -137,6 +137,8 @@ targetStrategy oldLeader aid = do
         return $! returN "setPath" $ maybe (tgt, Nothing) (second Just) mpath
       pickNewTarget :: m (Strategy (Target, Maybe PathEtc))
       pickNewTarget = do
+        -- This is mostly lazy and used between 0 and 3 times below.
+        ctriggers <- closestTriggers Nothing aid
         -- TODO: for foes, items, etc. consider a few nearby, not just one
         cfoes <- closestFoes nearbyFoes aid
         case cfoes of
@@ -150,11 +152,11 @@ targetStrategy oldLeader aid = do
                      else return []
             case smpos of
               [] -> do
-               ctriggersEarly <-
-                 if EM.findWithDefault 0 AbTrigger actorSk > 0
-                    && not condNoEqpWeapon
-                 then closestTriggers Nothing aid
-                 else return mzero
+               let ctriggersEarly =
+                     if EM.findWithDefault 0 AbTrigger actorSk > 0
+                        && not condNoEqpWeapon
+                     then ctriggers
+                     else mzero
                if nullFreq ctriggersEarly then do
                 citems <- if EM.findWithDefault 0 AbMoveItem actorSk > 0
                           then closestItems aid
@@ -190,24 +192,23 @@ targetStrategy oldLeader aid = do
                                     else closestSuspect aid
                         case csuspect of
                           [] -> do
-                            ctriggers <-
-                              if EM.findWithDefault 0 AbTrigger actorSk > 0
-                                 && not allExplored
-                              then closestTriggers Nothing aid
-                              else return mzero
-                            if nullFreq ctriggers then do
+                            let ctriggersMiddle =
+                                  if EM.findWithDefault 0 AbTrigger actorSk > 0
+                                     && not allExplored
+                                  then ctriggers
+                                  else mzero
+                            if nullFreq ctriggersMiddle then do
                               -- All stones turned, time to win or die.
                               afoes <- closestFoes allFoes aid
                               case afoes of
                                 (_, (aid2, _)) : _ ->
                                   setPath $ TEnemy aid2 False
                                 [] -> do
-                                  pFreq <- closestTriggers Nothing aid
-                                  if nullFreq pFreq then do
+                                  if nullFreq ctriggers then do
                                     furthest <- furthestKnown aid
                                     setPath $ TPoint (blid b) furthest
                                   else do
-                                    p <- rndToAction $ frequency pFreq
+                                    p <- rndToAction $ frequency ctriggers
                                     setPath $ TPoint (blid b) p
                             else do
                               p <- rndToAction $ frequency ctriggers
@@ -216,7 +217,7 @@ targetStrategy oldLeader aid = do
                       Just p -> setPath $ TPoint (blid b) p
                   (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
                else do
-                 p <- rndToAction $ frequency ctriggersEarly
+                 p <- rndToAction $ frequency ctriggers
                  setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
       tellOthersNothingHere pos = do

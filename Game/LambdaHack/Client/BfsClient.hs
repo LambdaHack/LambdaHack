@@ -292,13 +292,13 @@ closestTriggers onlyDir aid = do
       -- If no other stairs in this direction, let's wait here,
       -- unless the actor has just returned via the very stairs.
       triggers = filter ((/= bpos body) . snd) triggersAll
-  case triggers of
-    [] -> return mzero
+  bfs <- getCacheBfs aid
+  return $ case triggers of  -- keep lazy
+    [] -> mzero
     _ | isNothing onlyDir && not escape && allExplored ->
       -- Distance also irrelevant, to ensure random wandering.
-      return $! toFreq "closestTriggers when allExplored" triggers
-    _ -> do
-      bfs <- getCacheBfs aid
+      toFreq "closestTriggers when allExplored" triggers
+    _ ->
       -- Prefer stairs to easier levels.
       -- If exactly one escape, these stairs will all be in one direction.
       let mix (k, p) dist =
@@ -309,7 +309,7 @@ closestTriggers onlyDir aid = do
                             - dist
             in (depthDelta * distDelta * distDelta, p)
           ds = mapMaybe (\(k, p) -> mix (k, p) <$> accessBfs bfs p) triggers
-      return $! toFreq "closestTriggers" ds
+      in toFreq "closestTriggers" ds
 
 unexploredDepth :: MonadClient m => m (Int -> LevelId -> Bool)
 unexploredDepth = do
