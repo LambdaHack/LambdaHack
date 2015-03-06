@@ -80,8 +80,8 @@ playerMonster = Player
   , fhasNumbers = False
   , fhasGender = False
   , ftactic = TExplore
-  , fentryLevel = -2
-  , finitialActors = 2  -- explorers, not a nose, ensured via irarity
+  , fentryLevel = -4
+  , finitialActors = 4  -- one of these most probably not nose, so will explore
   , fleaderMode = LeaderAI $ AutoLeader True True
   , fhasUI = False
   }
