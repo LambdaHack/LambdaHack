@@ -140,18 +140,20 @@ hiHero, hiDweller :: HiCondPoly
 hiHero = [ ( [(HiLoot, 1)]
            , [minBound, maxBound] )
          , ( [(HiConst, 1000), (HiLoss, -100)]
-           , [Conquer, Escape] ) ]
+           , [Conquer, Escape] )
+         ]
 
 -- Spawners or skirmishers get no points from loot, but try to kill
 -- all opponents fast or at least hold up for long.
 hiDweller = [ ( [(HiConst, 1000)]  -- no loot
-                , [Conquer, Escape] )
-              , ( [(HiConst, 1000), (HiLoss, -100)]
-                , [Conquer, Escape] )
-              , ( [(HiBlitz, -100)]
-                , [Conquer, Escape] )
-              , ( [(HiSurvival, 100)]
-                , [minBound, maxBound] \\ [Conquer, Escape] ) ]
+              , [Conquer, Escape] )
+            , ( [(HiConst, 1000), (HiLoss, -100)]
+              , [Conquer, Escape] )
+            , ( [(HiBlitz, -100)]
+              , [Conquer, Escape] )
+            , ( [(HiSurvival, 100)]
+              , [minBound, maxBound] \\ [Conquer, Escape] )
+            ]
 
 minusTen, meleeAdjacent, _meleeAndRanged :: Skills
 

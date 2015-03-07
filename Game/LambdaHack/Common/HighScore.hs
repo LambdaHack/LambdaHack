@@ -131,18 +131,22 @@ register table total time status@Status{stOutcome} date difficulty gplayerName
       hiInValue (hi, c) = case hi of
         HiConst -> c
         HiLoot -> c * fromIntegral total
-        HiBlitz -> -- Up to 1000 points, so up to 10000 turns matter.
-                   sqrt $ max 0 (1000000 - c * turnsSpent)
-        HiSurvival -> -- Up to 1000 for surviving long, so up to 10000 matter.
-                      sqrt $ min 1000000 $ c * turnsSpent
+        HiBlitz -> -- Up to 1000 points, so up to 1000000c turns matter.
+                   sqrt $ max 0 (1000000 + c * turnsSpent)
+        HiSurvival -> -- Up to 1000 points for surviving long,
+                      -- so up to 1000000/c turns matter.
+                      sqrt $ max 0 (min 1000000 $ c * turnsSpent)
         HiKill -> c * fromIntegral (sum (EM.elems theirVictims))
         HiLoss -> c * fromIntegral (sum (EM.elems ourVictims))
       hiPolynomialValue = sum . map hiInValue
-      niSummandValue (hiPoly, outcomes) =
-        if stOutcome `elem` outcomes then hiPolynomialValue hiPoly else 0
-      hiCondValue = sum . map niSummandValue
+      hiSummandValue (hiPoly, outcomes) =
+        if stOutcome `elem` outcomes
+        then max 0 (hiPolynomialValue hiPoly)
+        else 0
+      hiCondValue = sum . map hiSummandValue
       points = (ceiling :: Double -> Int)
-               $ hiCondValue hiCondPoly * 1.5 ^^ (- (difficultyCoeff difficulty))
+               $ hiCondValue hiCondPoly
+                 * 1.5 ^^ (- (difficultyCoeff difficulty))
       negTime = absoluteTimeNegate time
       score = ScoreRecord{..}
   in (points > 0, insertPos score table)
