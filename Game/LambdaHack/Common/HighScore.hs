@@ -131,10 +131,9 @@ register table total time status@Status{stOutcome} date difficulty gplayerName
       hiInValue (hi, c) = case hi of
         HiConst -> c
         HiLoot -> c * fromIntegral total
-        HiBlitz -> -- Up to 1000 points, so up to 1000000c turns matter.
+        HiBlitz -> -- Up to 1000000/c turns matter.
                    sqrt $ max 0 (1000000 + c * turnsSpent)
-        HiSurvival -> -- Up to 1000 points for surviving long,
-                      -- so up to 1000000/c turns matter.
+        HiSurvival -> -- Up to 1000000/c turns matter.
                       sqrt $ max 0 (min 1000000 $ c * turnsSpent)
         HiKill -> c * fromIntegral (sum (EM.elems theirVictims))
         HiLoss -> c * fromIntegral (sum (EM.elems ourVictims))

@@ -52,7 +52,7 @@ data Outcome =
   | Conquer   -- ^ the player won by eliminating all rivals
   | Escape    -- ^ the player escaped the dungeon alive
   | Restart   -- ^ game is restarted
-  deriving (Show, Eq, Ord, Bounded, Generic)
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary Outcome
 

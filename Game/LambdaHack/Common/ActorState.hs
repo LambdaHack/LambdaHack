@@ -282,7 +282,7 @@ mapActorItems_ :: Monad m
                -> State
                -> m ()
 mapActorItems_ sharedToo f b s = do
-  let sts = (if sharedToo then id else delete CSha) [minBound, maxBound]
+  let sts = (if sharedToo then id else delete CSha) [minBound..maxBound]
       g cstore = do
         let bag = getBodyActorBag b cstore s
         mapM_ (uncurry $ f cstore) $ EM.assocs bag

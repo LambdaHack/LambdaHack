@@ -134,25 +134,28 @@ playerHorror = Player
   , fhasUI = False
   }
 
+victoryOutcomes :: [Outcome]
+victoryOutcomes = [Conquer, Escape]
+
 hiHero, hiDweller :: HiCondPoly
 
 -- Heroes rejoice in loot.
 hiHero = [ ( [(HiLoot, 1)]
-           , [minBound, maxBound] )
+           , [minBound..maxBound] )
          , ( [(HiConst, 1000), (HiLoss, -100)]
-           , [Conquer, Escape] )
+           , victoryOutcomes )
          ]
 
 -- Spawners or skirmishers get no points from loot, but try to kill
 -- all opponents fast or at least hold up for long.
 hiDweller = [ ( [(HiConst, 1000)]  -- no loot
-              , [Conquer, Escape] )
-            , ( [(HiConst, 1000), (HiLoss, -100)]
-              , [Conquer, Escape] )
+              , victoryOutcomes )
+            , ( [(HiConst, 1000), (HiLoss, -10)]
+              , victoryOutcomes )
             , ( [(HiBlitz, -100)]
-              , [Conquer, Escape] )
+              , victoryOutcomes )
             , ( [(HiSurvival, 100)]
-              , [minBound, maxBound] \\ [Conquer, Escape] )
+              , [minBound..maxBound] \\ victoryOutcomes )
             ]
 
 minusTen, meleeAdjacent, _meleeAndRanged :: Skills
