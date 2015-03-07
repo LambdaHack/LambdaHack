@@ -217,8 +217,10 @@ keepArenaFact :: Faction -> Bool
 keepArenaFact fact = fleaderMode (gplayer fact) /= LeaderNull
                      && fneverEmpty (gplayer fact)
 
--- We assume the actor in the second argumet is dead by this point
--- and his items are on the floor and his other stores are empty.
+-- We assume the actor in the second argumet is dead or dominated
+-- by this point and if he was the last actor alive, shared stash
+-- has been moved to his inventory. Even if the actor is to be dominated,
+-- @bfid@ of the actor body is still the old faction.
 deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> Maybe Actor -> m ()
 deduceKilled body mbody = do
   Kind.COps{corule} <- getsState scops
