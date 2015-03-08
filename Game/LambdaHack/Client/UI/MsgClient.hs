@@ -92,10 +92,11 @@ lookAt :: MonadClientUI m
 lookAt detailed tilePrefix canSee pos aid msg = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   itemToF <- itemToFullClient
-  lidV <- viewedLevel
+  b <- getsState $ getActorBody aid
+  stgtMode <- getsClient stgtMode
+  let lidV = maybe (blid b) tgtLevelId stgtMode
   lvl <- getLevel lidV
   localTime <- getsState $ getLocalTime lidV
-  b <- getsState $ getActorBody aid
   subject <- partAidLeader aid
   is <- getsState $ getCBag $ CFloor lidV pos
   let verb = MU.Text $ if pos == bpos b
