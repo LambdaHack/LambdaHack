@@ -143,7 +143,12 @@ pickActorToMove refreshTarget oldAid = do
           -- AI has to be prudent and not lightly waste leader for meleeing,
           -- even if his target is distant
           actorMeleeing ((aid, _), _) = condAnyFoeAdjM aid
-          actorMeleeBad ((aid, _), _) = condMeleeBadM aid
+          actorMeleeBad ((aid, _), _) = do
+            threatDistL <- threatDistList aid
+            let condThreatMedium =  -- if foes far, friends may still come
+                  not $ null $ takeWhile ((<= 5) . fst) threatDistL
+            condMeleeBad <- condMeleeBadM aid
+            return $! condThreatMedium && condMeleeBad
       oursVulnerable <- filterM actorVulnerable oursTgt
       oursSafe <- filterM (fmap not . actorVulnerable) oursTgt
         -- TODO: partitionM
