@@ -292,6 +292,7 @@ targetStrategy oldLeader aid = do
                    in if not lidExplored
                       then t /= unknownId  -- closestUnknown
                            && not (Tile.isSuspect cotile t)  -- closestSuspect
+                           && (condNoEqpWeapon || not (Tile.isStair cotile t))
                       else  -- closestTriggers
                         -- Try to kill that very last enemy for his loot before
                         -- leaving the level or dungeon.
