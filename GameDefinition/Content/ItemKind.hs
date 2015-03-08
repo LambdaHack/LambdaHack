@@ -415,7 +415,7 @@ ring7 = ring
   , ifeature = ifeature ring ++ [EqpSlot (EqpSlotAddSkills AbProject) ""]
   }
 ring8 = ring
-  { ifreq    = [("useful", 100), ("ring of opportunity grenadier", 1) ]
+  { ifreq    = [("useful", 1), ("ring of opportunity grenadier", 1) ]
   , irarity  = [(10, 1)]
   , iaspects = [AddSkills $ EM.fromList [(AbProject, 10)]]
   , ieffects = [ NoEffect "of opportunity grenadier"
