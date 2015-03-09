@@ -153,6 +153,8 @@ quitF mbody status fid = do
     Just Escape -> return ()
     _ -> do
       when (fhasUI $ gplayer fact) $ do
+        when (isAIFact fact && fleaderMode (gplayer fact) /= LeaderNull) $
+          execUpdAtomic $ UpdAutoFaction fid False
         revealItems (Just fid) mbody
         registerScore status mbody fid
       execUpdAtomic $ UpdQuitFaction fid mbody oldSt $ Just status
