@@ -94,7 +94,8 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   UpdDestroyItem iid _ kit c -> itemVerbMU iid kit "disappear" c
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
   UpdLoseActor aid body _ ->
-    destroyActorUI aid body "be missing in action" "be lost" verbose
+    when verbose $
+      destroyActorUI aid body "be missing in action" "be lost" verbose
   UpdSpotItem iid _ kit c -> do
     (itemSlots, _) <- getsClient sslots
     case lookup iid $ map swap $ EM.assocs itemSlots of
