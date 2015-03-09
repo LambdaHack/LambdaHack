@@ -268,8 +268,8 @@ condMeleeBadM aid = do
   strongCloseFriends <- filterM strongActor closeFriends
   let noFriendlyHelp = length closeFriends < 3
                        && null strongCloseFriends
-                       && (not (null friends)
-                           || spawnerOnLvl)  -- solo fighters aggresive
+                       && (length friends > 1  -- solo fighters aggresive
+                           || spawnerOnLvl)
                        && not (hpHuge b)  -- uniques, etc., aggresive
   actorSk <- actorSkillsClient aid
   return $ condNoUsableWeapon
