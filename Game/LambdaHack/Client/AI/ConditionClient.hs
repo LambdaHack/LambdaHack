@@ -269,10 +269,10 @@ condMeleeBadM aid = do
       spawnerOnLvl = any (`elem` freqNames) factNames
       closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
                        in dist > 0 && (dist <= 2 || approaching b2)
-      -- 4 is the condThreatAtHand distance that AI keeps when alone.
+      -- 3 is the condThreatAtHand distance that AI keeps when alone.
       approaching = case mtgtPos of
         Just tgtPos | condTgtEnemyPresent || condTgtEnemyRemembered ->
-          \b1 -> chessDist (bpos b1) tgtPos <= 4
+          \b1 -> chessDist (bpos b1) tgtPos <= 3
         _ -> const False
       closeFriends = filter (closeEnough . snd) friends
       strongActor (aid2, b2) = do

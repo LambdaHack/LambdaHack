@@ -84,7 +84,7 @@ actionStrategy aid = do
       panicFleeL = fleeL ++ badVic
       actorShines = sumSlotNoFilter IK.EqpSlotAddLight activeItems > 0
       condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
-      condThreatAtHand = not $ null $ takeWhile ((<= 3) . fst) threatDistL
+      condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= 9) . fst) threatDistL
       speed1_5 = speedScale (3%2) (bspeed body activeItems)
       condFastThreatAdj = any (\(_, (_, b)) -> bspeed b activeItems > speed1_5)
