@@ -76,6 +76,7 @@ actionStrategy aid = do
   condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
+  condTgtNonmoving <- condTgtNonmovingM aid
   aInAmbient <- getsState $ actorInAmbient body
   explored <- getsClient sexplored
   (fleeL, badVic) <- fleeList aid
@@ -97,7 +98,9 @@ actionStrategy aid = do
                   -> m (Frequency RequestAnyAbility)
       stratToFreq scale mstrat = do
         st <- mstrat
-        return $! scaleFreq scale $ bestVariant st  -- TODO: flatten instead?
+        return $! if scale == 0
+                  then mzero
+                  else scaleFreq scale $ bestVariant st  -- TODO: flatten instead?
       -- Order matters within the list, because it's summed with .| after
       -- filtering. Also, the results of prefix, distant and suffix
       -- are summed with .| at the end.
@@ -165,6 +168,8 @@ actionStrategy aid = do
         , ( [AbMove]
           , stratToFreq (if not condTgtEnemyPresent
                          then 3  -- if enemy only remembered, investigate anyway
+                         else if condTgtNonmoving
+                         then 0
                          else if condTgtEnemyAdjFriend
                          then 1000  -- friends probably pummeled, go to help
                          else 100)

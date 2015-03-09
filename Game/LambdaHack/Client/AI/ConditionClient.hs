@@ -4,6 +4,7 @@ module Game.LambdaHack.Client.AI.ConditionClient
   ( condTgtEnemyPresentM
   , condTgtEnemyRememberedM
   , condTgtEnemyAdjFriendM
+  , condTgtNonmovingM
   , condAnyFoeAdjM
   , condHpTooLowM
   , condOnTriggerableM
@@ -82,6 +83,16 @@ condTgtEnemyAdjFriendM aid = do
       let friendlyFid fid = fid == bfid b || isAllied fact fid
       friends <- getsState $ actorRegularList friendlyFid (blid b)
       return $ any (adjacent (bpos be) . bpos) friends  -- keep it lazy
+    _ -> return False
+
+-- | Check if the target is nonmoving.
+condTgtNonmovingM :: MonadClient m => ActorId -> m Bool
+condTgtNonmovingM aid = do
+  btarget <- getsClient $ getTarget aid
+  case btarget of
+    Just (TEnemy enemy _) -> do
+      actorSkE <- actorSkillsClient enemy
+      return $! EM.findWithDefault 0 Ability.AbMove actorSkE <= 0
     _ -> return False
 
 -- | Require that any non-dying foe is adjacent.
