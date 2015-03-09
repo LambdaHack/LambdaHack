@@ -11,6 +11,7 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , condBlocksFriendsM
   , condFloorWeaponM
   , condNoEqpWeaponM
+  , condEnoughGearM
   , condCanProjectM
   , condNotCalmEnoughM
   , condDesirableFloorItemM
@@ -161,6 +162,15 @@ condNoEqpWeaponM :: MonadClient m => ActorId -> m Bool
 condNoEqpWeaponM aid = do
   allAssocs <- fullAssocsClient aid [CEqp]
   return $ all (not . isMelee . snd) allAssocs  -- keep it lazy
+
+-- | Check whether the actor has enough gear to go look for enemies.
+condEnoughGearM :: MonadClient m => ActorId -> m Bool
+condEnoughGearM aid = do
+  eqpAssocs <- fullAssocsClient aid [CEqp]
+  invAssocs <- fullAssocsClient aid [CEqp]
+  return $ any (isMelee . snd) eqpAssocs
+           || length (eqpAssocs ++ invAssocs) >= 5
+    -- keep it lazy
 
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => ActorId -> m Bool

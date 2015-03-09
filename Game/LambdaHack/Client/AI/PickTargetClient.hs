@@ -89,7 +89,7 @@ targetStrategy oldLeader aid = do
   actorSk <- maxActorSkillsClient aid
   condCanProject <- condCanProjectM aid
   condHpTooLow <- condHpTooLowM aid
-  condNoEqpWeapon <- condNoEqpWeaponM aid
+  condEnoughGear <- condEnoughGearM aid
   condMeleeBad <- condMeleeBadM aid
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
@@ -164,7 +164,7 @@ targetStrategy oldLeader aid = do
               [] -> do
                let ctriggersEarly =
                      if EM.findWithDefault 0 AbTrigger actorSk > 0
-                        && not condNoEqpWeapon
+                        && condEnoughGear
                      then ctriggers
                      else mzero
                if nullFreq ctriggersEarly then do
@@ -302,7 +302,7 @@ targetStrategy oldLeader aid = do
                    in if not lidExplored
                       then t /= unknownId  -- closestUnknown
                            && not (Tile.isSuspect cotile t)  -- closestSuspect
-                           && (condNoEqpWeapon || not (Tile.isStair cotile t))
+                           && not (condEnoughGear && (Tile.isStair cotile t))
                       else  -- closestTriggers
                         -- Try to kill that very last enemy for his loot before
                         -- leaving the level or dungeon.

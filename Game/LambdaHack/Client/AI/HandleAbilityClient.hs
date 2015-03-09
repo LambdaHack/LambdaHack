@@ -71,6 +71,7 @@ actionStrategy aid = do
   condBlocksFriends <- condBlocksFriendsM aid
   condNoEqpWeapon <- condNoEqpWeaponM aid
   let condNoUsableWeapon = all (not . isMelee) activeItems
+  condEnoughGear <- condEnoughGearM aid
   condFloorWeapon <- condFloorWeaponM aid
   condCanProject <- condCanProjectM aid
   condNotCalmEnough <- condNotCalmEnoughM aid
@@ -135,7 +136,7 @@ actionStrategy aid = do
         , ( [AbTrigger], (toAny :: ToAny AbTrigger)
             <$> trigger aid False
           , condOnTriggerable && not condDesirableFloorItem
-            && (lidExplored || not condNoEqpWeapon)
+            && (lidExplored || condEnoughGear)
             && not condTgtEnemyPresent )
         , ( [AbMove]
           , flee aid fleeL
