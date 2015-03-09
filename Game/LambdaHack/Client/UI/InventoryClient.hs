@@ -307,7 +307,6 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
-  lastStore <- getsClient slastStore
   lastSlot <- getsClient slastSlot
   itemToF <- itemToFullClient
   Binding{brevMap} <- askBinding
@@ -331,8 +330,11 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
       isOrgan = cCur == MStore COrgan
       lSlots = if isOrgan then organSlots else itemSlots
       bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
+      -- Predicate for slot matching the current prefix, unless the prefix
+      -- is 0, in which case we display all slots, even if they require
+      -- the user to start with number keys to get to them.
       -- Could be generalized to 1 if prefix 1x exists, etc., but too rare.
-      hasPrefixOpen x _ = numPrefix `elem` [0, slotPrefix x]
+      hasPrefixOpen x _ = slotPrefix x == numPrefix || numPrefix == 0
       bagItemSlotsOpen = EM.filterWithKey hasPrefixOpen bagItemSlotsAll
       hasPrefix x _ = slotPrefix x == numPrefix
       bagItemSlots = EM.filterWithKey hasPrefix bagItemSlotsOpen
@@ -381,19 +383,15 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                let eslots = EM.elems multipleSlots
                in return $ Right $ getMultResult eslots
            })
-        , let noGround = cCur /= MStore CGround || lastStore == CGround
-          in (K.toKM K.NoModifier K.Return, DefItemKey
-           -- The RET(_) item is shown regardless if it's suitable, because
-           -- it may be in a different store and so not on the screen anyway.
-           { defLabel = if lastSlot `EM.member` bagItemSlotsAll && noGround
+        , (K.toKM K.NoModifier K.Return, DefItemKey
+           { defLabel = if lastSlot `EM.member` labelItemSlotsOpen
                         then let l = makePhrase [slotLabel lastSlot]
-                             in "RET(" <> l <> ")"
+                             in "RET(" <> l <> ")"  -- l is on the screen list
                         else "RET"
-           , defCond = lastSlot `EM.member` bagItemSlotsAll
-                       || not (EM.null labelItemSlotsOpen)
-           , defAction = \_ -> case EM.lookup lastSlot bagItemSlotsAll of
-               Just iid | noGround -> return $ Right $ getResult iid
-               _ -> case EM.minViewWithKey labelItemSlotsOpen of
+           , defCond = not (EM.null labelItemSlotsOpen)
+           , defAction = \_ -> case EM.lookup lastSlot labelItemSlotsOpen of
+               Just iid -> return $ Right $ getResult iid
+               Nothing -> case EM.minViewWithKey labelItemSlotsOpen of
                  Nothing -> assert `failure` "labelItemSlotsOpen empty"
                                    `twith` labelItemSlotsOpen
                  Just ((l, _), _) -> do
