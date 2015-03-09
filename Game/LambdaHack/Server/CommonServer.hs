@@ -104,12 +104,13 @@ getPerFid fid lid = do
 -- We don't provide ActorId, because the actor can be dead and then, e.g.,
 -- containers with the ActorId are invalid and lead to crashes.
 revealItems :: (MonadAtomic m, MonadServer m)
-            => Maybe FactionId -> Maybe Actor -> m ()
+            => Maybe FactionId -> Maybe (ActorId, Actor) -> m ()
 revealItems mfid mbody = do
   itemToF <- itemToFullServer
   dungeon <- getsState sdungeon
-  let discover c iid k =
+  let discover aid store iid k =
         let itemFull = itemToF iid k
+            c = CActor aid store
         in case itemDisco itemFull of
           Just ItemDisco{itemKindId} -> do
             seed <- getsServer $ (EM.! iid) . sitemSeedD
@@ -118,20 +119,16 @@ revealItems mfid mbody = do
       f aid = do
         b <- getsState $ getActorBody aid
         let ourSide = maybe True (== bfid b) mfid
-            c store = CActor aid store
         when ourSide $
           -- CSha is IDed for each actor of each faction, which is OK,
           -- even though it may introduce a slight lag.
           -- AI clients being sent this is a bigger waste anyway.
-          join $ getsState
-               $ mapActorItems_ True (\store -> discover (c store)) b
+          join $ getsState $ mapActorItems_ (discover aid) b
   mapDungeonActors_ f dungeon
-  maybe (return ()) (\b -> do
-    -- The actor is dead, so his items are on the floor.
-    -- That includes the shared stash if he was the last of his party.
-    -- Otherwise we dn't ID the stash, not to declare the wrong container.
-    let c = CFloor (blid b) (bpos b)
-    join $ getsState $ mapActorItems_ False (\_ -> discover c) b) mbody
+  maybe (return ())
+        (\(aid, b) -> do
+           join $ getsState $ mapActorItems_ (discover aid) b)
+        mbody
 
 moveStores :: (MonadAtomic m, MonadServer m)
            => ActorId -> CStore -> CStore -> m ()
@@ -141,9 +138,9 @@ moveStores aid fromStore toStore = do
   mapActorCStore_ fromStore g b
 
 quitF :: (MonadAtomic m, MonadServer m)
-      => Maybe Actor -> Status -> FactionId -> m ()
+      => Maybe (ActorId, Actor) -> Status -> FactionId -> m ()
 quitF mbody status fid = do
-  let !_A = assert (maybe True ((fid ==) . bfid) mbody) ()
+  let !_A = assert (maybe True ((fid ==) . bfid . snd) mbody) ()
   fact <- getsState $ (EM.! fid) . sfactionD
   let oldSt = gquit fact
   case stOutcome <$> oldSt of
@@ -159,13 +156,13 @@ quitF mbody status fid = do
               && not keepAutomated) $
           execUpdAtomic $ UpdAutoFaction fid False
         revealItems (Just fid) mbody
-        registerScore status mbody fid
-      execUpdAtomic $ UpdQuitFaction fid mbody oldSt $ Just status
+        registerScore status (snd <$> mbody) fid
+      execUpdAtomic $ UpdQuitFaction fid (snd <$> mbody) oldSt $ Just status  -- TODO: send only aid to UpdQuitFaction and elsewhere --- aid is alive
       modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP
 
 -- Send any QuitFactionA actions that can be deduced from their current state.
 deduceQuits :: (MonadAtomic m, MonadServer m)
-            => FactionId -> Maybe Actor -> Status -> m ()
+            => FactionId -> Maybe (ActorId, Actor) -> Status -> m ()
 deduceQuits fid mbody status@Status{stOutcome}
   | stOutcome `elem` [Defeated, Camping, Restart, Conquer] =
     assert `failure` "no quitting to deduce" `twith` (fid, mbody, status)
@@ -225,7 +222,7 @@ keepArenaFact fact = fleaderMode (gplayer fact) /= LeaderNull
 -- We assume the actor in the second argumet is dead or dominated
 -- by this point. Even if the actor is to be dominated,
 -- @bfid@ of the actor body is still the old faction.
-deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> Maybe Actor -> m ()
+deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> Maybe (ActorId, Actor) -> m ()
 deduceKilled body mbody = do
   Kind.COps{corule} <- getsState scops
   let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule

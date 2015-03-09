@@ -171,7 +171,8 @@ dominateFid fid target = do
   -- Prevent the faction's stash from being lost in case they are not spawners.
   when (isNothing $ gleader fact) $ moveStores target CSha CInv
   tb <- getsState $ getActorBody target
-  deduceKilled tb (Just tb)
+  deduceKilled tb (Just (target, tb))
+  -- TODO: some messages after game over below? Compare with dieSer.
   ais <- getsState $ getCarriedAssocs tb
   calmMax <- sumOrganEqpServer IK.EqpSlotAddMaxCalm target
   execUpdAtomic $ UpdLoseActor target tb ais

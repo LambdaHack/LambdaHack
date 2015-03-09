@@ -70,22 +70,21 @@ dieSer aid b hit =
     let ikind = discoKind EM.! jkindIx trunk
     execUpdAtomic $ UpdRecordKill aid ikind 1
     electLeader (bfid b) (blid b) aid
+    tb <- getsState $ getActorBody aid
+    deduceKilled tb (Just (aid, tb))  -- tb has items not dropped, stash in inv
+    fact <- getsState $ (EM.! bfid b) . sfactionD
+    -- Prevent faction's stash from being lost in case they are not spawners.
+    -- Projectiles can't drop stash, because they are blind and so the faction
+    -- would not see the actor that drops the stash, leading to a crash.
+    -- But this is OK; projectiles can't be leaders, so stash dropped earlier.
+    when (isNothing $ gleader fact) $ moveStores aid CSha CInv
     dropAllItems aid b False
     b2 <- getsState $ getActorBody aid
-    execUpdAtomic $ UpdDestroyActor aid b2 []
-    deduceKilled b2 (Just b)  -- b has items not dropped
+    execUpdAtomic $ UpdLoseActor aid b2 []  -- (more) silent, because comes late
 
 -- | Drop all actor's items.
 dropAllItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> Bool -> m ()
 dropAllItems aid b hit = do
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  -- A faction that is defeated, leaderless or with temporarlity no member
-  -- drops all items from the faction stash, too.
-  -- Projectiles can't drop stash, because they are blind and so the faction
-  -- would not see the actor that drops the stash, leading to a crash.
-  -- But this is OK --- projectiles can't be leaders, so stash dropped earlier.
-  when (not (bproj b) && isNothing (gleader fact)) $
-    mapActorCStore_ CSha (dropCStoreItem CSha aid b hit) b
   mapActorCStore_ CInv (dropCStoreItem CInv aid b hit) b
   mapActorCStore_ CEqp (dropCStoreItem CEqp aid b hit) b

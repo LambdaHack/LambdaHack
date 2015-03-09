@@ -278,11 +278,12 @@ getBodyActorBag b cstore s =
     CSha -> gsha $ sfactionD s EM.! bfid b
 
 mapActorItems_ :: Monad m
-               => Bool -> (CStore -> ItemId -> ItemQuant -> m a) -> Actor
+               => (CStore -> ItemId -> ItemQuant -> m a) -> Actor
                -> State
                -> m ()
-mapActorItems_ sharedToo f b s = do
-  let sts = (if sharedToo then id else delete CSha) [minBound..maxBound]
+mapActorItems_ f b s = do
+  let notProcessed = [CGround]
+      sts = [minBound..maxBound] \\ notProcessed
       g cstore = do
         let bag = getBodyActorBag b cstore s
         mapM_ (uncurry $ f cstore) $ EM.assocs bag
