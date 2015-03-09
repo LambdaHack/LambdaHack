@@ -263,7 +263,7 @@ handleActors lid = do
       if isJust $ btrajectory body then do
         setTrajectory aid
         b2 <- getsState $ getActorBody aid
-        unless (bproj b2 && maybe True (null . fst) (btrajectory b2)) $
+        unless (bproj b2 && actorDying b2) $
           advanceTime aid
       else if queryUI then do
         cmdS <- sendQueryUI side aid
