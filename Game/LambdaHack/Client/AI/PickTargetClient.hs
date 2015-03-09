@@ -90,6 +90,7 @@ targetStrategy oldLeader aid = do
   condCanProject <- condCanProjectM aid
   condHpTooLow <- condHpTooLowM aid
   condNoEqpWeapon <- condNoEqpWeaponM aid
+  condMeleeBad <- condMeleeBadM aid
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
   -- TODO: refine all this when some actors specialize in ranged attacks
@@ -107,20 +108,29 @@ targetStrategy oldLeader aid = do
       meleeNearby | canEscape = nearby `div` 2  -- not aggresive
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
-      targetableMelee body =
+      -- Don't target nonmoving actors at all if bad melee,
+      -- because nonmoving can't be lured nor ambushed.
+      -- This is especially important for fences, tower defense actors, etc.
+      -- If content gives nonmoving actor loot, this becomes problematic.
+      targetableMelee aidE body = do
+        actorSkE <- actorSkillsClient aidE
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
             n = if attacksFriends then rangedNearby else meleeNearby
-        in chessDist (bpos body) (bpos b) < n
+            nonmoving = EM.findWithDefault 0 AbMove actorSkE <= 0
+        return {-keep lazy-} $
+           chessDist (bpos body) (bpos b) < n
            && not condNoUsableWeapon
            && EM.findWithDefault 0 AbMelee actorSk > 0
            && not (hpTooLow b activeItems)
+           && not (nonmoving && condMeleeBad)
       targetableRangedOrSpecial body =
         chessDist (bpos body) (bpos b) < rangedNearby
         && condCanProject
-      targetableEnemy body =
-        targetableMelee body || targetableRangedOrSpecial body
-      nearbyFoes = filter (targetableEnemy . snd) allFoes
-      unknownId = ouniqGroup "unknown space"
+      targetableEnemy (aidE, body) = do
+        tMelee <- targetableMelee aidE body
+        return $! targetableRangedOrSpecial body || tMelee
+  nearbyFoes <- filterM targetableEnemy allFoes
+  let unknownId = ouniqGroup "unknown space"
       itemUsefulness itemFull =
         fst <$> totalUsefulness cops b activeItems fact itemFull
       desirableBag bag = any (\(iid, k) ->
