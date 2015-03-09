@@ -119,7 +119,9 @@ threatDistList aid = do
   allAtWar <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let strongActor (aid2, b2) = do
         activeItems <- activeItemsClient aid2
-        return $! not $ hpTooLow b2 activeItems
+        actorSkE <- actorSkillsClient aid2
+        let nonmoving = EM.findWithDefault 0 Ability.AbMove actorSkE <= 0
+        return $! not $ (hpTooLow b2 activeItems || nonmoving)
   allThreats <- filterM strongActor allAtWar
   let addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
   return $ sortBy (comparing fst) $ map addDist allThreats
