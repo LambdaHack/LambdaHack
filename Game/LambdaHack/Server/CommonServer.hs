@@ -153,7 +153,10 @@ quitF mbody status fid = do
     Just Escape -> return ()
     _ -> do
       when (fhasUI $ gplayer fact) $ do
-        when (isAIFact fact && fleaderMode (gplayer fact) /= LeaderNull) $
+        keepAutomated <- getsServer $ skeepAutomated . sdebugSer
+        when (isAIFact fact
+              && fleaderMode (gplayer fact) /= LeaderNull
+              && not keepAutomated) $
           execUpdAtomic $ UpdAutoFaction fid False
         revealItems (Just fid) mbody
         registerScore status mbody fid

@@ -78,6 +78,7 @@ data DebugModeSer = DebugModeSer
   , sallClear      :: !Bool
   , sgameMode      :: !(Maybe (GroupName ModeKind))
   , sautomateAll   :: !Bool
+  , skeepAutomated :: !Bool
   , sstopAfter     :: !(Maybe Int)
   , sdungeonRng    :: !(Maybe R.StdGen)
   , smainRng       :: !(Maybe R.StdGen)
@@ -143,6 +144,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sallClear = False
                                , sgameMode = Nothing
                                , sautomateAll = False
+                               , skeepAutomated = False
                                , sstopAfter = Nothing
                                , sdungeonRng = Nothing
                                , smainRng = Nothing
@@ -222,6 +224,7 @@ instance Binary DebugModeSer where
     put sallClear
     put sgameMode
     put sautomateAll
+    put skeepAutomated
     put sdifficultySer
     put sfovMode
     put ssavePrefixSer
@@ -235,6 +238,7 @@ instance Binary DebugModeSer where
     sallClear <- get
     sgameMode <- get
     sautomateAll <- get
+    skeepAutomated <- get
     sdifficultySer <- get
     sfovMode <- get
     ssavePrefixSer <- get
