@@ -94,8 +94,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   UpdDestroyItem iid _ kit c -> itemVerbMU iid kit "disappear" c
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
   UpdLoseActor aid body _ ->
-    when verbose $
-      destroyActorUI aid body "be missing in action" "be lost" verbose
+    destroyActorUI aid body "be missing in action" "be lost" verbose
   UpdSpotItem iid _ kit c -> do
     (itemSlots, _) <- getsClient sslots
     case lookup iid $ map swap $ EM.assocs itemSlots of
@@ -366,8 +365,7 @@ createActorUI aid body verbose verb = do
   -- or on a distant tile, via teleport while the observer teleported, too).
   lastLost <- getsClient slastLost
   when (ES.notMember aid lastLost
-        && (bfid body /= side
-            && not (bproj body) || verbose)) $ do
+        && (not (bproj body) || verbose)) $ do
     actorVerbMU aid body verb
     animFrs <- animate (blid body)
                $ actorX (bpos body) (bsymbol body) (bcolor body)
@@ -377,11 +375,12 @@ createActorUI aid body verbose verb = do
 destroyActorUI :: MonadClientUI m
                => ActorId -> Actor -> MU.Part -> MU.Part -> Bool -> m ()
 destroyActorUI aid body verb verboseVerb verbose = do
-  side <- getsClient sside
-  if bfid body == side && bhp body <= 0 && not (bproj body) then do
-    actorVerbMU aid body verb
-    void $ displayMore ColorBW ""
-  else when verbose $ actorVerbMU aid body verboseVerb
+  when verbose $ do
+    side <- getsClient sside
+    if bfid body == side && bhp body <= 0 && not (bproj body) then do
+      actorVerbMU aid body verb
+      void $ displayMore ColorBW ""
+    else when {-very-}verbose $ actorVerbMU aid body verboseVerb
   modifyClient $ \cli -> cli {slastLost = ES.insert aid $ slastLost cli}
 
 moveActor :: MonadClientUI m => State -> ActorId -> Point -> Point -> m ()

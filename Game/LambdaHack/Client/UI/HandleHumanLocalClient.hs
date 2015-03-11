@@ -255,7 +255,7 @@ markSmellHuman = do
 markSuspectHuman :: MonadClientUI m => m ()
 markSuspectHuman = do
   -- @condBFS@ depends on the setting we change here.
-  modifyClient $ \cli -> cli {sbfsD = EM.empty, slastLost = ES.empty}
+  modifyClient $ \cli -> cli {sbfsD = EM.empty}
   modifyClient toggleMarkSuspect
   cur <- getsClient smarkSuspect
   msgAdd $ "Suspect terrain display toggled" <+> if cur then "on." else "off."
