@@ -8,7 +8,9 @@ module Game.LambdaHack.Client.CommonClient
   , itemToFullClient, pickWeaponClient, sumOrganEqpClient
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
+import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Tuple
@@ -182,8 +184,13 @@ makeLine onlyFirst body fpos epsOld = do
 actorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 actorSkillsClient aid = do
   activeItems <- activeItemsClient aid
+  body <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid body) . sfactionD
+  side <- getsClient sside
   -- Newest Leader in _sleader, not yet in sfactionD.
-  mleader <- getsClient _sleader
+  mleader1 <- if side == bfid body then getsClient _sleader else return Nothing
+  let mleader2 = fst <$> gleader fact
+      mleader = mleader1 `mplus` mleader2
   getsState $ actorSkills mleader aid activeItems
 
 maxActorSkillsClient :: MonadClient m
