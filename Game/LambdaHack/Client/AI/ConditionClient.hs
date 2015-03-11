@@ -92,7 +92,7 @@ condTgtNonmovingM aid = do
   btarget <- getsClient $ getTarget aid
   case btarget of
     Just (TEnemy enemy _) -> do
-      actorSkE <- actorSkillsClient enemy
+      actorSkE <- maxActorSkillsClient enemy
       return $! EM.findWithDefault 0 Ability.AbMove actorSkE <= 0
     _ -> return False
 
@@ -131,7 +131,7 @@ threatDistList aid = do
   allAtWar <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let strongActor (aid2, b2) = do
         activeItems <- activeItemsClient aid2
-        actorSkE <- actorSkillsClient aid2
+        actorSkE <- maxActorSkillsClient aid2
         let nonmoving = EM.findWithDefault 0 Ability.AbMove actorSkE <= 0
         return $! not $ (hpTooLow b2 activeItems || nonmoving)
   allThreats <- filterM strongActor allAtWar
@@ -173,9 +173,9 @@ condEnoughGearM aid = do
     -- keep it lazy
 
 -- | Require that the actor can project any items.
-condCanProjectM :: MonadClient m => ActorId -> m Bool
-condCanProjectM aid = do
-  actorSk <- actorSkillsClient aid
+condCanProjectM :: MonadClient m => Bool -> ActorId -> m Bool
+condCanProjectM maxSkills aid = do
+  actorSk <- (if maxSkills then maxActorSkillsClient else actorSkillsClient) aid
   let skill = EM.findWithDefault 0 Ability.AbProject actorSk
       q _ itemFull b activeItems =
         either (const False) id
@@ -294,7 +294,7 @@ condMeleeBadM aid = do
                        && (length friends > 1  -- solo fighters aggresive
                            || spawnerOnLvl)
                        && not (hpHuge b)  -- uniques, etc., aggresive
-  actorSk <- actorSkillsClient aid
+  actorSk <- maxActorSkillsClient aid
   return $ condNoUsableWeapon
            || EM.findWithDefault 0 Ability.AbMelee actorSk <= 0
            || noFriendlyHelp  -- still not getting friends' help

@@ -86,8 +86,8 @@ targetStrategy oldLeader aid = do
   dungeon <- getsState sdungeon
   -- We assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
-  actorSk <- maxActorSkillsClient aid
-  condCanProject <- condCanProjectM aid
+  actorMaxSk <- maxActorSkillsClient aid
+  condCanProject <- condCanProjectM True aid
   condHpTooLow <- condHpTooLowM aid
   condEnoughGear <- condEnoughGearM aid
   condMeleeBad <- condMeleeBadM aid
@@ -113,14 +113,14 @@ targetStrategy oldLeader aid = do
       -- This is especially important for fences, tower defense actors, etc.
       -- If content gives nonmoving actor loot, this becomes problematic.
       targetableMelee aidE body = do
-        actorSkE <- actorSkillsClient aidE
+        actorMaxSkE <- maxActorSkillsClient aidE
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
             n = if attacksFriends then rangedNearby else meleeNearby
-            nonmoving = EM.findWithDefault 0 AbMove actorSkE <= 0
+            nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0
         return {-keep lazy-} $
            chessDist (bpos body) (bpos b) < n
            && not condNoUsableWeapon
-           && EM.findWithDefault 0 AbMelee actorSk > 0
+           && EM.findWithDefault 0 AbMelee actorMaxSk > 0
            && not (hpTooLow b activeItems)
            && not (nonmoving && condMeleeBad)
       targetableRangedOrSpecial body =
@@ -163,12 +163,12 @@ targetStrategy oldLeader aid = do
             case smpos of
               [] -> do
                let ctriggersEarly =
-                     if EM.findWithDefault 0 AbTrigger actorSk > 0
+                     if EM.findWithDefault 0 AbTrigger actorMaxSk > 0
                         && condEnoughGear
                      then ctriggers
                      else mzero
                if nullFreq ctriggersEarly then do
-                citems <- if EM.findWithDefault 0 AbMoveItem actorSk > 0
+                citems <- if EM.findWithDefault 0 AbMoveItem actorMaxSk > 0
                           then closestItems aid
                           else return []
                 case filter desirable citems of
@@ -203,7 +203,8 @@ targetStrategy oldLeader aid = do
                         case csuspect of
                           [] -> do
                             let ctriggersMiddle =
-                                  if EM.findWithDefault 0 AbTrigger actorSk > 0
+                                  if EM.findWithDefault 0 AbTrigger
+                                                        actorMaxSk > 0
                                      && not allExplored
                                   then ctriggers
                                   else mzero
@@ -292,7 +293,8 @@ targetStrategy oldLeader aid = do
              -- shows up) and not changed all the time mid-route
              -- to equally interesting, but perhaps a bit closer targets,
              -- most probably already targeted by other actors.
-             || (EM.findWithDefault 0 AbMoveItem actorSk <= 0  -- closestItems
+             || (EM.findWithDefault 0 AbMoveItem
+                                    actorMaxSk <= 0  -- closestItems
                  || not (desirableBag bag))
                 && (not canSmell  -- closestSmell
                     || pos == bpos b  -- in case server resends deleted smell
@@ -315,7 +317,7 @@ targetStrategy oldLeader aid = do
                            -- (this changes with time), but allow the actor
                            -- to reach them and then retarget, unless he can't
                            -- trigger them at all.
-                           && (EM.findWithDefault 0 AbTrigger actorSk <= 0
+                           && (EM.findWithDefault 0 AbTrigger actorMaxSk <= 0
                                || pos == bpos b
                                || not (Tile.isStair cotile t))
                            -- The remaining case is furthestKnown. This is

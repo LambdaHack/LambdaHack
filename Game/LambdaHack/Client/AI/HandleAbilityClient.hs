@@ -73,7 +73,7 @@ actionStrategy aid = do
   let condNoUsableWeapon = all (not . isMelee) activeItems
   condEnoughGear <- condEnoughGearM aid
   condFloorWeapon <- condFloorWeaponM aid
-  condCanProject <- condCanProjectM aid
+  condCanProject <- condCanProjectM False aid
   condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
@@ -92,8 +92,8 @@ actionStrategy aid = do
                           $ takeWhile ((== 1) . fst) threatDistL
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
-  actorSk <- actorSkillsClient aid
-  let abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
+  actorMaxSk <- maxActorSkillsClient aid
+  let abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
       stratToFreq :: MonadStateRead m
                   => Int -> m (Strategy RequestAnyAbility)
                   -> m (Frequency RequestAnyAbility)
@@ -126,11 +126,11 @@ actionStrategy aid = do
         , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> pickup aid True
           , condNoEqpWeapon && condFloorWeapon && not condHpTooLow
-            && abInSkill AbMelee )
+            && abInMaxSkill AbMelee )
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeBlocker aid  -- only melee target or blocker
           , condAnyFoeAdj
-            || not (abInSkill AbDisplace)  -- melee friends, not displace
+            || not (abInMaxSkill AbDisplace)  -- melee friends, not displace
                && fleaderMode (gplayer fact) == LeaderNull  -- not restrained
                && condTgtEnemyPresent )  -- excited
         , ( [AbTrigger], (toAny :: ToAny AbTrigger)
@@ -143,7 +143,7 @@ actionStrategy aid = do
           , condMeleeBad && not condFastThreatAdj
             -- Don't keep fleeing if was just hit, unless can't melee at all.
             && not (heavilyDistressed
-                    && abInSkill AbMelee
+                    && abInMaxSkill AbMelee
                     && not condNoUsableWeapon)
             && condThreatAtHand )
         , ( [AbDisplace]  -- prevents some looping movement
@@ -178,7 +178,7 @@ actionStrategy aid = do
                               && not aInAmbient && not actorShines)
           , (condTgtEnemyPresent || condTgtEnemyRemembered)
             && not (condDesirableFloorItem && not condThreatAtHand)
-            && abInSkill AbMelee
+            && abInMaxSkill AbMelee
             && not condNoUsableWeapon )
         ]
       -- Order matters again.
@@ -200,7 +200,7 @@ actionStrategy aid = do
                             -- Don't keep hiding in darkness if hit right now,
                             -- unless can't melee at all.
                             && not (heavilyDistressed
-                                    && abInSkill AbMelee
+                                    && abInMaxSkill AbMelee
                                     && not condNoUsableWeapon)
                             && condMeleeBad && condThreatNearby
                             && not aInAmbient && not actorShines)
@@ -215,6 +215,9 @@ actionStrategy aid = do
           , True )
         ]
       -- TODO: don't msum not to evaluate until needed
+  -- Check current, not maximal skills, since this can be a non-leader action.
+  actorSk <- actorSkillsClient aid
+  let abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
       checkAction :: ([Ability], m a, Bool) -> Bool
       checkAction (abts, _, cond) = all abInSkill abts && cond
       sumS abAction = do

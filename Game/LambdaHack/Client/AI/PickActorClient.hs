@@ -112,10 +112,10 @@ pickActorToMove refreshTarget oldAid = do
             condMeleeBad <- condMeleeBadM aid
             threatDistL <- threatDistList aid
             (fleeL, _) <- fleeList aid
-            actorSk <- actorSkillsClient aid
-            let abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
+            actorMaxSk <- maxActorSkillsClient aid
+            let abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
                 condNoUsableWeapon = all (not . isMelee) activeItems
-                canMelee = abInSkill AbMelee && not condNoUsableWeapon
+                canMelee = abInMaxSkill AbMelee && not condNoUsableWeapon
                 condCanFlee = not (null fleeL)
                 condThreatAtHandVeryClose =
                   let f = if canMelee then (== 2) else (<= 2)
