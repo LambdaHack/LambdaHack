@@ -204,7 +204,8 @@ actionStrategy aid = do
                                     && not condNoUsableWeapon)
                             && condMeleeBad && condThreatNearby
                             && not aInAmbient && not actorShines)
-          , True )
+          , not (condTgtNonmoving && condThreatAtHand) )
+            -- TODO: unless tgt can't melee
         ]
       fallback =
         [ ( [AbWait], (toAny :: ToAny AbWait)
