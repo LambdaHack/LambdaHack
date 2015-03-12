@@ -491,6 +491,7 @@ applyHuman ts = do
 
 -- * AlterDir
 
+-- TODO: accept mouse, too
 -- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: MonadClientUI m
               => [Trigger] -> m (SlideOrCmd (RequestTimed AbAlter))
@@ -515,12 +516,18 @@ alterTile dir ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
+  as <- getsState $ actorList (const True) (blid b)
   let tpos = bpos b `shift` dir
       t = lvl `at` tpos
       alterFeats = alterFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
     [] -> failWith $ guessAlter cops alterFeats t
-    feat : _ -> return $ Right $ ReqAlter tpos $ Just feat
+    feat : _ ->
+      if EM.notMember tpos $ lfloor lvl then
+        if unoccupied as tpos then
+          return $ Right $ ReqAlter tpos $ Just feat
+        else failSer AlterBlockActor
+      else failSer AlterBlockItem
 
 alterFeatures :: [Trigger] -> [TK.Feature]
 alterFeatures [] = []
