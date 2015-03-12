@@ -238,7 +238,7 @@ armadillo = ItemKind
   , irarity  = [(1, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 35, AddMaxCalm 30, AddSpeed 18
+  , iaspects = [ AddMaxHP 25, AddMaxCalm 30, AddSpeed 18
                , AddSkills $ EM.singleton AbAlter (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
