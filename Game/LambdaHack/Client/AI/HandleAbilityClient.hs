@@ -205,6 +205,7 @@ actionStrategy aid = do
                             && condMeleeBad && condThreatNearby
                             && not aInAmbient && not actorShines)
           , not (condTgtNonmoving && condThreatAtHand) )
+
             -- TODO: unless tgt can't melee
         ]
       fallback =
@@ -298,7 +299,7 @@ equipItems aid = do
             | not (eqpOverfull body n)
               && (vInv > vEqp || not (toShare slot)) ->
                 (n, (iidInv, 1, fromCStore, CEqp) : l4)
-          _ -> (n, l4)
+          _ -> (oldN, l4)
       -- We filter out unneeded items. In particular, we ignore them in eqp
       -- when comparing to items we may want to equip. Anyway, the unneeded
       -- items should be removed in yieldUnneeded earlier or soon after.

@@ -148,12 +148,12 @@ totalUsefulness cops b activeItems fact itemFull =
               && (selfSum > 0 && minimum selfBens < -10
                   || selfSum < 0 && maximum selfBens > 10)
             effSum = sum effBens
-            isWeapon = isMelee itemFull
+            isWeapon = isMeleeEqp itemFull
             totalSum
+              | isWeapon && effSum < 0 = - effSum + selfSum
               | goesIntoInv itemFull = effSum
               | mixedBlessing =
                   0  -- significant mixed blessings out of AI control
-              | isWeapon && effSum < 0 = - effSum + selfSum
               | otherwise = selfSum  -- if the weapon heals the enemy, it
                                      -- won't be used but can be equipped
         in (totalSum, effSum)

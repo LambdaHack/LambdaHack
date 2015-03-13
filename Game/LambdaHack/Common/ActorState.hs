@@ -391,8 +391,8 @@ itemToFull Kind.COps{coitem=Kind.Ops{okind}}
 -- but if it is in equipment or among organs, it's used for melee
 -- nevertheless, e.g., thorns.
 goesIntoInv :: ItemFull -> Bool
-goesIntoInv itemFull = not (isJust (strengthEqpSlot $ itemBase itemFull)
-                            || isMeleeEqp itemFull)
+goesIntoInv itemFull = not (isJust (strengthEqpSlot $ itemBase itemFull))
+-- TODO: not needed if EqpSlotWeapon stays         || isMeleeEqp itemFull)
 
 goesIntoSha :: ItemFull -> Bool
 goesIntoSha itemFull = IK.Precious `elem` jfeature (itemBase itemFull)
