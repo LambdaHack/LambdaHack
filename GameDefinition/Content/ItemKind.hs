@@ -862,7 +862,7 @@ sword = ItemKind
   , iweight  = 2000
   , iaspects = []
   , ieffects = [Hurt (10 * d 1)]
-  , ifeature = [ toVelocity 20  -- ensuring it hits with the tip costs speed
+  , ifeature = [ toVelocity 5  -- ensuring it hits with the tip costs speed
                , Durable, EqpSlot EqpSlotWeapon "", Identified ]
   , idesc    = "Difficult to master; deadly when used effectively. The steel is particularly hard and keen, but rusts quickly without regular maintenance."
   , ikit     = []
@@ -896,7 +896,7 @@ halberd = ItemKind
   , iweight  = 3000
   , iaspects = [AddArmorMelee $ 1 + dl 3 |*| 5]
   , ieffects = [Hurt (12 * d 1)]
-  , ifeature = [ toVelocity 20  -- not balanced
+  , ifeature = [ toVelocity 5  -- not balanced
                , Durable, EqpSlot EqpSlotWeapon "", Identified ]
   , idesc    = "An improvised but deadly weapon made of a blade from a scythe attached to a long pole."
   , ikit     = []
