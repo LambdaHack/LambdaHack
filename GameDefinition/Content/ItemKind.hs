@@ -797,7 +797,9 @@ dagger = ItemKind
   , irarity  = [(1, 20), (10, 1)]
   , iverbHit = "stab"
   , iweight  = 1000
-  , iaspects = [AddHurtMelee $ d 3 + dl 3 |*| 3, AddArmorMelee $ d 2 |*| 5]
+  , iaspects = [ AddHurtMelee $ d 3 + dl 3 |*| 3
+               , AddArmorMelee $ d 2 |*| 5
+               , AddHurtRanged (-60) ]  -- as powerful as a dart
   , ieffects = [Hurt (6 * d 1)]
   , ifeature = [ toVelocity 40  -- ensuring it hits with the tip costs speed
                , Durable, EqpSlot EqpSlotWeapon "", Identified ]
@@ -830,7 +832,8 @@ hammer = ItemKind
   , irarity  = [(5, 15)]
   , iverbHit = "club"
   , iweight  = 1500
-  , iaspects = [AddHurtMelee $ d 2 + dl 2 |*| 3]
+  , iaspects = [ AddHurtMelee $ d 2 + dl 2 |*| 3
+               , AddHurtRanged (-80) ]  -- as powerful as a dart
   , ieffects = [Hurt (8 * d 1)]
   , ifeature = [ toVelocity 20  -- ensuring it hits with the sharp tip costs
                , Durable, EqpSlot EqpSlotWeapon "", Identified ]
