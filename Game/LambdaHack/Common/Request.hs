@@ -9,6 +9,7 @@ module Game.LambdaHack.Common.Request
   , permittedPrecious, permittedProject, permittedApply
   ) where
 
+import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Atomic
@@ -99,6 +100,7 @@ data ReqFailure =
   | ProjectBlockTerrain
   | ProjectBlockActor
   | ProjectUnskilled
+  | ProjectNotRanged
   | ProjectFragile
   | ProjectOutOfReach
   | TriggerNothing
@@ -133,6 +135,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   ProjectBlockTerrain -> True  -- adjacent terrain always visible
   ProjectBlockActor -> True  -- adjacent actor always visible
   ProjectUnskilled -> False  -- unidentified skill items
+  ProjectNotRanged -> False  -- unidentified skill items
   ProjectFragile -> False  -- unidentified skill items
   ProjectOutOfReach -> True
   TriggerNothing -> True  -- terrain underneath always visibl
@@ -167,7 +170,8 @@ showReqFailure reqFailure = case reqFailure of
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
   ProjectUnskilled -> "unskilled actors cannot aim"
-  ProjectFragile -> "to lob a fragile item requires fling skill 2"
+  ProjectNotRanged -> "to fling a non-missile requires fling skill 2"
+  ProjectFragile -> "to lob a fragile item requires fling skill 3"
   ProjectOutOfReach -> "cannot aim an item out of reach"
   TriggerNothing -> "wasting time on triggering nothing"
   NoChangeDunLeader -> "no manual level change for your team"
@@ -189,11 +193,15 @@ permittedProject :: [Char] -> Bool -> Int -> ItemFull -> Actor -> [ItemFull]
 permittedProject triggerSyms forced skill itemFull@ItemFull{itemBase}
                  b activeItems =
   let calm10 = calmEnough10 b activeItems
+      mhurtRanged = strengthFromEqpSlot IK.EqpSlotAddHurtRanged itemFull
   in if not forced
         && skill < 1 then Left ProjectUnskilled
   else if not forced
+          && isNothing mhurtRanged
+          && skill < 2 then Left ProjectNotRanged
+  else if not forced
           && IK.Fragile `elem` jfeature itemBase
-          && skill < 2 then Left ProjectFragile
+          && skill < 3 then Left ProjectFragile
   else
     let legal = permittedPrecious calm10 forced itemFull
     in case legal of

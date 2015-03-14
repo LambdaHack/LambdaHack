@@ -28,7 +28,7 @@ warrior = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 60  -- partially from clothes and assumed first aid
                , AddMaxCalm 60, AddSpeed 20
-               , AddSkills $ EM.fromList [(AbProject, 1), (AbApply, 1)] ]
+               , AddSkills $ EM.fromList [(AbProject, 2), (AbApply, 1)] ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -84,7 +84,7 @@ eye = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 16, AddMaxCalm 60, AddSpeed 20
-               , AddSkills $ EM.fromList [(AbProject, 1), (AbApply, 1)] ]
+               , AddSkills $ EM.fromList [(AbProject, 2), (AbApply, 1)] ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "Under your stare, it reduces to the bits that define its essence. Under introspection, the bits slow down and solidify into an arbitrary form again. It must be huge inside, for holographic principle to manifest so overtly."  -- holographic principle is an anachronism for XIX or most of XX century, but "the cosmological scale effects" is too weak
@@ -136,7 +136,7 @@ elbow = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 8, AddMaxCalm 90, AddSpeed 21
                , AddSkills
-                 $ EM.fromList [(AbProject, 1), (AbApply, 1), (AbMelee, -1)] ]
+                 $ EM.fromList [(AbProject, 2), (AbApply, 1), (AbMelee, -1)] ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
@@ -157,7 +157,7 @@ torsor = ItemKind
   , iweight  = 80000
   , iaspects = [ Unique, AddMaxHP 100, AddMaxCalm 100, AddSpeed 10
                , AddSkills $ EM.fromList
-                   [(AbProject, 1), (AbApply, 1), (AbTrigger, -1)] ]
+                   [(AbProject, 2), (AbApply, 1), (AbTrigger, -1)] ]
                    -- can't switch levels, a miniboss
   , ieffects = []
   , ifeature = [Durable, Identified]
