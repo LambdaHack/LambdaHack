@@ -365,7 +365,7 @@ unEquipItems aid = do
         case (bestSha, bestEOrI) of
           _ | not (toShare slot)
               && fromCStore == CEqp
-              && not (eqpOverfull body 1) ->  -- keep one eqp slot empty
+              && not (eqpOverfull body 1) ->  -- keep periodic items up to M-1
             []
           (_, (vEOrI, (iidEOrI, _)) : _) | (toShare slot || fromCStore == CInv)
                                            && getK bestEOrI > 1
@@ -377,12 +377,10 @@ unEquipItems aid = do
                                                && betterThanSha vEOrI bestSha ->
             -- To share the second best items with others, if they care.
             [(iidEOrI, getK bestEOrI, fromCStore, CSha)]
-          (_, (vEOrI, (_, _)) : _) | eqpOverfull body 1
-                                     && if worseThanSha vEOrI bestSha
-                                        then fromCStore == CEqp
-                                        else fromCStore == CInv ->
-            -- To make place in eqp for an item better than any ours
-            -- or to remove from inv bad items that won't be equipped.
+          (_, (vEOrI, (_, _)) : _) | fromCStore == CEqp
+                                     && eqpOverfull body 1
+                                     && worseThanSha vEOrI bestSha ->
+            -- To make place in eqp for an item better than any ours.
             [(fst $ snd $ last bestEOrI, 1, fromCStore, CSha)]
           _ -> []
       getK [] = 0
@@ -391,7 +389,11 @@ unEquipItems aid = do
       betterThanSha vEOrI ((vSha, _) : _) = vEOrI > vSha
       worseThanSha _ [] = False
       worseThanSha vEOrI ((vSha, _) : _) = vEOrI < vSha
-      bestThree = bestByEqpSlot eqpAssocs invAssocs shaAssocs
+      filterNeeded (_, itemFull) =
+        not $ unneeded cops condAnyFoeAdj condLightBetrays condTgtEnemyPresent
+                       body activeItems fact itemFull
+      bestThree =
+        bestByEqpSlot eqpAssocs invAssocs (filter filterNeeded shaAssocs)
       bInvSha = concatMap (improve CInv)
                 $ map (\((slot, _), (_, inv, sha)) ->
                         (slot, (sha, inv))) bestThree
