@@ -421,9 +421,7 @@ effectDominate :: (MonadAtomic m, MonadServer m)
 effectDominate recursiveCall source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  if bproj tb then
-    return False
-  else if bfid tb == bfid sb then
+  if bfid tb == bfid sb then
     -- Dominate is rather on projectiles than on items, so alternate effect
     -- is useful to avoid boredom if domination can't happen.
     recursiveCall IK.Impress

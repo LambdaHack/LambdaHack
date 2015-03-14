@@ -146,12 +146,16 @@ rollSpawnPos Kind.COps{cotile} visible
 dominateFidSfx :: (MonadAtomic m, MonadServer m)
                => FactionId -> ActorId -> m Bool
 dominateFidSfx fid target = do
-  -- Actors that never ever move can't be dominated
+  tb <- getsState $ getActorBody target
+  -- Actors that don't move freely can't be dominated, for otherwise,
+  -- when they are the last survivors, they could get stuck
+  -- and the game wouldn't end.
   actorSk <- maxActorSkillsServer target
   let canMove = EM.findWithDefault 0 Ability.AbMove actorSk > 0
-  if canMove
+                && EM.findWithDefault 0 Ability.AbTrigger actorSk > 0
+                && EM.findWithDefault 0 Ability.AbAlter actorSk > 0
+  if canMove && not (bproj tb)
     then do
-      tb <- getsState $ getActorBody target
       let execSfx = execSfxAtomic
                     $ SfxEffect (bfidImpressed tb) target IK.Dominate
       execSfx
@@ -224,7 +228,7 @@ managePerTurn aid = do
       if bcalm b == 0
          && bfidImpressed b /= bfid b
          && fleaderMode (gplayer fact) /= LeaderNull
-              -- animals never Calm-dominated
+              -- animals/robots never Calm-dominated
       then dominateFidSfx (bfidImpressed b) aid
       else return False
     unless dominated $ do
