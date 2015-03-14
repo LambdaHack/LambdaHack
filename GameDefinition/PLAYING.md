@@ -208,7 +208,7 @@ stats can be viewed via the `!` command.
 In ranged combat, the missile is assumed to be attacking the defender
 in melee, using itself as the weapon, but the ranged damage bonus
 and the ranged armor modifier are taken into account for calculations.
-You may propel any item in your equipment, inventory and on the ground
+You may propel any item in your equipment, inventory pack and on the ground
 (by default you are offered only the appropriate items; press `?`
 to cycle item menu modes). Only items of a few kinds inflict any damage,
 but some have other effects, beneficial, detrimental or mixed.
