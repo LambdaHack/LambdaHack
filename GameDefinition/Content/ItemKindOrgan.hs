@@ -193,8 +193,9 @@ beeSting = fist
   , ifreq    = [("bee sting", 100)]
   , icount   = 1
   , iverbHit = "sting"
-  , iaspects = [Timeout $ 1 + d 5]
-  , ieffects = [Burn 1, Recharging (Paralyze 3), RefillHP 2]
+  , iaspects = [AddMaxHP 10]
+  , ieffects = [Burn 2, Paralyze 10, RefillHP 5]
+  , ifeature = [Identified]  -- not Durable
   , idesc    = "Painful, but beneficial."
   }
 sting = fist

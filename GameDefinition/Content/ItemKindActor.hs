@@ -365,7 +365,7 @@ beeSwarm = ItemKind
   , irarity  = [(1, 3), (10, 6)]
   , iverbHit = "thud"
   , iweight  = 1000
-  , iaspects = [ AddMaxHP 5, AddMaxCalm 60, AddSpeed 30
+  , iaspects = [ AddMaxCalm 60, AddSpeed 30  -- AddMaxHP in beeSting
                , AddSkills $ EM.singleton AbAlter (-1)
                , AddArmorMelee 90, AddArmorRanged 90 ]
   , ieffects = []
