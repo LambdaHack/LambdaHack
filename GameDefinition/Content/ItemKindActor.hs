@@ -155,7 +155,7 @@ torsor = ItemKind
   , irarity  = [(9, 0), (10, 1000)]  -- unique
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ Unique, AddMaxHP 100, AddMaxCalm 100, AddSpeed 10
+  , iaspects = [ Unique, AddMaxHP 200, AddMaxCalm 100, AddSpeed 10
                , AddSkills $ EM.fromList
                    [(AbProject, 2), (AbApply, 1), (AbTrigger, -1)] ]
                    -- can't switch levels, a miniboss
