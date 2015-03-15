@@ -13,9 +13,9 @@ import Game.LambdaHack.Content.ItemKind
 
 organs :: [ItemKind]
 organs =
-  [fist, foot, claw, smallClaw, snout, smallJaw, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, fissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision6, vision8, vision10, vision12, vision14, vision16, nostril, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP]
+  [fist, foot, claw, smallClaw, snout, smallJaw, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision6, vision8, vision10, vision12, vision14, vision16, nostril, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP]
 
-fist,    foot, claw, smallClaw, snout, smallJaw, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, fissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision6, vision8, vision10, vision12, vision14, vision16, nostril, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP :: ItemKind
+fist,    foot, claw, smallClaw, snout, smallJaw, jaw, largeJaw, tooth, horn, tentacle, lash, noseTip, lip, torsionRight, torsionLeft, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, pupil, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision6, vision8, vision10, vision12, vision14, vision16, nostril, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP :: ItemKind
 
 -- Weapons
 
@@ -180,13 +180,26 @@ thorn = fist
   , ifeature = [Identified]  -- not Durable
   , idesc    = ""
   }
-fissure = fist
+boilingFissure = fist
   { iname    = "fissure"
-  , ifreq    = [("fissure", 100)]
-  , icount   = 2
+  , ifreq    = [("boiling fissure", 100)]
+  , icount   = 5 + d 5
   , iverbHit = "hiss at"
   , ieffects = [Burn 1]
+  , ifeature = [Identified]  -- not Durable
   , idesc    = ""
+  }
+arsenicFissure = boilingFissure
+  { iname    = "fissure"
+  , ifreq    = [("arsenic fissure", 100)]
+  , icount   = 2 + d 2
+  , ieffects = [Burn 1]
+  }
+sulfurFissure = boilingFissure
+  { iname    = "fissure"
+  , ifreq    = [("sulfur fissure", 100)]
+  , icount   = 2 + d 2
+  , ieffects = [Burn 1, RefillHP 5]
   }
 beeSting = fist
   { iname    = "bee sting"
@@ -402,9 +415,8 @@ sulfurVent = boilingVent
   { iname    = "vent"
   , ifreq    = [("sulfur vent", 100)]
   , iflavour = zipPlain [BrYellow]
-  , iaspects = [Periodic, Timeout $ d 3 + 2]
-  , ieffects = [ Recharging (Explode "healing mist")
-               , Recharging (RefillHP (-1)) ]
+  , iaspects = [Periodic, Timeout $ d 2 |*| 5]
+  , ieffects = [Recharging (Explode "strength mist")]
   }
 bonusHP = armoredSkin
   { iname    = "bonus HP"

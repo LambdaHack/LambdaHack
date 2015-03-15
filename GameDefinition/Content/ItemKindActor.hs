@@ -11,9 +11,9 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, warrior2, warrior3, warrior4, warrior5, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyser, geyserArsenic, geyserSulfur]
+  [warrior, warrior2, warrior3, warrior4, warrior5, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyserBoiling, geyserArsenic, geyserSulfur]
 
-warrior,    warrior2, warrior3, warrior4, warrior5, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyser, geyserArsenic, geyserSulfur :: ItemKind
+warrior,    warrior2, warrior3, warrior4, warrior5, soldier, sniper, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush, geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 
 -- * Hunams
 
@@ -408,7 +408,7 @@ thornbush = ItemKind
   , idesc    = ""
   , ikit     = [("thorn", COrgan), ("armored skin", COrgan)]
   }
-geyser = ItemKind
+geyserBoiling = ItemKind
   { isymbol  = 'g'
   , iname    = "geyser"
   , ifreq    = [("animal", 50), ("immobileVents", 50)]
@@ -423,7 +423,7 @@ geyser = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("boiling vent", COrgan), ("fissure", COrgan)]
+  , ikit     = [("boiling vent", COrgan), ("boiling fissure", COrgan)]
   }
 geyserArsenic = ItemKind
   { isymbol  = 'g'
@@ -440,7 +440,7 @@ geyserArsenic = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("arsenic vent", COrgan), ("fissure", COrgan)]
+  , ikit     = [("arsenic vent", COrgan), ("arsenic fissure", COrgan)]
   }
 geyserSulfur = ItemKind
   { isymbol  = 'g'
@@ -456,5 +456,5 @@ geyserSulfur = ItemKind
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
-  , ikit     = [("sulfur vent", COrgan), ("fissure", COrgan)]
+  , ikit     = [("sulfur vent", COrgan), ("sulfur fissure", COrgan)]
   }
