@@ -118,18 +118,19 @@ pickActorToMove refreshTarget oldAid = do
                 canMelee = abInMaxSkill AbMelee && not condNoUsableWeapon
                 condCanFlee = not (null fleeL)
                 condThreatAtHandVeryClose =
-                  let f = if canMelee then (== 2) else (<= 2)
-                  in not $ null $ takeWhile (f . fst) threatDistL
+                  not $ null $ takeWhile ((<= 2) . fst) threatDistL
+                threatAdj = takeWhile ((== 1) . fst) threatDistL
+                condThreatAdj = not $ null threatAdj
                 condFastThreatAdj =
                   any (\(_, (_, b)) ->
                          bspeed b activeItems > bspeed body activeItems)
-                  $ takeWhile ((== 1) . fst) threatDistL
+                      threatAdj
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
-            return $! if condThreatAtHandVeryClose
+            return $! if canMelee && condThreatAdj then False
+                      else if condThreatAtHandVeryClose
                       then condCanFlee && condMeleeBad && not condFastThreatAdj
-                           && not (heavilyDistressed && canMelee)
                       else heavilyDistressed  -- shot at
                         -- TODO: modify when reaction fire is possible
           actorHearning (_, (TEnemyPos{}, (_, (_, d)))) | d <= 2 =
