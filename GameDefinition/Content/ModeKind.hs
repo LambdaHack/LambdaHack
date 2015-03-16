@@ -106,7 +106,8 @@ screensaver = safari
   , mfreq   = [("screensaver", 1), ("starting", 1)]
   , mroster = rosterSafari
       { rosterList = (head (rosterList rosterSafari))
-                       {fleaderMode = LeaderAI $ AutoLeader False False }
+                       -- changing leader by client needed, because of TFollow
+                       {fleaderMode = LeaderAI $ AutoLeader True False}
                      : tail (rosterList rosterSafari)
       }
   }
@@ -189,13 +190,12 @@ rosterBattle = Roster
 rosterSafari = Roster
   { rosterList = [ playerAntiMonster { fname = "Monster Tourist Office"
                                      , fcanEscape = True
-                                     , fneverEmpty = True
+                                     , fneverEmpty = True  -- no spawning
                                      -- Follow-the-guide, as tourists do.
                                      , ftactic = TFollow
                                      , fentryLevel = -4
                                      , finitialActors = 15
                                      , fleaderMode =
-                                         -- no spawning and TFollow
                                          LeaderUI $ AutoLeader False False }
                  , playerCivilian { fname = "Hunam Convict Pack"
                                   , fentryLevel = -4 }
@@ -203,12 +203,15 @@ rosterSafari = Roster
                                           "Animal Magnificent Specimen Variety"
                                       , fneverEmpty = True
                                       , fentryLevel = -7
-                                      , finitialActors = 10 }
+                                      , finitialActors = 10
+                                      , fleaderMode =  -- move away from stairs
+                                          LeaderAI $ AutoLeader True True }
                  , playerMobileAnimal { fname =
                                           "Animal Exquisite Herds and Packs"
                                       , fneverEmpty = True
                                       , fentryLevel = -10
-                                      , finitialActors = 30 } ]
+                                      , finitialActors = 30 }
+                 ]
   , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
                   , ("Monster Tourist Office",
                      "Animal Magnificent Specimen Variety")

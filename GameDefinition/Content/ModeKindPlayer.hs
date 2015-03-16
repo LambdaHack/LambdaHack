@@ -82,7 +82,8 @@ playerMonster = Player
   , ftactic = TExplore
   , fentryLevel = -4
   , finitialActors = 4  -- one of these most probably not nose, so will explore
-  , fleaderMode = LeaderAI $ AutoLeader True True
+  , fleaderMode =  -- no point changing leader on level, since all move
+      LeaderAI $ AutoLeader True True
   , fhasUI = False
   }
 
