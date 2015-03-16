@@ -576,7 +576,8 @@ trigger aid fleeViaStairs = do
                     else 0
                 | not lidExplored = 0  -- fully explore current
                 | unexpBack = 0  -- wait for stairs in the opposite direciton
-                | lescape lvl = 0  -- all explored, stay on the escape level
+                | not $ null $ lescape lvl = 0
+                    -- all explored, stay on the escape level
                 | otherwise = 2  -- no escape, switch levels occasionally
               actorsThere = posToActors pos2 lid2 s
           return $!

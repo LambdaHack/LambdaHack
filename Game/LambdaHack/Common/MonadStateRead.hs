@@ -37,7 +37,7 @@ factionCanEscape :: MonadStateRead m => FactionId -> m Bool
 factionCanEscape fid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   dungeon <- getsState sdungeon
-  let escape = any lescape $ EM.elems dungeon
+  let escape = any (not . null . lescape) $ EM.elems dungeon
   return $! escape && fcanEscape (gplayer fact)
 
 -- TODO: "treasure" is hardwired; tie this code with calculateTotal

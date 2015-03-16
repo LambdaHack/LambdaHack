@@ -86,7 +86,7 @@ data Level = Level
   , litemFreq   :: !(Freqs ItemKind)  -- ^ frequency of initial items; [] for clients
   , lsecret     :: !Int        -- ^ secret tile seed
   , lhidden     :: !Int        -- ^ secret tile density
-  , lescape     :: !Bool       -- ^ has an IK.Escape tile
+  , lescape     :: ![Point]    -- ^ positions of IK.Escape tiles
   }
   deriving (Show, Eq)
 

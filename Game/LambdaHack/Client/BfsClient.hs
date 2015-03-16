@@ -256,7 +256,7 @@ closestTriggers onlyDir aid = do
   let lid = blid body
   lvl <- getLevel lid
   dungeon <- getsState sdungeon
-  let escape = any lescape $ EM.elems dungeon
+  let escape = any (not . null . lescape) $ EM.elems dungeon
   unexploredD <- unexploredDepth
   let allExplored = ES.size explored == EM.size dungeon
       -- If lid not explored, aid equips a weapon and so can leave level.
@@ -282,7 +282,7 @@ closestTriggers onlyDir aid = do
                                     then easier
                                          || not unexpBack && lidExplored
                                     else not unexpBack && lidExplored
-                                         && not (lescape lvl)
+                                         && (null $ lescape lvl)
                        in maybe aiCond (\d -> d == (k > 0)) onlyDir
                  in map (,p) (filter g l) ++ acc
         else acc
@@ -317,7 +317,8 @@ unexploredDepth = do
   explored <- getsClient sexplored
   let allExplored = ES.size explored == EM.size dungeon
       unexploredD p =
-        let unex lid = allExplored && lescape (dungeon EM.! lid)
+        let unex lid = allExplored
+                       && (not $ null $ lescape $ dungeon EM.! lid)
                        || ES.notMember lid explored
                        || unexploredD p lid
         in any unex . ascendInBranch dungeon p

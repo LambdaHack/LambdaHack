@@ -48,7 +48,7 @@ data State = State
 -- and when loading regenerate this level.
 unknownLevel :: Kind.COps -> AbsDepth -> X -> Y
              -> Text -> ([Point], [Point]) -> Int
-             -> (Freqs ItemKind) -> Int -> Int -> Bool
+             -> (Freqs ItemKind) -> Int -> Int -> [Point]
              -> Level
 unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
              ldepth lxsize lysize ldesc lstair lclear

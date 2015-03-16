@@ -204,12 +204,12 @@ buildLevel cops@Kind.COps{ cotile=Kind.Ops{opick, okind}
   lsecret <- randomR (1, maxBound)  -- 0 means unknown
   return $! levelFromCaveKind cops kc ldepth ltile lstair
                               cactorCoeff cactorFreq litemNum citemFreq
-                              lsecret (isJust escapeFeature)
+                              lsecret (map fst escape)
 
 -- | Build rudimentary level from a cave kind.
 levelFromCaveKind :: Kind.COps
                   -> CaveKind -> AbsDepth -> TileMap -> ([Point], [Point])
-                  -> Int -> Freqs ItemKind -> Int -> Freqs ItemKind -> Int -> Bool
+                  -> Int -> Freqs ItemKind -> Int -> Freqs ItemKind -> Int -> [Point]
                   -> Level
 levelFromCaveKind Kind.COps{cotile}
                   CaveKind{..}
