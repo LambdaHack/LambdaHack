@@ -222,7 +222,7 @@ populateDungeon = do
                         placeActors lid ((fid4, fact4), ppos, timeOffset))
                     arenaFactions
         entryPoss <- rndToAction
-                     $ findEntryPoss cops lvl (length arenaAlliances)
+                     $ findEntryPoss cops lid lvl (length arenaAlliances)
         mapM_ placeAlliance $ zip3 arenaAlliances entryPoss [0..]
       placeActors lid ((fid3, fact3), ppos, timeOffset) = do
         time <- getsState $ getLocalTime lid
@@ -307,9 +307,10 @@ addHero bfid ppos lid heroNames mNumber time = do
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. Place as many of the initial factions, as possible,
--- over stairs.
-findEntryPoss :: Kind.COps -> Level -> Int -> Rnd [Point]
-findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
+-- over stairs and escapes.
+findEntryPoss :: Kind.COps -> LevelId -> Level -> Int -> Rnd [Point]
+findEntryPoss Kind.COps{cotile}
+              lid Level{ltile, lxsize, lysize, lstair, lescape} k = do
   let factionDist = max lxsize lysize - 5
       dist poss cmin l _ = all (\pos -> chessDist l pos > cmin) poss
       tryFind _ 0 = return []
@@ -328,7 +329,12 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
                 ]
         nps <- tryFind (np : ps) (n - 1)
         return $! np : nps
-      stairPoss = nub $ sort $ uncurry (++) lstair
+      -- Prefer deeper stairs to avoid spawners ambushing explorers.
+      (deeperStairs, shallowerStairs) =
+        (if fromEnum lid > 0 then id else swap) lstair
+      stairPoss = (deeperStairs \\ shallowerStairs)
+                  ++ lescape
+                  ++ shallowerStairs
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
   let !_A = assert (k > 0 && factionDist > 0) ()
       onStairs = take k stairPoss
