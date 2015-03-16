@@ -85,6 +85,12 @@ empty = rogue
   , chidden       = 1000
   , cactorCoeff   = 8
   , cactorFreq    = [("monster", 2), ("animal", 8), ("immobileVents", 90)]
+      -- The geysers on lvl 3 act like HP resets. They are needed to avoid
+      -- cascading failure, if the particular starting conditions were
+      -- very hard. The items are not reset, even if the are bad, which provides
+      -- enough of a continuity. Gyesers on lvl 3 are not OP and can't be
+      -- abused, because they spawn less and less often, they don't heal over
+      -- max HP and they expire naturally.
   , citemNum      = 7 * d 2  -- few rooms
   , cpassable     = True
   , cdefTile      = "emptySet"

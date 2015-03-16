@@ -199,7 +199,7 @@ sulfurFissure = boilingFissure
   { iname    = "fissure"
   , ifreq    = [("sulfur fissure", 100)]
   , icount   = 2 + d 2
-  , ieffects = [Burn 1, RefillHP 5]
+  , ieffects = [Burn 1, RefillHP 6]
   }
 beeSting = fist
   { iname    = "bee sting"
@@ -400,7 +400,7 @@ boilingVent = armoredSkin
   , iflavour = zipPlain [Blue]
   , icount   = 1
   , iverbHit = "menace"
-  , iaspects = [Periodic, Timeout $ d 4 |*| 5]
+  , iaspects = [Periodic, Timeout $ 14 + d 6]
   , ieffects = [Recharging (Explode "boiling water")]
   , idesc    = ""
   }
@@ -408,15 +408,17 @@ arsenicVent = boilingVent
   { iname    = "vent"
   , ifreq    = [("arsenic vent", 100)]
   , iflavour = zipPlain [Cyan]
-  , iaspects = [Periodic, Timeout $ d 2 |*| 5]
-  , ieffects = [Recharging (Explode "weakness mist")]
+  , iaspects = [Periodic, Timeout $ 7 + d 3]
+  , ieffects = [ Recharging (Explode "weakness mist")
+               , Recharging (RefillHP (-1)) ]
   }
 sulfurVent = boilingVent
   { iname    = "vent"
   , ifreq    = [("sulfur vent", 100)]
   , iflavour = zipPlain [BrYellow]
-  , iaspects = [Periodic, Timeout $ d 2 |*| 5]
-  , ieffects = [Recharging (Explode "strength mist")]
+  , iaspects = [Periodic, Timeout $ 7 + d 3]
+  , ieffects = [ Recharging (Explode "strength mist")
+               , Recharging (RefillHP (-1)) ]
   }
 bonusHP = armoredSkin
   { iname    = "bonus HP"
