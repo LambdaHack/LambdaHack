@@ -59,7 +59,6 @@ arena = rogue
   , cminPlaceSize = DiceXY (2 * d 2 + 3) 4
   , cdarkChance   = d 60 + dl 60
   , cnightChance  = d 60 + dl 60 -- trails provide enough light for fun stealth
-  , cnightChance  = 0
   , cmaxVoid      = 1%4
   , chidden       = 1000
   , cactorCoeff   = 10
