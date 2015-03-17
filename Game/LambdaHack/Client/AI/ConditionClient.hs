@@ -18,6 +18,7 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , condMeleeBadM
   , condLightBetraysM
   , benAvailableItems
+  , hinders
   , benGroundItems
   , desirableItem
   , threatDistList
@@ -51,6 +52,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
@@ -199,18 +201,52 @@ benAvailableItems aid permitted cstores = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
+  condAnyFoeAdj <- condAnyFoeAdjM aid
+  condLightBetrays <- condLightBetraysM aid
+  condTgtEnemyPresent <- condTgtEnemyPresentM aid
   let ben cstore bag =
         [ ((benefit, (k, cstore)), (iid, itemFull))
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
-        , let benefit = totalUsefulness cops b activeItems fact itemFull
-        , permitted (fst <$> benefit) itemFull b activeItems ]
+              benefit = totalUsefulness cops b activeItems fact itemFull
+              hind = hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
+                     b activeItems itemFull
+        , permitted (fst <$> benefit) itemFull b activeItems
+          && (cstore /= CEqp || hind) ]
       benCStore cs = do
         bag <- getsState $ getActorBag aid cs
         return $! ben cs bag
   perBag <- mapM benCStore cstores
   return $ concat perBag
     -- keep it lazy
+
+-- TODO: also take into account dynamic lights *not* wielded by the actor
+hinders :: Bool -> Bool -> Bool -> Actor -> [ItemFull] -> ItemFull -> Bool
+hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
+        body activeItems itemFull =
+  let itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
+  in -- Fast actors want to hide in darkness to ambush opponents and want
+     -- to hit hard for the short span they get to survive melee.
+     bspeed body activeItems > speedNormal
+     && (itemLit
+         || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtMelee
+                                                 itemFull)
+         || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtRanged
+                                                 itemFull))
+     -- In the presence of enemies (seen, or unseen but distressing)
+     -- actors want to hide in the dark.
+     || let heavilyDistressed =  -- actor hit by a proj or similarly distressed
+              deltaSerious (bcalmDelta body)
+        in (heavilyDistressed || condTgtEnemyPresent)
+           && condLightBetrays && not condAnyFoeAdj
+           && itemLit
+  -- TODO:
+  -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
+  -- (friends close, only one enemy close)
+  -- and turning on afterwards (AI plays for time, especially spawners
+  -- so shields are preferable by default;
+  -- also, turning on when no friends and enemies close is too late,
+  -- AI should flee or fire at such times, not muck around with eqp)
 
 -- | Require the actor is not calm enough.
 condNotCalmEnoughM :: MonadClient m => ActorId -> m Bool

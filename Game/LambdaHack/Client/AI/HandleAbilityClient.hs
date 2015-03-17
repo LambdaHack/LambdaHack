@@ -435,34 +435,6 @@ bestByEqpSlot eqpAssocs invAssocs shaAssocs =
                                              bestSingle eqpSlot g3)
   in M.assocs $ M.mapWithKey bestThree eqpInvShaMap
 
--- TODO: also take into account dynamic lights *not* wielded by the actor
-hinders :: Bool -> Bool -> Bool -> Actor -> [ItemFull] -> ItemFull -> Bool
-hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
-        body activeItems itemFull =
-  let itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
-  in -- Fast actors want to hide in darkness to ambush opponents and want
-     -- to hit hard for the short span they get to survive melee.
-     bspeed body activeItems > speedNormal
-     && (itemLit
-         || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtMelee
-                                                 itemFull)
-         || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtRanged
-                                                 itemFull))
-     -- In the presence of enemies (seen, or unseen but distressing)
-     -- actors want to hide in the dark.
-     || let heavilyDistressed =  -- actor hit by a proj or similarly distressed
-              deltaSerious (bcalmDelta body)
-        in (heavilyDistressed || condTgtEnemyPresent)
-           && condLightBetrays && not condAnyFoeAdj
-           && itemLit
-  -- TODO:
-  -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
-  -- (friends close, only one enemy close)
-  -- and turning on afterwards (AI plays for time, especially spawners
-  -- so shields are preferable by default;
-  -- also, turning on when no friends and enemies close is too late,
-  -- AI should flee or fire at such times, not muck around with eqp)
-
 harmful :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull -> Bool
 harmful cops body activeItems fact itemFull =
   -- Items that are known and their effects are not stricly beneficial
@@ -631,7 +603,7 @@ projectItem aid = do
           localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2
               coeff COrgan = 3  -- can't give to others
-              coeff CEqp = 1
+              coeff CEqp = 10  -- must hinder currently
               coeff CInv = 1
               coeff CSha = undefined  -- banned
               fRanged ( (mben, (_, cstore))
@@ -695,7 +667,7 @@ applyItem aid applyGroup = do
         ApplyAll -> True
       coeff CGround = 2
       coeff COrgan = 3  -- can't give to others
-      coeff CEqp = 1
+      coeff CEqp = 10  -- must hinder currently
       coeff CInv = 1
       coeff CSha = undefined  -- banned
       fTool ((mben, (_, cstore)), (iid, itemFull@ItemFull{itemBase})) =
