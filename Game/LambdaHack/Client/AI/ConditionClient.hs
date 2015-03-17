@@ -204,13 +204,15 @@ benAvailableItems aid permitted cstores = do
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condLightBetrays <- condLightBetraysM aid
   condTgtEnemyPresent <- condTgtEnemyPresentM aid
+  condNotCalmEnough <- condNotCalmEnoughM aid
   let ben cstore bag =
         [ ((benefit, (k, cstore)), (iid, itemFull))
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
               benefit = totalUsefulness cops b activeItems fact itemFull
-              hind = hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
-                     b activeItems itemFull
+              hind = hinders condAnyFoeAdj condLightBetrays
+                             condTgtEnemyPresent condNotCalmEnough
+                             b activeItems itemFull
         , permitted (fst <$> benefit) itemFull b activeItems
           && (cstore /= CEqp || hind) ]
       benCStore cs = do
@@ -221,14 +223,16 @@ benAvailableItems aid permitted cstores = do
     -- keep it lazy
 
 -- TODO: also take into account dynamic lights *not* wielded by the actor
-hinders :: Bool -> Bool -> Bool -> Actor -> [ItemFull] -> ItemFull -> Bool
+hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> [ItemFull] -> ItemFull
+        -> Bool
 hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
+        condNotCalmEnough  -- perhaps enemies don't have projectiles
         body activeItems itemFull =
   let itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
   in -- Fast actors want to hide in darkness to ambush opponents and want
      -- to hit hard for the short span they get to survive melee.
      bspeed body activeItems > speedNormal
-     && (itemLit
+     && (condNotCalmEnough && itemLit
          || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtMelee
                                                  itemFull)
          || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtRanged
@@ -237,7 +241,8 @@ hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
      -- actors want to hide in the dark.
      || let heavilyDistressed =  -- actor hit by a proj or similarly distressed
               deltaSerious (bcalmDelta body)
-        in (heavilyDistressed || condTgtEnemyPresent)
+        in condNotCalmEnough
+           && (heavilyDistressed || condTgtEnemyPresent)
            && condLightBetrays && not condAnyFoeAdj
            && itemLit
   -- TODO:

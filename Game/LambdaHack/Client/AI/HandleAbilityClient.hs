@@ -152,12 +152,18 @@ actionStrategy aid = do
         , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> equipItems aid  -- doesn't take long, very useful if safe
                                 -- only if calm enough, so high priority
-          , not condAnyFoeAdj && not condDesirableFloorItem )
+          , not (condAnyFoeAdj
+                 || condDesirableFloorItem
+                 || condNotCalmEnough) )
         ]
       -- Order doesn't matter, scaling does.
       distant :: [([Ability], m (Frequency RequestAnyAbility), Bool)]
       distant =
-        [ ( [AbProject]  -- for high-value target, shoot even in melee
+        [ ( [AbMoveItem]
+          , stratToFreq 20000 $ (toAny :: ToAny AbMoveItem)
+            <$> yieldUnneeded aid  -- 20000 to unequip ASAP, unless is thrown
+          , True )
+        , ( [AbProject]  -- for high-value target, shoot even in melee
           , stratToFreq 2 $ (toAny :: ToAny AbProject)
             <$> projectItem aid
           , condTgtEnemyPresent && condCanProject && not condOnTriggerable )
@@ -183,17 +189,17 @@ actionStrategy aid = do
         ]
       -- Order matters again.
       suffix =
-        [ ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
-            <$> pickup aid False
-          , not condThreatAtHand )  -- e.g., to give to other party members
-        , ( [AbMelee], (toAny :: ToAny AbMelee)
+        [ ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeAny aid  -- avoid getting damaged for naught
           , condAnyFoeAdj )
         , ( [AbMove]
           , flee aid panicFleeL  -- ultimate panic mode, displaces foes
           , condAnyFoeAdj )
         , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
-            <$> unEquipItems aid  -- late, because better to throw than unequip
+            <$> pickup aid False
+          , not condThreatAtHand )  -- e.g., to give to other party members
+        , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
+            <$> unEquipItems aid  -- late, because these items not bad
           , True )
         , ( [AbMove]
           , chase aid True (condTgtEnemyPresent
@@ -304,7 +310,8 @@ equipItems aid = do
       -- when comparing to items we may want to equip. Anyway, the unneeded
       -- items should be removed in yieldUnneeded earlier or soon after.
       filterNeeded (_, itemFull) =
-        not $ unneeded cops condAnyFoeAdj condLightBetrays condTgtEnemyPresent
+        not $ unneeded cops condAnyFoeAdj condLightBetrays
+                       condTgtEnemyPresent (not calmE)
                        body activeItems fact itemFull
       bestThree = bestByEqpSlot (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded invAssocs)
@@ -326,6 +333,38 @@ toShare :: IK.EqpSlot -> Bool
 toShare IK.EqpSlotPeriodic = False
 toShare _ = True
 
+yieldUnneeded :: MonadClient m
+              => ActorId -> m (Strategy (RequestTimed AbMoveItem))
+yieldUnneeded aid = do
+  cops <- getsState scops
+  body <- getsState $ getActorBody aid
+  activeItems <- activeItemsClient aid
+  let calmE = calmEnough body activeItems
+  fact <- getsState $ (EM.! bfid body) . sfactionD
+  eqpAssocs <- fullAssocsClient aid [CEqp]
+  condAnyFoeAdj <- condAnyFoeAdjM aid
+  condLightBetrays <- condLightBetraysM aid
+  condTgtEnemyPresent <- condTgtEnemyPresentM aid
+      -- Here AI hides from the human player the Ring of Speed And Bleeding,
+      -- which is a bit harsh, but fair. However any subsequent such
+      -- rings will not be picked up at all, so the human player
+      -- doesn't lose much fun. Additionally, if AI learns alchemy later on,
+      -- they can repair the ring, wield it, drop at death and it's
+      -- in play again.
+  let yieldSingleUnneeded (iidEqp, itemEqp) =
+        let csha = if calmE then CSha else CInv
+        in if harmful cops body activeItems fact itemEqp
+           then [(iidEqp, itemK itemEqp, CEqp, CInv)]
+           else if hinders condAnyFoeAdj condLightBetrays
+                           condTgtEnemyPresent (not calmE)
+                           body activeItems itemEqp
+           then [(iidEqp, itemK itemEqp, CEqp, csha)]
+           else []
+      yieldAllUnneeded = concatMap yieldSingleUnneeded eqpAssocs
+  return $! if null yieldAllUnneeded
+            then reject
+            else returN "yieldUnneeded" $ ReqMoveItems yieldAllUnneeded
+
 unEquipItems :: MonadClient m
              => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 unEquipItems aid = do
@@ -346,18 +385,7 @@ unEquipItems aid = do
       -- doesn't lose much fun. Additionally, if AI learns alchemy later on,
       -- they can repair the ring, wield it, drop at death and it's
       -- in play again.
-  let yieldSingleUnneeded (iidEqp, itemEqp) =
-        let csha = if calmE then CSha else CInv
-        in if harmful cops body activeItems fact itemEqp
-           then [(iidEqp, itemK itemEqp, CEqp, CInv)]
-           else if hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
-                           body activeItems itemEqp
-           then [(iidEqp, itemK itemEqp, CEqp, csha)]
-           else []
-      yieldUnneeded = concatMap yieldSingleUnneeded eqpAssocs
-      -- Don't share around items that are not critically needed and that
-      -- cumulate their effects well.
-      improve :: CStore -> ( IK.EqpSlot
+  let improve :: CStore -> ( IK.EqpSlot
                            , ( [(Int, (ItemId, ItemFull))]
                              , [(Int, (ItemId, ItemFull))] ) )
               -> [(ItemId, Int, CStore, CStore)]
@@ -390,7 +418,8 @@ unEquipItems aid = do
       worseThanSha _ [] = False
       worseThanSha vEOrI ((vSha, _) : _) = vEOrI < vSha
       filterNeeded (_, itemFull) =
-        not $ unneeded cops condAnyFoeAdj condLightBetrays condTgtEnemyPresent
+        not $ unneeded cops condAnyFoeAdj condLightBetrays
+                       condTgtEnemyPresent (not calmE)
                        body activeItems fact itemFull
       bestThree =
         bestByEqpSlot eqpAssocs invAssocs (filter filterNeeded shaAssocs)
@@ -400,9 +429,7 @@ unEquipItems aid = do
       bEqpSha = concatMap (improve CEqp)
                 $ map (\((slot, _), (eqp, _, sha)) ->
                         (slot, (sha, eqp))) bestThree
-      prepared = if null yieldUnneeded
-                 then if calmE then bInvSha ++ bEqpSha else []
-                 else yieldUnneeded
+      prepared = if calmE then bInvSha ++ bEqpSha else []
   return $! if null prepared
             then reject
             else returN "unEquipItems" $ ReqMoveItems prepared
@@ -442,13 +469,15 @@ harmful cops body activeItems fact itemFull =
   maybe False (\(u, _) -> u <= 0)
     (totalUsefulness cops body activeItems fact itemFull)
 
-unneeded :: Kind.COps -> Bool -> Bool -> Bool
+unneeded :: Kind.COps -> Bool -> Bool -> Bool -> Bool
          -> Actor -> [ItemFull] -> Faction -> ItemFull
          -> Bool
-unneeded cops condAnyFoeAdj condLightBetrays condTgtEnemyPresent
+unneeded cops condAnyFoeAdj condLightBetrays
+         condTgtEnemyPresent condNotCalmEnough
          body activeItems fact itemFull =
   harmful cops body activeItems fact itemFull
-  || hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
+  || hinders condAnyFoeAdj condLightBetrays
+             condTgtEnemyPresent condNotCalmEnough
              body activeItems itemFull
   || let calm10 = calmEnough10 body activeItems  -- unneeded risk
          itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
@@ -603,7 +632,7 @@ projectItem aid = do
           localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2
               coeff COrgan = 3  -- can't give to others
-              coeff CEqp = 10  -- must hinder currently
+              coeff CEqp = 100000  -- must hinder currently
               coeff CInv = 1
               coeff CSha = undefined  -- banned
               fRanged ( (mben, (_, cstore))
@@ -667,7 +696,7 @@ applyItem aid applyGroup = do
         ApplyAll -> True
       coeff CGround = 2
       coeff COrgan = 3  -- can't give to others
-      coeff CEqp = 10  -- must hinder currently
+      coeff CEqp = 100000  -- must hinder currently
       coeff CInv = 1
       coeff CSha = undefined  -- banned
       fTool ((mben, (_, cstore)), (iid, itemFull@ItemFull{itemBase})) =
