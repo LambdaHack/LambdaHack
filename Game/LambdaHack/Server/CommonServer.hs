@@ -176,7 +176,7 @@ deduceQuits fid mbody status = do
         _ -> True
       inGame (fid2, fact2) =
         if inGameOutcome (fid2, fact2)
-        then anyActorsAlive fid2
+        then anyActorsAlive fid2 (fst <$> mbody)
         else return False
   factionD <- getsState sfactionD
   assocsInGame <- filterM inGame $ EM.assocs factionD
@@ -222,25 +222,27 @@ keepArenaFact fact = fleaderMode (gplayer fact) /= LeaderNull
 -- We assume the actor in the second argumet is dead or dominated
 -- by this point. Even if the actor is to be dominated,
 -- @bfid@ of the actor body is still the old faction.
-deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> Maybe (ActorId, Actor) -> m ()
-deduceKilled body mbody = do
+deduceKilled :: (MonadAtomic m, MonadServer m)
+             => ActorId -> Actor -> m ()
+deduceKilled aid body = do
   Kind.COps{corule} <- getsState scops
   let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
       fid = bfid body
   fact <- getsState $ (EM.! fid) . sfactionD
   when (fneverEmpty $ gplayer fact) $ do
-    actorsAlive <- anyActorsAlive fid
+    actorsAlive <- anyActorsAlive fid (Just aid)
     when (not actorsAlive || firstDeathEnds) $
-      deduceQuits fid mbody $ Status Killed (fromEnum $ blid body) Nothing
+      deduceQuits fid (Just (aid, body))
+      $ Status Killed (fromEnum $ blid body) Nothing
 
-anyActorsAlive :: MonadServer m => FactionId -> m Bool
-anyActorsAlive fid = do
+anyActorsAlive :: MonadServer m => FactionId -> Maybe ActorId -> m Bool
+anyActorsAlive fid maid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   if fleaderMode (gplayer fact) /= LeaderNull
     then return $! isJust $ gleader fact
     else do
-      as <- getsState $ fidActorNotProjList fid
-      return $! not $ null as
+      as <- getsState $ fidActorNotProjAssocs fid
+      return $! not $ null $ maybe as (\aid -> filter ((/= aid) . fst) as) maid
 
 electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
 electLeader fid lid aidDead = do

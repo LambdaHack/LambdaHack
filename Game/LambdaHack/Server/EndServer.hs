@@ -71,7 +71,7 @@ dieSer aid b hit =
     execUpdAtomic $ UpdRecordKill aid ikind 1
     electLeader (bfid b) (blid b) aid
     tb <- getsState $ getActorBody aid
-    deduceKilled tb (Just (aid, tb))  -- tb has items not dropped, stash in inv
+    deduceKilled aid tb  -- tb has items not dropped, stash in inv
     fact <- getsState $ (EM.! bfid b) . sfactionD
     -- Prevent faction's stash from being lost in case they are not spawners.
     -- Projectiles can't drop stash, because they are blind and so the faction
