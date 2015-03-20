@@ -2,7 +2,7 @@
 -- | AI strategy abilities.
 module Game.LambdaHack.Common.Ability
   ( Ability(..), Skills
-  , zeroSkills, unitSkills, addSkills, maxSkills, scaleSkills
+  , zeroSkills, unitSkills, addSkills, scaleSkills
   ) where
 
 import Data.Binary
@@ -26,18 +26,14 @@ data Ability =
 -- skill level in particular abilities.
 type Skills = EM.EnumMap Ability Int
 
--- @EM.empty@ gives a wrong result in the maxSkills operation
 zeroSkills :: Skills
-zeroSkills = EM.fromDistinctAscList $ zip [minBound..maxBound] (repeat 0)
+zeroSkills = EM.empty
 
 unitSkills :: Skills
 unitSkills = EM.fromDistinctAscList $ zip [minBound..maxBound] (repeat 1)
 
 addSkills :: Skills -> Skills -> Skills
 addSkills = EM.unionWith (+)
-
-maxSkills :: Skills -> Skills -> Skills
-maxSkills = EM.unionWith max
 
 scaleSkills :: Int -> Skills -> Skills
 scaleSkills n = EM.map (n *)

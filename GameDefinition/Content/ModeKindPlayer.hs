@@ -164,9 +164,7 @@ minusTen, meleeAdjacent, _meleeAndRanged :: Skills
 -- To make sure only a lot of weak items can override move-only-leader, etc.
 minusTen = EM.fromList $ zip [minBound..maxBound] [-10, -10..]
 
-meleeAdjacent = addSkills minusTen
-                $ EM.fromList $ zip [AbWait, AbMelee] [10, 10..]
+meleeAdjacent = EM.delete AbWait $ EM.delete AbMelee minusTen
 
 -- Melee and reaction fire.
-_meleeAndRanged = addSkills minusTen
-                  $ EM.fromList $ zip [AbWait, AbMelee, AbProject] [10, 10..]
+_meleeAndRanged = EM.delete AbProject $ meleeAdjacent

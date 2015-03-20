@@ -7,6 +7,7 @@ module Game.LambdaHack.Content.ModeKind
   ) where
 
 import Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -145,7 +146,6 @@ validateSingleRoster caves Roster{..} =
      in concatMap (checkDipl "rosterEnemy") rosterEnemy
         ++ concatMap (checkDipl "rosterAlly") rosterAlly
 
--- Note that @fSkillsOther@ needn't be a subset of @fSkillsLeader@.
 validateSinglePlayer :: Caves -> Player Dice.Dice -> [Text]
 validateSinglePlayer caves Player{..} =
   [ "fname empty:" <+> fname | T.null fname ]
@@ -159,6 +159,8 @@ validateSinglePlayer caves Player{..} =
      | any (`notElem` IM.keys caves)
            [Dice.minDice fentryLevel
             .. Dice.maxDice fentryLevel] ]  -- simplification
+  ++ [ "fskillsOther not negative:" <+> fname
+     | any (>= 0) $ EM.elems fskillsOther ]
 
 -- | Validate all game mode kinds. Currently always valid.
 validateAllModeKind :: [ModeKind] -> [Text]
