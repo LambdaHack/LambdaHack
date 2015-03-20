@@ -94,8 +94,9 @@ condTgtNonmovingM aid = do
   btarget <- getsClient $ getTarget aid
   case btarget of
     Just (TEnemy enemy _) -> do
-      actorSkE <- maxActorSkillsClient enemy
-      return $! EM.findWithDefault 0 Ability.AbMove actorSkE <= 0
+      activeItems <- activeItemsClient enemy
+      let actorMaxSkE = sumSkills activeItems
+      return $! EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
     _ -> return False
 
 -- | Require that any non-dying foe is adjacent.
@@ -133,8 +134,8 @@ threatDistList aid = do
   allAtWar <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let strongActor (aid2, b2) = do
         activeItems <- activeItemsClient aid2
-        actorSkE <- maxActorSkillsClient aid2
-        let nonmoving = EM.findWithDefault 0 Ability.AbMove actorSkE <= 0
+        let actorMaxSkE = sumSkills activeItems
+            nonmoving = EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
         return $! not $ (hpTooLow b2 activeItems || nonmoving)
   allThreats <- filterM strongActor allAtWar
   let addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
@@ -177,7 +178,12 @@ condEnoughGearM aid = do
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => Bool -> ActorId -> m Bool
 condCanProjectM maxSkills aid = do
-  actorSk <- (if maxSkills then maxActorSkillsClient else actorSkillsClient) aid
+  actorSk <- if maxSkills
+             then do
+               activeItems <- activeItemsClient aid
+               return $! sumSkills activeItems
+             else
+               actorSkillsClient aid
   let skill = EM.findWithDefault 0 Ability.AbProject actorSk
       q _ itemFull b activeItems =
         either (const False) id
@@ -327,17 +333,18 @@ condMeleeBadM aid = do
         _ -> const False
       closeFriends = filter (closeEnough . snd) friends
       strongActor (aid2, b2) = do
-        activeItems <- activeItemsClient aid2
-        return $! not $ hpTooLow b2 activeItems
+        activeItems2 <- activeItemsClient aid2
+        return $! not $ hpTooLow b2 activeItems2
   strongCloseFriends <- filterM strongActor closeFriends
   let noFriendlyHelp = length closeFriends < 3
                        && null strongCloseFriends
                        && (length friends > 1  -- solo fighters aggresive
                            || spawnerOnLvl)
                        && not (hpHuge b)  -- uniques, etc., aggresive
-  actorSk <- maxActorSkillsClient aid
+  activeItems <- activeItemsClient aid
+  let actorMaxSk = sumSkills activeItems
   return $ condNoUsableWeapon
-           || EM.findWithDefault 0 Ability.AbMelee actorSk <= 0
+           || EM.findWithDefault 0 Ability.AbMelee actorMaxSk <= 0
            || noFriendlyHelp  -- still not getting friends' help
     -- no $!; keep it lazy
 

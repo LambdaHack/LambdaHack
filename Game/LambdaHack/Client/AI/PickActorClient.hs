@@ -24,6 +24,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -36,8 +37,7 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 
 pickActorToMove :: MonadClient m
-                => (ActorId -> (ActorId, Actor)
-                    -> m (Maybe (Target, PathEtc)))
+                => ((ActorId, Actor) -> m (Maybe (Target, PathEtc)))
                 -> ActorId
                 -> m (ActorId, Actor)
 pickActorToMove refreshTarget oldAid = do
@@ -51,7 +51,7 @@ pickActorToMove refreshTarget oldAid = do
       t = lvl `at` bpos oldBody
   mleader <- getsClient _sleader
   ours <- getsState $ actorRegularAssocs (== side) arena
-  let explore = void $ refreshTarget oldAid (oldAid, oldBody)
+  let explore = void $ refreshTarget (oldAid, oldBody)
       pickOld = do
         if mleader == Just oldAid then explore
         else case ftactic $ gplayer fact of
@@ -104,7 +104,7 @@ pickActorToMove refreshTarget oldAid = do
       -- (to make the AI appear more human-like and easier to observe).
       -- TODO: this also takes melee into account, but not shooting.
       let refresh aidBody = do
-            mtgt <- refreshTarget oldAid aidBody
+            mtgt <- refreshTarget aidBody
             return $! (aidBody,) <$> mtgt
       oursTgt <- catMaybes <$> mapM refresh ours
       let actorVulnerable ((aid, body), _) = do
@@ -112,8 +112,8 @@ pickActorToMove refreshTarget oldAid = do
             condMeleeBad <- condMeleeBadM aid
             threatDistL <- threatDistList aid
             (fleeL, _) <- fleeList aid
-            actorMaxSk <- maxActorSkillsClient aid
-            let abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
+            let actorMaxSk = sumSkills activeItems
+                abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
                 condNoUsableWeapon = all (not . isMelee) activeItems
                 canMelee = abInMaxSkill AbMelee && not condNoUsableWeapon
                 condCanFlee = not (null fleeL)

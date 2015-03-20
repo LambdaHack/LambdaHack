@@ -179,9 +179,8 @@ displaceAid target = do
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   activeItems <- activeItemsClient target
   disp <- getsState $ dispEnemy leader target activeItems
-  actorSk <- getsState $ maxActorSkills target activeItems
-  let immobile = EM.findWithDefault 0 AbDisplace actorSk <= 0
-                 && EM.findWithDefault 0 AbMove actorSk <= 0
+  let actorMaxSk = sumSkills activeItems
+      immobile = EM.findWithDefault 0 AbMove actorMaxSk <= 0
       spos = bpos sb
       tpos = bpos tb
       adj = checkAdjacent sb tb

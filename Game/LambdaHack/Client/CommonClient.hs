@@ -3,8 +3,7 @@
 module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
-  , actorSkillsClient, maxActorSkillsClient
-  , updateItemSlot, fullAssocsClient, activeItemsClient
+  , actorSkillsClient, updateItemSlot, fullAssocsClient, activeItemsClient
   , itemToFullClient, pickWeaponClient, sumOrganEqpClient
   ) where
 
@@ -192,12 +191,6 @@ actorSkillsClient aid = do
   let mleader2 = fst <$> gleader fact
       mleader = mleader1 `mplus` mleader2
   getsState $ actorSkills mleader aid activeItems
-
-maxActorSkillsClient :: MonadClient m
-                     => ActorId -> m Ability.Skills
-maxActorSkillsClient aid = do
-  activeItems <- activeItemsClient aid
-  getsState $ maxActorSkills aid activeItems
 
 updateItemSlot :: MonadClient m
                => CStore -> Maybe ActorId -> ItemId -> m SlotChar

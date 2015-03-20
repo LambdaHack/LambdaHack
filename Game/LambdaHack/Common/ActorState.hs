@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.ActorState
   , nearbyFreePoints, whereTo, getCarriedAssocs, getCarriedIidCStore
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
-  , actorInAmbient, actorSkills, maxActorSkills, dispEnemy
+  , actorInAmbient, actorSkills, dispEnemy
   , fullAssocs, itemToFull, goesIntoInv, goesIntoSha, eqpOverfull
   , storeFromC, lidFromC, aidFromC, hasCharge
   , strongestMelee, isMelee, isMeleeEqp
@@ -339,15 +339,6 @@ actorSkills mleader aid activeItems s =
       itemSkills = sumSkills activeItems
   in itemSkills `Ability.addSkills` factionSkills
 
-maxActorSkills :: ActorId -> [ItemFull] -> State -> Ability.Skills
-maxActorSkills aid activeItems s =
-  let body = getActorBody aid s
-      fact = (EM.! bfid body) . sfactionD $ s
-      factionSkills = Ability.maxSkills Ability.zeroSkills
-                                        (fskillsOther $ gplayer fact)
-      itemSkills = sumSkills activeItems
-  in itemSkills `Ability.addSkills` factionSkills
-
 -- Check whether an actor can displace an enemy. We assume they are adjacent.
 dispEnemy :: ActorId -> ActorId -> [ItemFull] -> State -> Bool
 dispEnemy source target activeItems s =
@@ -356,14 +347,13 @@ dispEnemy source target activeItems s =
             friendlyFid fid = fid == bfid b || isAllied fact fid
             sup = actorRegularList friendlyFid (blid b) s
         in any (adjacent (bpos b) . bpos) sup
-      actorSk = maxActorSkills target activeItems s
+      actorMaxSk = sumSkills activeItems
       sb = getActorBody source s
       tb = getActorBody target s
   in bproj tb
      || not (actorDying tb
              || braced tb
-             || EM.findWithDefault 0 Ability.AbDisplace actorSk <= 0
-                && EM.findWithDefault 0 Ability.AbMove actorSk <= 0
+             || EM.findWithDefault 0 Ability.AbMove actorMaxSk <= 0
              || hasSupport sb && hasSupport tb)  -- solo actors are flexible
 
 fullAssocs :: Kind.COps -> DiscoveryKind -> DiscoveryEffect

@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -150,10 +151,11 @@ dominateFidSfx fid target = do
   -- Actors that don't move freely can't be dominated, for otherwise,
   -- when they are the last survivors, they could get stuck
   -- and the game wouldn't end.
-  actorSk <- maxActorSkillsServer target
-  let canMove = EM.findWithDefault 0 Ability.AbMove actorSk > 0
-                && EM.findWithDefault 0 Ability.AbTrigger actorSk > 0
-                && EM.findWithDefault 0 Ability.AbAlter actorSk > 0
+  activeItems <- activeItemsServer target
+  let actorMaxSk = sumSkills activeItems
+      canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
+                && EM.findWithDefault 0 Ability.AbTrigger actorMaxSk > 0
+                && EM.findWithDefault 0 Ability.AbAlter actorMaxSk > 0
   if canMove && not (bproj tb)
     then do
       let execSfx = execSfxAtomic

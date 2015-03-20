@@ -24,6 +24,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -40,8 +41,8 @@ import Game.LambdaHack.Content.RuleKind
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m
-               => ActorId -> ActorId -> m (Strategy (Target, Maybe PathEtc))
-targetStrategy oldLeader aid = do
+               => ActorId -> m (Strategy (Target, Maybe PathEtc))
+targetStrategy aid = do
   cops@Kind.COps{corule, cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   let stdRuleset = Kind.stdRuleset corule
       nearby = rnearby stdRuleset
@@ -86,7 +87,8 @@ targetStrategy oldLeader aid = do
   dungeon <- getsState sdungeon
   -- We assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
-  actorMaxSk <- maxActorSkillsClient aid
+  let actorMaxSk = sumSkills activeItems
+  actorMinSk <- getsState $ actorSkills Nothing aid activeItems
   condCanProject <- condCanProjectM True aid
   condHpTooLow <- condHpTooLowM aid
   condEnoughGear <- condEnoughGearM aid
@@ -113,8 +115,9 @@ targetStrategy oldLeader aid = do
       -- This is especially important for fences, tower defense actors, etc.
       -- If content gives nonmoving actor loot, this becomes problematic.
       targetableMelee aidE body = do
-        actorMaxSkE <- maxActorSkillsClient aidE
-        let attacksFriends = any (adjacent (bpos body) . bpos) friends
+        activeItemsE <- activeItemsClient aidE
+        let actorMaxSkE = sumSkills activeItemsE
+            attacksFriends = any (adjacent (bpos body) . bpos) friends
             n = if attacksFriends then rangedNearby else meleeNearby
             nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0
         return {-keep lazy-} $
@@ -237,7 +240,12 @@ targetStrategy oldLeader aid = do
               _ -> True
         modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
-      isStuck = waitedLastTurn b && canMoveFact fact (oldLeader == aid)
+      couldMoveLastTurn =
+        let axtorSk = if (fst <$> gleader fact) == Just aid
+                      then actorMaxSk
+                      else actorMinSk
+        in EM.findWithDefault 0 AbMove axtorSk > 0
+      isStuck = waitedLastTurn b && couldMoveLastTurn
       updateTgt :: Target -> PathEtc
                 -> m (Strategy (Target, Maybe PathEtc))
       updateTgt oldTgt updatedPath@(_, (_, len)) = case oldTgt of

@@ -92,8 +92,8 @@ actionStrategy aid = do
                           $ takeWhile ((== 1) . fst) threatDistL
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
-  actorMaxSk <- maxActorSkillsClient aid
-  let abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
+  let actorMaxSk = sumSkills activeItems
+      abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
       stratToFreq :: MonadStateRead m
                   => Int -> m (Strategy RequestAnyAbility)
                   -> m (Frequency RequestAnyAbility)

@@ -54,10 +54,9 @@ pongAI = return ReqAIPong
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.
 refreshTarget :: MonadClient m
-              => ActorId           -- ^ the leader of the party last turn
-              -> (ActorId, Actor)  -- ^ the actor to refresh
+              => (ActorId, Actor)  -- ^ the actor to refresh
               -> m (Maybe (Target, PathEtc))
-refreshTarget oldLeader (aid, body) = do
+refreshTarget (aid, body) = do
   side <- getsClient sside
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move an enemy actor"
@@ -65,7 +64,7 @@ refreshTarget oldLeader (aid, body) = do
   let !_A = assert (not (bproj body)
                     `blame` "AI gets to manually move its projectiles"
                     `twith` (aid, body, side)) ()
-  stratTarget <- targetStrategy oldLeader aid
+  stratTarget <- targetStrategy aid
   tgtMPath <-
     if nullStrategy stratTarget then
       -- No sensible target; wipe out the old one.

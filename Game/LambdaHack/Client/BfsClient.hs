@@ -26,6 +26,7 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
@@ -111,7 +112,8 @@ condBFS aid = do
   -- to reset BFS after leader changes, but it would still lead to
   -- wasted movement if, e.g., non-leaders move but only leaders open doors
   -- and leader change is very rare.
-  actorSk <- maxActorSkillsClient aid
+  activeItems <- activeItemsClient aid
+  let actorMaxSk = sumSkills activeItems
   lvl <- getLevel $ blid b
   smarkSuspect <- getsClient smarkSuspect
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -124,7 +126,7 @@ condBFS aid = do
   -- so it's amortized. We treat unknown tiles specially.
   let unknownId = ouniqGroup "unknown space"
       chAccess = checkAccess cops lvl
-      canOpenDoors = EM.findWithDefault 0 Ability.AbAlter actorSk > 0
+      canOpenDoors = EM.findWithDefault 0 Ability.AbAlter actorMaxSk > 0
       chDoorAccess = [checkDoorAccess cops lvl | canOpenDoors]
       conditions = catMaybes $ chAccess : chDoorAccess
       -- Legality of move from a known tile, assuming doors freely openable.
