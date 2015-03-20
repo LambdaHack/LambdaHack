@@ -185,7 +185,7 @@ boilingFissure = fist
   , ifreq    = [("boiling fissure", 100)]
   , icount   = 5 + d 5
   , iverbHit = "hiss at"
-  , ieffects = [Burn 1]
+  , ieffects = [Burn $ 1 * d 1]
   , ifeature = [Identified]  -- not Durable
   , idesc    = ""
   }
@@ -193,13 +193,13 @@ arsenicFissure = boilingFissure
   { iname    = "fissure"
   , ifreq    = [("arsenic fissure", 100)]
   , icount   = 2 + d 2
-  , ieffects = [Burn 1]
+  , ieffects = [Burn $ 1 * d 1]
   }
 sulfurFissure = boilingFissure
   { iname    = "fissure"
   , ifreq    = [("sulfur fissure", 100)]
   , icount   = 2 + d 2
-  , ieffects = [Burn 1, RefillHP 6]
+  , ieffects = [Burn $ 1 * d 1, RefillHP 6]
   }
 beeSting = fist
   { iname    = "bee sting"
@@ -217,7 +217,7 @@ sting = fist
   , icount   = 1
   , iverbHit = "sting"
   , iaspects = [Timeout $ 1 + d 5]
-  , ieffects = [Burn 1, Recharging (Paralyze 3)]
+  , ieffects = [Burn $ 1 * d 1, Recharging (Paralyze 3)]
   , idesc    = "Painful, debilitating and harmful."
   }
 venomTooth = fist
