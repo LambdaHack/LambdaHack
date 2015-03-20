@@ -19,6 +19,7 @@ import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor as Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
@@ -35,6 +36,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -290,12 +292,21 @@ drawLeaderDamage width = do
                    (T.unpack t)
   stats <- case mleader of
     Just leader -> do
+      actorSk <- actorSkillsClient leader
       b <- getsState $ getActorBody leader
       localTime <- getsState $ getLocalTime (blid b)
       allAssocs <- fullAssocsClient leader [CEqp, COrgan]
       let activeItems = map snd allAssocs
-          damage = case strongestMelee False localTime allAssocs of
-            (_average, (_, itemFull)) : _->
+          calm10 = calmEnough10 b $ map snd allAssocs
+          forced = assert (not $ bproj b) False
+          permitted = permittedPrecious calm10 forced
+          preferredPrecious = either (const False) id . permitted
+          strongest = strongestMelee False localTime allAssocs
+          strongestPreferred = filter (preferredPrecious . snd . snd) strongest
+          damage = case strongestPreferred of
+            _ | EM.findWithDefault 0 Ability.AbMelee actorSk <= 0 -> "0"
+            [] -> "0"
+            (_average, (_, itemFull)) : _ ->
               let getD :: IK.Effect -> Maybe Dice.Dice -> Maybe Dice.Dice
                   getD (IK.Hurt dice) acc = Just $ dice + fromMaybe 0 acc
                   getD (IK.Burn dice) acc = Just $ dice + fromMaybe 0 acc
@@ -317,7 +328,6 @@ drawLeaderDamage width = do
                                 <> tshow bonus
                                 <> if unknownBonus then "%?" else "%"
              in tdice <> tbonus
-            [] -> "0"
       return $! damage
     Nothing -> return ""
   return $! if T.null stats || T.length stats >= width then []
