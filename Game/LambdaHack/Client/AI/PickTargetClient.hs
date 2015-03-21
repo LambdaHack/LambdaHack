@@ -8,6 +8,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.List
 import Data.Maybe
 
 import Game.LambdaHack.Client.AI.ConditionClient
@@ -181,11 +182,14 @@ targetStrategy aid = do
                 let vToTgt v = do
                       -- Items and smells, etc. considered every 7 moves.
                       -- Thanks to sentinels, @path@ is never null.
-                      let path = trajectoryToPathBounded
-                                   lxsize lysize (bpos b) (replicate 7 v)
+                      let path = nub $
+                            bpos b : trajectoryToPathBounded
+                                       lxsize lysize (bpos b) (replicate 7 v)
                       return $! returN "tgt with no exploration"
                         ( TVector v
-                        , Just (bpos b : path, (last path, length path)) )
+                        , if length path == 1
+                          then Nothing
+                          else Just (path, (last path, length path - 1)) )
                     vOld = bpos b `vectorToFrom` boldpos b
                     pNew = shiftBounded lxsize lysize (bpos b) vOld
                 if slackTactic && not isStuck && bpos b /= pNew

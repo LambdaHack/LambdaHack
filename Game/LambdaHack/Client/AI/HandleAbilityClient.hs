@@ -846,7 +846,10 @@ moveTowards :: MonadClient m
 moveTowards aid source target goal relaxed = do
   cops@Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody aid
-  let !_A = assert (source == bpos b && adjacent source target) ()
+  let !_A = assert (source == bpos b
+                    `blame` (source, bpos b, aid, b, goal)) ()
+      !_B = assert (adjacent source target
+                    `blame` (source, target, aid, b, goal)) ()
   lvl <- getLevel $ blid b
   fact <- getsState $ (EM.! bfid b) . sfactionD
   friends <- getsState $ actorList (not . isAtWar fact) $ blid b
