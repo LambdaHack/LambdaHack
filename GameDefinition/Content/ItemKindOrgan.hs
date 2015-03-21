@@ -389,7 +389,7 @@ scentGland = armoredSkin  -- TODO: cone attack, 3m away, project? apply?
   , ifreq    = [("scent gland", 100)]
   , icount   = 2
   , iverbHit = "spray at"
-  , iaspects = [Periodic, Timeout $ d 3 |*| 5 ]
+  , iaspects = [Periodic, Timeout $ 10 + d 2 |*| 5 ]
   , ieffects = [ Recharging (Explode "distressing odor")
                , Recharging ApplyPerfume ]
   , idesc    = ""
