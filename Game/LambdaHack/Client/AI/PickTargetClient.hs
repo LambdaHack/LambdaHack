@@ -348,6 +348,7 @@ createPath aid tgt = do
   mpos <- aidTgtToPos aid (blid b) (Just tgt)
   case mpos of
     Nothing -> return Nothing
+    Just p | p == bpos b -> return Nothing
     Just p -> do
       (bfs, mpath) <- getCacheBfsAndPath aid p
       return $! case mpath of
