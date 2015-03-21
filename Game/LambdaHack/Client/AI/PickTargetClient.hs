@@ -4,7 +4,6 @@ module Game.LambdaHack.Client.AI.PickTargetClient
   ) where
 
 import Control.Applicative
-import Control.Arrow
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -144,10 +143,24 @@ targetStrategy aid = do
       desirable (_, (_, Just bag)) = desirableBag bag
       -- TODO: make more common when weak ranged foes preferred, etc.
       focused = bspeed b activeItems < speedNormal || condHpTooLow
+      couldMoveLastTurn =
+        let axtorSk = if (fst <$> gleader fact) == Just aid
+                      then actorMaxSk
+                      else actorMinSk
+        in EM.findWithDefault 0 AbMove axtorSk > 0
+      isStuck = waitedLastTurn b && couldMoveLastTurn
+      slackTactic = ftactic (gplayer fact) `elem` [TBlock, TRoam, TPatrol]
       setPath :: Target -> m (Strategy (Target, Maybe PathEtc))
       setPath tgt = do
         mpath <- createPath aid tgt
-        return $! returN "setPath" $ maybe (tgt, Nothing) (second Just) mpath
+        let take5 (_, pgl@(path, (goal, _))) =
+              if slackTactic then
+                -- Best path only followed 5 moves; then straight on.
+                let path5 = take 5 path
+                    v = towards (bpos b) goal  -- only for UI
+                in (TVector v, Just (path5, (last path5, length path5 - 1)))
+              else (tgt, Just pgl)
+        return $! returN "setPath" $ maybe (tgt, Nothing) take5 mpath
       pickNewTarget :: m (Strategy (Target, Maybe PathEtc))
       pickNewTarget = do
         -- This is mostly lazy and used between 0 and 3 times below.
@@ -165,81 +178,70 @@ targetStrategy aid = do
                      else return []
             case smpos of
               [] -> do
-               let ctriggersEarly =
-                     if EM.findWithDefault 0 AbTrigger actorMaxSk > 0
-                        && condEnoughGear
-                     then ctriggers
-                     else mzero
-               if nullFreq ctriggersEarly then do
-                citems <- if EM.findWithDefault 0 AbMoveItem actorMaxSk > 0
-                          then closestItems aid
-                          else return []
-                case filter desirable citems of
-                  [] | ftactic (gplayer fact)
-                      `elem` [TBlock, TRoam, TPatrol] -> do
-                    mtgtPrev <- getsClient $ getTarget aid
-                    let vToTgt v = do
-                          -- Items and smells, etc. considered every 5 moves.
-                          -- Thanks to sentinels, @path@ is never null.
-                          let path = trajectoryToPathBounded
-                                       lxsize lysize (bpos b) (replicate 5 v)
-                          return $! returN "tgt with no exploration"
-                            ( TVector v
-                            , Just (bpos b : path, (last path, length path)) )
-                        vOld = bpos b `vectorToFrom` boldpos b
-                    case (mtgtPrev, isUnit vOld) of
-                      (Just (TVector tgtPrev), True) -> vToTgt $
-                        if euclidDistSqVector tgtPrev vOld <= 2
-                        then tgtPrev
-                        else vOld
-                      (Just (TVector tgtPrev), False) -> vToTgt tgtPrev
-                      (_, True) -> vToTgt vOld
-                      (_, False) ->
-                        if nullFreq ctriggers then do
-                          furthest <- furthestKnown aid
-                          setPath $ TPoint (blid b) furthest
-                        else do
-                          p <- rndToAction $ frequency ctriggers
-                          setPath $ TPoint (blid b) p
-                  [] -> do
-                    upos <- if lidExplored
-                            then return Nothing
-                            else closestUnknown aid
-                    case upos of
-                      Nothing -> do
-                        csuspect <- if lidExplored
-                                    then return []
-                                    else closestSuspect aid
-                        case csuspect of
-                          [] -> do
-                            let ctriggersMiddle =
-                                  if EM.findWithDefault 0 AbTrigger
-                                                        actorMaxSk > 0
-                                     && not allExplored
-                                  then ctriggers
-                                  else mzero
-                            if nullFreq ctriggersMiddle then do
-                              -- All stones turned, time to win or die.
-                              afoes <- closestFoes allFoes aid
-                              case afoes of
-                                (_, (aid2, _)) : _ ->
-                                  setPath $ TEnemy aid2 False
+                let vToTgt v = do
+                      -- Items and smells, etc. considered every 7 moves.
+                      -- Thanks to sentinels, @path@ is never null.
+                      let path = trajectoryToPathBounded
+                                   lxsize lysize (bpos b) (replicate 7 v)
+                      return $! returN "tgt with no exploration"
+                        ( TVector v
+                        , Just (bpos b : path, (last path, length path)) )
+                    vOld = bpos b `vectorToFrom` boldpos b
+                    pNew = shiftBounded lxsize lysize (bpos b) vOld
+                if slackTactic && not isStuck && bpos b /= pNew
+                   && accessible cops lvl (bpos b) pNew
+                then vToTgt vOld
+                else do
+                    let ctriggersEarly =
+                          if EM.findWithDefault 0 AbTrigger actorMaxSk > 0
+                             && condEnoughGear
+                          then ctriggers
+                          else mzero
+                    if nullFreq ctriggersEarly then do
+                      citems <-
+                        if EM.findWithDefault 0 AbMoveItem actorMaxSk > 0
+                        then closestItems aid
+                        else return []
+                      case filter desirable citems of
+                        [] -> do
+                          upos <- if lidExplored
+                                  then return Nothing
+                                  else closestUnknown aid
+                          case upos of
+                            Nothing -> do
+                              csuspect <- if lidExplored
+                                          then return []
+                                          else closestSuspect aid
+                              case csuspect of
                                 [] -> do
-                                  if nullFreq ctriggers then do
-                                    furthest <- furthestKnown aid
-                                    setPath $ TPoint (blid b) furthest
+                                  let ctriggersMiddle =
+                                        if EM.findWithDefault 0 AbTrigger
+                                                              actorMaxSk > 0
+                                           && not allExplored
+                                        then ctriggers
+                                        else mzero
+                                  if nullFreq ctriggersMiddle then do
+                                    -- All stones turned, time to win or die.
+                                    afoes <- closestFoes allFoes aid
+                                    case afoes of
+                                      (_, (aid2, _)) : _ ->
+                                        setPath $ TEnemy aid2 False
+                                      [] -> do
+                                        if nullFreq ctriggers then do
+                                          furthest <- furthestKnown aid
+                                          setPath $ TPoint (blid b) furthest
+                                        else do
+                                          p <- rndToAction $ frequency ctriggers
+                                          setPath $ TPoint (blid b) p
                                   else do
                                     p <- rndToAction $ frequency ctriggers
                                     setPath $ TPoint (blid b) p
-                            else do
-                              p <- rndToAction $ frequency ctriggers
-                              setPath $ TPoint (blid b) p
-                          p : _ -> setPath $ TPoint (blid b) p
-                      Just p -> setPath $ TPoint (blid b) p
-                  (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
-               else do
-                 p <- rndToAction $ frequency ctriggers
-                 setPath $ TPoint (blid b) p
+                                p : _ -> setPath $ TPoint (blid b) p
+                            Just p -> setPath $ TPoint (blid b) p
+                        (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
+                    else do
+                      p <- rndToAction $ frequency ctriggers
+                      setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
       tellOthersNothingHere pos = do
         let f (tgt, _) = case tgt of
@@ -247,12 +249,6 @@ targetStrategy aid = do
               _ -> True
         modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
-      couldMoveLastTurn =
-        let axtorSk = if (fst <$> gleader fact) == Just aid
-                      then actorMaxSk
-                      else actorMinSk
-        in EM.findWithDefault 0 AbMove axtorSk > 0
-      isStuck = waitedLastTurn b && couldMoveLastTurn
       updateTgt :: Target -> PathEtc
                 -> m (Strategy (Target, Maybe PathEtc))
       updateTgt oldTgt updatedPath@(_, (_, len)) = case oldTgt of
@@ -292,13 +288,6 @@ targetStrategy aid = do
               return $! returN "TEnemyPos" (oldTgt, Just updatedPath)
         _ | not $ null nearbyFoes ->
           pickNewTarget  -- prefer close foes to anything
-        TPoint lid pos | ftactic (gplayer fact)
-                         `elem` [TBlock, TRoam, TPatrol] ->
-          if lid /= blid b  -- wrong level
-             || pos == bpos b
-             || isStuck
-          then pickNewTarget
-          else return $! returN "updateTgt ftactic" (oldTgt, Just updatedPath)
         TPoint lid pos -> do
           bag <- getsState $ getCBag $ CFloor lid pos
           if lid /= blid b  -- wrong level
