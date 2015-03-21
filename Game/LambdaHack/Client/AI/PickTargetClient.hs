@@ -178,22 +178,29 @@ targetStrategy aid = do
                   [] | ftactic (gplayer fact)
                       `elem` [TBlock, TRoam, TPatrol] -> do
                     mtgtPrev <- getsClient $ getTarget aid
-                    let vOld = bpos b `vectorToFrom` boldpos b
-                        v = case (mtgtPrev, isUnit vOld) of
-                              (Just (TVector tgtPrev), True) ->
-                                if euclidDistSqVector tgtPrev vOld <= 2
-                                then tgtPrev
-                                else vOld
-                              (Just (TVector tgtPrev), False) -> tgtPrev
-                              (_, True) -> vOld
-                              (_, False) -> Vector 1 1  -- south-east
-                        -- Items and smells considered every 5 moves.
-                        -- Thanks to sentinels, @path@ is never null.
-                        path = trajectoryToPathBounded
-                                 lxsize lysize (bpos b) (replicate 5 v)
-                    return $! returN "tgt with no playerLeader"
-                      ( TVector v
-                      , Just (bpos b : path, (last path, length path)) )
+                    let vToTgt v = do
+                          -- Items and smells, etc. considered every 5 moves.
+                          -- Thanks to sentinels, @path@ is never null.
+                          let path = trajectoryToPathBounded
+                                       lxsize lysize (bpos b) (replicate 5 v)
+                          return $! returN "tgt with no exploration"
+                            ( TVector v
+                            , Just (bpos b : path, (last path, length path)) )
+                        vOld = bpos b `vectorToFrom` boldpos b
+                    case (mtgtPrev, isUnit vOld) of
+                      (Just (TVector tgtPrev), True) -> vToTgt $
+                        if euclidDistSqVector tgtPrev vOld <= 2
+                        then tgtPrev
+                        else vOld
+                      (Just (TVector tgtPrev), False) -> vToTgt tgtPrev
+                      (_, True) -> vToTgt vOld
+                      (_, False) ->
+                        if nullFreq ctriggers then do
+                          furthest <- furthestKnown aid
+                          setPath $ TPoint (blid b) furthest
+                        else do
+                          p <- rndToAction $ frequency ctriggers
+                          setPath $ TPoint (blid b) p
                   [] -> do
                     upos <- if lidExplored
                             then return Nothing
