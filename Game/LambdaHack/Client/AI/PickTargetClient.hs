@@ -181,7 +181,6 @@ targetStrategy aid = do
               [] -> do
                 let vToTgt v = do
                       -- Items and smells, etc. considered every 7 moves.
-                      -- Thanks to sentinels, @path@ is never null.
                       let path = nub $
                             bpos b : trajectoryToPathBounded
                                        lxsize lysize (bpos b) (replicate 7 v)
@@ -192,7 +191,7 @@ targetStrategy aid = do
                           else Just (path, (last path, length path - 1)) )
                     vOld = bpos b `vectorToFrom` boldpos b
                     pNew = shiftBounded lxsize lysize (bpos b) vOld
-                if slackTactic && not isStuck && bpos b /= pNew
+                if slackTactic && not isStuck && isUnit vOld && bpos b /= pNew
                    && accessible cops lvl (bpos b) pNew
                 then vToTgt vOld
                 else do
