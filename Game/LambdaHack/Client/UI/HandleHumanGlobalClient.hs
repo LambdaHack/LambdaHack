@@ -88,7 +88,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
                               , runInitial = True
                               , runStopMsg = Nothing
                               , runWaiting = 0 }
-        macroRun25 = ["CTRL-period", "CTRL-V"]
+        macroRun25 = ["CTRL-comma", "CTRL-V"]
     when (initialStep && run) $ do
       modifyClient $ \cli ->
         cli {srunning = Just runParams}

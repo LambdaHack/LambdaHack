@@ -17,12 +17,12 @@ macroLeftButtonPress :: HumanCmd
 macroLeftButtonPress =
   Macro "go to pointer for 100 steps"
         [ "ALT-space", "ALT-minus"
-        , "SHIFT-MiddleButtonPress", "semicolon"
-        , "CTRL-colon", "V" ]
+        , "SHIFT-MiddleButtonPress", "CTRL-semicolon"
+        , "CTRL-period", "V" ]
 
 macroShiftLeftButtonPress :: HumanCmd
 macroShiftLeftButtonPress =
   Macro "run collectively to pointer for 100 steps"
         [ "ALT-space"
-        , "SHIFT-MiddleButtonPress", "CTRL-semicolon"
-        , "CTRL-colon", "V" ]
+        , "SHIFT-MiddleButtonPress", "CTRL-colon"
+        , "CTRL-period", "V" ]

@@ -53,24 +53,27 @@ standardKeys = KeyKind
            [ TriggerFeature { verb = "descend"
                             , object = "10 levels"
                             , feature = TK.Cause (IK.Ascend (-10)) } ]))
-      , ("semicolon", ([CmdMove], MoveOnceToCursor))
-      , ("colon",
+      , ("semicolon",
          ( [CmdMove]
          , Macro "go to crosshair for 100 steps"
-                 ["semicolon", "CTRL-colon", "V"] ))
+                 ["CTRL-semicolon", "CTRL-period", "V"] ))
+      , ("colon",
+         ( [CmdMove]
+         , Macro "run selected to crosshair for 100 steps"
+                 ["CTRL-colon", "CTRL-period", "V"] ))
       , ("x",
          ( [CmdMove]
          , Macro "explore the closest unknown spot"
                  [ "CTRL-question"  -- no semicolon
-                 , "CTRL-colon", "V" ] ))
+                 , "CTRL-period", "V" ] ))
       , ("X",
          ( [CmdMove]
          , Macro "autoexplore 100 times"
-                 ["'", "CTRL-question", "CTRL-colon", "'", "V"] ))
+                 ["'", "CTRL-question", "CTRL-period", "'", "V"] ))
       , ("CTRL-X",
          ( [CmdMove]
          , Macro "autoexplore 25 times"
-                 ["'", "CTRL-question", "CTRL-colon", "'", "CTRL-V"] ))
+                 ["'", "CTRL-question", "CTRL-period", "'", "CTRL-V"] ))
       , ("R", ([CmdMove], Macro "rest (wait 100 times)"
                                 ["KP_Begin", "V"]))
       , ("CTRL-R", ([CmdMove], Macro "rest (wait 25 times)"
@@ -191,9 +194,10 @@ standardKeys = KeyKind
       , ("CTRL-r", ([CmdDebug], GameRestart "safari survival"))
       , ("CTRL-e", ([CmdDebug], GameRestart "defense"))
       , ("CTRL-g", ([CmdDebug], GameRestart "boardgame"))
-      , ("CTRL-period", ([CmdInternal], RunOnceAhead))
-      , ("CTRL-semicolon", ([CmdInternal], RunOnceToCursor))
-      , ("CTRL-colon", ([CmdInternal], ContinueToCursor))
+      , ("CTRL-semicolon", ([CmdInternal], MoveOnceToCursor))
+      , ("CTRL-colon", ([CmdInternal], RunOnceToCursor))
+      , ("CTRL-period", ([CmdInternal], ContinueToCursor))
+      , ("CTRL-comma", ([CmdInternal], RunOnceAhead))
       , ("CTRL-LeftButtonPress",
          ([CmdInternal], Macro "" ["SHIFT-LeftButtonPress"]))
       , ("CTRL-MiddleButtonPress",

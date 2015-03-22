@@ -138,7 +138,7 @@ cmdDescription cmd = case cmd of
   TriggerTile ts -> triggerDescription ts
   RunOnceAhead -> "run once ahead"
   MoveOnceToCursor -> "move one step towards the crosshair"
-  RunOnceToCursor -> "run one step towards the crosshair"
+  RunOnceToCursor -> "run selected one step towards the crosshair"
   ContinueToCursor -> "continue towards the crosshair"
 
   GameRestart t ->

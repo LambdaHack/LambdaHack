@@ -32,7 +32,7 @@ which in its most complex form may look as follows.
 
 The line starts with the list of party members (unless there's only one member)
 and the shortened name of the team. Clicking on the list selects heroes and
-the selected run together when `SHIFT`-left mouse button is pressed.
+the selected run together when `:` or `SHIFT`-left mouse button is pressed.
 
 Then comes the damage of the highest damage dice weapon the leader can use,
 then his current and maximum Calm (composure, focus, attentiveness), then
