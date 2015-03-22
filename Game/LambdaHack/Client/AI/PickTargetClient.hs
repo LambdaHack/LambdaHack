@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Let AI pick the best target for an actor.
 module Game.LambdaHack.Client.AI.PickTargetClient
   ( targetStrategy, createPath
@@ -180,7 +181,9 @@ targetStrategy aid = do
                      else return []
             case smpos of
               [] -> do
-                let vToTgt v = do
+                let vToTgt v0 = do
+                      let vFreq = toFreq "vFreq" $ (20, v0) : map (1,) moves
+                      v <- rndToAction $ frequency vFreq
                       -- Items and smells, etc. considered every 7 moves.
                       let path = nub $
                             bpos b : trajectoryToPathBounded
