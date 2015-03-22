@@ -181,74 +181,76 @@ targetStrategy aid = do
                      else return []
             case smpos of
               [] -> do
-                let vToTgt v0 = do
-                      let vFreq = toFreq "vFreq" $ (20, v0) : map (1,) moves
-                      v <- rndToAction $ frequency vFreq
-                      -- Items and smells, etc. considered every 7 moves.
-                      let path = nub $
-                            bpos b : trajectoryToPathBounded
-                                       lxsize lysize (bpos b) (replicate 7 v)
-                      return $! returN "tgt with no exploration"
-                        ( TVector v
-                        , if length path == 1
-                          then Nothing
-                          else Just (path, (last path, length path - 1)) )
-                    vOld = bpos b `vectorToFrom` boldpos b
-                    pNew = shiftBounded lxsize lysize (bpos b) vOld
-                if slackTactic && not isStuck && isUnit vOld && bpos b /= pNew
-                   && accessible cops lvl (bpos b) pNew
-                then vToTgt vOld
+                let ctriggersEarly =
+                      if EM.findWithDefault 0 AbTrigger actorMaxSk > 0
+                         && condEnoughGear
+                      then ctriggers
+                      else mzero
+                if nullFreq ctriggersEarly then do
+                  citems <-
+                    if EM.findWithDefault 0 AbMoveItem actorMaxSk > 0
+                    then closestItems aid
+                    else return []
+                  case filter desirable citems of
+                    [] -> do
+                      let vToTgt v0 = do
+                            let vFreq = toFreq "vFreq"
+                                        $ (20, v0) : map (1,) moves
+                            v <- rndToAction $ frequency vFreq
+                            -- Items and smells, etc. considered every 7 moves.
+                            let tra = trajectoryToPathBounded
+                                        lxsize lysize (bpos b) (replicate 7 v)
+                                path = nub $ bpos b : tra
+                            return $! returN "tgt with no exploration"
+                              ( TVector v
+                              , if length path == 1
+                                then Nothing
+                                else Just (path, (last path, length path - 1)) )
+                          vOld = bpos b `vectorToFrom` boldpos b
+                          pNew = shiftBounded lxsize lysize (bpos b) vOld
+                      if slackTactic && not isStuck
+                         && isUnit vOld && bpos b /= pNew
+                         && accessible cops lvl (bpos b) pNew
+                      then vToTgt vOld
+                      else do
+                        upos <- if lidExplored
+                                then return Nothing
+                                else closestUnknown aid
+                        case upos of
+                          Nothing -> do
+                            csuspect <- if lidExplored
+                                        then return []
+                                        else closestSuspect aid
+                            case csuspect of
+                              [] -> do
+                                let ctriggersMiddle =
+                                      if EM.findWithDefault 0 AbTrigger
+                                                            actorMaxSk > 0
+                                         && not allExplored
+                                      then ctriggers
+                                      else mzero
+                                if nullFreq ctriggersMiddle then do
+                                  -- All stones turned, time to win or die.
+                                  afoes <- closestFoes allFoes aid
+                                  case afoes of
+                                    (_, (aid2, _)) : _ ->
+                                      setPath $ TEnemy aid2 False
+                                    [] -> do
+                                      if nullFreq ctriggers then do
+                                        furthest <- furthestKnown aid
+                                        setPath $ TPoint (blid b) furthest
+                                      else do
+                                        p <- rndToAction $ frequency ctriggers
+                                        setPath $ TPoint (blid b) p
+                                else do
+                                  p <- rndToAction $ frequency ctriggers
+                                  setPath $ TPoint (blid b) p
+                              p : _ -> setPath $ TPoint (blid b) p
+                          Just p -> setPath $ TPoint (blid b) p
+                    (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
                 else do
-                    let ctriggersEarly =
-                          if EM.findWithDefault 0 AbTrigger actorMaxSk > 0
-                             && condEnoughGear
-                          then ctriggers
-                          else mzero
-                    if nullFreq ctriggersEarly then do
-                      citems <-
-                        if EM.findWithDefault 0 AbMoveItem actorMaxSk > 0
-                        then closestItems aid
-                        else return []
-                      case filter desirable citems of
-                        [] -> do
-                          upos <- if lidExplored
-                                  then return Nothing
-                                  else closestUnknown aid
-                          case upos of
-                            Nothing -> do
-                              csuspect <- if lidExplored
-                                          then return []
-                                          else closestSuspect aid
-                              case csuspect of
-                                [] -> do
-                                  let ctriggersMiddle =
-                                        if EM.findWithDefault 0 AbTrigger
-                                                              actorMaxSk > 0
-                                           && not allExplored
-                                        then ctriggers
-                                        else mzero
-                                  if nullFreq ctriggersMiddle then do
-                                    -- All stones turned, time to win or die.
-                                    afoes <- closestFoes allFoes aid
-                                    case afoes of
-                                      (_, (aid2, _)) : _ ->
-                                        setPath $ TEnemy aid2 False
-                                      [] -> do
-                                        if nullFreq ctriggers then do
-                                          furthest <- furthestKnown aid
-                                          setPath $ TPoint (blid b) furthest
-                                        else do
-                                          p <- rndToAction $ frequency ctriggers
-                                          setPath $ TPoint (blid b) p
-                                  else do
-                                    p <- rndToAction $ frequency ctriggers
-                                    setPath $ TPoint (blid b) p
-                                p : _ -> setPath $ TPoint (blid b) p
-                            Just p -> setPath $ TPoint (blid b) p
-                        (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
-                    else do
-                      p <- rndToAction $ frequency ctriggers
-                      setPath $ TPoint (blid b) p
+                  p <- rndToAction $ frequency ctriggers
+                  setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
       tellOthersNothingHere pos = do
         let f (tgt, _) = case tgt of
