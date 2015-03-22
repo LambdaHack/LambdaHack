@@ -35,7 +35,7 @@ and the shortened name of the team. Clicking on the list selects heroes and
 the selected run together when `SHIFT`-direction or `SHIFT`-left mouse button
 are pressed.
 
-Then comes the damage of the leader's weapon with the highest damage dice,
+Then comes the damage of the highest damage dice weapon the leader can use,
 then his current and maximum Calm (composure, focus, attentiveness), then
 his current and maximum HP (hit points, health). At the end, the personal
 target of the leader is described, in this case a basilisk monster,
