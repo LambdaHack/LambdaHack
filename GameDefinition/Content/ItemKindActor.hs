@@ -365,9 +365,8 @@ beeSwarm = ItemKind
   , irarity  = [(1, 3), (10, 6)]
   , iverbHit = "thud"
   , iweight  = 1000
-  , iaspects = [ AddMaxCalm 60, AddSpeed 30  -- AddMaxHP in beeSting
-               , AddSkills $ EM.singleton AbAlter (-1)
-               , AddArmorMelee 90, AddArmorRanged 90 ]
+  , iaspects = [ AddMaxHP 8, AddMaxCalm 60, AddSpeed 30
+               , AddSkills $ EM.singleton AbAlter (-1) ]  -- armor in sting
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -383,9 +382,9 @@ hornetSwarm = ItemKind
   , irarity  = [(5, 1), (10, 10)]
   , iverbHit = "thud"
   , iweight  = 1000
-  , iaspects = [ AddMaxHP 5, AddMaxCalm 60, AddSpeed 30
+  , iaspects = [ AddMaxHP 8, AddMaxCalm 60, AddSpeed 30
                , AddSkills $ EM.singleton AbAlter (-1)
-               , AddArmorMelee 90, AddArmorRanged 90 ]
+               , AddArmorMelee 80, AddArmorRanged 80 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""

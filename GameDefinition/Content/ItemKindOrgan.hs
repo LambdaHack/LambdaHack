@@ -206,8 +206,8 @@ beeSting = fist
   , ifreq    = [("bee sting", 100)]
   , icount   = 1
   , iverbHit = "sting"
-  , iaspects = [AddMaxHP 10]
-  , ieffects = [Burn 2, Paralyze 10, RefillHP 5]
+  , iaspects = [AddArmorMelee 90, AddArmorRanged 90]
+  , ieffects = [Burn $ 2 * d 1, Paralyze 10, RefillHP 5]
   , ifeature = [Identified]  -- not Durable
   , idesc    = "Painful, but beneficial."
   }
