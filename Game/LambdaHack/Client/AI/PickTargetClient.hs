@@ -158,8 +158,9 @@ targetStrategy aid = do
               if slackTactic then
                 -- Best path only followed 5 moves; then straight on.
                 let path5 = take 5 path
-                    v = towards (bpos b) goal  -- only for UI
-                in (TVector v, Just (path5, (last path5, length path5 - 1)))
+                    vtgt | bpos b == goal = tgt
+                         | otherwise = TVector $ towards (bpos b) goal
+                in (vtgt, Just (path5, (last path5, length path5 - 1)))
               else (tgt, Just pgl)
         return $! returN "setPath" $ maybe (tgt, Nothing) take5 mpath
       pickNewTarget :: m (Strategy (Target, Maybe PathEtc))
@@ -351,7 +352,8 @@ createPath aid tgt = do
   mpos <- aidTgtToPos aid (blid b) (Just tgt)
   case mpos of
     Nothing -> return Nothing
-    Just p | p == bpos b -> return Nothing
+-- TODO: for now, an extra turn at target is needed, e.g., to pick up items
+--  Just p | p == bpos b -> return Nothing
     Just p -> do
       (bfs, mpath) <- getCacheBfsAndPath aid p
       return $! case mpath of
