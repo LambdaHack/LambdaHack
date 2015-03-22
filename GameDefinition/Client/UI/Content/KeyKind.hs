@@ -133,9 +133,9 @@ standardKeys = KeyKind
       , ("t", ([CmdItem], Project [ApplyItem { verb = "throw"
                                              , object = "missile"
                                              , symbol = '|' }]))
-      , ("z", ([CmdItem], Project [ApplyItem { verb = "zap"
-                                             , object = "wand"
-                                             , symbol = '/' }]))
+--      , ("z", ([CmdItem], Project [ApplyItem { verb = "zap"
+--                                             , object = "wand"
+--                                             , symbol = '/' }]))
 
       -- Targeting
       , ("KP_Multiply", ([CmdTgt], TgtEnemy))
