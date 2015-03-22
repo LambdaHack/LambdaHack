@@ -80,7 +80,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
     -- most of the disturbances, since the player is mostly aware of them
     -- and still explicitly requests a run, knowing how it behaves.
     sel <- getsClient sselected
-    let runMembers = if noRunWithMulti fact
+    let runMembers = if runAhead || noRunWithMulti fact
                      then [leader]  -- TODO: warn?
                      else ES.toList (ES.delete leader sel) ++ [leader]
         runParams = RunParams { runLeader = leader

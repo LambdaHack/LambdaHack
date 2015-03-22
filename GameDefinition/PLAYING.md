@@ -32,8 +32,7 @@ which in its most complex form may look as follows.
 
 The line starts with the list of party members (unless there's only one member)
 and the shortened name of the team. Clicking on the list selects heroes and
-the selected run together when `SHIFT`-direction or `SHIFT`-left mouse button
-are pressed.
+the selected run together when `SHIFT`-left mouse button is pressed.
 
 Then comes the damage of the highest damage dice weapon the leader can use,
 then his current and maximum Calm (composure, focus, attentiveness), then
@@ -97,9 +96,8 @@ which have to be enabled in config.ui.ini).
                 1 2 3          j k l          b j n
 
 In aiming mode the same keys (or the middle and right mouse buttons)
-move the crosshair (the white box). In normal mode, `SHIFT`
-(or `CTRL`) and a movement key make the current party leader
-(and the currently selected party members, if any) run in the indicated
+move the crosshair (the white box). In normal mode, `SHIFT` (or `CTRL`)
+and a movement key make the current party leader run in the indicated
 direction, until anything of interest is spotted. The `5` keypad key
 and the `i` and `.` keys consume a turn and make you brace for combat,
 which reduces any damage taken for a turn and makes it impossible
