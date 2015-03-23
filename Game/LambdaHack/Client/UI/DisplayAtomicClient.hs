@@ -851,6 +851,11 @@ strike source target iid cstore hitStatus = assert (source /= target) $ do
            then []
            else ["with", partItemChoice itemFull]
       msg (HitBlock n) =
+        -- This sounds funny when the victim falls down immediately,
+        -- but there is no easy way to prevent that. And it's consistent.
+        -- If/when death blow instead sets HP to 1 and only the next below 1,
+        -- we can check here for HP==1; also perhaps actors with HP 1 should
+        -- not be able to block.
         let sActs =
               if bproj sb
               then [ MU.SubjectVerbSg spart "connect" ]
