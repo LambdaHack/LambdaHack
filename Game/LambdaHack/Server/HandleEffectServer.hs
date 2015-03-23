@@ -876,7 +876,6 @@ effectPolyItem execSfx source target = do
               kit = (maxCount, take maxCount itemTimer)
           identifyIid execSfx iid c itemKindId
           execUpdAtomic $ UpdDestroyItem iid itemBase kit c
-          execSfx
           effectCreateItem target cstore "useful" IK.TimerNone
       _ -> assert `failure` (target, iid, itemFull)
 
