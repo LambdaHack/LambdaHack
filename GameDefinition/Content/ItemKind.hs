@@ -316,7 +316,7 @@ necklace6 = necklace
   }
 necklace7 = necklace  -- TODO: teach AI to wear only for fight
   { ifreq    = [("treasure", 100)]
-  , iaspects = [ Unique, AddMaxHP $ 5 + d 5
+  , iaspects = [ Unique, AddMaxHP $ 10 + d 10
                , AddArmorMelee 20, AddArmorRanged 20
                , Timeout $ d 2 + 5 - dl 3 ]
                ++ iaspects necklace
@@ -373,22 +373,22 @@ ring = ItemKind
   }
 ring1 = ring
   { irarity  = [(10, 2)]
-  , iaspects = [AddSpeed $ d 2, AddMaxHP $ dl 3 - 5 - d 3]
+  , iaspects = [AddSpeed $ d 2, AddMaxHP $ dl 5 - 5 - d 5]
   , ieffects = [Explode "distortion"]  -- strong magic
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddSpeed ""]
   }
 ring2 = ring
-  { iaspects = [AddMaxHP $ 3 + dl 5, AddMaxCalm $ dl 6 - 15 - d 6]
+  { iaspects = [AddMaxHP $ 10 + dl 10, AddMaxCalm $ dl 5 - 20 - d 5]
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddMaxHP ""]
   }
 ring3 = ring
-  { iaspects = [AddMaxCalm $ 10 + dl 10]
+  { iaspects = [AddMaxCalm $ 15 + dl 15]
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddMaxCalm ""]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
 ring4 = ring
   { irarity  = [(3, 6), (10, 6)]
-  , iaspects = [AddHurtMelee $ d 5 + dl 5 |*| 3, AddMaxHP $ dl 3 - 4 - d 2]
+  , iaspects = [AddHurtMelee $ d 5 + dl 5 |*| 3, AddMaxHP $ dl 3 - 5 - d 3]
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddHurtMelee ""]
   }
 ring5 = ring  -- by the time it's found, probably no space in eqp
