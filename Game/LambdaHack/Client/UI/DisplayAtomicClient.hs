@@ -714,13 +714,16 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             msgAdd $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
           stopPlayBack
-        IK.Impress{} ->
+        IK.Impress ->
           actorVerbMU aid b
           $ if bfidImpressed b /= bfid b
             then
-              "get refocused by the fragrant moisture"
+              "get calmed and refocused"
+-- TODO: only show for liquids; for others say "='flash', etc.
+--              "get refocused by the fragrant moisture"
             else
-              "inhale the sweet smell that weakens resolve and erodes loyalty"
+              "experience anxiety that weakens resolve and erodes loyalty"
+-- TODO:        "inhale the sweet smell that weakens resolve and erodes loyalty"
         IK.CallFriend{} -> return ()
         IK.Summon{} -> return ()
         IK.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"
