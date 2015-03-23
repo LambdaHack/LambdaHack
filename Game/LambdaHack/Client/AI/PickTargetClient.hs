@@ -103,8 +103,7 @@ targetStrategy aid = do
   canEscape <- factionCanEscape (bfid b)
   explored <- getsClient sexplored
   smellRadius <- sumOrganEqpClient IK.EqpSlotAddSmell aid
-  allAssocs <- fullAssocsClient aid [COrgan, CEqp]
-  let condNoUsableWeapon = all (not . isMelee . snd) allAssocs
+  let condNoUsableWeapon = all (not . isMelee) activeItems
       lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
       canSmell = smellRadius > 0

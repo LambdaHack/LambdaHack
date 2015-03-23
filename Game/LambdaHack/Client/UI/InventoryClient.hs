@@ -521,9 +521,8 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
 statsOverlay :: MonadClient m => ActorId -> m Overlay
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
-  activeAssocs <- fullAssocsClient aid [CEqp, COrgan]
+  activeItems <- activeItemsClient aid
   let block n = n + if braced b then 50 else 0
-      activeItems = map snd activeAssocs
       prSlot :: (IK.EqpSlot, Int -> Text) -> Text
       prSlot (eqpSlot, f) =
         let fullText t =

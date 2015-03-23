@@ -170,7 +170,7 @@ condNoEqpWeaponM aid = do
 condEnoughGearM :: MonadClient m => ActorId -> m Bool
 condEnoughGearM aid = do
   eqpAssocs <- fullAssocsClient aid [CEqp]
-  invAssocs <- fullAssocsClient aid [CEqp]
+  invAssocs <- fullAssocsClient aid [CInv]
   return $ any (isMelee . snd) eqpAssocs
            || length (eqpAssocs ++ invAssocs) >= 5
     -- keep it lazy
@@ -314,8 +314,8 @@ condMeleeBadM aid = do
   condTgtEnemyPresent <- condTgtEnemyPresentM aid
   condTgtEnemyRemembered <- condTgtEnemyRememberedM aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  allAssocs <- fullAssocsClient aid [COrgan, CEqp]
-  let condNoUsableWeapon = all (not . isMelee . snd) allAssocs
+  activeItems <- activeItemsClient aid
+  let condNoUsableWeapon = all (not . isMelee) activeItems
       friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
   friendlyFacts <-
@@ -334,14 +334,17 @@ condMeleeBadM aid = do
       closeFriends = filter (closeEnough . snd) friends
       strongActor (aid2, b2) = do
         activeItems2 <- activeItemsClient aid2
-        return $! not $ hpTooLow b2 activeItems2
+        let condUsableWeapon2 = any isMelee activeItems2
+            actorMaxSk2 = sumSkills activeItems2
+            canMelee2 = EM.findWithDefault 0 Ability.AbMelee actorMaxSk2 > 0
+            hpGood = not $ hpTooLow b2 activeItems2
+        return $! hpGood && condUsableWeapon2 && canMelee2
   strongCloseFriends <- filterM strongActor closeFriends
   let noFriendlyHelp = length closeFriends < 3
                        && null strongCloseFriends
                        && (length friends > 1  -- solo fighters aggresive
                            || spawnerOnLvl)
                        && not (hpHuge b)  -- uniques, etc., aggresive
-  activeItems <- activeItemsClient aid
   let actorMaxSk = sumSkills activeItems
   return $ condNoUsableWeapon
            || EM.findWithDefault 0 Ability.AbMelee actorMaxSk <= 0
