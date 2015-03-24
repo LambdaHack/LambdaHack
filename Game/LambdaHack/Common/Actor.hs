@@ -40,17 +40,20 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 data Actor = Actor
   { -- The trunk of the actor's body (present also in @borgan@ or @beqp@)
     btrunk        :: !ItemId
+
     -- Presentation
   , bsymbol       :: !Char         -- ^ individual map symbol
   , bname         :: !Text         -- ^ individual name
   , bpronoun      :: !Text         -- ^ individual pronoun
   , bcolor        :: !Color.Color  -- ^ individual map color
+
     -- Resources
   , btime         :: !Time         -- ^ absolute time of next action
   , bhp           :: !Int64        -- ^ current hit points * 1M
   , bhpDelta      :: !ResDelta     -- ^ HP delta this turn * 1M
   , bcalm         :: !Int64        -- ^ current calm * 1M
   , bcalmDelta    :: !ResDelta     -- ^ calm delta this turn * 1M
+
     -- Location
   , bpos          :: !Point        -- ^ current position
   , boldpos       :: !Point        -- ^ previous position
@@ -62,10 +65,12 @@ data Actor = Actor
   , btrajectory   :: !(Maybe ([Vector], Speed))
                                    -- ^ trajectory the actor must
                                    --   travel and his travel speed
+
     -- Items
   , borgan        :: !ItemBag      -- ^ organs
   , beqp          :: !ItemBag      -- ^ personal equipment
   , binv          :: !ItemBag      -- ^ personal inventory
+
     -- Assorted
   , bwait         :: !Bool         -- ^ is the actor waiting right now?
   , bproj         :: !Bool         -- ^ is a projectile? (shorthand only,
