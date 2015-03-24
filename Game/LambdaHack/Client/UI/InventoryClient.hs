@@ -989,7 +989,7 @@ describeItemC c = do
               fstores =
                 filter ((/= fromCStore) . fst . snd) $
                   [ (K.Char 'e', (CEqp, "'e'quipment"))
-                  , (K.Char 'i', (CInv, "inventory 'p'ack")) ]
+                  , (K.Char 'p', (CInv, "inventory 'p'ack")) ]
                   ++ [ (K.Char 's', (CSha, "shared 's'tash")) | calmE ]
                   ++ [ (K.Char 'g', (CGround, "'g'round")) ]
               choice = "[" <> T.intercalate ", " (map (snd . snd) fstores)
