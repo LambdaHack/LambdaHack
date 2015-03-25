@@ -585,10 +585,8 @@ trigger aid fleeViaStairs = do
              if boldpos b == bpos b   -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction
              then 0  -- avoid trivial loops (pushing, being pushed, etc.)
-             else let leaderless = fleaderMode (gplayer fact) == LeaderNull
-                      eben = case actorsThere of
+             else let eben = case actorsThere of
                         [] | canSee -> expBenefit
-                        _ | leaderless -> 0  -- leaderless clog stairs easily
                         _ -> min 1 expBenefit  -- risk pushing
                   in if fleeViaStairs
                      then 1000 * eben + 1  -- strongly prefer correct direction
