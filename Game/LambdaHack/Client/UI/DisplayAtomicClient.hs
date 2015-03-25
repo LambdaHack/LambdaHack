@@ -78,9 +78,8 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
             itemAidVerbMU aid verb iid (Left Nothing) COrgan
           _ -> do
             itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
-            side <- getsClient sside
-            b <- getsState $ getActorBody aid
-            when (bfid b == side) $
+            mleader <- getsClient _sleader
+            when (Just aid == mleader) $
               modifyClient $ \cli -> cli { slastSlot = l
                                          , slastStore = store }
       CEmbed{} -> return ()
@@ -425,8 +424,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
   (itemSlots, _) <- getsClient sslots
   case lookup iid $ map swap $ EM.assocs itemSlots of
     Just l -> do
-      side <- getsClient sside
-      when (bfid b == side) $
+      when (Just aid == mleader) $
         modifyClient $ \cli -> cli { slastSlot = l
                                    , slastStore = cstore2 }
       if cstore1 == CGround && Just aid == mleader && not underAI then do
@@ -821,9 +819,9 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do
-  side <- getsClient sside
   b <- getsState $ getActorBody aid
-  when (bfid b == side) $ do
+  mleader <- getsClient _sleader
+  when (Just aid == mleader) $ do
     (itemSlots, _) <- getsClient sslots
     case lookup iid $ map swap $ EM.assocs itemSlots of
       Just l -> modifyClient $ \cli -> cli { slastSlot = l
