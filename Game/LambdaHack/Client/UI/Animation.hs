@@ -272,5 +272,5 @@ fadeout out topRight step lxsize lysize = do
         return $! EM.fromList l
       startN = if out then 3 else 1
       fs = [startN, startN + step .. 3 * lxsize `divUp` 4 + 2]
-  as <- mapM rollFrame $ if out then fs else reverse fs
-  return $! Animation as
+  as <- mapM rollFrame fs
+  return $! Animation $ if out then as else reverse (EM.empty : as)
