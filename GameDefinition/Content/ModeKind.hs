@@ -210,7 +210,8 @@ rosterBattleSurvival = rosterBattle
   { rosterList = [ playerSoldier { fhiCondPoly = hiDweller
                                  , fentryLevel = -5
                                  , finitialActors = 5
-                                 , fleaderMode = LeaderAI $ AutoLeader True True
+                                 , fleaderMode =
+                                     LeaderAI $ AutoLeader True False
                                  , fhasUI = False }
                  , playerMobileMonster { fentryLevel = -5
                                        , finitialActors = 35
@@ -240,17 +241,15 @@ playerHunamConvict =
                  , fentryLevel = -4 }
 
 playerAnimalMagnificent =
-  playerMobileAnimal { fname =
-                         "Animal Magnificent Specimen Variety"
+  playerMobileAnimal { fname = "Animal Magnificent Specimen Variety"
                      , fneverEmpty = True
                      , fentryLevel = -7
                      , finitialActors = 10
                      , fleaderMode =  -- move away from stairs
-                         LeaderAI $ AutoLeader True True }
+                         LeaderAI $ AutoLeader True False }
 
 playerAnimalExquisite =
-  playerMobileAnimal { fname =
-                         "Animal Exquisite Herds and Packs"
+  playerMobileAnimal { fname = "Animal Exquisite Herds and Packs"
                      , fneverEmpty = True
                      , fentryLevel = -10
                      , finitialActors = 30 }
@@ -271,7 +270,7 @@ rosterSafari = Roster
 
 rosterSafariSurvival = rosterSafari
   { rosterList = [ playerMonsterTourist
-                     { fleaderMode = LeaderAI $ AutoLeader True True
+                     { fleaderMode = LeaderAI $ AutoLeader True False
                      , fhasUI = False }
                  , playerHunamConvict
                  , playerAnimalMagnificent
