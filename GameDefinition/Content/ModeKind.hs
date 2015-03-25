@@ -219,8 +219,6 @@ rosterBattleSurvival = rosterBattle
                  , playerMobileAnimal { fentryLevel = -5
                                       , finitialActors = 30
                                       , fneverEmpty = True
---                                      , fleaderMode =
---                                          LeaderUI $ AutoLeader False False
                                       , fhasUI = True } ] }
 
 playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: Player Dice

@@ -100,12 +100,10 @@ createFactions totalDepth players = do
             cmap = mapFromFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
             nameoc = lowercase $ head $ T.words fname
-            fisAI = case fleaderMode of
-              LeaderNull -> True
-              LeaderAI _ -> True
-              LeaderUI _ -> False
-            prefix | fisAI = "Autonomous"
-                   | otherwise = "Controlled"
+            prefix = case fleaderMode of
+              LeaderNull -> "Loose"
+              LeaderAI _ -> "Autonomous"
+              LeaderUI _ -> "Controlled"
             (gcolor, gname) = case M.lookup nameoc cmap of
               Nothing -> (Color.BrWhite, prefix <+> fname)
               Just c -> (c, prefix <+> fname <+> "Team")
