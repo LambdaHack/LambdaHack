@@ -453,16 +453,17 @@ potion2 = potion
                , OnSmash (Explode "pheromone") ]
   }
 potion3 = potion
-  { irarity  = [(1, 5), (10, 5)]
-  , ieffects = [RefillHP 5, OnSmash (Explode "healing mist")]
+  { irarity  = [(1, 10), (10, 5)]
+  , ieffects = [ RefillHP 5, DropItem COrgan "poisoned" True
+               , OnSmash (Explode "healing mist") ]
   }
 potion4 = potion
-  { irarity  = [(10, 5)]
-  , ieffects = [RefillHP 10, OnSmash (Explode "healing mist 2")]
+  { irarity  = [(10, 10)]
+  , ieffects = [ RefillHP 10, DropItem COrgan "poisoned" True
+               , OnSmash (Explode "healing mist 2") ]
   }
 potion5 = potion
-  { ieffects = [ OneOf [ Impress, OverfillHP 10, Burn 5
-                       , DropItem COrgan "poisoned" True ]
+  { ieffects = [ OneOf [ Impress, OverfillHP 10, OverfillHP 5, Burn 5 ]
                , OnSmash (OneOf [ Explode "healing mist"
                                 , Explode "wounding mist"
                                 , Explode "fragrance"
@@ -473,8 +474,7 @@ potion6 = potion
   , ieffects = [ Impress
                , OneOf [ OverfillCalm (-60)
                        , toOrganActorTurn "fast 20" (20 + d 5)
-                       , OverfillHP 20, Burn 10
-                       , DropItem COrgan "temporary conditions" True ]
+                       , OverfillHP 20, OverfillHP 10, Burn 10 ]
                , OnSmash (OneOf [ Explode "healing mist 2"
                                 , Explode "calming mist"
                                 , Explode "distressing odor"
