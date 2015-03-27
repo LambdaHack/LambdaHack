@@ -44,19 +44,13 @@ import Game.LambdaHack.Server.State
 -- We assume heroes are never spawned.
 spawnMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 spawnMonster lid = do
-  -- We check the number of current dungeon dwellers (whether spawned or not)
-  -- to decide if more should be spawned.
-  f <- getsState $ \s fid -> not $ fcanEscape $ gplayer $ sfactionD s EM.! fid
-  spawns <- getsState $ actorRegularList f lid
   totalDepth <- getsState stotalDepth
   -- TODO: eliminate the defeated and victorious faction from lactorFreq;
   -- then fcanEscape and fneverEmpty make sense for spawning factions
   Level{ldepth, lactorCoeff, lactorFreq} <- getLevel lid
   lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup lid . snumSpawned
-  -- Heroes have to endure two lvl-sized waves of spawners upon entering lvl.
-  let numSpawnedCoeff = length spawns + lvlSpawned `div` 2
   rc <- rndToAction
-        $ monsterGenChance ldepth totalDepth numSpawnedCoeff lactorCoeff
+        $ monsterGenChance ldepth totalDepth lvlSpawned lactorCoeff
   when rc $ do
     modifyServer $ \ser ->
       ser {snumSpawned = EM.insert lid (lvlSpawned + 1) $ snumSpawned ser}

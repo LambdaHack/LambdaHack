@@ -106,10 +106,12 @@ oneM = xM 1
 -- will also depend on the cave kind used to build the level.
 monsterGenChance :: AbsDepth -> AbsDepth -> Int -> Int -> Rnd Bool
 monsterGenChance _ _ _ 0 = return False
-monsterGenChance (AbsDepth n) (AbsDepth totalDepth) numSpawnedCoeff actorCoeff =
+monsterGenChance (AbsDepth n) (AbsDepth totalDepth) lvlSpawned actorCoeff =
   assert (totalDepth > 0 && n > 0)
   -- Mimics @castDice@. On level 5/10, first 6 monsters appear fast.
   $ let scaledDepth = n * 10 `div` totalDepth
+        -- Heroes have to endure two lvl-sized waves of spawners for each level.
+        numSpawnedCoeff = lvlSpawned `div` 2
     in chance $ 1%(fromIntegral
                      ((10 * actorCoeff * (numSpawnedCoeff - scaledDepth))
                       `max` 1))
