@@ -113,7 +113,7 @@ monsterGenChance (AbsDepth n) (AbsDepth totalDepth) lvlSpawned actorCoeff =
         -- Heroes have to endure two lvl-sized waves of spawners for each level.
         numSpawnedCoeff = lvlSpawned `div` 2
     in chance $ 1%(fromIntegral
-                     ((10 * actorCoeff * (numSpawnedCoeff - scaledDepth))
+                     ((actorCoeff * (numSpawnedCoeff - scaledDepth))
                       `max` 1))
 
 -- | The part of speech describing the actor.
