@@ -756,7 +756,8 @@ effectCreateItem target store grp tim = do
   let c = CActor target store
   bagBefore <- getsState $ getCBag c
   let litemFreq = [(grp, 1)]
-  m5 <- rollItem (blid tb) litemFreq
+  -- Power depth of new items unaffected by number of spawned actors.
+  m5 <- rollItem 0 (blid tb) litemFreq
   let (itemKnown, itemFull, _, seed, _) =
         fromMaybe (assert `failure` (blid tb, litemFreq, c)) m5
   itemRev <- getsServer sitemRev

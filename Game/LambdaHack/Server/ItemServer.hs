@@ -89,10 +89,10 @@ embedItem lid pos tk = do
   void $ rollAndRegisterItem lid itemFreq container False Nothing
 
 rollItem :: (MonadAtomic m, MonadServer m)
-         => LevelId -> Freqs ItemKind
+         => Int -> LevelId -> Freqs ItemKind
          -> m (Maybe ( ItemKnown, ItemFull, ItemDisco
                      , ItemSeed, GroupName ItemKind ))
-rollItem lid itemFreq = do
+rollItem lvlSpawned lid itemFreq = do
   cops <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoKindRev
@@ -100,7 +100,7 @@ rollItem lid itemFreq = do
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
   m5 <- rndToAction $ newItem cops flavour discoRev uniqueSet
-                              itemFreq lid ldepth totalDepth
+                              itemFreq lvlSpawned lid ldepth totalDepth
   case m5 of
     Just (_, _, ItemDisco{ itemKindId
                          , itemAE=Just ItemAspectEffect{jaspects}}, _, _) ->
@@ -115,7 +115,8 @@ rollAndRegisterItem :: (MonadAtomic m, MonadServer m)
                     -> Maybe Int
                     -> m (Maybe (ItemId, (ItemFull, GroupName ItemKind)))
 rollAndRegisterItem lid itemFreq container verbose mk = do
-  m5 <- rollItem lid itemFreq
+  -- Power depth of new items unaffected by number of spawned actors.
+  m5 <- rollItem 0 lid itemFreq
   case m5 of
     Nothing -> return Nothing
     Just (itemKnown, itemFullRaw, itemDisco, seed, itemGroup) -> do

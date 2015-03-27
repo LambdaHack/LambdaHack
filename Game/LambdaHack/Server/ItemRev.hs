@@ -56,7 +56,8 @@ serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldrWithKey}} = do
   return (discoS, discoRev)
 
 -- | Build an item with the given stats.
-buildItem :: FlavourMap -> DiscoveryKindRev -> Kind.Id ItemKind -> ItemKind -> LevelId
+buildItem :: FlavourMap -> DiscoveryKindRev -> Kind.Id ItemKind -> ItemKind
+          -> LevelId
           -> Item
 buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
   let jkindIx  = discoRev EM.! ikChosen
@@ -72,13 +73,15 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
 
 -- | Generate an item based on level.
 newItem :: Kind.COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
-        -> Freqs ItemKind -> LevelId -> AbsDepth -> AbsDepth
+        -> Freqs ItemKind -> Int -> LevelId -> AbsDepth -> AbsDepth
         -> Rnd (Maybe ( ItemKnown, ItemFull, ItemDisco
                       , ItemSeed, GroupName ItemKind ))
 newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
-        flavour discoRev uniqueSet itemFreq jlid
-        ldepth@(AbsDepth ld) totalDepth@(AbsDepth depth) = do
-  let findInterval x1y1 [] = (x1y1, (11, 0))
+        flavour discoRev uniqueSet itemFreq lvlSpawned jlid
+        ldepth@(AbsDepth absld) totalDepth@(AbsDepth depth) = do
+  -- Effective generation depth of actors (not items) increases with spawns.
+  let ld = absld + lvlSpawned `div` 2
+      findInterval x1y1 [] = (x1y1, (11, 0))
       findInterval x1y1 ((x, y) : rest) =
         if fromIntegral ld * 10 <= x * fromIntegral depth
         then (x1y1, (x, y))
@@ -101,6 +104,7 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
   if nullFreq freq then return Nothing
   else do
     ((itemKindId, itemKind), itemGroup) <- frequency freq
+    -- Number of new items/actors unaffected by number of spawned actors.
     itemN <- castDice ldepth totalDepth (IK.icount itemKind)
     seed <- fmap toEnum random
     let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
@@ -108,6 +112,7 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         itemTimer = []
         itemDiscoData = ItemDisco {itemKindId, itemKind, itemAE = Just iae}
         itemDisco = Just itemDiscoData
+        -- Bonuses on items/actors unaffected by number of spawned actors.
         iae = seedToAspectsEffects seed itemKind ldepth totalDepth
         itemFull = ItemFull {..}
     return $ Just ( (jkindIx itemBase, iae)

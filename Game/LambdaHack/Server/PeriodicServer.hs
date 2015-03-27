@@ -73,7 +73,8 @@ addAnyActor actorFreq lid time mpos = do
   cops <- getsState scops
   lvl <- getLevel lid
   factionD <- getsState sfactionD
-  m4 <- rollItem lid actorFreq
+  lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup lid . snumSpawned
+  m4 <- rollItem lvlSpawned lid actorFreq
   case m4 of
     Nothing -> return Nothing
     Just (itemKnown, trunkFull, itemDisco, seed, _) -> do
