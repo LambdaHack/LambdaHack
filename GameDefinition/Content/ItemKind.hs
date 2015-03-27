@@ -199,13 +199,13 @@ light1 = ItemKind
   , iname    = "wooden torch"
   , ifreq    = [("useful", 100), ("light source", 100)]
   , iflavour = zipPlain [Brown]
-  , icount   = 1
-  , irarity  = [(1, 8), (5, 1)]
+  , icount   = 1 + d 3
+  , irarity  = [(1, 8)]
   , iverbHit = "scorch"
   , iweight  = 1200
   , iaspects = [ AddLight 3       -- not only flashes, but also sparks
                , AddSight (-2) ]  -- unused by AI due to the mixed blessing
-  , ieffects = [Burn 3]
+  , ieffects = [Burn 2]
   , ifeature = [EqpSlot EqpSlotAddLight "", Identified]
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady glow."
   , ikit     = []
