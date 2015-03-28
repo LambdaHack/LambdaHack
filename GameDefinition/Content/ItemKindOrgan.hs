@@ -51,16 +51,18 @@ claw = fist
   { iname    = "claw"
   , ifreq    = [("claw", 50)]
   , icount   = 2  -- even if more, only the fore claws used for fighting
-  , iverbHit = "slash"
-  , ieffects = [Hurt (6 * d 1)]
+  , iverbHit = "hook"
+  , iaspects = [Timeout $ 4 + d 4]
+  , ieffects = [Hurt (4 * d 1), Recharging (toOrganGameTurn "slow 10" 2)]
   , idesc    = ""
   }
 smallClaw = fist
   { iname    = "small claw"
   , ifreq    = [("small claw", 50)]
   , icount   = 2
-  , iverbHit = "slash"
-  , ieffects = [Hurt (3 * d 1)]
+  , iverbHit = "hook"
+  , iaspects = [Timeout $ 4 + d 4]
+  , ieffects = [Hurt (2 * d 1), Recharging (toOrganGameTurn "slow 10" 1)]
   , idesc    = ""
   }
 snout = fist
@@ -193,7 +195,7 @@ arsenicFissure = boilingFissure
   { iname    = "fissure"
   , ifreq    = [("arsenic fissure", 100)]
   , icount   = 2 + d 2
-  , ieffects = [Burn $ 1 * d 1]
+  , ieffects = [Burn $ 1 * d 1, toOrganGameTurn "weakened" (2 + d 2)]
   }
 sulfurFissure = boilingFissure
   { iname    = "fissure"
