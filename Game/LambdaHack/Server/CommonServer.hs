@@ -174,14 +174,9 @@ deduceQuits fid mbody status = do
         Just Defeated -> False
         Just Restart -> False  -- effectively, commits suicide
         _ -> True
-      inGame (fid2, fact2) =
-        if inGameOutcome (fid2, fact2)
-        then anyActorsAlive fid2 (fst <$> mbody)
-        else return False
   factionD <- getsState sfactionD
-  assocsInGame <- filterM inGame $ EM.assocs factionD
-  let assocsInGameOutcome = filter inGameOutcome $ EM.assocs factionD
-      keysInGame = map fst assocsInGameOutcome
+  let assocsInGame = filter inGameOutcome $ EM.assocs factionD
+      keysInGame = map fst assocsInGame
       assocsKeepArena = filter (keepArenaFact . snd) assocsInGame
       assocsUI = filter (fhasUI . gplayer . snd) assocsInGame
       nonHorrorAIG = filter (not . isHorrorFact . snd) assocsInGame
@@ -204,8 +199,8 @@ deduceQuits fid mbody status = do
     _ | stOutcome status == Escape -> do
       -- Otherwise, in a game with many warring teams alive,
       -- only complete Victory matters, until enough of them die.
-      let (victors, losers) = partition (flip isAllied fid . snd)
-                              assocsInGameOutcome
+      let (victors, losers) =
+            partition (flip isAllied fid . snd) assocsInGame
       mapQuitF status{stOutcome=Escape} $ map fst victors
       mapQuitF status{stOutcome=Defeated} $ map fst losers
     _ -> return ()
