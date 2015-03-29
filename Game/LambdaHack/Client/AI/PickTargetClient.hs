@@ -298,6 +298,7 @@ targetStrategy aid = do
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
           bag <- getsState $ getCBag $ CFloor lid pos
+          let t = lvl `at` pos
           if lid /= blid b  -- wrong level
              -- Below we check the target could not be picked again in
              -- pickNewTarget, and only in this case it is invalidated.
@@ -305,18 +306,18 @@ targetStrategy aid = do
              -- shows up) and not changed all the time mid-route
              -- to equally interesting, but perhaps a bit closer targets,
              -- most probably already targeted by other actors.
-             || (EM.findWithDefault 0 AbMoveItem
-                                    actorMaxSk <= 0  -- closestItems
-                 || not (desirableBag bag))
-                && (not canSmell  -- closestSmell
-                    || pos == bpos b  -- in case server resends deleted smell
+             ||
+               (EM.findWithDefault 0 AbMoveItem actorMaxSk <= 0
+                || not (desirableBag bag))  -- closestItems
+               &&
+               (pos == bpos b
+                || (not canSmell  -- closestSmell
                     || let sml = EM.findWithDefault timeZero pos (lsmell lvl)
                        in sml <= ltime lvl)
-                && let t = lvl `at` pos
-                   in if not lidExplored
+                   && if not lidExplored
                       then t /= unknownId  -- closestUnknown
                            && not (Tile.isSuspect cotile t)  -- closestSuspect
-                           && not (condEnoughGear && (Tile.isStair cotile t))
+                           && not (condEnoughGear && Tile.isStair cotile t)
                       else  -- closestTriggers
                         -- Try to kill that very last enemy for his loot before
                         -- leaving the level or dungeon.
@@ -330,16 +331,14 @@ targetStrategy aid = do
                            -- to reach them and then retarget, unless he can't
                            -- trigger them at all.
                            && (EM.findWithDefault 0 AbTrigger actorMaxSk <= 0
-                               || pos == bpos b
                                || not (Tile.isStair cotile t))
                            -- The remaining case is furthestKnown. This is
                            -- always an unimportant target, so we forget it
                            -- if the actor is stuck (waits, though could move;
                            -- or has zeroed individual moving skill,
                            -- but then should change targets often anyway).
-                           && (pos == bpos b
-                               || isStuck
-                               || not allExplored)
+                           && (isStuck
+                               || not allExplored))
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, Just updatedPath)
         TVector{} | len > 1 ->
