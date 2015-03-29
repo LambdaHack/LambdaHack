@@ -78,17 +78,17 @@ newItem :: Kind.COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
                       , ItemSeed, GroupName ItemKind ))
 newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         flavour discoRev uniqueSet itemFreq lvlSpawned jlid
-        ldepth@(AbsDepth absld) totalDepth@(AbsDepth depth) = do
+        ldepth@(AbsDepth ldAbs) totalDepth@(AbsDepth depth) = do
   -- Effective generation depth of actors (not items) increases with spawns.
-  let ld = absld + lvlSpawned `div` 2
-      findInterval x1y1 [] = (x1y1, (11, 0))
-      findInterval x1y1 ((x, y) : rest) =
+  let ldSpawned = ldAbs + lvlSpawned `div` 2
+      findInterval _ x1y1 [] = (x1y1, (11, 0))
+      findInterval ld x1y1 ((x, y) : rest) =
         if fromIntegral ld * 10 <= x * fromIntegral depth
         then (x1y1, (x, y))
-        else findInterval (x, y) rest
-      linearInterpolation dataset =
+        else findInterval ld (x, y) rest
+      linearInterpolation ld dataset =
         -- We assume @dataset@ is sorted and between 0 and 10.
-        let ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
+        let ((x1, y1), (x2, y2)) = findInterval ld (0, 0) dataset
         in ceiling
            $ fromIntegral y1
              + fromIntegral (y2 - y1)
@@ -96,11 +96,13 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
                / ((x2 - x1) * fromIntegral depth)
       f _ _ _ ik _ acc | ik `ES.member` uniqueSet = acc
       f itemGroup q p ik kind acc =
-        let rarity = linearInterpolation (IK.irarity kind)
+        -- Don't consider lvlSpawned for uniques.
+        let ld = if IK.Unique `elem` IK.iaspects kind then ldAbs else ldSpawned
+            rarity = linearInterpolation ld (IK.irarity kind)
         in (q * p * rarity, ((ik, kind), itemGroup)) : acc
       g (itemGroup, q) = ofoldrGroup itemGroup (f itemGroup q) []
       freqDepth = concatMap g itemFreq
-      freq = toFreq ("newItem ('" <> tshow ld <> ")") freqDepth
+      freq = toFreq ("newItem ('" <> tshow ldSpawned <> ")") freqDepth
   if nullFreq freq then return Nothing
   else do
     ((itemKindId, itemKind), itemGroup) <- frequency freq
