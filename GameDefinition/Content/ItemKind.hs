@@ -186,7 +186,7 @@ seeingItem = ItemKind
   , iaspects = [ AddSight 10, AddMaxCalm 60, AddLight 2
                , Periodic, Timeout $ 1 + d 2 ]
   , ieffects = [ Recharging (toOrganNone "poisoned")
-               , Recharging (Summon [("monster", 1)] 1) ]
+               , Recharging (Summon [("mobile monster", 1)] 1) ]
   , ifeature = [Identified]
   , idesc    = "A slimy, dilated green pupil torn out from some giant eye. Clear and focused, as if still alive."
   , ikit     = []
@@ -680,7 +680,7 @@ scroll11 = scroll
   }
 
 standardSummon :: Freqs ItemKind
-standardSummon = [("monster", 30), ("mobile animal", 70)]
+standardSummon = [("mobile monster", 30), ("mobile animal", 70)]
 
 -- * Armor
 
