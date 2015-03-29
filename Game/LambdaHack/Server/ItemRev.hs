@@ -80,7 +80,11 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         flavour discoRev uniqueSet itemFreq lvlSpawned jlid
         ldepth@(AbsDepth ldAbs) totalDepth@(AbsDepth depth) = do
   -- Effective generation depth of actors (not items) increases with spawns.
-  let ldSpawned = ldAbs + lvlSpawned `div` 2
+  let scaledDepth = ldAbs * 10 `div` depth
+      numSpawnedCoeff = lvlSpawned `div` 2
+      ldSpawned = max ldAbs  -- the first fast spawns are of the nominal level
+                  $ min depth
+                  $ ldAbs + numSpawnedCoeff - scaledDepth
       findInterval _ x1y1 [] = (x1y1, (11, 0))
       findInterval ld x1y1 ((x, y) : rest) =
         if fromIntegral ld * 10 <= x * fromIntegral depth
