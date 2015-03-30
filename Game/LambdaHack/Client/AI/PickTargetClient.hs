@@ -154,7 +154,9 @@ targetStrategy aid = do
       setPath :: Target -> m (Strategy (Target, Maybe PathEtc))
       setPath tgt = do
         mpath <- createPath aid tgt
-        let take5 (_, pgl@(path, (goal, _))) =
+        let take5 (TEnemy{}, pgl) =
+              (tgt, Just pgl)  -- for projecting, even by roaming actors
+            take5 (_, pgl@(path, (goal, _))) =
               if slackTactic then
                 -- Best path only followed 5 moves; then straight on.
                 let path5 = take 5 path
