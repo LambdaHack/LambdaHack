@@ -532,7 +532,9 @@ discover c oldcli iid = do
   cops <- getsState scops
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
-  let itemFull = itemToF iid (1, [])
+  bag <- getsState $ getCBag c
+  let kit = EM.findWithDefault (1, []) iid bag
+      itemFull = itemToF iid kit
       knownName = partItemMediumAW cstore lid localTime itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
@@ -548,7 +550,8 @@ discover c oldcli iid = do
                    iid (itemBase itemFull) (1, [])
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
-  when (textAllAE 7 cstore itemFull /= textAllAE 7 cstore oldItemFull) $
+  when (textAllAE 7 False cstore itemFull
+        /= textAllAE 7 False cstore oldItemFull) $
     msgAdd msg
 
 -- * RespSfxAtomicUI
@@ -837,8 +840,9 @@ strike source target iid cstore hitStatus = assert (source /= target) $ do
   tpart <- partActorLeader target tb
   spronoun <- partPronounLeader source sb
   localTime <- getsState $ getLocalTime (blid sb)
-  -- We don't show the charging status in the weapon strike message. Succinct.
-  let itemFull = itemToF iid (1, [])
+  bag <- getsState $ getActorBag source cstore
+  let kit = EM.findWithDefault (1, []) iid bag
+      itemFull = itemToF iid kit
       verb = case itemDisco itemFull of
         Nothing -> "hit"  -- not identified
         Just ItemDisco{itemKind} -> IK.iverbHit itemKind

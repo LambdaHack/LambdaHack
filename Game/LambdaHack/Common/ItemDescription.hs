@@ -33,8 +33,7 @@ partItemN fullInfo n c _lid localTime itemFull =
       let flav = flavourToName $ jflavour $ itemBase itemFull
       in (False, MU.Text $ flav <+> genericName, "")
     Just iDisco ->
-      let effTs = filter (not . T.null) $ textAllAE fullInfo c itemFull
-          (toutN, it1) = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
+      let (toutN, it1) = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
             Nothing -> (0, [])
             Just timeout ->
               let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
@@ -46,6 +45,9 @@ partItemN fullInfo n c _lid localTime itemFull =
           timer | len == 0 = ""
                 | itemK itemFull == 1 && len == 1 = "(" <> chargingAdj <> ")"
                 | otherwise = "(" <> tshow len <+> chargingAdj <> ")"
+          skipRecharging = fullInfo <= 4 && len >= itemK itemFull
+          effTs = filter (not . T.null)
+                  $ textAllAE fullInfo skipRecharging c itemFull
           ts = take n effTs
                ++ ["(...)" | length effTs > n]
                ++ [timer]
@@ -64,8 +66,8 @@ partItemN fullInfo n c _lid localTime itemFull =
 partItem :: CStore -> LevelId -> Time -> ItemFull -> (Bool, MU.Part, MU.Part)
 partItem = partItemN 4 4
 
-textAllAE :: Int -> CStore -> ItemFull -> [Text]
-textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
+textAllAE :: Int -> Bool -> CStore -> ItemFull -> [Text]
+textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
   let features | fullInfo >= 9 = map featureToSuff $ sort $ jfeature itemBase
                | otherwise = []
   in case itemDisco of
@@ -112,7 +114,7 @@ textAllAE fullInfo cstore ItemFull{itemBase, itemDisco} =
                             $ map ppE $ stripOnSmash restEs
                 durable = IK.Durable `elem` jfeature itemBase
                 periodicOrTimeout = case mperiodic of
-                  _ | T.null rechargingTs -> ""
+                  _ | skipRecharging || T.null rechargingTs -> ""
                   Just IK.Periodic ->
                     case mtimeout of
                       Just (IK.Timeout 0) | not durable ->
