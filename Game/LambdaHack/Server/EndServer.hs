@@ -80,7 +80,7 @@ dieSer aid b hit =
     when (isNothing $ gleader fact) $ moveStores aid CSha CInv
     dropAllItems aid b False
     b2 <- getsState $ getActorBody aid
-    execUpdAtomic $ UpdLoseActor aid b2 []  -- (more) silent, because comes late
+    execUpdAtomic $ UpdDestroyActor aid b2 []
 
 -- | Drop all actor's items.
 dropAllItems :: (MonadAtomic m, MonadServer m)

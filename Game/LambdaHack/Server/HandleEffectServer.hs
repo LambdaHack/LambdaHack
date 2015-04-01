@@ -261,14 +261,14 @@ effectHurt nDm source target verboseEffectConstructor = do
               | otherwise = rawDeltaHP
       deltaDiv = fromIntegral $ deltaHP `divUp` oneM
   -- Damage the target.
+  execUpdAtomic $ UpdRefillHP target deltaHP
+  when serious $ halveCalm target
   execSfxAtomic $ SfxEffect (bfid sb) target $
     if source == target
     then verboseEffectConstructor deltaDiv
            -- no SfxStrike, so treat as any heal/wound
     else IK.Hurt (Dice.intToDice deltaDiv)
            -- SfxStrike already sent, avoid spam
-  execUpdAtomic $ UpdRefillHP target deltaHP
-  when serious $ halveCalm target
   return True
 
 armorHurtBonus :: (MonadAtomic m, MonadServer m)

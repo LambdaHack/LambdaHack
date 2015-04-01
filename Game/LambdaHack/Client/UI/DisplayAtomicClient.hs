@@ -376,7 +376,7 @@ destroyActorUI :: MonadClientUI m
 destroyActorUI aid body verb verboseVerb verbose = do
   side <- getsClient sside
   if bfid body == side && bhp body <= 0 && not (bproj body) then do
-    actorVerbMU aid body verb
+    when verbose $ actorVerbMU aid body verb
     void $ displayMore ColorBW ""
   else when verbose $ actorVerbMU aid body verboseVerb
   modifyClient $ \cli -> cli {slastLost = ES.insert aid $ slastLost cli}
@@ -594,26 +594,28 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                     | bproj b = "be shattered into little pieces"
                     | otherwise = "be reduced to a bloody pulp"
           deadPreviousTurn p = p < 0 && bhp b <= p
-          (canKill, deadBefore, verbDie) =
+          harm3 dp = if deadPreviousTurn dp
+                     then (dp < 0, True, Just hurtExtra)
+                     else (False, False, Just firstFall)
+          (canKill, deadBefore, mverbDie) =
             case effect of
-              IK.Hurt p | deadPreviousTurn (xM $ Dice.maxDice p) ->
-                (p < 0, True, hurtExtra)
-              IK.RefillHP p | deadPreviousTurn (xM p) ->
-                (p < 0, True, hurtExtra)
-              IK.OverfillHP p | deadPreviousTurn (xM p) ->
-                (p < 0, True, hurtExtra)
-              IK.Burn p | deadPreviousTurn (xM $ Dice.maxDice p) ->
-                (p < 0, True, hurtExtra)
-              _ -> (False, False, firstFall)
-      subject <- partActorLeader aid b
-      let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
-      when (canKill || not (bproj b)) $ msgAdd msgDie
-      when (fid == side && not (bproj b)) $ do
-        animDie <- if deadBefore
-                   then animate (blid b)
-                        $ twirlSplash (bpos b, bpos b) Color.Red Color.Red
-                   else animate (blid b) $ deathBody $ bpos b
-        displayActorStart b animDie
+              IK.Hurt p -> harm3 (xM $ Dice.maxDice p)
+              IK.RefillHP p -> harm3 (xM p)
+              IK.OverfillHP p -> harm3 (xM p)
+              IK.Burn p -> harm3 (xM $ Dice.maxDice p)
+              _ -> (False, False, Nothing)
+      case mverbDie of
+        Nothing -> return ()  -- only brutal effects work on dead/dying actor
+        Just verbDie -> do
+          subject <- partActorLeader aid b
+          let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
+          when (canKill || not (bproj b)) $ msgAdd msgDie
+          when (fid == side && not (bproj b)) $ do
+            animDie <- if deadBefore
+                       then animate (blid b)
+                            $ twirlSplash (bpos b, bpos b) Color.Red Color.Red
+                       else animate (blid b) $ deathBody $ bpos b
+            displayActorStart b animDie
     else case effect of
         IK.NoEffect t -> msgAdd $ "Nothing happens." <+> t
         IK.Hurt{} -> return ()  -- avoid spam; SfxStrike just sent
