@@ -143,7 +143,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
 
 -- | Actor atttacks an enemy actor or his own projectile.
 meleeAid :: MonadClientUI m
-         => ActorId -> m (SlideOrCmd (RequestTimed AbMelee))
+         => ActorId -> m (SlideOrCmd (RequestTimed 'AbMelee))
 meleeAid target = do
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
@@ -170,7 +170,7 @@ meleeAid target = do
 
 -- | Actor swaps position with another.
 displaceAid :: MonadClientUI m
-            => ActorId -> m (SlideOrCmd (RequestTimed AbDisplace))
+            => ActorId -> m (SlideOrCmd (RequestTimed 'AbDisplace))
 displaceAid target = do
   cops <- getsState scops
   leader <- getLeaderUI
@@ -254,7 +254,7 @@ moveSearchAlterAid source dir = do
 -- * Wait
 
 -- | Leader waits a turn (and blocks, etc.).
-waitHuman :: MonadClientUI m => m (RequestTimed AbWait)
+waitHuman :: MonadClientUI m => m (RequestTimed 'AbWait)
 waitHuman = do
   modifyClient $ \cli -> cli {swaitTimes = abs (swaitTimes cli) + 1}
   return ReqWait
@@ -263,7 +263,7 @@ waitHuman = do
 
 moveItemHuman :: MonadClientUI m
               => [CStore] -> CStore -> Maybe MU.Part -> Bool
-              -> m (SlideOrCmd (RequestTimed AbMoveItem))
+              -> m (SlideOrCmd (RequestTimed 'AbMoveItem))
 moveItemHuman cLegalRaw destCStore mverb auto = do
   let !_A = assert (destCStore `notElem` cLegalRaw) ()
   let verb = fromMaybe (MU.Text $ verbCStore destCStore) mverb
@@ -330,13 +330,13 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
 
 -- | Display items from a given container store and describe the chosen one.
 describeItemHuman :: MonadClientUI m
-                  => ItemDialogMode -> m (SlideOrCmd (RequestTimed AbMoveItem))
+                  => ItemDialogMode -> m (SlideOrCmd (RequestTimed 'AbMoveItem))
 describeItemHuman = describeItemC
 
 -- * Project
 
 projectHuman :: forall m. MonadClientUI m
-             => [Trigger] -> m (SlideOrCmd (RequestTimed AbProject))
+             => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbProject))
 projectHuman ts = do
   leader <- getLeaderUI
   lidV <- viewedLevel
@@ -461,7 +461,7 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 -- * Apply
 
 applyHuman :: MonadClientUI m
-           => [Trigger] -> m (SlideOrCmd (RequestTimed AbApply))
+           => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbApply))
 applyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -493,7 +493,7 @@ applyHuman ts = do
 -- TODO: accept mouse, too
 -- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: MonadClientUI m
-              => [Trigger] -> m (SlideOrCmd (RequestTimed AbAlter))
+              => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbAlter))
 alterDirHuman ts = do
   Config{configVi, configLaptop} <- askConfig
   let verb1 = case ts of
@@ -509,7 +509,7 @@ alterDirHuman ts = do
 
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m
-          => Vector -> [Trigger] -> m (SlideOrCmd (RequestTimed AbAlter))
+          => Vector -> [Trigger] -> m (SlideOrCmd (RequestTimed 'AbAlter))
 alterTile dir ts = do
   cops@Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI
@@ -547,7 +547,7 @@ guessAlter _ _ _ = "never mind"
 
 -- | Leader tries to trigger the tile he's standing on.
 triggerTileHuman :: MonadClientUI m
-                 => [Trigger] -> m (SlideOrCmd (RequestTimed AbTrigger))
+                 => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbTrigger))
 triggerTileHuman ts = do
   tgtMode <- getsClient stgtMode
   if isJust tgtMode then do
@@ -563,7 +563,7 @@ triggerTileHuman ts = do
 
 -- | Player tries to trigger a tile using a feature.
 triggerTile :: MonadClientUI m
-            => [Trigger] -> m (SlideOrCmd (RequestTimed AbTrigger))
+            => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbTrigger))
 triggerTile ts = do
   cops@Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI

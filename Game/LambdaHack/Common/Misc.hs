@@ -13,6 +13,7 @@ module Game.LambdaHack.Common.Misc
   , isRight
   ) where
 
+import Control.DeepSeq
 import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
@@ -29,7 +30,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Traversable (traverse)
 import GHC.Generics (Generic)
-import NLP.Miniutter.English ()
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Point
 
@@ -50,13 +51,15 @@ divUp n k = (n + k - 1) `div` k
 -- is never serialized. But we'd need to cover the few cases
 -- (e.g., @litemFreq@) where @GroupName@ goes into savegame.
 newtype GroupName a = GroupName Text
-  deriving (Eq, Ord, Read, Hashable, Binary)
+  deriving (Eq, Ord, Read, Hashable, Binary, Generic)
 
 instance IsString (GroupName a) where
   fromString = GroupName . T.pack
 
 instance Show (GroupName a) where
   show (GroupName gn) = T.unpack gn
+
+instance NFData (GroupName a)
 
 toGroupName :: Text -> GroupName a
 toGroupName = GroupName
@@ -108,8 +111,12 @@ instance Binary CStore
 
 instance Hashable CStore
 
+instance NFData CStore
+
 data ItemDialogMode = MStore CStore | MOwned | MStats
-  deriving (Show, Read, Eq, Ord)
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance NFData ItemDialogMode
 
 -- | A unique identifier of a faction in a game.
 newtype FactionId = FactionId Int
@@ -218,3 +225,11 @@ instance Enum k => Adjustable (EM.EnumMap k) where
 instance (Enum k, Hashable k, Hashable e) => Hashable (EM.EnumMap k e) where
   {-# INLINEABLE hashWithSalt #-}
   hashWithSalt s x = hashWithSalt s (EM.toAscList x)
+
+-- Control.DeepSeq
+
+instance NFData MU.Part
+
+instance NFData MU.Person
+
+instance NFData MU.Polarity

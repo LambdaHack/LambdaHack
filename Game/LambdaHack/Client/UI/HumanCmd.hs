@@ -1,12 +1,15 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | Abstract syntax human player commands.
 module Game.LambdaHack.Client.UI.HumanCmd
   ( CmdCategory(..), HumanCmd(..), Trigger(..)
   , noRemoteHumanCmd, categoryDescription, cmdDescription
   ) where
 
+import Control.DeepSeq
 import Control.Exception.Assert.Sugar
 import Data.Maybe
 import Data.Text (Text)
+import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Actor (verbCStore)
@@ -19,7 +22,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 data CmdCategory =
     CmdMenu | CmdMove | CmdItem | CmdTgt | CmdAuto | CmdMeta | CmdMouse
   | CmdInternal | CmdDebug | CmdMinimal
-  deriving (Show, Read, Eq)
+  deriving (Show, Read, Eq, Generic)
+
+instance NFData CmdCategory
 
 categoryDescription :: CmdCategory -> Text
 categoryDescription CmdMenu = "Main Menu"
@@ -92,14 +97,18 @@ data HumanCmd =
   | CursorPointerEnemy
   | TgtPointerFloor
   | TgtPointerEnemy
-  deriving (Show, Read, Eq, Ord)
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance NFData HumanCmd
 
 data Trigger =
     ApplyItem {verb :: !MU.Part, object :: !MU.Part, symbol :: !Char}
   | AlterFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
   | TriggerFeature
       {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
-  deriving (Show, Read, Eq, Ord)
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance NFData Trigger
 
 -- | Commands that are forbidden on a remote level, because they
 -- would usually take time when invoked on one.

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric, FlexibleContexts #-}
 -- | Personal game configuration file type definitions.
 module Game.LambdaHack.Client.UI.Config
   ( Config(..), mkConfig, applyConfigToDebug
@@ -15,6 +16,7 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import Game.LambdaHack.Common.ClientOptions
+import GHC.Generics (Generic)
 import System.Directory
 import System.FilePath
 import Text.Read
@@ -43,7 +45,7 @@ data Config = Config
   , configNoAnim      :: !Bool
   , configRunStopMsgs :: !Bool
   }
-  deriving Show
+  deriving (Show, Generic)
 
 instance NFData Config
 

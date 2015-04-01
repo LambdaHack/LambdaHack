@@ -919,12 +919,12 @@ doLook addMoreMsg = do
 -- | Create a list of item names.
 _floorItemOverlay :: MonadClientUI m
                   => LevelId -> Point
-                  -> m (SlideOrCmd (RequestTimed Ability.AbMoveItem))
+                  -> m (SlideOrCmd (RequestTimed 'Ability.AbMoveItem))
 _floorItemOverlay _lid _p = describeItemC MOwned {-CFloor lid p-}
 
 describeItemC :: MonadClientUI m
               => ItemDialogMode
-              -> m (SlideOrCmd (RequestTimed Ability.AbMoveItem))
+              -> m (SlideOrCmd (RequestTimed 'Ability.AbMoveItem))
 describeItemC c = do
   let subject = partActor
       verbSha body activeItems = if calmEnough body activeItems

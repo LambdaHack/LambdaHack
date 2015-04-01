@@ -61,15 +61,15 @@ anyToUI (RequestAnyAbility cmd) = ReqUITimed cmd
 
 -- | Client-server requests that take game time. Sent by both AI and UI clients.
 data RequestTimed :: Ability -> * where
-  ReqMove :: !Vector -> RequestTimed AbMove
-  ReqMelee :: !ActorId -> !ItemId -> !CStore -> RequestTimed AbMelee
-  ReqDisplace :: !ActorId -> RequestTimed AbDisplace
-  ReqAlter :: !Point -> !(Maybe TK.Feature) -> RequestTimed AbAlter
-  ReqWait :: RequestTimed AbWait
-  ReqMoveItems :: ![(ItemId, Int, CStore, CStore)] -> RequestTimed AbMoveItem
-  ReqProject :: !Point -> !Int -> !ItemId -> !CStore -> RequestTimed AbProject
-  ReqApply :: !ItemId -> !CStore -> RequestTimed AbApply
-  ReqTrigger :: !(Maybe TK.Feature) -> RequestTimed AbTrigger
+  ReqMove :: !Vector -> RequestTimed 'AbMove
+  ReqMelee :: !ActorId -> !ItemId -> !CStore -> RequestTimed 'AbMelee
+  ReqDisplace :: !ActorId -> RequestTimed 'AbDisplace
+  ReqAlter :: !Point -> !(Maybe TK.Feature) -> RequestTimed 'AbAlter
+  ReqWait :: RequestTimed 'AbWait
+  ReqMoveItems :: ![(ItemId, Int, CStore, CStore)] -> RequestTimed 'AbMoveItem
+  ReqProject :: !Point -> !Int -> !ItemId -> !CStore -> RequestTimed 'AbProject
+  ReqApply :: !ItemId -> !CStore -> RequestTimed 'AbApply
+  ReqTrigger :: !(Maybe TK.Feature) -> RequestTimed 'AbTrigger
 
 deriving instance Show (RequestTimed a)
 

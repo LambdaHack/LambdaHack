@@ -14,6 +14,7 @@ module Game.LambdaHack.Common.Frequency
 
 import Control.Applicative
 import Control.Arrow (first, second)
+import Control.DeepSeq
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
@@ -78,6 +79,8 @@ instance Alternative Frequency where
 instance Hashable a => Hashable (Frequency a)
 
 instance Binary a => Binary (Frequency a)
+
+instance NFData a => NFData (Frequency a)
 
 -- | Uniform discrete frequency distribution.
 uniformFreq :: Text -> [a] -> Frequency a

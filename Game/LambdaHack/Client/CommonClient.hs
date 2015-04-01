@@ -246,7 +246,7 @@ itemToFullClient = do
 -- because if server chose it, it would leak item discovery information.
 pickWeaponClient :: MonadClient m
                  => ActorId -> ActorId
-                 -> m (Maybe (RequestTimed Ability.AbMelee))
+                 -> m (Maybe (RequestTimed 'Ability.AbMelee))
 pickWeaponClient source target = do
   eqpAssocs <- fullAssocsClient source [CEqp]
   bodyAssocs <- fullAssocsClient source [COrgan]

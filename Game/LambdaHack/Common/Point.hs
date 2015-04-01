@@ -1,13 +1,16 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Common.Point
   ( X, Y, Point(..), dummyPoint, maxLevelDimExponent
   , chessDist, euclidDistSq, adjacent, inside, bla, fromTo
   ) where
 
+import Control.DeepSeq
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import Data.Int (Int32)
+import GHC.Generics (Generic)
 
 -- | Spacial dimension for points and vectors.
 type X = Int
@@ -22,7 +25,7 @@ data Point = Point
   { px :: !X
   , py :: !Y
   }
-  deriving (Read, Eq, Ord)
+  deriving (Read, Eq, Ord, Generic)
 
 instance Show Point where
   show (Point x y) = show (x, y)
@@ -30,6 +33,8 @@ instance Show Point where
 instance Binary Point where
   put = put . (fromIntegral :: Int -> Int32) . fromEnum
   get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
+
+instance NFData Point
 
 -- This conversion cannot be used for PointArray indexing,
 -- because it is not contiguous --- we don't know the horizontal

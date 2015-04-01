@@ -15,6 +15,7 @@ module Game.LambdaHack.Common.Dice
   ) where
 
 import Control.Applicative
+import Control.DeepSeq
 import Data.Binary
 import qualified Data.Char as Char
 import Data.Hashable (Hashable)
@@ -116,6 +117,8 @@ instance Show Dice where
 instance Hashable Dice
 
 instance Binary Dice
+
+instance NFData Dice
 
 instance Num Dice where
   (Dice dc1 dl1 ds1) + (Dice dc2 dl2 ds2) =

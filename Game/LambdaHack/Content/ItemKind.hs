@@ -10,6 +10,7 @@ module Game.LambdaHack.Content.ItemKind
   , validateSingleItemKind, validateAllItemKind
   ) where
 
+import Control.DeepSeq
 import Data.Binary
 import Data.Foldable (Foldable)
 import Data.Hashable (Hashable)
@@ -92,6 +93,8 @@ data Effect =
                           --   Periodic activation, unless Durable
   deriving (Show, Read, Eq, Ord, Generic)
 
+instance NFData Effect
+
 data TimerDice =
     TimerNone
   | TimerGameTurn !Dice.Dice
@@ -104,6 +107,8 @@ instance Show TimerDice where
     show nDm ++ " " ++ if nDm == 1 then "turn" else "turns"
   show (TimerActorTurn nDm) =
     show nDm ++ " " ++ if nDm == 1 then "move" else "moves"
+
+instance NFData TimerDice
 
 -- | Aspects of items. Those that are named @Add*@ are additive
 -- (starting at 0) for all items wielded by an actor and they affect the actor.
@@ -130,6 +135,8 @@ data ThrowMod = ThrowMod
   , throwLinger   :: !Int  -- ^ fly for this percentage of 2 turns
   }
   deriving (Show, Read, Eq, Ord, Generic)
+
+instance NFData ThrowMod
 
 -- | Features of item. Affect only the item in question, not the actor,
 -- and so not additive in any sense.

@@ -107,11 +107,11 @@ actionStrategy aid = do
       -- are summed with .| at the end.
       prefix, suffix :: [([Ability], m (Strategy RequestAnyAbility), Bool)]
       prefix =
-        [ ( [AbApply], (toAny :: ToAny AbApply)
+        [ ( [AbApply], (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyFirstAid
           , condHpTooLow && not condAnyFoeAdj
             && not condOnTriggerable )  -- don't block stairs, perhaps ascend
-        , ( [AbTrigger], (toAny :: ToAny AbTrigger)
+        , ( [AbTrigger], (toAny :: ToAny 'AbTrigger)
             <$> trigger aid True
               -- flee via stairs, even if to wrong level
               -- may return via different stairs
@@ -123,17 +123,17 @@ actionStrategy aid = do
           , displaceFoe aid  -- only swap with an enemy to expose him
           , condBlocksFriends && condAnyFoeAdj
             && not condOnTriggerable && not condDesirableFloorItem )
-        , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
+        , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> pickup aid True
           , condNoEqpWeapon && condFloorWeapon && not condHpTooLow
             && abInMaxSkill AbMelee )
-        , ( [AbMelee], (toAny :: ToAny AbMelee)
+        , ( [AbMelee], (toAny :: ToAny 'AbMelee)
             <$> meleeBlocker aid  -- only melee target or blocker
           , condAnyFoeAdj
             || not (abInMaxSkill AbDisplace)  -- melee friends, not displace
                && fleaderMode (gplayer fact) == LeaderNull  -- not restrained
                && condTgtEnemyPresent )  -- excited
-        , ( [AbTrigger], (toAny :: ToAny AbTrigger)
+        , ( [AbTrigger], (toAny :: ToAny 'AbTrigger)
             <$> trigger aid False
           , condOnTriggerable && not condDesirableFloorItem
             && (lidExplored || condEnoughGear)
@@ -149,7 +149,7 @@ actionStrategy aid = do
         , ( [AbDisplace]  -- prevents some looping movement
           , displaceBlocker aid  -- fires up only when path blocked
           , not condDesirableFloorItem )
-        , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
+        , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> equipItems aid  -- doesn't take long, very useful if safe
                                 -- only if calm enough, so high priority
           , not (condAnyFoeAdj
@@ -160,15 +160,15 @@ actionStrategy aid = do
       distant :: [([Ability], m (Frequency RequestAnyAbility), Bool)]
       distant =
         [ ( [AbMoveItem]
-          , stratToFreq 20000 $ (toAny :: ToAny AbMoveItem)
+          , stratToFreq 20000 $ (toAny :: ToAny 'AbMoveItem)
             <$> yieldUnneeded aid  -- 20000 to unequip ASAP, unless is thrown
           , True )
         , ( [AbProject]  -- for high-value target, shoot even in melee
-          , stratToFreq 2 $ (toAny :: ToAny AbProject)
+          , stratToFreq 2 $ (toAny :: ToAny 'AbProject)
             <$> projectItem aid
           , condTgtEnemyPresent && condCanProject && not condOnTriggerable )
         , ( [AbApply]
-          , stratToFreq 2 $ (toAny :: ToAny AbApply)
+          , stratToFreq 2 $ (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyAll  -- use any potion or scroll
           , (condTgtEnemyPresent || condThreatNearby)  -- can affect enemies
             && not condOnTriggerable )
@@ -189,16 +189,16 @@ actionStrategy aid = do
         ]
       -- Order matters again.
       suffix =
-        [ ( [AbMelee], (toAny :: ToAny AbMelee)
+        [ ( [AbMelee], (toAny :: ToAny 'AbMelee)
             <$> meleeAny aid  -- avoid getting damaged for naught
           , condAnyFoeAdj )
         , ( [AbMove]
           , flee aid panicFleeL  -- ultimate panic mode, displaces foes
           , condAnyFoeAdj )
-        , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
+        , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> pickup aid False
           , not condThreatAtHand )  -- e.g., to give to other party members
-        , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
+        , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
             <$> unEquipItems aid  -- late, because these items not bad
           , True )
         , ( [AbMove]
@@ -215,7 +215,7 @@ actionStrategy aid = do
             -- TODO: unless tgt can't melee
         ]
       fallback =
-        [ ( [AbWait], (toAny :: ToAny AbWait)
+        [ ( [AbWait], (toAny :: ToAny 'AbWait)
             <$> waitBlockNow
             -- Wait until friends sidestep; ensures strategy is never empty.
             -- TODO: try to switch leader away before that (we already
@@ -244,11 +244,11 @@ actionStrategy aid = do
   return $! sumPrefix .| comDistant .| sumSuffix .| sumFallback
 
 -- | A strategy to always just wait.
-waitBlockNow :: MonadClient m => m (Strategy (RequestTimed AbWait))
+waitBlockNow :: MonadClient m => m (Strategy (RequestTimed 'AbWait))
 waitBlockNow = return $! returN "wait" ReqWait
 
 pickup :: MonadClient m
-       => ActorId -> Bool -> m (Strategy (RequestTimed AbMoveItem))
+       => ActorId -> Bool -> m (Strategy (RequestTimed 'AbMoveItem))
 pickup aid onlyWeapon = do
   benItemL <- benGroundItems aid
   b <- getsState $ getActorBody aid
@@ -277,7 +277,7 @@ pickup aid onlyWeapon = do
             then reject
             else returN "pickup" $ ReqMoveItems prepared
 
-equipItems :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMoveItem))
+equipItems :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 equipItems aid = do
   cops <- getsState scops
   body <- getsState $ getActorBody aid
@@ -334,7 +334,7 @@ toShare IK.EqpSlotPeriodic = False
 toShare _ = True
 
 yieldUnneeded :: MonadClient m
-              => ActorId -> m (Strategy (RequestTimed AbMoveItem))
+              => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 yieldUnneeded aid = do
   cops <- getsState scops
   body <- getsState $ getActorBody aid
@@ -366,7 +366,7 @@ yieldUnneeded aid = do
             else returN "yieldUnneeded" $ ReqMoveItems yieldAllUnneeded
 
 unEquipItems :: MonadClient m
-             => ActorId -> m (Strategy (RequestTimed AbMoveItem))
+             => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 unEquipItems aid = do
   cops <- getsState scops
   body <- getsState $ getActorBody aid
@@ -484,7 +484,7 @@ unneeded cops condAnyFoeAdj condLightBetrays
      in itemLit && not calm10
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
-meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))
+meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
 meleeBlocker aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -521,7 +521,7 @@ meleeBlocker aid = do
 
 -- Everybody melees in a pinch, skills and weapons allowing,
 -- even though some prefer ranged attacks.
-meleeAny :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))
+meleeAny :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
 meleeAny aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -542,7 +542,7 @@ meleeAny aid = do
 -- We don't verify the stairs are targeted by the actor, but at least
 -- the actor doesn't target a visible enemy at this point.
 trigger :: MonadClient m
-        => ActorId -> Bool -> m (Strategy (RequestTimed AbTrigger))
+        => ActorId -> Bool -> m (Strategy (RequestTimed 'AbTrigger))
 trigger aid fleeViaStairs = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
@@ -607,7 +607,7 @@ trigger aid fleeViaStairs = do
     | (benefit, feat) <- benFeat
     , benefit > 0 ]
 
-projectItem :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
+projectItem :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbProject))
 projectItem aid = do
   btarget <- getsClient $ getTarget aid
   b <- getsState $ getActorBody aid
@@ -671,7 +671,7 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid
   deriving Eq
 
 applyItem :: MonadClient m
-          => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
+          => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed 'AbApply))
 applyItem aid applyGroup = do
   actorSk <- actorSkillsClient aid
   b <- getsState $ getActorBody aid

@@ -22,6 +22,7 @@ import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Vector.Binary ()
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified NLP.Miniutter.English as MU

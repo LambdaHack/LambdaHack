@@ -7,6 +7,7 @@ module Game.LambdaHack.Client.Key
   , escKM, spaceKM, returnKM, pgupKM, pgdnKM, leftButtonKM, rightButtonKM
   ) where
 
+import Control.DeepSeq
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.Char as Char
@@ -48,6 +49,8 @@ data Key =
 
 instance Binary Key
 
+instance NFData Key
+
 -- | Our own encoding of modifiers. Incomplete.
 data Modifier =
     NoModifier
@@ -58,10 +61,14 @@ data Modifier =
 
 instance Binary Modifier
 
+instance NFData Modifier
+
 data KM = KM { key      :: !Key
              , modifier :: !Modifier
              , pointer  :: !Point }
   deriving (Read, Ord, Eq, Generic)
+
+instance NFData KM
 
 instance Show KM where
   show = T.unpack . showKM

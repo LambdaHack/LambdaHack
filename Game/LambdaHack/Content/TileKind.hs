@@ -5,6 +5,7 @@ module Game.LambdaHack.Content.TileKind
   , validateSingleTileKind, validateAllTileKind, actionFeatures
   ) where
 
+import Control.DeepSeq
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Hashable
@@ -64,6 +65,8 @@ data Feature =
 instance Binary Feature
 
 instance Hashable Feature
+
+instance NFData Feature
 
 -- TODO: (spans multiple contents) check that all posible solid place
 -- fences have hidden counterparts.

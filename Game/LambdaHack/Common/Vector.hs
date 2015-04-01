@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | Basic operations on 2D vectors represented in an efficient,
 -- but not unique, way.
 module Game.LambdaHack.Common.Vector
@@ -8,11 +9,13 @@ module Game.LambdaHack.Common.Vector
   , RadianAngle, rotate, towards
   ) where
 
+import Control.DeepSeq
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int32)
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Point
 
@@ -23,7 +26,7 @@ data Vector = Vector
   { vx :: !X
   , vy :: !Y
   }
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, Generic)
 
 instance Binary Vector where
   put = put . (fromIntegral :: Int -> Int32) . fromEnum
@@ -32,6 +35,8 @@ instance Binary Vector where
 instance Enum Vector where
   fromEnum = fromEnumVector
   toEnum = toEnumVector
+
+instance NFData Vector
 
 -- | Maximal supported vector X and Y coordinates.
 maxVectorDim :: Int
