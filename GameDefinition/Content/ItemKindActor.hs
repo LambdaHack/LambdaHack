@@ -434,7 +434,7 @@ geyserArsenic = ItemKind
   , irarity  = [(5, 2), (10, 1)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20
+  , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20, AddLight 3
                , AddSkills $ EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -450,7 +450,7 @@ geyserSulfur = ItemKind
   , irarity  = [(5, 4), (10, 2)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20
+  , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20, AddLight 3
                , AddSkills $ EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
