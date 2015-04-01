@@ -53,16 +53,15 @@ claw = fist
   , icount   = 2  -- even if more, only the fore claws used for fighting
   , iverbHit = "hook"
   , iaspects = [Timeout $ 4 + d 4]
-  , ieffects = [Hurt (4 * d 1), Recharging (toOrganGameTurn "slow 10" 2)]
+  , ieffects = [Hurt (2 * d 1), Recharging (toOrganGameTurn "slow 10" 2)]
   , idesc    = ""
   }
 smallClaw = fist
   { iname    = "small claw"
   , ifreq    = [("small claw", 50)]
   , icount   = 2
-  , iverbHit = "hook"
-  , iaspects = [Timeout $ 4 + d 4]
-  , ieffects = [Hurt (2 * d 1), Recharging (toOrganGameTurn "slow 10" 1)]
+  , iverbHit = "slash"
+  , ieffects = [Hurt (2 * d 1)]
   , idesc    = ""
   }
 snout = fist
