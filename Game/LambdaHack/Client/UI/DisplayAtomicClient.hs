@@ -593,23 +593,23 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                     | fid == side = "be stomped flat"
                     | bproj b = "be shattered into little pieces"
                     | otherwise = "be reduced to a bloody pulp"
-          deadPreviousTurn p = p < 0 && bhp b <= p
-          harm3 dp = if deadPreviousTurn dp
-                     then (dp < 0, True, Just hurtExtra)
-                     else (False, False, Just firstFall)
-          (canKill, deadBefore, mverbDie) =
+          deadPreviousTurn dp = bhp b <= dp
+          harm2 dp = if deadPreviousTurn dp
+                     then (True, Just hurtExtra)
+                     else (False, Just firstFall)
+          (deadBefore, mverbDie) =
             case effect of
-              IK.Hurt p -> harm3 (xM $ Dice.maxDice p)
-              IK.RefillHP p -> harm3 (xM p)
-              IK.OverfillHP p -> harm3 (xM p)
-              IK.Burn p -> harm3 (xM $ Dice.maxDice p)
-              _ -> (False, False, Nothing)
+              IK.Hurt p -> harm2 (- (xM $ Dice.maxDice p))
+              IK.RefillHP p | p < 0 -> harm2 (xM p)
+              IK.OverfillHP p | p < 0 -> harm2 (xM p)
+              IK.Burn p -> harm2 (- (xM $ Dice.maxDice p))
+              _ -> (False, Nothing)
       case mverbDie of
         Nothing -> return ()  -- only brutal effects work on dead/dying actor
         Just verbDie -> do
           subject <- partActorLeader aid b
           let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
-          when (canKill || not (bproj b)) $ msgAdd msgDie
+          msgAdd msgDie
           when (fid == side && not (bproj b)) $ do
             animDie <- if deadBefore
                        then animate (blid b)

@@ -386,8 +386,8 @@ effectRefillHP overfill execSfx power source target = do
   if deltaHP == 0
     then return False
     else do
-      execSfx
       execUpdAtomic $ UpdRefillHP target deltaHP
+      execSfx
       when (deltaHP < 0 && serious) $ halveCalm target
       return True
 
