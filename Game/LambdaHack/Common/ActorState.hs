@@ -425,8 +425,8 @@ hasCharge localTime itemFull@ItemFull{..} =
       len = length it1
   in len < itemK
 
-strengthMelee :: Bool -> Time -> ItemFull -> Maybe Int
-strengthMelee effectBonus localTime itemFull =
+strMelee :: Bool -> Time -> ItemFull -> Maybe Int
+strMelee effectBonus localTime itemFull =
   let durable = IK.Durable `elem` jfeature (itemBase itemFull)
       recharged = hasCharge localTime itemFull
       -- We assume extra weapon effects are useful and so such
@@ -451,7 +451,7 @@ strengthMelee effectBonus localTime itemFull =
 strongestMelee :: Bool -> Time -> [(ItemId, ItemFull)]
                -> [(Int, (ItemId, ItemFull))]
 strongestMelee effectBonus localTime is =
-  let f = strengthMelee effectBonus localTime
+  let f = strMelee effectBonus localTime
       g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> f itemFull
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
 

@@ -59,11 +59,16 @@ effectToBenefit cops b activeItems fact eff =
          else max (-20) p
     IK.Dominate -> -200
     IK.Impress -> -10
-    IK.CallFriend d -> 20 * Dice.meanDice d
-    IK.Summon{} | dungeonDweller -> 1 -- probably summons friends or crazies
-    IK.Summon{} -> 0                  -- probably generates enemies
-    IK.Ascend{} -> 1               -- change levels sensibly, in teams
-    IK.Escape{} -> 10000           -- AI wants to win; spawners to guard
+    IK.CallFriend d -> 100 * Dice.meanDice d
+    IK.Summon _ d | dungeonDweller ->
+      -- Probably summons friends or crazies.
+      -- TODO: should be Negative, to use Calm of enemy, but also positive
+      -- to use with own Calm, if needed.
+      50 * Dice.meanDice d
+    IK.Summon{} -> 0      -- probably generates enemies
+    IK.Ascend{} -> 1      -- low, to only change levels sensibly, in teams
+                          -- TODO: use if low HP and enemies at hand
+    IK.Escape{} -> 10000  -- AI wants to win; spawners to guard
     IK.Paralyze d -> -20 * Dice.meanDice d
     IK.InsertMove d -> 50 * Dice.meanDice d
     IK.Teleport d ->
@@ -75,7 +80,7 @@ effectToBenefit cops b activeItems fact eff =
     IK.CreateItem COrgan grp _ ->  -- TODO: use the timeout
       let (total, count) = organBenefit grp cops b
       in total `divUp` count  -- average over all matching grp; rarities ignored
-    IK.CreateItem{} -> 30
+    IK.CreateItem{} -> 30  -- TODO
     IK.DropItem COrgan grp True ->  -- calculated for future use, general pickup
       let (total, _) = organBenefit grp cops b
       in - total  -- sum over all matching grp; simplification: rarities ignored
