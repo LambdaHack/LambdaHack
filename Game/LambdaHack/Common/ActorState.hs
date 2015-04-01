@@ -437,6 +437,9 @@ strMelee effectBonus localTime itemFull =
       p (IK.Burn d) = [Dice.meanDice d]
       p IK.NoEffect{} = []
       p IK.OnSmash{} = []
+      -- Hackish extra bonus to force Summon as first effect used
+      -- before Calm of enemy is depleted.
+      p (IK.Recharging IK.Summon{}) = [999 | recharged && effectBonus]
       -- We assume the weapon is still worth using, even if some effects
       -- are charging; in particular, we assume Hurt or Burn are not
       -- under Recharging.
