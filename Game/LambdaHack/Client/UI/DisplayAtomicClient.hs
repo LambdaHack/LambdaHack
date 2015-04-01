@@ -374,12 +374,11 @@ createActorUI aid body verbose verb = do
 destroyActorUI :: MonadClientUI m
                => ActorId -> Actor -> MU.Part -> MU.Part -> Bool -> m ()
 destroyActorUI aid body verb verboseVerb verbose = do
-  when verbose $ do
-    side <- getsClient sside
-    if bfid body == side && bhp body <= 0 && not (bproj body) then do
-      actorVerbMU aid body verb
-      void $ displayMore ColorBW ""
-    else when {-very-}verbose $ actorVerbMU aid body verboseVerb
+  side <- getsClient sside
+  if bfid body == side && bhp body <= 0 && not (bproj body) then do
+    actorVerbMU aid body verb
+    void $ displayMore ColorBW ""
+  else when verbose $ actorVerbMU aid body verboseVerb
   modifyClient $ \cli -> cli {slastLost = ES.insert aid $ slastLost cli}
 
 moveActor :: MonadClientUI m => State -> ActorId -> Point -> Point -> m ()
