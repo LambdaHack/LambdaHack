@@ -64,7 +64,7 @@ partItemN fullInfo n c _lid localTime itemFull =
 
 -- | The part of speech describing the item.
 partItem :: CStore -> LevelId -> Time -> ItemFull -> (Bool, MU.Part, MU.Part)
-partItem = partItemN 4 4
+partItem = partItemN 5 4
 
 textAllAE :: Int -> Bool -> CStore -> ItemFull -> [Text]
 textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
@@ -159,7 +159,7 @@ partItemWs count c lid localTime itemFull =
 
 partItemAW :: CStore -> LevelId -> Time -> ItemFull -> MU.Part
 partItemAW c lid localTime itemFull =
-  let (unique, name, stats) = partItem c lid localTime itemFull
+  let (unique, name, stats) = partItemN 4 4 c lid localTime itemFull
   in if unique
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
@@ -173,7 +173,7 @@ partItemMediumAW c lid localTime itemFull =
 
 partItemWownW :: MU.Part -> CStore -> LevelId -> Time -> ItemFull -> MU.Part
 partItemWownW partA c lid localTime itemFull =
-  let (_, name, stats) = partItem c lid localTime itemFull
+  let (_, name, stats) = partItemN 4 4 c lid localTime itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
 itemDesc :: CStore -> LevelId -> Time -> ItemFull -> Overlay

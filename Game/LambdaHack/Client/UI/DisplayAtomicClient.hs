@@ -593,6 +593,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                     | fid == side = "be stomped flat"
                     | bproj b = "be shattered into little pieces"
                     | otherwise = "be reduced to a bloody pulp"
+          -- Aspect bonuses ignored, so hurtExtra will add variety sometimes.
           deadPreviousTurn dp = bhp b <= dp
           harm2 dp = if deadPreviousTurn dp
                      then (True, Just hurtExtra)

@@ -267,7 +267,7 @@ effectHurt nDm source target verboseEffectConstructor = do
     if source == target
     then verboseEffectConstructor deltaDiv
            -- no SfxStrike, so treat as any heal/wound
-    else IK.Hurt (Dice.intToDice deltaDiv)
+    else IK.Hurt (Dice.intToDice (- deltaDiv))
            -- SfxStrike already sent, avoid spam
   return True
 
@@ -310,7 +310,7 @@ effectBurn :: (MonadAtomic m, MonadServer m)
            => Dice.Dice -> ActorId -> ActorId
            -> m Bool
 effectBurn nDm source target =
-  effectHurt nDm source target (\p -> IK.Burn $ Dice.intToDice p)
+  effectHurt nDm source target (\p -> IK.Burn $ Dice.intToDice (-p))
 
 -- ** Explode
 
