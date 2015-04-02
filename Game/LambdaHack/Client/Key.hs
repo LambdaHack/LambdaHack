@@ -193,9 +193,9 @@ moveBinding :: Bool -> Bool -> (Vector -> a) -> (Vector -> a)
 moveBinding configVi configLaptop move run =
   let assign f (km, dir) = (km, f dir)
       mapMove modifier keys =
-        map (assign move) (zip (map (toKM modifier) keys) moves)
+        map (assign move) (zip (map (toKM modifier) keys) $ cycle moves)
       mapRun modifier keys =
-        map (assign run) (zip (map (toKM modifier) keys) moves)
+        map (assign run) (zip (map (toKM modifier) keys) $ cycle moves)
   in mapMove NoModifier (dirMoveNoModifier configVi configLaptop)
      ++ mapRun NoModifier (dirRunNoModifier configVi configLaptop)
      ++ mapRun Control dirRunControl

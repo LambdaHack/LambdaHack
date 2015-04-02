@@ -43,12 +43,12 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
            , (K.mkKM "CTRL-KP_Begin", ([CmdMove], Macro "" ["KP_Begin"]))
            , (K.mkKM "KP_5", ([CmdMove], Macro "" ["KP_Begin"]))
            , (K.mkKM "CTRL-KP_5", ([CmdMove], Macro "" ["KP_Begin"])) ]
-        ++ if configVi
-           then [ (K.mkKM "period", ([CmdMove], Macro "" ["KP_Begin"])) ]
-           else if configLaptop
-           then [ (K.mkKM "i", ([CmdMove], Macro "" ["KP_Begin"]))
-                , (K.mkKM "I", ([CmdMove], Macro "" ["KP_Begin"])) ]
-           else []
+        ++ (if configVi
+            then [ (K.mkKM "period", ([CmdMove], Macro "" ["KP_Begin"])) ]
+            else if configLaptop
+            then [ (K.mkKM "i", ([CmdMove], Macro "" ["KP_Begin"]))
+                 , (K.mkKM "I", ([CmdMove], Macro "" ["KP_Begin"])) ]
+            else [])
         ++ K.moveBinding configVi configLaptop (\v -> ([CmdMove], Move v))
                                                (\v -> ([CmdMove], Run v))
         ++ fmap heroSelect [0..6]
