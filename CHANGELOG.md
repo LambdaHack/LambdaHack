@@ -2,10 +2,10 @@
 
 - the game is now officially fun to play
 - introduce unique boss monsters and unique artifact items
-- add monsters that heal the player
+- add animals that heal the player
 - let AI gang up, attempt stealth and react to player aggressiveness
 - spawn actors fast and close to the enemy
-- spawn actors less often on a given level, but with higher actor level
+- spawn actors less and less often on a given level, but with growing depth
 - prefer weapons with effects, if recharged
 - make the bracing melee bonus additive, not multiplicative
 - let explosions buffet actors around
