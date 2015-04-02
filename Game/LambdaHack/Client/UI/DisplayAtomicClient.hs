@@ -38,6 +38,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * RespUpdAtomicUI
@@ -374,12 +375,31 @@ createActorUI aid body verbose verb = do
 destroyActorUI :: MonadClientUI m
                => ActorId -> Actor -> MU.Part -> MU.Part -> Bool -> m ()
 destroyActorUI aid body verb verboseVerb verbose = do
+  Kind.COps{corule} <- getsState scops
   side <- getsClient sside
   if bfid body == side && bhp body <= 0 && not (bproj body) then do
     when verbose $ actorVerbMU aid body verb
-    void $ displayMore ColorBW ""
+    let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
+        fid = bfid body
+    fact <- getsState $ (EM.! fid) . sfactionD
+    actorsAlive <- anyActorsAlive fid (Just aid)
+    -- TODO: deduplicate wrt Server
+    -- TODO; actually show the --more- prompt, but not between fadeout frames
+    unless (fneverEmpty (gplayer fact)
+            && (not actorsAlive || firstDeathEnds)) $
+      void $ displayMore ColorBW ""
   else when verbose $ actorVerbMU aid body verboseVerb
   modifyClient $ \cli -> cli {slastLost = ES.insert aid $ slastLost cli}
+
+-- TODO: deduplicate wrt Server
+anyActorsAlive :: MonadClient m => FactionId -> Maybe ActorId -> m Bool
+anyActorsAlive fid maid = do
+  fact <- getsState $ (EM.! fid) . sfactionD
+  if fleaderMode (gplayer fact) /= LeaderNull
+    then return $! isJust $ gleader fact
+    else do
+      as <- getsState $ fidActorNotProjAssocs fid
+      return $! not $ null $ maybe as (\aid -> filter ((/= aid) . fst) as) maid
 
 moveActor :: MonadClientUI m => State -> ActorId -> Point -> Point -> m ()
 moveActor oldState aid source target = do
