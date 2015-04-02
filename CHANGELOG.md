@@ -1,3 +1,29 @@
+## [v0.4.101.0, aka 'Officially fun'](https://github.com/LambdaHack/LambdaHack/compare/v0.4.100.0...v0.4.101.0)
+
+- the game is now officially fun to play
+- introduce unique boss monsters and unique artifact items
+- add monsters that heal the player
+- let AI gang up, attempt stealth and react to player aggressiveness
+- spawn actors fast and close to the enemy
+- spawn actors less often on a given level, but with higher actor level
+- prefer weapons with effects, if recharged
+- make the bracing melee bonus additive, not multiplicative
+- let explosions buffet actors around
+- make braced actors immune to translocation effects
+- use mouse for movement, actor selection, aiming
+- don't run straight with selected actors, but go-to cross-hair with them
+- speed up default frame rate, slot down projectiles visually
+- rework item manipulation UI
+- you can pick up many items at once and it costs only one turn
+- allow actors to apply and project from the shared stash
+- reverse messages shown in player diary
+- display actor organs and stats
+- split highscore tables wrt game modes
+- move score calculation formula to content
+- don't keep the default/example config file commented out; was misleading
+- I was naughty again and changed v0.5.0.0 of LambdaHack content API slightly
+  one last time
+
 ## [v0.4.100.0, aka 'The last thaw'](https://github.com/LambdaHack/LambdaHack/compare/v0.4.99.0...v0.4.100.0)
 
 - unexpectedly thaw and freeze again v0.5.0.0 of LambdaHack content API
