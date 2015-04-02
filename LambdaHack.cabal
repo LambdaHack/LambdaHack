@@ -21,8 +21,8 @@ description:   LambdaHack is a game engine library for roguelike games
                Several frontends are available (GTK is the default)
                and many other generic engine components are easily overridden,
                but the fundamental source of flexibility lies
-               in the strict and type-safe separation of code and content
-               and of clients (human and AI-controlled) and server.
+               in the strict and type-safe separation of code from the content
+               and of clients (human and AI-controlled) from the server.
                Please see the changelog file for recent improvements
                and the issue tracker for short-term plans. Long term vision
                revolves around procedural content generation and includes
@@ -45,9 +45,9 @@ description:   LambdaHack is a game engine library for roguelike games
                the module is the exclusive interface to the directory.
                No references to the modules in the directory are allowed
                except from the interface module. This policy is only binding
-               inside the library --- users are free to do whatever they
-               please, since the library authors are in no position to guess
-               their particular needs.
+               when developing the library --- library users are free
+               to access any modules, since the library authors are in
+               no position to guess their particular needs.
 homepage:      http://github.com/LambdaHack/LambdaHack
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD3

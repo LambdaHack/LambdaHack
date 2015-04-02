@@ -85,11 +85,11 @@ or you can enable the Vi keys (aka roguelike keys) in the config file.
 Compilation from source
 -----------------------
 
-The library is best compiled and installed via Cabal (already a part
-of your OS distribution, or available within [The Haskell Platform] [7]),
-which also takes care of all the dependencies. You also need
-the GTK libraries for your OS. On Linux, remember to install the -dev
-versions as well. On Windows follow [the same steps as for Wine] [13].
+If you want to compile your own binaries from the source code,
+use Cabal (already a part of your OS distribution, or available within
+[The Haskell Platform] [7]), which also takes care of all the dependencies.
+You also need the GTK libraries for your OS. On Linux, remember to install
+the -dev versions as well. On Windows follow [the same steps as for Wine] [13].
 On OSX, if you encounter problems, you may want to
 [compile the GTK libraries from sources] [14].
 

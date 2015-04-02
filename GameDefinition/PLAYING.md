@@ -111,7 +111,7 @@ Few commands other than movement, 'g'etting an item from the floor,
 Some are provided only as specialized versions of the more general
 commands or as building blocks for more complex convenience macros,
 e.g., the autoexplore command (key `X`) could be defined
-by the player as a macro using `CTRL-?`, `:` and `V`.
+by the player as a macro using `CTRL-?`, `CTRL-.` and `V`.
 
 The following minimal command set lets you accomplish almost anything
 in the game, though not necessarily with the fewest number of keystrokes.
@@ -169,8 +169,7 @@ are listed in the Main Menu, brought up by the `ESC` key.
 Game difficulty setting affects hitpoints at birth for any actors
 of any UI-using faction. For a person new to roguelikes, the Duel scenario
 offers a gentle introduction. The subsequent game modes gradually introduce
-squad combat, stealth, opportunity fire, asymmetric battles and more
-gameplay elements.
+squad combat, stealth, opportunity fire, asymmetric battles and more.
 
 
 Monsters
@@ -192,7 +191,7 @@ e.g., when both parties form a continuous front-line.
 In melee combat, the best equipped weapon (or the best fighting organ)
 of each opponent is taken into account for determining the damage
 and any extra effects of the blow. If a recharged weapon with a non-trivial
-effect is in the equipment, it is chosen for combat. Otherwise combat
+effect is in the equipment, it is preferred for combat. Otherwise combat
 involves the weapon with the highest raw damage dice (the same as displayed
 at bottommost status line).
 
@@ -229,4 +228,4 @@ that were lost, are awarded if you win.
 If all your heroes fall, you will invariably see a new foolhardy party
 of adventurers clamoring to be led into the dungeon. They start
 their conquest from a new entrance, with no experience and no equipment,
-and new, undaunted enemies bar their way. Lead them wisely!
+and new, undaunted enemies bar their way. Lead them with fortitude!
