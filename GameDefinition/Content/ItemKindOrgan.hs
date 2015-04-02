@@ -249,9 +249,8 @@ screechingBeak = armoredSkin
   , icount   = 1
   , iverbHit = "peck"
   , iaspects = [Timeout $ 5 + d 5]
-  , ieffects = [ Hurt (2 * d 1)
-               , Recharging (Summon [("scavenger", 1)] $ 1 + dl 2)
-               ]
+  , ieffects = [ Recharging (Summon [("scavenger", 1)] $ 1 + dl 2)
+               , Hurt (2 * d 1) ]
   , idesc    = ""
   }
 largeTail = fist
