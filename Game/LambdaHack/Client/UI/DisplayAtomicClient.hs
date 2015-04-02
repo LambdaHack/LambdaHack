@@ -377,6 +377,9 @@ destroyActorUI :: MonadClientUI m
 destroyActorUI aid body verb verboseVerb verbose = do
   Kind.COps{corule} <- getsState scops
   side <- getsClient sside
+  when (bfid body == side) $ do
+    let upd = ES.delete aid
+    modifyClient $ \cli -> cli {sselected = upd $ sselected cli}
   if bfid body == side && bhp body <= 0 && not (bproj body) then do
     when verbose $ actorVerbMU aid body verb
     let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
