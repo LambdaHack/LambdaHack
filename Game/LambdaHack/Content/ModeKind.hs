@@ -2,7 +2,7 @@
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
   ( Caves, Roster(..), Player(..), ModeKind(..), LeaderMode(..), AutoLeader(..)
-  , Outcome(..), HiIndeterminant(..), HiCondPoly
+  , Outcome(..), HiIndeterminant(..), HiCondPoly, HiSummand, HiPolynomial
   , validateSingleModeKind, validateAllModeKind
   ) where
 
