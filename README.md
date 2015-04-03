@@ -72,11 +72,11 @@ at its official location or by CTRL-right-clicking on the game window.
 
 If you use the numeric keypad, use the NumLock key on your keyboard
 to toggle the game keyboard mode. With NumLock off, you walk with the numeric
-keys and run with Shift (or Control) and the keys. This mode is probably
+keys and run with SHIFT (or CONTROL) and the keys. This mode is probably
 the best if you use mouse for running. When you turn NumLock on,
 the reversed key setup enforces good playing habits by setting as the default
 the run command (which automatically stops at threats, keeping you safe)
-and requiring Shift for the error-prone step by step walking.
+and requiring SHIFT (or CONTROL) for the error-prone step by step walking.
 
 If you don't have the numeric keypad, you can use laptop keys (uk8o79jl)
 or you can enable the Vi keys (aka roguelike keys) in the config file.
