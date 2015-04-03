@@ -173,6 +173,9 @@ dirRunControl = dirKeypadKey
                 ++ dirKeypadShiftKey
                 ++ map Char dirKeypadShiftChar
 
+dirRunShift :: [Key]
+dirRunShift = dirRunControl
+
 dirAllKey :: Bool -> Bool -> [Key]
 dirAllKey configVi configLaptop =
   dirMoveNoModifier configVi configLaptop
@@ -199,6 +202,7 @@ moveBinding configVi configLaptop move run =
   in mapMove NoModifier (dirMoveNoModifier configVi configLaptop)
      ++ mapRun NoModifier (dirRunNoModifier configVi configLaptop)
      ++ mapRun Control dirRunControl
+     ++ mapRun Shift dirRunShift
 
 mkKM :: String -> KM
 mkKM s = let mkKey sk =
