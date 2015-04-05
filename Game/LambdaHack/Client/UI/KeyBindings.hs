@@ -75,7 +75,7 @@ keyHelp Binding{bcmdList} =
       , "                /|\\            /|\\            /|\\"
       , "               1 2 3          j k l          b j n"
       , ""
-      , "In aiming mode the same keys (or mouse) move the crosshair (the white box)."
+      , "In aiming mode (KEYPAD_* or \\) the same keys (or mouse) move the crosshair."
       , "Press 'KEYPAD_5' (or 'i' or '.') to wait, bracing for blows, which reduces"
       , "any damage taken and makes it impossible for foes to displace you."
       , "You displace enemies or friends by bumping into them with SHIFT (or CTRL)."
@@ -108,7 +108,7 @@ keyHelp Binding{bcmdList} =
       , "Press PGUP to return to previous pages or ESC to see the map again."
       ]
     pickLeaderDescription =
-      [ fmt 16 "0, 1, ... 6" "pick a particular actor as the new leader"
+      [ fmt 16 "0, 1 ... 6" "pick a particular actor as the new leader"
       ]
     casualDescription = "Minimal cheat sheet for casual play"
     fmt n k h = T.justifyRight 72 ' '
@@ -125,7 +125,7 @@ keyHelp Binding{bcmdList} =
                          | (from, (_, cats, Macro _ [to])) <- bcmdList
                          , K.mkKM to == k
                          , any (`notElem` [CmdDebug, CmdInternal]) cats ]
-    disp k = T.concat $ intersperse " and " $ map K.showKM $ coImage k
+    disp k = T.concat $ intersperse " or " $ map K.showKM $ coImage k
     keysN n cat = [ fmt n (disp k) h
                   | (k, (h, cats, _)) <- bcmdList, cat `elem` cats, h /= "" ]
     -- TODO: measure the longest key sequence and set the caption automatically

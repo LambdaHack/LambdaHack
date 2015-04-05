@@ -12,7 +12,7 @@
 - make braced actors immune to translocation effects
 - use mouse for movement, actor selection, aiming
 - don't run straight with selected actors, but go-to cross-hair with them
-- speed up default frame rate, slot down projectiles visually
+- speed up default frame rate, slow down projectiles visually
 - rework item manipulation UI
 - you can pick up many items at once and it costs only one turn
 - allow actors to apply and project from the shared stash

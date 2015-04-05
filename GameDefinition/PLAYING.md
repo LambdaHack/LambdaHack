@@ -95,14 +95,14 @@ which have to be enabled in config.ui.ini).
                  /|\            /|\            /|\
                 1 2 3          j k l          b j n
 
-In aiming mode the same keys (or the middle and right mouse buttons)
-move the crosshair (the white box). In normal mode, `SHIFT` (or `CTRL`)
-and a movement key make the current party leader run in the indicated
-direction, until anything of interest is spotted. The `5` keypad key
-and the `i` and `.` keys consume a turn and make you brace for combat,
-which reduces any damage taken for a turn and makes it impossible
-for foes to displace you. You displace enemies or friends by bumping
-into them with `SHIFT` (or `CTRL`).
+In aiming mode (KEYPAD_* or \) the same keys (or the middle and right
+mouse buttons) move the crosshair (the white box). In normal mode,
+`SHIFT` (or `CTRL`) and a movement key make the current party leader
+run in the indicated direction, until anything of interest is spotted.
+The `5` keypad key and the `i` and `.` keys consume a turn and make you
+brace for combat, which reduces any damage taken for a turn and makes it
+impossible for foes to displace you. You displace enemies or friends
+by bumping into them with `SHIFT` (or `CTRL`).
 
 Melee, searching for secret doors, looting and opening closed doors
 can be done by bumping into a monster, a wall and a door, respectively.
@@ -123,7 +123,7 @@ from the Main Menu.
         >               descend a level
         c               close door
         E               manage equipment of the leader
-        g and ,         get items
+        g or ,          get items
         a               apply consumable
         f               fling projectile
         +               swerve the aiming line
@@ -141,8 +141,8 @@ and you can assign individual targets to party members
 using the aiming and targeting commands listed below.
 
         keys            command
-        KEYPAD_* and \  aim at an enemy
-        KEYPAD_/ and |  cycle aiming styles
+        KEYPAD_* or \   aim at an enemy
+        KEYPAD_/ or |   cycle aiming styles
         +               swerve the aiming line
         -               unswerve the aiming line
         CTRL-?          set crosshair to the closest unknown spot
@@ -150,7 +150,7 @@ using the aiming and targeting commands listed below.
         CTRL-{          set crosshair to the closest stairs up
         CTRL-}          set crosshair to the closest stairs down
         BACKSPACE       reset target/crosshair
-        RET and INSERT  accept target/choice
+        RET or INSERT   accept target/choice
 
 For ranged attacks, setting the crosshair or individual targets
 beforehand is not mandatory, because the crosshair is set automatically
