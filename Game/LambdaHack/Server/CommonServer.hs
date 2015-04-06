@@ -101,11 +101,10 @@ getPerFid fid lid = do
       per = EM.findWithDefault failLvl lid fper
   return $! per
 
--- We don't provide ActorId, because the actor can be dead and then, e.g.,
--- containers with the ActorId are invalid and lead to crashes.
 revealItems :: (MonadAtomic m, MonadServer m)
             => Maybe FactionId -> Maybe (ActorId, Actor) -> m ()
 revealItems mfid mbody = do
+  let !_A = assert (maybe True (not . bproj . snd) mbody) ()
   itemToF <- itemToFullServer
   dungeon <- getsState sdungeon
   let discover aid store iid k =
@@ -119,7 +118,8 @@ revealItems mfid mbody = do
       f aid = do
         b <- getsState $ getActorBody aid
         let ourSide = maybe True (== bfid b) mfid
-        when ourSide $
+        -- Don't ID projectiles, because client may not see them.
+        when (not (bproj b) && ourSide) $
           -- CSha is IDed for each actor of each faction, which is OK,
           -- even though it may introduce a slight lag.
           -- AI clients being sent this is a bigger waste anyway.
