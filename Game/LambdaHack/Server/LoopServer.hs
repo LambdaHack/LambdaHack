@@ -114,9 +114,10 @@ loopSer cops sdebug executorUI executorAI = do
                Just (leader, _) -> do
                   b <- getsState $ getActorBody leader
                   return $ Just $ blid b
-               Nothing -> if fleaderMode (gplayer fact) /= LeaderNull
-                          then Just <$> getEntryArena fact
-                          else return Nothing
+               Nothing -> if fleaderMode (gplayer fact) == LeaderNull
+                             || EM.null (gvictims fact)
+                          then return Nothing
+                          else Just <$> getEntryArena fact
         factionD <- getsState sfactionD
         marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
