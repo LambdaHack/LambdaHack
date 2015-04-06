@@ -2,9 +2,11 @@
 -- player actions. Has no access to the the main action type.
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
-  , getLevel, nUI, posOfAid, factionCanEscape, factionLoots, getGameMode
+  , getLevel, nUI, posOfAid, factionCanEscape, factionLoots
+  , getGameMode, getEntryArena
   ) where
 
+import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Common.Actor
@@ -55,3 +57,12 @@ getGameMode = do
   Kind.COps{comode=Kind.Ops{okind}} <- getsState scops
   t <- getsState sgameModeId
   return $! okind t
+
+getEntryArena :: MonadStateRead m => Faction -> m LevelId
+getEntryArena fact = do
+  dungeon <- getsState sdungeon
+  let (minD, maxD) =
+        case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
+          (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
+          _ -> assert `failure` "empty dungeon" `twith` dungeon
+  return $! max minD $ min maxD $ toEnum $ fentryLevel $ gplayer fact

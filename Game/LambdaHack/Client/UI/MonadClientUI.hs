@@ -295,13 +295,7 @@ getArenaUI = do
       fact <- getsState $ (EM.! side) . sfactionD
       case gquit fact of
         Just Status{stDepth} -> return $! toEnum stDepth
-        Nothing -> do
-          dungeon <- getsState sdungeon
-          let (minD, maxD) =
-                case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
-                  (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-                  _ -> assert `failure` "empty dungeon" `twith` dungeon
-          return $! max minD $ min maxD $ toEnum $ fentryLevel $ gplayer fact
+        Nothing -> getEntryArena fact
 
 viewedLevel :: MonadClientUI m => m LevelId
 viewedLevel = do

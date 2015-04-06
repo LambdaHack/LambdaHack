@@ -3,6 +3,7 @@
 -- moves turn by turn.
 module Game.LambdaHack.Server.LoopServer (loopSer) where
 
+import Control.Applicative
 import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
 import Control.Monad
@@ -100,14 +101,22 @@ loopSer cops sdebug executorUI executorAI = do
   -- Run the leader and other actors moves. Eventually advance the time
   -- and repeat.
   let loop = do
+        -- Note that if a faction enters dungeon on a level with no spawners,
+        -- the faction won't cause spawning on its active arena
+        -- as long as it has no leader. This may cause regeneration items
+        -- of its opponents become overpowered and lead to micromanagement
+        -- (make sure to kill all actors of the faction, go to a no-spawn
+        -- level and heal fully with no risk nor cost).
         let factionArena fact =
               case gleader fact of
-               -- Even spawners and horrors need an active arena
-               -- for their leader, or they start clogging stairs.
+               -- Even spawners need an active arena for their leader,
+               -- or they start clogging stairs.
                Just (leader, _) -> do
                   b <- getsState $ getActorBody leader
                   return $ Just $ blid b
-               Nothing -> return Nothing
+               Nothing -> if fleaderMode (gplayer fact) /= LeaderNull
+                          then Just <$> getEntryArena fact
+                          else return Nothing
         factionD <- getsState sfactionD
         marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
