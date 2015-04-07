@@ -47,7 +47,7 @@ explosionBlast n = ItemKind
   , iverbHit = "tear apart"
   , iweight  = 1
   , iaspects = [AddLight $ intToDice n]
-  , ieffects = [Impress, RefillHP (- n `div` 2)]
+  , ieffects = [RefillHP (- n `div` 2)]
                ++ [PushActor (ThrowMod (100 * (n `div` 5)) 50)]
                ++ [DropItem COrgan "temporary conditions" True | n >= 10]
   , ifeature = [Fragile, toLinger 20, Identified]
@@ -68,8 +68,7 @@ firecracker n = ItemKind
   , iverbHit = "crack"
   , iweight  = 1
   , iaspects = [AddLight $ intToDice $ n `div` 2]
-  , ieffects = [Impress]
-               ++ [ RefillCalm (-1) | n >= 5 ]
+  , ieffects = [ RefillCalm (-1) | n >= 5 ]
                ++ [ DropBestWeapon | n >= 5]
                ++ [ OnSmash (Explode $ toGroupName
                              $ "firecracker" <+> tshow (n - 1))
@@ -212,7 +211,7 @@ distortion = ItemKind
   , iverbHit = "engulf"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [Impress, Teleport $ 15 + d 10]
+  , ieffects = [Teleport $ 15 + d 10]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
   , idesc    = ""
@@ -482,7 +481,7 @@ whiskeySpray = ItemKind
   , iverbHit = "inebriate"
   , iweight  = 1
   , iaspects = []
-  , ieffects = [Impress, toOrganActorTurn "drunk" (3 + d 3)]
+  , ieffects = [toOrganActorTurn "drunk" (3 + d 3)]
   , ifeature = [ toVelocity 13  -- the slowest that travels at least 2 steps
                , Fragile, Identified ]
   , idesc    = ""

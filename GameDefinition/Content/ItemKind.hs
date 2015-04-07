@@ -463,7 +463,8 @@ potion4 = potion
                , OnSmash (Explode "healing mist 2") ]
   }
 potion5 = potion
-  { ieffects = [ OneOf [ Impress, OverfillHP 10, OverfillHP 5, Burn 5 ]
+  { ieffects = [ OneOf [ OverfillHP 10, OverfillHP 5, Burn 5
+                       , toOrganActorTurn "strengthened" (20 + d 5) ]
                , OnSmash (OneOf [ Explode "healing mist"
                                 , Explode "wounding mist"
                                 , Explode "fragrance"
@@ -473,8 +474,8 @@ potion6 = potion
   { irarity  = [(3, 3), (10, 6)]
   , ieffects = [ Impress
                , OneOf [ OverfillCalm (-60)
-                       , toOrganActorTurn "fast 20" (20 + d 5)
-                       , OverfillHP 20, OverfillHP 10, Burn 10 ]
+                       , OverfillHP 20, OverfillHP 10, Burn 10
+                       , toOrganActorTurn "fast 20" (20 + d 5) ]
                , OnSmash (OneOf [ Explode "healing mist 2"
                                 , Explode "calming mist"
                                 , Explode "distressing odor"
@@ -572,7 +573,6 @@ flask8 = flask
 flask9 = flask
   { ieffects = [ NoEffect "of bait cocktail"
                , toOrganActorTurn "drunk" (5 + d 5)
-               , Impress
                , OnSmash (Summon [("mobile animal", 1)] $ 1 + dl 2)
                , OnSmash (Explode "waste") ]
   }
