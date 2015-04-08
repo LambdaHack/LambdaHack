@@ -147,7 +147,18 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
         when (null closeFoes) $ do  -- obvious where the feeling comes from
           aidVerbMU aid "hear something"
           msgDuplicateScrap
-  UpdFidImpressedActor{} -> return ()
+  UpdFidImpressedActor aid _fidOld fidNew -> do
+    b <- getsState $ getActorBody aid
+    actorVerbMU aid b $
+      if fidNew == bfid b then
+        "get calmed and refocused"
+-- TODO: only show for liquids; for others say 'flash', etc.
+--              "get refocused by the fragrant moisture"
+      else if fidNew == bfidOriginal b then
+        "remember forgone allegiance suddenly"
+      else
+        "experience anxiety that weakens resolve and erodes loyalty"
+-- TODO     "inhale the sweet smell that weakens resolve and erodes loyalty"
   UpdTrajectory{} -> return ()
   UpdColorActor{} -> return ()
   -- Change faction attributes.
@@ -740,16 +751,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             msgAdd $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
           stopPlayBack
-        IK.Impress ->
-          actorVerbMU aid b
-          $ if bfidImpressed b /= bfid b
-            then
-              "get calmed and refocused"
--- TODO: only show for liquids; for others say "='flash', etc.
---              "get refocused by the fragrant moisture"
-            else
-              "experience anxiety that weakens resolve and erodes loyalty"
--- TODO:        "inhale the sweet smell that weakens resolve and erodes loyalty"
+        IK.Impress -> return ()
         IK.CallFriend{} -> return ()
         IK.Summon{} -> return ()
         IK.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"

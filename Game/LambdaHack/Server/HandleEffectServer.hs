@@ -212,7 +212,7 @@ effectSem source target iid recharged effect = do
     IK.RefillCalm p -> effectRefillCalm False execSfx p source target
     IK.OverfillCalm p -> effectRefillCalm True execSfx p source target
     IK.Dominate -> effectDominate recursiveCall source target
-    IK.Impress -> effectImpress execSfx source target
+    IK.Impress -> effectImpress source target
     IK.CallFriend p -> effectCallFriend p source target
     IK.Summon freqs p -> effectSummon freqs p source target
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target
@@ -431,14 +431,13 @@ effectDominate recursiveCall source target = do
 -- ** Impress
 
 effectImpress :: (MonadAtomic m, MonadServer m)
-              => m () -> ActorId -> ActorId -> m Bool
-effectImpress execSfx source target = do
+              => ActorId -> ActorId -> m Bool
+effectImpress source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if bfidImpressed tb == bfid sb || bproj tb then
     return False
   else do
-    execSfx
     execUpdAtomic $ UpdFidImpressedActor target (bfidImpressed tb) (bfid sb)
     return True
 
