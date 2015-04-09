@@ -2,13 +2,14 @@
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicServer
   ( spawnMonster, addAnyActor, dominateFidSfx
-  , advanceTime, managePerTurn, leadLevelSwitch
+  , advanceTime, managePerTurn, leadLevelSwitch, udpateCalm
   ) where
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Int (Int64)
 import Data.List
 import Data.Maybe
 
@@ -222,6 +223,10 @@ managePerTurn aid = do
     activeItems <- activeItemsServer aid
     fact <- getsState $ (EM.! bfid b) . sfactionD
     dominated <-
+      -- We react one turn after bcalm reaches 0, to let it be
+      -- displayed first, to let the player panic in advance
+      -- and also to avoid the dramatic domination message
+      -- be swamped in other enemy turn messages.
       if bcalm b == 0
          && bfidImpressed b /= bfid b
          && fleaderMode (gplayer fact) /= LeaderNull
@@ -233,13 +238,25 @@ managePerTurn aid = do
       let clearMark = 0
       unless (newCalmDelta <= 0) $
         -- Update delta for the current player turn.
-        execUpdAtomic $ UpdRefillCalm aid newCalmDelta
+        udpateCalm aid newCalmDelta
       unless (bcalmDelta b == ResDelta 0 0) $
         -- Clear delta for the next player turn.
         execUpdAtomic $ UpdRefillCalm aid clearMark
       unless (bhpDelta b == ResDelta 0 0) $
         -- Clear delta for the next player turn.
         execUpdAtomic $ UpdRefillHP aid clearMark
+
+udpateCalm :: (MonadAtomic m, MonadServer m) => ActorId -> Int64 -> m ()
+udpateCalm target deltaCalm = do
+  tb <- getsState $ getActorBody target
+  activeItems <- activeItemsServer target
+  let calmMax64 = xM $ sumSlotNoFilter IK.EqpSlotAddMaxCalm activeItems
+  execUpdAtomic $ UpdRefillCalm target deltaCalm
+  when (bcalm tb < calmMax64
+        && bcalm tb + deltaCalm >= calmMax64
+        && bfidImpressed tb /= bfidOriginal tb) $
+    execUpdAtomic $
+      UpdFidImpressedActor target (bfidImpressed tb) (bfidOriginal tb)
 
 leadLevelSwitch :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelSwitch = do

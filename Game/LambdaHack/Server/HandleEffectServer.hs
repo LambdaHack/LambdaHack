@@ -288,8 +288,7 @@ armorHurtBonus source target = do
       block = braced tb
   return $! itemBonus - if block then 50 else 0
 
-halveCalm :: (MonadAtomic m, MonadServer m)
-          => ActorId -> m ()
+halveCalm :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 halveCalm target = do
   tb <- getsState $ getActorBody target
   activeItems <- activeItemsServer target
@@ -301,7 +300,7 @@ halveCalm target = do
   -- HP loss decreases Calm by at least minusTwoM, to overcome Calm regen,
   -- when far from shooting foe and to avoid "hears something",
   -- which is emitted for decrease @minusM@.
-  execUpdAtomic $ UpdRefillCalm target deltaCalm
+  udpateCalm target deltaCalm
 
 -- ** Burn
 
@@ -409,7 +408,7 @@ effectRefillCalm overfill execSfx power source target = do
     then return False
     else do
       execSfx
-      execUpdAtomic $ UpdRefillCalm target deltaCalm
+      udpateCalm target deltaCalm
       return True
 
 -- ** Dominate
@@ -494,7 +493,7 @@ effectSummon actorFreq nDm source target = do
     return False
   else do
     let deltaCalm = - xM 10
-    unless (bproj tb) $ execUpdAtomic $ UpdRefillCalm target deltaCalm
+    unless (bproj tb) $ udpateCalm target deltaCalm
     let validTile t = not $ Tile.hasFeature cotile TK.NoActor t
     ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
     localTime <- getsState $ getLocalTime (blid tb)

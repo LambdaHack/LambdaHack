@@ -3,8 +3,8 @@
 module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, moveStores, deduceQuits, deduceKilled, electLeader
-  , addActor, addActorIid, projectFail, pickWeaponServer, sumOrganEqpServer
-  , actorSkillsServer
+  , addActor, addActorIid, projectFail
+  , pickWeaponServer, sumOrganEqpServer, actorSkillsServer
   ) where
 
 import Control.Applicative
