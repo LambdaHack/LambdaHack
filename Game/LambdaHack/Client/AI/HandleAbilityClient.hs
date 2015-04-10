@@ -265,11 +265,10 @@ pickup aid onlyWeapon = do
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
       prepareOne (oldN, l4) ((_, (k, _)), (iid, itemFull)) =
-        -- TODO: instead of pickup to eqp and then move to inv, pickup to inv
         let n = oldN + k
             (newN, toCStore)
               | calmE && goesIntoSha itemFull = (oldN, CSha)
-              | goesIntoInv itemFull || eqpOverfull b n = (oldN, CInv)
+              | not (goesIntoEqp itemFull) || eqpOverfull b n = (oldN, CInv)
               | otherwise = (n, CEqp)
         in (newN, (iid, k, CGround, toCStore) : l4)
       (_, prepared) = foldl' prepareOne (0, []) $ filterWeapon benItemL

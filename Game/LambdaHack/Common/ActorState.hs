@@ -12,8 +12,8 @@ module Game.LambdaHack.Common.ActorState
   , nearbyFreePoints, whereTo, getCarriedAssocs, getCarriedIidCStore
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
-  , actorInAmbient, actorSkills, dispEnemy
-  , fullAssocs, itemToFull, goesIntoInv, goesIntoSha, eqpOverfull
+  , actorInAmbient, actorSkills, dispEnemy, fullAssocs, itemToFull
+  , goesIntoEqp, goesIntoInv, goesIntoSha, eqpOverfull
   , storeFromC, lidFromC, aidFromC, hasCharge
   , strongestMelee, isMelee, isMeleeEqp
   ) where
@@ -380,13 +380,17 @@ itemToFull Kind.COps{coitem=Kind.Ops{okind}}
 -- Non-durable item that hurts doesn't go into equipment by default,
 -- but if it is in equipment or among organs, it's used for melee
 -- nevertheless, e.g., thorns.
-goesIntoInv :: ItemFull -> Bool
-goesIntoInv itemFull = not (isJust (strengthEqpSlot $ itemBase itemFull))
+goesIntoEqp :: ItemFull -> Bool
+goesIntoEqp itemFull = isJust (strengthEqpSlot $ itemBase itemFull)
 -- TODO: not needed if EqpSlotWeapon stays         || isMeleeEqp itemFull)
+
+goesIntoInv :: ItemFull -> Bool
+goesIntoInv itemFull = IK.Precious `notElem` jfeature (itemBase itemFull)
+                       && not (goesIntoEqp itemFull)
 
 goesIntoSha :: ItemFull -> Bool
 goesIntoSha itemFull = IK.Precious `elem` jfeature (itemBase itemFull)
-                       && goesIntoInv itemFull
+                       && not (goesIntoEqp itemFull)
 
 eqpOverfull :: Actor -> Int -> Bool
 eqpOverfull b n = let size = sum $ map fst $ EM.elems $ beqp b

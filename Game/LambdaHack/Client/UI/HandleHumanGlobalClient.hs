@@ -295,7 +295,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
         then case destCStore of
           CEqp | calmE && goesIntoSha itemFull ->
             retRec CSha
-          CEqp | goesIntoInv itemFull ->
+          CEqp | not $ goesIntoEqp itemFull ->
             retRec CInv
           CEqp | eqpOverfull b (oldN + k) -> do
             msgAdd $ "Warning:" <+> showReqFailure EqpOverfull <> "."

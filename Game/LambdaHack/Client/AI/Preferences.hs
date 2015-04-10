@@ -156,7 +156,7 @@ totalUsefulness cops b activeItems fact itemFull =
             isWeapon = isMeleeEqp itemFull
             totalSum
               | isWeapon && effSum < 0 = - effSum + selfSum
-              | goesIntoInv itemFull = effSum
+              | not $ goesIntoEqp itemFull = effSum
               | mixedBlessing =
                   0  -- significant mixed blessings out of AI control
               | otherwise = selfSum  -- if the weapon heals the enemy, it
