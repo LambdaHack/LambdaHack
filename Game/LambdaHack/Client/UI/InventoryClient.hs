@@ -109,19 +109,21 @@ getGroupItem psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm = do
 -- and let him specify the number of items.
 -- Used, e.g., for picking up and inventory manipulation.
 getAnyItems :: MonadClientUI m
-            => MU.Part   -- ^ the verb describing the action
+            => m Suitability
+                         -- ^ which items to consider suitable
+            -> Text      -- ^ specific prompt for only suitable items
+            -> Text      -- ^ generic prompt
             -> [CStore]  -- ^ initial legal modes
             -> [CStore]  -- ^ legal modes after Calm taken into account
             -> Bool      -- ^ whether to ask, when the only item
                          --   in the starting mode is suitable
             -> Bool      -- ^ whether to ask for the number of items
             -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
-getAnyItems verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
-  let prompt _ _ cCur =
-        makePhrase ["What to", verb, MU.Text $ ppItemDialogModeFrom cCur]
-  soc <- getFull (return SuitsEverything)
-                 prompt prompt False
-                 cLegalRaw cLegalAfterCalm
+getAnyItems psuit prompt promptGeneric cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
+  soc <- getFull psuit
+                 (\_ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
+                 (\_ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
+                 False cLegalRaw cLegalAfterCalm
                  askWhenLone True ISuitable
   case soc of
     Left _ -> return soc

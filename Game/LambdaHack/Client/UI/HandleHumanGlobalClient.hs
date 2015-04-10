@@ -23,6 +23,7 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import Data.Monoid
+import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
@@ -261,7 +262,7 @@ waitHuman = do
 
 -- * MoveItem
 
-moveItemHuman :: MonadClientUI m
+moveItemHuman :: forall m. MonadClientUI m
               => [CStore] -> CStore -> Maybe MU.Part -> Bool
               -> m (SlideOrCmd (RequestTimed 'AbMoveItem))
 moveItemHuman cLegalRaw destCStore mverb auto = do
@@ -305,9 +306,16 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
         else case destCStore of
           CEqp | eqpOverfull b (oldN + k) -> failSer EqpOverfull
           _ -> retRec destCStore
-  ggi <- if auto
-         then getAnyItems verb cLegalRaw cLegal False False
-         else getAnyItems verb cLegalRaw cLegal True True
+      prompt = makePhrase ["What to", verb]
+      promptEqp = makePhrase ["What unusual item to", verb]
+      p :: CStore -> (Text, m Suitability)
+      p CEqp = (promptEqp, return $ SuitsSomething goesIntoEqp)
+      p _ = (prompt, return SuitsEverything)
+      (promptGeneric, psuit) = p destCStore
+  ggi <-
+    if auto
+    then getAnyItems psuit prompt promptGeneric cLegalRaw cLegal False False
+    else getAnyItems psuit prompt promptGeneric cLegalRaw cLegal True True
   case ggi of
     Right (l, MStore fromCStore) -> do
       leader2 <- getLeaderUI
