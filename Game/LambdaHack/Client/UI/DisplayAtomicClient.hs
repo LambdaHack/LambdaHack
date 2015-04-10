@@ -845,7 +845,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             displayDelay
           let ageDisp = EM.insert arena localTime
           modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
-          displayPush ""
+          when (not (bproj b)) $  -- projectiles display animations instead
+            displayPush ""
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do
