@@ -313,12 +313,11 @@ targetDesc target = do
       b <- getsState $ getActorBody aid
       maxHP <- sumOrganEqpClient IK.EqpSlotAddMaxHP aid
       let percentage = 100 * bhp b `div` xM (max 5 maxHP)
-          stars | percentage < 20  = "[_____]"
-                | percentage < 40  = "[*____]"
-                | percentage < 60  = "[**___]"
-                | percentage < 80  = "[***__]"
-                | percentage < 100 = "[****_]"
-                | otherwise        = "[*****]"
+          stars | percentage < 20  = "[____]"
+                | percentage < 40  = "[*___]"
+                | percentage < 60  = "[**__]"
+                | percentage < 80  = "[***_]"
+                | otherwise        = "[****]"
           hpIndicator = if bfid b == side then Nothing else Just stars
       return (bname b, hpIndicator)
     Just (TEnemyPos _ lid p _) -> do
