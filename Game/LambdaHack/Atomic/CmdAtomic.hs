@@ -97,12 +97,12 @@ data UpdAtomic =
   -- Assorted.
   | UpdTimeItem !ItemId !Container !ItemTimer !ItemTimer
   | UpdAgeGame !(Delta Time) ![LevelId]
-  | UpdDiscover !Container !ItemId !(Kind.Id ItemKind) !ItemSeed
-  | UpdCover !Container !ItemId !(Kind.Id ItemKind) !ItemSeed
+  | UpdDiscover !Container !ItemId !(Kind.Id ItemKind) !ItemSeed !AbsDepth
+  | UpdCover !Container !ItemId !(Kind.Id ItemKind) !ItemSeed !AbsDepth
   | UpdDiscoverKind !Container !ItemId !(Kind.Id ItemKind)
   | UpdCoverKind !Container !ItemId !(Kind.Id ItemKind)
-  | UpdDiscoverSeed !Container !ItemId !ItemSeed
-  | UpdCoverSeed !Container !ItemId !ItemSeed
+  | UpdDiscoverSeed !Container !ItemId !ItemSeed !AbsDepth
+  | UpdCoverSeed !Container !ItemId !ItemSeed !AbsDepth
   | UpdPerception !LevelId !Perception !Perception
   | UpdRestart !FactionId !DiscoveryKind !FactionPers !State !DebugModeCli
   | UpdRestartServer !State
@@ -182,12 +182,12 @@ undoUpdAtomic cmd = case cmd of
   UpdLoseSmell lid sms -> Just $ UpdSpotSmell lid sms
   UpdTimeItem iid c fromIt toIt -> Just $ UpdTimeItem iid c toIt fromIt
   UpdAgeGame delta lids -> Just $ UpdAgeGame (timeDeltaReverse delta) lids
-  UpdDiscover c iid ik seed -> Just $ UpdCover c iid ik seed
-  UpdCover c iid ik seed -> Just $ UpdDiscover c iid ik seed
+  UpdDiscover c iid ik seed ldepth -> Just $ UpdCover c iid ik seed ldepth
+  UpdCover c iid ik seed ldepth -> Just $ UpdDiscover c iid ik seed ldepth
   UpdDiscoverKind c iid ik -> Just $ UpdCoverKind c iid ik
   UpdCoverKind c iid ik -> Just $ UpdDiscoverKind c iid ik
-  UpdDiscoverSeed c iid seed -> Just $ UpdCoverSeed c iid seed
-  UpdCoverSeed c iid seed -> Just $ UpdDiscoverSeed c iid seed
+  UpdDiscoverSeed c iid seed ldepth -> Just $ UpdCoverSeed c iid seed ldepth
+  UpdCoverSeed c iid seed ldepth -> Just $ UpdDiscoverSeed c iid seed ldepth
   UpdPerception lid outPer inPer -> Just $ UpdPerception lid inPer outPer
   UpdRestart{} -> Just cmd  -- here history ends; change direction
   UpdRestartServer{} -> Just cmd  -- here history ends; change direction

@@ -229,11 +229,11 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   -- Assorted.
   UpdTimeItem{} -> return ()
   UpdAgeGame{} -> return ()
-  UpdDiscover c iid _ _ -> discover c oldStateClient iid
+  UpdDiscover c iid _ _ _ -> discover c oldStateClient iid
   UpdCover{} -> return ()  -- don't spam when doing undo
   UpdDiscoverKind c iid _ -> discover c oldStateClient iid
   UpdCoverKind{} -> return ()  -- don't spam when doing undo
-  UpdDiscoverSeed c iid _ -> discover c oldStateClient iid
+  UpdDiscoverSeed c iid _ _ -> discover c oldStateClient iid
   UpdCoverSeed{} -> return ()  -- don't spam when doing undo
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ -> do

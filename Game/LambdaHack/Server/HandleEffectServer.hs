@@ -168,7 +168,9 @@ itemEffectDisco source target iid c recharged periodic effs = do
   case EM.lookup (jkindIx item) discoKind of
     Just itemKindId -> do
       seed <- getsServer $ (EM.! iid) . sitemSeedD
-      execUpdAtomic $ UpdDiscover c iid itemKindId seed
+      Level{ldepth} <- getLevel $ jlid item
+      -- TODO: we leak first depth the item was created at on the server
+      execUpdAtomic $ UpdDiscover c iid itemKindId seed ldepth
       itemEffect source target iid recharged periodic effs
     _ -> assert `failure` (source, target, iid, item)
 
@@ -925,7 +927,9 @@ identifyIid :: (MonadAtomic m, MonadServer m)
 identifyIid execSfx iid c itemKindId = do
   execSfx
   seed <- getsServer $ (EM.! iid) . sitemSeedD
-  execUpdAtomic $ UpdDiscover c iid itemKindId seed
+  item <- getsState $ getItemBody iid
+  Level{ldepth} <- getLevel $ jlid item
+  execUpdAtomic $ UpdDiscover c iid itemKindId seed ldepth
 
 -- ** SendFlying
 

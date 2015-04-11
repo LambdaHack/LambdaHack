@@ -93,7 +93,7 @@ cmdAtomicFilterCli cmd = case cmd of
                                  || t /= Tile.hideAs cotile tClient)
         newTs = filter notKnown ts
     return $! if null newTs then [] else [UpdSpotTile lid newTs]
-  UpdDiscover c iid _ seed -> do
+  UpdDiscover c iid _ seed ldepth -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -104,9 +104,9 @@ cmdAtomicFilterCli cmd = case cmd of
             discoEffect <- getsClient sdiscoEffect
             if iid `EM.member` discoEffect
               then return []
-              else return [UpdDiscoverSeed c iid seed]
+              else return [UpdDiscoverSeed c iid seed ldepth]
           else return [cmd]
-  UpdCover c iid ik _ -> do
+  UpdCover c iid ik _ _ -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -137,7 +137,7 @@ cmdAtomicFilterCli cmd = case cmd of
         if jkindIx item `EM.notMember` discoKind
         then return []
         else return [cmd]
-  UpdDiscoverSeed _ iid _ -> do
+  UpdDiscoverSeed _ iid _ _ -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -150,7 +150,7 @@ cmdAtomicFilterCli cmd = case cmd of
           if iid `EM.member` discoEffect
             then return []
             else return [cmd]
-  UpdCoverSeed _ iid _ -> do
+  UpdCoverSeed _ iid _ _ -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -255,16 +255,16 @@ cmdAtomicSemCli cmd = case cmd of
       cli { stargetD = case (mtgt, mleader) of
               (Just tgt, Just leader) -> EM.singleton leader tgt
               _ -> EM.empty }
-  UpdDiscover c iid ik seed -> do
+  UpdDiscover c iid ik seed ldepth -> do
     discoverKind c iid ik
-    discoverSeed c iid seed
-  UpdCover c iid ik seed -> do
+    discoverSeed c iid seed ldepth
+  UpdCover c iid ik seed _ldepth -> do
     coverSeed c iid seed
     coverKind c iid ik
   UpdDiscoverKind c iid ik -> discoverKind c iid ik
   UpdCoverKind c iid ik -> coverKind c iid ik
-  UpdDiscoverSeed c iid seed -> discoverSeed c iid seed
-  UpdCoverSeed c iid seed -> coverSeed c iid seed
+  UpdDiscoverSeed c iid seed  ldepth -> discoverSeed c iid seed ldepth
+  UpdCoverSeed c iid seed _ldepth -> coverSeed c iid seed
   UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sdiscoKind sfper _ sdebugCli -> do
     shistory <- getsClient shistory
@@ -351,12 +351,11 @@ coverKind c iid ik = do
   modifyClient $ \cli -> cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
 
 discoverSeed :: MonadClient m
-             => Container -> ItemId -> ItemSeed -> m ()
-discoverSeed c iid seed = do
+             => Container -> ItemId -> ItemSeed -> AbsDepth -> m ()
+discoverSeed c iid seed ldepth = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   discoKind <- getsClient sdiscoKind
   item <- getsState $ getItemBody iid
-  Level{ldepth} <- getLevel (jlid item)
   totalDepth <- getsState stotalDepth
   case EM.lookup (jkindIx item) discoKind of
     Nothing -> assert `failure` "kind not known"
@@ -370,8 +369,8 @@ discoverSeed c iid seed = do
 
 coverSeed :: MonadClient m
           => Container -> ItemId -> ItemSeed -> m ()
-coverSeed c iid ik = do
-  let f Nothing = assert `failure` "already covered" `twith` (c, iid, ik)
+coverSeed c iid seed = do
+  let f Nothing = assert `failure` "already covered" `twith` (c, iid, seed)
       f Just{} = Nothing  -- checking that old and new agree is too much work
   modifyClient $ \cli -> cli {sdiscoEffect = EM.alter f iid (sdiscoEffect cli)}
 

@@ -184,8 +184,10 @@ dominateFid fid target = do
   execUpdAtomic $ UpdSpotActor target bNew ais
   let discoverSeed (iid, cstore) = do
         seed <- getsServer $ (EM.! iid) . sitemSeedD
+        item <- getsState $ getItemBody iid
+        Level{ldepth} <- getLevel $ jlid item
         let c = CActor target cstore
-        execUpdAtomic $ UpdDiscoverSeed c iid seed
+        execUpdAtomic $ UpdDiscoverSeed c iid seed ldepth
       aic = getCarriedIidCStore tb
   mapM_ discoverSeed aic
   mleaderOld <- getsState $ gleader . (EM.! fid) . sfactionD
