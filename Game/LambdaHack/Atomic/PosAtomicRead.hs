@@ -302,7 +302,7 @@ loudUpdAtomic local fid cmd = do
       -- Death of a party member does not need to be heard,
       -- because it's seen.
       | not $ fid == bfid body || bproj body -> return $ Just "shriek"
-    UpdCreateItem{} -> return $ Just "clatter"
+    UpdCreateItem _ _ _ (CActor _ CGround) -> return $ Just "clatter"
     UpdAlterTile _ _ fromTile _ -> do
       Kind.COps{cotile} <- getsState scops
       if Tile.isDoor cotile fromTile
