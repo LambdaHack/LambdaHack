@@ -85,7 +85,7 @@ empty = rogue
   , cmaxVoid      = 1%2
   , cminStairDist = 50
   , chidden       = 1000
-  , cactorCoeff   = 20
+  , cactorCoeff   = 3
   , cactorFreq    = [("monster", 2), ("animal", 8), ("immobile vents", 90)]
       -- The geysers on lvl 3 act like HP resets. They are needed to avoid
       -- cascading failure, if the particular starting conditions were

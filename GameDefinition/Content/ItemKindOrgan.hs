@@ -409,16 +409,14 @@ arsenicVent = boilingVent
   , ifreq    = [("arsenic vent", 100)]
   , iflavour = zipPlain [Cyan]
   , iaspects = [Periodic, Timeout $ 2 + d 2 |*| 5]
-  , ieffects = [ Recharging (Explode "weakness mist")
-               , Recharging (RefillHP (-1)) ]
+  , ieffects = [Recharging (Explode "weakness mist")]
   }
 sulfurVent = boilingVent
   { iname    = "vent"
   , ifreq    = [("sulfur vent", 100)]
   , iflavour = zipPlain [BrYellow]
   , iaspects = [Periodic, Timeout $ 2 + d 2 |*| 5]
-  , ieffects = [ Recharging (Explode "strength mist")
-               , Recharging (RefillHP (-1)) ]
+  , ieffects = [Recharging (Explode "strength mist")]
   }
 bonusHP = armoredSkin
   { iname    = "bonus HP"
