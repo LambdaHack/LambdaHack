@@ -292,7 +292,7 @@ komodoDragon = ItemKind  -- bad hearing; regeneration makes it very powerful
   , irarity  = [(7, 0), (10, 10)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 40, AddMaxCalm 60, AddSpeed 16 ]
+  , iaspects = [ AddMaxHP 41, AddMaxCalm 60, AddSpeed 16 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -326,7 +326,7 @@ alligator = ItemKind
   , irarity  = [(6, 1), (10, 9)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 40, AddMaxCalm 60, AddSpeed 17 ]
+  , iaspects = [ AddMaxHP 41, AddMaxCalm 60, AddSpeed 17 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -344,7 +344,7 @@ rhinoceros = ItemKind
   , irarity  = [(2, 0), (3, 1000000), (4, 0)]  -- unique
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ Unique, AddMaxHP 70, AddMaxCalm 60, AddSpeed 25
+  , iaspects = [ Unique, AddMaxHP 82, AddMaxCalm 60, AddSpeed 25
                , AddSkills $ EM.singleton AbTrigger (-1) ]
                    -- can't switch levels, a miniboss
   , ieffects = []

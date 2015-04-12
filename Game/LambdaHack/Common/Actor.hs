@@ -184,7 +184,7 @@ hpTooLow b activeItems =
   in bhp b <= oneM || 5 * bhp b < xM maxHP && bhp b <= xM 10
 
 hpHuge :: Actor -> Bool
-hpHuge b = bhp b > xM 30
+hpHuge b = bhp b > xM 40
 
 calmEnough :: Actor -> [ItemFull] -> Bool
 calmEnough b activeItems =
