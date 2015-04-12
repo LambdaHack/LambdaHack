@@ -309,7 +309,8 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
       prompt = makePhrase ["What to", verb]
       promptEqp = makePhrase ["What unusual item to", verb]
       p :: CStore -> (Text, m Suitability)
-      p CEqp = (promptEqp, return $ SuitsSomething goesIntoEqp)
+      p CEqp | cLegalRaw /= [CGround] =
+        (promptEqp, return $ SuitsSomething goesIntoEqp)
       p _ = (prompt, return SuitsEverything)
       (promptGeneric, psuit) = p destCStore
   ggi <-
