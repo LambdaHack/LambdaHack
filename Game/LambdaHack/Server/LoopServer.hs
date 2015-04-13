@@ -285,15 +285,29 @@ handleActors lid = do
             hasWait _ = False
         maybe (return ()) (setBWait (hasWait cmdS)) aidNew
         -- Advance time once, after the leader switched perhaps many times.
-        -- Sometimes this may result in a double move of the new leader,
-        -- followed by a double pause. Or a fractional variant of that.
-        -- In this setup, reading a scroll of Previous Leader is a free action
-        -- for the old leader, but otherwise his time is undisturbed.
-        -- He is able to move normally in the same turn, immediately
-        -- after the new leader completes his move.
+        -- The following was true before, but now we badly want to avoid double
+        -- moves against the UI player (especially deadly when using stairs),
+        -- so this is no longer true:
+          -- Sometimes this may result in a double move of the new leader,
+          -- followed by a double pause. Or a fractional variant of that.
+          -- In this setup, reading a scroll of Previous Leader is a free action
+          -- for the old leader, but otherwise his time is undisturbed.
+          -- He is able to move normally in the same turn, immediately
+          -- after the new leader completes his move.
+        -- So now we exchange times of the old and new leader.
+        -- This permits an abuse, because a slow tank can be moved fast
+        -- by alternating between it and many fast actors (until all of them
+        -- get slowed down by this and none remain). But at least the sum
+        -- of all times of a faction is conserved. And we avoid double moves
+        -- against the UI player caused by his leader changes. There may still
+        -- happen double moves caused by AI leader changes, but that's rare.
+        -- The flip side is the possibility of multi-moves of the UI player
+        -- as in the case of the tank, but at least the sum of times is OK.
         -- Warning: when the action is performed on the server,
         -- the time of the actor is different than when client prepared that
         -- action, so any client checks involving time should discount this.
+        when (aidIsLeader && Just aid /= aidNew) $
+          maybe (return ()) (swapTime aid) aidNew
         maybe (return ()) advanceTime aidNew
         action
         maybe (return ()) managePerTurn aidNew

@@ -3,7 +3,8 @@
 module Game.LambdaHack.Common.Time
   ( Time, timeZero, timeClip, timeTurn, timeEpsilon
   , absoluteTimeAdd, absoluteTimeNegate, timeFit, timeFitUp
-  , Delta(..), timeShift, timeDeltaToFrom, timeDeltaReverse, timeDeltaScale
+  , Delta(..), timeShift, timeDeltaToFrom
+  , timeDeltaSubtract, timeDeltaReverse, timeDeltaScale
   , timeDeltaToDigit, ticksPerMeter
   , Speed, toSpeed, fromSpeed, speedZero, speedNormal
   , speedScale, timeDeltaDiv, speedAdd, speedNegate
@@ -99,6 +100,11 @@ absoluteTimeNegate (Time t) = Time (-t)
 -- The arguments are in the same order as in the underlying scalar subtraction.
 timeDeltaToFrom :: Time -> Time -> Delta Time
 timeDeltaToFrom (Time t1) (Time t2) = Delta $ Time (t1 - t2)
+
+-- | Time time vector between the second and the first absolute times.
+-- The arguments are in the same order as in the underlying scalar subtraction.
+timeDeltaSubtract :: Delta Time -> Delta Time -> Delta Time
+timeDeltaSubtract (Delta (Time t1)) (Delta (Time t2)) = Delta $ Time (t1 - t2)
 
 -- | Scale the time vector by an @Int@ scalar value.
 timeDeltaScale :: Delta Time -> Int -> Delta Time

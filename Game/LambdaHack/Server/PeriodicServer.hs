@@ -2,7 +2,7 @@
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicServer
   ( spawnMonster, addAnyActor, dominateFidSfx
-  , advanceTime, managePerTurn, leadLevelSwitch, udpateCalm
+  , advanceTime, swapTime, managePerTurn, leadLevelSwitch, udpateCalm
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -209,6 +209,31 @@ advanceTime aid = do
   activeItems <- activeItemsServer aid
   let t = ticksPerMeter $ bspeed b activeItems
   execUpdAtomic $ UpdAgeActor aid t
+
+-- | Swap the relative move times of two actors (e.g., when switching
+-- a UI leader).
+swapTime :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
+swapTime source target = do
+  sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
+  slvl <- getsState $ getLocalTime (blid sb)
+  tlvl <- getsState $ getLocalTime (blid tb)
+  let lvlDelta = slvl `timeDeltaToFrom` tlvl
+      bDelta = btime sb `timeDeltaToFrom` btime tb
+      sdelta = timeDeltaSubtract lvlDelta bDelta
+      tdelta = timeDeltaReverse sdelta
+  -- Equivalent, for the assert:
+  let !_A = let sbodyDelta = btime sb `timeDeltaToFrom` slvl
+                tbodyDelta = btime tb `timeDeltaToFrom` tlvl
+                sgoal = slvl `timeShift` tbodyDelta
+                tgoal = tlvl `timeShift` sbodyDelta
+                sdelta' = sgoal `timeDeltaToFrom` btime sb
+                tdelta' = tgoal `timeDeltaToFrom` btime tb
+            in assert (sdelta == sdelta' && tdelta == tdelta'
+                      `blame` ( slvl, tlvl, btime sb, btime tb
+                              , sdelta, sdelta', tdelta, tdelta' )) ()
+  when (sdelta /= Delta timeZero) $ execUpdAtomic $ UpdAgeActor source sdelta
+  when (tdelta /= Delta timeZero) $ execUpdAtomic $ UpdAgeActor target tdelta
 
 -- | Check if the given actor is dominated and update his calm.
 -- We don't update calm once per game turn (even though
