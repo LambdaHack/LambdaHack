@@ -307,11 +307,11 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
           CEqp | eqpOverfull b (oldN + k) -> failSer EqpOverfull
           _ -> retRec destCStore
       prompt = makePhrase ["What to", verb]
-      promptEqp = makePhrase ["What unusual item to", verb]
+      promptEqp = makePhrase ["What consumable to", verb]
       p :: CStore -> (Text, m Suitability)
-      p CEqp | cLegalRaw /= [CGround] =
-        (promptEqp, return $ SuitsSomething goesIntoEqp)
-      p _ = (prompt, return SuitsEverything)
+      p cstore = if cstore `elem` [CEqp, CSha] && cLegalRaw /= [CGround]
+                 then (promptEqp, return $ SuitsSomething goesIntoEqp)
+                 else (prompt, return SuitsEverything)
       (promptGeneric, psuit) = p destCStore
   ggi <-
     if auto
