@@ -366,7 +366,7 @@ ring = ItemKind
   , iverbHit = "knock"
   , iweight  = 15
   , iaspects = []
-  , ieffects = [Explode "blast 2"]
+  , ieffects = [Explode "blast 20"]
   , ifeature = [Precious, Identified]
   , idesc    = "It looks like an ordinary object, but it's in fact a generator of exceptional effects: adding to some of your natural abilities and subtracting from others. You'd profit enormously if you could find a way to multiply such generators."
   , ikit     = []
@@ -468,6 +468,7 @@ potion5 = potion
                , OnSmash (OneOf [ Explode "healing mist"
                                 , Explode "wounding mist"
                                 , Explode "fragrance"
+                                , Explode "smelly droplet"
                                 , Explode "blast 10" ]) ]
   }
 potion6 = potion
@@ -479,7 +480,7 @@ potion6 = potion
                , OnSmash (OneOf [ Explode "healing mist 2"
                                 , Explode "calming mist"
                                 , Explode "distressing odor"
-                                , Explode "distortion"  -- outlier, OK
+                                , Explode "eye drop"
                                 , Explode "blast 20" ]) ]
   }
 potion7 = potion
@@ -562,13 +563,13 @@ flask7 = flask  -- sight can be reduced from Calm, drunk, etc.
   { irarity  = [(10, 7)]
   , ieffects = [ NoEffect "of eye drops"
                , toOrganActorTurn "far-sighted" (20 + d 5)
-               , OnSmash (Explode "eye drop") ]
+               , OnSmash (Explode "blast 10") ]
   }
 flask8 = flask
   { irarity  = [(10, 3)]
   , ieffects = [ NoEffect "of smelly concoction"
                , toOrganActorTurn "keen-smelling" (20 + d 5)
-               , OnSmash (Explode "smelly droplet") ]
+               , OnSmash (Explode "blast 10") ]
   }
 flask9 = flask
   { ieffects = [ NoEffect "of bait cocktail"
