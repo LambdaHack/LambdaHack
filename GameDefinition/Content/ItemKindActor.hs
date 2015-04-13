@@ -155,7 +155,7 @@ torsor = ItemKind
   , irarity  = [(9, 0), (10, 1000)]  -- unique
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ Unique, AddMaxHP 200, AddMaxCalm 100, AddSpeed 10
+  , iaspects = [ Unique, AddMaxHP 300, AddMaxCalm 100, AddSpeed 10
                , AddSkills $ EM.fromList
                    [(AbProject, 2), (AbApply, 1), (AbTrigger, -1)] ]
                    -- can't switch levels, a miniboss
@@ -344,7 +344,7 @@ rhinoceros = ItemKind
   , irarity  = [(2, 0), (3, 1000000), (4, 0)]  -- unique
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ Unique, AddMaxHP 82, AddMaxCalm 60, AddSpeed 25
+  , iaspects = [ Unique, AddMaxHP 90, AddMaxCalm 60, AddSpeed 25
                , AddSkills $ EM.singleton AbTrigger (-1) ]
                    -- can't switch levels, a miniboss
   , ieffects = []
