@@ -475,7 +475,7 @@ applyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorSk <- actorSkillsClient leader
-  let skill = EM.findWithDefault 0 AbProject actorSk
+  let skill = EM.findWithDefault 0 AbApply actorSk
   activeItems <- activeItemsClient leader
   localTime <- getsState $ getLocalTime (blid b)
   let cLegal = [CGround, CInv, CEqp, CSha]

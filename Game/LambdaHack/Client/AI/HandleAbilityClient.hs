@@ -675,7 +675,7 @@ applyItem aid applyGroup = do
   actorSk <- actorSkillsClient aid
   b <- getsState $ getActorBody aid
   localTime <- getsState $ getLocalTime (blid b)
-  let skill = EM.findWithDefault 0 AbProject actorSk
+  let skill = EM.findWithDefault 0 AbApply actorSk
       q _ itemFull _ activeItems =
         either (const False) id
         $ permittedApply " " localTime skill itemFull b activeItems

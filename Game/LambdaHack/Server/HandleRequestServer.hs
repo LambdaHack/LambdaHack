@@ -441,7 +441,7 @@ reqApply aid iid cstore = do
       activeItems <- activeItemsServer aid
       actorSk <- actorSkillsServer aid
       localTime <- getsState $ getLocalTime (blid b)
-      let skill = EM.findWithDefault 0 Ability.AbProject actorSk
+      let skill = EM.findWithDefault 0 Ability.AbApply actorSk
           itemFull = itemToF iid kit
           legal = permittedApply " " localTime skill itemFull b activeItems
       case legal of
