@@ -402,12 +402,14 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
   let diffBonusCoeff = difficultyCoeff sdifficultySer
       hasUIorEscapes Faction{gplayer} =
         fhasUI gplayer || nU == 0 && fcanEscape gplayer
-      boostFact fact = not bproj
-                       && if diffBonusCoeff > 0
-                          then hasUIorEscapes fact
-                          else any hasUIorEscapes
-                               $ filter (`isAtWar` bfid) $ EM.elems factionD
-      diffHP | boostFact factMine = hp * 2 ^ abs diffBonusCoeff
+      boostFact = not bproj
+                  && if diffBonusCoeff > 0
+                     then hasUIorEscapes factMine
+                          || any hasUIorEscapes
+                                 (filter (`isAllied` bfid) $ EM.elems factionD)
+                     else any hasUIorEscapes
+                              (filter (`isAtWar` bfid) $ EM.elems factionD)
+      diffHP | boostFact = hp * 2 ^ abs diffBonusCoeff
              | otherwise = hp
       bonusHP = fromIntegral $ (diffHP - hp) `divUp` oneM
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]

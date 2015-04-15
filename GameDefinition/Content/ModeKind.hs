@@ -263,8 +263,12 @@ rosterSafari = Roster
                      "Animal Magnificent Specimen Variety")
                   , ("Monster Tourist Office",
                      "Animal Exquisite Herds and Packs") ]
-  , rosterAlly = [( "Animal Magnificent Specimen Variety"
-                  , "Animal Exquisite Herds and Packs" )] }
+  , rosterAlly = [ ( "Animal Magnificent Specimen Variety"
+                   , "Animal Exquisite Herds and Packs" )
+                 , ( "Animal Magnificent Specimen Variety"
+                   , "Hunam Convict Pack" )
+                 , ( "Hunam Convict Pack"
+                   , "Animal Exquisite Herds and Packs" ) ] }
 
 rosterSafariSurvival = rosterSafari
   { rosterList = [ playerMonsterTourist
@@ -309,13 +313,10 @@ rosterCoop = Roster
                  , ("Green", "Monster Hive")
                  , ("Green", "Leaderless Monster Hive") ] }
 
-rosterDefense = Roster
+rosterDefense = rosterCampaign
   { rosterList = [ playerAntiHero
                  , playerAntiMonster
-                 , playerAnimal ]
-  , rosterEnemy = [ ("Adventurer Party", "Monster Hive")
-                  , ("Adventurer Party", "Animal Kingdom") ]
-  , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
+                 , playerAnimal ] }
 
 rosterBoardgame = Roster
   { rosterList = [ playerHero { fname = "Blue"
