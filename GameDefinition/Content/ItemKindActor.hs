@@ -453,7 +453,7 @@ geyserSulfur = ItemKind
   , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20, AddLight 3
                , AddSkills $ EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
   , ieffects = []
-  , ifeature = [Durable, Identified]
+  , ifeature = [Durable, Identified]  -- TODO: only heal humans
   , idesc    = ""
   , ikit     = [("sulfur vent", COrgan), ("sulfur fissure", COrgan)]
   }
