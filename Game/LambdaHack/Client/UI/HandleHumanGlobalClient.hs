@@ -683,7 +683,7 @@ goToCursor initialStep run = do
     b <- getsState $ getActorBody leader
     cursorPos <- cursorToPos
     case cursorPos of
-      Nothing -> failWith "no leader"
+      Nothing -> failWith "crosshair position invalid"
       Just c | c == bpos b ->
         if initialStep
         then return $ Right $ RequestAnyAbility ReqWait
