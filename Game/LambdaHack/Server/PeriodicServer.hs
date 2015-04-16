@@ -111,16 +111,14 @@ rollSpawnPos Kind.COps{cotile} visible
              mobile lid Level{ltile, lxsize, lysize} fact s = do
   let inhabitants = actorRegularList (isAtWar fact) lid s
       as = actorList (const True) lid s
-      isLit = Tile.isLit cotile
       distantSo df p _ =
         all (\b -> df $ chessDist (bpos b) p) inhabitants
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
       distantMiddle d p _ = chessDist p middlePos < d
       condList | mobile =
-        [ \_ t -> not (isLit t) -- no such tiles on some maps
-        , distantSo (<= 10)  -- try to harass enemies
-        , distantSo (>= 5)   -- but leave room for yourself for ranged combat
-        , distantSo (<= 20)  -- but applying pressure is more important
+        [ distantSo (<= 10)  -- try hard to harass enemies
+        , distantSo (<= 15)
+        , distantSo (<= 20)
         ]
                | otherwise =
         [ distantMiddle 5
@@ -136,8 +134,9 @@ rollSpawnPos Kind.COps{cotile} visible
               && not (Tile.hasFeature cotile TK.NoActor t)
               && unoccupied as p)
     (condList
-     ++ [ \p _ -> not (p `ES.member` visible)  -- surprise and believability
-        , distantSo (>= 3)  -- otherwise fast actor approach and hit in one turn
+     ++ [ distantSo (> 5)  -- otherwise actors in dark rooms are swarmed
+        , distantSo (> 2)  -- otherwise actors can be hit on entering level
+        , \p _ -> not (p `ES.member` visible)  -- surprise and believability
         ])
 
 dominateFidSfx :: (MonadAtomic m, MonadServer m)
