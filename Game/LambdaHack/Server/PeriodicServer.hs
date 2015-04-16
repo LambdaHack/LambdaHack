@@ -92,7 +92,7 @@ addAnyActor actorFreq lid time mpos = do
       pers <- getsServer sper
       let allPers = ES.unions $ map (totalVisible . (EM.! lid))
                     $ EM.elems $ EM.delete fid pers  -- expensive :(
-          mobile = any (`elem` freqNames) ["civilian", "horror"]
+          mobile = any (`elem` freqNames) ["mobile", "horror"]
       pos <- case mpos of
         Just pos -> return pos
         Nothing -> do
