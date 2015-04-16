@@ -59,7 +59,10 @@ displayRespUpdAtomicUI :: MonadClientUI m
                        => Bool -> State -> StateClient -> UpdAtomic -> m ()
 displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   -- Create/destroy actors and items.
-  UpdCreateActor aid body _ -> createActorUI aid body verbose "appear"
+  UpdCreateActor aid body _ -> do
+    side <- getsClient sside
+    let verb = "appear" <+> if bfid body == side then "" else "suddenly"
+    createActorUI aid body verbose (MU.Text verb)
   UpdDestroyActor aid body _ -> do
     destroyActorUI aid body "die" "be destroyed" verbose
     side <- getsClient sside
