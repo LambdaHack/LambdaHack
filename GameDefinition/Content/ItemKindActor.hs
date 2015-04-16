@@ -326,7 +326,7 @@ alligator = ItemKind
   , irarity  = [(6, 1), (10, 9)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 41, AddMaxCalm 60, AddSpeed 17 ]
+  , iaspects = [ AddMaxHP 41, AddMaxCalm 60, AddSpeed 15 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -417,7 +417,7 @@ geyserBoiling = ItemKind
   , irarity  = [(5, 2)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 10, AddMaxCalm 999, AddSpeed 5
+  , iaspects = [ AddMaxHP 10, AddMaxCalm 999, AddSpeed 10
                , AddSkills $ EM.fromList (zip [AbWait, AbMelee] [1, 1..])
                , AddArmorMelee 80, AddArmorRanged 80 ]
   , ieffects = []
