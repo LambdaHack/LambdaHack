@@ -677,8 +677,13 @@ applyItem aid applyGroup = do
   localTime <- getsState $ getLocalTime (blid b)
   let skill = EM.findWithDefault 0 AbApply actorSk
       q _ itemFull _ activeItems =
-        either (const False) id
-        $ permittedApply " " localTime skill itemFull b activeItems
+        -- TODO: terrible hack to prevent the use of identified healing gems
+        let freq = case itemDisco itemFull of
+              Nothing -> []
+              Just ItemDisco{itemKind} -> IK.ifreq itemKind
+        in maybe True (<= 0) (lookup "gem" freq)
+           && either (const False) id
+                (permittedApply " " localTime skill itemFull b activeItems)
   benList <- benAvailableItems aid q [CEqp, CInv, CGround]
   organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b
   let itemLegal itemFull = case applyGroup of
