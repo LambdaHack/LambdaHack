@@ -951,7 +951,9 @@ gem = ItemKind
   , irarity  = []
   , iverbHit = "tap"
   , iweight  = 50
-  , iaspects = [AddLight 1, AddSpeed (-1)]  -- reflects strongly, distracts
+  , iaspects = [AddLight 1, AddSpeed (-1)]
+                 -- reflects strongly, distracts; so it glows in the dark,
+                 -- is visible on dark floor, but not too tempting to wear
   , ieffects = []
   , ifeature = [Precious]
   , idesc    = "Useless, and still worth around 100 gold each. Would gems of thought and pearls of artful design be valued that much in our age of Science and Progress!"
