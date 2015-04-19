@@ -212,9 +212,10 @@ moveSearchAlterAid :: MonadClient m
 moveSearchAlterAid source dir = do
   cops@Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
-  let lid = blid sb
-  lvl <- getLevel lid
-  let spos = bpos sb           -- source position
+  actorSk <- actorSkillsClient source
+  lvl <- getLevel $ blid sb
+  let skill = EM.findWithDefault 0 AbAlter actorSk
+      spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
       runStopOrCmd
@@ -225,14 +226,16 @@ moveSearchAlterAid source dir = do
         -- No access, so search and/or alter the tile. Non-walkability is
         -- not implied by the lack of access.
         | not (Tile.isWalkable cotile t)
-                && (not (knownLsecret lvl)
-                    || (isSecretPos lvl tpos  -- possible secrets here
-                        && (Tile.isSuspect cotile t  -- not yet searched
-                            || Tile.hideAs cotile t /= t))  -- search again
-                    || Tile.isOpenable cotile t
-                    || Tile.isClosable cotile t
-                    || Tile.isChangeable cotile t)
-          = if EM.member tpos $ lfloor lvl then
+          && (not (knownLsecret lvl)
+              || (isSecretPos lvl tpos  -- possible secrets here
+                  && (Tile.isSuspect cotile t  -- not yet searched
+                      || Tile.hideAs cotile t /= t))  -- search again
+              || Tile.isOpenable cotile t
+              || Tile.isClosable cotile t
+              || Tile.isChangeable cotile t)
+          = if skill < 1 then
+              Left $ showReqFailure AlterUnskilled
+            else if EM.member tpos $ lfloor lvl then
               Left $ showReqFailure AlterBlockItem
             else
               Right $ RequestAnyAbility $ ReqAlter tpos Nothing
@@ -523,12 +526,15 @@ alterTile dir ts = do
   cops@Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
+  actorSk <- actorSkillsClient leader
   lvl <- getLevel $ blid b
   as <- getsState $ actorList (const True) (blid b)
-  let tpos = bpos b `shift` dir
+  let skill = EM.findWithDefault 0 AbAlter actorSk
+      tpos = bpos b `shift` dir
       t = lvl `at` tpos
       alterFeats = alterFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
+    _ | skill < 1 -> failSer AlterUnskilled
     [] -> failWith $ guessAlter cops alterFeats t
     feat : _ ->
       if EM.notMember tpos $ lfloor lvl then

@@ -84,6 +84,7 @@ data ReqFailure =
   | DisplaceBraced
   | DisplaceImmobile
   | DisplaceSupported
+  | AlterUnskilled
   | AlterDistant
   | AlterBlockActor
   | AlterBlockItem
@@ -96,10 +97,10 @@ data ReqFailure =
   | ItemNothing
   | ItemNotCalm
   | NotCalmPrecious
+  | ProjectUnskilled
   | ProjectAimOnself
   | ProjectBlockTerrain
   | ProjectBlockActor
-  | ProjectUnskilled
   | ProjectNotRanged
   | ProjectFragile
   | ProjectOutOfReach
@@ -119,6 +120,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   DisplaceBraced -> True
   DisplaceImmobile -> False  -- unidentified skill items
   DisplaceSupported -> True
+  AlterUnskilled -> False  -- unidentified skill items
   AlterDistant -> True
   AlterBlockActor -> True  -- adjacent actor always visible
   AlterBlockItem -> True  -- adjacent item always visible
@@ -131,10 +133,10 @@ impossibleReqFailure reqFailure = case reqFailure of
   ItemNothing -> True
   ItemNotCalm -> False  -- unidentified skill items
   NotCalmPrecious -> False  -- unidentified skill items
+  ProjectUnskilled -> False  -- unidentified skill items
   ProjectAimOnself -> True
   ProjectBlockTerrain -> True  -- adjacent terrain always visible
   ProjectBlockActor -> True  -- adjacent actor always visible
-  ProjectUnskilled -> False  -- unidentified skill items
   ProjectNotRanged -> False  -- unidentified skill items
   ProjectFragile -> False  -- unidentified skill items
   ProjectOutOfReach -> True
@@ -154,6 +156,7 @@ showReqFailure reqFailure = case reqFailure of
   DisplaceBraced -> "trying to displace a braced foe"
   DisplaceImmobile -> "trying to displace an immobile foe"
   DisplaceSupported -> "trying to displace a supported foe"
+  AlterUnskilled -> "unskilled actors cannot alter tiles"
   AlterDistant -> "trying to alter a distant tile"
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"
@@ -166,10 +169,10 @@ showReqFailure reqFailure = case reqFailure of
   ItemNothing -> "wasting time on void item manipulation"
   ItemNotCalm -> "you are too alarmed to sort through the shared stash"
   NotCalmPrecious -> "you are too alarmed to handle such an exquisite item"
+  ProjectUnskilled -> "unskilled actors cannot aim"
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
-  ProjectUnskilled -> "unskilled actors cannot aim"
   ProjectNotRanged -> "to fling a non-missile requires fling skill 2"
   ProjectFragile -> "to lob a fragile item requires fling skill 3"
   ProjectOutOfReach -> "cannot aim an item out of reach"
