@@ -206,8 +206,17 @@ advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 advanceTime aid = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsServer aid
-  let t = ticksPerMeter $ bspeed b activeItems
-  execUpdAtomic $ UpdAgeActor aid t
+  localTime <- getsState $ getLocalTime (blid b)
+  let actorTurn = ticksPerMeter $ bspeed b activeItems
+      -- Dead bodies stay around for only one standard turn, even if paralyzed.
+      -- Projectiles that hit actors or are hit by actors vanish at once
+      -- not to block actor's path, e.g., for Pull effect.
+      t | bhp b <= 0 =
+        let delta = Delta $ if bproj b then timeZero else timeTurn
+            localPlusDelta = localTime `timeShift` delta
+        in localPlusDelta `timeDeltaToFrom` btime b
+        | otherwise = actorTurn
+  execUpdAtomic $ UpdAgeActor aid t  -- @t@ may be negative; that's OK
 
 -- | Swap the relative move times of two actors (e.g., when switching
 -- a UI leader).
