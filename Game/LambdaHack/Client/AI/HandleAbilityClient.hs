@@ -268,15 +268,18 @@ pickup aid onlyWeapon = do
         let n = oldN + k
             (newN, toCStore)
               | calmE && goesIntoSha itemFull = (oldN, CSha)
-              | not (goesIntoEqp itemFull) || eqpOverfull b n = (oldN, CInv)
-              | otherwise = (n, CEqp)
+              | goesIntoEqp itemFull && eqpOverfull b n =
+                (oldN, if calmE then CSha else CInv)
+              | goesIntoEqp itemFull = (n, CEqp)
+              | otherwise = (oldN, CInv)
         in (newN, (iid, k, CGround, toCStore) : l4)
       (_, prepared) = foldl' prepareOne (0, []) $ filterWeapon benItemL
   return $! if null prepared
             then reject
             else returN "pickup" $ ReqMoveItems prepared
 
-equipItems :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
+equipItems :: MonadClient m
+           => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
 equipItems aid = do
   cops <- getsState scops
   body <- getsState $ getActorBody aid
@@ -625,13 +628,16 @@ projectItem aid = do
           let q _ itemFull b2 activeItems =
                 either (const False) id
                 $ permittedProject " " False skill itemFull b2 activeItems
-          benList <- benAvailableItems aid q [CEqp, CInv, CGround]
+          activeItems <- activeItemsClient aid
+          let calmE = calmEnough b activeItems
+              stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
+          benList <- benAvailableItems aid q stores
           localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2
               coeff COrgan = 3  -- can't give to others
               coeff CEqp = 100000  -- must hinder currently
               coeff CInv = 1
-              coeff CSha = undefined  -- banned
+              coeff CSha = 1
               fRanged ( (mben, (_, cstore))
                       , (iid, itemFull@ItemFull{itemBase}) ) =
                 -- We assume if the item has a timeout, most effects are under
@@ -684,7 +690,10 @@ applyItem aid applyGroup = do
         in maybe True (<= 0) (lookup "gem" freq)
            && either (const False) id
                 (permittedApply " " localTime skill itemFull b activeItems)
-  benList <- benAvailableItems aid q [CEqp, CInv, CGround]
+  activeItems <- activeItemsClient aid
+  let calmE = calmEnough b activeItems
+      stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
+  benList <- benAvailableItems aid q stores
   organs <- mapM (getsState . getItemBody) $ EM.keys $ borgan b
   let itemLegal itemFull = case applyGroup of
         ApplyFirstAid ->
@@ -700,7 +709,7 @@ applyItem aid applyGroup = do
       coeff COrgan = 3  -- can't give to others
       coeff CEqp = 100000  -- must hinder currently
       coeff CInv = 1
-      coeff CSha = undefined  -- banned
+      coeff CSha = 1
       fTool ((mben, (_, cstore)), (iid, itemFull@ItemFull{itemBase})) =
         let durableBonus = if IK.Durable `elem` jfeature itemBase
                            then 5  -- we keep it after use

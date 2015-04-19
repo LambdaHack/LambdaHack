@@ -54,9 +54,9 @@ sniper = warrior
   , ifreq    = [("sniper", 100), ("mobile", 1)]
   , ikit     = ikit warrior
                ++ [ ("ring of opportunity sniper", CEqp)
+                  , ("any arrow", CSha), ("any arrow", CInv)
                   , ("any arrow", CInv), ("any arrow", CInv)
-                  , ("any arrow", CInv), ("any arrow", CInv)
-                  , ("flask", CInv), ("light source", CInv)
+                  , ("flask", CInv), ("light source", CSha)
                   , ("light source", CInv), ("light source", CInv) ]
   }
 
@@ -142,7 +142,7 @@ elbow = ItemKind
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
   , ikit     = [ ("speed gland 4", COrgan), ("armored skin", COrgan)
                , ("vision 14", COrgan)
-               , ("any arrow", CInv), ("any arrow", CInv)
+               , ("any arrow", CSha), ("any arrow", CInv)
                , ("any arrow", CInv), ("any arrow", CInv)
                , ("sapient brain", COrgan) ]
   }
