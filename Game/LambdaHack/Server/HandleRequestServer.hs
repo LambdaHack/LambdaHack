@@ -279,10 +279,14 @@ reqAlter :: (MonadAtomic m, MonadServer m)
 reqAlter source tpos mfeat = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{okind, opick}} <- getsState scops
   sb <- getsState $ getActorBody source
-  let lid = blid sb
+  actorSk <- actorSkillsServer source
+  let skill = EM.findWithDefault 0 Ability.AbAlter actorSk
+      lid = blid sb
       spos = bpos sb
       req = ReqAlter tpos mfeat
-  if not $ adjacent spos tpos then execFailure source req AlterDistant
+  -- Only actors with AbAlter can search for hidden doors, etc.
+  if skill < 1 then execFailure source req AlterUnskilled
+  else if not $ adjacent spos tpos then execFailure source req AlterDistant
   else do
     lvl <- getLevel lid
     let serverTile = lvl `at` tpos

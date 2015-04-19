@@ -852,12 +852,15 @@ chase aid doDisplace avoidAmbient = do
   -- this is meaningul.
   mapStrategyM (moveOrRunAid doDisplace aid) str
 
+-- TODO: rename source here and elsewhere, it's always an ActorId in the code
 moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> Point -> Bool -> m (Strategy Vector)
 moveTowards aid source target goal relaxed = do
   cops@Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody aid
-  let !_A = assert (source == bpos b
+  actorSk <- actorSkillsClient aid
+  let alterSkill = EM.findWithDefault 0 AbAlter actorSk
+      !_A = assert (source == bpos b
                     `blame` (source, bpos b, aid, b, goal)) ()
       !_B = assert (adjacent source target
                     `blame` (source, target, aid, b, goal)) ()
@@ -866,11 +869,13 @@ moveTowards aid source target goal relaxed = do
   friends <- getsState $ actorList (not . isAtWar fact) $ blid b
   let noFriends = unoccupied friends
       accessibleHere = accessible cops lvl source
+      -- Only actors with AbAlter can search for hidden doors, etc.
       bumpableHere p =
         let t = lvl `at` p
-        in Tile.isOpenable cotile t
-           || Tile.isSuspect cotile t
-           || Tile.isChangeable cotile t
+        in alterSkill >= 1
+           && (Tile.isOpenable cotile t
+               || Tile.isSuspect cotile t
+               || Tile.isChangeable cotile t)
       enterableHere p = accessibleHere p || bumpableHere p
   if noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ target `vectorToFrom` source
@@ -895,9 +900,11 @@ moveOrRunAid :: MonadClient m
 moveOrRunAid run source dir = do
   cops@Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
+  actorSk <- actorSkillsClient source
   let lid = blid sb
   lvl <- getLevel lid
-  let spos = bpos sb           -- source position
+  let skill = EM.findWithDefault 0 AbAlter actorSk
+      spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
   -- We start by checking actors at the the target position,
@@ -935,8 +942,11 @@ moveOrRunAid run source dir = do
         -- Movement requires full access.
         return $! Just $ RequestAnyAbility $ ReqMove dir
         -- The potential invisible actor is hit.
+      else if skill < 1 then
+        assert `failure` "AI causes  AlterUnskilled" `twith` (run, source, dir)
       else if EM.member tpos $ lfloor lvl then
-        -- This is, e.g., inaccessible open door with an item in it.
+        -- This could be, e.g., inaccessible open door with an item in it,
+        -- but for this case to happen, it would also need to be unwalkable.
         assert `failure` "AI causes AlterBlockItem" `twith` (run, source, dir)
       else if not (Tile.isWalkable cotile t)  -- not implied
               && (Tile.isSuspect cotile t

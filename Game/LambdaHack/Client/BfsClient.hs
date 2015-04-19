@@ -114,11 +114,13 @@ condBFS aid = do
   -- and leader change is very rare.
   activeItems <- activeItemsClient aid
   let actorMaxSk = sumSkills activeItems
+      alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
+      canSearchAndOpen = alterSkill >= 1
   lvl <- getLevel $ blid b
   smarkSuspect <- getsClient smarkSuspect
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let underAI = isAIFact fact
-      enterSuspect = smarkSuspect || underAI
+      enterSuspect = canSearchAndOpen && (smarkSuspect || underAI)
       isPassable | enterSuspect = Tile.isPassable
                  | otherwise = Tile.isPassableNoSuspect
   -- We treat doors as an open tile and don't add an extra step for opening
@@ -126,8 +128,7 @@ condBFS aid = do
   -- so it's amortized. We treat unknown tiles specially.
   let unknownId = ouniqGroup "unknown space"
       chAccess = checkAccess cops lvl
-      canOpenDoors = EM.findWithDefault 0 Ability.AbAlter actorMaxSk > 0
-      chDoorAccess = [checkDoorAccess cops lvl | canOpenDoors]
+      chDoorAccess = [checkDoorAccess cops lvl | canSearchAndOpen]
       conditions = catMaybes $ chAccess : chDoorAccess
       -- Legality of move from a known tile, assuming doors freely openable.
       isEnterable :: Point -> Point -> MoveLegal
