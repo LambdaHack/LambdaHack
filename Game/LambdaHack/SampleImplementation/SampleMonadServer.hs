@@ -113,7 +113,7 @@ executorSer m = do
   -- TODO: send them a message to tell users "server crashed"
   -- and then wait for them to exit normally.
   Ex.handle (\(ex :: Ex.SomeException) -> do
-               threadDelay 100000  -- let clients report their errors
+               threadDelay 1000000  -- let clients report their errors
                Ex.throw ex)  -- crash eventually, which kills clients
             exeWithSaves
   waitForChildren childrenServer  -- no crash, wait for clients indefinitely
