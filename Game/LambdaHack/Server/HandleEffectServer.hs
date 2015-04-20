@@ -215,8 +215,8 @@ effectSem source target iid recharged effect = do
     IK.OverfillCalm p -> effectRefillCalm True execSfx p source target
     IK.Dominate -> effectDominate recursiveCall source target
     IK.Impress -> effectImpress source target
-    IK.CallFriend p -> effectCallFriend p source target
-    IK.Summon freqs p -> effectSummon freqs p source target
+    IK.CallFriend p -> effectCallFriend execSfx p source target
+    IK.Summon freqs p -> effectSummon execSfx freqs p source target
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target
     IK.Escape{} -> effectEscape source target
     IK.Paralyze p -> effectParalyze execSfx p target
@@ -446,9 +446,9 @@ effectImpress source target = do
 
 -- Note that the Calm expended doesn't depend on the number of actors called.
 effectCallFriend :: (MonadAtomic m, MonadServer m)
-                   => Dice.Dice -> ActorId -> ActorId
+                   => m () -> Dice.Dice -> ActorId -> ActorId
                    -> m Bool
-effectCallFriend nDm source target = do
+effectCallFriend execSfx nDm source target = do
   -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
@@ -465,6 +465,7 @@ effectCallFriend nDm source target = do
   else do
     let deltaHP = - xM 10
     execUpdAtomic $ UpdRefillHP target deltaHP
+    execSfx
     let validTile t = not $ Tile.hasFeature cotile TK.NoActor t
     ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
     time <- getsState $ getLocalTime (blid tb)
@@ -477,9 +478,9 @@ effectCallFriend nDm source target = do
 
 -- Note that the Calm expended doesn't depend on the number of actors summoned.
 effectSummon :: (MonadAtomic m, MonadServer m)
-             => Freqs ItemKind -> Dice.Dice -> ActorId -> ActorId
+             => m () -> Freqs ItemKind -> Dice.Dice -> ActorId -> ActorId
              -> m Bool
-effectSummon actorFreq nDm source target = do
+effectSummon execSfx actorFreq nDm source target = do
   -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
   power <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
@@ -496,6 +497,7 @@ effectSummon actorFreq nDm source target = do
   else do
     let deltaCalm = - xM 10
     unless (bproj tb) $ udpateCalm target deltaCalm
+    execSfx
     let validTile t = not $ Tile.hasFeature cotile TK.NoActor t
     ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
     localTime <- getsState $ getLocalTime (blid tb)

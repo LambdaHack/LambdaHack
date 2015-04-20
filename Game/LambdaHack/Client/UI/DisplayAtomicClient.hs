@@ -755,8 +755,12 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
           stopPlayBack
         IK.Impress -> return ()
-        IK.CallFriend{} -> return ()
-        IK.Summon{} -> return ()
+        IK.CallFriend{} -> do
+          let verb = if bproj b then "attract" else "call forth"
+          actorVerbMU aid b $ MU.Text $ verb <+> "friends"
+        IK.Summon{} -> do  -- TODO: if a singleton, use the freq?
+          let verb = if bproj b then "lure" else "summon"
+          actorVerbMU aid b $ MU.Text $ verb <+> "nearby beasts"
         IK.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"
         IK.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
         IK.Ascend{} -> assert `failure` sfx
