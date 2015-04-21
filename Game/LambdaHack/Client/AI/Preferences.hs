@@ -96,7 +96,7 @@ effectToBenefit cops b activeItems fact eff =
     IK.ActivateInv _ -> -50
     IK.ApplyPerfume -> 0  -- depends on the smell sense of friends and foes
     IK.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
-    IK.OnSmash _ -> -10
+    IK.OnSmash _ -> 0  -- TOOD: can be beneficial or not; analyze explosions
     IK.Recharging e ->
       -- Used, e.g., in @periodicBens@, which takes timeout into account, too.
       effectToBenefit cops b activeItems fact e
