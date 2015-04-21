@@ -307,10 +307,10 @@ closestTriggers onlyDir aid = do
       let mix (k, p) dist =
             let easier = signum k /= signum (fromEnum lid)
                 depthDelta = if easier then 2 else 1
-                distDelta = fromEnum (maxBound :: BfsDistance)
-                            - fromEnum apartBfs
-                            - dist
-            in (depthDelta * distDelta * distDelta, p)
+                maxd = fromEnum (maxBound :: BfsDistance)
+                       - fromEnum apartBfs
+                v = (maxd * maxd * maxd) `div` ((dist + 1) * (dist + 1))
+            in (depthDelta * v, p)
           ds = mapMaybe (\(k, p) -> mix (k, p) <$> accessBfs bfs p) triggers
       in toFreq "closestTriggers" ds
 
