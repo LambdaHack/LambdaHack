@@ -421,7 +421,10 @@ projectItem ts posFromCursor = do
   activeItems <- activeItemsClient leader
   actorSk <- actorSkillsClient leader
   let skill = EM.findWithDefault 0 AbProject actorSk
-      cLegal = [CGround, CInv, CEqp, CSha]
+      calmE = calmEnough b activeItems
+      cLegalRaw = [CGround, CInv, CEqp, CSha]
+      cLegal | calmE = cLegalRaw
+             | otherwise = delete CSha cLegalRaw
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
@@ -452,7 +455,7 @@ projectItem ts posFromCursor = do
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What to fling"
   ggi <- getGroupItem psuit prompt promptGeneric True
-                      cLegal cLegal
+                      cLegalRaw cLegal
   case ggi of
     Right ((iid, itemFull), MStore fromCStore) -> do
       mpsuitReq <- psuitReq
@@ -481,7 +484,10 @@ applyHuman ts = do
   let skill = EM.findWithDefault 0 AbApply actorSk
   activeItems <- activeItemsClient leader
   localTime <- getsState $ getLocalTime (blid b)
-  let cLegal = [CGround, CInv, CEqp, CSha]
+  let calmE = calmEnough b activeItems
+      cLegalRaw = [CGround, CInv, CEqp, CSha]
+      cLegal | calmE = cLegalRaw
+             | otherwise = delete CSha cLegalRaw
       (verb1, object1) = case ts of
         [] -> ("apply", "item")
         tr : _ -> (verb tr, object tr)
@@ -491,7 +497,7 @@ applyHuman ts = do
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What to apply"
   ggi <- getGroupItem (return $ SuitsSomething $ either (const False) id . p)
-                      prompt promptGeneric False cLegal cLegal
+                      prompt promptGeneric False cLegalRaw cLegal
   case ggi of
     Right ((iid, itemFull), MStore fromCStore) ->
       case p itemFull of
