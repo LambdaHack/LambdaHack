@@ -423,9 +423,14 @@ reqProject :: (MonadAtomic m, MonadServer m)
            -> CStore     -- ^ whether the items comes from floor or inventory
            -> m ()
 reqProject source tpxy eps iid cstore = do
-  mfail <- projectFail source tpxy eps iid cstore False
   let req = ReqProject tpxy eps iid cstore
-  maybe (return ()) (execFailure source req) mfail
+  b <- getsState $ getActorBody source
+  activeItems <- activeItemsServer source
+  let calmE = calmEnough b activeItems
+  if cstore == CSha && not calmE then execFailure source req ItemNotCalm
+  else do
+    mfail <- projectFail source tpxy eps iid cstore False
+    maybe (return ()) (execFailure source req) mfail
 
 -- * ReqApply
 
@@ -436,21 +441,24 @@ reqApply :: (MonadAtomic m, MonadServer m)
          -> m ()
 reqApply aid iid cstore = do
   let req = ReqApply iid cstore
-  bag <- getsState $ getActorBag aid cstore
-  case EM.lookup iid bag of
-    Nothing -> execFailure aid req ApplyOutOfReach
-    Just kit -> do
-      itemToF <- itemToFullServer
-      b <- getsState $ getActorBody aid
-      activeItems <- activeItemsServer aid
-      actorSk <- actorSkillsServer aid
-      localTime <- getsState $ getLocalTime (blid b)
-      let skill = EM.findWithDefault 0 Ability.AbApply actorSk
-          itemFull = itemToF iid kit
-          legal = permittedApply " " localTime skill itemFull b activeItems
-      case legal of
-        Left reqFail -> execFailure aid req reqFail
-        Right _ -> applyItem aid iid cstore
+  b <- getsState $ getActorBody aid
+  activeItems <- activeItemsServer aid
+  let calmE = calmEnough b activeItems
+  if cstore == CSha && not calmE then execFailure aid req ItemNotCalm
+  else do
+    bag <- getsState $ getActorBag aid cstore
+    case EM.lookup iid bag of
+      Nothing -> execFailure aid req ApplyOutOfReach
+      Just kit -> do
+        itemToF <- itemToFullServer
+        actorSk <- actorSkillsServer aid
+        localTime <- getsState $ getLocalTime (blid b)
+        let skill = EM.findWithDefault 0 Ability.AbApply actorSk
+            itemFull = itemToF iid kit
+            legal = permittedApply " " localTime skill itemFull b activeItems
+        case legal of
+          Left reqFail -> execFailure aid req reqFail
+          Right _ -> applyItem aid iid cstore
 
 -- * ReqTrigger
 
