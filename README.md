@@ -1,4 +1,4 @@
-LambdaHack [![GitHub release](https://img.shields.io/github/release/qubyte/rubidium.svg)](https://github.com/LambdaHack/LambdaHack/releases) [![GitHub license](https://img.shields.io/github/license/mashape/apistatus.svg)](LICENSE) [![Hackage-Deps](https://img.shields.io/hackage-deps/v/lens.svg)](http://hackage.haskell.org/package/LambdaHack) [![Travis](https://img.shields.io/travis/joyent/node.svg)](https://travis-ci.org/LambdaHack/LambdaHack)
+LambdaHack [![Build Status](https://travis-ci.org/LambdaHack/LambdaHack.svg?branch=master)](https://travis-ci.org/LambdaHack/LambdaHack)[![Build Status](https://drone.io/github.com/LambdaHack/LambdaHack/status.png)](https://drone.io/github.com/LambdaHack/LambdaHack/latest)
 ==========
 
 LambdaHack is a [Haskell] [1] game engine library for [roguelike] [2]
