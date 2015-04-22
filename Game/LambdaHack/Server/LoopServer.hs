@@ -95,18 +95,13 @@ loopSer cops sdebug executorUI executorAI = do
       reinitGame
       writeSaveAll False
   resetSessionStart
-  -- Start a clip (a part of a turn for which one or more frames
-  -- will be generated). Do whatever has to be done
-  -- every fixed number of time units, e.g., monster generation.
-  -- Run the leader and other actors moves. Eventually advance the time
-  -- and repeat.
-  let loop = do
-        -- Note that if a faction enters dungeon on a level with no spawners,
-        -- the faction won't cause spawning on its active arena
-        -- as long as it has no leader. This may cause regeneration items
-        -- of its opponents become overpowered and lead to micromanagement
-        -- (make sure to kill all actors of the faction, go to a no-spawn
-        -- level and heal fully with no risk nor cost).
+  -- Note that if a faction enters dungeon on a level with no spawners,
+  -- the faction won't cause spawning on its active arena
+  -- as long as it has no leader. This may cause regeneration items
+  -- of its opponents become overpowered and lead to micromanagement
+  -- (make sure to kill all actors of the faction, go to a no-spawn
+  -- level and heal fully with no risk nor cost).
+  let arenasForLoop = do
         let factionArena fact =
               case gleader fact of
                -- Even spawners need an active arena for their leader,
@@ -122,17 +117,30 @@ loopSer cops sdebug executorUI executorAI = do
         marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
         let !_A = assert (not $ null arenas) ()  -- game over not caught earlier
-        mapM_ handleActors arenas
+        return $! arenas
+  -- Start a clip (a part of a turn for which one or more frames
+  -- will be generated). Do whatever has to be done
+  -- every fixed number of time units, e.g., monster generation.
+  -- Run the leader and other actors moves. Eventually advance the time
+  -- and repeat.
+  let loop arenasStart [] = do
+        arenas <- arenasForLoop
+        continue <- endClip arenasStart
+        when continue (loop arenas arenas)
+      loop arenasStart (arena : rest) = do
+        handleActors arena
         quit <- getsServer squit
         if quit then do
           -- In case of game save+exit or restart, don't age levels (endClip)
           -- since possibly not all actors have moved yet.
           modifyServer $ \ser -> ser {squit = False}
-          endOrLoop loop (restartGame updConn loop) gameExit (writeSaveAll True)
-        else do
-          continue <- endClip arenas
-          when continue loop
-  loop
+          let loopAgain = loop arenasStart (arena : rest)
+          endOrLoop loopAgain
+                    (restartGame updConn loopAgain) gameExit (writeSaveAll True)
+        else
+          loop arenasStart rest
+  arenas <- arenasForLoop
+  loop arenas arenas
 
 endClip :: (MonadAtomic m, MonadServer m, MonadServerReadRequest m)
         => [LevelId] -> m Bool
