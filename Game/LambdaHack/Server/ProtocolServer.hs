@@ -31,6 +31,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM, mapWithKeyM_)
+import Data.Maybe
 import Game.LambdaHack.Common.Thread
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -164,9 +165,9 @@ sendPingUI fid = do
 killAllClients :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 killAllClients = do
   d <- getDict
-  let sendKill fid _ = do
+  let sendKill fid cs = do
         -- We can't check in sfactionD, because client can be from an old game.
-        when (fromEnum fid > 0) $
+        when (isJust $ fst cs) $
           sendUpdateUI fid $ RespUpdAtomicUI $ UpdKillExit fid
         sendUpdateAI fid $ RespUpdAtomicAI $ UpdKillExit fid
   mapWithKeyM_ sendKill d
