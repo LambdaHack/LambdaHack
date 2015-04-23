@@ -21,7 +21,6 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Chosen
 import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Common.Point
 
 -- | The instructions sent by clients to the raw frontend over a channel.
 data FrontReq =
@@ -70,7 +69,7 @@ promptGetKey :: RawFrontend -> [K.KM] -> SingleFrame -> IO K.KM
 promptGetKey fs [] frame = fpromptGetKey fs frame
 promptGetKey fs keys frame = do
   km <- fpromptGetKey fs frame
-  if km{K.pointer=dummyPoint} `elem` keys
+  if km{K.pointer=Nothing} `elem` keys
     then return km
     else promptGetKey fs keys frame
 

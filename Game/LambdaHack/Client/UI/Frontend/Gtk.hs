@@ -145,7 +145,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
 #endif
         !modifier = let md = modifierTranslate mods
                     in if md == K.Shift then K.NoModifier else md
-        !pointer = dummyPoint
+        !pointer = Nothing
     liftIO $ do
       unless (deadKey n) $ do
         -- If ESC, also mark it specially and reset the key channel.
@@ -207,7 +207,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
               MiddleButton -> K.MiddleButtonPress
               RightButton -> K.RightButtonPress
               _ -> K.LeftButtonPress
-            !pointer = Point cx (cy - 1)
+            !pointer = Just $! Point cx (cy - 1)
         -- Store the mouse even coords in the keypress channel.
         STM.atomically $ STM.writeTQueue schanKey K.KM{..}
     return $! but == RightButton  -- not to disable selection

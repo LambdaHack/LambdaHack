@@ -65,7 +65,7 @@ instance NFData Modifier
 
 data KM = KM { key      :: !Key
              , modifier :: !Modifier
-             , pointer  :: !Point }
+             , pointer  :: !(Maybe Point) }
   deriving (Read, Ord, Eq, Generic)
 
 instance NFData KM
@@ -76,7 +76,7 @@ instance Show KM where
 instance Binary KM
 
 toKM :: Modifier -> Key -> KM
-toKM modifier key = KM{pointer=dummyPoint, ..}
+toKM modifier key = KM{pointer=Nothing, ..}
 
 -- Common and terse names for keys.
 showKey :: Key -> Text

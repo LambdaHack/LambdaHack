@@ -602,7 +602,7 @@ runDefItemKey keyDefs lettersDef io labelItemSlots prompt = do
   case akm of
     Left slides -> failSlides slides
     Right km ->
-      case lookup km{K.pointer=dummyPoint} keyDefs of
+      case lookup km{K.pointer=Nothing} keyDefs of
         Just keyDef -> defAction keyDef km
         Nothing -> defAction lettersDef km
 
@@ -702,43 +702,45 @@ pickLeader verbose aid = do
 cursorPointerFloor :: MonadClientUI m => Bool -> Bool -> m Slideshow
 cursorPointerFloor verbose addMoreMsg = do
   km <- getsClient slastKM
-  let newPos@Point{..} = K.pointer km
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
-  if px < 0 || py < 0 || px >= lxsize || py >= lysize then do
-    stopPlayBack
-    return mempty
-  else do
-    let scursor = TPoint lidV newPos
-    modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
-    if verbose then
-      doLook addMoreMsg
-    else do
-      displayPush ""  -- flash the targeting line and path
-      displayDelay  -- for a bit longer
+  case K.pointer km of
+    Just(newPos@Point{..}) | px >= 0 && py >= 0
+                             && px < lxsize && py < lysize -> do
+      let scursor = TPoint lidV newPos
+      modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
+      if verbose then
+        doLook addMoreMsg
+      else do
+        displayPush ""  -- flash the targeting line and path
+        displayDelay  -- for a bit longer
+        return mempty
+    _ -> do
+      stopPlayBack
       return mempty
 
 cursorPointerEnemy :: MonadClientUI m => Bool -> Bool -> m Slideshow
 cursorPointerEnemy verbose addMoreMsg = do
   km <- getsClient slastKM
-  let newPos@Point{..} = K.pointer km
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
-  if px < 0 || py < 0 || px >= lxsize || py >= lysize then do
-    stopPlayBack
-    return mempty
-  else do
-    bsAll <- getsState $ actorAssocs (const True) lidV
-    let scursor =
-          case find (\(_, m) -> bpos m == newPos) bsAll of
-            Just (im, _) -> TEnemy im True
-            Nothing -> TPoint lidV newPos
-    modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
-    if verbose then
-      doLook addMoreMsg
-    else do
-      displayPush ""  -- flash the targeting line and path
-      displayDelay  -- for a bit longer
+  case K.pointer km of
+    Just(newPos@Point{..}) | px >= 0 && py >= 0
+                             && px < lxsize && py < lysize -> do
+      bsAll <- getsState $ actorAssocs (const True) lidV
+      let scursor =
+            case find (\(_, m) -> bpos m == newPos) bsAll of
+              Just (im, _) -> TEnemy im True
+              Nothing -> TPoint lidV newPos
+      modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
+      if verbose then
+        doLook addMoreMsg
+      else do
+        displayPush ""  -- flash the targeting line and path
+        displayDelay  -- for a bit longer
+        return mempty
+    _ -> do
+      stopPlayBack
       return mempty
 
 -- | Move the cursor. Assumes targeting mode.

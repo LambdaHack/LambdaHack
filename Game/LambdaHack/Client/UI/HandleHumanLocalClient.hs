@@ -172,7 +172,6 @@ stopIfTgtModeHuman = do
 selectWithPointer:: MonadClientUI m => m ()
 selectWithPointer = do
   km <- getsClient slastKM
-  let Point{..} = K.pointer km
   lidV <- viewedLevel
   Level{lysize} <- getLevel lidV
   side <- getsClient sside
@@ -180,12 +179,14 @@ selectWithPointer = do
                       . actorAssocs (== side) lidV
   -- Select even if no space in status line for the actor's symbol.
   let viewed = sortBy (comparing keySelected) ours
-  when (py == lysize + 1 && px <= length viewed && px >= 0) $ do
-    if px == 0 then
-      selectNoneHuman
-    else
-      selectAidHuman $ fst $ viewed !! (px - 1)
-    stopPlayBack
+  case K.pointer km of
+    Just(Point{..}) | py == lysize + 1 && px <= length viewed && px >= 0 -> do
+      if px == 0 then
+        selectNoneHuman
+      else
+        selectAidHuman $ fst $ viewed !! (px - 1)
+      stopPlayBack
+    _ -> return ()
 
 -- * Repeat
 

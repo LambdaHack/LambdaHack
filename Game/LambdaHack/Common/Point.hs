@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Common.Point
-  ( X, Y, Point(..), dummyPoint, maxLevelDimExponent
+  ( X, Y, Point(..), maxLevelDimExponent
   , chessDist, euclidDistSq, adjacent, inside, bla, fromTo
   ) where
 
@@ -44,9 +44,6 @@ instance Enum Point where
   fromEnum = fromEnumPoint
   toEnum = toEnumPoint
 
-dummyPoint :: Point
-dummyPoint = Point (-10000) (-10000)
-
 -- | The maximum number of bits for level X and Y dimension (16).
 -- The value is chosen to support architectures with 32-bit Ints.
 maxLevelDimExponent :: Int
@@ -62,8 +59,9 @@ maxLevelDim = 2 ^ maxLevelDimExponent - 1
 fromEnumPoint :: Point -> Int
 {-# INLINE fromEnumPoint #-}
 fromEnumPoint (Point x y) =
-  assert (x >= 0 && y >= 0 `blame` "invalid point coordinates"
-                           `twith` (x, y))
+  assert (x >= 0 && y >= 0 && x <= maxLevelDim && y <= maxLevelDim
+          `blame` "invalid point coordinates"
+          `twith` (x, y))
   $ x + unsafeShiftL y maxLevelDimExponent
 
 toEnumPoint :: Int -> Point

@@ -42,7 +42,6 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
@@ -94,7 +93,7 @@ humanCommand = do
         abortOrCmd <- do
           -- Look up the key.
           Binding{bcmdMap} <- askBinding
-          case M.lookup km{K.pointer=dummyPoint} bcmdMap of
+          case M.lookup km{K.pointer=Nothing} bcmdMap of
             Just (_, _, cmd) -> do
               -- Query and clear the last command key.
               modifyClient $ \cli -> cli
