@@ -136,11 +136,13 @@ loopSer cops sdebug executorUI executorAI = do
           modifyServer $ \ser -> ser {squit = False}
           let loopAgain = loop arenasStart (arena : rest)
           endOrLoop loopAgain
-                    (restartGame updConn loopAgain) gameExit (writeSaveAll True)
+                    (restartGame updConn loopNew) gameExit (writeSaveAll True)
         else
           loop arenasStart rest
-  arenas <- arenasForLoop
-  loop arenas arenas
+      loopNew = do
+        arenas <- arenasForLoop
+        loop arenas arenas
+  loopNew
 
 endClip :: (MonadAtomic m, MonadServer m, MonadServerReadRequest m)
         => [LevelId] -> m Bool
