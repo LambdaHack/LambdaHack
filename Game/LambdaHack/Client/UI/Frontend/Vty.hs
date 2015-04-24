@@ -27,11 +27,10 @@ import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { svty      :: !Vty  -- internal vty session
+  { svty      :: !Vty  -- ^ internal vty session
   , schanKey  :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
   , sescMVar  :: !(Maybe (MVar ()))
   , sdebugCli :: !DebugModeCli  -- ^ client configuration
-      -- ^ Configuration of the frontend session.
   }
 
 -- | The name of the frontend.
