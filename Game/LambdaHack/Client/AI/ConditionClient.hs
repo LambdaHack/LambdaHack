@@ -235,22 +235,19 @@ hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
         condNotCalmEnough  -- perhaps enemies don't have projectiles
         body activeItems itemFull =
   let itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
+      itemLitBad = itemLit && condNotCalmEnough && not condAnyFoeAdj
   in -- Fast actors want to hide in darkness to ambush opponents and want
      -- to hit hard for the short span they get to survive melee.
      bspeed body activeItems > speedNormal
-     && (condNotCalmEnough && itemLit
+     && (itemLitBad
          || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtMelee
-                                                 itemFull)
-         || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtRanged
                                                  itemFull))
      -- In the presence of enemies (seen, or unseen but distressing)
      -- actors want to hide in the dark.
      || let heavilyDistressed =  -- actor hit by a proj or similarly distressed
               deltaSerious (bcalmDelta body)
-        in condNotCalmEnough
+        in itemLitBad && condLightBetrays
            && (heavilyDistressed || condTgtEnemyPresent)
-           && condLightBetrays && not condAnyFoeAdj
-           && itemLit
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
   -- (friends close, only one enemy close)

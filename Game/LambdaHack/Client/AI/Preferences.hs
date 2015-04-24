@@ -27,8 +27,8 @@ effectToBenefit cops b activeItems fact eff =
   let dungeonDweller = not $ fcanEscape $ gplayer fact
   in case eff of
     IK.NoEffect _ -> 0
-    IK.Hurt d -> -(min 100 $ 10 * Dice.meanDice d)
-    IK.Burn d -> -(min 150 $ 15 * Dice.meanDice d)
+    IK.Hurt d -> -(min 150 $ 10 * Dice.meanDice d)
+    IK.Burn d -> -(min 200 $ 15 * Dice.meanDice d)
                    -- often splash damage, etc.
     IK.Explode _ -> 0  -- depends on explosion
     IK.RefillHP p ->
@@ -123,6 +123,7 @@ aspectToBenefit _cops _b asp =
     IK.Periodic{} -> 0
     IK.Timeout{} -> 0
     IK.AddHurtMelee p -> p
+    IK.AddHurtRanged p | p < 0 -> 0  -- TODO: don't ignore for missiles
     IK.AddHurtRanged p -> p `divUp` 5  -- TODO: should be summed with damage
     IK.AddArmorMelee p -> p `divUp` 5
     IK.AddArmorRanged p -> p `divUp` 10
