@@ -56,7 +56,7 @@ storeKeys sess@FrontendSession{..} = do
     EvKey n mods -> do
       let !key = keyTranslate n
           !modifier = modifierTranslate mods
-          !pointer = dummyPoint
+          !pointer = Nothing
           readAll = do
             res <- STM.atomically $ STM.tryReadTQueue schanKey
             when (isJust res) readAll
