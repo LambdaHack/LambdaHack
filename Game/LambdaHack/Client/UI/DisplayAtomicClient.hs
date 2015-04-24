@@ -425,9 +425,12 @@ moveActor oldState aid source target = do
   when (bproj body) $ do
     let oldpos = case EM.lookup aid $ sactorD oldState of
           Nothing -> assert `failure` (sactorD oldState, aid)
-          Just b -> boldpos b
+          -- If no old position, default to current, which is then overwritten
+          -- in the animation.
+          Just b -> fromMaybe source $ boldpos b
     let ps = (oldpos, source, target)
-    animFrs <- animate (blid body) $ moveProj ps (bsymbol body) (bcolor body)
+    animFrs <- animate (blid body)
+               $ moveProj ps (bsymbol body) (bcolor body)
     displayActorStart body animFrs
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()

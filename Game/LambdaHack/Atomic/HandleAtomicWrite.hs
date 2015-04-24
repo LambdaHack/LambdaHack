@@ -197,7 +197,7 @@ updMoveActor aid fromP toP = assert (fromP /= toP) $ do
   let !_A = assert (fromP == bpos b
                     `blame` "unexpected moved actor position"
                     `twith` (aid, fromP, toP, bpos b, b)) ()
-  updateActor aid $ \body -> body {bpos = toP, boldpos = fromP}
+  updateActor aid $ \body -> body {bpos = toP, boldpos = Just fromP}
 
 updWaitActor :: MonadStateWrite m => ActorId -> Bool -> m ()
 updWaitActor aid toWait = do
@@ -211,8 +211,8 @@ updDisplaceActor :: MonadStateWrite m => ActorId -> ActorId -> m ()
 updDisplaceActor source target = assert (source /= target) $ do
   spos <- getsState $ bpos . getActorBody source
   tpos <- getsState $ bpos . getActorBody target
-  updateActor source $ \b -> b {bpos = tpos, boldpos = spos}
-  updateActor target $ \b -> b {bpos = spos, boldpos = tpos}
+  updateActor source $ \b -> b {bpos = tpos, boldpos = Just spos}
+  updateActor target $ \b -> b {bpos = spos, boldpos = Just tpos}
 
 updMoveItem :: MonadStateWrite m
             => ItemId -> Int -> ActorId -> CStore -> CStore

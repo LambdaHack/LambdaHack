@@ -624,7 +624,7 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
       bNew = bOld { blid = lidNew
                   , btime = shiftByDelta $ btime bOld
                   , bpos = posNew
-                  , boldpos = posNew  -- new level, new direction
+                  , boldpos = Just posNew  -- new level, new direction
                   , boldlid = lidOld  -- record old level
                   , borgan = setTimeout $ borgan bOld
                   , beqp = setTimeout $ beqp bOld }
@@ -990,18 +990,19 @@ sendFlyingVector :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> Maybe Bool -> m Vector
 sendFlyingVector source target modePush = do
   sb <- getsState $ getActorBody source
+  let boldpos_sb = fromMaybe (Point 0 0) (boldpos sb)
   if source == target then
-    if boldpos sb == bpos sb then rndToAction $ do
+    if boldpos_sb == bpos sb then rndToAction $ do
       z <- randomR (-10, 10)
       oneOf [Vector 10 z, Vector (-10) z, Vector z 10, Vector z (-10)]
     else
-      return $! vectorToFrom (bpos sb) (boldpos sb)
+      return $! vectorToFrom (bpos sb) boldpos_sb
   else do
     tb <- getsState $ getActorBody target
     let (sp, tp) = if adjacent (bpos sb) (bpos tb)
-                   then let pos = if chessDist (boldpos sb) (bpos tb)
+                   then let pos = if chessDist (boldpos_sb) (bpos tb)
                                      > chessDist (bpos sb) (bpos tb)
-                                  then boldpos sb  -- avoid cardinal dir
+                                  then boldpos_sb  -- avoid cardinal dir
                                   else bpos sb
                         in (pos, bpos tb)
                    else (bpos sb, bpos tb)

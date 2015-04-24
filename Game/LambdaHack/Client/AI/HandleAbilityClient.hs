@@ -584,7 +584,7 @@ trigger aid fleeViaStairs = do
                 | otherwise = 2  -- no escape, switch levels occasionally
               actorsThere = posToActors pos2 lid2 s
           return $!
-             if boldpos b == bpos b   -- probably used stairs last turn
+             if boldpos b == Just (bpos b)   -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction
              then 0  -- avoid trivial loops (pushing, being pushed, etc.)
              else let eben = case actorsThere of
@@ -803,7 +803,7 @@ displaceTowards aid source target = do
   b <- getsState $ getActorBody aid
   let !_A = assert (source == bpos b && adjacent source target) ()
   lvl <- getLevel $ blid b
-  if boldpos b /= target -- avoid trivial loops
+  if boldpos b /= Just target -- avoid trivial loops
      && accessible cops lvl source target then do  -- DisplaceAccess
     mleader <- getsClient _sleader
     mBlocker <- getsState $ posToActors target (blid b)
@@ -880,7 +880,8 @@ moveTowards aid source target goal relaxed = do
   if noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ target `vectorToFrom` source
   else do
-    let goesBack v = v == boldpos b `vectorToFrom` source
+    let goesBack v = maybe False (\oldpos -> v == oldpos `vectorToFrom` source)
+                           (boldpos b)
         nonincreasing p = chessDist source goal >= chessDist p goal
         isSensible p = (relaxed || nonincreasing p)
                        && noFriends p
@@ -918,7 +919,8 @@ moveOrRunAid run source dir = do
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
       activeItems <- activeItemsClient target
       dEnemy <- getsState $ dispEnemy source target activeItems
-      if boldpos sb == tpos && not (waitedLastTurn sb)  -- avoid Displace loops
+      if boldpos sb == Just tpos && not (waitedLastTurn sb)
+           -- avoid Displace loops
          || not (accessible cops lvl spos tpos) -- DisplaceAccess
       then return Nothing
       else if isAtWar tfact (bfid sb) && not dEnemy  -- DisplaceDying, etc.

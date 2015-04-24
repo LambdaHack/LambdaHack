@@ -98,6 +98,8 @@ getCacheBfs aid = do
   case mbfs of
     Just (True, bfs, _, _, _) -> return bfs
     _ -> fst <$> getCacheBfsAndPath aid (Point 0 0)
+      -- @undefined@ here crashes, because it's used to invalidate cache,
+      -- but the paths is not computed, until needed (unlikely at (0, 0))
 
 condBFS :: MonadClient m
         => ActorId

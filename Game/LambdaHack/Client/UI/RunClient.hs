@@ -117,7 +117,8 @@ continueRunDir params = case params of
       cops@Kind.COps{cotile} <- getsState scops
       rbody <- getsState $ getActorBody runLeader
       let rposHere = bpos rbody
-          rposLast = boldpos rbody
+          rposLast = fromMaybe (assert `failure` (runLeader, rbody))
+                               (boldpos rbody)
           -- Match run-leader dir, because we want runners to keep formation.
           dir = rposHere `vectorToFrom` rposLast
       body <- getsState $ getActorBody aid
@@ -152,7 +153,7 @@ tryTurning aid = do
   let lid = blid body
   lvl <- getLevel lid
   let posHere = bpos body
-      posLast = boldpos body
+      posLast = fromMaybe (assert `failure` (aid, body)) (boldpos body)
       dirLast = posHere `vectorToFrom` posLast
   let openableDir dir = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
       dirEnterable dir = accessibleDir cops lvl posHere dir || openableDir dir
@@ -183,7 +184,7 @@ checkAndRun aid dir = do
       posHasItems pos = EM.member pos $ lfloor lvl
       posThere = posHere `shift` dir
   actorsThere <- getsState $ posToActors posThere lid
-  let posLast = boldpos body
+  let posLast = fromMaybe (assert `failure` (aid, body)) (boldpos body)
       dirLast = posHere `vectorToFrom` posLast
       -- This is supposed to work on unit vectors --- diagonal, as well as,
       -- vertical and horizontal.

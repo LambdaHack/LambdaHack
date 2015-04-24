@@ -18,6 +18,7 @@ import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
+import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
@@ -56,7 +57,7 @@ data Actor = Actor
 
     -- Location
   , bpos          :: !Point        -- ^ current position
-  , boldpos       :: !Point        -- ^ previous position
+  , boldpos       :: !(Maybe Point)  -- ^ previous position, if any
   , blid          :: !LevelId      -- ^ current level
   , boldlid       :: !LevelId      -- ^ previous level
   , bfid          :: !FactionId    -- ^ faction the actor currently belongs to
@@ -134,7 +135,7 @@ actorTemplate :: ItemId -> Char -> Text -> Text
 actorTemplate btrunk bsymbol bname bpronoun bcolor bhp bcalm
               bpos blid btime bfid =
   let btrajectory = Nothing
-      boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
+      boldpos = Nothing
       boldlid = blid
       beqp    = EM.empty
       binv    = EM.empty
@@ -174,7 +175,7 @@ actorDying b = bhp b <= 0
                || bproj b && maybe True (null . fst) (btrajectory b)
 
 actorNewBorn :: Actor -> Bool
-actorNewBorn b = boldpos b == Point 0 0
+actorNewBorn b = isNothing (boldpos b)
                  && not (waitedLastTurn b)
                  && btime b >= timeTurn
 
