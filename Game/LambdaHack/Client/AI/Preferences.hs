@@ -78,11 +78,11 @@ effectToBenefit cops b activeItems fact eff =
          then 1
          else -p  -- get rid of the foe
     IK.CreateItem COrgan grp _ ->  -- TODO: use the timeout
-      let (total, count) = organBenefit grp cops b
+      let (total, count) = organBenefit grp cops b activeItems fact
       in total `divUp` count  -- average over all matching grp; rarities ignored
     IK.CreateItem{} -> 30  -- TODO
     IK.DropItem COrgan grp True ->  -- calculated for future use, general pickup
-      let (total, _) = organBenefit grp cops b
+      let (total, _) = organBenefit grp cops b activeItems fact
       in - total  -- sum over all matching grp; simplification: rarities ignored
     IK.DropItem _ _ False -> -15
     IK.DropItem _ _ True -> -30
@@ -103,11 +103,15 @@ effectToBenefit cops b activeItems fact eff =
     IK.Temporary _ -> 0
 
 -- TODO: calculating this for "temporary conditions" takes forever
-organBenefit :: GroupName ItemKind -> Kind.COps -> Actor -> (Int, Int)
-organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b =
+organBenefit :: GroupName ItemKind -> Kind.COps
+             -> Actor -> [ItemFull] -> Faction
+             -> (Int, Int)
+organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b activeItems fact =
   let f p _ kind (sacc, pacc) =
         let paspect asp = p * aspectToBenefit cops b (Dice.meanDice <$> asp)
+            peffect eff = p * effectToBenefit cops b activeItems fact eff
         in ( sacc + sum (map paspect $ IK.iaspects kind)
+                  + sum (map peffect $ IK.ieffects kind)
            , pacc + p )
   in ofoldrGroup t f (0, 0)
 
