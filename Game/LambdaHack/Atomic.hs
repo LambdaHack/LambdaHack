@@ -10,6 +10,7 @@ module Game.LambdaHack.Atomic
   , CmdAtomic(..), UpdAtomic(..), SfxAtomic(..), HitAtomic(..)
     -- * Re-exported from "Game.LambdaHack.Atomic.PosAtomicRead"
   , PosAtomic(..), posUpdAtomic, posSfxAtomic, seenAtomicCli, generalMoveItem
+  , posProjBody
   ) where
 
 import Game.LambdaHack.Atomic.CmdAtomic

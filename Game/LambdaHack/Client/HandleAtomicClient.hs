@@ -178,9 +178,18 @@ cmdAtomicFilterCli cmd = case cmd of
     -- TODO: perhaps instead create LoseActor for all actors in lprio,
     -- and keep only those where seenAtomicCli is True; this is even
     -- cheaper than repeated posToActor (until it's optimized).
-    let outFov = totalVisible perOld ES.\\ totalVisible perNew
+    let seenNew = seenAtomicCli False fid perNew
+        seenOld = seenAtomicCli False fid perOld
+        outFov = totalVisible perOld ES.\\ totalVisible perNew
         outPrio = concatMap (\p -> posToActors p lid s) $ ES.elems outFov
-        fActor ((aid, b), ais) = Just $ UpdLoseActor aid b ais
+        fActor ((aid, b), ais) =
+          let ps = posProjBody b
+              -- Verify that we forget only previously seen actors.
+              !_A = assert (seenOld ps) ()
+          in -- We forget only currently invisible actors.
+             if seenNew ps
+             then Nothing
+             else Just $ UpdLoseActor aid b ais
         outActor = mapMaybe fActor outPrio
     -- Wipe out remembered items on tiles that now came into view.
     lvl <- getLevel lid
@@ -200,14 +209,6 @@ cmdAtomicFilterCli cmd = case cmd of
         inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl))
                         (ES.elems inSmellFov)
         inSmell = if null inSm then [] else [UpdLoseSmell lid inSm]
-    let seenNew = seenAtomicCli False fid perNew
-        seenOld = seenAtomicCli False fid perOld
-    -- TODO: these assertions are probably expensive
-    psActor <- mapM posUpdAtomic outActor
-    -- Verify that we forget only previously seen actors.
-    let !_A = assert (allB seenOld psActor) ()
-    -- Verify that we forget only currently invisible actors.
-    let !_A = assert (allB (not . seenNew) psActor) ()
     let inTileSmell = inFloor ++ inEmbed ++ inSmell
     psItemSmell <- mapM posUpdAtomic inTileSmell
     -- Verify that we forget only previously invisible items and smell.

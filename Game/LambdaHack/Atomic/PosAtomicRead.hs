@@ -4,7 +4,7 @@
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
   , resetsFovCmdAtomic, breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
-  , seenAtomicCli, seenAtomicSer, generalMoveItem
+  , seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
   ) where
 
 import Control.Applicative
@@ -69,12 +69,12 @@ data PosAtomic =
 -- contradict state) if the visibility is lower.
 posUpdAtomic :: MonadStateRead m => UpdAtomic -> m PosAtomic
 posUpdAtomic cmd = case cmd of
-  UpdCreateActor _ body _ -> posProjBody body
-  UpdDestroyActor _ body _ -> posProjBody body
+  UpdCreateActor _ body _ -> return $! posProjBody body
+  UpdDestroyActor _ body _ -> return $! posProjBody body
   UpdCreateItem _ _ _ c -> singleContainer c
   UpdDestroyItem _ _ _ c -> singleContainer c
-  UpdSpotActor _ body _ -> posProjBody body
-  UpdLoseActor _ body _ -> posProjBody body
+  UpdSpotActor _ body _ -> return $! posProjBody body
+  UpdLoseActor _ body _ -> return $! posProjBody body
   UpdSpotItem _ _ _ c -> singleContainer c
   UpdLoseItem _ _ _ c -> singleContainer c
   UpdMoveActor aid fromP toP -> do
@@ -187,8 +187,8 @@ posSfxAtomic cmd = case cmd of
   SfxMsgAll _ -> return PosAll
   SfxActorStart aid -> singleAid aid
 
-posProjBody :: Monad m => Actor -> m PosAtomic
-posProjBody body = return $!
+posProjBody :: Actor -> PosAtomic
+posProjBody body =
   if bproj body
   then PosSight (blid body) [bpos body]
   else PosFidAndSight [bfid body] (blid body) [bpos body]
