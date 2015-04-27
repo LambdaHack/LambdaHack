@@ -499,11 +499,11 @@ meleeBlocker aid = do
       let maim | adjacent (bpos b) goal = Just goal
                | adjacent (bpos b) q = Just q
                | otherwise = Nothing  -- MeleeDistant
-      mBlocker <- case maim of
-        Nothing -> return Nothing
-        Just aim -> getsState $ posToActor aim (blid b)
-      case mBlocker of
-        Just ((aid2, _), _) -> do
+      lBlocker <- case maim of
+        Nothing -> return []
+        Just aim -> getsState $ posToActors aim (blid b)
+      case lBlocker of
+        (aid2, _) : _ -> do
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
           body2 <- getsState $ getActorBody aid2
@@ -518,7 +518,7 @@ meleeBlocker aid = do
               mel <- maybeToList <$> pickWeaponClient aid aid2
               return $! liftFrequency $ uniformFreq "melee in the way" mel
             else return reject
-        Nothing -> return reject
+        [] -> return reject
     _ -> return reject  -- probably no path to the enemy, if any
 
 -- Everybody melees in a pinch, skills and weapons allowing,
@@ -809,7 +809,7 @@ displaceTowards aid source target = do
     mBlocker <- getsState $ posToActors target (blid b)
     case mBlocker of
       [] -> return reject
-      [((aid2, b2), _)] | Just aid2 /= mleader -> do
+      [(aid2, b2)] | Just aid2 /= mleader -> do
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
         case mtgtMPath of
           Just (tgt, Just (p : q : rest, (goal, len)))
@@ -914,7 +914,7 @@ moveOrRunAid run source dir = do
   -- (tiles can't be invisible).
   tgts <- getsState $ posToActors tpos lid
   case tgts of
-    [((target, b2), _)] | run -> do
+    [(target, b2)] | run -> do
       -- @target@ can be a foe, as well as a friend.
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
       activeItems <- activeItemsClient target
@@ -931,7 +931,7 @@ moveOrRunAid run source dir = do
           Just wp -> return $! Just $ RequestAnyAbility wp
       else do
         return $! Just $ RequestAnyAbility $ ReqDisplace target
-    ((target, _), _) : _ -> do  -- can be a foe, as well as friend (e.g., proj.)
+    (target, _) : _ -> do  -- can be a foe, as well as friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
       -- Attacking does not require full access, adjacency is enough.

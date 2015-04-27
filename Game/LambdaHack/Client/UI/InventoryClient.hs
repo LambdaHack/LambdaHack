@@ -889,9 +889,9 @@ doLook addMoreMsg = do
       let aims = isJust mnewEps
           enemyMsg = case inhabitants of
             [] -> ""
-            ((_, body), _) : rest ->
+            ((_, body)) : rest ->
                  -- Even if it's the leader, give his proper name, not 'you'.
-                 let subjects = map (partActor . snd . fst) inhabitants
+                 let subjects = map (partActor . snd) inhabitants
                      subject = MU.WWandW subjects
                      verb = "be here"
                      desc = if not (null rest)  -- many actors

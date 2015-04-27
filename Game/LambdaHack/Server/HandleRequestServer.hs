@@ -158,9 +158,9 @@ reqMove source dir = do
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by checking actors at the the target position.
-  tgt <- getsState $ posToActor tpos lid
+  tgt <- getsState $ posToActors tpos lid
   case tgt of
-    Just ((target, tb), _) | not (bproj sb && bproj tb) -> do  -- visible or not
+    (target, tb) : _ | not (bproj sb && bproj tb) -> do  -- visible or not
       -- Projectiles are too small to hit each other.
       -- Attacking does not require full access, adjacency is enough.
       -- Here the only weapon of projectiles is picked, too.

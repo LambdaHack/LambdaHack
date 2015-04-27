@@ -172,24 +172,33 @@ cmdAtomicFilterCli cmd = case cmd of
     perOld <- getPerFid lid
     perception lid outPer inPer
     perNew <- getPerFid lid
-    s <- getState
+    carriedAssocs <- getsState $ flip getCarriedAssocs
     fid <- getsClient sside
+    s <- getState
     -- Wipe out actors that just became invisible due to changed FOV.
-    -- TODO: perhaps instead create LoseActor for all actors in lprio,
-    -- and keep only those where seenAtomicCli is True; this is even
-    -- cheaper than repeated posToActor (until it's optimized).
+    -- Worst case is many actors O(n) in an open room of large diameter O(m).
+    -- Then a step reveals many positions. Iterating over them via @posToActors@
+    -- takes O(m * n) and so is more cosly than interating over all actors
+    -- and for each checking inclusion in a set of positions O(n * log m).
+    -- OTOH, m is bounded by sight radius and n is unbounded, so we have
+    -- O(n) in both cases, especially with huge levels. To help there,
+    -- we'd need to keep a dictionary from positions to actors, which means
+    -- @posToActors@ is the right approach for now.
     let seenNew = seenAtomicCli False fid perNew
         seenOld = seenAtomicCli False fid perOld
         outFov = totalVisible perOld ES.\\ totalVisible perNew
         outPrio = concatMap (\p -> posToActors p lid s) $ ES.elems outFov
-        fActor ((aid, b), ais) =
+        fActor (aid, b) =
           let ps = posProjBody b
               -- Verify that we forget only previously seen actors.
               !_A = assert (seenOld ps) ()
           in -- We forget only currently invisible actors.
              if seenNew ps
              then Nothing
-             else Just $ UpdLoseActor aid b ais
+             else -- Verify that we forget only previously seen actors.
+                  let !_A = assert (seenOld ps) ()
+                      ais = carriedAssocs b
+                  in Just $ UpdLoseActor aid b ais
         outActor = mapMaybe fActor outPrio
     -- Wipe out remembered items on tiles that now came into view.
     lvl <- getLevel lid

@@ -160,8 +160,11 @@ atomicRemember lid inPer s =
   let inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
       -- Actors.
+      carriedAssocs b = getCarriedAssocs b s
       inPrio = concatMap (\p -> posToActors p lid s) inFov
-      fActor ((aid, b), ais) = UpdSpotActor aid b ais
+      fActor (aid, b) =
+        let ais = carriedAssocs b
+        in UpdSpotActor aid b ais
       inActor = map fActor inPrio
       -- Items.
       pMaybe p = maybe Nothing (\x -> Just (p, x))

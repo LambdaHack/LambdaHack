@@ -116,14 +116,14 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
             -- Don't check @initialStep@ and @finalGoal@
             -- and don't stop going to target: door opening is mundane enough.
             return $ Right runCmd
-      [((target, _), _)] | run && initialStep ->
+      [(target, _)] | run && initialStep ->
         -- No @stopPlayBack@: initial displace is benign enough.
         -- Displacing requires accessibility, but it's checked later on.
         fmap RequestAnyAbility <$> displaceAid target
       _ : _ : _ | run && initialStep -> do
-        let !_A = assert (all (bproj . snd . fst) tgts) ()
+        let !_A = assert (all (bproj . snd) tgts) ()
         failSer DisplaceProjectiles
-      ((target, tb), _) : _ | initialStep && finalGoal -> do
+      (target, tb) : _ | initialStep && finalGoal -> do
         stopPlayBack  -- don't ever auto-repeat melee
         -- No problem if there are many projectiles at the spot. We just
         -- attack the first one.
@@ -407,8 +407,8 @@ projectCheck tpos = do
       if not $ Tile.isWalkable cotile t
         then return $ Just ProjectBlockTerrain
         else do
-          mab <- getsState $ posToActor pos lid
-          if maybe True (bproj . snd . fst) mab
+          lab <- getsState $ posToActors pos lid
+          if all (bproj . snd) lab
           then return Nothing
           else return $ Just ProjectBlockActor
 
@@ -761,7 +761,7 @@ multiActorGoTo arena c paramOld =
               [] -> do
                 modifyClient $ \cli -> cli {srunning = Just paramNew}
                 return $ Right (finalGoal, dir)
-              [((target, _), _)]
+              [(target, _)]
                 | target `elem` rs || runWaiting <= length rs ->
                 -- Let r wait until all others move. Mark it in runWaiting
                 -- to avoid cycles. When all wait for each other, fail.

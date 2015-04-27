@@ -526,7 +526,6 @@ effectAscend :: (MonadAtomic m, MonadServer m)
              -> m Bool
 effectAscend recursiveCall execSfx k source target = do
   b1 <- getsState $ getActorBody target
-  ais1 <- getsState $ getCarriedAssocs b1
   let lid1 = blid b1
       pos1 = bpos b1
   (lid2, pos2) <- getsState $ whereTo lid1 pos1 k . sdungeon
@@ -540,13 +539,13 @@ effectAscend recursiveCall execSfx k source target = do
     -- We keep it useful even in shallow dungeons.
     recursiveCall $ IK.Teleport 30  -- powerful teleport
   else do
-    let switch1 = void $ switchLevels1 ((target, b1), ais1)
+    let switch1 = void $ switchLevels1 (target, b1)
         switch2 = do
           -- Make the initiator of the stair move the leader,
           -- to let him clear the stairs for others to follow.
           let mlead = Just target
           -- Move the actor to where the inhabitants were, if any.
-          switchLevels2 lid2 pos2 ((target, b1), ais1) mlead
+          switchLevels2 lid2 pos2 (target, b1) mlead
           -- Verify only one non-projectile actor on every tile.
           !_ <- getsState $ posToActors pos1 lid1  -- assertion is inside
           !_ <- getsState $ posToActors pos2 lid2  -- assertion is inside
@@ -558,9 +557,9 @@ effectAscend recursiveCall execSfx k source target = do
       [] -> do
         switch1
         switch2
-      ((_, b2), _) : _ -> do
+      (_, b2) : _ -> do
         -- Alert about the switch.
-        let subjects = map (partActor . snd . fst) inhabitants
+        let subjects = map (partActor . snd) inhabitants
             subject = MU.WWandW subjects
             verb = "be pushed to another level"
             msg2 = makeSentence [MU.SubjectVerbSg subject verb]
@@ -582,10 +581,8 @@ effectAscend recursiveCall execSfx k source target = do
     execSfx
     return True
 
-switchLevels1 :: MonadAtomic m
-              => ((ActorId, Actor), [(ItemId, Item)])
-              -> m (Maybe ActorId)
-switchLevels1 ((aid, bOld), ais) = do
+switchLevels1 :: MonadAtomic m => (ActorId, Actor) -> m (Maybe ActorId)
+switchLevels1 (aid, bOld) = do
   let side = bfid bOld
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
   -- Prevent leader pointing to a non-existing actor.
@@ -598,14 +595,14 @@ switchLevels1 ((aid, bOld), ais) = do
   -- Remove the actor from the old level.
   -- Onlookers see somebody disappear suddenly.
   -- @UpdDestroyActor@ is too loud, so use @UpdLoseActor@ instead.
+  ais <- getsState $ getCarriedAssocs bOld
   execUpdAtomic $ UpdLoseActor aid bOld ais
   return mlead
 
 switchLevels2 ::(MonadAtomic m, MonadServer m)
-              => LevelId -> Point
-              -> ((ActorId, Actor), [(ItemId, Item)]) -> Maybe ActorId
+              => LevelId -> Point -> (ActorId, Actor) -> Maybe ActorId
               -> m ()
-switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
+switchLevels2 lidNew posNew (aid, bOld) mlead = do
   let lidOld = blid bOld
       side = bfid bOld
   let !_A = assert (lidNew /= lidOld `blame` "stairs looped" `twith` lidNew) ()
@@ -631,6 +628,7 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
   -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
+  ais <- getsState $ getCarriedAssocs bOld
   execUpdAtomic $ UpdCreateActor aid bNew ais
   case mlead of
     Nothing -> return ()

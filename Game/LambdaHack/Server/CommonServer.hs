@@ -295,8 +295,8 @@ projectFail source tpxy eps iid cstore isBlast = do
               if not $ Tile.isWalkable cotile t
                 then return $ Just ProjectBlockTerrain
                 else do
-                  mab <- getsState $ posToActor pos lid
-                  if not $ maybe True (bproj . snd . fst) mab
+                  lab <- getsState $ posToActors pos lid
+                  if not $ all (bproj . snd) lab
                     then if isBlast && bproj sb then do
                            -- Hit the blocking actor.
                            projectBla source spos (pos:rest) iid cstore isBlast

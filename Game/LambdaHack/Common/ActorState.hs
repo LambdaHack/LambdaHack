@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.ActorState
   , mergeItemQuant, sharedAllOwnedFid, findIid
   , getCBag, getActorBag, getBodyActorBag, mapActorItems_, getActorAssocs
   , nearbyFreePoints, whereTo, getCarriedAssocs, getCarriedIidCStore
-  , posToActors, posToActor, getItemBody, memActor, getActorBody
+  , posToActors, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, dispEnemy, fullAssocs, itemToFull
   , goesIntoEqp, goesIntoInv, goesIntoSha, eqpOverfull
@@ -104,22 +104,12 @@ bagAssocsK s bag =
   let iidItem (iid, kit) = (iid, (getItemBody iid s, kit))
   in map iidItem $ EM.assocs bag
 
--- | Finds an actor at a position on the current level.
-posToActor :: Point -> LevelId -> State
-           -> Maybe ((ActorId, Actor), [(ItemId, Item)])
-posToActor pos lid s = listToMaybe $ posToActors pos lid s
-
-posToActors :: Point -> LevelId -> State
-            -> [((ActorId, Actor), [(ItemId, Item)])]
+-- | Finds all actors at a position on the current level.
+posToActors :: Point -> LevelId -> State -> [(ActorId, Actor)]
 posToActors pos lid s =
   let as = actorAssocs (const True) lid s
-      aps = filter (\(_, b) -> bpos b == pos) as
-      g (aid, b) = ( (aid, b)
-                   , bagAssocs s (binv b)
-                     ++ bagAssocs s (beqp b)
-                     ++ bagAssocs s (borgan b) )
-      l = map g aps
-  in assert (length l <= 1 || all (bproj . snd . fst) l
+      l = filter (\(_, b) -> bpos b == pos) as
+  in assert (length l <= 1 || all (bproj . snd) l
              `blame` "many actors at the same position" `twith` l)
      l
 
