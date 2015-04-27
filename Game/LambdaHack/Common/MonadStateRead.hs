@@ -2,7 +2,7 @@
 -- player actions. Has no access to the the main action type.
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
-  , getLevel, nUI, posOfAid, factionCanEscape, factionLoots
+  , getLevel, nUI, posOfAid, factionCanEscape
   , getGameMode, getEntryArena
   ) where
 
@@ -41,16 +41,6 @@ factionCanEscape fid = do
   dungeon <- getsState sdungeon
   let escape = any (not . null . lescape) $ EM.elems dungeon
   return $! escape && fcanEscape (gplayer fact)
-
--- TODO: "treasure" is hardwired; tie this code with calculateTotal
-factionLoots :: MonadStateRead m => FactionId -> m Bool
-factionLoots fid = do
-  dungeon <- getsState sdungeon
-  let hasTreasure Level{litemFreq} =
-        maybe False (> 0) $ lookup "treasure" litemFreq
-      loots = any hasTreasure $ EM.elems dungeon
-  canEscape <- factionCanEscape fid
-  return $! canEscape && loots
 
 getGameMode :: MonadStateRead m => m ModeKind
 getGameMode = do

@@ -24,7 +24,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 
@@ -48,11 +47,11 @@ data State = State
 -- and when loading regenerate this level.
 unknownLevel :: Kind.COps -> AbsDepth -> X -> Y
              -> Text -> ([Point], [Point]) -> Int
-             -> (Freqs ItemKind) -> Int -> Int -> [Point]
+             -> Int -> Int -> [Point]
              -> Level
 unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
              ldepth lxsize lysize ldesc lstair lclear
-             litemFreq lsecret lhidden lescape =
+             lsecret lhidden lescape =
   let unknownId = ouniqGroup "unknown space"
       outerId = ouniqGroup "basic outer fence"
   in Level { ldepth
@@ -71,7 +70,7 @@ unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
            , lactorCoeff = 0
            , lactorFreq = []
            , litemNum = 0
-           , litemFreq  -- = []  --- TODO: field needed by factionLoots
+           , litemFreq = []
            , lsecret
            , lhidden
            , lescape
@@ -127,7 +126,7 @@ localFromGlobal State{..} =
     { _sdungeon =
       EM.map (\Level{..} ->
               unknownLevel _scops ldepth lxsize lysize ldesc lstair lclear
-                           litemFreq lsecret lhidden lescape)
+                           lsecret lhidden lescape)
              _sdungeon
     , ..
     }
