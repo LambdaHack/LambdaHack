@@ -55,7 +55,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
 
 -- | Require that the target enemy is visible by the party.
 condTgtEnemyPresentM :: MonadClient m => ActorId -> m Bool
@@ -315,13 +314,7 @@ condMeleeBadM aid = do
   let condNoUsableWeapon = all (not . isMelee) activeItems
       friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
-  friendlyFacts <-
-    getsState $ map snd . filter (friendlyFid . fst) . EM.assocs . sfactionD
-  Level{lactorFreq} <- getLevel $ blid b
-  let freqNames = map fst lactorFreq
-      factNames = map (fgroup . gplayer) friendlyFacts
-      spawnerOnLvl = any (`elem` freqNames) factNames
-      closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
+  let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
                        in dist > 0 && (dist <= 2 || approaching b2)
       -- 3 is the condThreatAtHand distance that AI keeps when alone.
       approaching = case mtgtPos of
@@ -339,8 +332,7 @@ condMeleeBadM aid = do
   strongCloseFriends <- filterM strongActor closeFriends
   let noFriendlyHelp = length closeFriends < 3
                        && null strongCloseFriends
-                       && (length friends > 1  -- solo fighters aggresive
-                           || spawnerOnLvl)
+                       && length friends > 1  -- solo fighters aggresive
                        && not (hpHuge b)  -- uniques, etc., aggresive
   let actorMaxSk = sumSkills activeItems
   return $ condNoUsableWeapon
