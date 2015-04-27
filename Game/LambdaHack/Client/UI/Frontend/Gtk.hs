@@ -129,6 +129,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   aCont <- async $ cont sess `Ex.finally` postGUISync mainQuit
   link aCont
   -- Fork the thread that periodically draws a frame from a queue, if any.
+  -- TODO: mainQuit somehow never called.
   aPoll <- async $ pollFramesAct sess `Ex.finally` postGUISync mainQuit
   link aPoll
   let flushChanKey = do

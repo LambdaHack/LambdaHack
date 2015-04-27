@@ -298,20 +298,14 @@ rosterCoop = Roster
   { rosterList = [ playerAntiHero { fname = "Coral" }
                  , playerAntiHero { fname = "Amber"
                                   , fleaderMode = LeaderNull }
-                 , playerAntiHero { fname = "Green" }
                  , playerAnimal { fhasUI = True }
+                 , playerAnimal
                  , playerMonster
                  , playerMonster { fname = "Leaderless Monster Hive"
                                  , fleaderMode = LeaderNull } ]
   , rosterEnemy = [ ("Coral", "Monster Hive")
-                  , ("Amber", "Monster Hive")
-                  , ("Animal Kingdom", "Leaderless Monster Hive") ]
-  , rosterAlly = [ ("Coral", "Amber")
-                 , ("Coral", "Green")
-                 , ("Amber", "Green")
-                 , ("Green", "Animal Kingdom")
-                 , ("Green", "Monster Hive")
-                 , ("Green", "Leaderless Monster Hive") ] }
+                  , ("Amber", "Monster Hive") ]
+  , rosterAlly = [ ("Coral", "Amber") ] }
 
 rosterDefense = rosterCampaign
   { rosterList = [ playerAntiHero
