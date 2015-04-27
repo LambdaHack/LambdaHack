@@ -102,7 +102,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   let verb = MU.Text $ if pos == bpos b
                        then "stand on"
                        else if canSee then "notice" else "remember"
-  let nWs (iid, kit@(k, _)) = partItemWs k CGround lidV localTime (itemToF iid kit)
+  let nWs (iid, kit@(k, _)) = partItemWs k CGround localTime (itemToF iid kit)
       isd = case detailed of
               _ | EM.size is == 0 -> ""
               _ | EM.size is <= 2 ->
@@ -146,6 +146,6 @@ itemOverlay c lid bag = do
                 -- with all items visible on the floor or known to player
                 -- symbol = jsymbol $ itemBase itemFull
             in Just $ makePhrase [ slotLabel l, "-"  -- MU.String [symbol]
-                                 , partItemWs k c lid localTime itemFull ]
+                                 , partItemWs k c localTime itemFull ]
                       <> "  "
   return $! toOverlay $ mapMaybe pr $ EM.assocs lSlots

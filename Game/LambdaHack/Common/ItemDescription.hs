@@ -21,12 +21,11 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
--- TODO: remove _lid if still unused after some time
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show..
-partItemN :: Int -> Int -> CStore -> LevelId -> Time -> ItemFull
+partItemN :: Int -> Int -> CStore -> Time -> ItemFull
           -> (Bool, MU.Part, MU.Part)
-partItemN fullInfo n c _lid localTime itemFull =
+partItemN fullInfo n c localTime itemFull =
   let genericName = jname $ itemBase itemFull
   in case itemDisco itemFull of
     Nothing ->
@@ -63,7 +62,7 @@ partItemN fullInfo n c _lid localTime itemFull =
       in (unique, capName, MU.Phrase $ map MU.Text ts)
 
 -- | The part of speech describing the item.
-partItem :: CStore -> LevelId -> Time -> ItemFull -> (Bool, MU.Part, MU.Part)
+partItem :: CStore -> Time -> ItemFull -> (Bool, MU.Part, MU.Part)
 partItem = partItemN 5 4
 
 textAllAE :: Int -> Bool -> CStore -> ItemFull -> [Text]
@@ -150,35 +149,35 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
       in aets ++ features
 
 -- TODO: use kit
-partItemWs :: Int -> CStore -> LevelId -> Time -> ItemFull -> MU.Part
-partItemWs count c lid localTime itemFull =
-  let (unique, name, stats) = partItem c lid localTime itemFull
+partItemWs :: Int -> CStore -> Time -> ItemFull -> MU.Part
+partItemWs count c localTime itemFull =
+  let (unique, name, stats) = partItem c localTime itemFull
   in if unique && count == 1
      then MU.Phrase ["the", name, stats]
      else MU.Phrase [MU.CarWs count name, stats]
 
-partItemAW :: CStore -> LevelId -> Time -> ItemFull -> MU.Part
-partItemAW c lid localTime itemFull =
-  let (unique, name, stats) = partItemN 4 4 c lid localTime itemFull
+partItemAW :: CStore -> Time -> ItemFull -> MU.Part
+partItemAW c localTime itemFull =
+  let (unique, name, stats) = partItemN 4 4 c localTime itemFull
   in if unique
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
 
-partItemMediumAW :: CStore -> LevelId -> Time -> ItemFull -> MU.Part
-partItemMediumAW c lid localTime itemFull =
-  let (unique, name, stats) = partItemN 5 100 c lid localTime itemFull
+partItemMediumAW :: CStore -> Time -> ItemFull -> MU.Part
+partItemMediumAW c localTime itemFull =
+  let (unique, name, stats) = partItemN 5 100 c localTime itemFull
   in if unique
      then MU.Phrase ["the", name, stats]
      else MU.AW $ MU.Phrase [name, stats]
 
-partItemWownW :: MU.Part -> CStore -> LevelId -> Time -> ItemFull -> MU.Part
-partItemWownW partA c lid localTime itemFull =
-  let (_, name, stats) = partItemN 4 4 c lid localTime itemFull
+partItemWownW :: MU.Part -> CStore -> Time -> ItemFull -> MU.Part
+partItemWownW partA c localTime itemFull =
+  let (_, name, stats) = partItemN 4 4 c localTime itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
 
-itemDesc :: CStore -> LevelId -> Time -> ItemFull -> Overlay
-itemDesc c lid localTime itemFull =
-  let (_, name, stats) = partItemN 10 100 c lid localTime itemFull
+itemDesc :: CStore -> Time -> ItemFull -> Overlay
+itemDesc c localTime itemFull =
+  let (_, name, stats) = partItemN 10 100 c localTime itemFull
       nstats = makePhrase [name, stats]
       desc = case itemDisco itemFull of
         Nothing -> "This item is as unremarkable as can be."

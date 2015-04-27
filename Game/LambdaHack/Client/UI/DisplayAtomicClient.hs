@@ -303,7 +303,7 @@ itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
-  let subject = partItemWs k (storeFromC c) lid localTime (itemToF iid kit)
+  let subject = partItemWs k (storeFromC c) localTime (itemToF iid kit)
       msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
@@ -330,14 +330,14 @@ itemAidVerbMU aid verb iid ek cstore = do
           object = case ek of
             Left (Just n) ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
-              $ partItemWs n cstore lid localTime itemFull
+              $ partItemWs n cstore localTime itemFull
             Left Nothing ->
-              let (_, name, stats) = partItem cstore lid localTime itemFull
+              let (_, name, stats) = partItem cstore localTime itemFull
               in MU.Phrase [name, stats]
             Right n ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
               $ let itemSecret = itemNoDisco (itemBase itemFull, n)
-                    (_, secretName, secretAE) = partItem cstore lid localTime itemSecret
+                    (_, secretName, secretAE) = partItem cstore localTime itemSecret
                     name = MU.Phrase [secretName, secretAE]
                     nameList = if n == 1
                                then ["the", name]
@@ -473,7 +473,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
                    [ "\n"
                    , slotLabel l
                    , "-"
-                   , partItemWs n cstore2 (blid b) localTime (itemToF iid kit)
+                   , partItemWs n cstore2 localTime (itemToF iid kit)
                    , "\n" ]
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
         itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
@@ -575,12 +575,12 @@ discover c oldcli iid = do
   bag <- getsState $ getCBag c
   let kit = EM.findWithDefault (1, []) iid bag
       itemFull = itemToF iid kit
-      knownName = partItemMediumAW cstore lid localTime itemFull
+      knownName = partItemMediumAW cstore localTime itemFull
       -- Wipe out the whole knowledge of the item to make sure the two names
       -- in the message differ even if, e.g., the item is described as
       -- "of many effects".
       itemSecret = itemNoDisco (itemBase itemFull, itemK itemFull)
-      (_, secretName, secretAEText) = partItem cstore lid localTime itemSecret
+      (_, secretName, secretAEText) = partItem cstore localTime itemSecret
       msg = makeSentence
         [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
                                   "turn out to be"
@@ -786,7 +786,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
               let itemSecret = itemNoDisco (itemBase, itemK)
                   -- TODO: plural form of secretName? only when K > 1?
                   -- At this point we don't easily know how many consumed.
-                  (_, secretName, secretAEText) = partItem CGround (blid b) localTime itemSecret
+                  (_, secretName, secretAEText) = partItem CGround localTime itemSecret
                   verb = "repurpose"
                   store = MU.Text $ ppCStoreIn CGround
               msgAdd $ makeSentence
@@ -888,8 +888,8 @@ strike source target iid cstore hitStatus = assert (source /= target) $ do
       isOrgan = iid `EM.member` borgan sb
       partItemChoice =
         if isOrgan
-        then partItemWownW spronoun COrgan (blid sb) localTime
-        else partItemAW cstore (blid sb) localTime
+        then partItemWownW spronoun COrgan localTime
+        else partItemAW cstore localTime
       msg HitClear = makeSentence $
         [MU.SubjectVerbSg spart verb, tpart]
         ++ if bproj sb

@@ -975,7 +975,7 @@ describeItemC c = do
       activeItems <- activeItemsClient leader
       let calmE = calmEnough b activeItems
       localTime <- getsState $ getLocalTime (blid b)
-      let io = itemDesc (storeFromMode c2) (blid b) localTime itemFull
+      let io = itemDesc (storeFromMode c2) localTime itemFull
       case c2 of
         MStore COrgan -> do
           let symbol = jsymbol (itemBase itemFull)
