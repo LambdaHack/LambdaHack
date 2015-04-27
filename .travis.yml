@@ -7,8 +7,8 @@ env:
  - MYSETUP=7.6.3.vty
  - MYSETUP=7.8.4.gtk
  - MYSETUP=7.8.4.vty
-# - MYSETUP=7.10.1.gtk
-# - MYSETUP=7.10.1.vty
+ - MYSETUP=7.10.1.gtk
+ - MYSETUP=7.10.1.vty
  - MYSETUP=2014.2.0.0.gtk
  - MYSETUP=2014.2.0.0.vty
  - MYSETUP=2013.2.0.0.gtk
