@@ -259,10 +259,10 @@ rosterSafari = Roster
                  , playerAnimalExquisite
                  ]
   , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
-                  , ("Monster Tourist Office",
-                     "Animal Magnificent Specimen Variety")
-                  , ("Monster Tourist Office",
-                     "Animal Exquisite Herds and Packs") ]
+                  , ( "Monster Tourist Office"
+                    , "Animal Magnificent Specimen Variety")
+                  , ( "Monster Tourist Office"
+                    , "Animal Exquisite Herds and Packs") ]
   , rosterAlly = [ ( "Animal Magnificent Specimen Variety"
                    , "Animal Exquisite Herds and Packs" )
                  , ( "Animal Magnificent Specimen Variety"
