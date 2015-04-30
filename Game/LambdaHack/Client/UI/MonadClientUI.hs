@@ -146,7 +146,7 @@ displayFrame mf = do
   writeConnFrontend frame
 
 displayDelay :: MonadClientUI m =>  m ()
-displayDelay = sequence_ $ replicate 4 $ writeConnFrontend FrontDelay
+displayDelay = replicateM_ 4 $ writeConnFrontend FrontDelay
 
 -- | Push frames or delays to the frame queue. Additionally set @sdisplayed@.
 -- because animations not always happen after @SfxActorStart@ on the leader's

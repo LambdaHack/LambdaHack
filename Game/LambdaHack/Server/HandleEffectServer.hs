@@ -869,7 +869,7 @@ effectPolyItem execSfx source target = do
             <+> "pieces of this item, not by" <+> tshow itemK <> "."
           return False
         else if IK.Unique `elem` aspects then do
-          execSfxAtomic $ SfxMsgFid (bfid sb) $
+          execSfxAtomic $ SfxMsgFid (bfid sb)
             "Unique items can't be repurposed."
           return False
         else do
@@ -998,7 +998,7 @@ sendFlyingVector source target modePush = do
   else do
     tb <- getsState $ getActorBody target
     let (sp, tp) = if adjacent (bpos sb) (bpos tb)
-                   then let pos = if chessDist (boldpos_sb) (bpos tb)
+                   then let pos = if chessDist boldpos_sb (bpos tb)
                                      > chessDist (bpos sb) (bpos tb)
                                   then boldpos_sb  -- avoid cardinal dir
                                   else bpos sb

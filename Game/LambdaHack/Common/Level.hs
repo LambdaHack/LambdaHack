@@ -154,7 +154,7 @@ knownLsecret lvl = lsecret lvl /= 0
 
 isSecretPos :: Level -> Point -> Bool
 isSecretPos lvl (Point x y) =
-  not (lhidden lvl == 0)
+  lhidden lvl /= 0
   && (lsecret lvl `Bits.rotateR` x `Bits.xor` y + x) `mod` lhidden lvl == 0
 
 hideTile :: Kind.COps -> Level -> Point -> Kind.Id TileKind

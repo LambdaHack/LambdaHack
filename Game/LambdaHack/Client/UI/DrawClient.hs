@@ -369,7 +369,7 @@ drawSelected drawnLevelId width = do
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       -- Don't show anything if the only actor in the dungeon is the leader.
       -- He's clearly highlighted on the level map, anyway.
-      party = if length allOurs == 1 && length ours == 1 || length ours == 0
+      party = if length allOurs == 1 && length ours == 1 || null ours
               then []
               else [star] ++ viewed ++ addAttr " "
   return $! party

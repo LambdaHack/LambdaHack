@@ -183,12 +183,11 @@ itemDesc c localTime itemFull =
         Nothing -> "This item is as unremarkable as can be."
         Just ItemDisco{itemKind} -> IK.idesc itemKind
       weight = jweight (itemBase itemFull)
-      (scaledWeight, unitWeight) =
-        if weight > 1000
-        then (tshow $ fromIntegral weight / (1000 :: Double), "kg")
-        else if weight > 0
-        then (tshow weight, "g")
-        else ("", "")
+      (scaledWeight, unitWeight)
+        | weight > 1000 =
+          (tshow $ fromIntegral weight / (1000 :: Double), "kg")
+        | weight > 0 = (tshow weight, "g")
+        | otherwise = ("", "")
       ln = abs $ fromEnum $ jlid (itemBase itemFull)
       colorSymbol = uncurry (flip Color.AttrChar) (viewItem $ itemBase itemFull)
       f = Color.AttrChar Color.defAttr

@@ -425,12 +425,12 @@ unEquipItems aid = do
                        body activeItems fact itemFull
       bestThree =
         bestByEqpSlot eqpAssocs invAssocs (filter filterNeeded shaAssocs)
-      bInvSha = concatMap (improve CInv)
-                $ map (\((slot, _), (_, inv, sha)) ->
-                        (slot, (sha, inv))) bestThree
-      bEqpSha = concatMap (improve CEqp)
-                $ map (\((slot, _), (eqp, _, sha)) ->
-                        (slot, (sha, eqp))) bestThree
+      bInvSha = concatMap
+                  (improve CInv . (\((slot, _), (_, inv, sha)) ->
+                                    (slot, (sha, inv)))) bestThree
+      bEqpSha = concatMap
+                  (improve CEqp . (\((slot, _), (eqp, _, sha)) ->
+                                    (slot, (sha, eqp)))) bestThree
       prepared = if calmE then bInvSha ++ bEqpSha else []
   return $! if null prepared
             then reject
@@ -929,8 +929,7 @@ moveOrRunAid run source dir = do
         case wps of
           Nothing -> return Nothing
           Just wp -> return $! Just $ RequestAnyAbility wp
-      else do
-        return $! Just $ RequestAnyAbility $ ReqDisplace target
+      else return $! Just $ RequestAnyAbility $ ReqDisplace target
     (target, _) : _ -> do  -- can be a foe, as well as friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
@@ -939,25 +938,25 @@ moveOrRunAid run source dir = do
       case wps of
         Nothing -> return Nothing
         Just wp -> return $! Just $ RequestAnyAbility wp
-    [] ->  -- move or search or alter
-      if accessible cops lvl spos tpos then
-        -- Movement requires full access.
-        return $! Just $ RequestAnyAbility $ ReqMove dir
-        -- The potential invisible actor is hit.
-      else if skill < 1 then
-        assert `failure` "AI causes  AlterUnskilled" `twith` (run, source, dir)
-      else if EM.member tpos $ lfloor lvl then
-        -- This could be, e.g., inaccessible open door with an item in it,
-        -- but for this case to happen, it would also need to be unwalkable.
-        assert `failure` "AI causes AlterBlockItem" `twith` (run, source, dir)
-      else if not (Tile.isWalkable cotile t)  -- not implied
+    [] -- move or search or alter
+       | accessible cops lvl spos tpos ->
+         -- Movement requires full access.
+         return $! Just $ RequestAnyAbility $ ReqMove dir
+         -- The potential invisible actor is hit.
+       | skill < 1 ->
+         assert `failure` "AI causes  AlterUnskilled" `twith` (run, source, dir)
+       | EM.member tpos $ lfloor lvl ->
+         -- This could be, e.g., inaccessible open door with an item in it,
+         -- but for this case to happen, it would also need to be unwalkable.
+         assert `failure` "AI causes AlterBlockItem" `twith` (run, source, dir)
+       | not (Tile.isWalkable cotile t)  -- not implied
               && (Tile.isSuspect cotile t
                   || Tile.isOpenable cotile t
                   || Tile.isClosable cotile t
-                  || Tile.isChangeable cotile t) then
-        -- No access, so search and/or alter the tile.
-        return $! Just $ RequestAnyAbility $ ReqAlter tpos Nothing
-      else
-        -- Boring tile, no point bumping into it, do WaitSer if really idle.
-        assert `failure` "AI causes MoveNothing or AlterNothing"
-               `twith` (run, source, dir)
+                  || Tile.isChangeable cotile t) ->
+         -- No access, so search and/or alter the tile.
+         return $! Just $ RequestAnyAbility $ ReqAlter tpos Nothing
+       | otherwise ->
+         -- Boring tile, no point bumping into it, do WaitSer if really idle.
+         assert `failure` "AI causes MoveNothing or AlterNothing"
+                `twith` (run, source, dir)

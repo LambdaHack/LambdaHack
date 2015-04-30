@@ -287,7 +287,7 @@ closestTriggers onlyDir aid = do
                                     then easier
                                          || not unexpBack && lidExplored
                                     else not unexpBack && lidExplored
-                                         && (null $ lescape lvl)
+                                         && null (lescape lvl)
                        in maybe aiCond (\d -> d == (k > 0)) onlyDir
                  in map (,p) (filter g l) ++ acc
         else acc
@@ -323,7 +323,7 @@ unexploredDepth = do
   let allExplored = ES.size explored == EM.size dungeon
       unexploredD p =
         let unex lid = allExplored
-                       && (not $ null $ lescape $ dungeon EM.! lid)
+                       && not (null $ lescape $ dungeon EM.! lid)
                        || ES.notMember lid explored
                        || unexploredD p lid
         in any unex . ascendInBranch dungeon p

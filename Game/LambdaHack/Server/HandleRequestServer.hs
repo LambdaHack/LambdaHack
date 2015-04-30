@@ -261,8 +261,7 @@ reqDisplace source target = do
       tgts <- getsState $ posToActors tpos lid
       case tgts of
         [] -> assert `failure` (source, sb, target, tb)
-        [_] -> do
-          execUpdAtomic $ UpdDisplaceActor source target
+        [_] -> execUpdAtomic $ UpdDisplaceActor source target
         _ -> execFailure source req DisplaceProjectiles
     else
       -- Client foolishly tries to displace an actor without access.
@@ -293,7 +292,7 @@ reqAlter source tpos mfeat = do
         freshClientTile = hideTile cops lvl tpos
         changeTo tgroup = do
           -- No @SfxAlter@, because the effect is obvious (e.g., opened door).
-          toTile <- rndToAction $ (fromMaybe $ assert `failure` tgroup)
+          toTile <- rndToAction $ fromMaybe (assert `failure` tgroup)
                                   <$> opick tgroup (const True)
           unless (toTile == serverTile) $ do
             execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile

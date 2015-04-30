@@ -36,7 +36,7 @@ strengthAspect f itemFull =
       -- Approximation. For some effects lower values are better,
       -- so we just offer the mean of the dice. This is also correct
       -- for summation, on average.
-      concatMap f $ map (fmap Dice.meanDice) iaspects
+      concatMap (f . fmap Dice.meanDice) iaspects
     Nothing -> []
 
 strengthAspectMaybe :: Show b => (Aspect Int -> [b]) -> ItemFull -> Maybe b

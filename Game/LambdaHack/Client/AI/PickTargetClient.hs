@@ -237,7 +237,7 @@ targetStrategy aid = do
                                   case afoes of
                                     (_, (aid2, _)) : _ ->
                                       setPath $ TEnemy aid2 False
-                                    [] -> do
+                                    [] ->
                                       if nullFreq ctriggers then do
                                         furthest <- furthestKnown aid
                                         setPath $ TPoint (blid b) furthest

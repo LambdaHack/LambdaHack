@@ -433,7 +433,7 @@ cursorStairHuman up = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   stairs <- closestTriggers (Just up) leader
-  case reverse $ sort $ runFrequency stairs of
+  case sortBy (flip compare) $ runFrequency stairs of
     [] -> failMsg $ "no stairs" <+> if up then "up" else "down"
     (_, p) : _ -> do
       let tgt = TPoint (blid b) p

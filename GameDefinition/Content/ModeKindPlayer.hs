@@ -169,4 +169,4 @@ minusTen = EM.fromList $ zip [minBound..maxBound] [-10, -10..]
 meleeAdjacent = EM.delete AbWait $ EM.delete AbMelee minusTen
 
 -- Melee and reaction fire.
-_meleeAndRanged = EM.delete AbProject $ meleeAdjacent
+_meleeAndRanged = EM.delete AbProject meleeAdjacent

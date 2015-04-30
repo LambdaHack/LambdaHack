@@ -206,8 +206,7 @@ openTo Kind.Ops{okind, opick} t = do
     [] -> return t
     groups -> do
       grp <- oneOf groups
-      (fromMaybe $ assert `failure` grp)
-        <$> opick grp (const True)
+      fromMaybe (assert `failure` grp) <$> opick grp (const True)
 
 closeTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 closeTo Kind.Ops{okind, opick} t = do
@@ -217,8 +216,7 @@ closeTo Kind.Ops{okind, opick} t = do
     [] -> return t
     groups -> do
       grp <- oneOf groups
-      (fromMaybe $ assert `failure` grp)
-        <$> opick grp (const True)
+      fromMaybe (assert `failure` grp) <$> opick grp (const True)
 
 embedItems :: Kind.Ops TileKind -> Kind.Id TileKind -> [GroupName ItemKind]
 embedItems Kind.Ops{okind} t =
@@ -240,8 +238,7 @@ revealAs Kind.Ops{okind, opick} t = do
     [] -> return t
     groups -> do
       grp <- oneOf groups
-      (fromMaybe $ assert `failure` grp)
-        <$> opick grp (const True)
+      fromMaybe (assert `failure` grp) <$> opick grp (const True)
 
 hideAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 hideAs Kind.Ops{okind, ouniqGroup} t =

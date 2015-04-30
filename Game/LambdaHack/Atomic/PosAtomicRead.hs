@@ -162,16 +162,10 @@ posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic
 posSfxAtomic cmd = case cmd of
   SfxStrike _ _ _ CSha _ ->  -- shared stash is private
     return PosNone  -- TODO: PosSerAndFidIfSight; but probably never used
-  SfxStrike source target _ _ _ -> do
-    (slid, sp) <- posOfAid source
-    (tlid, tp) <- posOfAid target
-    return $! assert (slid == tlid) $ PosSight slid [sp, tp]
+  SfxStrike source target _ _ _ -> doubleAid source target
   SfxRecoil _ _ _ CSha _ ->  -- shared stash is private
     return PosNone  -- TODO: PosSerAndFidIfSight; but probably never used
-  SfxRecoil source target _ _ _ -> do
-    (slid, sp) <- posOfAid source
-    (tlid, tp) <- posOfAid target
-    return $! assert (slid == tlid) $ PosSight slid [sp, tp]
+  SfxRecoil source target _ _ _ -> doubleAid source target
   SfxProject aid _ cstore -> singleContainer $ CActor aid cstore
   SfxCatch aid _ cstore -> singleContainer $ CActor aid cstore
   SfxApply aid _ cstore -> singleContainer $ CActor aid cstore
@@ -202,6 +196,12 @@ singleAid :: MonadStateRead m => ActorId -> m PosAtomic
 singleAid aid = do
   (lid, p) <- posOfAid aid
   return $! PosSight lid [p]
+
+doubleAid :: MonadStateRead m => ActorId -> ActorId -> m PosAtomic
+doubleAid source target = do
+  (slid, sp) <- posOfAid source
+  (tlid, tp) <- posOfAid target
+  return $! assert (slid == tlid) $ PosSight slid [sp, tp]
 
 singleContainer :: MonadStateRead m => Container -> m PosAtomic
 singleContainer (CFloor lid p) = return $! PosSight lid [p]

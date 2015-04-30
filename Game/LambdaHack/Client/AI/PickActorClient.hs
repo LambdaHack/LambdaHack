@@ -128,11 +128,12 @@ pickActorToMove refreshTarget oldAid = do
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
-            return $! if canMelee && condThreatAdj then False
-                      else if condThreatAtHandVeryClose
-                      then condCanFlee && condMeleeBad && not condFastThreatAdj
-                      else heavilyDistressed  -- shot at
-                        -- TODO: modify when reaction fire is possible
+            return $! not (canMelee && condThreatAdj)
+                      && if condThreatAtHandVeryClose
+                         then condCanFlee && condMeleeBad
+                              && not condFastThreatAdj
+                         else heavilyDistressed  -- shot at
+                           -- TODO: modify when reaction fire is possible
           actorHearning (_, (TEnemyPos{}, (_, (_, d)))) | d <= 2 =
             return False  -- noise probably due to fleeing target
           actorHearning ((_aid, b), _) = do

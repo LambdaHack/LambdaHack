@@ -127,8 +127,7 @@ revealItems mfid mbody = do
           join $ getsState $ mapActorItems_ (discover aid) b
   mapDungeonActors_ f dungeon
   maybe (return ())
-        (\(aid, b) -> do
-           join $ getsState $ mapActorItems_ (discover aid) b)
+        (\(aid, b) -> join $ getsState $ mapActorItems_ (discover aid) b)
         mbody
 
 moveStores :: (MonadAtomic m, MonadServer m)

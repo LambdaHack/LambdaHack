@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Item slots for UI and AI item collections.
 -- TODO: document
 module Game.LambdaHack.Client.ItemSlot

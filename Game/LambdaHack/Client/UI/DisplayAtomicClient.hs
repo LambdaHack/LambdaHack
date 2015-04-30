@@ -240,7 +240,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   UpdCoverSeed{} -> return ()  -- don't spam when doing undo
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ -> do
-    void $ tryTakeMVarSescMVar  -- clear ESC-pressed from end of previous game
+    void tryTakeMVarSescMVar  -- clear ESC-pressed from end of previous game
     mode <- getGameMode
     msgAdd $ "New game started in" <+> mname mode <+> "mode." <+> mdesc mode
     -- TODO: use a vertical animation instead, e.g., roll down,
@@ -855,7 +855,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             displayDelay
           let ageDisp = EM.insert arena localTime
           modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
-          when (not (bproj b)) $  -- projectiles display animations instead
+          unless (bproj b) $  -- projectiles display animations instead
             displayPush ""
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()

@@ -150,8 +150,7 @@ sharedEqp body s =
 sharedAllOwned :: Actor -> State -> ItemBag
 sharedAllOwned body s =
   let shaBag = gsha $ sfactionD s EM.! bfid body
-  in EM.unionsWith mergeItemQuant
-     $ [sharedEqp body s, sharedInv body s, shaBag]
+  in EM.unionsWith mergeItemQuant [sharedEqp body s, sharedInv body s, shaBag]
 
 sharedAllOwnedFid :: Bool -> FactionId -> State -> ItemBag
 sharedAllOwnedFid onlyOrgans fid s =

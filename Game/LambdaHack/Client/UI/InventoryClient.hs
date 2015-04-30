@@ -210,9 +210,7 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
       let suitsThisActor store =
             let bag = getCStoreBag store
             in any (\(iid, kit) -> psuitFun $ itemToF iid kit) $ EM.assocs bag
-          cThisActor cDef = case find suitsThisActor haveThis of
-            Nothing -> cDef
-            Just cSuits -> cSuits
+          cThisActor cDef = fromMaybe cDef $ find suitsThisActor haveThis
       -- Don't display stores totally empty for all actors.
       cLegal <- filterM partyNotEmpty cLegalRaw
       let breakStores cInit =
@@ -241,7 +239,7 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
                           else cLast
       let (modeFirst, modeRest) = breakStores firstStore
       getItem psuit prompt promptGeneric cursor modeFirst modeRest
-              askWhenLone permitMulitple (map MStore $ cLegal) initalState
+              askWhenLone permitMulitple (map MStore cLegal) initalState
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
@@ -889,7 +887,7 @@ doLook addMoreMsg = do
       let aims = isJust mnewEps
           enemyMsg = case inhabitants of
             [] -> ""
-            ((_, body)) : rest ->
+            (_, body) : rest ->
                  -- Even if it's the leader, give his proper name, not 'you'.
                  let subjects = map (partActor . snd) inhabitants
                      subject = MU.WWandW subjects
@@ -985,7 +983,7 @@ describeItemC c = do
           Left <$> overlayToSlideshow ("Can't"
                                        <+> blurb
                                        <> ", but here's the description.") io
-        MStore CSha | not calmE -> do
+        MStore CSha | not calmE ->
           Left <$> overlayToSlideshow "Not enough calm to take items from the shared stash, but here's the description." io
         MStore fromCStore -> do
           let prompt2 = "Where to move the item?"
