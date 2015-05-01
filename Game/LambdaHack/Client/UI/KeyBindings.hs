@@ -88,7 +88,7 @@ keyHelp Binding{bcmdList} =
       ]
     minimalBlurb =
       [ "The following minimal command set lets you accomplish anything in the game,"
-      , "though not neccessarily with the fewest number of keystrokes."
+      , "though not necessarily with the fewest number of keystrokes."
       , "Most of the other commands are shorthands, defined as macros"
       , "(with the exception of the advanced commands for assigning non-default"
       , "tactics and targets to your autonomous henchmen, if you have any)."
