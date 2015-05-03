@@ -257,14 +257,14 @@ scoreToSlideshow total status = do
   gameMode <- getGameMode
   time <- getsState stime
   date <- liftIO getClockTime
-  scurDifficulty <- getsClient scurDifficulty
+  scurDiff <- getsClient scurDiff
   factionD <- getsState sfactionD
   let table = HighScore.getTable gameModeId scoreDict
       gameModeName = mname gameMode
       showScore (ntable, pos) =
         HighScore.highSlideshow ntable pos gameModeName
       diff | not $ fhasUI $ gplayer fact = difficultyDefault
-           | otherwise = scurDifficulty
+           | otherwise = scurDiff
       theirVic (fi, fa) | isAtWar fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa
                         | otherwise = Nothing

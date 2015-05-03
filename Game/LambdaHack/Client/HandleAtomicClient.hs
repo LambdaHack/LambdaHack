@@ -18,7 +18,6 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -271,15 +270,17 @@ cmdAtomicSemCli cmd = case cmd of
   UpdDiscoverSeed c iid seed  ldepth -> discoverSeed c iid seed ldepth
   UpdCoverSeed c iid seed _ldepth -> coverSeed c iid seed
   UpdPerception lid outPer inPer -> perception lid outPer inPer
-  UpdRestart side sdiscoKind sfper _ sdebugCli -> do
+  UpdRestart side sdiscoKind sfper _ d sdebugCli -> do
     shistory <- getsClient shistory
     sreport <- getsClient sreport
     isAI <- getsClient sisAI
+    snxtDiff <- getsClient snxtDiff
     let cli = defStateClient shistory sreport side isAI
     putClient cli { sdiscoKind
                   , sfper
                   -- , sundo = [UpdAtomic cmd]
-                  , scurDifficulty = sdifficultyCli sdebugCli
+                  , scurDiff = d
+                  , snxtDiff
                   , sdebugCli }
   UpdResume _fid sfper -> modifyClient $ \cli -> cli {sfper}
   UpdKillExit _fid -> killExit

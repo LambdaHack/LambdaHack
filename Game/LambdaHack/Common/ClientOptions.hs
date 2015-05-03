@@ -7,8 +7,6 @@ module Game.LambdaHack.Common.ClientOptions
 import Data.Binary
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Faction
-
 data DebugModeCli = DebugModeCli
   { sfont           :: !(Maybe String)
       -- ^ Font to use for the main game window.
@@ -31,8 +29,6 @@ data DebugModeCli = DebugModeCli
       -- ^ Start a new game, overwriting the save file.
   , sbenchmark      :: !Bool
       -- ^ Don't create directories and files and show time stats.
-  , sdifficultyCli  :: !Int
-      -- ^ The difficulty level for all UI clients.
   , ssavePrefixCli  :: !(Maybe String)
       -- ^ Prefix of the save game file.
   , sfrontendStd    :: !Bool
@@ -56,7 +52,6 @@ defDebugModeCli = DebugModeCli
   , snoAnim = Nothing
   , snewGameCli = False
   , sbenchmark = False
-  , sdifficultyCli = difficultyDefault
   , ssavePrefixCli = Nothing
   , sfrontendStd = False
   , sfrontendNull = False

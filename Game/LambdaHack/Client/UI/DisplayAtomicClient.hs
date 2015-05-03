@@ -239,7 +239,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   UpdDiscoverSeed c iid _ _ -> discover c oldStateClient iid
   UpdCoverSeed{} -> return ()  -- don't spam when doing undo
   UpdPerception{} -> return ()
-  UpdRestart fid _ _ _ _ -> do
+  UpdRestart fid _ _ _ _ _ -> do
     void tryTakeMVarSescMVar  -- clear ESC-pressed from end of previous game
     mode <- getGameMode
     msgAdd $ "New game started in" <+> mname mode <+> "mode." <+> mdesc mode

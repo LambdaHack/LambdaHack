@@ -81,7 +81,8 @@ data StateClient = StateClient
   , smarkVision  :: !Bool          -- ^ mark leader and party FOV
   , smarkSmell   :: !Bool          -- ^ mark smell, if the leader can smell
   , smarkSuspect :: !Bool          -- ^ mark suspect features
-  , scurDifficulty :: !Int         -- ^ current game difficulty level
+  , scurDiff     :: !Int           -- ^ current game difficulty level
+  , snxtDiff     :: !Int           -- ^ next game difficulty level
   , sslots       :: !ItemSlots     -- ^ map from slots to items
   , slastSlot    :: !SlotChar      -- ^ last used slot
   , slastStore   :: !CStore        -- ^ last used store
@@ -149,7 +150,8 @@ defStateClient shistory sreport _sside sisAI =
     , smarkVision = False
     , smarkSmell = True
     , smarkSuspect = False
-    , scurDifficulty = difficultyDefault
+    , scurDiff = difficultyDefault
+    , snxtDiff = difficultyDefault
     , sslots = (EM.empty, EM.empty)
     , slastSlot = SlotChar 0 'Z'
     , slastStore = CInv
@@ -221,7 +223,8 @@ instance Binary StateClient where
     put smarkVision
     put smarkSmell
     put smarkSuspect
-    put scurDifficulty
+    put scurDiff
+    put snxtDiff
     put sslots
     put slastSlot
     put slastStore
@@ -247,7 +250,8 @@ instance Binary StateClient where
     smarkVision <- get
     smarkSmell <- get
     smarkSuspect <- get
-    scurDifficulty <- get
+    scurDiff <- get
+    snxtDiff <- get
     sslots <- get
     slastSlot <- get
     slastStore <- get

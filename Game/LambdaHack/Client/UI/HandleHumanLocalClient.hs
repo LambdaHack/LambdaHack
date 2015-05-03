@@ -48,7 +48,6 @@ import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -68,9 +67,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 
 gameDifficultyCycle :: MonadClientUI m => m ()
 gameDifficultyCycle = do
-  DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
-  let d = if sdifficultyCli >= difficultyBound then 1 else sdifficultyCli + 1
-  modifyClient $ \cli -> cli {sdebugCli = (sdebugCli cli) {sdifficultyCli = d}}
+  snxtDiff <- getsClient snxtDiff
+  let d = if snxtDiff >= difficultyBound then 1 else snxtDiff + 1
+  modifyClient $ \cli -> cli {snxtDiff = d}
   msgAdd $ "Next game difficulty set to" <+> tshow d <> "."
 
 -- * PickLeader
@@ -278,8 +277,8 @@ mainMenuHuman = do
   Kind.COps{corule} <- getsState scops
   escAI <- getsClient sescAI
   Binding{brevMap, bcmdList} <- askBinding
-  scurDifficulty <- getsClient scurDifficulty
-  DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
+  scurDiff <- getsClient scurDiff
+  snxtDiff <- getsClient snxtDiff
   let stripFrame t = map (T.tail . T.init) $ tail . init $ T.lines t
       pasteVersion art =
         let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
@@ -305,9 +304,9 @@ mainMenuHuman = do
            ++ cmds
            ++ [ (fst ( revLookup HumanCmd.GameDifficultyCycle)
                      , "next game difficulty"
-                       <+> tshow sdifficultyCli
+                       <+> tshow snxtDiff
                        <+> "(current"
-                       <+> tshow scurDifficulty <> ")" ) ]
+                       <+> tshow scurDiff <> ")" ) ]
       bindingLen = 25
       bindings =  -- key bindings to display
         let fmt (k, d) = T.justifyLeft bindingLen ' '

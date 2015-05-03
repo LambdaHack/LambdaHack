@@ -84,7 +84,7 @@ data DebugModeSer = DebugModeSer
   , smainRng       :: !(Maybe R.StdGen)
   , sfovMode       :: !(Maybe FovMode)
   , snewGameSer    :: !Bool
-  , sdifficultySer :: !Int
+  , scurDiff       :: !Int
   , sdumpInitRngs  :: !Bool
   , ssavePrefixSer :: !(Maybe String)
   , sdbgMsgSer     :: !Bool
@@ -150,7 +150,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , smainRng = Nothing
                                , sfovMode = Nothing
                                , snewGameSer = False
-                               , sdifficultySer = difficultyDefault
+                               , scurDiff = difficultyDefault
                                , sdumpInitRngs = False
                                , ssavePrefixSer = Nothing
                                , sdbgMsgSer = False
@@ -225,7 +225,7 @@ instance Binary DebugModeSer where
     put sgameMode
     put sautomateAll
     put skeepAutomated
-    put sdifficultySer
+    put scurDiff
     put sfovMode
     put ssavePrefixSer
     put sdbgMsgSer
@@ -239,7 +239,7 @@ instance Binary DebugModeSer where
     sgameMode <- get
     sautomateAll <- get
     skeepAutomated <- get
-    sdifficultySer <- get
+    scurDiff <- get
     sfovMode <- get
     ssavePrefixSer <- get
     sdbgMsgSer <- get

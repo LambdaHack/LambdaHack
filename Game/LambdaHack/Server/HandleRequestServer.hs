@@ -23,7 +23,6 @@ import Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -72,7 +71,7 @@ handleRequestUI fid cmd = case cmd of
     handleRequestUI fid cmd2
   ReqUIGameRestart aid t d names ->
     return (Nothing, reqGameRestart aid t d names)
-  ReqUIGameExit aid d -> return (Nothing, reqGameExit aid d)
+  ReqUIGameExit aid -> return (Nothing, reqGameExit aid)
   ReqUIGameSave -> return (Nothing, reqGameSave)
   ReqUITactic toT -> return (Nothing, reqTactic fid toT)
   ReqUIAutomate -> return (Nothing, reqAutomate fid)
@@ -498,11 +497,7 @@ reqGameRestart :: (MonadAtomic m, MonadServer m)
                => ActorId -> GroupName ModeKind -> Int -> [(Int, (Text, Text))]
                -> m ()
 reqGameRestart aid groupName d configHeroNames = do
-  modifyServer $ \ser ->
-    ser {sdebugNxt = (sdebugNxt ser) { sdifficultySer = d
-                                     , sdebugCli = (sdebugCli (sdebugNxt ser))
-                                                     {sdifficultyCli = d}
-                                     }}
+  modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {scurDiff = d}}
   b <- getsState $ getActorBody aid
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
@@ -515,13 +510,8 @@ reqGameRestart aid groupName d configHeroNames = do
 
 -- * ReqGameExit
 
-reqGameExit :: (MonadAtomic m, MonadServer m) => ActorId -> Int -> m ()
-reqGameExit aid d = do
-  modifyServer $ \ser ->
-    ser {sdebugNxt = (sdebugNxt ser) { sdifficultySer = d
-                                     , sdebugCli = (sdebugCli (sdebugNxt ser))
-                                                     {sdifficultyCli = d}
-                                     }}
+reqGameExit :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+reqGameExit aid  = do
   b <- getsState $ getActorBody aid
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD

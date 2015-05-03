@@ -42,7 +42,6 @@ import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
@@ -785,10 +784,10 @@ gameRestartHuman :: MonadClientUI m => GroupName ModeKind -> m (SlideOrCmd Reque
 gameRestartHuman t = do
   let restart = do
         leader <- getLeaderUI
-        DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
+        snxtDiff <- getsClient snxtDiff
         Config{configHeroNames} <- askConfig
         return $ Right
-               $ ReqUIGameRestart leader t sdifficultyCli configHeroNames
+               $ ReqUIGameRestart leader t snxtDiff configHeroNames
   escAI <- getsClient sescAI
   if escAI == EscAIExited then restart
   else do
@@ -811,8 +810,7 @@ gameExitHuman = do
   go <- displayYesNo ColorFull "Really save and exit?"
   if go then do
     leader <- getLeaderUI
-    DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
-    return $ Right $ ReqUIGameExit leader sdifficultyCli
+    return $ Right $ ReqUIGameExit leader
   else failWith "save and exit canceled"
 
 -- * GameSave; does not take time

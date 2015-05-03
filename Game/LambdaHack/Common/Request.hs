@@ -44,7 +44,7 @@ data RequestUI =
     forall a. ReqUITimed !(RequestTimed a)
   | ReqUILeader !ActorId !(Maybe Target) !RequestUI
   | ReqUIGameRestart !ActorId !(GroupName ModeKind) !Int ![(Int, (Text, Text))]
-  | ReqUIGameExit !ActorId !Int
+  | ReqUIGameExit !ActorId
   | ReqUIGameSave
   | ReqUITactic !Tactic
   | ReqUIAutomate

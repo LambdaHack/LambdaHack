@@ -104,7 +104,7 @@ data UpdAtomic =
   | UpdDiscoverSeed !Container !ItemId !ItemSeed !AbsDepth
   | UpdCoverSeed !Container !ItemId !ItemSeed !AbsDepth
   | UpdPerception !LevelId !Perception !Perception
-  | UpdRestart !FactionId !DiscoveryKind !FactionPers !State !DebugModeCli
+  | UpdRestart !FactionId !DiscoveryKind !FactionPers !State !Int !DebugModeCli
   | UpdRestartServer !State
   | UpdResume !FactionId !FactionPers
   | UpdResumeServer !State
