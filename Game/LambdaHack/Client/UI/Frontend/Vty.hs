@@ -113,6 +113,7 @@ fpromptGetKey sess frame = do
   fdisplay sess $ Just frame
   nextKeyEvent sess
 
+-- TODO: Ctrl-m is RET
 keyTranslate :: Key -> K.Key
 keyTranslate n =
   case n of

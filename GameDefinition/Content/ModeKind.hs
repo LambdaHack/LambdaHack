@@ -22,7 +22,7 @@ cdefs = ContentDef
 campaign,        duel, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, screensaver, boardgame :: ModeKind
 
 campaign = ModeKind
-  { msymbol = 'n'
+  { msymbol = 'c'
   , mname   = "campaign"
   , mfreq   = [("campaign", 1)]
   , mroster = rosterCampaign
@@ -85,7 +85,7 @@ safari = ModeKind
   }
 
 safariSurvival = ModeKind
-  { msymbol = 'n'
+  { msymbol = 'r'
   , mname   = "safari survival"
   , mfreq   = [("safari survival", 1)]
   , mroster = rosterSafariSurvival

@@ -27,7 +27,7 @@ standardKeys = KeyKind
       , ("CTRL-k", ([CmdMenu], GameRestart "skirmish"))
       , ("CTRL-m", ([CmdMenu], GameRestart "ambush"))
       , ("CTRL-b", ([CmdMenu], GameRestart "battle"))
-      , ("CTRL-n", ([CmdMenu], GameRestart "campaign"))
+      , ("CTRL-c", ([CmdMenu], GameRestart "campaign"))
       , ("CTRL-d", ([CmdMenu], GameDifficultyCycle))
 
       -- Movement and terrain alteration
