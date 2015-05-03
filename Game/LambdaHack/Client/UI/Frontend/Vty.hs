@@ -23,7 +23,6 @@ import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -114,9 +113,6 @@ fpromptGetKey sess frame = do
   fdisplay sess $ Just frame
   nextKeyEvent sess
 
--- TODO: Ctrl-Home and Ctrl-End are the same as Home and End on some terminals
--- so we should probably go back to using 0-9 (and Shift) for movement
--- but let's wait until vty 5.0 is out and see if it helps.
 keyTranslate :: Key -> K.Key
 keyTranslate n =
   case n of
@@ -137,7 +133,12 @@ keyTranslate n =
     KBegin        -> K.Begin
     KCenter       -> K.Begin
     KIns          -> K.Insert
-    (KChar c)     -> K.Char c
+    -- Ctrl-Home and Ctrl-End are the same in vty as Home and End
+    -- on some terminals so we have to use 1--9 for movement instead of
+    -- leader change.
+    (KChar c)
+      | c `elem` ['1'..'9'] -> K.KP c  -- movement, not leader change
+      | otherwise           -> K.Char c
     _             -> K.Unknown (tshow n)
 
 -- | Translates modifiers to our own encoding.
@@ -148,7 +149,6 @@ modifierTranslate mods
   | MShift `elem` mods = K.Shift
   | otherwise = K.NoModifier
 
--- TODO: with vty 5.0 check if bold is still needed.
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.
 -- HSCurses does this by default, but in Vty you have to request the hack.
