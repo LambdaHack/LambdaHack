@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Faction
   , isHorrorFact
   , noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
   , isAtWar, isAllied
-  , difficultyBound, difficultyDefault, difficultyCoeff
+  , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , Dipl
@@ -140,6 +140,10 @@ difficultyDefault = (1 + difficultyBound) `div` 2
 -- The function is its own inverse.
 difficultyCoeff :: Int -> Int
 difficultyCoeff n = difficultyDefault - n
+
+-- The function is its own inverse.
+difficultyInverse :: Int -> Int
+difficultyInverse n = difficultyBound + 1 - n
 
 instance Binary Faction where
   put Faction{..} = do

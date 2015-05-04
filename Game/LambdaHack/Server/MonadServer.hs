@@ -159,8 +159,8 @@ registerScore status mbody fid = do
           let nScoreDict = EM.insert gameModeId ntable scoreDict
           in when worthMentioning $
                liftIO $ encodeEOF path (nScoreDict :: HighScore.ScoreDict)
-      diff | not $ fhasUI $ gplayer fact = difficultyDefault
-           | otherwise = scurDiff
+      diff | fhasUI $ gplayer fact = scurDiff
+           | otherwise = difficultyInverse scurDiff
       theirVic (fi, fa) | isAtWar fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa
                         | otherwise = Nothing

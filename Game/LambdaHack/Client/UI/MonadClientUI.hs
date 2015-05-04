@@ -263,8 +263,8 @@ scoreToSlideshow total status = do
       gameModeName = mname gameMode
       showScore (ntable, pos) =
         HighScore.highSlideshow ntable pos gameModeName
-      diff | not $ fhasUI $ gplayer fact = difficultyDefault
-           | otherwise = scurDiff
+      diff | fhasUI $ gplayer fact = scurDiff
+           | otherwise = difficultyInverse scurDiff
       theirVic (fi, fa) | isAtWar fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa
                         | otherwise = Nothing
