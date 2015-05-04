@@ -453,7 +453,7 @@ pickWeaponServer source = do
   sb <- getsState $ getActorBody source
   localTime <- getsState $ getLocalTime (blid sb)
   -- For projectiles we need to accept even items without any effect,
-  -- so that the projectile dissapears and NoEffect feedback is produced.
+  -- so that the projectile dissapears and "No effect" feedback is produced.
   let allAssocs = eqpAssocs ++ bodyAssocs
       calm10 = calmEnough10 sb $ map snd allAssocs
       forced = bproj sb

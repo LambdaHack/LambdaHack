@@ -184,10 +184,11 @@ itemEffect source target iid recharged periodic effects = do
   sb <- getsState $ getActorBody source
   -- Announce no effect, which is rare and wastes time, so noteworthy.
   unless (triggered  -- some effect triggered, so feedback comes from them
-          || null effects  -- no effects present, no feedback needed
           || periodic  -- don't spam from fizzled periodic effects
           || bproj sb) $  -- don't spam, projectiles can be very numerous
-    execSfxAtomic $ SfxEffect (bfid sb) target $ IK.NoEffect ""
+    if null effects
+    then execSfxAtomic $ SfxMsgFid (bfid sb) "Nothing happens."
+    else execSfxAtomic $ SfxMsgFid (bfid sb) "It flashes and fizzles."
   return triggered
 
 -- | The source actor affects the target actor, with a given effect and power.
