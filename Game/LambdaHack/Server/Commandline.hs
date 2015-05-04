@@ -24,8 +24,8 @@ debugArgs args = do
         , "  --gameMode m  start next game in the given mode"
         , "  --automateAll  give control of all UI teams to computer"
         , "  --keepAutomated  keep factions automated after game over"
-        , "  --newGame  start a new game, overwriting the save file"
-        , "  --difficulty n  set difficulty for all UI players to n"
+        , "  --newGame n  start a new game, overwriting the save file,"
+        , "               with difficulty for all UI players set to n"
         , "  --stopAfter n  exit this game session after around n seconds"
         , "  --benchmark  print stats, limit saving and other file operations"
         , "  --setDungeonRng s  set dungeon generation RNG seed to string s"
@@ -64,14 +64,12 @@ debugArgs args = do
         (parseArgs rest) {sautomateAll = True}
       parseArgs ("--keepAutomated" : rest) =
         (parseArgs rest) {skeepAutomated = True}
-      parseArgs ("--newGame" : rest) =
-        let debugSer = parseArgs rest
-        in debugSer { snewGameSer = True
-                    , sdebugCli = (sdebugCli debugSer) {snewGameCli = True}}
-      parseArgs ("--difficulty" : s : rest) =
+      parseArgs ("--newGame" : s : rest) =
         let debugSer = parseArgs rest
             scurDiff = read s
-        in debugSer {scurDiff}
+        in debugSer { scurDiff
+                    , snewGameSer = True
+                    , sdebugCli = (sdebugCli debugSer) {snewGameCli = True}}
       parseArgs ("--stopAfter" : s : rest) =
         (parseArgs rest) {sstopAfter = Just $ read s}
       parseArgs ("--benchmark" : rest) =
