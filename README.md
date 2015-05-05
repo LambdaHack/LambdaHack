@@ -151,7 +151,7 @@ after the automated tests would be in order, as well, since the tests don't
 touch the topmost UI layer.
 
     cabal clean
-    cabal install --enable-library-coverage
+    cabal install --enable-coverage
     make test
     hpc report --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
     hpc markup --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
