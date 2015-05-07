@@ -31,6 +31,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
@@ -422,7 +423,14 @@ setTrajectory aid = do
           let toColor = Color.BrBlack
           when (bcolor b /= toColor) $
             execUpdAtomic $ UpdColorActor aid (bcolor b) toColor
-        reqMove aid d  -- hit clears trajectory of non-projectiles in reqMelee
+        -- Hit clears trajectory of non-projectiles in reqMelee so no need here.
+        -- Non-projectiles displace, to make pushing in crowds less lethal
+        -- and chaotic and to avoid hitting harpoons when pulled by them.
+        let tpos = bpos b `shift` d  -- target position
+        tgt <- getsState $ posToActors tpos (blid b)
+        case tgt of
+          [(target, _)] | not (bproj b) -> reqDisplace aid target
+          _ -> reqMove aid d
         b2 <- getsState $ getActorBody aid
         unless (btrajectory b2 == Just (lv, speed)) $  -- cleared in reqMelee
           execUpdAtomic $ UpdTrajectory aid (btrajectory b2) (Just (lv, speed))

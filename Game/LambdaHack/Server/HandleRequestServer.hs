@@ -9,7 +9,7 @@
 -- influence the outcome of the evaluation.
 -- TODO: document
 module Game.LambdaHack.Server.HandleRequestServer
-  ( handleRequestAI, handleRequestUI, reqMove
+  ( handleRequestAI, handleRequestUI, reqMove, reqDisplace
   ) where
 
 import Control.Applicative
