@@ -76,7 +76,7 @@ continueRun arena paramOld = case paramOld of
           paramNew = paramIni { runMembers = runMembersNew
                               , runStopMsg = runStopMsgNew }
       case mdirOrRunStopMsgCurrent of
-        Left _ -> continueRun arena  paramNew
+        Left _ -> continueRun arena paramNew
                     -- run all others undisturbed; one time
         Right dir -> do
           s <- getState

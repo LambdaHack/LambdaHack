@@ -173,9 +173,8 @@ furthestKnown aid = do
                                      , PointArray.maxLastIndexA ]
   let furthestPos = getMaxIndex bfs
       dist = bfs PointArray.! furthestPos
-  return $! if dist <= apartBfs
-            then assert `failure` (aid, furthestPos, dist)
-            else furthestPos
+  return $! assert (dist > apartBfs `blame` (aid, furthestPos, dist))
+                   furthestPos
 
 -- | Closest reachable unknown tile position, if any.
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)

@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Actor
     -- * The@ Acto@r type
   , Actor(..), ResDelta(..)
   , deltaSerious, deltaMild, xM, minusM, minusTwoM, oneM
-  , bspeed, actorTemplate, timeShiftFromSpeed, braced, waitedLastTurn
+  , bspeed, actorTemplate, braced, waitedLastTurn
   , actorDying, actorNewBorn, unoccupied
   , hpTooLow, hpHuge, calmEnough, calmEnough10, hpEnough, hpEnough10
     -- * Assorted
@@ -154,13 +154,6 @@ bspeed b activeItems =
     Nothing -> toSpeed $ max 1  -- avoid infinite wait
                $ sumSlotNoFilter IK.EqpSlotAddSpeed activeItems
     Just (_, speed) -> speed
-
--- | Add time taken by a single 1m step at the actor's current speed.
-timeShiftFromSpeed :: Actor -> [ItemFull] -> Time -> Time
-timeShiftFromSpeed b activeItems time =
-  let speed = bspeed b activeItems
-      delta = ticksPerMeter speed
-  in timeShift time delta
 
 -- | Whether an actor is braced for combat this clip.
 braced :: Actor -> Bool

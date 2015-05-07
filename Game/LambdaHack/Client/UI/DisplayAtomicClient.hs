@@ -860,14 +860,13 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do
-  b <- getsState $ getActorBody aid
   mleader <- getsClient _sleader
   when (Just aid == mleader) $ do
     (itemSlots, _) <- getsClient sslots
     case lookup iid $ map swap $ EM.assocs itemSlots of
       Just l -> modifyClient $ \cli -> cli { slastSlot = l
                                            , slastStore = cstore }
-      Nothing -> assert `failure` (iid, cstore, aid, b)
+      Nothing -> assert `failure` (iid, cstore, aid)
 
 strike :: MonadClientUI m
        => ActorId -> ActorId -> ItemId -> CStore -> HitAtomic -> m ()

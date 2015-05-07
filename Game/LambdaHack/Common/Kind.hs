@@ -68,9 +68,9 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
                 in EM.findWithDefault assFail i kindMap
       correct a = not (T.null (getName a)) && all ((> 0) . snd) (getFreq a)
       singleOffenders = [ (offences, a)
-                        | a <- content,
-                          let offences = validateSingle a
-                          , not (null offences) ]
+                        | a <- content
+                        , let offences = validateSingle a
+                        , not (null offences) ]
       allOffences = validateAll content
   in assert (allB correct content) $
      assert (null singleOffenders `blame` "some content items not valid"

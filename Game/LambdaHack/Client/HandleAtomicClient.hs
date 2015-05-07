@@ -70,11 +70,9 @@ cmdAtomicFilterCli cmd = case cmd of
            [ cmd  -- show the message
            , UpdAlterTile (blid b) p fromTile toTile  -- reveal tile
            ]
-      else if t == toTile
-           then [cmd]  -- Already knows the tile fully, only confirm.
-           else -- Misguided.
-                assert `failure` "LoseTile fails to reset memory"
-                       `twith` (aid, p, fromTile, toTile, b, t, cmd)
+      else assert (t == toTile `blame` "LoseTile fails to reset memory"
+                               `twith` (aid, p, fromTile, toTile, b, t, cmd))
+                  [cmd]  -- Already knows the tile fully, only confirm.
   UpdLearnSecrets aid fromS _toS -> do
     b <- getsState $ getActorBody aid
     lvl <- getLevel $ blid b
