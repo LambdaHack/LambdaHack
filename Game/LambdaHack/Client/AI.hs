@@ -21,6 +21,7 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
@@ -66,7 +67,7 @@ refreshTarget (aid, body) = do
                     `twith` (aid, body, side)) ()
   stratTarget <- targetStrategy aid
   tgtMPath <-
-    if nullStrategy stratTarget then
+    if nullStrategy stratTarget then  -- equiv to nullFreq
       -- No sensible target; wipe out the old one.
       return Nothing
     else do
@@ -99,5 +100,9 @@ pickAction (aid, body) = do
                     `blame` "AI gets to manually move its projectiles"
                     `twith` (aid, bfid body, side)) ()
   stratAction <- actionStrategy aid
+  let bestAction = bestVariant stratAction
+      !_A = assert (not (nullFreq bestAction)  -- equiv to nullStrategy
+                    `blame` "no AI action for actor"
+                    `twith` (stratAction, aid, body)) ()
   -- Run the AI: chose an action from those given by the AI strategy.
-  rndToAction $ frequency $ bestVariant stratAction
+  rndToAction $ frequency bestAction
