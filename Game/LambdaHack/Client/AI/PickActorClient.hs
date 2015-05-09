@@ -52,6 +52,18 @@ pickActorToMove refreshTarget oldAid = do
   mleader <- getsClient _sleader
   ours <- getsState $ actorRegularAssocs (== side) arena
   let explore = void $ refreshTarget (oldAid, oldBody)
+      setPath mtgt = case mtgt of
+        Nothing -> return False
+        Just (tgtLeader, _) -> do
+          mpath <- createPath oldAid tgtLeader
+          case mpath of
+            Nothing -> return False
+            Just path -> do
+              let tgtMPath = second Just path
+              modifyClient $ \cli ->
+                cli {stargetD = EM.alter (const $ Just tgtMPath)
+                                         oldAid (stargetD cli)}
+              return True
       pickOld = do
         if mleader == Just oldAid then explore
         else case ftactic $ gplayer fact of
@@ -66,21 +78,18 @@ pickActorToMove refreshTarget oldAid = do
                 -- If leader not on this level, fall back to @TExplore@.
                 if not onLevel then explore
                 else do
-                  -- Copy over the leader's target, if any, or follow his bpos.
-                  tgtLeader <- do
-                    mtgt <- getsClient $ EM.lookup leader . stargetD
-                    case mtgt of
-                      Nothing -> return $! TEnemy leader True
-                      Just (tgtLeader, _) -> return tgtLeader
                   modifyClient $ \cli ->
                     cli { sbfsD = invalidateBfs oldAid (sbfsD cli)
                         , seps = seps cli + 773 }  -- randomize paths
-                  mpath <- createPath oldAid tgtLeader
-                  let tgtMPath =
-                        maybe (tgtLeader, Nothing) (second Just) mpath
-                  modifyClient $ \cli ->
-                    cli {stargetD = EM.alter (const $ Just tgtMPath)
-                                             oldAid (stargetD cli)}
+                  -- Copy over the leader's target, if any, or follow his bpos.
+                  mtgt <- getsClient $ EM.lookup leader . stargetD
+                  tgtPathSet <- setPath mtgt
+                  let enemyPath = Just (TEnemy leader True, Nothing)
+                  unless tgtPathSet $ do
+                     enemyPathSet <- setPath enemyPath
+                     unless enemyPathSet $
+                       -- If no path even to the leader himself, explore.
+                       explore
           TExplore -> explore
           TRoam -> explore  -- @TRoam@ is checked again inside @explore@
           TPatrol -> explore  -- TODO
