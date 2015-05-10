@@ -62,7 +62,7 @@ reinitGame :: (MonadAtomic m, MonadServer m) => m ()
 reinitGame = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sper
-  DebugModeSer{scurDiff, sknowMap, sdebugCli} <- getsServer sdebugSer
+  DebugModeSer{scurDiffSer, sknowMap, sdebugCli} <- getsServer sdebugSer
   -- This state is quite small, fit for transmition to the client.
   -- The biggest part is content, which needs to be updated
   -- at this point to keep clients in sync with server improvements.
@@ -73,7 +73,7 @@ reinitGame = do
   let sdiscoKind = let f ik = IK.Identified `elem` IK.ifeature (okind ik)
                in EM.filter f discoS
   broadcastUpdAtomic
-    $ \fid -> UpdRestart fid sdiscoKind (pers EM.! fid) defLocal scurDiff sdebugCli
+    $ \fid -> UpdRestart fid sdiscoKind (pers EM.! fid) defLocal scurDiffSer sdebugCli
   populateDungeon
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a

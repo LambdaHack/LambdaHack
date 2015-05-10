@@ -497,7 +497,7 @@ reqGameRestart :: (MonadAtomic m, MonadServer m)
                => ActorId -> GroupName ModeKind -> Int -> [(Int, (Text, Text))]
                -> m ()
 reqGameRestart aid groupName d configHeroNames = do
-  modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {scurDiff = d}}
+  modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {scurDiffSer = d}}
   b <- getsState $ getActorBody aid
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD

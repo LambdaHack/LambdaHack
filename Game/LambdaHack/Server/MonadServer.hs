@@ -146,7 +146,7 @@ registerScore status mbody fid = do
   gameModeId <- getsState sgameModeId
   time <- getsState stime
   date <- liftIO getClockTime
-  DebugModeSer{scurDiff} <- getsServer sdebugSer
+  DebugModeSer{scurDiffSer} <- getsServer sdebugSer
   factionD <- getsState sfactionD
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   let path = dataDir </> scoresFile
@@ -159,8 +159,8 @@ registerScore status mbody fid = do
           let nScoreDict = EM.insert gameModeId ntable scoreDict
           in when worthMentioning $
                liftIO $ encodeEOF path (nScoreDict :: HighScore.ScoreDict)
-      diff | fhasUI $ gplayer fact = scurDiff
-           | otherwise = difficultyInverse scurDiff
+      diff | fhasUI $ gplayer fact = scurDiffSer
+           | otherwise = difficultyInverse scurDiffSer
       theirVic (fi, fa) | isAtWar fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa
                         | otherwise = Nothing

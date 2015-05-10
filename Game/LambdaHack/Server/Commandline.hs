@@ -66,8 +66,8 @@ debugArgs args = do
         (parseArgs rest) {skeepAutomated = True}
       parseArgs ("--newGame" : s : rest) =
         let debugSer = parseArgs rest
-            scurDiff = read s
-        in debugSer { scurDiff
+            scurDiffSer = read s
+        in debugSer { scurDiffSer
                     , snewGameSer = True
                     , sdebugCli = (sdebugCli debugSer) {snewGameCli = True}}
       parseArgs ("--stopAfter" : s : rest) =
