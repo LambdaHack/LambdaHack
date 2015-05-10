@@ -262,7 +262,7 @@ gilaMonster = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("venom tooth", COrgan), ("small claw", COrgan)
-               , ("eye 5", COrgan), ("nostril", COrgan)
+               , ("eye 2", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
   }
 rattlesnake = ItemKind
