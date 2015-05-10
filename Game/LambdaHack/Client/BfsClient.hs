@@ -69,6 +69,8 @@ getCacheBfsAndPath aid target = do
                                  (sbfsD cli)}
         return (bfs, mpath)
   mbfs <- getsClient $ EM.lookup aid . sbfsD
+  -- TODO: record past skills too, in case mobility lost; but no great harm,
+  -- perhaps the loss is temporary
   case mbfs of
     Just (True, bfs, targetOld, sepsOld, mpath)
       -- TODO: hack: in screensavers this is not always ensured, so check here:
@@ -118,6 +120,11 @@ condBFS aid = do
   let actorMaxSk = sumSkills activeItems
       alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
       canSearchAndOpen = alterSkill >= 1
+      canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
+                || EM.findWithDefault 0 Ability.AbDisplace actorMaxSk > 0
+                -- TODO: needed for now, because AI targets enemies
+                -- based on the path to them, not LOS to them.
+                || EM.findWithDefault 0 Ability.AbProject actorMaxSk > 0
   lvl <- getLevel $ blid b
   smarkSuspect <- getsClient smarkSuspect
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -157,7 +164,9 @@ condBFS aid = do
         Just ch -> \spos tpos -> let tt = lvl `at` tpos
                                  in tt == unknownId
                                     && ch spos tpos
-  return (isEnterable, passUnknown)
+  if canMove
+    then return (isEnterable, passUnknown)
+    else return (\_ _ -> MoveBlocked, \_ _ -> False)
 
 accessCacheBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
 {-# INLINE accessCacheBfs #-}
