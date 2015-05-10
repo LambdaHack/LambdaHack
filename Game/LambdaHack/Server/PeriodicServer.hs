@@ -272,7 +272,7 @@ managePerTurn aid = do
     unless dominated $ do
       newCalmDelta <- getsState $ regenCalmDelta b activeItems
       let clearMark = 0
-      unless (newCalmDelta <= 0) $
+      unless (newCalmDelta == 0) $
         -- Update delta for the current player turn.
         udpateCalm aid newCalmDelta
       unless (bcalmDelta b == ResDelta 0 0) $

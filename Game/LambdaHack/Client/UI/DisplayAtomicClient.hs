@@ -145,11 +145,12 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
       b <- getsState $ getActorBody aid
       when (bfid b == side) $ do
         fact <- getsState $ (EM.! bfid b) . sfactionD
-        allFoes  <- getsState $ actorRegularList (isAtWar fact) (blid b)
+        allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
         let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
         when (null closeFoes) $ do  -- obvious where the feeling comes from
           aidVerbMU aid "hear something"
           msgDuplicateScrap
+          stopPlayBack
   UpdFidImpressedActor aid _fidOld fidNew -> do
     b <- getsState $ getActorBody aid
     actorVerbMU aid b $
