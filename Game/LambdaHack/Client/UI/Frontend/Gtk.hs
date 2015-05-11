@@ -410,6 +410,9 @@ trimFrameState sess@FrontendSession{sframeState} = do
         Just frame -> do
           -- Comparison is done inside the mvar lock, this time, but it's OK,
           -- since we wipe out the queue anyway, not draw it concurrently.
+          -- The comparison is very rarely true, because that means
+          -- the screen looks the same as a few moves before.
+          -- Still, we want the invariant that frames are never repeated.
           let lastFrame = fshown
               nextFrame = if frame == lastFrame
                           then Nothing  -- no sense repeating

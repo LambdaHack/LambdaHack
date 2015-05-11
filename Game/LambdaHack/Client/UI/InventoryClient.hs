@@ -892,11 +892,12 @@ doLook addMoreMsg = do
                  let subjects = map (partActor . snd) inhabitants
                      subject = MU.WWandW subjects
                      verb = "be here"
-                     desc = if not (null rest)  -- many actors
-                            then ""
-                            else case itemDisco $ itemToF (btrunk body) (1, []) of
-                              Nothing -> ""
-                              Just ItemDisco{itemKind} -> IK.idesc itemKind
+                     desc =
+                       if not (null rest)  -- many actors, only list names
+                       then ""
+                       else case itemDisco $ itemToF (btrunk body) (1, []) of
+                         Nothing -> ""  -- no details, only show the name
+                         Just ItemDisco{itemKind} -> IK.idesc itemKind
                      pdesc = if desc == "" then "" else "(" <> desc <> ")"
                  in makeSentence [MU.SubjectVerbSg subject verb] <+> pdesc
           vis | lvl `at` p == unknownId = "that is"
