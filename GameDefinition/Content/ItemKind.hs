@@ -382,7 +382,7 @@ ring2 = ring
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddMaxHP ""]
   }
 ring3 = ring
-  { iaspects = [AddMaxCalm $ 15 + dl 15]
+  { iaspects = [AddMaxCalm $ 29 + dl 10]
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddMaxCalm ""]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
