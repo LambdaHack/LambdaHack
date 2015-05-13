@@ -166,7 +166,7 @@ are described in the status lines at the bottom of the screen.
 Commands for saving and exiting the current game, starting a new game, etc.,
 are listed in the Main Menu, brought up by the `ESC` key.
 Game difficulty setting affects hitpoints at birth for any actors
-of any UI-using faction. For a person new to roguelikes, the Duel scenario
+of any UI-using faction. For a person new to roguelikes, the Raid scenario
 offers a gentle introduction. The subsequent game modes gradually introduce
 squad combat, stealth, opportunity fire, asymmetric battles and more.
 

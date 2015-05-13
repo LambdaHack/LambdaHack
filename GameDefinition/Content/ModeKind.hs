@@ -17,9 +17,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content =
-      [campaign, duel, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, screensaver, boardgame]
+      [campaign, raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, screensaver, boardgame]
   }
-campaign,        duel, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, screensaver, boardgame :: ModeKind
+campaign,        raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, screensaver, boardgame :: ModeKind
 
 campaign = ModeKind
   { msymbol = 'c'
@@ -30,13 +30,13 @@ campaign = ModeKind
   , mdesc   = "Don't let wanton curiosity, greed and the creeping abstraction madness keep you down there in the darkness for too long!"
   }
 
-duel = ModeKind
-  { msymbol = 'u'
-  , mname   = "duel"
-  , mfreq   = [("duel", 1)]
-  , mroster = rosterDuel
+raid = ModeKind
+  { msymbol = 'r'
+  , mname   = "raid"
+  , mfreq   = [("raid", 1)]
+  , mroster = rosterRaid
   , mcaves  = cavesSkirmish
-  , mdesc   = "You disagreed about the premises of a relative completeness theorem and there's only one way to settle that."
+  , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the other end of this maze. Be the first to claim it and fund a research team that will make typing accurate and dependable forever."
   }
 
 skirmish = ModeKind
@@ -45,7 +45,7 @@ skirmish = ModeKind
   , mfreq   = [("skirmish", 1)]
   , mroster = rosterSkirmish
   , mcaves  = cavesSkirmish
-  , mdesc   = "The scoring system of a programming contest fails to determine the winning team and participants take matters into their own hands."
+  , mdesc   = "Your type theory research teams disagreed about the premises of a relative completeness theorem and there's only one way to settle that."
   }
 
 ambush = ModeKind
@@ -85,7 +85,7 @@ safari = ModeKind
   }
 
 safariSurvival = ModeKind
-  { msymbol = 'r'
+  { msymbol = 'u'
   , mname   = "safari survival"
   , mfreq   = [("safari survival", 1)]
   , mroster = rosterSafariSurvival
@@ -141,7 +141,7 @@ boardgame = ModeKind
   }
 
 
-rosterCampaign, rosterDuel, rosterSkirmish, rosterAmbush, rosterBattle, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterPvP, rosterCoop, rosterDefense, rosterBoardgame:: Roster
+rosterCampaign, rosterRaid, rosterSkirmish, rosterAmbush, rosterBattle, rosterBattleSurvival, rosterSafari, rosterSafariSurvival, rosterPvP, rosterCoop, rosterDefense, rosterBoardgame:: Roster
 
 rosterCampaign = Roster
   { rosterList = [ playerHero
@@ -151,7 +151,7 @@ rosterCampaign = Roster
                   , ("Adventurer Party", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
 
-rosterDuel = Roster
+rosterRaid = Roster
   { rosterList = [ playerHero { fname = "White Recursive"
                               , fhiCondPoly = hiDweller
                               , fentryLevel = -3
@@ -166,7 +166,7 @@ rosterDuel = Roster
                   , ("Red Iterative", "Horror Den") ]
   , rosterAlly = [] }
 
-rosterSkirmish = rosterDuel
+rosterSkirmish = rosterRaid
   { rosterList = [ playerHero { fname = "White Haskell"
                               , fhiCondPoly = hiDweller
                               , fentryLevel = -3 }
@@ -178,7 +178,7 @@ rosterSkirmish = rosterDuel
                   , ("White Haskell", "Horror Den")
                   , ("Purple Agda", "Horror Den") ] }
 
-rosterAmbush = rosterDuel
+rosterAmbush = rosterRaid
   { rosterList = [ playerSniper { fname = "Yellow Idris"
                                 , fhiCondPoly = hiDweller
                                 , fentryLevel = -5
