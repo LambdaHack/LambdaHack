@@ -16,9 +16,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleCaveKind
   , validateAll = validateAllCaveKind
   , content =
-      [rogue, arena, empty, noise, shallow1rogue, battle, skirmish, ambush, safari1, safari2, safari3, boardgame]
+      [rogue, arena, empty, noise, shallow1rogue, battle, skirmish, ambush, safari1, safari2, safari3, rogueLit, boardgame]
   }
-rogue,        arena, empty, noise, shallow1rogue, battle, skirmish, ambush, safari1, safari2, safari3, boardgame :: CaveKind
+rogue,        arena, empty, noise, shallow1rogue, battle, skirmish, ambush, safari1, safari2, safari3, rogueLit, boardgame :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -199,6 +199,17 @@ ambush = rogue  -- lots of lights, to give a chance to snipe
 safari1 = ambush {cfreq = [("caveSafari1", 1)]}
 safari2 = battle {cfreq = [("caveSafari2", 1)]}
 safari3 = skirmish {cfreq = [("caveSafari3", 1)]}
+rogueLit = rogue
+  { csymbol       = 'S'
+  , cname         = "Typing den"
+  , cfreq         = [("caveRogueLit", 1)]
+  , cdarkChance   = 0
+  , cmaxVoid      = 1%10
+  , cactorCoeff   = 1000  -- deep level with no eqp, so slow spawning
+  , cactorFreq    = [("animal", 100)]
+  , citemNum      = 30 * d 2  -- just one level, hard enemies, treasure
+  , citemFreq     = [("useful", 33), ("gem", 33), ("currency", 33)]
+  }
 boardgame = CaveKind
   { csymbol       = 'B'
   , cname         = "A boardgame"

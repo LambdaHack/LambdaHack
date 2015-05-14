@@ -35,7 +35,7 @@ raid = ModeKind
   , mname   = "raid"
   , mfreq   = [("raid", 1)]
   , mroster = rosterRaid
-  , mcaves  = cavesSkirmish
+  , mcaves  = cavesRaid
   , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the other end of this maze. Be the first to claim it and fund a research team that will make typing accurate and dependable forever."
   }
 
@@ -154,19 +154,19 @@ rosterCampaign = Roster
 rosterRaid = Roster
   { rosterList = [ playerHero { fname = "White Recursive"
                               , fhiCondPoly = hiDweller
-                              , fentryLevel = -3
+                              , fentryLevel = -4
                               , finitialActors = 1 }
                  , playerAntiHero { fname = "Red Iterative"
                                   , fhiCondPoly = hiDweller
-                                  , fentryLevel = -3
+                                  , fentryLevel = -4
                                   , finitialActors = 1 }
-                 , playerHorror ]
-  , rosterEnemy = [ ("White Recursive", "Red Iterative")
-                  , ("White Recursive", "Horror Den")
-                  , ("Red Iterative", "Horror Den") ]
+                 , playerAnimal { fentryLevel = -4
+                                , finitialActors = 2 } ]
+  , rosterEnemy = [ ("White Recursive", "Animal Kingdom")
+                  , ("Red Iterative", "Animal Kingdom") ]
   , rosterAlly = [] }
 
-rosterSkirmish = rosterRaid
+rosterSkirmish = Roster
   { rosterList = [ playerHero { fname = "White Haskell"
                               , fhiCondPoly = hiDweller
                               , fentryLevel = -3 }
@@ -176,9 +176,10 @@ rosterSkirmish = rosterRaid
                  , playerHorror ]
   , rosterEnemy = [ ("White Haskell", "Purple Agda")
                   , ("White Haskell", "Horror Den")
-                  , ("Purple Agda", "Horror Den") ] }
+                  , ("Purple Agda", "Horror Den") ]
+  , rosterAlly = [] }
 
-rosterAmbush = rosterRaid
+rosterAmbush = Roster
   { rosterList = [ playerSniper { fname = "Yellow Idris"
                                 , fhiCondPoly = hiDweller
                                 , fentryLevel = -5
@@ -190,7 +191,8 @@ rosterAmbush = rosterRaid
                  , playerHorror {fentryLevel = -5} ]
   , rosterEnemy = [ ("Yellow Idris", "Blue Epigram")
                   , ("Yellow Idris", "Horror Den")
-                  , ("Blue Epigram", "Horror Den") ] }
+                  , ("Blue Epigram", "Horror Den") ]
+  , rosterAlly = [] }
 
 rosterBattle = Roster
   { rosterList = [ playerSoldier { fhiCondPoly = hiDweller
@@ -327,7 +329,7 @@ rosterBoardgame = Roster
                   , ("Red", "Horror Den") ]
   , rosterAlly = [] }
 
-cavesCampaign, cavesSkirmish, cavesAmbush, cavesBattle, cavesSafari, cavesBoardgame :: Caves
+cavesCampaign, cavesRaid, cavesSkirmish, cavesAmbush, cavesBattle, cavesSafari, cavesBoardgame :: Caves
 
 cavesCampaign = IM.fromList
                 $ [ (-1, ("shallow random 1", Just True))
@@ -335,6 +337,8 @@ cavesCampaign = IM.fromList
                   , (-3, ("caveEmpty", Nothing)) ]
                   ++ zip [-4, -5..(-9)] (repeat ("campaign random", Nothing))
                   ++ [(-10, ("caveNoise", Nothing))]
+
+cavesRaid = IM.fromList [(-4, ("caveRogueLit", Just True))]
 
 cavesSkirmish = IM.fromList [(-3, ("caveSkirmish", Nothing))]
 
