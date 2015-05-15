@@ -12,7 +12,10 @@ xcplay:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --dumpInitRngs
 
 xcfrontendCampaign:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame 2 --maxFps 60 --dumpInitRngs --automateAll --gameMode campaign
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame 1 --maxFps 60 --dumpInitRngs --automateAll --gameMode campaign
+
+xcfrontendRaid:
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame 5 --maxFps 60 --dumpInitRngs --automateAll --gameMode raid
 
 xcfrontendSkirmish:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame 5 --maxFps 60 --dumpInitRngs --automateAll --gameMode skirmish
@@ -33,14 +36,17 @@ xcfrontendSafariSurvival:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame 8 --maxFps 60 --dumpInitRngs --automateAll --gameMode "safari survival"
 
 xcfrontendDefense:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame 8 --maxFps 60 --dumpInitRngs --automateAll --gameMode defense
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame 9 --maxFps 60 --dumpInitRngs --automateAll --gameMode defense
 
 
 play:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --dumpInitRngs
 
 frontendCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --maxFps 60 --dumpInitRngs --automateAll --gameMode campaign
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --maxFps 60 --dumpInitRngs --automateAll --gameMode campaign
+
+frontendRaid:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --maxFps 60 --dumpInitRngs --automateAll --gameMode raid
 
 frontendSkirmish:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --maxFps 60 --dumpInitRngs --automateAll --gameMode skirmish
@@ -61,16 +67,16 @@ frontendSafariSurvival:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 8 --maxFps 60 --dumpInitRngs --automateAll --gameMode "safari survival"
 
 frontendDefense:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 8 --maxFps 60 --dumpInitRngs --automateAll --gameMode defense
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 9 --maxFps 60 --dumpInitRngs --automateAll --gameMode defense
 
 benchCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --noDelay --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 60 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --noDelay --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 60 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
 
 benchBattle:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --noDelay --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 60 --automateAll --keepAutomated --gameMode battle --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
 
 benchFrontendCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --maxFps 100000 --benchmark --stopAfter 60 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --maxFps 100000 --benchmark --stopAfter 60 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
 
 benchFrontendBattle:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --maxFps 100000 --benchmark --stopAfter 60 --automateAll --keepAutomated --gameMode battle --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
@@ -94,19 +100,25 @@ test: test-short test-medium test-long
 
 test-short: test-short-new test-short-load
 
-test-medium: testCampaign-medium testSkirmish-medium testAmbush-medium testBattle-medium testBattleSurvival-medium testSafari-medium testSafariSurvival-medium testPvP-medium testCoop-medium testDefense-medium
+test-medium: testCampaign-medium testRaid-medium testSkirmish-medium testAmbush-medium testBattle-medium testBattleSurvival-medium testSafari-medium testSafariSurvival-medium testPvP-medium testCoop-medium testDefense-medium
 
-test-medium-no-safari: testCampaign-medium testSkirmish-medium testAmbush-medium testBattle-medium testBattleSurvival-medium testPvP-medium testCoop-medium testDefense-medium
+test-medium-no-safari: testCampaign-medium testRaid-medium testSkirmish-medium testAmbush-medium testBattle-medium testBattleSurvival-medium testPvP-medium testCoop-medium testDefense-medium
 
-test-long: testCampaign-long testSkirmish-medium testAmbush-medium testBattle-long testBattleSurvival-long testSafari-long testSafariSurvival-long testPvP-medium testDefense-long
+test-long: testCampaign-long testRaid-medium testSkirmish-medium testAmbush-medium testBattle-long testBattleSurvival-long testSafari-long testSafariSurvival-long testPvP-medium testDefense-long
 
-test-long-no-safari: testCampaign-long testSkirmish-medium testAmbush-medium testBattle-long testBattleSurvival-long testPvP-medium testDefense-long
+test-long-no-safari: testCampaign-long testRaid-medium testSkirmish-medium testAmbush-medium testBattle-long testBattleSurvival-long testPvP-medium testDefense-long
 
 testCampaign-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 500 --dumpInitRngs --automateAll --keepAutomated --gameMode campaign > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 500 --dumpInitRngs --automateAll --keepAutomated --gameMode campaign > /tmp/stdtest.log
 
 testCampaign-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 400 --dumpInitRngs --automateAll --keepAutomated --gameMode campaign > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 400 --dumpInitRngs --automateAll --keepAutomated --gameMode campaign > /tmp/stdtest.log
+
+testRaid-long:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --maxFps 100000 --frontendStd --benchmark --stopAfter 60 --dumpInitRngs --automateAll --keepAutomated --gameMode raid > /tmp/stdtest.log
+
+testRaid-medium:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --maxFps 100000 --frontendStd --benchmark --stopAfter 30 --dumpInitRngs --automateAll --keepAutomated --gameMode raid > /tmp/stdtest.log
 
 testSkirmish-long:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --maxFps 100000 --frontendStd --benchmark --stopAfter 60 --dumpInitRngs --automateAll --keepAutomated --gameMode skirmish > /tmp/stdtest.log
@@ -158,13 +170,14 @@ testCoop-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 300 --dumpInitRngs --automateAll --keepAutomated --gameMode Coop > /tmp/stdtest.log
 
 testDefense-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 8 --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 500 --dumpInitRngs --automateAll --keepAutomated --gameMode defense > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 9 --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 500 --dumpInitRngs --automateAll --keepAutomated --gameMode defense > /tmp/stdtest.log
 
 testDefense-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 8 --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 300 --dumpInitRngs --automateAll --keepAutomated --gameMode defense > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 9 --noDelay --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 300 --dumpInitRngs --automateAll --keepAutomated --gameMode defense > /tmp/stdtest.log
 
 test-short-new:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix campaign --dumpInitRngs --automateAll --keepAutomated --gameMode campaign --frontendStd --stopAfter 2 > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix raid --dumpInitRngs --automateAll --keepAutomated --gameMode raid --frontendStd --stopAfter 2 > /tmp/stdtest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix skirmish --dumpInitRngs --automateAll --keepAutomated --gameMode skirmish --frontendStd --stopAfter 2 > /tmp/stdtest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix ambush --dumpInitRngs --automateAll --keepAutomated --gameMode ambush --frontendStd --stopAfter 2 > /tmp/stdtest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame 5 --savePrefix battle --dumpInitRngs --automateAll --keepAutomated --gameMode battle --frontendStd --stopAfter 2 > /tmp/stdtest.log
@@ -177,6 +190,7 @@ test-short-new:
 
 test-short-load:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix campaign --dumpInitRngs --automateAll --keepAutomated --gameMode campaign --frontendStd --stopAfter 2 > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix raid --dumpInitRngs --automateAll --keepAutomated --gameMode raid --frontendStd --stopAfter 2 > /tmp/stdtest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix skirmish --dumpInitRngs --automateAll --keepAutomated --gameMode skirmish --frontendStd --stopAfter 2 > /tmp/stdtest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix ambush --dumpInitRngs --automateAll --keepAutomated --gameMode ambush --frontendStd --stopAfter 2 > /tmp/stdtest.log
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix battle --dumpInitRngs --automateAll --keepAutomated --gameMode battle --frontendStd --stopAfter 2 > /tmp/stdtest.log
