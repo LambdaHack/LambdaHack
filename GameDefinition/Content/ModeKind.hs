@@ -122,7 +122,7 @@ defense = ModeKind
 
 screensaver = safari
   { mname   = "safari screensaver"
-  , mfreq   = [("screensaver", 1), ("starting", 1)]
+  , mfreq   = [("starting", 1)]
   , mroster = rosterSafari
       { rosterList = (head (rosterList rosterSafari))
                        -- changing leader by client needed, because of TFollow

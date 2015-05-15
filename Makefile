@@ -1,5 +1,5 @@
 # All xc* tests assume a profiling build (for stack traces).
-# See the install-debug target below or .travis.yml.prof.
+# See the install-debug target below.
 
 install-debug:
 	cabal install --enable-library-profiling --enable-executable-profiling --ghc-options="-fprof-auto-calls" --disable-optimization

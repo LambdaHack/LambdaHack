@@ -163,7 +163,7 @@ hiDweller = [ ( [(HiConst, 1000)]  -- no loot
 
 hiRaid = [ ( [(HiLoot, 1)]
            , [minBound..maxBound] )
-         , ( [(HiConst, 100), (HiKill, -50)]
+         , ( [(HiConst, 100)]
            , victoryOutcomes )
          ]
 
