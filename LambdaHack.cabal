@@ -166,6 +166,7 @@ library
                       Game.LambdaHack.Common.PointArray,
                       Game.LambdaHack.Common.Point,
                       Game.LambdaHack.Common.Random,
+                      Game.LambdaHack.Common.RingBuffer,
                       Game.LambdaHack.Common.Save,
                       Game.LambdaHack.Common.Request,
                       Game.LambdaHack.Common.Response,

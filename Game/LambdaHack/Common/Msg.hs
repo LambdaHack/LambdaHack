@@ -30,6 +30,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.RingBuffer as RB
 import Game.LambdaHack.Common.Time
 
 infixr 6 <+>  -- TODO: not needed when we require a very new minimorph
@@ -155,35 +156,38 @@ splitText' w xs
          else T.reverse ppost : splitText w (T.reverse ppre <> post)
 
 -- | The history of reports. This is a ring buffer of the given length
-newtype History = History [(Time, Report)]
+newtype History = History (RB.RingBuffer (Time, Report))
   deriving (Show, Binary)
 
 -- | Empty history of reports of the given maximal length.
 emptyHistory :: Int -> History
-emptyHistory size = History []
+emptyHistory size = History $ RB.empty size
 
 -- | Add a report to history, handling repetitions.
 addReport :: History -> Time -> Report -> History
 addReport h _ (Report []) = h
-addReport (History []) time m = History [(time, m)]
-addReport (History oldRs@((oldTime, Report h) : hs)) time (Report m)  =
-  case (reverse m, h) of
-    ((s1, n1) : rs, (s2, n2) : hhs) | s1 == s2 ->
-      let hist = (oldTime, Report ((s2, n1 + n2) : hhs)) : hs
-      in History $ if null rs
-                   then hist
-                   else (time, Report (reverse rs)) : hist
-    _ -> History $ (time, Report m) : oldRs
+addReport (History rb) time rep@(Report m) =
+  case RB.uncons rb of
+    Nothing -> History $ RB.insert (time, rep) rb
+    Just ((oldTime, Report h), hRest) ->
+      case (reverse m, h) of
+        ((s1, n1) : rs, (s2, n2) : hhs) | s1 == s2 ->
+          let hist = RB.insert (oldTime, Report ((s2, n1 + n2) : hhs)) hRest
+          in History $ if null rs
+                       then hist
+                       else RB.insert (time, Report (reverse rs)) hist
+        _ -> History $ RB.insert (time, rep) rb
 
 lengthHistory :: History -> Int
-lengthHistory (History rs) = length rs
+lengthHistory (History rs) = RB.rbLength rs
 
 -- | Render history as many lines of text, wrapping if necessary.
 renderHistory :: History -> Overlay
-renderHistory (History h) =
-  let (x, y) = normalLevelBound
+renderHistory (History rb) =
+  let l = RB.toList rb
+      (x, y) = normalLevelBound
       screenLength = y + 2
-      reportLines = concatMap (splitReportForHistory (x + 1)) $ reverse h
+      reportLines = concatMap (splitReportForHistory (x + 1)) $ reverse l
       padding = screenLength - length reportLines `mod` screenLength
   in toOverlay $ replicate padding "" ++ reportLines
 
@@ -198,9 +202,11 @@ splitReportForHistory w (time, r) =
     hd : tl -> hd : map (T.cons ' ') tl
 
 lastReportOfHistory :: History -> Maybe Report
-lastReportOfHistory (History hist) = case hist of
-  [] -> Nothing
-  (_, rep) : _ -> Just rep
+lastReportOfHistory (History rb) =
+  let l = RB.toList rb
+  in case l of
+    [] -> Nothing
+    (_, rep) : _ -> Just rep
 
 type ScreenLine = U.Vector Int32
 
