@@ -20,7 +20,6 @@ import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
@@ -51,9 +50,8 @@ recordHistory = do
   time <- getsState stime
   StateClient{sreport, shistory} <- getClient
   unless (nullReport sreport) $ do
-    Config{configHistoryMax} <- askConfig
     msgReset ""
-    let nhistory = takeHistory configHistoryMax $! addReport shistory time sreport
+    let nhistory = addReport shistory time sreport
     modifyClient $ \cli -> cli {shistory = nhistory}
 
 type SlideOrCmd a = Either Slideshow a

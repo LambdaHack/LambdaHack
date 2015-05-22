@@ -159,11 +159,13 @@ defStateClient shistory sreport _sside sisAI =
     , sdebugCli = defDebugModeCli
     }
 
-defaultHistory :: IO History
-defaultHistory = do
+defaultHistory :: Int -> IO History
+defaultHistory configHistoryMax = do
   dateTime <- getClockTime
   let curDate = MU.Text $ T.pack $ calendarTimeToString $ toUTCTime dateTime
-  return $! singletonHistory timeZero $ singletonReport
+  let emptyHist = emptyHistory configHistoryMax
+  return $! addReport emptyHist timeZero
+         $! singletonReport
          $! makeSentence ["Human history log started on", curDate]
 
 -- | Update target parameters within client state.

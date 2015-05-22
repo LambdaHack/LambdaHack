@@ -5,8 +5,8 @@ module Game.LambdaHack.Common.Msg
   , Msg, (<>), (<+>), tshow, toWidth, moreMsg, endMsg, yesnoMsg, truncateMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg, prependMsg
   , splitReport, renderReport, findInReport, lastMsgOfReport
-  , History, emptyHistory, lengthHistory, singletonHistory
-  , addReport, renderHistory, takeHistory, lastReportOfHistory
+  , History, emptyHistory, lengthHistory
+  , addReport, renderHistory, lastReportOfHistory
   , Overlay(overlay), emptyOverlay, truncateToOverlay, toOverlay
   , Slideshow(slideshow), splitOverlay, toSlideshow
   , encodeLine, encodeOverlay, ScreenLine, toScreenLine, splitText
@@ -154,17 +154,13 @@ splitText' w xs
          then pre : splitText w post
          else T.reverse ppost : splitText w (T.reverse ppre <> post)
 
--- | The history of reports.
+-- | The history of reports. This is a ring buffer of the given length
 newtype History = History [(Time, Report)]
   deriving (Show, Binary)
 
--- | Empty history of reports.
-emptyHistory :: History
-emptyHistory = History []
-
--- | Construct a singleton history of reports.
-singletonHistory :: Time -> Report -> History
-singletonHistory = addReport emptyHistory
+-- | Empty history of reports of the given maximal length.
+emptyHistory :: Int -> History
+emptyHistory size = History []
 
 -- | Add a report to history, handling repetitions.
 addReport :: History -> Time -> Report -> History
@@ -200,10 +196,6 @@ splitReportForHistory w (time, r) =
   in case ts of
     [] -> []
     hd : tl -> hd : map (T.cons ' ') tl
-
--- | Take the given prefix of reports from a history.
-takeHistory :: Int -> History -> History
-takeHistory k (History h) = History $ take k h
 
 lastReportOfHistory :: History -> Maybe Report
 lastReportOfHistory (History hist) = case hist of

@@ -42,7 +42,7 @@ srtFrontend executorUI executorAI
   sconfig <- mkConfig cops
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
       sdebugMode = applyConfigToDebug sconfig sdebugCli cops
-  defaultHist <- defaultHistory
+  defaultHist <- defaultHistory $ configHistoryMax sconfig
   let cli = defStateClient defaultHist emptyReport
       s = updateCOps (const cops) emptyState
       exeClientAI fid =
