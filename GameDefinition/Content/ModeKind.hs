@@ -126,7 +126,8 @@ screensaver = safari
   , mroster = rosterSafari
       { rosterList = (head (rosterList rosterSafari))
                        -- changing leader by client needed, because of TFollow
-                       {fleaderMode = LeaderAI $ AutoLeader True False}
+                       -- changing level by client enabled for UI
+                       {fleaderMode = LeaderAI $ AutoLeader False False}
                      : tail (rosterList rosterSafari)
       }
   }
