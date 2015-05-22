@@ -34,6 +34,7 @@ movementLaptopKeys_uk8o79jl = True
 font = "Terminus,DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace normal normal normal normal 14"
 ;font = "Terminus,DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace normal normal normal normal 18"
 colorIsBold = True
+; New historyMax takes effect after removal of savefiles.
 historyMax = 5000
 maxFps = 30
 noAnim = False

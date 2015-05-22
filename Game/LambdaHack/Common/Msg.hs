@@ -13,6 +13,7 @@ module Game.LambdaHack.Common.Msg
   )
   where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.ByteString.Char8 as BS
@@ -161,22 +162,22 @@ newtype History = History (RB.RingBuffer (Time, Report))
 
 -- | Empty history of reports of the given maximal length.
 emptyHistory :: Int -> History
-emptyHistory size = History $ RB.empty size
+emptyHistory size = History $ RB.empty size (timeZero, Report [])
 
 -- | Add a report to history, handling repetitions.
 addReport :: History -> Time -> Report -> History
 addReport h _ (Report []) = h
-addReport (History rb) time rep@(Report m) =
+addReport !(History rb) !time !rep@(Report m) =
   case RB.uncons rb of
-    Nothing -> History $ RB.insert (time, rep) rb
+    Nothing -> History $ RB.cons (time, rep) rb
     Just ((oldTime, Report h), hRest) ->
       case (reverse m, h) of
         ((s1, n1) : rs, (s2, n2) : hhs) | s1 == s2 ->
-          let hist = RB.insert (oldTime, Report ((s2, n1 + n2) : hhs)) hRest
+          let hist = RB.cons (oldTime, Report ((s2, n1 + n2) : hhs)) hRest
           in History $ if null rs
                        then hist
-                       else RB.insert (time, Report (reverse rs)) hist
-        _ -> History $ RB.insert (time, rep) rb
+                       else RB.cons (time, Report (reverse rs)) hist
+        _ -> History $ RB.cons (time, rep) rb
 
 lengthHistory :: History -> Int
 lengthHistory (History rs) = RB.rbLength rs
@@ -187,7 +188,7 @@ renderHistory (History rb) =
   let l = RB.toList rb
       (x, y) = normalLevelBound
       screenLength = y + 2
-      reportLines = concatMap (splitReportForHistory (x + 1)) $ reverse l
+      reportLines = concatMap (splitReportForHistory (x + 1)) l
       padding = screenLength - length reportLines `mod` screenLength
   in toOverlay $ replicate padding "" ++ reportLines
 
@@ -202,11 +203,7 @@ splitReportForHistory w (time, r) =
     hd : tl -> hd : map (T.cons ' ') tl
 
 lastReportOfHistory :: History -> Maybe Report
-lastReportOfHistory (History rb) =
-  let l = RB.toList rb
-  in case l of
-    [] -> Nothing
-    (_, rep) : _ -> Just rep
+lastReportOfHistory (History rb) = snd . fst <$> RB.uncons rb
 
 type ScreenLine = U.Vector Int32
 
