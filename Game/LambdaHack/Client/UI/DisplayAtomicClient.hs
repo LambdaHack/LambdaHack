@@ -407,7 +407,9 @@ destroyActorUI aid body verb verboseVerb verbose = do
             && (not actorsAlive || firstDeathEnds)) $
       void $ displayMore ColorBW ""
   else when verbose $ actorVerbMU aid body verboseVerb
-  modifyClient $ \cli -> cli {slastLost = ES.insert aid $ slastLost cli}
+  -- If pushed, animate spotting again, to draw attention to pushing.
+  when (isNothing $ btrajectory body) $
+    modifyClient $ \cli -> cli {slastLost = ES.insert aid $ slastLost cli}
 
 -- TODO: deduplicate wrt Server
 anyActorsAlive :: MonadClient m => FactionId -> Maybe ActorId -> m Bool
