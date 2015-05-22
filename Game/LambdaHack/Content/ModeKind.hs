@@ -102,7 +102,7 @@ instance Binary LeaderMode
 data AutoLeader = AutoLeader
   { autoDungeon :: !Bool
       -- ^ leader switching between levels is automatically done by the server
-      --   and client is not permitted to change leaders
+      --   and client is not permitted to change to leaders from other levels
       --   (the frequency of leader level switching done by the server
       --   is controlled by @RuleKind.rleadLevelClips@);
       --   if the flag is @False@, server still does a subset

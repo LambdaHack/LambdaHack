@@ -649,9 +649,10 @@ memberBack verbose = do
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
-  let autoDun = fst $ autoDungeonLevel fact
+  let (autoDun, autoLvl) = autoDungeonLevel fact
   case reverse hs of
     _ | autoDun -> failMsg $ showReqFailure NoChangeDunLeader
+    _ | autoLvl -> failMsg $ showReqFailure NoChangeLvlLeader
     [] -> failMsg "no other member in the party"
     (np, b) : _ -> do
       success <- pickLeader verbose np

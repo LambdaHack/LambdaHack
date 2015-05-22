@@ -92,10 +92,10 @@ pickLeaderHuman k = do
   case mchoice of
     Nothing -> failMsg "no such member of the party"
     Just (aid, b)
-      | blid b == arena && autoLvl ->
-          failMsg $ showReqFailure NoChangeLvlLeader
-      | autoDun ->
+      | blid b /= arena && autoDun ->
           failMsg $ showReqFailure NoChangeDunLeader
+      | autoLvl ->
+          failMsg $ showReqFailure NoChangeLvlLeader
       | otherwise -> do
           void $ pickLeader True aid
           return mempty
