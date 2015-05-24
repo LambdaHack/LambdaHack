@@ -57,7 +57,6 @@ data-files:    GameDefinition/config.ui.default, GameDefinition/scores
                GameDefinition/PLAYING.md, README.md, LICENSE, CREDITS,
                CHANGELOG.md
 extra-source-files: GameDefinition/MainMenu.ascii, Makefile
--- extra-doc-files: GameDefinition/screenshot.png
 author:        Andres Loeh, Mikolaj Konarski
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
 category:      Game Engine, Game
