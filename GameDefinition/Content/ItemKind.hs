@@ -121,7 +121,7 @@ harpoon = ItemKind
   , iweight  = 4000
   , iaspects = [AddHurtRanged (d 2 + dl 5 |*| 20)]
   , ieffects = [Hurt (4 * d 1), PullActor (ThrowMod 200 50)]
-  , ifeature = []
+  , ifeature = [Identified]
   , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
   , ikit     = []
   }
@@ -373,26 +373,28 @@ ring = ItemKind
   }
 ring1 = ring
   { irarity  = [(10, 2)]
-  , iaspects = [AddSpeed $ d 2, AddMaxHP $ dl 5 - 5 - d 5]
+  , iaspects = [AddSpeed $ 1 + d 2, AddMaxHP $ dl 7 - 7 - d 7]
   , ieffects = [Explode "distortion"]  -- strong magic
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddSpeed ""]
   }
 ring2 = ring
-  { iaspects = [AddMaxHP $ 10 + dl 10, AddMaxCalm $ dl 5 - 20 - d 5]
+  { irarity  = [(10, 5)]
+  , iaspects = [AddMaxHP $ 10 + dl 10, AddMaxCalm $ dl 5 - 20 - d 5]
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddMaxHP ""]
   }
 ring3 = ring
-  { iaspects = [AddMaxCalm $ 29 + dl 10]
+  { irarity  = [(10, 5)]
+  , iaspects = [AddMaxCalm $ 29 + dl 10]
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddMaxCalm ""]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
 ring4 = ring
-  { irarity  = [(3, 6), (10, 6)]
+  { irarity  = [(3, 3), (10, 5)]
   , iaspects = [AddHurtMelee $ d 5 + dl 5 |*| 3, AddMaxHP $ dl 3 - 5 - d 3]
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddHurtMelee ""]
   }
 ring5 = ring  -- by the time it's found, probably no space in eqp
-  { irarity  = [(5, 0), (10, 1)]
+  { irarity  = [(5, 0), (10, 2)]
   , iaspects = [AddLight $ d 2]
   , ieffects = [Explode "distortion"]  -- strong magic
   , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddLight ""]
