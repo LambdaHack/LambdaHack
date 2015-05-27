@@ -301,12 +301,25 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
           CEqp | not $ goesIntoEqp itemFull ->
             retRec CInv
           CEqp | eqpOverfull b (oldN + k) -> do
-            msgAdd $ "Warning:" <+> showReqFailure EqpOverfull <> "."
+            -- If this stack doesn't fit, we don't equip any part of it,
+            -- but we may equip a smaller stack later in the same pickup.
+            -- TODO: try to ask for a number of items, thus giving the player
+            -- the option of picking up a part.
+            let fullWarn = if eqpOverfull b (oldN + 1)
+                           then EqpOverfull
+                           else EqpStackFull
+            msgAdd $ "Warning:" <+> showReqFailure fullWarn <> "."
             retRec $ if calmE then CSha else CInv
           _ ->
             retRec destCStore
         else case destCStore of
-          CEqp | eqpOverfull b (oldN + k) -> failSer EqpOverfull
+          CEqp | eqpOverfull b (oldN + k) -> do
+            -- If the chosen number from the stack doesn't fit,
+            -- we don't equip any part of it and we exit item manipulation.
+            let fullWarn = if eqpOverfull b (oldN + 1)
+                           then EqpOverfull
+                           else EqpStackFull
+            failSer fullWarn
           _ -> retRec destCStore
       prompt = makePhrase ["What to", verb]
       promptEqp = makePhrase ["What consumable to", verb]

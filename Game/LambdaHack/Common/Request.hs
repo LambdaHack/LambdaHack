@@ -90,6 +90,7 @@ data ReqFailure =
   | AlterBlockItem
   | AlterNothing
   | EqpOverfull
+  | EqpStackFull
   | ApplyUnskilled
   | ApplyRead
   | ApplyOutOfReach
@@ -126,6 +127,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   AlterBlockItem -> True  -- adjacent item always visible
   AlterNothing -> True
   EqpOverfull -> True
+  EqpStackFull -> True
   ApplyUnskilled -> False  -- unidentified skill items
   ApplyRead -> False  -- unidentified skill items
   ApplyOutOfReach -> True
@@ -162,6 +164,7 @@ showReqFailure reqFailure = case reqFailure of
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"
   EqpOverfull -> "cannot equip any more items"
+  EqpStackFull -> "cannot equip the whole item stack"
   ApplyUnskilled -> "unskilled actors cannot apply items"
   ApplyRead -> "activating this kind of items requires skill level 2"
   ApplyOutOfReach -> "cannot apply an item out of reach"
