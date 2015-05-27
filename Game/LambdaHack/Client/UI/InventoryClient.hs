@@ -656,7 +656,8 @@ memberBack verbose = do
     [] -> failMsg "no other member in the party"
     (np, b) : _ -> do
       success <- pickLeader verbose np
-      let !_A = assert (success `blame` "same leader" `twith` (leader, np, b)) ()
+      let !_A = assert (success `blame` "same leader"
+                                `twith` (leader, np, b)) ()
       return mempty
 
 partyAfterLeader :: MonadStateRead m => ActorId -> m [(ActorId, Actor)]
@@ -989,11 +990,12 @@ describeItemC c = do
           Left <$> overlayToSlideshow "Not enough calm to take items from the shared stash, but here's the description." io
         MStore fromCStore -> do
           let prompt2 = "Where to move the item?"
+              eqpFree = eqpFreeN b
               fstores :: [(K.Key, (CStore, Text))]
               fstores =
                 filter ((/= fromCStore) . fst . snd) $
-                  [ (K.Char 'e', (CEqp, "'e'quipment"))
-                  , (K.Char 'p', (CInv, "inventory 'p'ack")) ]
+                  [ (K.Char 'p', (CInv, "inventory 'p'ack")) ]
+                  ++ [ (K.Char 'e', (CEqp, "'e'quipment")) | eqpFree > 0 ]
                   ++ [ (K.Char 's', (CSha, "shared 's'tash")) | calmE ]
                   ++ [ (K.Char 'g', (CGround, "'g'round")) ]
               choice = "[" <> T.intercalate ", " (map (snd . snd) fstores)
@@ -1002,22 +1004,25 @@ describeItemC c = do
           case akm of
             Left slides -> failSlides slides
             Right km -> do
-              socK <- pickNumber True $ itemK itemFull
-              case socK of
-                Left slides -> return $ Left slides
-                Right k -> do
-                  let lr toCStore = return $ Right $ ReqMoveItems
-                                     [(iid, k, fromCStore, toCStore)]
-                  case lookup (K.key km) fstores of
-                    Just (store, _) -> lr store
-                    Nothing -> return $ Left mempty
+              case lookup (K.key km) fstores of
+                Nothing -> return $ Left mempty  -- canceled
+                Just (toCStore, _) -> do
+                  let k = itemK itemFull
+                      kToPick | toCStore == CEqp = min eqpFree k
+                              | otherwise = k
+                  socK <- pickNumber True kToPick
+                  case socK of
+                    Left slides -> return $ Left slides
+                    Right kChosen -> return $ Right $ ReqMoveItems
+                                       [(iid, kChosen, fromCStore, toCStore)]
         MOwned -> do
           -- We can't move items from MOwned, because different copies may come
           -- from different stores and we can't guess player's intentions.
           found <- getsState $ findIid leader (bfid b) iid
           let !_A = assert (not (null found) `blame` ggi) ()
           let ppLoc (_, CSha) = MU.Text $ ppCStoreIn CSha <+> "of the party"
-              ppLoc (b2, store) = MU.Text $ ppCStoreIn store <+> "of" <+> bname b2
+              ppLoc (b2, store) = MU.Text $ ppCStoreIn store <+> "of"
+                                                             <+> bname b2
               foundTexts = map ppLoc found
               prompt2 = makeSentence ["The item is", MU.WWandW foundTexts]
           Left <$> overlayToSlideshow prompt2 io

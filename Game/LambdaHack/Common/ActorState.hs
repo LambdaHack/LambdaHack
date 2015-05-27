@@ -13,7 +13,7 @@ module Game.LambdaHack.Common.ActorState
   , posToActors, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, itemPrice, regenCalmDelta
   , actorInAmbient, actorSkills, dispEnemy, fullAssocs, itemToFull
-  , goesIntoEqp, goesIntoInv, goesIntoSha, eqpOverfull
+  , goesIntoEqp, goesIntoInv, goesIntoSha, eqpOverfull, eqpFreeN
   , storeFromC, lidFromC, aidFromC, hasCharge
   , strongestMelee, isMelee, isMeleeEqp
   ) where
@@ -385,6 +385,11 @@ eqpOverfull :: Actor -> Int -> Bool
 eqpOverfull b n = let size = sum $ map fst $ EM.elems $ beqp b
                   in assert (size <= 10 `blame` (b, n, size))
                      $ size + n > 10
+
+eqpFreeN :: Actor -> Int
+eqpFreeN b = let size = sum $ map fst $ EM.elems $ beqp b
+             in assert (size <= 10 `blame` (b, size))
+                $ 10 - size
 
 storeFromC :: Container -> CStore
 storeFromC c = case c of
