@@ -822,6 +822,7 @@ tgtEnemyHuman = do
       gtlt = gt ++ lt
       isEnemy b = isAtWar fact (bfid b)
                   && not (bproj b)
+                  && bhp b > 0
       lf = filter (isEnemy . snd) gtlt
       tgt | permitAnyActor = case gtlt of
         (a, _) : _ -> TEnemy a True
