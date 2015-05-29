@@ -207,7 +207,7 @@ griffonVulture = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("screeching beak", COrgan)  -- in reality it grunts and hisses
-               , ("claw", COrgan), ("eye 6", COrgan)
+               , ("small claw", COrgan), ("eye 6", COrgan)
                , ("animal brain", COrgan) ]
   }
 skunk = ItemKind
@@ -238,7 +238,7 @@ armadillo = ItemKind
   , irarity  = [(1, 5)]
   , iverbHit = "thud"
   , iweight  = 80000
-  , iaspects = [ AddMaxHP 30, AddMaxCalm 30, AddSpeed 18
+  , iaspects = [ AddMaxHP 20, AddMaxCalm 30, AddSpeed 17
                , AddSkills $ EM.singleton AbAlter (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
