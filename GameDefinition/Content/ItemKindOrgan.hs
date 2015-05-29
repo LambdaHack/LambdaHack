@@ -127,8 +127,8 @@ lash = fist
   , ifreq    = [("lash", 100)]
   , icount   = 1
   , iverbHit = "lash"
-  , iaspects = [Timeout $ 3 + d 3]
-  , ieffects = [Hurt (3 * d 1), Recharging $ DropItem COrgan "far-sighted" True]
+  , iaspects = []
+  , ieffects = [Hurt (3 * d 1)]
   , idesc    = ""
   }
 noseTip = fist
@@ -146,7 +146,7 @@ lip = fist
   , iverbHit = "lap"
   , iaspects = [Timeout $ 3 + d 3]
   , ieffects = [ Hurt (1 * d 1)
-               , Recharging $ DropItem COrgan "keen-smelling" True ]
+               , Recharging (toOrganGameTurn "weakened" (2 + d 2)) ]
   , idesc    = ""
   }
 torsionRight = fist
