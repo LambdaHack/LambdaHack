@@ -64,33 +64,36 @@ pickActorToMove refreshTarget oldAid = do
                 cli {stargetD = EM.alter (const $ Just tgtMPath)
                                          oldAid (stargetD cli)}
               return True
+      follow = case mleader of
+        -- If no leader at all (forced @TFollow@ tactic on an actor
+        -- from a leaderless faction), fall back to @TExplore@.
+        Nothing -> explore
+        Just leader -> do
+          onLevel <- getsState $ memActor leader arena
+          -- If leader not on this level, fall back to @TExplore@.
+          if not onLevel then explore
+          else do
+            modifyClient $ \cli ->
+              cli { sbfsD = invalidateBfs oldAid (sbfsD cli)
+                  , seps = seps cli + 773 }  -- randomize paths
+            -- Copy over the leader's target, if any, or follow his bpos.
+            mtgt <- getsClient $ EM.lookup leader . stargetD
+            tgtPathSet <- setPath mtgt
+            let enemyPath = Just (TEnemy leader True, Nothing)
+            unless tgtPathSet $ do
+               enemyPathSet <- setPath enemyPath
+               unless enemyPathSet $
+                 -- If no path even to the leader himself, explore.
+                 explore
       pickOld = do
         if mleader == Just oldAid then explore
         else case ftactic $ gplayer fact of
-          TBlock -> return ()  -- no point refreshing target
-          TFollow ->
-            case mleader of
-              -- If no leader at all (forced @TFollow@ tactic on an actor
-              -- from a leaderless faction), fall back to @TExplore@.
-              Nothing -> explore
-              Just leader -> do
-                onLevel <- getsState $ memActor leader arena
-                -- If leader not on this level, fall back to @TExplore@.
-                if not onLevel then explore
-                else do
-                  modifyClient $ \cli ->
-                    cli { sbfsD = invalidateBfs oldAid (sbfsD cli)
-                        , seps = seps cli + 773 }  -- randomize paths
-                  -- Copy over the leader's target, if any, or follow his bpos.
-                  mtgt <- getsClient $ EM.lookup leader . stargetD
-                  tgtPathSet <- setPath mtgt
-                  let enemyPath = Just (TEnemy leader True, Nothing)
-                  unless tgtPathSet $ do
-                     enemyPathSet <- setPath enemyPath
-                     unless enemyPathSet $
-                       -- If no path even to the leader himself, explore.
-                       explore
           TExplore -> explore
+          TFollow -> follow
+          TFollowNoItems -> follow
+          TMeleeAndRanged -> explore  -- needs to find ranged targets
+          TMeleeAdjacent -> explore  -- probably not needed, but may change
+          TBlock -> return ()  -- no point refreshing target
           TRoam -> explore  -- @TRoam@ is checked again inside @explore@
           TPatrol -> explore  -- TODO
         return (oldAid, oldBody)

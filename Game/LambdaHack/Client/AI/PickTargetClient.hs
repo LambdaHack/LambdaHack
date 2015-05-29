@@ -150,7 +150,9 @@ targetStrategy aid = do
                       else actorMinSk
         in EM.findWithDefault 0 AbMove axtorSk > 0
       isStuck = waitedLastTurn b && couldMoveLastTurn
-      slackTactic = ftactic (gplayer fact) `elem` [TBlock, TRoam, TPatrol]
+      slackTactic =
+        ftactic (gplayer fact)
+          `elem` [TMeleeAndRanged, TMeleeAdjacent, TBlock, TRoam, TPatrol]
       setPath :: Target -> m (Strategy (Target, Maybe PathEtc))
       setPath tgt = do
         mpath <- createPath aid tgt

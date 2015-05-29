@@ -3,6 +3,7 @@
 module Game.LambdaHack.Common.Ability
   ( Ability(..), Skills
   , zeroSkills, unitSkills, addSkills, scaleSkills
+  , blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
   ) where
 
 import Data.Binary
@@ -37,6 +38,20 @@ addSkills = EM.unionWith (+)
 
 scaleSkills :: Int -> Skills -> Skills
 scaleSkills n = EM.map (n *)
+
+minusTen, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems :: Skills
+
+-- To make sure only a lot of weak items can override move-only-leader, etc.
+minusTen = EM.fromList $ zip [minBound..maxBound] [-10, -10..]
+
+blockOnly = EM.delete AbWait minusTen
+
+meleeAdjacent = EM.delete AbMelee blockOnly
+
+-- Melee and reaction fire.
+meleeAndRanged = EM.delete AbProject meleeAdjacent
+
+ignoreItems = EM.fromList $ zip [AbMoveItem, AbProject, AbApply] [-10, -10..]
 
 instance Show Ability where
   show AbMove = "move"

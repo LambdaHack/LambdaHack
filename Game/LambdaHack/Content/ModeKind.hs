@@ -73,13 +73,16 @@ type HiCondPoly = [HiSummand]
 data Player a = Player
   { fname          :: !Text        -- ^ name of the player
   , fgroup         :: !(GroupName ItemKind)  -- ^ name of the monster group to control
-  , fskillsOther   :: !Skills      -- ^ skills of the other actors
+  , fskillsOther   :: !Skills      -- ^ fixed skill modifiers to the non-leader
+                                   --   actors; also summed with skills implied
+                                   --   by ftactic (which is not fixed)
   , fcanEscape     :: !Bool        -- ^ the player can escape the dungeon
   , fneverEmpty    :: !Bool        -- ^ the faction declared killed if no actors
   , fhiCondPoly    :: !HiCondPoly  -- ^ score polynomial for the player
   , fhasNumbers    :: !Bool        -- ^ whether actors have numbers, not symbols
   , fhasGender     :: !Bool        -- ^ whether actors have gender
-  , ftactic        :: !Tactic      -- ^ members behave according to this tactic
+  , ftactic        :: !Tactic      -- ^ non-leader behave according to this
+                                   --   tactic; can be changed during the game
   , fentryLevel    :: !a           -- ^ level where the initial members start
   , finitialActors :: !a           -- ^ number of initial members
   , fleaderMode    :: !LeaderMode  -- ^ the mode of switching the leader

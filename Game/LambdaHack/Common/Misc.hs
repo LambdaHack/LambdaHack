@@ -137,14 +137,22 @@ newtype AbsDepth = AbsDepth Int
 newtype ActorId = ActorId Int
   deriving (Show, Eq, Ord, Enum, Binary)
 
--- TODO: alway shoot, never shoot, etc., but there is too many and this is best
--- expressed via skills, and also we risk micromanagement, so let's stop
--- and think first; perhaps only have as many tactics as needed for realistic
--- AI behaviour in our game modes; perhaps even expose only some of them to UI
+-- TODO: there is already too many; express this somehow via skills;
+-- also, we risk micromanagement; perhaps only have as many tactics
+-- as needed for realistic AI behaviour in our game modes;
+-- perhaps even expose only some of them to UI; perhaps define tactics
+-- in rules content or in game mode defs; perhaps have skills corresponding
+-- to exploration. following, etc.
+-- | Tactic of non-leader actors. Apart of determining AI operation,
+-- each tactic implies a skill modifier, that is added to the non-leader skills
+-- defined in 'fskillsOther' field of 'Player'.
 data Tactic =
-    TBlock    -- ^ always only wait, even if enemy in melee range
+    TExplore  -- ^ if enemy nearby, attack, if no items, etc., explore unknown
   | TFollow   -- ^ always follow leader's target or his position if no target
-  | TExplore  -- ^ if enemy nearby, attack, if no items, etc., explore unknown
+  | TFollowNoItems   -- ^ follow but don't do any item management nor use
+  | TMeleeAndRanged  -- ^ only melee and do ranged combat
+  | TMeleeAdjacent   -- ^ only melee (or wait)
+  | TBlock    -- ^ always only wait, even if enemy in melee range
   | TRoam     -- ^ if enemy nearby, attack, if no items, etc., roam randomly
   | TPatrol   -- ^ find an open and uncrowded area, patrol it according
               --   to sight radius and fallback temporarily to @TRoam@
@@ -155,9 +163,12 @@ data Tactic =
   deriving (Eq, Ord, Enum, Bounded, Generic)
 
 instance Show Tactic where
-  show TBlock = "block and wait"
-  show TFollow = "follow leader's target or position"
   show TExplore = "explore unknown, chase targets"
+  show TFollow = "follow leader's target or position"
+  show TFollowNoItems = "follow leader's target or position, ignore items"
+  show TMeleeAndRanged = "only melee and perform ranged combat"
+  show TMeleeAdjacent = "only melee"
+  show TBlock = "only block and wait"
   show TRoam = "roam freely, chase targets"
   show TPatrol = "find and patrol an area (TODO)"
 

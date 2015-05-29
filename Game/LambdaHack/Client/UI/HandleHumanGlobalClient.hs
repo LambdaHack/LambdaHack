@@ -850,9 +850,9 @@ tacticHuman = do
   fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
   let toT = if fromT == maxBound then minBound else succ fromT
   go <- displayMore ColorFull
-        $ "Switching tactic to"
-          <+> tshow toT
-          <> ". (This clears targets.)"
+        $ "Current tactic is '" <> tshow fromT
+          <> "'. Switching tactic to '" <> tshow toT
+          <> "'. (This clears targets.)"
   if not go
     then failWith "tactic change canceled"
     else return $ Right $ ReqUITactic toT

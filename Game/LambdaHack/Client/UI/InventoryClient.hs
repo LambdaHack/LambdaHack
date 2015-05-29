@@ -806,19 +806,19 @@ tgtEnemyHuman = do
   bsAll <- getsState $ actorAssocs (const True) lidV
   let ordPos (_, b) = (chessDist lpos $ bpos b, bpos b)
       dbs = sortBy (comparing ordPos) bsAll
-      pickUnderCursor =  -- switch to the enemy under cursor, if any
+      pickUnderCursor =  -- switch to the actor under cursor, if any
         let i = fromMaybe (-1)
                 $ findIndex ((== cursorPos) . Just . bpos . snd) dbs
         in splitAt i dbs
       (permitAnyActor, (lt, gt)) = case scursor of
-            TEnemy a permit | isJust stgtMode ->  -- pick next enemy
-              let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
-              in (permit, splitAt (i + 1) dbs)
-            TEnemy a permit ->  -- first key press, retarget old enemy
-              let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
-              in (permit, splitAt i dbs)
-            TEnemyPos _ _ _ permit -> (permit, pickUnderCursor)
-            _ -> (False, pickUnderCursor)  -- the sensible default is only-foes
+        TEnemy a permit | isJust stgtMode ->  -- pick next enemy
+          let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
+          in (permit, splitAt (i + 1) dbs)
+        TEnemy a permit ->  -- first key press, retarget old enemy
+          let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
+          in (permit, splitAt i dbs)
+        TEnemyPos _ _ _ permit -> (permit, pickUnderCursor)
+        _ -> (False, pickUnderCursor)  -- the sensible default is only-foes
       gtlt = gt ++ lt
       isEnemy b = isAtWar fact (bfid b)
                   && not (bproj b)

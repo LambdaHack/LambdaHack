@@ -321,12 +321,23 @@ actorInAmbient b s =
 actorSkills :: Maybe ActorId -> ActorId -> [ItemFull] -> State -> Ability.Skills
 actorSkills mleader aid activeItems s =
   let body = getActorBody aid s
-      fact = (EM.! bfid body) . sfactionD $ s
+      player = gplayer . (EM.! bfid body) . sfactionD $ s
+      skillsFromTactic = tacticSkills $ ftactic player
       factionSkills
         | Just aid == mleader = Ability.zeroSkills
-        | otherwise = fskillsOther $ gplayer fact
+        | otherwise = fskillsOther player `Ability.addSkills` skillsFromTactic
       itemSkills = sumSkills activeItems
   in itemSkills `Ability.addSkills` factionSkills
+
+tacticSkills :: Tactic -> Ability.Skills
+tacticSkills TExplore = Ability.zeroSkills
+tacticSkills TFollow = Ability.zeroSkills
+tacticSkills TFollowNoItems = Ability.ignoreItems
+tacticSkills TMeleeAndRanged = Ability.meleeAndRanged
+tacticSkills TMeleeAdjacent = Ability.meleeAdjacent
+tacticSkills TBlock = Ability.blockOnly
+tacticSkills TRoam = Ability.zeroSkills
+tacticSkills TPatrol = Ability.zeroSkills
 
 -- Check whether an actor can displace an enemy. We assume they are adjacent.
 dispEnemy :: ActorId -> ActorId -> [ItemFull] -> State -> Bool

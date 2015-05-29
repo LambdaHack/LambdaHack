@@ -8,7 +8,6 @@ module Content.ModeKindPlayer
   , hiHero, hiDweller, hiRaid
   ) where
 
-import qualified Data.EnumMap.Strict as EM
 import Data.List
 
 import Game.LambdaHack.Common.Ability
@@ -166,13 +165,3 @@ hiRaid = [ ( [(HiLoot, 1)]
          , ( [(HiConst, 100)]
            , victoryOutcomes )
          ]
-
-minusTen, meleeAdjacent, _meleeAndRanged :: Skills
-
--- To make sure only a lot of weak items can override move-only-leader, etc.
-minusTen = EM.fromList $ zip [minBound..maxBound] [-10, -10..]
-
-meleeAdjacent = EM.delete AbWait $ EM.delete AbMelee minusTen
-
--- Melee and reaction fire.
-_meleeAndRanged = EM.delete AbProject meleeAdjacent
