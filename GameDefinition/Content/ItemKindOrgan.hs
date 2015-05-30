@@ -142,7 +142,7 @@ noseTip = fist
 lip = fist
   { iname    = "lip"
   , ifreq    = [("lip", 10)]
-  , icount   = 2
+  , icount   = 1
   , iverbHit = "lap"
   , iaspects = [Timeout $ 3 + d 3]
   , ieffects = [ Hurt (1 * d 1)
@@ -334,7 +334,7 @@ nostril = armoredSkin
   , ifreq    = [("nostril", 100)]
   , icount   = 2
   , iverbHit = "snuff"
-  , iaspects = [AddSmell 2]
+  , iaspects = [AddSmell 1]  -- * 2, from icount
   , idesc    = ""
   }
 
@@ -387,7 +387,7 @@ speedGland10 = speedGland 10
 scentGland = armoredSkin  -- TODO: cone attack, 3m away, project? apply?
   { iname    = "scent gland"
   , ifreq    = [("scent gland", 100)]
-  , icount   = 2
+  , icount   = 1
   , iverbHit = "spray at"
   , iaspects = [Periodic, Timeout $ 10 + d 2 |*| 5 ]
   , ieffects = [ Recharging (Explode "distressing odor")
