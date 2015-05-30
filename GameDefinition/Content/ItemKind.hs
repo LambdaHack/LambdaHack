@@ -256,7 +256,7 @@ gorget = ItemKind
   , iweight  = 30
   , iaspects = [ Unique
                , Periodic
-               , Timeout $ d 3 + 3 - dl 3 |*| 10
+               , Timeout $ 1 + d 2
                , AddArmorMelee $ 2 + d 3
                , AddArmorRanged $ 2 + d 3 ]
   , ieffects = [Recharging (RefillCalm 1)]
