@@ -271,7 +271,7 @@ rattlesnake = ItemKind
   , ifreq    = [("animal", 100), ("horror", 100), ("mobile animal", 100)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
-  , irarity  = [(3, 3), (10, 5)]
+  , irarity  = [(4, 1), (10, 7)]
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 25, AddMaxCalm 60, AddSpeed 15
@@ -280,7 +280,7 @@ rattlesnake = ItemKind
   , ifeature = [Durable, Identified]
   , idesc    = ""
   , ikit     = [ ("venom fang", COrgan)
-               , ("eye 5", COrgan), ("nostril", COrgan)
+               , ("eye 3", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
   }
 komodoDragon = ItemKind  -- bad hearing; regeneration makes it very powerful
