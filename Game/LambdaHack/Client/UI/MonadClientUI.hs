@@ -196,6 +196,8 @@ stopPlayBack :: MonadClientUI m => m ()
 stopPlayBack = do
   modifyClient $ \cli -> cli
     { slastPlay = []
+    , slastRecord = ([], [], 0)
+        -- TODO: not ideal, but needed to cancel macros that contain apostrophes
     , swaitTimes = - abs (swaitTimes cli)
     }
   srunning <- getsClient srunning
