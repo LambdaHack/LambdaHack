@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -- | Arrays, based on Data.Vector.Unboxed, indexed by @Point@.
 module Game.LambdaHack.Common.PointArray
   ( Array
@@ -12,7 +13,11 @@ import Control.Monad
 import Control.Monad.ST.Strict
 import Data.Binary
 import Data.Vector.Binary ()
-import qualified Data.Vector.Fusion.Stream as Stream
+#if MIN_VERSION_vector(0,11,0)
+import qualified Data.Vector.Fusion.Bundle as Bundle
+#else
+import qualified Data.Vector.Fusion.Stream as Bundle
+#endif
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
@@ -165,7 +170,7 @@ minLastIndexA :: Enum c => Array c -> Point
 {-# INLINE minLastIndexA #-}
 minLastIndexA Array{..} =
   punindex axsize
-  $ fst . Stream.foldl1' imin . Stream.indexed . G.stream
+  $ fst . Bundle.foldl1' imin . Bundle.indexed . G.stream
   $ avector
  where
   imin (i, x) (j, y) = i `seq` j `seq` if x >= y then (j, y) else (i, x)
@@ -176,7 +181,7 @@ minIndexesA :: Enum c => Array c -> [Point]
 {-# INLINE minIndexesA #-}
 minIndexesA Array{..} =
   map (punindex axsize)
-  $ Stream.foldl' imin [] . Stream.indexed . G.stream
+  $ Bundle.foldl' imin [] . Bundle.indexed . G.stream
   $ avector
  where
   imin acc (i, x) = i `seq` if x == minE then i : acc else acc
@@ -194,7 +199,7 @@ maxLastIndexA :: Enum c => Array c -> Point
 {-# INLINE maxLastIndexA #-}
 maxLastIndexA Array{..} =
   punindex axsize
-  $ fst . Stream.foldl1' imax . Stream.indexed . G.stream
+  $ fst . Bundle.foldl1' imax . Bundle.indexed . G.stream
   $ avector
  where
   imax (i, x) (j, y) = i `seq` j `seq` if x <= y then (j, y) else (i, x)
