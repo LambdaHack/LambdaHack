@@ -126,7 +126,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   AlterBlockActor -> True  -- adjacent actor always visible
   AlterBlockItem -> True  -- adjacent item always visible
   AlterNothing -> True
-  EqpOverfull -> True
+  EqpOverfull -> False  -- REVERT ME on branches other than 0.5.0
   EqpStackFull -> True
   ApplyUnskilled -> False  -- unidentified skill items
   ApplyRead -> False  -- unidentified skill items
