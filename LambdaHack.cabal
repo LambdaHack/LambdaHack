@@ -89,7 +89,7 @@ flag with_expensive_assertions
 
 flag release
   description:        prepare for a release (expose, optimize, etc.)
-  default:            False
+  default:            True
   manual:             True
 
 library
