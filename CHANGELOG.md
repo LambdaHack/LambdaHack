@@ -1,3 +1,14 @@
+## [v0.5.0.0, aka 'Halfway through space'](https://github.com/LambdaHack/LambdaHack/compare/v0.4.101.0...v0.5.0.0)
+
+- let AI put excess items in shared stash and use them out of shared stash
+- let UI multiple items pickup routine put items that don't fit into equipment into shared stash, if possible, not into inventory pack
+- re-enable the ability to hear close, invisible foes
+- add a few more AI and autonomous henchmen tactics (CTRL-T)
+- keep difficulty setting over session restart
+- change some game start keybindings
+- replace the Duel game mode with the Raid game mode
+- various bugfixes, minor improvements and balancing
+
 ## [v0.4.101.0, aka 'Officially fun'](https://github.com/LambdaHack/LambdaHack/compare/v0.4.100.0...v0.4.101.0)
 
 - the game is now officially fun to play
