@@ -16,7 +16,7 @@ auto-balancing and persistent content modification based on player behaviour.
 The engine comes with a sample code for a little dungeon crawler,
 called LambdaHack and described in [PLAYING.md](GameDefinition/PLAYING.md).
 
-![gameplay screenshot](https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/skirmish1.png)
+![gameplay screenshot](https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/raid1.png)
 
 Other games known to use the LambdaHack library:
 
