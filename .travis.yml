@@ -9,6 +9,8 @@ env:
  - MYSETUP=7.8.4.vty
  - MYSETUP=7.10.1.gtk
  - MYSETUP=7.10.1.vty
+ - MYSETUP=7.10.2.gtk
+ - MYSETUP=7.10.2.vty
  - MYSETUP=2014.2.0.0.gtk
  - MYSETUP=2014.2.0.0.vty
  - MYSETUP=2013.2.0.0.gtk
@@ -49,6 +51,16 @@ before_install:
 
     "7.10.1.vty")
       export GHCVER=7.10.1 ;
+      export CABALVER=1.22 ;
+      export GTKVTY=vty ;;
+
+    "7.10.2.gtk")
+      export GHCVER=7.10.2 ;
+      export CABALVER=1.22 ;
+      export GTKVTY=gtk ;;
+
+    "7.10.2.vty")
+      export GHCVER=7.10.2 ;
       export CABALVER=1.22 ;
       export GTKVTY=vty ;;
 
