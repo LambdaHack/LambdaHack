@@ -12,7 +12,9 @@ module Game.LambdaHack.SampleImplementation.SampleMonadClient
 #endif
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Concurrent.STM
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)

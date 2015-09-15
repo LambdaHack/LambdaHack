@@ -5,14 +5,16 @@ module Game.LambdaHack.Client.AI.HandleAbilityClient
   ( actionStrategy
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
-import Control.Monad
+import Control.Monad (mzero, msum)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
-import Data.List
+import Data.List (groupBy, sortBy, intersect, foldl')
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Ord

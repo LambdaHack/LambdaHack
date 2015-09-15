@@ -12,17 +12,17 @@ module Game.LambdaHack.Common.Frequency
   , maxFreq, minFreq, meanFreq
   ) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Control.Applicative
 import Control.Arrow (first, second)
 import Control.DeepSeq
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
-import Data.Foldable (Foldable)
-import qualified Data.Foldable as F
 import Data.Hashable (Hashable)
 import Data.Text (Text)
-import Data.Traversable (Traversable)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Misc
@@ -115,11 +115,11 @@ nullFreq (Frequency fs _) = null fs
 
 maxFreq :: Ord a => Frequency a -> Maybe a
 {-# INLINE maxFreq #-}
-maxFreq fr = if nullFreq fr then Nothing else Just $ F.maximum fr
+maxFreq fr = if nullFreq fr then Nothing else Just $ maximum fr
 
 minFreq :: Ord a => Frequency a -> Maybe a
 {-# INLINE minFreq #-}
-minFreq fr = if nullFreq fr then Nothing else Just $ F.minimum fr
+minFreq fr = if nullFreq fr then Nothing else Just $ minimum fr
 
 -- | Average value of an @Int@ distribution, rounded up to avoid truncating
 -- it in the other code higher up, which would equate 1d0 with 1d1.

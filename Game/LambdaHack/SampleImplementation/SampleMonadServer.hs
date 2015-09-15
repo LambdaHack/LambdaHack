@@ -11,7 +11,9 @@ module Game.LambdaHack.SampleImplementation.SampleMonadServer
 #endif
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Concurrent
 import qualified Control.Exception as Ex
 import qualified Control.Monad.IO.Class as IO

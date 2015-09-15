@@ -10,10 +10,12 @@ module Game.LambdaHack.Common.ItemStrongest
   , unknownMelee, allRecharging, stripRecharging, stripOnSmash
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
-import Data.List
+import Data.List (sortBy)
 import Data.Maybe
 import qualified Data.Ord as Ord
 import Data.Text (Text)

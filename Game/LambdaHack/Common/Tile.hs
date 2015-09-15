@@ -27,7 +27,9 @@ module Game.LambdaHack.Common.Tile
 #endif
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
 import qualified Data.Array.Unboxed as A
 import Data.Maybe

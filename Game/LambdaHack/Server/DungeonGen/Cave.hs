@@ -3,13 +3,15 @@ module Game.LambdaHack.Server.DungeonGen.Cave
   ( Cave(..), buildCave
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
-import Control.Monad
+import Control.Monad (replicateM, foldM)
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM)
-import Data.List
+import Data.List (union)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 

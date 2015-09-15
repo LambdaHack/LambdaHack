@@ -3,14 +3,16 @@ module Game.LambdaHack.Server.StartServer
   ( gameReset, reinitGame, initPer, recruitActors, applyDebug, initDebug
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
-import Control.Monad
+import Control.Monad (mplus, when, unless, forM, forM_)
 import qualified Control.Monad.State as St
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List
+import Data.List ((\\), elemIndex, findIndex, sortBy, find)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Ord

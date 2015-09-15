@@ -3,7 +3,9 @@ module Game.LambdaHack.Client.AI.Preferences
   ( totalUsefulness, effectToBenefit
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Common.Actor

@@ -3,8 +3,8 @@ module Game.LambdaHack.Client.UI.HandleHumanClient
   ( cmdHumanSem
   ) where
 
-import Control.Applicative
-import Data.Monoid
+import Prelude ()
+import Prelude.Compat
 
 import Game.LambdaHack.Client.UI.HandleHumanGlobalClient
 import Game.LambdaHack.Client.UI.HandleHumanLocalClient

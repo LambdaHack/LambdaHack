@@ -5,13 +5,15 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
   ( handleCmdAtomic
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
-import Control.Monad
+import Control.Monad (when, forM_)
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
-import Data.List
+import Data.List (delete)
 import Data.Maybe
 
 import Game.LambdaHack.Atomic.CmdAtomic

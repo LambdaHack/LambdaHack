@@ -17,7 +17,9 @@ module Game.LambdaHack.Atomic.CmdAtomic
   , undoUpdAtomic, undoSfxAtomic, undoCmdAtomic
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Data.Binary
 import Data.Int (Int64)
 import GHC.Generics (Generic)

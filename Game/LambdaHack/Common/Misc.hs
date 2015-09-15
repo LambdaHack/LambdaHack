@@ -13,22 +13,23 @@ module Game.LambdaHack.Common.Misc
   , isRight
   ) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Control.DeepSeq
-import Control.Monad
+import Control.Monad (MonadPlus, mzero, liftM)
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
-import Data.Functor
 import Data.Hashable
 import qualified Data.HashMap.Strict as HM
 import Data.Key
-import Data.List
+import Data.List (sortBy, nubBy)
 import Data.Ord
 import Data.String (IsString (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Traversable (traverse)
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 

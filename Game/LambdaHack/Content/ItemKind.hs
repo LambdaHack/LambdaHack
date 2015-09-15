@@ -10,14 +10,15 @@ module Game.LambdaHack.Content.ItemKind
   , validateSingleItemKind, validateAllItemKind
   ) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Control.DeepSeq
 import Data.Binary
-import Data.Foldable (Foldable)
 import Data.Hashable (Hashable)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Traversable (Traversable)
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 

@@ -12,9 +12,11 @@ module Game.LambdaHack.Server.HandleRequestServer
   ( handleRequestAI, handleRequestUI, reqMove, reqDisplace
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
-import Control.Monad
+import Control.Monad (void, unless, when)
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)

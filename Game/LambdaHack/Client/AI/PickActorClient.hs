@@ -4,12 +4,14 @@ module Game.LambdaHack.Client.AI.PickActorClient
   ( pickActorToMove
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Arrow
 import Control.Exception.Assert.Sugar
-import Control.Monad
+import Control.Monad (void, unless, unless, filterM)
 import qualified Data.EnumMap.Strict as EM
-import Data.List
+import Data.List (partition, sortBy)
 import Data.Maybe
 import Data.Ord
 

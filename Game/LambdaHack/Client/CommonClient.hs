@@ -7,7 +7,9 @@ module Game.LambdaHack.Client.CommonClient
   , itemToFullClient, pickWeaponClient, sumOrganEqpClient
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM

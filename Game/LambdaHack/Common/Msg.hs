@@ -13,12 +13,14 @@ module Game.LambdaHack.Common.Msg
   )
   where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.ByteString.Char8 as BS
 import Data.Int (Int32)
-import Data.List
+import Data.List (find)
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T

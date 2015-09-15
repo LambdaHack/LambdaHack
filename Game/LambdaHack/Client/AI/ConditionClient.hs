@@ -25,12 +25,14 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , fleeList
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
-import Control.Monad
+import Control.Monad (filterM)
 import qualified Data.EnumMap.Strict as EM
-import Data.List
+import Data.List (sortBy)
 import Data.Maybe
 import Data.Ord
 

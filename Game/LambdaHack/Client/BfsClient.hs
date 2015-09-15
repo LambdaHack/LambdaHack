@@ -6,13 +6,15 @@ module Game.LambdaHack.Client.BfsClient
   , closestTriggers, closestItems, closestFoes
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List
+import Data.List (sortBy, maximumBy)
 import Data.Maybe
 import Data.Ord
 

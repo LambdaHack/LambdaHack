@@ -4,9 +4,11 @@ module Game.LambdaHack.Client.HandleAtomicClient
   ( cmdAtomicSemCli, cmdAtomicFilterCli
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
-import Control.Monad
+import Control.Monad (when)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe

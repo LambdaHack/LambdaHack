@@ -6,12 +6,13 @@ module Game.LambdaHack.Client.AI.Strategy
   , (.|), reject, (.=>), only, bestVariant, renameStrategy, returN, mapStrategyM
   ) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Control.Applicative
-import Control.Monad
-import Data.Foldable (Foldable)
+import Control.Monad (MonadPlus(..), ap)
 import Data.Maybe
 import Data.Text (Text)
-import Data.Traversable (Traversable)
 
 import Game.LambdaHack.Common.Frequency as Frequency
 import Game.LambdaHack.Common.Msg

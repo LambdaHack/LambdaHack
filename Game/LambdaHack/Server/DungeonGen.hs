@@ -8,12 +8,14 @@ module Game.LambdaHack.Server.DungeonGen
 #endif
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
-import Data.List
+import Data.List (find, nub, sort)
 import Data.Maybe
 
 import qualified Game.LambdaHack.Common.Kind as Kind

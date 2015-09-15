@@ -3,14 +3,16 @@
 -- moves turn by turn.
 module Game.LambdaHack.Server.LoopServer (loopSer) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
-import Control.Monad
+import Control.Monad (when, unless)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM_)
-import Data.List
+import Data.List (minimumBy)
 import Data.Maybe
 import qualified Data.Ord as Ord
 

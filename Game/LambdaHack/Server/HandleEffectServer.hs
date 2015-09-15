@@ -5,14 +5,16 @@ module Game.LambdaHack.Server.HandleEffectServer
   , dropCStoreItem, armorHurtBonus
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
-import Control.Monad
+import Control.Monad (filterM, unless, when, void, forM, forM_)
 import Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.HashMap.Strict as HM
 import Data.Key (mapWithKeyM_)
-import Data.List
+import Data.List (find)
 import Data.Maybe
 import qualified NLP.Miniutter.English as MU
 

@@ -4,7 +4,9 @@ module Game.LambdaHack.Server.DungeonGen.Place
   ( TileMapEM, Place(..), placeCheck, buildFenceRnd, buildPlace
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM

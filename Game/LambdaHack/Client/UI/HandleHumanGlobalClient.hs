@@ -15,12 +15,14 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   , gameRestartHuman, gameExitHuman, gameSaveHuman, tacticHuman, automateHuman
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
-import Control.Monad
+import Control.Monad (when)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List
+import Data.List (delete)
 import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)

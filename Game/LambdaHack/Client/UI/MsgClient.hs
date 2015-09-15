@@ -5,7 +5,9 @@ module Game.LambdaHack.Client.UI.MsgClient
   , lookAt, itemOverlay
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM

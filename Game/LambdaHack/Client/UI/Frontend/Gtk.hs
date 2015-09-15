@@ -10,16 +10,18 @@ module Game.LambdaHack.Client.UI.Frontend.Gtk
   , frontendName, startup
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Exception as Ex hiding (handle)
-import Control.Monad
-import Control.Monad.Reader
+import Control.Monad (when, unless, void)
+import Control.Monad.Reader (liftIO)
 import qualified Data.ByteString.Char8 as BS
 import Data.IORef
-import Data.List
+import Data.List (foldl')
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.String (IsString (..))

@@ -8,14 +8,16 @@ module Game.LambdaHack.Client.UI.Animation
   , swapPlaces, moveProj, fadeout
   ) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List
+import Data.List (foldl')
 import Data.Maybe
-import Data.Monoid
 import qualified Data.Vector.Generic as G
 import GHC.Generics (Generic)
 

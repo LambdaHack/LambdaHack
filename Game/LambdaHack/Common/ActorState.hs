@@ -18,12 +18,14 @@ module Game.LambdaHack.Common.ActorState
   , strongestMelee, isMelee, isMeleeEqp
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
-import Data.List
+import Data.List (sortBy, nub, find, elemIndex, (\\))
 import Data.Maybe
 import qualified Data.Ord as Ord
 
