@@ -20,6 +20,7 @@ module Game.LambdaHack.Client.UI
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
+import Data.Either.Compat
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
@@ -39,7 +40,6 @@ import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.StartupFrontendClient
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request

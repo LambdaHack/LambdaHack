@@ -9,15 +9,13 @@ module Game.LambdaHack.Common.Misc
     -- * Assorted
   , normalLevelBound, divUp, GroupName, toGroupName, Freqs, breturn
   , serverSaveName, Rarity, validateRarity, Tactic(..)
-    -- * Backward compatibility
-  , isRight
   ) where
 
 import Prelude ()
 import Prelude.Compat
 
 import Control.DeepSeq
-import Control.Monad (MonadPlus, mzero, liftM)
+import Control.Monad (MonadPlus, liftM, mzero)
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -25,7 +23,7 @@ import Data.Function
 import Data.Hashable
 import qualified Data.HashMap.Strict as HM
 import Data.Key
-import Data.List (sortBy, nubBy)
+import Data.List (nubBy, sortBy)
 import Data.Ord
 import Data.String (IsString (..))
 import Data.Text (Text)
@@ -176,12 +174,6 @@ instance Show Tactic where
 instance Binary Tactic
 
 instance Hashable Tactic
-
--- TODO: remove me when we no longer suppoert GHC 7.6.*
-isRight :: Either a b -> Bool
-isRight e = case e of
-  Right{} -> True
-  Left{} -> False
 
 -- Data.Binary
 
