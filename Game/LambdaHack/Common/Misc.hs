@@ -21,7 +21,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
 import Data.Hashable
-import qualified Data.HashMap.Strict as HM
 import Data.Key
 import Data.List (nubBy, sortBy)
 import Data.Ord
@@ -188,12 +187,6 @@ instance (Enum k, Binary k) => Binary (ES.EnumSet k) where
   put m = put (ES.size m) >> mapM_ put (ES.toAscList m)
   {-# INLINEABLE get #-}
   get = liftM ES.fromDistinctAscList get
-
-instance (Binary k, Binary v, Eq k, Hashable k) => Binary (HM.HashMap k v) where
-  {-# INLINEABLE put #-}
-  put ir = put $ HM.toList ir
-  {-# INLINEABLE get #-}
-  get = fmap HM.fromList get
 
 -- Data.Key
 

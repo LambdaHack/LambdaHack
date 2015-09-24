@@ -6,8 +6,8 @@ module Game.LambdaHack.Common.RingBuffer
   ) where
 
 import Data.Binary
+import Data.Binary.Orphans ()
 import qualified Data.Vector as V
-import Data.Vector.Binary ()
 import GHC.Generics (Generic)
 
 data RingBuffer a = RingBuffer
