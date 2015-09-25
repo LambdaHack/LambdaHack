@@ -18,7 +18,7 @@ import Data.List
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock
+import Data.Time.Clock.POSIX
 import Data.Time.LocalTime
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
@@ -37,7 +37,7 @@ import Game.LambdaHack.Content.ModeKind (HiCondPoly, HiIndeterminant (..),
 data ScoreRecord = ScoreRecord
   { points       :: !Int        -- ^ the score
   , negTime      :: !Time       -- ^ game time spent (negated, so less better)
-  , date         :: !UTCTime    -- ^ date of the last game interruption
+  , date         :: !POSIXTime  -- ^ date of the last game interruption
   , status       :: !Status     -- ^ reason of the game interruption
   , difficulty   :: !Int        -- ^ difficulty of the game
   , gplayerName  :: !Text       -- ^ name of the faction's gplayer
@@ -69,7 +69,7 @@ showScore tz (pos, score) =
         Conquer  -> "slew all opposition"
         Escape   -> "emerged victorious"
         Restart  -> "resigned prematurely"
-      curDate = tshow . utcToLocalTime tz . date $ score
+      curDate = tshow . utcToLocalTime tz . posixSecondsToUTCTime . date $ score
       turns = absoluteTimeNegate (negTime score) `timeFitUp` timeTurn
       tpos = T.justifyRight 3 ' ' $ tshow pos
       tscore = T.justifyRight 6 ' ' $ tshow $ points score
@@ -111,7 +111,7 @@ register :: ScoreTable  -- ^ old table
          -> Int         -- ^ the total value of faction items
          -> Time        -- ^ game time spent
          -> Status      -- ^ reason of the game interruption
-         -> UTCTime     -- ^ current date
+         -> POSIXTime   -- ^ current date
          -> Int         -- ^ difficulty level
          -> Text        -- ^ name of the faction's gplayer
          -> EM.EnumMap (Kind.Id ItemKind) Int  -- ^ allies lost

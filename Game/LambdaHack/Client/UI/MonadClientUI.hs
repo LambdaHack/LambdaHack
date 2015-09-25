@@ -28,7 +28,7 @@ import Control.Monad (replicateM_, when)
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)
-import Data.Time.Clock
+import Data.Time.Clock.POSIX
 import Data.Time.LocalTime
 import qualified NLP.Miniutter.English as MU
 
@@ -258,8 +258,8 @@ scoreToSlideshow total status = do
   gameModeId <- getsState sgameModeId
   gameMode <- getGameMode
   time <- getsState stime
-  date <- liftIO getCurrentTime
-  tz <- liftIO $ getTimeZone date
+  date <- liftIO getPOSIXTime
+  tz <- liftIO $ getTimeZone $ posixSecondsToUTCTime date
   scurDiff <- getsClient scurDiff
   factionD <- getsState sfactionD
   let table = HighScore.getTable gameModeId scoreDict

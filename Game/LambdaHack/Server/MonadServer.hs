@@ -26,7 +26,7 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Data.Time.Clock
+import Data.Time.Clock.POSIX
 import Data.Time.LocalTime
 import System.Directory
 import System.Exit (exitFailure)
@@ -146,8 +146,8 @@ registerScore status mbody fid = do
   scoreDict <- restoreScore cops
   gameModeId <- getsState sgameModeId
   time <- getsState stime
-  date <- liftIO getCurrentTime
-  tz <- liftIO $ getTimeZone date
+  date <- liftIO getPOSIXTime
+  tz <- liftIO $ getTimeZone $ posixSecondsToUTCTime date
   DebugModeSer{scurDiffSer} <- getsServer sdebugSer
   factionD <- getsState sfactionD
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
@@ -180,34 +180,34 @@ registerScore status mbody fid = do
 
 resetSessionStart :: MonadServer m => m ()
 resetSessionStart = do
-  sstart <- liftIO getCurrentTime
+  sstart <- liftIO getPOSIXTime
   modifyServer $ \ser -> ser {sstart}
 
 -- TODO: all this breaks when games are loaded; we'd need to save
 -- elapsed game clock time to fix this.
 resetGameStart :: MonadServer m => m ()
 resetGameStart = do
-  sgstart <- liftIO getCurrentTime
+  sgstart <- liftIO getPOSIXTime
   time <- getsState stime
   modifyServer $ \ser ->
     ser {sgstart, sallTime = absoluteTimeAdd (sallTime ser) time}
 
 elapsedSessionTimeGT :: MonadServer m => Int -> m Bool
 elapsedSessionTimeGT stopAfter = do
-  current <- liftIO getCurrentTime
-  sstartUTC <- getsServer sstart
-  return $! addUTCTime (fromIntegral stopAfter) sstartUTC <= current
+  current <- liftIO getPOSIXTime
+  sstartPOSIX <- getsServer sstart
+  return $! fromIntegral stopAfter + sstartPOSIX <= current
 
 tellAllClipPS :: MonadServer m => m ()
 tellAllClipPS = do
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   when bench $ do
-    sstartUTC <- getsServer sstart
-    curUTC <- liftIO $ getCurrentTime
+    sstartPOSIX <- getsServer sstart
+    curPOSIX <- liftIO $ getPOSIXTime
     allTime <- getsServer sallTime
     gtime <- getsState stime
     let time = absoluteTimeAdd allTime gtime
-    let diff = fromRational $ toRational $ diffUTCTime curUTC sstartUTC
+    let diff = fromRational $ toRational $ curPOSIX - sstartPOSIX
         cps = fromIntegral (timeFit time timeClip) / diff :: Double
     debugPossiblyPrint $
       "Session time:" <+> tshow diff <> "s."
@@ -217,12 +217,12 @@ tellGameClipPS :: MonadServer m => m ()
 tellGameClipPS = do
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   when bench $ do
-    sgstartUTC <- getsServer sgstart
-    curUTC <- liftIO $ getCurrentTime
+    sgstartPOSIX <- getsServer sgstart
+    curPOSIX <- liftIO $ getPOSIXTime
     -- If loaded game, don't report anything.
-    unless (fromEnum (utctDay sgstartUTC) == 0) $ do
+    unless (sgstartPOSIX == 0) $ do
       time <- getsState stime
-      let diff = fromRational $ toRational $ diffUTCTime curUTC sgstartUTC
+      let diff = fromRational $ toRational $ curPOSIX - sgstartPOSIX
           cps = fromIntegral (timeFit time timeClip) / diff :: Double
       debugPossiblyPrint $
         "Game time:" <+> tshow diff <> "s."

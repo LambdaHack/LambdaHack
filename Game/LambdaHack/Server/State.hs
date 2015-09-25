@@ -10,7 +10,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
-import Data.Time.Clock
+import Data.Time.Clock.POSIX
 import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
@@ -49,8 +49,8 @@ data StateServer = StateServer
   , srngs         :: !RNGs          -- ^ initial random generators
   , squit         :: !Bool          -- ^ exit the game loop
   , swriteSave    :: !Bool          -- ^ write savegame to a file now
-  , sstart        :: !UTCTime       -- ^ this session start time
-  , sgstart       :: !UTCTime       -- ^ this game start time
+  , sstart        :: !POSIXTime     -- ^ this session start time
+  , sgstart       :: !POSIXTime     -- ^ this game start time
   , sallTime      :: !Time          -- ^ clips since the start of the session
   , sheroNames    :: !(EM.EnumMap FactionId [(Int, (Text, Text))])
                                     -- ^ hero names sent by clients
@@ -128,16 +128,13 @@ emptyStateServer =
                    , startingRandomGenerator = Nothing }
     , squit = False
     , swriteSave = False
-    , sstart = dummyLocalTime
-    , sgstart = dummyLocalTime
+    , sstart = 0
+    , sgstart = 0
     , sallTime = timeZero
     , sheroNames = EM.empty
     , sdebugSer = defDebugModeSer
     , sdebugNxt = defDebugModeSer
     }
-
-dummyLocalTime :: UTCTime
-dummyLocalTime = UTCTime (toEnum 0) (toEnum 0)
 
 defDebugModeSer :: DebugModeSer
 defDebugModeSer = DebugModeSer { sknowMap = False
@@ -201,8 +198,8 @@ instance Binary StateServer where
         sper = EM.empty
         squit = False
         swriteSave = False
-        sstart = dummyLocalTime
-        sgstart = dummyLocalTime
+        sstart = 0
+        sgstart = 0
         sallTime = timeZero
         sdebugNxt = defDebugModeSer  -- TODO: here difficulty level, etc. from the last session is wiped out
     return $! StateServer{..}
