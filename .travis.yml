@@ -3,8 +3,6 @@
 # See also https://github.com/hvr/multi-ghc-travis for more information
 
 env:
- - MYSETUP=7.6.3.gtk
- - MYSETUP=7.6.3.vty
  - MYSETUP=7.8.4.gtk
  - MYSETUP=7.8.4.vty
  - MYSETUP=7.10.1.gtk
@@ -13,26 +11,12 @@ env:
  - MYSETUP=7.10.2.vty
  - MYSETUP=2014.2.0.0.gtk
  - MYSETUP=2014.2.0.0.vty
- - MYSETUP=2013.2.0.0.gtk
- - MYSETUP=2013.2.0.0.vty
- - MYSETUP=2012.4.0.0.gtk
- - MYSETUP=2012.4.0.0.vty
 
 # Note: the distinction between `before_install` and `install` is not
 #       important.
 before_install:
  - case "$MYSETUP" in
     "") ;;
-
-    "7.6.3.gtk")
-      export GHCVER=7.6.3 ;
-      export CABALVER=1.18 ;
-      export GTKVTY=gtk ;;
-
-    "7.6.3.vty")
-      export GHCVER=7.6.3 ;
-      export CABALVER=1.18 ;
-      export GTKVTY=vty ;;
 
     "7.8.4.gtk")
       export GHCVER=7.8.4 ;
@@ -70,35 +54,11 @@ before_install:
       export GTKVTY=gtk ;
       echo "constraints:async==2.0.1.5,attoparsec==0.10.4.0,case-insensitive==1.1.0.3,fgl==5.5.0.1,GLUT==2.5.1.1,GLURaw==1.4.0.1,haskell-src==1.0.1.6,hashable==1.2.2.0,html==1.0.1.2,HTTP==4000.2.10,HUnit==1.2.5.2,mtl==2.1.3.1,network==2.4.2.3,OpenGL==2.9.2.0,OpenGLRaw==1.5.0.0,parallel==3.2.0.4,parsec==3.1.5,primitive==0.5.2.1,QuickCheck==2.6,regex-base==0.93.2,regex-compat==0.95.1,regex-posix==0.95.2,split==0.2.2,stm==2.4.2,syb==0.4.1,text==1.1.0.0,transformers==0.3.0.0,unordered-containers==0.2.4.0,vector==0.10.9.1,xhtml==3000.2.1,zlib==0.5.4.1" > cabal.config ;;
 
-    "2013.2.0.0.gtk")
-      export GHCVER=7.6.3 ;
-      export CABALVER=1.18 ;
-      export GTKVTY=gtk ;
-      echo "constraints:async==2.0.1.4,attoparsec==0.10.4.0,case-insensitive==1.0.0.1,cgi==3001.1.7.5,fgl==5.4.2.4,GLUT==2.4.0.0,GLURaw==1.3.0.0,haskell-src==1.0.1.5,html==1.0.1.2,HTTP==4000.2.8,HUnit==1.2.5.2,mtl==2.1.2,network==2.4.1.2,OpenGL==2.8.0.0,OpenGLRaw==1.3.0.0,parallel==3.2.0.3,parsec==3.1.3,QuickCheck==2.6,regex-base==0.93.2,regex-compat==0.95.1,regex-posix==0.95.2,split==0.2.2,stm==2.4.2,syb==0.4.0,text==0.11.3.1,transformers==0.3.0.0,unordered-containers==0.2.3.0,vector==0.10.0.1,xhtml==3000.2.1,zlib==0.5.4.1,keys==3.10.1,lens==4.9.1" > cabal.config ;;
-
-    "2012.4.0.0.gtk")
-      export GHCVER=7.6.2 ;
-      export CABALVER=1.18 ;
-      export GTKVTY=gtk ;
-      echo "constraints:async==2.0.1.3,cgi==3001.1.7.4,fgl==5.4.2.4,GLUT==2.1.2.1,haskell-src==1.0.1.5,html==1.0.1.2,HTTP==4000.2.5,HUnit==1.2.5.1,mtl==2.1.2,network==2.3.1.0,OpenGL==2.2.3.1,parallel==3.2.0.3,parsec==3.1.3,QuickCheck==2.5.1.1,regex-base==0.93.2,regex-compat==0.95.1,regex-posix==0.95.2,split==0.2.1.1,stm==2.4,syb==0.3.7,text==0.11.3.1,transformers==0.3.0.0,vector==0.10.0.1,xhtml==3000.2.1,zlib==0.5.4.0" > cabal.config ;;
-
     "2014.2.0.0.vty")
       export GHCVER=7.8.3 ;
       export CABALVER=1.18 ;
       export GTKVTY=vty ;
       echo "constraints:async==2.0.1.5,attoparsec==0.10.4.0,case-insensitive==1.1.0.3,fgl==5.5.0.1,GLUT==2.5.1.1,GLURaw==1.4.0.1,haskell-src==1.0.1.6,hashable==1.2.2.0,html==1.0.1.2,HTTP==4000.2.10,HUnit==1.2.5.2,mtl==2.1.3.1,network==2.4.2.3,OpenGL==2.9.2.0,OpenGLRaw==1.5.0.0,parallel==3.2.0.4,parsec==3.1.5,primitive==0.5.2.1,QuickCheck==2.6,regex-base==0.93.2,regex-compat==0.95.1,regex-posix==0.95.2,split==0.2.2,stm==2.4.2,syb==0.4.1,text==1.1.0.0,transformers==0.3.0.0,unordered-containers==0.2.4.0,vector==0.10.9.1,xhtml==3000.2.1,zlib==0.5.4.1" > cabal.config ;;
-
-    "2013.2.0.0.vty")
-      export GHCVER=7.6.3 ;
-      export CABALVER=1.18 ;
-      export GTKVTY=vty ;
-      echo "constraints:async==2.0.1.4,attoparsec==0.10.4.0,case-insensitive==1.0.0.1,cgi==3001.1.7.5,fgl==5.4.2.4,GLUT==2.4.0.0,GLURaw==1.3.0.0,haskell-src==1.0.1.5,html==1.0.1.2,HTTP==4000.2.8,HUnit==1.2.5.2,mtl==2.1.2,network==2.4.1.2,OpenGL==2.8.0.0,OpenGLRaw==1.3.0.0,parallel==3.2.0.3,parsec==3.1.3,QuickCheck==2.6,regex-base==0.93.2,regex-compat==0.95.1,regex-posix==0.95.2,split==0.2.2,stm==2.4.2,syb==0.4.0,text==0.11.3.1,transformers==0.3.0.0,unordered-containers==0.2.3.0,vector==0.10.0.1,xhtml==3000.2.1,zlib==0.5.4.1,keys==3.10.1,lens==4.9.1" > cabal.config ;;
-
-    "2012.4.0.0.vty")
-      export GHCVER=7.6.2 ;
-      export CABALVER=1.18 ;
-      export GTKVTY=vty ;
-      echo "constraints:async==2.0.1.3,cgi==3001.1.7.4,fgl==5.4.2.4,GLUT==2.1.2.1,haskell-src==1.0.1.5,html==1.0.1.2,HTTP==4000.2.5,HUnit==1.2.5.1,mtl==2.1.2,network==2.3.1.0,OpenGL==2.2.3.1,parallel==3.2.0.3,parsec==3.1.3,QuickCheck==2.5.1.1,regex-base==0.93.2,regex-compat==0.95.1,regex-posix==0.95.2,split==0.2.1.1,stm==2.4,syb==0.3.7,text==0.11.3.1,transformers==0.3.0.0,vector==0.10.0.1,xhtml==3000.2.1,zlib==0.5.4.0" > cabal.config ;;
 
     *)
       export GHCVER=unknown ;
@@ -117,36 +77,18 @@ install:
  - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
  - travis_retry cabal update
 
- - |
-   if [ ${GHCVER%.*} = "7.6" ]; then
-     travis_retry sudo apt-get install happy alex;
-     if [ $GTKVTY = "vty" ]; then
-       cabal install -j2 Cabal-1.18.0;
-     fi;
-   else
-     travis_retry sudo apt-get install happy-1.19.4 alex-3.1.3;
-     export PATH=/opt/alex/3.1.3/bin:/opt/happy/1.19.4/bin:$PATH;
-   fi
+ - travis_retry sudo apt-get install happy-1.19.4 alex-3.1.3;
+ - export PATH=/opt/alex/3.1.3/bin:/opt/happy/1.19.4/bin:$PATH;
 
-# mine (7.6 struggles with -O2):
+# mine:
  - |
    if [ $GTKVTY = "gtk" ]; then
      cabal install -j2 gtk2hs-buildtools;
-     if [ ${GHCVER%.*} = "7.6" ]; then
-       cabal install -j2 -f-release -O1 --only-dependencies --force-reinstalls;
-       cabal configure -f-release -O1 --enable-tests;
-     else
-       cabal install -j2 -f-release --only-dependencies --force-reinstalls;
-       cabal configure -f-release --enable-tests;
-     fi;
+     cabal install -j2 -f-release --only-dependencies --force-reinstalls;
+     cabal configure -f-release --enable-tests;
    else
-     if [ ${GHCVER%.*} = "7.6" ]; then
-       cabal install -fvty -j2 -frelease -O1 --only-dependencies --force-reinstalls;
-       cabal configure -fvty -frelease -O1 --enable-tests;
-     else
-       cabal install -fvty -j2 -frelease --only-dependencies --force-reinstalls;
-       cabal configure -fvty -frelease --enable-tests;
-     fi;
+     cabal install -fvty -j2 -frelease --only-dependencies --force-reinstalls;
+     cabal configure -fvty -frelease --enable-tests;
    fi
  - cabal build -j2
  - cabal test
@@ -181,13 +123,7 @@ script:
    cd ..
 
 # mine:
- - |
-   if [ ${GHCVER%.*} = "7.6" ]; then
-     touch /tmp/stdtest.log;
-     (make test-travis-medium || (tail -n 200 /tmp/stdtest.log ; exit 77));
-   else
-     touch /tmp/stdtest.log;
-     (make test-travis-medium-no-safari || (tail -n 200 /tmp/stdtest.log ; exit 77));
-   fi
+ - touch /tmp/stdtest.log;
+ - (make test-travis-medium-no-safari || (tail -n 200 /tmp/stdtest.log ; exit 77));
 
 # EOF
