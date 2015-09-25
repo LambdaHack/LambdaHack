@@ -28,8 +28,9 @@ import Control.Monad (replicateM_, when)
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)
+import Data.Time.Clock
+import Data.Time.LocalTime
 import qualified NLP.Miniutter.English as MU
-import System.Time
 
 import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.CommonClient
@@ -257,7 +258,9 @@ scoreToSlideshow total status = do
   gameModeId <- getsState sgameModeId
   gameMode <- getGameMode
   time <- getsState stime
-  date <- liftIO getClockTime
+  utcTime <- liftIO getCurrentTime
+  timezone <- liftIO $ getTimeZone utcTime
+  let date = utcToLocalTime timezone utcTime
   scurDiff <- getsClient scurDiff
   factionD <- getsState sfactionD
   let table = HighScore.getTable gameModeId scoreDict

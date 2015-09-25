@@ -12,10 +12,10 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Time.Clock
+import Data.Time.LocalTime
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
-import System.Time
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.Bfs
@@ -161,8 +161,9 @@ defStateClient shistory sreport _sside sisAI =
 
 defaultHistory :: Int -> IO History
 defaultHistory configHistoryMax = do
-  dateTime <- getClockTime
-  let curDate = MU.Text $ T.pack $ calendarTimeToString $ toUTCTime dateTime
+  utcTime <- getCurrentTime
+  timezone <- getTimeZone utcTime
+  let curDate = MU.Text $ tshow $ utcToLocalTime timezone utcTime
   let emptyHist = emptyHistory configHistoryMax
   return $! addReport emptyHist timeZero
          $! singletonReport

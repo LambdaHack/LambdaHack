@@ -26,12 +26,13 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Data.Time.Clock
+import Data.Time.LocalTime
 import System.Directory
 import System.Exit (exitFailure)
 import System.FilePath
 import System.IO
 import qualified System.Random as R
-import System.Time
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -145,7 +146,9 @@ registerScore status mbody fid = do
   scoreDict <- restoreScore cops
   gameModeId <- getsState sgameModeId
   time <- getsState stime
-  date <- liftIO getClockTime
+  utcTime <- liftIO getCurrentTime
+  timezone <- liftIO $ getTimeZone utcTime
+  let date = utcToLocalTime timezone utcTime
   DebugModeSer{scurDiffSer} <- getsServer sdebugSer
   factionD <- getsState sfactionD
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
@@ -178,35 +181,34 @@ registerScore status mbody fid = do
 
 resetSessionStart :: MonadServer m => m ()
 resetSessionStart = do
-  sstart <- liftIO getClockTime
+  sstart <- liftIO getCurrentTime
   modifyServer $ \ser -> ser {sstart}
 
 -- TODO: all this breaks when games are loaded; we'd need to save
 -- elapsed game clock time to fix this.
 resetGameStart :: MonadServer m => m ()
 resetGameStart = do
-  sgstart <- liftIO getClockTime
+  sgstart <- liftIO getCurrentTime
   time <- getsState stime
   modifyServer $ \ser ->
     ser {sgstart, sallTime = absoluteTimeAdd (sallTime ser) time}
 
 elapsedSessionTimeGT :: MonadServer m => Int -> m Bool
 elapsedSessionTimeGT stopAfter = do
-  current <- liftIO getClockTime
-  TOD s p <- getsServer sstart
-  return $! TOD (s + fromIntegral stopAfter) p <= current
+  current <- liftIO getCurrentTime
+  sstartUTC <- getsServer sstart
+  return $! addUTCTime (fromIntegral stopAfter) sstartUTC <= current
 
 tellAllClipPS :: MonadServer m => m ()
 tellAllClipPS = do
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   when bench $ do
-    TOD s p <- getsServer sstart
-    TOD sCur pCur <- liftIO getClockTime
+    sstartUTC <- getsServer sstart
+    curUTC <- liftIO $ getCurrentTime
     allTime <- getsServer sallTime
     gtime <- getsState stime
     let time = absoluteTimeAdd allTime gtime
-    let diff = fromIntegral sCur + fromIntegral pCur / 10e12
-               - fromIntegral s - fromIntegral p / 10e12
+    let diff = fromRational $ toRational $ diffUTCTime curUTC sstartUTC
         cps = fromIntegral (timeFit time timeClip) / diff :: Double
     debugPossiblyPrint $
       "Session time:" <+> tshow diff <> "s."
@@ -216,12 +218,12 @@ tellGameClipPS :: MonadServer m => m ()
 tellGameClipPS = do
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   when bench $ do
-    TOD s p <- getsServer sgstart
-    unless (s == 0) $ do  -- loaded game, don't report anything
-      TOD sCur pCur <- liftIO getClockTime
+    sgstartUTC <- getsServer sgstart
+    curUTC <- liftIO $ getCurrentTime
+    -- If loaded game, don't report anything.
+    unless (fromEnum (utctDay sgstartUTC) == 0) $ do
       time <- getsState stime
-      let diff = fromIntegral sCur + fromIntegral pCur / 10e12
-                 - fromIntegral s - fromIntegral p / 10e12
+      let diff = fromRational $ toRational $ diffUTCTime curUTC sgstartUTC
           cps = fromIntegral (timeFit time timeClip) / diff :: Double
       debugPossiblyPrint $
         "Game time:" <+> tshow diff <> "s."

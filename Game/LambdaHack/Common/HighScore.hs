@@ -12,14 +12,15 @@ module Game.LambdaHack.Common.HighScore
 
 import Control.Exception.Assert.Sugar
 import Data.Binary
+import Data.Binary.Orphans ()
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Time.LocalTime
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
-import System.Time
 
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -35,7 +36,7 @@ import Game.LambdaHack.Content.ModeKind (HiCondPoly, HiIndeterminant (..),
 data ScoreRecord = ScoreRecord
   { points       :: !Int        -- ^ the score
   , negTime      :: !Time       -- ^ game time spent (negated, so less better)
-  , date         :: !ClockTime  -- ^ date of the last game interruption
+  , date         :: !LocalTime  -- ^ date of the last game interruption
   , status       :: !Status     -- ^ reason of the game interruption
   , difficulty   :: !Int        -- ^ difficulty of the game
   , gplayerName  :: !Text       -- ^ name of the faction's gplayer
@@ -43,15 +44,6 @@ data ScoreRecord = ScoreRecord
   , theirVictims :: !(EM.EnumMap (Kind.Id ItemKind) Int)  -- ^ foes killed
   }
   deriving (Eq, Ord, Show, Generic)
-
-instance Binary ClockTime where
-  put (TOD cs cp) = do
-    put cs
-    put cp
-  get = do
-    cs <- get
-    cp <- get
-    return $! TOD cs cp
 
 instance Binary ScoreRecord
 
@@ -76,7 +68,7 @@ showScore (pos, score) =
         Conquer  -> "slew all opposition"
         Escape   -> "emerged victorious"
         Restart  -> "resigned prematurely"
-      curDate = T.pack $ calendarTimeToString . toUTCTime . date $ score
+      curDate = tshow . date $ score
       turns = absoluteTimeNegate (negTime score) `timeFitUp` timeTurn
       tpos = T.justifyRight 3 ' ' $ tshow pos
       tscore = T.justifyRight 6 ' ' $ tshow $ points score
@@ -118,7 +110,7 @@ register :: ScoreTable  -- ^ old table
          -> Int         -- ^ the total value of faction items
          -> Time        -- ^ game time spent
          -> Status      -- ^ reason of the game interruption
-         -> ClockTime   -- ^ current date
+         -> LocalTime   -- ^ current date
          -> Int         -- ^ difficulty level
          -> Text        -- ^ name of the faction's gplayer
          -> EM.EnumMap (Kind.Id ItemKind) Int  -- ^ allies lost

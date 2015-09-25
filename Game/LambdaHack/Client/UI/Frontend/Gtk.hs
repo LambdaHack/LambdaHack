@@ -17,7 +17,7 @@ import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Exception as Ex hiding (handle)
-import Control.Monad (when, unless, void)
+import Control.Monad (unless, void, when)
 import Control.Monad.Reader (liftIO)
 import qualified Data.ByteString.Char8 as BS
 import Data.IORef
