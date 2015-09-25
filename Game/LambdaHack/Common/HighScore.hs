@@ -18,6 +18,7 @@ import Data.List
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Time.Clock
 import Data.Time.LocalTime
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
@@ -36,7 +37,7 @@ import Game.LambdaHack.Content.ModeKind (HiCondPoly, HiIndeterminant (..),
 data ScoreRecord = ScoreRecord
   { points       :: !Int        -- ^ the score
   , negTime      :: !Time       -- ^ game time spent (negated, so less better)
-  , date         :: !LocalTime  -- ^ date of the last game interruption
+  , date         :: !UTCTime    -- ^ date of the last game interruption
   , status       :: !Status     -- ^ reason of the game interruption
   , difficulty   :: !Int        -- ^ difficulty of the game
   , gplayerName  :: !Text       -- ^ name of the faction's gplayer
@@ -58,8 +59,8 @@ instance Show ScoreTable where
 type ScoreDict = EM.EnumMap (Kind.Id ModeKind) ScoreTable
 
 -- | Show a single high score, from the given ranking in the high score table.
-showScore :: (Int, ScoreRecord) -> [Text]
-showScore (pos, score) =
+showScore :: TimeZone -> (Int, ScoreRecord) -> [Text]
+showScore tz (pos, score) =
   let Status{stOutcome, stDepth} = status score
       died = case stOutcome of
         Killed   -> "perished on level" <+> tshow (abs stDepth)
@@ -68,7 +69,7 @@ showScore (pos, score) =
         Conquer  -> "slew all opposition"
         Escape   -> "emerged victorious"
         Restart  -> "resigned prematurely"
-      curDate = tshow . date $ score
+      curDate = tshow . utcToLocalTime tz . date $ score
       turns = absoluteTimeNegate (negTime score) `timeFitUp` timeTurn
       tpos = T.justifyRight 3 ' ' $ tshow pos
       tscore = T.justifyRight 6 ' ' $ tshow $ points score
@@ -110,7 +111,7 @@ register :: ScoreTable  -- ^ old table
          -> Int         -- ^ the total value of faction items
          -> Time        -- ^ game time spent
          -> Status      -- ^ reason of the game interruption
-         -> LocalTime   -- ^ current date
+         -> UTCTime     -- ^ current date
          -> Int         -- ^ difficulty level
          -> Text        -- ^ name of the faction's gplayer
          -> EM.EnumMap (Kind.Id ItemKind) Int  -- ^ allies lost
@@ -144,26 +145,27 @@ register table total time status@Status{stOutcome} date difficulty gplayerName
 
 -- | Show a screenful of the high scores table.
 -- Parameter height is the number of (3-line) scores to be shown.
-tshowable :: ScoreTable -> Int -> Int -> [Text]
-tshowable (ScoreTable table) start height =
+showTable :: TimeZone -> ScoreTable -> Int -> Int -> [Text]
+showTable tz (ScoreTable table) start height =
   let zipped    = zip [1..] table
       screenful = take height . drop (start - 1) $ zipped
-  in intercalate ["\n"] (map showScore screenful) ++ [moreMsg]
+  in intercalate ["\n"] (map (showScore tz) screenful) ++ [moreMsg]
 
 -- | Produce a couple of renderings of the high scores table.
-showCloseScores :: Int -> ScoreTable -> Int -> [[Text]]
-showCloseScores pos h height =
+showNearbyScores :: TimeZone -> Int -> ScoreTable -> Int -> [[Text]]
+showNearbyScores tz pos h height =
   if pos <= height
-  then [tshowable h 1 height]
-  else [tshowable h 1 height,
-        tshowable h (max (height + 1) (pos - height `div` 2)) height]
+  then [showTable tz h 1 height]
+  else [showTable tz h 1 height,
+        showTable tz h (max (height + 1) (pos - height `div` 2)) height]
 
 -- | Generate a slideshow with the current and previous scores.
 highSlideshow :: ScoreTable -- ^ current score table
               -> Int        -- ^ position of the current score in the table
               -> Text       -- ^ the name of the game mode
+              -> TimeZone   -- ^ the timezone where the game is run
               -> Slideshow
-highSlideshow table pos gameModeName =
+highSlideshow table pos gameModeName tz =
   let (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
       height = nlines `div` 3
       posStatus = status $ getRecord pos table
@@ -196,4 +198,4 @@ highSlideshow table pos gameModeName =
       msg = makeSentence
         [ MU.SubjectVerb person MU.Yes (MU.Text subject) "award you"
         , MU.Ordinal pos, "place", msgUnless ]
-  in toSlideshow Nothing $ map ([msg, "\n"] ++) $ showCloseScores pos table height
+  in toSlideshow Nothing $ map ([msg, "\n"] ++) $ showNearbyScores tz pos table height

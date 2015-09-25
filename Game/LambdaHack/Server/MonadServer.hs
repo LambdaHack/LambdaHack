@@ -146,9 +146,8 @@ registerScore status mbody fid = do
   scoreDict <- restoreScore cops
   gameModeId <- getsState sgameModeId
   time <- getsState stime
-  utcTime <- liftIO getCurrentTime
-  timezone <- liftIO $ getTimeZone utcTime
-  let date = utcToLocalTime timezone utcTime
+  date <- liftIO getCurrentTime
+  tz <- liftIO $ getTimeZone date
   DebugModeSer{scurDiffSer} <- getsServer sdebugSer
   factionD <- getsState sfactionD
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
@@ -157,7 +156,7 @@ registerScore status mbody fid = do
         -- If not human, probably debugging, so dump instead of registering.
         if bench || isAIFact fact then
           debugPossiblyPrint $ T.intercalate "\n"
-          $ HighScore.showScore (pos, HighScore.getRecord pos ntable)
+          $ HighScore.showScore tz (pos, HighScore.getRecord pos ntable)
         else
           let nScoreDict = EM.insert gameModeId ntable scoreDict
           in when worthMentioning $

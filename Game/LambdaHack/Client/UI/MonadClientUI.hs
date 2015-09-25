@@ -258,15 +258,14 @@ scoreToSlideshow total status = do
   gameModeId <- getsState sgameModeId
   gameMode <- getGameMode
   time <- getsState stime
-  utcTime <- liftIO getCurrentTime
-  timezone <- liftIO $ getTimeZone utcTime
-  let date = utcToLocalTime timezone utcTime
+  date <- liftIO getCurrentTime
+  tz <- liftIO $ getTimeZone date
   scurDiff <- getsClient scurDiff
   factionD <- getsState sfactionD
   let table = HighScore.getTable gameModeId scoreDict
       gameModeName = mname gameMode
       showScore (ntable, pos) =
-        HighScore.highSlideshow ntable pos gameModeName
+        HighScore.highSlideshow ntable pos gameModeName tz
       diff | fhasUI $ gplayer fact = scurDiff
            | otherwise = difficultyInverse scurDiff
       theirVic (fi, fa) | isAtWar fact fi
