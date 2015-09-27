@@ -10,6 +10,7 @@ module Game.LambdaHack.Common.State
   , updateFactionD, updateTime, updateCOps
   ) where
 
+import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
@@ -108,7 +109,7 @@ emptyState =
     , _sitemD = EM.empty
     , _sfactionD = EM.empty
     , _stime = timeZero
-    , _scops = undefined
+    , _scops = assert `failure` "empty State is undefined" `twith` ()
     , _shigh = HighScore.empty
     , _sgameModeId = toEnum 0  -- the initial value is unused
     }
@@ -205,5 +206,5 @@ instance Binary State where
     _stime <- get
     _shigh <- get
     _sgameModeId <- get
-    let _scops = undefined  -- overwritten by recreated cops
+    let _scops = assert `failure` "overwritten by recreated cops" `twith` ()
     return $! State{..}

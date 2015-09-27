@@ -65,7 +65,7 @@ fillBfs isEnterable passUnknown origin aInitial =
                         freshMv = a2 PointArray.! p == apartBfs
                         legality = isEnterable pos p
                         (notBlocked, enteredUnknown) = case legality of
-                          MoveBlocked -> (False, undefined)
+                          MoveBlocked -> (False, assert `failure` ())
                           MoveToOpen -> (True, False)
                           MoveToUnknown -> (True, True)
                     in if freshMv && notBlocked
