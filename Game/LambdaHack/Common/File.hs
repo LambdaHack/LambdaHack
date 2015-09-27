@@ -3,7 +3,6 @@ module Game.LambdaHack.Common.File
   ( encodeEOF, strictDecodeEOF, tryCreateDir, tryCopyDataFiles, appDataDir
   ) where
 
-import qualified Codec.Compression.Zlib as Z
 import qualified Control.Exception as Ex
 import Control.Monad
 import Data.Binary
@@ -14,6 +13,16 @@ import System.Environment
 import System.FilePath
 import System.IO
 
+-- TODO: when/if a pure and fast Haskell version becomes available, use it,
+-- otherwise take it from frontends, so that the JS frontend can supply
+-- its own in JS; preferably avoid packing yet another library with Windows
+-- installer, as we had to do with zlib;
+-- eventually, we have to compress, because savefiles for large dungeons
+-- will take megabytes and they shrink 5-50 times
+compress, decompress :: a -> a
+compress = id
+decompress = id
+
 -- | Serialize, compress and save data.
 -- Note that LBS.writeFile opens the file in binary mode.
 encodeData :: Binary a => FilePath -> a -> IO ()
@@ -23,7 +32,7 @@ encodeData f a = do
     (openBinaryFile tmpPath WriteMode)
     (\h -> hClose h >> removeFile tmpPath)
     (\h -> do
-       LBS.hPut h . Z.compress . encode $ a
+       LBS.hPut h . compress . encode $ a
        hClose h
        renameFile tmpPath f
     )
@@ -39,7 +48,7 @@ strictReadSerialized :: FilePath -> IO LBS.ByteString
 strictReadSerialized f =
   withBinaryFile f ReadMode $ \ h -> do
     c <- LBS.hGetContents h
-    let d = Z.decompress c
+    let d = decompress c
     LBS.length d `seq` return d
 
 -- | Read, decompress and deserialize data.

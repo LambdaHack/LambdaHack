@@ -255,5 +255,4 @@ build-binary-windows-i386:
 	cp CREDITS /tmp/LambdaHackTheGame
 	cp LICENSE /tmp/LambdaHackTheGame
 	cp README.md /tmp/LambdaHackTheGame
-	cp /home/mikolaj/.wine/drive_c/users/mikolaj/gtk/bin/zlib1.dll /tmp/LambdaHackTheGame
 	wine Z:/home/mikolaj/.local/share/wineprefixes/7zip/drive_c/Program\ Files/7-Zip/7z.exe a -ssc -sfx Z:/tmp/LambdaHack_x_windows-i386.exe Z:/tmp/LambdaHackTheGame
