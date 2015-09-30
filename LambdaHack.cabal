@@ -282,17 +282,10 @@ library
     build-depends:    hscurses >= 1.4.1 && < 2
     cpp-options:      -DUSE_CURSES
   } else {
-    if impl(ghc > 7.8) {
-      other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
-      build-depends:    gtk >= 0.12.1 && < 0.14,
-                        old-time >= 1.0.0.7 && < 2
-      pkgconfig-depends: gtk+-2.0
-    } else {
-      other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
-      build-depends:    gtk >= 0.12.1 && < 0.13,
-                        old-time >= 1.0.0.7 && < 2
-      pkgconfig-depends: gtk+-2.0
-    }
+    other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
+    build-depends:    gtk >= 0.12.1 && < 0.14,
+                      old-time >= 1.0.0.7 && < 2
+    pkgconfig-depends: gtk+-2.0
   } } } }
 
   if flag(expose_internal)
@@ -303,9 +296,7 @@ library
 
   if flag(release) {
     cpp-options:      -DEXPOSE_INTERNAL
--- 7.6.3 has broken -O2, apparently
-    if impl(ghc > 7.8)
-      ghc-options:      -O2 -fno-ignore-asserts
+    ghc-options:      -O2 -fno-ignore-asserts
   }
 
 executable LambdaHack

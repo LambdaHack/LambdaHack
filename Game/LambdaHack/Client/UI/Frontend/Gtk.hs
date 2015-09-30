@@ -139,11 +139,7 @@ startup sdebugCli@DebugModeCli{sfont} k = do
   sview `on` keyPressEvent $ do
     n <- eventKeyName
     mods <- eventModifier
-#if MIN_VERSION_gtk(0,13,0)
     let !key = K.keyTranslate $ T.unpack n
-#else
-    let !key = K.keyTranslate n
-#endif
         !modifier = let md = modifierTranslate mods
                     in if md == K.Shift then K.NoModifier else md
         !pointer = Nothing
