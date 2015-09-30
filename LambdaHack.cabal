@@ -266,21 +266,21 @@ library
   if flag(browser) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
     build-depends:    ghcjs-dom >= 0.2 && < 0.3
-    cpp-options:      -DBROWSER
+    cpp-options:      -DUSE_BROWSER
 --TODO:    with-compiler: ghcjs (so that --ghcjs on commandline not needed)
 --TODO:    js-sources: a drop-in replacement for zlib when there is one
   } else { if flag(webkit) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
     build-depends:    ghcjs-dom >= 0.2 && < 0.3
-    cpp-options:      -DWEBKIT
+    cpp-options:      -DUSE_WEBKIT
   } else { if flag(vty) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Vty
     build-depends:    vty >= 5 && < 6
-    cpp-options:      -DVTY
+    cpp-options:      -DUSE_VTY
   } else { if flag(curses) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Curses
     build-depends:    hscurses >= 1.4.1 && < 2
-    cpp-options:      -DCURSES
+    cpp-options:      -DUSE_CURSES
   } else {
     if impl(ghc > 7.8) {
       other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk

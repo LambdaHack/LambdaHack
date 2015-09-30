@@ -11,11 +11,11 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation (SingleFrame (..))
 import Game.LambdaHack.Common.ClientOptions
 
-#ifdef CURSES
+#ifdef USE_CURSES
 import qualified Game.LambdaHack.Client.UI.Frontend.Curses as Chosen
-#elif VTY
+#elif USE_VTY
 import qualified Game.LambdaHack.Client.UI.Frontend.Vty as Chosen
-#elif (BROWSER || WEBKIT)
+#elif (USE_BROWSER || USE_WEBKIT)
 import qualified Game.LambdaHack.Client.UI.Frontend.Dom as Chosen
 #else
 import qualified Game.LambdaHack.Client.UI.Frontend.Gtk as Chosen

@@ -52,9 +52,9 @@ data FrontendSession = FrontendSession
 
 -- | The name of the frontend.
 frontendName :: String
-#ifdef BROWSER
+#ifdef USE_BROWSER
 frontendName = "browser"
-#elif WEBKIT
+#elif USE_WEBKIT
 frontendName = "webkit"
 #else
 terrible error
