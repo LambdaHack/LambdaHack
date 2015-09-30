@@ -22,8 +22,8 @@ import qualified Game.LambdaHack.Common.Color as Color
 
 -- | No session data needs to be maintained by this frontend.
 data FrontendSession = FrontendSession
-  { sdebugCli :: !DebugModeCli  -- ^ client configuration
-  , sescMVar  :: !(Maybe (MVar ()))
+  { sescMVar  :: !(Maybe (MVar ()))
+  , sdebugCli :: !DebugModeCli  -- ^ client configuration
   }
 
 -- | The name of the frontend.
@@ -33,9 +33,10 @@ frontendName = "std"
 -- | Starts the main program loop using the frontend input and output.
 startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
 startup sdebugCli k = do
-  a <- async $ k FrontendSession{sescMVar = Nothing, ..}
-               `Ex.finally` (SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr)
-  wait a
+  aCont <-
+    async $ k FrontendSession{sescMVar = Nothing, ..}
+            `Ex.finally` (SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr)
+  wait aCont
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data

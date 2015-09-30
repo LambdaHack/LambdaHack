@@ -88,17 +88,15 @@ onQueue f FrontendSession{sframeState} = do
 frontendName :: String
 frontendName = "gtk"
 
--- | Starts GTK. The other threads have to be spawned
--- after gtk is initialized, because they call @postGUIAsync@,
--- and need @sview@ and @stags@. Because of Windows, GTK needs to be
--- on a bound thread, so we can't avoid the communication overhead
--- of bound threads, so there's no point spawning a separate thread for GTK.
-startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
-startup = runGtk
-
 -- | Sets up and starts the main GTK loop providing input and output.
-runGtk :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
-runGtk sdebugCli@DebugModeCli{sfont} cont = do
+--
+-- The other threads have to be spawned after gtk is initialized,
+-- because they call @postGUIAsync@, and need @sview@ and @stags@.
+-- Because of Windows, GTK needs to beo n a bound thread,
+-- so we can't avoid the communication overhead of bound threads,
+-- so there's no point spawning a separate thread for GTK.
+startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
+startup sdebugCli@DebugModeCli{sfont} k = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -128,16 +126,16 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   let sess = FrontendSession{sescMVar = Just escMVar, ..}
   -- Fork the game logic thread. When logic ends, game exits.
   -- TODO: is postGUISync needed here?
-  aCont <- async $ cont sess `Ex.finally` postGUISync mainQuit
+  aCont <- async $ k sess `Ex.finally` postGUISync mainQuit
   link aCont
   -- Fork the thread that periodically draws a frame from a queue, if any.
   -- TODO: mainQuit somehow never called.
   aPoll <- async $ pollFramesAct sess `Ex.finally` postGUISync mainQuit
   link aPoll
+  -- Fill the keyboard channel.
   let flushChanKey = do
         res <- STM.atomically $ STM.tryReadTQueue schanKey
         when (isJust res) flushChanKey
-  -- Fill the keyboard channel.
   sview `on` keyPressEvent $ do
     n <- eventKeyName
     mods <- eventModifier
@@ -164,7 +162,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   liftIO $ do
     textViewSetLeftMargin sview 3
     textViewSetRightMargin sview 3
-  -- Prepare font chooser dialog.
+  -- Take care of the mouse events.
   currentfont <- newIORef f
   Just display <- displayGetDefault
   -- TODO: change cursor depending on targeting mode, etc.; hard

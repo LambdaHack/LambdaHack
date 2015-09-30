@@ -67,6 +67,16 @@ source-repository head
   type:               git
   location:           git://github.com/LambdaHack/LambdaHack.git
 
+flag browser
+  description:        switch to the browser frontend
+  default:            False
+  manual:             True
+
+flag webkit
+  description:        switch to the webkit frontend
+  default:            False
+  manual:             True
+
 flag vty
   description:        switch to the vty frontend
   default:            False
@@ -253,14 +263,24 @@ library
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
   ghc-prof-options:   -fprof-auto-calls
 
-  if flag(curses) {
-    other-modules:    Game.LambdaHack.Client.UI.Frontend.Curses
-    build-depends:    hscurses >= 1.4.1 && < 2
-    cpp-options:      -DCURSES
+  if flag(browser) {
+    other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
+    build-depends:    ghcjs-dom >= 0.2 && < 0.3
+    cpp-options:      -DBROWSER
+--TODO:    with-compiler: ghcjs (so that --ghcjs on commandline not needed)
+--TODO:    js-sources: a drop-in replacement for zlib when there is one
+  } else { if flag(webkit) {
+    other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
+    build-depends:    ghcjs-dom >= 0.2 && < 0.3
+    cpp-options:      -DWEBKIT
   } else { if flag(vty) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Vty
     build-depends:    vty >= 5 && < 6
     cpp-options:      -DVTY
+  } else { if flag(curses) {
+    other-modules:    Game.LambdaHack.Client.UI.Frontend.Curses
+    build-depends:    hscurses >= 1.4.1 && < 2
+    cpp-options:      -DCURSES
   } else {
     if impl(ghc > 7.8) {
       other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
@@ -273,7 +293,7 @@ library
                         old-time >= 1.0.0.7 && < 2
       pkgconfig-depends: gtk+-2.0
     }
-  } }
+  } } } }
 
   if flag(expose_internal)
     cpp-options:      -DEXPOSE_INTERNAL

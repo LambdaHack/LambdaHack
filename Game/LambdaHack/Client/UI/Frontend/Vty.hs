@@ -44,8 +44,8 @@ startup sdebugCli k = do
   escMVar <- newEmptyMVar
   let sess = FrontendSession{sescMVar = Just escMVar, ..}
   void $ async $ storeKeys sess
-  a <- async $ k sess `Ex.finally` Vty.shutdown svty
-  wait a
+  aCont <- async $ k sess `Ex.finally` Vty.shutdown svty
+  wait aCont
 
 storeKeys :: FrontendSession -> IO ()
 storeKeys sess@FrontendSession{..} = do
@@ -79,8 +79,8 @@ fdisplay FrontendSession{svty} (Just rawSF) =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
       img = (foldr (<->) emptyImage
              . map (foldr (<|>) emptyImage
-                      . map (\ Color.AttrChar{..} ->
-                                char (setAttr acAttr) acChar)))
+                      . map (\Color.AttrChar{..} ->
+                               char (setAttr acAttr) acChar)))
             $ map decodeLine sfLevel
       pic = picForImage img
   in update svty pic
