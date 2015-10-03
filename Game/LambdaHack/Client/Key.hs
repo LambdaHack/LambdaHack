@@ -2,7 +2,7 @@
 -- | Frontend-independent keyboard input operations.
 module Game.LambdaHack.Client.Key
   ( Key(..), showKey, handleDir, dirAllKey
-  , moveBinding, mkKM, keyTranslate
+  , moveBinding, mkKM, keyTranslate, keyTranslateWeb
   , Modifier(..), KM(..), toKM, showKM
   , escKM, spaceKM, returnKM, pgupKM, pgdnKM, leftButtonKM, rightButtonKM
   ) where
@@ -293,3 +293,50 @@ keyTranslate "RightButtonPress" = RightButtonPress
 keyTranslate ['K','P','_',c] = KP c
 keyTranslate [c]             = Char c
 keyTranslate s               = Unknown $ T.pack s
+
+
+-- | Translate key from a Web API string description
+-- (https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key#Key_values)
+-- to our internal key type. To be used in web frontends.
+-- Currently only the "Key values on Linux (GTK)" table taken into account.
+-- TODO: KEY_LOCATION_NUMPAD
+keyTranslateWeb :: String -> Key
+keyTranslateWeb "Backspace"  = BackSpace
+keyTranslateWeb "Tab"        = Tab
+keyTranslateWeb "Clear"      = Begin
+keyTranslateWeb "Enter"      = Return
+keyTranslateWeb "Esc"        = Esc
+keyTranslateWeb "Escape"     = Esc
+keyTranslateWeb "Del"        = Delete
+keyTranslateWeb "Delete"     = Delete
+keyTranslateWeb "Home"       = Home
+keyTranslateWeb "Up"         = Up
+keyTranslateWeb "ArrowUp"    = Up
+keyTranslateWeb "Down"       = Down
+keyTranslateWeb "ArrowDown"  = Down
+keyTranslateWeb "Left"       = Left
+keyTranslateWeb "ArrowLeft"  = Left
+keyTranslateWeb "Right"      = Right
+keyTranslateWeb "ArrowRight" = Right
+keyTranslateWeb "PageUp"     = PgUp
+keyTranslateWeb "PageDown"   = PgDn
+keyTranslateWeb "End"        = End
+keyTranslateWeb "Insert"     = Insert
+keyTranslateWeb "space"      = Space
+keyTranslateWeb "Equals"     = Char '='
+keyTranslateWeb "Multiply"   = KP '*'
+keyTranslateWeb "Add"        = Char '+'
+keyTranslateWeb "Subtract"   = Char '-'
+keyTranslateWeb "Divide"     = KP '/'
+-- browser/webkit quirks
+keyTranslateWeb ['\ESC']     = Esc
+keyTranslateWeb [' ']        = Space
+keyTranslateWeb ['\n']       = Return
+keyTranslateWeb ['\r']       = Return
+keyTranslateWeb ['\t']       = Tab
+-- standard characters
+keyTranslateWeb [c]          = Char c
+keyTranslateWeb s            = Unknown $ T.pack s
+
+-- TODO: with Shift?
+-- keyTranslateWeb "ISO_Left_Tab"  = BackTab

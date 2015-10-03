@@ -15,16 +15,17 @@ import qualified Control.Concurrent.STM as STM
 import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
 import Control.Monad.Reader (ask, liftIO)
-import Data.Char (chr, ord)
+import Data.Bits ((.|.))
+import Data.Char (chr, isUpper, toLower)
 import Data.List (intercalate)
 import Data.Maybe
 import Data.String (IsString (..))
+import qualified Data.Text as T
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
 import GHCJS.DOM.CSSStyleDeclaration (setProperty)
-import GHCJS.DOM.Document (click, createElement, getBody, keyPress)
-import GHCJS.DOM.Element (setInnerHTML)
-import GHCJS.DOM.Element (getStyle)
+import GHCJS.DOM.Document (click, createElement, getBody, keyDown)
+import GHCJS.DOM.Element (getStyle, setInnerHTML)
 import GHCJS.DOM.EventM (mouseAltKey, mouseButton, mouseClientXY, mouseCtrlKey,
                          mouseMetaKey, mouseShiftKey, on)
 import GHCJS.DOM.HTMLElement (setInnerText)
@@ -34,6 +35,8 @@ import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
 import GHCJS.DOM.Node (appendChild)
+import GHCJS.DOM.UIEvent ()
+import GHCJS.DOM.UIEvent (getKeyCode, getWhich)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
@@ -100,28 +103,52 @@ font-weight: normal;
   escMVar <- newEmptyMVar
   let sess = FrontendSession{sescMVar = Just escMVar, ..}
   -- Fork the game logic thread. When logic ends, game exits.
-  aCont <- async $ k sess `Ex.finally` return ()  --- TODO: webkit cleanup?
+  aCont <- async $ k sess `Ex.finally` return ()  --- TODO: close webkit window?
   link aCont
   -- Fill the keyboard channel.
   let flushChanKey = do
         res <- STM.atomically $ STM.tryReadTQueue schanKey
         when (isJust res) flushChanKey
-  void $ doc `on` keyPress $ do
+  -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys and
+  -- @getKeyCode@ then returns wrong characters anyway.
+  -- Regardless, it doesn't work: https://bugs.webkit.org/show_bug.cgi?id=20027
+  void $ doc `on` keyDown $ do
     -- https://hackage.haskell.org/package/webkitgtk3-0.14.1.0/docs/Graphics-UI-Gtk-WebKit-DOM-KeyboardEvent.html
-    n <- ask >>= getKeyIdentifier
-    _keyLoc <- ask >>= getKeyLocation  -- TODO: KEY_LOCATION_NUMPAD
+    -- though: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyIdentifier
+    keyId <- ask >>= getKeyIdentifier
+    _keyLoc <- ask >>= getKeyLocation
     modCtrl <- ask >>= getCtrlKey
     modShift <- ask >>= getShiftKey
     modAlt <- ask >>= getAltKey
     modMeta <- ask >>= getMetaKey
     modAltG <- ask >>= getAltGraphKey
-    let !key = K.keyTranslate n
+    which <- ask >>= getWhich
+    keyCode <- ask >>= getKeyCode
+    let keyIdBogus = keyId `elem` ["", "Unidentified"]
+                     || take 2 keyId == "U+"
+        -- Handle browser quirks and webkit non-conformance to standards,
+        -- especially for ESC, etc. This is still not nearly enough.
+        -- Webkit DOM is just too old.
+        -- http://www.w3schools.com/jsref/event_key_keycode.asp
+        quirksN | not keyIdBogus = keyId
+                | otherwise = let c = chr $ which .|. keyCode
+                              in [if isUpper c && not modShift
+                                  then toLower c
+                                  else c]
+        !key = K.keyTranslateWeb quirksN
         !modifier = let md = modifierTranslate
                                modCtrl modShift (modAlt || modAltG) modMeta
                     in if md == K.Shift then K.NoModifier else md
         !pointer = Nothing
     liftIO $ do
-      unless (deadKey n) $ do
+      {-
+      putStrLn keyId
+      putStrLn quirksN
+      putStrLn $ T.unpack $ K.showKey key
+      putStrLn $ show which
+      putStrLn $ show keyCode
+      -}
+      unless (deadKey keyId) $ do
         -- If ESC, also mark it specially and reset the key channel.
         when (key == K.Esc) $ do
           void $ tryPutMVar escMVar ()
@@ -184,23 +211,18 @@ fpromptGetKey sess@FrontendSession{schanKey} frame = do
 
 -- | Tells a dead key.
 deadKey :: (Eq t, IsString t) => t -> Bool
-deadKey x = case x of
-  "Shift_L"          -> True
-  "Shift_R"          -> True
-  "Control_L"        -> True
-  "Control_R"        -> True
-  "Super_L"          -> True
-  "Super_R"          -> True
-  "Menu"             -> True
-  "Alt_L"            -> True
-  "Alt_R"            -> True
-  "ISO_Level2_Shift" -> True
-  "ISO_Level3_Shift" -> True
-  "ISO_Level2_Latch" -> True
-  "ISO_Level3_Latch" -> True
-  "Num_Lock"         -> True
-  "Caps_Lock"        -> True
-  _                  -> False
+deadKey x = case x of   -- ??? x == "Dead"
+  "Dead"        -> True
+  "Shift"       -> True
+  "Control"     -> True
+  "Meta"        -> True
+  "Menu"        -> True
+  "ContextMenu" -> True
+  "Alt"         -> True
+  "AltGraph"    -> True
+  "Num_Lock"    -> True
+  "CapsLock"    -> True
+  _             -> False
 
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: Bool -> Bool -> Bool -> Bool -> K.Modifier
@@ -209,20 +231,3 @@ modifierTranslate modCtrl modShift modAlt modMeta
   | modAlt || modMeta = K.Alt
   | modShift = K.Shift
   | otherwise = K.NoModifier
-
-keyTranslate :: Char -> K.KM
-keyTranslate e = (\(key, modifier) -> K.toKM modifier key) $
-  case e of
-    '\ESC' -> (K.Esc,     K.NoModifier)
-    '\n'   -> (K.Return,  K.NoModifier)
-    '\r'   -> (K.Return,  K.NoModifier)
-    ' '    -> (K.Space,   K.NoModifier)
-    '\t'   -> (K.Tab,     K.NoModifier)
-    c | ord '\^A' <= ord c && ord c <= ord '\^Z' ->
-        -- Alas, only lower-case letters.
-        (K.Char $ chr $ ord c - ord '\^A' + ord 'a', K.Control)
-        -- Movement keys are more important than leader picking,
-        -- so disabling the latter and interpreting the keypad numbers
-        -- as movement:
-      | c `elem` ['1'..'9'] -> (K.KP c,              K.NoModifier)
-      | otherwise           -> (K.Char c,            K.NoModifier)
