@@ -17,10 +17,8 @@ import Control.Monad
 import Control.Monad.Reader (ask, liftIO)
 import Data.Bits ((.|.))
 import Data.Char (chr, isUpper, toLower)
-import Data.List (intercalate)
 import Data.Maybe
 import Data.String (IsString (..))
-import qualified Data.Text as T
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
 import GHCJS.DOM.CSSStyleDeclaration (setProperty)
@@ -28,9 +26,14 @@ import GHCJS.DOM.Document (click, createElement, getBody, keyDown)
 import GHCJS.DOM.Element (getStyle, setInnerHTML)
 import GHCJS.DOM.EventM (mouseAltKey, mouseButton, mouseClientXY, mouseCtrlKey,
                          mouseMetaKey, mouseShiftKey, on)
+import GHCJS.DOM.HTMLCollection (item)
 import GHCJS.DOM.HTMLElement (setInnerText)
-import GHCJS.DOM.HTMLParagraphElement (HTMLParagraphElement,
-                                       castToHTMLParagraphElement)
+import GHCJS.DOM.HTMLTableCellElement (HTMLTableCellElement,
+                                       castToHTMLTableCellElement)
+import GHCJS.DOM.HTMLTableElement (HTMLTableElement, castToHTMLTableElement,
+                                   getRows)
+import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement,
+                                      castToHTMLTableRowElement, getCells)
 import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
@@ -42,12 +45,13 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { swebView   :: !WebView
-  , sparagraph :: !HTMLParagraphElement
+  , scharTable :: !HTMLTableElement
   , schanKey   :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
   , sescMVar   :: !(Maybe (MVar ()))
   , sdebugCli  :: !DebugModeCli  -- ^ client configuration
@@ -75,9 +79,15 @@ runWeb sdebugCli@DebugModeCli{sfont} k swebView = do
   Just body <- getBody doc
   -- Set up the HTML.
   setInnerHTML body (Just ("<h1>LambdaHack</h1>" :: String))
-  Just sparagraph <- fmap castToHTMLParagraphElement <$> createElement doc (Just ("p" :: String))
-  setInnerText sparagraph $ Just $ ("Please wait..." :: String)
-  Just style <- getStyle sparagraph
+  let lxsize = fst normalLevelBound + 1  -- TODO
+      lysize = snd normalLevelBound + 1
+      cell = "<td>."
+      row = "<tr>" ++ concat (replicate lxsize cell)
+      rows = concat (replicate lysize row)
+  Just scharTable <- fmap castToHTMLTableElement
+                     <$> createElement doc (Just ("table" :: String))
+  setInnerHTML scharTable (Just (rows :: String))
+  Just style <- getStyle scharTable
   let setProp :: String -> String -> IO ()
       setProp propRef propValue =
         setProperty style propRef (Just propValue) ("" :: String)
@@ -97,7 +107,7 @@ font-weight: normal;
   -- Modify default colours.
   setProp "background-color" (Color.colorToRGB Color.Black)
   setProp "color" (Color.colorToRGB Color.White)
-  void $ appendChild body (Just sparagraph)
+  void $ appendChild body (Just scharTable)
   -- Create the session record.
   schanKey <- STM.atomically STM.newTQueue
   escMVar <- newEmptyMVar
@@ -181,7 +191,7 @@ font-weight: normal;
             2 -> K.RightButtonPress
             _ -> K.LeftButtonPress
           !pointer = Just $! Point cx (cy - 1)
-      -- Store the mouse even coords in the keypress channel.
+      -- Store the mouse event coords in the keypress channel.
       STM.atomically $ STM.writeTQueue schanKey K.KM{..}
   return ()  -- nothing to clean up
 
@@ -193,12 +203,25 @@ fdisplay :: FrontendSession    -- ^ frontend session data
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
 fdisplay _ Nothing = return ()
-fdisplay FrontendSession{sparagraph} (Just rawSF) = postGUISync $ do
+fdisplay FrontendSession{scharTable} (Just rawSF) = postGUISync $ do
   let SingleFrame{sfLevel} = overlayOverlay rawSF
-      ls = map (map Color.acChar . decodeLine) sfLevel ++ []
-      s = intercalate ['\n'] ls
-  setInnerText sparagraph $ Just s
-  return ()
+      ls = map (map Color.acChar . decodeLine) sfLevel
+      lxsize = fromIntegral $ fst normalLevelBound + 1  -- TODO
+      lysize = fromIntegral $ snd normalLevelBound + 1
+  Just rows <- getRows scharTable
+  lmrow <- mapM (item rows) [0..lysize-1]
+  let lrow = map (castToHTMLTableRowElement . fromJust) lmrow
+      getC :: HTMLTableRowElement -> IO [HTMLTableCellElement]
+      getC row = do
+        Just cells <- getCells row
+        lmcell <- mapM (item cells) [0..lxsize-1]
+        return $! map (castToHTMLTableCellElement . fromJust) lmcell
+  lrc <- mapM getC lrow
+  let setChar :: (HTMLTableCellElement, Char) -> IO ()
+      setChar (cell, c) = do
+        let s = if c == ' ' then [chr 160] else [c]
+        setInnerText cell $ Just s
+  mapM_ setChar $ zip (concat lrc) (concat ls)
 
 fsyncFrames :: FrontendSession -> IO ()
 fsyncFrames _ = return ()

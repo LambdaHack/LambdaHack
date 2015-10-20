@@ -205,7 +205,7 @@ startup sdebugCli@DebugModeCli{sfont} k = do
               RightButton -> K.RightButtonPress
               _ -> K.LeftButtonPress
             !pointer = Just $! Point cx (cy - 1)
-        -- Store the mouse even coords in the keypress channel.
+        -- Store the mouse event coords in the keypress channel.
         STM.atomically $ STM.writeTQueue schanKey K.KM{..}
     return $! but == RightButton  -- not to disable selection
   -- Modify default colours.
