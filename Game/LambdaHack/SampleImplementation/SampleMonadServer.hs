@@ -31,6 +31,7 @@ import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Thread
 import Game.LambdaHack.Server.CommonServer
+import Game.LambdaHack.Server.FileServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolServer
 import Game.LambdaHack.Server.State
@@ -108,7 +109,7 @@ executorSer m = do
                    , serDict = EM.empty
                    , serToSave
                    }
-      exeWithSaves = Save.wrapInSaves saveFile exe
+      exeWithSaves = Save.wrapInSaves tryCreateDir encodeEOF saveFile exe
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.

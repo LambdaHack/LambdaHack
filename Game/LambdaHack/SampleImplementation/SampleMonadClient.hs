@@ -24,6 +24,7 @@ import System.FilePath
 import Game.LambdaHack.Atomic.HandleAtomicWrite
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
+import Game.LambdaHack.Client.FileClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
@@ -103,4 +104,4 @@ executorCli m cliSession cliState cliClient cliDict =
         <.> saveName (sside cli2) (sisAI cli2)
       exe cliToSave =
         evalStateT (runCliImplementation m) CliState{..}
-  in Save.wrapInSaves saveFile exe
+  in Save.wrapInSaves tryCreateDir encodeEOF saveFile exe

@@ -8,16 +8,21 @@ import Control.Concurrent.Async
 import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
 import Data.Binary
+import qualified Data.Char as Char
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import System.Directory
+import System.Environment
 import System.FilePath
 import System.IO
 import qualified System.Random as R
 
-import Game.LambdaHack.Common.File
 import Game.LambdaHack.Common.Msg
+
+-- TODO: refactor all this somehow, preferably restricting the use
+-- of IO and/or making these operations a part of the Client
+-- and Server monads
 
 type ChanSave a = MVar (Maybe a)
 
@@ -36,8 +41,9 @@ saveToChan toSave s = do
 -- All this is not needed if we bkp save each turn, but that's costly.
 
 -- | Repeatedly save a simple serialized version of the current state.
-loopSave :: Binary a => (a -> FilePath) -> ChanSave a -> IO ()
-loopSave saveFile toSave =
+loopSave :: Binary a => (FilePath -> IO ()) -> (FilePath -> a -> IO ())
+         -> (a -> FilePath) -> ChanSave a -> IO ()
+loopSave tryCreateDir encodeEOF saveFile toSave =
   loop
  where
   loop = do
@@ -53,13 +59,14 @@ loopSave saveFile toSave =
         loop
       Nothing -> return ()  -- exit
 
-wrapInSaves :: Binary a => (a -> FilePath) -> (ChanSave a -> IO ()) -> IO ()
-wrapInSaves saveFile exe = do
+wrapInSaves :: Binary a => (FilePath -> IO ()) -> (FilePath -> a -> IO ())
+            -> (a -> FilePath) -> (ChanSave a -> IO ()) -> IO ()
+wrapInSaves tryCreateDir encodeEOF saveFile exe = do
   -- We don't merge this with the other calls to waitForChildren,
   -- because, e.g., for server, we don't want to wait for clients to exit,
   -- if the server crashes (but we wait for the save to finish).
   toSave <- newEmptyMVar
-  a <- async $ loopSave saveFile toSave
+  a <- async $ loopSave tryCreateDir encodeEOF saveFile toSave
   link a
   let fin = do
         -- Wait until the last save (if any) starts
@@ -80,9 +87,15 @@ wrapInSaves saveFile exe = do
 -- | Restore a saved game, if it exists. Initialize directory structure
 -- and copy over data files, if needed.
 restoreGame :: Binary a
-            => String -> [(FilePath, FilePath)] -> (FilePath -> IO FilePath)
+            => (FilePath -> IO ())
+            -> (FilePath
+                -> (FilePath -> IO FilePath)
+                -> [(FilePath, FilePath)]
+                -> IO ())
+            -> (FilePath -> IO a)
+            -> String -> [(FilePath, FilePath)] -> (FilePath -> IO FilePath)
             -> IO (Maybe a)
-restoreGame name copies pathsDataFile = do
+restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF name copies pathsDataFile = do
   -- Create user data directory and copy files, if not already there.
   dataDir <- appDataDir
   tryCreateDir dataDir
@@ -113,3 +126,12 @@ delayPrint t = do
   threadDelay delay  -- try not to interleave saves with other clients
   T.hPutStrLn stderr t
   hFlush stderr
+
+-- TODO: deduplicate
+-- | Personal data directory for the game. Depends on the OS and the game,
+-- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.
+appDataDir :: IO FilePath
+appDataDir = do
+  progName <- getProgName
+  let name = takeWhile Char.isAlphaNum progName
+  getAppUserDataDirectory name

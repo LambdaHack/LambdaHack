@@ -1,5 +1,5 @@
 -- | Saving/loading with serialization and compression.
-module Game.LambdaHack.Common.File
+module Game.LambdaHack.Common.HSFile
   ( encodeEOF, strictDecodeEOF, tryCreateDir, tryCopyDataFiles, appDataDir
   ) where
 

@@ -121,6 +121,7 @@ library
                       Game.LambdaHack.Client.Bfs,
                       Game.LambdaHack.Client.BfsClient,
                       Game.LambdaHack.Client.CommonClient,
+                      Game.LambdaHack.Client.FileClient,
                       Game.LambdaHack.Client.HandleAtomicClient,
                       Game.LambdaHack.Client.HandleResponseClient,
                       Game.LambdaHack.Client.ItemSlot,
@@ -158,7 +159,6 @@ library
                       Game.LambdaHack.Common.Dice,
                       Game.LambdaHack.Common.EffectDescription,
                       Game.LambdaHack.Common.Faction,
-                      Game.LambdaHack.Common.File,
                       Game.LambdaHack.Common.Flavour,
                       Game.LambdaHack.Common.Frequency,
                       Game.LambdaHack.Common.HighScore,
@@ -202,6 +202,7 @@ library
                       Game.LambdaHack.Server.DungeonGen.Cave,
                       Game.LambdaHack.Server.DungeonGen.Place,
                       Game.LambdaHack.Server.EndServer,
+                      Game.LambdaHack.Server.FileServer,
                       Game.LambdaHack.Server.Fov,
                       Game.LambdaHack.Server.Fov.Common,
                       Game.LambdaHack.Server.Fov.Digital,
@@ -245,8 +246,7 @@ library
                       text       >= 0.11.2.3 && < 2,
                       transformers >= 0.3   && < 1,
                       unordered-containers >= 0.2.3 && < 1,
-                      vector     >= 0.10    && < 1,
-                      zlib       >= 0.5.3.1 && < 1
+                      vector     >= 0.10    && < 1
 
   default-language:   Haskell2010
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
@@ -267,9 +267,9 @@ library
   if flag(browser) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
     build-depends:    ghcjs-dom >= 0.2 && < 0.3
-    cpp-options:      -DUSE_BROWSER
+    cpp-options:      -DUSE_BROWSER -DUSE_JSFILE_CLIENT -DUSE_JSFILE_SERVER
 --TODO:    with-compiler: ghcjs (so that --ghcjs on commandline not needed)
---TODO:    js-sources: a drop-in replacement for zlib when there is one
+--         compiler: ghcjs    ???
   } else { if flag(webkit) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
     build-depends:    ghcjs-dom >= 0.2 && < 0.3
@@ -288,6 +288,14 @@ library
                       old-time >= 1.0.0.7 && < 2
     pkgconfig-depends: gtk+-2.0
   } } } }
+
+  if flag(browser) {
+    other-modules:    Game.LambdaHack.Common.JSFile
+--TODO:    js-sources: a drop-in replacement for zlib when there is one
+  } else {
+    other-modules:    Game.LambdaHack.Common.HSFile
+    build-depends:    zlib >= 0.5.3.1 && < 1
+  }
 
   if flag(expose_internal)
     cpp-options:      -DEXPOSE_INTERNAL
@@ -347,8 +355,7 @@ executable LambdaHack
                       text       >= 0.11.2.3 && < 2,
                       transformers >= 0.3   && < 1,
                       unordered-containers >= 0.2.3 && < 1,
-                      vector     >= 0.10    && < 1,
-                      zlib       >= 0.5.3.1 && < 1
+                      vector     >= 0.10    && < 1
 
   default-language:   Haskell2010
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
@@ -358,6 +365,14 @@ executable LambdaHack
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
   ghc-options:        -threaded "-with-rtsopts=-C0.005" -rtsopts
+
+  if flag(browser) {
+--TODO:    js-sources: a drop-in replacement for zlib when there is one
+    default-language:   Haskell2010
+-- dummy
+  } else {
+    build-depends:    zlib >= 0.5.3.1 && < 1
+  }
 
   if flag(release)
     ghc-options:      -O2 -fno-ignore-asserts "-with-rtsopts=-N1"
@@ -397,8 +412,7 @@ test-suite test
                       text       >= 0.11.2.3 && < 2,
                       transformers >= 0.3   && < 1,
                       unordered-containers >= 0.2.3 && < 1,
-                      vector     >= 0.10    && < 1,
-                      zlib       >= 0.5.3.1 && < 1
+                      vector     >= 0.10    && < 1
 
   default-language:   Haskell2010
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
@@ -408,6 +422,14 @@ test-suite test
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
   ghc-options:        -threaded "-with-rtsopts=-C0.005" -rtsopts
+
+  if flag(browser) {
+--TODO:    js-sources: a drop-in replacement for zlib when there is one
+    default-language:   Haskell2010
+-- dummy
+  } else {
+    build-depends:    zlib >= 0.5.3.1 && < 1
+  }
 
   if flag(release)
     ghc-options:      -O2 -fno-ignore-asserts "-with-rtsopts=-N1"

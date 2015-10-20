@@ -16,10 +16,10 @@ import Data.Text (Text)
 import System.Directory
 import System.FilePath
 
+import Game.LambdaHack.Client.FileClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -73,7 +73,8 @@ restoreGame = do
     let copies = [( "GameDefinition" </> cfgUIName <.> "default"
                   , cfgUIName <.> "ini" )]
         name = fromMaybe "save" prefix <.> saveName side isAI
-    liftIO $ Save.restoreGame name copies pathsDataFile
+    liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF
+                              name copies pathsDataFile
 
 -- | Assuming the client runs on the same machine and for the same
 -- user as the server, move the server savegame out of the way.

@@ -38,7 +38,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
@@ -52,6 +51,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Server.FileServer
 import Game.LambdaHack.Server.State
 
 class MonadStateRead m => MonadServer m where
@@ -241,7 +241,7 @@ tryRestore Kind.COps{corule} sdebugSer = do
     let copies = [( "GameDefinition" </> scoresFile
                   , scoresFile )]
         name = fromMaybe "save" prefix <.> saveName
-    liftIO $ Save.restoreGame name copies pathsDataFile
+    liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF name copies pathsDataFile
 
 -- | Compute and insert auxiliary optimized components into game content,
 -- to be used in time-critical sections of the code.
