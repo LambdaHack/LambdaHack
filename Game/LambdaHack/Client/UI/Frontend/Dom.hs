@@ -31,7 +31,7 @@ import GHCJS.DOM.HTMLElement (setInnerText)
 import GHCJS.DOM.HTMLTableCellElement (HTMLTableCellElement,
                                        castToHTMLTableCellElement)
 import GHCJS.DOM.HTMLTableElement (HTMLTableElement, castToHTMLTableElement,
-                                   getRows)
+                                   getRows, setCellPadding, setCellSpacing)
 import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement,
                                       castToHTMLTableRowElement, getCells)
 import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
@@ -107,6 +107,17 @@ font-weight: normal;
   -- Modify default colours.
   setProp "background-color" (Color.colorToRGB Color.Black)
   setProp "color" (Color.colorToRGB Color.White)
+  -- Get rid of table spacing. Tons of spurious hacks just in case.
+  setCellPadding scharTable ("0" :: String)
+  setCellSpacing scharTable ("0" :: String)
+  setProp "border-collapse" "collapse"
+  setProp "border-spacing" "0"  -- supposedly no effect with 'collapse'
+  setProp "border-width" "0"
+  setProp "margin" "0 0 0 0"
+  setProp "padding" "0 0 0 0"
+  -- TODO: for icons, in <td>
+  -- setProp "display" "block"
+  -- setProp "vertical-align" "bottom"
   void $ appendChild body (Just scharTable)
   -- Create the session record.
   schanKey <- STM.atomically STM.newTQueue
