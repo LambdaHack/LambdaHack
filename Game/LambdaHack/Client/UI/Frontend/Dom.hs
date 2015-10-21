@@ -80,7 +80,7 @@ runWeb sdebugCli@DebugModeCli{sfont} k swebView = do
   -- Set up the HTML.
   setInnerHTML body (Just ("<h1>LambdaHack</h1>" :: String))
   let lxsize = fst normalLevelBound + 1  -- TODO
-      lysize = snd normalLevelBound + 1
+      lysize = snd normalLevelBound + 4
       cell = "<td>."
       row = "<tr>" ++ concat (replicate lxsize cell)
       rows = concat (replicate lysize row)
@@ -216,9 +216,9 @@ fdisplay :: FrontendSession    -- ^ frontend session data
 fdisplay _ Nothing = return ()
 fdisplay FrontendSession{scharTable} (Just rawSF) = postGUISync $ do
   let SingleFrame{sfLevel} = overlayOverlay rawSF
-      ls = map (map Color.acChar . decodeLine) sfLevel
+      lattrc = map decodeLine sfLevel
       lxsize = fromIntegral $ fst normalLevelBound + 1  -- TODO
-      lysize = fromIntegral $ snd normalLevelBound + 1
+      lysize = fromIntegral $ snd normalLevelBound + 4
   Just rows <- getRows scharTable
   lmrow <- mapM (item rows) [0..lysize-1]
   let lrow = map (castToHTMLTableRowElement . fromJust) lmrow
@@ -228,11 +228,17 @@ fdisplay FrontendSession{scharTable} (Just rawSF) = postGUISync $ do
         lmcell <- mapM (item cells) [0..lxsize-1]
         return $! map (castToHTMLTableCellElement . fromJust) lmcell
   lrc <- mapM getC lrow
-  let setChar :: (HTMLTableCellElement, Char) -> IO ()
-      setChar (cell, c) = do
-        let s = if c == ' ' then [chr 160] else [c]
+  let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
+      setChar (cell, Color.AttrChar{..}) = do
+        let s = if acChar == ' ' then [chr 160] else [acChar]
         setInnerText cell $ Just s
-  mapM_ setChar $ zip (concat lrc) (concat ls)
+        Just style <- getStyle cell
+        let setProp :: String -> String -> IO ()
+            setProp propRef propValue =
+              setProperty style propRef (Just propValue) ("" :: String)
+        setProp "background-color" (Color.colorToRGB $ Color.bg acAttr)
+        setProp "color" (Color.colorToRGB $ Color.fg acAttr)
+  mapM_ setChar $ zip (concat lrc) (concat lattrc)
 
 fsyncFrames :: FrontendSession -> IO ()
 fsyncFrames _ = return ()
