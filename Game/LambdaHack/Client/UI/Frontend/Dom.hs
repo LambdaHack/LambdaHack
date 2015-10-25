@@ -22,10 +22,11 @@ import Data.String (IsString (..))
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
 import GHCJS.DOM.CSSStyleDeclaration (setProperty)
-import GHCJS.DOM.Document (click, createElement, getBody, keyDown)
+import GHCJS.DOM.Document (createElement, getBody, keyDown)
 import GHCJS.DOM.Element (getStyle, setInnerHTML)
-import GHCJS.DOM.EventM (mouseAltKey, mouseButton, mouseClientXY, mouseCtrlKey,
-                         mouseMetaKey, mouseShiftKey, on)
+import GHCJS.DOM.EventM (mouseAltKey, mouseButton, mouseCtrlKey, mouseMetaKey,
+                         mouseShiftKey, on)
+import GHCJS.DOM.EventTargetClosures (EventName (EventName))
 import GHCJS.DOM.HTMLCollection (item)
 import GHCJS.DOM.HTMLElement (setInnerText)
 import GHCJS.DOM.HTMLTableCellElement (HTMLTableCellElement,
@@ -38,7 +39,7 @@ import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
 import GHCJS.DOM.Node (appendChild)
-import GHCJS.DOM.UIEvent ()
+import GHCJS.DOM.Types (MouseEvent)
 import GHCJS.DOM.UIEvent (getKeyCode, getWhich)
 
 import qualified Game.LambdaHack.Client.Key as K
@@ -126,10 +127,7 @@ font-weight: normal;
   -- Fork the game logic thread. When logic ends, game exits.
   aCont <- async $ k sess `Ex.finally` return ()  --- TODO: close webkit window?
   link aCont
-  -- Fill the keyboard channel.
-  let flushChanKey = do
-        res <- STM.atomically $ STM.tryReadTQueue schanKey
-        when (isJust res) flushChanKey
+  -- Handle keypresses.
   -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys and
   -- @getKeyCode@ then returns wrong characters anyway.
   -- Regardless, it doesn't work: https://bugs.webkit.org/show_bug.cgi?id=20027
@@ -173,15 +171,33 @@ font-weight: normal;
         -- If ESC, also mark it specially and reset the key channel.
         when (key == K.Esc) $ do
           void $ tryPutMVar escMVar ()
-          flushChanKey
+          resetChanKey schanKey
         -- Store the key in the channel.
         STM.atomically $ STM.writeTQueue schanKey K.KM{..}
-  -- Take care of the mouse events.
-  void $ doc `on` click $ do
+  -- Handle mouseclicks, per-cell.
+  cells <- flattenTable scharTable
+  let xs = [0..lxsize - 1]
+      ys = [0..lysize - 1]
+      xys = concat $ map (\y -> zip xs (repeat y)) ys
+  mapM_ (handleMouse schanKey) $ zip cells xys
+  return ()  -- nothing to clean up
+
+-- | Empty the keyboard channel.
+resetChanKey :: STM.TQueue K.KM -> IO ()
+resetChanKey schanKey = do
+  res <- STM.atomically $ STM.tryReadTQueue schanKey
+  when (isJust res) $ resetChanKey schanKey
+
+click :: EventName HTMLTableCellElement MouseEvent
+click = EventName "click"
+
+-- | Let each table cell handle mouse events inside.
+handleMouse :: STM.TQueue K.KM -> (HTMLTableCellElement, (Int, Int)) -> IO ()
+handleMouse schanKey (cell, (cx, cy)) = do
+  void $ cell `on` click $ do
     -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
-    liftIO flushChanKey
+    liftIO $ resetChanKey schanKey
     but <- mouseButton
-    (wx, wy) <- mouseClientXY
     modCtrl <- mouseCtrlKey
     modShift <- mouseShiftKey
     modAlt <- mouseAltKey
@@ -195,8 +211,7 @@ font-weight: normal;
       -- let setCursor (drawWin, _, _) =
       --       drawWindowSetCursor drawWin (Just cursor)
       -- maybe (return ()) setCursor mdrawWin
-      let (cx, cy) = windowToTextCoords (wx, wy)
-          !key = case but of
+      let !key = case but of
             0 -> K.LeftButtonPress
             1 -> K.MiddleButtonPress
             2 -> K.RightButtonPress
@@ -204,22 +219,14 @@ font-weight: normal;
           !pointer = Just $! Point cx (cy - 1)
       -- Store the mouse event coords in the keypress channel.
       STM.atomically $ STM.writeTQueue schanKey K.KM{..}
-  return ()  -- nothing to clean up
 
-windowToTextCoords :: (Int, Int) -> (Int, Int)
-windowToTextCoords (x, y) = (x, y)  -- TODO
-
--- | Output to the screen via the frontend.
-fdisplay :: FrontendSession    -- ^ frontend session data
-         -> Maybe SingleFrame  -- ^ the screen frame to draw
-         -> IO ()
-fdisplay _ Nothing = return ()
-fdisplay FrontendSession{scharTable} (Just rawSF) = postGUISync $ do
-  let SingleFrame{sfLevel} = overlayOverlay rawSF
-      lattrc = map decodeLine sfLevel
-      lxsize = fromIntegral $ fst normalLevelBound + 1  -- TODO
+-- TODO: if no resize, do once and put into session; with resize, more complex
+-- | Get the list of all cells of an HTML table.
+flattenTable :: HTMLTableElement -> IO [HTMLTableCellElement]
+flattenTable table = do
+  let lxsize = fromIntegral $ fst normalLevelBound + 1  -- TODO
       lysize = fromIntegral $ snd normalLevelBound + 4
-  Just rows <- getRows scharTable
+  Just rows <- getRows table
   lmrow <- mapM (item rows) [0..lysize-1]
   let lrow = map (castToHTMLTableRowElement . fromJust) lmrow
       getC :: HTMLTableRowElement -> IO [HTMLTableCellElement]
@@ -228,6 +235,14 @@ fdisplay FrontendSession{scharTable} (Just rawSF) = postGUISync $ do
         lmcell <- mapM (item cells) [0..lxsize-1]
         return $! map (castToHTMLTableCellElement . fromJust) lmcell
   lrc <- mapM getC lrow
+  return $! concat lrc
+
+-- | Output to the screen via the frontend.
+fdisplay :: FrontendSession    -- ^ frontend session data
+         -> Maybe SingleFrame  -- ^ the screen frame to draw
+         -> IO ()
+fdisplay _ Nothing = return ()
+fdisplay FrontendSession{scharTable} (Just rawSF) = postGUISync $ do
   let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
       setChar (cell, Color.AttrChar{..}) = do
         let s = if acChar == ' ' then [chr 160] else [acChar]
@@ -238,7 +253,10 @@ fdisplay FrontendSession{scharTable} (Just rawSF) = postGUISync $ do
               setProperty style propRef (Just propValue) ("" :: String)
         setProp "background-color" (Color.colorToRGB $ Color.bg acAttr)
         setProp "color" (Color.colorToRGB $ Color.fg acAttr)
-  mapM_ setChar $ zip (concat lrc) (concat lattrc)
+  cells <- flattenTable scharTable
+  let SingleFrame{sfLevel} = overlayOverlay rawSF
+      acs = concat $ map decodeLine sfLevel
+  mapM_ setChar $ zip cells acs
 
 fsyncFrames :: FrontendSession -> IO ()
 fsyncFrames _ = return ()

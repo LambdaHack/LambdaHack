@@ -132,10 +132,10 @@ startup sdebugCli@DebugModeCli{sfont} k = do
   -- TODO: mainQuit somehow never called.
   aPoll <- async $ pollFramesAct sess `Ex.finally` postGUISync mainQuit
   link aPoll
-  -- Fill the keyboard channel.
-  let flushChanKey = do
+  -- Empty the keyboard channel.
+  let resetChanKey = do
         res <- STM.atomically $ STM.tryReadTQueue schanKey
-        when (isJust res) flushChanKey
+        when (isJust res) resetChanKey
   sview `on` keyPressEvent $ do
     n <- eventKeyName
     mods <- eventModifier
@@ -148,7 +148,7 @@ startup sdebugCli@DebugModeCli{sfont} k = do
         -- If ESC, also mark it specially and reset the key channel.
         when (key == K.Esc) $ do
           void $ tryPutMVar escMVar ()
-          flushChanKey
+          resetChanKey
         -- Store the key in the channel.
         STM.atomically $ STM.writeTQueue schanKey K.KM{..}
       return True
@@ -164,7 +164,7 @@ startup sdebugCli@DebugModeCli{sfont} k = do
   -- TODO: change cursor depending on targeting mode, etc.; hard
   cursor <- cursorNewForDisplay display Tcross  -- Target Crosshair Arrow
   sview `on` buttonPressEvent $ do
-    liftIO flushChanKey
+    liftIO resetChanKey
     but <- eventButton
     (wx, wy) <- eventCoordinates
     mods <- eventModifier
