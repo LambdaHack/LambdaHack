@@ -39,7 +39,7 @@ import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
 import GHCJS.DOM.Node (appendChild)
-import GHCJS.DOM.Types (MouseEvent)
+import GHCJS.DOM.Types (CSSStyleDeclaration, MouseEvent)
 import GHCJS.DOM.UIEvent (getKeyCode, getWhich)
 
 import qualified Game.LambdaHack.Client.Key as K
@@ -52,7 +52,8 @@ import Game.LambdaHack.Common.Point
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { swebView   :: !WebView
-  , scharTable :: ![HTMLTableCellElement]
+  , scharStyle :: !CSSStyleDeclaration
+  , scharCells :: ![HTMLTableCellElement]
   , schanKey   :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
   , sescMVar   :: !(Maybe (MVar ()))
   , sdebugCli  :: !DebugModeCli  -- ^ client configuration
@@ -88,10 +89,7 @@ runWeb sdebugCli@DebugModeCli{sfont} k swebView = do
   Just tableElem <- fmap castToHTMLTableElement
                      <$> createElement doc (Just ("table" :: String))
   setInnerHTML tableElem (Just (rows :: String))
-  Just style <- getStyle tableElem
-  let setProp :: String -> String -> IO ()
-      setProp propRef propValue =
-        setProperty style propRef (Just propValue) ("" :: String)
+  Just scharStyle <- getStyle tableElem
   -- Set the font specified in config, if any.
   let font = "Monospace normal normal normal normal 14" -- fromMaybe "" sfont
   -- setProp "font" font
@@ -104,21 +102,21 @@ font-variant: normal;
 font-variant-ligatures: normal;
 font-weight: normal;
       -}
-  setProp "font-family" "Monospace"
+  setProp scharStyle "font-family" "Monospace"
   -- Get rid of table spacing. Tons of spurious hacks just in case.
   setCellPadding tableElem ("0" :: String)
   setCellSpacing tableElem ("0" :: String)
-  setProp "border-collapse" "collapse"
-  setProp "border-spacing" "0"  -- supposedly no effect with 'collapse'
-  setProp "border-width" "0"
-  setProp "margin" "0 0 0 0"
-  setProp "padding" "0 0 0 0"
+  setProp scharStyle "border-collapse" "collapse"
+  setProp scharStyle "border-spacing" "0"
+    -- supposedly no effect with 'collapse'
+  setProp scharStyle "border-width" "0"
+  setProp scharStyle "margin" "0 0 0 0"
+  setProp scharStyle "padding" "0 0 0 0"
   -- TODO: for icons, in <td>
   -- setProp "display" "block"
   -- setProp "vertical-align" "bottom"
-  void $ appendChild body (Just tableElem)
   -- Create the session record.
-  scharTable <- flattenTable tableElem
+  scharCells <- flattenTable tableElem
   schanKey <- STM.atomically STM.newTQueue
   escMVar <- newEmptyMVar
   let sess = FrontendSession{sescMVar = Just escMVar, ..}
@@ -176,8 +174,14 @@ font-weight: normal;
   let xs = [0..lxsize - 1]
       ys = [0..lysize - 1]
       xys = concat $ map (\y -> zip xs (repeat y)) ys
-  mapM_ (handleMouse schanKey) $ zip scharTable xys
+  mapM_ (handleMouse schanKey) $ zip scharCells xys
+  -- Display at the end to avoid redraw
+  void $ appendChild body (Just tableElem)
   return ()  -- nothing to clean up
+
+setProp :: CSSStyleDeclaration -> String -> String -> IO ()
+setProp style propRef propValue =
+  setProperty style propRef (Just propValue) ("" :: String)
 
 -- | Empty the keyboard channel.
 resetChanKey :: STM.TQueue K.KM -> IO ()
@@ -238,20 +242,19 @@ fdisplay :: FrontendSession    -- ^ frontend session data
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
 fdisplay _ Nothing = return ()
-fdisplay FrontendSession{scharTable} (Just rawSF) = postGUISync $ do
+fdisplay FrontendSession{scharStyle, scharCells} (Just rawSF) = postGUISync $ do
   let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
       setChar (cell, Color.AttrChar{..}) = do
         let s = if acChar == ' ' then [chr 160] else [acChar]
         setInnerText cell $ Just s
         Just style <- getStyle cell
-        let setProp :: String -> String -> IO ()
-            setProp propRef propValue =
-              setProperty style propRef (Just propValue) ("" :: String)
-        setProp "background-color" (Color.colorToRGB $ Color.bg acAttr)
-        setProp "color" (Color.colorToRGB $ Color.fg acAttr)
+        setProp style "background-color" (Color.colorToRGB $ Color.bg acAttr)
+        setProp style "color" (Color.colorToRGB $ Color.fg acAttr)
   let SingleFrame{sfLevel} = overlayOverlay rawSF
       acs = concat $ map decodeLine sfLevel
-  mapM_ setChar $ zip scharTable acs
+  setProp scharStyle "visibility" "hidden"
+  mapM_ setChar $ zip scharCells acs
+  setProp scharStyle "visibility" "visible"
 
 fsyncFrames :: FrontendSession -> IO ()
 fsyncFrames _ = return ()
