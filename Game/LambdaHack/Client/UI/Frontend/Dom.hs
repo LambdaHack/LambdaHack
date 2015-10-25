@@ -52,7 +52,7 @@ import Game.LambdaHack.Common.Point
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { swebView   :: !WebView
-  , scharTable :: !HTMLTableElement
+  , scharTable :: ![HTMLTableCellElement]
   , schanKey   :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
   , sescMVar   :: !(Maybe (MVar ()))
   , sdebugCli  :: !DebugModeCli  -- ^ client configuration
@@ -85,10 +85,10 @@ runWeb sdebugCli@DebugModeCli{sfont} k swebView = do
       cell = "<td>."
       row = "<tr>" ++ concat (replicate lxsize cell)
       rows = concat (replicate lysize row)
-  Just scharTable <- fmap castToHTMLTableElement
+  Just tableElem <- fmap castToHTMLTableElement
                      <$> createElement doc (Just ("table" :: String))
-  setInnerHTML scharTable (Just (rows :: String))
-  Just style <- getStyle scharTable
+  setInnerHTML tableElem (Just (rows :: String))
+  Just style <- getStyle tableElem
   let setProp :: String -> String -> IO ()
       setProp propRef propValue =
         setProperty style propRef (Just propValue) ("" :: String)
@@ -105,12 +105,9 @@ font-variant-ligatures: normal;
 font-weight: normal;
       -}
   setProp "font-family" "Monospace"
-  -- Modify default colours.
-  setProp "background-color" (Color.colorToRGB Color.Black)
-  setProp "color" (Color.colorToRGB Color.White)
   -- Get rid of table spacing. Tons of spurious hacks just in case.
-  setCellPadding scharTable ("0" :: String)
-  setCellSpacing scharTable ("0" :: String)
+  setCellPadding tableElem ("0" :: String)
+  setCellSpacing tableElem ("0" :: String)
   setProp "border-collapse" "collapse"
   setProp "border-spacing" "0"  -- supposedly no effect with 'collapse'
   setProp "border-width" "0"
@@ -119,8 +116,9 @@ font-weight: normal;
   -- TODO: for icons, in <td>
   -- setProp "display" "block"
   -- setProp "vertical-align" "bottom"
-  void $ appendChild body (Just scharTable)
+  void $ appendChild body (Just tableElem)
   -- Create the session record.
+  scharTable <- flattenTable tableElem
   schanKey <- STM.atomically STM.newTQueue
   escMVar <- newEmptyMVar
   let sess = FrontendSession{sescMVar = Just escMVar, ..}
@@ -175,11 +173,10 @@ font-weight: normal;
         -- Store the key in the channel.
         STM.atomically $ STM.writeTQueue schanKey K.KM{..}
   -- Handle mouseclicks, per-cell.
-  cells <- flattenTable scharTable
   let xs = [0..lxsize - 1]
       ys = [0..lysize - 1]
       xys = concat $ map (\y -> zip xs (repeat y)) ys
-  mapM_ (handleMouse schanKey) $ zip cells xys
+  mapM_ (handleMouse schanKey) $ zip scharTable xys
   return ()  -- nothing to clean up
 
 -- | Empty the keyboard channel.
@@ -220,7 +217,6 @@ handleMouse schanKey (cell, (cx, cy)) = do
       -- Store the mouse event coords in the keypress channel.
       STM.atomically $ STM.writeTQueue schanKey K.KM{..}
 
--- TODO: if no resize, do once and put into session; with resize, more complex
 -- | Get the list of all cells of an HTML table.
 flattenTable :: HTMLTableElement -> IO [HTMLTableCellElement]
 flattenTable table = do
@@ -253,10 +249,9 @@ fdisplay FrontendSession{scharTable} (Just rawSF) = postGUISync $ do
               setProperty style propRef (Just propValue) ("" :: String)
         setProp "background-color" (Color.colorToRGB $ Color.bg acAttr)
         setProp "color" (Color.colorToRGB $ Color.fg acAttr)
-  cells <- flattenTable scharTable
   let SingleFrame{sfLevel} = overlayOverlay rawSF
       acs = concat $ map decodeLine sfLevel
-  mapM_ setChar $ zip cells acs
+  mapM_ setChar $ zip scharTable acs
 
 fsyncFrames :: FrontendSession -> IO ()
 fsyncFrames _ = return ()
