@@ -60,6 +60,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 
@@ -279,8 +280,9 @@ mainMenuHuman = do
   Kind.COps{corule} <- getsState scops
   escAI <- getsClient sescAI
   Binding{brevMap, bcmdList} <- askBinding
---  scurDiff <- getsClient scurDiff
---  snxtDiff <- getsClient snxtDiff
+  gameMode <- getGameMode
+  scurDiff <- getsClient scurDiff
+  snxtDiff <- getsClient snxtDiff
   let stripFrame t = map (T.tail . T.init) $ tail . init $ T.lines t
       pasteVersion art =
         let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
@@ -294,7 +296,7 @@ mainMenuHuman = do
         let showKD cmd km = (K.showKM km, HumanCmd.cmdDescription cmd)
             revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd brevMap
             cmds = [ (K.showKM km, desc)
-                   | (km, (desc, [HumanCmd.CmdMenu], cmd)) <- bcmdList ]
+                   | (km, (desc, [HumanCmd.CmdMenu], _)) <- bcmdList ]
         in [
              if escAI == EscAIMenu then
                (fst (revLookup HumanCmd.Automate), "back to screensaver")
@@ -303,23 +305,27 @@ mainMenuHuman = do
            , (fst (revLookup HumanCmd.Accept), "see more help")
            ]
            ++ cmds
---                       <+> tshow scurDiff <> ")" ) ]
-      bindingLen = 25
+      scenarioNameLen = 12
+      minBraceLen = 5
+      gameInfo = [ T.justifyLeft scenarioNameLen ' ' $ mname gameMode
+                 , T.justifyLeft minBraceLen ' ' $ tshow scurDiff
+                 , T.justifyLeft minBraceLen ' ' $ tshow snxtDiff ]
+      bindingLen = 30
       bindings =  -- key bindings to display
         let fmt (k, d) = T.justifyLeft bindingLen ' '
                          $ T.justifyLeft 7 ' ' k <> " " <> d
         in map fmt kds
-      overwrite =  -- overwrite the art with key bindings
+      overwrite =  -- overwrite the art with key bindings and other lines
         let over [] line = ([], T.pack line)
             over bs@(binding : bsRest) line =
               let (prefix, lineRest) = break (=='{') line
                   (braces, suffix)   = span  (=='{') lineRest
-              in if length braces == 25
+              in if length braces >= minBraceLen
                  then (bsRest, T.pack prefix <> binding
                                <> T.drop (T.length binding - bindingLen)
                                          (T.pack suffix))
                  else (bs, T.pack line)
-        in snd . mapAccumL over bindings
+        in snd . mapAccumL over (gameInfo ++ bindings)
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
       menuOverlay =  -- TODO: switch to Text and use T.justifyLeft
         overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
