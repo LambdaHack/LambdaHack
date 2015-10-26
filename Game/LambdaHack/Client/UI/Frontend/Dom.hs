@@ -263,6 +263,8 @@ fdisplay FrontendSession{..} (Just rawSF) = postGUISync $ do
       SingleFrame{sfLevel} = overlayOverlay rawSF
       acs = concat $ map decodeLine sfLevel
   -- Double buffering, to avoid redraw after each cell update.
+  -- Another possibility (probably less efficient) is visibility:hidden/visible
+  -- and yet another is replaceChild.
   Just disp <- getPropertyValue scharStyle ("display" :: String)
   if disp == ("block" :: String)
     then do

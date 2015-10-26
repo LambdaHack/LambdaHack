@@ -63,7 +63,7 @@ data HumanCmd =
   | Automate
     -- Local.
     -- Below this line, commands do not notify the server.
-  | GameDifficultyCycle
+  | GameDifficultyIncr Int
   | PickLeader !Int
   | MemberCycle
   | MemberBack
@@ -158,7 +158,10 @@ cmdDescription cmd = case cmd of
   Tactic      -> "cycle tactic of non-leader team members (WIP)"
   Automate    -> "automate faction (ESC to retake control)"
 
-  GameDifficultyCycle -> "cycle difficulty of the next game"
+  GameDifficultyIncr k | k > 0 -> "increase next game difficulty"
+  GameDifficultyIncr k | k < 0 -> "decrease next game difficulty"
+  GameDifficultyIncr _ -> assert `failure` "void game difficulty change"
+                                 `twith` cmd
   PickLeader{} -> "pick leader"
   MemberCycle -> "cycle among party members on the level"
   MemberBack  -> "cycle among all party members"

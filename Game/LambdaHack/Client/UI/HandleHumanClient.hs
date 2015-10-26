@@ -56,7 +56,7 @@ cmdAction cmd = case cmd of
   Automate -> automateHuman
 
   -- Local.
-  GameDifficultyCycle -> addNoSlides gameDifficultyCycle
+  GameDifficultyIncr k -> addNoSlides $ gameDifficultyIncr k
   PickLeader k -> Left <$> pickLeaderHuman k
   MemberCycle -> Left <$> memberCycleHuman
   MemberBack -> Left <$> memberBackHuman

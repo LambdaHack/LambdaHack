@@ -21,19 +21,20 @@ standardKeys = KeyKind
       -- Remember to put commands that show information (e.g., enter targeting
       -- mode) first.
 
-      -- Main Menu, which apart of these includes a few extra commands
+      -- Main Menu.
       [ ("CTRL-x", ([CmdMenu], GameExit))
-      , ("CTRL-r", ([CmdMenu], GameRestart "raid"))
-      , ("CTRL-k", ([CmdMenu], GameRestart "skirmish"))
-      , ("CTRL-m", ([CmdMenu], GameRestart "ambush"))
-      , ("CTRL-b", ([CmdMenu], GameRestart "battle"))
-      , ("CTRL-c", ([CmdMenu], GameRestart "campaign"))
-      , ("CTRL-i", ([CmdDebug], GameRestart "battle survival"))
-      , ("CTRL-f", ([CmdDebug], GameRestart "safari"))
-      , ("CTRL-u", ([CmdDebug], GameRestart "safari survival"))
-      , ("CTRL-e", ([CmdDebug], GameRestart "defense"))
-      , ("CTRL-g", ([CmdDebug], GameRestart "boardgame"))
-      , ("CTRL-d", ([CmdMenu], GameDifficultyCycle))
+      , ("r", ([CmdMenu], GameRestart "raid"))
+      , ("s", ([CmdMenu], GameRestart "skirmish"))
+      , ("a", ([CmdMenu], GameRestart "ambush"))
+      , ("b", ([CmdMenu], GameRestart "battle"))
+      , ("c", ([CmdMenu], GameRestart "campaign"))
+      , ("i", ([CmdDebug], GameRestart "battle survival"))
+      , ("f", ([CmdDebug], GameRestart "safari"))
+      , ("u", ([CmdDebug], GameRestart "safari survival"))
+      , ("d", ([CmdDebug], GameRestart "defense"))
+      , ("g", ([CmdDebug], GameRestart "boardgame"))
+      , ("+", ([CmdMenu], GameDifficultyIncr 1))
+      , ("-", ([CmdMenu], GameDifficultyIncr (-1)))
 
       -- Movement and terrain alteration
       , ("less", ([CmdMove, CmdMinimal], TriggerTile

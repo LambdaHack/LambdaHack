@@ -3,7 +3,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   ( -- * Assorted commands
-    gameDifficultyCycle
+    gameDifficultyIncr
   , pickLeaderHuman, memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, clearHuman
   , stopIfTgtModeHuman, selectWithPointer, repeatHuman, recordHuman
@@ -63,12 +63,14 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 
--- * GameDifficultyCycle
+-- * GameDifficultyIncr
 
-gameDifficultyCycle :: MonadClientUI m => m ()
-gameDifficultyCycle = do
+gameDifficultyIncr :: MonadClientUI m => Int -> m ()
+gameDifficultyIncr delta = do
   snxtDiff <- getsClient snxtDiff
-  let d = if snxtDiff >= difficultyBound then 1 else snxtDiff + 1
+  let d | snxtDiff + delta > difficultyBound = 1
+        | snxtDiff + delta < 1 = difficultyBound
+        | otherwise = snxtDiff + delta
   modifyClient $ \cli -> cli {snxtDiff = d}
   msgAdd $ "Next game difficulty set to" <+> tshow d <> "."
 
@@ -277,8 +279,8 @@ mainMenuHuman = do
   Kind.COps{corule} <- getsState scops
   escAI <- getsClient sescAI
   Binding{brevMap, bcmdList} <- askBinding
-  scurDiff <- getsClient scurDiff
-  snxtDiff <- getsClient snxtDiff
+--  scurDiff <- getsClient scurDiff
+--  snxtDiff <- getsClient snxtDiff
   let stripFrame t = map (T.tail . T.init) $ tail . init $ T.lines t
       pasteVersion art =
         let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
@@ -292,8 +294,7 @@ mainMenuHuman = do
         let showKD cmd km = (K.showKM km, HumanCmd.cmdDescription cmd)
             revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd brevMap
             cmds = [ (K.showKM km, desc)
-                   | (km, (desc, [HumanCmd.CmdMenu], cmd)) <- bcmdList,
-                     cmd /= HumanCmd.GameDifficultyCycle ]
+                   | (km, (desc, [HumanCmd.CmdMenu], cmd)) <- bcmdList ]
         in [
              if escAI == EscAIMenu then
                (fst (revLookup HumanCmd.Automate), "back to screensaver")
@@ -302,11 +303,7 @@ mainMenuHuman = do
            , (fst (revLookup HumanCmd.Accept), "see more help")
            ]
            ++ cmds
-           ++ [ (fst ( revLookup HumanCmd.GameDifficultyCycle)
-                     , "next game difficulty"
-                       <+> tshow snxtDiff
-                       <+> "(current"
-                       <+> tshow scurDiff <> ")" ) ]
+--                       <+> tshow scurDiff <> ")" ) ]
       bindingLen = 25
       bindings =  -- key bindings to display
         let fmt (k, d) = T.justifyLeft bindingLen ' '
