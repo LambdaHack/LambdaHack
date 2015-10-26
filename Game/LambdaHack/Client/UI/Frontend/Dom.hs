@@ -21,7 +21,7 @@ import Data.Maybe
 import Data.String (IsString (..))
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
-import GHCJS.DOM.CSSStyleDeclaration (setProperty)
+import GHCJS.DOM.CSSStyleDeclaration (getPropertyValue, setProperty)
 import GHCJS.DOM.Document (createElement, getBody, keyDown)
 import GHCJS.DOM.Element (getStyle, setInnerHTML)
 import GHCJS.DOM.EventM (mouseAltKey, mouseButton, mouseCtrlKey, mouseMetaKey,
@@ -38,7 +38,7 @@ import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement,
 import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
-import GHCJS.DOM.Node (appendChild)
+import GHCJS.DOM.Node (appendChild, cloneNode)
 import GHCJS.DOM.Types (CSSStyleDeclaration, MouseEvent)
 import GHCJS.DOM.UIEvent (getKeyCode, getWhich)
 
@@ -51,12 +51,14 @@ import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { swebView   :: !WebView
-  , scharStyle :: !CSSStyleDeclaration
-  , scharCells :: ![HTMLTableCellElement]
-  , schanKey   :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
-  , sescMVar   :: !(Maybe (MVar ()))
-  , sdebugCli  :: !DebugModeCli  -- ^ client configuration
+  { swebView    :: !WebView
+  , scharStyle  :: !CSSStyleDeclaration
+  , scharCells  :: ![HTMLTableCellElement]
+  , scharStyle2 :: !CSSStyleDeclaration
+  , scharCells2 :: ![HTMLTableCellElement]
+  , schanKey    :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
+  , sescMVar    :: !(Maybe (MVar ()))
+  , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
 -- | The name of the frontend.
@@ -83,7 +85,7 @@ runWeb sdebugCli@DebugModeCli{sfont} k swebView = do
   setInnerHTML body (Just ("<h1>LambdaHack</h1>" :: String))
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 4
-      cell = "<td>."
+      cell = "<td>" ++ [chr 160]
       row = "<tr>" ++ concat (replicate lxsize cell)
       rows = concat (replicate lysize row)
   Just tableElem <- fmap castToHTMLTableElement
@@ -118,6 +120,9 @@ font-weight: normal;
   -- Create the session record.
   scharCells <- flattenTable tableElem
   schanKey <- STM.atomically STM.newTQueue
+  Just tableElem2 <- fmap castToHTMLTableElement <$> cloneNode tableElem True
+  scharCells2 <- flattenTable tableElem2
+  Just scharStyle2 <- getStyle tableElem2
   escMVar <- newEmptyMVar
   let sess = FrontendSession{sescMVar = Just escMVar, ..}
   -- Fork the game logic thread. When logic ends, game exits.
@@ -174,9 +179,14 @@ font-weight: normal;
   let xs = [0..lxsize - 1]
       ys = [0..lysize - 1]
       xys = concat $ map (\y -> zip xs (repeat y)) ys
+  -- This can't be cloned, so I has to be done for both cell sets.
   mapM_ (handleMouse schanKey) $ zip scharCells xys
+  mapM_ (handleMouse schanKey) $ zip scharCells2 xys
   -- Display at the end to avoid redraw
   void $ appendChild body (Just tableElem)
+  setProp scharStyle "display" "none"
+  void $ appendChild body (Just tableElem2)
+  setProp scharStyle2 "display" "block"
   return ()  -- nothing to clean up
 
 setProp :: CSSStyleDeclaration -> String -> String -> IO ()
@@ -242,7 +252,7 @@ fdisplay :: FrontendSession    -- ^ frontend session data
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
 fdisplay _ Nothing = return ()
-fdisplay FrontendSession{scharStyle, scharCells} (Just rawSF) = postGUISync $ do
+fdisplay FrontendSession{..} (Just rawSF) = postGUISync $ do
   let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
       setChar (cell, Color.AttrChar{..}) = do
         let s = if acChar == ' ' then [chr 160] else [acChar]
@@ -250,11 +260,19 @@ fdisplay FrontendSession{scharStyle, scharCells} (Just rawSF) = postGUISync $ do
         Just style <- getStyle cell
         setProp style "background-color" (Color.colorToRGB $ Color.bg acAttr)
         setProp style "color" (Color.colorToRGB $ Color.fg acAttr)
-  let SingleFrame{sfLevel} = overlayOverlay rawSF
+      SingleFrame{sfLevel} = overlayOverlay rawSF
       acs = concat $ map decodeLine sfLevel
-  setProp scharStyle "visibility" "hidden"
-  mapM_ setChar $ zip scharCells acs
-  setProp scharStyle "visibility" "visible"
+  -- Double buffering, to avoid redraw after each cell update.
+  Just disp <- getPropertyValue scharStyle ("display" :: String)
+  if disp == ("block" :: String)
+    then do
+      mapM_ setChar $ zip scharCells2 acs
+      setProp scharStyle "display" "none"
+      setProp scharStyle2 "display" "block"
+    else do
+      mapM_ setChar $ zip scharCells acs
+      setProp scharStyle2 "display" "none"
+      setProp scharStyle "display" "block"
 
 fsyncFrames :: FrontendSession -> IO ()
 fsyncFrames _ = return ()
