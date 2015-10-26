@@ -283,7 +283,7 @@ mainMenuHuman = do
   gameMode <- getGameMode
   scurDiff <- getsClient scurDiff
   snxtDiff <- getsClient snxtDiff
-  let stripFrame t = map (T.tail . T.init) $ tail . init $ T.lines t
+  let stripFrame t = tail . init $ T.lines t
       pasteVersion art =
         let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
             version = " Version " ++ showVersion pathsVersion
