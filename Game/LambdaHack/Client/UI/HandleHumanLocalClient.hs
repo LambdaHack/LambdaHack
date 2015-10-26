@@ -305,7 +305,7 @@ mainMenuHuman = do
            , (fst (revLookup HumanCmd.Accept), "see more help")
            ]
            ++ cmds
-      scenarioNameLen = 12
+      scenarioNameLen = 11
       minBraceLen = 5
       gameInfo = [ T.justifyLeft scenarioNameLen ' ' $ mname gameMode
                  , T.justifyLeft minBraceLen ' ' $ tshow scurDiff
