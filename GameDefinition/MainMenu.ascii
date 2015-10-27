@@ -1,25 +1,26 @@
 --------------------------------------------------------------------------------
-GLffjtfjfjttjjijtfjtjjjffLfffjt;;;i;;,;;;,,,,;ii:.,,,::...::,:..,;;,:,,;;iiittjj
-GLffjjtjttfftjfLfjjjjjjjfLLLfjji:;;,,;;,;,,,,,;;;..::..  ..... .:,:::,,;;;ittjjf
-GLfffLLjfLLjjjjjtittttjfffLLLfjtttii,,,,:,,:::,,,: ....   ...  .:...:,,,;ittjjff
-DGLfjjtffftjj;;tjfjjjjjfjfLLLfffjti;;;,:...:::..... ..        ..  ..::,;iittjjjj
-DGGLjffff                             ..,,........                ..:,;iiitttjjj
-DGGfjfffL  Current scenario: {{{{{{{{{{{.,..      .    .  .     .  .,,;;;iiitttj
-DDGLffjjj  Current game difficulty: {{{{{,,:..     .  .. .. . ..  ..::,,;;;iiitt
-DGGGLLjtj  Next game difficulty: {{{{{   ,,,:..    ------------    ...::,,;iitjj
-DGGLfLLtL                                ;,,:..   .|LambdaHack|.    ..:;;ittjjff
-EDLLLfffG  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{,,,:..    ------------.  .,;;iittjjffff
-EGDGLfLLG  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{,;,,:..    . .. .. .   . ..:,;;iittjjff
-DDDGLLLLf  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{:;;;;,..  ..  . .     .  ..:,,;;itttjjj
-EEDGLfLLf  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{.;;,.    .                .:,;iittjjjjf
-EEEGLffff  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{.,:..                  .:::::,;iitjjfff
-KEEGfLffL  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{.,,.....                .:;;;;;;ittjjff
-KEEGDLLfL  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{.,,,;:...             ....:;itttttttjjf
-EEDDDGLLL  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{.;;;,.::..            ..:,,,;itjjjjjjjj
-EEEEDGLjf  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{.;;,,,,:.. .        ....,,;;;;itjffffff
-EEEEDDfff  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{,;,;;;,::.....   .   :.:,;;iittttjff;LL
-KKEEDGfff                                ;;;;;,,,:.:...   .   ,,:,;iitttjjjjf,LL
-KKEDGLGfffLfffjjjjjjfjtjtiittttittttttttiiiii;;;,::,::..  :.  .i;;;iittjjjjjffLL
-KEDDGGLLfjjfjjjjjjjjjjjttttitjttjttiitittjji;;;;,,;,,,....,,. .;i;;iitjjffffiiff
-EEDDDGLffjfffjjjjjfjjfj Version X.X.X (frontend: gtk, engine: LambdaHack X.X.X)
+fffffjjjjtti,:Lft:                tDEGLLGEKEDEK  .    .   . . ..iEDEGL.;iiij ...
+fLLLLfffjjjti;.fL .              GDDLfGDEDEDGf;.  .  .     .. .  ;LDWEGi,;iit ..
+LD#WWELfffjjtt;.if.:           .DEGLLGEDELti,  .  .. .. . ..   .. .,tLKDG ,;itt.
+fK#WWW#DLffjjtt;:;j...        tDEGfLDEDGtKi.  ..LambdaHack  .     . itLEG::;itt.
+;K#WWWWW Lfffjjti:.t...      tDEGfLDEDLf,   ..  . ..  . .    ..       tDGj.;itt.
+ EWWWWKW  GLffjjti: t,      tDEGLGEEDj                               ,tLDLi,ittj
+ EKWWWEWG  GLffjjti: tt   .tDEGGDEDGi, Current scenario: {{{{{{{{{{{  ;fEG :iitj
+ LEWWWKKK   GLfffjti: tt  tDDLGDEDGf.  Current game difficulty: {{{{{ ;jGG :iitj
+  DWWWKDWL   DLffjjti: jt.DDLGDEDLD    Next game difficulty: {{{{{    ,jDG .ittj
+  LEWWWEDKj   DLffjjti: jj.LGDEDLE                                    ,jDG  ittj
+   DKKWKDEKf   GLffjjti::ff.EEDLE      {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ ,fGG  ittj
+    GWKWEDEEt   GLffjjji :fL.ELE       {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ :tGL  ittf
+    EEWKKDGDEjt..DLfftjji.,fG:K,       {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ ,fGj,.tjjf
+     EfKGKDLGDDDGDGLffiiti ttf:.       {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ .LG;i,;itt
+    ..EDKEKEGjiLDDfGLLfijtii;fL:       {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{;LLj ,;tjtL
+   . . KLEEKKDGLLLGLGLfffjji,;LL:,.    {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{:tfL.fijffL
+  .......jDKEEKKKKKEDGLffffji;;LL:...  {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{j fGii tjff
+..........KtGDKEDEEDGLGLfffjti,;Lf:::: {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{iDf j:jffL.
+..........::,E,tjjifL,,LLfffjji.;fL.,: {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{fiififffL .
+ ......::,;tjLGGGGGLfji;LLfffjjt.,jft..{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{t;i:jfff  .
+ ..:::::,;;;,iiiiiiii;;;;LLfffjjt,,;LL: :...                       ,iiijjfffL ..
+..:::::,,;;;;;;;;;;;;;;;;;GLffffjt;j,jff,:::,                   ;ifLjjijifffL ..
+.......::,,,,;;;;,,,,,,,,,:GLffffjjt:::tLiL                   LLLLGj;i,ffLLL ...
+.    ..:::::,,,,,,,,,,, Version X.X.X (frontend: gtk, engine: LambdaHack X.X.X) 
 --------------------------------------------------------------------------------
