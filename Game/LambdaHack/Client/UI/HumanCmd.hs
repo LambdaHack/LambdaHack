@@ -20,14 +20,14 @@ import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 data CmdCategory =
-    CmdMenu | CmdMove | CmdItem | CmdTgt | CmdAuto | CmdMeta | CmdMouse
+    CmdMainMenu | CmdMove | CmdItem | CmdTgt | CmdAuto | CmdMeta | CmdMouse
   | CmdInternal | CmdDebug | CmdMinimal
   deriving (Show, Read, Eq, Generic)
 
 instance NFData CmdCategory
 
 categoryDescription :: CmdCategory -> Text
-categoryDescription CmdMenu = "Main Menu"
+categoryDescription CmdMainMenu = "Main Menu"
 categoryDescription CmdMove = "Terrain exploration and alteration"
 categoryDescription CmdItem = "Item use"
 categoryDescription CmdTgt = "Aiming and targeting"

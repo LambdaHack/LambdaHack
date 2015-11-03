@@ -94,7 +94,7 @@ humanCommand = do
           -- Look up the key.
           Binding{bcmdMap} <- askBinding
           case M.lookup km{K.pointer=Nothing} bcmdMap of
-            Just (_, _, cmd) -> do
+            Just (_, cats, cmd) | CmdMainMenu `notElem` cats -> do
               -- Query and clear the last command key.
               modifyClient $ \cli -> cli
                 {swaitTimes = if swaitTimes cli > 0
@@ -115,8 +115,8 @@ humanCommand = do
                   if km == K.escKM && isNothing stgtMode && isRight mover
                   then cmdHumanSem Clear
                   else cmdHumanSem cmd
-            Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
-                       in failWith msgKey
+            _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
+                 in failWith msgKey
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
         case abortOrCmd of

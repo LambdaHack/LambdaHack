@@ -296,7 +296,7 @@ mainMenuHuman = do
         let showKD cmd km = (K.showKM km, HumanCmd.cmdDescription cmd)
             revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd brevMap
             cmds = [ (K.showKM km, desc)
-                   | (km, (desc, [HumanCmd.CmdMenu], _)) <- bcmdList ]
+                   | (km, (desc, [HumanCmd.CmdMainMenu], _)) <- bcmdList ]
         in [
              if escAI == EscAIMenu then
                (fst (revLookup HumanCmd.Automate), "back to screensaver")

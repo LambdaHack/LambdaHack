@@ -22,19 +22,19 @@ standardKeys = KeyKind
       -- mode) first.
 
       -- Main Menu.
-      [ ("CTRL-x", ([CmdMenu], GameExit))
-      , ("r", ([CmdMenu], GameRestart "raid"))
-      , ("s", ([CmdMenu], GameRestart "skirmish"))
-      , ("a", ([CmdMenu], GameRestart "ambush"))
-      , ("b", ([CmdMenu], GameRestart "battle"))
-      , ("c", ([CmdMenu], GameRestart "campaign"))
-      , ("i", ([CmdDebug], GameRestart "battle survival"))
-      , ("f", ([CmdDebug], GameRestart "safari"))
-      , ("u", ([CmdDebug], GameRestart "safari survival"))
-      , ("d", ([CmdDebug], GameRestart "defense"))
-      , ("g", ([CmdDebug], GameRestart "boardgame"))
-      , ("+", ([CmdMenu], GameDifficultyIncr 1))
-      , ("-", ([CmdMenu], GameDifficultyIncr (-1)))
+      [ ("CTRL-x", ([CmdMainMenu], GameExit))
+      , ("r", ([CmdMainMenu], GameRestart "raid"))
+      , ("s", ([CmdMainMenu], GameRestart "skirmish"))
+      , ("a", ([CmdMainMenu], GameRestart "ambush"))
+      , ("b", ([CmdMainMenu], GameRestart "battle"))
+      , ("c", ([CmdMainMenu], GameRestart "campaign"))
+      , ("i", ([CmdMainMenu, CmdDebug], GameRestart "battle survival"))
+      , ("f", ([CmdMainMenu, CmdDebug], GameRestart "safari"))
+      , ("u", ([CmdMainMenu, CmdDebug], GameRestart "safari survival"))
+      , ("d", ([CmdMainMenu, CmdDebug], GameRestart "defense"))
+      , ("g", ([CmdMainMenu, CmdDebug], GameRestart "boardgame"))
+      , ("+", ([CmdMainMenu], GameDifficultyIncr 1))
+      , ("-", ([CmdMainMenu], GameDifficultyIncr (-1)))
 
       -- Movement and terrain alteration
       , ("less", ([CmdMove, CmdMinimal], TriggerTile
