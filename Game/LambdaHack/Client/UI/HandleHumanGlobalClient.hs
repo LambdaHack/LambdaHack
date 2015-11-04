@@ -864,10 +864,10 @@ mainMenuHuman cmdAction = do
       gameInfo = [ T.justifyLeft scenarioNameLen ' ' $ mname gameMode
                  , T.justifyLeft minBraceLen ' ' $ tshow scurDiff
                  , T.justifyLeft minBraceLen ' ' $ tshow snxtDiff ]
-      bindingLen = 30
+      bindingLen = 28
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) = T.justifyLeft bindingLen ' '
-                              $ T.justifyLeft 7 ' ' (K.showKM k) <> " " <> d
+                              $ T.justifyLeft 3 ' ' (K.showKM k) <> " " <> d
         in map fmt kds
       overwrite =  -- overwrite the art with key bindings and other lines
         let over [] line = ([], T.pack line)

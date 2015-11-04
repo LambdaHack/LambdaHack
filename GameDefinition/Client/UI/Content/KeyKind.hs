@@ -22,7 +22,9 @@ standardKeys = KeyKind
       -- mode) first.
 
       -- Main Menu.
-      [ ("CTRL-x", ([CmdMainMenu], GameExit))
+      [ ("X", ([CmdMainMenu], GameExit))
+      , ("+", ([CmdMainMenu], GameDifficultyIncr 1))
+      , ("-", ([CmdMainMenu], GameDifficultyIncr (-1)))
       , ("r", ([CmdMainMenu], GameRestart "raid"))
       , ("s", ([CmdMainMenu], GameRestart "skirmish"))
       , ("a", ([CmdMainMenu], GameRestart "ambush"))
@@ -33,8 +35,6 @@ standardKeys = KeyKind
       , ("u", ([CmdMainMenu, CmdDebug], GameRestart "safari survival"))
       , ("d", ([CmdMainMenu, CmdDebug], GameRestart "defense"))
       , ("g", ([CmdMainMenu, CmdDebug], GameRestart "boardgame"))
-      , ("+", ([CmdMainMenu], GameDifficultyIncr 1))
-      , ("-", ([CmdMainMenu], GameDifficultyIncr (-1)))
 
       -- Movement and terrain alteration
       , ("less", ([CmdMove, CmdMinimal], TriggerTile
