@@ -8,31 +8,24 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   , selectActorHuman, selectNoneHuman, clearHuman
   , stopIfTgtModeHuman, selectWithPointer, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
-  , helpHuman, mainMenuHuman, macroHuman
+  , helpHuman, macroHuman
     -- * Commands specific to targeting
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman
   , tgtAscendHuman, epsIncrHuman, tgtClearHuman
   , cursorUnknownHuman, cursorItemHuman, cursorStairHuman
-  , cancelHuman, acceptHuman
+  , acceptHuman
   , cursorPointerFloorHuman, cursorPointerEnemyHuman
   , tgtPointerFloorHuman, tgtPointerEnemyHuman
   ) where
-
--- Cabal
-import qualified Paths_LambdaHack as Self (version)
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
-import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import Data.Ord
-import qualified Data.Text as T
-import Data.Version
-import Game.LambdaHack.Client.UI.Frontend (frontendName)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
@@ -40,7 +33,6 @@ import Game.LambdaHack.Client.CommonClient
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.UI.InventoryClient
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
@@ -60,8 +52,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * GameDifficultyIncr
@@ -271,69 +261,6 @@ helpHuman = do
   keyb <- askBinding
   return $! keyHelp keyb
 
--- * MainMenu
-
--- TODO: merge with the help screens better
--- | Display the main menu.
-mainMenuHuman :: MonadClientUI m => m Slideshow
-mainMenuHuman = do
-  Kind.COps{corule} <- getsState scops
-  escAI <- getsClient sescAI
-  Binding{brevMap, bcmdList} <- askBinding
-  gameMode <- getGameMode
-  scurDiff <- getsClient scurDiff
-  snxtDiff <- getsClient snxtDiff
-  let stripFrame t = tail . init $ T.lines t
-      pasteVersion art =
-        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
-            version = " Version " ++ showVersion pathsVersion
-                      ++ " (frontend: " ++ frontendName
-                      ++ ", engine: LambdaHack " ++ showVersion Self.version
-                      ++ ") "
-            versionLen = length version
-        in init art ++ [take (80 - versionLen) (last art) ++ version]
-      kds =  -- key-description pairs
-        let showKD cmd km = (K.showKM km, HumanCmd.cmdDescription cmd)
-            revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd brevMap
-            cmds = [ (K.showKM km, desc)
-                   | (km, (desc, [HumanCmd.CmdMainMenu], _)) <- bcmdList ]
-        in [
-             if escAI == EscAIMenu then
-               (fst (revLookup HumanCmd.Automate), "back to screensaver")
-             else
-               (fst (revLookup HumanCmd.Cancel), "back to playing")
-           , (fst (revLookup HumanCmd.Accept), "see more help")
-           ]
-           ++ cmds
-      scenarioNameLen = 11
-      minBraceLen = 5
-      gameInfo = [ T.justifyLeft scenarioNameLen ' ' $ mname gameMode
-                 , T.justifyLeft minBraceLen ' ' $ tshow scurDiff
-                 , T.justifyLeft minBraceLen ' ' $ tshow snxtDiff ]
-      bindingLen = 30
-      bindings =  -- key bindings to display
-        let fmt (k, d) = T.justifyLeft bindingLen ' '
-                         $ T.justifyLeft 7 ' ' k <> " " <> d
-        in map fmt kds
-      overwrite =  -- overwrite the art with key bindings and other lines
-        let over [] line = ([], T.pack line)
-            over bs@(binding : bsRest) line =
-              let (prefix, lineRest) = break (=='{') line
-                  (braces, suffix)   = span  (=='{') lineRest
-              in if length braces >= minBraceLen
-                 then (bsRest, T.pack prefix <> binding
-                               <> T.drop (T.length binding - bindingLen)
-                                         (T.pack suffix))
-                 else (bs, T.pack line)
-        in snd . mapAccumL over (gameInfo ++ bindings)
-      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
-      menuOverlay =  -- TODO: switch to Text and use T.justifyLeft
-        overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
-  case menuOverlay of
-    [] -> assert `failure` "empty Main Menu overlay" `twith` mainMenuArt
-    hd : tl -> overlayToBlankSlideshow True hd (toOverlay tl)
-               -- TODO: keys don't work if tl/=[]
-
 -- * Macro
 
 macroHuman :: MonadClient m => [String] -> m ()
@@ -441,23 +368,6 @@ cursorStairHuman up = do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
       doLook False
-
--- * Cancel
-
--- | Cancel something, e.g., targeting mode, resetting the cursor
--- to the position of the leader. Chosen target is not invalidated.
-cancelHuman :: MonadClientUI m => m Slideshow -> m Slideshow
-cancelHuman h = do
-  stgtMode <- getsClient stgtMode
-  if isJust stgtMode
-    then targetReject
-    else h  -- nothing to cancel right now, treat this as a command invocation
-
--- | End targeting mode, rejecting the current position.
-targetReject :: MonadClientUI m => m Slideshow
-targetReject = do
-  modifyClient $ \cli -> cli {stgtMode = Nothing}
-  failMsg "target not set"
 
 -- * Accept
 

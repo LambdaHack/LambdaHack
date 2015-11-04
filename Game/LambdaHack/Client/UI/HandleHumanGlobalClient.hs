@@ -12,20 +12,27 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   , runOnceAheadHuman, moveOnceToCursorHuman
   , runOnceToCursorHuman, continueToCursorHuman
     -- * Commands that never take time
-  , gameRestartHuman, gameExitHuman, gameSaveHuman, tacticHuman, automateHuman
+  , cancelHuman, mainMenuHuman, gameRestartHuman, gameExitHuman, gameSaveHuman
+  , tacticHuman, automateHuman
   ) where
 
 import Prelude ()
 import Prelude.Compat
 
+-- Cabal
+import qualified Paths_LambdaHack as Self (version)
+
 import Control.Exception.Assert.Sugar
 import Control.Monad (when)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List (delete)
+import Data.List (delete, mapAccumL)
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Version
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
@@ -34,9 +41,12 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
+import Game.LambdaHack.Client.UI.Frontend (frontendName)
 import Game.LambdaHack.Client.UI.HandleHumanLocalClient
 import Game.LambdaHack.Client.UI.HumanCmd (Trigger (..))
+import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.UI.InventoryClient
+import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.RunClient
@@ -60,6 +70,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
@@ -792,6 +803,94 @@ runOnceToCursorHuman = goToCursor True True
 
 continueToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
 continueToCursorHuman = goToCursor False False{-irrelevant-}
+
+-- * Cancel
+
+-- | Cancel something, e.g., targeting mode, resetting the cursor
+-- to the position of the leader. Chosen target is not invalidated.
+cancelHuman :: MonadClientUI m
+            => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
+cancelHuman h = do
+  stgtMode <- getsClient stgtMode
+  if isJust stgtMode
+    then targetReject
+    else h  -- nothing to cancel right now, treat this as a command invocation
+
+-- | End targeting mode, rejecting the current position.
+targetReject :: MonadClientUI m => m (SlideOrCmd RequestUI)
+targetReject = do
+  modifyClient $ \cli -> cli {stgtMode = Nothing}
+  failWith "target not set"
+
+-- * MainMenu; does not take time
+
+-- TODO: merge with the help screens better
+-- | Display the main menu.
+mainMenuHuman :: MonadClientUI m
+              => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
+              -> m (SlideOrCmd RequestUI)
+mainMenuHuman cmdAction = do
+  Kind.COps{corule} <- getsState scops
+  escAI <- getsClient sescAI
+  Binding{brevMap, bcmdList} <- askBinding
+  gameMode <- getGameMode
+  scurDiff <- getsClient scurDiff
+  snxtDiff <- getsClient snxtDiff
+  let stripFrame t = tail . init $ T.lines t
+      pasteVersion art =
+        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
+            version = " Version " ++ showVersion pathsVersion
+                      ++ " (frontend: " ++ frontendName
+                      ++ ", engine: LambdaHack " ++ showVersion Self.version
+                      ++ ") "
+            versionLen = length version
+        in init art ++ [take (80 - versionLen) (last art) ++ version]
+      kds =  -- key-description-command tuples
+        let revLookup cmd = fromMaybe (assert `failure` cmd)
+                            $ M.lookup cmd brevMap
+            revPair cmd desc = (revLookup cmd, (desc, cmd))
+            cmds = [ (km, (desc, cmd))
+                   | (km, (desc, [HumanCmd.CmdMainMenu], cmd)) <- bcmdList ]
+        in [
+             if escAI == EscAIMenu then
+               revPair HumanCmd.Automate "back to screensaver"
+             else
+               revPair HumanCmd.Cancel "back to playing"
+           , revPair HumanCmd.Accept "see more help"
+           ]
+           ++ cmds
+      scenarioNameLen = 11
+      minBraceLen = 5
+      gameInfo = [ T.justifyLeft scenarioNameLen ' ' $ mname gameMode
+                 , T.justifyLeft minBraceLen ' ' $ tshow scurDiff
+                 , T.justifyLeft minBraceLen ' ' $ tshow snxtDiff ]
+      bindingLen = 30
+      bindings =  -- key bindings to display
+        let fmt (k, (d, _)) = T.justifyLeft bindingLen ' '
+                              $ T.justifyLeft 7 ' ' (K.showKM k) <> " " <> d
+        in map fmt kds
+      overwrite =  -- overwrite the art with key bindings and other lines
+        let over [] line = ([], T.pack line)
+            over bs@(binding : bsRest) line =
+              let (prefix, lineRest) = break (=='{') line
+                  (braces, suffix)   = span  (=='{') lineRest
+              in if length braces >= minBraceLen
+                 then (bsRest, T.pack prefix <> binding
+                               <> T.drop (T.length binding - bindingLen)
+                                         (T.pack suffix))
+                 else (bs, T.pack line)
+        in snd . mapAccumL over (gameInfo ++ bindings)
+      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
+      menuOverwritten =  -- TODO: switch to Text and use T.justifyLeft
+        overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
+      io = toOverlay menuOverwritten
+  akm <- displayChoiceUI "" io (map fst kds)
+  case akm of
+    Left slides -> failSlides slides
+    Right km ->
+      case lookup km{K.pointer=Nothing} kds of
+        Just (_desc, cmd) -> cmdAction cmd
+        Nothing -> failWith "never mind"
 
 -- * GameRestart; does not take time
 

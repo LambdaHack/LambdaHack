@@ -54,6 +54,8 @@ cmdAction cmd = case cmd of
   GameSave -> fmap Right gameSaveHuman
   Tactic -> tacticHuman
   Automate -> automateHuman
+  MainMenu -> mainMenuHuman cmdAction
+  Cancel -> cancelHuman $ mainMenuHuman cmdAction
 
   -- Local.
   GameDifficultyIncr k -> addNoSlides $ gameDifficultyIncr k
@@ -72,7 +74,6 @@ cmdAction cmd = case cmd of
   MarkSmell -> addNoSlides markSmellHuman
   MarkSuspect -> addNoSlides markSuspectHuman
   Help -> Left <$> helpHuman
-  MainMenu -> Left <$> mainMenuHuman
   Macro _ kms -> addNoSlides $ macroHuman kms
 
   MoveCursor v k -> Left <$> moveCursorHuman v k
@@ -84,7 +85,6 @@ cmdAction cmd = case cmd of
   CursorUnknown -> Left <$> cursorUnknownHuman
   CursorItem -> Left <$> cursorItemHuman
   CursorStair up -> Left <$> cursorStairHuman up
-  Cancel -> Left <$> cancelHuman mainMenuHuman
   Accept -> Left <$> acceptHuman helpHuman
   CursorPointerFloor -> addNoSlides cursorPointerFloorHuman
   CursorPointerEnemy -> addNoSlides cursorPointerEnemyHuman
