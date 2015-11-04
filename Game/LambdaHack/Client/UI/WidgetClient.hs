@@ -1,6 +1,7 @@
 -- | A set of widgets for UI clients.
 module Game.LambdaHack.Client.UI.WidgetClient
-  ( displayMore, displayYesNo, displayChoiceUI, displayPush, describeMainKeys
+  ( displayMore, displayYesNo, displayChoiceScreen, displayChoiceUI
+  , displayPush, describeMainKeys
   , promptToSlideshow, overlayToSlideshow, overlayToBlankSlideshow
   , animate, fadeOutOrIn
   ) where
@@ -60,6 +61,12 @@ displayYesNo dm prompt = do
   sli <- promptToSlideshow $ prompt <+> yesnoMsg
   frame <- drawOverlay False dm $ head . snd $ slideshow sli
   getYesNo frame
+
+displayChoiceScreen :: MonadClientUI m
+                    => Overlay -> [K.KM] -> m K.KM
+displayChoiceScreen ov keys = do
+  frame <- drawOverlay True ColorFull ov
+  promptGetKey keys frame
 
 -- TODO: generalize getInitConfirms and displayChoiceUI to a single op
 -- | Print a prompt and an overlay and wait for a player keypress.

@@ -883,14 +883,11 @@ mainMenuHuman cmdAction = do
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
       menuOverwritten =  -- TODO: switch to Text and use T.justifyLeft
         overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
-      io = toOverlay menuOverwritten
-  akm <- displayChoiceUI "" io (map fst kds)
-  case akm of
-    Left slides -> failSlides slides
-    Right km ->
-      case lookup km{K.pointer=Nothing} kds of
-        Just (_desc, cmd) -> cmdAction cmd
-        Nothing -> failWith "never mind"
+      ov = toOverlay menuOverwritten
+  km <- displayChoiceScreen ov (map fst kds)
+  case lookup km{K.pointer=Nothing} kds of
+    Just (_desc, cmd) -> cmdAction cmd
+    Nothing -> failWith "never mind"
 
 -- * GameRestart; does not take time
 
