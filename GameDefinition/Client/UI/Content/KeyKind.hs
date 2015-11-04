@@ -23,8 +23,6 @@ standardKeys = KeyKind
 
       -- Main Menu.
       [ ("X", ([CmdMainMenu], GameExit))
-      , ("+", ([CmdMainMenu], GameDifficultyIncr 1))
-      , ("-", ([CmdMainMenu], GameDifficultyIncr (-1)))
       , ("r", ([CmdMainMenu], GameRestart "raid"))
       , ("s", ([CmdMainMenu], GameRestart "skirmish"))
       , ("a", ([CmdMainMenu], GameRestart "ambush"))
@@ -35,6 +33,9 @@ standardKeys = KeyKind
       , ("u", ([CmdMainMenu, CmdDebug], GameRestart "safari survival"))
       , ("d", ([CmdMainMenu, CmdDebug], GameRestart "defense"))
       , ("g", ([CmdMainMenu, CmdDebug], GameRestart "boardgame"))
+      , ("+", ([CmdMainMenu], GameDifficultyIncr 1))
+      , ("-", ([CmdMainMenu], GameDifficultyIncr (-1)))
+      , ("A", ([CmdMainMenu], Automate))
 
       -- Movement and terrain alteration
       , ("less", ([CmdMove, CmdMinimal], TriggerTile
@@ -168,7 +169,6 @@ standardKeys = KeyKind
       , ("CTRL-V", ([CmdAuto], Repeat 25))
       , ("apostrophe", ([CmdAuto], Record))
       , ("CTRL-T", ([CmdAuto], Tactic))
-      , ("CTRL-A", ([CmdAuto], Automate))
 
       -- Assorted
       , ("question", ([CmdMeta], Help))

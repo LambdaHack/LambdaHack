@@ -831,7 +831,6 @@ mainMenuHuman :: MonadClientUI m
               -> m (SlideOrCmd RequestUI)
 mainMenuHuman cmdAction = do
   Kind.COps{corule} <- getsState scops
-  escAI <- getsClient sescAI
   Binding{brevMap, bcmdList} <- askBinding
   gameMode <- getGameMode
   scurDiff <- getsClient scurDiff
@@ -851,11 +850,7 @@ mainMenuHuman cmdAction = do
             revPair cmd desc = (revLookup cmd, (desc, cmd))
             cmds = [ (km, (desc, cmd))
                    | (km, (desc, [HumanCmd.CmdMainMenu], cmd)) <- bcmdList ]
-        in [
-             if escAI == EscAIMenu then
-               revPair HumanCmd.Automate "back to screensaver"
-             else
-               revPair HumanCmd.Cancel "back to playing"
+        in [ revPair HumanCmd.Cancel "back to playing"
            , revPair HumanCmd.Accept "see more help"
            ]
            ++ cmds

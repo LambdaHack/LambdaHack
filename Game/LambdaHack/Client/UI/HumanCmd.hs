@@ -156,7 +156,7 @@ cmdDescription cmd = case cmd of
   GameExit    -> "save and exit"
   GameSave    -> "save game"
   Tactic      -> "cycle tactic of non-leader team members (WIP)"
-  Automate    -> "automate faction (ESC to retake control)"
+  Automate    -> "automate faction"
 
   GameDifficultyIncr k | k > 0 -> "increase next difficulty"
   GameDifficultyIncr k | k < 0 -> "decrease next difficulty"
