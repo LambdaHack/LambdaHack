@@ -22,7 +22,9 @@ standardKeys = KeyKind
       -- mode) first.
 
       -- Main Menu.
-      [ ("X", ([CmdMainMenu], GameExit))
+      [ ("Escape", ([CmdMainMenu], Macro "back to playing" ["Escape"]))
+      , ("?", ([CmdMainMenu], Macro "see more help" ["?"]))
+      , ("X", ([CmdMainMenu], GameExit))
       , ("r", ([CmdMainMenu], GameRestart "raid"))
       , ("s", ([CmdMainMenu], GameRestart "skirmish"))
       , ("a", ([CmdMainMenu], GameRestart "ambush"))

@@ -27,7 +27,6 @@ import Control.Monad (when)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List (delete, mapAccumL)
-import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
@@ -831,7 +830,7 @@ mainMenuHuman :: MonadClientUI m
               -> m (SlideOrCmd RequestUI)
 mainMenuHuman cmdAction = do
   Kind.COps{corule} <- getsState scops
-  Binding{brevMap, bcmdList} <- askBinding
+  Binding{bcmdList} <- askBinding
   gameMode <- getGameMode
   scurDiff <- getsClient scurDiff
   snxtDiff <- getsClient snxtDiff
@@ -844,16 +843,9 @@ mainMenuHuman cmdAction = do
                       ++ ") "
             versionLen = length version
         in init art ++ [take (80 - versionLen) (last art) ++ version]
-      kds =  -- key-description-command tuples
-        let revLookup cmd = fromMaybe (assert `failure` cmd)
-                            $ M.lookup cmd brevMap
-            revPair cmd desc = (revLookup cmd, (desc, cmd))
-            cmds = [ (km, (desc, cmd))
-                   | (km, (desc, [HumanCmd.CmdMainMenu], cmd)) <- bcmdList ]
-        in [ revPair HumanCmd.Cancel "back to playing"
-           , revPair HumanCmd.Accept "see more help"
-           ]
-           ++ cmds
+      -- Key-description-command tuples.
+      kds = [ (km, (desc, cmd))
+            | (km, (desc, [HumanCmd.CmdMainMenu], cmd)) <- bcmdList ]
       scenarioNameLen = 11
       minBraceLen = 5
       gameInfo = [ T.justifyLeft scenarioNameLen ' ' $ mname gameMode
@@ -886,7 +878,8 @@ mainMenuHuman cmdAction = do
 
 -- * GameRestart; does not take time
 
-gameRestartHuman :: MonadClientUI m => GroupName ModeKind -> m (SlideOrCmd RequestUI)
+gameRestartHuman :: MonadClientUI m
+                 => GroupName ModeKind -> m (SlideOrCmd RequestUI)
 gameRestartHuman t = do
   let restart = do
         leader <- getLeaderUI
