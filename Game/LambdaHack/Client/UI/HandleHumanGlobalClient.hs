@@ -824,6 +824,7 @@ targetReject = do
 -- * MainMenu; does not take time
 
 -- TODO: merge with the help screens better
+-- TODO: avoid String
 -- | Display the main menu.
 mainMenuHuman :: MonadClientUI m
               => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
@@ -853,25 +854,34 @@ mainMenuHuman cmdAction = do
                  , T.justifyLeft minBraceLen ' ' $ tshow snxtDiff ]
       bindingLen = 28
       bindings =  -- key bindings to display
-        let fmt (k, (d, _)) = T.justifyLeft bindingLen ' '
-                              $ T.justifyLeft 3 ' ' (K.showKM k) <> " " <> d
+        let fmt (k, (d, _)) =
+              ( Just k
+              , T.justifyLeft bindingLen ' '
+                  $ T.justifyLeft 3 ' ' (K.showKM k) <> " " <> d )
         in map fmt kds
       overwrite =  -- overwrite the art with key bindings and other lines
-        let over [] line = ([], T.pack line)
-            over bs@(binding : bsRest) line =
+        let over [] (_, line) = ([], (T.pack line, Nothing))
+            over bs@((mkey, binding) : bsRest) (y, line) =
               let (prefix, lineRest) = break (=='{') line
                   (braces, suffix)   = span  (=='{') lineRest
               in if length braces >= minBraceLen
-                 then (bsRest, T.pack prefix <> binding
-                               <> T.drop (T.length binding - bindingLen)
-                                         (T.pack suffix))
-                 else (bs, T.pack line)
-        in snd . mapAccumL over (gameInfo ++ bindings)
+                 then
+                   let lenB = T.length binding
+                       pre = T.pack prefix
+                       post = T.drop (lenB - bindingLen) (T.pack suffix)
+                       len = T.length pre
+                       yxxx key = (key, (y, len + 1, len + 4, len + lenB))
+                       myxxx = yxxx <$> mkey
+                   in (bsRest, (pre <> binding <> post, myxxx))
+                 else (bs, (T.pack line, Nothing))
+        in snd . mapAccumL over (zip (repeat Nothing) gameInfo ++ bindings)
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
-      menuOverwritten =  -- TODO: switch to Text and use T.justifyLeft
-        overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
-      ov = toOverlay menuOverwritten
-  km <- displayChoiceScreen ov (map fst kds)
+      artWithVersion = pasteVersion $ map T.unpack $ stripFrame mainMenuArt
+      menuOverwritten = overwrite $ zip [0..] artWithVersion
+      (menuOvLines, mkyxs) = unzip menuOverwritten
+      kyxs = catMaybes mkyxs
+      ov = toOverlay menuOvLines
+  km <- displayChoiceScreen True [(ov, kyxs)]
   case lookup km{K.pointer=Nothing} kds of
     Just (_desc, cmd) -> cmdAction cmd
     Nothing -> failWith "never mind"

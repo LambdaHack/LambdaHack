@@ -4,7 +4,8 @@ module Game.LambdaHack.Client.Key
   ( Key(..), showKey, handleDir, dirAllKey
   , moveBinding, mkKM, keyTranslate, keyTranslateWeb
   , Modifier(..), KM(..), toKM, showKM
-  , escKM, spaceKM, returnKM, pgupKM, pgdnKM, leftButtonKM, rightButtonKM
+  , escKM, spaceKM, returnKM, pgupKM, pgdnKM, upKM, downKM
+  , leftButtonKM, rightButtonKM
   ) where
 
 import Control.DeepSeq
@@ -125,6 +126,12 @@ pgupKM = toKM NoModifier PgUp
 
 pgdnKM :: KM
 pgdnKM = toKM NoModifier PgDn
+
+upKM :: KM
+upKM = toKM NoModifier Up
+
+downKM :: KM
+downKM = toKM NoModifier Down
 
 leftButtonKM :: KM
 leftButtonKM = toKM NoModifier LeftButtonPress
