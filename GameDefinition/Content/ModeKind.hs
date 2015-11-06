@@ -121,7 +121,7 @@ defense = ModeKind
   }
 
 screensaver = safari
-  { mname   = "safari screensaver"
+  { mname   = "safari"
   , mfreq   = [("starting", 1)]
   , mroster = rosterSafari
       { rosterList = (head (rosterList rosterSafari))
