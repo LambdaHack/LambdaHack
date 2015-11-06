@@ -353,7 +353,7 @@ drawSelected drawnLevelId width = do
                   -- when selection changes
                   if bcolor /= Color.Blue
                   then cattr {Color.bg = Color.Blue}
-                  else cattr {Color.bg = Color.Magenta}
+                  else cattr {Color.bg = Color.BrBlack}
               | otherwise = cattr
         in Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%'
       maxViewed = width - 2

@@ -76,10 +76,11 @@ instance Enum AttrChar where
 isBright :: Color -> Bool
 isBright c = c >= BrBlack
 
+-- TODO: smart constructor for bg
 -- | Due to the limitation of the curses library used in the curses frontend,
 -- only these are legal backgrounds.
 legalBG :: [Color]
-legalBG = [Black, White, Blue, Magenta]
+legalBG = [Black, White, Blue, BrBlack]
 
 -- | Colour sets.
 darkCol, brightCol, stdCol :: [Color]
