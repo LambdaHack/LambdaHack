@@ -47,7 +47,7 @@ standardKeys = KeyKind
            , TriggerFeature { verb = "escape"
                             , object = "dungeon"
                             , feature = TK.Cause (IK.Escape 1) } ]))
-      , ("CTRL-less", ([CmdMove], TriggerTile
+      , ("CTRL-less", ([CmdInternal], TriggerTile
            [ TriggerFeature { verb = "ascend"
                             , object = "10 levels"
                             , feature = TK.Cause (IK.Ascend 10) } ]))
@@ -58,7 +58,7 @@ standardKeys = KeyKind
            , TriggerFeature { verb = "escape"
                             , object = "dungeon"
                             , feature = TK.Cause (IK.Escape (-1)) } ]))
-      , ("CTRL-greater", ([CmdMove], TriggerTile
+      , ("CTRL-greater", ([CmdInternal], TriggerTile
            [ TriggerFeature { verb = "descend"
                             , object = "10 levels"
                             , feature = TK.Cause (IK.Ascend (-10)) } ]))
@@ -79,14 +79,8 @@ standardKeys = KeyKind
          ( [CmdMove]
          , Macro "autoexplore 100 times"
                  ["'", "CTRL-question", "CTRL-period", "'", "V"] ))
-      , ("CTRL-X",
-         ( [CmdMove]
-         , Macro "autoexplore 25 times"
-                 ["'", "CTRL-question", "CTRL-period", "'", "CTRL-V"] ))
       , ("R", ([CmdMove], Macro "rest (wait 100 times)"
                                 ["KP_Begin", "V"]))
-      , ("CTRL-R", ([CmdMove], Macro "rest (wait 25 times)"
-                                     ["KP_Begin", "CTRL-V"]))
       , ("c", ([CmdMove, CmdMinimal], AlterDir
            [ AlterFeature { verb = "close"
                           , object = "door"

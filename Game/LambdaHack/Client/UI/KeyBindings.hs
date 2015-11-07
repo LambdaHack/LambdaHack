@@ -124,7 +124,8 @@ keyHelp Binding{bcmdList} =
     coImage k = k : sort [ from
                          | (from, (_, cats, Macro _ [to])) <- bcmdList
                          , K.mkKM to == k
-                         , any (`notElem` [CmdDebug, CmdInternal]) cats ]
+                         , any (`notElem` [CmdMainMenu, CmdDebug, CmdInternal])
+                               cats ]
     disp k = T.concat $ intersperse " or " $ map K.showKM $ coImage k
     keysN n cat = [ fmt n (disp k) h
                   | (k, (h, cats, _)) <- bcmdList, cat `elem` cats, h /= "" ]
