@@ -55,10 +55,10 @@ cmdAction cmd = case cmd of
   Tactic -> tacticHuman
   Automate -> automateHuman
   MainMenu -> mainMenuHuman cmdAction
+  GameDifficultyIncr k -> gameDifficultyIncr k >> mainMenuHuman cmdAction
   Cancel -> cancelHuman $ mainMenuHuman cmdAction
 
   -- Local.
-  GameDifficultyIncr k -> addNoSlides $ gameDifficultyIncr k
   PickLeader k -> Left <$> pickLeaderHuman k
   MemberCycle -> Left <$> memberCycleHuman
   MemberBack -> Left <$> memberBackHuman

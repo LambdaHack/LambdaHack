@@ -63,7 +63,6 @@ gameDifficultyIncr delta = do
         | snxtDiff + delta < 1 = difficultyBound
         | otherwise = snxtDiff + delta
   modifyClient $ \cli -> cli {snxtDiff = d}
-  msgAdd $ "Next game difficulty set to" <+> tshow d <> "."
 
 -- * PickLeader
 
