@@ -12,7 +12,8 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   , runOnceAheadHuman, moveOnceToCursorHuman
   , runOnceToCursorHuman, continueToCursorHuman
     -- * Commands that never take time
-  , cancelHuman, mainMenuHuman, gameRestartHuman, gameExitHuman, gameSaveHuman
+  , cancelHuman, acceptHuman, mainMenuHuman, helpHuman
+  , gameRestartHuman, gameExitHuman, gameSaveHuman
   , tacticHuman, automateHuman
   ) where
 
@@ -27,6 +28,7 @@ import Control.Monad (when)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List (delete, mapAccumL)
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
@@ -821,9 +823,57 @@ targetReject = do
   modifyClient $ \cli -> cli {stgtMode = Nothing}
   failWith "target not set"
 
--- * MainMenu; does not take time
+-- * Help; does not take time, but some of the commands do
 
--- TODO: merge with the help screens better
+-- | Display command help.
+helpHuman :: MonadClientUI m
+          => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
+          -> m (SlideOrCmd RequestUI)
+helpHuman cmdAction = do
+  keyb <- askBinding
+  km <- displayChoiceScreen True $ keyHelp keyb
+  case M.lookup km{K.pointer=Nothing} $ bcmdMap keyb of
+    _ | K.key km == K.Esc -> return $ Left mempty
+    Just (_desc, _cats, cmd) -> cmdAction cmd
+    Nothing -> failWith "never mind"
+
+-- * Accept
+
+-- | Accept something, e.g., targeting mode, keeping cursor where it was.
+-- Or perform the default action, if nothing needs accepting.
+acceptHuman :: MonadClientUI m
+            => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
+acceptHuman h = do
+  stgtMode <- getsClient stgtMode
+  if isJust stgtMode
+    then do
+      targetAccept
+      return $ Left mempty
+    else h  -- nothing to accept right now, treat this as a command invocation
+
+-- | End targeting mode, accepting the current position.
+targetAccept :: MonadClientUI m => m ()
+targetAccept = do
+  endTargeting
+  endTargetingMsg
+  modifyClient $ \cli -> cli {stgtMode = Nothing}
+
+-- | End targeting mode, accepting the current position.
+endTargeting :: MonadClientUI m => m ()
+endTargeting = do
+  leader <- getLeaderUI
+  scursor <- getsClient scursor
+  modifyClient $ updateTarget leader $ const $ Just scursor
+
+endTargetingMsg :: MonadClientUI m => m ()
+endTargetingMsg = do
+  leader <- getLeaderUI
+  (targetMsg, _) <- targetDescLeader leader
+  subject <- partAidLeader leader
+  msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
+
+-- * MainMenu; does not take time, but some of the commands do
+
 -- TODO: avoid String
 -- | Display the main menu.
 mainMenuHuman :: MonadClientUI m
@@ -883,6 +933,7 @@ mainMenuHuman cmdAction = do
       ov = toOverlay menuOvLines
   km <- displayChoiceScreen True [(ov, kyxs)]
   case lookup km{K.pointer=Nothing} kds of
+    _ | K.key km == K.Esc -> return $ Left mempty
     Just (_desc, cmd) -> cmdAction cmd
     Nothing -> failWith "never mind"
 

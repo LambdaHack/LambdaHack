@@ -60,7 +60,7 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   }
 
 -- | Produce a set of help screens from the key bindings.
-keyHelp :: Binding -> Slideshow
+keyHelp :: Binding -> [K.OKX]
 keyHelp Binding{bcmdList} =
   let
     movBlurb =
@@ -105,7 +105,8 @@ keyHelp Binding{bcmdList} =
     lastBlurb =
       [ ""
       , "For more playing instructions see file PLAYING.md."
-      , "Press PGUP to return to previous pages or ESC to see the map again."
+      , "Press PGUP to return to previous pages"
+      , "or ESC to see the map again."
       ]
     pickLeaderDescription =
       [ fmt 16 "0, 1 ... 6" "pick a particular actor as the new leader"
@@ -127,31 +128,55 @@ keyHelp Binding{bcmdList} =
                          , any (`notElem` [CmdMainMenu, CmdDebug, CmdInternal])
                                cats ]
     disp k = T.concat $ intersperse " or " $ map K.showKM $ coImage k
-    keysN n cat = [ fmt n (disp k) h
+    keysN n cat = [ (k, fmt n (disp k) h)
                   | (k, (h, cats, _)) <- bcmdList, cat `elem` cats, h /= "" ]
     -- TODO: measure the longest key sequence and set the caption automatically
     keyCaptionN n = fmt n "keys" "command"
-    keys = keysN 16
     keyCaption = keyCaptionN 16
-  in toSlideshow (Just True)
-    [ [casualDescription <+> "(1/2). [press SPACE to see more]"] ++ [""]
-      ++ movText ++ [moreMsg]
-    , [casualDescription <+> "(2/2). [press SPACE to see all commands]"] ++ [""]
-      ++ minimalText
-      ++ [keyCaption] ++ keys CmdMinimal ++ casualEndText ++ [moreMsg]
-    , ["All terrain exploration and alteration commands"
-       <> ". [press SPACE to advance]"] ++ [""]
-      ++ [keyCaptionN 10] ++ keysN 10 CmdMove ++ categoryText ++ [moreMsg]
-    , [categoryDescription CmdItem <> ". [press SPACE to advance]"] ++ [""]
-      ++ [keyCaptionN 10] ++ keysN 10 CmdItem ++ categoryText ++ [moreMsg]
-    , [categoryDescription CmdTgt <> ". [press SPACE to advance]"] ++ [""]
-      ++ [keyCaption] ++ keys CmdTgt ++ categoryText ++ [moreMsg]
-    , [categoryDescription CmdAuto <> ". [press SPACE to advance]"] ++ [""]
-      ++ [keyCaption] ++ keys CmdAuto ++ categoryText ++ [moreMsg]
-    , [categoryDescription CmdMeta <> ". [press SPACE to advance]"] ++ [""]
-      ++ [keyCaption] ++ keys CmdMeta ++ pickLeaderDescription
-      ++ categoryText ++ [moreMsg]
-    , [categoryDescription CmdMouse
-       <> ". [press PGUP to see previous, ESC to cancel]"] ++ [""]
-      ++ [keyCaptionN 21] ++ keysN 21 CmdMouse ++ lastText ++ [endMsg]
+    okxsN :: Int -> CmdCategory -> [Text] -> [Text] -> K.OKX
+    okxsN n cat header footer =
+      let (ks, keyTable) = unzip $ keysN n cat
+          kxs = zip ks [(y, 0, maxBound) | y <- [length header..]]
+      in (toOverlay $ header ++ keyTable ++ footer, kxs)
+    okxs = okxsN 16
+  in
+    [ ( toOverlay $
+          [casualDescription <+> "(1/2). [press SPACE to see more]"]
+          ++ [""] ++ movText ++ [moreMsg]
+      , [(K.spaceKM, (length movText + 1, 0, maxBound))])
+    , okxs CmdMinimal
+        ([casualDescription <+> "(2/2). [press SPACE to see all commands]"]
+         ++ [""] ++ minimalText ++ [keyCaption])
+        (casualEndText ++ [moreMsg])
+    , okxsN 10 CmdMove
+        (["All terrain exploration and alteration commands"
+         <> ". [press SPACE to advance]"]
+         ++ [""] ++ [keyCaptionN 10])
+        (categoryText ++ [moreMsg])
+    , okxsN 10 CmdItem
+        ([categoryDescription CmdItem <> ". [press SPACE to advance]"]
+          ++ [""] ++ [keyCaptionN 10])
+        (categoryText ++ [moreMsg])
+    , okxs CmdTgt
+        ([categoryDescription CmdTgt <> ". [press SPACE to advance]"]
+         ++ [""] ++ [keyCaption])
+        (categoryText ++ [moreMsg])
+    , okxs CmdAuto
+        ([categoryDescription CmdAuto <> ". [press SPACE to advance]"]
+         ++ [""] ++ [keyCaption])
+        (categoryText ++ [moreMsg])
+    , okxs CmdMeta
+        ([categoryDescription CmdMeta <> ". [press SPACE to advance]"]
+         ++ [""] ++ [keyCaption])
+        (pickLeaderDescription ++ categoryText ++ [moreMsg])
+    , let (ov, _) =
+            okxsN 21 CmdMouse
+              ([categoryDescription CmdMouse
+               <> ". [press PGUP to see previous, ESC to cancel]"]
+               ++ [""] ++ [keyCaptionN 21])
+              (lastText ++ [endMsg])
+          len = 4 + length (keysN 0 CmdMouse)
+      in ( ov
+         , [ (K.pgupKM, (len + 1, 0, maxBound))
+           , (K.escKM, (len + 2, 0, maxBound))] )
     ]

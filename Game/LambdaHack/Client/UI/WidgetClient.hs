@@ -64,11 +64,7 @@ displayYesNo dm prompt = do
   frame <- drawOverlay False dm $ head . snd $ slideshow sli
   getYesNo frame
 
-type KYX = (K.KM, (Y, X, X))
-
-type OKS = [(Overlay, [KYX])]
-
-displayChoiceScreen :: forall m . MonadClientUI m => Bool -> OKS -> m K.KM
+displayChoiceScreen :: forall m . MonadClientUI m => Bool -> [K.OKX] -> m K.KM
 displayChoiceScreen _ [] = assert `failure` "no menu pages" `twith` ()
 displayChoiceScreen sfBlank (ok : oks) = do
   let keys = concatMap (map fst . snd) (ok : oks)
@@ -77,9 +73,9 @@ displayChoiceScreen sfBlank (ok : oks) = do
       legalKeys = keys ++ scrollKeys ++ pageKeys
       -- The arguments go from first menu line and menu page to the last,
       -- in order. The middle ones are where the focus is.
-      page :: OKS -> (Overlay, [KYX]) -> OKS -> m K.KM
+      page :: [K.OKX] -> K.OKX -> [K.OKX] -> m K.KM
       page srf f@(ov0, kyxs0) frs =
-        let scroll :: [KYX] -> KYX -> [KYX] -> m K.KM
+        let scroll :: [K.KYX] -> K.KYX -> [K.KYX] -> m K.KM
             scroll sxyk k@(km4, (y, x1, x2)) kyxs = do
               let prevPage = case srf of
                     [] -> startScroll  -- no wrap
@@ -94,23 +90,25 @@ displayChoiceScreen sfBlank (ok : oks) = do
                         (xs2, xs3) = splitAt x2 xsRest
                     in xs1 ++ map greyBG xs2 ++ xs3
                   ov1 = updateOverlayLine y drawHighlight ov0
+                  interpretKey ikm =
+                    case K.key ikm of
+                      K.Return | K.key km4 /= K.Return -> interpretKey km4
+                      K.Up -> case sxyk of
+                        [] | null oks -> endScroll  -- single page, wrap keys
+                        [] -> prevPage
+                        l : ls -> scroll ls l (k : kyxs)
+                      K.Down -> case kyxs of
+                        [] | null oks -> startScroll  -- single page, wrap keys
+                        [] -> nextPage
+                        l : ls -> scroll (k : sxyk) l ls
+                      K.PgUp -> prevPage
+                      K.PgDn -> nextPage
+                      K.Space -> nextPage
+                      _ | ikm `elem` keys -> return ikm  -- km can be PgUp, etc.
+                      _ -> assert `failure` "unknown key" `twith` ikm
               frame <- drawOverlay sfBlank ColorFull ov1
-              km@K.KM{..} <- promptGetKey legalKeys frame
-              case key of
-                _ | km `elem` keys -> return km  -- km can be PgUp, etc.
-                K.Return -> return km4
-                K.Up -> case sxyk of
-                  [] | null oks -> endScroll  -- single page, wrap keys
-                  [] -> prevPage
-                  l : ls -> scroll ls l (k : kyxs)
-                K.Down -> case kyxs of
-                  [] | null oks -> startScroll  -- single page, wrap keys
-                  [] -> nextPage
-                  l : ls -> scroll (k : sxyk) l ls
-                K.PgUp -> prevPage
-                K.PgDn -> nextPage
-                K.Space -> nextPage
-                _ -> assert `failure` "unknown key" `twith` km
+              pkm <- promptGetKey legalKeys frame
+              interpretKey pkm
             startScroll = case kyxs0 of
               [] -> assert `failure` "no menu keys" `twith` keys
               k : ks -> scroll [] k ks

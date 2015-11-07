@@ -55,8 +55,10 @@ cmdAction cmd = case cmd of
   Tactic -> tacticHuman
   Automate -> automateHuman
   MainMenu -> mainMenuHuman cmdAction
+  Help -> helpHuman cmdAction
   GameDifficultyIncr k -> gameDifficultyIncr k >> mainMenuHuman cmdAction
   Cancel -> cancelHuman $ mainMenuHuman cmdAction
+  Accept -> acceptHuman $ helpHuman cmdAction
 
   -- Local.
   PickLeader k -> Left <$> pickLeaderHuman k
@@ -73,7 +75,6 @@ cmdAction cmd = case cmd of
   MarkVision -> addNoSlides markVisionHuman
   MarkSmell -> addNoSlides markSmellHuman
   MarkSuspect -> addNoSlides markSuspectHuman
-  Help -> Left <$> helpHuman
   Macro _ kms -> addNoSlides $ macroHuman kms
 
   MoveCursor v k -> Left <$> moveCursorHuman v k
@@ -85,7 +86,6 @@ cmdAction cmd = case cmd of
   CursorUnknown -> Left <$> cursorUnknownHuman
   CursorItem -> Left <$> cursorItemHuman
   CursorStair up -> Left <$> cursorStairHuman up
-  Accept -> Left <$> acceptHuman helpHuman
   CursorPointerFloor -> addNoSlides cursorPointerFloorHuman
   CursorPointerEnemy -> addNoSlides cursorPointerEnemyHuman
   TgtPointerFloor -> Left <$> tgtPointerFloorHuman

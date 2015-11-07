@@ -8,12 +8,11 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   , selectActorHuman, selectNoneHuman, clearHuman
   , stopIfTgtModeHuman, selectWithPointer, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
-  , helpHuman, macroHuman
+  , macroHuman
     -- * Commands specific to targeting
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman
   , tgtAscendHuman, epsIncrHuman, tgtClearHuman
   , cursorUnknownHuman, cursorItemHuman, cursorStairHuman
-  , acceptHuman
   , cursorPointerFloorHuman, cursorPointerEnemyHuman
   , tgtPointerFloorHuman, tgtPointerEnemyHuman
   ) where
@@ -29,12 +28,10 @@ import Data.Ord
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
-import Game.LambdaHack.Client.CommonClient
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.InventoryClient
-import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.WidgetClient
@@ -252,14 +249,6 @@ markSuspectHuman = do
   cur <- getsClient smarkSuspect
   msgAdd $ "Suspect terrain display toggled" <+> if cur then "on." else "off."
 
--- * Help
-
--- | Display command help.
-helpHuman :: MonadClientUI m => m Slideshow
-helpHuman = do
-  keyb <- askBinding
-  return $! keyHelp keyb
-
 -- * Macro
 
 macroHuman :: MonadClient m => [String] -> m ()
@@ -367,40 +356,6 @@ cursorStairHuman up = do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
       doLook False
-
--- * Accept
-
--- | Accept something, e.g., targeting mode, keeping cursor where it was.
--- Or perform the default action, if nothing needs accepting.
-acceptHuman :: MonadClientUI m => m Slideshow -> m Slideshow
-acceptHuman h = do
-  stgtMode <- getsClient stgtMode
-  if isJust stgtMode
-    then do
-      targetAccept
-      return mempty
-    else h  -- nothing to accept right now, treat this as a command invocation
-
--- | End targeting mode, accepting the current position.
-targetAccept :: MonadClientUI m => m ()
-targetAccept = do
-  endTargeting
-  endTargetingMsg
-  modifyClient $ \cli -> cli {stgtMode = Nothing}
-
--- | End targeting mode, accepting the current position.
-endTargeting :: MonadClientUI m => m ()
-endTargeting = do
-  leader <- getLeaderUI
-  scursor <- getsClient scursor
-  modifyClient $ updateTarget leader $ const $ Just scursor
-
-endTargetingMsg :: MonadClientUI m => m ()
-endTargetingMsg = do
-  leader <- getLeaderUI
-  (targetMsg, _) <- targetDescLeader leader
-  subject <- partAidLeader leader
-  msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
 
 -- * CursorPointerFloor
 
