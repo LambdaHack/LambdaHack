@@ -64,7 +64,7 @@ displayYesNo dm prompt = do
   frame <- drawOverlay False dm $ head . snd $ slideshow sli
   getYesNo frame
 
-type KYX = (K.KM, (Y, X, X, X))
+type KYX = (K.KM, (Y, X, X))
 
 type OKS = [(Overlay, [KYX])]
 
@@ -80,7 +80,7 @@ displayChoiceScreen sfBlank (ok : oks) = do
       page :: OKS -> (Overlay, [KYX]) -> OKS -> m K.KM
       page srf f@(ov0, kyxs0) frs =
         let scroll :: [KYX] -> KYX -> [KYX] -> m K.KM
-            scroll sxyk k@(km4, (y, x1, x2, x3)) kyxs = do
+            scroll sxyk k@(km4, (y, x1, x2)) kyxs = do
               let prevPage = case srf of
                     [] -> startScroll  -- no wrap
                     g : gs -> page gs g (f : frs)
@@ -91,12 +91,8 @@ displayChoiceScreen sfBlank (ok : oks) = do
                                  (Color.acAttr x){Color.fg = Color.BrWhite}}
                   drawHighlight xs =
                     let (xs1, xsRest) = splitAt x1 xs
-                    in case splitAt x2 xsRest of
-                      (xs2, x : xsEnd) ->
-                        let (xs3, xs4) = splitAt x3 xsEnd
-                            item = xs2 ++ x{Color.acChar = '>'} : xs3
-                        in xs1 ++ map greyBG item ++ xs4
-                      _ -> xs
+                        (xs2, xs3) = splitAt x2 xsRest
+                    in xs1 ++ map greyBG xs2 ++ xs3
                   ov1 = updateOverlayLine y drawHighlight ov0
               frame <- drawOverlay sfBlank ColorFull ov1
               km@K.KM{..} <- promptGetKey legalKeys frame
