@@ -870,7 +870,7 @@ mainMenuHuman cmdAction = do
                        pre = T.pack prefix
                        post = T.drop (lenB - bindingLen) (T.pack suffix)
                        len = T.length pre
-                       yxxx key = (key, (y, len + 1, len + 4, len + lenB))
+                       yxxx key = (key, (y, len, 3, lenB - 4))
                        myxxx = yxxx <$> mkey
                    in (bsRest, (pre <> binding <> post, myxxx))
                  else (bs, (T.pack line, Nothing))

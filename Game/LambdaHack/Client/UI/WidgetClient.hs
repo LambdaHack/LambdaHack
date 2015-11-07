@@ -28,6 +28,7 @@ import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Common.ClientOptions
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
@@ -79,18 +80,29 @@ displayChoiceScreen sfBlank (ok : oks) = do
       page :: OKS -> (Overlay, [KYX]) -> OKS -> m K.KM
       page srf f@(ov0, kyxs0) frs =
         let scroll :: [KYX] -> KYX -> [KYX] -> m K.KM
-            scroll sxyk k kyxs = do
+            scroll sxyk k@(km4, (y, x1, x2, x3)) kyxs = do
               let prevPage = case srf of
                     [] -> startScroll  -- no wrap
                     g : gs -> page gs g (f : frs)
                   nextPage = case frs of
                     [] -> endScroll  -- no wrap
                     g : gs -> page (f : srf) g gs
-              frame <- drawOverlay sfBlank ColorFull ov0
+                  greyBG x = x{Color.acAttr =
+                                 (Color.acAttr x){Color.fg = Color.BrWhite}}
+                  drawHighlight xs =
+                    let (xs1, xsRest) = splitAt x1 xs
+                    in case splitAt x2 xsRest of
+                      (xs2, x : xsEnd) ->
+                        let (xs3, xs4) = splitAt x3 xsEnd
+                            item = xs2 ++ x{Color.acChar = '>'} : xs3
+                        in xs1 ++ map greyBG item ++ xs4
+                      _ -> xs
+                  ov1 = updateOverlayLine y drawHighlight ov0
+              frame <- drawOverlay sfBlank ColorFull ov1
               km@K.KM{..} <- promptGetKey legalKeys frame
               case key of
                 _ | km `elem` keys -> return km  -- km can be PgUp, etc.
-                K.Return -> return $! fst k
+                K.Return -> return km4
                 K.Up -> case sxyk of
                   [] | null oks -> endScroll  -- single page, wrap keys
                   [] -> prevPage

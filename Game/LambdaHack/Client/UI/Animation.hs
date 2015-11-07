@@ -28,9 +28,6 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
-decodeLine :: ScreenLine -> [AttrChar]
-decodeLine v = map (toEnum . fromIntegral) $ G.toList v
-
 -- | The data sufficent to draw a single game screen frame.
 data SingleFrame = SingleFrame
   { sfLevel  :: ![ScreenLine]  -- ^ screen, from top to bottom, line by line

@@ -8,8 +8,9 @@ module Game.LambdaHack.Common.Msg
   , History, emptyHistory, lengthHistory
   , addReport, renderHistory, lastReportOfHistory
   , Overlay(overlay), emptyOverlay, truncateToOverlay, toOverlay
+  , updateOverlayLine
   , Slideshow(slideshow), splitOverlay, toSlideshow
-  , encodeLine, encodeOverlay, ScreenLine, toScreenLine, splitText
+  , encodeLine, decodeLine, encodeOverlay, ScreenLine, toScreenLine, splitText
   )
   where
 
@@ -216,6 +217,9 @@ toScreenLine t = let f = AttrChar defAttr
 encodeLine :: [AttrChar] -> ScreenLine
 encodeLine l = G.fromList $ map (fromIntegral . fromEnum) l
 
+decodeLine :: ScreenLine -> [AttrChar]
+decodeLine v = map (toEnum . fromIntegral) $ G.toList v
+
 encodeOverlay :: [[AttrChar]] -> Overlay
 encodeOverlay = Overlay . map encodeLine
 
@@ -234,6 +238,15 @@ truncateToOverlay msg = toOverlay [msg]
 toOverlay :: [Text] -> Overlay
 toOverlay = let lxsize = fst normalLevelBound + 1  -- TODO
             in Overlay . map (toScreenLine . truncateMsg lxsize)
+
+-- @f@ should not enlarge the line beyond screen width.
+updateOverlayLine :: Int -> ([AttrChar] -> [AttrChar]) -> Overlay -> Overlay
+updateOverlayLine n f Overlay{overlay} =
+  let upd k (l : ls) = if k == 0
+                       then encodeLine (f (decodeLine l)) : ls
+                       else l : upd (k - 1) ls
+      upd _ [] = []
+  in Overlay $ upd n overlay
 
 -- | Split an overlay into a slideshow in which each overlay,
 -- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,
