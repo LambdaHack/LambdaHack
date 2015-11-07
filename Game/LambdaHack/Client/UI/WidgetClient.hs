@@ -11,6 +11,7 @@ import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
+import Data.List (find)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
@@ -68,7 +69,7 @@ displayChoiceScreen :: forall m . MonadClientUI m => Bool -> [K.OKX] -> m K.KM
 displayChoiceScreen _ [] = assert `failure` "no menu pages" `twith` ()
 displayChoiceScreen sfBlank (ok : oks) = do
   let keys = concatMap (map fst . snd) (ok : oks)
-      scrollKeys = [K.returnKM, K.upKM, K.downKM]
+      scrollKeys = [K.leftButtonKM, K.returnKM, K.upKM, K.downKM]
       pageKeys = [K.spaceKM, K.pgupKM, K.pgdnKM]
       legalKeys = keys ++ scrollKeys ++ pageKeys
       -- The arguments go from first menu line and menu page to the last,
@@ -87,12 +88,20 @@ displayChoiceScreen sfBlank (ok : oks) = do
                                  (Color.acAttr x){Color.fg = Color.BrWhite}}
                   drawHighlight xs =
                     let (xs1, xsRest) = splitAt x1 xs
-                        (xs2, xs3) = splitAt x2 xsRest
+                        (xs2, xs3) = splitAt (x2 - x1) xsRest
                     in xs1 ++ map greyBG xs2 ++ xs3
                   ov1 = updateOverlayLine y drawHighlight ov0
                   interpretKey ikm =
                     case K.key ikm of
                       K.Return | K.key km4 /= K.Return -> interpretKey km4
+                      K.LeftButtonPress -> case K.pointer ikm of
+                        Nothing -> scroll sxyk k kyxs
+                        Just Point{..} ->
+                          let onChoice (_, (cy, cx1, cx2)) =
+                                cy == py + 1 && cx1 <= px && cx2 > px
+                          in case find onChoice kyxs0 of
+                            Nothing -> scroll sxyk k kyxs
+                            Just (ckm, _) -> interpretKey ckm
                       K.Up -> case sxyk of
                         [] | null oks -> endScroll  -- single page, wrap keys
                         [] -> prevPage
@@ -174,8 +183,6 @@ describeMainKeys = do
                           macroLeftButtonPress brevMap
       kmEscape =
         M.findWithDefault (K.toKM K.NoModifier K.Esc) Cancel brevMap
-      kmCtrlx =
-        M.findWithDefault (K.toKM K.Control (K.KP 'x')) GameExit brevMap
       kmRightButtonPress =
         M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
                           TgtPointerEnemy brevMap
@@ -196,7 +203,7 @@ describeMainKeys = do
         "Explore with keypad or keys or mouse: ["
         <> moveKeys
         <> T.intercalate ", "
-             (map K.showKM [kmLeftButtonPress, kmCtrlx, kmEscape])
+             (map K.showKM [kmLeftButtonPress, kmEscape])
         <> "]"
            | otherwise =
         "Aim" <+> tgtKind <+> "with keypad or keys or mouse: ["
