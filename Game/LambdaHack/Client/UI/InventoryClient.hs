@@ -14,12 +14,12 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
-import Control.Monad (when, void, filterM)
+import Control.Monad (filterM, void, when)
 import Data.Char (intToDigit)
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List (findIndex, sortBy, find, nub)
+import Data.List (find, findIndex, nub, sortBy)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
@@ -385,7 +385,12 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                let eslots = EM.elems multipleSlots
                in return $ Right $ getMultResult eslots
            })
-        , (K.toKM K.NoModifier K.Return, DefItemKey
+        , (K.escKM, DefItemKey
+           { defLabel = ""
+           , defCond = True
+           , defAction = \_ -> failWith "never mind"
+           })
+        , (K.returnKM, DefItemKey
            { defLabel = if lastSlot `EM.member` labelItemSlotsOpen
                         then let l = makePhrase [slotLabel lastSlot]
                              in "RET(" <> l <> ")"  -- l is on the screen list
@@ -597,14 +602,12 @@ runDefItemKey keyDefs lettersDef io labelItemSlots prompt = do
       choice = let letterRange = defLabel lettersDef
                    keyLabelsRaw = letterRange : map (defLabel . snd) keyDefs
                    keyLabels = filter (not . T.null) keyLabelsRaw
-               in "[" <> T.intercalate ", " (nub keyLabels)
-  akm <- displayChoiceUI (prompt <+> choice) io itemKeys
-  case akm of
-    Left slides -> failSlides slides
-    Right km ->
-      case lookup km{K.pointer=Nothing} keyDefs of
-        Just keyDef -> defAction keyDef km
-        Nothing -> defAction lettersDef km
+               in "[" <> T.intercalate ", " (nub keyLabels) <> ", ESC]"
+  (_, ovs) <- slideshow <$> overlayToSlideshow (prompt <+> choice) io
+  km <- displayChoiceScreen False (map (\ov -> (ov, [])) ovs)  --TODO
+  case lookup km{K.pointer=Nothing} keyDefs of
+    Just keyDef -> defAction keyDef km
+    Nothing -> defAction lettersDef km
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (SlideOrCmd Int)
 pickNumber askNumber kAll = do
@@ -613,18 +616,16 @@ pickNumber askNumber kAll = do
     let tDefault = tshow kDefault
         kbound = min 9 kAll
         kprompt = "Choose number [1-" <> tshow kbound
-                  <> ", RET(" <> tDefault <> ")"
-        kkeys = map (K.toKM K.NoModifier)
-                $ map (K.Char . Char.intToDigit) [1..kbound]
-                  ++ [K.Return]
-    kkm <- displayChoiceUI kprompt emptyOverlay kkeys
-    case kkm of
-      Left slides -> failSlides slides
-      Right K.KM{key} ->
-        case key of
-          K.Char l -> return $ Right $ Char.digitToInt l
-          K.Return -> return $ Right kDefault
-          _ -> assert `failure` "unexpected key:" `twith` kkm
+                  <> ", RET(" <> tDefault <> ")" <> ", ESC]"
+        kkeys = K.escKM : K.returnKM
+                : map (K.toKM K.NoModifier)
+                    (map (K.Char . Char.intToDigit) [1..kbound])
+    kkm <- displayChoiceLine kprompt emptyOverlay kkeys
+    case K.key kkm of
+      K.Char l -> return $ Right $ Char.digitToInt l
+      K.Return -> return $ Right kDefault
+      K.Esc -> failWith "never mind"
+      _ -> assert `failure` "unexpected key:" `twith` kkm
   else return $ Right kAll
 
 -- | Switches current member to the next on the level, if any, wrapping.
@@ -1002,22 +1003,20 @@ describeItemC c = do
                   ++ [ (K.Char 's', (CSha, "shared 's'tash")) | calmE ]
                   ++ [ (K.Char 'g', (CGround, "'g'round")) ]
               choice = "[" <> T.intercalate ", " (map (snd . snd) fstores)
-              keys = map (K.toKM K.NoModifier . K.Char) "epsg"
-          akm <- displayChoiceUI (prompt2 <+> choice) io keys
-          case akm of
-            Left slides -> failSlides slides
-            Right km -> do
-              case lookup (K.key km) fstores of
-                Nothing -> return $ Left mempty  -- canceled
-                Just (toCStore, _) -> do
-                  let k = itemK itemFull
-                      kToPick | toCStore == CEqp = min eqpFree k
-                              | otherwise = k
-                  socK <- pickNumber True kToPick
-                  case socK of
-                    Left slides -> return $ Left slides
-                    Right kChosen -> return $ Right $ ReqMoveItems
-                                       [(iid, kChosen, fromCStore, toCStore)]
+                           <> ", ESC]"
+              keys = K.escKM : map (K.toKM K.NoModifier . K.Char) "epsg"
+          km <- displayChoiceLine (prompt2 <+> choice) io keys
+          case lookup (K.key km) fstores of
+            Nothing -> failWith "never mind"  -- canceled
+            Just (toCStore, _) -> do
+              let k = itemK itemFull
+                  kToPick | toCStore == CEqp = min eqpFree k
+                          | otherwise = k
+              socK <- pickNumber True kToPick
+              case socK of
+                Left slides -> return $ Left slides
+                Right kChosen -> return $ Right $ ReqMoveItems
+                                   [(iid, kChosen, fromCStore, toCStore)]
         MOwned -> do
           -- We can't move items from MOwned, because different copies may come
           -- from different stores and we can't guess player's intentions.

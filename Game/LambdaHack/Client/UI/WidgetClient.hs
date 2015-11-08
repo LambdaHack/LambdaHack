@@ -1,6 +1,6 @@
 -- | A set of widgets for UI clients.
 module Game.LambdaHack.Client.UI.WidgetClient
-  ( displayMore, displayYesNo, displayChoiceScreen, displayChoiceUI
+  ( displayMore, displayYesNo, displayChoiceScreen, displayChoiceLine
   , displayPush, describeMainKeys
   , promptToSlideshow, overlayToSlideshow, overlayToBlankSlideshow
   , animate, fadeOutOrIn
@@ -127,35 +127,19 @@ displayChoiceScreen sfBlank (ok : oks) = do
         in startScroll
   page [] ok oks
 
--- TODO: generalize getInitConfirms and displayChoiceUI to a single op
+-- TODO: generalize displayChoiceLine and getInitConfirms to a single op?
+--       but don't enable SPACE, etc. if only one screen (or only prompt)
+--       don't truncate then, but
+-- If many overlays, scroll screenfuls with SPACE, etc.
 -- | Print a prompt and an overlay and wait for a player keypress.
--- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
--- (in some menus @?@ cycles views, so the user can restart from the top).
-displayChoiceUI :: MonadClientUI m
-                => Msg -> Overlay -> [K.KM] -> m (Either Slideshow K.KM)
-displayChoiceUI prompt ov keys = do
-  (_, ovs) <- slideshow <$> overlayToSlideshow (prompt <> ", ESC]") ov
-  let extraKeys = [K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM]
-      legalKeys = keys ++ extraKeys
-      loop frs srf =
-        case frs of
-          [] -> Left <$> promptToSlideshow "*never mind*"
-          x : xs -> do
-            frame <- drawOverlay False ColorFull x
-            km@K.KM{..} <- promptGetKey legalKeys frame
-            case key of
-              _ | km `elem` keys -> return $ Right km  -- km can be PgUp, etc.
-              K.Esc -> Left <$> promptToSlideshow "*never mind*"
-              K.PgUp -> case srf of
-                [] -> loop frs srf
-                y : ys -> loop (y : frs) ys
-              K.Space -> case xs of
-                [] -> Left <$> promptToSlideshow "*never mind*"
-                _ -> loop xs (x : srf)
-              _ -> case xs of  -- K.PgDn and any other permitted key
-                [] -> loop frs srf
-                _ -> loop xs (x : srf)
-  loop ovs []
+displayChoiceLine :: MonadClientUI m => Msg -> Overlay -> [K.KM] -> m K.KM
+displayChoiceLine prompt ov0 keys = do
+  -- If the prompt and overlay don't fit on the screen, they are truncated.
+  (_, ov : _) <- slideshow <$> overlayToSlideshow prompt ov0
+  frame <- drawOverlay False ColorFull ov
+  pkm <- promptGetKey keys frame
+  let !_A = assert (pkm `elem` keys) ()
+  return pkm
 
 -- TODO: if more slides, don't take head, but do as in getInitConfirms,
 -- but then we have to clear the messages or they get redisplayed

@@ -543,13 +543,11 @@ alterDirHuman ts = do
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
-      keys = map (K.toKM K.NoModifier) (K.dirAllKey configVi configLaptop)
-      prompt = makePhrase ["What to", verb1 <> "? [movement key"]
-  me <- displayChoiceUI prompt emptyOverlay keys
-  case me of
-    Left slides -> failSlides slides
-    Right e -> K.handleDir configVi configLaptop e (`alterTile` ts)
-                                                   (failWith "never mind")
+      keys = K.escKM : map (K.toKM K.NoModifier)
+                           (K.dirAllKey configVi configLaptop)
+      prompt = makePhrase ["What to", verb1 <> "? [movement key, ESC]"]
+  km <- displayChoiceLine prompt emptyOverlay keys
+  K.handleDir configVi configLaptop km (`alterTile` ts) (failWith "never mind")
 
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m
