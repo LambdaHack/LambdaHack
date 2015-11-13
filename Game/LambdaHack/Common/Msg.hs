@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Msg
   , splitReport, renderReport, findInReport, lastMsgOfReport
   , History, emptyHistory, lengthHistory
   , addReport, renderHistory, lastReportOfHistory
-  , Overlay(overlay), emptyOverlay, truncateToOverlay, toOverlay
+  , Overlay(overlay), emptyOverlay, toOverlayRaw, truncateToOverlay, toOverlay
   , updateOverlayLine
   , Slideshow(slideshow), splitOverlay, toSlideshow
   , encodeLine, decodeLine, encodeOverlay, ScreenLine, toScreenLine, splitText
@@ -232,6 +232,10 @@ newtype Overlay = Overlay {overlay :: [ScreenLine]}
 emptyOverlay :: Overlay
 emptyOverlay = Overlay []
 
+-- TODO: get rid of
+toOverlayRaw :: [ScreenLine] -> Overlay
+toOverlayRaw = Overlay
+
 truncateToOverlay :: Text -> Overlay
 truncateToOverlay msg = toOverlay [msg]
 
@@ -252,22 +256,22 @@ updateOverlayLine n f Overlay{overlay} =
 -- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,
 -- fits on the screen wrt height (but lines may be too wide).
 splitOverlay :: Maybe Bool -> Y -> Overlay -> Overlay -> Slideshow
-splitOverlay onBlank yspace (Overlay msg) (Overlay ls) =
+splitOverlay onBlank yspace (Overlay msg) (Overlay ls0) =
   let len = length msg
       endB = [ toScreenLine
                $ endMsg <> "[press PGUP to see previous, ESC to cancel]"
              | onBlank == Just False ]
   in if len >= yspace
-     then  -- no space left for @ls@
+     then  -- no space left for @ls0@
        Slideshow (onBlank, [Overlay $ take (yspace - 1) msg
                                       ++ [toScreenLine moreMsg]])
-     else let splitO over =
-                let (pre, post) = splitAt (yspace - 1) $ msg ++ over
-                in if null (drop 1 post)  -- (don't call @length@ on @ls@)
-                   then [Overlay $ msg ++ over ++ endB]  -- all fits on screen
+     else let splitO ls =
+                let (pre, post) = splitAt (yspace - 1) $ msg ++ ls
+                in if null (drop 1 post)  -- (don't call @length@ on @ls0@)
+                   then [Overlay $ msg ++ ls ++ endB]  -- all fits on screen
                    else let rest = splitO post
                         in Overlay (pre ++ [toScreenLine moreMsg]) : rest
-          in Slideshow (onBlank, splitO ls)
+          in Slideshow (onBlank, splitO ls0)
 
 -- | A few overlays, displayed one by one upon keypress.
 -- When displayed, they are trimmed, not wrapped

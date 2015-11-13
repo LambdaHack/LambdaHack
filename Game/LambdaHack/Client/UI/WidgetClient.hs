@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.WidgetClient
   ( displayMore, displayYesNo, displayChoiceScreen, displayChoiceLine
   , displayPush, describeMainKeys
   , promptToSlideshow, overlayToSlideshow, overlayToBlankSlideshow
-  , animate, fadeOutOrIn
+  , animate, fadeOutOrIn, msgPromptAI
   ) where
 
 import Prelude ()
@@ -65,10 +65,11 @@ displayYesNo dm prompt = do
   frame <- drawOverlay False dm $ head . snd $ slideshow sli
   getYesNo frame
 
-displayChoiceScreen :: forall m . MonadClientUI m => Bool -> [K.OKX] -> m K.KM
-displayChoiceScreen _ [] = assert `failure` "no menu pages" `twith` ()
-displayChoiceScreen sfBlank (ok : oks) = do
-  let keys = concatMap (map fst . snd) (ok : oks)
+displayChoiceScreen :: forall m . MonadClientUI m
+                    => Bool -> [K.OKX] ->  [K.KM] -> m K.KM
+displayChoiceScreen _ [] _ = assert `failure` "no menu pages" `twith` ()
+displayChoiceScreen sfBlank (ok : oks) extraKeys = do
+  let keys = concatMap (map fst . snd) (ok : oks) ++ extraKeys
       scrollKeys = [K.leftButtonKM, K.returnKM, K.upKM, K.downKM]
       pageKeys = [K.spaceKM, K.pgupKM, K.pgdnKM]
       legalKeys = keys ++ scrollKeys ++ pageKeys

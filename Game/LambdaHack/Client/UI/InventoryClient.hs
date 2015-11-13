@@ -521,11 +521,11 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                           EM.empty,
                           promptGeneric body activeItems cCur <> ":")
   io <- case cCur of
-    MStats -> statsOverlay leader -- TODO: describe each stat when selected
+    MStats -> statsOverlay leader
     _ -> itemOverlay (storeFromMode cCur) (blid body) bagFiltered
   runDefItemKey keyDefs lettersDef io bagItemSlots promptChosen
 
-statsOverlay :: MonadClient m => ActorId -> m Overlay
+statsOverlay :: MonadClient m => ActorId -> m K.OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
@@ -568,7 +568,8 @@ statsOverlay aid = do
             valueText = tshow $ EM.findWithDefault 0 ability skills
         in fullText valueText
       abilityList = [minBound..maxBound]
-  return $! toOverlay $ map prSlot slotList ++ map prAbility abilityList
+  return $ ( toOverlay $ map prSlot slotList ++ map prAbility abilityList
+           , [(K.escKM, (0, 0, 5))] )  --abc...
 
 legalWithUpdatedLeader :: MonadClientUI m
                        => ItemDialogMode
@@ -590,11 +591,11 @@ legalWithUpdatedLeader cCur cRest = do
 runDefItemKey :: MonadClientUI m
               => [(K.KM, DefItemKey m)]
               -> DefItemKey m
-              -> Overlay
+              -> K.OKX
               -> EM.EnumMap SlotChar ItemId
               -> Text
               -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
-runDefItemKey keyDefs lettersDef io labelItemSlots prompt = do
+runDefItemKey keyDefs lettersDef okx labelItemSlots prompt = do
   let itemKeys =
         let slotKeys = map (K.Char . slotChar) (EM.keys labelItemSlots)
             defKeys = map fst keyDefs
@@ -603,11 +604,48 @@ runDefItemKey keyDefs lettersDef io labelItemSlots prompt = do
                    keyLabelsRaw = letterRange : map (defLabel . snd) keyDefs
                    keyLabels = filter (not . T.null) keyLabelsRaw
                in "[" <> T.intercalate ", " (nub keyLabels) <> ", ESC]"
-  (_, ovs) <- slideshow <$> overlayToSlideshow (prompt <+> choice) io
-  km <- displayChoiceScreen False (map (\ov -> (ov, [])) ovs)  --TODO
+  km <- if null $ overlay $ fst okx
+        then do
+          let keys = map fst (snd okx) ++ itemKeys
+          displayChoiceLine (prompt <+> choice) (fst okx) keys
+        else do
+          okxs <- splitOKX (prompt <+> choice) okx
+          displayChoiceScreen False okxs itemKeys
   case lookup km{K.pointer=Nothing} keyDefs of
     Just keyDef -> defAction keyDef km
     Nothing -> defAction lettersDef km
+
+splitOKX :: MonadClientUI m => Msg -> K.OKX -> m [K.OKX]
+splitOKX prompt okx = do
+  promptAI <- msgPromptAI
+  lid <- getArenaUI
+  Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
+  sreport <- getsClient sreport
+  let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
+  return $! splitOverlayOKX (lysize + 1) msg okx 0
+
+splitOverlayOKX :: Y -> Overlay -> K.OKX -> Y -> [K.OKX]
+splitOverlayOKX yspace omsg (ov0, kxs0) yindex =
+  let msg = overlay omsg
+      msg0 = if yspace - length msg - 1 <= 0  -- all space taken by @msg@
+             then take 1 msg
+             else msg
+      ls0 = overlay ov0
+      len = length msg0
+      renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
+      zipRenumber y = zipWith renumber [y..]
+      splitO ls kxs yi =
+        let (pre, post) = splitAt (yspace - 1) $ msg0 ++ ls
+        in if null (drop 1 post)
+           then [( toOverlayRaw $ msg0 ++ ls  -- all fits on screen
+                 , zipRenumber (yi + len) kxs )]
+           else let ynew = yi + yspace - len
+                    (preX, postX) = splitAt (yspace - len - 1) kxs
+                    rest = splitO post postX ynew
+                in ( toOverlayRaw (pre ++ [toScreenLine moreMsg])
+                   , zipRenumber (yi + len) preX )
+                   : rest
+  in splitO ls0 kxs0 yindex
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (SlideOrCmd Int)
 pickNumber askNumber kAll = do

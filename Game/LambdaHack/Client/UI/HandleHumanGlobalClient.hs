@@ -829,7 +829,7 @@ helpHuman :: MonadClientUI m
           -> m (SlideOrCmd RequestUI)
 helpHuman cmdAction = do
   keyb <- askBinding
-  km <- displayChoiceScreen True $ keyHelp keyb
+  km <- displayChoiceScreen True (keyHelp keyb) []
   case M.lookup km{K.pointer=Nothing} $ bcmdMap keyb of
     _ | K.key km == K.Esc -> return $ Left mempty
     Just (_desc, _cats, cmd) -> cmdAction cmd
@@ -929,7 +929,7 @@ mainMenuHuman cmdAction = do
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
       ov = toOverlay menuOvLines
-  km <- displayChoiceScreen True [(ov, kyxs)]
+  km <- displayChoiceScreen True [(ov, kyxs)] []
   case lookup km{K.pointer=Nothing} kds of
     _ | K.key km == K.Esc -> return $ Left mempty
     Just (_desc, cmd) -> cmdAction cmd

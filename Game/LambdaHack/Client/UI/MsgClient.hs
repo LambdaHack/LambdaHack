@@ -20,6 +20,7 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.ItemSlot
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
@@ -128,16 +129,16 @@ lookAt detailed tilePrefix canSee pos aid msg = do
 
 -- | Create a list of item names.
 itemOverlay :: MonadClient m
-            => CStore -> LevelId -> ItemBag -> m Overlay
+            => CStore -> LevelId -> ItemBag -> m K.OKX
 itemOverlay c lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   (itemSlots, organSlots) <- getsClient sslots
   let isOrgan = c == COrgan
       lSlots = if isOrgan then organSlots else itemSlots
-  let !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
+      !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (c, lid, bag, lSlots)) ()
-  let pr (l, iid) =
+      pr (l, iid) =
         case EM.lookup iid bag of
           Nothing -> Nothing
           Just kit@(k, _) ->
@@ -145,7 +146,11 @@ itemOverlay c lid bag = do
                 -- TODO: add color item symbols as soon as we have a menu
                 -- with all items visible on the floor or known to player
                 -- symbol = jsymbol $ itemBase itemFull
-            in Just $ makePhrase [ slotLabel l, "-"  -- MU.String [symbol]
-                                 , partItemWs k c localTime itemFull ]
-                      <> "  "
-  return $! toOverlay $ mapMaybe pr $ EM.assocs lSlots
+                phrase = makePhrase [ slotLabel l, "-"  -- MU.String [symbol]
+                                    , partItemWs k c localTime itemFull ]
+                         <> "  "
+                km = K.toKM K.NoModifier $ K.Char $ slotChar l
+                kx = (km, (undefined, 0, T.length phrase - 2))
+            in Just (phrase, kx)
+      (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
+  return (toOverlay ts, kxs)

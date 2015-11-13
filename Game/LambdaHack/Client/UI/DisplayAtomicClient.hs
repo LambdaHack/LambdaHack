@@ -540,7 +540,8 @@ quitFactionUI fid mbody toSt = do
             if EM.null bag then return (mempty, 0)
             else do
               io <- itemOverlay CGround (blid b) bag
-              sli <- overlayToSlideshow itemMsg io
+              -- TODO: treat as menu and display item description
+              sli <- overlayToSlideshow itemMsg $ fst io
               return (sli, tot)
       (itemSlides, total) <- case mbody of
         Just b | fid == side -> bodyToItemSlides b
