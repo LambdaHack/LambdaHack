@@ -2,7 +2,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.ItemSlot
   ( ItemSlots, SlotChar(..)
-  , allSlots, slotLabel, slotRange, assignSlot
+  , allSlots, allZeroSlots, slotLabel, slotRange, assignSlot
   ) where
 
 import Control.Exception.Assert.Sugar

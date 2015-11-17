@@ -520,26 +520,42 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                           bagItemSlots,
                           EM.empty,
                           promptGeneric body activeItems cCur <> ":")
-  io <- case cCur of
-    MStats -> statsOverlay leader
-    _ -> itemOverlay (storeFromMode cCur) (blid body) bagFiltered
-  runDefItemKey keyDefs lettersDef io bagItemSlots promptChosen
+  case cCur of
+    MStats -> do
+      io <- statsOverlay leader
+      let unKey K.KM{key=K.Char c} = SlotChar 0 c
+          unKey km = assert `failure` "unexpected key:" `twith` km
+          slotLabels = map (unKey . fst) $ snd io
+          statsDef :: DefItemKey m
+          statsDef = DefItemKey
+            { defLabel = slotRange slotLabels
+            , defCond = True
+            , defAction = \K.KM{key} -> case key of
+                K.Char _l -> failWith "stats affect character actions"  -- TODO
+                _ -> assert `failure` "unexpected key:" `twith` K.showKey key
+            }
+      runDefItemKey keyDefs statsDef io slotLabels promptChosen
+    _ -> do
+      io <- itemOverlay (storeFromMode cCur) (blid body) bagFiltered
+      runDefItemKey keyDefs lettersDef io (EM.keys bagItemSlots) promptChosen
 
 statsOverlay :: MonadClient m => ActorId -> m K.OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
   let block n = n + if braced b then 50 else 0
-      prSlot :: (IK.EqpSlot, Int -> Text) -> Text
-      prSlot (eqpSlot, f) =
+      prSlot :: SlotChar -> (IK.EqpSlot, Int -> Text) -> (Text, K.KYX)
+      prSlot c (eqpSlot, f) =
         let fullText t =
-              "    "
-              <> makePhrase [ MU.Text $ T.justifyLeft 22 ' '
-                                      $ IK.slotName eqpSlot
-                            , MU.Text t ]
+              makePhrase [ slotLabel c, "-"
+                         , MU.Text $ T.justifyLeft 22 ' '
+                                   $ IK.slotName eqpSlot
+                         , MU.Text t ]
               <> "  "
             valueText = f $ sumSlotNoFilter eqpSlot activeItems
-        in fullText valueText
+            ft = fullText valueText
+            km = K.toKM K.NoModifier $ K.Char $ slotChar c
+        in (ft, (km, (undefined, 0, T.length ft)))
       -- Some values can be negative, for others 0 is equivalent but shorter.
       slotList =  -- TODO:  [IK.EqpSlotAddHurtMelee..IK.EqpSlotAddLight]
         [ (IK.EqpSlotAddHurtMelee, \t -> tshow t <> "%")
@@ -557,19 +573,24 @@ statsOverlay aid = do
         ]
       skills = sumSkills activeItems
       -- TODO: are negative total skills meaningful?
-      prAbility :: Ability.Ability -> Text
-      prAbility ability =
+      -- TODO: unduplicate with prSlot
+      prAbility :: SlotChar -> Ability.Ability -> (Text, K.KYX)
+      prAbility c ability =
         let fullText t =
-              "    "
-              <> makePhrase [ MU.Text $ T.justifyLeft 22 ' '
-                              $ "ability" <+> tshow ability
-                            , MU.Text t ]
+              makePhrase [ slotLabel c, "-"
+                         , MU.Text $ T.justifyLeft 22 ' '
+                           $ "ability" <+> tshow ability
+                         , MU.Text t ]
               <> "  "
             valueText = tshow $ EM.findWithDefault 0 ability skills
-        in fullText valueText
+            ft = fullText valueText
+            km = K.toKM K.NoModifier $ K.Char $ slotChar c
+        in (ft, (km, (undefined, 0, T.length ft)))
       abilityList = [minBound..maxBound]
-  return $ ( toOverlay $ map prSlot slotList ++ map prAbility abilityList
-           , [(K.escKM, (0, 0, 5))] )  --abc...
+      reslot c = either (prSlot c) (prAbility c)
+      zipReslot = zipWith reslot allZeroSlots
+      (ts, kxs) = unzip $ zipReslot $ map Left slotList ++ map Right abilityList
+  return (toOverlay ts, kxs)
 
 legalWithUpdatedLeader :: MonadClientUI m
                        => ItemDialogMode
@@ -592,12 +613,12 @@ runDefItemKey :: MonadClientUI m
               => [(K.KM, DefItemKey m)]
               -> DefItemKey m
               -> K.OKX
-              -> EM.EnumMap SlotChar ItemId
+              -> [SlotChar]
               -> Text
               -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
-runDefItemKey keyDefs lettersDef okx labelItemSlots prompt = do
+runDefItemKey keyDefs lettersDef okx slotLabels prompt = do
   let itemKeys =
-        let slotKeys = map (K.Char . slotChar) (EM.keys labelItemSlots)
+        let slotKeys = map (K.Char . slotChar) slotLabels
             defKeys = map fst keyDefs
         in map (K.toKM K.NoModifier) slotKeys ++ defKeys
       choice = let letterRange = defLabel lettersDef
