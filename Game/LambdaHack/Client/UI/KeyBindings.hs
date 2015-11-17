@@ -12,6 +12,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple (swap)
 
+import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
@@ -60,7 +61,7 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   }
 
 -- | Produce a set of help screens from the key bindings.
-keyHelp :: Binding -> [K.OKX]
+keyHelp :: Binding -> [OKX]
 keyHelp Binding{bcmdList} =
   let
     movBlurb =
@@ -128,12 +129,12 @@ keyHelp Binding{bcmdList} =
                          , any (`notElem` [CmdMainMenu, CmdDebug, CmdInternal])
                                cats ]
     disp k = T.concat $ intersperse " or " $ map K.showKM $ coImage k
-    keysN n cat = [ (k, fmt n (disp k) h)
+    keysN n cat = [ (Left k, fmt n (disp k) h)
                   | (k, (h, cats, _)) <- bcmdList, cat `elem` cats, h /= "" ]
     -- TODO: measure the longest key sequence and set the caption automatically
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN 16
-    okxsN :: Int -> CmdCategory -> [Text] -> [Text] -> K.OKX
+    okxsN :: Int -> CmdCategory -> [Text] -> [Text] -> OKX
     okxsN n cat header footer =
       let (ks, keyTable) = unzip $ keysN n cat
           kxs = zip ks [(y, 0, maxBound) | y <- [length header..]]
@@ -143,7 +144,7 @@ keyHelp Binding{bcmdList} =
     [ ( toOverlay $
           [casualDescription <+> "(1/2). [press SPACE to see more]"]
           ++ [""] ++ movText ++ [moreMsg]
-      , [(K.spaceKM, (length movText + 1, 0, maxBound))])
+      , [(Left K.spaceKM, (length movText + 1, 0, maxBound))])
     , okxs CmdMinimal
         ([casualDescription <+> "(2/2). [press SPACE to see all commands]"]
          ++ [""] ++ minimalText ++ [keyCaption])
@@ -177,6 +178,6 @@ keyHelp Binding{bcmdList} =
               (lastText ++ [endMsg])
           len = 4 + length (keysN 0 CmdMouse)
       in ( ov
-         , [ (K.pgupKM, (len + 1, 0, maxBound))
-           , (K.escKM, (len + 2, 0, maxBound))] )
+         , [ (Left K.pgupKM, (len + 1, 0, maxBound))
+           , (Left K.escKM, (len + 2, 0, maxBound))] )
     ]

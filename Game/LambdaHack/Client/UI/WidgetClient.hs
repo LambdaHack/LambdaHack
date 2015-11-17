@@ -18,6 +18,7 @@ import Data.Monoid
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.BfsClient
+import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
@@ -66,19 +67,21 @@ displayYesNo dm prompt = do
   getYesNo frame
 
 displayChoiceScreen :: forall m . MonadClientUI m
-                    => Bool -> [K.OKX] -> [K.KM] -> m K.KM
+                    => Bool -> [OKX] -> [K.KM] -> m (Either K.KM SlotChar)
 displayChoiceScreen _ [] _ = assert `failure` "no menu pages" `twith` ()
 displayChoiceScreen sfBlank (ok : oks) extraKeys = do
-  let keys = concatMap (map fst . snd) (ok : oks) ++ extraKeys
+  -- We don't create keys from slots, so they have to be @in extraKeys@.
+  let keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) (ok : oks)
+             ++ extraKeys
       scrollKeys = [K.leftButtonKM, K.returnKM, K.upKM, K.downKM]
       pageKeys = [K.spaceKM, K.pgupKM, K.pgdnKM]
       legalKeys = keys ++ scrollKeys ++ pageKeys
       -- The arguments go from first menu line and menu page to the last,
       -- in order. The middle ones are where the focus is.
-      page :: [K.OKX] -> K.OKX -> [K.OKX] -> m K.KM
+      page :: [OKX] -> OKX -> [OKX] -> m (Either K.KM SlotChar)
       page srf f@(ov0, kyxs0) frs =
-        let scroll :: [K.KYX] -> K.KYX -> [K.KYX] -> m K.KM
-            scroll sxyk k@(km4, (y, x1, x2)) kyxs = do
+        let scroll :: [KYX] -> KYX -> [KYX] -> m (Either K.KM SlotChar)
+            scroll sxyk k@(ekm4, (y, x1, x2)) kyxs = do
               let prevPage = case srf of
                     [] -> startScroll  -- no wrap
                     g : gs -> page gs g (f : frs)
@@ -94,7 +97,9 @@ displayChoiceScreen sfBlank (ok : oks) extraKeys = do
                   ov1 = updateOverlayLine y drawHighlight ov0
                   interpretKey ikm =
                     case K.key ikm of
-                      K.Return | K.key km4 /= K.Return -> interpretKey km4
+                      K.Return | ekm4 /= Left K.returnKM -> case ekm4 of
+                        Left km4 -> interpretKey km4
+                        _ -> return ekm4
                       K.LeftButtonPress -> case K.pointer ikm of
                         Nothing -> scroll sxyk k kyxs
                         Just Point{..} ->
@@ -102,7 +107,9 @@ displayChoiceScreen sfBlank (ok : oks) extraKeys = do
                                 cy == py + 1 && cx1 <= px && cx2 > px
                           in case find onChoice kyxs0 of
                             Nothing -> scroll sxyk k kyxs
-                            Just (ckm, _) -> interpretKey ckm
+                            Just (ckm, _) -> case ckm of
+                              Left km4 -> interpretKey km4
+                              _ -> return ckm
                       K.Up -> case sxyk of
                         [] | null oks -> endScroll  -- single page, wrap keys
                         [] -> prevPage
@@ -114,7 +121,7 @@ displayChoiceScreen sfBlank (ok : oks) extraKeys = do
                       K.PgUp -> prevPage
                       K.PgDn -> nextPage
                       K.Space -> nextPage
-                      _ | ikm `elem` keys -> return ikm  -- km can be PgUp, etc.
+                      _ | ikm `elem` keys -> return $ Left ikm
                       _ -> assert `failure` "unknown key" `twith` ikm
               frame <- drawOverlay sfBlank ColorFull ov1
               pkm <- promptGetKey legalKeys frame

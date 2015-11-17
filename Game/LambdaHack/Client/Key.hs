@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.Key
   ( Key(..), showKey, handleDir, dirAllKey
   , moveBinding, mkKM, keyTranslate, keyTranslateWeb
-  , Modifier(..), KM(..), toKM, showKM, KYX, OKX
+  , Modifier(..), KM(..), toKM, showKM
   , escKM, spaceKM, returnKM, pgupKM, pgdnKM, upKM, downKM
   , leftButtonKM, rightButtonKM
   ) where
@@ -78,10 +78,6 @@ instance Binary KM
 
 toKM :: Modifier -> Key -> KM
 toKM modifier key = KM{pointer=Nothing, ..}
-
-type KYX = (KM, (Y, X, X))
-
-type OKX = (Overlay, [KYX])
 
 -- Common and terse names for keys.
 showKey :: Key -> Text

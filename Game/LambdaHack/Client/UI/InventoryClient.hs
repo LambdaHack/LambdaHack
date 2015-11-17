@@ -17,6 +17,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad (filterM, void, when)
 import Data.Char (intToDigit)
 import qualified Data.Char as Char
+import Data.Either (rights)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List (find, findIndex, nub, sortBy)
@@ -278,7 +279,8 @@ getItem psuit prompt promptGeneric cursor cCur cRest askWhenLone permitMulitple
 data DefItemKey m = DefItemKey
   { defLabel  :: Text  -- ^ can be undefined if not @defCond@
   , defCond   :: !Bool
-  , defAction :: K.KM -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
+  , defAction :: Either K.KM SlotChar
+                 -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
   }
 
 data Suitability =
@@ -495,12 +497,17 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
       lettersDef = DefItemKey
         { defLabel = slotRange $ EM.keys labelItemSlots
         , defCond = True
-        , defAction = \K.KM{key} -> case key of
-            K.Char l -> case EM.lookup (SlotChar numPrefix l) bagItemSlots of
+        , defAction = \ekm ->
+            let slot = case ekm of
+                  Left K.KM{key} -> case key of
+                    K.Char l -> SlotChar numPrefix l
+                    _ -> assert `failure` "unexpected key:"
+                                `twith` K.showKey key
+                  Right sl -> sl
+            in case EM.lookup slot bagItemSlotsAll of
               Nothing -> assert `failure` "unexpected slot"
-                                `twith` (l, bagItemSlots)
+                                `twith` (slot, bagItemSlots)
               Just iid -> return $ Right $ getResult iid
-            _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
       (labelItemSlotsOpen, labelItemSlots, bagFiltered, promptChosen) =
         case itemDialogState of
@@ -523,28 +530,34 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
   case cCur of
     MStats -> do
       io <- statsOverlay leader
-      let unKey K.KM{key=K.Char c} = SlotChar 0 c
-          unKey km = assert `failure` "unexpected key:" `twith` km
-          slotLabels = map (unKey . fst) $ snd io
+      let slotLabels = map fst $ snd io
+          slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
           statsDef :: DefItemKey m
           statsDef = DefItemKey
-            { defLabel = slotRange slotLabels
+            { defLabel = slotRange $ rights slotLabels
             , defCond = True
-            , defAction = \K.KM{key} -> case key of
-                K.Char _l -> failWith "stats affect character actions"  -- TODO
-                _ -> assert `failure` "unexpected key:" `twith` K.showKey key
+            , defAction = \ekm ->
+            let _slot = case ekm of
+                  Left K.KM{key} -> case key of
+                    K.Char l -> SlotChar numPrefix l
+                    _ -> assert `failure` "unexpected key:"
+                                `twith` K.showKey key
+                  Right sl -> sl
+            in failWith "stats affect character actions"  -- TODO
             }
-      runDefItemKey keyDefs statsDef io slotLabels promptChosen
+      runDefItemKey keyDefs statsDef io slotKeys promptChosen
     _ -> do
       io <- itemOverlay (storeFromMode cCur) (blid body) bagFiltered
-      runDefItemKey keyDefs lettersDef io (EM.keys bagItemSlots) promptChosen
+      let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)
+                     $ EM.keys bagItemSlots
+      runDefItemKey keyDefs lettersDef io slotKeys promptChosen
 
-statsOverlay :: MonadClient m => ActorId -> m K.OKX
+statsOverlay :: MonadClient m => ActorId -> m OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
   let block n = n + if braced b then 50 else 0
-      prSlot :: SlotChar -> (IK.EqpSlot, Int -> Text) -> (Text, K.KYX)
+      prSlot :: SlotChar -> (IK.EqpSlot, Int -> Text) -> (Text, KYX)
       prSlot c (eqpSlot, f) =
         let fullText t =
               makePhrase [ slotLabel c, "-"
@@ -554,8 +567,7 @@ statsOverlay aid = do
               <> "  "
             valueText = f $ sumSlotNoFilter eqpSlot activeItems
             ft = fullText valueText
-            km = K.toKM K.NoModifier $ K.Char $ slotChar c
-        in (ft, (km, (undefined, 0, T.length ft)))
+        in (ft, (Right c, (undefined, 0, T.length ft)))
       -- Some values can be negative, for others 0 is equivalent but shorter.
       slotList =  -- TODO:  [IK.EqpSlotAddHurtMelee..IK.EqpSlotAddLight]
         [ (IK.EqpSlotAddHurtMelee, \t -> tshow t <> "%")
@@ -574,7 +586,7 @@ statsOverlay aid = do
       skills = sumSkills activeItems
       -- TODO: are negative total skills meaningful?
       -- TODO: unduplicate with prSlot
-      prAbility :: SlotChar -> Ability.Ability -> (Text, K.KYX)
+      prAbility :: SlotChar -> Ability.Ability -> (Text, KYX)
       prAbility c ability =
         let fullText t =
               makePhrase [ slotLabel c, "-"
@@ -584,8 +596,7 @@ statsOverlay aid = do
               <> "  "
             valueText = tshow $ EM.findWithDefault 0 ability skills
             ft = fullText valueText
-            km = K.toKM K.NoModifier $ K.Char $ slotChar c
-        in (ft, (km, (undefined, 0, T.length ft)))
+        in (ft, (Right c, (undefined, 0, T.length ft)))
       abilityList = [minBound..maxBound]
       reslot c = either (prSlot c) (prAbility c)
       zipReslot = zipWith reslot allZeroSlots
@@ -612,31 +623,29 @@ legalWithUpdatedLeader cCur cRest = do
 runDefItemKey :: MonadClientUI m
               => [(K.KM, DefItemKey m)]
               -> DefItemKey m
-              -> K.OKX
-              -> [SlotChar]
+              -> OKX
+              -> [K.KM]
               -> Text
               -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
-runDefItemKey keyDefs lettersDef okx slotLabels prompt = do
-  let itemKeys =
-        let slotKeys = map (K.Char . slotChar) slotLabels
-            defKeys = map fst keyDefs
-        in map (K.toKM K.NoModifier) slotKeys ++ defKeys
+runDefItemKey keyDefs lettersDef okx slotKeys prompt = do
+  let itemKeys = slotKeys ++ map fst keyDefs
       choice = let letterRange = defLabel lettersDef
                    keyLabelsRaw = letterRange : map (defLabel . snd) keyDefs
                    keyLabels = filter (not . T.null) keyLabelsRaw
                in "[" <> T.intercalate ", " (nub keyLabels) <> ", ESC]"
-  km <- if null $ overlay $ fst okx
-        then do
-          let keys = map fst (snd okx) ++ itemKeys
-          displayChoiceLine (prompt <+> choice) (fst okx) keys
-        else do
-          okxs <- splitOKX (prompt <+> choice) okx
-          displayChoiceScreen False okxs itemKeys
-  case lookup km{K.pointer=Nothing} keyDefs of
-    Just keyDef -> defAction keyDef km
-    Nothing -> defAction lettersDef km
+  ekm <- if null $ overlay $ fst okx
+         then
+           Left <$> displayChoiceLine (prompt <+> choice) (fst okx) itemKeys
+         else do
+           okxs <- splitOKX (prompt <+> choice) okx
+           displayChoiceScreen False okxs itemKeys
+  case ekm of
+    Left km -> case lookup km{K.pointer=Nothing} keyDefs of
+      Just keyDef -> defAction keyDef ekm
+      Nothing -> defAction lettersDef ekm  -- pressed; with current prefix
+    Right _slot -> defAction lettersDef ekm  -- selected; with the given prefix
 
-splitOKX :: MonadClientUI m => Msg -> K.OKX -> m [K.OKX]
+splitOKX :: MonadClientUI m => Msg -> OKX -> m [OKX]
 splitOKX prompt okx = do
   promptAI <- msgPromptAI
   lid <- getArenaUI
@@ -645,7 +654,7 @@ splitOKX prompt okx = do
   let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
   return $! splitOverlayOKX (lysize + 1) msg okx
 
-splitOverlayOKX :: Y -> Overlay -> K.OKX -> [K.OKX]
+splitOverlayOKX :: Y -> Overlay -> OKX -> [OKX]
 splitOverlayOKX yspace omsg (ov0, kxs0) =
   let msg = overlay omsg
       msg0 = if yspace - length msg - 1 <= 0  -- all space taken by @msg@

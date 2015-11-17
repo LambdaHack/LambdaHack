@@ -20,7 +20,6 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.ItemSlot
-import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
@@ -129,7 +128,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
 
 -- | Create a list of item names.
 itemOverlay :: MonadClient m
-            => CStore -> LevelId -> ItemBag -> m K.OKX
+            => CStore -> LevelId -> ItemBag -> m OKX
 itemOverlay c lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
@@ -149,8 +148,8 @@ itemOverlay c lid bag = do
                 phrase = makePhrase [ slotLabel l, "-"  -- MU.String [symbol]
                                     , partItemWs k c localTime itemFull ]
                          <> "  "
-                km = K.toKM K.NoModifier $ K.Char $ slotChar l
-                kx = (km, (undefined, 0, T.length phrase - 2))
+                ekm = Right l
+                kx = (ekm, (undefined, 0, T.length phrase - 2))
             in Just (phrase, kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
   return (toOverlay ts, kxs)

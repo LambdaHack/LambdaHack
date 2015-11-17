@@ -829,11 +829,13 @@ helpHuman :: MonadClientUI m
           -> m (SlideOrCmd RequestUI)
 helpHuman cmdAction = do
   keyb <- askBinding
-  km <- displayChoiceScreen True (keyHelp keyb) []
-  case M.lookup km{K.pointer=Nothing} $ bcmdMap keyb of
-    _ | K.key km == K.Esc -> return $ Left mempty
-    Just (_desc, _cats, cmd) -> cmdAction cmd
-    Nothing -> failWith "never mind"
+  ekm <- displayChoiceScreen True (keyHelp keyb) []
+  case ekm of
+    Left km -> case M.lookup km{K.pointer=Nothing} $ bcmdMap keyb of
+      _ | K.key km == K.Esc -> return $ Left mempty
+      Just (_desc, _cats, cmd) -> cmdAction cmd
+      Nothing -> failWith "never mind"
+    Right _slot -> assert `failure` ekm
 
 -- * Accept
 
@@ -918,7 +920,7 @@ mainMenuHuman cmdAction = do
                        pre = T.pack prefix
                        post = T.drop (lenB - bindingLen) (T.pack suffix)
                        len = T.length pre
-                       yxx key = (key, (y, len, len + lenB))
+                       yxx key = (Left key, (y, len, len + lenB))
                        myxx = yxx <$> mkey
                    in (bsRest, (pre <> binding <> post, myxx))
                  else (bs, (T.pack line, Nothing))
@@ -929,11 +931,13 @@ mainMenuHuman cmdAction = do
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
       ov = toOverlay menuOvLines
-  km <- displayChoiceScreen True [(ov, kyxs)] []
-  case lookup km{K.pointer=Nothing} kds of
-    _ | K.key km == K.Esc -> return $ Left mempty
-    Just (_desc, cmd) -> cmdAction cmd
-    Nothing -> failWith "never mind"
+  ekm <- displayChoiceScreen True [(ov, kyxs)] []
+  case ekm of
+    Left km -> case lookup km{K.pointer=Nothing} kds of
+      _ | K.key km == K.Esc -> return $ Left mempty
+      Just (_desc, cmd) -> cmdAction cmd
+      Nothing -> failWith "never mind"
+    Right _slot -> assert `failure` ekm
 
 -- * GameRestart; does not take time
 

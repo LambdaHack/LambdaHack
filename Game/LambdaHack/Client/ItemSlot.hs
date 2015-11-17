@@ -2,6 +2,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.ItemSlot
   ( ItemSlots, SlotChar(..)
+  , KYX, OKX, keyOfEKM
   , allSlots, allZeroSlots, slotLabel, slotRange, assignSlot
   ) where
 
@@ -18,11 +19,14 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 
 data SlotChar = SlotChar {slotPrefix :: Int, slotChar :: Char}
@@ -46,6 +50,16 @@ instance Enum SlotChar where
 
 type ItemSlots = ( EM.EnumMap SlotChar ItemId
                  , EM.EnumMap SlotChar ItemId )
+
+type KYX = (Either K.KM SlotChar, (Y, X, X))
+
+type OKX = (Overlay, [KYX])
+
+keyOfEKM :: Int -> Either K.KM SlotChar -> Maybe K.KM
+keyOfEKM _ (Left km) = Just km
+keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
+  Just $ K.toKM K.NoModifier $ K.Char slotChar
+keyOfEKM _ _ = Nothing
 
 slotRange :: [SlotChar] -> Text
 slotRange ls =
