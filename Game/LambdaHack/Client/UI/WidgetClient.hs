@@ -66,7 +66,7 @@ displayYesNo dm prompt = do
   getYesNo frame
 
 displayChoiceScreen :: forall m . MonadClientUI m
-                    => Bool -> [K.OKX] ->  [K.KM] -> m K.KM
+                    => Bool -> [K.OKX] -> [K.KM] -> m K.KM
 displayChoiceScreen _ [] _ = assert `failure` "no menu pages" `twith` ()
 displayChoiceScreen sfBlank (ok : oks) extraKeys = do
   let keys = concatMap (map fst . snd) (ok : oks) ++ extraKeys

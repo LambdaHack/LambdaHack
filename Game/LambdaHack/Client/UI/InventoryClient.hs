@@ -643,10 +643,10 @@ splitOKX prompt okx = do
   Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
   sreport <- getsClient sreport
   let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
-  return $! splitOverlayOKX (lysize + 1) msg okx 0
+  return $! splitOverlayOKX (lysize + 1) msg okx
 
-splitOverlayOKX :: Y -> Overlay -> K.OKX -> Y -> [K.OKX]
-splitOverlayOKX yspace omsg (ov0, kxs0) yindex =
+splitOverlayOKX :: Y -> Overlay -> K.OKX -> [K.OKX]
+splitOverlayOKX yspace omsg (ov0, kxs0) =
   let msg = overlay omsg
       msg0 = if yspace - length msg - 1 <= 0  -- all space taken by @msg@
              then take 1 msg
@@ -655,18 +655,17 @@ splitOverlayOKX yspace omsg (ov0, kxs0) yindex =
       len = length msg0
       renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
       zipRenumber y = zipWith renumber [y..]
-      splitO ls kxs yi =
+      splitO ls kxs =
         let (pre, post) = splitAt (yspace - 1) $ msg0 ++ ls
         in if null (drop 1 post)
            then [( toOverlayRaw $ msg0 ++ ls  -- all fits on screen
-                 , zipRenumber (yi + len) kxs )]
-           else let ynew = yi + yspace - len
-                    (preX, postX) = splitAt (yspace - len - 1) kxs
-                    rest = splitO post postX ynew
+                 , zipRenumber len kxs )]
+           else let (preX, postX) = splitAt (yspace - len - 1) kxs
+                    rest = splitO post postX
                 in ( toOverlayRaw (pre ++ [toScreenLine moreMsg])
-                   , zipRenumber (yi + len) preX )
+                   , zipRenumber len preX )
                    : rest
-  in splitO ls0 kxs0 yindex
+  in splitO ls0 kxs0
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (SlideOrCmd Int)
 pickNumber askNumber kAll = do
