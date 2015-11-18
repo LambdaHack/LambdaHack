@@ -950,20 +950,17 @@ gameRestartHuman t = do
         Config{configHeroNames} <- askConfig
         return $ Right
                $ ReqUIGameRestart leader t snxtDiff configHeroNames
-  escAI <- getsClient sescAI
-  if escAI == EscAIExited then restart
+  let msg = "You just requested a new" <+> tshow t <+> "game."
+  b1 <- displayMore ColorFull msg
+  if not b1 then failWith "never mind"
   else do
-    let msg = "You just requested a new" <+> tshow t <+> "game."
-    b1 <- displayMore ColorFull msg
-    if not b1 then failWith "never mind"
-    else do
-      b2 <- displayYesNo ColorBW
-              "Current progress will be lost! Really restart the game?"
-      msg2 <- rndToAction $ oneOf
-                [ "yea, would be a pity to leave them all to die"
-                , "yea, a shame to get your own team stranded" ]
-      if not b2 then failWith msg2
-      else restart
+    b2 <- displayYesNo ColorBW
+            "Current progress will be lost! Really restart the game?"
+    msg2 <- rndToAction $ oneOf
+              [ "yea, would be a pity to leave them all to die"
+              , "yea, a shame to get your own team stranded" ]
+    if not b2 then failWith msg2
+    else restart
 
 -- * GameExit; does not take time
 
@@ -1012,10 +1009,7 @@ automateHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 automateHuman = do
   -- BFS is not updated while automated, which would lead to corruption.
   modifyClient $ \cli -> cli {stgtMode = Nothing}
-  escAI <- getsClient sescAI
-  if escAI == EscAIExited then return $ Right ReqUIAutomate
-  else do
-    go <- displayMore ColorBW "Ceding control to AI (ESC to regain)."
-    if not go
-      then failWith "automation canceled"
-      else return $ Right ReqUIAutomate
+  go <- displayMore ColorBW "Ceding control to AI (ESC to regain)."
+  if not go
+    then failWith "automation canceled"
+    else return $ Right ReqUIAutomate
