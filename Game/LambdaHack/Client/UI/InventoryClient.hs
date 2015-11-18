@@ -27,6 +27,7 @@ import Data.Monoid
 import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Vector.Generic as G
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.CommonClient
@@ -654,6 +655,7 @@ splitOKX prompt okx = do
   let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
   return $! splitOverlayOKX (lysize + 1) msg okx
 
+-- TODO: assert that ov0 nonempty
 splitOverlayOKX :: Y -> Overlay -> OKX -> [OKX]
 splitOverlayOKX yspace omsg (ov0, kxs0) =
   let msg = overlay omsg
@@ -666,8 +668,10 @@ splitOverlayOKX yspace omsg (ov0, kxs0) =
       zipRenumber y = zipWith renumber [y..]
       splitO ls kxs =
         let (pre, post) = splitAt (yspace - 1) $ msg0 ++ ls
-        in if null (drop 1 post)
-           then [( toOverlayRaw $ msg0 ++ ls  -- all fits on screen
+        in if null post
+           then  -- all fits on screen
+             let bottomMsg = T.replicate (G.length $ last pre) " "
+             in [( toOverlayRaw $ pre ++ [toScreenLine bottomMsg]
                  , zipRenumber len kxs )]
            else let (preX, postX) = splitAt (yspace - len - 1) kxs
                     rest = splitO post postX
