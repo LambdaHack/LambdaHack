@@ -25,6 +25,7 @@ import Data.List
 import Data.Maybe
 import Data.Monoid
 import Data.Ord
+import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
@@ -251,9 +252,10 @@ markSuspectHuman = do
 
 -- * Macro
 
-macroHuman :: MonadClient m => [String] -> m ()
-macroHuman kms =
+macroHuman :: MonadClientUI m => [String] -> m Slideshow
+macroHuman kms = do
   modifyClient $ \cli -> cli {slastPlay = map K.mkKM kms ++ slastPlay cli}
+  promptToSlideshow $ "Macro activated:" <+> T.pack (intercalate " " kms)
 
 -- * MoveCursor
 

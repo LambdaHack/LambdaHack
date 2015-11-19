@@ -20,7 +20,6 @@ module Game.LambdaHack.Client.UI
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import Data.Either.Compat
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
@@ -100,10 +99,7 @@ humanCommand = do
                 {swaitTimes = if swaitTimes cli > 0
                               then - swaitTimes cli
                               else 0}
-              stgtMode <- getsClient stgtMode
-              if km == K.escKM && isNothing stgtMode && isRight mover
-              then cmdHumanSem Clear
-              else cmdHumanSem cmd
+              cmdHumanSem cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                  in failWith msgKey
         -- The command was failed or successful and if the latter,
@@ -120,7 +116,7 @@ humanCommand = do
             mLast <- case sli of
               [] -> do
                 stgtMode <- getsClient stgtMode
-                return $ Left $ isJust stgtMode || km == K.escKM
+                return $ Left $ isJust stgtMode
               [sLast] ->
                 -- Avoid displaying the single slide twice.
                 return $ Right (onBlank, sLast)

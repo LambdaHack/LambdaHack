@@ -75,7 +75,7 @@ cmdAction cmd = case cmd of
   MarkVision -> addNoSlides markVisionHuman
   MarkSmell -> addNoSlides markSmellHuman
   MarkSuspect -> addNoSlides markSuspectHuman
-  Macro _ kms -> addNoSlides $ macroHuman kms
+  Macro _ kms -> Left <$> macroHuman kms
 
   MoveCursor v k -> Left <$> moveCursorHuman v k
   TgtFloor -> Left <$> tgtFloorHuman

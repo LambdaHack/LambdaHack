@@ -22,7 +22,7 @@ standardKeys = KeyKind
       -- mode) first.
 
       -- Main Menu.
-      [ ("Escape", ([CmdMainMenu], Macro "back to playing" ["space"]))
+      [ ("Escape", ([CmdMainMenu], Macro "back to playing" ["Escape"]))
       , ("?", ([CmdMainMenu], Macro "see more help" ["?"]))
       , ("X", ([CmdMainMenu], GameExit))
       , ("r", ([CmdMainMenu], GameRestart "raid"))
