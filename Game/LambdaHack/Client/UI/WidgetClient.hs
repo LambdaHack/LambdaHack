@@ -170,16 +170,16 @@ describeMainKeys = do
   Binding{brevMap} <- askBinding
   Config{configVi, configLaptop} <- askConfig
   cursor <- getsClient scursor
-  let kmLeftButtonPress =
-        M.findWithDefault (K.toKM K.NoModifier K.LeftButtonPress)
+  let kmLeftButtonPress = head $
+        M.findWithDefault [K.toKM K.NoModifier K.LeftButtonPress]
                           macroLeftButtonPress brevMap
-      kmEscape =
-        M.findWithDefault (K.toKM K.NoModifier K.Esc) Cancel brevMap
-      kmRightButtonPress =
-        M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
+      kmEscape = head $
+        M.findWithDefault [K.toKM K.NoModifier K.Esc] Cancel brevMap
+      kmRightButtonPress = head $
+        M.findWithDefault [K.toKM K.NoModifier K.RightButtonPress]
                           TgtPointerEnemy brevMap
-      kmReturn =
-        M.findWithDefault (K.toKM K.NoModifier K.Return) Accept brevMap
+      kmReturn = head $
+        M.findWithDefault [K.toKM K.NoModifier K.Return] Accept brevMap
       moveKeys | configVi = "hjklyubn, "
                | configLaptop = "uk8o79jl, "
                | otherwise = ""

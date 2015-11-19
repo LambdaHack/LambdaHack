@@ -355,6 +355,10 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
       multipleSlots = if itemDialogState `elem` [IAll, INoAll]
                       then bagItemSlotsAll
                       else suitableItemSlotsAll
+      revCmd dflt cmd = case M.lookup cmd brevMap of
+        Nothing -> dflt
+        Just (k : _) -> k
+        Just [] -> assert `failure` brevMap
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
         [ (K.toKM K.NoModifier $ K.Char '?', DefItemKey
@@ -410,8 +414,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                          , slastStore = storeFromMode cCur }
                    recCall numPrefix cCur cRest itemDialogState
            })
-        , let km = M.findWithDefault (K.toKM K.NoModifier K.Tab)
-                                     MemberCycle brevMap
+        , let km = revCmd (K.toKM K.NoModifier K.Tab) MemberCycle
           in (km, DefItemKey
            { defLabel = K.showKM km
            , defCond = not (cCur == MOwned
@@ -423,8 +426,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall numPrefix cCurUpd cRestUpd itemDialogState
            })
-        , let km = M.findWithDefault (K.toKM K.NoModifier K.BackTab)
-                                     MemberBack brevMap
+        , let km = revCmd (K.toKM K.NoModifier K.BackTab) MemberBack
           in (km, DefItemKey
            { defLabel = K.showKM km
            , defCond = not (cCur == MOwned || autoDun || null hs)
@@ -434,41 +436,35 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall numPrefix cCurUpd cRestUpd itemDialogState
            })
-        , let km = M.findWithDefault (K.toKM K.NoModifier (K.KP '/'))
-                                     TgtFloor brevMap
+        , let km = revCmd (K.toKM K.NoModifier (K.KP '/')) TgtFloor
           in cursorCmdDef False km tgtFloorHuman
-        , let hackyCmd = Macro "" ["KP_Divide"]  -- no keypad, but arrows enough
-              km = M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
-                                     hackyCmd brevMap
+        , let hackyCmd = Alias "" TgtFloor  -- no keypad, but arrows enough
+              km = revCmd (K.toKM K.NoModifier K.RightButtonPress) hackyCmd
+          in cursorCmdDef False km tgtFloorHuman
+        , let km = revCmd (K.toKM K.NoModifier (K.KP '*')) TgtEnemy
           in cursorCmdDef False km tgtEnemyHuman
-        , let km = M.findWithDefault (K.toKM K.NoModifier (K.KP '*'))
-                                     TgtEnemy brevMap
+        , let hackyCmd = Alias "" TgtEnemy  -- no keypad, but arrows enough
+              km = revCmd (K.toKM K.NoModifier K.RightButtonPress) hackyCmd
           in cursorCmdDef False km tgtEnemyHuman
-        , let hackyCmd = Macro "" ["KP_Multiply"]  -- no keypad, but arrows OK
-              km = M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
-                                     hackyCmd brevMap
-          in cursorCmdDef False km tgtEnemyHuman
-        , let km = M.findWithDefault (K.toKM K.NoModifier K.BackSpace)
-                                     TgtClear brevMap
+        , let km = revCmd (K.toKM K.NoModifier K.BackSpace) TgtClear
           in cursorCmdDef False km tgtClearHuman
         ]
         ++ numberPrefixes
         ++ [ let plusMinus = K.Char $ if b then '+' else '-'
-                 km = M.findWithDefault (K.toKM K.NoModifier plusMinus)
-                                        (EpsIncr b) brevMap
+                 km = revCmd (K.toKM K.NoModifier plusMinus) (EpsIncr b)
              in cursorCmdDef False km (epsIncrHuman b)
            | b <- [True, False]
            ]
         ++ arrows
         ++ [
-          let km = M.findWithDefault (K.toKM K.NoModifier K.MiddleButtonPress)
-                                     CursorPointerEnemy brevMap
+          let km = revCmd (K.toKM K.NoModifier K.MiddleButtonPress)
+                          CursorPointerEnemy
           in cursorCmdDef False km (cursorPointerEnemy False False)
-        , let km = M.findWithDefault (K.toKM K.Shift K.MiddleButtonPress)
-                                     CursorPointerFloor brevMap
+        , let km = revCmd (K.toKM K.Shift K.MiddleButtonPress)
+                          CursorPointerFloor
           in cursorCmdDef False km (cursorPointerFloor False False)
-        , let km = M.findWithDefault (K.toKM K.NoModifier K.RightButtonPress)
-                                     TgtPointerEnemy brevMap
+        , let km = revCmd (K.toKM K.NoModifier K.RightButtonPress)
+                          TgtPointerEnemy
           in cursorCmdDef True km (cursorPointerEnemy True True)
         ]
       prefixCmdDef d =

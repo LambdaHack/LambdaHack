@@ -5,12 +5,12 @@ module Game.LambdaHack.Client.UI.KeyBindings
   ) where
 
 import Control.Arrow (second)
+import Control.Exception.Assert.Sugar
 import qualified Data.Char as Char
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Tuple (swap)
 
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
@@ -22,11 +22,11 @@ import Game.LambdaHack.Common.Msg
 -- | Bindings and other information about human player commands.
 data Binding = Binding
   { bcmdMap  :: !(M.Map K.KM (Text, [CmdCategory], HumanCmd))
-                                        -- ^ binding of keys to commands
+                                          -- ^ binding of keys to commands
   , bcmdList :: ![(K.KM, (Text, [CmdCategory], HumanCmd))]
-                                        -- ^ the properly ordered list
-                                        --   of commands for the help menu
-  , brevMap  :: !(M.Map HumanCmd K.KM)  -- ^ and from commands to their keys
+                                          -- ^ the properly ordered list
+                                          --   of commands for the help menu
+  , brevMap  :: !(M.Map HumanCmd [K.KM])  -- ^ and from commands to their keys
   }
 
 -- | Binding of keys to movement and other standard commands,
@@ -41,14 +41,14 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
       cmdAll =
         cmdWithHelp
         ++ [ (K.mkKM "KP_Begin", ([CmdMove], Wait))
-           , (K.mkKM "CTRL-KP_Begin", ([CmdMove], Macro "" ["KP_Begin"]))
-           , (K.mkKM "KP_5", ([CmdMove], Macro "" ["KP_Begin"]))
-           , (K.mkKM "CTRL-KP_5", ([CmdMove], Macro "" ["KP_Begin"])) ]
+           , (K.mkKM "CTRL-KP_Begin", ([CmdMove], Alias "" Wait))
+           , (K.mkKM "KP_5", ([CmdMove], Alias "" Wait))
+           , (K.mkKM "CTRL-KP_5", ([CmdMove], Alias "" Wait)) ]
         ++ (if configVi
-            then [ (K.mkKM "period", ([CmdMove], Macro "" ["KP_Begin"])) ]
+            then [ (K.mkKM "period", ([CmdMove], Alias "" Wait)) ]
             else if configLaptop
-            then [ (K.mkKM "i", ([CmdMove], Macro "" ["KP_Begin"]))
-                 , (K.mkKM "I", ([CmdMove], Macro "" ["KP_Begin"])) ]
+            then [ (K.mkKM "i", ([CmdMove], Alias "" Wait))
+                 , (K.mkKM "I", ([CmdMove], Alias "" Wait)) ]
             else [])
         ++ K.moveBinding configVi configLaptop (\v -> ([CmdMove], Move v))
                                                (\v -> ([CmdMove], Run v))
@@ -57,12 +57,18 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   in Binding
   { bcmdMap = M.fromList $ map (second mkDescribed) cmdAll
   , bcmdList = map (second mkDescribed) cmdWithHelp
-  , brevMap = M.fromList $ map (swap . second snd) cmdAll
+  , brevMap = M.fromListWith (flip (++))
+      [ (cmd2, [k])
+      | (k, (cats, cmd)) <- cmdAll
+      , let cmd2 = case cmd of
+              Alias _ cmd1 -> cmd1
+              _ -> cmd
+      , any (`notElem` [CmdMainMenu, CmdDebug, CmdInternal]) cats ]
   }
 
 -- | Produce a set of help screens from the key bindings.
 keyHelp :: Binding -> [OKX]
-keyHelp Binding{bcmdList} =
+keyHelp Binding{..} =
   let
     movBlurb =
       [ "Walk throughout a level with mouse or numeric keypad (left diagram)"
@@ -122,15 +128,11 @@ keyHelp Binding{bcmdList} =
     casualEndText = map fmts casualEndBlurb
     categoryText = map fmts categoryBlurb
     lastText = map fmts lastBlurb
-    coImage :: K.KM -> [K.KM]
-    coImage k = k : sort [ from
-                         | (from, (_, cats, Macro _ [to])) <- bcmdList
-                         , K.mkKM to == k
-                         , any (`notElem` [CmdMainMenu, CmdDebug, CmdInternal])
-                               cats ]
-    disp k = T.concat $ intersperse " or " $ map K.showKM $ coImage k
-    keysN n cat = [ (Left k, fmt n (disp k) h)
-                  | (k, (h, cats, _)) <- bcmdList, cat `elem` cats, h /= "" ]
+    coImage :: HumanCmd -> [K.KM]
+    coImage cmd = M.findWithDefault (assert `failure` cmd) cmd brevMap
+    disp cmd = T.concat $ intersperse " or " $ map K.showKM $ coImage cmd
+    keysN n cat = [ (Left k, fmt n (disp cmd) h)
+                  | (k, (h, cats, cmd)) <- bcmdList, cat `elem` cats, h /= "" ]
     -- TODO: measure the longest key sequence and set the caption automatically
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN 16
