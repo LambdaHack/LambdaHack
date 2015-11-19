@@ -81,6 +81,7 @@ data HumanCmd =
   | Help
   | MainMenu
   | Macro !Text ![String]
+  | Alias !Text !HumanCmd
     -- These are mostly related to targeting.
   | MoveCursor !Vector !Int
   | TgtFloor
@@ -180,6 +181,7 @@ cmdDescription cmd = case cmd of
   Help        -> "display help"
   MainMenu    -> "display the Main Menu"
   Macro t _   -> t
+  Alias t _   -> t
 
   MoveCursor v 1 -> "move crosshair" <+> compassText v
   MoveCursor v k ->

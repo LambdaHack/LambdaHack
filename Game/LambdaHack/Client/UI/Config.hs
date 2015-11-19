@@ -53,7 +53,7 @@ parseConfig :: Ini.Config -> Config
 parseConfig cfg =
   let configCommands =
         let mkCommand (ident, keydef) =
-              case stripPrefix "Macro_" ident of
+              case stripPrefix "Cmd_" ident of
                 Just _ ->
                   let (key, def) = read keydef
                   in (K.mkKM key, def :: ([CmdCategory], HumanCmd))

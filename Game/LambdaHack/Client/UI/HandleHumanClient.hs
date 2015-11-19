@@ -76,6 +76,7 @@ cmdAction cmd = case cmd of
   MarkSmell -> addNoSlides markSmellHuman
   MarkSuspect -> addNoSlides markSuspectHuman
   Macro _ kms -> Left <$> macroHuman kms
+  Alias _ cmd2 -> cmdAction cmd2
 
   MoveCursor v k -> Left <$> moveCursorHuman v k
   TgtFloor -> Left <$> tgtFloorHuman

@@ -22,8 +22,8 @@ standardKeys = KeyKind
       -- mode) first.
 
       -- Main Menu.
-      [ ("Escape", ([CmdMainMenu], Macro "back to playing" ["Escape"]))
-      , ("?", ([CmdMainMenu], Macro "see more help" ["?"]))
+      [ ("Escape", ([CmdMainMenu], Alias "back to playing" Cancel))
+      , ("?", ([CmdMainMenu], Alias "see more help" Help))
       , ("X", ([CmdMainMenu], GameExit))
       , ("r", ([CmdMainMenu], GameRestart "raid"))
       , ("s", ([CmdMainMenu], GameRestart "skirmish"))
@@ -145,9 +145,9 @@ standardKeys = KeyKind
 
       -- Targeting
       , ("KP_Multiply", ([CmdTgt], TgtEnemy))
-      , ("backslash", ([CmdTgt], Macro "" ["KP_Multiply"]))
+      , ("backslash", ([CmdTgt], Alias "" TgtEnemy))
       , ("KP_Divide", ([CmdTgt], TgtFloor))
-      , ("bar", ([CmdTgt], Macro "" ["KP_Divide"]))
+      , ("bar", ([CmdTgt], Alias "" TgtFloor))
       , ("plus", ([CmdTgt, CmdMinimal], EpsIncr True))
       , ("minus", ([CmdTgt], EpsIncr False))
       , ("CTRL-question", ([CmdTgt], CursorUnknown))
@@ -185,8 +185,6 @@ standardKeys = KeyKind
          ([CmdMouse], macroShiftLeftButtonPress))
       , ("MiddleButtonPress", ([CmdMouse], CursorPointerEnemy))
       , ("SHIFT-MiddleButtonPress", ([CmdMouse], CursorPointerFloor))
-      , ("CTRL-MiddleButtonPress",
-         ([CmdInternal], Macro "" ["SHIFT-MiddleButtonPress"]))
       , ("RightButtonPress", ([CmdMouse], TgtPointerEnemy))
 
       -- Debug and others not to display in help screens
@@ -196,9 +194,9 @@ standardKeys = KeyKind
       , ("CTRL-period", ([CmdInternal], ContinueToCursor))
       , ("CTRL-comma", ([CmdInternal], RunOnceAhead))
       , ("CTRL-LeftButtonPress",
-         ([CmdInternal], Macro "" ["SHIFT-LeftButtonPress"]))
+         ([CmdInternal], Alias "" macroShiftLeftButtonPress))
       , ("CTRL-MiddleButtonPress",
-         ([CmdInternal], Macro "" ["SHIFT-MiddleButtonPress"]))
+         ([CmdInternal], Alias "" CursorPointerFloor))
       , ("ALT-space", ([CmdInternal], StopIfTgtMode))
       , ("ALT-minus", ([CmdInternal], SelectWithPointer))
      ]

@@ -14,9 +14,9 @@
 
 [extra_commands]
 ; A handy shorthand with Vi keys
-Macro_1 = ("comma", ([CmdItem], Macro "" ["g"]))
+Cmd_1 = ("comma", ([CmdItem], Alias "" (MoveItem [CGround] CEqp (Just "pick up") "items" True)))
 ; Angband compatibility (accept target)
-Macro_2 = ("KP_Insert", ([CmdMeta], Macro "" ["Return"]))
+Cmd_2 = ("KP_Insert", ([CmdMeta], Alias "" Accept))
 
 [hero_names]
 HeroName_0 = ("Haskell Alvin", "he")
