@@ -403,6 +403,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                              in "RET(" <> l <> ")"  -- l is on the screen list
                         else "RET"
            , defCond = not (EM.null labelItemSlotsOpen)
+                       && EM.null bagFiltered
            , defAction = \_ -> case EM.lookup lastSlot labelItemSlotsOpen of
                Just iid -> return $ Right $ getResult iid
                Nothing -> case EM.minViewWithKey labelItemSlotsOpen of
