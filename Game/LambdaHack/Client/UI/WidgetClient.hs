@@ -68,72 +68,73 @@ displayYesNo dm prompt = do
 
 displayChoiceScreen :: forall m . MonadClientUI m
                     => Bool -> [OKX] -> [K.KM] -> m (Either K.KM SlotChar)
-displayChoiceScreen _ [] _ = assert `failure` "no menu pages" `twith` ()
-displayChoiceScreen sfBlank (ok : oks) extraKeys = do
+displayChoiceScreen sfBlank frs0 extraKeys = do
   -- We don't create keys from slots, so they have to be @in extraKeys@.
-  let keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) (ok : oks)
+  let keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) frs0
              ++ extraKeys
       scrollKeys = [K.leftButtonKM, K.returnKM, K.upKM, K.downKM]
       pageKeys = [K.spaceKM, K.pgupKM, K.pgdnKM]
       legalKeys = keys ++ scrollKeys ++ pageKeys
       -- The arguments go from first menu line and menu page to the last,
-      -- in order. The middle ones are where the focus is.
-      page :: [OKX] -> OKX -> [OKX] -> m (Either K.KM SlotChar)
-      page srf f@(ov0, kyxs0) frs =
-        let scroll :: [KYX] -> KYX -> [KYX] -> m (Either K.KM SlotChar)
-            scroll sxyk k@(ekm4, (y, x1, x2)) kyxs = do
-              let prevPage = case srf of
-                    [] -> startScroll  -- no wrap
-                    g : gs -> page gs g (f : frs)
-                  nextPage = case frs of
-                    [] -> endScroll  -- no wrap
-                    g : gs -> page (f : srf) g gs
-                  greyBG x = x{Color.acAttr =
-                                 (Color.acAttr x){Color.fg = Color.BrWhite}}
-                  drawHighlight xs =
-                    let (xs1, xsRest) = splitAt x1 xs
-                        (xs2, xs3) = splitAt (x2 - x1) xsRest
-                    in xs1 ++ map greyBG xs2 ++ xs3
-                  ov1 = updateOverlayLine y drawHighlight ov0
-                  interpretKey ikm =
-                    case K.key ikm of
-                      K.Return | ekm4 /= Left K.returnKM -> case ekm4 of
-                        Left km4 -> interpretKey km4
-                        _ -> return ekm4
-                      K.LeftButtonPress -> case K.pointer ikm of
-                        Nothing -> scroll sxyk k kyxs
-                        Just Point{..} ->
-                          let onChoice (_, (cy, cx1, cx2)) =
-                                cy == py + 1 && cx1 <= px && cx2 > px
-                          in case find onChoice kyxs0 of
-                            Nothing -> scroll sxyk k kyxs
-                            Just (ckm, _) -> case ckm of
-                              Left km4 -> interpretKey km4
-                              _ -> return ckm
-                      K.Up -> case sxyk of
-                        [] | null oks -> endScroll  -- single page, wrap keys
-                        [] -> prevPage
-                        l : ls -> scroll ls l (k : kyxs)
-                      K.Down -> case kyxs of
-                        [] | null oks -> startScroll  -- single page, wrap keys
-                        [] -> nextPage
-                        l : ls -> scroll (k : sxyk) l ls
-                      K.PgUp -> prevPage
-                      K.PgDn -> nextPage
-                      K.Space -> nextPage
-                      _ | ikm `elem` keys -> return $ Left ikm
-                      _ -> assert `failure` "unknown key" `twith` ikm
-              frame <- drawOverlay sfBlank ColorFull ov1
-              pkm <- promptGetKey legalKeys frame
-              interpretKey pkm
-            startScroll = case kyxs0 of
-              [] -> assert `failure` "no menu keys" `twith` keys
-              k : ks -> scroll [] k ks
-            endScroll = case reverse kyxs0 of
-              [] -> assert `failure` "no menu keys" `twith` keys
-              k : ks -> scroll ks k []
-        in startScroll
-  page [] ok oks
+      -- in order. Their indexing is from 0. We select the closest item
+      -- with the index equal or less to the pointer, or if there is none,
+      -- with a larger index.
+      findKYX :: Int -> [OKX] -> Maybe (Overlay, KYX, Int, [KYX])
+      findKYX _ [] = Nothing
+      findKYX pointer ((ov, kyxs) : frs) =
+        case drop pointer kyxs of
+          [] ->  -- not enough menu items on this page
+            case findKYX (pointer - length kyxs) frs of
+              Nothing ->  -- no more menu items in later pages
+                case reverse kyxs of
+                  [] -> Nothing
+                  kyx : _ -> Just (ov, kyx, length kyxs, kyxs)
+              okyx -> okyx
+          kyx : _ -> Just (ov, kyx, pointer, kyxs)
+      maxIx = length (concatMap snd frs0) - 1
+      page :: Int -> [OKX] -> m (Either K.KM SlotChar)
+      page pointer frs = case findKYX pointer frs of
+        Nothing -> assert `failure` "no menu keys" `twith` frs
+        Just (ov, (ekm, (y, x1, x2)), ixOnPage, kyxs) -> do
+          let greyBG x = x{Color.acAttr =
+                            (Color.acAttr x){Color.fg = Color.BrWhite}}
+              drawHighlight xs =
+                let (xs1, xsRest) = splitAt x1 xs
+                    (xs2, xs3) = splitAt (x2 - x1) xsRest
+                in xs1 ++ map greyBG xs2 ++ xs3
+              ov1 = updateOverlayLine y drawHighlight ov
+              ingoreKey = page pointer frs
+              pageLen = length kyxs
+              interpretKey :: K.KM -> m (Either K.KM SlotChar)
+              interpretKey ikm =
+                case K.key ikm of
+                  K.Return | ekm /= Left K.returnKM -> case ekm of
+                    Left km -> interpretKey km
+                    _ -> return ekm
+                  K.LeftButtonPress -> case K.pointer ikm of
+                    Nothing -> ingoreKey
+                    Just Point{..} ->
+                      let onChoice (_, (cy, cx1, cx2)) =
+                            cy == py + 1 && cx1 <= px && cx2 > px
+                      in case find onChoice kyxs of
+                        Nothing -> ingoreKey
+                        Just (ckm, _) -> case ckm of
+                          Left km -> interpretKey km
+                          _ -> return ckm
+                  K.Up -> page (max 0 (pointer - 1)) frs
+                  K.Down -> page (min maxIx (pointer + 1)) frs
+                  K.PgUp ->
+                    page (max 0 (pointer - ixOnPage - 1)) frs
+                  K.PgDn ->
+                    page (min maxIx (pointer + pageLen - ixOnPage)) frs
+                  K.Space ->
+                    page (min maxIx (pointer + pageLen - ixOnPage)) frs
+                  _ | ikm `elem` keys -> return $ Left ikm
+                  _ -> assert `failure` "unknown key" `twith` ikm
+          frame <- drawOverlay sfBlank ColorFull ov1
+          pkm <- promptGetKey legalKeys frame
+          interpretKey pkm
+  page 0 frs0
 
 -- TODO: generalize displayChoiceLine and getInitConfirms to a single op?
 --       but don't enable SPACE, etc. if only one screen (or only prompt)
