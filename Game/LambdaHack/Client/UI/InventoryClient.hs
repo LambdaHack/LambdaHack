@@ -636,7 +636,8 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt = do
            Left <$> displayChoiceLine (prompt <+> choice) (fst okx) itemKeys
          else do
            okxs <- splitOKX (prompt <+> choice) okx
-           displayChoiceScreen False okxs itemKeys
+           (okm, _pointer) <- displayChoiceScreen False 0 okxs itemKeys
+           return okm
   case ekm of
     Left km -> case lookup km{K.pointer=Nothing} keyDefs of
       Just keyDef -> defAction keyDef ekm

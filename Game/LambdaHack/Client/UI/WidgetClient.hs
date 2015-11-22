@@ -67,8 +67,9 @@ displayYesNo dm prompt = do
   getYesNo frame
 
 displayChoiceScreen :: forall m . MonadClientUI m
-                    => Bool -> [OKX] -> [K.KM] -> m (Either K.KM SlotChar)
-displayChoiceScreen sfBlank frs0 extraKeys = do
+                    => Bool -> Int -> [OKX] -> [K.KM]
+                    -> m (Either K.KM SlotChar, Int)
+displayChoiceScreen sfBlank pointer0 frs0 extraKeys = do
   -- We don't create keys from slots, so they have to be @in extraKeys@.
   let keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) frs0
              ++ extraKeys
@@ -79,23 +80,23 @@ displayChoiceScreen sfBlank frs0 extraKeys = do
       -- in order. Their indexing is from 0. We select the closest item
       -- with the index equal or less to the pointer, or if there is none,
       -- with a larger index.
-      findKYX :: Int -> [OKX] -> Maybe (Overlay, KYX, Int, [KYX])
+      findKYX :: Int -> [OKX] -> Maybe (OKX, KYX, Int)
       findKYX _ [] = Nothing
-      findKYX pointer ((ov, kyxs) : frs) =
+      findKYX pointer (okx@(_, kyxs) : frs) =
         case drop pointer kyxs of
           [] ->  -- not enough menu items on this page
             case findKYX (pointer - length kyxs) frs of
               Nothing ->  -- no more menu items in later pages
                 case reverse kyxs of
                   [] -> Nothing
-                  kyx : _ -> Just (ov, kyx, length kyxs, kyxs)
+                  kyx : _ -> Just (okx, kyx, length kyxs)
               okyx -> okyx
-          kyx : _ -> Just (ov, kyx, pointer, kyxs)
+          kyx : _ -> Just (okx, kyx, pointer)
       maxIx = length (concatMap snd frs0) - 1
-      page :: Int -> [OKX] -> m (Either K.KM SlotChar)
+      page :: Int -> [OKX] -> m (Either K.KM SlotChar, Int)
       page pointer frs = case findKYX pointer frs of
         Nothing -> assert `failure` "no menu keys" `twith` frs
-        Just (ov, (ekm, (y, x1, x2)), ixOnPage, kyxs) -> do
+        Just ((ov, kyxs), (ekm, (y, x1, x2)), ixOnPage) -> do
           let greyBG x = x{Color.acAttr =
                             (Color.acAttr x){Color.fg = Color.BrWhite}}
               drawHighlight xs =
@@ -105,12 +106,12 @@ displayChoiceScreen sfBlank frs0 extraKeys = do
               ov1 = updateOverlayLine y drawHighlight ov
               ingoreKey = page pointer frs
               pageLen = length kyxs
-              interpretKey :: K.KM -> m (Either K.KM SlotChar)
+              interpretKey :: K.KM -> m (Either K.KM SlotChar, Int)
               interpretKey ikm =
                 case K.key ikm of
                   K.Return | ekm /= Left K.returnKM -> case ekm of
                     Left km -> interpretKey km
-                    _ -> return ekm
+                    _ -> return (ekm, pointer)
                   K.LeftButtonPress -> case K.pointer ikm of
                     Nothing -> ingoreKey
                     Just Point{..} ->
@@ -120,7 +121,7 @@ displayChoiceScreen sfBlank frs0 extraKeys = do
                         Nothing -> ingoreKey
                         Just (ckm, _) -> case ckm of
                           Left km -> interpretKey km
-                          _ -> return ckm
+                          _ -> return (ckm, pointer)
                   K.Up -> page (max 0 (pointer - 1)) frs
                   K.Down -> page (min maxIx (pointer + 1)) frs
                   K.PgUp ->
@@ -129,12 +130,12 @@ displayChoiceScreen sfBlank frs0 extraKeys = do
                     page (min maxIx (pointer + pageLen - ixOnPage)) frs
                   K.Space ->
                     page (min maxIx (pointer + pageLen - ixOnPage)) frs
-                  _ | ikm `elem` keys -> return $ Left ikm
+                  _ | ikm `elem` keys -> return (Left ikm, pointer)
                   _ -> assert `failure` "unknown key" `twith` ikm
           frame <- drawOverlay sfBlank ColorFull ov1
           pkm <- promptGetKey legalKeys frame
           interpretKey pkm
-  page 0 frs0
+  page pointer0 frs0
 
 -- TODO: generalize displayChoiceLine and getInitConfirms to a single op?
 --       but don't enable SPACE, etc. if only one screen (or only prompt)

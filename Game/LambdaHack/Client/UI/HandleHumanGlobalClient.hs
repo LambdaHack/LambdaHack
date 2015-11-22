@@ -829,7 +829,9 @@ helpHuman :: MonadClientUI m
           -> m (SlideOrCmd RequestUI)
 helpHuman cmdAction = do
   keyb <- askBinding
-  ekm <- displayChoiceScreen True (keyHelp keyb) []
+  menuIxHelp <- getsClient smenuIxHelp
+  (ekm, pointer) <- displayChoiceScreen True menuIxHelp (keyHelp keyb) []
+  modifyClient $ \cli -> cli {smenuIxHelp = pointer}
   case ekm of
     Left km -> case M.lookup km{K.pointer=Nothing} $ bcmdMap keyb of
       _ | K.key km == K.Esc -> return $ Left mempty
@@ -931,7 +933,9 @@ mainMenuHuman cmdAction = do
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
       ov = toOverlay menuOvLines
-  ekm <- displayChoiceScreen True [(ov, kyxs)] []
+  menuIxMain <- getsClient smenuIxMain
+  (ekm, pointer) <- displayChoiceScreen True menuIxMain [(ov, kyxs)] []
+  modifyClient $ \cli -> cli {smenuIxMain = pointer}
   case ekm of
     Left km -> case lookup km{K.pointer=Nothing} kds of
       _ | K.key km == K.Esc -> return $ Left mempty

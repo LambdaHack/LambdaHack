@@ -86,6 +86,8 @@ data StateClient = StateClient
   , sslots       :: !ItemSlots     -- ^ map from slots to items
   , slastSlot    :: !SlotChar      -- ^ last used slot
   , slastStore   :: !CStore        -- ^ last used store
+  , smenuIxMain  :: !Int           -- ^ index of last used Main Menu item
+  , smenuIxHelp  :: !Int           -- ^ index of last used Help Menu item
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving Show
@@ -151,6 +153,8 @@ defStateClient shistory sreport _sside sisAI =
     , sslots = (EM.empty, EM.empty)
     , slastSlot = SlotChar 0 'Z'
     , slastStore = CInv
+    , smenuIxMain = 0
+    , smenuIxHelp = 0
     , sdebugCli = defDebugModeCli
     }
 
@@ -226,6 +230,8 @@ instance Binary StateClient where
     put sslots
     put slastSlot
     put slastStore
+    put smenuIxMain
+    put smenuIxHelp
     put sdebugCli  -- TODO: this is overwritten at once
   get = do
     stgtMode <- get
@@ -253,6 +259,8 @@ instance Binary StateClient where
     sslots <- get
     slastSlot <- get
     slastStore <- get
+    smenuIxMain <- get
+    smenuIxHelp <- get
     sdebugCli <- get
     let sbfsD = EM.empty
         sfper = EM.empty
