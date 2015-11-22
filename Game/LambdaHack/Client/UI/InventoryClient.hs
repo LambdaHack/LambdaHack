@@ -20,7 +20,7 @@ import qualified Data.Char as Char
 import Data.Either (rights)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List (find, findIndex, nub, sortBy)
+import Data.List (delete, find, findIndex, intersect, nub, sortBy)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
@@ -222,25 +222,13 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
                 post = dropWhile (== cInit) rest
             in (MStore cInit, map MStore $ post ++ pre)
       -- The last used store may go before even the first nonempty store.
-      lastStore <- getsClient slastStore
-      firstStore <-
-        if lastStore `notElem` cLegalAfterCalm
-        then return $! cThisActor headThisActor
-        else do
-          (itemSlots, organSlots) <- getsClient sslots
-          let lSlots = if lastStore == COrgan then organSlots else itemSlots
-          lastSlot <- getsClient slastSlot
-          case EM.lookup lastSlot lSlots of
-            Nothing -> return $! cThisActor headThisActor
-            Just lastIid -> case EM.lookup lastIid $ getCStoreBag lastStore of
-              Nothing -> return $! cThisActor headThisActor
-              Just kit -> do
-                let lastItemFull = itemToF lastIid kit
-                    lastSuits = psuitFun lastItemFull
-                    cLast = cThisActor lastStore
-                return $! if lastSuits && cLast /= CGround
-                          then lastStore
-                          else cLast
+      lastStoreList <- getsClient slastStore
+      let legalLast = intersect lastStoreList cLegalAfterCalm
+      firstStore <- case legalLast of
+        [] -> return $! cThisActor headThisActor
+        lastStore : _ -> return $! if cThisActor lastStore == CGround
+                                   then CGround
+                                   else lastStore
       let (modeFirst, modeRest) = breakStores firstStore
       getItem psuit prompt promptGeneric cursor modeFirst modeRest
               askWhenLone permitMulitple (map MStore cLegal) initalState
@@ -410,9 +398,11 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                  Nothing -> assert `failure` "labelItemSlotsOpen empty"
                                    `twith` labelItemSlotsOpen
                  Just ((l, _), _) -> do
-                   modifyClient $ \cli ->
-                     cli { slastSlot = l
-                         , slastStore = storeFromMode cCur }
+                   lastStore <- getsClient slastStore
+                   let store = storeFromMode cCur
+                       newStore = store : delete store lastStore
+                   modifyClient $ \cli -> cli { slastSlot = l
+                                              , slastStore = newStore }
                    recCall numPrefix cCur cRest itemDialogState
            })
         , let km = revCmd (K.toKM K.NoModifier K.Tab) MemberCycle
@@ -646,9 +636,12 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
            -- Only remember item pointer, if moved and if not stats.
            case drop pointer $ snd okx of
              (Right newSlot, _) : _ | pointer /= lastPointer
-                                      && cCur /= MStats ->
+                                      && cCur /= MStats -> do
+               lastStore <- getsClient slastStore
+               let store = storeFromMode cCur
+                   newStore = store : delete store lastStore
                modifyClient $ \cli -> cli { slastSlot = newSlot
-                                          , slastStore = storeFromMode cCur }
+                                          , slastStore = newStore }
              _ -> return ()
            return okm
   case ekm of

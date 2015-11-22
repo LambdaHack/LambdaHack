@@ -85,7 +85,7 @@ data StateClient = StateClient
   , snxtDiff     :: !Int           -- ^ next game difficulty level
   , sslots       :: !ItemSlots     -- ^ map from slots to items
   , slastSlot    :: !SlotChar      -- ^ last used slot
-  , slastStore   :: !CStore        -- ^ last used store
+  , slastStore   :: ![CStore]      -- ^ last used stores
   , smenuIxMain  :: !Int           -- ^ index of last used Main Menu item
   , smenuIxHelp  :: !Int           -- ^ index of last used Help Menu item
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
@@ -152,7 +152,7 @@ defStateClient shistory sreport _sside sisAI =
     , snxtDiff = difficultyDefault
     , sslots = (EM.empty, EM.empty)
     , slastSlot = SlotChar 0 'Z'
-    , slastStore = CInv
+    , slastStore = []
     , smenuIxMain = 0
     , smenuIxHelp = 0
     , sdebugCli = defDebugModeCli

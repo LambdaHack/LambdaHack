@@ -7,6 +7,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.List (delete)
 import Data.Maybe
 import Data.Monoid
 import Data.Tuple
@@ -83,9 +84,11 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
           _ -> do
             itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
             mleader <- getsClient _sleader
-            when (Just aid == mleader) $
+            when (Just aid == mleader) $ do
+              lastStore <- getsClient slastStore
+              let newStore = store : delete store lastStore
               modifyClient $ \cli -> cli { slastSlot = l
-                                         , slastStore = store }
+                                         , slastStore = newStore }
       CEmbed{} -> return ()
       CFloor{} -> do
         -- If you want an item to be assigned to @slastSlot@, create it
@@ -466,9 +469,12 @@ moveItemUI iid k aid cstore1 cstore2 = do
   (itemSlots, _) <- getsClient sslots
   case lookup iid $ map swap $ EM.assocs itemSlots of
     Just l -> do
-      when (Just aid == mleader) $
+      when (Just aid == mleader) $ do
+        lastStore <- getsClient slastStore
+        let newStore = cstore2 : cstore1
+                       : delete cstore2 (delete cstore1 lastStore)
         modifyClient $ \cli -> cli { slastSlot = l
-                                   , slastStore = cstore2 }
+                                   , slastStore = newStore }
       if cstore1 == CGround && Just aid == mleader && not underAI then do
         itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
         localTime <- getsState $ getLocalTime (blid b)
@@ -865,9 +871,11 @@ setLastSlot aid iid cstore = do
   mleader <- getsClient _sleader
   when (Just aid == mleader) $ do
     (itemSlots, _) <- getsClient sslots
+    lastStore <- getsClient slastStore
+    let newStore = cstore : delete cstore lastStore
     case lookup iid $ map swap $ EM.assocs itemSlots of
       Just l -> modifyClient $ \cli -> cli { slastSlot = l
-                                           , slastStore = cstore }
+                                           , slastStore = newStore }
       Nothing -> assert `failure` (iid, cstore, aid)
 
 strike :: MonadClientUI m
