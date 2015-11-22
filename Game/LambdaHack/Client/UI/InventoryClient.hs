@@ -543,12 +543,12 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                   Right sl -> sl
             in failWith "stats affect character actions"  -- TODO
             }
-      runDefItemKey keyDefs statsDef io slotKeys promptChosen
+      runDefItemKey keyDefs statsDef io slotKeys promptChosen MStats
     _ -> do
       io <- itemOverlay (storeFromMode cCur) (blid body) bagFiltered
       let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)
                      $ EM.keys bagItemSlots
-      runDefItemKey keyDefs lettersDef io slotKeys promptChosen
+      runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur
 
 statsOverlay :: MonadClient m => ActorId -> m OKX
 statsOverlay aid = do
@@ -624,8 +624,9 @@ runDefItemKey :: MonadClientUI m
               -> OKX
               -> [K.KM]
               -> Text
+              -> ItemDialogMode
               -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
-runDefItemKey keyDefs lettersDef okx slotKeys prompt = do
+runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   let itemKeys = slotKeys ++ map fst keyDefs
       choice = let letterRange = defLabel lettersDef
                    keyLabelsRaw = letterRange : map (defLabel . snd) keyDefs
@@ -638,11 +639,17 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt = do
            lastSlot <- getsClient slastSlot
            let lastPointer = case findIndex ((== Right lastSlot) . fst)
                                             (snd okx) of
-                 Nothing -> 0
-                 Just p -> p
+                 Just p | cCur /= MStats -> p
+                 _ -> 0
            okxs <- splitOKX (prompt <+> choice) okx
-           (okm, _pointer) <-
-             displayChoiceScreen False lastPointer okxs itemKeys
+           (okm, pointer) <- displayChoiceScreen False lastPointer okxs itemKeys
+           -- Only remember item pointer, if moved and if not stats.
+           case drop pointer $ snd okx of
+             (Right newSlot, _) : _ | pointer /= lastPointer
+                                      && cCur /= MStats ->
+               modifyClient $ \cli -> cli { slastSlot = newSlot
+                                          , slastStore = storeFromMode cCur }
+             _ -> return ()
            return okm
   case ekm of
     Left km -> case lookup km{K.pointer=Nothing} keyDefs of
