@@ -635,8 +635,14 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt = do
          then
            Left <$> displayChoiceLine (prompt <+> choice) (fst okx) itemKeys
          else do
+           lastSlot <- getsClient slastSlot
+           let lastPointer = case findIndex ((== Right lastSlot) . fst)
+                                            (snd okx) of
+                 Nothing -> 0
+                 Just p -> p
            okxs <- splitOKX (prompt <+> choice) okx
-           (okm, _pointer) <- displayChoiceScreen False 0 okxs itemKeys
+           (okm, _pointer) <-
+             displayChoiceScreen False lastPointer okxs itemKeys
            return okm
   case ekm of
     Left km -> case lookup km{K.pointer=Nothing} keyDefs of
