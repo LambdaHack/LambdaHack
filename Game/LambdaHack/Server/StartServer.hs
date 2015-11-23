@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -- | Operations for starting and restarting the game.
 module Game.LambdaHack.Server.StartServer
   ( gameReset, reinitGame, initPer, recruitActors, applyDebug, initDebug
@@ -7,12 +8,12 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
-import Control.Monad (mplus, when, unless, forM, forM_)
+import Control.Monad (forM, forM_, mplus, unless, when)
 import qualified Control.Monad.State as St
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List ((\\), elemIndex, findIndex, sortBy, find)
+import Data.List (elemIndex, find, findIndex, sortBy, (\\))
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Ord
@@ -154,7 +155,14 @@ gameReset cops@Kind.COps{comode=Kind.Ops{opick, okind}}
   sstart <- getsServer sstart  -- copy over from previous game
   sallTime <- getsServer sallTime  -- copy over from previous game
   sheroNames <- getsServer sheroNames  -- copy over from previous game
-  let gameMode = fromMaybe "starting" $ mGameMode `mplus` sgameMode sdebug
+#ifdef USE_BROWSER
+  -- TODO: implement as an commandline option and have a diff set of default
+  -- options for browser
+  let startingModeName = "starting JS"
+#else
+  let startingModeName = "starting"
+#endif
+      gameMode = fromMaybe startingModeName $ mGameMode `mplus` sgameMode sdebug
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
                   DungeonGen.FreshDungeon, Kind.Id ModeKind)
       rnd = do

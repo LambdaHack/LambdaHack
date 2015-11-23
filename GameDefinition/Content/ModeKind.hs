@@ -17,9 +17,9 @@ cdefs = ContentDef
   , validateSingle = validateSingleModeKind
   , validateAll = validateAllModeKind
   , content =
-      [campaign, raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, screensaver, boardgame]
+      [campaign, raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverSkirmish]
   }
-campaign,        raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, screensaver, boardgame :: ModeKind
+campaign,        raid, skirmish, ambush, battle, battleSurvival, safari, safariSurvival, pvp, coop, defense, boardgame, screensaverSafari, screensaverSkirmish :: ModeKind
 
 campaign = ModeKind
   { msymbol = 'c'
@@ -120,7 +120,16 @@ defense = ModeKind
   , mdesc   = "Don't let the humans defile your abstract secrets and flee, like the vulgar, literal, base scoundrels that they are!"
   }
 
-screensaver = safari
+boardgame = ModeKind
+  { msymbol = 'g'
+  , mname   = "boardgame"
+  , mfreq   = [("boardgame", 1)]
+  , mroster = rosterBoardgame
+  , mcaves  = cavesBoardgame
+  , mdesc   = "Small room, no exits. Who will prevail?"
+  }
+
+screensaverSafari = safari
   { mname   = "safari"
   , mfreq   = [("starting", 1)]
   , mroster = rosterSafari
@@ -132,13 +141,14 @@ screensaver = safari
       }
   }
 
-boardgame = ModeKind
-  { msymbol = 'g'
-  , mname   = "boardgame"
-  , mfreq   = [("boardgame", 1)]
-  , mroster = rosterBoardgame
-  , mcaves  = cavesBoardgame
-  , mdesc   = "Small room, no exits. Who will prevail?"
+screensaverSkirmish = skirmish
+  { mname   = "skirmish"
+  , mfreq   = [("starting JS", 1)]
+  , mroster = rosterSkirmish
+      { rosterList = (head (rosterList rosterSkirmish))
+                       {fleaderMode = LeaderAI $ AutoLeader True False}
+                     : tail (rosterList rosterSkirmish)
+      }
   }
 
 
