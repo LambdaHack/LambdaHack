@@ -20,7 +20,8 @@ import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 data CmdCategory =
-    CmdMainMenu | CmdMove | CmdItem | CmdTgt | CmdAuto | CmdMeta | CmdMouse
+    CmdMainMenu | CmdSettingsMenu
+  | CmdMove | CmdItem | CmdTgt | CmdMeta | CmdMouse
   | CmdInternal | CmdDebug | CmdMinimal
   deriving (Show, Read, Eq, Generic)
 
@@ -28,10 +29,10 @@ instance NFData CmdCategory
 
 categoryDescription :: CmdCategory -> Text
 categoryDescription CmdMainMenu = "Main Menu"
+categoryDescription CmdSettingsMenu = "Settings Menu"
 categoryDescription CmdMove = "Terrain exploration and alteration"
 categoryDescription CmdItem = "Item use"
 categoryDescription CmdTgt = "Aiming and targeting"
-categoryDescription CmdAuto = "Automation"
 categoryDescription CmdMeta = "Assorted"
 categoryDescription CmdMouse = "Mouse"
 categoryDescription CmdInternal = "Internal"
@@ -63,7 +64,7 @@ data HumanCmd =
   | Automate
     -- Local.
     -- Below this line, commands do not notify the server.
-  | GameDifficultyIncr Int
+  | GameDifficultyIncr
   | PickLeader !Int
   | MemberCycle
   | MemberBack
@@ -158,11 +159,8 @@ cmdDescription cmd = case cmd of
   GameSave    -> "save game"
   Tactic      -> "cycle tactic of non-leader team members (WIP)"
   Automate    -> "automate faction"
+  GameDifficultyIncr -> "cycle next difficulty"
 
-  GameDifficultyIncr k | k > 0 -> "increase next difficulty"
-  GameDifficultyIncr k | k < 0 -> "decrease next difficulty"
-  GameDifficultyIncr _ -> assert `failure` "void game difficulty change"
-                                 `twith` cmd
   PickLeader{} -> "pick leader"
   MemberCycle -> "cycle among party members on the level"
   MemberBack  -> "cycle among all party members"
@@ -201,7 +199,7 @@ cmdDescription cmd = case cmd of
   CursorItem     -> "set crosshair to the closest item"
   CursorStair up -> "set crosshair to the closest stairs"
                     <+> if up then "up" else "down"
-  Cancel -> "cancel action, open Main Menu"
+  Cancel -> "cancel target/action or open Main Menu"
   Accept -> "accept target/choice"
   CursorPointerFloor -> "set crosshair to floor under pointer"
   CursorPointerEnemy -> "set crosshair to enemy under pointer"

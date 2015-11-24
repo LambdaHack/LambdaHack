@@ -63,7 +63,8 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
       , let cmd2 = case cmd of
               Alias _ cmd1 -> cmd1
               _ -> cmd
-      , any (`notElem` [CmdMainMenu, CmdDebug, CmdInternal]) cats ]
+      , any (`notElem` [CmdMainMenu, CmdSettingsMenu, CmdDebug, CmdInternal])
+            cats ]
   }
 
 -- | Produce a set of help screens from the key bindings.
@@ -162,10 +163,6 @@ keyHelp Binding{..} =
         (categoryText ++ [moreMsg])
     , okxs CmdTgt
         ([categoryDescription CmdTgt <> ". [press SPACE to advance]"]
-         ++ [""] ++ [keyCaption])
-        (categoryText ++ [moreMsg])
-    , okxs CmdAuto
-        ([categoryDescription CmdAuto <> ". [press SPACE to advance]"]
          ++ [""] ++ [keyCaption])
         (categoryText ++ [moreMsg])
     , okxs CmdMeta

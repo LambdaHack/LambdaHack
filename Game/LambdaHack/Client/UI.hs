@@ -93,7 +93,8 @@ humanCommand = do
           -- Look up the key.
           Binding{bcmdMap} <- askBinding
           case M.lookup km{K.pointer=Nothing} bcmdMap of
-            Just (_, cats, cmd) | CmdMainMenu `notElem` cats -> do
+            Just (_, cats, cmd) | CmdMainMenu `notElem` cats
+                                  && CmdSettingsMenu `notElem` cats -> do
               -- Query and clear the last command key.
               modifyClient $ \cli -> cli
                 {swaitTimes = if swaitTimes cli > 0

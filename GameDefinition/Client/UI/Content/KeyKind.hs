@@ -21,9 +21,10 @@ standardKeys = KeyKind
       -- Remember to put commands that show information (e.g., enter targeting
       -- mode) first.
 
-      -- Main Menu.
+      -- Main Menu
       [ ("Escape", ([CmdMainMenu], Alias "back to playing" Cancel))
-      , ("?", ([CmdMainMenu], Alias "see more help" Help))
+      , ("?", ([CmdMainMenu], Alias "see command help" Help))
+      , ("S", ([CmdMainMenu], Alias "enter settings menu" Help))
       , ("X", ([CmdMainMenu], GameExit))
       , ("r", ([CmdMainMenu], GameRestart "raid"))
       , ("s", ([CmdMainMenu], GameRestart "skirmish"))
@@ -35,9 +36,14 @@ standardKeys = KeyKind
       , ("u", ([CmdMainMenu, CmdDebug], GameRestart "safari survival"))
       , ("d", ([CmdMainMenu, CmdDebug], GameRestart "defense"))
       , ("g", ([CmdMainMenu, CmdDebug], GameRestart "boardgame"))
-      , ("+", ([CmdMainMenu], GameDifficultyIncr 1))
-      , ("-", ([CmdMainMenu], GameDifficultyIncr (-1)))
+      , ("D", ([CmdMainMenu], GameDifficultyIncr))
       , ("A", ([CmdMainMenu], Automate))
+
+      -- Settings Menu  -- TODO: add some from ClientOptions
+      , ("T", ([CmdSettingsMenu], Tactic))
+      , ("S", ([CmdSettingsMenu], MarkSuspect))
+      , ("V", ([CmdSettingsMenu], MarkVision))
+      , ("C", ([CmdSettingsMenu], MarkSmell))
 
       -- Movement and terrain alteration
       , ("less", ([CmdMove, CmdMinimal], TriggerTile
@@ -155,28 +161,22 @@ standardKeys = KeyKind
       , ("CTRL-braceleft", ([CmdTgt], CursorStair True))
       , ("CTRL-braceright", ([CmdTgt], CursorStair False))
       , ("BackSpace", ([CmdTgt], TgtClear))
-
-      -- Automation
-      , ("equal", ([CmdAuto], SelectActor))
-      , ("underscore", ([CmdAuto], SelectNone))
-      , ("v", ([CmdAuto], Repeat 1))
-      , ("V", ([CmdAuto], Repeat 100))
-      , ("CTRL-v", ([CmdAuto], Repeat 1000))
-      , ("CTRL-V", ([CmdAuto], Repeat 25))
-      , ("apostrophe", ([CmdAuto], Record))
-      , ("CTRL-T", ([CmdAuto], Tactic))
+      , ("Escape", ([CmdTgt, CmdMinimal], Cancel))
+      , ("Return", ([CmdTgt, CmdMinimal], Accept))
 
       -- Assorted
+      , ("space", ([CmdMeta], Clear))
       , ("question", ([CmdMeta], Help))
       , ("D", ([CmdMeta, CmdMinimal], History))
-      , ("T", ([CmdMeta, CmdMinimal], MarkSuspect))
-      , ("Z", ([CmdMeta], MarkVision))
-      , ("C", ([CmdMeta], MarkSmell))
       , ("Tab", ([CmdMeta], MemberCycle))
       , ("ISO_Left_Tab", ([CmdMeta, CmdMinimal], MemberBack))
-      , ("space", ([CmdMeta], Clear))
-      , ("Escape", ([CmdMeta, CmdMinimal], Cancel))
-      , ("Return", ([CmdMeta, CmdTgt], Accept))
+      , ("equal", ([CmdMeta], SelectActor))
+      , ("underscore", ([CmdMeta], SelectNone))
+      , ("v", ([CmdMeta], Repeat 1))
+      , ("V", ([CmdMeta], Repeat 100))
+      , ("CTRL-v", ([CmdMeta], Repeat 1000))
+      , ("CTRL-V", ([CmdMeta], Repeat 25))
+      , ("apostrophe", ([CmdMeta], Record))
 
       -- Mouse
       , ("LeftButtonPress",

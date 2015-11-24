@@ -54,8 +54,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * GameDifficultyIncr
 
-gameDifficultyIncr :: MonadClientUI m => Int -> m ()
-gameDifficultyIncr delta = do
+gameDifficultyIncr :: MonadClientUI m => m ()
+gameDifficultyIncr = do
+  let delta = 1
   snxtDiff <- getsClient snxtDiff
   let d | snxtDiff + delta > difficultyBound = 1
         | snxtDiff + delta < 1 = difficultyBound

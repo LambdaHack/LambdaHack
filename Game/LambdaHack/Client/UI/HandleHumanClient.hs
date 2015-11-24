@@ -56,7 +56,7 @@ cmdAction cmd = case cmd of
   Automate -> automateHuman
   MainMenu -> mainMenuHuman cmdAction
   Help -> helpHuman cmdAction
-  GameDifficultyIncr k -> gameDifficultyIncr k >> mainMenuHuman cmdAction
+  GameDifficultyIncr -> gameDifficultyIncr >> mainMenuHuman cmdAction
   Cancel -> cancelHuman $ mainMenuHuman cmdAction
   Accept -> acceptHuman $ helpHuman cmdAction
 

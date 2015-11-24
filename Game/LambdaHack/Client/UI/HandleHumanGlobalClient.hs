@@ -901,7 +901,8 @@ mainMenuHuman cmdAction = do
             | (km, (desc, [HumanCmd.CmdMainMenu], cmd)) <- bcmdList ]
       scenarioNameLen = 11
       minBraceLen = 5
-      gameInfo = [ T.justifyLeft scenarioNameLen ' ' $ mname gameMode
+      gameName = makePhrase [MU.Capitalize $ MU.Text $ mname gameMode]
+      gameInfo = [ T.justifyLeft scenarioNameLen ' ' gameName
                  , T.justifyLeft minBraceLen ' ' $ tshow scurDiff
                  , T.justifyLeft minBraceLen ' ' $ tshow snxtDiff ]
       bindingLen = 28
