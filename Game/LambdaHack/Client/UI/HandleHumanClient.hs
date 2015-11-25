@@ -55,6 +55,7 @@ cmdAction cmd = case cmd of
   Tactic -> tacticHuman
   Automate -> automateHuman
   MainMenu -> mainMenuHuman cmdAction
+  SettingsMenu -> settingsMenuHuman cmdAction
   Help -> helpHuman cmdAction
   GameDifficultyIncr -> gameDifficultyIncr >> mainMenuHuman cmdAction
   Cancel -> cancelHuman $ mainMenuHuman cmdAction
@@ -72,9 +73,9 @@ cmdAction cmd = case cmd of
   Repeat n -> addNoSlides $ repeatHuman n
   Record -> Left <$> recordHuman
   History -> Left <$> historyHuman
-  MarkVision -> addNoSlides markVisionHuman
-  MarkSmell -> addNoSlides markSmellHuman
-  MarkSuspect -> addNoSlides markSuspectHuman
+  MarkVision -> markVisionHuman >> settingsMenuHuman cmdAction
+  MarkSmell -> markSmellHuman >> settingsMenuHuman cmdAction
+  MarkSuspect -> markSuspectHuman >> settingsMenuHuman cmdAction
   Macro _ kms -> Left <$> macroHuman kms
   Alias _ cmd2 -> cmdAction cmd2
 

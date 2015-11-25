@@ -81,6 +81,7 @@ data HumanCmd =
   | MarkSuspect
   | Help
   | MainMenu
+  | SettingsMenu
   | Macro !Text ![String]
   | Alias !Text !HumanCmd
     -- These are mostly related to targeting.
@@ -157,7 +158,7 @@ cmdDescription cmd = case cmd of
     makePhrase ["new", MU.Capitalize $ MU.Text $ tshow t, "game"]
   GameExit    -> "save and exit"
   GameSave    -> "save game"
-  Tactic      -> "cycle tactic of non-leader team members (WIP)"
+  Tactic      -> "cycle henchmen tactic"
   Automate    -> "automate faction"
   GameDifficultyIncr -> "cycle next difficulty"
 
@@ -173,11 +174,12 @@ cmdDescription cmd = case cmd of
   Repeat n    -> "voice the recorded commands" <+> tshow n <+> "times"
   Record      -> "start recording commands"
   History     -> "display player diary"
-  MarkVision  -> "toggle visible zone display"
-  MarkSmell   -> "toggle smell clues display"
-  MarkSuspect -> "toggle suspect terrain display"
+  MarkVision  -> "toggle visible zone"
+  MarkSmell   -> "toggle smell clues"
+  MarkSuspect -> "toggle suspect terrain"
   Help        -> "display help"
   MainMenu    -> "display the Main Menu"
+  SettingsMenu -> "display the Settings Menu"
   Macro t _   -> t
   Alias t _   -> t
 

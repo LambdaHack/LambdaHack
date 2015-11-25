@@ -29,13 +29,13 @@ data FrontReq =
   | FrontDelay
       -- ^ perform a single explicit delay
   | FrontKey {frontKM :: ![K.KM], frontFr :: !SingleFrame}
-      -- ^ flush frames, possibly show fadeout/fadein and ask for a keypress
+      -- ^ flush frames, display a frame and ask for a keypress
   | FrontSlides { frontClear   :: ![K.KM]
                 , frontSlides  :: ![SingleFrame]
                 , frontFromTop :: !(Maybe Bool) }
       -- ^ show a whole slideshow without interleaving with other clients
   | FrontAutoYes !Bool
-      -- ^ set the frontend option for auto-answering prompts
+      -- ^ set in the frontend that it should auto-answer prompts
   | FrontFinish
       -- ^ exit frontend loop
 

@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   , runOnceAheadHuman, moveOnceToCursorHuman
   , runOnceToCursorHuman, continueToCursorHuman
     -- * Commands that never take time
-  , cancelHuman, acceptHuman, mainMenuHuman, helpHuman
+  , cancelHuman, acceptHuman, mainMenuHuman, settingsMenuHuman, helpHuman
   , gameRestartHuman, gameExitHuman, gameSaveHuman
   , tacticHuman, automateHuman
   ) where
@@ -899,13 +899,17 @@ mainMenuHuman cmdAction = do
       -- Key-description-command tuples.
       kds = [ (km, (desc, cmd))
             | (km, (desc, [HumanCmd.CmdMainMenu], cmd)) <- bcmdList ]
-      scenarioNameLen = 11
-      minBraceLen = 5
-      gameName = makePhrase [MU.Capitalize $ MU.Text $ mname gameMode]
-      gameInfo = [ T.justifyLeft scenarioNameLen ' ' gameName
-                 , T.justifyLeft minBraceLen ' ' $ tshow scurDiff
-                 , T.justifyLeft minBraceLen ' ' $ tshow snxtDiff ]
+      statusLen = 30
       bindingLen = 28
+      gameName = makePhrase [MU.Capitalize $ MU.Text $ mname gameMode]
+      gameInfo = [ T.justifyLeft statusLen ' '
+                   $ "Current scenario:" <+> gameName
+                 , T.justifyLeft statusLen ' '
+                   $ "Current game difficulty:" <+> tshow scurDiff
+                 , T.justifyLeft statusLen ' '
+                   $ "Next game difficulty:" <+> tshow snxtDiff
+                 , T.justifyLeft statusLen ' ' "" ]
+      emptyInfo = repeat $ T.justifyLeft bindingLen ' ' ""
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
               ( Just k
@@ -917,7 +921,7 @@ mainMenuHuman cmdAction = do
             over bs@((mkey, binding) : bsRest) (y, line) =
               let (prefix, lineRest) = break (=='{') line
                   (braces, suffix)   = span  (=='{') lineRest
-              in if length braces >= minBraceLen
+              in if length braces >= bindingLen
                  then
                    let lenB = T.length binding
                        pre = T.pack prefix
@@ -927,7 +931,9 @@ mainMenuHuman cmdAction = do
                        myxx = yxx <$> mkey
                    in (bsRest, (pre <> binding <> post, myxx))
                  else (bs, (T.pack line, Nothing))
-        in snd . mapAccumL over (zip (repeat Nothing) gameInfo ++ bindings)
+        in snd . mapAccumL over (zip (repeat Nothing) gameInfo
+                                 ++ bindings
+                                 ++ zip (repeat Nothing) emptyInfo)
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
       artWithVersion = pasteVersion $ map T.unpack $ stripFrame mainMenuArt
       menuOverwritten = overwrite $ zip [0..] artWithVersion
@@ -939,7 +945,72 @@ mainMenuHuman cmdAction = do
   modifyClient $ \cli -> cli {smenuIxMain = pointer}
   case ekm of
     Left km -> case lookup km{K.pointer=Nothing} kds of
-      _ | K.key km == K.Esc -> return $ Left mempty
+      Just (_desc, cmd) -> cmdAction cmd
+      Nothing -> failWith "never mind"
+    Right _slot -> assert `failure` ekm
+
+-- * SettingsMenu; does not take time
+
+-- TODO: display "on"/"off" after Mark* commands
+-- TODO: display tactics at the top; somehow return to this menu after Tactics
+-- | Display the settings menu.
+settingsMenuHuman :: MonadClientUI m
+                  => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
+                  -> m (SlideOrCmd RequestUI)
+settingsMenuHuman cmdAction = do
+  Kind.COps{corule} <- getsState scops
+  Binding{bcmdList} <- askBinding
+  let stripFrame t = tail . init $ T.lines t
+      pasteVersion art =  -- TODO: factor out
+        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
+            version = " Version " ++ showVersion pathsVersion
+                      ++ " (frontend: " ++ frontendName
+                      ++ ", engine: LambdaHack " ++ showVersion Self.version
+                      ++ ") "
+            versionLen = length version
+        in init art ++ [take (80 - versionLen) (last art) ++ version]
+      -- Key-description-command tuples.
+      kds = [ (km, (desc, cmd))
+            | (km, (desc, [HumanCmd.CmdSettingsMenu], cmd)) <- bcmdList ]
+      statusLen = 30
+      bindingLen = 28
+      gameInfo = replicate 4 $ T.justifyLeft statusLen ' ' ""
+      emptyInfo = repeat $ T.justifyLeft bindingLen ' ' ""
+      bindings =  -- key bindings to display
+        let fmt (k, (d, _)) =
+              ( Just k
+              , T.justifyLeft bindingLen ' '
+                  $ T.justifyLeft 3 ' ' (K.showKM k) <> " " <> d )
+        in map fmt kds
+      overwrite =  -- overwrite the art with key bindings and other lines
+        let over [] (_, line) = ([], (T.pack line, Nothing))
+            over bs@((mkey, binding) : bsRest) (y, line) =
+              let (prefix, lineRest) = break (=='{') line
+                  (braces, suffix)   = span  (=='{') lineRest
+              in if length braces >= bindingLen
+                 then
+                   let lenB = T.length binding
+                       pre = T.pack prefix
+                       post = T.drop (lenB - bindingLen) (T.pack suffix)
+                       len = T.length pre
+                       yxx key = (Left key, (y, len, len + lenB))
+                       myxx = yxx <$> mkey
+                   in (bsRest, (pre <> binding <> post, myxx))
+                 else (bs, (T.pack line, Nothing))
+        in snd . mapAccumL over (zip (repeat Nothing) gameInfo
+                                 ++ bindings
+                                 ++ zip (repeat Nothing) emptyInfo)
+      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
+      artWithVersion = pasteVersion $ map T.unpack $ stripFrame mainMenuArt
+      menuOverwritten = overwrite $ zip [0..] artWithVersion
+      (menuOvLines, mkyxs) = unzip menuOverwritten
+      kyxs = catMaybes mkyxs
+      ov = toOverlay menuOvLines
+  menuIxSettings <- getsClient smenuIxSettings
+  (ekm, pointer) <- displayChoiceScreen True menuIxSettings [(ov, kyxs)] []
+  modifyClient $ \cli -> cli {smenuIxSettings = pointer}
+  case ekm of
+    Left km -> case lookup km{K.pointer=Nothing} kds of
       Just (_desc, cmd) -> cmdAction cmd
       Nothing -> failWith "never mind"
     Right _slot -> assert `failure` ekm

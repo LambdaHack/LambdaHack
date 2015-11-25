@@ -22,9 +22,9 @@ standardKeys = KeyKind
       -- mode) first.
 
       -- Main Menu
-      [ ("Escape", ([CmdMainMenu], Alias "back to playing" Cancel))
+      [ ("Escape", ([CmdMainMenu], Alias "back to playing" Clear))
       , ("?", ([CmdMainMenu], Alias "see command help" Help))
-      , ("S", ([CmdMainMenu], Alias "enter settings menu" Help))
+      , ("S", ([CmdMainMenu], Alias "enter settings menu" SettingsMenu))
       , ("X", ([CmdMainMenu], GameExit))
       , ("r", ([CmdMainMenu], GameRestart "raid"))
       , ("s", ([CmdMainMenu], GameRestart "skirmish"))
@@ -40,6 +40,7 @@ standardKeys = KeyKind
       , ("A", ([CmdMainMenu], Automate))
 
       -- Settings Menu  -- TODO: add some from ClientOptions
+      , ("Escape", ([CmdSettingsMenu], Alias "back to Main Menu" MainMenu))
       , ("T", ([CmdSettingsMenu], Tactic))
       , ("S", ([CmdSettingsMenu], MarkSuspect))
       , ("V", ([CmdSettingsMenu], MarkVision))
