@@ -2,7 +2,7 @@
 -- using one of the available raw frontends and derived operations.
 module Game.LambdaHack.Client.UI.Frontend
   ( -- * Connection types
-    FrontReq(..), ChanFrontend(..)
+    FrontReq(..), FrontResp(..), ChanFrontend(..)
     -- * Re-exported part of the raw frontend
   , frontendName
     -- * A derived operation
@@ -13,6 +13,7 @@ import Control.Concurrent
 import qualified Control.Concurrent.STM as STM
 import Control.Exception.Assert.Sugar
 import Control.Monad
+import Data.Text (Text)
 import qualified Data.Text.IO as T
 import System.IO
 
@@ -33,16 +34,22 @@ data FrontReq =
   | FrontSlides { frontClear   :: ![K.KM]
                 , frontSlides  :: ![SingleFrame]
                 , frontFromTop :: !(Maybe Bool) }
-      -- ^ show a whole slideshow without interleaving with other clients
+      -- ^ flush frames and disply a whole slideshow
   | FrontAutoYes !Bool
       -- ^ set in the frontend that it should auto-answer prompts
   | FrontFinish
       -- ^ exit frontend loop
 
+data FrontResp =
+    FrontKM !K.KM
+  | FrontInt !Int
+  | FrontText !Text
+  deriving Eq
+
 -- | Connection channel between a frontend and a client. Frontend acts
 -- as a server, serving keys, when given frames to display.
 data ChanFrontend = ChanFrontend
-  { responseF :: !(STM.TQueue K.KM)
+  { responseF :: !(STM.TQueue FrontResp)
   , requestF  :: !(STM.TQueue FrontReq)
   }
 
@@ -88,7 +95,7 @@ loopFrontend :: RawFrontend -> ChanFrontend -> IO ()
 loopFrontend fs ChanFrontend{..} = loop False
  where
   writeKM :: K.KM -> IO ()
-  writeKM km = STM.atomically $ STM.writeTQueue responseF km
+  writeKM km = STM.atomically $ STM.writeTQueue responseF $ FrontKM km
 
   loop :: Bool -> IO ()
   loop autoYes = do

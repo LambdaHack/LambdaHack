@@ -31,7 +31,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- TODO: make remove second arg from ReqLeader; this requires a separate
 -- channel for Ping, probably, and then client sends as many commands
 -- as it wants at once
--- | Cclient-server requests sent by AI clients.
+-- | Client-server requests sent by AI clients.
 data RequestAI =
     forall a. ReqAITimed !(RequestTimed a)
   | ReqAILeader !ActorId !(Maybe Target) !RequestAI

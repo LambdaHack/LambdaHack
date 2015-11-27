@@ -74,7 +74,7 @@ class MonadClient m => MonadClientUI m where
   liftIO       :: IO a -> m a
 
 -- | Read a keystroke received from the frontend.
-readConnFrontend :: MonadClientUI m => m K.KM
+readConnFrontend :: MonadClientUI m => m FrontResp
 readConnFrontend = do
   ChanFrontend{responseF} <- getsSession schanF
   liftIO $ atomically $ readTQueue responseF
@@ -110,7 +110,7 @@ promptGetKey frontKM frontFr = do
     _ -> do
       stopPlayBack  -- we can't continue playback; wipe out old srunning
       writeConnFrontend FrontKey{..}
-      km <- readConnFrontend
+      FrontKM km <- readConnFrontend
       modifyClient $ \cli -> cli {slastKM = km}
       return km
   (seqCurrent, seqPrevious, k) <- getsClient slastRecord
@@ -138,7 +138,7 @@ getInitConfirms dm frontClear slides = do
       km <- readConnFrontend
       -- Don't clear ESC marker here, because the wait for confirms may
       -- block a ping and the ping would not see the ESC.
-      return $! km /= K.escKM
+      return $! km /= FrontKM K.escKM
 
 displayFrame :: MonadClientUI m => Maybe SingleFrame -> m ()
 displayFrame mf = do
@@ -231,7 +231,7 @@ syncFrames = do
   writeConnFrontend
     FrontSlides{frontClear=[], frontSlides=[], frontFromTop=Nothing}
   km <- readConnFrontend
-  let !_A = assert (km == K.spaceKM) ()
+  let !_A = assert (km == FrontKM K.spaceKM) ()
   return ()
 
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
