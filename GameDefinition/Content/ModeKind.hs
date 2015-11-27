@@ -99,7 +99,7 @@ pvp = ModeKind
   , mfreq   = [("PvP", 1)]
   , mroster = rosterPvP
   , mcaves  = cavesSkirmish
-  , mdesc   = "(Not usable right now.) This is a fight to the death between two human-controlled teams."
+  , mdesc   = "(Not really a multiplayer in this game version.) This is a fight to the death between two human-controlled teams."
   }
 
 coop = ModeKind
@@ -295,9 +295,9 @@ rosterSafariSurvival = rosterSafari
                  ] }
 
 rosterPvP = Roster
-  { rosterList = [ playerHero { fname = "Red"
-                              , fhiCondPoly = hiDweller
-                              , fentryLevel = -3 }
+  { rosterList = [ playerAntiHero { fname = "Red"
+                                  , fhiCondPoly = hiDweller
+                                  , fentryLevel = -3 }
                  , playerHero { fname = "Blue"
                               , fhiCondPoly = hiDweller
                               , fentryLevel = -3 }

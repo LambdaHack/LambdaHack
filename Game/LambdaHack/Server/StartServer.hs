@@ -116,6 +116,9 @@ createFactions totalDepth players = do
             gsha = EM.empty
         return $! Faction{..}
   lUI <- mapM rawCreate $ filter fhasUI $ rosterList players
+  let !_A = assert (length lUI <= 1
+                    `blame` "currently, at most one faction may have a UI"
+                    `twith` lUI) ()
   lnoUI <- mapM rawCreate $ filter (not . fhasUI) $ rosterList players
   let lFs = reverse (zip [toEnum (-1), toEnum (-2)..] lnoUI)  -- sorted
             ++ zip [toEnum 1..] lUI
