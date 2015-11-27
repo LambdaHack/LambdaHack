@@ -73,17 +73,18 @@ class MonadClient m => MonadClientUI m where
   getsSession  :: (SessionUI -> a) -> m a
   liftIO       :: IO a -> m a
 
--- | Read a keystroke received from the frontend.
-readConnFrontend :: MonadClientUI m => m FrontResp
-readConnFrontend = do
-  ChanFrontend{responseF} <- getsSession schanF
-  liftIO $ atomically $ readTQueue responseF
-
 -- | Write a UI request to the frontend.
 writeConnFrontend :: MonadClientUI m => FrontReq -> m ()
 writeConnFrontend efr = do
   ChanFrontend{requestF} <- getsSession schanF
   liftIO $ atomically $ writeTQueue requestF efr
+
+-- | Write a UI request to the frontend and read a corresponding reply.
+connFrontend :: MonadClientUI m => FrontReq -> m FrontResp
+connFrontend efr = do
+  ChanFrontend{..} <- getsSession schanF
+  liftIO $ atomically $ writeTQueue requestF efr
+  liftIO $ atomically $ readTQueue responseF
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey frontKM frontFr = do
@@ -109,8 +110,7 @@ promptGetKey frontKM frontFr = do
       return km
     _ -> do
       stopPlayBack  -- we can't continue playback; wipe out old srunning
-      writeConnFrontend FrontKey{..}
-      FrontKM km <- readConnFrontend
+      FrontKM km <- connFrontend FrontKey{..}
       modifyClient $ \cli -> cli {slastKM = km}
       return km
   (seqCurrent, seqPrevious, k) <- getsClient slastRecord
@@ -134,8 +134,7 @@ getInitConfirms dm frontClear slides = do
   case frontSlides of
     [] -> return True
     _ -> do
-      writeConnFrontend FrontSlides{..}
-      km <- readConnFrontend
+      km <- connFrontend FrontSlides{..}
       -- Don't clear ESC marker here, because the wait for confirms may
       -- block a ping and the ping would not see the ESC.
       return $! km /= FrontKM K.escKM
@@ -228,9 +227,8 @@ askBinding = getsSession sbinding
 syncFrames :: MonadClientUI m => m ()
 syncFrames = do
   -- Hack.
-  writeConnFrontend
-    FrontSlides{frontClear=[], frontSlides=[], frontFromTop=Nothing}
-  km <- readConnFrontend
+  km <- connFrontend
+          FrontSlides{frontClear=[], frontSlides=[], frontFromTop=Nothing}
   let !_A = assert (km == FrontKM K.spaceKM) ()
   return ()
 
