@@ -22,7 +22,6 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Concurrent
-import Control.Concurrent.STM
 import Control.Exception.Assert.Sugar
 import Control.Monad (replicateM_, when)
 import qualified Data.EnumMap.Strict as EM
@@ -40,7 +39,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.DrawClient
-import Game.LambdaHack.Client.UI.Frontend as Frontend
+import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -73,18 +72,11 @@ class MonadClient m => MonadClientUI m where
   getsSession  :: (SessionUI -> a) -> m a
   liftIO       :: IO a -> m a
 
--- | Write a UI request to the frontend.
-writeConnFrontend :: MonadClientUI m => FrontReq -> m ()
-writeConnFrontend efr = do
-  ChanFrontend{requestF} <- getsSession schanF
-  liftIO $ atomically $ writeTQueue requestF efr
-
 -- | Write a UI request to the frontend and read a corresponding reply.
-connFrontend :: MonadClientUI m => FrontReq -> m FrontResp
-connFrontend efr = do
-  ChanFrontend{..} <- getsSession schanF
-  liftIO $ atomically $ writeTQueue requestF efr
-  liftIO $ atomically $ readTQueue responseF
+connFrontend :: MonadClientUI m => FrontReq a -> m a
+connFrontend req = do
+  f <- getsSession schanF
+  liftIO $ f req
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey frontKM frontFr = do
@@ -110,7 +102,7 @@ promptGetKey frontKM frontFr = do
       return km
     _ -> do
       stopPlayBack  -- we can't continue playback; wipe out old srunning
-      FrontKM km <- connFrontend FrontKey{..}
+      km <- connFrontend FrontKey{..}
       modifyClient $ \cli -> cli {slastKM = km}
       return km
   (seqCurrent, seqPrevious, k) <- getsClient slastRecord
@@ -137,17 +129,17 @@ getInitConfirms dm frontClear slides = do
       km <- connFrontend FrontSlides{..}
       -- Don't clear ESC marker here, because the wait for confirms may
       -- block a ping and the ping would not see the ESC.
-      return $! km /= FrontKM K.escKM
+      return $! km /= K.escKM
 
 displayFrame :: MonadClientUI m => Maybe SingleFrame -> m ()
 displayFrame mf = do
   let frame = case mf of
         Nothing -> FrontDelay
         Just fr -> FrontNormalFrame fr
-  writeConnFrontend frame
+  connFrontend frame
 
 displayDelay :: MonadClientUI m =>  m ()
-displayDelay = replicateM_ 4 $ writeConnFrontend FrontDelay
+displayDelay = replicateM_ 4 $ connFrontend FrontDelay
 
 -- | Push frames or delays to the frame queue. Additionally set @sdisplayed@.
 -- because animations not always happen after @SfxActorStart@ on the leader's
@@ -229,11 +221,11 @@ syncFrames = do
   -- Hack.
   km <- connFrontend
           FrontSlides{frontClear=[], frontSlides=[], frontFromTop=Nothing}
-  let !_A = assert (km == FrontKM K.spaceKM) ()
+  let !_A = assert (km == K.spaceKM) ()
   return ()
 
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
-setFrontAutoYes b = writeConnFrontend $ FrontAutoYes b
+setFrontAutoYes b = connFrontend $ FrontAutoYes b
 
 tryTakeMVarSescMVar :: MonadClientUI m => m Bool
 tryTakeMVarSescMVar = do

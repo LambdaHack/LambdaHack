@@ -1,8 +1,9 @@
+{-# LANGUAGE GADTs, KindSignatures, RankNTypes #-}
 -- | Display game data on the screen and receive user input
 -- using one of the available raw frontends and derived operations.
 module Game.LambdaHack.Client.UI.Frontend
   ( -- * Connection types
-    FrontReq(..), FrontResp(..), ChanFrontend(..)
+    FrontReq(..), ChanFrontend
     -- * Re-exported part of the raw frontend
   , frontendName
     -- * A derived operation
@@ -10,10 +11,8 @@ module Game.LambdaHack.Client.UI.Frontend
   ) where
 
 import Control.Concurrent
-import qualified Control.Concurrent.STM as STM
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import Data.Text (Text)
 import qualified Data.Text.IO as T
 import System.IO
 
@@ -23,48 +22,36 @@ import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Chosen
 import Game.LambdaHack.Common.ClientOptions
 
--- | The instructions sent by clients to the raw frontend over a channel.
-data FrontReq =
-    FrontNormalFrame {frontFrame :: !SingleFrame}
-      -- ^ show a frame
-  | FrontDelay
-      -- ^ perform a single explicit delay
-  | FrontKey {frontKM :: ![K.KM], frontFr :: !SingleFrame}
-      -- ^ flush frames, display a frame and ask for a keypress
-  | FrontSlides { frontClear   :: ![K.KM]
-                , frontSlides  :: ![SingleFrame]
-                , frontFromTop :: !(Maybe Bool) }
-      -- ^ flush frames and disply a whole slideshow
-  | FrontAutoYes !Bool
-      -- ^ set in the frontend that it should auto-answer prompts
-  | FrontFinish
-      -- ^ exit frontend loop
-
-data FrontResp =
-    FrontKM !K.KM
-  | FrontInt !Int
-  | FrontText !Text
-  deriving Eq
+-- | The instructions sent by clients to the raw frontend.
+data FrontReq :: * -> * where
+  FrontNormalFrame :: {frontFrame :: !SingleFrame} -> FrontReq ()
+    -- ^ show a frame
+  FrontDelay :: FrontReq ()
+    -- ^ perform a single explicit delay
+  FrontKey :: { frontKM :: ![K.KM]
+              , frontFr :: !SingleFrame } -> FrontReq K.KM
+    -- ^ flush frames, display a frame and ask for a keypress
+  FrontSlides :: { frontClear   :: ![K.KM]
+                 , frontSlides  :: ![SingleFrame]
+                 , frontFromTop :: !(Maybe Bool) } -> FrontReq K.KM
+    -- ^ flush frames and disply a whole slideshow
+  FrontAutoYes :: !Bool -> FrontReq ()
+    -- ^ set in the frontend that it should auto-answer prompts
 
 -- | Connection channel between a frontend and a client. Frontend acts
--- as a server, serving keys, when given frames to display.
-data ChanFrontend = ChanFrontend
-  { responseF :: !(STM.TQueue FrontResp)
-  , requestF  :: !(STM.TQueue FrontReq)
-  }
+-- as a server, serving keys, etc., when given frames to display.
+type ChanFrontend = forall a. FrontReq a -> IO a
 
 -- | Initialize the frontend and apply the given continuation to the results
 -- of the initialization.
 startupF :: DebugModeCli  -- ^ debug settings
-         -> (Maybe (MVar ())
-             -> (ChanFrontend -> IO ())
-             -> IO ())  -- ^ continuation
+         -> (Maybe (MVar ()) -> ChanFrontend -> IO ())  -- ^ continuation
          -> IO ()
 startupF dbg cont =
   (if sfrontendNull dbg then nullStartup
    else if sfrontendStd dbg then stdStartup
         else chosenStartup) dbg $ \fs -> do
-    cont (fescMVar fs) (loopFrontend fs)
+    cont (fescMVar fs) (chanFrontend fs)
     let debugPrint t = when (sdbgMsgCli dbg) $ do
           T.hPutStrLn stderr t
           hFlush stderr
@@ -91,57 +78,43 @@ getConfirmGeneric autoYes fs clearKeys frame = do
     promptGetKey fs (clearKeys ++ extraKeys) frame
 
 -- Read UI requests from the client and send them to the frontend,
-loopFrontend :: RawFrontend -> ChanFrontend -> IO ()
-loopFrontend fs ChanFrontend{..} = loop False
- where
-  writeKM :: K.KM -> IO ()
-  writeKM km = STM.atomically $ STM.writeTQueue responseF $ FrontKM km
-
-  loop :: Bool -> IO ()
-  loop autoYes = do
-    efr <- STM.atomically $ STM.readTQueue requestF
-    case efr of
-      FrontNormalFrame{..} -> do
-        fdisplay fs (Just frontFrame)
-        loop autoYes
-      FrontDelay -> do
-        fdisplay fs Nothing
-        loop autoYes
-      FrontKey{..} -> do
-        km <- promptGetKey fs frontKM frontFr
-        writeKM km
-        loop autoYes
-      FrontSlides{frontSlides = []} -> do
-        -- Hack.
-        fsyncFrames fs
-        writeKM K.spaceKM
-        loop autoYes
-      FrontSlides{..} -> do
-        let displayFrs frs srf =
-              case frs of
-                [] -> assert `failure` "null slides" `twith` frs
-                [x] | isNothing frontFromTop -> do
-                  fdisplay fs (Just x)
-                  writeKM K.spaceKM
-                x : xs -> do
-                  K.KM{..} <- getConfirmGeneric autoYes fs frontClear x
-                  case key of
-                    K.Esc -> writeKM K.escKM
-                    K.PgUp -> case srf of
-                      [] -> displayFrs frs srf
-                      y : ys -> displayFrs (y : frs) ys
-                    K.Space -> case xs of
-                      [] -> writeKM K.escKM  -- hack
-                      _ -> displayFrs xs (x : srf)
-                    _ -> case xs of  -- K.PgDn and any other permitted key
-                      [] -> displayFrs frs srf
-                      _ -> displayFrs xs (x : srf)
-        case (frontFromTop, reverse frontSlides) of
-          (Just False, r : rs) -> displayFrs [r] rs
-          _ -> displayFrs frontSlides []
-        loop autoYes
-      FrontAutoYes b ->
-        loop b
-      FrontFinish ->
-        return ()
-        -- Do not loop again.
+chanFrontend :: RawFrontend -> ChanFrontend
+chanFrontend fs req = case req of
+  FrontNormalFrame{..} -> do
+    fdisplay fs (Just frontFrame)
+    return ()
+  FrontDelay -> do
+    fdisplay fs Nothing
+    return ()
+  FrontKey{..} -> do
+    promptGetKey fs frontKM frontFr
+  FrontSlides{frontSlides = []} -> do
+    -- Hack.
+    fsyncFrames fs
+    return K.spaceKM
+  FrontSlides{..} -> do
+    let displayFrs frs srf = case frs of
+          [] -> assert `failure` "null slides" `twith` frs
+          [x] | isNothing frontFromTop -> do
+            fdisplay fs (Just x)
+            return K.spaceKM
+          x : xs -> do
+            let autoYes = False  -- TODO
+            K.KM{..} <- getConfirmGeneric autoYes fs frontClear x
+            case key of
+              K.Esc -> return K.escKM
+              K.PgUp -> case srf of
+                [] -> displayFrs frs srf
+                y : ys -> displayFrs (y : frs) ys
+              K.Space -> case xs of
+                [] -> return K.escKM  -- hack
+                _ -> displayFrs xs (x : srf)
+              _ -> case xs of  -- K.PgDn and any other permitted key
+                [] -> displayFrs frs srf
+                _ -> displayFrs xs (x : srf)
+    case (frontFromTop, reverse frontSlides) of
+      (Just False, r : rs) -> displayFrs [r] rs
+      _ -> displayFrs frontSlides []
+  FrontAutoYes b ->
+    -- TODO: autoYes as ref in session
+    return ()
