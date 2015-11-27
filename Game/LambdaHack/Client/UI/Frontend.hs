@@ -13,6 +13,7 @@ module Game.LambdaHack.Client.UI.Frontend
 import Control.Concurrent
 import Control.Exception.Assert.Sugar
 import Control.Monad
+import Data.IORef
 import qualified Data.Text.IO as T
 import System.IO
 
@@ -99,7 +100,7 @@ chanFrontend fs req = case req of
             fdisplay fs (Just x)
             return K.spaceKM
           x : xs -> do
-            let autoYes = False  -- TODO
+            autoYes <- readIORef (fautoYesRef fs)
             K.KM{..} <- getConfirmGeneric autoYes fs frontClear x
             case key of
               K.Esc -> return K.escKM
@@ -116,5 +117,4 @@ chanFrontend fs req = case req of
       (Just False, r : rs) -> displayFrs [r] rs
       _ -> displayFrs frontSlides []
   FrontAutoYes b ->
-    -- TODO: autoYes as ref in session
-    return ()
+    writeIORef (fautoYesRef fs) b
