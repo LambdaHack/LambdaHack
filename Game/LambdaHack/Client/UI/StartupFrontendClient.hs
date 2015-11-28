@@ -5,7 +5,6 @@ module Game.LambdaHack.Client.UI.StartupFrontendClient
   ) where
 
 import Control.Concurrent
-import Control.Exception.Assert.Sugar
 
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
@@ -24,10 +23,10 @@ import Game.LambdaHack.Common.State
 -- the server loop, if the whole game runs in one process),
 -- UI config and the definitions of game commands.
 srtFrontend :: forall chanServerUI chanServerAI.
-               (DebugModeCli -> SessionUI -> State -> StateClient
+               (SessionUI -> DebugModeCli -> State -> StateClient
                 -> chanServerUI
                 -> IO ())    -- ^ UI main loop
-            -> (DebugModeCli -> SessionUI -> State -> StateClient
+            -> (DebugModeCli -> State -> StateClient
                 -> chanServerAI
                 -> IO ())    -- ^ AI main loop
             -> KeyKind       -- ^ key and command content
@@ -46,17 +45,14 @@ srtFrontend executorUI executorAI
   defaultHist <- defaultHistory $ configHistoryMax sconfig
   let cli = defStateClient defaultHist emptyReport
       s = updateCOps (const cops) emptyState
-      exeClientAI fid =
-        let noSession = assert `failure` "AI client needs no UI session"
-                               `twith` fid
-        in executorAI sdebugMode noSession s (cli fid True)
+      exeClientAI fid = executorAI sdebugMode s (cli fid True)
       exeClientUI :: Maybe (MVar ())
                   -> ChanFrontend
                   -> FactionId
                   -> chanServerUI
                   -> IO ()
       exeClientUI sescMVar schanF fid chanServerUI = do
-        executorUI sdebugMode SessionUI{..} s (cli fid False) chanServerUI
+        executorUI SessionUI{..} sdebugMode s (cli fid False) chanServerUI
   -- TODO: let each client start his own raw frontend (e.g., gtk, though
   -- that leads to disaster); then don't give server as the argument
   -- to startupF, but the Client.hs (when it ends, gtk ends); server is

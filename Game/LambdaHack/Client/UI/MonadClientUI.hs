@@ -2,7 +2,9 @@
 -- | Client monad for interacting with a human through UI.
 module Game.LambdaHack.Client.UI.MonadClientUI
   ( -- * Client UI monad
-    MonadClientUI(getsSession)  -- exposed only to be implemented, not used
+    MonadClientUI( putSession
+                 , getsSession -- exposed only to be implemented, not used
+                 )
   , SessionUI(..)
     -- * Display and key input
   , ColorMode(..)
@@ -67,6 +69,7 @@ data SessionUI = SessionUI
 
 -- | The monad that gives the client access to UI operations.
 class MonadClient m => MonadClientUI m where
+  putSession  :: SessionUI -> m ()
   getsSession  :: (SessionUI -> a) -> m a
 
 -- | Write a UI request to the frontend and read a corresponding reply.

@@ -82,8 +82,9 @@ loopUI :: ( MonadClientUI m
           , MonadAtomic m
           , MonadClientReadResponse ResponseUI m
           , MonadClientWriteRequest RequestUI m )
-       => DebugModeCli -> m ()
-loopUI sdebugCli = do
+       => SessionUI -> DebugModeCli -> m ()
+loopUI sess sdebugCli = do
+  putSession sess
   Kind.COps{corule} <- getsState scops
   let title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside

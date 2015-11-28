@@ -75,6 +75,9 @@ instance MonadClient (CliImplementation resp req) where
   saveChanClient = CliImplementation $ gets cliToSave
 
 instance MonadClientUI (CliImplementation resp req) where
+  putSession   s = CliImplementation $ state $ \cliS ->
+    let newCliS = cliS {cliSession = s}
+    in newCliS `seq` ((), newCliS)
   getsSession f  = CliImplementation $ gets $ f . cliSession
 
 instance MonadClientReadResponse resp (CliImplementation resp req) where
@@ -95,12 +98,13 @@ instance MonadAtomic (CliImplementation resp req) where
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
 executorCli :: CliImplementation resp req ()
-            -> SessionUI -> State -> StateClient -> ChanServer resp req
+            -> State -> StateClient -> ChanServer resp req
             -> IO ()
-executorCli m cliSession cliState cliClient cliDict =
+executorCli m cliState cliClient cliDict =
   let saveFile (_, cli2) =
         fromMaybe "save" (ssavePrefixCli (sdebugCli cli2))
         <.> saveName (sside cli2) (sisAI cli2)
+      cliSession = undefined
       exe cliToSave =
         evalStateT (runCliImplementation m) CliState{..}
   in Save.wrapInSaves tryCreateDir encodeEOF saveFile exe
