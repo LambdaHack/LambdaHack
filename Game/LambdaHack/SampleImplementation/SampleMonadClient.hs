@@ -76,7 +76,6 @@ instance MonadClient (CliImplementation resp req) where
 
 instance MonadClientUI (CliImplementation resp req) where
   getsSession f  = CliImplementation $ gets $ f . cliSession
-  liftIO         = CliImplementation . IO.liftIO
 
 instance MonadClientReadResponse resp (CliImplementation resp req) where
   receiveResponse     = CliImplementation $ do
