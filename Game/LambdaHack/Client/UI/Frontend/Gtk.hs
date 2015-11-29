@@ -107,7 +107,7 @@ startupBound sdebugCli@DebugModeCli{sfont} k = do
   -- Text attributes.
   ttt <- textTagTableNew
   stags <- M.fromList <$>
-             mapM (\ ak -> do
+             mapM (\ak -> do
                       tt <- textTagNew Nothing
                       textTagTableAdd ttt tt
                       doAttr sdebugCli tt ak

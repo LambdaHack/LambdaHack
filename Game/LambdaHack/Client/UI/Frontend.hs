@@ -67,10 +67,10 @@ promptGetKey fs keys frame = do
     then return km
     else promptGetKey fs keys frame
 
-getConfirmGeneric :: Bool -> RawFrontend -> [K.KM] -> SingleFrame -> IO K.KM
-getConfirmGeneric autoYes fs clearKeys frame = do
-  let DebugModeCli{sdisableAutoYes} = fdebugCli fs
-  if autoYes && not sdisableAutoYes then do
+getConfirmGeneric :: RawFrontend -> [K.KM] -> SingleFrame -> IO K.KM
+getConfirmGeneric fs clearKeys frame = do
+  autoYes <- readIORef (fautoYesRef fs)
+  if autoYes then do
     fdisplay fs (Just frame)
     return K.spaceKM
   else do
@@ -99,8 +99,7 @@ chanFrontend fs req = case req of
             fdisplay fs (Just x)
             return K.spaceKM
           x : xs -> do
-            autoYes <- readIORef (fautoYesRef fs)
-            K.KM{..} <- getConfirmGeneric autoYes fs frontClear x
+            K.KM{..} <- getConfirmGeneric fs frontClear x
             case key of
               K.Esc -> return K.escKM
               K.PgUp -> case srf of
