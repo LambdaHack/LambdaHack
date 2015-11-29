@@ -1,7 +1,7 @@
 -- | Text frontend based on Vty.
 module Game.LambdaHack.Client.UI.Frontend.Vty
   ( -- * Session data type for the frontend
-    FrontendSession(sescMVar)
+    FrontendSession(sescPressed)
     -- * The output and input operations
   , fdisplay, fpromptGetKey, fsyncFrames
     -- * Frontend administration tools
@@ -14,6 +14,7 @@ import qualified Control.Concurrent.STM as STM
 import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
 import Data.Default
+import Data.IORef
 import Data.Maybe
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
@@ -26,10 +27,10 @@ import Game.LambdaHack.Common.Msg
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { svty      :: !Vty  -- ^ internal vty session
-  , schanKey  :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
-  , sescMVar  :: !(Maybe (MVar ()))
-  , sdebugCli :: !DebugModeCli  -- ^ client configuration
+  { svty        :: !Vty  -- ^ internal vty session
+  , schanKey    :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
+  , sescPressed :: !(IORef Bool)
+  , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
 -- | The name of the frontend.
@@ -41,8 +42,8 @@ startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
 startup sdebugCli k = do
   svty <- mkVty def
   schanKey <- STM.atomically STM.newTQueue
-  escMVar <- newEmptyMVar
-  let sess = FrontendSession{sescMVar = Just escMVar, ..}
+  sescPressed <- newIORef False
+  let sess = FrontendSession{..}
   void $ async $ storeKeys sess
   aCont <- async $ k sess `Ex.finally` Vty.shutdown svty
   wait aCont
@@ -59,12 +60,9 @@ storeKeys sess@FrontendSession{..} = do
             res <- STM.atomically $ STM.tryReadTQueue schanKey
             when (isJust res) readAll
       -- If ESC, also mark it specially and reset the key channel.
-      case sescMVar of
-        Just escMVar ->
-          when (key == K.Esc) $ do
-            void $ tryPutMVar escMVar ()
-            readAll
-        Nothing -> return ()
+      when (key == K.Esc) $ do
+        writeIORef sescPressed True
+        readAll
       -- Store the key in the channel.
       STM.atomically $ STM.writeTQueue schanKey K.KM{..}
     _ -> return ()

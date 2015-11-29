@@ -87,7 +87,7 @@ loopUI :: ( MonadClientUI m
        => KeyKind -> Config -> RawFrontend -> DebugModeCli -> m ()
 loopUI copsClient sconfig fs sdebugCli = do
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
-      sescMVar = fescMVar fs
+      sescPressed = fescPressed fs
       schanF :: ChanFrontend
       schanF = chanFrontend fs
   putSession SessionUI{..}

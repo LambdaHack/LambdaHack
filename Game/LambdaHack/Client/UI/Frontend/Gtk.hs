@@ -3,7 +3,7 @@
 -- | Text frontend based on Gtk.
 module Game.LambdaHack.Client.UI.Frontend.Gtk
   ( -- * Session data type for the frontend
-    FrontendSession(sescMVar)
+    FrontendSession(sescPressed)
     -- * The output and input operations
   , fdisplay, fpromptGetKey, fsyncFrames
     -- * Frontend administration tools
@@ -17,7 +17,7 @@ import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Exception as Ex hiding (handle)
-import Control.Monad (unless, void, when)
+import Control.Monad (unless, when)
 import Control.Monad.Reader (liftIO)
 import qualified Data.ByteString.Char8 as BS
 import Data.IORef
@@ -60,7 +60,7 @@ data FrontendSession = FrontendSession
       -- add frames in an orderly manner. This is not done in real time,
       -- though sometimes the frame display subsystem has to poll
       -- for a frame, in which case the locking interval becomes meaningful.
-  , sescMVar    :: !(Maybe (MVar ()))
+  , sescPressed :: !(IORef Bool)
   , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
@@ -127,8 +127,8 @@ startupBound sdebugCli@DebugModeCli{sfont} k = do
   -- Create the session record.
   sframeState <- newMVar frameState
   slastFull <- newMVar (dummyFrame, False)
-  escMVar <- newEmptyMVar
-  let sess = FrontendSession{sescMVar = Just escMVar, ..}
+  sescPressed <- newIORef False
+  let sess = FrontendSession{..}
   -- Fork the client thread. When client ends, game exits.
   -- TODO: is postGUISync needed here?
   aCont <- async $ k sess `Ex.finally` postGUISync mainQuit
@@ -152,7 +152,7 @@ startupBound sdebugCli@DebugModeCli{sfont} k = do
       unless (deadKey n) $ do
         -- If ESC, also mark it specially and reset the key channel.
         when (key == K.Esc) $ do
-          void $ tryPutMVar escMVar ()
+          writeIORef sescPressed True
           resetChanKey
         -- Store the key in the channel.
         STM.atomically $ STM.writeTQueue schanKey K.KM{..}
@@ -433,11 +433,9 @@ fdisplay sess = pushFrame sess False
 
 -- Display all queued frames, synchronously.
 displayAllFramesSync :: FrontendSession -> FrameState -> IO ()
-displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}, sescMVar}
+displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}, sescPressed}
                      fs = do
-  escPressed <- case sescMVar of
-    Nothing -> return False
-    Just escMVar -> not <$> isEmptyMVar escMVar
+  escPressed <- readIORef sescPressed
   let maxFps = fromMaybe defaultMaxFps smaxFps
   case fs of
     _ | escPressed -> return ()

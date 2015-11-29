@@ -6,7 +6,6 @@ module Game.LambdaHack.Client.UI.Frontend.Chosen
   , frontendName
   ) where
 
-import Control.Concurrent
 import Data.IORef
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation (SingleFrame (..))
@@ -32,7 +31,7 @@ data RawFrontend = RawFrontend
   { fdisplay      :: Maybe SingleFrame -> IO ()
   , fpromptGetKey :: SingleFrame -> IO K.KM
   , fsyncFrames   :: IO ()
-  , fescMVar      :: !(Maybe (MVar ()))
+  , fescPressed   :: !(IORef Bool)
   , fautoYesRef   :: !(IORef Bool)
   }
 
@@ -44,7 +43,7 @@ chosenStartup fdebugCli cont =
       { fdisplay = Chosen.fdisplay fs
       , fpromptGetKey = Chosen.fpromptGetKey fs
       , fsyncFrames = Chosen.fsyncFrames fs
-      , fescMVar = Chosen.sescMVar fs
+      , fescPressed = Chosen.sescPressed fs
       , fautoYesRef
       }
 
@@ -56,7 +55,7 @@ stdStartup fdebugCli cont =
       { fdisplay = Std.fdisplay fs
       , fpromptGetKey = Std.fpromptGetKey fs
       , fsyncFrames = Std.fsyncFrames fs
-      , fescMVar = Std.sescMVar fs
+      , fescPressed = Std.sescPressed fs
       , fautoYesRef
       }
 
@@ -65,10 +64,11 @@ nullStartup fdebugCli cont =
   -- Std used to fork (async) the server thread, to avoid bound thread overhead.
   Std.startup fdebugCli $ \_ -> do
     fautoYesRef <- newIORef $ not $ sdisableAutoYes fdebugCli
+    fescPressed <- newIORef False
     cont RawFrontend
       { fdisplay = \_ -> return ()
       , fpromptGetKey = \_ -> return K.escKM
       , fsyncFrames = return ()
-      , fescMVar = Nothing
+      , fescPressed
       , fautoYesRef
       }

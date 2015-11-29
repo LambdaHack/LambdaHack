@@ -2,7 +2,7 @@
 -- | Text frontend running in Browser or in Webkit.
 module Game.LambdaHack.Client.UI.Frontend.Dom
   ( -- * Session data type for the frontend
-    FrontendSession(sescMVar)
+    FrontendSession(sescPressed)
     -- * The output and input operations
   , fdisplay, fpromptGetKey, fsyncFrames
     -- * Frontend administration tools
@@ -17,6 +17,7 @@ import Control.Monad
 import Control.Monad.Reader (ask, liftIO)
 import Data.Bits ((.|.))
 import Data.Char (chr, isUpper, toLower)
+import Data.IORef
 import Data.Maybe
 import Data.String (IsString (..))
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
@@ -57,7 +58,7 @@ data FrontendSession = FrontendSession
   , scharStyle2 :: !CSSStyleDeclaration
   , scharCells2 :: ![HTMLTableCellElement]
   , schanKey    :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
-  , sescMVar    :: !(Maybe (MVar ()))
+  , sescPressed :: !(IORef Bool)
   , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
@@ -123,8 +124,8 @@ font-weight: normal;
   Just tableElem2 <- fmap castToHTMLTableElement <$> cloneNode tableElem True
   scharCells2 <- flattenTable tableElem2
   Just scharStyle2 <- getStyle tableElem2
-  escMVar <- newEmptyMVar
-  let sess = FrontendSession{sescMVar = Just escMVar, ..}
+  sescPressed <- newIORef False
+  let sess = FrontendSession{..}
   -- Fork the game logic thread. When logic ends, game exits.
   aCont <- async $ k sess `Ex.finally` return ()  --- TODO: close webkit window?
   link aCont
@@ -171,7 +172,7 @@ font-weight: normal;
       unless (deadKey keyId) $ do
         -- If ESC, also mark it specially and reset the key channel.
         when (key == K.Esc) $ do
-          void $ tryPutMVar escMVar ()
+          writeIORef sescPressed True
           resetChanKey schanKey
         -- Store the key in the channel.
         STM.atomically $ STM.writeTQueue schanKey K.KM{..}

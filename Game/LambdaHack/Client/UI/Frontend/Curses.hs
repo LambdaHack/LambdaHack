@@ -3,7 +3,7 @@
 -- of the last line).
 module Game.LambdaHack.Client.UI.Frontend.Curses
   ( -- * Session data type for the frontend
-    FrontendSession(sescMVar)
+    FrontendSession(sescPressed)
     -- * The output and input operations
   , fdisplay, fpromptGetKey, fsyncFrames
     -- * Frontend administration tools
@@ -16,6 +16,7 @@ import qualified Control.Exception as Ex hiding (handle)
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Char (chr, ord)
+import Data.IORef
 import qualified Data.Map.Strict as M
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
@@ -28,11 +29,11 @@ import Game.LambdaHack.Common.Msg
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { swin      :: !C.Window  -- ^ the window to draw to
-  , sstyles   :: !(M.Map Color.Attr C.CursesStyle)
+  { swin        :: !C.Window  -- ^ the window to draw to
+  , sstyles     :: !(M.Map Color.Attr C.CursesStyle)
       -- ^ map from fore/back colour pairs to defined curses styles
-  , sescMVar  :: !(Maybe (MVar ()))
-  , sdebugCli :: !DebugModeCli  -- ^ client configuration
+  , sescPressed :: !(IORef Bool)
+  , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
 -- | The name of the frontend.
@@ -56,7 +57,8 @@ startup sdebugCli k = do
   ws <- C.convertStyles vs
   let swin = C.stdScr
       sstyles = M.fromList (zip ks ws)
-  a <- async $ k FrontendSession{sescMVar = Nothing, ..} `Ex.finally` C.end
+  sescPressed <- newIORef False
+  a <- async $ k FrontendSession{..} `Ex.finally` C.end
   wait a
 
 -- | Output to the screen via the frontend.

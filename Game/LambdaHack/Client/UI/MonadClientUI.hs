@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , displayFrame, displayDelay, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
-  , syncFrames, setFrontAutoYes, tryTakeMVarSescMVar, scoreToSlideshow
+  , syncFrames, setFrontAutoYes, clearEscPressed, scoreToSlideshow
   , getLeaderUI, getArenaUI, viewedLevel
   , targetDescLeader, targetDescCursor
   , leaderTgtToPos, leaderTgtAims, cursorToPos
@@ -21,10 +21,10 @@ module Game.LambdaHack.Client.UI.MonadClientUI
 import Prelude ()
 import Prelude.Compat
 
-import Control.Concurrent
 import Control.Exception.Assert.Sugar
 import Control.Monad (replicateM_, when)
 import qualified Data.EnumMap.Strict as EM
+import Data.IORef
 import Data.Maybe
 import Data.Text (Text)
 import Data.Time.Clock.POSIX
@@ -61,10 +61,10 @@ import Game.LambdaHack.Content.ModeKind
 -- but is completely disregarded and reset when a new playing session starts.
 -- This includes a frontend session and keybinding info.
 data SessionUI = SessionUI
-  { schanF   :: !ChanFrontend       -- ^ connection with the frontend
-  , sbinding :: !Binding            -- ^ binding of keys to commands
-  , sescMVar :: !(Maybe (MVar ()))
-  , sconfig  :: !Config
+  { schanF      :: !ChanFrontend       -- ^ connection with the frontend
+  , sbinding    :: !Binding            -- ^ binding of keys to commands
+  , sescPressed :: !(IORef Bool)
+  , sconfig     :: !Config
   }
 
 -- | The monad that gives the client access to UI operations.
@@ -91,7 +91,8 @@ promptGetKey frontKM frontFr = do
   -- Or this is running, etc., which we want fast.
   let ageDisp = EM.insert arena localTime
   modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
-  escPressed <- tryTakeMVarSescMVar  -- this also clears the ESC-pressed marker
+  escPressed <- clearEscPressed
+    -- this also clears the ESC-pressed marker
   lastPlayOld <- getsClient slastPlay
   km <- case lastPlayOld of
     km : kms | not escPressed && (null frontKM || km `elem` frontKM) -> do
@@ -227,14 +228,13 @@ syncFrames = do
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
 setFrontAutoYes b = connFrontend $ FrontAutoYes b
 
-tryTakeMVarSescMVar :: MonadClientUI m => m Bool
-tryTakeMVarSescMVar = do
-  mescMVar <- getsSession sescMVar
-  case mescMVar of
-    Nothing -> return False
-    Just escMVar -> do
-      mUnit <- liftIO $ tryTakeMVar escMVar
-      return $! isJust mUnit
+clearEscPressed :: MonadClientUI m => m Bool
+clearEscPressed = do
+  escPressed <- getsSession sescPressed
+  liftIO $ do
+    b <- readIORef escPressed
+    writeIORef escPressed False
+    return b
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
