@@ -10,7 +10,7 @@ module Game.LambdaHack.Client.UI
   , displayRespUpdAtomicUI, displayRespSfxAtomicUI
     -- * Startup
   , srtFrontend, KeyKind, SessionUI(..)
-  , ChanFrontend, chanFrontend, RawFrontend(..)
+  , ChanFrontend, chanFrontend, startupF, RawFrontend(..)
     -- * Operations exposed for LoopClient
   , ColorMode(..), displayMore, msgAdd
 #ifdef EXPOSE_INTERNAL

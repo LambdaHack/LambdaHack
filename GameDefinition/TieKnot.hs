@@ -33,17 +33,14 @@ tieKnot args = do
       -- Client content operations.
       copsClient = Content.KeyKind.standardKeys
   sdebugNxt <- debugArgs args
-  -- Fire up the frontend with the engine fueled by content.
   -- The action monad types to be used are determined by the 'exeSer'
   -- and 'executorCli' calls. If other functions are used in their place
   -- the types are different and so the whole pattern of computation
   -- is different. Which of the frontends is run depends on the flags supplied
   -- when compiling the engine library.
-  let exeServer executorUI executorAI =
-        executorSer $ loopSer copsShared sdebugNxt executorUI executorAI
-  -- Currently a single frontend is started by the server,
-  -- instead of each client starting it's own.
-  srtFrontend (\sconfig fs ->
-                 executorCli . loopUI copsClient sconfig fs)
-              (executorCli . loopAI)
-              copsShared (sdebugCli sdebugNxt) exeServer
+  (exeClientUI, exeClientAI) <-
+    srtFrontend (\sconfig fs sdebugCli ->
+                   executorCli $ loopUI copsClient sconfig fs sdebugCli)
+                (executorCli . loopAI)
+                copsShared (sdebugCli sdebugNxt)
+  executorSer $ loopSer copsShared sdebugNxt exeClientUI exeClientAI

@@ -18,8 +18,7 @@ import Game.LambdaHack.Common.State
 -- the server loop, if the whole game runs in one process),
 -- UI config and the definitions of game commands.
 srtFrontend :: forall chanServerUI chanServerAI.
-               (Config -> RawFrontend
-                -> DebugModeCli -> State -> StateClient
+               (Config -> RawFrontend -> DebugModeCli -> State -> StateClient
                 -> chanServerUI
                 -> IO ())    -- ^ UI main loop
             -> (DebugModeCli -> State -> StateClient
@@ -27,11 +26,9 @@ srtFrontend :: forall chanServerUI chanServerAI.
                 -> IO ())    -- ^ AI main loop
             -> Kind.COps     -- ^ game content
             -> DebugModeCli  -- ^ client debug parameters
-            -> ((FactionId -> chanServerUI -> IO ())
-               -> (FactionId -> chanServerAI -> IO ())
-               -> IO ())     -- ^ frontend main loop
-            -> IO ()
-srtFrontend executorUI executorAI cops sdebugCli exeServer = do
+            -> IO ( FactionId -> chanServerUI -> IO ()
+                  , FactionId -> chanServerAI -> IO () )
+srtFrontend executorUI executorAI cops sdebugCli = do
   -- UI config reloaded at each client start.
   sconfig <- mkConfig cops
   let sdebugMode = applyConfigToDebug sconfig sdebugCli cops
@@ -39,16 +36,8 @@ srtFrontend executorUI executorAI cops sdebugCli exeServer = do
   let cli = defStateClient defaultHist emptyReport
       s = updateCOps (const cops) emptyState
       exeClientAI fid = executorAI sdebugMode s (cli fid True)
-      exeClientUI :: RawFrontend
-                  -> FactionId
-                  -> chanServerUI
-                  -> IO ()
-      exeClientUI fs fid chanServerUI = do
-        executorUI sconfig fs
-                   sdebugMode s (cli fid False) chanServerUI
-  -- TODO: let each client start his own raw frontend (e.g., gtk, though
-  -- that leads to disaster); then don't give server as the argument
-  -- to startupF, but the Client.hs (when it ends, gtk ends); server is
-  -- then forked separately and client doesn't need to know about
-  -- starting servers.
-  startupF sdebugMode $ \fs -> exeServer (exeClientUI fs) exeClientAI
+      exeClientUI :: FactionId -> chanServerUI -> IO ()
+      exeClientUI fid chanServerUI =
+        startupF sdebugMode
+        $ \fs -> executorUI sconfig fs sdebugMode s (cli fid False) chanServerUI
+  return (exeClientUI, exeClientAI)

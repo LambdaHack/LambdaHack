@@ -92,11 +92,16 @@ frontendName = "gtk"
 --
 -- The other threads have to be spawned after gtk is initialized,
 -- because they call @postGUIAsync@, and need @sview@ and @stags@.
--- Because of Windows, GTK needs to beo n a bound thread,
--- so we can't avoid the communication overhead of bound threads,
--- so there's no point spawning a separate thread for GTK.
+-- Because of Windows, GTK needs to be on a bound thread,
+-- so we can't avoid the communication overhead of bound threads.
 startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
-startup sdebugCli@DebugModeCli{sfont} k = do
+startup sdebugCl k = do
+  a <- asyncBound $ startupBound sdebugCl k
+  link a
+  -- TODO: for some reason server doesn't exit when gtk window killed
+
+startupBound :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
+startupBound sdebugCli@DebugModeCli{sfont} k = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -124,7 +129,7 @@ startup sdebugCli@DebugModeCli{sfont} k = do
   slastFull <- newMVar (dummyFrame, False)
   escMVar <- newEmptyMVar
   let sess = FrontendSession{sescMVar = Just escMVar, ..}
-  -- Fork the game logic thread. When logic ends, game exits.
+  -- Fork the client thread. When client ends, game exits.
   -- TODO: is postGUISync needed here?
   aCont <- async $ k sess `Ex.finally` postGUISync mainQuit
   link aCont

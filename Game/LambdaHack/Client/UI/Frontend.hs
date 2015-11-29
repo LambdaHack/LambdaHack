@@ -55,7 +55,7 @@ startupF dbg cont =
     let debugPrint t = when (sdbgMsgCli dbg) $ do
           T.hPutStrLn stderr t
           hFlush stderr
-    debugPrint "Server shuts down"
+    debugPrint "Frontend shuts down"
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
