@@ -43,6 +43,7 @@ tieKnot args = do
         executorSer $ loopSer copsShared sdebugNxt executorUI executorAI
   -- Currently a single frontend is started by the server,
   -- instead of each client starting it's own.
-  srtFrontend (\sess -> executorCli . loopUI sess)
+  srtFrontend (\sconfig fs ->
+                 executorCli . loopUI copsClient sconfig fs)
               (executorCli . loopAI)
-              copsClient copsShared (sdebugCli sdebugNxt) exeServer
+              copsShared (sdebugCli sdebugNxt) exeServer

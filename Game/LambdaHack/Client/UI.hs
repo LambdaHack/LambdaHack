@@ -9,7 +9,8 @@ module Game.LambdaHack.Client.UI
   , queryUI, pongUI
   , displayRespUpdAtomicUI, displayRespSfxAtomicUI
     -- * Startup
-  , srtFrontend, KeyKind, SessionUI
+  , srtFrontend, KeyKind, SessionUI(..)
+  , ChanFrontend, chanFrontend, RawFrontend(..)
     -- * Operations exposed for LoopClient
   , ColorMode(..), displayMore, msgAdd
 #ifdef EXPOSE_INTERNAL
@@ -31,6 +32,7 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.DisplayAtomicClient
+import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.HandleHumanClient
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings

@@ -3,14 +3,13 @@
 -- using one of the available raw frontends and derived operations.
 module Game.LambdaHack.Client.UI.Frontend
   ( -- * Connection types
-    FrontReq(..), ChanFrontend
+    FrontReq(..), RawFrontend(..), ChanFrontend
     -- * Re-exported part of the raw frontend
   , frontendName
-    -- * A derived operation
-  , startupF
+    -- * Derived operations
+  , startupF, chanFrontend
   ) where
 
-import Control.Concurrent
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.IORef
@@ -46,13 +45,13 @@ type ChanFrontend = forall a. FrontReq a -> IO a
 -- | Initialize the frontend and apply the given continuation to the results
 -- of the initialization.
 startupF :: DebugModeCli  -- ^ debug settings
-         -> (Maybe (MVar ()) -> ChanFrontend -> IO ())  -- ^ continuation
+         -> (RawFrontend -> IO ())  -- ^ continuation
          -> IO ()
 startupF dbg cont =
   (if sfrontendNull dbg then nullStartup
    else if sfrontendStd dbg then stdStartup
         else chosenStartup) dbg $ \fs -> do
-    cont (fescMVar fs) (chanFrontend fs)
+    cont fs
     let debugPrint t = when (sdbgMsgCli dbg) $ do
           T.hPutStrLn stderr t
           hFlush stderr

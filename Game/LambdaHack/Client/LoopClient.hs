@@ -14,6 +14,8 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
+import Game.LambdaHack.Client.UI.Config
+import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -82,9 +84,13 @@ loopUI :: ( MonadClientUI m
           , MonadAtomic m
           , MonadClientReadResponse ResponseUI m
           , MonadClientWriteRequest RequestUI m )
-       => SessionUI -> DebugModeCli -> m ()
-loopUI sess sdebugCli = do
-  putSession sess
+       => KeyKind -> Config -> RawFrontend -> DebugModeCli -> m ()
+loopUI copsClient sconfig fs sdebugCli = do
+  let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
+      sescMVar = fescMVar fs
+      schanF :: ChanFrontend
+      schanF = chanFrontend fs
+  putSession SessionUI{..}
   Kind.COps{corule} <- getsState scops
   let title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside
