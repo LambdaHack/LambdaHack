@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Client.State
-  ( StateClient(..), defStateClient, defaultHistory
+  ( StateClient(..), defStateClient
   , updateTarget, getTarget, updateLeader, sside
   , PathEtc, TgtMode(..), RunParams(..), LastRecord
   , toggleMarkVision, toggleMarkSmell, toggleMarkSuspect
@@ -12,9 +12,6 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Text (Text)
-import Data.Time.Clock
-import Data.Time.LocalTime
-import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
@@ -116,8 +113,8 @@ type LastRecord = ( [K.KM]  -- accumulated keys of the current command
                   )
 
 -- | Initial game client state.
-defStateClient :: History -> Report -> FactionId -> Bool -> StateClient
-defStateClient shistory sreport _sside sisAI =
+defStateClient :: FactionId -> Bool -> StateClient
+defStateClient _sside sisAI =
   StateClient
     { stgtMode = Nothing
     , scursor = if sisAI
@@ -129,8 +126,8 @@ defStateClient shistory sreport _sside sisAI =
     , sbfsD = EM.empty
     , sselected = ES.empty
     , srunning = Nothing
-    , sreport
-    , shistory
+    , sreport = emptyReport
+    , shistory = emptyHistory 0
     , sdisplayed = EM.empty
     , sundo = []
     , sdiscoKind = EM.empty
@@ -159,16 +156,6 @@ defStateClient shistory sreport _sside sisAI =
     , smenuIxHelp = 0
     , sdebugCli = defDebugModeCli
     }
-
-defaultHistory :: Int -> IO History
-defaultHistory configHistoryMax = do
-  utcTime <- getCurrentTime
-  timezone <- getTimeZone utcTime
-  let curDate = MU.Text $ tshow $ utcToLocalTime timezone utcTime
-  let emptyHist = emptyHistory configHistoryMax
-  return $! addReport emptyHist timeZero
-         $! singletonReport
-         $! makeSentence ["Human history log started on", curDate]
 
 -- | Update target parameters within client state.
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient

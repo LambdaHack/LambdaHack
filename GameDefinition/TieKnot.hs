@@ -16,7 +16,6 @@ import Game.LambdaHack.Client
 import Game.LambdaHack.Client.State hiding (sdebugCli)
 import Game.LambdaHack.Client.UI.Config
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server
 
@@ -50,8 +49,7 @@ tieKnot args = do
   sconfig <- mkConfig cops
   let debugCli = sdebugCli sdebugNxt
       sdebugMode = applyConfigToDebug sconfig debugCli cops
-  defaultHist <- defaultHistory $ configHistoryMax sconfig
-  let cli = defStateClient defaultHist emptyReport
+  let cli = defStateClient
       s = updateCOps (const cops) emptyState
       exeClientAI fid = (executorCli . loopAI) sdebugMode s (cli fid True)
       exeClientUI fid = (\xconfig xdebugCli ->

@@ -6,13 +6,17 @@ module Game.LambdaHack.Client.MonadClient
                , liftIO  -- exposed only to be implemented, not used
                )
     -- * Assorted primitives
-  , debugPrint, saveClient, saveName, restoreGame, removeServerSave, rndToAction
+  , debugPrint, saveClient, saveName, restoreGame, removeServerSave
+  , defaultHistory, rndToAction
   ) where
 
 import Control.Monad
 import qualified Control.Monad.State as St
 import Data.Maybe
 import Data.Text (Text)
+import Data.Time.Clock
+import Data.Time.LocalTime
+import qualified NLP.Miniutter.English as MU
 import System.Directory
 import System.FilePath
 
@@ -23,9 +27,11 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.RuleKind
 
 class MonadStateRead m => MonadClient m where
@@ -89,6 +95,16 @@ removeServerSave = do
                        <.> serverSaveName
   bSer <- liftIO $ doesFileExist serverSaveFile
   when bSer $ liftIO $ renameFile serverSaveFile (serverSaveFile <.> "bkp")
+
+defaultHistory :: MonadClient m => Int -> m History
+defaultHistory configHistoryMax = liftIO $ do
+  utcTime <- getCurrentTime
+  timezone <- getTimeZone utcTime
+  let curDate = MU.Text $ tshow $ utcToLocalTime timezone utcTime
+  let emptyHist = emptyHistory configHistoryMax
+  return $! addReport emptyHist timeZero
+         $! singletonReport
+         $! makeSentence ["Human history log started on", curDate]
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a
