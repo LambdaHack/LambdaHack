@@ -3,8 +3,7 @@ module Game.LambdaHack.Client.UI.Frontend.Std
   ( startup, frontendName
   ) where
 
-import Control.Concurrent.Async
-import qualified Control.Exception as Ex hiding (handle)
+import Control.Concurrent
 import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
 import Data.IORef
@@ -26,8 +25,8 @@ frontendName :: String
 frontendName = "std"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
-startup sdebugCli k = do
+startup :: DebugModeCli -> MVar RawFrontend -> IO ()
+startup sdebugCli rfMVar = do
   sescPressed <- newIORef False
   fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   let sess = FrontendSession{..}
@@ -38,10 +37,8 @@ startup sdebugCli k = do
         , fescPressed = sescPressed
         , fautoYesRef
         }
-  aCont <-
-    async $ k rf
-            `Ex.finally` (SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr)
-  wait aCont
+  putMVar rfMVar rf
+  -- TODO: (SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr)
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data

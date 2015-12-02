@@ -84,12 +84,13 @@ loopUI :: ( MonadClientUI m
           , MonadAtomic m
           , MonadClientReadResponse ResponseUI m
           , MonadClientWriteRequest RequestUI m )
-       => KeyKind -> Config -> RawFrontend -> DebugModeCli -> m ()
-loopUI copsClient sconfig fs sdebugCli = do
+       => KeyKind -> Config -> DebugModeCli -> m ()
+loopUI copsClient sconfig sdebugCli = do
+  rf <- liftIO $ startupF sdebugCli
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
-      sescPressed = fescPressed fs
+      sescPressed = fescPressed rf
       schanF :: ChanFrontend
-      schanF = chanFrontend fs
+      schanF = chanFrontend rf
   putSession SessionUI{..}
   Kind.COps{corule} <- getsState scops
   let title = rtitle $ Kind.stdRuleset corule

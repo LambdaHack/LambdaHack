@@ -36,8 +36,8 @@ frontendName :: String
 frontendName = "curses"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
-startup sdebugCli k = do
+startup :: DebugModeCli -> MVar RawFrontend -> IO ()
+startup sdebugCli rfMVar = do
   C.start
 --  C.keypad C.stdScr False  -- TODO: may help to fix xterm keypad on Ubuntu
   void $ C.cursSet C.CursorInvisible
@@ -62,8 +62,8 @@ startup sdebugCli k = do
         , fescPressed = sescPressed
         , fautoYesRef
         }
-  a <- async $ k rf `Ex.finally` C.end
-  wait a
+  putMVar rfMVar rf
+  -- TODO: C.end
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data

@@ -68,11 +68,11 @@ terrible error
 #endif
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
+startup :: DebugModeCli -> MVar RawFrontend -> IO ()
 startup sdebugCli k = runWebGUI $ runWeb sdebugCli k
 
-runWeb :: DebugModeCli -> (RawFrontend -> IO ()) -> WebView -> IO ()
-runWeb sdebugCli@DebugModeCli{sfont} k swebView = do
+runWeb :: DebugModeCli -> MVar RawFrontend -> WebView -> IO ()
+runWeb sdebugCli@DebugModeCli{sfont} rfMVar swebView = do
   -- Init the document.
   enableInspector swebView  -- enables Inspector in Webkit
   Just doc <- webViewGetDomDocument swebView
@@ -129,9 +129,7 @@ font-weight: normal;
         , fescPressed = sescPressed
         , fautoYesRef
         }
-  -- Fork the game logic thread. When logic ends, game exits.
-  aCont <- async $ k rf `Ex.finally` return ()  --- TODO: close webkit window?
-  link aCont
+  putMVar rfMVar rf
   -- Handle keypresses.
   -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys and
   -- @getKeyCode@ then returns wrong characters anyway.

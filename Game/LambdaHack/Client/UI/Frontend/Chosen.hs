@@ -5,10 +5,9 @@ module Game.LambdaHack.Client.UI.Frontend.Chosen
   ( startupF, frontendName
   ) where
 
-import Control.Monad
+import Control.Concurrent
+import Control.Concurrent.Async
 import Data.IORef
-import qualified Data.Text.IO as T
-import System.IO
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
@@ -30,11 +29,11 @@ import qualified Game.LambdaHack.Client.UI.Frontend.Std as Std
 frontendName :: String
 frontendName = Chosen.frontendName
 
-nullStartup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
-nullStartup sdebugCli cont = do
+nullStartup :: DebugModeCli -> MVar RawFrontend -> IO ()
+nullStartup sdebugCli rfMVar = do
   fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   fescPressed <- newIORef False
-  cont RawFrontend
+  putMVar rfMVar RawFrontend
     { fdisplay = \_ -> return ()
     , fpromptGetKey = \_ -> return K.escKM
     , fsyncFrames = return ()
@@ -44,16 +43,12 @@ nullStartup sdebugCli cont = do
 
 -- | Initialize the frontend and apply the given continuation to the results
 -- of the initialization.
-startupF :: DebugModeCli  -- ^ debug settings
-         -> (RawFrontend -> IO ())  -- ^ continuation
-         -> IO ()
-startupF dbg cont = do
+startupF :: DebugModeCli -> IO RawFrontend
+startupF dbg = do
   let startup | sfrontendNull dbg = nullStartup
               | sfrontendStd dbg = Std.startup
               | otherwise = Chosen.startup
-  startup dbg $ \fs -> do
-    cont fs
-    let debugPrint t = when (sdbgMsgCli dbg) $ do
-          T.hPutStrLn stderr t
-          hFlush stderr
-    debugPrint "Frontend shuts down"
+  rfMVar <- newEmptyMVar
+  a <- async $ startup dbg rfMVar
+  link a
+  takeMVar rfMVar

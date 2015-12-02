@@ -33,8 +33,8 @@ frontendName :: String
 frontendName = "vty"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
-startup sdebugCli k = do
+startup :: DebugModeCli -> MVar RawFrontend -> IO ()
+startup sdebugCli rfMVar = do
   svty <- mkVty def
   schanKey <- STM.atomically STM.newTQueue
   sescPressed <- newIORef False
@@ -47,9 +47,9 @@ startup sdebugCli k = do
         , fescPressed = sescPressed
         , fautoYesRef
         }
+  putMVar rfMVar rf
   void $ async $ storeKeys sess
-  aCont <- async $ k rf `Ex.finally` Vty.shutdown svty
-  wait aCont
+  -- TODO: Vty.shutdown svty
 
 storeKeys :: FrontendSession -> IO ()
 storeKeys sess@FrontendSession{..} = do

@@ -39,8 +39,8 @@ tieKnot args = do
   -- is different. Which of the frontends is run depends on the flags supplied
   -- when compiling the engine library.
   (exeClientUI, exeClientAI) <-
-    srtFrontend (\sconfig fs sdebugCli ->
-                   executorCli $ loopUI copsClient sconfig fs sdebugCli)
+    srtFrontend (\sconfig sdebugCli ->
+                   executorCli $ loopUI copsClient sconfig sdebugCli)
                 (executorCli . loopAI)
                 copsShared (sdebugCli sdebugNxt)
   executorSer $ loopSer copsShared sdebugNxt exeClientUI exeClientAI

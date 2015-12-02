@@ -88,14 +88,14 @@ frontendName = "gtk"
 -- because they call @postGUIAsync@, and need @sview@ and @stags@.
 -- Because of Windows, GTK needs to be on a bound thread,
 -- so we can't avoid the communication overhead of bound threads.
-startup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
-startup sdebugCl k = do
-  a <- asyncBound $ startupBound sdebugCl k
+startup :: DebugModeCli -> MVar RawFrontend -> IO ()
+startup sdebugCl rfMVar = do
+  a <- asyncBound $ startupBound sdebugCl rfMVar
   link a
   -- TODO: for some reason server doesn't exit when gtk window killed
 
-startupBound :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
-startupBound sdebugCli@DebugModeCli{sfont} k = do
+startupBound :: DebugModeCli -> MVar RawFrontend -> IO ()
+startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -131,10 +131,7 @@ startupBound sdebugCli@DebugModeCli{sfont} k = do
         , fescPressed = sescPressed
         , fautoYesRef
         }
-  -- Fork the client thread. When client ends, game exits.
-  -- TODO: is postGUISync needed here?
-  aCont <- async $ k rf `Ex.finally` postGUISync mainQuit
-  link aCont
+  putMVar rfMVar rf
   -- Fork the thread that periodically draws a frame from a queue, if any.
   -- TODO: mainQuit somehow never called.
   aPoll <- async $ pollFramesAct sess `Ex.finally` postGUISync mainQuit
@@ -226,6 +223,7 @@ startupBound sdebugCli@DebugModeCli{sfont} k = do
   onDestroy w mainQuit
   widgetShowAll w
   mainGUI
+  -- TODO: mainQuit
 
 -- | Output to the screen via the frontend.
 output :: FrontendSession  -- ^ frontend session data

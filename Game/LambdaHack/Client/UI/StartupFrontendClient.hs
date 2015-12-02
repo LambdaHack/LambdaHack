@@ -5,9 +5,7 @@ module Game.LambdaHack.Client.UI.StartupFrontendClient
   ) where
 
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -19,7 +17,7 @@ import Game.LambdaHack.Common.State
 -- the server loop, if the whole game runs in one process),
 -- UI config and the definitions of game commands.
 srtFrontend :: forall chanServerUI chanServerAI.
-               (Config -> RawFrontend -> DebugModeCli -> State -> StateClient
+               (Config -> DebugModeCli -> State -> StateClient
                 -> chanServerUI
                 -> IO ())    -- ^ UI main loop
             -> (DebugModeCli -> State -> StateClient
@@ -38,7 +36,5 @@ srtFrontend executorUI executorAI cops sdebugCli = do
       s = updateCOps (const cops) emptyState
       exeClientAI fid = executorAI sdebugMode s (cli fid True)
       exeClientUI :: FactionId -> chanServerUI -> IO ()
-      exeClientUI fid chanServerUI =
-        startupF sdebugMode
-        $ \fs -> executorUI sconfig fs sdebugMode s (cli fid False) chanServerUI
+      exeClientUI fid = executorUI sconfig sdebugMode s (cli fid False)
   return (exeClientUI, exeClientAI)
