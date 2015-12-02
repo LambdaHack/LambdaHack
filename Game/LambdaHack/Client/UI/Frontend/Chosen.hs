@@ -2,11 +2,14 @@
 -- | Re-export the operations of the chosen raw frontend
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.Frontend.Chosen
-  ( chosenStartup, stdStartup, nullStartup
-  , frontendName
+  ( startupF, frontendName
   ) where
 
+import Control.Monad
 import Data.IORef
+import qualified Data.Text.IO as T
+import System.IO
+
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.ClientOptions
@@ -27,12 +30,6 @@ import qualified Game.LambdaHack.Client.UI.Frontend.Std as Std
 frontendName :: String
 frontendName = Chosen.frontendName
 
-chosenStartup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
-chosenStartup = Chosen.startup
-
-stdStartup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
-stdStartup = Std.startup
-
 nullStartup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
 nullStartup sdebugCli cont = do
   fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
@@ -44,3 +41,19 @@ nullStartup sdebugCli cont = do
     , fescPressed
     , fautoYesRef
     }
+
+-- | Initialize the frontend and apply the given continuation to the results
+-- of the initialization.
+startupF :: DebugModeCli  -- ^ debug settings
+         -> (RawFrontend -> IO ())  -- ^ continuation
+         -> IO ()
+startupF dbg cont = do
+  let startup | sfrontendNull dbg = nullStartup
+              | sfrontendStd dbg = Std.startup
+              | otherwise = Chosen.startup
+  startup dbg $ \fs -> do
+    cont fs
+    let debugPrint t = when (sdbgMsgCli dbg) $ do
+          T.hPutStrLn stderr t
+          hFlush stderr
+    debugPrint "Frontend shuts down"

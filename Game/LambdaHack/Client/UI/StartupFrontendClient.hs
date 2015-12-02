@@ -5,6 +5,7 @@ module Game.LambdaHack.Client.UI.StartupFrontendClient
   ) where
 
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Common.ClientOptions

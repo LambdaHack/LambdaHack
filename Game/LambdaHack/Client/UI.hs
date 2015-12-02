@@ -30,6 +30,7 @@ import Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.DisplayAtomicClient
 import Game.LambdaHack.Client.UI.Frontend

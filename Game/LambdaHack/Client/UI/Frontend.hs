@@ -3,24 +3,20 @@
 -- using one of the available raw frontends and derived operations.
 module Game.LambdaHack.Client.UI.Frontend
   ( -- * Connection types
-    FrontReq(..), RawFrontend(..), ChanFrontend
+    FrontReq(..), ChanFrontend
     -- * Re-exported part of the raw frontend
-  , frontendName
+  , startupF, frontendName
     -- * Derived operations
-  , startupF, chanFrontend
+  , chanFrontend
   ) where
 
 import Control.Exception.Assert.Sugar
-import Control.Monad
 import Data.IORef
-import qualified Data.Text.IO as T
-import System.IO
 
 import Data.Maybe
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Chosen
-import Game.LambdaHack.Common.ClientOptions
 
 -- | The instructions sent by clients to the raw frontend.
 data FrontReq :: * -> * where
@@ -41,21 +37,6 @@ data FrontReq :: * -> * where
 -- | Connection channel between a frontend and a client. Frontend acts
 -- as a server, serving keys, etc., when given frames to display.
 type ChanFrontend = forall a. FrontReq a -> IO a
-
--- | Initialize the frontend and apply the given continuation to the results
--- of the initialization.
-startupF :: DebugModeCli  -- ^ debug settings
-         -> (RawFrontend -> IO ())  -- ^ continuation
-         -> IO ()
-startupF dbg cont =
-  (if sfrontendNull dbg then nullStartup
-   else if sfrontendStd dbg then stdStartup
-        else chosenStartup) dbg $ \fs -> do
-    cont fs
-    let debugPrint t = when (sdbgMsgCli dbg) $ do
-          T.hPutStrLn stderr t
-          hFlush stderr
-    debugPrint "Frontend shuts down"
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
