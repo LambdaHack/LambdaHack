@@ -6,8 +6,6 @@ module Game.LambdaHack.Client.UI.Frontend.Curses
   ) where
 
 import Control.Concurrent
-import Control.Concurrent.Async
-import qualified Control.Exception as Ex hiding (handle)
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Char (chr, ord)

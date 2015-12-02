@@ -5,9 +5,7 @@ module Game.LambdaHack.Client.UI.Frontend.Dom
   ) where
 
 import Control.Concurrent
-import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
-import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
 import Control.Monad.Reader (ask, liftIO)
 import Data.Bits ((.|.))
@@ -254,11 +252,11 @@ flattenTable table = do
   return $! concat lrc
 
 -- | Output to the screen via the frontend.
-fdisplay :: FrontendSession    -- ^ frontend session data
+display :: FrontendSession    -- ^ frontend session data
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
-fdisplay _ Nothing = return ()
-fdisplay FrontendSession{..} (Just rawSF) = postGUISync $ do
+display _ Nothing = return ()
+display FrontendSession{..} (Just rawSF) = postGUISync $ do
   let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
       setChar (cell, Color.AttrChar{..}) = do
         let s = if acChar == ' ' then [chr 160] else [acChar]
@@ -282,13 +280,13 @@ fdisplay FrontendSession{..} (Just rawSF) = postGUISync $ do
       setProp scharStyle2 "display" "none"
       setProp scharStyle "display" "block"
 
-fsyncFrames :: FrontendSession -> IO ()
-fsyncFrames _ = return ()
+syncFrames :: FrontendSession -> IO ()
+syncFrames _ = return ()
 
 -- | Display a prompt, wait for any key.
-fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
-fpromptGetKey sess@FrontendSession{schanKey} frame = do
-  fdisplay sess $ Just frame
+promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
+promptGetKey sess@FrontendSession{schanKey} frame = do
+  display sess $ Just frame
   STM.atomically $ STM.readTQueue schanKey
 
 -- | Tells a dead key.

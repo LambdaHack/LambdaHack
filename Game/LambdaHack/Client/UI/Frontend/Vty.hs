@@ -6,7 +6,6 @@ module Game.LambdaHack.Client.UI.Frontend.Vty
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
-import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
 import Data.Default
 import Data.IORef
@@ -44,15 +43,12 @@ startup sdebugCli rfMVar = do
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fsyncFrames = syncFrames sess
-        , fshutdown = shutdown sess
+        , fshutdown = Vty.shutdown svty
         , fescPressed = sescPressed
         , fautoYesRef
         }
   putMVar rfMVar rf
   void $ async $ storeKeys sess
-
-shutdown :: FrontendSession -> IO ()
-shutdown = Vty.shutdown
 
 storeKeys :: FrontendSession -> IO ()
 storeKeys sess@FrontendSession{..} = do
@@ -75,11 +71,11 @@ storeKeys sess@FrontendSession{..} = do
   storeKeys sess
 
 -- | Output to the screen via the frontend.
-fdisplay :: FrontendSession    -- ^ frontend session data
+display :: FrontendSession    -- ^ frontend session data
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
-fdisplay _ Nothing = return ()
-fdisplay FrontendSession{svty} (Just rawSF) =
+display _ Nothing = return ()
+display FrontendSession{svty} (Just rawSF) =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
       img = (foldr (<->) emptyImage
              . map (foldr (<|>) emptyImage
@@ -108,13 +104,13 @@ nextKeyEvent FrontendSession{..} = do
       return ()
   return km
 
-fsyncFrames :: FrontendSession -> IO ()
-fsyncFrames _ = return ()
+syncFrames :: FrontendSession -> IO ()
+syncFrames _ = return ()
 
 -- | Display a prompt, wait for any key.
-fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
-fpromptGetKey sess frame = do
-  fdisplay sess $ Just frame
+promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
+promptGetKey sess frame = do
+  display sess $ Just frame
   nextKeyEvent sess
 
 -- TODO: Ctrl-m is RET
