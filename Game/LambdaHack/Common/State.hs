@@ -38,7 +38,7 @@ data State = State
   , _sitemD      :: !ItemDict     -- ^ remembered items in the dungeon
   , _sfactionD   :: !FactionDict  -- ^ remembered sides still in game
   , _stime       :: !Time         -- ^ global game time
-  , _scops       :: Kind.COps     -- ^ remembered content
+  , _scops       :: Kind.COps    -- ^ remembered content
   , _shigh       :: !HighScore.ScoreDict  -- ^ high score table
   , _sgameModeId :: !(Kind.Id ModeKind)  -- ^ current game mode
   }
@@ -100,8 +100,8 @@ defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId =
     }
 
 -- | Initial empty state.
-emptyState :: State
-emptyState =
+emptyState :: Kind.COps -> State
+emptyState _scops =
   State
     { _sdungeon = EM.empty
     , _stotalDepth = AbsDepth 0
@@ -109,7 +109,7 @@ emptyState =
     , _sitemD = EM.empty
     , _sfactionD = EM.empty
     , _stime = timeZero
-    , _scops = assert `failure` "empty State is undefined" `twith` ()
+    , _scops
     , _shigh = HighScore.empty
     , _sgameModeId = toEnum 0  -- the initial value is unused
     }

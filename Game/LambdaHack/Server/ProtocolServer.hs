@@ -212,10 +212,8 @@ updateConn executorUI executorAI = do
   putDict newD
   -- Spawn client threads.
   let toSpawn = newD EM.\\ oldD
-  let forkUI fid connS =
-        forkChild childrenServer $ executorUI fid connS
-      forkAI fid connS =
-        forkChild childrenServer $ executorAI fid connS
+  let forkUI fid connS = forkChild childrenServer $ executorUI fid connS
+      forkAI fid connS = forkChild childrenServer $ executorAI fid connS
       forkClient fid (connUI, connAI) = do
         -- When a connection is reused, clients are not respawned,
         -- even if UI usage changes, but it works OK thanks to UI faction

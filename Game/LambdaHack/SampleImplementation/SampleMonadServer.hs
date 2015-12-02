@@ -26,6 +26,7 @@ import Game.LambdaHack.Atomic.BroadcastAtomicWrite
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
@@ -97,18 +98,18 @@ handleAndBroadcastServer atomic = do
                      sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.
-executorSer :: SerImplementation () -> IO ()
-executorSer m = do
+executorSer :: Kind.COps -> SerImplementation () -> IO ()
+executorSer cops m = do
   let saveFile (_, ser) =
         fromMaybe "save" (ssavePrefixSer (sdebugSer ser))
         <.> saveName
-      exe serToSave =
-        evalStateT (runSerImplementation m)
-          SerState { serState = emptyState
-                   , serServer = emptyStateServer
-                   , serDict = EM.empty
-                   , serToSave
-                   }
+      totalState serToSave = SerState
+        { serState = emptyState cops
+        , serServer = emptyStateServer
+        , serDict = EM.empty
+        , serToSave
+        }
+      exe = evalStateT (runSerImplementation m) . totalState
       exeWithSaves = Save.wrapInSaves tryCreateDir encodeEOF saveFile exe
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save

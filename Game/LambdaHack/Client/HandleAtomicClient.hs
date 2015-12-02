@@ -273,9 +273,9 @@ cmdAtomicSemCli cmd = case cmd of
   UpdRestart side sdiscoKind sfper _ d sdebugCli -> do
     shistory <- getsClient shistory
     sreport <- getsClient sreport
-    isAI <- getsClient sisAI
+    sisAI <- getsClient sisAI
     snxtDiff <- getsClient snxtDiff
-    let cli = (defStateClient side isAI) {shistory, sreport}
+    let cli = (emptyStateClient side) {shistory, sreport, sisAI}
     putClient cli { sdiscoKind
                   , sfper
                   -- , sundo = [UpdAtomic cmd]

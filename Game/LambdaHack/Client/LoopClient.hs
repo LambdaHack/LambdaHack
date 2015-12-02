@@ -24,6 +24,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 
@@ -53,6 +54,7 @@ loopAI :: ( MonadAtomic m
           , MonadClientWriteRequest RequestAI m )
        => DebugModeCli -> m ()
 loopAI sdebugCli = do
+  modifyClient $ \cli -> cli {sisAI = True}
   side <- getsClient sside
   restored <- initCli sdebugCli
               $ \s -> handleResponseAI $ RespUpdAtomicAI $ UpdResumeServer s
@@ -86,6 +88,9 @@ loopUI :: ( MonadClientUI m
           , MonadClientWriteRequest RequestUI m )
        => KeyKind -> Config -> DebugModeCli -> m ()
 loopUI copsClient sconfig sdebugCli = do
+  modifyClient $ \cli ->
+    cli { sisAI = False
+        , scursor = TVector $ Vector 1 1 }  -- a step south-east, less alarming
   rf <- liftIO $ startupF sdebugCli
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
       sescPressed = fescPressed rf

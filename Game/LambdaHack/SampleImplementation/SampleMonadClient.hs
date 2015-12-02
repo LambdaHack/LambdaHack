@@ -30,6 +30,8 @@ import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
@@ -97,14 +99,21 @@ instance MonadAtomic (CliImplementation resp req) where
 
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
-executorCli :: CliImplementation resp req ()
-            -> State -> StateClient -> ChanServer resp req
+executorCli :: Kind.COps
+            -> CliImplementation resp req ()
+            -> FactionId
+            -> ChanServer resp req
             -> IO ()
-executorCli m cliState cliClient cliDict =
+executorCli cops m fid cliDict =
   let saveFile (_, cli2) =
         fromMaybe "save" (ssavePrefixCli (sdebugCli cli2))
         <.> saveName (sside cli2) (sisAI cli2)
-      cliSession = undefined
-      exe cliToSave =
-        evalStateT (runCliImplementation m) CliState{..}
+      totalState cliToSave = CliState
+        { cliState = emptyState cops
+        , cliClient = emptyStateClient fid
+        , cliDict
+        , cliToSave
+        , cliSession = undefined
+        }
+      exe = evalStateT (runCliImplementation m) . totalState
   in Save.wrapInSaves tryCreateDir encodeEOF saveFile exe

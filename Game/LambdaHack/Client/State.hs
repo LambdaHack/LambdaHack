@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Client.State
-  ( StateClient(..), defStateClient
+  ( StateClient(..), emptyStateClient
   , updateTarget, getTarget, updateLeader, sside
   , PathEtc, TgtMode(..), RunParams(..), LastRecord
   , toggleMarkVision, toggleMarkSmell, toggleMarkSuspect
@@ -112,14 +112,12 @@ type LastRecord = ( [K.KM]  -- accumulated keys of the current command
                   , Int     -- commands left to record for this batch
                   )
 
--- | Initial game client state.
-defStateClient :: FactionId -> Bool -> StateClient
-defStateClient _sside sisAI =
+-- | Initial empty game client state.
+emptyStateClient :: FactionId -> StateClient
+emptyStateClient _sside =
   StateClient
     { stgtMode = Nothing
-    , scursor = if sisAI
-                then TVector $ Vector 30000 30000  -- invalid
-                else TVector $ Vector 1 1  -- a step south-east
+    , scursor = TVector $ Vector 30000 30000  -- invalid; AI recomputes ASAP
     , seps = fromEnum _sside
     , stargetD = EM.empty
     , sexplored = ES.empty
@@ -142,7 +140,7 @@ defStateClient _sside sisAI =
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
-    , sisAI
+    , sisAI = False
     , smarkVision = False
     , smarkSmell = True
     , smarkSuspect = False

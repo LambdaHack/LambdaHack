@@ -13,14 +13,18 @@ import Game.LambdaHack.SampleImplementation.SampleMonadClient (executorCli)
 import Game.LambdaHack.SampleImplementation.SampleMonadServer (executorSer)
 
 import Game.LambdaHack.Client
-import Game.LambdaHack.Client.State hiding (sdebugCli)
 import Game.LambdaHack.Client.UI.Config
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server
 
 -- | Tie the LambdaHack engine client, server and frontend code
 -- with the game-specific content definitions, and run the game.
+--
+-- The action monad types to be used are determined by the 'executorSer'
+-- and 'executorCli' calls. If other functions are used in their place
+-- the types are different and so the whole pattern of computation
+-- is different. Which of the frontends is run inside the UI client
+-- depends on the flags supplied when compiling the engine library.
 tieKnot :: [String] -> IO ()
 tieKnot args = do
   let -- Common content operations, created from content definitions.
@@ -34,25 +38,20 @@ tieKnot args = do
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
       !cops = speedupCOps False copsSlow
-      -- Client content operations.
-      copsClient = Content.KeyKind.standardKeys
+      -- Client content operations containing default keypresses
+      -- and command descriptions.
+      !copsClient = Content.KeyKind.standardKeys
+  -- Options for the next game taken from the commandline.
   sdebugNxt <- debugArgs args
-  -- The action monad types to be used are determined by the 'exeSer'
-  -- and 'executorCli' calls. If other functions are used in their place
-  -- the types are different and so the whole pattern of computation
-  -- is different. Which of the frontends is run depends on the flags supplied
-  -- when compiling the engine library.
-  -- Wire together game content, the main loops of game clients,
-  -- the main game loop assigned to this frontend,
-  -- UI config and the definitions of game commands.
-  -- UI config reloaded at each client start.
+  -- Parsed UI client configuration file.
+  -- It is reloaded at each game executable start.
   sconfig <- mkConfig cops
+  -- Options for the clients modified with the configuration file.
   let debugCli = sdebugCli sdebugNxt
       sdebugMode = applyConfigToDebug sconfig debugCli cops
-  let cli = defStateClient
-      s = updateCOps (const cops) emptyState
-      exeClientAI fid = (executorCli . loopAI) sdebugMode s (cli fid True)
-      exeClientUI fid = (\xconfig xdebugCli ->
-                           executorCli $ loopUI copsClient xconfig xdebugCli)
-                             sconfig sdebugMode s (cli fid False)
-  executorSer $ loopSer cops sdebugNxt exeClientUI exeClientAI
+      -- Partially applied main loops of the clients.
+      exeClientAI = executorCli cops $ loopAI sdebugMode
+      exeClientUI = executorCli cops $ loopUI copsClient sconfig sdebugMode
+  -- Wire together game content, the main loops of game clients
+  -- and the game server loop.
+  executorSer cops $ loopSer sdebugNxt exeClientUI exeClientAI

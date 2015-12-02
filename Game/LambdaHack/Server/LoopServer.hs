@@ -8,7 +8,7 @@ import Prelude.Compat
 
 import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
-import Control.Monad (when, unless)
+import Control.Monad (unless, when)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM_)
@@ -50,16 +50,16 @@ import Game.LambdaHack.Server.State
 -- | Start a game session, including the clients, and then loop,
 -- communicating with the clients.
 loopSer :: (MonadAtomic m, MonadServerReadRequest m)
-        => Kind.COps  -- ^ game content
-        -> DebugModeSer  -- ^ server debug parameters
+        => DebugModeSer  -- ^ server debug parameters
         -> (FactionId -> ChanServer ResponseUI RequestUI -> IO ())
              -- ^ the code to run for UI clients
         -> (FactionId -> ChanServer ResponseAI RequestAI -> IO ())
              -- ^ the code to run for AI clients
         -> m ()
-loopSer cops sdebug executorUI executorAI = do
+loopSer sdebug executorUI executorAI = do
   -- Recover states and launch clients.
   let updConn = updateConn executorUI executorAI
+  cops <- getsState scops
   restored <- tryRestore cops sdebug
   case restored of
     Just (sRaw, ser) | not $ snewGameSer sdebug -> do  -- run a restored game
