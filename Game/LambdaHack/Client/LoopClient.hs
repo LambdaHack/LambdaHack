@@ -123,7 +123,9 @@ loopUI copsClient sconfig sdebugCli = do
   -- State and client state now valid.
   debugPrint $ "UI client" <+> tshow side <+> "started."
   loop
-  debugPrint $ "UI client" <+> tshow side <+> "stopped."
+  debugPrint $ "Frontend" <+> tshow side <+> "shutting down."
+  liftIO $ fshutdown rf
+  debugPrint $ "UI cliet" <+> tshow side <+> "stopped."
  where
   loop = do
     cmd <- receiveResponse

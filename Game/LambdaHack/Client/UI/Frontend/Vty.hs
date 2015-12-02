@@ -44,12 +44,15 @@ startup sdebugCli rfMVar = do
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fsyncFrames = syncFrames sess
+        , fshutdown = shutdown sess
         , fescPressed = sescPressed
         , fautoYesRef
         }
   putMVar rfMVar rf
   void $ async $ storeKeys sess
-  -- TODO: Vty.shutdown svty
+
+shutdown :: FrontendSession -> IO ()
+shutdown = Vty.shutdown
 
 storeKeys :: FrontendSession -> IO ()
 storeKeys sess@FrontendSession{..} = do

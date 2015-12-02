@@ -59,18 +59,21 @@ startup sdebugCli rfMVar = do
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fsyncFrames = syncFrames sess
+        , fshutdown = shutdown
         , fescPressed = sescPressed
         , fautoYesRef
         }
   putMVar rfMVar rf
-  -- TODO: C.end
+
+shutdown :: IO ()
+shutdown = C.end
 
 -- | Output to the screen via the frontend.
-fdisplay :: FrontendSession    -- ^ frontend session data
+display :: FrontendSession    -- ^ frontend session data
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
-fdisplay _ Nothing = return ()
-fdisplay FrontendSession{..}  (Just rawSF) = do
+display _ Nothing = return ()
+display FrontendSession{..}  (Just rawSF) = do
   let SingleFrame{sfLevel} = overlayOverlay rawSF
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
@@ -92,13 +95,13 @@ fdisplay FrontendSession{..}  (Just rawSF) = do
 nextEvent :: IO K.KM
 nextEvent = keyTranslate `fmap` C.getKey C.refresh
 
-fsyncFrames :: FrontendSession -> IO ()
-fsyncFrames _ = return ()
+syncFrames :: FrontendSession -> IO ()
+syncFrames _ = return ()
 
 -- | Display a prompt, wait for any key.
-fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
-fpromptGetKey sess frame = do
-  fdisplay sess $ Just frame
+promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
+promptGetKey sess frame = do
+  display sess $ Just frame
   nextEvent
 
 keyTranslate :: C.Key -> K.KM

@@ -34,11 +34,14 @@ startup sdebugCli rfMVar = do
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fsyncFrames = syncFrames sess
+        , fshutdown = shutdown
         , fescPressed = sescPressed
         , fautoYesRef
         }
   putMVar rfMVar rf
-  -- TODO: (SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr)
+
+shutdown :: IO ()
+shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data

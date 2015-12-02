@@ -34,6 +34,7 @@ data RawFrontend = RawFrontend
   { fdisplay      :: Maybe SingleFrame -> IO ()
   , fpromptGetKey :: SingleFrame -> IO K.KM
   , fsyncFrames   :: IO ()
+  , fshutdown     :: IO ()
   , fescPressed   :: !(IORef Bool)
   , fautoYesRef   :: !(IORef Bool)
   }

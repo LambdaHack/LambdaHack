@@ -126,6 +126,7 @@ font-weight: normal;
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fsyncFrames = syncFrames sess
+        , fshutdown = shutdown
         , fescPressed = sescPressed
         , fautoYesRef
         }
@@ -189,7 +190,10 @@ font-weight: normal;
   setProp scharStyle "display" "none"
   void $ appendChild body (Just tableElem2)
   setProp scharStyle2 "display" "block"
-  return ()  -- nothing to clean up
+  return ()
+
+shutdown :: IO ()
+shutdown = return () -- nothing to clean up
 
 setProp :: CSSStyleDeclaration -> String -> String -> IO ()
 setProp style propRef propValue =

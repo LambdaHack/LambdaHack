@@ -128,6 +128,7 @@ startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fsyncFrames = syncFrames sess
+        , fshutdown = shutdown
         , fescPressed = sescPressed
         , fautoYesRef
         }
@@ -223,7 +224,9 @@ startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
   onDestroy w mainQuit
   widgetShowAll w
   mainGUI
-  -- TODO: mainQuit
+
+shutdown :: IO ()
+shutdown = mainQuit
 
 -- | Output to the screen via the frontend.
 output :: FrontendSession  -- ^ frontend session data
