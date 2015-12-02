@@ -9,10 +9,15 @@ import qualified Content.ModeKind
 import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.TileKind
-import Game.LambdaHack.Client
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.SampleImplementation.SampleMonadClient (executorCli)
 import Game.LambdaHack.SampleImplementation.SampleMonadServer (executorSer)
+
+import Game.LambdaHack.Client
+import Game.LambdaHack.Client.State hiding (sdebugCli)
+import Game.LambdaHack.Client.UI.Config
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server
 
 -- | Tie the LambdaHack engine client, server and frontend code
@@ -29,7 +34,7 @@ tieKnot args = do
         , corule  = Kind.createOps Content.RuleKind.cdefs
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
-      !copsShared = speedupCOps False copsSlow
+      !cops = speedupCOps False copsSlow
       -- Client content operations.
       copsClient = Content.KeyKind.standardKeys
   sdebugNxt <- debugArgs args
@@ -38,9 +43,18 @@ tieKnot args = do
   -- the types are different and so the whole pattern of computation
   -- is different. Which of the frontends is run depends on the flags supplied
   -- when compiling the engine library.
-  (exeClientUI, exeClientAI) <-
-    srtFrontend (\sconfig sdebugCli ->
-                   executorCli $ loopUI copsClient sconfig sdebugCli)
-                (executorCli . loopAI)
-                copsShared (sdebugCli sdebugNxt)
-  executorSer $ loopSer copsShared sdebugNxt exeClientUI exeClientAI
+  -- Wire together game content, the main loops of game clients,
+  -- the main game loop assigned to this frontend,
+  -- UI config and the definitions of game commands.
+  -- UI config reloaded at each client start.
+  sconfig <- mkConfig cops
+  let debugCli = sdebugCli sdebugNxt
+      sdebugMode = applyConfigToDebug sconfig debugCli cops
+  defaultHist <- defaultHistory $ configHistoryMax sconfig
+  let cli = defStateClient defaultHist emptyReport
+      s = updateCOps (const cops) emptyState
+      exeClientAI fid = (executorCli . loopAI) sdebugMode s (cli fid True)
+      exeClientUI fid = (\xconfig xdebugCli ->
+                           executorCli $ loopUI copsClient xconfig xdebugCli)
+                             sconfig sdebugMode s (cli fid False)
+  executorSer $ loopSer cops sdebugNxt exeClientUI exeClientAI
