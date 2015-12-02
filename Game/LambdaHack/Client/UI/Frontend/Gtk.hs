@@ -1,13 +1,7 @@
-{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 -- | Text frontend based on Gtk.
 module Game.LambdaHack.Client.UI.Frontend.Gtk
-  ( -- * Session data type for the frontend
-    FrontendSession(sescPressed)
-    -- * The output and input operations
-  , fdisplay, fpromptGetKey, fsyncFrames
-    -- * Frontend administration tools
-  , frontendName, startup
+  ( startup, frontendName
   ) where
 
 import Prelude ()
@@ -94,13 +88,13 @@ frontendName = "gtk"
 -- because they call @postGUIAsync@, and need @sview@ and @stags@.
 -- Because of Windows, GTK needs to be on a bound thread,
 -- so we can't avoid the communication overhead of bound threads.
-startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
+startup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
 startup sdebugCl k = do
   a <- asyncBound $ startupBound sdebugCl k
   link a
   -- TODO: for some reason server doesn't exit when gtk window killed
 
-startupBound :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
+startupBound :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
 startupBound sdebugCli@DebugModeCli{sfont} k = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
@@ -128,10 +122,18 @@ startupBound sdebugCli@DebugModeCli{sfont} k = do
   sframeState <- newMVar frameState
   slastFull <- newMVar (dummyFrame, False)
   sescPressed <- newIORef False
+  fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   let sess = FrontendSession{..}
+      rf = RawFrontend
+        { fdisplay = display sess
+        , fpromptGetKey = promptGetKey sess
+        , fsyncFrames = syncFrames sess
+        , fescPressed = sescPressed
+        , fautoYesRef
+        }
   -- Fork the client thread. When client ends, game exits.
   -- TODO: is postGUISync needed here?
-  aCont <- async $ k sess `Ex.finally` postGUISync mainQuit
+  aCont <- async $ k rf `Ex.finally` postGUISync mainQuit
   link aCont
   -- Fork the thread that periodically draws a frame from a queue, if any.
   -- TODO: mainQuit somehow never called.
@@ -165,9 +167,9 @@ startupBound sdebugCli@DebugModeCli{sfont} k = do
     textViewSetRightMargin sview 3
   -- Take care of the mouse events.
   currentfont <- newIORef f
-  Just display <- displayGetDefault
+  Just defDisplay <- displayGetDefault
   -- TODO: change cursor depending on targeting mode, etc.; hard
-  cursor <- cursorNewForDisplay display Tcross  -- Target Crosshair Arrow
+  cursor <- cursorNewForDisplay defDisplay Tcross  -- Target Crosshair Arrow
   sview `on` buttonPressEvent $ do
     liftIO resetChanKey
     but <- eventButton
@@ -194,7 +196,7 @@ startupBound sdebugCli@DebugModeCli{sfont} k = do
       -- We shouldn't pass on the click if the user has selected something.
       hasSelection <- textBufferHasSelection tb
       unless hasSelection $ do
-        mdrawWin <- displayGetWindowAtPointer display
+        mdrawWin <- displayGetWindowAtPointer defDisplay
         let setCursor (drawWin, _, _) =
               drawWindowSetCursor drawWin (Just cursor)
         maybe (return ()) setCursor mdrawWin
@@ -426,10 +428,10 @@ trimFrameState sess@FrontendSession{sframeState} = do
   putMVar sframeState FNone
 
 -- | Add a frame to be drawn.
-fdisplay :: FrontendSession    -- ^ frontend session data
+display :: FrontendSession    -- ^ frontend session data
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
-fdisplay sess = pushFrame sess False
+display sess = pushFrame sess False
 
 -- Display all queued frames, synchronously.
 displayAllFramesSync :: FrontendSession -> FrameState -> IO ()
@@ -458,8 +460,8 @@ displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}, sescPresse
       -- Not in Push state to start with.
       return ()
 
-fsyncFrames :: FrontendSession -> IO ()
-fsyncFrames sess@FrontendSession{sframeState} = do
+syncFrames :: FrontendSession -> IO ()
+syncFrames sess@FrontendSession{sframeState} = do
   fs <- takeMVar sframeState
   displayAllFramesSync sess fs
   putMVar sframeState FNone
@@ -467,9 +469,8 @@ fsyncFrames sess@FrontendSession{sframeState} = do
 -- | Display a prompt, wait for any key.
 -- Starts in Push mode, ends in Push or None mode.
 -- Syncs with the drawing threads by showing the last or all queued frames.
-fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
-fpromptGetKey sess@FrontendSession{..}
-              frame = do
+promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
+promptGetKey sess@FrontendSession{..} frame = do
   pushFrame sess True $ Just frame
   km <- STM.atomically $ STM.readTQueue schanKey
   case km of

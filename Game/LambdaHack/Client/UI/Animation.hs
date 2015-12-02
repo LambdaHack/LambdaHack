@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Animation
-  ( SingleFrame(..), decodeLine, encodeLine
+  ( RawFrontend(..), SingleFrame(..), decodeLine, encodeLine
   , overlayOverlay
   , Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, actorX
@@ -16,17 +16,27 @@ import Data.Binary
 import Data.Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.IORef
 import Data.List (foldl')
 import Data.Maybe
 import qualified Data.Vector.Generic as G
 import GHC.Generics (Generic)
 
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
+
+data RawFrontend = RawFrontend
+  { fdisplay      :: Maybe SingleFrame -> IO ()
+  , fpromptGetKey :: SingleFrame -> IO K.KM
+  , fsyncFrames   :: IO ()
+  , fescPressed   :: !(IORef Bool)
+  , fautoYesRef   :: !(IORef Bool)
+  }
 
 -- | The data sufficent to draw a single game screen frame.
 data SingleFrame = SingleFrame

@@ -1,12 +1,7 @@
 {-# LANGUAGE CPP #-}
 -- | Text frontend running in Browser or in Webkit.
 module Game.LambdaHack.Client.UI.Frontend.Dom
-  ( -- * Session data type for the frontend
-    FrontendSession(sescPressed)
-    -- * The output and input operations
-  , fdisplay, fpromptGetKey, fsyncFrames
-    -- * Frontend administration tools
-  , frontendName, startup
+  ( startup, frontendName
   ) where
 
 import Control.Concurrent
@@ -73,10 +68,10 @@ terrible error
 #endif
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
+startup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
 startup sdebugCli k = runWebGUI $ runWeb sdebugCli k
 
-runWeb :: DebugModeCli -> (FrontendSession -> IO ()) -> WebView -> IO ()
+runWeb :: DebugModeCli -> (RawFrontend -> IO ()) -> WebView -> IO ()
 runWeb sdebugCli@DebugModeCli{sfont} k swebView = do
   -- Init the document.
   enableInspector swebView  -- enables Inspector in Webkit
@@ -125,9 +120,17 @@ font-weight: normal;
   scharCells2 <- flattenTable tableElem2
   Just scharStyle2 <- getStyle tableElem2
   sescPressed <- newIORef False
+  fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   let sess = FrontendSession{..}
+      rf = RawFrontend
+        { fdisplay = display sess
+        , fpromptGetKey = promptGetKey sess
+        , fsyncFrames = syncFrames sess
+        , fescPressed = sescPressed
+        , fautoYesRef
+        }
   -- Fork the game logic thread. When logic ends, game exits.
-  aCont <- async $ k sess `Ex.finally` return ()  --- TODO: close webkit window?
+  aCont <- async $ k rf `Ex.finally` return ()  --- TODO: close webkit window?
   link aCont
   -- Handle keypresses.
   -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys and

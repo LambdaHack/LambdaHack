@@ -2,13 +2,13 @@
 -- | Re-export the operations of the chosen raw frontend
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.Frontend.Chosen
-  ( RawFrontend(..), chosenStartup, stdStartup, nullStartup
+  ( chosenStartup, stdStartup, nullStartup
   , frontendName
   ) where
 
 import Data.IORef
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.UI.Animation (SingleFrame (..))
+import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.ClientOptions
 
 #ifdef USE_CURSES
@@ -27,48 +27,20 @@ import qualified Game.LambdaHack.Client.UI.Frontend.Std as Std
 frontendName :: String
 frontendName = Chosen.frontendName
 
-data RawFrontend = RawFrontend
-  { fdisplay      :: Maybe SingleFrame -> IO ()
-  , fpromptGetKey :: SingleFrame -> IO K.KM
-  , fsyncFrames   :: IO ()
-  , fescPressed   :: !(IORef Bool)
-  , fautoYesRef   :: !(IORef Bool)
-  }
-
 chosenStartup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
-chosenStartup fdebugCli cont =
-  Chosen.startup fdebugCli $ \fs -> do
-    fautoYesRef <- newIORef $ not $ sdisableAutoYes fdebugCli
-    cont RawFrontend
-      { fdisplay = Chosen.fdisplay fs
-      , fpromptGetKey = Chosen.fpromptGetKey fs
-      , fsyncFrames = Chosen.fsyncFrames fs
-      , fescPressed = Chosen.sescPressed fs
-      , fautoYesRef
-      }
+chosenStartup = Chosen.startup
 
 stdStartup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
-stdStartup fdebugCli cont =
-  Std.startup fdebugCli $ \fs -> do
-    fautoYesRef <- newIORef $ not $ sdisableAutoYes fdebugCli
-    cont RawFrontend
-      { fdisplay = Std.fdisplay fs
-      , fpromptGetKey = Std.fpromptGetKey fs
-      , fsyncFrames = Std.fsyncFrames fs
-      , fescPressed = Std.sescPressed fs
-      , fautoYesRef
-      }
+stdStartup = Std.startup
 
 nullStartup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
-nullStartup fdebugCli cont =
-  -- Std used to fork (async) the server thread, to avoid bound thread overhead.
-  Std.startup fdebugCli $ \_ -> do
-    fautoYesRef <- newIORef $ not $ sdisableAutoYes fdebugCli
-    fescPressed <- newIORef False
-    cont RawFrontend
-      { fdisplay = \_ -> return ()
-      , fpromptGetKey = \_ -> return K.escKM
-      , fsyncFrames = return ()
-      , fescPressed
-      , fautoYesRef
-      }
+nullStartup sdebugCli cont = do
+  fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
+  fescPressed <- newIORef False
+  cont RawFrontend
+    { fdisplay = \_ -> return ()
+    , fpromptGetKey = \_ -> return K.escKM
+    , fsyncFrames = return ()
+    , fescPressed
+    , fautoYesRef
+    }

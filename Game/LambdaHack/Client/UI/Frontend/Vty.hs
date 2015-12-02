@@ -1,11 +1,6 @@
 -- | Text frontend based on Vty.
 module Game.LambdaHack.Client.UI.Frontend.Vty
-  ( -- * Session data type for the frontend
-    FrontendSession(sescPressed)
-    -- * The output and input operations
-  , fdisplay, fpromptGetKey, fsyncFrames
-    -- * Frontend administration tools
-  , frontendName, startup
+  ( startup, frontendName
   ) where
 
 import Control.Concurrent
@@ -38,14 +33,22 @@ frontendName :: String
 frontendName = "vty"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
+startup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
 startup sdebugCli k = do
   svty <- mkVty def
   schanKey <- STM.atomically STM.newTQueue
   sescPressed <- newIORef False
+  fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   let sess = FrontendSession{..}
+      rf = RawFrontend
+        { fdisplay = display sess
+        , fpromptGetKey = promptGetKey sess
+        , fsyncFrames = syncFrames sess
+        , fescPressed = sescPressed
+        , fautoYesRef
+        }
   void $ async $ storeKeys sess
-  aCont <- async $ k sess `Ex.finally` Vty.shutdown svty
+  aCont <- async $ k rf `Ex.finally` Vty.shutdown svty
   wait aCont
 
 storeKeys :: FrontendSession -> IO ()

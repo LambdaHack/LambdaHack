@@ -2,12 +2,7 @@
 -- due to the limitations of the curses library (keys, colours, last character
 -- of the last line).
 module Game.LambdaHack.Client.UI.Frontend.Curses
-  ( -- * Session data type for the frontend
-    FrontendSession(sescPressed)
-    -- * The output and input operations
-  , fdisplay, fpromptGetKey, fsyncFrames
-    -- * Frontend administration tools
-  , frontendName, startup
+  ( startup, frontendName
   ) where
 
 import Control.Concurrent
@@ -41,7 +36,7 @@ frontendName :: String
 frontendName = "curses"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
+startup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
 startup sdebugCli k = do
   C.start
 --  C.keypad C.stdScr False  -- TODO: may help to fix xterm keypad on Ubuntu
@@ -58,7 +53,16 @@ startup sdebugCli k = do
   let swin = C.stdScr
       sstyles = M.fromList (zip ks ws)
   sescPressed <- newIORef False
-  a <- async $ k FrontendSession{..} `Ex.finally` C.end
+  fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
+  let sess = FrontendSession{..}
+      rf = RawFrontend
+        { fdisplay = display sess
+        , fpromptGetKey = promptGetKey sess
+        , fsyncFrames = syncFrames sess
+        , fescPressed = sescPressed
+        , fautoYesRef
+        }
+  a <- async $ k rf `Ex.finally` C.end
   wait a
 
 -- | Output to the screen via the frontend.

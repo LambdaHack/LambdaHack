@@ -1,11 +1,6 @@
 -- | Text frontend based on stdin/stdout, intended for bots.
 module Game.LambdaHack.Client.UI.Frontend.Std
-  ( -- * Session data type for the frontend
-    FrontendSession(sescPressed)
-    -- * The output and input operations
-  , fdisplay, fpromptGetKey, fsyncFrames
-    -- * Frontend administration tools
-  , frontendName, startup
+  ( startup, frontendName
   ) where
 
 import Control.Concurrent.Async
@@ -31,20 +26,29 @@ frontendName :: String
 frontendName = "std"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
+startup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
 startup sdebugCli k = do
   sescPressed <- newIORef False
+  fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
+  let sess = FrontendSession{..}
+      rf = RawFrontend
+        { fdisplay = display sess
+        , fpromptGetKey = promptGetKey sess
+        , fsyncFrames = syncFrames sess
+        , fescPressed = sescPressed
+        , fautoYesRef
+        }
   aCont <-
-    async $ k FrontendSession{..}
+    async $ k rf
             `Ex.finally` (SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr)
   wait aCont
 
 -- | Output to the screen via the frontend.
-fdisplay :: FrontendSession    -- ^ frontend session data
+display :: FrontendSession    -- ^ frontend session data
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
-fdisplay _ Nothing = return ()
-fdisplay _ (Just rawSF) =
+display _ Nothing = return ()
+display _ (Just rawSF) =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
       bs = map (BS.pack . map Color.acChar . decodeLine) sfLevel ++ [BS.empty]
   in mapM_ BS.putStrLn bs
@@ -58,13 +62,13 @@ nextEvent = do
         Just (hd, _) -> hd
   return $! keyTranslate c
 
-fsyncFrames :: FrontendSession -> IO ()
-fsyncFrames _ = return ()
+syncFrames :: FrontendSession -> IO ()
+syncFrames _ = return ()
 
 -- | Display a prompt, wait for any key.
-fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
-fpromptGetKey sess frame = do
-  fdisplay sess $ Just frame
+promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
+promptGetKey sess frame = do
+  display sess $ Just frame
   nextEvent
 
 keyTranslate :: Char -> K.KM
