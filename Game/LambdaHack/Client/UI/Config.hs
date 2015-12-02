@@ -108,18 +108,16 @@ mkConfig Kind.COps{corule} = do
   -- Catch syntax errors in complex expressions ASAP,
   return $! deepseq conf conf
 
-applyConfigToDebug :: Config -> DebugModeCli -> Kind.COps
-                   -> DebugModeCli
-applyConfigToDebug sconfig sdebugCli Kind.COps{corule} =
-  let stdRuleset = Kind.stdRuleset corule
-  in (\dbg -> dbg {sfont =
-        sfont dbg `mplus` Just (configFont sconfig)}) .
-     (\dbg -> dbg {scolorIsBold =
-        scolorIsBold dbg `mplus` Just (configColorIsBold sconfig)}) .
-     (\dbg -> dbg {smaxFps =
-        smaxFps dbg `mplus` Just (configMaxFps sconfig)}) .
-     (\dbg -> dbg {snoAnim =
-        snoAnim dbg `mplus` Just (configNoAnim sconfig)}) .
-     (\dbg -> dbg {ssavePrefixCli =
-        ssavePrefixCli dbg `mplus` Just (rsavePrefix stdRuleset)})
-     $ sdebugCli
+applyConfigToDebug :: Config -> DebugModeCli -> DebugModeCli
+applyConfigToDebug sconfig sdebugCli =
+  (\dbg -> dbg {sfont =
+     sfont dbg `mplus` Just (configFont sconfig)}) .
+  (\dbg -> dbg {scolorIsBold =
+     scolorIsBold dbg `mplus` Just (configColorIsBold sconfig)}) .
+  (\dbg -> dbg {smaxFps =
+     smaxFps dbg `mplus` Just (configMaxFps sconfig)}) .
+  (\dbg -> dbg {snoAnim =
+     snoAnim dbg `mplus` Just (configNoAnim sconfig)}) .
+  (\dbg -> dbg {ssavePrefixCli =
+     ssavePrefixCli dbg `mplus` Just "save"})
+  $ sdebugCli

@@ -48,7 +48,7 @@ tieKnot args = do
   sconfig <- mkConfig cops
   -- Options for the clients modified with the configuration file.
   let debugCli = sdebugCli sdebugNxt
-      sdebugMode = applyConfigToDebug sconfig debugCli cops
+      sdebugMode = applyConfigToDebug sconfig debugCli
       -- Partially applied main loops of the clients.
       exeClientAI = executorCli cops $ loopAI sdebugMode
       exeClientUI = executorCli cops $ loopUI copsClient sconfig sdebugMode

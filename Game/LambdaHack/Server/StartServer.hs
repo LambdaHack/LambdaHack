@@ -364,7 +364,7 @@ initDebug Kind.COps{corule} sdebugSer = do
     (\dbg -> dbg {sfovMode =
         sfovMode dbg `mplus` Just (rfovMode stdRuleset)}) .
     (\dbg -> dbg {ssavePrefixSer =
-        ssavePrefixSer dbg `mplus` Just (rsavePrefix stdRuleset)})
+        ssavePrefixSer dbg `mplus` Just "save"})
     $ sdebugSer
 
 -- | Apply debug options that don't need a new game.
