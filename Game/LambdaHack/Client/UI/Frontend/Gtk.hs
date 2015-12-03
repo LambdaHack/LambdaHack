@@ -10,7 +10,6 @@ import Prelude.Compat
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
-import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad (unless, when)
 import Control.Monad.Reader (liftIO)
 import qualified Data.ByteString.Char8 as BS
@@ -92,7 +91,6 @@ startup :: DebugModeCli -> MVar RawFrontend -> IO ()
 startup sdebugCl rfMVar = do
   a <- asyncBound $ startupBound sdebugCl rfMVar
   link a
-  -- TODO: for some reason server doesn't exit when gtk window killed
 
 startupBound :: DebugModeCli -> MVar RawFrontend -> IO ()
 startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
@@ -134,8 +132,7 @@ startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
         }
   putMVar rfMVar rf
   -- Fork the thread that periodically draws a frame from a queue, if any.
-  -- TODO: mainQuit somehow never called.
-  aPoll <- async $ pollFramesAct sess `Ex.finally` postGUISync mainQuit
+  aPoll <- async $ pollFramesAct sess
   link aPoll
   -- Empty the keyboard channel.
   let resetChanKey = do
@@ -221,12 +218,13 @@ startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
   -- Set up the main window.
   w <- windowNew
   containerAdd w sview
-  onDestroy w mainQuit
+  onDestroy w (error "Window killed")
   widgetShowAll w
   mainGUI
 
+-- TODO: is postGUISync required?
 shutdown :: IO ()
-shutdown = mainQuit
+shutdown = postGUISync mainQuit
 
 -- | Output to the screen via the frontend.
 output :: FrontendSession  -- ^ frontend session data

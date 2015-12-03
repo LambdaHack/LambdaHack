@@ -91,6 +91,7 @@ loopUI copsClient sconfig sdebugCli = do
   modifyClient $ \cli ->
     cli { sisAI = False
         , scursor = TVector $ Vector 1 1 }  -- a step south-east, less alarming
+  -- Start the frontend.
   rf <- liftIO $ startupF sdebugCli
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
       sescPressed = fescPressed rf
