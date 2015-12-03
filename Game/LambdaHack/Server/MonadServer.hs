@@ -245,11 +245,17 @@ tryRestore Kind.COps{corule} sdebugSer = do
 
 -- | Compute and insert auxiliary optimized components into game content,
 -- to be used in time-critical sections of the code.
-speedupCOps :: Bool -> Kind.COps -> Kind.COps
-speedupCOps allClear copsSlow@Kind.COps{cotile=tile} =
-  let ospeedup = Tile.speedup allClear tile
-      cotile = tile {Kind.ospeedup = Just ospeedup}
-  in copsSlow {Kind.cotile = cotile}
+speedupCOps :: DebugModeSer -> Kind.COps -> Kind.COps
+speedupCOps DebugModeSer{sallClear}
+            copsSlow@Kind.COps{cotile=tile, coSlow, coClear} =
+  if not coSlow && sallClear == coClear
+  then copsSlow
+  else let ospeedup = Tile.speedup sallClear tile
+           cotile = tile {Kind.ospeedup = Just ospeedup}
+       in copsSlow { Kind.cotile = cotile
+                   , Kind.coClear = sallClear
+                   , Kind.coSlow = False
+                   }
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadServer m => Rnd a -> m a

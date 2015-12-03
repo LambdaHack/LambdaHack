@@ -27,6 +27,8 @@ import Game.LambdaHack.Server
 -- depends on the flags supplied when compiling the engine library.
 tieKnot :: [String] -> IO ()
 tieKnot args = do
+  -- Options for the next game taken from the commandline.
+  sdebugNxt <- debugArgs args
   let -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and free memory.
       !copsSlow = Kind.COps
@@ -36,13 +38,13 @@ tieKnot args = do
         , coplace = Kind.createOps Content.PlaceKind.cdefs
         , corule  = Kind.createOps Content.RuleKind.cdefs
         , cotile  = Kind.createOps Content.TileKind.cdefs
+        , coClear = False
+        , coSlow  = True
         }
-      !cops = speedupCOps False copsSlow
+      !cops = speedupCOps sdebugNxt copsSlow
       -- Client content operations containing default keypresses
       -- and command descriptions.
       !copsClient = Content.KeyKind.standardKeys
-  -- Options for the next game taken from the commandline.
-  sdebugNxt <- debugArgs args
   -- Parsed UI client configuration file.
   -- It is reloaded at each game executable start.
   sconfig <- mkConfig cops
