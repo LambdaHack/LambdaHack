@@ -231,7 +231,7 @@ handleMouse schanKey (cell, (cx, cy)) = do
             1 -> K.MiddleButtonPress
             2 -> K.RightButtonPress
             _ -> K.LeftButtonPress
-          !pointer = Just $! Point cx (cy - 1)
+          !pointer = Just $! Point cx cy
       -- Store the mouse event coords in the keypress channel.
       STM.atomically $ STM.writeTQueue schanKey K.KM{..}
 

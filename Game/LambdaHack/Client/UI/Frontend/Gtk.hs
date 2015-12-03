@@ -206,7 +206,7 @@ startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
               MiddleButton -> K.MiddleButtonPress
               RightButton -> K.RightButtonPress
               _ -> K.LeftButtonPress
-            !pointer = Just $! Point cx (cy - 1)
+            !pointer = Just $! Point cx cy
         -- Store the mouse event coords in the keypress channel.
         STM.atomically $ STM.writeTQueue schanKey K.KM{..}
     return $! but == RightButton  -- not to disable selection

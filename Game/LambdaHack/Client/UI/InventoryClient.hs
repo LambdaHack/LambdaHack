@@ -783,8 +783,8 @@ cursorPointerFloor verbose addMoreMsg = do
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
   case K.pointer km of
-    Just(newPos@Point{..}) | px >= 0 && py >= 0
-                             && px < lxsize && py < lysize -> do
+    Just(newPos@Point{..}) | px >= 0 && py - mapStartY >= 0
+                             && px < lxsize && py - mapStartY < lysize -> do
       let scursor = TPoint lidV newPos
       modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
       if verbose then
@@ -803,8 +803,8 @@ cursorPointerEnemy verbose addMoreMsg = do
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
   case K.pointer km of
-    Just(newPos@Point{..}) | px >= 0 && py >= 0
-                             && px < lxsize && py < lysize -> do
+    Just(newPos@Point{..}) | px >= 0 && py - mapStartY >= 0
+                             && px < lxsize && py - mapStartY < lysize -> do
       bsAll <- getsState $ actorAssocs (const True) lidV
       let scursor =
             case find (\(_, m) -> bpos m == newPos) bsAll of

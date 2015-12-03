@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , SessionUI(..)
     -- * Display and key input
   , ColorMode(..)
-  , promptGetKey, getKeyOverlayCommand, getInitConfirms
+  , mapStartY, promptGetKey, getKeyOverlayCommand, getInitConfirms
   , displayFrame, displayDelay, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
@@ -55,6 +55,10 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
+
+-- | The row where the dungeon map starts.
+mapStartY :: Y
+mapStartY = 1
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,
