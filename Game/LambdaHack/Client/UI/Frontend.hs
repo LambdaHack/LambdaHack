@@ -87,7 +87,7 @@ chanFrontend fs req = case req of
                 [] -> displayFrs frs srf
                 y : ys -> displayFrs (y : frs) ys
               K.Space -> case xs of
-                [] -> return K.escKM  -- hack
+                [] -> return K.escKM  -- exits at the end of slideshow
                 _ -> displayFrs xs (x : srf)
               _ -> case xs of  -- K.PgDn and any other permitted key
                 [] -> displayFrs frs srf
