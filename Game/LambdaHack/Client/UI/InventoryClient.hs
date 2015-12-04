@@ -685,24 +685,23 @@ splitOverlayOKX yspace omsg (ov0, kxs0) =
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (SlideOrCmd Int)
 pickNumber askNumber kAll = do
-  let kDefault = kAll
-  if askNumber && kAll > 1 then do
-    let tDefault = tshow kDefault
-        kprompt = "Choose number [digits, BACKSPACE, RET("
-                  <> tDefault <> ")" <> ", ESC]"
-                  -- TODO: write the new default inside RET(..)
-                  -- when editing starts, erase it
-                  -- TODO: perhaps auto-cap at frontIntMax
-    -- If the prompt and overlay don't fit on the screen, they are truncated.
-    (_, ov : _) <- slideshow <$> overlayToSlideshow kprompt emptyOverlay
-    frame <- drawOverlay False ColorFull ov
-    kkm <- promptGetInt frame
-    case K.key kkm of
-      K.Char l -> return $ Right $ min kAll (Char.digitToInt l)
-      K.Return -> return $ Right kDefault
-      K.Esc -> failWith "never mind"
-      _ -> failWith "never mind"
-           -- assert `failure` "unexpected key:" `twith` kkm
+  let gatherNumber kDefaultRaw = do
+        let kDefault = min kAll kDefaultRaw
+            kprompt = "Choose number [digits, BACKSPACE, RET("
+                      <> tshow kDefault
+                      <> "), ESC]"
+        (_, ov : _) <- slideshow <$> overlayToSlideshow kprompt emptyOverlay
+        frame <- drawOverlay False ColorFull ov
+        kkm <- promptGetInt frame
+        case K.key kkm of
+          K.Char l | kDefault == kAll -> gatherNumber $ Char.digitToInt l
+          K.Char l -> gatherNumber $ kDefault * 10 + Char.digitToInt l
+          K.BackSpace -> gatherNumber $ kDefault `div` 10
+          K.Return -> return $ Right kDefault
+          K.Esc -> failWith "never mind"
+          _ -> assert `failure` "unexpected key:" `twith` kkm
+  if askNumber && kAll > 1
+  then gatherNumber kAll
   else return $ Right kAll
 
 -- | Switches current member to the next on the level, if any, wrapping.
