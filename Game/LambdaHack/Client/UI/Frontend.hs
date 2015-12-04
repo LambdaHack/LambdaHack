@@ -36,6 +36,8 @@ data FrontReq :: * -> * where
   FrontText :: { frontTextKeys  :: ![K.KM]
                , frontTextFrame :: !SingleFrame } -> FrontReq (Either K.KM Text)
     -- ^ flush frames, display a frame and ask for a number
+  FrontSync :: FrontReq ()
+    -- ^ flush frames
   FrontSlides :: { frontClear   :: ![K.KM]
                  , frontSlides  :: ![SingleFrame]
                  , frontFromTop :: !(Maybe Bool) } -> FrontReq K.KM
@@ -89,10 +91,7 @@ chanFrontend fs req = case req of
         return $ Right $ Char.digitToInt l
       _ -> return $ Left km
   FrontText{..} -> undefined
-  FrontSlides{frontSlides = []} -> do
-    -- Hack.
-    fsyncFrames fs
-    return K.spaceKM
+  FrontSync -> fsyncFrames fs
   FrontSlides{..} -> do
     let displayFrs frs srf = case frs of
           [] -> assert `failure` "null slides" `twith` frs

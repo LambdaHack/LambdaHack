@@ -231,12 +231,7 @@ askBinding = getsSession sbinding
 
 -- | Sync frames display with the frontend.
 syncFrames :: MonadClientUI m => m ()
-syncFrames = do
-  -- Hack.
-  km <- connFrontend
-          FrontSlides{frontClear=[], frontSlides=[], frontFromTop=Nothing}
-  let !_A = assert (km == K.spaceKM) ()
-  return ()
+syncFrames = connFrontend FrontSync
 
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
 setFrontAutoYes b = connFrontend $ FrontAutoYes b
