@@ -11,7 +11,9 @@ module Game.LambdaHack.Client.UI.Frontend
   ) where
 
 import Control.Exception.Assert.Sugar
+import qualified Data.Char as Char
 import Data.IORef
+import Data.Text (Text)
 
 import Data.Maybe
 import qualified Game.LambdaHack.Client.Key as K
@@ -20,13 +22,20 @@ import Game.LambdaHack.Client.UI.Frontend.Chosen
 
 -- | The instructions sent by clients to the raw frontend.
 data FrontReq :: * -> * where
-  FrontNormalFrame :: {frontFrame :: !SingleFrame} -> FrontReq ()
+  FrontFrame :: {frontFrame :: !SingleFrame} -> FrontReq ()
     -- ^ show a frame
   FrontDelay :: FrontReq ()
     -- ^ perform a single explicit delay
-  FrontKey :: { frontKM :: ![K.KM]
-              , frontFr :: !SingleFrame } -> FrontReq K.KM
+  FrontKey :: { frontKeyKeys  :: ![K.KM]
+              , frontKeyFrame :: !SingleFrame } -> FrontReq K.KM
     -- ^ flush frames, display a frame and ask for a keypress
+  FrontInt :: { frontIntKeys  :: ![K.KM]
+              , frontIntFrame :: !SingleFrame
+              , frontIntMax   :: Int } -> FrontReq (Either K.KM Int)
+    -- ^ flush frames, display a frame and ask for a number
+  FrontText :: { frontTextKeys  :: ![K.KM]
+               , frontTextFrame :: !SingleFrame } -> FrontReq (Either K.KM Text)
+    -- ^ flush frames, display a frame and ask for a number
   FrontSlides :: { frontClear   :: ![K.KM]
                  , frontSlides  :: ![SingleFrame]
                  , frontFromTop :: !(Maybe Bool) } -> FrontReq K.KM
@@ -61,14 +70,25 @@ getConfirmGeneric fs clearKeys frame = do
 -- Read UI requests from the client and send them to the frontend,
 chanFrontend :: RawFrontend -> ChanFrontend
 chanFrontend fs req = case req of
-  FrontNormalFrame{..} -> do
+  FrontFrame{..} -> do
     fdisplay fs (Just frontFrame)
     return ()
   FrontDelay -> do
     fdisplay fs Nothing
     return ()
   FrontKey{..} -> do
-    promptGetKey fs frontKM frontFr
+    promptGetKey fs frontKeyKeys frontKeyFrame
+  FrontInt{..} -> do
+    let keys = frontIntKeys ++ K.escKM : K.returnKM
+               : map (K.toKM K.NoModifier)
+                   (map (K.Char . Char.intToDigit) [0..9])
+    km <- promptGetKey fs keys frontIntFrame
+    -- TODO: permit any number, perhaps auto-cap at frontIntMax
+    case K.key km of
+      K.Char l | Char.digitToInt l <= frontIntMax ->
+        return $ Right $ Char.digitToInt l
+      _ -> return $ Left km
+  FrontText{..} -> undefined
   FrontSlides{frontSlides = []} -> do
     -- Hack.
     fsyncFrames fs

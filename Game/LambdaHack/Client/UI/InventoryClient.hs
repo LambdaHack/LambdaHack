@@ -16,7 +16,6 @@ import Prelude.Compat
 import Control.Exception.Assert.Sugar
 import Control.Monad (filterM, void, when)
 import Data.Char (intToDigit)
-import qualified Data.Char as Char
 import Data.Either (rights)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -689,18 +688,16 @@ pickNumber askNumber kAll = do
   let kDefault = kAll
   if askNumber && kAll > 1 then do
     let tDefault = tshow kDefault
-        kbound = min 9 kAll
+        kbound = min 9 kAll  -- TODO: remove when displayIntLine finished
         kprompt = "Choose number [1-" <> tshow kbound
                   <> ", RET(" <> tDefault <> ")" <> ", ESC]"
-        kkeys = K.escKM : K.returnKM
-                : map (K.toKM K.NoModifier)
-                    (map (K.Char . Char.intToDigit) [1..kbound])
-    kkm <- displayChoiceLine kprompt emptyOverlay kkeys
-    case K.key kkm of
-      K.Char l -> return $ Right $ Char.digitToInt l
-      K.Return -> return $ Right kDefault
-      K.Esc -> failWith "never mind"
-      _ -> assert `failure` "unexpected key:" `twith` kkm
+    kkm <- displayIntLine kprompt emptyOverlay [] kAll
+    case kkm of
+      Right n -> return $ Right n
+      Left K.KM{key=K.Return} -> return $ Right kDefault
+      Left K.KM{key=K.Esc} -> failWith "never mind"
+      _ -> failWith "never mind"
+           -- assert `failure` "unexpected key:" `twith` kkm
   else return $ Right kAll
 
 -- | Switches current member to the next on the level, if any, wrapping.

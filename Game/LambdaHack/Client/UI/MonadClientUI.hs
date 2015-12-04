@@ -8,7 +8,8 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , SessionUI(..)
     -- * Display and key input
   , ColorMode(..)
-  , mapStartY, promptGetKey, getKeyOverlayCommand, getInitConfirms
+  , mapStartY, promptGetKey, promptGetInt
+  , getKeyOverlayCommand, getInitConfirms
   , displayFrame, displayDelay, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
@@ -83,7 +84,7 @@ connFrontend req = do
   liftIO $ f req
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
-promptGetKey frontKM frontFr = do
+promptGetKey frontKeyKeys frontKeyFrame = do
   -- Assume we display the arena when we prompt for a key and possibly
   -- insert a delay and reset cutoff.
   arena <- getArenaUI
@@ -99,8 +100,9 @@ promptGetKey frontKM frontFr = do
     -- this also clears the ESC-pressed marker
   lastPlayOld <- getsClient slastPlay
   km <- case lastPlayOld of
-    km : kms | not escPressed && (null frontKM || km `elem` frontKM) -> do
-      displayFrame $ Just frontFr
+    km : kms | not escPressed
+               && (null frontKeyKeys || km `elem` frontKeyKeys) -> do
+      displayFrame $ Just frontKeyFrame
       -- Sync frames so that ESC doesn't skip frames.
       syncFrames
       modifyClient $ \cli -> cli {slastPlay = kms}
@@ -114,6 +116,13 @@ promptGetKey frontKM frontFr = do
   let slastRecord = (km : seqCurrent, seqPrevious, k)
   modifyClient $ \cli -> cli {slastRecord}
   return km
+
+promptGetInt :: MonadClientUI m
+             => [K.KM] -> SingleFrame -> Int -> m (Either K.KM Int)
+promptGetInt frontIntKeys frontIntFrame frontIntMax =
+  -- We assume this is used inside a menu, so delays and cutoffs
+  -- are already taken care of.
+  connFrontend FrontInt{..}
 
 -- | Display an overlay and wait for a human player command.
 getKeyOverlayCommand :: MonadClientUI m => Maybe Bool -> Overlay -> m K.KM
@@ -140,7 +149,7 @@ displayFrame :: MonadClientUI m => Maybe SingleFrame -> m ()
 displayFrame mf = do
   let frame = case mf of
         Nothing -> FrontDelay
-        Just fr -> FrontNormalFrame fr
+        Just fr -> FrontFrame fr
   connFrontend frame
 
 displayDelay :: MonadClientUI m =>  m ()
