@@ -1,7 +1,6 @@
 -- | A set of widgets for UI clients.
 module Game.LambdaHack.Client.UI.WidgetClient
-  ( displayMore, displayYesNo, displayChoiceScreen
-  , displayChoiceLine, displayIntLine
+  ( displayMore, displayYesNo, displayChoiceScreen, displayChoiceLine
   , displayPush, describeMainKeys
   , promptToSlideshow, overlayToSlideshow, overlayToBlankSlideshow
   , animate, fadeOutOrIn, msgPromptAI
@@ -154,15 +153,6 @@ displayChoiceLine prompt ov0 keys = do
   pkm <- promptGetKey keys frame
   let !_A = assert (pkm `elem` keys) ()
   return pkm
-
--- | Print a prompt and an overlay and wait for a player keypress.
-displayIntLine :: MonadClientUI m
-               => Msg -> Overlay -> [K.KM] -> Int -> m (Either K.KM Int)
-displayIntLine prompt ov0 keys intMax = do
-  -- If the prompt and overlay don't fit on the screen, they are truncated.
-  (_, ov : _) <- slideshow <$> overlayToSlideshow prompt ov0
-  frame <- drawOverlay False ColorFull ov
-  promptGetInt keys frame intMax
 
 -- TODO: if more slides, don't take head, but do as in getInitConfirms,
 -- but then we have to clear the messages or they get redisplayed

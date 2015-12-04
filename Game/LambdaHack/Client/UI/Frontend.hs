@@ -10,9 +10,7 @@ module Game.LambdaHack.Client.UI.Frontend
   , chanFrontend
   ) where
 
-import qualified Data.Char as Char
 import Data.IORef
-import Data.Text (Text)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
@@ -27,13 +25,6 @@ data FrontReq :: * -> * where
   FrontKey :: { frontKeyKeys  :: ![K.KM]
               , frontKeyFrame :: !SingleFrame } -> FrontReq K.KM
     -- ^ flush frames, display a frame and ask for a keypress
-  FrontInt :: { frontIntKeys  :: ![K.KM]
-              , frontIntFrame :: !SingleFrame
-              , frontIntMax   :: Int } -> FrontReq (Either K.KM Int)
-    -- ^ flush frames, display a frame and ask for a number
-  FrontText :: { frontTextKeys  :: ![K.KM]
-               , frontTextFrame :: !SingleFrame } -> FrontReq (Either K.KM Text)
-    -- ^ flush frames, display a frame and ask for a number
   FrontSync :: FrontReq ()
     -- ^ flush frames
   FrontAutoYes :: !Bool -> FrontReq ()
@@ -69,17 +60,6 @@ chanFrontend fs req = case req of
     return ()
   FrontKey{..} -> do
     promptGetKey fs frontKeyKeys frontKeyFrame
-  FrontInt{..} -> do
-    let keys = frontIntKeys ++ K.escKM : K.returnKM
-               : map (K.toKM K.NoModifier)
-                   (map (K.Char . Char.intToDigit) [0..9])
-    km <- promptGetKey fs keys frontIntFrame
-    -- TODO: permit any number, perhaps auto-cap at frontIntMax
-    case K.key km of
-      K.Char l | Char.digitToInt l <= frontIntMax ->
-        return $ Right $ Char.digitToInt l
-      _ -> return $ Left km
-  FrontText{..} -> undefined
   FrontSync -> fsyncFrames fs
   FrontAutoYes b ->
     writeIORef (fautoYesRef fs) b

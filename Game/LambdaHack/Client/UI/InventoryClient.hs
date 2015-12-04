@@ -15,7 +15,7 @@ import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
 import Control.Monad (filterM, void, when)
-import Data.Char (intToDigit)
+import qualified Data.Char as Char
 import Data.Either (rights)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -458,7 +458,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
           in cursorCmdDef True km (cursorPointerEnemy True True)
         ]
       prefixCmdDef d =
-        (K.toKM K.NoModifier $ K.Char (intToDigit d), DefItemKey
+        (K.toKM K.NoModifier $ K.Char $ Char.intToDigit d, DefItemKey
            { defLabel = ""
            , defCond = True
            , defAction = \_ ->
@@ -688,14 +688,19 @@ pickNumber askNumber kAll = do
   let kDefault = kAll
   if askNumber && kAll > 1 then do
     let tDefault = tshow kDefault
-        kbound = min 9 kAll  -- TODO: remove when displayIntLine finished
-        kprompt = "Choose number [1-" <> tshow kbound
-                  <> ", RET(" <> tDefault <> ")" <> ", ESC]"
-    kkm <- displayIntLine kprompt emptyOverlay [] kAll
-    case kkm of
-      Right n -> return $ Right n
-      Left K.KM{key=K.Return} -> return $ Right kDefault
-      Left K.KM{key=K.Esc} -> failWith "never mind"
+        kprompt = "Choose number [digits, BACKSPACE, RET("
+                  <> tDefault <> ")" <> ", ESC]"
+                  -- TODO: write the new default inside RET(..)
+                  -- when editing starts, erase it
+                  -- TODO: perhaps auto-cap at frontIntMax
+    -- If the prompt and overlay don't fit on the screen, they are truncated.
+    (_, ov : _) <- slideshow <$> overlayToSlideshow kprompt emptyOverlay
+    frame <- drawOverlay False ColorFull ov
+    kkm <- promptGetInt frame
+    case K.key kkm of
+      K.Char l -> return $ Right $ min kAll (Char.digitToInt l)
+      K.Return -> return $ Right kDefault
+      K.Esc -> failWith "never mind"
       _ -> failWith "never mind"
            -- assert `failure` "unexpected key:" `twith` kkm
   else return $ Right kAll

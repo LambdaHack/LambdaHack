@@ -24,6 +24,7 @@ import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
 import Control.Monad (replicateM_, when)
+import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.IORef
 import Data.Maybe
@@ -117,12 +118,14 @@ promptGetKey frontKeyKeys frontKeyFrame = do
   modifyClient $ \cli -> cli {slastRecord}
   return km
 
-promptGetInt :: MonadClientUI m
-             => [K.KM] -> SingleFrame -> Int -> m (Either K.KM Int)
-promptGetInt frontIntKeys frontIntFrame frontIntMax =
+promptGetInt :: MonadClientUI m => SingleFrame -> m K.KM
+promptGetInt frontKeyFrame = do
   -- We assume this is used inside a menu, so delays and cutoffs
   -- are already taken care of.
-  connFrontend FrontInt{..}
+  let frontKeyKeys = K.escKM : K.returnKM : K.backspaceKM
+                     : map (K.toKM K.NoModifier)
+                         (map (K.Char . Char.intToDigit) [0..9])
+  connFrontend FrontKey{..}
 
 -- | Display an overlay and wait for a human player command.
 getKeyOverlayCommand :: MonadClientUI m => Maybe Bool -> Overlay -> m K.KM
