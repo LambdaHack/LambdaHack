@@ -5,6 +5,7 @@ module Game.LambdaHack.Client.UI.Frontend.Dom
   ) where
 
 import Control.Concurrent
+import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import Control.Monad
 import Control.Monad.Reader (ask, liftIO)
@@ -67,7 +68,15 @@ terrible error
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: DebugModeCli -> MVar RawFrontend -> IO ()
-startup sdebugCli k = runWebGUI $ runWeb sdebugCli k
+startup sdebugCli rfMVar = do
+#ifdef USE_BROWSER
+  runWebGUI $ runWeb sdebugCli rfMVar
+#elif USE_WEBKIT
+  a <- asyncBound $ runWebGUI $ runWeb sdebugCli rfMVar
+  link a
+#else
+terrible error
+#endif
 
 runWeb :: DebugModeCli -> MVar RawFrontend -> WebView -> IO ()
 runWeb sdebugCli@DebugModeCli{sfont} rfMVar swebView = do
@@ -123,7 +132,6 @@ font-weight: normal;
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
-        , fsyncFrames = syncFrames sess
         , fshutdown = shutdown
         , fescPressed = sescPressed
         , fautoYesRef
@@ -190,9 +198,6 @@ font-weight: normal;
   setProp scharStyle2 "display" "block"
   return ()
 
-shutdown :: IO ()
-shutdown = return () -- nothing to clean up
-
 setProp :: CSSStyleDeclaration -> String -> String -> IO ()
 setProp style propRef propValue =
   setProperty style propRef (Just propValue) ("" :: String)
@@ -251,10 +256,13 @@ flattenTable table = do
   lrc <- mapM getC lrow
   return $! concat lrc
 
+shutdown :: IO ()
+shutdown = return () -- nothing to clean up
+
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data
-         -> Maybe SingleFrame  -- ^ the screen frame to draw
-         -> IO ()
+        -> Maybe SingleFrame  -- ^ the screen frame to draw
+        -> IO ()
 display _ Nothing = return ()
 display FrontendSession{..} (Just rawSF) = postGUISync $ do
   let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
@@ -279,9 +287,6 @@ display FrontendSession{..} (Just rawSF) = postGUISync $ do
       mapM_ setChar $ zip scharCells acs
       setProp scharStyle2 "display" "none"
       setProp scharStyle "display" "block"
-
-syncFrames :: FrontendSession -> IO ()
-syncFrames _ = return ()
 
 -- | Display a prompt, wait for any key.
 promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM

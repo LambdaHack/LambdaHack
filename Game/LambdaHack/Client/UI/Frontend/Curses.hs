@@ -56,7 +56,6 @@ startup sdebugCli rfMVar = do
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
-        , fsyncFrames = syncFrames sess
         , fshutdown = shutdown
         , fescPressed = sescPressed
         , fautoYesRef
@@ -92,9 +91,6 @@ display FrontendSession{..}  (Just rawSF) = do
 -- | Input key via the frontend.
 nextEvent :: IO K.KM
 nextEvent = keyTranslate `fmap` C.getKey C.refresh
-
-syncFrames :: FrontendSession -> IO ()
-syncFrames _ = return ()
 
 -- | Display a prompt, wait for any key.
 promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM

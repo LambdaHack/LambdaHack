@@ -36,7 +36,6 @@ nullStartup sdebugCli rfMVar = do
   putMVar rfMVar RawFrontend
     { fdisplay = \_ -> return ()
     , fpromptGetKey = \_ -> return K.escKM
-    , fsyncFrames = return ()
     , fshutdown = return ()
     , fescPressed
     , fautoYesRef

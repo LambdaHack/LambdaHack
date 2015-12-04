@@ -33,7 +33,6 @@ startup sdebugCli rfMVar = do
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
-        , fsyncFrames = syncFrames sess
         , fshutdown = shutdown
         , fescPressed = sescPressed
         , fautoYesRef
@@ -61,9 +60,6 @@ nextEvent = do
         Nothing -> '\n'  -- empty line counts as RET
         Just (hd, _) -> hd
   return $! keyTranslate c
-
-syncFrames :: FrontendSession -> IO ()
-syncFrames _ = return ()
 
 -- | Display a prompt, wait for any key.
 promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM

@@ -166,7 +166,6 @@ library
                       Game.LambdaHack.Common.ItemStrongest,
                       Game.LambdaHack.Common.Kind,
                       Game.LambdaHack.Common.Level,
-                      Game.LambdaHack.Common.LQueue,
                       Game.LambdaHack.Common.Misc,
                       Game.LambdaHack.Common.MonadStateRead,
                       Game.LambdaHack.Common.Msg,

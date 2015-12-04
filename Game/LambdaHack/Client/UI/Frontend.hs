@@ -55,5 +55,5 @@ chanFrontend fs req = case req of
   FrontFrame{..} -> fdisplay fs (Just frontFrame)
   FrontDelay -> fdisplay fs Nothing
   FrontKey{..} -> promptGetKey fs frontKeyKeys frontKeyFrame
-  FrontSync -> fsyncFrames fs
+  FrontSync -> return ()  -- TODO
   FrontAutoYes b -> writeIORef (fautoYesRef fs) b

@@ -20,39 +20,18 @@ import Data.Maybe
 import Data.String (IsString (..))
 import qualified Data.Text as T
 import Graphics.UI.Gtk hiding (Point)
-import System.Time
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.LQueue
 import Game.LambdaHack.Common.Point
-
-data FrameState =
-    FPushed  -- frames stored in a queue, to be drawn in equal time intervals
-      { fpushed :: !(LQueue (Maybe GtkFrame))  -- ^ screen output channel
-      , fshown  :: !GtkFrame                   -- ^ last full frame shown
-      }
-  | FNone  -- no frames stored
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { sview       :: !TextView                    -- ^ the widget to draw to
   , stags       :: !(M.Map Color.Attr TextTag)  -- ^ text color tags for fg/bg
   , schanKey    :: !(STM.TQueue K.KM)           -- ^ channel for keyboard input
-  , sframeState :: !(MVar FrameState)
-      -- ^ State of the frame finite machine. This mvar is locked
-      -- for a short time only, because it's needed, among others,
-      -- to display frames, which is done by a single polling thread,
-      -- in real time.
-  , slastFull   :: !(MVar (GtkFrame, Bool))
-      -- ^ Most recent full (not empty, not repeated) frame received
-      -- and if any empty frame followed it. This mvar is locked
-      -- for longer intervals to ensure that threads (possibly many)
-      -- add frames in an orderly manner. This is not done in real time,
-      -- though sometimes the frame display subsystem has to poll
-      -- for a frame, in which case the locking interval becomes meaningful.
   , sescPressed :: !(IORef Bool)
   , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
@@ -62,20 +41,6 @@ data GtkFrame = GtkFrame
   , gfAttr :: ![[TextTag]]
   }
   deriving Eq
-
-dummyFrame :: GtkFrame
-dummyFrame = GtkFrame BS.empty []
-
--- | Perform an operation on the frame queue.
-onQueue :: (LQueue (Maybe GtkFrame) -> LQueue (Maybe GtkFrame))
-        -> FrontendSession -> IO ()
-onQueue f FrontendSession{sframeState} = do
-  fs <- takeMVar sframeState
-  case fs of
-    FPushed{..} ->
-      putMVar sframeState FPushed{fpushed = f fpushed, ..}
-    FNone ->
-      putMVar sframeState fs
 
 -- | The name of the frontend.
 frontendName :: String
@@ -114,30 +79,18 @@ startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
   textViewSetCursorVisible sview False
   -- Set up the channel for keyboard input.
   schanKey <- STM.atomically STM.newTQueue
-  -- Set up the frame state.
-  let frameState = FNone
   -- Create the session record.
-  sframeState <- newMVar frameState
-  slastFull <- newMVar (dummyFrame, False)
   sescPressed <- newIORef False
   fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   let sess = FrontendSession{..}
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
-        , fsyncFrames = syncFrames sess
         , fshutdown = shutdown
         , fescPressed = sescPressed
         , fautoYesRef
         }
   putMVar rfMVar rf
-  -- Fork the thread that periodically draws a frame from a queue, if any.
-  aPoll <- async $ pollFramesAct sess
-  link aPoll
-  -- Empty the keyboard channel.
-  let resetChanKey = do
-        res <- STM.atomically $ STM.tryReadTQueue schanKey
-        when (isJust res) resetChanKey
   sview `on` keyPressEvent $ do
     n <- eventKeyName
     mods <- eventModifier
@@ -150,7 +103,7 @@ startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
         -- If ESC, also mark it specially and reset the key channel.
         when (key == K.Esc) $ do
           writeIORef sescPressed True
-          resetChanKey
+          resetChanKey schanKey
         -- Store the key in the channel.
         STM.atomically $ STM.writeTQueue schanKey K.KM{..}
       return True
@@ -166,7 +119,7 @@ startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
   -- TODO: change cursor depending on targeting mode, etc.; hard
   cursor <- cursorNewForDisplay defDisplay Tcross  -- Target Crosshair Arrow
   sview `on` buttonPressEvent $ do
-    liftIO resetChanKey
+    liftIO $ resetChanKey schanKey
     but <- eventButton
     (wx, wy) <- eventCoordinates
     mods <- eventModifier
@@ -222,15 +175,42 @@ startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
   widgetShowAll w
   mainGUI
 
+-- | Empty the keyboard channel.
+resetChanKey :: STM.TQueue K.KM -> IO ()
+resetChanKey schanKey = do
+  res <- STM.atomically $ STM.tryReadTQueue schanKey
+  when (isJust res) $ resetChanKey schanKey
+
+doAttr :: DebugModeCli -> TextTag -> Color.Attr -> IO ()
+doAttr sdebugCli tt attr@Color.Attr{fg, bg}
+  | attr == Color.defAttr = return ()
+  | fg == Color.defFG =
+    set tt $ extraAttr sdebugCli
+             ++ [textTagBackground := Color.colorToRGB bg]
+  | bg == Color.defBG =
+    set tt $ extraAttr sdebugCli
+             ++ [textTagForeground := Color.colorToRGB fg]
+  | otherwise =
+    set tt $ extraAttr sdebugCli
+             ++ [ textTagForeground := Color.colorToRGB fg
+                , textTagBackground := Color.colorToRGB bg ]
+
+extraAttr :: DebugModeCli -> [AttrOp TextTag]
+extraAttr DebugModeCli{scolorIsBold} =
+  [textTagWeight := fromEnum WeightBold | scolorIsBold == Just True]
+--     , textTagStretch := StretchUltraExpanded
+
 -- TODO: is postGUISync required?
 shutdown :: IO ()
 shutdown = postGUISync mainQuit
 
--- | Output to the screen via the frontend.
-output :: FrontendSession  -- ^ frontend session data
-       -> GtkFrame         -- ^ the screen frame to draw
-       -> IO ()
-output FrontendSession{sview, stags} GtkFrame{..} = do  -- new frame
+-- | Add a frame to be drawn.
+display :: FrontendSession    -- ^ frontend session data
+        -> Maybe SingleFrame  -- ^ the screen frame to draw
+        -> IO ()
+display _ Nothing = return ()
+display sess@FrontendSession{sview, stags} (Just frame) = postGUISync $ do
+  let GtkFrame{..} = evalFrame sess frame
   tb <- textViewGetBuffer sview
   let attrs = zip [0..] gfAttr
       defAttr = stags M.! Color.defAttr
@@ -258,134 +238,6 @@ setTo tb defAttr lx (ly, attr:attrs) = do
             setIter a 1 as
   setIter attr 1 attrs
 
--- | Maximal polls per second.
-maxPolls :: Int -> Int
-maxPolls maxFps = max 120 (2 * maxFps)
-
-picoInMicro :: Int
-picoInMicro = 1000000
-
--- | Add a given number of microseconds to time.
-addTime :: ClockTime -> Int -> ClockTime
-addTime (TOD s p) mus = TOD s (p + fromIntegral (mus * picoInMicro))
-
--- | The difference between the first and the second time, in microseconds.
-diffTime :: ClockTime -> ClockTime -> Int
-diffTime (TOD s1 p1) (TOD s2 p2) =
-  fromIntegral (s1 - s2) * picoInMicro +
-  fromIntegral (p1 - p2) `div` picoInMicro
-
-microInSec :: Int
-microInSec = 1000000
-
-defaultMaxFps :: Int
-defaultMaxFps = 30
-
--- | Poll the frame queue often and draw frames at fixed intervals.
-pollFramesWait :: FrontendSession -> ClockTime -> IO ()
-pollFramesWait sess@FrontendSession{sdebugCli=DebugModeCli{smaxFps}}
-               setTime = do
-  -- Check if the time is up.
-  let maxFps = fromMaybe defaultMaxFps smaxFps
-  curTime <- getClockTime
-  let diffSetCur = diffTime setTime curTime
-  if diffSetCur > microInSec `div` maxPolls maxFps
-    then do
-      -- Delay half of the time difference.
-      threadDelay $ diffTime curTime setTime `div` 2
-      pollFramesWait sess setTime
-    else
-      -- Don't delay, because time is up!
-      pollFramesAct sess
-
--- | Poll the frame queue often and draw frames at fixed intervals.
-pollFramesAct :: FrontendSession -> IO ()
-pollFramesAct sess@FrontendSession{sframeState, sdebugCli=DebugModeCli{..}} = do
-  -- Time is up, check if we actually wait for anyting.
-  let maxFps = fromMaybe defaultMaxFps smaxFps
-  fs <- takeMVar sframeState
-  case fs of
-    FPushed{..} ->
-      case tryReadLQueue fpushed of
-        Just (Just frame, queue) -> do
-          -- The frame has arrived so send it for drawing and update delay.
-          putMVar sframeState FPushed{fpushed = queue, fshown = frame}
-          -- Count the time spent outputting towards the total frame time.
-          curTime <- getClockTime
-          -- Wait until the frame is drawn.
-          postGUISync $ output sess frame
-          -- Regardless of how much time drawing took, wait at least
-          -- half of the normal delay time. This can distort the large-scale
-          -- frame rhythm, but makes sure this frame can at all be seen.
-          -- If the main GTK thread doesn't lag, large-scale rhythm will be OK.
-          -- TODO: anyway, it's GC that causes visible snags, most probably.
-          threadDelay $ microInSec `div` (maxFps * 2)
-          pollFramesWait sess $ addTime curTime $ microInSec `div` maxFps
-        Just (Nothing, queue) -> do
-          -- Delay requested via an empty frame.
-          putMVar sframeState FPushed{fpushed = queue, ..}
-          unless snoDelay $
-            -- There is no problem if the delay is a bit delayed.
-            threadDelay $ microInSec `div` maxFps
-          pollFramesAct sess
-        Nothing -> do
-          -- The queue is empty, the game logic thread lags.
-          putMVar sframeState fs
-          -- Time is up, the game thread is going to send a frame,
-          -- (otherwise it would change the state), so poll often.
-          threadDelay $ microInSec `div` maxPolls maxFps
-          pollFramesAct sess
-    FNone -> do
-      putMVar sframeState fs
-      -- Not in the Push state, so poll lazily to catch the next state change.
-      -- The slow polling also gives the game logic a head start
-      -- in creating frames in case one of the further frames is slow
-      -- to generate and would normally cause a jerky delay in drawing.
-      threadDelay $ microInSec `div` (maxFps * 2)
-      pollFramesAct sess
-
--- | Add a game screen frame to the frame drawing channel, or show
--- it ASAP if @immediate@ display is requested and the channel is empty.
-pushFrame :: FrontendSession -> Bool -> Maybe SingleFrame -> IO ()
-pushFrame sess immediate rawFrame = do
-  let FrontendSession{sframeState, slastFull} = sess
-  -- Full evaluation is done outside the mvar locks.
-  let !frame = case rawFrame of
-        Nothing -> Nothing
-        Just fr -> Just $! evalFrame sess fr
-  -- Lock frame addition.
-  (lastFrame, anyFollowed) <- takeMVar slastFull
-  -- Comparison of frames is done outside the frame queue mvar lock.
-  let nextFrame = if frame == Just lastFrame
-                  then Nothing  -- no sense repeating
-                  else frame
-  -- Lock frame queue.
-  fs <- takeMVar sframeState
-  case fs of
-    FPushed{..} ->
-      putMVar sframeState
-      $ if isNothing nextFrame && anyFollowed && isJust rawFrame
-        then fs  -- old news
-        else FPushed{fpushed = writeLQueue fpushed nextFrame, ..}
-    FNone | immediate -> do
-      -- If the frame not repeated, draw it.
-      maybe (return ()) (postGUIAsync . output sess) nextFrame
-      -- Frame sent, we may now safely release the queue lock.
-      putMVar sframeState FNone
-    FNone ->
-      putMVar sframeState
-      $ if isNothing nextFrame && anyFollowed && isJust rawFrame
-        then fs  -- old news
-        else FPushed{ fpushed = writeLQueue newLQueue nextFrame
-                    , fshown = dummyFrame }
-  case nextFrame of
-    Nothing -> putMVar slastFull (lastFrame, not (case fs of
-                                                    FNone -> True
-                                                    FPushed{} -> False
-                                                  && immediate
-                                                  && not anyFollowed))
-    Just f  -> putMVar slastFull (f, False)
-
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} rawSF =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
@@ -398,92 +250,13 @@ evalFrame FrontendSession{stags} rawSF =
       f l ac  = let !tag = stags M.! Color.acAttr ac in tag : l
   in GtkFrame{..}
 
--- | Trim current frame queue and display the most recent frame, if any.
-trimFrameState :: FrontendSession -> IO ()
-trimFrameState sess@FrontendSession{sframeState} = do
-  -- Take the lock to wipe out the frame queue, unless it's empty already.
-  fs <- takeMVar sframeState
-  case fs of
-    FPushed{..} ->
-      -- Remove all but the last element of the frame queue.
-      -- The kept (and displayed) last element ensures that
-      -- @slastFull@ is not invalidated.
-      case lastLQueue fpushed of
-        Just frame -> do
-          -- Comparison is done inside the mvar lock, this time, but it's OK,
-          -- since we wipe out the queue anyway, not draw it concurrently.
-          -- The comparison is very rarely true, because that means
-          -- the screen looks the same as a few moves before.
-          -- Still, we want the invariant that frames are never repeated.
-          let lastFrame = fshown
-              nextFrame = if frame == lastFrame
-                          then Nothing  -- no sense repeating
-                          else Just frame
-          -- Draw the last frame ASAP.
-          maybe (return ()) (postGUIAsync . output sess) nextFrame
-        Nothing -> return ()
-    FNone -> return ()
-  -- Wipe out the frame queue. Release the lock.
-  putMVar sframeState FNone
-
--- | Add a frame to be drawn.
-display :: FrontendSession    -- ^ frontend session data
-         -> Maybe SingleFrame  -- ^ the screen frame to draw
-         -> IO ()
-display sess = pushFrame sess False
-
--- Display all queued frames, synchronously.
-displayAllFramesSync :: FrontendSession -> FrameState -> IO ()
-displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}, sescPressed}
-                     fs = do
-  escPressed <- readIORef sescPressed
-  let maxFps = fromMaybe defaultMaxFps smaxFps
-  case fs of
-    _ | escPressed -> return ()
-    FPushed{..} ->
-      case tryReadLQueue fpushed of
-        Just (Just frame, queue) -> do
-          -- Display synchronously.
-          postGUISync $ output sess frame
-          threadDelay $ microInSec `div` maxFps
-          displayAllFramesSync sess FPushed{fpushed = queue, fshown = frame}
-        Just (Nothing, queue) -> do
-          -- Delay requested via an empty frame.
-          unless snoDelay $
-            threadDelay $ microInSec `div` maxFps
-          displayAllFramesSync sess FPushed{fpushed = queue, ..}
-        Nothing ->
-          -- The queue is empty.
-          return ()
-    FNone ->
-      -- Not in Push state to start with.
-      return ()
-
-syncFrames :: FrontendSession -> IO ()
-syncFrames sess@FrontendSession{sframeState} = do
-  fs <- takeMVar sframeState
-  displayAllFramesSync sess fs
-  putMVar sframeState FNone
-
 -- | Display a prompt, wait for any key.
 -- Starts in Push mode, ends in Push or None mode.
 -- Syncs with the drawing threads by showing the last or all queued frames.
 promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 promptGetKey sess@FrontendSession{..} frame = do
-  pushFrame sess True $ Just frame
-  km <- STM.atomically $ STM.readTQueue schanKey
-  case km of
-    K.KM{key=K.Space} ->
-      -- Drop frames up to the first empty frame.
-      -- Keep the last non-empty frame, if any.
-      -- Pressing SPACE repeatedly can be used to step
-      -- through intermediate stages of an animation,
-      -- whereas any other key skips the whole animation outright.
-      onQueue dropStartLQueue sess
-    _ ->
-      -- Show the last non-empty frame and empty the queue.
-      trimFrameState sess
-  return km
+  display sess $ Just frame
+  STM.atomically $ STM.readTQueue schanKey
 
 -- | Tells a dead key.
 deadKey :: (Eq t, IsString t) => t -> Bool
@@ -512,22 +285,3 @@ modifierTranslate mods
   | any (`elem` mods) [Meta, Super, Alt, Alt2, Alt3, Alt4, Alt5] = K.Alt
   | Shift `elem` mods = K.Shift
   | otherwise = K.NoModifier
-
-doAttr :: DebugModeCli -> TextTag -> Color.Attr -> IO ()
-doAttr sdebugCli tt attr@Color.Attr{fg, bg}
-  | attr == Color.defAttr = return ()
-  | fg == Color.defFG =
-    set tt $ extraAttr sdebugCli
-             ++ [textTagBackground := Color.colorToRGB bg]
-  | bg == Color.defBG =
-    set tt $ extraAttr sdebugCli
-             ++ [textTagForeground := Color.colorToRGB fg]
-  | otherwise =
-    set tt $ extraAttr sdebugCli
-             ++ [ textTagForeground := Color.colorToRGB fg
-                , textTagBackground := Color.colorToRGB bg ]
-
-extraAttr :: DebugModeCli -> [AttrOp TextTag]
-extraAttr DebugModeCli{scolorIsBold} =
-  [textTagWeight := fromEnum WeightBold | scolorIsBold == Just True]
---     , textTagStretch := StretchUltraExpanded
