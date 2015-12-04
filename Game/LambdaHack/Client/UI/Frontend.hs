@@ -10,12 +10,10 @@ module Game.LambdaHack.Client.UI.Frontend
   , chanFrontend
   ) where
 
-import Control.Exception.Assert.Sugar
 import qualified Data.Char as Char
 import Data.IORef
 import Data.Text (Text)
 
-import Data.Maybe
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Chosen
@@ -38,10 +36,6 @@ data FrontReq :: * -> * where
     -- ^ flush frames, display a frame and ask for a number
   FrontSync :: FrontReq ()
     -- ^ flush frames
-  FrontSlides :: { frontClear   :: ![K.KM]
-                 , frontSlides  :: ![SingleFrame]
-                 , frontFromTop :: !(Maybe Bool) } -> FrontReq K.KM
-    -- ^ flush frames and disply a whole slideshow
   FrontAutoYes :: !Bool -> FrontReq ()
     -- ^ set in the frontend that it should auto-answer prompts
 
@@ -54,20 +48,15 @@ type ChanFrontend = forall a. FrontReq a -> IO a
 promptGetKey :: RawFrontend -> [K.KM] -> SingleFrame -> IO K.KM
 promptGetKey fs [] frame = fpromptGetKey fs frame
 promptGetKey fs keys frame = do
-  km <- fpromptGetKey fs frame
-  if km{K.pointer=Nothing} `elem` keys
-    then return km
-    else promptGetKey fs keys frame
-
-getConfirmGeneric :: RawFrontend -> [K.KM] -> SingleFrame -> IO K.KM
-getConfirmGeneric fs clearKeys frame = do
   autoYes <- readIORef (fautoYesRef fs)
-  if autoYes then do
+  if autoYes && K.spaceKM `elem` keys then do
     fdisplay fs (Just frame)
     return K.spaceKM
   else do
-    let extraKeys = [K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM]
-    promptGetKey fs (clearKeys ++ extraKeys) frame
+    km <- fpromptGetKey fs frame
+    if km{K.pointer=Nothing} `elem` keys
+      then return km
+      else promptGetKey fs keys frame
 
 -- Read UI requests from the client and send them to the frontend,
 chanFrontend :: RawFrontend -> ChanFrontend
@@ -92,27 +81,5 @@ chanFrontend fs req = case req of
       _ -> return $ Left km
   FrontText{..} -> undefined
   FrontSync -> fsyncFrames fs
-  FrontSlides{..} -> do
-    let displayFrs frs srf = case frs of
-          [] -> assert `failure` "null slides" `twith` frs
-          [x] | isNothing frontFromTop -> do
-            fdisplay fs (Just x)
-            return K.spaceKM
-          x : xs -> do
-            K.KM{..} <- getConfirmGeneric fs frontClear x
-            case key of
-              K.Esc -> return K.escKM
-              K.PgUp -> case srf of
-                [] -> displayFrs frs srf
-                y : ys -> displayFrs (y : frs) ys
-              K.Space -> case xs of
-                [] -> return K.escKM  -- exits at the end of slideshow
-                _ -> displayFrs xs (x : srf)
-              _ -> case xs of  -- K.PgDn and any other permitted key
-                [] -> displayFrs frs srf
-                _ -> displayFrs xs (x : srf)
-    case (frontFromTop, reverse frontSlides) of
-      (Just False, r : rs) -> displayFrs [r] rs
-      _ -> displayFrs frontSlides []
   FrontAutoYes b ->
     writeIORef (fautoYesRef fs) b

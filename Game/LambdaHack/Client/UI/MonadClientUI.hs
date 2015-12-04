@@ -134,16 +134,37 @@ getKeyOverlayCommand onBlank overlay = do
 getInitConfirms :: MonadClientUI m
                 => ColorMode -> [K.KM] -> Slideshow -> m Bool
 getInitConfirms dm frontClear slides = do
+  -- Don't clear ESC marker here, because the wait for confirms may
+  -- block a ping and the ping would not see the ESC.
   let (onBlank, ovs) = slideshow slides
-      frontFromTop = onBlank
   frontSlides <- drawOverlays (isJust onBlank) dm ovs
-  case frontSlides of
-    [] -> return True
-    _ -> do
-      km <- connFrontend FrontSlides{..}
-      -- Don't clear ESC marker here, because the wait for confirms may
-      -- block a ping and the ping would not see the ESC.
-      return $! km /= K.escKM
+  let displayFrs frs srf = case frs of
+        [] -> return True
+        [x] | isNothing onBlank -> do
+          connFrontend $ FrontFrame x
+          return True
+        x : xs -> do
+          K.KM{..} <- getConfirmGeneric frontClear x
+          case key of
+            K.Esc -> return False
+            K.PgUp -> case srf of
+              [] -> displayFrs frs srf
+              y : ys -> displayFrs (y : frs) ys
+            K.Space -> case xs of
+              [] -> return False  -- exits at the end of slideshow
+              _ -> displayFrs xs (x : srf)
+            _ -> case xs of  -- K.PgDn and any other permitted key
+              [] -> displayFrs frs srf
+              _ -> displayFrs xs (x : srf)
+  case (onBlank, reverse frontSlides) of
+    (Just False, r : rs) -> displayFrs [r] rs
+    _ -> displayFrs frontSlides []
+
+getConfirmGeneric :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
+getConfirmGeneric clearKeys frontKeyFrame = do
+  let extraKeys = [K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM]
+      frontKeyKeys = clearKeys ++ extraKeys
+  connFrontend FrontKey {..}
 
 displayFrame :: MonadClientUI m => Maybe SingleFrame -> m ()
 displayFrame mf = do
