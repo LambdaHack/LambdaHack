@@ -102,7 +102,8 @@ promptGetKey frontKeyKeys frontKeyFrame = do
   lastPlayOld <- getsClient slastPlay
   km <- case lastPlayOld of
     km : kms | not escPressed
-               && (null frontKeyKeys || km `elem` frontKeyKeys) -> do
+               && (null frontKeyKeys
+                   || km{K.pointer=Nothing} `elem` frontKeyKeys) -> do
       displayFrame $ Just frontKeyFrame
       -- Sync frames so that ESC doesn't skip frames.
       syncFrames

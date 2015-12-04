@@ -133,7 +133,8 @@ displayChoiceScreen sfBlank pointer0 frs0 extraKeys = do
                     return (Left K.escKM, pointer)
                   K.Space ->
                     page (min maxIx (pointer + pageLen - ixOnPage)) frs
-                  _ | ikm `elem` keys -> return (Left ikm, pointer)
+                  _ | ikm{K.pointer=Nothing} `elem` keys ->
+                    return (Left ikm, pointer)
                   _ -> assert `failure` "unknown key" `twith` ikm
           frame <- drawOverlay sfBlank ColorFull ov1
           pkm <- promptGetKey legalKeys frame
@@ -151,7 +152,7 @@ displayChoiceLine prompt ov0 keys = do
   (_, ov : _) <- slideshow <$> overlayToSlideshow prompt ov0
   frame <- drawOverlay False ColorFull ov
   pkm <- promptGetKey keys frame
-  let !_A = assert (pkm `elem` keys) ()
+  let !_A = assert (pkm{K.pointer=Nothing} `elem` keys) ()
   return pkm
 
 -- TODO: if more slides, don't take head, but do as in getInitConfirms,

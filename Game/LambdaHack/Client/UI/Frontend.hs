@@ -46,20 +46,14 @@ promptGetKey fs keys frame = do
   else do
     km <- fpromptGetKey fs frame
     if km{K.pointer=Nothing} `elem` keys
-      then return km
-      else promptGetKey fs keys frame
+    then return km
+    else promptGetKey fs keys frame
 
 -- Read UI requests from the client and send them to the frontend,
 chanFrontend :: RawFrontend -> ChanFrontend
 chanFrontend fs req = case req of
-  FrontFrame{..} -> do
-    fdisplay fs (Just frontFrame)
-    return ()
-  FrontDelay -> do
-    fdisplay fs Nothing
-    return ()
-  FrontKey{..} -> do
-    promptGetKey fs frontKeyKeys frontKeyFrame
+  FrontFrame{..} -> fdisplay fs (Just frontFrame)
+  FrontDelay -> fdisplay fs Nothing
+  FrontKey{..} -> promptGetKey fs frontKeyKeys frontKeyFrame
   FrontSync -> fsyncFrames fs
-  FrontAutoYes b ->
-    writeIORef (fautoYesRef fs) b
+  FrontAutoYes b -> writeIORef (fautoYesRef fs) b
