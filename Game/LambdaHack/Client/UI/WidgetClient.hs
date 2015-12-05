@@ -104,7 +104,7 @@ displayChoiceScreen sfBlank pointer0 frs0 extraKeys = do
                     (xs2, xs3) = splitAt (x2 - x1) xsRest
                 in xs1 ++ map greyBG xs2 ++ xs3
               ov1 = updateOverlayLine y drawHighlight ov
-              ingoreKey = page pointer frs
+              ignoreKey = page pointer frs
               pageLen = length kyxs
               interpretKey :: K.KM -> m (Either K.KM SlotChar, Int)
               interpretKey ikm =
@@ -113,12 +113,12 @@ displayChoiceScreen sfBlank pointer0 frs0 extraKeys = do
                     Left km -> interpretKey km
                     _ -> return (ekm, pointer)
                   K.LeftButtonPress -> case K.pointer ikm of
-                    Nothing -> ingoreKey
+                    Nothing -> ignoreKey
                     Just Point{..} ->
                       let onChoice (_, (cy, cx1, cx2)) =
-                            cy == py + 1 && cx1 <= px && cx2 > px
+                            cy == py && cx1 <= px && cx2 > px
                       in case find onChoice kyxs of
-                        Nothing -> ingoreKey
+                        Nothing -> ignoreKey
                         Just (ckm, _) -> case ckm of
                           Left km -> interpretKey km
                           _ -> return (ckm, pointer)
