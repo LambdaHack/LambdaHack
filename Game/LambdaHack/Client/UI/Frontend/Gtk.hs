@@ -206,10 +206,9 @@ shutdown = postGUISync mainQuit
 
 -- | Add a frame to be drawn.
 display :: FrontendSession    -- ^ frontend session data
-        -> Maybe SingleFrame  -- ^ the screen frame to draw
+        -> SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display _ Nothing = return ()
-display sess@FrontendSession{sview, stags} (Just frame) = postGUISync $ do
+display sess@FrontendSession{sview, stags} frame = postGUISync $ do
   let GtkFrame{..} = evalFrame sess frame
   tb <- textViewGetBuffer sview
   let attrs = zip [0..] gfAttr
@@ -255,7 +254,7 @@ evalFrame FrontendSession{stags} rawSF =
 -- Syncs with the drawing threads by showing the last or all queued frames.
 promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 promptGetKey sess@FrontendSession{..} frame = do
-  display sess $ Just frame
+  display sess frame
   STM.atomically $ STM.readTQueue schanKey
 
 -- | Tells a dead key.

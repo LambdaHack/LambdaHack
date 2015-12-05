@@ -67,10 +67,9 @@ shutdown = C.end
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data
-         -> Maybe SingleFrame  -- ^ the screen frame to draw
-         -> IO ()
-display _ Nothing = return ()
-display FrontendSession{..}  (Just rawSF) = do
+        -> SingleFrame  -- ^ the screen frame to draw
+        -> IO ()
+display FrontendSession{..} rawSF = do
   let SingleFrame{sfLevel} = overlayOverlay rawSF
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
@@ -95,7 +94,7 @@ nextEvent = keyTranslate `fmap` C.getKey C.refresh
 -- | Display a prompt, wait for any key.
 promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 promptGetKey sess frame = do
-  display sess $ Just frame
+  display sess frame
   nextEvent
 
 keyTranslate :: C.Key -> K.KM

@@ -44,10 +44,9 @@ shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data
-         -> Maybe SingleFrame  -- ^ the screen frame to draw
-         -> IO ()
-display _ Nothing = return ()
-display _ (Just rawSF) =
+        -> SingleFrame  -- ^ the screen frame to draw
+        -> IO ()
+display _ rawSF =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
       bs = map (BS.pack . map Color.acChar . decodeLine) sfLevel ++ [BS.empty]
   in mapM_ BS.putStrLn bs
@@ -64,7 +63,7 @@ nextEvent = do
 -- | Display a prompt, wait for any key.
 promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 promptGetKey sess frame = do
-  display sess $ Just frame
+  display sess frame
   nextEvent
 
 keyTranslate :: Char -> K.KM

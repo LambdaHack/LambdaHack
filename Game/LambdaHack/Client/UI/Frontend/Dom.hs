@@ -261,10 +261,9 @@ shutdown = return () -- nothing to clean up
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data
-        -> Maybe SingleFrame  -- ^ the screen frame to draw
+        -> SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display _ Nothing = return ()
-display FrontendSession{..} (Just rawSF) = postGUISync $ do
+display FrontendSession{..} rawSF = postGUISync $ do
   let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
       setChar (cell, Color.AttrChar{..}) = do
         let s = if acChar == ' ' then [chr 160] else [acChar]
@@ -291,7 +290,7 @@ display FrontendSession{..} (Just rawSF) = postGUISync $ do
 -- | Display a prompt, wait for any key.
 promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 promptGetKey sess@FrontendSession{schanKey} frame = do
-  display sess $ Just frame
+  display sess frame
   STM.atomically $ STM.readTQueue schanKey
 
 -- | Tells a dead key.

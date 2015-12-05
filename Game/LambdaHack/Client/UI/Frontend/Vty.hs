@@ -71,10 +71,9 @@ storeKeys sess@FrontendSession{..} = do
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data
-         -> Maybe SingleFrame  -- ^ the screen frame to draw
-         -> IO ()
-display _ Nothing = return ()
-display FrontendSession{svty} (Just rawSF) =
+        -> SingleFrame  -- ^ the screen frame to draw
+        -> IO ()
+display FrontendSession{svty} rawSF =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
       img = (foldr (<->) emptyImage
              . map (foldr (<|>) emptyImage
@@ -106,7 +105,7 @@ nextKeyEvent FrontendSession{..} = do
 -- | Display a prompt, wait for any key.
 promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 promptGetKey sess frame = do
-  display sess $ Just frame
+  display sess frame
   nextKeyEvent sess
 
 -- TODO: Ctrl-m is RET

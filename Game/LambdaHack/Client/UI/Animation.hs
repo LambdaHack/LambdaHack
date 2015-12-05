@@ -31,7 +31,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
 data RawFrontend = RawFrontend
-  { fdisplay      :: Maybe SingleFrame -> IO ()
+  { fdisplay      :: SingleFrame -> IO ()
   , fpromptGetKey :: SingleFrame -> IO K.KM
   , fshutdown     :: IO ()
   , fescPressed   :: !(IORef Bool)
