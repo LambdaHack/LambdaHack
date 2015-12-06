@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.Frontend
   ( -- * Connection types
     FrontReq(..), ChanFrontend(..)
     -- * Re-exported part of the raw frontend
-  , startupF, frontendName
+  , frontendName
     -- * Derived operations
   , chanFrontend
   ) where
@@ -32,6 +32,8 @@ data FrontReq :: * -> * where
     -- ^ inspect and reset the fescPressed reference
   FrontAutoYes :: Bool -> FrontReq ()
     -- ^ set in the frontend that it should auto-answer prompts
+  FrontShutdown :: FrontReq ()
+    -- ^ shut the frontend down
 
 -- | Connection channel between a frontend and a client. Frontend acts
 -- as a server, serving keys, etc., when given frames to display.
@@ -44,33 +46,35 @@ data FSession = FSession
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
 promptGetKey :: IORef Bool -> RawFrontend -> [K.KM] -> SingleFrame -> IO K.KM
-promptGetKey _ fs [] frame = fpromptGetKey fs frame
-promptGetKey fautoYesRef fs keys frame = do
+promptGetKey _ rf [] frame = fpromptGetKey rf frame
+promptGetKey fautoYesRef rf keys frame = do
   autoYes <- readIORef fautoYesRef
   if autoYes && K.spaceKM `elem` keys then do
-    fdisplay fs frame
+    fdisplay rf frame
     return K.spaceKM
   else do
-    km <- fpromptGetKey fs frame
+    km <- fpromptGetKey rf frame
     if km{K.pointer=Nothing} `elem` keys
     then return km
-    else promptGetKey fautoYesRef fs keys frame
+    else promptGetKey fautoYesRef rf keys frame
 
 -- | Read UI requests from the client and send them to the frontend,
 fchanFrontend :: FSession -> RawFrontend -> ChanFrontend
-fchanFrontend FSession{..} fs = ChanFrontend $ \req -> case req of
-  FrontFrame{..} -> fdisplay fs frontFrame
+fchanFrontend FSession{..} rf = ChanFrontend $ \req -> case req of
+  FrontFrame{..} -> fdisplay rf frontFrame
   FrontDelay -> return ()
-  FrontKey{..} -> promptGetKey fautoYesRef fs frontKeyKeys frontKeyFrame
+  FrontKey{..} -> promptGetKey fautoYesRef rf frontKeyKeys frontKeyFrame
   FrontSync -> return ()  -- TODO
   FrontClearEsc -> do
-    b <- readIORef (fescPressed fs)
-    writeIORef (fescPressed fs) False
+    b <- readIORef (fescPressed rf)
+    writeIORef (fescPressed rf) False
     return b
   FrontAutoYes b -> writeIORef fautoYesRef b
+  FrontShutdown -> fshutdown rf
 
-chanFrontend :: DebugModeCli -> RawFrontend -> IO ChanFrontend
-chanFrontend sdebugCli fs = do
+chanFrontend :: DebugModeCli -> IO ChanFrontend
+chanFrontend sdebugCli = do
+  rf <- startupF sdebugCli
   fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
-  let fsess = FSession{..}
-  return $ fchanFrontend fsess fs
+  let fs = FSession{..}
+  return $ fchanFrontend fs rf

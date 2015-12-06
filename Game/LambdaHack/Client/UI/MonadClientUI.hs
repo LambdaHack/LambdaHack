@@ -13,7 +13,8 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , displayFrame, displayDelay, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
-  , syncFrames, setFrontAutoYes, clearEscPressed, scoreToSlideshow
+  , syncFrames, setFrontAutoYes, clearEscPressed, frontendShutdown
+  , scoreToSlideshow
   , getLeaderUI, getArenaUI, viewedLevel
   , targetDescLeader, targetDescCursor
   , leaderTgtToPos, leaderTgtAims, cursorToPos
@@ -261,6 +262,9 @@ setFrontAutoYes b = connFrontend $ FrontAutoYes b
 
 clearEscPressed :: MonadClientUI m => m Bool
 clearEscPressed = connFrontend FrontClearEsc
+
+frontendShutdown :: MonadClientUI m => m ()
+frontendShutdown = connFrontend FrontShutdown
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do

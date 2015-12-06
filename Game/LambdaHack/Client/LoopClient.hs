@@ -92,8 +92,7 @@ loopUI copsClient sconfig sdebugCli = do
     cli { sisAI = False
         , scursor = TVector $ Vector 1 1 }  -- a step south-east, less alarming
   -- Start the frontend.
-  rf <- liftIO $ startupF sdebugCli
-  schanF <- liftIO $ chanFrontend sdebugCli rf
+  schanF <- liftIO $ chanFrontend sdebugCli
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
   putSession SessionUI{..}
   Kind.COps{corule} <- getsState scops
@@ -131,7 +130,7 @@ loopUI copsClient sconfig sdebugCli = do
   debugPrint $ "UI client" <+> tshow side <+> "started."
   loop
   debugPrint $ "Frontend" <+> tshow side <+> "shutting down."
-  liftIO $ fshutdown rf
+  frontendShutdown
   debugPrint $ "UI cliet" <+> tshow side <+> "stopped."
  where
   loop = do
