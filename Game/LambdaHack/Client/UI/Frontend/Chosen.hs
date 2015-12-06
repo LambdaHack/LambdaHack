@@ -30,15 +30,13 @@ frontendName :: String
 frontendName = Chosen.frontendName
 
 nullStartup :: DebugModeCli -> MVar RawFrontend -> IO ()
-nullStartup sdebugCli rfMVar = do
-  fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
+nullStartup _ rfMVar = do
   fescPressed <- newIORef False
   putMVar rfMVar RawFrontend
     { fdisplay = \_ -> return ()
     , fpromptGetKey = \_ -> return K.escKM
     , fshutdown = return ()
     , fescPressed
-    , fautoYesRef
     }
 
 -- | Initialize the frontend and apply the given continuation to the results

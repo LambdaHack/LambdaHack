@@ -35,7 +35,6 @@ data RawFrontend = RawFrontend
   , fpromptGetKey :: SingleFrame -> IO K.KM
   , fshutdown     :: IO ()
   , fescPressed   :: !(IORef Bool)
-  , fautoYesRef   :: !(IORef Bool)
   }
 
 -- | The data sufficent to draw a single game screen frame.

@@ -51,14 +51,12 @@ startup sdebugCli rfMVar = do
   let swin = C.stdScr
       sstyles = M.fromList (zip ks ws)
   sescPressed <- newIORef False
-  fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   let sess = FrontendSession{..}
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fshutdown = shutdown
         , fescPressed = sescPressed
-        , fautoYesRef
         }
   putMVar rfMVar rf
 

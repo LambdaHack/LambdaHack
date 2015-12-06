@@ -127,14 +127,12 @@ font-weight: normal;
   scharCells2 <- flattenTable tableElem2
   Just scharStyle2 <- getStyle tableElem2
   sescPressed <- newIORef False
-  fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   let sess = FrontendSession{..}
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fshutdown = shutdown
         , fescPressed = sescPressed
-        , fautoYesRef
         }
   putMVar rfMVar rf
   -- Handle keypresses.

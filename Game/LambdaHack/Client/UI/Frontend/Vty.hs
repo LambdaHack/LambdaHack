@@ -37,14 +37,12 @@ startup sdebugCli rfMVar = do
   svty <- mkVty def
   schanKey <- STM.atomically STM.newTQueue
   sescPressed <- newIORef False
-  fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   let sess = FrontendSession{..}
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fshutdown = Vty.shutdown svty
         , fescPressed = sescPressed
-        , fautoYesRef
         }
   putMVar rfMVar rf
   void $ async $ storeKeys sess

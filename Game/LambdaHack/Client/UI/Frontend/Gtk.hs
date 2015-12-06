@@ -81,14 +81,12 @@ startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
   schanKey <- STM.atomically STM.newTQueue
   -- Create the session record.
   sescPressed <- newIORef False
-  fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   let sess = FrontendSession{..}
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fshutdown = shutdown
         , fescPressed = sescPressed
-        , fautoYesRef
         }
   putMVar rfMVar rf
   sview `on` keyPressEvent $ do

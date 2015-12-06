@@ -28,14 +28,12 @@ frontendName = "std"
 startup :: DebugModeCli -> MVar RawFrontend -> IO ()
 startup sdebugCli rfMVar = do
   sescPressed <- newIORef False
-  fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   let sess = FrontendSession{..}
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fshutdown = shutdown
         , fescPressed = sescPressed
-        , fautoYesRef
         }
   putMVar rfMVar rf
 

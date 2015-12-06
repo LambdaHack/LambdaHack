@@ -81,7 +81,7 @@ class MonadClient m => MonadClientUI m where
 -- | Write a UI request to the frontend and read a corresponding reply.
 connFrontend :: MonadClientUI m => FrontReq a -> m a
 connFrontend req = do
-  f <- getsSession schanF
+  ChanFrontend f <- getsSession schanF
   liftIO $ f req
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
