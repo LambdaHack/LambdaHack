@@ -5,7 +5,6 @@ module Game.LambdaHack.Client.UI.Frontend.Curses
   ( startup, frontendName
   ) where
 
-import Control.Concurrent
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Char (chr, ord)
@@ -16,6 +15,7 @@ import qualified UI.HSCurses.CursesHelper as C
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
+import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Msg
@@ -34,8 +34,8 @@ frontendName :: String
 frontendName = "curses"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> MVar RawFrontend -> IO ()
-startup sdebugCli rfMVar = do
+startup :: DebugModeCli -> IO RawFrontend
+startup sdebugCli = do
   C.start
 --  C.keypad C.stdScr False  -- TODO: may help to fix xterm keypad on Ubuntu
   void $ C.cursSet C.CursorInvisible
@@ -58,7 +58,7 @@ startup sdebugCli rfMVar = do
         , fshutdown = shutdown
         , fescPressed = sescPressed
         }
-  putMVar rfMVar rf
+  return $! rf
 
 shutdown :: IO ()
 shutdown = C.end

@@ -5,12 +5,10 @@ module Game.LambdaHack.Client.UI.Frontend.Chosen
   ( startupF, frontendName
   ) where
 
-import Control.Concurrent
-import Control.Concurrent.Async
 import Data.IORef
 
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.UI.Animation
+import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 
 #ifdef USE_CURSES
@@ -29,10 +27,10 @@ import qualified Game.LambdaHack.Client.UI.Frontend.Std as Std
 frontendName :: String
 frontendName = Chosen.frontendName
 
-nullStartup :: DebugModeCli -> MVar RawFrontend -> IO ()
-nullStartup _ rfMVar = do
+nullStartup :: IO RawFrontend
+nullStartup = do
   fescPressed <- newIORef False
-  putMVar rfMVar RawFrontend
+  return $! RawFrontend
     { fdisplay = \_ -> return ()
     , fpromptGetKey = \_ -> return K.escKM
     , fshutdown = return ()
@@ -42,11 +40,6 @@ nullStartup _ rfMVar = do
 -- | Initialize the frontend and apply the given continuation to the results
 -- of the initialization.
 startupF :: DebugModeCli -> IO RawFrontend
-startupF dbg = do
-  let startup | sfrontendNull dbg = nullStartup
-              | sfrontendStd dbg = Std.startup
-              | otherwise = Chosen.startup
-  rfMVar <- newEmptyMVar
-  a <- async $ startup dbg rfMVar
-  link a
-  takeMVar rfMVar
+startupF dbg | sfrontendNull dbg = nullStartup
+             | sfrontendStd dbg = Std.startup dbg
+             | otherwise = Chosen.startup dbg

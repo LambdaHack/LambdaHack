@@ -8,7 +8,6 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Concurrent
-import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import Control.Monad (unless, when)
 import Control.Monad.Reader (liftIO)
@@ -23,6 +22,7 @@ import Graphics.UI.Gtk hiding (Point)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
+import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Point
@@ -52,13 +52,8 @@ frontendName = "gtk"
 -- because they call @postGUIAsync@, and need @sview@ and @stags@.
 -- Because of Windows, GTK needs to be on a bound thread,
 -- so we can't avoid the communication overhead of bound threads.
-startup :: DebugModeCli -> MVar RawFrontend -> IO ()
-startup sdebugCl rfMVar = do
-  a <- asyncBound $ startupBound sdebugCl rfMVar
-  link a
-
-startupBound :: DebugModeCli -> MVar RawFrontend -> IO ()
-startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
+startup :: DebugModeCli -> IO RawFrontend
+startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -89,12 +84,18 @@ startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
         , fescPressed = sescPressed
         }
   putMVar rfMVar rf
+  let modTranslate mods = modifierTranslate
+        (Control `elem` mods)
+        (Shift `elem` mods)
+        (any (`elem` mods) [Alt, Alt2, Alt3, Alt4, Alt5])
+        (any (`elem` mods) [Meta, Super])
   sview `on` keyPressEvent $ do
     n <- eventKeyName
     mods <- eventModifier
     let !key = K.keyTranslate $ T.unpack n
-        !modifier = let md = modifierTranslate mods
-                    in if md == K.Shift then K.NoModifier else md
+        !modifier =
+          let md = modTranslate mods
+          in if md == K.Shift then K.NoModifier else md
         !pointer = Nothing
     liftIO $ do
       unless (deadKey n) $ do
@@ -121,7 +122,7 @@ startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
     but <- eventButton
     (wx, wy) <- eventCoordinates
     mods <- eventModifier
-    let !modifier = modifierTranslate mods  -- Shift included
+    let !modifier = modTranslate mods  -- Shift included
     liftIO $ do
       when (but == RightButton && modifier == K.Control) $ do
         fsd <- fontSelectionDialogNew ("Choose font" :: String)
@@ -172,12 +173,6 @@ startupBound sdebugCli@DebugModeCli{sfont} rfMVar = do
   onDestroy w (error "Window killed")
   widgetShowAll w
   mainGUI
-
--- | Empty the keyboard channel.
-resetChanKey :: STM.TQueue K.KM -> IO ()
-resetChanKey schanKey = do
-  res <- STM.atomically $ STM.tryReadTQueue schanKey
-  when (isJust res) $ resetChanKey schanKey
 
 doAttr :: DebugModeCli -> TextTag -> Color.Attr -> IO ()
 doAttr sdebugCli tt attr@Color.Attr{fg, bg}
@@ -274,11 +269,3 @@ deadKey x = case x of
   "Num_Lock"         -> True
   "Caps_Lock"        -> True
   _                  -> False
-
--- | Translates modifiers to our own encoding.
-modifierTranslate :: [Modifier] -> K.Modifier
-modifierTranslate mods
-  | Control `elem` mods = K.Control
-  | any (`elem` mods) [Meta, Super, Alt, Alt2, Alt3, Alt4, Alt5] = K.Alt
-  | Shift `elem` mods = K.Shift
-  | otherwise = K.NoModifier

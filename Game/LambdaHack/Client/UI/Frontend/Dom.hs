@@ -5,7 +5,6 @@ module Game.LambdaHack.Client.UI.Frontend.Dom
   ) where
 
 import Control.Concurrent
-import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import Control.Monad
 import Control.Monad.Reader (ask, liftIO)
@@ -39,6 +38,7 @@ import GHCJS.DOM.UIEvent (getKeyCode, getWhich)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
+import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
@@ -66,14 +66,14 @@ frontendName = "webkit"
 terrible error
 #endif
 
+-- TODO: test if runWebGUI already starts the frontend in a bound thread
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> MVar RawFrontend -> IO ()
-startup sdebugCli rfMVar = do
+startup :: DebugModeCli -> IO RawFrontend
+startup sdebugCli = do
 #ifdef USE_BROWSER
-  runWebGUI $ runWeb sdebugCli rfMVar
+  startupAsync $ \rfMVar -> runWebGUI $ runWeb sdebugCli rfMVar
 #elif USE_WEBKIT
-  a <- asyncBound $ runWebGUI $ runWeb sdebugCli rfMVar
-  link a
+  startupBound $ \rfMVar -> runWebGUI $ runWeb sdebugCli rfMVar
 #else
 terrible error
 #endif
@@ -134,7 +134,7 @@ font-weight: normal;
         , fshutdown = shutdown
         , fescPressed = sescPressed
         }
-  putMVar rfMVar rf
+  putMVar rfMVar rf  -- send to client ASAP, while wepage is being redrawn
   -- Handle keypresses.
   -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys and
   -- @getKeyCode@ then returns wrong characters anyway.
@@ -199,12 +199,6 @@ font-weight: normal;
 setProp :: CSSStyleDeclaration -> String -> String -> IO ()
 setProp style propRef propValue =
   setProperty style propRef (Just propValue) ("" :: String)
-
--- | Empty the keyboard channel.
-resetChanKey :: STM.TQueue K.KM -> IO ()
-resetChanKey schanKey = do
-  res <- STM.atomically $ STM.tryReadTQueue schanKey
-  when (isJust res) $ resetChanKey schanKey
 
 click :: EventName HTMLTableCellElement MouseEvent
 click = EventName "click"
@@ -305,11 +299,3 @@ deadKey x = case x of   -- ??? x == "Dead"
   "Num_Lock"    -> True
   "CapsLock"    -> True
   _             -> False
-
--- | Translates modifiers to our own encoding.
-modifierTranslate :: Bool -> Bool -> Bool -> Bool -> K.Modifier
-modifierTranslate modCtrl modShift modAlt modMeta
-  | modCtrl = K.Control
-  | modAlt || modMeta = K.Alt
-  | modShift = K.Shift
-  | otherwise = K.NoModifier

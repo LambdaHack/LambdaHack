@@ -138,6 +138,7 @@ library
                       Game.LambdaHack.Client.UI.DisplayAtomicClient,
                       Game.LambdaHack.Client.UI.Frontend,
                       Game.LambdaHack.Client.UI.Frontend.Chosen,
+                      Game.LambdaHack.Client.UI.Frontend.Common
                       Game.LambdaHack.Client.UI.Frontend.Std,
                       Game.LambdaHack.Client.UI.HandleHumanGlobalClient,
                       Game.LambdaHack.Client.UI.HandleHumanLocalClient,

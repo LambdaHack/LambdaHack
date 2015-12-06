@@ -3,7 +3,6 @@ module Game.LambdaHack.Client.UI.Frontend.Std
   ( startup, frontendName
   ) where
 
-import Control.Concurrent
 import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
 import Data.IORef
@@ -11,6 +10,7 @@ import qualified System.IO as SIO
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
+import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 
@@ -25,8 +25,8 @@ frontendName :: String
 frontendName = "std"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> MVar RawFrontend -> IO ()
-startup sdebugCli rfMVar = do
+startup :: DebugModeCli -> IO RawFrontend
+startup sdebugCli = do
   sescPressed <- newIORef False
   let sess = FrontendSession{..}
       rf = RawFrontend
@@ -35,7 +35,7 @@ startup sdebugCli rfMVar = do
         , fshutdown = shutdown
         , fescPressed = sescPressed
         }
-  putMVar rfMVar rf
+  return $! rf
 
 shutdown :: IO ()
 shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr

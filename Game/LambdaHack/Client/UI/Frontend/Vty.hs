@@ -3,7 +3,6 @@ module Game.LambdaHack.Client.UI.Frontend.Vty
   ( startup, frontendName
   ) where
 
-import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import Control.Monad
@@ -15,6 +14,7 @@ import qualified Graphics.Vty as Vty
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
+import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Msg
@@ -32,8 +32,8 @@ frontendName :: String
 frontendName = "vty"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: DebugModeCli -> MVar RawFrontend -> IO ()
-startup sdebugCli rfMVar = do
+startup :: DebugModeCli -> IO RawFrontend
+startup sdebugCli = do
   svty <- mkVty def
   schanKey <- STM.atomically STM.newTQueue
   sescPressed <- newIORef False
@@ -44,8 +44,8 @@ startup sdebugCli rfMVar = do
         , fshutdown = Vty.shutdown svty
         , fescPressed = sescPressed
         }
-  putMVar rfMVar rf
   void $ async $ storeKeys sess
+  return $! rf
 
 storeKeys :: FrontendSession -> IO ()
 storeKeys sess@FrontendSession{..} = do
@@ -53,7 +53,7 @@ storeKeys sess@FrontendSession{..} = do
   case e of
     EvKey n mods -> do
       let !key = keyTranslate n
-          !modifier = modifierTranslate mods
+          !modifier = modTranslate mods
           !pointer = Nothing
           readAll = do
             res <- STM.atomically $ STM.tryReadTQueue schanKey
@@ -136,12 +136,10 @@ keyTranslate n =
     _             -> K.Unknown (tshow n)
 
 -- | Translates modifiers to our own encoding.
-modifierTranslate :: [Modifier] -> K.Modifier
-modifierTranslate mods
-  | MCtrl `elem` mods = K.Control
-  | MAlt `elem` mods = K.Alt
-  | MShift `elem` mods = K.Shift
-  | otherwise = K.NoModifier
+modTranslate :: [Modifier] -> K.Modifier
+modTranslate mods =
+  modifierTranslate
+    (MCtrl `elem` mods) (MShift `elem` mods) (MAlt `elem` mods) False
 
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.
