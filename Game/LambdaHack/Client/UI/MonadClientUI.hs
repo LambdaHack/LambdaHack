@@ -26,7 +26,6 @@ import Control.Exception.Assert.Sugar
 import Control.Monad (replicateM_, when)
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
-import Data.IORef
 import Data.Maybe
 import Data.Text (Text)
 import Data.Time.Clock.POSIX
@@ -67,10 +66,9 @@ mapStartY = 1
 -- but is completely disregarded and reset when a new playing session starts.
 -- This includes a frontend session and keybinding info.
 data SessionUI = SessionUI
-  { schanF      :: !ChanFrontend       -- ^ connection with the frontend
-  , sbinding    :: !Binding            -- ^ binding of keys to commands
-  , sescPressed :: !(IORef Bool)
-  , sconfig     :: !Config
+  { schanF   :: !ChanFrontend       -- ^ connection with the frontend
+  , sbinding :: !Binding            -- ^ binding of keys to commands
+  , sconfig  :: !Config
   }
 
 -- | The monad that gives the client access to UI operations.
@@ -262,12 +260,7 @@ setFrontAutoYes :: MonadClientUI m => Bool -> m ()
 setFrontAutoYes b = connFrontend $ FrontAutoYes b
 
 clearEscPressed :: MonadClientUI m => m Bool
-clearEscPressed = do
-  escPressed <- getsSession sescPressed
-  liftIO $ do
-    b <- readIORef escPressed
-    writeIORef escPressed False
-    return b
+clearEscPressed = connFrontend FrontClearEsc
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do

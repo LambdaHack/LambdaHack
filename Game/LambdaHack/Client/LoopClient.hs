@@ -95,7 +95,6 @@ loopUI copsClient sconfig sdebugCli = do
   rf <- liftIO $ startupF sdebugCli
   schanF <- liftIO $ chanFrontend sdebugCli rf
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
-      sescPressed = fescPressed rf
   putSession SessionUI{..}
   Kind.COps{corule} <- getsState scops
   let title = rtitle $ Kind.stdRuleset corule

@@ -28,7 +28,9 @@ data FrontReq :: * -> * where
     -- ^ flush frames, display a frame and ask for a keypress
   FrontSync :: FrontReq ()
     -- ^ flush frames
-  FrontAutoYes :: !Bool -> FrontReq ()
+  FrontClearEsc :: FrontReq Bool
+    -- ^ inspect and reset the fescPressed reference
+  FrontAutoYes :: Bool -> FrontReq ()
     -- ^ set in the frontend that it should auto-answer prompts
 
 -- | Connection channel between a frontend and a client. Frontend acts
@@ -61,6 +63,10 @@ fchanFrontend FSession{..} fs = ChanFrontend $ \req -> case req of
   FrontDelay -> return ()
   FrontKey{..} -> promptGetKey fautoYesRef fs frontKeyKeys frontKeyFrame
   FrontSync -> return ()  -- TODO
+  FrontClearEsc -> do
+    b <- readIORef (fescPressed fs)
+    writeIORef (fescPressed fs) False
+    return b
   FrontAutoYes b -> writeIORef fautoYesRef b
 
 chanFrontend :: DebugModeCli -> RawFrontend -> IO ChanFrontend
