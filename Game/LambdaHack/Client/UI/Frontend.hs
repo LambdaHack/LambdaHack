@@ -14,8 +14,9 @@ import Data.IORef
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
-import Game.LambdaHack.Client.UI.Frontend.Chosen
+import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
 import Game.LambdaHack.Client.UI.Frontend.Common
+import qualified Game.LambdaHack.Client.UI.Frontend.Std as Std
 import Game.LambdaHack.Common.ClientOptions
 
 -- | The instructions sent by clients to the raw frontend.
@@ -73,9 +74,26 @@ fchanFrontend FSession{..} rf = ChanFrontend $ \req -> case req of
   FrontAutoYes b -> writeIORef fautoYesRef b
   FrontShutdown -> fshutdown rf
 
+-- | The name of the chosen frontend.
+frontendName :: String
+frontendName = Chosen.frontendName
+
+nullStartup :: IO RawFrontend
+nullStartup = do
+  fescPressed <- newIORef False
+  return $! RawFrontend
+    { fdisplay = \_ -> return ()
+    , fpromptGetKey = \_ -> return K.escKM
+    , fshutdown = return ()
+    , fescPressed
+    }
+
 chanFrontend :: DebugModeCli -> IO ChanFrontend
 chanFrontend sdebugCli = do
-  rf <- startupF sdebugCli
+  let startup | sfrontendNull sdebugCli = nullStartup
+              | sfrontendStd sdebugCli = Std.startup sdebugCli
+              | otherwise = Chosen.startup sdebugCli
+  rf <- startup
   fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   let fs = FSession{..}
   return $ fchanFrontend fs rf
