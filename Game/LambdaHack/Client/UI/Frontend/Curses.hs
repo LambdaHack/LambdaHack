@@ -5,10 +5,10 @@ module Game.LambdaHack.Client.UI.Frontend.Curses
   ( startup, frontendName
   ) where
 
+import Control.Concurrent
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Char (chr, ord)
-import Data.IORef
 import qualified Data.Map.Strict as M
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
@@ -25,7 +25,7 @@ data FrontendSession = FrontendSession
   { swin        :: !C.Window  -- ^ the window to draw to
   , sstyles     :: !(M.Map Color.Attr C.CursesStyle)
       -- ^ map from fore/back colour pairs to defined curses styles
-  , sescPressed :: !(IORef Bool)
+  , skeyPressed :: !(MVar ())
   , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
@@ -50,13 +50,13 @@ startup sdebugCli = do
   ws <- C.convertStyles vs
   let swin = C.stdScr
       sstyles = M.fromList (zip ks ws)
-  sescPressed <- newIORef False
+  skeyPressed <- newEmptyMVar
   let sess = FrontendSession{..}
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fshutdown = shutdown
-        , fescPressed = sescPressed
+        , fkeyPressed = skeyPressed
         }
   return $! rf
 
@@ -86,14 +86,17 @@ display FrontendSession{..} rawSF = do
   C.refresh
 
 -- | Input key via the frontend.
-nextEvent :: IO K.KM
-nextEvent = keyTranslate `fmap` C.getKey C.refresh
+nextEvent :: FrontendSession -> IO K.KM
+nextEvent FrontendSession{..} = do
+  km <- keyTranslate `fmap` C.getKey C.refresh
+  void $ tryPutMVar skeyPressed ()
+  return km
 
 -- | Display a prompt, wait for any key.
 promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 promptGetKey sess frame = do
   display sess frame
-  nextEvent
+  nextEvent sess
 
 keyTranslate :: C.Key -> K.KM
 keyTranslate e = (\(key, modifier) -> K.toKM modifier key) $

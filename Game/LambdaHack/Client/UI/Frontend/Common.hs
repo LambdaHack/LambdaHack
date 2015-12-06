@@ -10,7 +10,6 @@ import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import Control.Monad (when)
-import Data.IORef
 import Data.Maybe
 
 import qualified Game.LambdaHack.Client.Key as K
@@ -20,7 +19,7 @@ data RawFrontend = RawFrontend
   { fdisplay      :: SingleFrame -> IO ()
   , fpromptGetKey :: SingleFrame -> IO K.KM
   , fshutdown     :: IO ()
-  , fescPressed   :: !(IORef Bool)
+  , fkeyPressed   :: !(MVar ())
   }
 
 startupAsync :: (MVar RawFrontend -> IO ()) -> IO RawFrontend

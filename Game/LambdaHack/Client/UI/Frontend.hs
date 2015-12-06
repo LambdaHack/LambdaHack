@@ -10,7 +10,9 @@ module Game.LambdaHack.Client.UI.Frontend
   , chanFrontend
   ) where
 
+import Control.Concurrent
 import Data.IORef
+import Data.Maybe
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
@@ -30,8 +32,8 @@ data FrontReq :: * -> * where
     -- ^ flush frames, display a frame and ask for a keypress
   FrontSync :: FrontReq ()
     -- ^ flush frames
-  FrontClearEsc :: FrontReq Bool
-    -- ^ inspect and reset the fescPressed reference
+  FrontPressed :: FrontReq Bool
+    -- ^ inspect and reset the fkeyPressed MVar
   FrontAutoYes :: Bool -> FrontReq ()
     -- ^ set in the frontend that it should auto-answer prompts
   FrontShutdown :: FrontReq ()
@@ -67,10 +69,9 @@ fchanFrontend FSession{..} rf = ChanFrontend $ \req -> case req of
   FrontDelay -> return ()
   FrontKey{..} -> promptGetKey fautoYesRef rf frontKeyKeys frontKeyFrame
   FrontSync -> return ()  -- TODO
-  FrontClearEsc -> do
-    b <- readIORef (fescPressed rf)
-    writeIORef (fescPressed rf) False
-    return b
+  FrontPressed -> do
+    mUnit <- tryTakeMVar (fkeyPressed rf)
+    return $! isJust mUnit
   FrontAutoYes b -> writeIORef fautoYesRef b
   FrontShutdown -> fshutdown rf
 
@@ -80,12 +81,12 @@ frontendName = Chosen.frontendName
 
 nullStartup :: IO RawFrontend
 nullStartup = do
-  fescPressed <- newIORef False
+  fkeyPressed <- newEmptyMVar
   return $! RawFrontend
     { fdisplay = \_ -> return ()
     , fpromptGetKey = \_ -> return K.escKM
     , fshutdown = return ()
-    , fescPressed
+    , fkeyPressed
     }
 
 chanFrontend :: DebugModeCli -> IO ChanFrontend

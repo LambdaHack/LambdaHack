@@ -10,7 +10,6 @@ import Control.Monad
 import Control.Monad.Reader (ask, liftIO)
 import Data.Bits ((.|.))
 import Data.Char (chr, isUpper, toLower)
-import Data.IORef
 import Data.Maybe
 import Data.String (IsString (..))
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
@@ -52,7 +51,7 @@ data FrontendSession = FrontendSession
   , scharStyle2 :: !CSSStyleDeclaration
   , scharCells2 :: ![HTMLTableCellElement]
   , schanKey    :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
-  , sescPressed :: !(IORef Bool)
+  , skeyPressed :: !(MVar ())
   , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
@@ -126,13 +125,13 @@ font-weight: normal;
   Just tableElem2 <- fmap castToHTMLTableElement <$> cloneNode tableElem True
   scharCells2 <- flattenTable tableElem2
   Just scharStyle2 <- getStyle tableElem2
-  sescPressed <- newIORef False
+  skeyPressed <- newEmptyMVar
   let sess = FrontendSession{..}
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fshutdown = shutdown
-        , fescPressed = sescPressed
+        , fkeyPressed = skeyPressed
         }
   putMVar rfMVar rf  -- send to client ASAP, while wepage is being redrawn
   -- Handle keypresses.
@@ -176,10 +175,7 @@ font-weight: normal;
       putStrLn $ show keyCode
       -}
       unless (deadKey keyId) $ do
-        -- If ESC, also mark it specially and reset the key channel.
-        when (key == K.Esc) $ do
-          writeIORef sescPressed True
-          resetChanKey schanKey
+        void $ tryPutMVar skeyPressed ()
         -- Store the key in the channel.
         STM.atomically $ STM.writeTQueue schanKey K.KM{..}
   -- Handle mouseclicks, per-cell.

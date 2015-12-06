@@ -9,7 +9,7 @@ import Prelude.Compat
 
 import Control.Concurrent
 import qualified Control.Concurrent.STM as STM
-import Control.Monad (unless, when)
+import Control.Monad (unless, void, when)
 import Control.Monad.Reader (liftIO)
 import qualified Data.ByteString.Char8 as BS
 import Data.IORef
@@ -32,7 +32,7 @@ data FrontendSession = FrontendSession
   { sview       :: !TextView                    -- ^ the widget to draw to
   , stags       :: !(M.Map Color.Attr TextTag)  -- ^ text color tags for fg/bg
   , schanKey    :: !(STM.TQueue K.KM)           -- ^ channel for keyboard input
-  , sescPressed :: !(IORef Bool)
+  , skeyPressed :: !(MVar ())
   , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
@@ -75,13 +75,13 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
   -- Set up the channel for keyboard input.
   schanKey <- STM.atomically STM.newTQueue
   -- Create the session record.
-  sescPressed <- newIORef False
+  skeyPressed <- newEmptyMVar
   let sess = FrontendSession{..}
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fshutdown = shutdown
-        , fescPressed = sescPressed
+        , fkeyPressed = skeyPressed
         }
   putMVar rfMVar rf
   let modTranslate mods = modifierTranslate
@@ -99,10 +99,7 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
         !pointer = Nothing
     liftIO $ do
       unless (deadKey n) $ do
-        -- If ESC, also mark it specially and reset the key channel.
-        when (key == K.Esc) $ do
-          writeIORef sescPressed True
-          resetChanKey schanKey
+        void $ tryPutMVar skeyPressed ()
         -- Store the key in the channel.
         STM.atomically $ STM.writeTQueue schanKey K.KM{..}
       return True

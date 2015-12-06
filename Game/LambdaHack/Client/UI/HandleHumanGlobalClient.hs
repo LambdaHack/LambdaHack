@@ -24,7 +24,7 @@ import Prelude.Compat
 import qualified Paths_LambdaHack as Self (version)
 
 import Control.Exception.Assert.Sugar
-import Control.Monad (when)
+import Control.Monad (void, when)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List (delete, mapAccumL)
@@ -1085,7 +1085,8 @@ automateHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 automateHuman = do
   -- BFS is not updated while automated, which would lead to corruption.
   modifyClient $ \cli -> cli {stgtMode = Nothing}
-  go <- displayMore ColorBW "Ceding control to AI (ESC to regain)."
+  go <- displayMore ColorBW "Ceding control to AI (press any key to regain)."
+  void $ clearPressed  -- clear key-pressed from the confirmation
   if not go
     then failWith "automation canceled"
     else return $ Right ReqUIAutomate

@@ -3,12 +3,11 @@ module Game.LambdaHack.Client.UI.Frontend.Vty
   ( startup, frontendName
   ) where
 
+import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import Control.Monad
 import Data.Default
-import Data.IORef
-import Data.Maybe
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
@@ -23,7 +22,7 @@ import Game.LambdaHack.Common.Msg
 data FrontendSession = FrontendSession
   { svty        :: !Vty  -- ^ internal vty session
   , schanKey    :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
-  , sescPressed :: !(IORef Bool)
+  , skeyPressed :: !(MVar ())
   , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
@@ -36,13 +35,13 @@ startup :: DebugModeCli -> IO RawFrontend
 startup sdebugCli = do
   svty <- mkVty def
   schanKey <- STM.atomically STM.newTQueue
-  sescPressed <- newIORef False
+  skeyPressed <- newEmptyMVar
   let sess = FrontendSession{..}
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fshutdown = Vty.shutdown svty
-        , fescPressed = sescPressed
+        , fkeyPressed = skeyPressed
         }
   void $ async $ storeKeys sess
   return $! rf
@@ -55,13 +54,7 @@ storeKeys sess@FrontendSession{..} = do
       let !key = keyTranslate n
           !modifier = modTranslate mods
           !pointer = Nothing
-          readAll = do
-            res <- STM.atomically $ STM.tryReadTQueue schanKey
-            when (isJust res) readAll
-      -- If ESC, also mark it specially and reset the key channel.
-      when (key == K.Esc) $ do
-        writeIORef sescPressed True
-        readAll
+      void $ tryPutMVar skeyPressed ()
       -- Store the key in the channel.
       STM.atomically $ STM.writeTQueue schanKey K.KM{..}
     _ -> return ()

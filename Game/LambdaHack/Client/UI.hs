@@ -136,12 +136,12 @@ humanCommand = do
 -- (if needed) and sends some extra info.
 pongUI :: MonadClientUI m => m RequestUI
 pongUI = do
-  escPressed <- clearEscPressed
+  keyPressed <- clearPressed
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let pong ats = return $ ReqUIPong ats
       underAI = isAIFact fact
-  if escPressed && underAI && fleaderMode (gplayer fact) /= LeaderNull then do
+  if keyPressed && underAI && fleaderMode (gplayer fact) /= LeaderNull then do
     -- Ask server to turn off AI for the faction's leader.
     let atomicCmd = UpdAtomic $ UpdAutoFaction side False
     pong [atomicCmd]

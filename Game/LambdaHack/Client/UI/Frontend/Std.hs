@@ -3,9 +3,10 @@ module Game.LambdaHack.Client.UI.Frontend.Std
   ( startup, frontendName
   ) where
 
+import Control.Concurrent
+import Control.Monad (void)
 import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
-import Data.IORef
 import qualified System.IO as SIO
 
 import qualified Game.LambdaHack.Client.Key as K
@@ -16,7 +17,7 @@ import qualified Game.LambdaHack.Common.Color as Color
 
 -- | No session data needs to be maintained by this frontend.
 data FrontendSession = FrontendSession
-  { sescPressed :: !(IORef Bool)
+  { skeyPressed :: !(MVar ())
   , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
@@ -27,13 +28,13 @@ frontendName = "std"
 -- | Starts the main program loop using the frontend input and output.
 startup :: DebugModeCli -> IO RawFrontend
 startup sdebugCli = do
-  sescPressed <- newIORef False
+  skeyPressed <- newEmptyMVar
   let sess = FrontendSession{..}
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fshutdown = shutdown
-        , fescPressed = sescPressed
+        , fkeyPressed = skeyPressed
         }
   return $! rf
 
@@ -50,9 +51,10 @@ display _ rawSF =
   in mapM_ BS.putStrLn bs
 
 -- | Input key via the frontend.
-nextEvent :: IO K.KM
-nextEvent = do
+nextEvent :: FrontendSession -> IO K.KM
+nextEvent FrontendSession{..} = do
   l <- BS.hGetLine SIO.stdin
+  void $ tryPutMVar skeyPressed ()
   let c = case BS.uncons l of
         Nothing -> '\n'  -- empty line counts as RET
         Just (hd, _) -> hd
@@ -62,7 +64,7 @@ nextEvent = do
 promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 promptGetKey sess frame = do
   display sess frame
-  nextEvent
+  nextEvent sess
 
 keyTranslate :: Char -> K.KM
 keyTranslate e = (\(key, modifier) -> K.toKM modifier key) $

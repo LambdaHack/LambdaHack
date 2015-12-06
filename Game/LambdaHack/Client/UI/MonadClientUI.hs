@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , displayFrame, displayDelay, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
-  , syncFrames, setFrontAutoYes, clearEscPressed, frontendShutdown
+  , syncFrames, setFrontAutoYes, clearPressed, frontendShutdown
   , scoreToSlideshow
   , getLeaderUI, getArenaUI, viewedLevel
   , targetDescLeader, targetDescCursor
@@ -96,15 +96,15 @@ promptGetKey frontKeyKeys frontKeyFrame = do
   -- Or this is running, etc., which we want fast.
   let ageDisp = EM.insert arena localTime
   modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
-  escPressed <- clearEscPressed
-    -- this also clears the ESC-pressed marker
+  keyPressed <- clearPressed
+    -- this also clears the key-pressed marker
   lastPlayOld <- getsClient slastPlay
   km <- case lastPlayOld of
-    km : kms | not escPressed
+    km : kms | not keyPressed
                && (null frontKeyKeys
                    || km{K.pointer=Nothing} `elem` frontKeyKeys) -> do
       displayFrame $ Just frontKeyFrame
-      -- Sync frames so that ESC doesn't skip frames.
+      -- Sync frames so that a keypress doesn't skip frames.
       syncFrames
       modifyClient $ \cli -> cli {slastPlay = kms}
       return km
@@ -260,8 +260,8 @@ syncFrames = connFrontend FrontSync
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
 setFrontAutoYes b = connFrontend $ FrontAutoYes b
 
-clearEscPressed :: MonadClientUI m => m Bool
-clearEscPressed = connFrontend FrontClearEsc
+clearPressed :: MonadClientUI m => m Bool
+clearPressed = connFrontend FrontPressed
 
 frontendShutdown :: MonadClientUI m => m ()
 frontendShutdown = connFrontend FrontShutdown
