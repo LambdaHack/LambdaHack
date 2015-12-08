@@ -20,10 +20,7 @@ import Game.LambdaHack.Common.Msg
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { svty        :: !Vty  -- ^ internal vty session
-  , schanKey    :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
-  , skeyPressed :: !(MVar ())
-  , sdebugCli   :: !DebugModeCli  -- ^ client configuration
+  { svty :: !Vty  -- ^ internal vty session
   }
 
 -- | The name of the frontend.
@@ -32,33 +29,41 @@ frontendName = "vty"
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: DebugModeCli -> IO RawFrontend
-startup sdebugCli = do
+startup _sdebugCli = do
   svty <- mkVty def
-  schanKey <- STM.atomically STM.newTQueue
-  skeyPressed <- newEmptyMVar
+  -- Set up the channel for keyboard input.
+  fchanKey <- STM.atomically STM.newTQueue
+  -- Create the session record.
+  fshowNow <- newMVar ()
   let sess = FrontendSession{..}
+      promptGetKey :: SingleFrame -> IO K.KM
+      promptGetKey frame = do
+        display sess frame
+        STM.atomically $ STM.readTQueue fchanKey
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fshutdown = Vty.shutdown svty
-        , fkeyPressed = skeyPressed
+        , fshowNow
+        , fchanKey
         }
-  void $ async $ storeKeys sess
+  void $ async storeKeys
   return $! rf
-
-storeKeys :: FrontendSession -> IO ()
-storeKeys sess@FrontendSession{..} = do
-  e <- nextEvent svty  -- blocks here, so no polling
-  case e of
-    EvKey n mods -> do
-      let !key = keyTranslate n
-          !modifier = modTranslate mods
-          !pointer = Nothing
-      void $ tryPutMVar skeyPressed ()
-      -- Store the key in the channel.
-      STM.atomically $ STM.writeTQueue schanKey K.KM{..}
-    _ -> return ()
-  storeKeys sess
+ where
+  storeKeys :: IO ()
+  storeKeys = do
+    e <- nextEvent svty  -- blocks here, so no polling
+    case e of
+      EvKey n mods -> do
+        let !key = keyTranslate n
+            !modifier = modTranslate mods
+            !pointer = Nothing
+        -- Store the key in the channel.
+        STM.atomically $ STM.writeTQueue fchanKey K.KM{..}
+        -- Instantly show any frame waiting for display.
+        void $ tryPutMVar fshowNow ()
+      _ -> return ()
+    storeKeys
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data
@@ -73,31 +78,6 @@ display FrontendSession{svty} rawSF =
             $ map decodeLine sfLevel
       pic = picForImage img
   in update svty pic
-
--- | Input key via the frontend.
-nextKeyEvent :: FrontendSession -> IO K.KM
-nextKeyEvent FrontendSession{..} = do
-  km <- STM.atomically $ STM.readTQueue schanKey
-  case km of
-    K.KM{key=K.Space} ->
-      -- Drop frames up to the first empty frame.
-      -- Keep the last non-empty frame, if any.
-      -- Pressing SPACE repeatedly can be used to step
-      -- through intermediate stages of an animation,
-      -- whereas any other key skips the whole animation outright.
---      onQueue dropStartLQueue sess
-      return ()
-    _ ->
-      -- Show the last non-empty frame and empty the queue.
---      trimFrameState sess
-      return ()
-  return km
-
--- | Display a prompt, wait for any key.
-promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
-promptGetKey sess frame = do
-  display sess frame
-  nextKeyEvent sess
 
 -- TODO: Ctrl-m is RET
 keyTranslate :: Key -> K.Key

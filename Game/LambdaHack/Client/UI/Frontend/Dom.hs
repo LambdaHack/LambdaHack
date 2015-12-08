@@ -50,9 +50,6 @@ data FrontendSession = FrontendSession
   , scharCells  :: ![HTMLTableCellElement]
   , scharStyle2 :: !CSSStyleDeclaration
   , scharCells2 :: ![HTMLTableCellElement]
-  , schanKey    :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
-  , skeyPressed :: !(MVar ())
-  , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
 -- | The name of the frontend.
@@ -121,17 +118,24 @@ font-weight: normal;
   -- setProp "vertical-align" "bottom"
   -- Create the session record.
   scharCells <- flattenTable tableElem
-  schanKey <- STM.atomically STM.newTQueue
   Just tableElem2 <- fmap castToHTMLTableElement <$> cloneNode tableElem True
   scharCells2 <- flattenTable tableElem2
   Just scharStyle2 <- getStyle tableElem2
-  skeyPressed <- newEmptyMVar
+  -- Set up the channel for keyboard input.
+  fchanKey <- STM.atomically STM.newTQueue
+  -- Create the session record.
+  fshowNow <- newMVar ()
   let sess = FrontendSession{..}
+      promptGetKey :: SingleFrame -> IO K.KM
+      promptGetKey frame = do
+        display sess frame
+        STM.atomically $ STM.readTQueue fchanKey
       rf = RawFrontend
         { fdisplay = display sess
-        , fpromptGetKey = promptGetKey sess
+        , fpromptGetKey = promptGetKey
         , fshutdown = shutdown
-        , fkeyPressed = skeyPressed
+        , fshowNow
+        , fchanKey
         }
   putMVar rfMVar rf  -- send to client ASAP, while wepage is being redrawn
   -- Handle keypresses.
@@ -175,16 +179,17 @@ font-weight: normal;
       putStrLn $ show keyCode
       -}
       unless (deadKey keyId) $ do
-        void $ tryPutMVar skeyPressed ()
         -- Store the key in the channel.
-        STM.atomically $ STM.writeTQueue schanKey K.KM{..}
+        STM.atomically $ STM.writeTQueue fchanKey K.KM{..}
+        -- Instantly show any frame waiting for display.
+        void $ tryPutMVar fshowNow ()
   -- Handle mouseclicks, per-cell.
   let xs = [0..lxsize - 1]
       ys = [0..lysize - 1]
       xys = concat $ map (\y -> zip xs (repeat y)) ys
   -- This can't be cloned, so I has to be done for both cell sets.
-  mapM_ (handleMouse schanKey) $ zip scharCells xys
-  mapM_ (handleMouse schanKey) $ zip scharCells2 xys
+  mapM_ (handleMouse fchanKey) $ zip scharCells xys
+  mapM_ (handleMouse fchanKey) $ zip scharCells2 xys
   -- Display at the end to avoid redraw
   void $ appendChild body (Just tableElem)
   setProp scharStyle "display" "none"
@@ -201,10 +206,10 @@ click = EventName "click"
 
 -- | Let each table cell handle mouse events inside.
 handleMouse :: STM.TQueue K.KM -> (HTMLTableCellElement, (Int, Int)) -> IO ()
-handleMouse schanKey (cell, (cx, cy)) = do
+handleMouse fchanKey (cell, (cx, cy)) = do
   void $ cell `on` click $ do
     -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
-    liftIO $ resetChanKey schanKey
+    liftIO $ resetChanKey fchanKey
     but <- mouseButton
     modCtrl <- mouseCtrlKey
     modShift <- mouseShiftKey
@@ -226,7 +231,7 @@ handleMouse schanKey (cell, (cx, cy)) = do
             _ -> K.LeftButtonPress
           !pointer = Just $! Point cx cy
       -- Store the mouse event coords in the keypress channel.
-      STM.atomically $ STM.writeTQueue schanKey K.KM{..}
+      STM.atomically $ STM.writeTQueue fchanKey K.KM{..}
 
 -- | Get the list of all cells of an HTML table.
 flattenTable :: HTMLTableElement -> IO [HTMLTableCellElement]
@@ -274,12 +279,6 @@ display FrontendSession{..} rawSF = postGUISync $ do
       mapM_ setChar $ zip scharCells acs
       setProp scharStyle2 "display" "none"
       setProp scharStyle "display" "block"
-
--- | Display a prompt, wait for any key.
-promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
-promptGetKey sess@FrontendSession{schanKey} frame = do
-  display sess frame
-  STM.atomically $ STM.readTQueue schanKey
 
 -- | Tells a dead key.
 deadKey :: (Eq t, IsString t) => t -> Bool

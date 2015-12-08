@@ -29,11 +29,8 @@ import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { sview       :: !TextView                    -- ^ the widget to draw to
-  , stags       :: !(M.Map Color.Attr TextTag)  -- ^ text color tags for fg/bg
-  , schanKey    :: !(STM.TQueue K.KM)           -- ^ channel for keyboard input
-  , skeyPressed :: !(MVar ())
-  , sdebugCli   :: !DebugModeCli  -- ^ client configuration
+  { sview :: !TextView                    -- ^ the widget to draw to
+  , stags :: !(M.Map Color.Attr TextTag)  -- ^ text color tags for fg/bg
   }
 
 data GtkFrame = GtkFrame
@@ -46,10 +43,8 @@ data GtkFrame = GtkFrame
 frontendName :: String
 frontendName = "gtk"
 
--- | Sets up and starts the main GTK loop providing input and output.
+-- | Set up and start the main GTK loop providing input and output.
 --
--- The other threads have to be spawned after gtk is initialized,
--- because they call @postGUIAsync@, and need @sview@ and @stags@.
 -- Because of Windows, GTK needs to be on a bound thread,
 -- so we can't avoid the communication overhead of bound threads.
 startup :: DebugModeCli -> IO RawFrontend
@@ -73,15 +68,20 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
   textViewSetEditable sview False
   textViewSetCursorVisible sview False
   -- Set up the channel for keyboard input.
-  schanKey <- STM.atomically STM.newTQueue
+  fchanKey <- STM.atomically STM.newTQueue
   -- Create the session record.
-  skeyPressed <- newEmptyMVar
+  fshowNow <- newMVar ()
   let sess = FrontendSession{..}
+      promptGetKey :: SingleFrame -> IO K.KM
+      promptGetKey frame = do
+        display sess frame
+        STM.atomically $ STM.readTQueue fchanKey
       rf = RawFrontend
         { fdisplay = display sess
-        , fpromptGetKey = promptGetKey sess
+        , fpromptGetKey = promptGetKey
         , fshutdown = shutdown
-        , fkeyPressed = skeyPressed
+        , fshowNow
+        , fchanKey
         }
   putMVar rfMVar rf
   let modTranslate mods = modifierTranslate
@@ -99,9 +99,10 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
         !pointer = Nothing
     liftIO $ do
       unless (deadKey n) $ do
-        void $ tryPutMVar skeyPressed ()
         -- Store the key in the channel.
-        STM.atomically $ STM.writeTQueue schanKey K.KM{..}
+        STM.atomically $ STM.writeTQueue fchanKey K.KM{..}
+        -- Instantly show any frame waiting for display.
+        void $ tryPutMVar fshowNow ()
       return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString $ fromMaybe "" sfont
@@ -115,7 +116,7 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
   -- TODO: change cursor depending on targeting mode, etc.; hard
   cursor <- cursorNewForDisplay defDisplay Tcross  -- Target Crosshair Arrow
   sview `on` buttonPressEvent $ do
-    liftIO $ resetChanKey schanKey
+    liftIO $ resetChanKey fchanKey
     but <- eventButton
     (wx, wy) <- eventCoordinates
     mods <- eventModifier
@@ -157,7 +158,7 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
               _ -> K.LeftButtonPress
             !pointer = Just $! Point cx cy
         -- Store the mouse event coords in the keypress channel.
-        STM.atomically $ STM.writeTQueue schanKey K.KM{..}
+        STM.atomically $ STM.writeTQueue fchanKey K.KM{..}
     return $! but == RightButton  -- not to disable selection
   -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
@@ -238,14 +239,6 @@ evalFrame FrontendSession{stags} rawSF =
       ff ll l = reverse (foldl' f [] l) : ll
       f l ac  = let !tag = stags M.! Color.acAttr ac in tag : l
   in GtkFrame{..}
-
--- | Display a prompt, wait for any key.
--- Starts in Push mode, ends in Push or None mode.
--- Syncs with the drawing threads by showing the last or all queued frames.
-promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
-promptGetKey sess@FrontendSession{..} frame = do
-  display sess frame
-  STM.atomically $ STM.readTQueue schanKey
 
 -- | Tells a dead key.
 deadKey :: (Eq t, IsString t) => t -> Bool

@@ -22,11 +22,11 @@ import Game.LambdaHack.Common.Msg
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { swin        :: !C.Window  -- ^ the window to draw to
-  , sstyles     :: !(M.Map Color.Attr C.CursesStyle)
+  { sshowNow :: !(MVar ())
+  , schanKey :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
+  , swin     :: !C.Window  -- ^ the window to draw to
+  , sstyles  :: !(M.Map Color.Attr C.CursesStyle)
       -- ^ map from fore/back colour pairs to defined curses styles
-  , skeyPressed :: !(MVar ())
-  , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
 -- | The name of the frontend.
@@ -35,7 +35,7 @@ frontendName = "curses"
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: DebugModeCli -> IO RawFrontend
-startup sdebugCli = do
+startup _sdebugCli = do
   C.start
 --  C.keypad C.stdScr False  -- TODO: may help to fix xterm keypad on Ubuntu
   void $ C.cursSet C.CursorInvisible
@@ -50,13 +50,17 @@ startup sdebugCli = do
   ws <- C.convertStyles vs
   let swin = C.stdScr
       sstyles = M.fromList (zip ks ws)
-  skeyPressed <- newEmptyMVar
+  -- Set up the channel for keyboard input.
+  schanKey <- STM.atomically STM.newTQueue
+  -- Create the session record.
+  sshowNow <- newMVar ()
   let sess = FrontendSession{..}
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fshutdown = shutdown
-        , fkeyPressed = skeyPressed
+        , fshowNow = sshowNow
+        , fchanKey = schanKey
         }
   return $! rf
 
@@ -94,9 +98,14 @@ nextEvent FrontendSession{..} = do
 
 -- | Display a prompt, wait for any key.
 promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
-promptGetKey sess frame = do
+promptGetKey sess@FrontendSession{..} frame = do
   display sess frame
-  nextEvent sess
+  km <- nextEvent sess
+  -- Store the key in the channel.
+  STM.atomically $ STM.writeTQueue schanKey km
+  -- Instantly show any frame waiting for display.
+  void $ tryPutMVar sshowNow ()
+  STM.atomically $ STM.readTQueue schanKey
 
 keyTranslate :: C.Key -> K.KM
 keyTranslate e = (\(key, modifier) -> K.toKM modifier key) $

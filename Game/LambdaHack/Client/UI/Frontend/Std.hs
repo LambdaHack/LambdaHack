@@ -9,32 +9,37 @@ import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
 import qualified System.IO as SIO
 
+import qualified Control.Concurrent.STM as STM
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 
--- | No session data needs to be maintained by this frontend.
+-- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { skeyPressed :: !(MVar ())
-  , sdebugCli   :: !DebugModeCli  -- ^ client configuration
+  { sshowNow :: !(MVar ())
+  , schanKey :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
   }
 
 -- | The name of the frontend.
 frontendName :: String
 frontendName = "std"
 
--- | Starts the main program loop using the frontend input and output.
+-- | Set up the frontend input and output.
 startup :: DebugModeCli -> IO RawFrontend
-startup sdebugCli = do
-  skeyPressed <- newEmptyMVar
+startup _sdebugCli = do
+  -- Set up the channel for keyboard input.
+  schanKey <- STM.atomically STM.newTQueue
+  -- Create the session record.
+  sshowNow <- newMVar ()
   let sess = FrontendSession{..}
       rf = RawFrontend
         { fdisplay = display sess
         , fpromptGetKey = promptGetKey sess
         , fshutdown = shutdown
-        , fkeyPressed = skeyPressed
+        , fshowNow = sshowNow
+        , fchanKey = schanKey
         }
   return $! rf
 
@@ -54,7 +59,6 @@ display _ rawSF =
 nextEvent :: FrontendSession -> IO K.KM
 nextEvent FrontendSession{..} = do
   l <- BS.hGetLine SIO.stdin
-  void $ tryPutMVar skeyPressed ()
   let c = case BS.uncons l of
         Nothing -> '\n'  -- empty line counts as RET
         Just (hd, _) -> hd
@@ -62,9 +66,14 @@ nextEvent FrontendSession{..} = do
 
 -- | Display a prompt, wait for any key.
 promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
-promptGetKey sess frame = do
+promptGetKey sess@FrontendSession{..} frame = do
   display sess frame
-  nextEvent sess
+  km <- nextEvent sess
+  -- Store the key in the channel.
+  STM.atomically $ STM.writeTQueue schanKey km
+  -- Instantly show any frame waiting for display.
+  void $ tryPutMVar sshowNow ()
+  STM.atomically $ STM.readTQueue schanKey
 
 keyTranslate :: Char -> K.KM
 keyTranslate e = (\(key, modifier) -> K.toKM modifier key) $

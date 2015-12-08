@@ -19,7 +19,8 @@ data RawFrontend = RawFrontend
   { fdisplay      :: SingleFrame -> IO ()
   , fpromptGetKey :: SingleFrame -> IO K.KM
   , fshutdown     :: IO ()
-  , fkeyPressed   :: !(MVar ())
+  , fshowNow      :: !(MVar ())
+  , fchanKey      :: !(STM.TQueue K.KM)
   }
 
 startupAsync :: (MVar RawFrontend -> IO ()) -> IO RawFrontend
