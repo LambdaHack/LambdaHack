@@ -47,8 +47,9 @@ data FrontReq :: * -> * where
 newtype ChanFrontend = ChanFrontend (forall a. FrontReq a -> IO a)
 
 data FSession = FSession
-  { fautoYesRef :: !(IORef Bool)
-  , ftimeout    :: !(MVar Int)
+  { fautoYesRef   :: !(IORef Bool)
+  , ftimeout      :: !(MVar Int)
+  , fasyncTimeout :: !(Async ())
   }
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
@@ -92,7 +93,9 @@ fchanFrontend DebugModeCli{smaxFps}
       noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
       return $! not noKeysPending
     FrontAutoYes b -> writeIORef fautoYesRef b
-    FrontShutdown -> fshutdown rf
+    FrontShutdown -> do
+      cancel fasyncTimeout
+      fshutdown rf
 
 defaultMaxFps :: Int
 defaultMaxFps = 30
@@ -100,8 +103,10 @@ defaultMaxFps = 30
 microInSec :: Int
 microInSec = 1000000
 
-forkFrameTimeout :: FSession -> RawFrontend -> IO ()
-forkFrameTimeout FSession{ftimeout} RawFrontend{fshowNow} = do
+-- This thread is canceled forcefully, because the @threadDelay@
+-- may be much longer than an acceptable shutdown time.
+forkFrameTimeout :: MVar Int -> RawFrontend -> IO ()
+forkFrameTimeout ftimeout RawFrontend{fshowNow} = do
   let loop = do
         timeout <- takeMVar ftimeout
         threadDelay timeout
@@ -136,7 +141,7 @@ chanFrontend sdebugCli = do
   rf <- startup
   fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   ftimeout <- newEmptyMVar
+  fasyncTimeout <- async $ forkFrameTimeout ftimeout rf
+  -- Warning: not linking @fasyncTimeout@, so it'd better not crash.
   let fs = FSession{..}
-  a <- async $ forkFrameTimeout fs rf
-  link a
   return $ fchanFrontend sdebugCli fs rf
