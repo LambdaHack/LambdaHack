@@ -3,9 +3,7 @@ module Game.LambdaHack.Client.UI.Frontend.Vty
   ( startup, frontendName
   ) where
 
-import Control.Concurrent
 import Control.Concurrent.Async
-import qualified Control.Concurrent.STM as STM
 import Control.Monad
 import Data.Default
 import Graphics.Vty
@@ -31,22 +29,19 @@ frontendName = "vty"
 startup :: DebugModeCli -> IO RawFrontend
 startup _sdebugCli = do
   svty <- mkVty def
-  rf <- createRawFrontend display (Vty.shutdown svty)
+  let sess = FrontendSession{..}
+  rf <- createRawFrontend (display sess) (Vty.shutdown svty)
   let storeKeys :: IO ()
       storeKeys = do
-        km <- nextEvent svty
-        -- Store the key in the channel.
-        STM.atomically $ STM.writeTQueue (fchanKey rf) km
-        -- Instantly show any frame waiting for display.
-        void $ tryPutMVar (fshowNow rf) ()
+        km <- nextEvent0 sess
+        saveKM rf km
         storeKeys
-      sess = FrontendSession{..}
   void $ async storeKeys
   return $! rf
 
 -- | Input key via the frontend.
-nextEvent :: IO K.KM
-nextEvent = do
+nextEvent0 :: FrontendSession -> IO K.KM
+nextEvent0 sess@FrontendSession{svty} = do
   e <- nextEvent svty  -- blocks here, so no polling
   case e of
     EvKey n mods -> do
@@ -54,7 +49,7 @@ nextEvent = do
           !modifier = modTranslate mods
           !pointer = Nothing
       return $! K.KM{..}
-    _ -> nextEvent
+    _ -> nextEvent0 sess
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data

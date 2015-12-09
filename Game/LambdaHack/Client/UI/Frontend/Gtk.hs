@@ -9,7 +9,7 @@ import Prelude.Compat
 
 import Control.Concurrent
 import qualified Control.Concurrent.STM as STM
-import Control.Monad (unless, void, when)
+import Control.Monad (unless, when)
 import Control.Monad.Reader (liftIO)
 import qualified Data.ByteString.Char8 as BS
 import Data.IORef
@@ -85,11 +85,7 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
               !pointer = Nothing
           return $! K.KM{..}
     km <- nextEvent
-    unless (km == K.deadKM) $ liftIO $ do
-      -- Store the key in the channel.
-      STM.atomically $ STM.writeTQueue (fchanKey rf) km
-      -- Instantly show any frame waiting for display.
-      void $ tryPutMVar (fshowNow rf) ()
+    liftIO $ saveKM rf km
     return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString $ fromMaybe "" sfont

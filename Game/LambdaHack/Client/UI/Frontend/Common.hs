@@ -1,7 +1,7 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Frontend.Common
   ( RawFrontend(..)
-  , startupAsync, startupBound, createRawFrontend, resetChanKey
+  , startupAsync, startupBound, createRawFrontend, resetChanKey, saveKM
   , modifierTranslate
   ) where
 
@@ -11,7 +11,7 @@ import Prelude.Compat
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
-import Control.Monad (when)
+import Control.Monad (unless, void, when)
 import Data.Maybe
 
 import qualified Game.LambdaHack.Client.Key as K
@@ -56,6 +56,14 @@ resetChanKey :: STM.TQueue K.KM -> IO ()
 resetChanKey fchanKey = do
   res <- STM.atomically $ STM.tryReadTQueue fchanKey
   when (isJust res) $ resetChanKey fchanKey
+
+saveKM :: RawFrontend -> K.KM -> IO ()
+saveKM rf km = do
+  unless (km == K.deadKM) $ do
+    -- Store the key in the channel.
+    STM.atomically $ STM.writeTQueue (fchanKey rf) km
+    -- Instantly show any frame waiting for display.
+    void $ tryPutMVar (fshowNow rf) ()
 
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: Bool -> Bool -> Bool -> Bool -> K.Modifier

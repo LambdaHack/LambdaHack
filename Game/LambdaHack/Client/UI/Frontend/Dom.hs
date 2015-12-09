@@ -11,7 +11,6 @@ import Control.Monad.Reader (ask, liftIO)
 import Data.Bits ((.|.))
 import Data.Char (chr, isUpper, toLower)
 import Data.Maybe
-import Data.String (IsString (..))
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
 import GHCJS.DOM.CSSStyleDeclaration (getPropertyValue, setProperty)
@@ -75,7 +74,7 @@ terrible error
 #endif
 
 runWeb :: DebugModeCli -> MVar RawFrontend -> WebView -> IO ()
-runWeb sdebugCli@DebugModeCli{sfont} rfMVar swebView = do
+runWeb DebugModeCli{sfont} rfMVar swebView = do
   -- Init the document.
   enableInspector swebView  -- enables Inspector in Webkit
   Just doc <- webViewGetDomDocument swebView
@@ -123,13 +122,11 @@ font-weight: normal;
   Just scharStyle2 <- getStyle tableElem2
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sess) shutdown
-  putMVar rfMVar rf  -- send to client ASAP, while wepage is being redrawn
   -- Handle keypresses.
   -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys and
   -- @getKeyCode@ then returns wrong characters anyway.
   -- Regardless, it doesn't work: https://bugs.webkit.org/show_bug.cgi?id=20027
   void $ doc `on` keyDown $ do
-   let nextEvent = do
     -- https://hackage.haskell.org/package/webkitgtk3-0.14.1.0/docs/Graphics-UI-Gtk-WebKit-DOM-KeyboardEvent.html
     -- though: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyIdentifier
     keyId <- ask >>= getKeyIdentifier
@@ -157,20 +154,15 @@ font-weight: normal;
                                modCtrl modShift (modAlt || modAltG) modMeta
                     in if md == K.Shift then K.NoModifier else md
         !pointer = Nothing
-     {-
-     putStrLn keyId
-     putStrLn quirksN
-     putStrLn $ T.unpack $ K.showKey key
-     putStrLn $ show which
-     putStrLn $ show keyCode
-     -}
-     return $! K.KM{..}
-    km <- nextEvent
-    unless (km == K.deadKM) $ liftIO $ do
-      -- Store the key in the channel.
-      STM.atomically $ STM.writeTQueue (fchanKey rf) km
-      -- Instantly show any frame waiting for display.
-      void $ tryPutMVar (fshowNow rf) ()
+    {-
+    putStrLn keyId
+    putStrLn quirksN
+    putStrLn $ T.unpack $ K.showKey key
+    putStrLn $ show which
+    putStrLn $ show keyCode
+    -}
+    let !km = K.KM{..}
+    liftIO $ saveKM rf km
   -- Handle mouseclicks, per-cell.
   let xs = [0..lxsize - 1]
       ys = [0..lysize - 1]
@@ -183,7 +175,8 @@ font-weight: normal;
   setProp scharStyle "display" "none"
   void $ appendChild body (Just tableElem2)
   setProp scharStyle2 "display" "block"
-  return ()
+  putMVar rfMVar rf  -- send to client only after the whole wegage is set up
+                     -- because there is no @mainGUI@ to start accepting
 
 shutdown :: IO ()
 shutdown = return () -- nothing to clean up

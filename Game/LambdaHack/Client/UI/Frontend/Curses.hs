@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.Frontend.Curses
   ( startup, frontendName
   ) where
 
-import Control.Concurrent
+import Control.Concurrent.Async
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Char (chr, ord)
@@ -52,11 +52,8 @@ startup _sdebugCli = do
   rf <- createRawFrontend (display sess) shutdown
   let storeKeys :: IO ()
       storeKeys = do
-        km <- nextEvent svty
-        -- Store the key in the channel.
-        STM.atomically $ STM.writeTQueue (fchanKey rf) km
-        -- Instantly show any frame waiting for display.
-        void $ tryPutMVar (fshowNow rf) ()
+        km <- nextEvent
+        saveKM rf km
         storeKeys
   void $ async storeKeys
   return $! rf
@@ -86,7 +83,7 @@ display FrontendSession{..} rawSF = do
       level = init sfLevelDecoded ++ [init $ last sfLevelDecoded]
       nm = zip [0..] $ map (zip [0..]) level
   sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr sstyles)
-              >> C.mvWAddStr swin (y + 1) x [acChar]
+              >> C.mvWAddStr swin y x [acChar]
             | (y, line) <- nm, (x, Color.AttrChar{..}) <- line ]
   C.refresh
 

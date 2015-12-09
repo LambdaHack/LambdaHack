@@ -3,14 +3,12 @@ module Game.LambdaHack.Client.UI.Frontend.Std
   ( startup, frontendName
   ) where
 
-import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Monad (void)
 import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
 import qualified System.IO as SIO
 
-import qualified Control.Concurrent.STM as STM
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Common
@@ -30,10 +28,7 @@ startup _sdebugCli = do
   let storeKeys :: IO ()
       storeKeys = do
         km <- nextEvent  -- blocks here, so no polling
-        -- Store the key in the channel.
-        STM.atomically $ STM.writeTQueue (fchanKey rf) km
-        -- Instantly show any frame waiting for display.
-        void $ tryPutMVar (fshowNow rf) ()
+        saveKM rf km
         storeKeys
   void $ async storeKeys
   return $! rf
