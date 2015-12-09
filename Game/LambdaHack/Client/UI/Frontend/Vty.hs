@@ -50,13 +50,8 @@ startup _sdebugCli = do
           _ -> return ()
         storeKeys
       sess = FrontendSession{..}
-      promptGetKey :: SingleFrame -> IO K.KM
-      promptGetKey frame = do
-        display sess frame
-        STM.atomically $ STM.readTQueue fchanKey
       rf = RawFrontend
         { fdisplay = display sess
-        , fpromptGetKey = promptGetKey
         , fshutdown = Vty.shutdown svty
         , fshowNow
         , fchanKey

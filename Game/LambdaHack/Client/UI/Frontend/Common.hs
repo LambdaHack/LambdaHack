@@ -16,11 +16,10 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
 
 data RawFrontend = RawFrontend
-  { fdisplay      :: SingleFrame -> IO ()
-  , fpromptGetKey :: SingleFrame -> IO K.KM
-  , fshutdown     :: IO ()
-  , fshowNow      :: !(MVar ())
-  , fchanKey      :: !(STM.TQueue K.KM)
+  { fdisplay  :: SingleFrame -> IO ()
+  , fshutdown :: IO ()
+  , fshowNow  :: !(MVar ())
+  , fchanKey  :: !(STM.TQueue K.KM)
   }
 
 startupAsync :: (MVar RawFrontend -> IO ()) -> IO RawFrontend

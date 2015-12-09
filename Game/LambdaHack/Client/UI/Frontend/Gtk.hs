@@ -72,13 +72,8 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
   -- Create the session record.
   fshowNow <- newMVar ()
   let sess = FrontendSession{..}
-      promptGetKey :: SingleFrame -> IO K.KM
-      promptGetKey frame = do
-        display sess frame
-        STM.atomically $ STM.readTQueue fchanKey
       rf = RawFrontend
         { fdisplay = display sess
-        , fpromptGetKey = promptGetKey
         , fshutdown = shutdown
         , fshowNow
         , fchanKey

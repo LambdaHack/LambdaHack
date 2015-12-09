@@ -39,13 +39,8 @@ startup _sdebugCli = do
         -- Instantly show any frame waiting for display.
         void $ tryPutMVar fshowNow ()
         storeKeys
-      promptGetKey :: SingleFrame -> IO K.KM
-      promptGetKey frame = do
-        display frame
-        STM.atomically $ STM.readTQueue fchanKey
       rf = RawFrontend
         { fdisplay = display
-        , fpromptGetKey = promptGetKey
         , fshutdown = shutdown
         , fshowNow
         , fchanKey

@@ -54,39 +54,33 @@ data FSession = FSession
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
-promptGetKey :: FSession -> RawFrontend -> [K.KM] -> SingleFrame -> IO K.KM
-promptGetKey _ rf [] frame = fpromptGetKey rf frame
-promptGetKey fs@FSession{fautoYesRef} rf keys frame = do
+promptGetKey :: DebugModeCli -> FSession -> RawFrontend -> [K.KM] -> SingleFrame
+             -> IO K.KM
+promptGetKey sdebugCli fs rf@RawFrontend{fchanKey} [] frame = do
+  display sdebugCli fs rf frame
+  STM.atomically $ STM.readTQueue fchanKey
+promptGetKey sdebugCli fs@FSession{fautoYesRef} rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef fautoYesRef
   if autoYes && K.spaceKM `elem` keys then do
     fdisplay rf frame
     return K.spaceKM
   else do
-    -- cancel delay (or extend delay?)
-    km <- fpromptGetKey rf frame
+    -- Wait until timeout is up, not to skip the last frame of animation.
+    display sdebugCli fs rf frame
+    km <- STM.atomically $ STM.readTQueue fchanKey
     if km{K.pointer=Nothing} `elem` keys
     then return km
-    else promptGetKey fs rf keys frame
+    else promptGetKey sdebugCli fs rf keys frame
 
 -- | Read UI requests from the client and send them to the frontend,
 fchanFrontend :: DebugModeCli -> FSession -> RawFrontend -> ChanFrontend
-fchanFrontend DebugModeCli{smaxFps}
-              fsess@FSession{..}
+fchanFrontend sdebugCli
+              fs@FSession{..}
               rf@RawFrontend{fshowNow} =
-  let maxFps = fromMaybe defaultMaxFps smaxFps
-  in ChanFrontend $ \req -> case req of
-    FrontFrame{..} -> do
-      takeMVar fshowNow
-      noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
-      if noKeysPending then
-        -- For simplicity, not overwriting, even if @maxFps@ changed.
-        void $ tryPutMVar ftimeout $ microInSec `div` maxFps
-      else
-        -- Keys pending, so instantly show any future frame waiting for display.
-        void $ tryPutMVar fshowNow ()
-      fdisplay rf frontFrame
+  ChanFrontend $ \req -> case req of
+    FrontFrame{..} -> display sdebugCli fs rf frontFrame
     FrontDelay -> return ()
-    FrontKey{..} -> promptGetKey fsess rf frontKeyKeys frontKeyFrame
+    FrontKey{..} -> promptGetKey sdebugCli fs rf frontKeyKeys frontKeyFrame
     FrontSync ->
       void $ tryPutMVar fshowNow ()
     FrontPressed -> do
@@ -96,6 +90,22 @@ fchanFrontend DebugModeCli{smaxFps}
     FrontShutdown -> do
       cancel fasyncTimeout
       fshutdown rf
+
+display :: DebugModeCli -> FSession -> RawFrontend -> SingleFrame -> IO ()
+display DebugModeCli{smaxFps}
+        FSession{..}
+        rf@RawFrontend{fshowNow}
+        frontFrame = do
+  let maxFps = fromMaybe defaultMaxFps smaxFps
+  takeMVar fshowNow
+  noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
+  if noKeysPending then
+    -- For simplicity, not overwriting, even if @maxFps@ changed.
+    void $ tryPutMVar ftimeout $ microInSec `div` maxFps
+  else
+    -- Keys pending, so instantly show any future frame waiting for display.
+    void $ tryPutMVar fshowNow ()
+  fdisplay rf frontFrame
 
 defaultMaxFps :: Int
 defaultMaxFps = 30
@@ -127,7 +137,6 @@ nullStartup = do
   fshowNow <- newMVar ()
   return $! RawFrontend
     { fdisplay = \_ -> return ()
-    , fpromptGetKey = \_ -> return K.escKM
     , fshutdown = return ()
     , fshowNow
     , fchanKey
