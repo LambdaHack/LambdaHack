@@ -35,35 +35,34 @@ startup _sdebugCli = do
   fchanKey <- STM.atomically STM.newTQueue
   -- Create the session record.
   fshowNow <- newMVar ()
-  let sess = FrontendSession{..}
+  let storeKeys :: IO ()
+      storeKeys = do
+        e <- nextEvent svty  -- blocks here, so no polling
+        case e of
+          EvKey n mods -> do
+            let !key = keyTranslate n
+                !modifier = modTranslate mods
+                !pointer = Nothing
+            -- Store the key in the channel.
+            STM.atomically $ STM.writeTQueue fchanKey K.KM{..}
+            -- Instantly show any frame waiting for display.
+            void $ tryPutMVar fshowNow ()
+          _ -> return ()
+        storeKeys
+      sess = FrontendSession{..}
       promptGetKey :: SingleFrame -> IO K.KM
       promptGetKey frame = do
         display sess frame
         STM.atomically $ STM.readTQueue fchanKey
       rf = RawFrontend
         { fdisplay = display sess
-        , fpromptGetKey = promptGetKey sess
+        , fpromptGetKey = promptGetKey
         , fshutdown = Vty.shutdown svty
         , fshowNow
         , fchanKey
         }
   void $ async storeKeys
   return $! rf
- where
-  storeKeys :: IO ()
-  storeKeys = do
-    e <- nextEvent svty  -- blocks here, so no polling
-    case e of
-      EvKey n mods -> do
-        let !key = keyTranslate n
-            !modifier = modTranslate mods
-            !pointer = Nothing
-        -- Store the key in the channel.
-        STM.atomically $ STM.writeTQueue fchanKey K.KM{..}
-        -- Instantly show any frame waiting for display.
-        void $ tryPutMVar fshowNow ()
-      _ -> return ()
-    storeKeys
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data

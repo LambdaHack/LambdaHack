@@ -22,10 +22,8 @@ import Game.LambdaHack.Common.Msg
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { sshowNow :: !(MVar ())
-  , schanKey :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
-  , swin     :: !C.Window  -- ^ the window to draw to
-  , sstyles  :: !(M.Map Color.Attr C.CursesStyle)
+  { swin    :: !C.Window  -- ^ the window to draw to
+  , sstyles :: !(M.Map Color.Attr C.CursesStyle)
       -- ^ map from fore/back colour pairs to defined curses styles
   }
 
@@ -48,20 +46,33 @@ startup _sdebugCli = do
     C.end >> (assert `failure` "terminal has too few color pairs" `twith` nr)
   let (ks, vs) = unzip s
   ws <- C.convertStyles vs
+  -- Set up the channel for keyboard input.
+  fchanKey <- STM.atomically STM.newTQueue
+  -- Create the session record.
+  fshowNow <- newMVar ()
   let swin = C.stdScr
       sstyles = M.fromList (zip ks ws)
-  -- Set up the channel for keyboard input.
-  schanKey <- STM.atomically STM.newTQueue
-  -- Create the session record.
-  sshowNow <- newMVar ()
-  let sess = FrontendSession{..}
+      storeKeys :: IO ()
+      storeKeys = do
+        c <- nextEvent  -- blocks here, so no polling
+        let !km = keyTranslate c
+        -- Store the key in the channel.
+        STM.atomically $ STM.writeTQueue fchanKey km
+        -- Instantly show any frame waiting for display.
+        void $ tryPutMVar fshowNow ()
+        storeKeys
+      promptGetKey :: SingleFrame -> IO K.KM
+      promptGetKey frame = do
+        display frame
+        STM.atomically $ STM.readTQueue fchanKey
       rf = RawFrontend
-        { fdisplay = display sess
-        , fpromptGetKey = promptGetKey sess
+        { fdisplay = display
+        , fpromptGetKey = promptGetKey
         , fshutdown = shutdown
-        , fshowNow = sshowNow
-        , fchanKey = schanKey
+        , fshowNow
+        , fchanKey
         }
+  void $ async storeKeys
   return $! rf
 
 shutdown :: IO ()
@@ -90,22 +101,9 @@ display FrontendSession{..} rawSF = do
   C.refresh
 
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO K.KM
-nextEvent FrontendSession{..} = do
-  km <- keyTranslate `fmap` C.getKey C.refresh
-  void $ tryPutMVar skeyPressed ()
-  return km
-
--- | Display a prompt, wait for any key.
-promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
-promptGetKey sess@FrontendSession{..} frame = do
-  display sess frame
-  km <- nextEvent sess
-  -- Store the key in the channel.
-  STM.atomically $ STM.writeTQueue schanKey km
-  -- Instantly show any frame waiting for display.
-  void $ tryPutMVar sshowNow ()
-  STM.atomically $ STM.readTQueue schanKey
+nextEvent :: IO Char
+nextEvent FrontendSession{..} =
+  C.getKey C.refresh
 
 keyTranslate :: C.Key -> K.KM
 keyTranslate e = (\(key, modifier) -> K.toKM modifier key) $

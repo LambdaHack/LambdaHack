@@ -4,6 +4,7 @@ module Game.LambdaHack.Client.UI.Frontend.Std
   ) where
 
 import Control.Concurrent
+import Control.Concurrent.Async
 import Control.Monad (void)
 import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
@@ -16,11 +17,7 @@ import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 
--- | Session data maintained by the frontend.
-data FrontendSession = FrontendSession
-  { sshowNow :: !(MVar ())
-  , schanKey :: !(STM.TQueue K.KM)  -- ^ channel for keyboard input
-  }
+-- No session data maintained by this frontend
 
 -- | The name of the frontend.
 frontendName :: String
@@ -30,50 +27,50 @@ frontendName = "std"
 startup :: DebugModeCli -> IO RawFrontend
 startup _sdebugCli = do
   -- Set up the channel for keyboard input.
-  schanKey <- STM.atomically STM.newTQueue
+  fchanKey <- STM.atomically STM.newTQueue
   -- Create the session record.
-  sshowNow <- newMVar ()
-  let sess = FrontendSession{..}
+  fshowNow <- newMVar ()
+  let storeKeys :: IO ()
+      storeKeys = do
+        c <- nextEvent  -- blocks here, so no polling
+        let !km = keyTranslate c
+        -- Store the key in the channel.
+        STM.atomically $ STM.writeTQueue fchanKey km
+        -- Instantly show any frame waiting for display.
+        void $ tryPutMVar fshowNow ()
+        storeKeys
+      promptGetKey :: SingleFrame -> IO K.KM
+      promptGetKey frame = do
+        display frame
+        STM.atomically $ STM.readTQueue fchanKey
       rf = RawFrontend
-        { fdisplay = display sess
-        , fpromptGetKey = promptGetKey sess
+        { fdisplay = display
+        , fpromptGetKey = promptGetKey
         , fshutdown = shutdown
-        , fshowNow = sshowNow
-        , fchanKey = schanKey
+        , fshowNow
+        , fchanKey
         }
+  void $ async storeKeys
   return $! rf
 
 shutdown :: IO ()
 shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession    -- ^ frontend session data
-        -> SingleFrame  -- ^ the screen frame to draw
+display :: SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display _ rawSF =
+display rawSF =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
       bs = map (BS.pack . map Color.acChar . decodeLine) sfLevel ++ [BS.empty]
   in mapM_ BS.putStrLn bs
 
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO K.KM
-nextEvent FrontendSession{..} = do
+nextEvent :: IO Char
+nextEvent = do
   l <- BS.hGetLine SIO.stdin
-  let c = case BS.uncons l of
-        Nothing -> '\n'  -- empty line counts as RET
-        Just (hd, _) -> hd
-  return $! keyTranslate c
-
--- | Display a prompt, wait for any key.
-promptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
-promptGetKey sess@FrontendSession{..} frame = do
-  display sess frame
-  km <- nextEvent sess
-  -- Store the key in the channel.
-  STM.atomically $ STM.writeTQueue schanKey km
-  -- Instantly show any frame waiting for display.
-  void $ tryPutMVar sshowNow ()
-  STM.atomically $ STM.readTQueue schanKey
+  return $! case BS.uncons l of
+    Nothing -> '\n'  -- empty line counts as RET
+    Just (hd, _) -> hd
 
 keyTranslate :: Char -> K.KM
 keyTranslate e = (\(key, modifier) -> K.toKM modifier key) $
