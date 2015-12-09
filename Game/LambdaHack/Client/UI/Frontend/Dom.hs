@@ -129,6 +129,7 @@ font-weight: normal;
   -- @getKeyCode@ then returns wrong characters anyway.
   -- Regardless, it doesn't work: https://bugs.webkit.org/show_bug.cgi?id=20027
   void $ doc `on` keyDown $ do
+   let nextEvent = do
     -- https://hackage.haskell.org/package/webkitgtk3-0.14.1.0/docs/Graphics-UI-Gtk-WebKit-DOM-KeyboardEvent.html
     -- though: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyIdentifier
     keyId <- ask >>= getKeyIdentifier
@@ -156,19 +157,20 @@ font-weight: normal;
                                modCtrl modShift (modAlt || modAltG) modMeta
                     in if md == K.Shift then K.NoModifier else md
         !pointer = Nothing
-    liftIO $ do
-      {-
-      putStrLn keyId
-      putStrLn quirksN
-      putStrLn $ T.unpack $ K.showKey key
-      putStrLn $ show which
-      putStrLn $ show keyCode
-      -}
-      unless (deadKey keyId) $ do
-        -- Store the key in the channel.
-        STM.atomically $ STM.writeTQueue (fchanKey rf) K.KM{..}
-        -- Instantly show any frame waiting for display.
-        void $ tryPutMVar (fshowNow rf) ()
+     {-
+     putStrLn keyId
+     putStrLn quirksN
+     putStrLn $ T.unpack $ K.showKey key
+     putStrLn $ show which
+     putStrLn $ show keyCode
+     -}
+     return $! K.KM{..}
+    km <- nextEvent
+    unless (km == K.deadKM) $ liftIO $ do
+      -- Store the key in the channel.
+      STM.atomically $ STM.writeTQueue (fchanKey rf) km
+      -- Instantly show any frame waiting for display.
+      void $ tryPutMVar (fshowNow rf) ()
   -- Handle mouseclicks, per-cell.
   let xs = [0..lxsize - 1]
       ys = [0..lysize - 1]
@@ -182,6 +184,9 @@ font-weight: normal;
   void $ appendChild body (Just tableElem2)
   setProp scharStyle2 "display" "block"
   return ()
+
+shutdown :: IO ()
+shutdown = return () -- nothing to clean up
 
 setProp :: CSSStyleDeclaration -> String -> String -> IO ()
 setProp style propRef propValue =
@@ -235,9 +240,6 @@ flattenTable table = do
   lrc <- mapM getC lrow
   return $! concat lrc
 
-shutdown :: IO ()
-shutdown = return () -- nothing to clean up
-
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data
         -> SingleFrame  -- ^ the screen frame to draw
@@ -265,18 +267,3 @@ display FrontendSession{..} rawSF = postGUISync $ do
       mapM_ setChar $ zip scharCells acs
       setProp scharStyle2 "display" "none"
       setProp scharStyle "display" "block"
-
--- | Tells a dead key.
-deadKey :: (Eq t, IsString t) => t -> Bool
-deadKey x = case x of   -- ??? x == "Dead"
-  "Dead"        -> True
-  "Shift"       -> True
-  "Control"     -> True
-  "Meta"        -> True
-  "Menu"        -> True
-  "ContextMenu" -> True
-  "Alt"         -> True
-  "AltGraph"    -> True
-  "Num_Lock"    -> True
-  "CapsLock"    -> True
-  _             -> False

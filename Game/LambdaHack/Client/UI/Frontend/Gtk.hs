@@ -16,7 +16,6 @@ import Data.IORef
 import Data.List (foldl')
 import qualified Data.Map.Strict as M
 import Data.Maybe
-import Data.String (IsString (..))
 import qualified Data.Text as T
 import Graphics.UI.Gtk hiding (Point)
 
@@ -76,20 +75,22 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
         (any (`elem` mods) [Alt, Alt2, Alt3, Alt4, Alt5])
         (any (`elem` mods) [Meta, Super])
   sview `on` keyPressEvent $ do
-    n <- eventKeyName
-    mods <- eventModifier
-    let !key = K.keyTranslate $ T.unpack n
-        !modifier =
-          let md = modTranslate mods
-          in if md == K.Shift then K.NoModifier else md
-        !pointer = Nothing
-    liftIO $ do
-      unless (deadKey n) $ do
-        -- Store the key in the channel.
-        STM.atomically $ STM.writeTQueue (fchanKey rf) K.KM{..}
-        -- Instantly show any frame waiting for display.
-        void $ tryPutMVar (fshowNow rf) ()
-      return True
+    let nextEvent = do
+          n <- eventKeyName
+          mods <- eventModifier
+          let !key = K.keyTranslate $ T.unpack n
+              !modifier =
+                let md = modTranslate mods
+                in if md == K.Shift then K.NoModifier else md
+              !pointer = Nothing
+          return $! K.KM{..}
+    km <- nextEvent
+    unless (km == K.deadKM) $ liftIO $ do
+      -- Store the key in the channel.
+      STM.atomically $ STM.writeTQueue (fchanKey rf) km
+      -- Instantly show any frame waiting for display.
+      void $ tryPutMVar (fshowNow rf) ()
+    return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString $ fromMaybe "" sfont
   widgetModifyFont sview (Just f)
@@ -158,6 +159,10 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
   widgetShowAll w
   mainGUI
 
+-- TODO: is postGUISync required?
+shutdown :: IO ()
+shutdown = postGUISync mainQuit
+
 doAttr :: DebugModeCli -> TextTag -> Color.Attr -> IO ()
 doAttr sdebugCli tt attr@Color.Attr{fg, bg}
   | attr == Color.defAttr = return ()
@@ -176,10 +181,6 @@ extraAttr :: DebugModeCli -> [AttrOp TextTag]
 extraAttr DebugModeCli{scolorIsBold} =
   [textTagWeight := fromEnum WeightBold | scolorIsBold == Just True]
 --     , textTagStretch := StretchUltraExpanded
-
--- TODO: is postGUISync required?
-shutdown :: IO ()
-shutdown = postGUISync mainQuit
 
 -- | Add a frame to be drawn.
 display :: FrontendSession    -- ^ frontend session data
@@ -225,23 +226,3 @@ evalFrame FrontendSession{stags} rawSF =
       ff ll l = reverse (foldl' f [] l) : ll
       f l ac  = let !tag = stags M.! Color.acAttr ac in tag : l
   in GtkFrame{..}
-
--- | Tells a dead key.
-deadKey :: (Eq t, IsString t) => t -> Bool
-deadKey x = case x of
-  "Shift_L"          -> True
-  "Shift_R"          -> True
-  "Control_L"        -> True
-  "Control_R"        -> True
-  "Super_L"          -> True
-  "Super_R"          -> True
-  "Menu"             -> True
-  "Alt_L"            -> True
-  "Alt_R"            -> True
-  "ISO_Level2_Shift" -> True
-  "ISO_Level3_Shift" -> True
-  "ISO_Level2_Latch" -> True
-  "ISO_Level3_Latch" -> True
-  "Num_Lock"         -> True
-  "Caps_Lock"        -> True
-  _                  -> False

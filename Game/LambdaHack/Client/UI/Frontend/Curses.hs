@@ -48,21 +48,25 @@ startup _sdebugCli = do
   ws <- C.convertStyles vs
   let swin = C.stdScr
       sstyles = M.fromList (zip ks ws)
-      storeKeys :: IO ()
+      sess = FrontendSession{..}
+  rf <- createRawFrontend (display sess) shutdown
+  let storeKeys :: IO ()
       storeKeys = do
-        c <- nextEvent  -- blocks here, so no polling
-        let !km = keyTranslate c
+        km <- nextEvent svty
         -- Store the key in the channel.
         STM.atomically $ STM.writeTQueue (fchanKey rf) km
         -- Instantly show any frame waiting for display.
         void $ tryPutMVar (fshowNow rf) ()
         storeKeys
-  rf <- createRawFrontend display shutdown
   void $ async storeKeys
   return $! rf
 
 shutdown :: IO ()
 shutdown = C.end
+
+-- | Input key via the frontend.
+nextEvent :: IO K.KM
+nextEvent = keyTranslate <$> C.getKey C.refresh
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data
@@ -85,10 +89,6 @@ display FrontendSession{..} rawSF = do
               >> C.mvWAddStr swin (y + 1) x [acChar]
             | (y, line) <- nm, (x, Color.AttrChar{..}) <- line ]
   C.refresh
-
--- | Input key via the frontend.
-nextEvent :: IO Char
-nextEvent = C.getKey C.refresh
 
 keyTranslate :: C.Key -> K.KM
 keyTranslate e = (\(key, modifier) -> K.toKM modifier key) $

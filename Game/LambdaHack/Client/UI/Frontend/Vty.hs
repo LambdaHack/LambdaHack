@@ -31,24 +31,30 @@ frontendName = "vty"
 startup :: DebugModeCli -> IO RawFrontend
 startup _sdebugCli = do
   svty <- mkVty def
+  rf <- createRawFrontend display (Vty.shutdown svty)
   let storeKeys :: IO ()
       storeKeys = do
-        e <- nextEvent svty  -- blocks here, so no polling
-        case e of
-          EvKey n mods -> do
-            let !key = keyTranslate n
-                !modifier = modTranslate mods
-                !pointer = Nothing
-            -- Store the key in the channel.
-            STM.atomically $ STM.writeTQueue (fchanKey rf) K.KM{..}
-            -- Instantly show any frame waiting for display.
-            void $ tryPutMVar (fshowNow rf) ()
-          _ -> return ()
+        km <- nextEvent svty
+        -- Store the key in the channel.
+        STM.atomically $ STM.writeTQueue (fchanKey rf) km
+        -- Instantly show any frame waiting for display.
+        void $ tryPutMVar (fshowNow rf) ()
         storeKeys
       sess = FrontendSession{..}
-  rf <- createRawFrontend display (Vty.shutdown svty)
   void $ async storeKeys
   return $! rf
+
+-- | Input key via the frontend.
+nextEvent :: IO K.KM
+nextEvent = do
+  e <- nextEvent svty  -- blocks here, so no polling
+  case e of
+    EvKey n mods -> do
+      let !key = keyTranslate n
+          !modifier = modTranslate mods
+          !pointer = Nothing
+      return $! K.KM{..}
+    _ -> nextEvent
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data

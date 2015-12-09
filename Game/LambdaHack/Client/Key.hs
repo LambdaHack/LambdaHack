@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.Key
   , moveBinding, mkKM, keyTranslate, keyTranslateWeb
   , Modifier(..), KM(..), toKM, showKM
   , escKM, spaceKM, returnKM, pgupKM, pgdnKM, upKM, downKM, backspaceKM
-  , leftButtonKM, rightButtonKM
+  , leftButtonKM, rightButtonKM, deadKM
   ) where
 
 import Control.DeepSeq
@@ -46,6 +46,7 @@ data Key =
   | MiddleButtonPress  -- ^ middle mouse button pressed
   | RightButtonPress   -- ^ right mouse button pressed
   | Unknown !Text -- ^ an unknown key, registered to warn the user
+  | DeadKey
   deriving (Read, Ord, Eq, Generic)
 
 instance Binary Key
@@ -104,6 +105,7 @@ showKey LeftButtonPress = "LEFT-BUTTON"
 showKey MiddleButtonPress = "MIDDLE-BUTTON"
 showKey RightButtonPress = "RIGHT-BUTTON"
 showKey (Unknown s) = s
+showKey DeadKey      = "DEADKEY"
 
 -- | Show a key with a modifier, if any.
 showKM :: KM -> Text
@@ -141,6 +143,9 @@ leftButtonKM = toKM NoModifier LeftButtonPress
 
 rightButtonKM :: KM
 rightButtonKM = toKM NoModifier RightButtonPress
+
+deadKM :: KM
+deadKM = toKM NoModifier DeadKey
 
 dirKeypadKey :: [Key]
 dirKeypadKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
@@ -300,7 +305,25 @@ keyTranslate "KP_Enter"      = Return
 keyTranslate "LeftButtonPress" = LeftButtonPress
 keyTranslate "MiddleButtonPress" = MiddleButtonPress
 keyTranslate "RightButtonPress" = RightButtonPress
+-- dead keys
+keyTranslate "Shift_L"          = DeadKey
+keyTranslate "Shift_R"          = DeadKey
+keyTranslate "Control_L"        = DeadKey
+keyTranslate "Control_R"        = DeadKey
+keyTranslate "Super_L"          = DeadKey
+keyTranslate "Super_R"          = DeadKey
+keyTranslate "Menu"             = DeadKey
+keyTranslate "Alt_L"            = DeadKey
+keyTranslate "Alt_R"            = DeadKey
+keyTranslate "ISO_Level2_Shift" = DeadKey
+keyTranslate "ISO_Level3_Shift" = DeadKey
+keyTranslate "ISO_Level2_Latch" = DeadKey
+keyTranslate "ISO_Level3_Latch" = DeadKey
+keyTranslate "Num_Lock"         = DeadKey
+keyTranslate "Caps_Lock"        = DeadKey
+-- numeric keypad
 keyTranslate ['K','P','_',c] = KP c
+-- standard characters
 keyTranslate [c]             = Char c
 keyTranslate s               = Unknown $ T.pack s
 
@@ -338,6 +361,17 @@ keyTranslateWeb "Multiply"   = KP '*'
 keyTranslateWeb "Add"        = Char '+'
 keyTranslateWeb "Subtract"   = Char '-'
 keyTranslateWeb "Divide"     = KP '/'
+-- dead keys
+keyTranslateWeb "Dead"        = DeadKey
+keyTranslateWeb "Shift"       = DeadKey
+keyTranslateWeb "Control"     = DeadKey
+keyTranslateWeb "Meta"        = DeadKey
+keyTranslateWeb "Menu"        = DeadKey
+keyTranslateWeb "ContextMenu" = DeadKey
+keyTranslateWeb "Alt"         = DeadKey
+keyTranslateWeb "AltGraph"    = DeadKey
+keyTranslateWeb "Num_Lock"    = DeadKey
+keyTranslateWeb "CapsLock"    = DeadKey
 -- browser/webkit quirks
 keyTranslateWeb ['\ESC']     = Esc
 keyTranslateWeb [' ']        = Space

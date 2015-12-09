@@ -29,8 +29,7 @@ startup _sdebugCli = do
   rf <- createRawFrontend display shutdown
   let storeKeys :: IO ()
       storeKeys = do
-        c <- nextEvent  -- blocks here, so no polling
-        let !km = keyTranslate c
+        km <- nextEvent  -- blocks here, so no polling
         -- Store the key in the channel.
         STM.atomically $ STM.writeTQueue (fchanKey rf) km
         -- Instantly show any frame waiting for display.
@@ -42,6 +41,15 @@ startup _sdebugCli = do
 shutdown :: IO ()
 shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 
+-- | Input key via the frontend.
+nextEvent :: IO K.KM
+nextEvent = do
+  l <- BS.hGetLine SIO.stdin
+  let c = case BS.uncons l of
+        Nothing -> '\n'  -- empty line counts as RET
+        Just (hd, _) -> hd
+  return $! keyTranslate c
+
 -- | Output to the screen via the frontend.
 display :: SingleFrame  -- ^ the screen frame to draw
         -> IO ()
@@ -49,14 +57,6 @@ display rawSF =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
       bs = map (BS.pack . map Color.acChar . decodeLine) sfLevel ++ [BS.empty]
   in mapM_ BS.putStrLn bs
-
--- | Input key via the frontend.
-nextEvent :: IO Char
-nextEvent = do
-  l <- BS.hGetLine SIO.stdin
-  return $! case BS.uncons l of
-    Nothing -> '\n'  -- empty line counts as RET
-    Just (hd, _) -> hd
 
 keyTranslate :: Char -> K.KM
 keyTranslate e = (\(key, modifier) -> K.toKM modifier key) $
