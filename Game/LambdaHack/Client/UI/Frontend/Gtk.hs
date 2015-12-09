@@ -67,17 +67,8 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
   sview <- textViewNewWithBuffer tb
   textViewSetEditable sview False
   textViewSetCursorVisible sview False
-  -- Set up the channel for keyboard input.
-  fchanKey <- STM.atomically STM.newTQueue
-  -- Create the session record.
-  fshowNow <- newMVar ()
   let sess = FrontendSession{..}
-      rf = RawFrontend
-        { fdisplay = display sess
-        , fshutdown = shutdown
-        , fshowNow
-        , fchanKey
-        }
+  rf <- createRawFrontend (display sess) shutdown
   putMVar rfMVar rf
   let modTranslate mods = modifierTranslate
         (Control `elem` mods)
@@ -95,9 +86,9 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
     liftIO $ do
       unless (deadKey n) $ do
         -- Store the key in the channel.
-        STM.atomically $ STM.writeTQueue fchanKey K.KM{..}
+        STM.atomically $ STM.writeTQueue (fchanKey rf) K.KM{..}
         -- Instantly show any frame waiting for display.
-        void $ tryPutMVar fshowNow ()
+        void $ tryPutMVar (fshowNow rf) ()
       return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString $ fromMaybe "" sfont
@@ -111,7 +102,7 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
   -- TODO: change cursor depending on targeting mode, etc.; hard
   cursor <- cursorNewForDisplay defDisplay Tcross  -- Target Crosshair Arrow
   sview `on` buttonPressEvent $ do
-    liftIO $ resetChanKey fchanKey
+    liftIO $ resetChanKey (fchanKey rf)
     but <- eventButton
     (wx, wy) <- eventCoordinates
     mods <- eventModifier
@@ -153,7 +144,7 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
               _ -> K.LeftButtonPress
             !pointer = Just $! Point cx cy
         -- Store the mouse event coords in the keypress channel.
-        STM.atomically $ STM.writeTQueue fchanKey K.KM{..}
+        STM.atomically $ STM.writeTQueue (fchanKey rf) K.KM{..}
     return $! but == RightButton  -- not to disable selection
   -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black

@@ -26,25 +26,16 @@ frontendName = "std"
 -- | Set up the frontend input and output.
 startup :: DebugModeCli -> IO RawFrontend
 startup _sdebugCli = do
-  -- Set up the channel for keyboard input.
-  fchanKey <- STM.atomically STM.newTQueue
-  -- Create the session record.
-  fshowNow <- newMVar ()
+  rf <- createRawFrontend display shutdown
   let storeKeys :: IO ()
       storeKeys = do
         c <- nextEvent  -- blocks here, so no polling
         let !km = keyTranslate c
         -- Store the key in the channel.
-        STM.atomically $ STM.writeTQueue fchanKey km
+        STM.atomically $ STM.writeTQueue (fchanKey rf) km
         -- Instantly show any frame waiting for display.
-        void $ tryPutMVar fshowNow ()
+        void $ tryPutMVar (fshowNow rf) ()
         storeKeys
-      rf = RawFrontend
-        { fdisplay = display
-        , fshutdown = shutdown
-        , fshowNow
-        , fchanKey
-        }
   void $ async storeKeys
   return $! rf
 

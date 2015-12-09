@@ -121,17 +121,8 @@ font-weight: normal;
   Just tableElem2 <- fmap castToHTMLTableElement <$> cloneNode tableElem True
   scharCells2 <- flattenTable tableElem2
   Just scharStyle2 <- getStyle tableElem2
-  -- Set up the channel for keyboard input.
-  fchanKey <- STM.atomically STM.newTQueue
-  -- Create the session record.
-  fshowNow <- newMVar ()
   let sess = FrontendSession{..}
-      rf = RawFrontend
-        { fdisplay = display sess
-        , fshutdown = shutdown
-        , fshowNow
-        , fchanKey
-        }
+  rf <- createRawFrontend (display sess) shutdown
   putMVar rfMVar rf  -- send to client ASAP, while wepage is being redrawn
   -- Handle keypresses.
   -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys and
@@ -175,16 +166,16 @@ font-weight: normal;
       -}
       unless (deadKey keyId) $ do
         -- Store the key in the channel.
-        STM.atomically $ STM.writeTQueue fchanKey K.KM{..}
+        STM.atomically $ STM.writeTQueue (fchanKey rf) K.KM{..}
         -- Instantly show any frame waiting for display.
-        void $ tryPutMVar fshowNow ()
+        void $ tryPutMVar (fshowNow rf) ()
   -- Handle mouseclicks, per-cell.
   let xs = [0..lxsize - 1]
       ys = [0..lysize - 1]
       xys = concat $ map (\y -> zip xs (repeat y)) ys
   -- This can't be cloned, so I has to be done for both cell sets.
-  mapM_ (handleMouse fchanKey) $ zip scharCells xys
-  mapM_ (handleMouse fchanKey) $ zip scharCells2 xys
+  mapM_ (handleMouse (fchanKey rf)) $ zip scharCells xys
+  mapM_ (handleMouse (fchanKey rf)) $ zip scharCells2 xys
   -- Display at the end to avoid redraw
   void $ appendChild body (Just tableElem)
   setProp scharStyle "display" "none"

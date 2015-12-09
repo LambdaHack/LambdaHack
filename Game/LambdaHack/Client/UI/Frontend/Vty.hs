@@ -31,10 +31,6 @@ frontendName = "vty"
 startup :: DebugModeCli -> IO RawFrontend
 startup _sdebugCli = do
   svty <- mkVty def
-  -- Set up the channel for keyboard input.
-  fchanKey <- STM.atomically STM.newTQueue
-  -- Create the session record.
-  fshowNow <- newMVar ()
   let storeKeys :: IO ()
       storeKeys = do
         e <- nextEvent svty  -- blocks here, so no polling
@@ -44,18 +40,13 @@ startup _sdebugCli = do
                 !modifier = modTranslate mods
                 !pointer = Nothing
             -- Store the key in the channel.
-            STM.atomically $ STM.writeTQueue fchanKey K.KM{..}
+            STM.atomically $ STM.writeTQueue (fchanKey rf) K.KM{..}
             -- Instantly show any frame waiting for display.
-            void $ tryPutMVar fshowNow ()
+            void $ tryPutMVar (fshowNow rf) ()
           _ -> return ()
         storeKeys
       sess = FrontendSession{..}
-      rf = RawFrontend
-        { fdisplay = display sess
-        , fshutdown = Vty.shutdown svty
-        , fshowNow
-        , fchanKey
-        }
+  rf <- createRawFrontend display (Vty.shutdown svty)
   void $ async storeKeys
   return $! rf
 

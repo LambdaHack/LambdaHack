@@ -132,15 +132,7 @@ frontendName :: String
 frontendName = Chosen.frontendName
 
 nullStartup :: IO RawFrontend
-nullStartup = do
-  fchanKey <- STM.atomically STM.newTQueue
-  fshowNow <- newMVar ()
-  return $! RawFrontend
-    { fdisplay = \_ -> return ()
-    , fshutdown = return ()
-    , fshowNow
-    , fchanKey
-    }
+nullStartup = createRawFrontend (\_ -> return ()) (return ())
 
 chanFrontend :: DebugModeCli -> IO ChanFrontend
 chanFrontend sdebugCli = do

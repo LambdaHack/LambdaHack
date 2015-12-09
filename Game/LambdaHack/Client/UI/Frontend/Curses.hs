@@ -46,10 +46,6 @@ startup _sdebugCli = do
     C.end >> (assert `failure` "terminal has too few color pairs" `twith` nr)
   let (ks, vs) = unzip s
   ws <- C.convertStyles vs
-  -- Set up the channel for keyboard input.
-  fchanKey <- STM.atomically STM.newTQueue
-  -- Create the session record.
-  fshowNow <- newMVar ()
   let swin = C.stdScr
       sstyles = M.fromList (zip ks ws)
       storeKeys :: IO ()
@@ -57,16 +53,11 @@ startup _sdebugCli = do
         c <- nextEvent  -- blocks here, so no polling
         let !km = keyTranslate c
         -- Store the key in the channel.
-        STM.atomically $ STM.writeTQueue fchanKey km
+        STM.atomically $ STM.writeTQueue (fchanKey rf) km
         -- Instantly show any frame waiting for display.
-        void $ tryPutMVar fshowNow ()
+        void $ tryPutMVar (fshowNow rf) ()
         storeKeys
-      rf = RawFrontend
-        { fdisplay = display
-        , fshutdown = shutdown
-        , fshowNow
-        , fchanKey
-        }
+  rf <- createRawFrontend display shutdown
   void $ async storeKeys
   return $! rf
 
@@ -97,8 +88,7 @@ display FrontendSession{..} rawSF = do
 
 -- | Input key via the frontend.
 nextEvent :: IO Char
-nextEvent FrontendSession{..} =
-  C.getKey C.refresh
+nextEvent = C.getKey C.refresh
 
 keyTranslate :: C.Key -> K.KM
 keyTranslate e = (\(key, modifier) -> K.toKM modifier key) $

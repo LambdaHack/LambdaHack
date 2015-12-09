@@ -1,6 +1,8 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Frontend.Common
-  ( RawFrontend(..), startupAsync, startupBound, resetChanKey, modifierTranslate
+  ( RawFrontend(..)
+  , startupAsync, startupBound, createRawFrontend, resetChanKey
+  , modifierTranslate
   ) where
 
 import Prelude ()
@@ -36,11 +38,24 @@ startupBound k = do
   link a
   takeMVar rfMVar
 
+createRawFrontend :: (SingleFrame -> IO ()) -> IO () -> IO RawFrontend
+createRawFrontend fdisplay fshutdown = do
+  -- Set up the channel for keyboard input.
+  fchanKey <- STM.atomically STM.newTQueue
+  -- Create the session record.
+  fshowNow <- newMVar ()
+  return $! RawFrontend
+    { fdisplay
+    , fshutdown
+    , fshowNow
+    , fchanKey
+    }
+
 -- | Empty the keyboard channel.
 resetChanKey :: STM.TQueue K.KM -> IO ()
-resetChanKey schanKey = do
-  res <- STM.atomically $ STM.tryReadTQueue schanKey
-  when (isJust res) $ resetChanKey schanKey
+resetChanKey fchanKey = do
+  res <- STM.atomically $ STM.tryReadTQueue fchanKey
+  when (isJust res) $ resetChanKey fchanKey
 
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: Bool -> Bool -> Bool -> Bool -> K.Modifier
