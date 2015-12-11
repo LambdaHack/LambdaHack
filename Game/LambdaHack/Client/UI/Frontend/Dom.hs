@@ -13,7 +13,7 @@ import Data.Char (chr, isUpper, toLower)
 import Data.Maybe
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
-import GHCJS.DOM.CSSStyleDeclaration (getPropertyValue, setProperty)
+import GHCJS.DOM.CSSStyleDeclaration (setProperty)
 import GHCJS.DOM.Document (createElement, getBody, keyDown)
 import GHCJS.DOM.Element (getStyle, setInnerHTML)
 import GHCJS.DOM.EventM (mouseAltKey, mouseButton, mouseCtrlKey, mouseMetaKey,
@@ -27,10 +27,12 @@ import GHCJS.DOM.HTMLTableElement (HTMLTableElement, castToHTMLTableElement,
                                    getRows, setCellPadding, setCellSpacing)
 import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement,
                                       castToHTMLTableRowElement, getCells)
+import GHCJS.DOM.JSFFI.Generated.RequestAnimationFrameCallback
+import GHCJS.DOM.JSFFI.Generated.Window (requestAnimationFrame)
 import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
-import GHCJS.DOM.Node (appendChild, cloneNode)
+import GHCJS.DOM.Node (appendChild)
 import GHCJS.DOM.Types (CSSStyleDeclaration, MouseEvent)
 import GHCJS.DOM.UIEvent (getKeyCode, getWhich)
 
@@ -44,11 +46,9 @@ import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { swebView    :: !WebView
-  , scharStyle  :: !CSSStyleDeclaration
-  , scharCells  :: ![HTMLTableCellElement]
-  , scharStyle2 :: !CSSStyleDeclaration
-  , scharCells2 :: ![HTMLTableCellElement]
+  { swebView   :: !WebView
+  , scharStyle :: !CSSStyleDeclaration
+  , scharCells :: ![HTMLTableCellElement]
   }
 
 -- | The name of the frontend.
@@ -117,9 +117,6 @@ font-weight: normal;
   -- setProp "vertical-align" "bottom"
   -- Create the session record.
   scharCells <- flattenTable tableElem
-  Just tableElem2 <- fmap castToHTMLTableElement <$> cloneNode tableElem True
-  scharCells2 <- flattenTable tableElem2
-  Just scharStyle2 <- getStyle tableElem2
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sess) shutdown
   -- Handle keypresses.
@@ -169,12 +166,8 @@ font-weight: normal;
       xys = concat $ map (\y -> zip xs (repeat y)) ys
   -- This can't be cloned, so I has to be done for both cell sets.
   mapM_ (handleMouse (fchanKey rf)) $ zip scharCells xys
-  mapM_ (handleMouse (fchanKey rf)) $ zip scharCells2 xys
   -- Display at the end to avoid redraw
   void $ appendChild body (Just tableElem)
-  setProp scharStyle "display" "none"
-  void $ appendChild body (Just tableElem2)
-  setProp scharStyle2 "display" "block"
   putMVar rfMVar rf  -- send to client only after the whole wegage is set up
                      -- because there is no @mainGUI@ to start accepting
 
@@ -247,16 +240,10 @@ display FrontendSession{..} rawSF = postGUISync $ do
         setProp style "color" (Color.colorToRGB $ Color.fg acAttr)
       SingleFrame{sfLevel} = overlayOverlay rawSF
       acs = concat $ map decodeLine sfLevel
-  -- Double buffering, to avoid redraw after each cell update.
-  -- Another possibility (probably less efficient) is visibility:hidden/visible
-  -- and yet another is replaceChild.
-  Just disp <- getPropertyValue scharStyle ("display" :: String)
-  if disp == ("block" :: String)
-    then do
-      mapM_ setChar $ zip scharCells2 acs
-      setProp scharStyle "display" "none"
-      setProp scharStyle2 "display" "block"
-    else do
-      mapM_ setChar $ zip scharCells acs
-      setProp scharStyle2 "display" "none"
-      setProp scharStyle "display" "block"
+  -- TODO: Sync or Async?
+  callback <- newRequestAnimationFrameCallbackSync $ \_ -> do
+    mapM_ setChar $ zip scharCells acs
+  -- This ensure no frame redraws while callback executes.
+  void $ requestAnimationFrame swebView (Just callback)
+  -- This delay is not enough to always induce UI refresh.
+  threadDelay $ 1000000 `div` (4 * 30)
