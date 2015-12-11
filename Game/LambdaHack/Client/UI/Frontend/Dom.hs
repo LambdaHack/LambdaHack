@@ -27,7 +27,6 @@ import GHCJS.DOM.HTMLTableElement (HTMLTableElement, castToHTMLTableElement,
                                    getRows, setCellPadding, setCellSpacing)
 import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement,
                                       castToHTMLTableRowElement, getCells)
-import GHCJS.DOM.JSFFI.Generated.Element (getOffsetHeight)
 import GHCJS.DOM.JSFFI.Generated.RequestAnimationFrameCallback
 import GHCJS.DOM.JSFFI.Generated.Window (requestAnimationFrame)
 import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
@@ -48,7 +47,6 @@ import Game.LambdaHack.Common.Point
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { swebView   :: !WebView
-  , stableElem :: !HTMLTableElement
   , scharStyle :: !CSSStyleDeclaration
   , scharCells :: ![HTMLTableCellElement]
   }
@@ -121,7 +119,7 @@ font-weight: normal;
   -- setProp "vertical-align" "bottom"
   -- Create the session record.
   scharCells <- flattenTable tableElem
-  let sess = FrontendSession{stableElem = tableElem, ..}
+  let sess = FrontendSession{..}
   rf <- createRawFrontend (display sess) shutdown
   -- Handle keypresses.
   -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys and
@@ -245,13 +243,9 @@ display FrontendSession{..} rawSF = postGUISync $ do
       SingleFrame{sfLevel} = overlayOverlay rawSF
       acs = concat $ map decodeLine sfLevel
   -- TODO: Sync or Async?
-  callback <- newRequestAnimationFrameCallbackSync $ \_ ->
+  callback <- newRequestAnimationFrameCallbackSync $ \_ -> do
     mapM_ setChar $ zip scharCells acs
   -- This ensure no frame redraws while callback executes.
   void $ requestAnimationFrame swebView (Just callback)
-  -- Force UI refresh: http://www.eccesignum.org/blog/solving-display-refreshredrawrepaint-issues-in-webkit-browsers
-  setProp scharStyle "display" "none"
-  void $ getOffsetHeight stableElem
-  setProp scharStyle "display" "block"
   -- This delay is not enough to always induce UI refresh.
   threadDelay $ 1000000 `div` (4 * 30)
