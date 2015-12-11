@@ -90,6 +90,8 @@ runWeb DebugModeCli{sfont} rfMVar swebView = do
                      <$> createElement doc (Just ("table" :: String))
   setInnerHTML tableElem (Just (rows :: String))
   Just scharStyle <- getStyle tableElem
+  -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
+  setProp scharStyle "table-layout" "fixed"
   -- Set the font specified in config, if any.
   let font = "Monospace normal normal normal normal 14" -- fromMaybe "" sfont
   -- setProp "font" font
