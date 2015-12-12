@@ -33,8 +33,6 @@ data FrontReq :: * -> * where
   FrontKey :: { frontKeyKeys  :: ![K.KM]
               , frontKeyFrame :: !SingleFrame } -> FrontReq K.KM
     -- ^ flush frames, display a frame and ask for a keypress
-  FrontSync :: FrontReq ()
-    -- ^ flush frames
   FrontPressed :: FrontReq Bool
     -- ^ inspect and reset the fkeyPressed MVar
   FrontAutoYes :: Bool -> FrontReq ()
@@ -81,8 +79,6 @@ fchanFrontend sdebugCli
     FrontFrame{..} -> display sdebugCli fs rf frontFrame
     FrontDelay -> return ()
     FrontKey{..} -> promptGetKey sdebugCli fs rf frontKeyKeys frontKeyFrame
-    FrontSync ->
-      void $ tryPutMVar fshowNow ()
     FrontPressed -> do
       noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
       return $! not noKeysPending

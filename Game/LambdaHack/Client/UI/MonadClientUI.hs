@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , displayFrame, displayDelay, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
-  , syncFrames, setFrontAutoYes, clearPressed, frontendShutdown
+  , setFrontAutoYes, clearPressed, frontendShutdown
   , scoreToSlideshow
   , getLeaderUI, getArenaUI, viewedLevel
   , targetDescLeader, targetDescCursor
@@ -104,8 +104,6 @@ promptGetKey frontKeyKeys frontKeyFrame = do
                && (null frontKeyKeys
                    || km{K.pointer=Nothing} `elem` frontKeyKeys) -> do
       displayFrame $ Just frontKeyFrame
-      -- Sync frames so that a keypress doesn't skip frames.
-      syncFrames
       modifyClient $ \cli -> cli {slastPlay = kms}
       return km
     _ -> do
@@ -252,10 +250,6 @@ askConfig = getsSession sconfig
 -- | Get the key binding.
 askBinding :: MonadClientUI m => m Binding
 askBinding = getsSession sbinding
-
--- | Sync frames display with the frontend.
-syncFrames :: MonadClientUI m => m ()
-syncFrames = connFrontend FrontSync
 
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
 setFrontAutoYes b = connFrontend $ FrontAutoYes b

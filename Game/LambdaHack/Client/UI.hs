@@ -146,6 +146,5 @@ pongUI = do
     let atomicCmd = UpdAtomic $ UpdAutoFaction side False
     pong [atomicCmd]
   else do
-    -- Respond to the server normally, perhaps pinging the frontend, too.
-    when underAI syncFrames
+    -- Respond to the server normally.
     pong []
