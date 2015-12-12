@@ -48,6 +48,7 @@ data FSession = FSession
   { fautoYesRef   :: !(IORef Bool)
   , ftimeout      :: !(MVar Int)
   , fasyncTimeout :: !(Async ())
+  , fdelay        :: !(IORef Bool)
   }
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
@@ -72,12 +73,10 @@ promptGetKey sdebugCli fs@FSession{fautoYesRef} rf@RawFrontend{fchanKey} keys fr
 
 -- | Read UI requests from the client and send them to the frontend,
 fchanFrontend :: DebugModeCli -> FSession -> RawFrontend -> ChanFrontend
-fchanFrontend sdebugCli
-              fs@FSession{..}
-              rf@RawFrontend{fshowNow} =
+fchanFrontend sdebugCli fs@FSession{..} rf =
   ChanFrontend $ \req -> case req of
     FrontFrame{..} -> display sdebugCli fs rf frontFrame
-    FrontDelay -> return ()
+    FrontDelay -> writeIORef fdelay True
     FrontKey{..} -> promptGetKey sdebugCli fs rf frontKeyKeys frontKeyFrame
     FrontPressed -> do
       noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
@@ -93,11 +92,18 @@ display DebugModeCli{smaxFps}
         rf@RawFrontend{fshowNow}
         frontFrame = do
   let maxFps = fromMaybe defaultMaxFps smaxFps
+      baseTime = microInSec `div` maxFps
+  delay <- readIORef fdelay
+  delta <- if delay then do
+             writeIORef fdelay False
+             return $! 2 * baseTime
+           else
+             return $! baseTime
   takeMVar fshowNow
   noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
   if noKeysPending then
     -- For simplicity, not overwriting, even if @maxFps@ changed.
-    void $ tryPutMVar ftimeout $ microInSec `div` maxFps
+    void $ tryPutMVar ftimeout delta
   else
     -- Keys pending, so instantly show any future frame waiting for display.
     void $ tryPutMVar fshowNow ()
@@ -138,6 +144,7 @@ chanFrontend sdebugCli = do
   rf <- startup
   fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   ftimeout <- newEmptyMVar
+  fdelay <- newIORef False
   fasyncTimeout <- async $ forkFrameTimeout ftimeout rf
   -- Warning: not linking @fasyncTimeout@, so it'd better not crash.
   let fs = FSession{..}
