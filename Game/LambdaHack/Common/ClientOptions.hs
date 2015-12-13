@@ -18,9 +18,6 @@ data DebugModeCli = DebugModeCli
       -- that tell the player there are many intelligent enemies on the level.
       -- That's better than scaling AI sofistication down based
       -- on the FPS setting and machine speed.
-  , snoDelay        :: !Bool
-      -- ^ Don't maintain any requested delays between frames,
-      -- e.g., for screensaver.
   , sdisableAutoYes :: !Bool
       -- ^ Never auto-answer all prompts, even if under AI control.
   , snoAnim         :: !(Maybe Bool)
@@ -47,7 +44,6 @@ defDebugModeCli = DebugModeCli
   { sfont = Nothing
   , scolorIsBold = Nothing
   , smaxFps = Nothing
-  , snoDelay = False
   , sdisableAutoYes = False
   , snoAnim = Nothing
   , snewGameCli = False

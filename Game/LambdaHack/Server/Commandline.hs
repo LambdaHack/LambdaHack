@@ -35,7 +35,6 @@ debugArgs args = do
         , "  --font fn  use the given font for the main game window"
         , "  --noColorIsBold  don't use bold attribute for colorful characters"
         , "  --maxFps n  display at most n frames per second"
-        , "  --noDelay  don't maintain any requested delays between frames"
         , "  --disableAutoYes  never auto-answer all prompts"
         , "  --noAnim  don't show any animations"
         , "  --savePrefix  prepend the text to all savefile names"
@@ -96,9 +95,6 @@ debugArgs args = do
         let debugSer = parseArgs rest
         in debugSer {sdebugCli =
                        (sdebugCli debugSer) {smaxFps = Just $ max 1 $ read n}}
-      parseArgs ("--noDelay" : rest) =
-        let debugSer = parseArgs rest
-        in debugSer {sdebugCli = (sdebugCli debugSer) {snoDelay = True}}
       parseArgs ("--disableAutoYes" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdisableAutoYes = True}}
