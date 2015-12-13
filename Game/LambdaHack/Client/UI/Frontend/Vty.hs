@@ -65,6 +65,7 @@ display FrontendSession{svty} rawSF =
       pic = picForImage img
   in update svty pic
 
+-- TODO: use http://hackage.haskell.org/package/vty-5.4.0/docs/Graphics-Vty-Config.html to remap keys internally
 -- TODO: Ctrl-m is RET
 keyTranslate :: Key -> K.Key
 keyTranslate n =

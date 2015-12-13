@@ -69,9 +69,9 @@ displayYesNo dm prompt = do
 displayChoiceScreen :: forall m . MonadClientUI m
                     => Bool -> Int -> [OKX] -> [K.KM]
                     -> m (Either K.KM SlotChar, Int)
-displayChoiceScreen sfBlank pointer0 frs0 extraKeys = do
+displayChoiceScreen sfBlank pointer0 frs extraKeys = do
   -- We don't create keys from slots, so they have to be @in extraKeys@.
-  let keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) frs0
+  let keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) frs
              ++ extraKeys
       scrollKeys = [K.leftButtonKM, K.returnKM, K.upKM, K.downKM]
       pageKeys = [K.spaceKM, K.pgupKM, K.pgdnKM]
@@ -82,19 +82,19 @@ displayChoiceScreen sfBlank pointer0 frs0 extraKeys = do
       -- with a larger index.
       findKYX :: Int -> [OKX] -> Maybe (OKX, KYX, Int)
       findKYX _ [] = Nothing
-      findKYX pointer (okx@(_, kyxs) : frs) =
+      findKYX pointer (okx@(_, kyxs) : frs2) =
         case drop pointer kyxs of
           [] ->  -- not enough menu items on this page
-            case findKYX (pointer - length kyxs) frs of
+            case findKYX (pointer - length kyxs) frs2 of
               Nothing ->  -- no more menu items in later pages
                 case reverse kyxs of
                   [] -> Nothing
                   kyx : _ -> Just (okx, kyx, length kyxs)
               okyx -> okyx
           kyx : _ -> Just (okx, kyx, pointer)
-      maxIx = length (concatMap snd frs0) - 1
-      page :: Int -> [OKX] -> m (Either K.KM SlotChar, Int)
-      page pointer frs = case findKYX pointer frs of
+      maxIx = length (concatMap snd frs) - 1
+      page :: Int -> m (Either K.KM SlotChar, Int)
+      page pointer = case findKYX pointer frs of
         Nothing -> assert `failure` "no menu keys" `twith` frs
         Just ((ov, kyxs), (ekm, (y, x1, x2)), ixOnPage) -> do
           let greyBG x = x{Color.acAttr =
@@ -104,7 +104,7 @@ displayChoiceScreen sfBlank pointer0 frs0 extraKeys = do
                     (xs2, xs3) = splitAt (x2 - x1) xsRest
                 in xs1 ++ map greyBG xs2 ++ xs3
               ov1 = updateOverlayLine y drawHighlight ov
-              ignoreKey = page pointer frs
+              ignoreKey = page pointer
               pageLen = length kyxs
               interpretKey :: K.KM -> m (Either K.KM SlotChar, Int)
               interpretKey ikm =
@@ -122,24 +122,24 @@ displayChoiceScreen sfBlank pointer0 frs0 extraKeys = do
                         Just (ckm, _) -> case ckm of
                           Left km -> interpretKey km
                           _ -> return (ckm, pointer)
-                  K.Up -> page (max 0 (pointer - 1)) frs
-                  K.Down -> page (min maxIx (pointer + 1)) frs
+                  K.Up -> page (max 0 (pointer - 1))
+                  K.Down -> page (min maxIx (pointer + 1))
                   K.PgUp ->
-                    page (max 0 (pointer - ixOnPage - 1)) frs
+                    page (max 0 (pointer - ixOnPage - 1))
                   K.PgDn ->
-                    page (min maxIx (pointer + pageLen - ixOnPage)) frs
+                    page (min maxIx (pointer + pageLen - ixOnPage))
                   K.Space | pointer == maxIx && K.escKM `elem` extraKeys ->
                     -- If Esc permitted, exits at the end of the slideshow.
                     return (Left K.escKM, pointer)
                   K.Space ->
-                    page (min maxIx (pointer + pageLen - ixOnPage)) frs
+                    page (min maxIx (pointer + pageLen - ixOnPage))
                   _ | ikm{K.pointer=Nothing} `elem` keys ->
                     return (Left ikm, pointer)
                   _ -> assert `failure` "unknown key" `twith` ikm
           frame <- drawOverlay sfBlank ColorFull ov1
           pkm <- promptGetKey legalKeys frame
           interpretKey pkm
-  page pointer0 frs0
+  page pointer0
 
 -- TODO: generalize displayChoiceLine and getInitConfirms to a single op?
 --       but don't enable SPACE, etc. if only one screen (or only prompt)
