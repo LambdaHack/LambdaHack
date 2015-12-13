@@ -74,7 +74,7 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
   let keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) frs
              ++ extraKeys
       scrollKeys = [K.leftButtonKM, K.returnKM, K.upKM, K.downKM]
-      pageKeys = [K.spaceKM, K.pgupKM, K.pgdnKM]
+      pageKeys = [K.spaceKM, K.pgupKM, K.pgdnKM, K.homeKM, K.endKM]
       legalKeys = keys ++ scrollKeys ++ pageKeys
       -- The arguments go from first menu line and menu page to the last,
       -- in order. Their indexing is from 0. We select the closest item
@@ -122,8 +122,12 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
                         Just (ckm, _) -> case ckm of
                           Left km -> interpretKey km
                           _ -> return (ckm, pointer)
+                  K.Up | pointer == 0 -> page maxIx
                   K.Up -> page (max 0 (pointer - 1))
+                  K.Down | pointer == maxIx -> page 0
                   K.Down -> page (min maxIx (pointer + 1))
+                  K.Home -> page 0
+                  K.End -> page maxIx
                   K.PgUp ->
                     page (max 0 (pointer - ixOnPage - 1))
                   K.PgDn ->
