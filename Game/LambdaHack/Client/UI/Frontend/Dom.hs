@@ -14,7 +14,7 @@ import Data.Maybe
 import Data.Text (Text)
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
-import GHCJS.DOM.CSSStyleDeclaration (setProperty)
+import GHCJS.DOM.CSSStyleDeclaration (removeProperty, setProperty)
 import GHCJS.DOM.Document (createElement, getBody, keyDown)
 import GHCJS.DOM.Element (getStyle, setInnerHTML)
 import GHCJS.DOM.EventM (mouseAltKey, mouseButton, mouseCtrlKey, mouseMetaKey,
@@ -81,6 +81,9 @@ runWeb DebugModeCli{sfont} rfMVar swebView = do
   Just body <- getBody doc
   -- Set up the HTML.
   setInnerHTML body (Just ("<h1>LambdaHack</h1>" :: Text))
+  Just pageStyle <- getStyle body
+  setProp pageStyle "background-color" (Color.colorToRGB Color.Black)
+  setProp pageStyle "color" (Color.colorToRGB Color.White)
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 4
       cell = "<td>" ++ [chr 160]
@@ -180,6 +183,11 @@ setProp :: CSSStyleDeclaration -> String -> String -> IO ()
 setProp style propRef propValue =
   setProperty style propRef (Just propValue) ("" :: Text)
 
+removeProp :: CSSStyleDeclaration -> String -> IO ()
+removeProp style propRef = do
+  (_t :: Maybe Text) <- removeProperty style propRef
+  return ()
+
 click :: EventName HTMLTableCellElement MouseEvent
 click = EventName "click"
 
@@ -229,17 +237,23 @@ flattenTable table = do
   return $! concat lrc
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession    -- ^ frontend session data
+display :: FrontendSession  -- ^ frontend session data
         -> SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display FrontendSession{..} rawSF = postGUISync $ do
   let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
-      setChar (cell, Color.AttrChar{..}) = do
+      setChar (cell, Color.AttrChar{acAttr=acAttr@Color.Attr{..}, acChar}) = do
         let s = if acChar == ' ' then [chr 160] else [acChar]
         setInnerHTML cell $ Just s
         Just style <- getStyle cell
-        setProp style "background-color" (Color.colorToRGB $ Color.bg acAttr)
-        setProp style "color" (Color.colorToRGB $ Color.fg acAttr)
+        if acAttr == Color.defAttr then do
+          removeProp style "background-color"
+          removeProp style "color"
+          removeProp style "font-weight"
+        else do
+          setProp style "background-color" (Color.colorToRGB bg)
+          setProp style "color" (Color.colorToRGB fg)
+          setProp style "font-weight" "bold"
       SingleFrame{sfLevel} = overlayOverlay rawSF
       acs = concat $ map decodeLine sfLevel
   -- TODO: Sync or Async?
