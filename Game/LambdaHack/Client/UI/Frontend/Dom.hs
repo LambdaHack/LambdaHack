@@ -11,6 +11,7 @@ import Control.Monad.Reader (ask, liftIO)
 import Data.Bits ((.|.))
 import Data.Char (chr, isUpper, toLower)
 import Data.Maybe
+import Data.Text (Text)
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
 import GHCJS.DOM.CSSStyleDeclaration (setProperty)
@@ -79,20 +80,20 @@ runWeb DebugModeCli{sfont} rfMVar swebView = do
   Just doc <- webViewGetDomDocument swebView
   Just body <- getBody doc
   -- Set up the HTML.
-  setInnerHTML body (Just ("<h1>LambdaHack</h1>" :: String))
+  setInnerHTML body (Just ("<h1>LambdaHack</h1>" :: Text))
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 4
       cell = "<td>" ++ [chr 160]
       row = "<tr>" ++ concat (replicate lxsize cell)
       rows = concat (replicate lysize row)
   Just tableElem <- fmap castToHTMLTableElement
-                     <$> createElement doc (Just ("table" :: String))
-  setInnerHTML tableElem (Just (rows :: String))
+                     <$> createElement doc (Just ("table" :: Text))
+  setInnerHTML tableElem $ Just rows
   Just scharStyle <- getStyle tableElem
   -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
   setProp scharStyle "table-layout" "fixed"
   -- Set the font specified in config, if any.
-  let font = "Monospace normal normal normal normal 14" -- fromMaybe "" sfont
+  let font = "Monospace normal normal normal normal 14" :: Text  -- fromMaybe "" sfont
   -- setProp "font" font
       {-
 font-family: 'Times New Roman';
@@ -105,8 +106,8 @@ font-weight: normal;
       -}
   setProp scharStyle "font-family" "Monospace"
   -- Get rid of table spacing. Tons of spurious hacks just in case.
-  setCellPadding tableElem ("0" :: String)
-  setCellSpacing tableElem ("0" :: String)
+  setCellPadding tableElem ("0" :: Text)
+  setCellSpacing tableElem ("0" :: Text)
   setProp scharStyle "border-collapse" "collapse"
   setProp scharStyle "border-spacing" "0"
     -- supposedly no effect with 'collapse'
@@ -177,7 +178,7 @@ shutdown = return () -- nothing to clean up
 
 setProp :: CSSStyleDeclaration -> String -> String -> IO ()
 setProp style propRef propValue =
-  setProperty style propRef (Just propValue) ("" :: String)
+  setProperty style propRef (Just propValue) ("" :: Text)
 
 click :: EventName HTMLTableCellElement MouseEvent
 click = EventName "click"
