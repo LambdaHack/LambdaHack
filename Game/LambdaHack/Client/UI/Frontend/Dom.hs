@@ -20,7 +20,6 @@ import GHCJS.DOM.EventM (mouseAltKey, mouseButton, mouseCtrlKey, mouseMetaKey,
                          mouseShiftKey, on)
 import GHCJS.DOM.EventTargetClosures (EventName (EventName))
 import GHCJS.DOM.HTMLCollection (item)
-import GHCJS.DOM.HTMLElement (setInnerText)
 import GHCJS.DOM.HTMLTableCellElement (HTMLTableCellElement,
                                        castToHTMLTableCellElement)
 import GHCJS.DOM.HTMLTableElement (HTMLTableElement, castToHTMLTableElement,
@@ -236,7 +235,7 @@ display FrontendSession{..} rawSF = postGUISync $ do
   let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
       setChar (cell, Color.AttrChar{..}) = do
         let s = if acChar == ' ' then [chr 160] else [acChar]
-        setInnerText cell $ Just s
+        setInnerHTML cell $ Just s
         Just style <- getStyle cell
         setProp style "background-color" (Color.colorToRGB $ Color.bg acAttr)
         setProp style "color" (Color.colorToRGB $ Color.fg acAttr)
