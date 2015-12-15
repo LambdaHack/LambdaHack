@@ -33,7 +33,7 @@ import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
 import GHCJS.DOM.Node (appendChild)
-import GHCJS.DOM.Types (CSSStyleDeclaration, MouseEvent)
+import GHCJS.DOM.Types (CSSStyleDeclaration, MouseEvent, castToHTMLDivElement)
 import GHCJS.DOM.UIEvent (getKeyCode, getWhich)
 
 import qualified Game.LambdaHack.Client.Key as K
@@ -42,6 +42,7 @@ import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
@@ -74,16 +75,24 @@ terrible error
 #endif
 
 runWeb :: DebugModeCli -> MVar RawFrontend -> WebView -> IO ()
-runWeb DebugModeCli{sfont} rfMVar swebView = do
+runWeb DebugModeCli{..} rfMVar swebView = do
   -- Init the document.
   enableInspector swebView  -- enables Inspector in Webkit
   Just doc <- webViewGetDomDocument swebView
   Just body <- getBody doc
-  -- Set up the HTML.
-  setInnerHTML body (Just ("<h1>LambdaHack</h1>" :: Text))
   Just pageStyle <- getStyle body
   setProp pageStyle "background-color" (Color.colorToRGB Color.Black)
   setProp pageStyle "color" (Color.colorToRGB Color.White)
+  Just divBlock <- fmap castToHTMLDivElement
+                   <$> createElement doc (Just ("div" :: Text))
+  Just divStyle <- getStyle divBlock
+  setProp divStyle "text-align" "center"
+  case (saddress, stitle) of
+    (Just address, Just title) -> do
+      let headerText = "<h1><a href=\"" <> address <> "\">"
+                       <> title <> "</a></h1>"
+      setInnerHTML divBlock (Just headerText)
+    _ -> return ()
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 4
       cell = "<td>" ++ [chr 160]
@@ -91,12 +100,13 @@ runWeb DebugModeCli{sfont} rfMVar swebView = do
       rows = concat (replicate lysize row)
   Just tableElem <- fmap castToHTMLTableElement
                      <$> createElement doc (Just ("table" :: Text))
+  void $ appendChild divBlock (Just tableElem)
   setInnerHTML tableElem $ Just rows
   Just scharStyle <- getStyle tableElem
   -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
   setProp scharStyle "table-layout" "fixed"
   -- Set the font specified in config, if any.
-  let font = "Monospace normal normal normal normal 14" :: Text  -- fromMaybe "" sfont
+  let font = "Monospace normal normal normal normal 18" :: Text  -- fromMaybe "" sfont
   -- setProp "font" font
       {-
 font-family: 'Times New Roman';
@@ -115,7 +125,8 @@ font-weight: normal;
   setProp scharStyle "border-spacing" "0"
     -- supposedly no effect with 'collapse'
   setProp scharStyle "border-width" "0"
-  setProp scharStyle "margin" "0 0 0 0"
+  setProp scharStyle "margin-left" "auto"
+  setProp scharStyle "margin-right" "auto"
   setProp scharStyle "padding" "0 0 0 0"
   -- TODO: for icons, in <td>
   -- setProp "display" "block"
@@ -172,7 +183,7 @@ font-weight: normal;
   -- This can't be cloned, so I has to be done for both cell sets.
   mapM_ (handleMouse (fchanKey rf)) $ zip scharCells xys
   -- Display at the end to avoid redraw
-  void $ appendChild body (Just tableElem)
+  void $ appendChild body (Just divBlock)
   putMVar rfMVar rf  -- send to client only after the whole wegage is set up
                      -- because there is no @mainGUI@ to start accepting
 

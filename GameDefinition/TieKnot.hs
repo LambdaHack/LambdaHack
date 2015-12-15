@@ -49,8 +49,9 @@ tieKnot args = do
   -- It is reloaded at each game executable start.
   sconfig <- mkConfig cops
   -- Options for the clients modified with the configuration file.
-  let debugCli = sdebugCli sdebugNxt
-      sdebugMode = applyConfigToDebug sconfig debugCli
+  -- The client debug inside server debug only holds the client commandline
+  -- options and is never updated with config options, etc.
+  let sdebugMode = applyConfigToDebug cops sconfig $ sdebugCli sdebugNxt
       -- Partially applied main loops of the clients.
       exeClientAI = executorCli cops $ loopAI sdebugMode
       exeClientUI = executorCli cops $ loopUI copsClient sconfig sdebugMode

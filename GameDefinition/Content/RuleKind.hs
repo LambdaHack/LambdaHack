@@ -36,6 +36,7 @@ standard = RuleKind
   , raccessibleDoor =
       Just $ \spos tpos -> not $ isDiagonal $ spos `vectorToFrom` tpos
   , rtitle         = "LambdaHack"
+  , raddress       = "http://github.com/LambdaHack/LambdaHack/releases"
   , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version
   -- The strings containing the default configuration file

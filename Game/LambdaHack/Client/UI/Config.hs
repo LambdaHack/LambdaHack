@@ -38,7 +38,7 @@ data Config = Config
     -- ui
   , configVi          :: !Bool  -- ^ the option for Vi keys takes precendence
   , configLaptop      :: !Bool  -- ^ because the laptop keys are the default
-  , configFont        :: !String
+  , configFont        :: !Text
   , configColorIsBold :: !Bool
   , configHistoryMax  :: !Int
   , configMaxFps      :: !Int
@@ -108,16 +108,19 @@ mkConfig Kind.COps{corule} = do
   -- Catch syntax errors in complex expressions ASAP,
   return $! deepseq conf conf
 
-applyConfigToDebug :: Config -> DebugModeCli -> DebugModeCli
-applyConfigToDebug sconfig sdebugCli =
-  (\dbg -> dbg {sfont =
-     sfont dbg `mplus` Just (configFont sconfig)}) .
-  (\dbg -> dbg {scolorIsBold =
-     scolorIsBold dbg `mplus` Just (configColorIsBold sconfig)}) .
-  (\dbg -> dbg {smaxFps =
-     smaxFps dbg `mplus` Just (configMaxFps sconfig)}) .
-  (\dbg -> dbg {snoAnim =
-     snoAnim dbg `mplus` Just (configNoAnim sconfig)}) .
-  (\dbg -> dbg {ssavePrefixCli =
-     ssavePrefixCli dbg `mplus` Just "save"})
-  $ sdebugCli
+applyConfigToDebug :: Kind.COps -> Config -> DebugModeCli -> DebugModeCli
+applyConfigToDebug Kind.COps{corule} sconfig sdebugCli =
+  let stdRuleset = Kind.stdRuleset corule
+  in (\dbg -> dbg {sfont =
+        sfont dbg `mplus` Just (configFont sconfig)}) .
+     (\dbg -> dbg {scolorIsBold =
+        scolorIsBold dbg `mplus` Just (configColorIsBold sconfig)}) .
+     (\dbg -> dbg {smaxFps =
+        smaxFps dbg `mplus` Just (configMaxFps sconfig)}) .
+     (\dbg -> dbg {snoAnim =
+        snoAnim dbg `mplus` Just (configNoAnim sconfig)}) .
+     (\dbg -> dbg {stitle =
+        stitle dbg `mplus` Just (rtitle stdRuleset)}) .
+     (\dbg -> dbg {saddress =
+        saddress dbg `mplus` Just (raddress stdRuleset)})
+     $ sdebugCli

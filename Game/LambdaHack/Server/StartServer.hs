@@ -357,15 +357,12 @@ findEntryPoss Kind.COps{cotile}
     _ -> tryFind onStairs nk
   return $! onStairs ++ found
 
-initDebug :: MonadStateRead m => Kind.COps -> DebugModeSer -> m DebugModeSer
-initDebug Kind.COps{corule} sdebugSer = do
+initDebug :: Kind.COps -> DebugModeSer -> DebugModeSer
+initDebug Kind.COps{corule} sdebugSer =
   let stdRuleset = Kind.stdRuleset corule
-  return $!
-    (\dbg -> dbg {sfovMode =
-        sfovMode dbg `mplus` Just (rfovMode stdRuleset)}) .
-    (\dbg -> dbg {ssavePrefixSer =
-        ssavePrefixSer dbg `mplus` Just "save"})
-    $ sdebugSer
+  in (\dbg -> dbg {sfovMode =
+        sfovMode dbg `mplus` Just (rfovMode stdRuleset)})
+     $ sdebugSer
 
 -- | Apply debug options that don't need a new game.
 applyDebug :: MonadServer m => m ()

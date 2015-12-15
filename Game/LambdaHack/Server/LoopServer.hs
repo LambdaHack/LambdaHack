@@ -67,7 +67,7 @@ loopSer sdebug executorUI executorAI = do
       let setPreviousCops = const cops
       execUpdAtomic $ UpdResumeServer $ updateCOps setPreviousCops sRaw
       putServer ser
-      sdebugNxt <- initDebug cops sdebug
+      let sdebugNxt = initDebug cops sdebug
       modifyServer $ \ser2 -> ser2 {sdebugNxt}
       applyDebug
       updConn
@@ -87,8 +87,8 @@ loopSer sdebug executorUI executorAI = do
             Just (_, ser) -> Just $ srandom ser
             Nothing -> Nothing
       s <- gameReset cops sdebug Nothing mrandom
-      sdebugNxt <- initDebug cops sdebug
-      let debugBarRngs = sdebugNxt {sdungeonRng = Nothing, smainRng = Nothing}
+      let sdebugNxt = initDebug cops sdebug
+          debugBarRngs = sdebugNxt {sdungeonRng = Nothing, smainRng = Nothing}
       modifyServer $ \ser -> ser { sdebugNxt = debugBarRngs
                                  , sdebugSer = debugBarRngs }
       let speedup = speedupCOps sdebugNxt

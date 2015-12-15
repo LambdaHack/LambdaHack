@@ -86,9 +86,11 @@ data DebugModeSer = DebugModeSer
   , snewGameSer    :: !Bool
   , scurDiffSer    :: !Int
   , sdumpInitRngs  :: !Bool
-  , ssavePrefixSer :: !(Maybe String)
+  , ssavePrefixSer :: !String
   , sdbgMsgSer     :: !Bool
-  , sdebugCli      :: !DebugModeCli  -- ^ client debug parameters
+  , sdebugCli      :: !DebugModeCli
+      -- The client debug inside server debug only holds the client commandline
+      -- options and is never updated with config options, etc.
   }
   deriving Show
 
@@ -152,7 +154,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , snewGameSer = False
                                , scurDiffSer = difficultyDefault
                                , sdumpInitRngs = False
-                               , ssavePrefixSer = Nothing
+                               , ssavePrefixSer = "save"
                                , sdbgMsgSer = False
                                , sdebugCli = defDebugModeCli
                                }

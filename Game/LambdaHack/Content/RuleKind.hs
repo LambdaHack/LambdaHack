@@ -39,6 +39,7 @@ data RuleKind = RuleKind
   , raccessible     :: !(Maybe (Point -> Point -> Bool))  -- ^ see above
   , raccessibleDoor :: !(Maybe (Point -> Point -> Bool))  -- ^ see above
   , rtitle          :: !Text      -- ^ the title of the game
+  , raddress        :: !Text      -- ^ the homepage of the game
   , rpathsDataFile  :: FilePath -> IO FilePath
                                   -- ^ the path to data files
   , rpathsVersion   :: !Version   -- ^ the version of the game

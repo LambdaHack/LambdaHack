@@ -240,7 +240,7 @@ tryRestore Kind.COps{corule} sdebugSer = do
         prefix = ssavePrefixSer sdebugSer
     let copies = [( "GameDefinition" </> scoresFile
                   , scoresFile )]
-        name = fromMaybe "save" prefix <.> saveName
+        name = prefix <.> saveName
     liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF name copies pathsDataFile
 
 -- | Compute and insert auxiliary optimized components into game content,

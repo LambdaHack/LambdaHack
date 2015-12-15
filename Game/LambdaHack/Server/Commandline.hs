@@ -86,7 +86,7 @@ debugArgs args = do
         (parseArgs rest) {sdbgMsgSer = True}
       parseArgs ("--font" : s : rest) =
         let debugSer = parseArgs rest
-        in debugSer {sdebugCli = (sdebugCli debugSer) {sfont = Just s}}
+        in debugSer {sdebugCli = (sdebugCli debugSer) {sfont = Just $ T.pack s}}
       parseArgs ("--noColorIsBold" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli =
@@ -103,9 +103,9 @@ debugArgs args = do
         in debugSer {sdebugCli = (sdebugCli debugSer) {snoAnim = Just True}}
       parseArgs ("--savePrefix" : s : rest) =
         let debugSer = parseArgs rest
-        in debugSer { ssavePrefixSer = Just s
+        in debugSer { ssavePrefixSer = s
                     , sdebugCli =
-                        (sdebugCli debugSer) {ssavePrefixCli = Just s}}
+                        (sdebugCli debugSer) {ssavePrefixCli = s}}
       parseArgs ("--frontendStd" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sfrontendStd = True}}

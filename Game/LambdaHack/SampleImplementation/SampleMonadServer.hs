@@ -19,7 +19,6 @@ import qualified Control.Exception as Ex
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe
 import System.FilePath
 
 import Game.LambdaHack.Atomic.BroadcastAtomicWrite
@@ -100,9 +99,7 @@ handleAndBroadcastServer atomic = do
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> SerImplementation () -> IO ()
 executorSer cops m = do
-  let saveFile (_, ser) =
-        fromMaybe "save" (ssavePrefixSer (sdebugSer ser))
-        <.> saveName
+  let saveFile (_, ser) = ssavePrefixSer (sdebugSer ser) <.> saveName
       totalState serToSave = SerState
         { serState = emptyState cops
         , serServer = emptyStateServer

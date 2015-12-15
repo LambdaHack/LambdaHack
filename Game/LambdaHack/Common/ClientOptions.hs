@@ -5,10 +5,11 @@ module Game.LambdaHack.Common.ClientOptions
   ) where
 
 import Data.Binary
+import Data.Text (Text)
 import GHC.Generics (Generic)
 
 data DebugModeCli = DebugModeCli
-  { sfont           :: !(Maybe String)
+  { sfont           :: !(Maybe Text)
       -- ^ Font to use for the main game window.
   , scolorIsBold    :: !(Maybe Bool)
       -- ^ Whether to use bold attribute for colorful characters.
@@ -26,8 +27,10 @@ data DebugModeCli = DebugModeCli
       -- ^ Start a new game, overwriting the save file.
   , sbenchmark      :: !Bool
       -- ^ Don't create directories and files and show time stats.
-  , ssavePrefixCli  :: !(Maybe String)
-      -- ^ Prefix of the save game file.
+  , stitle          :: !(Maybe Text)
+  , saddress        :: !(Maybe Text)
+  , ssavePrefixCli  :: !String
+      -- ^ Prefix of the save game file name.
   , sfrontendStd    :: !Bool
       -- ^ Whether to use the stdout/stdin frontend for all clients.
   , sfrontendNull   :: !Bool
@@ -48,7 +51,9 @@ defDebugModeCli = DebugModeCli
   , snoAnim = Nothing
   , snewGameCli = False
   , sbenchmark = False
-  , ssavePrefixCli = Nothing
+  , stitle = Nothing
+  , saddress = Nothing
+  , ssavePrefixCli = "save"
   , sfrontendStd = False
   , sfrontendNull = False
   , sdbgMsgCli = False

@@ -18,7 +18,6 @@ import Prelude.Compat
 import Control.Concurrent.STM
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
-import Data.Maybe
 import System.FilePath
 
 import Game.LambdaHack.Atomic.HandleAtomicWrite
@@ -105,9 +104,9 @@ executorCli :: Kind.COps
             -> ChanServer resp req
             -> IO ()
 executorCli cops m fid cliDict =
-  let saveFile (_, cli2) =
-        fromMaybe "save" (ssavePrefixCli (sdebugCli cli2))
-        <.> saveName (sside cli2) (sisAI cli2)
+  let saveFile (_, cli) =
+        ssavePrefixCli (sdebugCli cli)
+        <.> saveName (sside cli) (sisAI cli)
       totalState cliToSave = CliState
         { cliState = emptyState cops
         , cliClient = emptyStateClient fid

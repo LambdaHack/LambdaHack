@@ -12,7 +12,6 @@ module Game.LambdaHack.Client.MonadClient
 
 import Control.Monad
 import qualified Control.Monad.State as St
-import Data.Maybe
 import Data.Text (Text)
 import Data.Time.Clock
 import Data.Time.LocalTime
@@ -78,7 +77,7 @@ restoreGame = do
     prefix <- getsClient $ ssavePrefixCli . sdebugCli
     let copies = [( "GameDefinition" </> cfgUIName <.> "default"
                   , cfgUIName <.> "ini" )]
-        name = fromMaybe "save" prefix <.> saveName side isAI
+        name = prefix <.> saveName side isAI
     liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF
                               name copies pathsDataFile
 
@@ -91,7 +90,7 @@ removeServerSave = do
   dataDir <- liftIO appDataDir
   let serverSaveFile = dataDir
                        </> "saves"
-                       </> fromMaybe "save" prefix
+                       </> prefix
                        <.> serverSaveName
   bSer <- liftIO $ doesFileExist serverSaveFile
   when bSer $ liftIO $ renameFile serverSaveFile (serverSaveFile <.> "bkp")
