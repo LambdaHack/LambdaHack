@@ -10,7 +10,7 @@ import Game.LambdaHack.Client.UI.HumanCmd
 -- | Key-command mappings to be used for the UI.
 data KeyKind = KeyKind
   { rhumanCommands :: ![(K.KM, ([CmdCategory], HumanCmd))]
-                                   -- ^ default client UI commands
+      -- ^ default client UI commands
   }
 
 macroLeftButtonPress :: HumanCmd

@@ -11,6 +11,7 @@ module Game.LambdaHack.Common.Color
 import Data.Binary
 import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import Data.Hashable (Hashable)
+import Data.Text (Text)
 import GHC.Generics (Generic)
 
 -- TODO: since this type may be essential to speed, consider implementing
@@ -89,7 +90,7 @@ brightCol = [BrRed .. BrCyan]  -- BrBlack is not really that bright
 stdCol    = darkCol ++ brightCol
 
 -- | Translationg to heavily modified Linux console color RGB values.
-colorToRGB :: Color -> String
+colorToRGB :: Color -> Text
 colorToRGB Black     = "#000000"
 colorToRGB Red       = "#D50000"
 colorToRGB Green     = "#00AA00"
@@ -109,7 +110,7 @@ colorToRGB BrWhite   = "#FFFFFF"
 
 -- | For reference, the original Linux console colors.
 -- Good old retro feel and more useful than xterm (e.g. brown).
-_olorToRGB :: Color -> String
+_olorToRGB :: Color -> Text
 _olorToRGB Black     = "#000000"
 _olorToRGB Red       = "#AA0000"
 _olorToRGB Green     = "#00AA00"

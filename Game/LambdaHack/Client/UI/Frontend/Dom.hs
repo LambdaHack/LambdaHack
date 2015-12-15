@@ -180,7 +180,6 @@ font-weight: normal;
   let xs = [0..lxsize - 1]
       ys = [0..lysize - 1]
       xys = concat $ map (\y -> zip xs (repeat y)) ys
-  -- This can't be cloned, so I has to be done for both cell sets.
   mapM_ (handleMouse (fchanKey rf)) $ zip scharCells xys
   -- Display at the end to avoid redraw
   void $ appendChild body (Just divBlock)
@@ -190,11 +189,11 @@ font-weight: normal;
 shutdown :: IO ()
 shutdown = return () -- nothing to clean up
 
-setProp :: CSSStyleDeclaration -> String -> String -> IO ()
+setProp :: CSSStyleDeclaration -> Text -> Text -> IO ()
 setProp style propRef propValue =
   setProperty style propRef (Just propValue) ("" :: Text)
 
-removeProp :: CSSStyleDeclaration -> String -> IO ()
+removeProp :: CSSStyleDeclaration -> Text -> IO ()
 removeProp style propRef = do
   (_t :: Maybe Text) <- removeProperty style propRef
   return ()
