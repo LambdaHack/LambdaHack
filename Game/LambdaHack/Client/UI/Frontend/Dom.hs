@@ -75,7 +75,7 @@ terrible error
 #endif
 
 runWeb :: DebugModeCli -> MVar RawFrontend -> WebView -> IO ()
-runWeb DebugModeCli{..} rfMVar swebView = do
+runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   -- Init the document.
   enableInspector swebView  -- enables Inspector in Webkit
   Just doc <- webViewGetDomDocument swebView
@@ -134,7 +134,7 @@ font-weight: normal;
   -- Create the session record.
   scharCells <- flattenTable tableElem
   let sess = FrontendSession{..}
-  rf <- createRawFrontend (display sess) shutdown
+  rf <- createRawFrontend (display sdebugCli sess) shutdown
   -- Handle keypresses.
   -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys and
   -- @getKeyCode@ then returns wrong characters anyway.
@@ -248,10 +248,11 @@ flattenTable table = do
   return $! concat lrc
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession  -- ^ frontend session data
+display :: DebugModeCli
+        -> FrontendSession  -- ^ frontend session data
         -> SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display FrontendSession{..} rawSF = postGUISync $ do
+display DebugModeCli{scolorIsBold} FrontendSession{..} rawSF = postGUISync $ do
   let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
       setChar (cell, Color.AttrChar{acAttr=acAttr@Color.Attr{..}, acChar}) = do
         let s = if acChar == ' ' then [chr 160] else [acChar]
@@ -264,7 +265,8 @@ display FrontendSession{..} rawSF = postGUISync $ do
         else do
           setProp style "background-color" (Color.colorToRGB bg)
           setProp style "color" (Color.colorToRGB fg)
-          setProp style "font-weight" "bold"
+          when (scolorIsBold == Just True) $
+            setProp style "font-weight" "bold"
       SingleFrame{sfLevel} = overlayOverlay rawSF
       acs = concat $ map decodeLine sfLevel
   -- TODO: Sync or Async?
