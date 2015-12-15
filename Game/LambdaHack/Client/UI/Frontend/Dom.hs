@@ -121,13 +121,10 @@ font-weight: normal;
   -- Get rid of table spacing. Tons of spurious hacks just in case.
   setCellPadding tableElem ("0" :: Text)
   setCellSpacing tableElem ("0" :: Text)
-  setProp scharStyle "border-collapse" "collapse"
-  setProp scharStyle "border-spacing" "0"
-    -- supposedly no effect with 'collapse'
-  setProp scharStyle "border-width" "0"
+  setProp scharStyle "padding" "0 0 0 0"
+  setProp scharStyle "border" "1px solid grey"
   setProp scharStyle "margin-left" "auto"
   setProp scharStyle "margin-right" "auto"
-  setProp scharStyle "padding" "0 0 0 0"
   -- TODO: for icons, in <td>
   -- setProp "display" "block"
   -- setProp "vertical-align" "bottom"
