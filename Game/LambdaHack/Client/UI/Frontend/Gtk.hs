@@ -90,7 +90,7 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
     return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString
-       $ fromMaybe "Monospace" sfontFamily <+> fromMaybe "14px" sfontSize
+       $ fromMaybe "Monospace" sfontFamily <+> fromMaybe "18px" sfontSize
   widgetModifyFont sview (Just f)
   liftIO $ do
     textViewSetLeftMargin sview 3

@@ -104,7 +104,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   Just scharStyle <- getStyle tableElem
   -- Set the font specified in config, if any.
   setProp scharStyle "font-family" $ fromMaybe "Monospace" sfontFamily
-  setProp scharStyle "font-size" $ fromMaybe "14px" sfontSize
+  setProp scharStyle "font-size" $ fromMaybe "18px" sfontSize
   setInnerHTML tableElem $ Just rows
   -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
   setProp scharStyle "table-layout" "fixed"
