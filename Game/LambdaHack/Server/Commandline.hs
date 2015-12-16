@@ -32,7 +32,8 @@ debugArgs args = do
         , "  --setMainRng s  set the main game RNG seed to string s"
         , "  --dumpInitRngs  dump RNG states from the start of the game"
         , "  --dbgMsgSer  let the server emit its internal debug messages"
-        , "  --font fn  use the given font for the main game window"
+        , "  --fontFamily s  use the given font family for the main game window"
+        , "  --fontSize s  use the given font size for the main game window"
         , "  --noColorIsBold  don't use bold attribute for colorful characters"
         , "  --maxFps n  display at most n frames per second"
         , "  --disableAutoYes  never auto-answer all prompts"
@@ -84,9 +85,12 @@ debugArgs args = do
         (parseArgs rest) {sfovMode = Just $ read mode}
       parseArgs ("--dbgMsgSer" : rest) =
         (parseArgs rest) {sdbgMsgSer = True}
-      parseArgs ("--font" : s : rest) =
+      parseArgs ("--fontFamily" : s : rest) =
         let debugSer = parseArgs rest
-        in debugSer {sdebugCli = (sdebugCli debugSer) {sfont = Just $ T.pack s}}
+        in debugSer {sdebugCli = (sdebugCli debugSer) {sfontFamily = Just $ T.pack s}}
+      parseArgs ("--fontSize" : s : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {sfontSize = Just $ T.pack s}}
       parseArgs ("--noColorIsBold" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli =

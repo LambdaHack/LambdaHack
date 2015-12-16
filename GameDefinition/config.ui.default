@@ -30,9 +30,10 @@ HeroName_6 = ("Christopher Flatt", "he")
 [ui]
 movementViKeys_hjklyubn = False
 movementLaptopKeys_uk8o79jl = True
-; Monospace fonts that have fixed size regardless of boldness (on some OSes)
-font = "Terminus,DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace normal normal normal normal 14"
-;font = "Terminus,DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace normal normal normal normal 18"
+; Monospace fonts that have fixed size regardless of boldness (on some OSes at least)
+fontFamily = "DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace"
+fontSize = "14px"
+;fontSize = "18px"
 colorIsBold = True
 ; New historyMax takes effect after removal of savefiles.
 historyMax = 5000

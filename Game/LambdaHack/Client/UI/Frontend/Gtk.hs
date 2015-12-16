@@ -24,6 +24,7 @@ import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
@@ -47,7 +48,7 @@ frontendName = "gtk"
 -- Because of Windows, GTK needs to be on a bound thread,
 -- so we can't avoid the communication overhead of bound threads.
 startup :: DebugModeCli -> IO RawFrontend
-startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
+startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -88,7 +89,8 @@ startup sdebugCli@DebugModeCli{sfont} = startupBound $ \rfMVar -> do
     liftIO $ saveKM rf km
     return True
   -- Set the font specified in config, if any.
-  f <- fontDescriptionFromString $ fromMaybe "" sfont
+  f <- fontDescriptionFromString
+       $ fromMaybe "Monospace" sfontFamily <+> fromMaybe "14px" sfontSize
   widgetModifyFont sview (Just f)
   liftIO $ do
     textViewSetLeftMargin sview 3

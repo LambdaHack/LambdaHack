@@ -93,7 +93,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
                        <> title <> "</a></h1>"
       setInnerHTML divBlock (Just headerText)
     _ -> return ()
-  let lxsize = fst normalLevelBound + 1  -- TODO
+  let lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 4
       cell = "<td>" ++ [chr 160]
       row = "<tr>" ++ concat (replicate lxsize cell)
@@ -101,23 +101,13 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   Just tableElem <- fmap castToHTMLTableElement
                      <$> createElement doc (Just ("table" :: Text))
   void $ appendChild divBlock (Just tableElem)
-  setInnerHTML tableElem $ Just rows
   Just scharStyle <- getStyle tableElem
+  -- Set the font specified in config, if any.
+  setProp scharStyle "font-family" $ fromMaybe "Monospace" sfontFamily
+  setProp scharStyle "font-size" $ fromMaybe "14px" sfontSize
+  setInnerHTML tableElem $ Just rows
   -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
   setProp scharStyle "table-layout" "fixed"
-  -- Set the font specified in config, if any.
-  let font = "Monospace normal normal normal normal 18" :: Text  -- fromMaybe "" sfont
-  -- setProp "font" font
-      {-
-font-family: 'Times New Roman';
-font-kerning: auto;
-font-size: 16px;
-font-style: normal;
-font-variant: normal;
-font-variant-ligatures: normal;
-font-weight: normal;
-      -}
-  setProp scharStyle "font-family" "Monospace"
   -- Get rid of table spacing. Tons of spurious hacks just in case.
   setCellPadding tableElem ("0" :: Text)
   setCellSpacing tableElem ("0" :: Text)
