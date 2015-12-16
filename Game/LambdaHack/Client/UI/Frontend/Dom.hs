@@ -8,17 +8,17 @@ import Control.Concurrent
 import qualified Control.Concurrent.STM as STM
 import Control.Monad
 import Control.Monad.Reader (ask, liftIO)
-import Data.Bits ((.|.))
-import Data.Char (chr, isUpper, toLower)
+import Data.Char (chr)
 import Data.Maybe
 import Data.Text (Text)
+import qualified Data.Text as T
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
 import GHCJS.DOM.CSSStyleDeclaration (removeProperty, setProperty)
-import GHCJS.DOM.Document (createElement, getBody, keyDown)
+import GHCJS.DOM.Document (createElement, getBody, keyDown, keyPress)
 import GHCJS.DOM.Element (getStyle, setInnerHTML)
 import GHCJS.DOM.EventM (mouseAltKey, mouseButton, mouseCtrlKey, mouseMetaKey,
-                         mouseShiftKey, on)
+                         mouseShiftKey, on, preventDefault)
 import GHCJS.DOM.EventTargetClosures (EventName (EventName))
 import GHCJS.DOM.HTMLCollection (item)
 import GHCJS.DOM.HTMLTableCellElement (HTMLTableCellElement,
@@ -34,7 +34,7 @@ import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getShiftKey)
 import GHCJS.DOM.Node (appendChild)
 import GHCJS.DOM.Types (CSSStyleDeclaration, MouseEvent, castToHTMLDivElement)
-import GHCJS.DOM.UIEvent (getKeyCode, getWhich)
+import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
@@ -122,47 +122,77 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   scharCells <- flattenTable tableElem
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sdebugCli sess) shutdown
-  -- Handle keypresses.
-  -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys and
-  -- @getKeyCode@ then returns wrong characters anyway.
-  -- Regardless, it doesn't work: https://bugs.webkit.org/show_bug.cgi?id=20027
-  void $ doc `on` keyDown $ do
-    -- https://hackage.haskell.org/package/webkitgtk3-0.14.1.0/docs/Graphics-UI-Gtk-WebKit-DOM-KeyboardEvent.html
-    -- though: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyIdentifier
-    keyId <- ask >>= getKeyIdentifier
-    _keyLoc <- ask >>= getKeyLocation
-    modCtrl <- ask >>= getCtrlKey
-    modShift <- ask >>= getShiftKey
-    modAlt <- ask >>= getAltKey
-    modMeta <- ask >>= getMetaKey
-    modAltG <- ask >>= getAltGraphKey
+  -- Handle keypresses. http://unixpapa.com/js/key.html
+  -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys
+  -- while with @keeDown@ all of getKeyIdentifier, getWhich and getKeyCode
+  -- return absurd codes for, e.g., semicolon in Chromium.
+  -- The new standard might help on newer browsers
+  -- http://www.w3schools.com/jsref/event_key_keycode.asp
+  -- but webkit doesn't give access to it yet.
+  let readMod = do
+        modCtrl <- ask >>= getCtrlKey
+        modShift <- ask >>= getShiftKey
+        modAlt <- ask >>= getAltKey
+        modMeta <- ask >>= getMetaKey
+        modAltG <- ask >>= getAltGraphKey
+        let md = modifierTranslate
+                   modCtrl modShift (modAlt || modAltG) modMeta
+        return $! if md == K.Shift then K.NoModifier else md
+  void $ doc `on` keyPress $ do
     which <- ask >>= getWhich
     keyCode <- ask >>= getKeyCode
+    charCode <- ask >>= getCharCode
+    let quirksN | which == 0 = [chr keyCode]  -- old IE
+                | charCode /= 0 = [chr which]  -- all others
+                | otherwise = ""
+    when (not $ null quirksN) $ do
+      modifier <- readMod
+      let !key = K.keyTranslateWeb quirksN
+          !pointer = Nothing
+          !km = K.KM{..}
+          _ks = T.unpack (K.showKey key)
+      -- liftIO $ do
+      --   putStrLn $ "charCode: " ++ show charCode
+      --   putStrLn $ "quirksN: " ++ quirksN
+      --   putStrLn $ "key: " ++ _ks
+      --   putStrLn $ "which: " ++ show which
+      --   putStrLn $ "keyCode: " ++ show keyCode
+      liftIO $ saveKM rf km
+      -- Pass through Ctrl-+ and others, disable Tab.
+      when (modifier == K.NoModifier) preventDefault
+  void $ doc `on` keyDown $ do
+    keyId <- ask >>= getKeyIdentifier
+    _keyLoc <- ask >>= getKeyLocation
+    which <- ask >>= getWhich
+    keyCode <- ask >>= getKeyCode
+    charCode <- ask >>= getCharCode
+    modShift <- ask >>= getShiftKey
     let keyIdBogus = keyId `elem` ["", "Unidentified"]
                      || take 2 keyId == "U+"
         -- Handle browser quirks and webkit non-conformance to standards,
-        -- especially for ESC, etc. This is still not nearly enough.
-        -- Webkit DOM is just too old.
-        -- http://www.w3schools.com/jsref/event_key_keycode.asp
-        quirksN | not keyIdBogus = keyId
-                | otherwise = let c = chr $ which .|. keyCode
-                              in [if isUpper c && not modShift
-                                  then toLower c
-                                  else c]
-        !key = K.keyTranslateWeb quirksN
-        !modifier = let md = modifierTranslate
-                               modCtrl modShift (modAlt || modAltG) modMeta
-                    in if md == K.Shift then K.NoModifier else md
-        !pointer = Nothing
-    {-
-    putStrLn keyId
-    putStrLn quirksN
-    putStrLn $ T.unpack $ K.showKey key
-    putStrLn $ show which
-    putStrLn $ show keyCode
-    -}
-    let !km = K.KM{..}
-    liftIO $ saveKM rf km
+        -- especially for ESC, etc.
+        quirksN | which == 0 = ""
+                | charCode /= 0 = ""
+                | not keyIdBogus = keyId
+                | keyCode == 27 = "Escape"
+                | keyCode == 9 = if modShift then "BackTab" else "Tab"
+                | otherwise = ""  -- TODO: translate from keyCode in FF and IE
+                                  -- until @key@ available in webkit DOM
+    when (not $ null quirksN) $ do
+      modifier <- readMod
+      let !key = K.keyTranslateWeb quirksN
+          !pointer = Nothing
+          !km = K.KM{..}
+          _ks = T.unpack (K.showKey key)
+      -- liftIO $ do
+      --   putStrLn $ "keyId: " ++ keyId
+      --   putStrLn $ "quirksN: " ++ quirksN
+      --   putStrLn $ "key: " ++ _ks
+      --   putStrLn $ "which: " ++ show which
+      --   putStrLn $ "keyCode: " ++ show keyCode
+      liftIO $ saveKM rf km
+      -- Pass through Ctrl-+ and others, disable Tab.
+      when (modifier == K.NoModifier) preventDefault
   -- Handle mouseclicks, per-cell.
   let xs = [0..lxsize - 1]
       ys = [0..lysize - 1]
@@ -220,7 +250,7 @@ handleMouse fchanKey (cell, (cx, cy)) = do
 -- | Get the list of all cells of an HTML table.
 flattenTable :: HTMLTableElement -> IO [HTMLTableCellElement]
 flattenTable table = do
-  let lxsize = fromIntegral $ fst normalLevelBound + 1  -- TODO
+  let lxsize = fromIntegral $ fst normalLevelBound + 1
       lysize = fromIntegral $ snd normalLevelBound + 4
   Just rows <- getRows table
   lmrow <- mapM (item rows) [0..lysize-1]

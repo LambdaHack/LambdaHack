@@ -343,6 +343,7 @@ keyTranslate s               = Unknown $ T.pack s
 keyTranslateWeb :: String -> Key
 keyTranslateWeb "Backspace"  = BackSpace
 keyTranslateWeb "Tab"        = Tab
+keyTranslateWeb "BackTab"    = BackTab
 keyTranslateWeb "Clear"      = Begin
 keyTranslateWeb "Enter"      = Return
 keyTranslateWeb "Esc"        = Esc
@@ -388,6 +389,3 @@ keyTranslateWeb ['\t']       = Tab
 -- standard characters
 keyTranslateWeb [c]          = Char c
 keyTranslateWeb s            = Unknown $ T.pack s
-
--- TODO: with Shift?
--- keyTranslateWeb "ISO_Left_Tab"  = BackTab
