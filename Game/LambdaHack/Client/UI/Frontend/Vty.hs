@@ -108,14 +108,17 @@ hack :: Color.Color -> Attr -> Attr
 hack c a = if Color.isBright c then withStyle a bold else a
 
 setAttr :: Color.Attr -> Attr
-setAttr Color.Attr{fg, bg} =
+setAttr Color.Attr{..} =
 -- This optimization breaks display for white background terminals:
 --  if (fg, bg) == Color.defAttr
 --  then def_attr
 --  else
-  hack fg $ hack bg $
-    defAttr { attrForeColor = SetTo (aToc fg)
-            , attrBackColor = SetTo (aToc bg) }
+  let (fg1, bg1) = if bg == Color.defFG  -- highlighted tile
+                   then (Color.defBG, Color.defFG)
+                   else (fg, bg)
+  in hack fg1 $ hack bg1 $
+       defAttr { attrForeColor = SetTo (aToc fg1)
+               , attrBackColor = SetTo (aToc bg1) }
 
 aToc :: Color.Color -> Color
 aToc Color.Black     = black

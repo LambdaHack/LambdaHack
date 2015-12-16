@@ -279,8 +279,11 @@ display DebugModeCli{scolorIsBold} FrontendSession{..} rawSF = postGUISync $ do
           removeProp style "color"
           removeProp style "font-weight"
         else do
-          setProp style "background-color" (Color.colorToRGB bg)
-          setProp style "color" (Color.colorToRGB fg)
+          let (fg1, bg1) = if bg == Color.defFG  -- highlighted tile
+                           then (Color.defBG, Color.defFG)
+                           else (fg, bg)
+          setProp style "background-color" (Color.colorToRGB bg1)
+          setProp style "color" (Color.colorToRGB fg1)
           when (scolorIsBold == Just True) $
             setProp style "font-weight" "bold"
       SingleFrame{sfLevel} = overlayOverlay rawSF

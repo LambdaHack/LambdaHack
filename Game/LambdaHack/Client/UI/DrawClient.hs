@@ -102,9 +102,9 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
             floorIids = EM.elems bagItemSlots  -- first slot will be shown
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeDeltaToFrom` ltime
-            viewActor aid Actor{bsymbol, bcolor, bhp, bproj}
-              | Just aid == mleader = (symbol, inverseVideo)
-              | otherwise = (symbol, Color.defAttr {Color.fg = bcolor})
+            viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
+              let bg = if mleader == Just aid then Color.defFG else Color.defBG
+              in (symbol, Color.Attr{fg=bcolor, bg})
              where
               symbol | bhp <= 0 && not bproj = '%'
                      | otherwise = bsymbol
@@ -123,9 +123,9 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
               (True, False)  -> Color.BrRed
               (False, True)  -> Color.Green
               (False, False) -> Color.Red
-            atttrOnPathOrLine = if Just pos0 == cursorPos
-                                then inverseVideo {Color.fg = fgOnPathOrLine}
-                                else Color.defAttr {Color.fg = fgOnPathOrLine}
+            atttrOnPathOrLine =
+              let bg = if Just pos0 == cursorPos then Color.defFG else Color.defBG
+              in Color.Attr{Color.fg=fgOnPathOrLine, bg}
             (char, attr0) =
               case find (\(_, m) -> pos0 == Actor.bpos m) actorsHere of
                 _ | isJust stgtMode
@@ -219,10 +219,6 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
         in foldl' f [] [lysize-1,lysize-2..0]
       sfBlank = False
   return $! SingleFrame{..}
-
-inverseVideo :: Color.Attr
-inverseVideo = Color.Attr { Color.fg = Color.bg Color.defAttr
-                          , Color.bg = Color.fg Color.defAttr }
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
 -- level descriptions (currently enforced max).
@@ -343,18 +339,18 @@ drawSelected drawnLevelId width = do
   ours <- getsState $ filter (not . bproj . snd)
                       . actorAssocs (== side) drawnLevelId
   let viewOurs (aid, Actor{bsymbol, bcolor, bhp}) =
-        let cattr = Color.defAttr {Color.fg = bcolor}
-            sattr
-              | Just aid == mleader = inverseVideo
-              | ES.member aid selected =
-                  -- TODO: in the future use a red rectangle instead
-                  -- of background and mark them on the map, too;
-                  -- also, perhaps blink all selected on the map,
-                  -- when selection changes
-                  if bcolor /= Color.Blue
-                  then cattr {Color.bg = Color.Blue}
-                  else cattr {Color.bg = Color.BrBlack}
-              | otherwise = cattr
+        let bg = if mleader == Just aid
+                 then Color.defFG
+                 else if ES.member aid selected
+                      -- TODO: in the future use a red rectangle instead
+                      -- of background and mark them on the map, too;
+                      -- also, perhaps blink all selected on the map,
+                      -- when selection changes
+                      then if bcolor /= Color.Blue
+                           then Color.Blue
+                           else Color.BrBlack
+                      else Color.defBG
+            sattr = Color.Attr {Color.fg = bcolor, bg}
         in Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%'
       maxViewed = width - 2
       star = let sattr = case ES.size selected of

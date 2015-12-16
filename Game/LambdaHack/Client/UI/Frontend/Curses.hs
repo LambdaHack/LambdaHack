@@ -82,9 +82,14 @@ display FrontendSession{..} rawSF = do
   let sfLevelDecoded = map decodeLine sfLevel
       level = init sfLevelDecoded ++ [init $ last sfLevelDecoded]
       nm = zip [0..] $ map (zip [0..]) level
-  sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr sstyles)
+  sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr1 sstyles)
               >> C.mvWAddStr swin y x [acChar]
-            | (y, line) <- nm, (x, Color.AttrChar{..}) <- line ]
+            | (y, line) <- nm
+            , (x, Color.AttrChar{acAttr=Color.Attr{..}, ..}) <- line
+            , let (fg1, bg1) = if bg == Color.defFG  -- highlighted tile
+                               then (Color.defBG, Color.defFG)
+                               else (fg, bg)
+                  acAttr1 = Color.Attr fg1 bg1 ]
   C.refresh
 
 keyTranslate :: C.Key -> K.KM

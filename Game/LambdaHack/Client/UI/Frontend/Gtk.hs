@@ -222,5 +222,11 @@ evalFrame FrontendSession{stags} rawSF =
       -- Strict version of @map (map ((stags M.!) . fst)) sfLevelDecoded@.
       gfAttr  = reverse $ foldl' ff [] sfLevelDecoded
       ff ll l = reverse (foldl' f [] l) : ll
-      f l ac  = let !tag = stags M.! Color.acAttr ac in tag : l
+      f l Color.AttrChar{acAttr=Color.Attr{..}} =
+        let (fg1, bg1) = if bg == Color.defFG  -- highlighted tile
+                         then (Color.defBG, Color.defFG)
+                         else (fg, bg)
+            acAttr1 = Color.Attr fg1 bg1
+            !tag = stags M.! acAttr1
+        in tag : l
   in GtkFrame{..}
