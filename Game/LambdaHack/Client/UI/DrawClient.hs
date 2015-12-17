@@ -65,6 +65,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
      (cursorDesc, mcursorHP) (targetDesc, mtargetHP) sfTop = do
   cops <- getsState scops
   mleader <- getsClient _sleader
+  selected <- getsClient sselected
   s <- getState
   cli@StateClient{ stgtMode, seps, sexplored
                  , smarkVision, smarkSmell, smarkSuspect, swaitTimes }
@@ -103,7 +104,11 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeDeltaToFrom` ltime
             viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
-              let bg = if mleader == Just aid then Color.BrRed else Color.defBG
+              let bg = if mleader == Just aid
+                       then Color.BrRed
+                       else if ES.member aid selected
+                            then Color.BrBlue
+                            else Color.defBG
               in (symbol, Color.Attr{fg=bcolor, bg})
              where
               symbol | bhp <= 0 && not bproj = '%'
@@ -348,13 +353,12 @@ drawSelected drawnLevelId width = do
             sattr = Color.Attr {Color.fg = bcolor, bg}
         in Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%'
       maxViewed = width - 2
-      star = let sattr = case ES.size selected of
-                   0 -> Color.defAttr {Color.fg = Color.BrBlack}
-                   n | n == length ours ->
-                     Color.defAttr {Color.bg = Color.Blue}
-                   _ -> Color.defAttr
+      star = let fg = case ES.size selected of
+                   0 -> Color.BrBlack
+                   n | n == length ours -> Color.BrWhite
+                   _ -> Color.defFG
                  char = if length ours > maxViewed then '$' else '*'
-             in Color.AttrChar sattr char
+             in Color.AttrChar Color.defAttr{Color.fg} char
       viewed = map viewOurs $ take maxViewed
                $ sortBy (comparing keySelected) ours
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
