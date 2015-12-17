@@ -102,16 +102,16 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
                      <$> createElement doc (Just ("table" :: Text))
   void $ appendChild divBlock (Just tableElem)
   Just scharStyle <- getStyle tableElem
+  -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
+  setProp scharStyle "table-layout" "fixed"
   -- Set the font specified in config, if any.
   setProp scharStyle "font-family" $ fromMaybe "Monospace" sfontFamily
   setProp scharStyle "font-size" $ fromMaybe "18px" sfontSize
-  setInnerHTML tableElem $ Just rows
-  -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
-  setProp scharStyle "table-layout" "fixed"
   -- Get rid of table spacing. Tons of spurious hacks just in case.
   setCellPadding tableElem ("0" :: Text)
   setCellSpacing tableElem ("0" :: Text)
   setProp scharStyle "padding" "0 0 0 0"
+  setProp scharStyle "border-collapse" "collapse"
   setProp scharStyle "border" "1px solid grey"
   setProp scharStyle "margin-left" "auto"
   setProp scharStyle "margin-right" "auto"
@@ -119,6 +119,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   -- setProp "display" "block"
   -- setProp "vertical-align" "bottom"
   -- Create the session record.
+  setInnerHTML tableElem $ Just rows
   scharCells <- flattenTable tableElem
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sdebugCli sess) shutdown
@@ -198,6 +199,10 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
       ys = [0..lysize - 1]
       xys = concat $ map (\y -> zip xs (repeat y)) ys
   mapM_ (handleMouse (fchanKey rf)) $ zip scharCells xys
+  let setBorder tcell = do
+        Just style <- getStyle tcell
+        setProp style "border" "1px none red"
+  mapM_ setBorder scharCells
   -- Display at the end to avoid redraw
   void $ appendChild body (Just divBlock)
   putMVar rfMVar rf  -- send to client only after the whole wegage is set up
@@ -278,14 +283,17 @@ display DebugModeCli{scolorIsBold} FrontendSession{..} rawSF = postGUISync $ do
           removeProp style "background-color"
           removeProp style "color"
           removeProp style "font-weight"
+          setProp style "border-style" "none"
         else do
-          let (fg1, bg1) = if bg == Color.defFG  -- highlighted tile
-                           then (Color.defBG, Color.defFG)
-                           else (fg, bg)
-          setProp style "background-color" (Color.colorToRGB bg1)
-          setProp style "color" (Color.colorToRGB fg1)
           when (scolorIsBold == Just True) $
             setProp style "font-weight" "bold"
+          if bg `elem` [Color.defFG, Color.defBG]
+          then removeProp style "background-color"
+          else setProp style "background-color" (Color.colorToRGB bg)
+          setProp style "color" (Color.colorToRGB fg)
+          if bg == Color.defFG  -- highlighted tile
+          then setProp style "border-style" "solid"
+          else setProp style "border-style" "none"
       SingleFrame{sfLevel} = overlayOverlay rawSF
       acs = concat $ map decodeLine sfLevel
   -- TODO: Sync or Async?
