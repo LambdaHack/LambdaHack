@@ -146,7 +146,7 @@ screensaverSkirmish = skirmish
   , mfreq   = [("starting JS", 1)]
   , mroster = rosterSkirmish
       { rosterList = (head (rosterList rosterSkirmish))
-                       {fleaderMode = LeaderAI $ AutoLeader True False}
+                       {fleaderMode = LeaderAI $ AutoLeader False False}
                      : tail (rosterList rosterSkirmish)
       }
   }
