@@ -287,16 +287,21 @@ display DebugModeCli{scolorIsBold} FrontendSession{..} rawSF = postGUISync $ do
         else do
           when (scolorIsBold == Just True) $
             setProp style "font-weight" "bold"
-          if bg `elem` [Color.BrRed, Color.BrBlue, Color.defBG]
+          if bg `elem` [Color.BrRed, Color.BrBlue, Color.BrYellow, Color.defBG]
           then removeProp style "background-color"
           else setProp style "background-color" (Color.colorToRGB bg)
           setProp style "color" (Color.colorToRGB fg)
-          if bg == Color.BrRed  -- highlighted tile
-          then setProp style "border-color" "red"
-          else if bg == Color.BrBlue  -- blue highlighted tile
-               then let ourBlue = Color.colorToRGB Color.Blue
-                    in setProp style "border-color" ourBlue
-               else setProp style "border-color" "transparent"
+          case bg of
+            Color.BrRed ->  -- highlighted tile
+              let ourColor = Color.colorToRGB Color.Red
+              in setProp style "border-color" ourColor
+            Color.BrBlue ->  -- blue highlighted tile
+              let ourColor = Color.colorToRGB Color.Blue
+              in setProp style "border-color" ourColor
+            Color.BrYellow ->  -- yellow highlighted tile
+              let ourColor = Color.colorToRGB Color.BrYellow
+              in setProp style "border-color" ourColor
+            _ -> setProp style "border-color" "transparent"
       SingleFrame{sfLevel} = overlayOverlay rawSF
       acs = concat $ map decodeLine sfLevel
   -- TODO: Sync or Async?

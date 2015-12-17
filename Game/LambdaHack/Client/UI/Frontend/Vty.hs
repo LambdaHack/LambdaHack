@@ -113,13 +113,14 @@ setAttr Color.Attr{..} =
 --  if (fg, bg) == Color.defAttr
 --  then def_attr
 --  else
-  let (fg1, bg1) = if bg == Color.BrRed  -- highlighted tile
-                   then (Color.defBG, Color.defFG)
-                   else if bg == Color.BrBlue  -- blue highlighted tile
-                        then if fg /= Color.Blue
-                             then (Color.Blue, fg)
-                             else (Color.BrBlack, fg)
-                        else (fg, bg)
+  let (fg1, bg1) = case bg of
+        Color.BrRed -> (Color.defBG, Color.defFG)  -- highlighted tile
+        Color.BrBlue ->  -- blue highlighted tile
+          if fg /= Color.Blue
+          then (Color.Blue, fg)
+          else (Color.BrBlack, fg)
+        Color.BrYellow -> (Color.defBG, Color.defFG)  -- yellow highlighted tile
+        _ -> (fg, bg)
   in hack fg1 $ hack bg1 $
        defAttr { attrForeColor = SetTo (aToc fg1)
                , attrBackColor = SetTo (aToc bg1) }

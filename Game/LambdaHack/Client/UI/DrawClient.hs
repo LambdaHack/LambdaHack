@@ -73,25 +73,26 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
   per <- getPerFid drawnLevelId
   let Kind.COps{cotile=cotile@Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
-      (bl, mblid, mbpos) = case (cursorPos, mleader) of
+      (bline, mblid, mbpos) = case (cursorPos, mleader) of
         (Just cursor, Just leader) ->
           let Actor{bpos, blid} = getActorBody leader s
           in if blid /= drawnLevelId
-             then ( [cursor], Just blid, Just bpos )
-             else ( fromMaybe [] $ bla lxsize lysize seps bpos cursor
+             then ( [], Just blid, Just bpos )
+             else ( maybe [] (delete cursor)
+                    $ bla lxsize lysize seps bpos cursor
                   , Just blid
                   , Just bpos )
         _ -> ([], Nothing, Nothing)
-      mpath = maybe Nothing (\(_, mp) -> if null bl
-                                            || mblid /= Just drawnLevelId
+      deleteCursor = maybe id (\cursor -> delete cursor) cursorPos
+      mpath = maybe Nothing (\(_, mp) -> if null bline
                                          then Nothing
-                                         else mp) bfsmpathRaw
+                                         else deleteCursor <$> mp) bfsmpathRaw
       actorsHere = actorAssocs (const True) drawnLevelId s
       cursorHere = find (\(_, m) -> cursorPos == Just (Actor.bpos m))
-                   actorsHere
+                        actorsHere
       shiftedBTrajectory = case cursorHere of
         Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
-          trajectoryToPath prPos (fst p)
+          deleteCursor $ trajectoryToPath prPos (fst p)
         _ -> []
       unknownId = ouniqGroup "unknown space"
       dis pos0 =
@@ -128,18 +129,15 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
               (True, False)  -> Color.BrRed
               (False, True)  -> Color.Green
               (False, False) -> Color.Red
-            atttrOnPathOrLine =
-              if Just pos0 == cursorPos
-              then Color.Attr fgOnPathOrLine Color.BrRed
-              else Color.Attr fgOnPathOrLine Color.defBG
+            atttrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
             (char, attr0) =
               case find (\(_, m) -> pos0 == Actor.bpos m) actorsHere of
                 _ | isJust stgtMode
-                    && (elem pos0 bl || elem pos0 shiftedBTrajectory) ->
+                    && (elem pos0 bline || elem pos0 shiftedBTrajectory) ->
                   ('*', atttrOnPathOrLine)  -- line takes precedence over path
                 _ | isJust stgtMode
                     && maybe False (elem pos0) mpath ->
-                  (';', Color.defAttr {Color.fg = fgOnPathOrLine})
+                  (';', atttrOnPathOrLine)
                 Just (aid, m) -> viewActor aid m
                 _ | smarkSmell && sml > ltime ->
                   (timeDeltaToDigit smellTimeout smlt, rainbow pos0)
@@ -150,9 +148,11 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
             vis = ES.member pos0 $ totalVisible per
             a = case dm of
                   ColorBW -> Color.defAttr
-                  ColorFull -> if smarkVision && vis
-                               then attr0 {Color.bg = Color.Blue}
-                               else attr0
+                  ColorFull -> if Just pos0 == cursorPos
+                               then attr0 {Color.bg = Color.BrYellow}
+                               else if smarkVision && vis
+                                    then attr0 {Color.bg = Color.Blue}
+                                    else attr0
         in Color.AttrChar a char
       widthX = 80
       widthTgt = 39

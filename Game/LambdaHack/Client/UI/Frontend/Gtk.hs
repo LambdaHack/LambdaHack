@@ -223,14 +223,15 @@ evalFrame FrontendSession{stags} rawSF =
       gfAttr  = reverse $ foldl' ff [] sfLevelDecoded
       ff ll l = reverse (foldl' f [] l) : ll
       f l Color.AttrChar{acAttr=Color.Attr{..}} =
-        let (fg1, bg1) =
-              if bg == Color.BrRed  -- highlighted tile
-              then (Color.defBG, Color.defFG)
-              else if bg == Color.BrBlue  -- blue highlighted tile
-                   then if fg /= Color.Blue
-                        then (Color.Blue, fg)
-                        else (Color.BrBlack, fg)
-                   else (fg, bg)
+        let (fg1, bg1) = case bg of
+              Color.BrRed -> (Color.defBG, Color.defFG)  -- highlighted tile
+              Color.BrBlue ->  -- blue highlighted tile
+                if fg /= Color.Blue
+                then (Color.Blue, fg)
+                else (Color.BrBlack, fg)
+              Color.BrYellow -> (Color.defBG, Color.defFG)
+                -- yellow highlighted tile
+              _ -> (fg, bg)
             acAttr1 = Color.Attr fg1 bg1
             !tag = stags M.! acAttr1
         in tag : l
