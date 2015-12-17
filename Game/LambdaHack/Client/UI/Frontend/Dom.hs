@@ -112,7 +112,6 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   setCellSpacing tableElem ("0" :: Text)
   setProp scharStyle "padding" "0 0 0 0"
   setProp scharStyle "border-collapse" "collapse"
-  setProp scharStyle "border" "1px solid grey"
   setProp scharStyle "margin-left" "auto"
   setProp scharStyle "margin-right" "auto"
   -- TODO: for icons, in <td>
@@ -201,7 +200,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   mapM_ (handleMouse (fchanKey rf)) $ zip scharCells xys
   let setBorder tcell = do
         Just style <- getStyle tcell
-        setProp style "border" "1px none red"
+        setProp style "border" "1px solid transparent"
   mapM_ setBorder scharCells
   -- Display at the end to avoid redraw
   void $ appendChild body (Just divBlock)
@@ -283,17 +282,20 @@ display DebugModeCli{scolorIsBold} FrontendSession{..} rawSF = postGUISync $ do
           removeProp style "background-color"
           removeProp style "color"
           removeProp style "font-weight"
-          setProp style "border-style" "none"
+          setProp style "border-color" "transparent"
         else do
           when (scolorIsBold == Just True) $
             setProp style "font-weight" "bold"
-          if bg `elem` [Color.defFG, Color.defBG]
+          if bg `elem` [Color.BrRed, Color.BrBlue, Color.defBG]
           then removeProp style "background-color"
           else setProp style "background-color" (Color.colorToRGB bg)
           setProp style "color" (Color.colorToRGB fg)
-          if bg == Color.defFG  -- highlighted tile
-          then setProp style "border-style" "solid"
-          else setProp style "border-style" "none"
+          if bg == Color.BrRed  -- highlighted tile
+          then setProp style "border-color" "red"
+          else if bg == Color.BrBlue  -- blue highlighted tile
+               then let ourBlue = Color.colorToRGB Color.Blue
+                    in setProp style "border-color" ourBlue
+               else setProp style "border-color" "transparent"
       SingleFrame{sfLevel} = overlayOverlay rawSF
       acs = concat $ map decodeLine sfLevel
   -- TODO: Sync or Async?

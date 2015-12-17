@@ -103,7 +103,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeDeltaToFrom` ltime
             viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
-              let bg = if mleader == Just aid then Color.defFG else Color.defBG
+              let bg = if mleader == Just aid then Color.BrRed else Color.defBG
               in (symbol, Color.Attr{fg=bcolor, bg})
              where
               symbol | bhp <= 0 && not bproj = '%'
@@ -124,8 +124,9 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
               (False, True)  -> Color.Green
               (False, False) -> Color.Red
             atttrOnPathOrLine =
-              let bg = if Just pos0 == cursorPos then Color.defFG else Color.defBG
-              in Color.Attr{Color.fg=fgOnPathOrLine, bg}
+              if Just pos0 == cursorPos
+              then Color.Attr fgOnPathOrLine Color.BrRed
+              else Color.Attr fgOnPathOrLine Color.defBG
             (char, attr0) =
               case find (\(_, m) -> pos0 == Actor.bpos m) actorsHere of
                 _ | isJust stgtMode
@@ -340,15 +341,9 @@ drawSelected drawnLevelId width = do
                       . actorAssocs (== side) drawnLevelId
   let viewOurs (aid, Actor{bsymbol, bcolor, bhp}) =
         let bg = if mleader == Just aid
-                 then Color.defFG
+                 then Color.BrRed
                  else if ES.member aid selected
-                      -- TODO: in the future use a red rectangle instead
-                      -- of background and mark them on the map, too;
-                      -- also, perhaps blink all selected on the map,
-                      -- when selection changes
-                      then if bcolor /= Color.Blue
-                           then Color.Blue
-                           else Color.BrBlack
+                      then Color.BrBlue
                       else Color.defBG
             sattr = Color.Attr {Color.fg = bcolor, bg}
         in Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%'
