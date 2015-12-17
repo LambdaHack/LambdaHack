@@ -110,6 +110,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   -- Get rid of table spacing. Tons of spurious hacks just in case.
   setCellPadding tableElem ("0" :: Text)
   setCellSpacing tableElem ("0" :: Text)
+  setProp scharStyle "outline" "1px solid grey"
   setProp scharStyle "padding" "0 0 0 0"
   setProp scharStyle "border-collapse" "collapse"
   setProp scharStyle "margin-left" "auto"
