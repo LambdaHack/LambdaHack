@@ -60,7 +60,7 @@ data Modifier =
   | Shift
   | Control
   | Alt
-  deriving (Read, Ord, Eq, Generic)
+  deriving (Show, Read, Ord, Eq, Generic)
 
 instance Binary Modifier
 
@@ -105,7 +105,7 @@ showKey (Char c) = T.singleton c
 showKey LeftButtonPress = "LEFT-BUTTON"
 showKey MiddleButtonPress = "MIDDLE-BUTTON"
 showKey RightButtonPress = "RIGHT-BUTTON"
-showKey (Unknown s) = s
+showKey (Unknown s) = "'" <> s <> "'"
 showKey DeadKey      = "DEADKEY"
 
 -- | Show a key with a modifier, if any.

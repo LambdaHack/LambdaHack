@@ -30,8 +30,7 @@ import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement,
 import GHCJS.DOM.JSFFI.Generated.RequestAnimationFrameCallback
 import GHCJS.DOM.JSFFI.Generated.Window (requestAnimationFrame)
 import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
-                                getKeyIdentifier, getKeyLocation, getMetaKey,
-                                getShiftKey)
+                                getKeyIdentifier, getMetaKey, getShiftKey)
 import GHCJS.DOM.Node (appendChild)
 import GHCJS.DOM.Types (CSSStyleDeclaration, MouseEvent, castToHTMLDivElement)
 import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
@@ -136,9 +135,44 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
         modAlt <- ask >>= getAltKey
         modMeta <- ask >>= getMetaKey
         modAltG <- ask >>= getAltGraphKey
-        let md = modifierTranslate
-                   modCtrl modShift (modAlt || modAltG) modMeta
-        return $! if md == K.Shift then K.NoModifier else md
+        return $! modifierTranslate
+                    modCtrl modShift (modAlt || modAltG) modMeta
+  void $ doc `on` keyDown $ do
+    keyId <- ask >>= getKeyIdentifier
+    -- unneded so far: _keyLoc <- ask >>= getKeyLocation
+    which <- ask >>= getWhich
+    keyCode <- ask >>= getKeyCode
+    charCode <- ask >>= getCharCode
+    modifier <- readMod
+    let keyIdBogus = keyId `elem` ["", "Unidentified"]
+                     || take 2 keyId == "U+"
+        -- Handle browser quirks and webkit non-conformance to standards,
+        -- especially for ESC, etc.
+        quirksN | which == 0 = ""
+                | charCode /= 0 = ""
+                | not keyIdBogus = keyId
+                | keyCode == 8 = "Backspace"
+                | keyCode == 9 =
+                  if modifier == K.Shift then "BackTab" else "Tab"
+                | keyCode == 27 = "Escape"
+                | keyCode == 46 = "Delete"
+                | otherwise = ""  -- TODO: translate from keyCode in FF and IE
+                                  -- until @key@ available in webkit DOM
+    when (not $ null quirksN) $ do
+      let !key = K.keyTranslateWeb quirksN
+          !pointer = Nothing
+          !km = K.KM{..}
+          _ks = T.unpack (K.showKey key)
+      -- liftIO $ do
+      --   putStrLn $ "keyId: " ++ keyId
+      --   putStrLn $ "quirksN: " ++ quirksN
+      --   putStrLn $ "key: " ++ _ks
+      --   putStrLn $ "which: " ++ show which
+      --   putStrLn $ "keyCode: " ++ show keyCode
+      --   putStrLn $ "modifier: " ++ show modifier
+      liftIO $ saveKM rf km
+      -- Pass through Ctrl-+ and others, disable Tab.
+      when (modifier `elem` [K.NoModifier, K.Shift]) preventDefault
   void $ doc `on` keyPress $ do
     which <- ask >>= getWhich
     keyCode <- ask >>= getKeyCode
@@ -150,7 +184,9 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
       modifier <- readMod
       let !key = K.keyTranslateWeb quirksN
           !pointer = Nothing
-          !km = K.KM{..}
+          !modifierNoShift =  -- to prevent Shift-!, etc.
+            if modifier == K.Shift then K.NoModifier else modifier
+          !km = K.KM{modifier=modifierNoShift, ..}
           _ks = T.unpack (K.showKey key)
       -- liftIO $ do
       --   putStrLn $ "charCode: " ++ show charCode
@@ -158,42 +194,10 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
       --   putStrLn $ "key: " ++ _ks
       --   putStrLn $ "which: " ++ show which
       --   putStrLn $ "keyCode: " ++ show keyCode
+      --   putStrLn $ "modifier: " ++ show modifier
       liftIO $ saveKM rf km
       -- Pass through Ctrl-+ and others, disable Tab.
-      when (modifier == K.NoModifier) preventDefault
-  void $ doc `on` keyDown $ do
-    keyId <- ask >>= getKeyIdentifier
-    _keyLoc <- ask >>= getKeyLocation
-    which <- ask >>= getWhich
-    keyCode <- ask >>= getKeyCode
-    charCode <- ask >>= getCharCode
-    modShift <- ask >>= getShiftKey
-    let keyIdBogus = keyId `elem` ["", "Unidentified"]
-                     || take 2 keyId == "U+"
-        -- Handle browser quirks and webkit non-conformance to standards,
-        -- especially for ESC, etc.
-        quirksN | which == 0 = ""
-                | charCode /= 0 = ""
-                | not keyIdBogus = keyId
-                | keyCode == 27 = "Escape"
-                | keyCode == 9 = if modShift then "BackTab" else "Tab"
-                | otherwise = ""  -- TODO: translate from keyCode in FF and IE
-                                  -- until @key@ available in webkit DOM
-    when (not $ null quirksN) $ do
-      modifier <- readMod
-      let !key = K.keyTranslateWeb quirksN
-          !pointer = Nothing
-          !km = K.KM{..}
-          _ks = T.unpack (K.showKey key)
-      -- liftIO $ do
-      --   putStrLn $ "keyId: " ++ keyId
-      --   putStrLn $ "quirksN: " ++ quirksN
-      --   putStrLn $ "key: " ++ _ks
-      --   putStrLn $ "which: " ++ show which
-      --   putStrLn $ "keyCode: " ++ show keyCode
-      liftIO $ saveKM rf km
-      -- Pass through Ctrl-+ and others, disable Tab.
-      when (modifier == K.NoModifier) preventDefault
+      when (modifier `elem` [K.NoModifier, K.Shift]) preventDefault
   -- Handle mouseclicks, per-cell.
   let xs = [0..lxsize - 1]
       ys = [0..lysize - 1]
