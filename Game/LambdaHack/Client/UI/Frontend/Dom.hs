@@ -5,7 +5,6 @@ module Game.LambdaHack.Client.UI.Frontend.Dom
   ) where
 
 import Control.Concurrent
-import qualified Control.Concurrent.STM as STM
 import Control.Monad
 import Control.Monad.Reader (ask, liftIO)
 import Data.Char (chr)
@@ -16,10 +15,9 @@ import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
 import GHCJS.DOM.CSSStyleDeclaration (removeProperty, setProperty)
 import GHCJS.DOM.Document (createElement, getBody, keyDown, keyPress)
-import GHCJS.DOM.Element (getStyle, setInnerHTML)
+import GHCJS.DOM.Element (click, contextMenu, getStyle, setInnerHTML)
 import GHCJS.DOM.EventM (mouseAltKey, mouseButton, mouseCtrlKey, mouseMetaKey,
                          mouseShiftKey, on, preventDefault)
-import GHCJS.DOM.EventTargetClosures (EventName (EventName))
 import GHCJS.DOM.HTMLCollection (item)
 import GHCJS.DOM.HTMLTableCellElement (HTMLTableCellElement,
                                        castToHTMLTableCellElement)
@@ -32,7 +30,7 @@ import GHCJS.DOM.JSFFI.Generated.Window (requestAnimationFrame)
 import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getMetaKey, getShiftKey)
 import GHCJS.DOM.Node (appendChild)
-import GHCJS.DOM.Types (CSSStyleDeclaration, MouseEvent, castToHTMLDivElement)
+import GHCJS.DOM.Types (CSSStyleDeclaration, castToHTMLDivElement)
 import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
 
 import qualified Game.LambdaHack.Client.Key as K
@@ -202,7 +200,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   let xs = [0..lxsize - 1]
       ys = [0..lysize - 1]
       xys = concat $ map (\y -> zip xs (repeat y)) ys
-  mapM_ (handleMouse (fchanKey rf)) $ zip scharCells xys
+  mapM_ (handleMouse rf) $ zip scharCells xys
   let setBorder tcell = do
         Just style <- getStyle tcell
         setProp style "border" "1px solid transparent"
@@ -224,22 +222,18 @@ removeProp style propRef = do
   (_t :: Maybe Text) <- removeProperty style propRef
   return ()
 
-click :: EventName HTMLTableCellElement MouseEvent
-click = EventName "click"
-
 -- | Let each table cell handle mouse events inside.
-handleMouse :: STM.TQueue K.KM -> (HTMLTableCellElement, (Int, Int)) -> IO ()
-handleMouse fchanKey (cell, (cx, cy)) = do
-  void $ cell `on` click $ do
-    -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
-    liftIO $ resetChanKey fchanKey
-    but <- mouseButton
-    modCtrl <- mouseCtrlKey
-    modShift <- mouseShiftKey
-    modAlt <- mouseAltKey
-    modMeta <- mouseMetaKey
-    let !modifier = modifierTranslate modCtrl modShift modAlt modMeta
-    liftIO $ do
+handleMouse :: RawFrontend -> (HTMLTableCellElement, (Int, Int)) -> IO ()
+handleMouse rf (cell, (cx, cy)) = do
+  let saveMouse = do
+        -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
+        but <- mouseButton
+        modCtrl <- mouseCtrlKey
+        modShift <- mouseShiftKey
+        modAlt <- mouseAltKey
+        modMeta <- mouseMetaKey
+        let !modifier = modifierTranslate modCtrl modShift modAlt modMeta
+        liftIO $ do
       -- TODO: Graphics.UI.Gtk.WebKit.DOM.Selection? ClipboardEvent?
       -- hasSelection <- textBufferHasSelection tb
       -- unless hasSelection $ do
@@ -247,14 +241,22 @@ handleMouse fchanKey (cell, (cx, cy)) = do
       -- let setCursor (drawWin, _, _) =
       --       drawWindowSetCursor drawWin (Just cursor)
       -- maybe (return ()) setCursor mdrawWin
-      let !key = case but of
-            0 -> K.LeftButtonPress
-            1 -> K.MiddleButtonPress
-            2 -> K.RightButtonPress
-            _ -> K.LeftButtonPress
-          !pointer = Just $! Point cx cy
-      -- Store the mouse event coords in the keypress channel.
-      STM.atomically $ STM.writeTQueue fchanKey K.KM{..}
+          let !key = case but of
+                0 -> K.LeftButtonPress
+                1 -> K.MiddleButtonPress
+                2 -> K.RightButtonPress
+                _ -> K.LeftButtonPress
+              !pointer = Just $! Point cx cy
+              !km = K.KM{..}
+              _ks = T.unpack (K.showKey key)
+          -- liftIO $ putStrLn $ "m: " ++ _ks ++ show modifier ++ show pointer
+          -- Store the mouse event coords in the keypress channel.
+          liftIO $ saveKM rf km
+  void $ cell `on` contextMenu $ do
+    saveMouse
+    preventDefault
+  void $ cell `on` click $
+    saveMouse
 
 -- | Get the list of all cells of an HTML table.
 flattenTable :: HTMLTableElement -> IO [HTMLTableCellElement]
