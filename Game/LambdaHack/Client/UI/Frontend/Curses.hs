@@ -91,8 +91,8 @@ display FrontendSession{..} rawSF = do
                       (Color.defBG, Color.defFG)  -- highlighted tile
                     Color.BrBlue ->  -- blue highlighted tile
                       if fg /= Color.Blue
-                      then (Color.Blue, fg)
-                      else (Color.BrBlack, fg)
+                      then (fg, Color.Blue)
+                      else (fg, Color.BrBlack)
                     Color.BrYellow ->
                       (Color.defBG, Color.defFG)
                         -- yellow highlighted tile

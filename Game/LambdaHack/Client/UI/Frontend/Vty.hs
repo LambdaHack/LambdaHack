@@ -117,8 +117,8 @@ setAttr Color.Attr{..} =
         Color.BrRed -> (Color.defBG, Color.defFG)  -- highlighted tile
         Color.BrBlue ->  -- blue highlighted tile
           if fg /= Color.Blue
-          then (Color.Blue, fg)
-          else (Color.BrBlack, fg)
+          then (fg, Color.Blue)
+          else (fg, Color.BrBlack)
         Color.BrYellow -> (Color.defBG, Color.defFG)  -- yellow highlighted tile
         _ -> (fg, bg)
   in hack fg1 $ hack bg1 $
