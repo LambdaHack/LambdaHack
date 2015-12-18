@@ -191,9 +191,16 @@ renderHistory (History rb) =
   let l = RB.toList rb
       (x, y) = normalLevelBound
       screenLength = y + 2
-      reportLines = concatMap (splitReportForHistory (x + 1)) l
+      reportLines = map (truncateHistory (x + 1)) l
       padding = screenLength - length reportLines `mod` screenLength
   in toOverlay $ replicate padding "" ++ reportLines
+
+truncateHistory :: X -> (Time, Report) -> Text
+truncateHistory w (time, r) =
+  -- TODO: display time fractions with granularity enough to differ
+  -- from previous and next report, if possible
+  let turns = time `timeFitUp` timeTurn
+  in truncateMsg w $ tshow turns <> ":" <+> renderReport r
 
 splitReportForHistory :: X -> (Time, Report) -> [Text]
 splitReportForHistory w (time, r) =
