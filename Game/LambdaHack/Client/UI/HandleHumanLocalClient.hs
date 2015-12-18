@@ -170,7 +170,7 @@ selectWithPointer = do
   -- Select even if no space in status line for the actor's symbol.
   let viewed = sortBy (comparing keySelected) ours
   case K.pointer km of
-    Just(Point{..}) | py == lysize + 1 && px <= length viewed && px >= 0 -> do
+    Just(Point{..}) | py == lysize + 2 && px <= length viewed && px >= 0 -> do
       if px == 0 then
         selectNoneHuman
       else
