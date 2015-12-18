@@ -61,8 +61,8 @@ pillar = TileKind
                , ("legendLit", 100), ("legendDark", 100)
                , ("noiseSet", 100), ("skirmishSet", 5)
                , ("battleSet", 250) ]
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
+  , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
+  , tcolor2  = Cyan
   , tfeature = []
   }
 pillarCache = TileKind
@@ -70,8 +70,8 @@ pillarCache = TileKind
   , tname    = "cache"
   , tfreq    = [ ("cachable", 30)
                , ("legendLit", 100), ("legendDark", 100) ]
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
+  , tcolor   = BrCyan
+  , tcolor2  = Cyan
   , tfeature = [ Cause $ IK.CreateItem CGround "useful" IK.TimerNone
                , ChangeTo "cachable" ]
   }
