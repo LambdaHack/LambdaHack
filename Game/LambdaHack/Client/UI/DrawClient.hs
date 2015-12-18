@@ -5,6 +5,9 @@ module Game.LambdaHack.Client.UI.DrawClient
   , draw
   ) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
