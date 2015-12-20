@@ -72,7 +72,7 @@ cmdAction cmd = case cmd of
   SelectWithPointer -> addNoSlides selectWithPointer
   Repeat n -> addNoSlides $ repeatHuman n
   Record -> Left <$> recordHuman
-  History -> Left <$> historyHuman
+  History -> addNoSlides historyHuman
   MarkVision -> markVisionHuman >> settingsMenuHuman cmdAction
   MarkSmell -> markSmellHuman >> settingsMenuHuman cmdAction
   MarkSuspect -> markSuspectHuman >> settingsMenuHuman cmdAction

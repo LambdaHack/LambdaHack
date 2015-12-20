@@ -5,8 +5,8 @@ module Game.LambdaHack.Common.Msg
   , Msg, (<>), (<+>), tshow, toWidth, moreMsg, endMsg, yesnoMsg, truncateMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg, prependMsg
   , splitReport, renderReport, findInReport, lastMsgOfReport
-  , History, emptyHistory, lengthHistory
-  , addReport, renderHistory, lastReportOfHistory
+  , History, emptyHistory, lengthHistory, linesHistory
+  , addReport, renderHistory, splitReportForHistory, lastReportOfHistory
   , Overlay(overlay), emptyOverlay, toOverlayRaw, truncateToOverlay, toOverlay
   , updateOverlayLine
   , Slideshow(slideshow), splitOverlay, toSlideshow
@@ -185,15 +185,16 @@ addReport !(History rb) !time !rep@(Report m) =
 lengthHistory :: History -> Int
 lengthHistory (History rs) = RB.rbLength rs
 
+linesHistory :: History -> [(Time, Report)]
+linesHistory (History rb) = RB.toList rb
+
 -- | Render history as many lines of text, wrapping if necessary.
 renderHistory :: History -> Overlay
 renderHistory (History rb) =
   let l = RB.toList rb
-      (x, y) = normalLevelBound
-      screenLength = y + 2
+      (x, _) = normalLevelBound
       reportLines = map (truncateHistory (x + 1)) l
-      padding = screenLength - length reportLines `mod` screenLength
-  in toOverlay $ replicate padding "" ++ reportLines
+  in toOverlay reportLines
 
 truncateHistory :: X -> (Time, Report) -> Text
 truncateHistory w (time, r) =
@@ -202,15 +203,17 @@ truncateHistory w (time, r) =
   let turns = time `timeFitUp` timeTurn
   in truncateMsg w $ tshow turns <> ":" <+> renderReport r
 
-splitReportForHistory :: X -> (Time, Report) -> [Text]
+splitReportForHistory :: X -> (Time, Report) -> (Text, [Text])
 splitReportForHistory w (time, r) =
   -- TODO: display time fractions with granularity enough to differ
-  -- from previous and next report, if possible
-  let turns = time `timeFitUp` timeTurn
-      ts = splitText (w - 1) $ tshow turns <> ":" <+> renderReport r
-  in case ts of
-    [] -> []
-    hd : tl -> hd : map (T.cons ' ') tl
+  -- from previous and next report, if possible.
+  -- or perhaps here display up to 4 decimal points
+  let tturns = tshow $ time `timeFitUp` timeTurn
+      ts = splitText (w - 1) $ tturns <> ":" <+> renderReport r
+      rep = case ts of
+        [] -> []
+        hd : tl -> hd : map (T.cons ' ') tl
+  in (tturns, rep)
 
 lastReportOfHistory :: History -> Maybe Report
 lastReportOfHistory (History rb) = snd . fst <$> RB.uncons rb
@@ -262,23 +265,20 @@ updateOverlayLine n f Overlay{overlay} =
 -- | Split an overlay into a slideshow in which each overlay,
 -- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,
 -- fits on the screen wrt height (but lines may be too wide).
-splitOverlay :: Maybe Bool -> Y -> Overlay -> Overlay -> Slideshow
-splitOverlay onBlank yspace (Overlay msg) (Overlay ls0) =
+splitOverlay :: Y -> Overlay -> Overlay -> Slideshow
+splitOverlay yspace (Overlay msg) (Overlay ls0) =
   let len = length msg
-      endB = [ toScreenLine
-               $ endMsg <> "[press PGUP to see previous, ESC to cancel]"
-             | onBlank == Just False ]
   in if len >= yspace
      then  -- no space left for @ls0@
-       Slideshow (onBlank, [Overlay $ take (yspace - 1) msg
+       Slideshow (Nothing, [Overlay $ take (yspace - 1) msg
                                       ++ [toScreenLine moreMsg]])
      else let splitO ls =
                 let (pre, post) = splitAt (yspace - 1) $ msg ++ ls
                 in if null (drop 1 post)  -- (don't call @length@ on @ls0@)
-                   then [Overlay $ msg ++ ls ++ endB]  -- all fits on screen
+                   then [Overlay $ msg ++ ls]  -- all fits on screen
                    else let rest = splitO post
                         in Overlay (pre ++ [toScreenLine moreMsg]) : rest
-          in Slideshow (onBlank, splitO ls0)
+          in Slideshow (Nothing, splitO ls0)
 
 -- | A few overlays, displayed one by one upon keypress.
 -- When displayed, they are trimmed, not wrapped

@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.WidgetClient
   ( displayMore, displayYesNo, displayChoiceScreen, displayChoiceLine
   , displayPush, describeMainKeys
-  , promptToSlideshow, overlayToSlideshow, overlayToBlankSlideshow
+  , promptToSlideshow, overlayToSlideshow
   , animate, fadeOutOrIn, msgPromptAI
   ) where
 
@@ -232,7 +232,7 @@ overlayToSlideshow prompt overlay = do
   Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
   sreport <- getsClient sreport
   let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
-  return $! splitOverlay Nothing (lysize + 1) msg overlay
+  return $! splitOverlay (lysize + 1) msg overlay
 
 msgPromptAI :: MonadClientUI m => m Msg
 msgPromptAI = do
@@ -240,14 +240,6 @@ msgPromptAI = do
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
   return $! if underAI then "[press ESC for Main Menu]" else ""
-
-overlayToBlankSlideshow :: MonadClientUI m
-                        => Bool -> Msg -> Overlay -> m Slideshow
-overlayToBlankSlideshow startAtTop prompt overlay = do
-  lid <- getArenaUI
-  Level{lysize} <- getLevel lid  -- TODO: screen length or viewLevel
-  return $! splitOverlay (Just startAtTop) (lysize + 3)
-                         (toOverlay [prompt]) overlay
 
 -- TODO: restrict the animation to 'per' before drawing.
 -- | Render animations on top of the current screen frame.

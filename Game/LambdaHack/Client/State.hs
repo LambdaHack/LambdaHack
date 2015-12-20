@@ -86,6 +86,7 @@ data StateClient = StateClient
   , smenuIxMain  :: !Int           -- ^ index of last used Main Menu item
   , smenuIxSettings :: !Int        -- ^ index of last used Settings Menu item
   , smenuIxHelp  :: !Int           -- ^ index of last used Help Menu item
+  , smenuIxHistory :: !Int         -- ^ index of last used History Menu item
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving Show
@@ -152,6 +153,7 @@ emptyStateClient _sside =
     , smenuIxMain = 0
     , smenuIxSettings = 0
     , smenuIxHelp = 0
+    , smenuIxHistory = 0
     , sdebugCli = defDebugModeCli
     }
 
@@ -220,6 +222,7 @@ instance Binary StateClient where
     put smenuIxMain
     put smenuIxSettings
     put smenuIxHelp
+    put smenuIxHistory
     put sdebugCli  -- TODO: this is overwritten at once
   get = do
     stgtMode <- get
@@ -250,6 +253,7 @@ instance Binary StateClient where
     smenuIxMain <- get
     smenuIxSettings <- get
     smenuIxHelp <- get
+    smenuIxHistory <- get
     sdebugCli <- get
     let sbfsD = EM.empty
         sfper = EM.empty

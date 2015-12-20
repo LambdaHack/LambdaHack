@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.InventoryClient
   , memberCycle, memberBack, pickLeader
   , cursorPointerFloor, cursorPointerEnemy
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman, epsIncrHuman, tgtClearHuman
-  , doLook, describeItemC
+  , doLook, describeItemC, splitOKX
   ) where
 
 import Prelude ()
@@ -621,6 +621,8 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
                    keyLabelsRaw = letterRange : map (defLabel . snd) keyDefs
                    keyLabels = filter (not . T.null) keyLabelsRaw
                in "[" <> T.intercalate ", " (nub keyLabels) <> ", ESC]"
+  arena <- getArenaUI
+  Level{lysize} <- getLevel arena
   ekm <- if null $ overlay $ fst okx
          then
            Left <$> displayChoiceLine (prompt <+> choice) (fst okx) itemKeys
@@ -630,7 +632,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
                                             (snd okx) of
                  Just p | cCur /= MStats -> p
                  _ -> 0
-           okxs <- splitOKX (prompt <+> choice) okx
+           okxs <- splitOKX (lysize + 1) (prompt <+> choice) okx
            (okm, pointer) <- displayChoiceScreen False lastPointer okxs itemKeys
            -- Only remember item pointer, if moved and if not stats.
            case drop pointer $ snd okx of
@@ -649,16 +651,17 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
       Nothing -> defAction lettersDef ekm  -- pressed; with current prefix
     Right _slot -> defAction lettersDef ekm  -- selected; with the given prefix
 
-splitOKX :: MonadClientUI m => Msg -> OKX -> m [OKX]
-splitOKX prompt okx = do
+splitOKX :: MonadClientUI m => Y -> Msg -> OKX -> m [OKX]
+splitOKX y prompt okx = do
   promptAI <- msgPromptAI
   lid <- getArenaUI
-  Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
+  Level{lxsize} <- getLevel lid  -- TODO: screen length or viewLevel
   sreport <- getsClient sreport
   let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
-  return $! splitOverlayOKX (lysize + 1) msg okx
+  return $! splitOverlayOKX y msg okx
 
--- TODO: assert that ov0 nonempty
+-- TODO: assert that ov0 nonempty and perhaps that kxs0 not too short
+-- (or should we just keep the rest of the overlay unclickable?)
 splitOverlayOKX :: Y -> Overlay -> OKX -> [OKX]
 splitOverlayOKX yspace omsg (ov0, kxs0) =
   let msg = overlay omsg

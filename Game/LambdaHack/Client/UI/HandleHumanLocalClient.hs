@@ -29,6 +29,7 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
+import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -213,21 +214,50 @@ recordHuman = do
 
 -- * History
 
-historyHuman :: MonadClientUI m => m Slideshow
+historyHuman :: MonadClientUI m => m ()
 historyHuman = do
   history <- getsClient shistory
   arena <- getArenaUI
+  Level{lxsize, lysize} <- getLevel arena
   local <- getsState $ getLocalTime arena
   global <- getsState stime
-  let turnsGlobal = global `timeFitUp` timeTurn
+  let histLines = linesHistory history
+      turnsGlobal = global `timeFitUp` timeTurn
       turnsLocal = local `timeFitUp` timeTurn
       msg = makeSentence
         [ "You survived for"
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
         , MU.Text (tshow turnsLocal) <> ")" ]
-        <+> "Past messages:"
-  overlayToBlankSlideshow False msg $ renderHistory history
+        <+> "[ESC to cancel]"
+      dummySlot = head allZeroSlots
+      ov = renderHistory history
+      kxs = replicate (length $ overlay ov)
+                      (Right dummySlot, (undefined, 0, lxsize))
+  okxs <- splitOKX (lysize + 3) msg (ov, kxs)
+  let displayAllHistory = do
+        menuIxHistory <- getsClient smenuIxHistory
+        (ekm, pointer) <-
+          displayChoiceScreen True menuIxHistory okxs [K.escKM]
+        modifyClient $ \cli -> cli {smenuIxHistory = pointer}
+        case ekm of
+          Left km | km == K.escKM -> return ()
+          Right slot | slot == dummySlot -> displayOneReport pointer
+          _ -> assert `failure` ekm
+      displayOneReport pointer = do
+        let timeReport = case drop pointer histLines of
+              [] -> assert `failure` pointer
+              tR : _ -> tR
+            (tturns, rep) =   splitReportForHistory lxsize timeReport
+            ov0 = toOverlay rep
+            -- TODO: print over history, not over dungeon;
+            -- expand this history item, not switch views completely;
+            prompt = "The full past message at time"
+                     <+> tturns <> ". [ESC to go back]"
+        escK <- displayChoiceLine prompt ov0 [K.escKM]
+        let !_A = assert (escK == K.escKM) ()
+        displayAllHistory
+  displayAllHistory
 
 -- * MarkVision, MarkSmell, MarkSuspect
 
