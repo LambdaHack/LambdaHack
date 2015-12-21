@@ -10,7 +10,6 @@ import Data.Char (chr, ord)
 import qualified System.IO as SIO
 
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color

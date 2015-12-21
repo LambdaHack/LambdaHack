@@ -20,7 +20,6 @@ import qualified Data.Text as T
 import Graphics.UI.Gtk hiding (Point)
 
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color

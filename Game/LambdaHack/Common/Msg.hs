@@ -10,6 +10,7 @@ module Game.LambdaHack.Common.Msg
   , addReport, renderHistory, splitReportForHistory, lastReportOfHistory
   , Overlay(overlay), toOverlayRaw, truncateToOverlay, toOverlay
   , updateOverlayLine, splitText
+  , SingleFrame(..)
   , Slideshow(slideshow), splitOverlay, toSlideshow
   )
   where
@@ -245,6 +246,11 @@ updateOverlayLine n f Overlay{overlay} =
                        else l : upd (k - 1) ls
       upd _ [] = []
   in Overlay $ upd n overlay
+
+-- | An overlay that fits on the screen and is displayed as
+-- a single game screen frame.
+newtype SingleFrame = SingleFrame { sfLevel :: Overlay }
+  deriving (Eq, Show)
 
 -- | Split an overlay into a slideshow in which each overlay,
 -- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,

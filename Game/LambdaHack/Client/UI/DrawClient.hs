@@ -21,7 +21,6 @@ import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.Animation
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor as Actor
 import Game.LambdaHack.Common.ActorState
@@ -226,7 +225,6 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
       sfLevel = toOverlayRaw $
         let f l y = let !line = fLine y in line : l
         in foldl' f [] [lysize-1,lysize-2..0] ++ sfBottom
-      sfBlank = False
   return $! SingleFrame{..}
 
 -- Comfortably accomodates 3-digit level numbers and 25-character

@@ -18,11 +18,11 @@ import Data.IORef
 import Data.Maybe
 
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.UI.Animation
 import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
 import Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Std as Std
 import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Common.Msg
 
 -- | The instructions sent by clients to the raw frontend.
 data FrontReq :: * -> * where

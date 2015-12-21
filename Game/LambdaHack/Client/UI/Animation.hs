@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Animation
-  ( SingleFrame(..), overlayOverlay
+  ( overlayOverlay
   , Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, actorX
   , swapPlaces, moveProj, fadeout
@@ -23,11 +23,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
-
--- | An overlay that fits on the screen and is displayed as
--- a single game screen frame.
-newtype SingleFrame = SingleFrame { sfLevel :: Overlay }
-  deriving (Eq, Show)
 
 -- | Overlays an overlay onto the @sfLevel@ field.
 overlayOverlay :: Bool -> Overlay -> SingleFrame -> SingleFrame
