@@ -215,7 +215,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
       targetGap = T.replicate (widthTgt - T.length pathTgt
                                         - T.length targetText) " "
       targetStatus = addAttr $ targetText <> targetGap <> pathTgt
-      sfBottom = toOverlayRaw
+      sfBottom =
         [ arenaStatus ++ cursorStatus
         , selectedStatus ++ nameStatus ++ statusGap
           ++ damageStatus ++ leaderStatus
@@ -225,7 +225,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
         in foldl' f [] [lxsize-1,lxsize-2..0]
       sfLevel = toOverlayRaw $
         let f l y = let !line = fLine y in line : l
-        in foldl' f [] [lysize-1,lysize-2..0]
+        in foldl' f [] [lysize-1,lysize-2..0] ++ sfBottom
       sfBlank = False
   return $! SingleFrame{..}
 

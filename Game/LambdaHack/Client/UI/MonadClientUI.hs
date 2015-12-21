@@ -196,7 +196,6 @@ drawOverlay :: MonadClientUI m
             => Bool -> ColorMode -> Overlay -> m SingleFrame
 drawOverlay sfBlank@True _ sfTop = do
   let sfLevel = emptyOverlay
-      sfBottom = emptyOverlay
   return $! SingleFrame {..}
 drawOverlay False dm sfTop = do
   lid <- viewedLevel

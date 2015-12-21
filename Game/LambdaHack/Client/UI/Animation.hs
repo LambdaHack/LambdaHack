@@ -26,15 +26,14 @@ import Game.LambdaHack.Common.Random
 
 -- | The data sufficent to draw a single game screen frame.
 data SingleFrame = SingleFrame
-  { sfLevel  :: !Overlay -- ^ screen, from top to bottom, line by line
-  , sfTop    :: !Overlay       -- ^ some extra lines to show over the top
-  , sfBottom :: !Overlay  -- ^ some extra lines to show at the bottom
-  , sfBlank  :: !Bool          -- ^ display only @sfTop@, on blank screen
+  { sfLevel :: !Overlay -- ^ screen, from top to bottom, line by line
+  , sfTop   :: !Overlay       -- ^ some extra lines to show over the top
+  , sfBlank :: !Bool          -- ^ display only @sfTop@, on blank screen
   }
   deriving (Eq, Show)
 
--- | Overlays the @sfTop@ and @sfBottom@ fields onto the @sfLevel@ field.
--- The resulting frame has empty @sfTop@ and @sfBottom@.
+-- | Overlays the @sfTop@ field onto the @sfLevel@ field.
+-- The resulting frame has empty @sfTop@.
 -- To be used by simple frontends that don't display overlays
 -- in separate windows/panes/scrolled views.
 overlayOverlay :: SingleFrame -> SingleFrame
@@ -53,11 +52,9 @@ overlayOverlay SingleFrame{..} =
       f layerLine canvasLine =
         layerLine ++ drop (length layerLine) canvasLine
       picture = zipWith f topLayer canvas
-      bottomLines = if sfBlank then emptyOverlay else sfBottom
-      newLevel = picture ++ drop (length picture) canvas ++ overlay bottomLines
+      newLevel = picture ++ drop (length picture) canvas
   in SingleFrame { sfLevel = toOverlayRaw newLevel
                  , sfTop = emptyOverlay
-                 , sfBottom = emptyOverlay
                  , sfBlank }
 
 -- | Animation is a list of frame modifications to play one by one,
@@ -83,8 +80,7 @@ renderAnim lxsize lysize basicFrame (Animation anim) =
             sfLevel =  -- fully evaluated inside
               let f l (y, lineOld) = let !line = fLine y lineOld in line : l
               in toOverlayRaw
-                 $ foldl' f [] (zip [lysize-1,lysize-2..0]
-                                $ reverse $ overlay levelOld)
+                 $ foldl' f [] (reverse $ zip [0..] $ overlay levelOld)
         in Just SingleFrame{..}  -- a thunk within Just
   in map (modifyFrame basicFrame) anim
 
