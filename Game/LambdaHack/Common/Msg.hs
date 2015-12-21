@@ -270,32 +270,31 @@ splitOverlay yspace (Overlay msg) (Overlay ls0) =
   let len = length msg
   in if len >= yspace
      then  -- no space left for @ls0@
-       Slideshow (Nothing, [Overlay $ take (yspace - 1) msg
-                                      ++ [toScreenLine moreMsg]])
+       Slideshow (False, [Overlay $ take (yspace - 1) msg
+                                    ++ [toScreenLine moreMsg]])
      else let splitO ls =
                 let (pre, post) = splitAt (yspace - 1) $ msg ++ ls
                 in if null (drop 1 post)  -- (don't call @length@ on @ls0@)
                    then [Overlay $ msg ++ ls]  -- all fits on screen
                    else let rest = splitO post
                         in Overlay (pre ++ [toScreenLine moreMsg]) : rest
-          in Slideshow (Nothing, splitO ls0)
+          in Slideshow (False, splitO ls0)
 
 -- | A few overlays, displayed one by one upon keypress.
 -- When displayed, they are trimmed, not wrapped
 -- and any lines below the lower screen edge are not visible.
--- If the first pair element is not @Nothing@, the overlay is displayed
--- over a blank screen, including the bottom lines. The boolean flag
--- then indicates whether to start at the topmost screenful or bottommost.
-newtype Slideshow = Slideshow {slideshow :: (Maybe Bool, [Overlay])}
+-- The first pair element determines if the overlay is displayed
+-- over a blank screen, including the bottom lines.
+newtype Slideshow = Slideshow {slideshow :: (Bool, [Overlay])}
   deriving (Show, Eq)
 
 instance Monoid Slideshow where
-  mempty = Slideshow (Nothing, [])
+  mempty = Slideshow (False, [])
   mappend (Slideshow (b1, l1)) (Slideshow (_, l2)) = Slideshow (b1, l1 ++ l2)
 
 -- | Declare the list of raw overlays to be fit for display on the screen.
 -- In particular, current @Report@ is eiter empty or unimportant
 -- or contained in the overlays and if any vertical or horizontal
 -- trimming of the overlays happens, this is intended.
-toSlideshow :: Maybe Bool -> [[Text]] -> Slideshow
+toSlideshow :: Bool -> [[Text]] -> Slideshow
 toSlideshow onBlank l = Slideshow (onBlank, map toOverlay l)

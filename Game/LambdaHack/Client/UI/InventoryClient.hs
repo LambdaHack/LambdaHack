@@ -307,7 +307,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
     SuitsEverything -> return (True, const True)
     SuitsNothing err -> do
       slides <- promptToSlideshow $ err <+> moreMsg
-      void $ getInitConfirms ColorFull [] $ slides <> toSlideshow Nothing [[]]
+      void $ getInitConfirms ColorFull [] $ slides <> toSlideshow False [[]]
       return (False, const False)
     -- When throwing, this function takes missile range into accout.
     SuitsSomething f -> return (False, f)
@@ -473,7 +473,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                look <- cmd
                when verbose $
                  void $ getInitConfirms ColorFull []
-                      $ look <> toSlideshow Nothing [[]]
+                      $ look <> toSlideshow False [[]]
                recCall numPrefix cCur cRest itemDialogState
            })
       arrows =

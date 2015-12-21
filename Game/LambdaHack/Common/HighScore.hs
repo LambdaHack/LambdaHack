@@ -198,4 +198,4 @@ highSlideshow table pos gameModeName tz =
       msg = makeSentence
         [ MU.SubjectVerb person MU.Yes (MU.Text subject) "award you"
         , MU.Ordinal pos, "place", msgUnless ]
-  in toSlideshow Nothing $ map ([msg, "\n"] ++) $ showNearbyScores tz pos table height
+  in toSlideshow False $ map ([msg, "\n"] ++) $ showNearbyScores tz pos table height

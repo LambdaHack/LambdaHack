@@ -126,9 +126,9 @@ promptGetInt frontKeyFrame = do
   connFrontend FrontKey{..}
 
 -- | Display an overlay and wait for a human player command.
-getKeyOverlayCommand :: MonadClientUI m => Maybe Bool -> Overlay -> m K.KM
+getKeyOverlayCommand :: MonadClientUI m => Bool -> Overlay -> m K.KM
 getKeyOverlayCommand onBlank overlay = do
-  frame <- drawOverlay (isJust onBlank) ColorFull overlay
+  frame <- drawOverlay onBlank ColorFull overlay
   promptGetKey [] frame
 
 -- | Display a slideshow, awaiting confirmation for each slide except the last.
@@ -138,10 +138,10 @@ getInitConfirms dm frontClear slides = do
   -- Don't clear ESC marker here, because the wait for confirms may
   -- block a ping and the ping would not see the ESC.
   let (onBlank, ovs) = slideshow slides
-  frontSlides <- drawOverlays (isJust onBlank) dm ovs
+  frontSlides <- drawOverlays onBlank dm ovs
   let displayFrs frs srf = case frs of
         [] -> return True
-        [x] | isNothing onBlank -> do
+        [x] | not onBlank -> do
           connFrontend $ FrontFrame x
           return True
         x : xs -> do
@@ -157,9 +157,7 @@ getInitConfirms dm frontClear slides = do
             _ -> case xs of  -- K.PgDn and any other permitted key
               [] -> displayFrs frs srf
               _ -> displayFrs xs (x : srf)
-  case (onBlank, reverse frontSlides) of
-    (Just False, r : rs) -> displayFrs [r] rs
-    _ -> displayFrs frontSlides []
+  displayFrs frontSlides []
 
 getConfirmGeneric :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 getConfirmGeneric clearKeys frontKeyFrame = do

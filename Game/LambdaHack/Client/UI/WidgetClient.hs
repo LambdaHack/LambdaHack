@@ -56,7 +56,7 @@ displayMore :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
   slides <- promptToSlideshow $ prompt <+> moreMsg
   -- Two frames drawn total (unless 'prompt' very long).
-  getInitConfirms dm [] $ slides <> toSlideshow Nothing [[]]
+  getInitConfirms dm [] $ slides <> toSlideshow False [[]]
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.

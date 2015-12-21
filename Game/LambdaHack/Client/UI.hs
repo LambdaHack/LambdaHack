@@ -67,14 +67,14 @@ humanCommand = do
   -- but doesn't slow screensavers, because they are UI,
   -- but not human.
   modifyClient $ \cli -> cli {sbfsD = EM.empty, slastLost = ES.empty}
-  let loop :: Either Bool (Maybe Bool, Overlay) -> m RequestUI
+  let loop :: Either Bool (Bool, Overlay) -> m RequestUI
       loop mover = do
         (lastBlank, over) <- case mover of
           Left b -> do
             -- Display current state and keys if no slideshow or if interrupted.
             keys <- if b then describeMainKeys else return ""
             sli <- promptToSlideshow keys
-            return (Nothing, head . snd $! slideshow sli)
+            return (False, head . snd $! slideshow sli)
           Right bLast ->
             -- (Re-)display the last slide while waiting for the next key.
             return bLast
