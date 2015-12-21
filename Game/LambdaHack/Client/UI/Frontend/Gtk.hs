@@ -216,11 +216,10 @@ setTo tb defAttr lx (ly, attr:attrs) = do
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} rawSF =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
-      sfLevelDecoded = map decodeLine sfLevel
-      levelChar = unlines $ map (map Color.acChar) sfLevelDecoded
+      levelChar = unlines $ map (map Color.acChar) $ overlay sfLevel
       gfChar = BS.pack $ init levelChar
-      -- Strict version of @map (map ((stags M.!) . fst)) sfLevelDecoded@.
-      gfAttr  = reverse $ foldl' ff [] sfLevelDecoded
+      -- Strict version of @map (map ((stags M.!) . fst)) sfLeve
+      gfAttr  = reverse $ foldl' ff [] $ overlay sfLevel
       ff ll l = reverse (foldl' f [] l) : ll
       f l Color.AttrChar{acAttr=Color.Attr{..}} =
         let (fg1, bg1) = case bg of

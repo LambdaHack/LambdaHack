@@ -1,8 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Animation
-  ( SingleFrame(..), decodeLine, encodeLine
-  , overlayOverlay
+  ( SingleFrame(..), overlayOverlay
   , Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, actorX
   , swapPlaces, moveProj, fadeout
@@ -12,14 +11,11 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
-import Data.Binary
 import Data.Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List (foldl')
 import Data.Maybe
-import qualified Data.Vector.Generic as G
-import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.Color as Color
@@ -30,14 +26,12 @@ import Game.LambdaHack.Common.Random
 
 -- | The data sufficent to draw a single game screen frame.
 data SingleFrame = SingleFrame
-  { sfLevel  :: ![ScreenLine]  -- ^ screen, from top to bottom, line by line
+  { sfLevel  :: !Overlay -- ^ screen, from top to bottom, line by line
   , sfTop    :: !Overlay       -- ^ some extra lines to show over the top
-  , sfBottom :: ![ScreenLine]  -- ^ some extra lines to show at the bottom
+  , sfBottom :: !Overlay  -- ^ some extra lines to show at the bottom
   , sfBlank  :: !Bool          -- ^ display only @sfTop@, on blank screen
   }
-  deriving (Eq, Show, Generic)
-
-instance Binary SingleFrame
+  deriving (Eq, Show)
 
 -- | Overlays the @sfTop@ and @sfBottom@ fields onto the @sfLevel@ field.
 -- The resulting frame has empty @sfTop@ and @sfBottom@.
@@ -47,24 +41,23 @@ overlayOverlay :: SingleFrame -> SingleFrame
 overlayOverlay SingleFrame{..} =
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 1
-      emptyLine = encodeLine
-                  $ replicate lxsize (Color.AttrChar Color.defAttr ' ')
+      emptyLine = replicate lxsize (Color.AttrChar Color.defAttr ' ')
       canvasLength = if sfBlank then lysize + 3 else lysize + 1
       canvas | sfBlank = replicate canvasLength emptyLine
-             | otherwise = emptyLine : sfLevel
+             | otherwise = emptyLine : overlay sfLevel
       topTrunc = overlay sfTop
       topLayer = if length topTrunc <= canvasLength
                  then topTrunc
                  else take (canvasLength - 1) topTrunc
                       ++ [toScreenLine "--a portion of the text trimmed--"]
       f layerLine canvasLine =
-        layerLine G.++ G.drop (G.length layerLine) canvasLine
+        layerLine ++ drop (length layerLine) canvasLine
       picture = zipWith f topLayer canvas
-      bottomLines = if sfBlank then [] else sfBottom
-      newLevel = picture ++ drop (length picture) canvas ++ bottomLines
-  in SingleFrame { sfLevel = newLevel
+      bottomLines = if sfBlank then emptyOverlay else sfBottom
+      newLevel = picture ++ drop (length picture) canvas ++ overlay bottomLines
+  in SingleFrame { sfLevel = toOverlayRaw newLevel
                  , sfTop = emptyOverlay
-                 , sfBottom = []
+                 , sfBottom = emptyOverlay
                  , sfBlank }
 
 -- | Animation is a list of frame modifications to play one by one,
@@ -78,7 +71,7 @@ type Frames = [Maybe SingleFrame]
 -- | Render animations on top of a screen frame.
 renderAnim :: X -> Y -> SingleFrame -> Animation -> Frames
 renderAnim lxsize lysize basicFrame (Animation anim) =
-  let modifyFrame SingleFrame{sfLevel = []} _ =
+  let modifyFrame SingleFrame{sfLevel} _ | overlay sfLevel == [] =
         assert `failure` (lxsize, lysize, basicFrame, anim)
       modifyFrame SingleFrame{sfLevel = levelOld, ..} am =
         let fLine y lineOld =
@@ -89,9 +82,9 @@ renderAnim lxsize lysize basicFrame (Animation anim) =
               in foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
             sfLevel =  -- fully evaluated inside
               let f l (y, lineOld) = let !line = fLine y lineOld in line : l
-              in map encodeLine
+              in toOverlayRaw
                  $ foldl' f [] (zip [lysize-1,lysize-2..0]
-                                $ reverse $ map decodeLine levelOld)
+                                $ reverse $ overlay levelOld)
         in Just SingleFrame{..}  -- a thunk within Just
   in map (modifyFrame basicFrame) anim
 

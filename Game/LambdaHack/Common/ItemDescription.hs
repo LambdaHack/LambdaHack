@@ -201,7 +201,7 @@ itemDesc c localTime itemFull =
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]
       splitBlurb = splitText lxsize blurb
       attrBlurb = map (map f . T.unpack) splitBlurb
-  in encodeOverlay $ (colorSymbol : tail (head attrBlurb)) : tail attrBlurb
+  in toOverlayRaw $ (colorSymbol : tail (head attrBlurb)) : tail attrBlurb
 
 viewItem :: Item -> (Char, Color.Attr)
 viewItem item = ( jsymbol item

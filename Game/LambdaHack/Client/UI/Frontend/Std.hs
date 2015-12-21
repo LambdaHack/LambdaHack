@@ -14,6 +14,7 @@ import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.Msg
 
 -- No session data maintained by this frontend
 
@@ -50,7 +51,7 @@ display :: SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display rawSF =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
-      bs = map (BS.pack . map Color.acChar . decodeLine) sfLevel ++ [BS.empty]
+      bs = map (BS.pack . map Color.acChar) (overlay sfLevel) ++ [BS.empty]
   in mapM_ BS.putStrLn bs
 
 keyTranslate :: Char -> K.KM

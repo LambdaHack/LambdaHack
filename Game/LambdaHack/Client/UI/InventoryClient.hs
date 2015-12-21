@@ -26,7 +26,6 @@ import Data.Monoid
 import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Vector.Generic as G
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.CommonClient
@@ -676,7 +675,7 @@ splitOverlayOKX yspace omsg (ov0, kxs0) =
         let (pre, post) = splitAt (yspace - 1) $ msg0 ++ ls
         in if null post
            then  -- all fits on screen
-             let bottomMsg = T.replicate (G.length $ last pre) " "
+             let bottomMsg = T.replicate (length $ last pre) " "
              in [( toOverlayRaw $ pre ++ [toScreenLine bottomMsg]
                  , zipRenumber len kxs )]
            else let (preX, postX) = splitAt (yspace - len - 1) kxs

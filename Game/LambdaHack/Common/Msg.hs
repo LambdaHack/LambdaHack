@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.Msg
   , Overlay(overlay), emptyOverlay, toOverlayRaw, truncateToOverlay, toOverlay
   , updateOverlayLine
   , Slideshow(slideshow), splitOverlay, toSlideshow
-  , encodeLine, decodeLine, encodeOverlay, ScreenLine, toScreenLine, splitText
+  , ScreenLine, toScreenLine, splitText
   )
   where
 
@@ -21,14 +21,11 @@ import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Binary.Orphans ()
 import qualified Data.ByteString.Char8 as BS
-import Data.Int (Int32)
 import Data.List (find)
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import qualified Data.Vector.Generic as G
-import qualified Data.Vector.Unboxed as U
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Color
@@ -218,26 +215,17 @@ splitReportForHistory w (time, r) =
 lastReportOfHistory :: History -> Maybe Report
 lastReportOfHistory (History rb) = snd . fst <$> RB.uncons rb
 
-type ScreenLine = U.Vector Int32
+type ScreenLine = [AttrChar]
 
 toScreenLine :: Text -> ScreenLine
 toScreenLine t = let f = AttrChar defAttr
-                 in encodeLine $ map f $ T.unpack t
-
-encodeLine :: [AttrChar] -> ScreenLine
-encodeLine l = G.fromList $ map (fromIntegral . fromEnum) l
-
-decodeLine :: ScreenLine -> [AttrChar]
-decodeLine v = map (toEnum . fromIntegral) $ G.toList v
-
-encodeOverlay :: [[AttrChar]] -> Overlay
-encodeOverlay = Overlay . map encodeLine
+                 in map f $ T.unpack t
 
 -- | A series of screen lines that may or may not fit the width nor height
 -- of the screen. An overlay may be transformed by adding the first line
 -- and/or by splitting into a slideshow of smaller overlays.
 newtype Overlay = Overlay {overlay :: [ScreenLine]}
-  deriving (Show, Eq, Binary)
+  deriving (Show, Eq)
 
 emptyOverlay :: Overlay
 emptyOverlay = Overlay []
@@ -257,7 +245,7 @@ toOverlay = let lxsize = fst normalLevelBound + 1  -- TODO
 updateOverlayLine :: Int -> ([AttrChar] -> [AttrChar]) -> Overlay -> Overlay
 updateOverlayLine n f Overlay{overlay} =
   let upd k (l : ls) = if k == 0
-                       then encodeLine (f (decodeLine l)) : ls
+                       then f l : ls
                        else l : upd (k - 1) ls
       upd _ [] = []
   in Overlay $ upd n overlay
