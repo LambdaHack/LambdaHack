@@ -48,7 +48,7 @@ overlayOverlay SingleFrame{..} =
       topLayer = if length topTrunc <= canvasLength
                  then topTrunc
                  else take (canvasLength - 1) topTrunc
-                      ++ [toScreenLine "--a portion of the text trimmed--"]
+                      ++ overlay (toOverlay ["--a portion of the text trimmed--"])
       f layerLine canvasLine =
         layerLine ++ drop (length layerLine) canvasLine
       picture = zipWith f topLayer canvas

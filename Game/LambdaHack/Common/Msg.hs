@@ -2,15 +2,15 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Common.Msg
   ( makePhrase, makeSentence
-  , Msg, (<>), (<+>), tshow, toWidth, moreMsg, endMsg, yesnoMsg, truncateMsg
+  , Msg, (<>), (<+>), tshow, toWidth
+  , moreMsg, moreMsgAttr, endMsg, yesnoMsg, truncateMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg, prependMsg
   , splitReport, renderReport, findInReport, lastMsgOfReport
   , History, emptyHistory, lengthHistory, linesHistory
   , addReport, renderHistory, splitReportForHistory, lastReportOfHistory
   , Overlay(overlay), emptyOverlay, toOverlayRaw, truncateToOverlay, toOverlay
-  , updateOverlayLine
+  , updateOverlayLine, splitText
   , Slideshow(slideshow), splitOverlay, toSlideshow
-  , ScreenLine, toScreenLine, splitText
   )
   where
 
@@ -57,6 +57,10 @@ type Msg = Text
 -- | The \"press something to see more\" mark.
 moreMsg :: Msg
 moreMsg = "--more--  "
+
+-- | The \"press something to see more\" mark.
+moreMsgAttr :: [AttrChar]
+moreMsgAttr = map (AttrChar defAttr) (T.unpack moreMsg)
 
 -- | The \"end of screenfuls of text\" mark.
 endMsg :: Msg
@@ -215,23 +219,17 @@ splitReportForHistory w (time, r) =
 lastReportOfHistory :: History -> Maybe Report
 lastReportOfHistory (History rb) = snd . fst <$> RB.uncons rb
 
-type ScreenLine = [AttrChar]
-
-toScreenLine :: Text -> ScreenLine
-toScreenLine t = let f = AttrChar defAttr
-                 in map f $ T.unpack t
-
 -- | A series of screen lines that may or may not fit the width nor height
 -- of the screen. An overlay may be transformed by adding the first line
 -- and/or by splitting into a slideshow of smaller overlays.
-newtype Overlay = Overlay {overlay :: [ScreenLine]}
+newtype Overlay = Overlay {overlay :: [[AttrChar]]}
   deriving (Show, Eq)
 
 emptyOverlay :: Overlay
 emptyOverlay = Overlay []
 
 -- TODO: get rid of
-toOverlayRaw :: [ScreenLine] -> Overlay
+toOverlayRaw :: [[AttrChar]] -> Overlay
 toOverlayRaw = Overlay
 
 truncateToOverlay :: Text -> Overlay
@@ -239,7 +237,8 @@ truncateToOverlay msg = toOverlay [msg]
 
 toOverlay :: [Text] -> Overlay
 toOverlay = let lxsize = fst normalLevelBound + 1  -- TODO
-            in Overlay . map (toScreenLine . truncateMsg lxsize)
+            in Overlay . map (map (AttrChar defAttr) . T.unpack
+                              . truncateMsg lxsize)
 
 -- @f@ should not enlarge the line beyond screen width.
 updateOverlayLine :: Int -> ([AttrChar] -> [AttrChar]) -> Overlay -> Overlay
@@ -259,13 +258,13 @@ splitOverlay yspace (Overlay msg) (Overlay ls0) =
   in if len >= yspace
      then  -- no space left for @ls0@
        Slideshow ([Overlay $ take (yspace - 1) msg
-                                    ++ [toScreenLine moreMsg]])
+                             ++ [moreMsgAttr]])
      else let splitO ls =
                 let (pre, post) = splitAt (yspace - 1) $ msg ++ ls
                 in if null (drop 1 post)  -- (don't call @length@ on @ls0@)
                    then [Overlay $ msg ++ ls]  -- all fits on screen
                    else let rest = splitO post
-                        in Overlay (pre ++ [toScreenLine moreMsg]) : rest
+                        in Overlay (pre ++ [moreMsgAttr]) : rest
           in Slideshow (splitO ls0)
 
 -- | A few overlays, displayed one by one upon keypress.

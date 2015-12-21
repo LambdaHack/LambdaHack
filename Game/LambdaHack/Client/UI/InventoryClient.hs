@@ -675,12 +675,13 @@ splitOverlayOKX yspace omsg (ov0, kxs0) =
         let (pre, post) = splitAt (yspace - 1) $ msg0 ++ ls
         in if null post
            then  -- all fits on screen
-             let bottomMsg = T.replicate (length $ last pre) " "
-             in [( toOverlayRaw $ pre ++ [toScreenLine bottomMsg]
+             let bottomMsgAttr = overlay $ toOverlay
+                   [T.replicate (length $ last pre) " "]
+             in [( toOverlayRaw $ pre ++ bottomMsgAttr
                  , zipRenumber len kxs )]
            else let (preX, postX) = splitAt (yspace - len - 1) kxs
                     rest = splitO post postX
-                in ( toOverlayRaw (pre ++ [toScreenLine moreMsg])
+                in ( toOverlayRaw (pre ++ [moreMsgAttr])
                    , zipRenumber len preX )
                    : rest
   in splitO ls0 kxs0
