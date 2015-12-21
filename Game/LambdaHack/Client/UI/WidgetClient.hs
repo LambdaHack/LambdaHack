@@ -56,14 +56,14 @@ displayMore :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
   slides <- promptToSlideshow $ prompt <+> moreMsg
   -- Two frames drawn total (unless 'prompt' very long).
-  getInitConfirms dm [] $ slides <> toSlideshow False [[]]
+  getInitConfirms dm [] $ slides <> toSlideshow [[]]
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
 displayYesNo :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayYesNo dm prompt = do
   sli <- promptToSlideshow $ prompt <+> yesnoMsg
-  frame <- drawOverlay False dm $ head . snd $ slideshow sli
+  frame <- drawOverlay False dm $ head $ slideshow sli
   getYesNo frame
 
 displayChoiceScreen :: forall m . MonadClientUI m
@@ -153,7 +153,7 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
 displayChoiceLine :: MonadClientUI m => Msg -> Overlay -> [K.KM] -> m K.KM
 displayChoiceLine prompt ov0 keys = do
   -- If the prompt and overlay don't fit on the screen, they are truncated.
-  (_, ov : _) <- slideshow <$> overlayToSlideshow prompt ov0
+  ov : _ <- slideshow <$> overlayToSlideshow prompt ov0
   frame <- drawOverlay False ColorFull ov
   pkm <- promptGetKey keys frame
   let !_A = assert (pkm{K.pointer=Nothing} `elem` keys) ()
@@ -167,7 +167,7 @@ displayChoiceLine prompt ov0 keys = do
 displayPush :: MonadClientUI m => Msg -> m ()
 displayPush prompt = do
   sls <- promptToSlideshow prompt
-  let slide = head . snd $ slideshow sls
+  let slide = head $ slideshow sls
   frame <- drawOverlay False ColorFull slide
   displayFrame (Just frame)
 

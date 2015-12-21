@@ -270,7 +270,7 @@ splitOverlay yspace (Overlay msg) (Overlay ls0) =
   let len = length msg
   in if len >= yspace
      then  -- no space left for @ls0@
-       Slideshow (False, [Overlay $ take (yspace - 1) msg
+       Slideshow ([Overlay $ take (yspace - 1) msg
                                     ++ [toScreenLine moreMsg]])
      else let splitO ls =
                 let (pre, post) = splitAt (yspace - 1) $ msg ++ ls
@@ -278,23 +278,23 @@ splitOverlay yspace (Overlay msg) (Overlay ls0) =
                    then [Overlay $ msg ++ ls]  -- all fits on screen
                    else let rest = splitO post
                         in Overlay (pre ++ [toScreenLine moreMsg]) : rest
-          in Slideshow (False, splitO ls0)
+          in Slideshow (splitO ls0)
 
 -- | A few overlays, displayed one by one upon keypress.
 -- When displayed, they are trimmed, not wrapped
 -- and any lines below the lower screen edge are not visible.
 -- The first pair element determines if the overlay is displayed
 -- over a blank screen, including the bottom lines.
-newtype Slideshow = Slideshow {slideshow :: (Bool, [Overlay])}
+newtype Slideshow = Slideshow {slideshow :: [Overlay]}
   deriving (Show, Eq)
 
 instance Monoid Slideshow where
-  mempty = Slideshow (False, [])
-  mappend (Slideshow (b1, l1)) (Slideshow (_, l2)) = Slideshow (b1, l1 ++ l2)
+  mempty = Slideshow []
+  mappend (Slideshow l1) (Slideshow l2) = Slideshow (l1 ++ l2)
 
 -- | Declare the list of raw overlays to be fit for display on the screen.
 -- In particular, current @Report@ is eiter empty or unimportant
 -- or contained in the overlays and if any vertical or horizontal
 -- trimming of the overlays happens, this is intended.
-toSlideshow :: Bool -> [[Text]] -> Slideshow
-toSlideshow onBlank l = Slideshow (onBlank, map toOverlay l)
+toSlideshow :: [[Text]] -> Slideshow
+toSlideshow l = Slideshow $ map toOverlay l

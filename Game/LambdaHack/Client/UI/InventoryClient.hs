@@ -307,7 +307,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
     SuitsEverything -> return (True, const True)
     SuitsNothing err -> do
       slides <- promptToSlideshow $ err <+> moreMsg
-      void $ getInitConfirms ColorFull [] $ slides <> toSlideshow False [[]]
+      void $ getInitConfirms ColorFull [] $ slides <> toSlideshow [[]]
       return (False, const False)
     -- When throwing, this function takes missile range into accout.
     SuitsSomething f -> return (False, f)
@@ -473,7 +473,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                look <- cmd
                when verbose $
                  void $ getInitConfirms ColorFull []
-                      $ look <> toSlideshow False [[]]
+                      $ look <> toSlideshow [[]]
                recCall numPrefix cCur cRest itemDialogState
            })
       arrows =
@@ -693,7 +693,7 @@ pickNumber askNumber kAll = do
             kprompt = "Choose number [digits, BACKSPACE, RET("
                       <> tshow kDefault
                       <> "), ESC]"
-        (_, ov : _) <- slideshow <$> overlayToSlideshow kprompt emptyOverlay
+        ov : _ <- slideshow <$> overlayToSlideshow kprompt emptyOverlay
         frame <- drawOverlay False ColorFull ov
         kkm <- promptGetInt frame
         case K.key kkm of

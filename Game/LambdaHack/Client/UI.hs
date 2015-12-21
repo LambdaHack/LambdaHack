@@ -67,14 +67,14 @@ humanCommand = do
   -- but doesn't slow screensavers, because they are UI,
   -- but not human.
   modifyClient $ \cli -> cli {sbfsD = EM.empty, slastLost = ES.empty}
-  let loop :: Either Bool (Bool, Overlay) -> m RequestUI
+  let loop :: Either Bool Overlay -> m RequestUI
       loop mover = do
-        (lastBlank, over) <- case mover of
+        over <- case mover of
           Left b -> do
             -- Display current state and keys if no slideshow or if interrupted.
             keys <- if b then describeMainKeys else return ""
             sli <- promptToSlideshow keys
-            return (False, head . snd $! slideshow sli)
+            return $! head $ slideshow sli
           Right bLast ->
             -- (Re-)display the last slide while waiting for the next key.
             return bLast
@@ -87,7 +87,7 @@ humanCommand = do
             let slastRecord = ([], seqCurrent ++ seqPrevious, k - 1)
             modifyClient $ \cli -> cli {slastRecord}
         lastPlay <- getsClient slastPlay
-        km <- getKeyOverlayCommand lastBlank over
+        km <- getKeyOverlayCommand over
         -- Messages shown, so update history and reset current report.
         when (null lastPlay) recordHistory
         abortOrCmd <- do
@@ -114,21 +114,21 @@ humanCommand = do
           Left slides -> do
             -- If no time taken, rinse and repeat.
             -- Analyse the obtained slides.
-            let (onBlank, sli) = slideshow slides
+            let sli = slideshow slides
             mLast <- case sli of
               [] -> do
                 stgtMode <- getsClient stgtMode
                 return $ Left $ isJust stgtMode
               [sLast] ->
                 -- Avoid displaying the single slide twice.
-                return $ Right (onBlank, sLast)
+                return $ Right sLast
               _ -> do
                 -- Show, one by one, all slides, awaiting confirmation
                 -- for all but the last one (which is displayed twice, BTW).
                 -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
                 go <- getInitConfirms ColorFull [km] slides
-                return $! if go then Right (onBlank, last sli) else Left True
+                return $! if go then Right $ last sli else Left True
             loop mLast
   loop $ Left False
 
