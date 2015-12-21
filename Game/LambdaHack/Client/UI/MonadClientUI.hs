@@ -128,7 +128,7 @@ promptGetInt frontKeyFrame = do
 -- | Display an overlay and wait for a human player command.
 getKeyOverlayCommand :: MonadClientUI m => Overlay -> m K.KM
 getKeyOverlayCommand overlay = do
-  frame <- drawOverlay False ColorFull overlay
+  frame <- drawOverlay ColorFull False overlay
   promptGetKey [] frame
 
 -- | Display a slideshow, awaiting confirmation for each slide except the last.
@@ -193,11 +193,15 @@ displayActorStart b frs = do
 
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadClientUI m
-            => Bool -> ColorMode -> Overlay -> m SingleFrame
-drawOverlay sfBlank@True _ sfTop = do
-  let sfLevel = mempty
-  return $! SingleFrame {..}
-drawOverlay False dm sfTop = do
+            => ColorMode -> Bool -> Overlay -> m SingleFrame
+drawOverlay dm sfBlank sfTop = do
+  baseFrame <- drawBaseFrame dm sfBlank
+  return $! overlayOverlay sfBlank sfTop baseFrame
+
+drawBaseFrame :: MonadClientUI m => ColorMode -> Bool -> m SingleFrame
+drawBaseFrame _ True =
+  return $! SingleFrame mempty
+drawBaseFrame dm False = do
   lid <- viewedLevel
   mleader <- getsClient _sleader
   tgtPos <- leaderTgtToPos
@@ -208,15 +212,15 @@ drawOverlay False dm sfTop = do
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
   cursorDesc <- targetDescCursor
-  draw dm lid cursorPos tgtPos bfsmpath cursorDesc tgtDesc sfTop
+  draw dm lid cursorPos tgtPos bfsmpath cursorDesc tgtDesc
 
 drawOverlays :: MonadClientUI m
              => Bool -> ColorMode -> [Overlay] -> m [SingleFrame]
 drawOverlays _ _ [] = return []
-drawOverlays sfBlank dm (topFirst : rest) = do
-  fistFrame <- drawOverlay sfBlank dm topFirst
-  let f topNext = fistFrame {sfTop = topNext}
-  return $! fistFrame : map f rest  -- keep @rest@ lazy for responsiveness
+drawOverlays sfBlank dm ovs = do
+  baseFrame <- drawBaseFrame dm sfBlank
+  let f topNext = overlayOverlay sfBlank topNext baseFrame
+  return $! map f ovs  -- keep lazy for responsiveness
 
 stopPlayBack :: MonadClientUI m => m ()
 stopPlayBack = do

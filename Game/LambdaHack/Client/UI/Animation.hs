@@ -24,20 +24,14 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
--- | The data sufficent to draw a single game screen frame.
-data SingleFrame = SingleFrame
-  { sfLevel :: !Overlay -- ^ screen, from top to bottom, line by line
-  , sfTop   :: !Overlay       -- ^ some extra lines to show over the top
-  , sfBlank :: !Bool          -- ^ display only @sfTop@, on blank screen
-  }
+-- | An overlay that fits on the screen and is displayed as
+-- a single game screen frame.
+newtype SingleFrame = SingleFrame { sfLevel :: Overlay }
   deriving (Eq, Show)
 
--- | Overlays the @sfTop@ field onto the @sfLevel@ field.
--- The resulting frame has empty @sfTop@.
--- To be used by simple frontends that don't display overlays
--- in separate windows/panes/scrolled views.
-overlayOverlay :: SingleFrame -> SingleFrame
-overlayOverlay SingleFrame{..} =
+-- | Overlays an overlay onto the @sfLevel@ field.
+overlayOverlay :: Bool -> Overlay -> SingleFrame -> SingleFrame
+overlayOverlay sfBlank sfTop SingleFrame{..} =
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 1
       emptyLine = replicate lxsize (Color.AttrChar Color.defAttr ' ')
@@ -53,9 +47,7 @@ overlayOverlay SingleFrame{..} =
         layerLine ++ drop (length layerLine) canvasLine
       picture = zipWith f topLayer canvas
       newLevel = picture ++ drop (length picture) canvas
-  in SingleFrame { sfLevel = toOverlayRaw newLevel
-                 , sfTop = mempty
-                 , sfBlank }
+  in SingleFrame $ toOverlayRaw newLevel
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.

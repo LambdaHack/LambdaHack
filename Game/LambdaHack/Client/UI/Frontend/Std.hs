@@ -49,9 +49,8 @@ nextEvent = do
 -- | Output to the screen via the frontend.
 display :: SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display rawSF =
-  let SingleFrame{sfLevel} = overlayOverlay rawSF
-      bs = map (BS.pack . map Color.acChar) (overlay sfLevel) ++ [BS.empty]
+display SingleFrame{sfLevel} =
+  let bs = map (BS.pack . map Color.acChar) (overlay sfLevel) ++ [BS.empty]
   in mapM_ BS.putStrLn bs
 
 keyTranslate :: Char -> K.KM

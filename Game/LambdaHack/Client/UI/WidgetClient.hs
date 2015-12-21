@@ -63,7 +63,7 @@ displayMore dm prompt = do
 displayYesNo :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayYesNo dm prompt = do
   sli <- promptToSlideshow $ prompt <+> yesnoMsg
-  frame <- drawOverlay False dm $ head $ slideshow sli
+  frame <- drawOverlay dm False $ head $ slideshow sli
   getYesNo frame
 
 displayChoiceScreen :: forall m . MonadClientUI m
@@ -140,7 +140,7 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
                   _ | ikm{K.pointer=Nothing} `elem` keys ->
                     return (Left ikm, pointer)
                   _ -> assert `failure` "unknown key" `twith` ikm
-          frame <- drawOverlay sfBlank ColorFull ov1
+          frame <- drawOverlay ColorFull sfBlank ov1
           pkm <- promptGetKey legalKeys frame
           interpretKey pkm
   page pointer0
@@ -154,7 +154,7 @@ displayChoiceLine :: MonadClientUI m => Msg -> Overlay -> [K.KM] -> m K.KM
 displayChoiceLine prompt ov0 keys = do
   -- If the prompt and overlay don't fit on the screen, they are truncated.
   ov : _ <- slideshow <$> overlayToSlideshow prompt ov0
-  frame <- drawOverlay False ColorFull ov
+  frame <- drawOverlay ColorFull False ov
   pkm <- promptGetKey keys frame
   let !_A = assert (pkm{K.pointer=Nothing} `elem` keys) ()
   return pkm
@@ -168,7 +168,7 @@ displayPush :: MonadClientUI m => Msg -> m ()
 displayPush prompt = do
   sls <- promptToSlideshow prompt
   let slide = head $ slideshow sls
-  frame <- drawOverlay False ColorFull slide
+  frame <- drawOverlay ColorFull False slide
   displayFrame (Just frame)
 
 describeMainKeys :: MonadClientUI m => m Msg
@@ -259,9 +259,9 @@ animate arena anim = do
   promptAI <- msgPromptAI
   let over = renderReport (prependMsg promptAI sreport)
       topLineOnly = truncateToOverlay over
-  basicFrame <-
+  basicFrame <- overlayOverlay False topLineOnly <$>
     draw ColorFull arena cursorPos tgtPos
-         bfsmpath cursorDesc tgtDesc topLineOnly
+         bfsmpath cursorDesc tgtDesc
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]

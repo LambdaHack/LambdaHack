@@ -62,10 +62,10 @@ draw :: MonadClient m
      => ColorMode -> LevelId
      -> Maybe Point -> Maybe Point
      -> Maybe (PointArray.Array BfsDistance, Maybe [Point])
-     -> (Text, Maybe Text) -> (Text, Maybe Text) -> Overlay
+     -> (Text, Maybe Text) -> (Text, Maybe Text)
      -> m SingleFrame
 draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
-     (cursorDesc, mcursorHP) (targetDesc, mtargetHP) sfTop = do
+     (cursorDesc, mcursorHP) (targetDesc, mtargetHP) = do
   cops <- getsState scops
   mleader <- getsClient _sleader
   selected <- getsClient sselected

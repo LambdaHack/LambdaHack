@@ -694,7 +694,7 @@ pickNumber askNumber kAll = do
                       <> tshow kDefault
                       <> "), ESC]"
         ov : _ <- slideshow <$> overlayToSlideshow kprompt mempty
-        frame <- drawOverlay False ColorFull ov
+        frame <- drawOverlay ColorFull False ov
         kkm <- promptGetInt frame
         case K.key kkm of
           K.Char l | kDefault == kAll -> gatherNumber $ Char.digitToInt l

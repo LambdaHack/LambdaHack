@@ -214,9 +214,8 @@ setTo tb defAttr lx (ly, attr:attrs) = do
   setIter attr 1 attrs
 
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
-evalFrame FrontendSession{stags} rawSF =
-  let SingleFrame{sfLevel} = overlayOverlay rawSF
-      levelChar = unlines $ map (map Color.acChar) $ overlay sfLevel
+evalFrame FrontendSession{stags} SingleFrame{sfLevel} =
+  let levelChar = unlines $ map (map Color.acChar) $ overlay sfLevel
       gfChar = BS.pack $ init levelChar
       -- Strict version of @map (map ((stags M.!) . fst)) sfLeve
       gfAttr  = reverse $ foldl' ff [] $ overlay sfLevel
