@@ -220,9 +220,9 @@ splitReportForHistory w (time, r) =
 lastReportOfHistory :: History -> Maybe Report
 lastReportOfHistory (History rb) = snd . fst <$> RB.uncons rb
 
--- | A series of screen lines that may or may not fit the width nor height
--- of the screen. An overlay may be transformed by adding the first line
--- and/or by splitting into a slideshow of smaller overlays.
+-- | A series of screen lines that either fit the width of the screen
+-- or are intended for truncation when displayed. The length of overlay
+-- may exceed the length of the screen, unlike in @SingleFrame@.
 newtype Overlay = Overlay {overlay :: [[AttrChar]]}
   deriving (Show, Eq, Monoid)
 
@@ -247,8 +247,8 @@ updateOverlayLine n f Overlay{overlay} =
       upd _ [] = []
   in Overlay $ upd n overlay
 
--- | An overlay that fits on the screen and is displayed as
--- a single game screen frame.
+-- | An overlay that fits on the screen (or is meant to be truncated on display)
+-- and is displayed as a single game screen frame.
 newtype SingleFrame = SingleFrame { sfLevel :: Overlay }
   deriving (Eq, Show)
 
@@ -260,14 +260,15 @@ splitOverlay yspace (Overlay msg) (Overlay ls0) =
   let len = length msg
   in if len >= yspace
      then  -- no space left for @ls0@
-       Slideshow ([Overlay $ take (yspace - 1) msg
-                             ++ [moreMsgAttr]])
+       Slideshow ([SingleFrame $ Overlay $
+                     take (yspace - 1) msg ++ [moreMsgAttr]])
      else let splitO ls =
                 let (pre, post) = splitAt (yspace - 1) $ msg ++ ls
                 in if null (drop 1 post)  -- (don't call @length@ on @ls0@)
-                   then [Overlay $ msg ++ ls]  -- all fits on screen
+                   then [SingleFrame $ Overlay $ msg ++ ls]
+                          -- all fits on screen
                    else let rest = splitO post
-                        in Overlay (pre ++ [moreMsgAttr]) : rest
+                        in SingleFrame (Overlay (pre ++ [moreMsgAttr])) : rest
           in Slideshow (splitO ls0)
 
 -- | A few overlays, displayed one by one upon keypress.
@@ -275,7 +276,7 @@ splitOverlay yspace (Overlay msg) (Overlay ls0) =
 -- and any lines below the lower screen edge are not visible.
 -- The first pair element determines if the overlay is displayed
 -- over a blank screen, including the bottom lines.
-newtype Slideshow = Slideshow {slideshow :: [Overlay]}
+newtype Slideshow = Slideshow {slideshow :: [SingleFrame]}
   deriving (Show, Eq, Monoid)
 
 -- | Declare the list of raw overlays to be fit for display on the screen.
@@ -283,4 +284,4 @@ newtype Slideshow = Slideshow {slideshow :: [Overlay]}
 -- or contained in the overlays and if any vertical or horizontal
 -- trimming of the overlays happens, this is intended.
 toSlideshow :: [[Text]] -> Slideshow
-toSlideshow l = Slideshow $ map toOverlay l
+toSlideshow l = Slideshow $ map (SingleFrame . toOverlay) l

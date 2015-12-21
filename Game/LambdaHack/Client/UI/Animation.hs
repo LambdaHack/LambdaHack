@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Animation
-  ( overlayOverlay
+  ( overlayFrame
   , Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, actorX
   , swapPlaces, moveProj, fadeout
@@ -24,16 +24,16 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
--- | Overlays an overlay onto the @sfLevel@ field.
-overlayOverlay :: Bool -> Overlay -> SingleFrame -> SingleFrame
-overlayOverlay sfBlank sfTop SingleFrame{..} =
+-- | Overlays two screen frames.
+overlayFrame :: Bool -> SingleFrame -> SingleFrame -> SingleFrame
+overlayFrame sfBlank sfTop SingleFrame{sfLevel=sfL} =
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 1
       emptyLine = replicate lxsize (Color.AttrChar Color.defAttr ' ')
       canvasLength = if sfBlank then lysize + 3 else lysize + 1
       canvas | sfBlank = replicate canvasLength emptyLine
-             | otherwise = emptyLine : overlay sfLevel
-      topTrunc = overlay sfTop
+             | otherwise = emptyLine : overlay sfL
+      topTrunc = overlay $ sfLevel sfTop
       topLayer = if length topTrunc <= canvasLength
                  then topTrunc
                  else take (canvasLength - 1) topTrunc

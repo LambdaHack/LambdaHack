@@ -140,7 +140,7 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
                   _ | ikm{K.pointer=Nothing} `elem` keys ->
                     return (Left ikm, pointer)
                   _ -> assert `failure` "unknown key" `twith` ikm
-          frame <- drawOverlay ColorFull sfBlank ov1
+          frame <- drawOverlay ColorFull sfBlank (SingleFrame ov1)
           pkm <- promptGetKey legalKeys frame
           interpretKey pkm
   page pointer0
@@ -259,7 +259,7 @@ animate arena anim = do
   promptAI <- msgPromptAI
   let over = renderReport (prependMsg promptAI sreport)
       topLineOnly = truncateToOverlay over
-  basicFrame <- overlayOverlay False topLineOnly <$>
+  basicFrame <- overlayFrame False (SingleFrame topLineOnly) <$>
     draw ColorFull arena cursorPos tgtPos
          bfsmpath cursorDesc tgtDesc
   snoAnim <- getsClient $ snoAnim . sdebugCli

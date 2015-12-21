@@ -126,7 +126,7 @@ promptGetInt frontKeyFrame = do
   connFrontend FrontKey{..}
 
 -- | Display an overlay and wait for a human player command.
-getKeyOverlayCommand :: MonadClientUI m => Overlay -> m K.KM
+getKeyOverlayCommand :: MonadClientUI m => SingleFrame -> m K.KM
 getKeyOverlayCommand overlay = do
   frame <- drawOverlay ColorFull False overlay
   promptGetKey [] frame
@@ -193,10 +193,11 @@ displayActorStart b frs = do
 
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadClientUI m
-            => ColorMode -> Bool -> Overlay -> m SingleFrame
+            => ColorMode -> Bool -> SingleFrame -> m SingleFrame
 drawOverlay dm sfBlank sfTop = do
   baseFrame <- drawBaseFrame dm sfBlank
-  return $! overlayOverlay sfBlank sfTop baseFrame
+  return $! overlayFrame sfBlank sfTop baseFrame
+  -- TODO: here sfTop is possibly truncated wrt length
 
 drawBaseFrame :: MonadClientUI m => ColorMode -> Bool -> m SingleFrame
 drawBaseFrame _ True =
@@ -215,11 +216,11 @@ drawBaseFrame dm False = do
   draw dm lid cursorPos tgtPos bfsmpath cursorDesc tgtDesc
 
 drawOverlays :: MonadClientUI m
-             => Bool -> ColorMode -> [Overlay] -> m [SingleFrame]
+             => Bool -> ColorMode -> [SingleFrame] -> m [SingleFrame]
 drawOverlays _ _ [] = return []
 drawOverlays sfBlank dm ovs = do
   baseFrame <- drawBaseFrame dm sfBlank
-  let f topNext = overlayOverlay sfBlank topNext baseFrame
+  let f topNext = overlayFrame sfBlank topNext baseFrame
   return $! map f ovs  -- keep lazy for responsiveness
 
 stopPlayBack :: MonadClientUI m => m ()

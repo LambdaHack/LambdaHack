@@ -67,7 +67,7 @@ humanCommand = do
   -- but doesn't slow screensavers, because they are UI,
   -- but not human.
   modifyClient $ \cli -> cli {sbfsD = EM.empty, slastLost = ES.empty}
-  let loop :: Either Bool Overlay -> m RequestUI
+  let loop :: Either Bool SingleFrame -> m RequestUI
       loop mover = do
         over <- case mover of
           Left b -> do
