@@ -11,7 +11,7 @@ import Prelude.Compat
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List
+import Data.List.Compat
 import Data.Maybe
 import Data.Ord
 import Data.Text (Text)
