@@ -54,7 +54,7 @@ overlayOverlay SingleFrame{..} =
       picture = zipWith f topLayer canvas
       newLevel = picture ++ drop (length picture) canvas
   in SingleFrame { sfLevel = toOverlayRaw newLevel
-                 , sfTop = emptyOverlay
+                 , sfTop = mempty
                  , sfBlank }
 
 -- | Animation is a list of frame modifications to play one by one,

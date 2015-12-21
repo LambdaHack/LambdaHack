@@ -219,7 +219,7 @@ describeMainKeys = do
 -- | The prompt is shown after the current message, but not added to history.
 -- This is useful, e.g., in targeting mode, not to spam history.
 promptToSlideshow :: MonadClientUI m => Msg -> m Slideshow
-promptToSlideshow prompt = overlayToSlideshow prompt emptyOverlay
+promptToSlideshow prompt = overlayToSlideshow prompt mempty
 
 -- | The prompt is shown after the current message at the top of each slide.
 -- Together they may take more than one line. The prompt is not added

@@ -693,7 +693,7 @@ pickNumber askNumber kAll = do
             kprompt = "Choose number [digits, BACKSPACE, RET("
                       <> tshow kDefault
                       <> "), ESC]"
-        ov : _ <- slideshow <$> overlayToSlideshow kprompt emptyOverlay
+        ov : _ <- slideshow <$> overlayToSlideshow kprompt mempty
         frame <- drawOverlay False ColorFull ov
         kkm <- promptGetInt frame
         case K.key kkm of

@@ -546,7 +546,7 @@ alterDirHuman ts = do
       keys = K.escKM : map (K.toKM K.NoModifier)
                            (K.dirAllKey configVi configLaptop)
       prompt = makePhrase ["What to", verb1 <> "? [movement key, ESC]"]
-  km <- displayChoiceLine prompt emptyOverlay keys
+  km <- displayChoiceLine prompt mempty keys
   K.handleDir configVi configLaptop km (`alterTile` ts) (failWith "never mind")
 
 -- | Player tries to alter a tile using a feature.

@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Msg
   , splitReport, renderReport, findInReport, lastMsgOfReport
   , History, emptyHistory, lengthHistory, linesHistory
   , addReport, renderHistory, splitReportForHistory, lastReportOfHistory
-  , Overlay(overlay), emptyOverlay, toOverlayRaw, truncateToOverlay, toOverlay
+  , Overlay(overlay), toOverlayRaw, truncateToOverlay, toOverlay
   , updateOverlayLine, splitText
   , Slideshow(slideshow), splitOverlay, toSlideshow
   )
@@ -223,10 +223,7 @@ lastReportOfHistory (History rb) = snd . fst <$> RB.uncons rb
 -- of the screen. An overlay may be transformed by adding the first line
 -- and/or by splitting into a slideshow of smaller overlays.
 newtype Overlay = Overlay {overlay :: [[AttrChar]]}
-  deriving (Show, Eq)
-
-emptyOverlay :: Overlay
-emptyOverlay = Overlay []
+  deriving (Show, Eq, Monoid)
 
 -- TODO: get rid of
 toOverlayRaw :: [[AttrChar]] -> Overlay
@@ -273,11 +270,7 @@ splitOverlay yspace (Overlay msg) (Overlay ls0) =
 -- The first pair element determines if the overlay is displayed
 -- over a blank screen, including the bottom lines.
 newtype Slideshow = Slideshow {slideshow :: [Overlay]}
-  deriving (Show, Eq)
-
-instance Monoid Slideshow where
-  mempty = Slideshow []
-  mappend (Slideshow l1) (Slideshow l2) = Slideshow (l1 ++ l2)
+  deriving (Show, Eq, Monoid)
 
 -- | Declare the list of raw overlays to be fit for display on the screen.
 -- In particular, current @Report@ is eiter empty or unimportant

@@ -195,7 +195,7 @@ displayActorStart b frs = do
 drawOverlay :: MonadClientUI m
             => Bool -> ColorMode -> Overlay -> m SingleFrame
 drawOverlay sfBlank@True _ sfTop = do
-  let sfLevel = emptyOverlay
+  let sfLevel = mempty
   return $! SingleFrame {..}
 drawOverlay False dm sfTop = do
   lid <- viewedLevel
