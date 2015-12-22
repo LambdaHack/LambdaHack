@@ -550,7 +550,6 @@ statsOverlay aid = do
                          , MU.Text $ T.justifyLeft 22 ' '
                                    $ IK.slotName eqpSlot
                          , MU.Text t ]
-              <> "  "
             valueText = f $ sumSlotNoFilter eqpSlot activeItems
             ft = fullText valueText
         in (ft, (Right c, (undefined, 0, T.length ft)))
@@ -579,7 +578,6 @@ statsOverlay aid = do
                          , MU.Text $ T.justifyLeft 22 ' '
                            $ "ability" <+> tshow ability
                          , MU.Text t ]
-              <> "  "
             valueText = tshow $ EM.findWithDefault 0 ability skills
             ft = fullText valueText
         in (ft, (Right c, (undefined, 0, T.length ft)))

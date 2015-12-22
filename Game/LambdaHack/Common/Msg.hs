@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.Msg
   ( makePhrase, makeSentence
   , Msg, (<>), (<+>), tshow, toWidth
-  , moreMsg, moreMsgAttr, endMsg, yesnoMsg, truncateMsg
+  , moreMsg, moreMsgAttr, endMsg, yesnoMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg, prependMsg
   , splitReport, renderReport, findInReport, lastMsgOfReport
   , History, emptyHistory, lengthHistory, linesHistory
@@ -30,7 +30,6 @@ import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.RingBuffer as RB
 import Game.LambdaHack.Common.Time
@@ -70,23 +69,6 @@ endMsg = "--end--  "
 -- | The confirmation request message.
 yesnoMsg :: Msg
 yesnoMsg = "[yn]"
-
--- | Add a space at the message end, for display overlayed over the level map.
--- Also trims (does not wrap!) too long lines. In case of newlines,
--- displays only the first line, but marks the message as partial.
-truncateMsg :: X -> Text -> Text
-truncateMsg w xsRaw =
-  let xs = case T.lines xsRaw of
-        [] -> xsRaw
-        [line] -> line
-        line : _ -> T.justifyLeft (w + 1) ' ' line
-      len = T.length xs
-  in case compare w len of
-       LT -> T.snoc (T.take (w - 1) xs) '$'
-       EQ -> xs
-       GT -> if T.null xs || T.last xs == ' '
-             then xs
-             else T.snoc xs ' '
 
 -- | The type of a set of messages to show at the screen at once.
 newtype Report = Report [(BS.ByteString, Int)]
@@ -194,16 +176,15 @@ linesHistory (History rb) = RB.toList rb
 renderHistory :: History -> Overlay
 renderHistory (History rb) =
   let l = RB.toList rb
-      (x, _) = normalLevelBound
-      reportLines = map (truncateHistory (x + 1)) l
+      reportLines = map truncateHistory l
   in toOverlay reportLines
 
-truncateHistory :: X -> (Time, Report) -> Text
-truncateHistory w (time, r) =
+truncateHistory :: (Time, Report) -> Text
+truncateHistory (time, r) =
   -- TODO: display time fractions with granularity enough to differ
   -- from previous and next report, if possible
   let turns = time `timeFitUp` timeTurn
-  in truncateMsg w $ tshow turns <> ":" <+> renderReport r
+  in tshow turns <> ":" <+> renderReport r
 
 splitReportForHistory :: X -> (Time, Report) -> (Text, [Text])
 splitReportForHistory w (time, r) =

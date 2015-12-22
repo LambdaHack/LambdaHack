@@ -41,10 +41,25 @@ overlayFrame sfTop msf =
                  else take (canvasLength - 1) topTrunc
                       ++ overlay (toOverlay ["--a portion of the text trimmed--"])
       f layerLine canvasLine =
-        take lxsize layerLine ++ drop (length layerLine) canvasLine
+        let truncated = truncateMsg lxsize layerLine
+        in truncated ++ drop (length truncated) canvasLine
       picture = zipWith f topLayer canvas
       newLevel = picture ++ drop (length picture) canvas
   in SingleFrame $ toOverlayRaw newLevel
+
+-- | Add a space at the message end, for display overlayed over the level map.
+-- Also trim (do not wrap!) too long lines.
+truncateMsg :: X -> [AttrChar] -> [AttrChar]
+truncateMsg w xs =
+  case compare w (length xs) of
+    LT -> let discarded = drop w xs
+          in if all ((== ' ') . acChar) discarded
+             then take w xs
+             else take (w - 1) xs ++ [AttrChar (Attr BrBlack defBG) '$']
+    EQ -> xs
+    GT -> if null xs || acChar (last xs) == ' '
+          then xs
+          else xs ++ [AttrChar Color.defAttr ' ']
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.

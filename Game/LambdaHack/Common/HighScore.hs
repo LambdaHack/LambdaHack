@@ -149,7 +149,7 @@ showTable :: TimeZone -> ScoreTable -> Int -> Int -> [Text]
 showTable tz (ScoreTable table) start height =
   let zipped    = zip [1..] table
       screenful = take height . drop (start - 1) $ zipped
-  in intercalate ["\n"] (map (showScore tz) screenful) ++ [moreMsg]
+  in intercalate [""] (map (showScore tz) screenful) ++ [moreMsg]
 
 -- | Produce a couple of renderings of the high scores table.
 showNearbyScores :: TimeZone -> Int -> ScoreTable -> Int -> [[Text]]
@@ -198,4 +198,4 @@ highSlideshow table pos gameModeName tz =
       msg = makeSentence
         [ MU.SubjectVerb person MU.Yes (MU.Text subject) "award you"
         , MU.Ordinal pos, "place", msgUnless ]
-  in toSlideshow $ map ([msg, "\n"] ++) $ showNearbyScores tz pos table height
+  in toSlideshow $ map ([msg, ""] ++) $ showNearbyScores tz pos table height

@@ -108,7 +108,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
               _ | EM.size is <= 2 ->
                 makeSentence [ MU.SubjectVerbSg subject verb
                              , MU.WWandW $ map nWs $ EM.assocs is]
--- TODO: detailed unused here; disabled together with overlay in doLook              True -> "\n"
+-- TODO: detailed unused here; disabled together with overlay in doLook
               _ -> makeSentence [MU.Cardinal (EM.size is), "items here"]
       tile = lvl `at` pos
       obscured | knownLsecret lvl
@@ -147,7 +147,6 @@ itemOverlay c lid bag = do
                 -- symbol = jsymbol $ itemBase itemFull
                 phrase = makePhrase [ slotLabel l, "-"  -- MU.String [symbol]
                                     , partItemWs k c localTime itemFull ]
-                         <> "  "
                 ekm = Right l
                 kx = (ekm, (undefined, 0, T.length phrase - 2))
             in Just (phrase, kx)
