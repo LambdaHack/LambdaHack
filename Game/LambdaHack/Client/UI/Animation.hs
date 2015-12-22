@@ -79,10 +79,18 @@ blank = Nothing
 cSym :: Color -> Char -> Maybe AttrChar
 cSym color symbol = Just $ AttrChar (Attr color defBG) symbol
 
+mapPosToScreenPos :: (Point, AttrChar) -> (Point, AttrChar)
+mapPosToScreenPos (Point{..}, attr) = (Point{py = py + 1, ..}, attr)
+
+mzipSingleton :: Point -> Maybe AttrChar -> [(Point, AttrChar)]
+mzipSingleton p1 mattr1 = map mapPosToScreenPos $
+  let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
+  in catMaybes $ [mzip (p1, mattr1)]
+
 mzipPairs :: (Point, Point) -> (Maybe AttrChar, Maybe AttrChar)
           -> [(Point, AttrChar)]
-mzipPairs (p1, p2) (mattr1, mattr2) =
-  let mzip (pos, mattr) = fmap (\x -> (pos, x)) mattr
+mzipPairs (p1, p2) (mattr1, mattr2) = map mapPosToScreenPos $
+  let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
   in catMaybes $ if p1 /= p2
                  then [mzip (p1, mattr1), mzip (p2, mattr2)]
                  else -- If actor affects himself, show only the effect,
@@ -92,8 +100,8 @@ mzipPairs (p1, p2) (mattr1, mattr2) =
 mzipTriples :: (Point, Point, Point)
             -> (Maybe AttrChar, Maybe AttrChar, Maybe AttrChar)
             -> [(Point, AttrChar)]
-mzipTriples (p1, p2, p3) (mattr1, mattr2, mattr3) =
-  let mzip (pos, mattr) = fmap (\x -> (pos, x)) mattr
+mzipTriples (p1, p2, p3) (mattr1, mattr2, mattr3) = map mapPosToScreenPos $
+  let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
   in catMaybes [mzip (p1, mattr1), mzip (p2, mattr2), mzip (p3, mattr3)]
 
 restrictAnim :: ES.EnumSet Point -> Animation -> Animation
@@ -162,7 +170,7 @@ blockMiss poss = Animation $ map (EM.fromList . mzipPairs poss)
 
 -- | Death animation for an organic body.
 deathBody :: Point -> Animation
-deathBody pos = Animation $ map (maybe EM.empty (EM.singleton pos))
+deathBody pos = Animation $ map (EM.fromList . mzipSingleton pos)
   [ cSym BrRed '\\'
   , cSym BrRed '\\'
   , cSym BrRed '|'
@@ -189,7 +197,7 @@ deathBody pos = Animation $ map (maybe EM.empty (EM.singleton pos))
 
 -- | Mark actor location animation.
 actorX :: Point -> Char -> Color.Color -> Animation
-actorX pos symbol color = Animation $ map (maybe EM.empty (EM.singleton pos))
+actorX pos symbol color = Animation $ map (EM.fromList . mzipSingleton pos)
   [ cSym BrRed 'X'
   , cSym BrRed 'X'
   , cSym BrRed symbol
