@@ -245,7 +245,7 @@ moveProj poss symbol color = Animation $ map (EM.fromList . mzipTriples poss)
 fadeout :: Bool -> Bool -> Int -> X -> Y -> Rnd Animation
 fadeout out topRight step lxsize lysize = do
   let xbound = lxsize - 1
-      ybound = lysize - 1
+      ybound = lysize + 2
       edge = EM.fromDistinctAscList $ zip [1..] ".%&%;:,."
       fadeChar r n x y =
         let d = x - 2 * y
@@ -271,6 +271,6 @@ fadeout out topRight step lxsize lysize = do
                 ]
         return $! EM.fromList l
       startN = if out then 3 else 1
-      fs = [startN, startN + step .. 3 * lxsize `divUp` 4 + 2]
+      fs = [startN, startN + step .. lxsize - 14]
   as <- mapM rollFrame fs
   return $! Animation $ if out then as else reverse (EM.empty : as)
