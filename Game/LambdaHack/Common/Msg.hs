@@ -260,15 +260,15 @@ splitOverlay yspace (Overlay msg) (Overlay ls0) =
   let len = length msg
   in if len >= yspace
      then  -- no space left for @ls0@
-       Slideshow ([SingleFrame $ Overlay $
+       Slideshow ([Overlay $
                      take (yspace - 1) msg ++ [moreMsgAttr]])
      else let splitO ls =
                 let (pre, post) = splitAt (yspace - 1) $ msg ++ ls
                 in if null (drop 1 post)  -- (don't call @length@ on @ls0@)
-                   then [SingleFrame $ Overlay $ msg ++ ls]
+                   then [Overlay $ msg ++ ls]
                           -- all fits on screen
                    else let rest = splitO post
-                        in SingleFrame (Overlay (pre ++ [moreMsgAttr])) : rest
+                        in Overlay (pre ++ [moreMsgAttr]) : rest
           in Slideshow (splitO ls0)
 
 -- | A few overlays, displayed one by one upon keypress.
@@ -276,7 +276,7 @@ splitOverlay yspace (Overlay msg) (Overlay ls0) =
 -- and any lines below the lower screen edge are not visible.
 -- The first pair element determines if the overlay is displayed
 -- over a blank screen, including the bottom lines.
-newtype Slideshow = Slideshow {slideshow :: [SingleFrame]}
+newtype Slideshow = Slideshow {slideshow :: [Overlay]}
   deriving (Show, Eq, Monoid)
 
 -- | Declare the list of raw overlays to be fit for display on the screen.
@@ -284,4 +284,4 @@ newtype Slideshow = Slideshow {slideshow :: [SingleFrame]}
 -- or contained in the overlays and if any vertical or horizontal
 -- trimming of the overlays happens, this is intended.
 toSlideshow :: [[Text]] -> Slideshow
-toSlideshow l = Slideshow $ map (SingleFrame . toOverlay) l
+toSlideshow l = Slideshow $ map toOverlay l

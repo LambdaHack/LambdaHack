@@ -24,9 +24,9 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
--- | Overlays with a given frame either the top line and level map area
+-- | Overlays with a given overlay either the top line and level map area
 -- of a screen frame or the whole area of a completely empty screen frame.
-overlayFrame :: SingleFrame -> Maybe SingleFrame -> SingleFrame
+overlayFrame :: Overlay -> Maybe SingleFrame -> SingleFrame
 overlayFrame sfTop msf =
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 1
@@ -35,7 +35,7 @@ overlayFrame sfTop msf =
       canvas = maybe (replicate canvasLength emptyLine)
                      (\sf -> overlay (sfLevel sf))
                      msf
-      topTrunc = overlay $ sfLevel sfTop
+      topTrunc = overlay sfTop
       topLayer = if length topTrunc <= canvasLength
                  then topTrunc
                  else take (canvasLength - 1) topTrunc
