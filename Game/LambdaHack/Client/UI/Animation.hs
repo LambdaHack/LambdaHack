@@ -24,15 +24,17 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
--- | Overlays two screen frames.
-overlayFrame :: Bool -> SingleFrame -> SingleFrame -> SingleFrame
-overlayFrame sfBlank sfTop SingleFrame{sfLevel=sfL} =
+-- | Overlays with a given frame either the top line and level map area
+-- of a screen frame or the whole area of a completely empty screen frame.
+overlayFrame :: SingleFrame -> Maybe SingleFrame -> SingleFrame
+overlayFrame sfTop msf =
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 1
       emptyLine = replicate lxsize (Color.AttrChar Color.defAttr ' ')
-      canvasLength = if sfBlank then lysize + 3 else lysize + 1
-      canvas | sfBlank = replicate canvasLength emptyLine
-             | otherwise = emptyLine : overlay sfL
+      canvasLength = if isNothing msf then lysize + 3 else lysize + 1
+      canvas = maybe (replicate canvasLength emptyLine)
+                     (\sf -> overlay (sfLevel sf))
+                     msf
       topTrunc = overlay $ sfLevel sfTop
       topLayer = if length topTrunc <= canvasLength
                  then topTrunc

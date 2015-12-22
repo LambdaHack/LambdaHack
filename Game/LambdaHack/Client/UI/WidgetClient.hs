@@ -259,9 +259,9 @@ animate arena anim = do
   promptAI <- msgPromptAI
   let over = renderReport (prependMsg promptAI sreport)
       topLineOnly = truncateToOverlay over
-  basicFrame <- overlayFrame False (SingleFrame topLineOnly) <$>
-    draw ColorFull arena cursorPos tgtPos
-         bfsmpath cursorDesc tgtDesc
+  basicFrame <- overlayFrame (SingleFrame topLineOnly) <$>
+    Just <$> draw ColorFull arena cursorPos tgtPos
+                  bfsmpath cursorDesc tgtDesc
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]

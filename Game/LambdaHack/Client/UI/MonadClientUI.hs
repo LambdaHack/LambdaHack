@@ -195,14 +195,12 @@ displayActorStart b frs = do
 drawOverlay :: MonadClientUI m
             => ColorMode -> Bool -> SingleFrame -> m SingleFrame
 drawOverlay dm sfBlank sfTop = do
-  baseFrame <- drawBaseFrame dm sfBlank
-  return $! overlayFrame sfBlank sfTop baseFrame
+  mbaseFrame <- if sfBlank then return Nothing else Just <$> drawBaseFrame dm
+  return $! overlayFrame sfTop mbaseFrame
   -- TODO: here sfTop is possibly truncated wrt length
 
-drawBaseFrame :: MonadClientUI m => ColorMode -> Bool -> m SingleFrame
-drawBaseFrame _ True =
-  return $! SingleFrame mempty
-drawBaseFrame dm False = do
+drawBaseFrame :: MonadClientUI m => ColorMode -> m SingleFrame
+drawBaseFrame dm = do
   lid <- viewedLevel
   mleader <- getsClient _sleader
   tgtPos <- leaderTgtToPos
@@ -219,8 +217,8 @@ drawOverlays :: MonadClientUI m
              => Bool -> ColorMode -> [SingleFrame] -> m [SingleFrame]
 drawOverlays _ _ [] = return []
 drawOverlays sfBlank dm ovs = do
-  baseFrame <- drawBaseFrame dm sfBlank
-  let f topNext = overlayFrame sfBlank topNext baseFrame
+  mbaseFrame <- if sfBlank then return Nothing else Just <$> drawBaseFrame dm
+  let f topNext = overlayFrame topNext mbaseFrame
   return $! map f ovs  -- keep lazy for responsiveness
 
 stopPlayBack :: MonadClientUI m => m ()

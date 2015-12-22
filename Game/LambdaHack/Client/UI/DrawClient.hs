@@ -222,7 +222,8 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
       fLine y =
         let f l x = let ac = dis $ Point x y in ac : l
         in foldl' f [] [lxsize-1,lxsize-2..0]
-      sfLevel = toOverlayRaw $
+      emptyLine = replicate lxsize (Color.AttrChar Color.defAttr ' ')
+      sfLevel = toOverlayRaw $ emptyLine :
         let f l y = let !line = fLine y in line : l
         in foldl' f [] [lysize-1,lysize-2..0] ++ sfBottom
   return $! SingleFrame{..}
