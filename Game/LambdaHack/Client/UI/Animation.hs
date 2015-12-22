@@ -41,7 +41,7 @@ overlayFrame sfTop msf =
                  else take (canvasLength - 1) topTrunc
                       ++ overlay (toOverlay ["--a portion of the text trimmed--"])
       f layerLine canvasLine =
-        layerLine ++ drop (length layerLine) canvasLine
+        take lxsize layerLine ++ drop (length layerLine) canvasLine
       picture = zipWith f topLayer canvas
       newLevel = picture ++ drop (length picture) canvas
   in SingleFrame $ toOverlayRaw newLevel

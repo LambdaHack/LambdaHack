@@ -234,9 +234,7 @@ truncateToOverlay :: Text -> Overlay
 truncateToOverlay msg = toOverlay [msg]
 
 toOverlay :: [Text] -> Overlay
-toOverlay = let lxsize = fst normalLevelBound + 1  -- TODO
-            in Overlay . map (map (AttrChar defAttr) . T.unpack
-                              . truncateMsg lxsize)
+toOverlay = Overlay . map (map (AttrChar defAttr) . T.unpack)
 
 -- @f@ should not enlarge the line beyond screen width.
 updateOverlayLine :: Int -> ([AttrChar] -> [AttrChar]) -> Overlay -> Overlay
@@ -248,6 +246,7 @@ updateOverlayLine n f Overlay{overlay} =
   in Overlay $ upd n overlay
 
 -- | An overlay that fits on the screen (or is meant to be truncated on display)
+-- and is padded to fill the whole screen
 -- and is displayed as a single game screen frame.
 newtype SingleFrame = SingleFrame { sfLevel :: Overlay }
   deriving (Eq, Show)
