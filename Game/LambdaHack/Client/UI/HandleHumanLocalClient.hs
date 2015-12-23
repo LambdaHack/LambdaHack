@@ -238,10 +238,10 @@ historyHuman = do
   let displayAllHistory = do
         menuIxHistory <- getsClient smenuIxHistory
         (ekm, pointer) <-
-          displayChoiceScreen True menuIxHistory okxs [K.escKM]
+          displayChoiceScreen True menuIxHistory okxs [K.spaceKM, K.escKM]
         modifyClient $ \cli -> cli {smenuIxHistory = pointer}
         case ekm of
-          Left km | km == K.escKM -> return ()
+          Left km | km `elem` [K.spaceKM, K.escKM] -> return ()
           Right slot | slot == dummySlot -> displayOneReport pointer
           _ -> assert `failure` ekm
       displayOneReport pointer = do

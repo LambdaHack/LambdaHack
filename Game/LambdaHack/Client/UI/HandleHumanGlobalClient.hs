@@ -830,11 +830,12 @@ helpHuman :: MonadClientUI m
 helpHuman cmdAction = do
   keyb <- askBinding
   menuIxHelp <- getsClient smenuIxHelp
-  (ekm, pointer) <- displayChoiceScreen True menuIxHelp (keyHelp keyb) [K.escKM]
+  (ekm, pointer) <-
+    displayChoiceScreen True menuIxHelp (keyHelp keyb) [K.spaceKM]
   modifyClient $ \cli -> cli {smenuIxHelp = pointer}
   case ekm of
     Left km -> case M.lookup km{K.pointer=Nothing} $ bcmdMap keyb of
-      _ | K.key km == K.Esc -> return $ Left mempty
+      _ | K.key km == K.Space -> return $ Left mempty
       Just (_desc, _cats, cmd) -> cmdAction cmd
       Nothing -> failWith "never mind"
     Right _slot -> assert `failure` ekm

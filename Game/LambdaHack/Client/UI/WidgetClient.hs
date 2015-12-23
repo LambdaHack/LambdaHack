@@ -132,9 +132,9 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
                     page (max 0 (pointer - ixOnPage - 1))
                   K.PgDn ->
                     page (min maxIx (pointer + pageLen - ixOnPage))
-                  K.Space | pointer == maxIx && K.escKM `elem` extraKeys ->
-                    -- If Esc permitted, exits at the end of the slideshow.
-                    return (Left K.escKM, pointer)
+                  K.Space | pointer == maxIx && K.spaceKM `elem` extraKeys ->
+                    -- If Space permitted, only exits at the end of slideshow.
+                    return (Left K.spaceKM, pointer)
                   K.Space ->
                     page (min maxIx (pointer + pageLen - ixOnPage))
                   _ | ikm{K.pointer=Nothing} `elem` keys ->
