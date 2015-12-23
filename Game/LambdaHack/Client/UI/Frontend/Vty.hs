@@ -10,7 +10,6 @@ import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
@@ -55,13 +54,12 @@ nextEvent0 sess@FrontendSession{svty} = do
 display :: FrontendSession    -- ^ frontend session data
         -> SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display FrontendSession{svty} rawSF =
-  let SingleFrame{sfLevel} = overlayOverlay rawSF
-      img = (foldr (<->) emptyImage
+display FrontendSession{svty} SingleFrame{sfLevel} =
+  let img = (foldr (<->) emptyImage
              . map (foldr (<|>) emptyImage
                       . map (\Color.AttrChar{..} ->
                                char (setAttr acAttr) acChar)))
-            $ map decodeLine sfLevel
+            $ overlay sfLevel
       pic = picForImage img
   in update svty pic
 

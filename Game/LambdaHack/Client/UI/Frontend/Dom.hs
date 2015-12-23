@@ -34,7 +34,6 @@ import GHCJS.DOM.Types (CSSStyleDeclaration, castToHTMLDivElement)
 import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
 
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
@@ -279,7 +278,9 @@ display :: DebugModeCli
         -> FrontendSession  -- ^ frontend session data
         -> SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display DebugModeCli{scolorIsBold} FrontendSession{..} rawSF = postGUISync $ do
+display DebugModeCli{scolorIsBold}
+        FrontendSession{..}
+        SingleFrame{sfLevel} = postGUISync $ do
   let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
       setChar (cell, Color.AttrChar{acAttr=acAttr@Color.Attr{..}, acChar}) = do
         let s = if acChar == ' ' then [chr 160] else [acChar]
@@ -308,8 +309,7 @@ display DebugModeCli{scolorIsBold} FrontendSession{..} rawSF = postGUISync $ do
               let ourColor = Color.colorToRGB Color.BrYellow
               in setProp style "border-color" ourColor
             _ -> setProp style "border-color" "transparent"
-      SingleFrame{sfLevel} = overlayOverlay rawSF
-      acs = concat $ map decodeLine sfLevel
+      acs = concat $ overlay sfLevel
   -- TODO: Sync or Async?
   callback <- newRequestAnimationFrameCallbackSync $ \_ -> do
     mapM_ setChar $ zip scharCells acs

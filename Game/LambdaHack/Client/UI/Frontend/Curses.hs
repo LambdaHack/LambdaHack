@@ -14,7 +14,6 @@ import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
@@ -69,8 +68,7 @@ nextEvent = keyTranslate <$> C.getKey C.refresh
 display :: FrontendSession    -- ^ frontend session data
         -> SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display FrontendSession{..} rawSF = do
-  let SingleFrame{sfLevel} = overlayOverlay rawSF
+display FrontendSession{..} SingleFrame{sfLevel} = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = sstyles M.! Color.defAttr
@@ -79,7 +77,7 @@ display FrontendSession{..} rawSF = do
   -- We need to remove the last character from the status line,
   -- because otherwise it would overflow a standard size xterm window,
   -- due to the curses historical limitations.
-  let sfLevelDecoded = map decodeLine sfLevel
+  let sfLevelDecoded = overlay sfLevel
       level = init sfLevelDecoded ++ [init $ last sfLevelDecoded]
       nm = zip [0..] $ map (zip [0..]) level
   sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr1 sstyles)
