@@ -38,33 +38,22 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 
--- | A yes-no confirmation.
-getYesNo :: MonadClientUI m => SingleFrame -> m Bool
-getYesNo frame = do
-  let keys = [ K.toKM K.NoModifier (K.Char 'y')
-             , K.toKM K.NoModifier (K.Char 'n')
-             , K.escKM
-             ]
-  K.KM {key} <- promptGetKey keys frame
-  case key of
-    K.Char 'y' -> return True
-    _          -> return False
-
 -- | Display a message with a @-more-@ prompt.
 -- Return value indicates if the player tried to cancel/escape.
 displayMore :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
   slides <- promptToSlideshow $ prompt <+> moreMsg
-  -- Two frames drawn total (unless 'prompt' very long).
-  getInitConfirms dm [] $ slides <> toSlideshow [[]]
+  -- Two frames drawn total (unless @prompt@ very long).
+  getConfirms dm [K.spaceKM] [K.escKM] slides
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
 displayYesNo :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayYesNo dm prompt = do
-  sli <- promptToSlideshow $ prompt <+> yesnoMsg
-  frame <- drawOverlay dm False $ head $ slideshow sli
-  getYesNo frame
+  slides <- promptToSlideshow $ prompt <+> yesnoMsg
+  -- Two frames drawn total (unless @prompt@ very long).
+  getConfirms dm [K.toKM K.NoModifier (K.Char 'y')]
+                 [K.toKM K.NoModifier (K.Char 'n'), K.escKM] slides
 
 displayChoiceScreen :: forall m . MonadClientUI m
                     => Bool -> Int -> [OKX] -> [K.KM]
@@ -151,23 +140,19 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
 -- If many overlays, scroll screenfuls with SPACE, etc.
 -- | Print a prompt and an overlay and wait for a player keypress.
 displayChoiceLine :: MonadClientUI m => Msg -> Overlay -> [K.KM] -> m K.KM
-displayChoiceLine prompt ov0 keys = do
-  -- If the prompt and overlay don't fit on the screen, they are truncated.
-  ov : _ <- slideshow <$> overlayToSlideshow prompt ov0
-  frame <- drawOverlay ColorFull False ov
-  pkm <- promptGetKey keys frame
-  let !_A = assert (pkm{K.pointer=Nothing} `elem` keys) ()
-  return pkm
+displayChoiceLine prompt ov extraKeys = do
+  slides <- overlayToSlideshow prompt ov
+  getConfirmsKey ColorFull extraKeys slides
 
--- TODO: if more slides, don't take head, but do as in getInitConfirms,
--- but then we have to clear the messages or they get redisplayed
--- each time screen is refreshed.
 -- | Push the frame depicting the current level to the frame queue.
--- Only one screenful of the report is shown, the rest is ignored.
+-- Only one screenful of the report is shown, the rest is ignored,
+-- since the frames may be displayed during the enemy turn and so
+-- we can't clear the prompts. In our turn, each screenful is displayed
+-- and we need to confirm each page change (e.g., in 'getConfirms').
 displayPush :: MonadClientUI m => Msg -> m ()
 displayPush prompt = do
   sls <- promptToSlideshow prompt
-  let slide = head $ slideshow sls
+  let slide = head $ slideshow sls  -- only the first slide shown
   frame <- drawOverlay ColorFull False slide
   displayFrame (Just frame)
 

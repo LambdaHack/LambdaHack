@@ -2,7 +2,7 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Common.Msg
   ( makePhrase, makeSentence
-  , Msg, (<>), (<+>), tshow, toWidth
+  , Msg, (<>), (<+>), tshow
   , moreMsg, moreMsgAttr, endMsg, yesnoMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg, prependMsg
   , splitReport, renderReport, findInReport, lastMsgOfReport
@@ -41,9 +41,6 @@ infixr 6 <+>  -- TODO: not needed when we require a very new minimorph
 -- Show and pack the result of @show@.
 tshow :: Show a => a -> Text
 tshow x = T.pack $ show x
-
-toWidth :: Int -> Text -> Text
-toWidth n x = T.take n (T.justifyLeft n ' ' x)
 
 -- | Re-exported English phrase creation functions, applied to default
 -- irregular word sets.

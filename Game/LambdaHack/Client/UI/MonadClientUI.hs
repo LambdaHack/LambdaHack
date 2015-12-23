@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
     -- * Display and key input
   , ColorMode(..)
   , mapStartY, promptGetKey, promptGetInt
-  , getKeyOverlayCommand, getInitConfirms
+  , getKeyOverlayCommand, getInitConfirms, getConfirms, getConfirmsKey
   , displayFrame, displayDelay, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
@@ -131,32 +131,57 @@ getKeyOverlayCommand overlay = do
   frame <- drawOverlay ColorFull False overlay
   promptGetKey [] frame
 
--- | Display a slideshow, awaiting confirmation for each slide except the last.
+-- | Display a slideshow, awaiting confirmation for each slide
+-- or not awaiting at all if there is only one.
 getInitConfirms :: MonadClientUI m
-                => ColorMode -> [K.KM] -> Slideshow -> m Bool
-getInitConfirms dm frontClear slides = do
-  -- Don't clear ESC marker here, because the wait for confirms may
-  -- block a ping and the ping would not see the ESC.
+                => ColorMode -> [K.KM] -> [K.KM] -> Slideshow -> m Bool
+getInitConfirms dm trueKeys falseKeys slides = do
+  case slideshow slides of
+    [ov] -> do
+      frame <- drawOverlay dm False ov
+      connFrontend $ FrontFrame frame
+      return True
+    _ -> getConfirms dm trueKeys falseKeys slides
+
+-- | Display a slideshow, awaiting confirmation for each slide
+-- and returning a boolean.
+getConfirms :: MonadClientUI m
+            => ColorMode -> [K.KM] -> [K.KM] -> Slideshow -> m Bool
+getConfirms dm trueKeys falseKeys slides = do
+  km <- getConfirmsKey dm (trueKeys ++ falseKeys) slides
+  return $! km `elem` trueKeys
+
+-- | Display a slideshow, awaiting confirmation for each slide
+-- and returning a key.
+getConfirmsKey :: MonadClientUI m
+               => ColorMode -> [K.KM] -> Slideshow -> m K.KM
+getConfirmsKey dm extraKeys slides = do
   let ovs = slideshow slides
-  frontSlides <- drawOverlays False dm ovs
+      keys = [K.spaceKM, K.pgupKM, K.pgdnKM, K.homeKM, K.endKM]
+             ++ extraKeys
+  frontSlides <- drawOverlays dm False ovs
   let displayFrs frs srf = case frs of
-        [] -> return True
-        [x] -> do
-          connFrontend $ FrontFrame x
-          return True
+        [] -> assert `failure` slides
         x : xs -> do
-          K.KM{..} <- getConfirmGeneric frontClear x
+          km@K.KM{..} <- getConfirmGeneric keys x
           case key of
-            K.Esc -> return False
+            K.Home -> displayFrs frontSlides []
+            K.End -> case reverse frontSlides of
+              [] -> assert `failure` slides
+              y : ys -> displayFrs [y] ys
             K.PgUp -> case srf of
               [] -> displayFrs frs srf
               y : ys -> displayFrs (y : frs) ys
-            K.Space -> case xs of
-              [] -> return False  -- exits at the end of slideshow
-              _ -> displayFrs xs (x : srf)
-            _ -> case xs of  -- K.PgDn and any other permitted key
+            K.PgDn -> case xs of
               [] -> displayFrs frs srf
               _ -> displayFrs xs (x : srf)
+            K.Space -> case xs of
+              -- If Space permitted, only exits at the end of slideshow.
+              [] | K.spaceKM `elem` extraKeys -> return km
+              [] -> displayFrs frs srf
+              _ -> displayFrs xs (x : srf)
+            _ | km `elem` extraKeys -> return km
+            _ -> assert `failure` "unknown key" `twith` km
   displayFrs frontSlides []
 
 getConfirmGeneric :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
@@ -214,9 +239,9 @@ drawBaseFrame dm = do
   draw dm lid cursorPos tgtPos bfsmpath cursorDesc tgtDesc
 
 drawOverlays :: MonadClientUI m
-             => Bool -> ColorMode -> [Overlay] -> m [SingleFrame]
+             => ColorMode -> Bool -> [Overlay] -> m [SingleFrame]
 drawOverlays _ _ [] = return []
-drawOverlays sfBlank dm ovs = do
+drawOverlays dm sfBlank ovs = do
   mbaseFrame <- if sfBlank then return Nothing else Just <$> drawBaseFrame dm
   let f topNext = overlayFrame topNext mbaseFrame
   return $! map f ovs  -- keep lazy for responsiveness

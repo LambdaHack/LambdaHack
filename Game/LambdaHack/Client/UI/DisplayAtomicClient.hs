@@ -16,6 +16,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.ItemSlot
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
@@ -560,16 +561,17 @@ quitFactionUI fid mbody toSt = do
       -- even though it is saved only for human UI clients.
       scoreSlides <- scoreToSlideshow total status
       partingSlide <- promptToSlideshow $ pp <+> moreMsg
-      shutdownSlide <- promptToSlideshow pp
       -- TODO: First ESC cancels items display.
-      void $ getInitConfirms ColorFull []
+      void $ getConfirms ColorFull [K.spaceKM] [K.escKM]
            $ startingSlide <> itemSlides
       -- TODO: Second ESC cancels high score and parting message display.
       -- The last slide stays onscreen during shutdown, etc.
-             <> scoreSlides <> partingSlide <> shutdownSlide
+             <> scoreSlides <> partingSlide
       -- TODO: perhaps use a vertical animation instead, e.g., roll down
       -- and put it before item and score screens (on blank background)
-      unless (fmap stOutcome toSt == Just Camping) $ fadeOutOrIn True
+      unless (fmap stOutcome toSt == Just Camping) $ do
+        msgAdd pp  -- TODO: mark for non-inclusion in history
+        fadeOutOrIn True
     _ -> return ()
 
 discover :: MonadClientUI m

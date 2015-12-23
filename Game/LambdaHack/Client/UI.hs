@@ -74,9 +74,9 @@ humanCommand = do
             -- Display current state and keys if no slideshow or if interrupted.
             keys <- if b then describeMainKeys else return ""
             sli <- promptToSlideshow keys
-            return $! head $ slideshow sli
+            return $! head $ slideshow sli  -- only the first slide
           Right bLast ->
-            -- (Re-)display the last slide while waiting for the next key.
+            -- Display the last generated slide while waiting for the next key.
             return bLast
         (seqCurrent, seqPrevious, k) <- getsClient slastRecord
         case k of
@@ -123,12 +123,11 @@ humanCommand = do
                 -- Avoid displaying the single slide twice.
                 return $ Right sLast
               _ -> do
-                -- Show, one by one, all slides, awaiting confirmation
-                -- for all but the last one (which is displayed twice, BTW).
+                -- Show, one by one, all slides, awaiting confirmation for each.
                 -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
-                go <- getInitConfirms ColorFull [km] slides
-                return $! if go then Right $ last sli else Left True
+                go <- getConfirms ColorFull [K.spaceKM] [K.escKM] slides
+                return $ Left $ not go
             loop mLast
   loop $ Left False
 
