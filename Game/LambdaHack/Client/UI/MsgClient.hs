@@ -148,7 +148,7 @@ itemOverlay c lid bag = do
                 phrase = makePhrase [ slotLabel l, "-"  -- MU.String [symbol]
                                     , partItemWs k c localTime itemFull ]
                 ekm = Right l
-                kx = (ekm, (undefined, 0, T.length phrase - 2))
+                kx = (ekm, (undefined, 0, T.length phrase))
             in Just (phrase, kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
   return (toOverlay ts, kxs)
