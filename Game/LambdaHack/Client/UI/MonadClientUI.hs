@@ -38,11 +38,11 @@ import Game.LambdaHack.Client.CommonClient
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
+import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -319,7 +319,8 @@ scoreToSlideshow total status = do
                            (fname $ gplayer fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
-  return $! if worthMentioning then showScore rScore else mempty
+  return $! toSlideshow
+         $ if worthMentioning then showScore rScore else mempty
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do

@@ -36,6 +36,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.InventoryClient
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
+import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -231,10 +232,10 @@ historyHuman = do
         , MU.Text (tshow turnsLocal) <> ")" ]
         <+> "[ESC to cancel]"
       dummySlot = head allZeroSlots
-      ov = renderHistory history
-      kxs = replicate (length $ overlay ov)
+      rh = renderHistory history
+      kxs = replicate (length rh)
                       (Right dummySlot, (undefined, 0, lxsize))
-  okxs <- splitOKX (lysize + 3) msg (ov, kxs)
+  okxs <- splitOKX (lysize + 3) msg (toOverlay rh, kxs)
   let displayAllHistory = do
         menuIxHistory <- getsClient smenuIxHistory
         (ekm, pointer) <-

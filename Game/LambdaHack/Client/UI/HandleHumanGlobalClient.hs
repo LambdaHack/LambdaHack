@@ -50,6 +50,7 @@ import Game.LambdaHack.Client.UI.InventoryClient
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
+import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.RunClient
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Ability

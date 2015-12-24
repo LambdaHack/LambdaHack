@@ -143,6 +143,7 @@ library
                       Game.LambdaHack.Client.UI.KeyBindings,
                       Game.LambdaHack.Client.UI.MonadClientUI,
                       Game.LambdaHack.Client.UI.MsgClient,
+                      Game.LambdaHack.Client.UI.Overlay,
                       Game.LambdaHack.Client.UI.RunClient,
                       Game.LambdaHack.Client.UI.WidgetClient,
                       Game.LambdaHack.Common.Ability,

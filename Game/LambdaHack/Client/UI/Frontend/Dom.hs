@@ -35,6 +35,7 @@ import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Frontend.Common
+import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc

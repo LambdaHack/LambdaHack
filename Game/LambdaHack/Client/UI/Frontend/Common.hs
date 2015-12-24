@@ -15,7 +15,7 @@ import Control.Monad (unless, void, when)
 import Data.Maybe
 
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Client.UI.Overlay
 
 data RawFrontend = RawFrontend
   { fdisplay  :: SingleFrame -> IO ()

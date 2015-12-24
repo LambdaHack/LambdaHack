@@ -1,8 +1,7 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Animation
-  ( overlayFrame
-  , Animation, Frames, renderAnim, restrictAnim
+  ( Animation, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, actorX
   , swapPlaces, moveProj, fadeout
   ) where
@@ -17,57 +16,16 @@ import qualified Data.EnumSet as ES
 import Data.List (foldl')
 import Data.Maybe
 
+import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
-
--- | Overlays with a given overlay either the top line and level map area
--- of a screen frame or the whole area of a completely empty screen frame.
-overlayFrame :: Overlay -> Maybe SingleFrame -> SingleFrame
-overlayFrame sfTop msf =
-  let lxsize = fst normalLevelBound + 1  -- TODO
-      lysize = snd normalLevelBound + 1
-      emptyLine = replicate lxsize (Color.AttrChar Color.defAttr ' ')
-      canvasLength = if isNothing msf then lysize + 3 else lysize + 1
-      canvas = maybe (replicate canvasLength emptyLine)
-                     (\sf -> overlay (sfLevel sf))
-                     msf
-      topTrunc = overlay sfTop
-      topLayer = if length topTrunc <= canvasLength
-                 then topTrunc
-                 else take (canvasLength - 1) topTrunc
-                      ++ overlay (toOverlay ["--a portion of the text trimmed--"])
-      f layerLine canvasLine =
-        let truncated = truncateMsg lxsize layerLine
-        in truncated ++ drop (length truncated) canvasLine
-      picture = zipWith f topLayer canvas
-      newLevel = picture ++ drop (length picture) canvas
-  in SingleFrame $ toOverlayRaw newLevel
-
--- | Add a space at the message end, for display overlayed over the level map.
--- Also trim (do not wrap!) too long lines.
-truncateMsg :: X -> [AttrChar] -> [AttrChar]
-truncateMsg w xs =
-  case compare w (length xs) of
-    LT -> let discarded = drop w xs
-          in if all ((== ' ') . acChar) discarded
-             then take w xs
-             else take (w - 1) xs ++ [AttrChar (Attr BrBlack defBG) '$']
-    EQ -> xs
-    GT -> if null xs || acChar (last xs) == ' '
-          then xs
-          else xs ++ [AttrChar Color.defAttr ' ']
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
 newtype Animation = Animation [EM.EnumMap Point AttrChar]
   deriving (Eq, Show, Monoid)
-
--- | Sequences of screen frames, including delays.
-type Frames = [Maybe SingleFrame]
 
 -- | Render animations on top of a screen frame.
 renderAnim :: X -> Y -> SingleFrame -> Animation -> Frames

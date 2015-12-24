@@ -159,12 +159,13 @@ showNearbyScores tz pos h height =
   else [showTable tz h 1 height,
         showTable tz h (max (height + 1) (pos - height `div` 2)) height]
 
+-- TODO: split off into DisplayHi module
 -- | Generate a slideshow with the current and previous scores.
 highSlideshow :: ScoreTable -- ^ current score table
               -> Int        -- ^ position of the current score in the table
               -> Text       -- ^ the name of the game mode
               -> TimeZone   -- ^ the timezone where the game is run
-              -> Slideshow
+              -> [[Text]]
 highSlideshow table pos gameModeName tz =
   let (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
       height = nlines `div` 3
@@ -198,4 +199,4 @@ highSlideshow table pos gameModeName tz =
       msg = makeSentence
         [ MU.SubjectVerb person MU.Yes (MU.Text subject) "award you"
         , MU.Ordinal pos, "place", msgUnless ]
-  in toSlideshow $ map ([msg, ""] ++) $ showNearbyScores tz pos table height
+  in map ([msg, ""] ++) $ showNearbyScores tz pos table height

@@ -3,15 +3,12 @@
 module Game.LambdaHack.Common.Msg
   ( makePhrase, makeSentence
   , Msg, (<>), (<+>), tshow
-  , moreMsg, moreMsgAttr, endMsg, yesnoMsg
+  , moreMsg, endMsg, yesnoMsg
+  , splitText
   , Report, emptyReport, nullReport, singletonReport, addMsg, prependMsg
-  , splitReport, renderReport, findInReport, lastMsgOfReport
-  , History, emptyHistory, lengthHistory, linesHistory
-  , addReport, renderHistory, splitReportForHistory, lastReportOfHistory
-  , Overlay(overlay), toOverlayRaw, truncateToOverlay, toOverlay
-  , updateOverlayLine, splitText
-  , SingleFrame(..)
-  , Slideshow(slideshow), splitOverlay, toSlideshow
+  , renderReport, findInReport, lastMsgOfReport
+  , History, emptyHistory, lengthHistory, linesHistory, renderHistory
+  , addReport, splitReportForHistory, lastReportOfHistory
   )
   where
 
@@ -29,7 +26,6 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.RingBuffer as RB
 import Game.LambdaHack.Common.Time
@@ -54,10 +50,6 @@ type Msg = Text
 -- | The \"press something to see more\" mark.
 moreMsg :: Msg
 moreMsg = "--more--  "
-
--- | The \"press something to see more\" mark.
-moreMsgAttr :: [AttrChar]
-moreMsgAttr = map (AttrChar defAttr) (T.unpack moreMsg)
 
 -- | The \"end of screenfuls of text\" mark.
 endMsg :: Msg
@@ -95,14 +87,6 @@ addMsg (Report xns) y = Report $ (encodeUtf8 y, 1) : xns
 prependMsg :: Msg -> Report -> Report
 prependMsg m r | T.null m = r
 prependMsg y (Report xns) = Report $ xns ++ [(encodeUtf8 y, 1)]
-
--- | Split a messages into chunks that fit in one line.
--- We assume the width of the messages line is the same as of level map.
-splitReport :: X -> Report -> Overlay
-splitReport w r = toOverlay $ splitReportList w r
-
-splitReportList :: X -> Report -> [Text]
-splitReportList w r = splitText w $ renderReport r
 
 -- | Render a report as a (possibly very long) string.
 renderReport :: Report  -> Text
@@ -169,20 +153,6 @@ lengthHistory (History rs) = RB.rbLength rs
 linesHistory :: History -> [(Time, Report)]
 linesHistory (History rb) = RB.toList rb
 
--- | Render history as many lines of text, wrapping if necessary.
-renderHistory :: History -> Overlay
-renderHistory (History rb) =
-  let l = RB.toList rb
-      reportLines = map truncateHistory l
-  in toOverlay reportLines
-
-truncateHistory :: (Time, Report) -> Text
-truncateHistory (time, r) =
-  -- TODO: display time fractions with granularity enough to differ
-  -- from previous and next report, if possible
-  let turns = time `timeFitUp` timeTurn
-  in tshow turns <> ":" <+> renderReport r
-
 splitReportForHistory :: X -> (Time, Report) -> (Text, [Text])
 splitReportForHistory w (time, r) =
   -- TODO: display time fractions with granularity enough to differ
@@ -198,67 +168,13 @@ splitReportForHistory w (time, r) =
 lastReportOfHistory :: History -> Maybe Report
 lastReportOfHistory (History rb) = snd . fst <$> RB.uncons rb
 
--- | A series of screen lines that either fit the width of the screen
--- or are intended for truncation when displayed. The length of overlay
--- may exceed the length of the screen, unlike in @SingleFrame@.
-newtype Overlay = Overlay {overlay :: [[AttrChar]]}
-  deriving (Show, Eq, Monoid)
+-- | Render history as many lines of text, wrapping if necessary.
+renderHistory :: History -> [Text]
+renderHistory (History rb) = map truncateHistory $ RB.toList rb
 
--- TODO: get rid of
-toOverlayRaw :: [[AttrChar]] -> Overlay
-toOverlayRaw = Overlay
-
-truncateToOverlay :: Text -> Overlay
-truncateToOverlay msg = toOverlay [msg]
-
-toOverlay :: [Text] -> Overlay
-toOverlay = Overlay . map (map (AttrChar defAttr) . T.unpack)
-
--- @f@ should not enlarge the line beyond screen width.
-updateOverlayLine :: Int -> ([AttrChar] -> [AttrChar]) -> Overlay -> Overlay
-updateOverlayLine n f Overlay{overlay} =
-  let upd k (l : ls) = if k == 0
-                       then f l : ls
-                       else l : upd (k - 1) ls
-      upd _ [] = []
-  in Overlay $ upd n overlay
-
--- | An overlay that fits on the screen (or is meant to be truncated on display)
--- and is padded to fill the whole screen
--- and is displayed as a single game screen frame.
-newtype SingleFrame = SingleFrame { sfLevel :: Overlay }
-  deriving (Eq, Show)
-
--- | Split an overlay into a slideshow in which each overlay,
--- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,
--- fits on the screen wrt height (but lines may be too wide).
-splitOverlay :: Y -> Overlay -> Overlay -> Slideshow
-splitOverlay yspace (Overlay msg) (Overlay ls0) =
-  let len = length msg
-  in if len >= yspace
-     then  -- no space left for @ls0@
-       Slideshow ([Overlay $
-                     take (yspace - 1) msg ++ [moreMsgAttr]])
-     else let splitO ls =
-                let (pre, post) = splitAt (yspace - 1) $ msg ++ ls
-                in if null (drop 1 post)  -- (don't call @length@ on @ls0@)
-                   then [Overlay $ msg ++ ls]
-                          -- all fits on screen
-                   else let rest = splitO post
-                        in Overlay (pre ++ [moreMsgAttr]) : rest
-          in Slideshow (splitO ls0)
-
--- | A few overlays, displayed one by one upon keypress.
--- When displayed, they are trimmed, not wrapped
--- and any lines below the lower screen edge are not visible.
--- The first pair element determines if the overlay is displayed
--- over a blank screen, including the bottom lines.
-newtype Slideshow = Slideshow {slideshow :: [Overlay]}
-  deriving (Show, Eq, Monoid)
-
--- | Declare the list of raw overlays to be fit for display on the screen.
--- In particular, current @Report@ is eiter empty or unimportant
--- or contained in the overlays and if any vertical or horizontal
--- trimming of the overlays happens, this is intended.
-toSlideshow :: [[Text]] -> Slideshow
-toSlideshow l = Slideshow $ map toOverlay l
+truncateHistory :: (Time, Report) -> Text
+truncateHistory (time, r) =
+  -- TODO: display time fractions with granularity enough to differ
+  -- from previous and next report, if possible
+  let turns = time `timeFitUp` timeTurn
+  in tshow turns <> ":" <+> renderReport r

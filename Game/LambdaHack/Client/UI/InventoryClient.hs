@@ -37,6 +37,7 @@ import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
+import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.WidgetClient
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor

@@ -38,6 +38,7 @@ import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
+import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
