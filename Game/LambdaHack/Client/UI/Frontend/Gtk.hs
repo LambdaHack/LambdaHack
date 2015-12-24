@@ -9,7 +9,7 @@ import Prelude.Compat
 
 import Control.Concurrent
 import qualified Control.Concurrent.STM as STM
-import Control.Monad (unless, when)
+import Control.Monad (when)
 import Control.Monad.Reader (liftIO)
 import qualified Data.ByteString.Char8 as BS
 import Data.IORef
@@ -123,27 +123,24 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
               widgetModifyFont sview (Just fd)
             Nothing  -> return ()
         widgetDestroy fsd
-      -- We shouldn't pass on the click if the user has selected something.
-      hasSelection <- textBufferHasSelection tb
-      unless hasSelection $ do
-        mdrawWin <- displayGetWindowAtPointer defDisplay
-        let setCursor (drawWin, _, _) =
-              drawWindowSetCursor drawWin (Just cursor)
-        maybe (return ()) setCursor mdrawWin
-        (bx, by) <-
-          textViewWindowToBufferCoords sview TextWindowText
-                                       (round wx, round wy)
-        (iter, _) <- textViewGetIterAtPosition sview bx by
-        cx <- textIterGetLineOffset iter
-        cy <- textIterGetLine iter
-        let !key = case but of
-              LeftButton -> K.LeftButtonPress
-              MiddleButton -> K.MiddleButtonPress
-              RightButton -> K.RightButtonPress
-              _ -> K.LeftButtonPress
-            !pointer = Just $! Point cx cy
-        -- Store the mouse event coords in the keypress channel.
-        STM.atomically $ STM.writeTQueue (fchanKey rf) K.KM{..}
+      mdrawWin <- displayGetWindowAtPointer defDisplay
+      let setCursor (drawWin, _, _) =
+            drawWindowSetCursor drawWin (Just cursor)
+      maybe (return ()) setCursor mdrawWin
+      (bx, by) <-
+        textViewWindowToBufferCoords sview TextWindowText
+                                     (round wx, round wy)
+      (iter, _) <- textViewGetIterAtPosition sview bx by
+      cx <- textIterGetLineOffset iter
+      cy <- textIterGetLine iter
+      let !key = case but of
+            LeftButton -> K.LeftButtonPress
+            MiddleButton -> K.MiddleButtonPress
+            RightButton -> K.RightButtonPress
+            _ -> K.LeftButtonPress
+          !pointer = Just $! Point cx cy
+      -- Store the mouse event coords in the keypress channel.
+      STM.atomically $ STM.writeTQueue (fchanKey rf) K.KM{..}
     return $! but == RightButton  -- not to disable selection
   -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
