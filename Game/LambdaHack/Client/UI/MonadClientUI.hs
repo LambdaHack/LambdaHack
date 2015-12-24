@@ -319,7 +319,7 @@ scoreToSlideshow total status = do
                            (fname $ gplayer fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
-  return $! toSlideshow
+  return $! toSlideshow  -- TODO: split dynamically, for changing ysize
          $ if worthMentioning then showScore rScore else mempty
 
 getLeaderUI :: MonadClientUI m => m ActorId

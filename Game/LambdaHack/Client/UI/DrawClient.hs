@@ -160,7 +160,6 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
       widthX = 80
       widthTgt = 39
       widthStats = widthX - widthTgt
-      addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       arenaStatus = drawArenaStatus (ES.member drawnLevelId sexplored) lvl
                                     widthStats
       displayPathText mp mt =
@@ -192,7 +191,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
            <+> trimTgtDesc n cursorDesc
       cursorGap = T.replicate (widthTgt - T.length pathCsr
                                         - T.length cursorText) " "
-      cursorStatus = addAttr $ cursorText <> cursorGap <> pathCsr
+      cursorStatus = toAttrLine $ cursorText <> cursorGap <> pathCsr
       minLeaderStatusWidth = 19  -- covers 3-digit HP
   selectedStatus <- drawSelected drawnLevelId
                                  (widthStats - minLeaderStatusWidth)
@@ -203,7 +202,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
   nameStatus <- drawPlayerName (widthStats - length leaderStatus
                                            - length selectedStatus
                                            - length damageStatus)
-  let statusGap = addAttr $ T.replicate (widthStats - length leaderStatus
+  let statusGap = toAttrLine $ T.replicate (widthStats - length leaderStatus
                                                     - length selectedStatus
                                                     - length damageStatus
                                                     - length nameStatus) " "
@@ -214,7 +213,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
         in "Target:" <+> trimTgtDesc n targetDesc
       targetGap = T.replicate (widthTgt - T.length pathTgt
                                         - T.length targetText) " "
-      targetStatus = addAttr $ targetText <> targetGap <> pathTgt
+      targetStatus = toAttrLine $ targetText <> targetGap <> pathTgt
       sfBottom =
         [ arenaStatus ++ cursorStatus
         , selectedStatus ++ nameStatus ++ statusGap
@@ -223,7 +222,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
       fLine y =
         let f l x = let ac = dis $ Point x y in ac : l
         in foldl' f [] [lxsize-1,lxsize-2..0]
-      emptyLine = replicate lxsize (Color.AttrChar Color.defAttr ' ')
+      emptyLine = toAttrLine $ T.replicate lxsize " "
       sfLevel = toOverlayRaw $ emptyLine :
         let f l y = let !line = fLine y in line : l
         in foldl' f [] [lysize-1,lysize-2..0] ++ sfBottom
@@ -233,21 +232,19 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
 -- level descriptions (currently enforced max).
 drawArenaStatus :: Bool -> Level -> Int -> [Color.AttrChar]
 drawArenaStatus explored Level{ldepth=AbsDepth ld, ldesc, lseen, lclear} width =
-  let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
-      seenN = 100 * lseen `div` max 1 lclear
+  let seenN = 100 * lseen `div` max 1 lclear
       seenTxt | explored || seenN >= 100 = "all"
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
       lvlN = T.justifyLeft 2 ' ' (tshow ld)
       seenStatus = "[" <> seenTxt <+> "seen] "
-  in addAttr $ T.justifyLeft width ' '
+  in toAttrLine $ T.justifyLeft width ' '
              $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
 
 drawLeaderStatus :: MonadClient m => Int -> Int -> m [Color.AttrChar]
 drawLeaderStatus waitT width = do
   mleader <- getsClient _sleader
   s <- getState
-  let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
-      addColor c t = map (Color.AttrChar $ Color.Attr c Color.defBG)
+  let addColor c t = map (Color.AttrChar $ Color.Attr c Color.defBG)
                          (T.unpack t)
       maxLeaderStatusWidth = 23  -- covers 3-digit HP and 2-digit Calm
       (calmHeaderText, hpHeaderText) = if width < maxLeaderStatusWidth
@@ -274,7 +271,7 @@ drawLeaderStatus waitT width = do
               = addColor Color.BrRed  -- alarming news have priority
             | resCurrentTurn > 0 || resPreviousTurn > 0
               = addColor Color.BrGreen
-            | otherwise = addAttr  -- only if nothing at all noteworthy
+            | otherwise = toAttrLine  -- only if nothing at all noteworthy
           calmAddAttr = checkDelta calmDelta
           darkPick | darkL   = "."
                    | otherwise = ":"
@@ -285,9 +282,9 @@ drawLeaderStatus waitT width = do
           hpAddAttr = checkDelta hpDelta
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick
           hpText = bhpS <> (if bracedL then slashPick else "/") <> ahpS
-      return $! calmHeader <> addAttr (T.justifyRight 6 ' ' calmText <> " ")
-                <> hpHeader <> addAttr (T.justifyRight 6 ' ' hpText <> " ")
-    Nothing -> return $! addAttr $ calmHeaderText <> ": --/-- "
+      return $! calmHeader <> toAttrLine (T.justifyRight 6 ' ' calmText <> " ")
+                <> hpHeader <> toAttrLine (T.justifyRight 6 ' ' hpText <> " ")
+    Nothing -> return $! toAttrLine $ calmHeaderText <> ": --/-- "
                                    <> hpHeaderText <> ": --/-- "
 
 drawLeaderDamage :: MonadClient m => Int -> m [Color.AttrChar]
@@ -364,17 +361,15 @@ drawSelected drawnLevelId width = do
              in Color.AttrChar Color.defAttr{Color.fg} char
       viewed = map viewOurs $ take maxViewed
                $ sortBy (comparing keySelected) ours
-      addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       -- Don't show anything if the only actor in the dungeon is the leader.
       -- He's clearly highlighted on the level map, anyway.
       party = if length allOurs == 1 && length ours == 1 || null ours
               then []
-              else [star] ++ viewed ++ addAttr " "
+              else [star] ++ viewed ++ toAttrLine " "
   return $! party
 
 drawPlayerName :: MonadClient m => Int -> m [Color.AttrChar]
 drawPlayerName width = do
-  let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let nameN n t =
@@ -386,4 +381,4 @@ drawPlayerName width = do
       ourName = nameN (width - 1) $ fname $ gplayer fact
   return $! if T.null ourName || T.length ourName >= width
             then []
-            else addAttr $ ourName <> " "
+            else toAttrLine $ ourName <> " "

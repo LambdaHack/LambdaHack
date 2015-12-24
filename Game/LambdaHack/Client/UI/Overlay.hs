@@ -1,7 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Screen overlays and frames.
 module Game.LambdaHack.Client.UI.Overlay
-  ( Overlay(overlay), toOverlayRaw, truncateToOverlay, toOverlay, moreMsgAttr
+  ( AttrLine, toAttrLine, moreMsgAttr
+  , Overlay(overlay), toOverlayRaw, truncateToOverlay, toOverlay
   , updateOverlayLine, splitReport, renderHistory
   , SingleFrame(..), Frames, overlayFrame
   , Slideshow(slideshow), splitOverlay, toSlideshow
@@ -23,28 +24,33 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 
+type AttrLine = [AttrChar]
+
+toAttrLine :: Text -> AttrLine
+toAttrLine = map (AttrChar defAttr) . T.unpack
+
 -- | The \"press something to see more\" mark.
-moreMsgAttr :: [AttrChar]
-moreMsgAttr = map (AttrChar defAttr) (T.unpack moreMsg)
+moreMsgAttr :: AttrLine
+moreMsgAttr = toAttrLine moreMsg
 
 -- | A series of screen lines that either fit the width of the screen
 -- or are intended for truncation when displayed. The length of overlay
 -- may exceed the length of the screen, unlike in @SingleFrame@.
-newtype Overlay = Overlay {overlay :: [[AttrChar]]}
+newtype Overlay = Overlay {overlay :: [AttrLine]}
   deriving (Show, Eq, Monoid)
 
 -- TODO: get rid of
-toOverlayRaw :: [[AttrChar]] -> Overlay
+toOverlayRaw :: [AttrLine] -> Overlay
 toOverlayRaw = Overlay
 
 truncateToOverlay :: Text -> Overlay
 truncateToOverlay msg = toOverlay [msg]
 
 toOverlay :: [Text] -> Overlay
-toOverlay = Overlay . map (map (AttrChar defAttr) . T.unpack)
+toOverlay = Overlay . map toAttrLine
 
 -- @f@ should not enlarge the line beyond screen width.
-updateOverlayLine :: Int -> ([AttrChar] -> [AttrChar]) -> Overlay -> Overlay
+updateOverlayLine :: Int -> (AttrLine -> AttrLine) -> Overlay -> Overlay
 updateOverlayLine n f Overlay{overlay} =
   let upd k (l : ls) = if k == 0
                        then f l : ls
@@ -106,7 +112,7 @@ overlayFrame :: Overlay -> Maybe SingleFrame -> SingleFrame
 overlayFrame sfTop msf =
   let lxsize = fst normalLevelBound + 1  -- TODO
       lysize = snd normalLevelBound + 1
-      emptyLine = replicate lxsize (Color.AttrChar Color.defAttr ' ')
+      emptyLine = toAttrLine $ T.replicate lxsize " "
       canvasLength = if isNothing msf then lysize + 3 else lysize + 1
       canvas = maybe (replicate canvasLength emptyLine)
                      (\sf -> overlay (sfLevel sf))
@@ -117,7 +123,7 @@ overlayFrame sfTop msf =
                  else take (canvasLength - 1) topTrunc
                       ++ overlay (toOverlay ["--a portion of the text trimmed--"])
       f layerLine canvasLine =
-        let truncated = truncateMsg lxsize layerLine
+        let truncated = truncateAttrLine lxsize layerLine
         in truncated ++ drop (length truncated) canvasLine
       picture = zipWith f topLayer canvas
       newLevel = picture ++ drop (length picture) canvas
@@ -125,8 +131,8 @@ overlayFrame sfTop msf =
 
 -- | Add a space at the message end, for display overlayed over the level map.
 -- Also trim (do not wrap!) too long lines.
-truncateMsg :: X -> [AttrChar] -> [AttrChar]
-truncateMsg w xs =
+truncateAttrLine :: X -> AttrLine -> AttrLine
+truncateAttrLine w xs =
   case compare w (length xs) of
     LT -> let discarded = drop w xs
           in if all ((== ' ') . acChar) discarded
