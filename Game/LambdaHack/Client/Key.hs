@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.Key
   , Modifier(..), KM(..), toKM, showKM
   , escKM, spaceKM, returnKM
   , pgupKM, pgdnKM, upKM, downKM, homeKM, endKM, backspaceKM
-  , leftButtonKM, rightButtonKM, deadKM
+  , leftButtonKM, rightButtonKM
   ) where
 
 import Control.DeepSeq
@@ -150,9 +150,6 @@ leftButtonKM = toKM NoModifier LeftButtonPress
 
 rightButtonKM :: KM
 rightButtonKM = toKM NoModifier RightButtonPress
-
-deadKM :: KM
-deadKM = toKM NoModifier DeadKey
 
 dirKeypadKey :: [Key]
 dirKeypadKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
@@ -383,6 +380,7 @@ keyTranslateWeb "Alt"         = DeadKey
 keyTranslateWeb "AltGraph"    = DeadKey
 keyTranslateWeb "Num_Lock"    = DeadKey
 keyTranslateWeb "CapsLock"    = DeadKey
+keyTranslateWeb "Win"         = DeadKey
 -- browser/webkit quirks
 keyTranslateWeb ['\ESC']     = Esc
 keyTranslateWeb [' ']        = Space

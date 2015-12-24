@@ -59,11 +59,11 @@ resetChanKey fchanKey = do
 
 saveKM :: RawFrontend -> K.KM -> IO ()
 saveKM rf km = do
-  unless (km == K.deadKM) $ do
+  -- Instantly show any frame waiting for display.
+  void $ tryPutMVar (fshowNow rf) ()
+  unless (K.key km == K.DeadKey) $
     -- Store the key in the channel.
     STM.atomically $ STM.writeTQueue (fchanKey rf) km
-    -- Instantly show any frame waiting for display.
-    void $ tryPutMVar (fshowNow rf) ()
 
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: Bool -> Bool -> Bool -> Bool -> K.Modifier
