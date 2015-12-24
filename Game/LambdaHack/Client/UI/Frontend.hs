@@ -57,7 +57,12 @@ promptGetKey :: DebugModeCli -> FSession -> RawFrontend -> [K.KM] -> SingleFrame
              -> IO K.KM
 promptGetKey sdebugCli fs rf@RawFrontend{fchanKey} [] frame = do
   display sdebugCli fs rf frame
-  STM.atomically $ STM.readTQueue fchanKey
+  let getNonDead = do
+        km <- STM.atomically $ STM.readTQueue fchanKey
+        if K.key km == K.DeadKey
+        then getNonDead
+        else return km
+  getNonDead
 promptGetKey sdebugCli fs@FSession{fautoYesRef} rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef fautoYesRef
   if autoYes && K.spaceKM `elem` keys then do

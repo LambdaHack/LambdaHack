@@ -322,12 +322,15 @@ keyTranslate "Super_R"          = DeadKey
 keyTranslate "Menu"             = DeadKey
 keyTranslate "Alt_L"            = DeadKey
 keyTranslate "Alt_R"            = DeadKey
+keyTranslate "Meta_L"           = DeadKey
+keyTranslate "Meta_R"           = DeadKey
 keyTranslate "ISO_Level2_Shift" = DeadKey
 keyTranslate "ISO_Level3_Shift" = DeadKey
 keyTranslate "ISO_Level2_Latch" = DeadKey
 keyTranslate "ISO_Level3_Latch" = DeadKey
 keyTranslate "Num_Lock"         = DeadKey
 keyTranslate "Caps_Lock"        = DeadKey
+keyTranslate "VoidSymbol"       = DeadKey
 -- numeric keypad
 keyTranslate ['K','P','_',c] = KP c
 -- standard characters
