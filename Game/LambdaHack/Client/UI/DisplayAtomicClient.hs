@@ -828,11 +828,12 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxActorStart aid -> do
     arena <- getArenaUI
     b <- getsState $ getActorBody aid
---    activeItems <- activeItemsClient aid
+    activeItems <- activeItemsClient aid
     when (blid b == arena) $ do
       -- If time clip has passed since any actor advanced @timeCutOff@
---TODO      -- or if the actor is so fast that he was capable of already moving
---          -- this clip (for simplicity, we don't check if he actually did)
+      -- or if the actor took some time since clip start and he seems so fast
+      -- that he is capable of already moving during that time
+      -- (for simplicity, we don't check if he actually did)
       -- or if the actor is newborn or is about to die,
       -- we end the frame early, before his current move.
       -- In the result, he moves at most once per frame, and thanks to this,
@@ -842,7 +843,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
       localTime <- getsState $ getLocalTime (blid b)
       timeCutOff <- getsClient $ EM.findWithDefault timeZero arena . sdisplayed
       when (localTime >= timeShift timeCutOff (Delta timeClip)
---TODO            || btime b >= timeShiftFromSpeed b activeItems timeCutOff
+            || btime b >= timeShift timeCutOff
+                                    (ticksPerMeter $ bspeed b activeItems)
             || actorNewBorn b
             || actorDying b) $ do
         -- If key will be requested, don't show the frame, because during
@@ -862,7 +864,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let delta = localTime `timeDeltaToFrom` timeCutOff
           when (delta > Delta timeClip && not (bproj b))
             displayDelay
-          let ageDisp = EM.insert arena localTime
+          let ageDisp = EM.insert arena (btime b)
           modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
           unless (bproj b) $  -- projectiles display animations instead
             displayPush ""
