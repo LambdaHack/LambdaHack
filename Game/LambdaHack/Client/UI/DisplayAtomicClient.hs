@@ -386,8 +386,7 @@ createActorUI aid body verbose verb = do
   when (ES.notMember aid lastLost
         && (not (bproj body) || verbose)) $ do
     actorVerbMU aid body verb
-    animFrs <- animate (blid body)
-               $ actorX (bpos body) (bsymbol body) (bcolor body)
+    animFrs <- animate (blid body) $ actorX (bpos body)
     displayActorStart body animFrs
   lookAtMove aid
 

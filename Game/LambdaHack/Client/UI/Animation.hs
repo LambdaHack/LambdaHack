@@ -169,15 +169,12 @@ deathBody pos = Animation $ map (EM.fromList . mzipSingleton pos)
   ]
 
 -- | Mark actor location animation.
-actorX :: Point -> Char -> Color.Color -> Animation
-actorX pos symbol color = Animation $ map (EM.fromList . mzipSingleton pos)
+actorX :: Point -> Animation
+actorX pos = Animation $ map (EM.fromList . mzipSingleton pos)
   [ cSym BrRed 'X'
   , cSym BrRed 'X'
-  , cSym BrRed symbol
-  , cSym color symbol
-  , cSym color symbol
-  , cSym color symbol
-  , cSym color symbol
+  , blank
+  , blank
   ]
 
 -- | Swap-places animation, both hostile and friendly.
