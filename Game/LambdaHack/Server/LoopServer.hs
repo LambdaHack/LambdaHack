@@ -342,7 +342,13 @@ handleActors lid = do
         action
         managePerTurn aidNew
       b3 <- getsState $ getActorBody aid
-      unless (waitedLastTurn b3) $ startActor aid
+      -- If only waited this turn and not killed nor pushed nor teleported,
+      -- its appearance not changed, so no need to redisplay it.
+      let appearanceUnchanged = waitedLastTurn b3
+                                && bhpDelta b3 == ResDelta 0 0
+                                && boldlid b3 == blid b3
+                                && boldpos b3 == Just (bpos b3)
+      unless appearanceUnchanged $ startActor aid
       handleActors lid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
