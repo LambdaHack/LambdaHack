@@ -28,7 +28,8 @@ import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement,
 import GHCJS.DOM.JSFFI.Generated.RequestAnimationFrameCallback
 import GHCJS.DOM.JSFFI.Generated.Window (requestAnimationFrame)
 import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
-                                getKeyIdentifier, getMetaKey, getShiftKey)
+                                getKeyIdentifier, getKeyLocation, getMetaKey,
+                                getShiftKey)
 import GHCJS.DOM.Node (appendChild)
 import GHCJS.DOM.Types (CSSStyleDeclaration, castToHTMLDivElement)
 import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
@@ -137,7 +138,6 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
                     modCtrl modShift (modAlt || modAltG) modMeta
   void $ doc `on` keyDown $ do
     keyId <- ask >>= getKeyIdentifier
-    -- unneded so far: _keyLoc <- ask >>= getKeyLocation
     which <- ask >>= getWhich
     keyCode <- ask >>= getKeyCode
     charCode <- ask >>= getCharCode
@@ -157,7 +157,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
                 | otherwise = ""  -- TODO: translate from keyCode in FF and IE
                                   -- until @key@ available in webkit DOM
     when (not $ null quirksN) $ do
-      let !key = K.keyTranslateWeb quirksN
+      let !key = K.keyTranslateWeb quirksN False
           !pointer = Nothing
           !km = K.KM{..}
           _ks = T.unpack (K.showKey key)
@@ -172,6 +172,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
       -- Pass through Ctrl-+ and others, disable Tab.
       when (modifier `elem` [K.NoModifier, K.Shift]) preventDefault
   void $ doc `on` keyPress $ do
+    keyLoc <- ask >>= getKeyLocation
     which <- ask >>= getWhich
     keyCode <- ask >>= getKeyCode
     charCode <- ask >>= getCharCode
@@ -180,7 +181,10 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
                 | otherwise = ""
     when (not $ null quirksN) $ do
       modifier <- readMod
-      let !key = K.keyTranslateWeb quirksN
+      let !onKeyPad = case keyLoc of
+            3 {-KEY_LOCATION_NUMPAD-} -> True
+            _ -> False
+          !key = K.keyTranslateWeb quirksN onKeyPad
           !pointer = Nothing
           !modifierNoShift =  -- to prevent Shift-!, etc.
             if modifier == K.Shift then K.NoModifier else modifier
@@ -207,7 +211,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   mapM_ setBorder scharCells
   -- Display at the end to avoid redraw
   void $ appendChild body (Just divBlock)
-  putMVar rfMVar rf  -- send to client only after the whole wegage is set up
+  putMVar rfMVar rf  -- send to client only after the whole webpage is set up
                      -- because there is no @mainGUI@ to start accepting
 
 shutdown :: IO ()
@@ -234,9 +238,6 @@ handleMouse rf (cell, (cx, cy)) = do
         modMeta <- mouseMetaKey
         let !modifier = modifierTranslate modCtrl modShift modAlt modMeta
         liftIO $ do
-      -- TODO: Graphics.UI.Gtk.WebKit.DOM.Selection? ClipboardEvent?
-      -- hasSelection <- textBufferHasSelection tb
-      -- unless hasSelection $ do
       -- TODO: mdrawWin <- displayGetWindowAtPointer display
       -- let setCursor (drawWin, _, _) =
       --       drawWindowSetCursor drawWin (Just cursor)
