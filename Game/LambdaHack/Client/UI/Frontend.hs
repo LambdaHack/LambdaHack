@@ -66,7 +66,7 @@ promptGetKey sdebugCli fs rf@RawFrontend{fchanKey} [] frame = do
 promptGetKey sdebugCli fs@FSession{fautoYesRef} rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef fautoYesRef
   if autoYes && K.spaceKM `elem` keys then do
-    fdisplay rf frame
+    display sdebugCli fs rf frame
     return K.spaceKM
   else do
     -- Wait until timeout is up, not to skip the last frame of animation.
