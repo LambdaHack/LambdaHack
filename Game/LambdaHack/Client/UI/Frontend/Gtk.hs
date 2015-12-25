@@ -8,7 +8,6 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Concurrent
-import qualified Control.Concurrent.STM as STM
 import Control.Monad (when)
 import Control.Monad.Reader (liftIO)
 import qualified Data.ByteString.Char8 as BS
@@ -140,7 +139,7 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
             _ -> K.LeftButtonPress
           !pointer = Just $! Point cx cy
       -- Store the mouse event coords in the keypress channel.
-      STM.atomically $ STM.writeTQueue (fchanKey rf) K.KM{..}
+      saveKM rf K.KM{..}
     return $! but == RightButton  -- not to disable selection
   -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
