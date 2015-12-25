@@ -85,19 +85,7 @@ connFrontend req = do
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey frontKeyKeys frontKeyFrame = do
-  -- Assume we display the arena when we prompt for a key and possibly
-  -- insert a delay and reset cutoff.
-  arena <- getArenaUI
-  localTime <- getsState $ getLocalTime arena
-  -- No delay, because this is before the UI actor acts. Ideally the frame
-  -- would not be changed either.
-  -- However, set sdisplayed so that there's no extra delay after the actor
-  -- acts either, because waiting for the key introduces enough delay.
-  -- Or this is running, etc., which we want fast.
-  let ageDisp = EM.insert arena localTime
-  modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
   keyPressed <- clearPressed
-    -- this also clears the key-pressed marker
   lastPlayOld <- getsClient slastPlay
   km <- case lastPlayOld of
     km : kms | not keyPressed
@@ -212,7 +200,7 @@ displayActorStart b frs = do
   let delta = localTime `timeDeltaToFrom` timeCutOff
   when (delta > Delta timeClip && not (bproj b))
     displayDelay
-  let ageDisp = EM.insert (blid b) localTime
+  let ageDisp = EM.insert (blid b) (btime b)
   modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
   mapM_ displayFrame frs
 
