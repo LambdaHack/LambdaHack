@@ -207,16 +207,17 @@ advanceTime aid = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsServer aid
   localTime <- getsState $ getLocalTime (blid b)
-  let halfActorTurn = timeDeltaDiv (ticksPerMeter $ bspeed b activeItems) 2
+  let actorTurn = ticksPerMeter $ bspeed b activeItems
+      halfStandardTurn = timeDeltaDiv (Delta timeTurn) 2
       -- Dead bodies stay around for only a half of standard turn,
-      -- even if paralyzed.
+      -- even if paralyzed (that is, wrt local time).
       -- Projectiles that hit actors or are hit by actors vanish at once
       -- not to block actor's path, e.g., for Pull effect.
       t | bhp b <= 0 =
-        let delta = Delta $ if bproj b then timeZero else timeTurn
+        let delta = if bproj b then Delta timeZero else halfStandardTurn
             localPlusDelta = localTime `timeShift` delta
         in localPlusDelta `timeDeltaToFrom` btime b
-        | otherwise = halfActorTurn
+        | otherwise = actorTurn
   execUpdAtomic $ UpdAgeActor aid t  -- @t@ may be negative; that's OK
 
 -- | Swap the relative move times of two actors (e.g., when switching
