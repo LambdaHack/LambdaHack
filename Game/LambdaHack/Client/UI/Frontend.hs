@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.UI.Frontend
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
-import Control.Monad (void)
+import Control.Monad (void, when)
 import Data.IORef
 import Data.Maybe
 
@@ -92,13 +92,7 @@ display DebugModeCli{smaxFps}
         rf@RawFrontend{fshowNow}
         frontFrame = do
   let maxFps = fromMaybe defaultMaxFps smaxFps
-      baseTime = microInSec `div` maxFps
-  delay <- readIORef fdelay
-  delta <- if delay then do
-             writeIORef fdelay False
-             return $! 2 * baseTime
-           else
-             return $! baseTime
+      delta = microInSec `div` maxFps
   takeMVar fshowNow
   noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
   if noKeysPending then
@@ -117,11 +111,15 @@ microInSec = 1000000
 
 -- This thread is canceled forcefully, because the @threadDelay@
 -- may be much longer than an acceptable shutdown time.
-forkFrameTimeout :: MVar Int -> RawFrontend -> IO ()
-forkFrameTimeout ftimeout RawFrontend{fshowNow} = do
+forkFrameTimeout :: MVar Int -> IORef Bool -> RawFrontend -> IO ()
+forkFrameTimeout ftimeout fdelay RawFrontend{fshowNow} = do
   let loop = do
         timeout <- takeMVar ftimeout
         threadDelay timeout
+        delay <- readIORef fdelay
+        when delay $ do
+          threadDelay timeout
+          writeIORef fdelay False
         -- For simplicity, we don't care that occasionally a frame will be
         -- shown too early, when a keypress happens during the timeout,
         -- is handled and the next frame is ready before timeout expires.
@@ -145,7 +143,7 @@ chanFrontend sdebugCli = do
   fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
   ftimeout <- newEmptyMVar
   fdelay <- newIORef False
-  fasyncTimeout <- async $ forkFrameTimeout ftimeout rf
+  fasyncTimeout <- async $ forkFrameTimeout ftimeout fdelay rf
   -- Warning: not linking @fasyncTimeout@, so it'd better not crash.
   let fs = FSession{..}
   return $ fchanFrontend sdebugCli fs rf

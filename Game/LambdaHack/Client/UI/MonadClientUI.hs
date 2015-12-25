@@ -24,7 +24,7 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
-import Control.Monad (replicateM_, when)
+import Control.Monad (when)
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
@@ -186,7 +186,7 @@ displayFrame mf = do
   connFrontend frame
 
 displayDelay :: MonadClientUI m =>  m ()
-displayDelay = replicateM_ 4 $ connFrontend FrontDelay
+displayDelay = displayFrame Nothing
 
 -- | Push frames or delays to the frame queue. Additionally set @sdisplayed@.
 -- because animations not always happen after @SfxActorStart@ on the leader's
