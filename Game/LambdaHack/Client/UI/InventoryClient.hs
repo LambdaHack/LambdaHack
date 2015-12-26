@@ -386,8 +386,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
            })
         , (K.returnKM, DefItemKey
            { defLabel = if lastSlot `EM.member` labelItemSlotsOpen
-                        then let l = makePhrase [slotLabel lastSlot]
-                             in "RET(" <> l <> ")"  -- l is on the screen list
+                        then "RET(" <> slotLabel lastSlot
                         else "RET"
            , defCond = not (EM.null labelItemSlotsOpen)
                        && EM.null bagFiltered
@@ -546,7 +545,7 @@ statsOverlay aid = do
       prSlot :: SlotChar -> (IK.EqpSlot, Int -> Text) -> (Text, KYX)
       prSlot c (eqpSlot, f) =
         let fullText t =
-              makePhrase [ slotLabel c, "-"
+              makePhrase [ MU.Text $ slotLabel c
                          , MU.Text $ T.justifyLeft 22 ' '
                                    $ IK.slotName eqpSlot
                          , MU.Text t ]
@@ -574,7 +573,7 @@ statsOverlay aid = do
       prAbility :: SlotChar -> Ability.Ability -> (Text, KYX)
       prAbility c ability =
         let fullText t =
-              makePhrase [ slotLabel c, "-"
+              makePhrase [ MU.Text $ slotLabel c
                          , MU.Text $ T.justifyLeft 22 ' '
                            $ "ability" <+> tshow ability
                          , MU.Text t ]

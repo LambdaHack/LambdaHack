@@ -16,13 +16,13 @@ import Data.Monoid
 import Data.Ord (comparing)
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
 
 data SlotChar = SlotChar {slotPrefix :: Int, slotChar :: Char}
@@ -101,7 +101,8 @@ assignSlot store item fid mbody (itemSlots, organSlots) lastSlot s =
   g l = l `EM.notMember` lSlots
   fresh = filter g $ take ((slotPrefix lastSlot + 1) * len0) candidates
 
-slotLabel :: SlotChar -> MU.Part
-slotLabel x = MU.String
-              $ (if slotPrefix x == 0 then [] else show $ slotPrefix x)
-                ++ [slotChar x]
+slotLabel :: SlotChar -> Text
+slotLabel x =
+  T.snoc (if slotPrefix x == 0 then T.empty else tshow $ slotPrefix x)
+         (slotChar x)
+  <> ")"

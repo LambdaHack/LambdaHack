@@ -27,6 +27,7 @@ import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.Level
@@ -143,13 +144,20 @@ itemOverlay c lid bag = do
           Nothing -> Nothing
           Just kit@(k, _) ->
             let itemFull = itemToF iid kit
-                -- TODO: add color item symbols as soon as we have a menu
-                -- with all items visible on the floor or known to player
-                -- symbol = jsymbol $ itemBase itemFull
-                phrase = makePhrase [ slotLabel l, "-"  -- MU.String [symbol]
-                                    , partItemWs k c localTime itemFull ]
+                label = slotLabel l
+                phrase = makePhrase
+                           [ MU.Text label
+                           , "D"  -- dummy
+                           , partItemWs k c localTime itemFull ]
+                insertSymbol line =
+                  let colorSymbol = uncurry (flip Color.AttrChar)
+                                            (viewItem $ itemBase itemFull)
+                  in take (T.length label + 1) line
+                     ++ [colorSymbol]
+                     ++ drop (T.length label + 2) line
+                ov = updateOverlayLine 0 insertSymbol $ toOverlay [phrase]
                 ekm = Right l
                 kx = (ekm, (undefined, 0, T.length phrase))
-            in Just (phrase, kx)
+            in Just (ov, kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
-  return (toOverlay ts, kxs)
+  return (mconcat ts, kxs)

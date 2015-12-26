@@ -191,7 +191,6 @@ itemDesc c localTime itemFull =
         | otherwise = ("", "")
       ln = abs $ fromEnum $ jlid (itemBase itemFull)
       colorSymbol = uncurry (flip Color.AttrChar) (viewItem $ itemBase itemFull)
-      f = Color.AttrChar Color.defAttr
       lxsize = fst normalLevelBound + 1  -- TODO
       blurb =
         "D"  -- dummy
@@ -201,8 +200,9 @@ itemDesc c localTime itemFull =
         <+> makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]
       splitBlurb = splitText lxsize blurb
-      attrBlurb = map (map f . T.unpack) splitBlurb
-  in toOverlayRaw $ (colorSymbol : tail (head attrBlurb)) : tail attrBlurb
+      attrBlurb = toOverlay splitBlurb
+      f line = [colorSymbol] ++ drop 1 line
+  in updateOverlayLine 0 f attrBlurb
 
 viewItem :: Item -> (Char, Color.Attr)
 viewItem item = ( jsymbol item

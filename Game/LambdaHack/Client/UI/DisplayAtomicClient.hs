@@ -470,6 +470,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
   let kit@(n, _) = bag EM.! iid
   itemToF <- itemToFullClient
   (itemSlots, _) <- getsClient sslots
+  let itemFull = itemToF iid kit
   case lookup iid $ map swap $ EM.assocs itemSlots of
     Just l -> do
       when (Just aid == mleader) $ do
@@ -481,15 +482,24 @@ moveItemUI iid k aid cstore1 cstore2 = do
       if cstore1 == CGround && Just aid == mleader && not underAI then do
         itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
         localTime <- getsState $ getLocalTime (blid b)
+        let label = slotLabel l
         msgAdd $ makePhrase
                    [ "\n"
-                   , slotLabel l
-                   , "-"
-                   , partItemWs n cstore2 localTime (itemToF iid kit)
+                   , MU.Text label
+                   , partItemWs n cstore2 localTime itemFull
                    , "\n" ]
+{- TODO: when messages are composed from attrs, not chars
+                insertSymbol line =
+                  let colorSymbol = uncurry (flip Color.AttrChar)
+                                            (viewItem $ itemBase itemFull)
+                  in take (T.length label + 1) line
+                     ++ [colorSymbol]
+                     ++ drop (T.length label + 2) line
+                ov = updateOverlayLine 0 insertSymbol $ toOverlay [phrase]
+-}
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
         itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
-    Nothing -> assert `failure` (iid, itemToF iid kit)
+    Nothing -> assert `failure` (iid, itemFull)
 
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Actor -> Maybe Status -> m ()
