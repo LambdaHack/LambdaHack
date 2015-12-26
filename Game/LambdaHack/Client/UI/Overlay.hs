@@ -74,19 +74,17 @@ newtype SingleFrame = SingleFrame { sfLevel :: Overlay }
 -- fits on the screen wrt height (but lines may be too wide).
 splitOverlay :: Y -> Overlay -> Overlay -> Slideshow
 splitOverlay yspace (Overlay msg) (Overlay ls0) =
-  let len = length msg
-  in if len >= yspace
-     then  -- no space left for @ls0@
-       Slideshow ([Overlay $
-                     take (yspace - 1) msg ++ [moreMsgAttr]])
-     else let splitO ls =
-                let (pre, post) = splitAt (yspace - 1) $ msg ++ ls
-                in if null (drop 1 post)  -- (don't call @length@ on @ls0@)
-                   then [Overlay $ msg ++ ls]
-                          -- all fits on screen
-                   else let rest = splitO post
-                        in Overlay (pre ++ [moreMsgAttr]) : rest
-          in Slideshow (splitO ls0)
+  if length msg > yspace `div` 2
+  then  -- too long msg, no sense repeating it on each page
+    splitOverlay yspace mempty (Overlay msg <> Overlay ls0)
+  else let splitO ls =
+             let (pre, post) = splitAt (yspace - 1) $ msg ++ ls
+             in if null (drop 1 post)  -- (don't call @length@ on @ls0@)
+                then [Overlay $ msg ++ ls]
+                       -- all fits on screen
+                else let rest = splitO post
+                     in Overlay (pre ++ [moreMsgAttr]) : rest
+       in Slideshow (splitO ls0)
 
 -- | A few overlays, displayed one by one upon keypress.
 -- When displayed, they are trimmed, not wrapped
