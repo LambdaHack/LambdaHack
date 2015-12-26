@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
     -- * Display and key input
   , ColorMode(..)
   , mapStartY, promptGetKey, promptGetInt
-  , getKeyOverlayCommand, getInitConfirms, getConfirms, getConfirmsKey
+  , getInitConfirms, getConfirms, getConfirmsKey
   , displayFrame, displayDelay, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
@@ -83,25 +83,27 @@ connFrontend req = do
   ChanFrontend f <- getsSession schanF
   liftIO $ f req
 
-promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
-promptGetKey frontKeyKeys frontKeyFrame = do
-  let frontKey = FrontKey{..}
+promptGetKey :: MonadClientUI m => Overlay -> Bool -> [K.KM] -> m K.KM
+promptGetKey ov sfBlank frontKeyKeys = do
   keyPressed <- anyKeyPressed
   lastPlayOld <- getsClient slastPlay
   km <- case lastPlayOld of
     km : kms | not keyPressed
                && (null frontKeyKeys
                    || km{K.pointer=Nothing} `elem` frontKeyKeys) -> do
+      frontKeyFrame <- drawOverlay ColorFull sfBlank ov
       displayFrame $ Just frontKeyFrame
       modifyClient $ \cli -> cli {slastPlay = kms}
       return km
     _ -> do
       -- We can't continue playback; wipe out old srunning, etc.
       interrupted <- stopPlayBack
-      when (keyPressed && interrupted) $
-        discardPressedKey
-        -- TODO: also add "*interrupted* to the next frame
-      km <- connFrontend frontKey
+      ov2 <- if keyPressed && interrupted then do
+               discardPressedKey
+               return $! toOverlay ["*interrupted*"] <> ov
+             else return ov
+      frontKeyFrame <- drawOverlay ColorFull sfBlank ov2
+      km <- connFrontend FrontKey{..}
       modifyClient $ \cli -> cli {slastKM = km}
       return km
   (seqCurrent, seqPrevious, k) <- getsClient slastRecord
@@ -117,12 +119,6 @@ promptGetInt frontKeyFrame = do
                      : map (K.toKM K.NoModifier)
                          (map (K.Char . Char.intToDigit) [0..9])
   connFrontend FrontKey{..}
-
--- | Display an overlay and wait for a human player command.
-getKeyOverlayCommand :: MonadClientUI m => Overlay -> m K.KM
-getKeyOverlayCommand overlay = do
-  frame <- drawOverlay ColorFull False overlay
-  promptGetKey [] frame
 
 -- | Display a slideshow, awaiting confirmation for each slide
 -- or not awaiting at all if there is only one.

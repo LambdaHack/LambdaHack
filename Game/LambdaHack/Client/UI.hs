@@ -88,7 +88,7 @@ humanCommand = do
             let slastRecord = ([], seqCurrent ++ seqPrevious, k - 1)
             modifyClient $ \cli -> cli {slastRecord}
         lastPlay <- getsClient slastPlay
-        km <- getKeyOverlayCommand over
+        km <- promptGetKey over False []
         -- Messages shown, so update history and reset current report.
         when (null lastPlay) recordHistory
         abortOrCmd <- do

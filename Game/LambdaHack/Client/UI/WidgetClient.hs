@@ -130,8 +130,7 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
                   _ | ikm{K.pointer=Nothing} `elem` keys ->
                     return (Left ikm, pointer)
                   _ -> assert `failure` "unknown key" `twith` ikm
-          frame <- drawOverlay ColorFull sfBlank ov1
-          pkm <- promptGetKey legalKeys frame
+          pkm <- promptGetKey ov1 sfBlank legalKeys
           interpretKey pkm
   page pointer0
 
