@@ -9,7 +9,6 @@ module Game.LambdaHack.Client.UI.Animation
 import Prelude ()
 import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
 import Data.Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -22,29 +21,35 @@ import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
+type AnimationDiff = EM.EnumMap Point AttrChar
+
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
-newtype Animation = Animation [EM.EnumMap Point AttrChar]
+newtype Animation = Animation [AnimationDiff]
   deriving (Eq, Show, Monoid)
 
 -- | Render animations on top of a screen frame.
-renderAnim :: X -> Y -> SingleFrame -> Animation -> Frames
-renderAnim lxsize lysize basicFrame (Animation anim) =
-  let modifyFrame SingleFrame{sfLevel} _ | overlay sfLevel == [] =
-        assert `failure` (lxsize, lysize, basicFrame, anim)
-      modifyFrame SingleFrame{sfLevel = levelOld, ..} am =
+renderAnim :: SingleFrame -> Animation -> Frames
+renderAnim SingleFrame{sfLevel = levelOld, ..} (Animation anim) =
+  let modifyFrame :: AnimationDiff -> Maybe SingleFrame
+      modifyFrame am =
         let fLine y lineOld =
               let f l (x, acOld) =
                     let pos = Point x y
                         !ac = EM.findWithDefault acOld pos am
                     in ac : l
-              in foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
+              in foldl' f [] $ reverse $ zip [0..] lineOld
             sfLevel =  -- fully evaluated inside
               let f l (y, lineOld) = let !line = fLine y lineOld in line : l
               in toOverlayRaw
                  $ foldl' f [] (reverse $ zip [0..] $ overlay levelOld)
         in Just SingleFrame{..}  -- a thunk within Just
-  in map (modifyFrame basicFrame) anim
+      modifyFrames :: (AnimationDiff, Frames) -> AnimationDiff
+                   -> (AnimationDiff, Frames)
+      modifyFrames (amPrevious, frs) am =
+        let frame = if am == amPrevious then Nothing else modifyFrame am
+        in (am, frame : frs)
+  in reverse $ snd $ foldl' modifyFrames (EM.empty, []) anim
 
 blank :: Maybe AttrChar
 blank = Nothing

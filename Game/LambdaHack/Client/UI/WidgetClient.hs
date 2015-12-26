@@ -233,7 +233,6 @@ animate :: MonadClientUI m => LevelId -> Animation -> m Frames
 animate arena anim = do
   sreport <- getsClient sreport
   mleader <- getsClient _sleader
-  Level{lxsize, lysize} <- getLevel arena
   tgtPos <- leaderTgtToPos
   cursorPos <- cursorToPos
   let anyPos = fromMaybe (Point 0 0) cursorPos
@@ -251,7 +250,7 @@ animate arena anim = do
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]
-            else renderAnim lxsize lysize basicFrame anim
+            else renderAnim basicFrame anim
 
 fadeOutOrIn :: MonadClientUI m => Bool -> m ()
 fadeOutOrIn out = do
