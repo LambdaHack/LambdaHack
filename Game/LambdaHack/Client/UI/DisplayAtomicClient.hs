@@ -68,7 +68,8 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   UpdDestroyActor aid body _ -> do
     destroyActorUI aid body "die" "be destroyed" verbose
     side <- getsClient sside
-    when (bfid body == side && not (bproj body)) stopPlayBack
+    when (bfid body == side && not (bproj body)) $
+      void $ stopPlayBack
   UpdCreateItem iid _ kit c -> do
     case c of
       CActor aid store -> do
@@ -97,7 +98,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
         void $ updateItemSlot CGround Nothing iid
         itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
       CTrunk{} -> assert `failure` c
-    stopPlayBack
+    void $ stopPlayBack
   UpdDestroyItem iid _ kit c -> itemVerbMU iid kit "disappear" c
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
   UpdLoseActor aid body _ ->
@@ -119,7 +120,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
               TEnemyPos{} -> return ()
               _ -> modifyClient $ \cli -> cli {scursor = TPoint lid p}
             itemVerbMU iid kit "be spotted" c
-            stopPlayBack
+            void $ stopPlayBack
           CTrunk{} -> return ()
       _ -> return ()  -- seen already (has a slot assigned)
   UpdLoseItem{} -> return ()
@@ -142,7 +143,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
       when (bhp b >= xM hpMax && hpMax > 0
             && resCurrentTurn (bhpDelta b) > 0) $ do
         actorVerbMU aid b "recover your health fully"
-        stopPlayBack
+        void $ stopPlayBack
   UpdRefillCalm aid calmDelta ->
     when (calmDelta == minusM) $ do  -- lower deltas come from hits; obvious
       side <- getsClient sside
@@ -154,7 +155,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
         when (null closeFoes) $ do  -- obvious where the feeling comes from
           aidVerbMU aid "hear something"
           msgDuplicateScrap
-          stopPlayBack
+          void $ stopPlayBack
   UpdFidImpressedActor aid _fidOld fidNew -> do
     b <- getsState $ getActorBody aid
     actorVerbMU aid b $
@@ -178,7 +179,8 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
       -- This faction can't run with multiple actors, so this is not
       -- a leader change while running, but rather server changing
       -- their leader, which the player should be alerted to.
-      when (noRunWithMulti fact) stopPlayBack
+      when (noRunWithMulti fact) $
+        void $ stopPlayBack
       actorD <- getsState sactorD
       case EM.lookup source actorD of
         Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do
@@ -245,7 +247,6 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
   UpdCoverSeed{} -> return ()  -- don't spam when doing undo
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ _ -> do
-    void $ clearPressed  -- clear key-pressed from end of previous game
     mode <- getGameMode
     msgAdd $ "New game started in" <+> mname mode <+> "mode." <+> mdesc mode
     -- TODO: use a vertical animation instead, e.g., roll down,
@@ -286,10 +287,12 @@ lookAtMove aid = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   if not (bproj body) && side == bfid body then do
     foes <- getsState $ actorList (isAtWar fact) (blid body)
-    when (any (adjacent (bpos body) . bpos) foes) stopPlayBack
+    when (any (adjacent (bpos body) . bpos) foes) $
+      void $ stopPlayBack
   else when (isAtWar fact side) $ do
     friends <- getsState $ actorRegularList (== side) (blid body)
-    when (any (adjacent (bpos body) . bpos) friends) stopPlayBack
+    when (any (adjacent (bpos body) . bpos) friends) $
+      void $ stopPlayBack
 
 -- | Sentences such as \"Dog barks loudly.\".
 actorVerbMU :: MonadClientUI m => ActorId -> Actor -> MU.Part -> m ()
@@ -378,7 +381,7 @@ createActorUI aid body verbose verb = do
       -- in-between turns and, e.g., leader's move has not yet been taken
       -- into account.
       modifyClient $ \cli -> cli {scursor = TEnemy aid False}
-    stopPlayBack
+    void $ stopPlayBack
   -- Don't spam if the actor was already visible (but, e.g., on a tile that is
   -- invisible this turn (in that case move is broken down to lose+spot)
   -- or on a distant tile, via teleport while the observer teleported, too).
@@ -765,7 +768,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             let verb = "be now under"
             msgAdd $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
-          stopPlayBack
+          void $ stopPlayBack
         IK.Impress -> return ()
         IK.CallFriend{} -> do
           let verb = if bproj b then "attract" else "call forth"

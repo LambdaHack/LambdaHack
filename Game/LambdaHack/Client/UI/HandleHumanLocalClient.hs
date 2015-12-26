@@ -157,7 +157,8 @@ clearHuman = return ()
 stopIfTgtModeHuman :: MonadClientUI m => m ()
 stopIfTgtModeHuman = do
   tgtMode <- getsClient stgtMode
-  when (isJust tgtMode) stopPlayBack
+  when (isJust tgtMode) $
+    void $ stopPlayBack
 
 -- * SelectWithPointer
 
@@ -177,7 +178,7 @@ selectWithPointer = do
         selectNoneHuman
       else
         selectAidHuman $ fst $ viewed !! (px - 1)
-      stopPlayBack
+      void $ stopPlayBack
     _ -> return ()
 
 -- * Repeat

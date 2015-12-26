@@ -138,7 +138,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
         let !_A = assert (all (bproj . snd) tgts) ()
         failSer DisplaceProjectiles
       (target, tb) : _ | initialStep && finalGoal -> do
-        stopPlayBack  -- don't ever auto-repeat melee
+        void $ stopPlayBack  -- don't ever auto-repeat melee
         -- No problem if there are many projectiles at the spot. We just
         -- attack the first one.
         -- We always see actors from our own faction.
@@ -678,25 +678,33 @@ runOnceAheadHuman = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
+  keyPressed <- anyKeyPressed
   srunning <- getsClient srunning
   -- When running, stop if disturbed. If not running, stop at once.
   case srunning of
     Nothing -> do
-      stopPlayBack
+      void $ stopPlayBack
       return $ Left mempty
     Just RunParams{runMembers}
       | noRunWithMulti fact && runMembers /= [leader] -> do
-      stopPlayBack
+      void $ stopPlayBack
       Config{configRunStopMsgs} <- askConfig
       if configRunStopMsgs
       then failWith "run stop: automatic leader change"
       else return $ Left mempty
+    Just _runParams | keyPressed -> do
+      discardPressedKey
+      void $ stopPlayBack
+      Config{configRunStopMsgs} <- askConfig
+      if configRunStopMsgs
+      then failWith "run stop: key pressed"
+      else failWith "interrupted"
     Just runParams -> do
       arena <- getArenaUI
       runOutcome <- continueRun arena runParams
       case runOutcome of
         Left stopMsg -> do
-          stopPlayBack
+          void $ stopPlayBack
           Config{configRunStopMsgs} <- askConfig
           if configRunStopMsgs
           then failWith $ "run stop:" <+> stopMsg
@@ -1088,7 +1096,6 @@ automateHuman = do
   -- BFS is not updated while automated, which would lead to corruption.
   modifyClient $ \cli -> cli {stgtMode = Nothing}
   go <- displayMore ColorBW "Ceding control to AI (press any key to regain)."
-  void $ clearPressed  -- clear key-pressed from the confirmation
   if not go
     then failWith "automation canceled"
     else return $ Right ReqUIAutomate

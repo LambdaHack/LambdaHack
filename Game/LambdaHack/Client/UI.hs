@@ -136,7 +136,7 @@ humanCommand = do
 -- (if needed) and sends some extra info.
 pongUI :: MonadClientUI m => m RequestUI
 pongUI = do
-  keyPressed <- clearPressed
+  keyPressed <- anyKeyPressed
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let pong ats = return $ ReqUIPong ats

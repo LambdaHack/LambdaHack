@@ -13,6 +13,7 @@ module Game.LambdaHack.Client.UI.Frontend
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
+import Control.Exception.Assert.Sugar
 import Control.Monad (void, when)
 import Data.IORef
 import Data.Maybe
@@ -35,6 +36,8 @@ data FrontReq :: * -> * where
     -- ^ flush frames, display a frame and ask for a keypress
   FrontPressed :: FrontReq Bool
     -- ^ inspect and reset the fkeyPressed MVar
+  FrontDiscard :: FrontReq ()
+    -- ^ discard a key in the queue; fail if queue empty
   FrontAutoYes :: Bool -> FrontReq ()
     -- ^ set in the frontend that it should auto-answer prompts
   FrontShutdown :: FrontReq ()
@@ -81,6 +84,10 @@ fchanFrontend sdebugCli fs@FSession{..} rf =
     FrontPressed -> do
       noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
       return $! not noKeysPending
+    FrontDiscard -> do
+      mkey <- STM.atomically $ STM.tryReadTQueue (fchanKey rf)
+      when (isNothing mkey) $
+        assert `failure` "empty queue of pressed keys" `twith` ()
     FrontAutoYes b -> writeIORef fautoYesRef b
     FrontShutdown -> do
       cancel fasyncTimeout

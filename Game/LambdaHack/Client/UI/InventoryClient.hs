@@ -796,7 +796,7 @@ cursorPointerFloor verbose addMoreMsg = do
         displayDelay  -- for a bit longer
         return mempty
     _ -> do
-      stopPlayBack
+      void $ stopPlayBack
       return mempty
 
 cursorPointerEnemy :: MonadClientUI m => Bool -> Bool -> m Slideshow
@@ -821,7 +821,7 @@ cursorPointerEnemy verbose addMoreMsg = do
         displayDelay  -- for a bit longer
         return mempty
     _ -> do
-      stopPlayBack
+      void $ stopPlayBack
       return mempty
 
 -- | Move the cursor. Assumes targeting mode.

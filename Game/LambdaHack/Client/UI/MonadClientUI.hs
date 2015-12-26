@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , displayFrame, displayDelay, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
-  , setFrontAutoYes, clearPressed, frontendShutdown
+  , setFrontAutoYes, anyKeyPressed, discardPressedKey, frontendShutdown
   , scoreToSlideshow
   , getLeaderUI, getArenaUI, viewedLevel
   , targetDescLeader, targetDescCursor
@@ -85,7 +85,8 @@ connFrontend req = do
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey frontKeyKeys frontKeyFrame = do
-  keyPressed <- clearPressed
+  let frontKey = FrontKey{..}
+  keyPressed <- anyKeyPressed
   lastPlayOld <- getsClient slastPlay
   km <- case lastPlayOld of
     km : kms | not keyPressed
@@ -95,8 +96,12 @@ promptGetKey frontKeyKeys frontKeyFrame = do
       modifyClient $ \cli -> cli {slastPlay = kms}
       return km
     _ -> do
-      stopPlayBack  -- we can't continue playback; wipe out old srunning
-      km <- connFrontend FrontKey{..}
+      -- We can't continue playback; wipe out old srunning, etc.
+      interrupted <- stopPlayBack
+      when (keyPressed && interrupted) $
+        discardPressedKey
+        -- TODO: also add "*interrupted* to the next frame
+      km <- connFrontend frontKey
       modifyClient $ \cli -> cli {slastKM = km}
       return km
   (seqCurrent, seqPrevious, k) <- getsClient slastRecord
@@ -234,8 +239,9 @@ drawOverlays dm sfBlank ovs = do
   let f topNext = overlayFrame topNext mbaseFrame
   return $! map f ovs  -- keep lazy for responsiveness
 
-stopPlayBack :: MonadClientUI m => m ()
+stopPlayBack :: MonadClientUI m => m Bool
 stopPlayBack = do
+  lastPlay <- getsClient slastPlay
   modifyClient $ \cli -> cli
     { slastPlay = []
     , slastRecord = ([], [], 0)
@@ -244,7 +250,7 @@ stopPlayBack = do
     }
   srunning <- getsClient srunning
   case srunning of
-    Nothing -> return ()
+    Nothing -> return $! not $ null lastPlay
     Just RunParams{runLeader} -> do
       -- Switch to the original leader, from before the run start,
       -- unless dead or unless the faction never runs with multiple
@@ -256,6 +262,7 @@ stopPlayBack = do
       when (memActor runLeader arena s && not (noRunWithMulti fact)) $
         modifyClient $ updateLeader runLeader s
       modifyClient (\cli -> cli {srunning = Nothing})
+      return True
 
 askConfig :: MonadClientUI m => m Config
 askConfig = getsSession sconfig
@@ -267,8 +274,11 @@ askBinding = getsSession sbinding
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
 setFrontAutoYes b = connFrontend $ FrontAutoYes b
 
-clearPressed :: MonadClientUI m => m Bool
-clearPressed = connFrontend FrontPressed
+anyKeyPressed :: MonadClientUI m => m Bool
+anyKeyPressed = connFrontend FrontPressed
+
+discardPressedKey :: MonadClientUI m => m ()
+discardPressedKey = connFrontend FrontDiscard
 
 frontendShutdown :: MonadClientUI m => m ()
 frontendShutdown = connFrontend FrontShutdown
