@@ -87,7 +87,8 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
       page pointer = case findKYX pointer frs of
         Nothing -> assert `failure` "no menu keys" `twith` frs
         Just ((ov, kyxs), (ekm, (y, x1, x2)), ixOnPage) -> do
-          let greyBG x = x{Color.acAttr =
+          let greyBG x | Color.acAttr x /= Color.defAttr = x
+              greyBG x = x{Color.acAttr =
                             (Color.acAttr x){Color.fg = Color.BrWhite}}
               drawHighlight xs =
                 let (xs1, xsRest) = splitAt x1 xs
