@@ -2,17 +2,19 @@
 -- | Inventory management and party cycling.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( Suitability(..)
+  ( Suitability(..), ItemDialogState(..)
   , getGroupItem, getAnyItems, getStoreItem
   , memberCycle, memberBack, pickLeader
   , cursorPointerFloor, cursorPointerEnemy
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman, epsIncrHuman, tgtClearHuman
   , doLook, describeItemC, splitOKX
+  , projectHumanState, triggerSymbols
   ) where
 
 import Prelude ()
 import Prelude.Compat
 
+import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import Control.Monad (filterM, void, when)
 import qualified Data.Char as Char
@@ -55,6 +57,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
@@ -96,13 +99,14 @@ getGroupItem :: MonadClientUI m
              -> Bool      -- ^ whether to enable setting cursor with mouse
              -> [CStore]  -- ^ initial legal modes
              -> [CStore]  -- ^ legal modes after Calm taken into account
+             -> ItemDialogState  -- ^ the dialog state to start in
              -> m (SlideOrCmd ((ItemId, ItemFull), ItemDialogMode))
-getGroupItem psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm = do
-  let dialogState = if cursor then INoSuitable else ISuitable
+getGroupItem psuit prompt promptGeneric
+             cursor cLegalRaw cLegalAfterCalm initalState = do
   soc <- getFull psuit
                  (\_ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
                  (\_ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
-                 cursor cLegalRaw cLegalAfterCalm True False dialogState
+                 cursor cLegalRaw cLegalAfterCalm True False initalState
   case soc of
     Left sli -> return $ Left sli
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
@@ -1005,12 +1009,11 @@ doLook addMoreMsg = do
 -- | Create a list of item names.
 _floorItemOverlay :: MonadClientUI m
                   => LevelId -> Point
-                  -> m (SlideOrCmd (RequestTimed 'Ability.AbMoveItem))
+                  -> m (SlideOrCmd RequestUI)
 _floorItemOverlay _lid _p = describeItemC MOwned {-CFloor lid p-}
 
-describeItemC :: MonadClientUI m
-              => ItemDialogMode
-              -> m (SlideOrCmd (RequestTimed 'Ability.AbMoveItem))
+describeItemC :: forall m. MonadClientUI m
+              => ItemDialogMode -> m (SlideOrCmd RequestUI)
 describeItemC c = do
   let subject = partActor
       verbSha body activeItems = if calmEnough body activeItems
@@ -1070,30 +1073,43 @@ describeItemC c = do
         MStore CSha | not calmE ->
           Left <$> overlayToSlideshow "Not enough calm to take items from the shared stash, but here's the description." io
         MStore fromCStore -> do
-          let prompt2 = "Where to move the item?"
-              eqpFree = eqpFreeN b
-              fstores :: [(K.Key, (CStore, Text))]
+          keyb <- askBinding
+          let eqpFree = eqpFreeN b
+              moveItems toCStore = do
+                let k = itemK itemFull
+                    kToPick | toCStore == CEqp = min eqpFree k
+                            | otherwise = k
+                socK <- pickNumber True kToPick
+                case socK of
+                  Left slides -> return $ Left slides
+                  Right kChosen -> return $ Right $ ReqUITimed $ ReqMoveItems
+                                     [(iid, kChosen, fromCStore, toCStore)]
+              -- TODO: handle keys from config; take keys from keyb
+              fstores :: [(K.Key, m (SlideOrCmd RequestUI))]
               fstores =
-                filter ((/= fromCStore) . fst . snd) $
-                  [ (K.Char 'p', (CInv, "inventory 'p'ack")) ]
-                  ++ [ (K.Char 'e', (CEqp, "'e'quipment")) | eqpFree > 0 ]
-                  ++ [ (K.Char 's', (CSha, "shared 's'tash")) | calmE ]
-                  ++ [ (K.Char 'g', (CGround, "'g'round")) ]
-              choice = "[" <> T.intercalate ", " (map (snd . snd) fstores)
-                           <> ", ESC]"
-              keys = K.escKM : map (K.toKM K.NoModifier . K.Char) "epsg"
-          km <- displayChoiceLine (prompt2 <+> choice) io keys
-          case lookup (K.key km) fstores of
-            Nothing -> failWith "never mind"  -- canceled
-            Just (toCStore, _) -> do
-              let k = itemK itemFull
-                  kToPick | toCStore == CEqp = min eqpFree k
-                          | otherwise = k
-              socK <- pickNumber True kToPick
-              case socK of
-                Left slides -> return $ Left slides
-                Right kChosen -> return $ Right $ ReqMoveItems
-                                   [(iid, kChosen, fromCStore, toCStore)]
+                map (second moveItems)
+                    (filter ((/= fromCStore) . snd)
+                     $ [ (K.Char 'd', CGround) ]
+                       ++ [ (K.Char 'e', CEqp) | eqpFree > 0 ]
+                       ++ [ (K.Char 'p', CInv) ]
+                       ++ [ (K.Char 's', CSha) | calmE ])
+                ++ [ (K.Char 'a', return $ Right $ ReqUITimed
+                                         $ ReqApply iid fromCStore) ]
+                ++ [ ( K.Char 'f'
+                     , fmap ReqUITimed <$> projectHumanState [] INoAll ) ]
+                ++ [ (K.Esc, describeItemC c) ]
+              (_, (ov, kyxs)) = keyHelp keyb
+              renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
+              zipRenumber y = zipWith renumber [y..]
+              okx = (io <> ov, zipRenumber (length (overlay io) + 2) kyxs)
+              -- TODO: split okx; also handle io larger than screen size
+          (ekm, _) <- displayChoiceScreen False 0 [okx] [K.escKM]
+          -- TODO: with throw, move cursor afterwards and press RET
+          case ekm of
+            Left km -> case lookup (K.key km) fstores of
+              Nothing -> failWith "never mind"  -- illegal
+              Just m -> m
+            Right _slot -> assert `failure` ekm
         MOwned -> do
           -- We can't move items from MOwned, because different copies may come
           -- from different stores and we can't guess player's intentions.
@@ -1107,3 +1123,130 @@ describeItemC c = do
           Left <$> overlayToSlideshow prompt2 io
         MStats -> assert `failure` ggi
     Left slides -> return $ Left slides
+
+projectHumanState :: forall m. MonadClientUI m
+                  => [Trigger] -> ItemDialogState
+                  -> m (SlideOrCmd (RequestTimed 'Ability.AbProject))
+projectHumanState ts initalState = do
+  leader <- getLeaderUI
+  lidV <- viewedLevel
+  oldTgtMode <- getsClient stgtMode
+  -- Show the targeting line, temporarily.
+  modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode lidV}
+  -- Set cursor to the personal target, permanently.
+  tgt <- getsClient $ getTarget leader
+  modifyClient $ \cli -> cli {scursor = fromMaybe (scursor cli) tgt}
+  -- Let the user pick the item to fling.
+  let posFromCursor :: m (Either Msg Point)
+      posFromCursor = do
+        canAim <- aidTgtAims leader lidV Nothing
+        case canAim of
+          Right newEps -> do
+            -- Modify @seps@, permanently.
+            modifyClient $ \cli -> cli {seps = newEps}
+            mpos <- aidTgtToPos leader lidV Nothing
+            case mpos of
+              Nothing -> assert `failure` (tgt, leader, lidV)
+              Just pos -> do
+                munit <- projectCheck pos
+                case munit of
+                  Nothing -> return $ Right pos
+                  Just reqFail -> return $ Left $ showReqFailure reqFail
+          Left cause -> return $ Left cause
+  mitem <- projectItem ts initalState posFromCursor
+  outcome <- case mitem of
+    Right (iid, fromCStore) -> do
+      mpos <- posFromCursor
+      case mpos of
+        Right pos -> do
+          eps <- getsClient seps
+          return $ Right $ ReqProject pos eps iid fromCStore
+        Left cause -> failWith cause
+    Left sli -> return $ Left sli
+  modifyClient $ \cli -> cli {stgtMode = oldTgtMode}
+  return outcome
+
+projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
+projectCheck tpos = do
+  Kind.COps{cotile} <- getsState scops
+  leader <- getLeaderUI
+  eps <- getsClient seps
+  sb <- getsState $ getActorBody leader
+  let lid = blid sb
+      spos = bpos sb
+  Level{lxsize, lysize} <- getLevel lid
+  case bla lxsize lysize eps spos tpos of
+    Nothing -> return $ Just ProjectAimOnself
+    Just [] -> assert `failure` "project from the edge of level"
+                      `twith` (spos, tpos, sb)
+    Just (pos : _) -> do
+      lvl <- getLevel lid
+      let t = lvl `at` pos
+      if not $ Tile.isWalkable cotile t
+        then return $ Just ProjectBlockTerrain
+        else do
+          lab <- getsState $ posToActors pos lid
+          if all (bproj . snd) lab
+          then return Nothing
+          else return $ Just ProjectBlockActor
+
+projectItem :: forall m. MonadClientUI m
+            => [Trigger] -> ItemDialogState -> m (Either Msg Point)
+            -> m (SlideOrCmd (ItemId, CStore))
+projectItem ts initalState posFromCursor = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  activeItems <- activeItemsClient leader
+  actorSk <- actorSkillsClient leader
+  let skill = EM.findWithDefault 0 Ability.AbProject actorSk
+      calmE = calmEnough b activeItems
+      cLegalRaw = [CGround, CInv, CEqp, CSha]
+      cLegal | calmE = cLegalRaw
+             | otherwise = delete CSha cLegalRaw
+      (verb1, object1) = case ts of
+        [] -> ("aim", "item")
+        tr : _ -> (verb tr, object tr)
+      triggerSyms = triggerSymbols ts
+      psuitReq :: m (Either Msg (ItemFull -> Either ReqFailure Bool))
+      psuitReq = do
+        mpos <- posFromCursor
+        case mpos of
+          Left err -> return $ Left err
+          Right pos -> return $ Right $ \itemFull@ItemFull{itemBase} -> do
+            let legal = permittedProject triggerSyms False skill
+                                         itemFull b activeItems
+            case legal of
+              Left{} -> legal
+              Right False -> legal
+              Right True ->
+                Right $ totalRange itemBase >= chessDist (bpos b) pos
+      psuit :: m Suitability
+      psuit = do
+        mpsuitReq <- psuitReq
+        case mpsuitReq of
+          -- If target invalid, no item is considered a (suitable) missile.
+          Left err -> return $ SuitsNothing err
+          Right psuitReqFun -> return $ SuitsSomething $ \itemFull ->
+            case psuitReqFun itemFull of
+              Left _ -> False
+              Right suit -> suit
+      prompt = makePhrase ["What", object1, "to", verb1]
+      promptGeneric = "What to fling"
+  ggi <- getGroupItem psuit prompt promptGeneric True
+                      cLegalRaw cLegal initalState
+  case ggi of
+    Right ((iid, itemFull), MStore fromCStore) -> do
+      mpsuitReq <- psuitReq
+      case mpsuitReq of
+        Left err -> failWith err
+        Right psuitReqFun ->
+          case psuitReqFun itemFull of
+            Left reqFail -> failSer reqFail
+            Right _ -> return $ Right (iid, fromCStore)
+    Left slides -> return $ Left slides
+    _ -> assert `failure` ggi
+
+triggerSymbols :: [Trigger] -> [Char]
+triggerSymbols [] = []
+triggerSymbols (ApplyItem{symbol} : ts) = symbol : triggerSymbols ts
+triggerSymbols (_ : ts) = triggerSymbols ts

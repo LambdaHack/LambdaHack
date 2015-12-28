@@ -21,7 +21,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 
 data CmdCategory =
     CmdMainMenu | CmdSettingsMenu
-  | CmdMove | CmdItem | CmdTgt | CmdMeta | CmdMouse
+  | CmdMove | CmdItemMenu | CmdItem | CmdTgt | CmdMeta | CmdMouse
   | CmdInternal | CmdDebug | CmdMinimal
   deriving (Show, Read, Eq, Generic)
 
@@ -31,6 +31,7 @@ categoryDescription :: CmdCategory -> Text
 categoryDescription CmdMainMenu = "Main Menu"
 categoryDescription CmdSettingsMenu = "Settings Menu"
 categoryDescription CmdMove = "Terrain exploration and alteration"
+categoryDescription CmdItemMenu = "Item use"
 categoryDescription CmdItem = "Item use"
 categoryDescription CmdTgt = "Aiming and targeting"
 categoryDescription CmdMeta = "Assorted"

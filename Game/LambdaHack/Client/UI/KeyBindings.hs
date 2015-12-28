@@ -68,7 +68,7 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   }
 
 -- | Produce a set of help screens from the key bindings.
-keyHelp :: Binding -> [OKX]
+keyHelp :: Binding -> ([OKX], OKX)
 keyHelp Binding{..} =
   let
     movBlurb =
@@ -144,7 +144,7 @@ keyHelp Binding{..} =
       in (toOverlay $ header ++ keyTable ++ footer, kxs)
     okxs = okxsN 16
   in
-    [ ( toOverlay $
+   ([ ( toOverlay $
           [casualDescription <+> "(1/2). [press SPACE to see more]"]
           ++ [""] ++ movText ++ [moreMsg]
       , [(Left K.spaceKM, (length movText + 1, 0, maxBound))])
@@ -180,3 +180,5 @@ keyHelp Binding{..} =
          , [ (Left K.pgupKM, (len + 1, 0, maxBound))
            , (Left K.escKM, (len + 2, 0, maxBound))] )
     ]
+   , okxsN 10 CmdItemMenu [fmts "", keyCaptionN 10] [fmts ""]
+   )

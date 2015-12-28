@@ -39,7 +39,7 @@ cmdAction cmd = case cmd of
   Wait -> Right <$> fmap ReqUITimed waitHuman
   MoveItem cLegalRaw toCStore mverb _ auto ->
     fmap ReqUITimed <$> moveItemHuman cLegalRaw toCStore mverb auto
-  DescribeItem cstore -> fmap ReqUITimed <$> describeItemHuman cstore
+  DescribeItem cstore -> describeItemHuman cstore
   Project ts -> fmap ReqUITimed <$> projectHuman ts
   Apply ts -> fmap ReqUITimed <$> applyHuman ts
   AlterDir ts -> fmap ReqUITimed <$> alterDirHuman ts

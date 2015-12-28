@@ -104,25 +104,11 @@ standardKeys = KeyKind
            ]))
 
       -- Item use
-      , ("E", ([CmdItem, CmdMinimal], DescribeItem $ MStore CEqp))
-      , ("P", ([CmdItem], DescribeItem $ MStore CInv))
-      , ("S", ([CmdItem], DescribeItem $ MStore CSha))
-      , ("A", ([CmdItem], DescribeItem MOwned))
-      , ("G", ([CmdItem], DescribeItem $ MStore CGround))
-      , ("@", ([CmdItem], DescribeItem $ MStore COrgan))
-      , ("exclam", ([CmdItem], DescribeItem MStats))
-      , ("g", ([CmdItem, CmdMinimal],
-               MoveItem [CGround] CEqp (Just "get") "items" True))
-      , ("d", ([CmdItem], MoveItem [CEqp, CInv, CSha] CGround
-                                   Nothing "items" False))
-      , ("e", ([CmdItem], MoveItem [CGround, CInv, CSha] CEqp
-                                   Nothing "items" False))
-      , ("p", ([CmdItem], MoveItem [CGround, CEqp, CSha] CInv
-                                   Nothing "items into inventory"
-                                   False))
-      , ("s", ([CmdItem], MoveItem [CGround, CInv, CEqp] CSha
-                                   Nothing "and share items" False))
-      , ("a", ([CmdItem, CmdMinimal], Apply
+      , ("f", ([CmdItem, CmdItemMenu], Project
+           [ApplyItem { verb = "fling"
+                      , object = "projectile"
+                      , symbol = ' ' }]))
+      , ("a", ([CmdItem, CmdItemMenu], Apply
            [ ApplyItem { verb = "apply"
                        , object = "consumable"
                        , symbol = ' ' }
@@ -133,16 +119,31 @@ standardKeys = KeyKind
                        , object = "scroll"
                        , symbol = '?' }
            ]))
+      , ("e", ( [CmdItem, CmdItemMenu]
+              , MoveItem [CGround, CInv, CSha] CEqp Nothing "item" False) )
+      , ("p", ( [CmdItem, CmdItemMenu]
+              , MoveItem [CGround, CEqp, CSha] CInv Nothing
+                         "item into inventory" False) )
+      , ("s", ( [CmdItem, CmdItemMenu]
+              , MoveItem [CGround, CInv, CEqp] CSha Nothing
+                         "and share item" False) )
+      , ("d", ( [CmdItem, CmdItemMenu]
+              , MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False) )
+      , ("E", ([CmdItem, CmdMinimal], DescribeItem $ MStore CEqp))
+      , ("P", ([CmdItem], DescribeItem $ MStore CInv))
+      , ("S", ([CmdItem], DescribeItem $ MStore CSha))
+      , ("A", ([CmdItem], DescribeItem MOwned))
+      , ("G", ([CmdItem], DescribeItem $ MStore CGround))
+      , ("@", ([CmdItem], DescribeItem $ MStore COrgan))
+      , ("exclam", ([CmdItem], DescribeItem MStats))
+      , ("g", ([CmdItem, CmdMinimal],
+               MoveItem [CGround] CEqp (Just "get") "items" True))
       , ("q", ([CmdItem], Apply [ApplyItem { verb = "quaff"
                                            , object = "potion"
                                            , symbol = '!' }]))
       , ("r", ([CmdItem], Apply [ApplyItem { verb = "read"
                                            , object = "scroll"
                                            , symbol = '?' }]))
-      , ("f", ([CmdItem, CmdMinimal], Project
-           [ApplyItem { verb = "fling"
-                      , object = "projectile"
-                      , symbol = ' ' }]))
       , ("t", ([CmdItem], Project [ApplyItem { verb = "throw"
                                              , object = "missile"
                                              , symbol = '|' }]))

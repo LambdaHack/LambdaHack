@@ -369,136 +369,14 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
 
 -- | Display items from a given container store and describe the chosen one.
 describeItemHuman :: MonadClientUI m
-                  => ItemDialogMode -> m (SlideOrCmd (RequestTimed 'AbMoveItem))
+                  => ItemDialogMode -> m (SlideOrCmd RequestUI)
 describeItemHuman = describeItemC
 
 -- * Project
 
-projectHuman :: forall m. MonadClientUI m
+projectHuman :: MonadClientUI m
              => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbProject))
-projectHuman ts = do
-  leader <- getLeaderUI
-  lidV <- viewedLevel
-  oldTgtMode <- getsClient stgtMode
-  -- Show the targeting line, temporarily.
-  modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode lidV}
-  -- Set cursor to the personal target, permanently.
-  tgt <- getsClient $ getTarget leader
-  modifyClient $ \cli -> cli {scursor = fromMaybe (scursor cli) tgt}
-  -- Let the user pick the item to fling.
-  let posFromCursor :: m (Either Msg Point)
-      posFromCursor = do
-        canAim <- aidTgtAims leader lidV Nothing
-        case canAim of
-          Right newEps -> do
-            -- Modify @seps@, permanently.
-            modifyClient $ \cli -> cli {seps = newEps}
-            mpos <- aidTgtToPos leader lidV Nothing
-            case mpos of
-              Nothing -> assert `failure` (tgt, leader, lidV)
-              Just pos -> do
-                munit <- projectCheck pos
-                case munit of
-                  Nothing -> return $ Right pos
-                  Just reqFail -> return $ Left $ showReqFailure reqFail
-          Left cause -> return $ Left cause
-  mitem <- projectItem ts posFromCursor
-  outcome <- case mitem of
-    Right (iid, fromCStore) -> do
-      mpos <- posFromCursor
-      case mpos of
-        Right pos -> do
-          eps <- getsClient seps
-          return $ Right $ ReqProject pos eps iid fromCStore
-        Left cause -> failWith cause
-    Left sli -> return $ Left sli
-  modifyClient $ \cli -> cli {stgtMode = oldTgtMode}
-  return outcome
-
-projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
-projectCheck tpos = do
-  Kind.COps{cotile} <- getsState scops
-  leader <- getLeaderUI
-  eps <- getsClient seps
-  sb <- getsState $ getActorBody leader
-  let lid = blid sb
-      spos = bpos sb
-  Level{lxsize, lysize} <- getLevel lid
-  case bla lxsize lysize eps spos tpos of
-    Nothing -> return $ Just ProjectAimOnself
-    Just [] -> assert `failure` "project from the edge of level"
-                      `twith` (spos, tpos, sb)
-    Just (pos : _) -> do
-      lvl <- getLevel lid
-      let t = lvl `at` pos
-      if not $ Tile.isWalkable cotile t
-        then return $ Just ProjectBlockTerrain
-        else do
-          lab <- getsState $ posToActors pos lid
-          if all (bproj . snd) lab
-          then return Nothing
-          else return $ Just ProjectBlockActor
-
-projectItem :: forall m. MonadClientUI m
-            => [Trigger] -> m (Either Msg Point)
-            -> m (SlideOrCmd (ItemId, CStore))
-projectItem ts posFromCursor = do
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  activeItems <- activeItemsClient leader
-  actorSk <- actorSkillsClient leader
-  let skill = EM.findWithDefault 0 AbProject actorSk
-      calmE = calmEnough b activeItems
-      cLegalRaw = [CGround, CInv, CEqp, CSha]
-      cLegal | calmE = cLegalRaw
-             | otherwise = delete CSha cLegalRaw
-      (verb1, object1) = case ts of
-        [] -> ("aim", "item")
-        tr : _ -> (verb tr, object tr)
-      triggerSyms = triggerSymbols ts
-      psuitReq :: m (Either Msg (ItemFull -> Either ReqFailure Bool))
-      psuitReq = do
-        mpos <- posFromCursor
-        case mpos of
-          Left err -> return $ Left err
-          Right pos -> return $ Right $ \itemFull@ItemFull{itemBase} -> do
-            let legal = permittedProject triggerSyms False skill
-                                         itemFull b activeItems
-            case legal of
-              Left{} -> legal
-              Right False -> legal
-              Right True ->
-                Right $ totalRange itemBase >= chessDist (bpos b) pos
-      psuit :: m Suitability
-      psuit = do
-        mpsuitReq <- psuitReq
-        case mpsuitReq of
-          -- If target invalid, no item is considered a (suitable) missile.
-          Left err -> return $ SuitsNothing err
-          Right psuitReqFun -> return $ SuitsSomething $ \itemFull ->
-            case psuitReqFun itemFull of
-              Left _ -> False
-              Right suit -> suit
-      prompt = makePhrase ["What", object1, "to", verb1]
-      promptGeneric = "What to fling"
-  ggi <- getGroupItem psuit prompt promptGeneric True
-                      cLegalRaw cLegal
-  case ggi of
-    Right ((iid, itemFull), MStore fromCStore) -> do
-      mpsuitReq <- psuitReq
-      case mpsuitReq of
-        Left err -> failWith err
-        Right psuitReqFun ->
-          case psuitReqFun itemFull of
-            Left reqFail -> failSer reqFail
-            Right _ -> return $ Right (iid, fromCStore)
-    Left slides -> return $ Left slides
-    _ -> assert `failure` ggi
-
-triggerSymbols :: [Trigger] -> [Char]
-triggerSymbols [] = []
-triggerSymbols (ApplyItem{symbol} : ts) = symbol : triggerSymbols ts
-triggerSymbols (_ : ts) = triggerSymbols ts
+projectHuman ts = projectHumanState ts INoSuitable
 
 -- * Apply
 
@@ -524,7 +402,7 @@ applyHuman ts = do
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What to apply"
   ggi <- getGroupItem (return $ SuitsSomething $ either (const False) id . p)
-                      prompt promptGeneric False cLegalRaw cLegal
+                      prompt promptGeneric False cLegalRaw cLegal ISuitable
   case ggi of
     Right ((iid, itemFull), MStore fromCStore) ->
       case p itemFull of
@@ -840,7 +718,7 @@ helpHuman cmdAction = do
   keyb <- askBinding
   menuIxHelp <- getsClient smenuIxHelp
   (ekm, pointer) <-
-    displayChoiceScreen True menuIxHelp (keyHelp keyb) [K.spaceKM]
+    displayChoiceScreen True menuIxHelp (fst $ keyHelp keyb) [K.spaceKM]
   modifyClient $ \cli -> cli {smenuIxHelp = pointer}
   case ekm of
     Left km -> case M.lookup km{K.pointer=Nothing} $ bcmdMap keyb of
