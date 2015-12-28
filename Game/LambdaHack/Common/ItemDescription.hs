@@ -1,7 +1,7 @@
 -- | Descripitons of items.
 module Game.LambdaHack.Common.ItemDescription
   ( partItemN, partItem, partItemWs, partItemAW, partItemMediumAW, partItemWownW
-  , itemDesc, textAllAE, viewItem
+  , textAllAE, viewItem
   ) where
 
 import Data.List
@@ -10,7 +10,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.EffectDescription
@@ -175,34 +174,6 @@ partItemWownW :: MU.Part -> CStore -> Time -> ItemFull -> MU.Part
 partItemWownW partA c localTime itemFull =
   let (_, name, stats) = partItemN 4 4 c localTime itemFull
   in MU.WownW partA $ MU.Phrase [name, stats]
-
-itemDesc :: CStore -> Time -> ItemFull -> Overlay
-itemDesc c localTime itemFull =
-  let (_, name, stats) = partItemN 10 100 c localTime itemFull
-      nstats = makePhrase [name, stats]
-      desc = case itemDisco itemFull of
-        Nothing -> "This item is as unremarkable as can be."
-        Just ItemDisco{itemKind} -> IK.idesc itemKind
-      weight = jweight (itemBase itemFull)
-      (scaledWeight, unitWeight)
-        | weight > 1000 =
-          (tshow $ fromIntegral weight / (1000 :: Double), "kg")
-        | weight > 0 = (tshow weight, "g")
-        | otherwise = ("", "")
-      ln = abs $ fromEnum $ jlid (itemBase itemFull)
-      colorSymbol = uncurry (flip Color.AttrChar) (viewItem $ itemBase itemFull)
-      lxsize = fst normalLevelBound + 1  -- TODO
-      blurb =
-        "D"  -- dummy
-        <+> nstats
-        <> ":"
-        <+> desc
-        <+> makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
-        <+> makeSentence ["First found on level", MU.Text $ tshow ln]
-      splitBlurb = splitText lxsize blurb
-      attrBlurb = toOverlay splitBlurb
-      f line = [colorSymbol] ++ drop 1 line
-  in updateOverlayLine 0 f attrBlurb
 
 viewItem :: Item -> (Char, Color.Attr)
 viewItem item = ( jsymbol item

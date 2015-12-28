@@ -33,7 +33,7 @@ import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.InventoryClient
+import Game.LambdaHack.Client.UI.HandleHelperClient
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay

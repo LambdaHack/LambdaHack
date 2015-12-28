@@ -135,6 +135,7 @@ library
                       Game.LambdaHack.Client.UI.Frontend.Chosen,
                       Game.LambdaHack.Client.UI.Frontend.Common
                       Game.LambdaHack.Client.UI.Frontend.Std,
+                      Game.LambdaHack.Client.UI.HandleHelperClient,
                       Game.LambdaHack.Client.UI.HandleHumanGlobalClient,
                       Game.LambdaHack.Client.UI.HandleHumanLocalClient,
                       Game.LambdaHack.Client.UI.HandleHumanClient,

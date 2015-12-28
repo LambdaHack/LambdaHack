@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.WidgetClient
   ( displayMore, displayYesNo, displayChoiceScreen, displayChoiceLine
   , displayPush, describeMainKeys
   , promptToSlideshow, overlayToSlideshow
-  , animate, fadeOutOrIn, msgPromptAI
+  , animate, fadeOutOrIn
   ) where
 
 import Prelude ()
@@ -219,13 +219,6 @@ overlayToSlideshow prompt overlay = do
   sreport <- getsClient sreport
   let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
   return $! splitOverlay (lysize + 1) msg overlay
-
-msgPromptAI :: MonadClientUI m => m Msg
-msgPromptAI = do
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  let underAI = isAIFact fact
-  return $! if underAI then "[press ESC for Main Menu]" else ""
 
 -- TODO: restrict the animation to 'per' before drawing.
 -- | Render animations on top of the current screen frame.

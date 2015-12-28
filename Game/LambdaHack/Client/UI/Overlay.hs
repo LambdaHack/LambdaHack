@@ -3,10 +3,10 @@
 module Game.LambdaHack.Client.UI.Overlay
   ( AttrLine, toAttrLine, moreMsgAttr
   , Overlay(overlay), toOverlayRaw, truncateToOverlay, toOverlay
-  , updateOverlayLine, splitReport, renderHistory
+  , updateOverlayLine, splitReport, renderHistory, itemDesc
   , SingleFrame(..), Frames, overlayFrame
   , Slideshow(slideshow), splitOverlay, toSlideshow
-  , KYX, OKX, keyOfEKM
+  , KYX, OKX, keyOfEKM, splitOverlayOKX
   ) where
 
 import Prelude ()
@@ -15,14 +15,19 @@ import Prelude.Compat
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Time
+import qualified Game.LambdaHack.Content.ItemKind as IK
 
 type AttrLine = [AttrChar]
 
@@ -62,6 +67,34 @@ updateOverlayLine n f Overlay{overlay} =
 -- We assume the width of the messages line is the same as of level map.
 splitReport :: X -> Report -> Overlay
 splitReport w r = toOverlay $ splitText w $ renderReport r
+
+itemDesc :: CStore -> Time -> ItemFull -> Overlay
+itemDesc c localTime itemFull =
+  let (_, name, stats) = partItemN 10 100 c localTime itemFull
+      nstats = makePhrase [name, stats]
+      desc = case itemDisco itemFull of
+        Nothing -> "This item is as unremarkable as can be."
+        Just ItemDisco{itemKind} -> IK.idesc itemKind
+      weight = jweight (itemBase itemFull)
+      (scaledWeight, unitWeight)
+        | weight > 1000 =
+          (tshow $ fromIntegral weight / (1000 :: Double), "kg")
+        | weight > 0 = (tshow weight, "g")
+        | otherwise = ("", "")
+      ln = abs $ fromEnum $ jlid (itemBase itemFull)
+      colorSymbol = uncurry (flip Color.AttrChar) (viewItem $ itemBase itemFull)
+      lxsize = fst normalLevelBound + 1  -- TODO
+      blurb =
+        "D"  -- dummy
+        <+> nstats
+        <> ":"
+        <+> desc
+        <+> makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
+        <+> makeSentence ["First found on level", MU.Text $ tshow ln]
+      splitBlurb = splitText lxsize blurb
+      attrBlurb = toOverlay splitBlurb
+      f line = [colorSymbol] ++ drop 1 line
+  in updateOverlayLine 0 f attrBlurb
 
 -- | An overlay that fits on the screen (or is meant to be truncated on display)
 -- and is padded to fill the whole screen
@@ -150,3 +183,30 @@ keyOfEKM _ (Left km) = Just km
 keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
   Just $ K.toKM K.NoModifier $ K.Char slotChar
 keyOfEKM _ _ = Nothing
+
+-- TODO: assert that ov0 nonempty and perhaps that kxs0 not too short
+-- (or should we just keep the rest of the overlay unclickable?)
+splitOverlayOKX :: Y -> Overlay -> OKX -> [OKX]
+splitOverlayOKX yspace omsg (ov0, kxs0) =
+  let msg = overlay omsg
+      msg0 = if yspace - length msg - 1 <= 0  -- all space taken by @msg@
+             then take 1 msg
+             else msg
+      ls0 = overlay ov0
+      len = length msg0
+      renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
+      zipRenumber y = zipWith renumber [y..]
+      splitO ls kxs =
+        let (pre, post) = splitAt (yspace - 1) $ msg0 ++ ls
+        in if null post
+           then  -- all fits on screen
+             let bottomMsgAttr = toAttrLine $
+                   T.replicate (length $ last pre) " "
+             in [( toOverlayRaw $ pre ++ [bottomMsgAttr]
+                 , zipRenumber len kxs )]
+           else let (preX, postX) = splitAt (yspace - len - 1) kxs
+                    rest = splitO post postX
+                in ( toOverlayRaw (pre ++ [moreMsgAttr])
+                   , zipRenumber len preX )
+                   : rest
+  in splitO ls0 kxs0

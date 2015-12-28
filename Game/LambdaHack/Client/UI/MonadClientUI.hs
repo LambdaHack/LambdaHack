@@ -14,10 +14,10 @@ module Game.LambdaHack.Client.UI.MonadClientUI
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, frontendShutdown
-  , scoreToSlideshow
+  , scoreToSlideshow, msgPromptAI
   , getLeaderUI, getArenaUI, viewedLevel
   , targetDescLeader, targetDescCursor
-  , leaderTgtToPos, leaderTgtAims, cursorToPos
+  , leaderTgtToPos, leaderTgtAims, cursorToPos, splitOKX
   ) where
 
 import Prelude ()
@@ -428,3 +428,19 @@ cursorToPos = do
   case mleader of
     Nothing -> return Nothing
     Just aid -> aidTgtToPos aid lidV $ Just scursor
+
+splitOKX :: MonadClientUI m => Y -> Msg -> OKX -> m [OKX]
+splitOKX y prompt okx = do
+  promptAI <- msgPromptAI
+  lid <- getArenaUI
+  Level{lxsize} <- getLevel lid  -- TODO: screen length or viewLevel
+  sreport <- getsClient sreport
+  let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
+  return $! splitOverlayOKX y msg okx
+
+msgPromptAI :: MonadClientUI m => m Msg
+msgPromptAI = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  let underAI = isAIFact fact
+  return $! if underAI then "[press ESC for Main Menu]" else ""
