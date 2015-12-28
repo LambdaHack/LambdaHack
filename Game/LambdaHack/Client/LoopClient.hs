@@ -7,8 +7,10 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
+import System.FilePath
 
 import Game.LambdaHack.Atomic
+import Game.LambdaHack.Client.FileClient
 import Game.LambdaHack.Client.HandleResponseClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
@@ -23,28 +25,52 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
+import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 
-initCli :: MonadClient m => DebugModeCli -> (State -> m ()) -> m Bool
-initCli sdebugCli putSt = do
+restoreGame :: MonadClient m => m (Maybe (State, StateClient, SessionUI))
+restoreGame = do
+  bench <- getsClient $ sbenchmark . sdebugCli
+  if bench then return Nothing
+  else do
+    Kind.COps{corule} <- getsState scops
+    let stdRuleset = Kind.stdRuleset corule
+        pathsDataFile = rpathsDataFile stdRuleset
+        cfgUIName = rcfgUIName stdRuleset
+    side <- getsClient sside
+    isAI <- getsClient sisAI
+    prefix <- getsClient $ ssavePrefixCli . sdebugCli
+    let copies = [( "GameDefinition" </> cfgUIName <.> "default"
+                  , cfgUIName <.> "ini" )]
+        name = prefix <.> saveName side isAI
+    liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF
+                              name copies pathsDataFile
+
+initCli :: MonadClient m
+        => DebugModeCli
+        -> (State -> m ())
+        -> (SessionUI -> m ())
+        -> m Bool
+initCli sdebugCli putSt putSess = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
   modifyClient $ \cli -> cli {sdebugCli}
   restored <- restoreGame
   case restored of
-    Just (s, cli) | not $ snewGameCli sdebugCli -> do  -- Restore the game.
+    Just (s, cli, sess) | not $ snewGameCli sdebugCli -> do  -- Restore the game.
       let sCops = updateCOps (const cops) s
       putSt sCops
+      putSess sess
       putClient cli {sdebugCli}
       return True
     _ -> do  -- First visit ever, use the initial state.
       -- But preserve the previous history, if any (--newGame).
       case restored of
-        Just (_, cliR) -> modifyClient $ \cli -> cli {shistory = shistory cliR}
+        Just (_, cliR, _) -> modifyClient $ \cli -> cli {shistory = shistory cliR}
         Nothing -> return ()
       return False
 
@@ -56,8 +82,10 @@ loopAI :: ( MonadAtomic m
 loopAI sdebugCli = do
   modifyClient $ \cli -> cli {sisAI = True}
   side <- getsClient sside
-  restored <- initCli sdebugCli
-              $ \s -> handleResponseAI $ RespUpdAtomicAI $ UpdResumeServer s
+  restored <-
+    initCli sdebugCli
+            (\s -> handleResponseAI $ RespUpdAtomicAI $ UpdResumeServer s)
+            (const $ return ())
   cmd1 <- receiveResponse
   case (restored, cmd1) of
     (True, RespUpdAtomicAI UpdResume{}) -> return ()
@@ -98,8 +126,10 @@ loopUI copsClient sconfig sdebugCli = do
   Kind.COps{corule} <- getsState scops
   let title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside
-  restored <- initCli sdebugCli
-              $ \s -> handleResponseUI $ RespUpdAtomicUI $ UpdResumeServer s
+  restored <-
+    initCli sdebugCli
+            (\s -> handleResponseUI $ RespUpdAtomicUI $ UpdResumeServer s)
+            putSession
   cmd1 <- receiveResponse
   case (restored, cmd1) of
     (True, RespUpdAtomicUI UpdResume{}) -> do

@@ -2,11 +2,11 @@
 module Game.LambdaHack.Client.MonadClient
   ( -- * Basic client monad
     MonadClient( getClient, getsClient, modifyClient, putClient
-               , saveChanClient  -- exposed only to be implemented, not used
+               , saveClient  -- exposed only to be implemented, not used
                , liftIO  -- exposed only to be implemented, not used
                )
     -- * Assorted primitives
-  , debugPrint, saveClient, saveName, restoreGame, removeServerSave
+  , debugPrint, saveName, removeServerSave
   , defaultHistory, rndToAction
   ) where
 
@@ -23,37 +23,27 @@ import Game.LambdaHack.Client.FileClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Save as Save
-import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.RuleKind
 
 class MonadStateRead m => MonadClient m where
-  getClient      :: m StateClient
-  getsClient     :: (StateClient -> a) -> m a
-  modifyClient   :: (StateClient -> StateClient) -> m ()
-  putClient      :: StateClient -> m ()
+  getClient    :: m StateClient
+  getsClient   :: (StateClient -> a) -> m a
+  modifyClient :: (StateClient -> StateClient) -> m ()
+  putClient    :: StateClient -> m ()
   -- We do not provide a MonadIO instance, so that outside of Action/
   -- nobody can subvert the action monads by invoking arbitrary IO.
-  liftIO         :: IO a -> m a
-  saveChanClient :: m (Save.ChanSave (State, StateClient))
+  liftIO       :: IO a -> m a
+  saveClient   :: m ()
 
 debugPrint :: MonadClient m => Text -> m ()
 debugPrint t = do
   sdbgMsgCli <- getsClient $ sdbgMsgCli . sdebugCli
   when sdbgMsgCli $ liftIO $ Save.delayPrint t
-
-saveClient :: MonadClient m => m ()
-saveClient = do
-  s <- getState
-  cli <- getClient
-  toSave <- saveChanClient
-  liftIO $ Save.saveToChan toSave (s, cli)
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI =
@@ -62,24 +52,6 @@ saveName side isAI =
       then "human_" ++ show n
       else "computer_" ++ show (-n))
      ++ if isAI then ".ai.sav" else ".ui.sav"
-
-restoreGame :: MonadClient m => m (Maybe (State, StateClient))
-restoreGame = do
-  bench <- getsClient $ sbenchmark . sdebugCli
-  if bench then return Nothing
-  else do
-    Kind.COps{corule} <- getsState scops
-    let stdRuleset = Kind.stdRuleset corule
-        pathsDataFile = rpathsDataFile stdRuleset
-        cfgUIName = rcfgUIName stdRuleset
-    side <- getsClient sside
-    isAI <- getsClient sisAI
-    prefix <- getsClient $ ssavePrefixCli . sdebugCli
-    let copies = [( "GameDefinition" </> cfgUIName <.> "default"
-                  , cfgUIName <.> "ini" )]
-        name = prefix <.> saveName side isAI
-    liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF
-                              name copies pathsDataFile
 
 -- | Assuming the client runs on the same machine and for the same
 -- user as the server, move the server savegame out of the way.

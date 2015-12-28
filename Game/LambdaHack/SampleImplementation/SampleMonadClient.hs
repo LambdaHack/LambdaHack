@@ -41,9 +41,9 @@ data CliState resp req = CliState
   , cliClient  :: !StateClient  -- ^ current client state
   , cliDict    :: !(ChanServer resp req)
                                 -- ^ this client connection information
-  , cliToSave  :: !(Save.ChanSave (State, StateClient))
+  , cliToSave  :: !(Save.ChanSave (State, StateClient, SessionUI))
                                 -- ^ connection to the save thread
-  , cliSession :: SessionUI     -- ^ UI setup data, empty for AI clients
+  , cliSession :: SessionUI     -- ^ UI state, empty for AI clients
   }
 
 -- | Client state transformation monad.
@@ -73,13 +73,22 @@ instance MonadClient (CliImplementation resp req) where
     let newCliS = cliS {cliClient = s}
     in newCliS `seq` ((), newCliS)
   liftIO         = CliImplementation . IO.liftIO
-  saveChanClient = CliImplementation $ gets cliToSave
+  saveClient = CliImplementation $ do
+    toSave <- gets cliToSave
+    s <- gets cliState
+    cli <- gets cliClient
+    sess <- gets cliSession
+    IO.liftIO $ Save.saveToChan toSave (s, cli, sess)
 
 instance MonadClientUI (CliImplementation resp req) where
+  getSession    = CliImplementation $ gets cliSession
+  getsSession f  = CliImplementation $ gets $ f . cliSession
+  modifySession f = CliImplementation $ state $ \cliS ->
+    let newCliS = cliS {cliSession = f $ cliSession cliS}
+    in newCliS `seq` ((), newCliS)
   putSession   s = CliImplementation $ state $ \cliS ->
     let newCliS = cliS {cliSession = s}
     in newCliS `seq` ((), newCliS)
-  getsSession f  = CliImplementation $ gets $ f . cliSession
 
 instance MonadClientReadResponse resp (CliImplementation resp req) where
   receiveResponse     = CliImplementation $ do
@@ -104,7 +113,7 @@ executorCli :: Kind.COps
             -> ChanServer resp req
             -> IO ()
 executorCli cops m fid cliDict =
-  let saveFile (_, cli) =
+  let saveFile (_, cli, _) =
         ssavePrefixCli (sdebugCli cli)
         <.> saveName (sside cli) (sisAI cli)
       totalState cliToSave = CliState

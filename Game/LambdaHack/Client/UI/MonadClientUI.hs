@@ -2,8 +2,10 @@
 -- | Client monad for interacting with a human through UI.
 module Game.LambdaHack.Client.UI.MonadClientUI
   ( -- * Client UI monad
-    MonadClientUI( putSession
-                 , getsSession -- exposed only to be implemented, not used
+    MonadClientUI( getSession
+                 , getsSession
+                 , modifySession
+                 , putSession
                  )
   , SessionUI(..)
     -- * Display and key input
@@ -25,6 +27,7 @@ import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
 import Control.Monad (when)
+import Data.Binary
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
@@ -62,20 +65,26 @@ import Game.LambdaHack.Content.ModeKind
 mapStartY :: Y
 mapStartY = 1
 
--- | The information that is constant across a client playing session,
--- including many consecutive games in a single session,
--- but is completely disregarded and reset when a new playing session starts.
--- This includes a frontend session and keybinding info.
+-- | The information that is used across a client playing session,
+-- including many consecutive games in a single session.
+-- Some of it is save, some is reset when a new playing session starts.
+-- An important component is a frontend session.
 data SessionUI = SessionUI
   { schanF   :: !ChanFrontend       -- ^ connection with the frontend
   , sbinding :: !Binding            -- ^ binding of keys to commands
   , sconfig  :: !Config
   }
 
+instance Binary SessionUI where
+  put _ = undefined
+  get = undefined
+
 -- | The monad that gives the client access to UI operations.
 class MonadClient m => MonadClientUI m where
-  putSession  :: SessionUI -> m ()
+  getSession  :: m SessionUI
   getsSession  :: (SessionUI -> a) -> m a
+  modifySession :: (SessionUI -> SessionUI) -> m ()
+  putSession  :: SessionUI -> m ()
 
 -- | Write a UI request to the frontend and read a corresponding reply.
 connFrontend :: MonadClientUI m => FrontReq a -> m a
