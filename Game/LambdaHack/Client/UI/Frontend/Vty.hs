@@ -3,9 +3,11 @@ module Game.LambdaHack.Client.UI.Frontend.Vty
   ( startup, frontendName
   ) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Control.Concurrent.Async
 import Control.Monad
-import Data.Default
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
@@ -28,7 +30,7 @@ frontendName = "vty"
 -- | Starts the main program loop using the frontend input and output.
 startup :: DebugModeCli -> IO RawFrontend
 startup _sdebugCli = do
-  svty <- mkVty def
+  svty <- mkVty mempty
   let sess = FrontendSession{..}
   rf <- createRawFrontend (display sess) (Vty.shutdown svty)
   let storeKeys :: IO ()
