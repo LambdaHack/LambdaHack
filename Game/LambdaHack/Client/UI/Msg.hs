@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Game messages displayed on top of the screen for the player to read.
-module Game.LambdaHack.Common.Msg
+module Game.LambdaHack.Client.UI.Msg
   ( Msg
   , moreMsg, endMsg, yesnoMsg
   , splitText

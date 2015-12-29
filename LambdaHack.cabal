@@ -167,7 +167,7 @@ library
                       Game.LambdaHack.Common.Level,
                       Game.LambdaHack.Common.Misc,
                       Game.LambdaHack.Common.MonadStateRead,
-                      Game.LambdaHack.Common.Msg,
+                      Game.LambdaHack.Client.UI.Msg,
                       Game.LambdaHack.Common.Perception,
                       Game.LambdaHack.Common.PointArray,
                       Game.LambdaHack.Common.Point,

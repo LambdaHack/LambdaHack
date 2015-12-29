@@ -21,7 +21,7 @@ import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Time
 
 -- | The information that is used across a client playing session,
