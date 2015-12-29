@@ -39,6 +39,7 @@ import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
@@ -67,7 +68,8 @@ humanCommand = do
   -- UI player input that start a player move, which is an overkill,
   -- but doesn't slow screensavers, because they are UI,
   -- but not human.
-  modifyClient $ \cli -> cli {sbfsD = EM.empty, slastLost = ES.empty}
+  modifyClient $ \cli -> cli {sbfsD = EM.empty}
+  modifySession $ \sess -> sess {slastLost = ES.empty}
   let loop :: Either Bool Overlay -> m RequestUI
       loop mover = do
         over <- case mover of
@@ -79,15 +81,15 @@ humanCommand = do
           Right bLast ->
             -- Display the last generated slide while waiting for the next key.
             return bLast
-        (seqCurrent, seqPrevious, k) <- getsClient slastRecord
+        (seqCurrent, seqPrevious, k) <- getsSession slastRecord
         case k of
           0 -> do
             let slastRecord = ([], seqCurrent, 0)
-            modifyClient $ \cli -> cli {slastRecord}
+            modifySession $ \sess -> sess {slastRecord}
           _ -> do
             let slastRecord = ([], seqCurrent ++ seqPrevious, k - 1)
-            modifyClient $ \cli -> cli {slastRecord}
-        lastPlay <- getsClient slastPlay
+            modifySession $ \sess -> sess {slastRecord}
+        lastPlay <- getsSession slastPlay
         km <- promptGetKey over False []
         -- Messages shown, so update history and reset current report.
         when (null lastPlay) recordHistory
@@ -98,9 +100,9 @@ humanCommand = do
             Just (_, cats, cmd) | CmdMainMenu `notElem` cats
                                   && CmdSettingsMenu `notElem` cats -> do
               -- Query and clear the last command key.
-              modifyClient $ \cli -> cli
-                {swaitTimes = if swaitTimes cli > 0
-                              then - swaitTimes cli
+              modifySession $ \sess -> sess
+                {swaitTimes = if swaitTimes sess > 0
+                              then - swaitTimes sess
                               else 0}
               cmdHumanSem cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
@@ -118,7 +120,7 @@ humanCommand = do
             let sli = slideshow slides
             mLast <- case sli of
               [] -> do
-                stgtMode <- getsClient stgtMode
+                stgtMode <- getsSession stgtMode
                 return $ Left $ isJust stgtMode
               [sLast] ->
                 -- Avoid displaying the single slide twice.

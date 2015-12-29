@@ -53,6 +53,7 @@ import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.RunClient
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
@@ -83,7 +84,7 @@ moveRunHuman :: MonadClientUI m
              => Bool -> Bool -> Bool -> Bool -> Vector
              -> m (SlideOrCmd RequestAnyAbility)
 moveRunHuman initialStep finalGoal run runAhead dir = do
-  tgtMode <- getsClient stgtMode
+  tgtMode <- getsSession stgtMode
   if isJust tgtMode then
     Left <$> moveCursorHuman dir (if run then 10 else 1)
   else do
@@ -95,7 +96,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
     -- succeeds much more often than subsequent turns, because we ignore
     -- most of the disturbances, since the player is mostly aware of them
     -- and still explicitly requests a run, knowing how it behaves.
-    sel <- getsClient sselected
+    sel <- getsSession sselected
     let runMembers = if runAhead || noRunWithMulti fact
                      then [leader]  -- TODO: warn?
                      else ES.toList (ES.delete leader sel) ++ [leader]
@@ -106,10 +107,10 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
                               , runWaiting = 0 }
         macroRun25 = ["CTRL-comma", "CTRL-V"]
     when (initialStep && run) $ do
-      modifyClient $ \cli ->
+      modifySession $ \cli ->
         cli {srunning = Just runParams}
       when runAhead $
-        modifyClient $ \cli ->
+        modifySession $ \cli ->
           cli {slastPlay = map K.mkKM macroRun25 ++ slastPlay cli}
     -- When running, the invisible actor is hit (not displaced!),
     -- so that running in the presence of roving invisible
@@ -275,7 +276,7 @@ moveSearchAlterAid source dir = do
 -- | Leader waits a turn (and blocks, etc.).
 waitHuman :: MonadClientUI m => m (RequestTimed 'AbWait)
 waitHuman = do
-  modifyClient $ \cli -> cli {swaitTimes = abs (swaitTimes cli) + 1}
+  modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
   return ReqWait
 
 -- * MoveItem
@@ -474,7 +475,7 @@ guessAlter _ _ _ = "never mind"
 triggerTileHuman :: MonadClientUI m
                  => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbTrigger))
 triggerTileHuman ts = do
-  tgtMode <- getsClient stgtMode
+  tgtMode <- getsSession stgtMode
   if isJust tgtMode then do
     let getK tfs = case tfs of
           TriggerFeature {feature = TK.Cause (IK.Ascend k)} : _ -> Just k
@@ -558,7 +559,7 @@ runOnceAheadHuman = do
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   keyPressed <- anyKeyPressed
-  srunning <- getsClient srunning
+  srunning <- getsSession srunning
   -- When running, stop if disturbed. If not running, stop at once.
   case srunning of
     Nothing -> do
@@ -599,7 +600,7 @@ moveOnceToCursorHuman = goToCursor True False
 goToCursor :: MonadClientUI m
            => Bool -> Bool -> m (SlideOrCmd RequestAnyAbility)
 goToCursor initialStep run = do
-  tgtMode <- getsClient stgtMode
+  tgtMode <- getsSession stgtMode
   -- Movement is legal only outside targeting mode.
   if isJust tgtMode then failWith "cannot move in aiming mode"
   else do
@@ -612,13 +613,13 @@ goToCursor initialStep run = do
         if initialStep
         then return $ Right $ RequestAnyAbility ReqWait
         else do
-          report <- getsClient sreport
+          report <- getsSession sreport
           if nullReport report
           then return $ Left mempty
           -- Mark that the messages are accumulated, not just from last move.
           else failWith "crosshair now reached"
       Just c -> do
-        running <- getsClient srunning
+        running <- getsSession srunning
         case running of
           -- Don't use running params from previous run or goto-cursor.
           Just paramOld | not initialStep -> do
@@ -639,7 +640,7 @@ goToCursor initialStep run = do
                     dir = towards (bpos b) p1
                 moveRunHuman initialStep finalGoal run False dir
 
-multiActorGoTo :: MonadClient m
+multiActorGoTo :: MonadClientUI m
                => LevelId -> Point -> RunParams
                -> m (Either Msg (Bool, Vector))
 multiActorGoTo arena c paramOld =
@@ -671,7 +672,7 @@ multiActorGoTo arena c paramOld =
             tgts <- getsState $ posToActors tpos arena
             case tgts of
               [] -> do
-                modifyClient $ \cli -> cli {srunning = Just paramNew}
+                modifySession $ \sess -> sess {srunning = Just paramNew}
                 return $ Right (finalGoal, dir)
               [(target, _)]
                 | target `elem` rs || runWaiting <= length rs ->
@@ -698,7 +699,7 @@ continueToCursorHuman = goToCursor False False{-irrelevant-}
 cancelHuman :: MonadClientUI m
             => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
 cancelHuman h = do
-  stgtMode <- getsClient stgtMode
+  stgtMode <- getsSession stgtMode
   if isJust stgtMode
     then targetReject
     else h  -- nothing to cancel right now, treat this as a command invocation
@@ -706,7 +707,7 @@ cancelHuman h = do
 -- | End targeting mode, rejecting the current position.
 targetReject :: MonadClientUI m => m (SlideOrCmd RequestUI)
 targetReject = do
-  modifyClient $ \cli -> cli {stgtMode = Nothing}
+  modifySession $ \sess -> sess {stgtMode = Nothing}
   failWith "target not set"
 
 -- * Help; does not take time, but some of the commands do
@@ -717,10 +718,10 @@ helpHuman :: MonadClientUI m
           -> m (SlideOrCmd RequestUI)
 helpHuman cmdAction = do
   keyb <- askBinding
-  menuIxHelp <- getsClient smenuIxHelp
+  menuIxHelp <- getsSession smenuIxHelp
   (ekm, pointer) <-
     displayChoiceScreen True menuIxHelp (fst $ keyHelp keyb) [K.spaceKM]
-  modifyClient $ \cli -> cli {smenuIxHelp = pointer}
+  modifySession $ \sess -> sess {smenuIxHelp = pointer}
   case ekm of
     Left km -> case M.lookup km{K.pointer=Nothing} $ bcmdMap keyb of
       _ | K.key km `elem` [K.Space, K.Esc] -> return $ Left mempty
@@ -735,7 +736,7 @@ helpHuman cmdAction = do
 acceptHuman :: MonadClientUI m
             => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
 acceptHuman h = do
-  stgtMode <- getsClient stgtMode
+  stgtMode <- getsSession stgtMode
   if isJust stgtMode
     then do
       targetAccept
@@ -747,7 +748,7 @@ targetAccept :: MonadClientUI m => m ()
 targetAccept = do
   endTargeting
   endTargetingMsg
-  modifyClient $ \cli -> cli {stgtMode = Nothing}
+  modifySession $ \sess -> sess {stgtMode = Nothing}
 
 -- | End targeting mode, accepting the current position.
 endTargeting :: MonadClientUI m => m ()
@@ -829,9 +830,9 @@ mainMenuHuman cmdAction = do
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
       ov = toOverlay menuOvLines
-  menuIxMain <- getsClient smenuIxMain
+  menuIxMain <- getsSession smenuIxMain
   (ekm, pointer) <- displayChoiceScreen True menuIxMain [(ov, kyxs)] []
-  modifyClient $ \cli -> cli {smenuIxMain = pointer}
+  modifySession $ \sess -> sess {smenuIxMain = pointer}
   case ekm of
     Left km -> case lookup km{K.pointer=Nothing} kds of
       Just (_desc, cmd) -> cmdAction cmd
@@ -895,9 +896,9 @@ settingsMenuHuman cmdAction = do
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
       ov = toOverlay menuOvLines
-  menuIxSettings <- getsClient smenuIxSettings
+  menuIxSettings <- getsSession smenuIxSettings
   (ekm, pointer) <- displayChoiceScreen True menuIxSettings [(ov, kyxs)] []
-  modifyClient $ \cli -> cli {smenuIxSettings = pointer}
+  modifySession $ \sess -> sess {smenuIxSettings = pointer}
   case ekm of
     Left km -> case lookup km{K.pointer=Nothing} kds of
       Just (_desc, cmd) -> cmdAction cmd
@@ -973,7 +974,7 @@ tacticHuman = do
 automateHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 automateHuman = do
   -- BFS is not updated while automated, which would lead to corruption.
-  modifyClient $ \cli -> cli {stgtMode = Nothing}
+  modifySession $ \sess -> sess {stgtMode = Nothing}
   go <- displayMore ColorBW "Ceding control to AI (press any key to regain)."
   if not go
     then failWith "automation canceled"

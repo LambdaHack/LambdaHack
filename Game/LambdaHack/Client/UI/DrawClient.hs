@@ -22,6 +22,7 @@ import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.UI.SessionUI
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor as Actor
 import Game.LambdaHack.Common.ActorState
@@ -63,15 +64,15 @@ draw :: MonadClient m
      -> Maybe Point -> Maybe Point
      -> Maybe (PointArray.Array BfsDistance, Maybe [Point])
      -> (Text, Maybe Text) -> (Text, Maybe Text)
+     -> ES.EnumSet ActorId -> Maybe TgtMode -> Bool -> Bool -> Int
      -> m SingleFrame
 draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
-     (cursorDesc, mcursorHP) (targetDesc, mtargetHP) = do
+     (cursorDesc, mcursorHP) (targetDesc, mtargetHP)
+     selected stgtMode smarkVision smarkSmell swaitTimes = do
   cops <- getsState scops
   mleader <- getsClient _sleader
-  selected <- getsClient sselected
   s <- getState
-  cli@StateClient{ stgtMode, seps, sexplored
-                 , smarkVision, smarkSmell, smarkSuspect, swaitTimes }
+  cli@StateClient{ seps, sexplored, smarkSuspect}
     <- getClient
   per <- getPerFid drawnLevelId
   let Kind.COps{cotile=cotile@Kind.Ops{okind=tokind, ouniqGroup}} = cops
@@ -195,6 +196,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
       minLeaderStatusWidth = 19  -- covers 3-digit HP
   selectedStatus <- drawSelected drawnLevelId
                                  (widthStats - minLeaderStatusWidth)
+                                 selected
   leaderStatus <- drawLeaderStatus swaitTimes
                                    (widthStats - length selectedStatus)
   damageStatus <- drawLeaderDamage (widthStats - length leaderStatus
@@ -336,10 +338,10 @@ drawLeaderDamage width = do
             else addColor $ stats <> " "
 
 -- TODO: colour some texts using the faction's colour
-drawSelected :: MonadClient m => LevelId -> Int -> m [Color.AttrChar]
-drawSelected drawnLevelId width = do
+drawSelected :: MonadClient m
+             => LevelId -> Int -> ES.EnumSet ActorId -> m [Color.AttrChar]
+drawSelected drawnLevelId width selected = do
   mleader <- getsClient _sleader
-  selected <- getsClient sselected
   side <- getsClient sside
   allOurs <- getsState $ filter ((== side) . bfid) . EM.elems . sactorD
   ours <- getsState $ filter (not . bproj . snd)

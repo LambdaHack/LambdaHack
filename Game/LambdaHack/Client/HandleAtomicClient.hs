@@ -271,17 +271,16 @@ cmdAtomicSemCli cmd = case cmd of
   UpdCoverSeed c iid seed _ldepth -> coverSeed c iid seed
   UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sdiscoKind sfper _ d sdebugCli -> do
-    shistory <- getsClient shistory
-    sreport <- getsClient sreport
     sisAI <- getsClient sisAI
     snxtDiff <- getsClient snxtDiff
-    let cli = (emptyStateClient side) {shistory, sreport, sisAI}
+    let cli = (emptyStateClient side) {sisAI}
     putClient cli { sdiscoKind
                   , sfper
                   -- , sundo = [UpdAtomic cmd]
                   , scurDiff = d
                   , snxtDiff
                   , sdebugCli }
+    restartClient
   UpdResume _fid sfper -> modifyClient $ \cli -> cli {sfper}
   UpdKillExit _fid -> killExit
   UpdWriteSave -> saveClient

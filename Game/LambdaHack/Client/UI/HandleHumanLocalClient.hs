@@ -37,6 +37,7 @@ import Game.LambdaHack.Client.UI.HandleHelperClient
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -117,11 +118,11 @@ selectActorHuman = do
 selectAidHuman :: MonadClientUI m => ActorId -> m ()
 selectAidHuman leader = do
   body <- getsState $ getActorBody leader
-  wasMemeber <- getsClient $ ES.member leader . sselected
+  wasMemeber <- getsSession $ ES.member leader . sselected
   let upd = if wasMemeber
             then ES.delete leader  -- already selected, deselect instead
             else ES.insert leader
-  modifyClient $ \cli -> cli {sselected = upd $ sselected cli}
+  modifySession $ \sess -> sess {sselected = upd $ sselected sess}
   let subject = partActor body
   msgAdd $ makeSentence [subject, if wasMemeber
                                   then "deselected"
@@ -135,12 +136,12 @@ selectNoneHuman = do
   lidV <- viewedLevel
   oursAssocs <- getsState $ actorRegularAssocs (== side) lidV
   let ours = ES.fromList $ map fst oursAssocs
-  oldSel <- getsClient sselected
+  oldSel <- getsSession sselected
   let wasNone = ES.null $ ES.intersection ours oldSel
       upd = if wasNone
             then ES.union  -- already all deselected; select all instead
             else ES.difference
-  modifyClient $ \cli -> cli {sselected = upd (sselected cli) ours}
+  modifySession $ \sess -> sess {sselected = upd (sselected sess) ours}
   let subject = "all party members on the level"
   msgAdd $ makeSentence [subject, if wasNone
                                   then "selected"
@@ -156,7 +157,7 @@ clearHuman = return ()
 
 stopIfTgtModeHuman :: MonadClientUI m => m ()
 stopIfTgtModeHuman = do
-  tgtMode <- getsClient stgtMode
+  tgtMode <- getsSession stgtMode
   when (isJust tgtMode) $
     void $ stopPlayBack
 
@@ -164,7 +165,7 @@ stopIfTgtModeHuman = do
 
 selectWithPointer:: MonadClientUI m => m ()
 selectWithPointer = do
-  km <- getsClient slastKM
+  km <- getsSession slastKM
   lidV <- viewedLevel
   Level{lysize} <- getLevel lidV
   side <- getsClient sside
@@ -186,13 +187,13 @@ selectWithPointer = do
 -- Note that walk followed by repeat should not be equivalent to run,
 -- because the player can really use a command that does not stop
 -- at terrain change or when walking over items.
-repeatHuman :: MonadClient m => Int -> m ()
+repeatHuman :: MonadClientUI m => Int -> m ()
 repeatHuman n = do
-  (_, seqPrevious, k) <- getsClient slastRecord
+  (_, seqPrevious, k) <- getsSession slastRecord
   let macro = concat $ replicate n $ reverse seqPrevious
-  modifyClient $ \cli -> cli {slastPlay = macro ++ slastPlay cli}
+  modifySession $ \sess -> sess {slastPlay = macro ++ slastPlay sess}
   let slastRecord = ([], [], if k == 0 then 0 else maxK)
-  modifyClient $ \cli -> cli {slastRecord}
+  modifySession $ \sess -> sess {slastRecord}
 
 maxK :: Int
 maxK = 100
@@ -201,16 +202,16 @@ maxK = 100
 
 recordHuman :: MonadClientUI m => m Slideshow
 recordHuman = do
-  (_seqCurrent, seqPrevious, k) <- getsClient slastRecord
+  (_seqCurrent, seqPrevious, k) <- getsSession slastRecord
   case k of
     0 -> do
       let slastRecord = ([], [], maxK)
-      modifyClient $ \cli -> cli {slastRecord}
+      modifySession $ \sess -> sess {slastRecord}
       promptToSlideshow $ "Macro will be recorded for up to"
                           <+> tshow maxK <+> "actions."  -- no MU, poweruser
     _ -> do
       let slastRecord = (seqPrevious, [], 0)
-      modifyClient $ \cli -> cli {slastRecord}
+      modifySession $ \sess -> sess {slastRecord}
       promptToSlideshow $ "Macro recording interrupted after"
                           <+> tshow (maxK - k - 1) <+> "actions."
 
@@ -218,7 +219,7 @@ recordHuman = do
 
 historyHuman :: MonadClientUI m => m ()
 historyHuman = do
-  history <- getsClient shistory
+  history <- getsSession shistory
   arena <- getArenaUI
   Level{lxsize, lysize} <- getLevel arena
   local <- getsState $ getLocalTime arena
@@ -238,10 +239,10 @@ historyHuman = do
                       (Right dummySlot, (undefined, 0, lxsize))
   okxs <- splitOKX (lysize + 3) msg (toOverlay rh, kxs)
   let displayAllHistory = do
-        menuIxHistory <- getsClient smenuIxHistory
+        menuIxHistory <- getsSession smenuIxHistory
         (ekm, pointer) <-
           displayChoiceScreen True menuIxHistory okxs [K.spaceKM, K.escKM]
-        modifyClient $ \cli -> cli {smenuIxHistory = pointer}
+        modifySession $ \sess -> sess {smenuIxHistory = pointer}
         case ekm of
           Left km | km `elem` [K.spaceKM, K.escKM] -> return ()
           Right slot | slot == dummySlot -> displayOneReport pointer
@@ -265,14 +266,14 @@ historyHuman = do
 
 markVisionHuman :: MonadClientUI m => m ()
 markVisionHuman = do
-  modifyClient toggleMarkVision
-  cur <- getsClient smarkVision
+  modifySession toggleMarkVision
+  cur <- getsSession smarkVision
   msgAdd $ "Visible area display toggled" <+> if cur then "on." else "off."
 
 markSmellHuman :: MonadClientUI m => m ()
 markSmellHuman = do
-  modifyClient toggleMarkSmell
-  cur <- getsClient smarkSmell
+  modifySession toggleMarkSmell
+  cur <- getsSession smarkSmell
   msgAdd $ "Smell display toggled" <+> if cur then "on." else "off."
 
 markSuspectHuman :: MonadClientUI m => m ()
@@ -287,7 +288,7 @@ markSuspectHuman = do
 
 macroHuman :: MonadClientUI m => [String] -> m Slideshow
 macroHuman kms = do
-  modifyClient $ \cli -> cli {slastPlay = map K.mkKM kms ++ slastPlay cli}
+  modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
   promptToSlideshow $ "Macro activated:" <+> T.pack (intercalate " " kms)
 
 -- * MoveCursor
@@ -333,13 +334,14 @@ tgtAscendHuman k = do
             if any ascDesc $ TK.tfeature $ okind (nlvl `at` npos)
             then TPoint nln npos  -- already known as an exit, focus on it
             else scursorOld  -- unknown, do not reveal
-      modifyClient $ \cli -> cli {scursor, stgtMode = Just (TgtMode nln)}
+      modifyClient $ \cli -> cli {scursor}
+      modifySession $ \sess -> sess {stgtMode = Just (TgtMode nln)}
       doLook False
     Nothing ->  -- no stairs in the right direction
       case ascendInBranch dungeon k lidV of
         [] -> failMsg "no more levels in this direction"
         nln : _ -> do
-          modifyClient $ \cli -> cli {stgtMode = Just (TgtMode nln)}
+          modifySession $ \sess -> sess {stgtMode = Just (TgtMode nln)}
           doLook False
 
 -- * EpsIncr
@@ -398,7 +400,7 @@ cursorPointerFloorHuman :: MonadClientUI m => m ()
 cursorPointerFloorHuman = do
   look <- cursorPointerFloor False False
   let !_A = assert (look == mempty `blame` look) ()
-  modifyClient $ \cli -> cli {stgtMode = Nothing}
+  modifySession $ \sess -> sess {stgtMode = Nothing}
 
 -- * CursorPointerEnemy
 
@@ -406,7 +408,7 @@ cursorPointerEnemyHuman :: MonadClientUI m => m ()
 cursorPointerEnemyHuman = do
   look <- cursorPointerEnemy False False
   let !_A = assert (look == mempty `blame` look) ()
-  modifyClient $ \cli -> cli {stgtMode = Nothing}
+  modifySession $ \sess -> sess {stgtMode = Nothing}
 
 -- * TgtPointerFloor
 

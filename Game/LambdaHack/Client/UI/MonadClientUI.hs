@@ -7,7 +7,6 @@ module Game.LambdaHack.Client.UI.MonadClientUI
                  , modifySession
                  , putSession
                  )
-  , SessionUI(..)
     -- * Display and key input
   , ColorMode(..)
   , mapStartY, promptGetKey, promptGetInt
@@ -27,7 +26,6 @@ import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
 import Control.Monad (when)
-import Data.Binary
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
@@ -46,6 +44,7 @@ import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -65,20 +64,6 @@ import Game.LambdaHack.Content.ModeKind
 mapStartY :: Y
 mapStartY = 1
 
--- | The information that is used across a client playing session,
--- including many consecutive games in a single session.
--- Some of it is save, some is reset when a new playing session starts.
--- An important component is a frontend session.
-data SessionUI = SessionUI
-  { schanF   :: !ChanFrontend       -- ^ connection with the frontend
-  , sbinding :: !Binding            -- ^ binding of keys to commands
-  , sconfig  :: !Config
-  }
-
-instance Binary SessionUI where
-  put _ = undefined
-  get = undefined
-
 -- | The monad that gives the client access to UI operations.
 class MonadClient m => MonadClientUI m where
   getSession  :: m SessionUI
@@ -95,14 +80,14 @@ connFrontend req = do
 promptGetKey :: MonadClientUI m => Overlay -> Bool -> [K.KM] -> m K.KM
 promptGetKey ov sfBlank frontKeyKeys = do
   keyPressed <- anyKeyPressed
-  lastPlayOld <- getsClient slastPlay
+  lastPlayOld <- getsSession slastPlay
   km <- case lastPlayOld of
     km : kms | not keyPressed
                && (null frontKeyKeys
                    || km{K.pointer=Nothing} `elem` frontKeyKeys) -> do
       frontKeyFrame <- drawOverlay ColorFull sfBlank ov
       displayFrame $ Just frontKeyFrame
-      modifyClient $ \cli -> cli {slastPlay = kms}
+      modifySession $ \sess -> sess {slastPlay = kms}
       return km
     _ -> do
       -- We can't continue playback; wipe out old srunning, etc.
@@ -113,11 +98,11 @@ promptGetKey ov sfBlank frontKeyKeys = do
              else return ov
       frontKeyFrame <- drawOverlay ColorFull sfBlank ov2
       km <- connFrontend FrontKey{..}
-      modifyClient $ \cli -> cli {slastKM = km}
+      modifySession $ \sess -> sess {slastKM = km}
       return km
-  (seqCurrent, seqPrevious, k) <- getsClient slastRecord
+  (seqCurrent, seqPrevious, k) <- getsSession slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)
-  modifyClient $ \cli -> cli {slastRecord}
+  modifySession $ \sess -> sess {slastRecord}
   return km
 
 promptGetInt :: MonadClientUI m => SingleFrame -> m K.KM
@@ -205,13 +190,13 @@ displayDelay = displayFrame Nothing
 -- Insert delays, so that the animations don't look rushed.
 displayActorStart :: MonadClientUI m => Actor -> Frames -> m ()
 displayActorStart b frs = do
-  timeCutOff <- getsClient $ EM.findWithDefault timeZero (blid b) . sdisplayed
+  timeCutOff <- getsSession $ EM.findWithDefault timeZero (blid b) . sdisplayed
   localTime <- getsState $ getLocalTime (blid b)
   let delta = localTime `timeDeltaToFrom` timeCutOff
   when (delta > Delta timeClip && not (bproj b))
     displayDelay
   let ageDisp = EM.insert (blid b) (btime b)
-  modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
+  modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}
   mapM_ displayFrame frs
 
 -- | Draw the current level with the overlay on top.
@@ -234,7 +219,10 @@ drawBaseFrame dm = do
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
   cursorDesc <- targetDescCursor
+  SessionUI{sselected, stgtMode, smarkVision, smarkSmell, swaitTimes}
+    <- getSession
   draw dm lid cursorPos tgtPos bfsmpath cursorDesc tgtDesc
+       sselected stgtMode smarkVision smarkSmell swaitTimes
 
 drawOverlays :: MonadClientUI m
              => ColorMode -> Bool -> [Overlay] -> m [SingleFrame]
@@ -246,14 +234,14 @@ drawOverlays dm sfBlank ovs = do
 
 stopPlayBack :: MonadClientUI m => m Bool
 stopPlayBack = do
-  lastPlay <- getsClient slastPlay
-  modifyClient $ \cli -> cli
+  lastPlay <- getsSession slastPlay
+  modifySession $ \sess -> sess
     { slastPlay = []
     , slastRecord = ([], [], 0)
         -- TODO: not ideal, but needed to cancel macros that contain apostrophes
-    , swaitTimes = - abs (swaitTimes cli)
+    , swaitTimes = - abs (swaitTimes sess)
     }
-  srunning <- getsClient srunning
+  srunning <- getsSession srunning
   case srunning of
     Nothing -> return $! not $ null lastPlay
     Just RunParams{runLeader} -> do
@@ -266,7 +254,7 @@ stopPlayBack = do
       s <- getState
       when (memActor runLeader arena s && not (noRunWithMulti fact)) $
         modifyClient $ updateLeader runLeader s
-      modifyClient (\cli -> cli {srunning = Nothing})
+      modifySession (\sess -> sess {srunning = Nothing})
       return True
 
 askConfig :: MonadClientUI m => m Config
@@ -347,7 +335,7 @@ getArenaUI = do
 viewedLevel :: MonadClientUI m => m LevelId
 viewedLevel = do
   arena <- getArenaUI
-  stgtMode <- getsClient stgtMode
+  stgtMode <- getsSession stgtMode
   return $! maybe arena tgtLevelId stgtMode
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Text, Maybe Text)
@@ -443,7 +431,7 @@ splitOKX y prompt okx = do
   promptAI <- msgPromptAI
   lid <- getArenaUI
   Level{lxsize} <- getLevel lid  -- TODO: screen length or viewLevel
-  sreport <- getsClient sreport
+  sreport <- getsSession sreport
   let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
   return $! splitOverlayOKX y msg okx
 

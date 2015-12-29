@@ -35,6 +35,7 @@ import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.WidgetClient
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
@@ -788,9 +789,9 @@ projectHumanState :: forall m. MonadClientUI m
 projectHumanState ts initalState = do
   leader <- getLeaderUI
   lidV <- viewedLevel
-  oldTgtMode <- getsClient stgtMode
+  oldTgtMode <- getsSession stgtMode
   -- Show the targeting line, temporarily.
-  modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode lidV}
+  modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
   -- Set cursor to the personal target, permanently.
   tgt <- getsClient $ getTarget leader
   modifyClient $ \cli -> cli {scursor = fromMaybe (scursor cli) tgt}
@@ -821,7 +822,7 @@ projectHumanState ts initalState = do
           return $ Right $ ReqProject pos eps iid fromCStore
         Left cause -> failWith cause
     Left sli -> return $ Left sli
-  modifyClient $ \cli -> cli {stgtMode = oldTgtMode}
+  modifySession $ \sess -> sess {stgtMode = oldTgtMode}
   return outcome
 
 projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)

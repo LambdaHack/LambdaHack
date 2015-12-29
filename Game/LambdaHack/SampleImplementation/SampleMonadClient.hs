@@ -27,7 +27,9 @@ import Game.LambdaHack.Client.FileClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -43,7 +45,7 @@ data CliState resp req = CliState
                                 -- ^ this client connection information
   , cliToSave  :: !(Save.ChanSave (State, StateClient, SessionUI))
                                 -- ^ connection to the save thread
-  , cliSession :: SessionUI     -- ^ UI state, empty for AI clients
+  , cliSession :: !SessionUI     -- ^ UI state, empty for AI clients
   }
 
 -- | Client state transformation monad.
@@ -72,13 +74,22 @@ instance MonadClient (CliImplementation resp req) where
   putClient    s = CliImplementation $ state $ \cliS ->
     let newCliS = cliS {cliClient = s}
     in newCliS `seq` ((), newCliS)
-  liftIO         = CliImplementation . IO.liftIO
   saveClient = CliImplementation $ do
     toSave <- gets cliToSave
     s <- gets cliState
     cli <- gets cliClient
     sess <- gets cliSession
     IO.liftIO $ Save.saveToChan toSave (s, cli, sess)
+  restartClient = CliImplementation $ state $ \cliS ->
+    let sess = cliSession cliS
+        newSess = (emptySessionUI (sconfig sess))
+                    { schanF = schanF sess
+                    , sbinding = sbinding sess
+                    , shistory = shistory sess
+                    , sreport = sreport sess }
+        newCliS = cliS {cliSession = newSess}
+    in newCliS `seq` ((), newCliS)
+  liftIO         = CliImplementation . IO.liftIO
 
 instance MonadClientUI (CliImplementation resp req) where
   getSession    = CliImplementation $ gets cliSession
@@ -108,11 +119,12 @@ instance MonadAtomic (CliImplementation resp req) where
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
 executorCli :: Kind.COps
+            -> Config
             -> CliImplementation resp req ()
             -> FactionId
             -> ChanServer resp req
             -> IO ()
-executorCli cops m fid cliDict =
+executorCli cops config m fid cliDict =
   let saveFile (_, cli, _) =
         ssavePrefixCli (sdebugCli cli)
         <.> saveName (sside cli) (sisAI cli)
@@ -121,7 +133,7 @@ executorCli cops m fid cliDict =
         , cliClient = emptyStateClient fid
         , cliDict
         , cliToSave
-        , cliSession = undefined
+        , cliSession = emptySessionUI config
         }
       exe = evalStateT (runCliImplementation m) . totalState
   in Save.wrapInSaves tryCreateDir encodeEOF saveFile exe

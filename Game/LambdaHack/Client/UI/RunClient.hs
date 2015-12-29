@@ -24,6 +24,8 @@ import Data.Maybe
 
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -38,7 +40,7 @@ import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Continue running in the given direction.
-continueRun :: MonadClient m
+continueRun :: MonadClientUI m
             => LevelId -> RunParams
             -> m (Either Msg RequestAnyAbility)
 continueRun arena paramOld = case paramOld of
@@ -81,7 +83,7 @@ continueRun arena paramOld = case paramOld of
         Right dir -> do
           s <- getState
           modifyClient $ updateLeader r s
-          modifyClient $ \cli -> cli {srunning = Just paramNew}
+          modifySession $ \sess -> sess {srunning = Just paramNew}
           return $ Right $ RequestAnyAbility $ ReqMove dir
       -- The potential invisible actor is hit. War is started without asking.
 
@@ -98,14 +100,14 @@ continueRun arena paramOld = case paramOld of
 -- works better with unknown terrain, e.g., it stops whenever an item
 -- is spotted, but then ignores the item, leaving it to the player
 -- to mark the item position as a goal of the next goto.
-continueRunDir :: MonadClient m
+continueRunDir :: MonadClientUI m
                => RunParams -> m (Either Msg Vector)
 continueRunDir params = case params of
   RunParams{ runMembers = [] } -> assert `failure` params
   RunParams{ runLeader
            , runMembers = aid : _
            , runInitial } -> do
-    sreport <- getsClient sreport -- TODO: check the message before it goes into history
+    sreport <- getsSession sreport -- TODO: check the message before it goes into history
     let boringMsgs = map BS.pack [ "You hear a distant"
                                  , "reveals that the" ]
         boring repLine = any (`BS.isInfixOf` repLine) boringMsgs

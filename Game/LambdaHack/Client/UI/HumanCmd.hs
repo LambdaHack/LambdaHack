@@ -7,6 +7,7 @@ module Game.LambdaHack.Client.UI.HumanCmd
 
 import Control.DeepSeq
 import Control.Exception.Assert.Sugar
+import Data.Binary
 import Data.Maybe
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -26,6 +27,8 @@ data CmdCategory =
   deriving (Show, Read, Eq, Generic)
 
 instance NFData CmdCategory
+
+instance Binary CmdCategory
 
 categoryDescription :: CmdCategory -> Text
 categoryDescription CmdMainMenu = "Main Menu"
@@ -105,6 +108,8 @@ data HumanCmd =
 
 instance NFData HumanCmd
 
+instance Binary HumanCmd
+
 data Trigger =
     ApplyItem {verb :: !MU.Part, object :: !MU.Part, symbol :: !Char}
   | AlterFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
@@ -113,6 +118,8 @@ data Trigger =
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance NFData Trigger
+
+instance Binary Trigger
 
 -- | Commands that are forbidden on a remote level, because they
 -- would usually take time when invoked on one.

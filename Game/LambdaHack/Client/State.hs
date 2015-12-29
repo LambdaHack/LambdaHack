@@ -3,21 +3,18 @@
 module Game.LambdaHack.Client.State
   ( StateClient(..), emptyStateClient
   , updateTarget, getTarget, updateLeader, sside
-  , PathEtc, TgtMode(..), RunParams(..), LastRecord
-  , toggleMarkVision, toggleMarkSmell, toggleMarkSuspect
+  , PathEtc, toggleMarkSuspect
   ) where
 
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Text (Text)
 import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.ItemSlot
-import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
@@ -25,12 +22,10 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 
 -- | Client state, belonging to a single faction.
@@ -38,9 +33,7 @@ import Game.LambdaHack.Common.Vector
 -- from game to game, even across playing sessions.
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
-  { stgtMode     :: !(Maybe TgtMode)
-                                   -- ^ targeting mode
-  , scursor      :: !Target        -- ^ the common, cursor target
+  { scursor      :: !Target        -- ^ the common, cursor target
   , seps         :: !Int           -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId (Target, Maybe PathEtc))
                                    -- ^ targets of our actors in the dungeon
@@ -51,111 +44,58 @@ data StateClient = StateClient
                         , Point, Int, Maybe [Point]) )
                                    -- ^ pathfinding distances for our actors
                                    --   and paths to their targets, if any
-  , sselected    :: !(ES.EnumSet ActorId)
-                                   -- ^ the set of currently selected actors
-  , srunning     :: !(Maybe RunParams)
-                                   -- ^ parameters of the current run, if any
-  , sreport      :: !Report        -- ^ current messages
-  , shistory     :: !History       -- ^ history of messages
-  , sdisplayed   :: !(EM.EnumMap LevelId Time)
-                                   -- ^ moves are displayed up to this time
   , sundo        :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sdiscoKind   :: !DiscoveryKind    -- ^ remembered item discoveries
   , sdiscoEffect :: !DiscoveryEffect  -- ^ remembered effects&Co of items
   , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom      :: !R.StdGen      -- ^ current random generator
-  , slastKM      :: !K.KM          -- ^ last issued key command
-  , slastRecord  :: !LastRecord    -- ^ state of key sequence recording
-  , slastPlay    :: ![K.KM]        -- ^ state of key sequence playback
-  , slastLost    :: !(ES.EnumSet ActorId)
-                                   -- ^ actors that just got out of sight
-  , swaitTimes   :: !Int           -- ^ player just waited this many times
   , _sleader     :: !(Maybe ActorId)
                                    -- ^ current picked party leader
   , _sside       :: !FactionId     -- ^ faction controlled by the client
   , squit        :: !Bool          -- ^ exit the game loop
   , sisAI        :: !Bool          -- ^ whether it's an AI client
-  , smarkVision  :: !Bool          -- ^ mark leader and party FOV
-  , smarkSmell   :: !Bool          -- ^ mark smell, if the leader can smell
-  , smarkSuspect :: !Bool          -- ^ mark suspect features
   , scurDiff     :: !Int           -- ^ current game difficulty level
   , snxtDiff     :: !Int           -- ^ next game difficulty level
   , sslots       :: !ItemSlots     -- ^ map from slots to items
   , slastSlot    :: !SlotChar      -- ^ last used slot
   , slastStore   :: ![CStore]      -- ^ last used stores
-  , smenuIxMain  :: !Int           -- ^ index of last used Main Menu item
-  , smenuIxSettings :: !Int        -- ^ index of last used Settings Menu item
-  , smenuIxHelp  :: !Int           -- ^ index of last used Help Menu item
-  , smenuIxHistory :: !Int         -- ^ index of last used History Menu item
+  , smarkSuspect :: !Bool          -- ^ mark suspect features
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving Show
 
 type PathEtc = ([Point], (Point, Int))
 
--- | Current targeting mode of a client.
-newtype TgtMode = TgtMode { tgtLevelId :: LevelId }
-  deriving (Show, Eq, Binary)
-
--- | Parameters of the current run.
-data RunParams = RunParams
-  { runLeader  :: !ActorId         -- ^ the original leader from run start
-  , runMembers :: ![ActorId]       -- ^ the list of actors that take part
-  , runInitial :: !Bool            -- ^ initial run continuation by any
-                                   --   run participant, including run leader
-  , runStopMsg :: !(Maybe Text)    -- ^ message with the next stop reason
-  , runWaiting :: !Int             -- ^ waiting for others to move out of the way
-  }
-  deriving (Show)
-
-type LastRecord = ( [K.KM]  -- accumulated keys of the current command
-                  , [K.KM]  -- keys of the rest of the recorded command batch
-                  , Int     -- commands left to record for this batch
-                  )
-
 -- | Initial empty game client state.
 emptyStateClient :: FactionId -> StateClient
 emptyStateClient _sside =
   StateClient
-    { stgtMode = Nothing
-    , scursor = TVector $ Vector 30000 30000  -- invalid; AI recomputes ASAP
+    { scursor = TVector $ Vector 30000 30000  -- invalid; AI recomputes ASAP
     , seps = fromEnum _sside
     , stargetD = EM.empty
     , sexplored = ES.empty
     , sbfsD = EM.empty
-    , sselected = ES.empty
-    , srunning = Nothing
-    , sreport = emptyReport
-    , shistory = emptyHistory 0
-    , sdisplayed = EM.empty
     , sundo = []
     , sdiscoKind = EM.empty
     , sdiscoEffect = EM.empty
     , sfper = EM.empty
     , srandom = R.mkStdGen 42  -- will be set later
-    , slastKM = K.escKM
-    , slastRecord = ([], [], 0)
-    , slastPlay = []
-    , slastLost = ES.empty
-    , swaitTimes = 0
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
     , sisAI = False
-    , smarkVision = False
-    , smarkSmell = True
-    , smarkSuspect = False
     , scurDiff = difficultyDefault
     , snxtDiff = difficultyDefault
     , sslots = (EM.empty, EM.empty)
     , slastSlot = SlotChar 0 'Z'
     , slastStore = []
-    , smenuIxMain = 0
-    , smenuIxSettings = 0
-    , smenuIxHelp = 0
-    , smenuIxHistory = 0
+    , smarkSuspect = False
     , sdebugCli = defDebugModeCli
     }
+
+toggleMarkSuspect :: StateClient -> StateClient
+toggleMarkSuspect s@StateClient{smarkSuspect} =
+  s {smarkSuspect = not smarkSuspect}
 
 -- | Update target parameters within client state.
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient
@@ -182,101 +122,47 @@ updateLeader leader s cli =
 sside :: StateClient -> FactionId
 sside = _sside
 
-toggleMarkVision :: StateClient -> StateClient
-toggleMarkVision s@StateClient{smarkVision} = s {smarkVision = not smarkVision}
-
-toggleMarkSmell :: StateClient -> StateClient
-toggleMarkSmell s@StateClient{smarkSmell} = s {smarkSmell = not smarkSmell}
-
-toggleMarkSuspect :: StateClient -> StateClient
-toggleMarkSuspect s@StateClient{smarkSuspect} =
-  s {smarkSuspect = not smarkSuspect}
-
 instance Binary StateClient where
   put StateClient{..} = do
-    put stgtMode
     put scursor
     put seps
     put stargetD
     put sexplored
-    put sselected
-    put srunning
-    put sreport
-    put shistory
     put sundo
-    put sdisplayed
     put sdiscoKind
     put sdiscoEffect
     put (show srandom)
     put _sleader
     put _sside
     put sisAI
-    put smarkVision
-    put smarkSmell
-    put smarkSuspect
     put scurDiff
     put snxtDiff
     put sslots
     put slastSlot
     put slastStore
-    put smenuIxMain
-    put smenuIxSettings
-    put smenuIxHelp
-    put smenuIxHistory
+    put smarkSuspect
     put sdebugCli  -- TODO: this is overwritten at once
   get = do
-    stgtMode <- get
     scursor <- get
     seps <- get
     stargetD <- get
     sexplored <- get
-    sselected <- get
-    srunning <- get
-    sreport <- get
-    shistory <- get
     sundo <- get
-    sdisplayed <- get
     sdiscoKind <- get
     sdiscoEffect <- get
     g <- get
     _sleader <- get
     _sside <- get
     sisAI <- get
-    smarkVision <- get
-    smarkSmell <- get
-    smarkSuspect <- get
     scurDiff <- get
     snxtDiff <- get
     sslots <- get
     slastSlot <- get
     slastStore <- get
-    smenuIxMain <- get
-    smenuIxSettings <- get
-    smenuIxHelp <- get
-    smenuIxHistory <- get
+    smarkSuspect <- get
     sdebugCli <- get
     let sbfsD = EM.empty
         sfper = EM.empty
         srandom = read g
-        slastKM = K.escKM
-        slastRecord = ([], [], 0)
-        slastPlay = []
-        slastLost = ES.empty
-        swaitTimes = 0
         squit = False
     return $! StateClient{..}
-
-instance Binary RunParams where
-  put RunParams{..} = do
-    put runLeader
-    put runMembers
-    put runInitial
-    put runStopMsg
-    put runWaiting
-  get = do
-    runLeader <- get
-    runMembers <- get
-    runInitial <- get
-    runStopMsg <- get
-    runWaiting <- get
-    return $! RunParams{..}

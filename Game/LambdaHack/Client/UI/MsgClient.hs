@@ -24,6 +24,7 @@ import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -42,21 +43,23 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Add a message to the current report.
 msgAdd :: MonadClientUI m => Msg -> m ()
-msgAdd msg = modifyClient $ \d -> d {sreport = addMsg (sreport d) msg}
+msgAdd msg = modifySession $ \sess ->
+  sess {sreport = addMsg (sreport sess) msg}
 
 -- | Wipe out and set a new value for the current report.
 msgReset :: MonadClientUI m => Msg -> m ()
-msgReset msg = modifyClient $ \d -> d {sreport = singletonReport msg}
+msgReset msg = modifySession $ \sess ->
+  sess {sreport = singletonReport msg}
 
 -- | Store current report in the history and reset report.
 recordHistory :: MonadClientUI m => m ()
 recordHistory = do
   time <- getsState stime
-  StateClient{sreport, shistory} <- getClient
+  SessionUI{sreport, shistory} <- getSession
   unless (nullReport sreport) $ do
     msgReset ""
     let nhistory = addReport shistory time sreport
-    modifyClient $ \cli -> cli {shistory = nhistory}
+    modifySession $ \sess -> sess {shistory = nhistory}
 
 type SlideOrCmd a = Either Slideshow a
 
@@ -95,7 +98,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
-  stgtMode <- getsClient stgtMode
+  stgtMode <- getsSession stgtMode
   let lidV = maybe (blid b) tgtLevelId stgtMode
   lvl <- getLevel lidV
   localTime <- getsState $ getLocalTime lidV

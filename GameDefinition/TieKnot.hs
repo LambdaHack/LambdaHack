@@ -53,8 +53,8 @@ tieKnot args = do
   -- options and is never updated with config options, etc.
   let sdebugMode = applyConfigToDebug cops sconfig $ sdebugCli sdebugNxt
       -- Partially applied main loops of the clients.
-      exeClientAI = executorCli cops $ loopAI sdebugMode
-      exeClientUI = executorCli cops $ loopUI copsClient sconfig sdebugMode
+      exeClientAI = executorCli cops sconfig $ loopAI sdebugMode
+      exeClientUI = executorCli cops sconfig $ loopUI copsClient sconfig sdebugMode
   -- Wire together game content, the main loops of game clients
   -- and the game server loop.
   executorSer cops $ loopSer sdebugNxt exeClientUI exeClientAI

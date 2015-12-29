@@ -30,6 +30,7 @@ import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
@@ -162,7 +163,7 @@ describeMainKeys = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
-  stgtMode <- getsClient stgtMode
+  stgtMode <- getsSession stgtMode
   Binding{brevMap} <- askBinding
   Config{configVi, configLaptop} <- askConfig
   cursor <- getsClient scursor
@@ -199,7 +200,7 @@ describeMainKeys = do
         <> T.intercalate ", "
              (map K.showKM [kmRightButtonPress, kmReturn, kmEscape])
         <> "]"
-  report <- getsClient sreport
+  report <- getsSession sreport
   return $! if nullReport report then keys else ""
 
 -- | The prompt is shown after the current message, but not added to history.
@@ -216,7 +217,7 @@ overlayToSlideshow prompt overlay = do
   promptAI <- msgPromptAI
   lid <- getArenaUI
   Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
-  sreport <- getsClient sreport
+  sreport <- getsSession sreport
   let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
   return $! splitOverlay (lysize + 1) msg overlay
 
@@ -224,7 +225,7 @@ overlayToSlideshow prompt overlay = do
 -- | Render animations on top of the current screen frame.
 animate :: MonadClientUI m => LevelId -> Animation -> m Frames
 animate arena anim = do
-  sreport <- getsClient sreport
+  sreport <- getsSession sreport
   mleader <- getsClient _sleader
   tgtPos <- leaderTgtToPos
   cursorPos <- cursorToPos
@@ -237,9 +238,12 @@ animate arena anim = do
   promptAI <- msgPromptAI
   let over = renderReport (prependMsg promptAI sreport)
       topLineOnly = truncateToOverlay over
+  SessionUI{sselected, stgtMode, smarkVision, smarkSmell, swaitTimes}
+    <- getSession
   basicFrame <- overlayFrame topLineOnly <$>
     Just <$> draw ColorFull arena cursorPos tgtPos
                   bfsmpath cursorDesc tgtDesc
+                  sselected stgtMode smarkVision smarkSmell swaitTimes
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]

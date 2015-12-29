@@ -26,6 +26,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -92,7 +93,7 @@ partyAfterLeader leader = do
 pickLeader :: MonadClientUI m => Bool -> ActorId -> m Bool
 pickLeader verbose aid = do
   leader <- getLeaderUI
-  stgtMode <- getsClient stgtMode
+  stgtMode <- getsSession stgtMode
   if leader == aid
     then return False -- already picked
     else do
@@ -110,7 +111,7 @@ pickLeader verbose aid = do
       case stgtMode of
         Nothing -> return ()
         Just _ ->
-          modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode $ blid pbody}
+          modifySession $ \sess -> sess {stgtMode = Just $ TgtMode $ blid pbody}
       -- Inform about items, etc.
       lookMsg <- lookAt False "" True (bpos pbody) aid ""
       when verbose $ msgAdd lookMsg
@@ -118,14 +119,15 @@ pickLeader verbose aid = do
 
 cursorPointerFloor :: MonadClientUI m => Bool -> Bool -> m Slideshow
 cursorPointerFloor verbose addMoreMsg = do
-  km <- getsClient slastKM
+  km <- getsSession slastKM
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
   case K.pointer km of
     Just(Point{..}) | px >= 0 && py - mapStartY >= 0
                       && px < lxsize && py - mapStartY < lysize -> do
       let scursor = TPoint lidV $ Point px (py - mapStartY)
-      modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
+      modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
+      modifyClient $ \cli -> cli {scursor}
       if verbose then
         doLook addMoreMsg
       else do
@@ -138,7 +140,7 @@ cursorPointerFloor verbose addMoreMsg = do
 
 cursorPointerEnemy :: MonadClientUI m => Bool -> Bool -> m Slideshow
 cursorPointerEnemy verbose addMoreMsg = do
-  km <- getsClient slastKM
+  km <- getsSession slastKM
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
   case K.pointer km of
@@ -150,7 +152,8 @@ cursorPointerEnemy verbose addMoreMsg = do
             case find (\(_, m) -> bpos m == newPos) bsAll of
               Just (im, _) -> TEnemy im True
               Nothing -> TPoint lidV newPos
-      modifyClient $ \cli -> cli {scursor, stgtMode = Just $ TgtMode lidV}
+      modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
+      modifyClient $ \cli -> cli {scursor}
       if verbose then
         doLook addMoreMsg
       else do
@@ -165,7 +168,7 @@ cursorPointerEnemy verbose addMoreMsg = do
 moveCursorHuman :: MonadClientUI m => Vector -> Int -> m Slideshow
 moveCursorHuman dir n = do
   leader <- getLeaderUI
-  stgtMode <- getsClient stgtMode
+  stgtMode <- getsSession stgtMode
   let lidV = maybe (assert `failure` leader) tgtLevelId stgtMode
   Level{lxsize, lysize} <- getLevel lidV
   lpos <- getsState $ bpos . getActorBody leader
@@ -191,7 +194,7 @@ tgtFloorHuman = do
   lpos <- getsState $ bpos . getActorBody leader
   cursorPos <- cursorToPos
   scursor <- getsClient scursor
-  stgtMode <- getsClient stgtMode
+  stgtMode <- getsSession stgtMode
   bsAll <- getsState $ actorAssocs (const True) lidV
   let cursor = fromMaybe lpos cursorPos
       tgt = case scursor of
@@ -208,7 +211,8 @@ tgtFloorHuman = do
           case find (\(_, m) -> Just (bpos m) == cursorPos) bsAll of
             Just (im, _) -> TEnemy im True
             Nothing -> TPoint lidV cursor
-  modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode lidV}
+  modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
+  modifyClient $ \cli -> cli {scursor = tgt}
   doLook False
 
 tgtEnemyHuman :: MonadClientUI m => m Slideshow
@@ -218,7 +222,7 @@ tgtEnemyHuman = do
   lpos <- getsState $ bpos . getActorBody leader
   cursorPos <- cursorToPos
   scursor <- getsClient scursor
-  stgtMode <- getsClient stgtMode
+  stgtMode <- getsSession stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   bsAll <- getsState $ actorAssocs (const True) lidV
@@ -249,13 +253,14 @@ tgtEnemyHuman = do
         (a, _) : _ -> TEnemy a False
         [] -> scursor  -- no seen foes in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
-  modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode lidV}
+  modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
+  modifyClient $ \cli -> cli {scursor = tgt}
   doLook False
 
 -- | Tweak the @eps@ parameter of the targeting digital line.
 epsIncrHuman :: MonadClientUI m => Bool -> m Slideshow
 epsIncrHuman b = do
-  stgtMode <- getsClient stgtMode
+  stgtMode <- getsSession stgtMode
   if isJust stgtMode
     then do
       modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
@@ -287,7 +292,7 @@ doLook :: MonadClientUI m => Bool -> m Slideshow
 doLook addMoreMsg = do
   Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
   let unknownId = ouniqGroup "unknown space"
-  stgtMode <- getsClient stgtMode
+  stgtMode <- getsSession stgtMode
   case stgtMode of
     Nothing -> return mempty
     Just tgtMode -> do

@@ -22,6 +22,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -251,7 +252,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
     msgAdd $ "New game started in" <+> mname mode <+> "mode." <+> mdesc mode
     -- TODO: use a vertical animation instead, e.g., roll down,
     -- and reveal the first frame of a new game, not blank screen.
-    history <- getsClient shistory
+    history <- getsSession shistory
     when (lengthHistory history > 1) $ fadeOutOrIn False
     fact <- getsState $ (EM.! fid) . sfactionD
     setFrontAutoYes $ isAIFact fact
@@ -278,7 +279,7 @@ lookAtMove :: MonadClientUI m => ActorId -> m ()
 lookAtMove aid = do
   body <- getsState $ getActorBody aid
   side <- getsClient sside
-  tgtMode <- getsClient stgtMode
+  tgtMode <- getsSession stgtMode
   when (not (bproj body)
         && bfid body == side
         && isNothing tgtMode) $ do  -- targeting does a more extensive look
@@ -356,14 +357,14 @@ itemAidVerbMU aid verb iid ek cstore = do
 
 msgDuplicateScrap :: MonadClientUI m => m ()
 msgDuplicateScrap = do
-  report <- getsClient sreport
-  history <- getsClient shistory
+  report <- getsSession sreport
+  history <- getsSession shistory
   let (lastMsg, repRest) = lastMsgOfReport report
       lastDup = isJust . findInReport (== lastMsg)
       lastDuplicated = lastDup repRest
                        || maybe False lastDup (lastReportOfHistory history)
   when lastDuplicated $
-    modifyClient $ \cli -> cli {sreport = repRest}
+    modifySession $ \sess -> sess {sreport = repRest}
 
 -- TODO: "XXX spots YYY"? or blink or show the changed cursor?
 createActorUI :: MonadClientUI m
@@ -385,7 +386,7 @@ createActorUI aid body verbose verb = do
   -- Don't spam if the actor was already visible (but, e.g., on a tile that is
   -- invisible this turn (in that case move is broken down to lose+spot)
   -- or on a distant tile, via teleport while the observer teleported, too).
-  lastLost <- getsClient slastLost
+  lastLost <- getsSession slastLost
   when (ES.notMember aid lastLost
         && (not (bproj body) || verbose)) $ do
     actorVerbMU aid body verb
@@ -400,7 +401,7 @@ destroyActorUI aid body verb verboseVerb verbose = do
   side <- getsClient sside
   when (bfid body == side) $ do
     let upd = ES.delete aid
-    modifyClient $ \cli -> cli {sselected = upd $ sselected cli}
+    modifySession $ \sess -> sess {sselected = upd $ sselected sess}
   if bfid body == side && bhp body <= 0 && not (bproj body) then do
     when verbose $ actorVerbMU aid body verb
     let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
@@ -415,7 +416,7 @@ destroyActorUI aid body verb verboseVerb verbose = do
   else when verbose $ actorVerbMU aid body verboseVerb
   -- If pushed, animate spotting again, to draw attention to pushing.
   when (isNothing $ btrajectory body) $
-    modifyClient $ \cli -> cli {slastLost = ES.insert aid $ slastLost cli}
+    modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
 
 -- TODO: deduplicate wrt Server
 anyActorsAlive :: MonadClient m => FactionId -> Maybe ActorId -> m Bool
@@ -854,7 +855,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
       -- If the actor changes his speed this very clip, the test can faii,
       -- but it's rare and results in a minor UI issue, so we don't care.
       localTime <- getsState $ getLocalTime (blid b)
-      timeCutOff <- getsClient $ EM.findWithDefault timeZero arena . sdisplayed
+      timeCutOff <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
       when (localTime >= timeShift timeCutOff (Delta timeClip)
             || btime b >= timeShift timeCutOff
                                     (ticksPerMeter $ bspeed b activeItems)
@@ -878,7 +879,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           when (delta > Delta timeClip && not (bproj b))
             displayDelay
           let ageDisp = EM.insert arena (btime b)
-          modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
+          modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}
           unless (bproj b) $  -- projectiles display animations instead
             displayPush ""
 

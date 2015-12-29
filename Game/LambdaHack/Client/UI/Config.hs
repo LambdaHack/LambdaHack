@@ -7,6 +7,7 @@ module Game.LambdaHack.Client.UI.Config
 import Control.DeepSeq
 import Control.Exception.Assert.Sugar
 import Control.Monad
+import Data.Binary
 import qualified Data.Ini as Ini
 import qualified Data.Ini.Reader as Ini
 import qualified Data.Ini.Types as Ini
@@ -49,6 +50,8 @@ data Config = Config
   deriving (Show, Generic)
 
 instance NFData Config
+
+instance Binary Config
 
 parseConfig :: Ini.Config -> Config
 parseConfig cfg =

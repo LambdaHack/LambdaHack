@@ -18,6 +18,8 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.KeyBindings
+import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -52,26 +54,30 @@ restoreGame = do
 initCli :: MonadClient m
         => DebugModeCli
         -> (State -> m ())
-        -> (SessionUI -> m ())
+        -> ((Config -> SessionUI) -> m ())
         -> m Bool
-initCli sdebugCli putSt putSess = do
+initCli sdebugCli putSt tweakAndPutSess = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
   modifyClient $ \cli -> cli {sdebugCli}
   restored <- restoreGame
   case restored of
-    Just (s, cli, sess) | not $ snewGameCli sdebugCli -> do  -- Restore the game.
+    Just (s, cli, sess) | not $ snewGameCli sdebugCli -> do  -- Restore game.
       let sCops = updateCOps (const cops) s
       putSt sCops
-      putSess sess
+      tweakAndPutSess $ \_config -> sess
       putClient cli {sdebugCli}
       return True
     _ -> do  -- First visit ever, use the initial state.
       -- But preserve the previous history, if any (--newGame).
       case restored of
-        Just (_, cliR, _) -> modifyClient $ \cli -> cli {shistory = shistory cliR}
-        Nothing -> return ()
+        Just (_, _, sessR) -> do
+          let sess config = (emptySessionUI config) {shistory = shistory sessR}
+          tweakAndPutSess sess
+        Nothing -> do
+          let sess = emptySessionUI
+          tweakAndPutSess sess
       return False
 
 -- | The main game loop for an AI client.
@@ -122,14 +128,13 @@ loopUI copsClient sconfig sdebugCli = do
   -- Start the frontend.
   schanF <- liftIO $ chanFrontend sdebugCli
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
-  putSession SessionUI{..}
-  Kind.COps{corule} <- getsState scops
-  let title = rtitle $ Kind.stdRuleset corule
-  side <- getsClient sside
   restored <-
     initCli sdebugCli
             (\s -> handleResponseUI $ RespUpdAtomicUI $ UpdResumeServer s)
-            putSession
+            (\sess -> putSession (sess sconfig) {schanF, sbinding})
+  Kind.COps{corule} <- getsState scops
+  let title = rtitle $ Kind.stdRuleset corule
+  side <- getsClient sside
   cmd1 <- receiveResponse
   case (restored, cmd1) of
     (True, RespUpdAtomicUI UpdResume{}) -> do
@@ -149,7 +154,7 @@ loopUI copsClient sconfig sdebugCli = do
       msgAdd $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
       shistory <- defaultHistory $ configHistoryMax sconfig
-      modifyClient $ \cli -> cli {shistory}
+      modifySession $ \sess -> sess {shistory}
       handleResponseUI cmd1
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
   fact <- getsState $ (EM.! side) . sfactionD
