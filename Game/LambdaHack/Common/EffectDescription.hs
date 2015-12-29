@@ -13,7 +13,6 @@ import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind
 

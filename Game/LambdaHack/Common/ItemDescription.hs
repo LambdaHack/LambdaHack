@@ -17,7 +17,6 @@ import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 

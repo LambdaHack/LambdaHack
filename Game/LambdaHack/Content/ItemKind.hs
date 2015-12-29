@@ -26,7 +26,6 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 
 -- | Item properties that are fixed for a given kind of items.
 data ItemKind = ItemKind

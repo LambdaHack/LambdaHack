@@ -9,7 +9,7 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
-import Control.Monad (filterM, unless, when, void, forM, forM_)
+import Control.Monad (filterM, forM, forM_, unless, void, when)
 import Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.HashMap.Strict as HM
@@ -30,7 +30,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request

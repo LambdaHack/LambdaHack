@@ -11,9 +11,9 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
-import Control.Monad (void, unless, when, forM_, join)
+import Control.Monad (forM_, join, unless, void, when)
 import qualified Data.EnumMap.Strict as EM
-import Data.List (partition, delete)
+import Data.List (delete, partition)
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -34,7 +34,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random

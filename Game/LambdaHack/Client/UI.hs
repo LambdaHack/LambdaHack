@@ -42,8 +42,8 @@ import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind

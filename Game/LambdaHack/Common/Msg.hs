@@ -1,8 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Common.Msg
-  ( makePhrase, makeSentence
-  , Msg, (<>), (<+>), tshow
+  ( Msg
   , moreMsg, endMsg, yesnoMsg
   , splitText
   , Report, emptyReport, nullReport, singletonReport, addMsg, prependMsg
@@ -24,25 +23,11 @@ import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.RingBuffer as RB
 import Game.LambdaHack.Common.Time
-
-infixr 6 <+>  -- TODO: not needed when we require a very new minimorph
-(<+>) :: Text -> Text -> Text
-(<+>) = (MU.<+>)
-
--- Show and pack the result of @show@.
-tshow :: Show a => a -> Text
-tshow x = T.pack $ show x
-
--- | Re-exported English phrase creation functions, applied to default
--- irregular word sets.
-makePhrase, makeSentence :: [MU.Part] -> Text
-makePhrase = MU.makePhrase MU.defIrregular
-makeSentence = MU.makeSentence MU.defIrregular
 
 -- | The type of a single message.
 type Msg = Text

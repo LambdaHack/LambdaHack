@@ -17,6 +17,7 @@ import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 
 -- | Bindings and other information about human player commands.

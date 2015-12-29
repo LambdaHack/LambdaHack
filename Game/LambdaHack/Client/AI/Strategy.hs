@@ -10,12 +10,12 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Applicative
-import Control.Monad (MonadPlus(..), ap)
+import Control.Monad (MonadPlus (..), ap)
 import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Frequency as Frequency
-import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Misc
 
 -- | A strategy is a choice of (non-empty) frequency tables
 -- of possible actions.

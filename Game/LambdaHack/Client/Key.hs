@@ -18,7 +18,7 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Prelude hiding (Left, Right)
 
-import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 

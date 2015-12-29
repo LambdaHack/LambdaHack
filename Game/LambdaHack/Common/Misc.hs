@@ -7,6 +7,7 @@ module Game.LambdaHack.Common.Misc
     -- * Item containers
   , Container(..), CStore(..), ItemDialogMode(..)
     -- * Assorted
+  , tshow, (<+>), (<>), makePhrase, makeSentence
   , normalLevelBound, divUp, GroupName, toGroupName, Freqs, breturn
   , serverSaveName, Rarity, validateRarity, Tactic(..)
   ) where
@@ -23,6 +24,7 @@ import Data.Function
 import Data.Hashable
 import Data.Key
 import Data.List (nubBy, sortBy)
+import Data.Monoid
 import Data.Ord
 import Data.String (IsString (..))
 import Data.Text (Text)
@@ -31,6 +33,20 @@ import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Point
+
+infixr 6 <+>  -- TODO: not needed when we require a very new minimorph
+(<+>) :: Text -> Text -> Text
+(<+>) = (MU.<+>)
+
+-- Show and pack the result of @show@.
+tshow :: Show a => a -> Text
+tshow x = T.pack $ show x
+
+-- | Re-exported English phrase creation functions, applied to default
+-- irregular word sets.
+makePhrase, makeSentence :: [MU.Part] -> Text
+makePhrase = MU.makePhrase MU.defIrregular
+makeSentence = MU.makeSentence MU.defIrregular
 
 serverSaveName :: String
 serverSaveName = "server.sav"

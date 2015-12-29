@@ -17,7 +17,6 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 

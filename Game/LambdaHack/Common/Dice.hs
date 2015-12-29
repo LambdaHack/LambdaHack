@@ -27,7 +27,7 @@ import Data.Tuple
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Misc
 
 type SimpleDice = Frequency Int
 

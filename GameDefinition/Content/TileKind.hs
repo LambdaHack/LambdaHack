@@ -8,7 +8,6 @@ import qualified Data.Text as T
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind
 

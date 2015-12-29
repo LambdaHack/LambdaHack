@@ -22,7 +22,6 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
 
 data SlotChar = SlotChar {slotPrefix :: Int, slotChar :: Char}

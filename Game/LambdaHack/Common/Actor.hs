@@ -27,7 +27,6 @@ import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time

@@ -42,7 +42,6 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Save
 import qualified Game.LambdaHack.Common.Save as Save

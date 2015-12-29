@@ -15,7 +15,6 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Actor (verbCStore)
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK

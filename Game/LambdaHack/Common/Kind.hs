@@ -15,7 +15,6 @@ import qualified Data.Text as T
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind

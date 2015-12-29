@@ -18,7 +18,7 @@ import System.FilePath
 import System.IO
 import qualified System.Random as R
 
-import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Misc
 
 -- TODO: refactor all this somehow, preferably restricting the use
 -- of IO and/or making these operations a part of the Client

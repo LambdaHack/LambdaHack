@@ -26,7 +26,6 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 
 -- TODO: do not expose runFrequency
 -- | The frequency distribution type. Not normalized (operations may
