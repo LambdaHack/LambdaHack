@@ -5,6 +5,7 @@ module Game.LambdaHack.Client.LoopClient (loopAI, loopUI) where
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
+import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import System.FilePath
@@ -33,7 +34,8 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 
-restoreGame :: MonadClient m => m (Maybe (State, StateClient, SessionUI))
+restoreGame :: (Binary sess, MonadClient m)
+            => m (Maybe (State, StateClient, sess))
 restoreGame = do
   bench <- getsClient $ sbenchmark . sdebugCli
   if bench then return Nothing
@@ -51,47 +53,27 @@ restoreGame = do
     liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF
                               name copies pathsDataFile
 
-initCli :: MonadClient m
-        => DebugModeCli
-        -> (State -> m ())
-        -> ((Config -> SessionUI) -> m ())
-        -> m Bool
-initCli sdebugCli putSt tweakAndPutSess = do
-  -- Warning: state and client state are invalid here, e.g., sdungeon
-  -- and sper are empty.
-  cops <- getsState scops
-  modifyClient $ \cli -> cli {sdebugCli}
-  restored <- restoreGame
-  case restored of
-    Just (s, cli, sess) | not $ snewGameCli sdebugCli -> do  -- Restore game.
-      let sCops = updateCOps (const cops) s
-      putSt sCops
-      tweakAndPutSess $ \_config -> sess
-      putClient cli {sdebugCli}
-      return True
-    _ -> do  -- First visit ever, use the initial state.
-      -- But preserve the previous history, if any (--newGame).
-      case restored of
-        Just (_, _, sessR) -> do
-          let sess config = (emptySessionUI config) {shistory = shistory sessR}
-          tweakAndPutSess sess
-        Nothing -> do
-          let sess = emptySessionUI
-          tweakAndPutSess sess
-      return False
-
 -- | The main game loop for an AI client.
-loopAI :: ( MonadAtomic m
+loopAI :: ( MonadClientSetup m
+          , MonadAtomic m
           , MonadClientReadResponse ResponseAI m
           , MonadClientWriteRequest RequestAI m )
        => DebugModeCli -> m ()
 loopAI sdebugCli = do
   modifyClient $ \cli -> cli {sisAI = True}
   side <- getsClient sside
-  restored <-
-    initCli sdebugCli
-            (\s -> handleResponseAI $ RespUpdAtomicAI $ UpdResumeServer s)
-            (const $ return ())
+  -- Warning: state and client state are invalid here, e.g., sdungeon
+  -- and sper are empty.
+  cops <- getsState scops
+  modifyClient $ \cli -> cli {sdebugCli}
+  restoredG <- restoreGame
+  restored <- case restoredG of
+    Just (s, cli, ()) | not $ snewGameCli sdebugCli -> do  -- Restore game.
+      let sCops = updateCOps (const cops) s
+      handleResponseAI $ RespUpdAtomicAI $ UpdResumeServer sCops
+      putClient cli {sdebugCli}
+      return True
+    _ -> return False
   cmd1 <- receiveResponse
   case (restored, cmd1) of
     (True, RespUpdAtomicAI UpdResume{}) -> return ()
@@ -116,7 +98,8 @@ loopAI sdebugCli = do
     unless quit loop
 
 -- | The main game loop for a UI client.
-loopUI :: ( MonadClientUI m
+loopUI :: ( MonadClientSetup m
+          , MonadClientUI m
           , MonadAtomic m
           , MonadClientReadResponse ResponseUI m
           , MonadClientWriteRequest RequestUI m )
@@ -128,10 +111,27 @@ loopUI copsClient sconfig sdebugCli = do
   -- Start the frontend.
   schanF <- liftIO $ chanFrontend sdebugCli
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
-  restored <-
-    initCli sdebugCli
-            (\s -> handleResponseUI $ RespUpdAtomicUI $ UpdResumeServer s)
-            (\sess -> putSession (sess sconfig) {schanF, sbinding})
+  -- Warning: state and client state are invalid here, e.g., sdungeon
+  -- and sper are empty.
+  cops <- getsState scops
+  modifyClient $ \cli -> cli {sdebugCli}
+  restoredG <- restoreGame
+  restored <- case restoredG of
+    Just (s, cli, sess) | not $ snewGameCli sdebugCli -> do  -- Restore game.
+      let sCops = updateCOps (const cops) s
+      handleResponseUI $ RespUpdAtomicUI $ UpdResumeServer sCops
+      putSession sess {schanF, sbinding}
+      putClient cli {sdebugCli}
+      return True
+    _ -> do  -- First visit ever, use the initial state.
+      -- But preserve the previous history, if any (--newGame).
+      let sess = emptySessionUI sconfig
+      case restoredG of
+        Just (_, _, sessR) ->
+          putSession sess {schanF, sbinding, shistory = shistory sessR}
+        Nothing ->
+          putSession sess {schanF, sbinding}
+      return False
   Kind.COps{corule} <- getsState scops
   let title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside

@@ -2,10 +2,11 @@
 module Game.LambdaHack.Client.MonadClient
   ( -- * Basic client monad
     MonadClient( getClient, getsClient, modifyClient, putClient
-               , saveClient  -- exposed only to be implemented, not used
-               , restartClient
                , liftIO  -- exposed only to be implemented, not used
                )
+  , MonadClientSetup( saveClient  -- exposed only to be implemented, not used
+                    , restartClient
+                    )
     -- * Assorted primitives
   , debugPrint, saveName, removeServerSave
   , defaultHistory, rndToAction
@@ -36,11 +37,13 @@ class MonadStateRead m => MonadClient m where
   getsClient    :: (StateClient -> a) -> m a
   modifyClient  :: (StateClient -> StateClient) -> m ()
   putClient     :: StateClient -> m ()
-  saveClient    :: m ()
-  restartClient :: m ()
   -- We do not provide a MonadIO instance, so that outside of Action/
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO        :: IO a -> m a
+
+class MonadClient m => MonadClientSetup m where
+  saveClient    :: m ()
+  restartClient :: m ()
 
 debugPrint :: MonadClient m => Text -> m ()
 debugPrint t = do

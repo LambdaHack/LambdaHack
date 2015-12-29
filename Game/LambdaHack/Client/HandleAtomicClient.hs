@@ -228,7 +228,7 @@ cmdAtomicFilterCli cmd = case cmd of
 
 -- | Effect of atomic actions on client state is calculated
 -- in the global state before the command is executed.
-cmdAtomicSemCli :: MonadClient m => UpdAtomic -> m ()
+cmdAtomicSemCli :: MonadClientSetup m => UpdAtomic -> m ()
 cmdAtomicSemCli cmd = case cmd of
   UpdCreateActor aid body _ -> createActor aid body
   UpdDestroyActor aid b _ -> destroyActor aid b True

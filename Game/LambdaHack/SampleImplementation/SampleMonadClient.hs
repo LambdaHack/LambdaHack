@@ -18,6 +18,7 @@ import Prelude.Compat
 import Control.Concurrent.STM
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
+import Data.Binary
 import System.FilePath
 
 import Game.LambdaHack.Atomic.HandleAtomicWrite
@@ -27,7 +28,6 @@ import Game.LambdaHack.Client.FileClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
@@ -38,26 +38,26 @@ import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.ProtocolServer
 
-data CliState resp req = CliState
+data CliState sess resp req = CliState
   { cliState   :: !State        -- ^ current global state
   , cliClient  :: !StateClient  -- ^ current client state
   , cliDict    :: !(ChanServer resp req)
                                 -- ^ this client connection information
-  , cliToSave  :: !(Save.ChanSave (State, StateClient, SessionUI))
+  , cliToSave  :: !(Save.ChanSave (State, StateClient, sess))
                                 -- ^ connection to the save thread
-  , cliSession :: !SessionUI     -- ^ UI state, empty for AI clients
+  , cliSession :: !sess         -- ^ UI state, empty for AI clients
   }
 
 -- | Client state transformation monad.
-newtype CliImplementation resp req a =
-    CliImplementation {runCliImplementation :: StateT (CliState resp req) IO a}
+newtype CliImplementation sess resp req a = CliImplementation
+  { runCliImplementation :: StateT (CliState sess resp req) IO a }
   deriving (Monad, Functor, Applicative)
 
-instance MonadStateRead (CliImplementation resp req) where
+instance MonadStateRead (CliImplementation sess resp req) where
   getState    = CliImplementation $ gets cliState
   getsState f = CliImplementation $ gets $ f . cliState
 
-instance MonadStateWrite (CliImplementation resp req) where
+instance MonadStateWrite (CliImplementation sess resp req) where
   modifyState f = CliImplementation $ state $ \cliS ->
     let newCliS = cliS {cliState = f $ cliState cliS}
     in newCliS `seq` ((), newCliS)
@@ -65,7 +65,7 @@ instance MonadStateWrite (CliImplementation resp req) where
     let newCliS = cliS {cliState = s}
     in newCliS `seq` ((), newCliS)
 
-instance MonadClient (CliImplementation resp req) where
+instance MonadClient (CliImplementation sess resp req) where
   getClient      = CliImplementation $ gets cliClient
   getsClient   f = CliImplementation $ gets $ f . cliClient
   modifyClient f = CliImplementation $ state $ \cliS ->
@@ -74,13 +74,24 @@ instance MonadClient (CliImplementation resp req) where
   putClient    s = CliImplementation $ state $ \cliS ->
     let newCliS = cliS {cliClient = s}
     in newCliS `seq` ((), newCliS)
-  saveClient = CliImplementation $ do
+  liftIO         = CliImplementation . IO.liftIO
+
+instance MonadClientSetup (CliImplementation () resp req) where
+  saveClient     = CliImplementation $ do
+    toSave <- gets cliToSave
+    s <- gets cliState
+    cli <- gets cliClient
+    IO.liftIO $ Save.saveToChan toSave (s, cli, ())
+  restartClient  = return ()
+
+instance MonadClientSetup (CliImplementation SessionUI resp req) where
+  saveClient     = CliImplementation $ do
     toSave <- gets cliToSave
     s <- gets cliState
     cli <- gets cliClient
     sess <- gets cliSession
     IO.liftIO $ Save.saveToChan toSave (s, cli, sess)
-  restartClient = CliImplementation $ state $ \cliS ->
+  restartClient  = CliImplementation $ state $ \cliS ->
     let sess = cliSession cliS
         newSess = (emptySessionUI (sconfig sess))
                     { schanF = schanF sess
@@ -89,9 +100,8 @@ instance MonadClient (CliImplementation resp req) where
                     , sreport = sreport sess }
         newCliS = cliS {cliSession = newSess}
     in newCliS `seq` ((), newCliS)
-  liftIO         = CliImplementation . IO.liftIO
 
-instance MonadClientUI (CliImplementation resp req) where
+instance MonadClientUI (CliImplementation SessionUI resp req) where
   getSession    = CliImplementation $ gets cliSession
   getsSession f  = CliImplementation $ gets $ f . cliSession
   modifySession f = CliImplementation $ state $ \cliS ->
@@ -101,30 +111,31 @@ instance MonadClientUI (CliImplementation resp req) where
     let newCliS = cliS {cliSession = s}
     in newCliS `seq` ((), newCliS)
 
-instance MonadClientReadResponse resp (CliImplementation resp req) where
+instance MonadClientReadResponse resp (CliImplementation sess resp req) where
   receiveResponse     = CliImplementation $ do
     ChanServer{responseS} <- gets cliDict
     IO.liftIO $ atomically . readTQueue $ responseS
 
-instance MonadClientWriteRequest req (CliImplementation resp req) where
+instance MonadClientWriteRequest req (CliImplementation sess resp req) where
   sendRequest scmd = CliImplementation $ do
     ChanServer{requestS} <- gets cliDict
     IO.liftIO $ atomically . writeTQueue requestS $ scmd
 
 -- | The game-state semantics of atomic commands
 -- as computed on the client.
-instance MonadAtomic (CliImplementation resp req) where
+instance MonadAtomic (CliImplementation sess resp req) where
   execAtomic = handleCmdAtomic
 
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
-executorCli :: Kind.COps
-            -> Config
-            -> CliImplementation resp req ()
+executorCli :: Binary sess
+            => Kind.COps
+            -> sess
+            -> CliImplementation sess resp req ()
             -> FactionId
             -> ChanServer resp req
             -> IO ()
-executorCli cops config m fid cliDict =
+executorCli cops cliSession m fid cliDict =
   let saveFile (_, cli, _) =
         ssavePrefixCli (sdebugCli cli)
         <.> saveName (sside cli) (sisAI cli)
@@ -133,7 +144,7 @@ executorCli cops config m fid cliDict =
         , cliClient = emptyStateClient fid
         , cliDict
         , cliToSave
-        , cliSession = emptySessionUI config
+        , cliSession
         }
       exe = evalStateT (runCliImplementation m) . totalState
   in Save.wrapInSaves tryCreateDir encodeEOF saveFile exe
