@@ -20,7 +20,6 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
@@ -146,7 +145,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   NoChangeDunLeader -> True
   NoChangeLvlLeader -> True
 
-showReqFailure :: ReqFailure -> Msg
+showReqFailure :: ReqFailure -> Text
 showReqFailure reqFailure = case reqFailure of
   MoveNothing -> "wasting time on moving into obstacle"
   MeleeSelf -> "trying to melee oneself"

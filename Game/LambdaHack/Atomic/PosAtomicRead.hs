@@ -13,6 +13,7 @@ import Prelude.Compat
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic.CmdAtomic
@@ -24,7 +25,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
@@ -297,7 +297,7 @@ breakSfxAtomic cmd = case cmd of
 
 -- | Messages for some unseen game object creation/destruction/alteration.
 loudUpdAtomic :: MonadStateRead m
-              => Bool -> FactionId -> UpdAtomic -> m (Maybe Msg)
+              => Bool -> FactionId -> UpdAtomic -> m (Maybe Text)
 loudUpdAtomic local fid cmd = do
   msound <- case cmd of
     UpdDestroyActor _ body _

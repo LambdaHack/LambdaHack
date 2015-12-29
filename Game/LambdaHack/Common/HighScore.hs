@@ -26,7 +26,6 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Content.ModeKind (HiCondPoly, HiIndeterminant (..),
@@ -149,7 +148,7 @@ showTable :: TimeZone -> ScoreTable -> Int -> Int -> [Text]
 showTable tz (ScoreTable table) start height =
   let zipped    = zip [1..] table
       screenful = take height . drop (start - 1) $ zipped
-  in intercalate [""] (map (showScore tz) screenful) ++ [moreMsg]
+  in intercalate [""] (map (showScore tz) screenful) ++ ["--more--  "]  --TODO
 
 -- | Produce a couple of renderings of the high scores table.
 showNearbyScores :: TimeZone -> Int -> ScoreTable -> Int -> [[Text]]

@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, frontendShutdown
-  , scoreToSlideshow, msgPromptAI
+  , scoreToSlideshow, msgPromptAI, defaultHistory
   , getLeaderUI, getArenaUI, viewedLevel
   , targetDescLeader, targetDescCursor
   , leaderTgtToPos, leaderTgtAims, cursorToPos, splitOKX
@@ -30,6 +30,7 @@ import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)
+import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import Data.Time.LocalTime
 import qualified NLP.Miniutter.English as MU
@@ -441,3 +442,13 @@ msgPromptAI = do
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
   return $! if underAI then "[press ESC for Main Menu]" else ""
+
+defaultHistory :: MonadClient m => Int -> m History
+defaultHistory configHistoryMax = liftIO $ do
+  utcTime <- getCurrentTime
+  timezone <- getTimeZone utcTime
+  let curDate = MU.Text $ tshow $ utcToLocalTime timezone utcTime
+  let emptyHist = emptyHistory configHistoryMax
+  return $! addReport emptyHist timeZero
+         $! singletonReport
+         $! makeSentence ["Human history log started on", curDate]

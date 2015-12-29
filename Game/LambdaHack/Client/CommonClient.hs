@@ -14,6 +14,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
+import Data.Text (Text)
 import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 
@@ -30,7 +31,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -108,7 +108,7 @@ aidTgtToPos aid lidV tgt =
 -- because the target actor can be obscured by a glass wall
 -- or be out of sight range, but in weapon range.
 aidTgtAims :: MonadClient m
-           => ActorId -> LevelId -> Maybe Target -> m (Either Msg Int)
+           => ActorId -> LevelId -> Maybe Target -> m (Either Text Int)
 aidTgtAims aid lidV tgt = do
   let findNewEps onlyFirst pos = do
         oldEps <- getsClient seps

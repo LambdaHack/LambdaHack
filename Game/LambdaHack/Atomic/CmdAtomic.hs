@@ -22,6 +22,7 @@ import Prelude.Compat
 
 import Data.Binary
 import Data.Int (Int64)
+import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
@@ -32,7 +33,6 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
@@ -112,7 +112,7 @@ data UpdAtomic =
   | UpdResumeServer !State
   | UpdKillExit !FactionId
   | UpdWriteSave
-  | UpdMsgAll !Msg
+  | UpdMsgAll !Text
   | UpdRecordHistory !FactionId
   deriving (Show, Eq, Generic)
 
@@ -130,8 +130,8 @@ data SfxAtomic =
   | SfxTrigger !ActorId !Point !TK.Feature
   | SfxShun !ActorId !Point !TK.Feature
   | SfxEffect !FactionId !ActorId !IK.Effect
-  | SfxMsgFid !FactionId !Msg
-  | SfxMsgAll !Msg
+  | SfxMsgFid !FactionId !Text
+  | SfxMsgAll !Text
   | SfxActorStart !ActorId
   deriving (Show, Eq, Generic)
 
