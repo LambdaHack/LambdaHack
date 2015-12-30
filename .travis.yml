@@ -19,16 +19,16 @@ matrix:
     - env: CABALVER=1.18 GHCVER=7.8.2 GTKVTY=vty
       compiler: ": #GHC 7.8.2"
       addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=1.18 GHCVER=7.8.3 GTKVTY=vty
+    - env: CABALVER=1.18 GHCVER=7.8.3 GTKVTY=curses
       compiler: ": #GHC 7.8.3"
       addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
     - env: CABALVER=1.18 GHCVER=7.8.4 GTKVTY=gtk
       compiler: ": #GHC 7.8.4"
       addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.4,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=1.22 GHCVER=7.10.1 GTKVTY=gtk
+    - env: CABALVER=1.22 GHCVER=7.10.1 GTKVTY=vty
       compiler: ": #GHC 7.10.1"
       addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=1.22 GHCVER=7.10.2 GTKVTY=vty
+    - env: CABALVER=1.22 GHCVER=7.10.2 GTKVTY=curses
       compiler: ": #GHC 7.10.2"
       addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
     - env: CABALVER=1.22 GHCVER=7.10.3 GTKVTY=gtk
@@ -60,8 +60,10 @@ install:
    if [ $GTKVTY = "gtk" ]; then
      cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v gtk2hs-buildtools > installplan.txt
      cabal install -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
-   else
+   elif [ $GTKVTY = "vty" ]; then
      cabal install -fvty -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt
+   else
+     cabal install -fcurses -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt
    fi
 
 
@@ -81,8 +83,10 @@ install:
      if [ $GTKVTY = "gtk" ]; then
        cabal install gtk2hs-buildtools;
        cabal install -frelease --only-dependencies --enable-tests --enable-benchmarks;
-     else
+     elif [ $GTKVTY = "vty" ]; then
        cabal install -fvty -frelease --only-dependencies --enable-tests --enable-benchmarks;
+     else
+       cabal install -fvurses -frelease --only-dependencies --enable-tests --enable-benchmarks;
      fi
    fi
 
@@ -103,8 +107,10 @@ script:
  - |
    if [ $GTKVTY = "gtk" ]; then
      cabal configure -frelease --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
-   else
+   elif [ $GTKVTY = "vty" ]; then
      cabal configure -fvty -frelease --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+   else
+     cabal configure -fcurses -frelease --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    fi
 
  - cabal build   # this builds all libraries and executables (including tests/benchmarks)
@@ -123,8 +129,10 @@ script:
    if [ -f "$SRC_TGZ" ]; then
       if [ $GTKVTY = "gtk" ]; then
         cabal install -j2 "$SRC_TGZ";
-      else
+      elif [ $GTKVTY = "vty" ]; then
         cabal install -fvty -j2 "$SRC_TGZ";
+      else
+        cabal install -fcurses -j2 "$SRC_TGZ";
       fi;
    else
       echo "expected '$SRC_TGZ' not found";
