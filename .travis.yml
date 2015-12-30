@@ -56,6 +56,7 @@ install:
    fi
  - travis_retry cabal update -v
  - sed -i 's/^jobs:/-- jobs:/' ${HOME}/.cabal/config
+ - echo "jobs: 2" >> ${HOME}/.cabal/config
  - |
    if [ $GTKVTY = "gtk" ]; then
      cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v gtk2hs-buildtools > installplan.txt
@@ -128,11 +129,11 @@ script:
    cd dist/;
    if [ -f "$SRC_TGZ" ]; then
       if [ $GTKVTY = "gtk" ]; then
-        cabal install -j2 "$SRC_TGZ";
+        cabal install "$SRC_TGZ";
       elif [ $GTKVTY = "vty" ]; then
-        cabal install -fvty -j2 "$SRC_TGZ";
+        cabal install -fvty "$SRC_TGZ";
       else
-        cabal install -fcurses -j2 "$SRC_TGZ";
+        cabal install -fcurses "$SRC_TGZ";
       fi;
    else
       echo "expected '$SRC_TGZ' not found";
