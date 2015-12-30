@@ -21,6 +21,7 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.WidgetClient
@@ -35,7 +36,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
@@ -468,7 +468,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
   let underAI = isAIFact fact
   mleader <- getsClient _sleader
   bag <- getsState $ getActorBag aid cstore2
-  let kit@(n, _) = bag EM.! iid
+  let kit = bag EM.! iid
   itemToF <- itemToFullClient
   (itemSlots, _) <- getsClient sslots
   let itemFull = itemToF iid kit
@@ -480,24 +480,8 @@ moveItemUI iid k aid cstore1 cstore2 = do
                        : delete cstore2 (delete cstore1 lastStore)
         modifyClient $ \cli -> cli { slastSlot = l
                                    , slastStore = newStore }
-      if cstore1 == CGround && Just aid == mleader && not underAI then do
+      if cstore1 == CGround && Just aid == mleader && not underAI then
         itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
-        localTime <- getsState $ getLocalTime (blid b)
-        let label = slotLabel l
-        msgAdd $ makePhrase
-                   [ "\n"
-                   , MU.Text label
-                   , partItemWs n cstore2 localTime itemFull
-                   , "\n" ]
-{- TODO: when messages are composed from attrs, not chars
-                insertSymbol line =
-                  let colorSymbol = uncurry (flip Color.AttrChar)
-                                            (viewItem $ itemBase itemFull)
-                  in take (T.length label + 1) line
-                     ++ [colorSymbol]
-                     ++ drop (T.length label + 2) line
-                ov = updateOverlayLine 0 insertSymbol $ toOverlay [phrase]
--}
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
         itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
     Nothing -> assert `failure` (iid, itemFull)
