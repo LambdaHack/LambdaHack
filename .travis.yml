@@ -1,92 +1,116 @@
-# NB: don't set `language: haskell` here
+# This file has been generated -- see https://github.com/hvr/multi-ghc-travis
+language: c
+sudo: false
 
-# See also https://github.com/hvr/multi-ghc-travis for more information
+cache:
+  directories:
+    - $HOME/.cabsnap
+    - $HOME/.cabal/packages
 
-env:
- - MYSETUP=7.8.4.gtk
- - MYSETUP=7.8.4.vty
- - MYSETUP=7.10.1.gtk
- - MYSETUP=7.10.1.vty
- - MYSETUP=7.10.2.gtk
- - MYSETUP=7.10.2.vty
+before_cache:
+  - rm -fv $HOME/.cabal/packages/hackage.haskell.org/build-reports.log
+  - rm -fv $HOME/.cabal/packages/hackage.haskell.org/00-index.tar
 
-# Note: the distinction between `before_install` and `install` is not
-#       important.
+matrix:
+  include:
+    - env: CABALVER=1.18 GHCVER=7.8.1 GTKVTY=gtk
+      compiler: ": #GHC 7.8.1"
+      addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.18 GHCVER=7.8.2 GTKVTY=vty
+      compiler: ": #GHC 7.8.2"
+      addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.18 GHCVER=7.8.3 GTKVTY=vty
+      compiler: ": #GHC 7.8.3"
+      addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.18 GHCVER=7.8.4 GTKVTY=gtk
+      compiler: ": #GHC 7.8.4"
+      addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.4,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.22 GHCVER=7.10.1 GTKVTY=gtk
+      compiler: ": #GHC 7.10.1"
+      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.22 GHCVER=7.10.2 GTKVTY=vty
+      compiler: ": #GHC 7.10.2"
+      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.22 GHCVER=7.10.3 GTKVTY=gtk
+      compiler: ": #GHC 7.10.3"
+      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=head GHCVER=head GTKVTY=gtk
+      compiler: ": #GHC head"
+      addons: {apt: {packages: [cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+
+  allow_failures:
+    - env: CABALVER=head GHCVER=head
+
 before_install:
- - case "$MYSETUP" in
-    "") ;;
-
-    "7.8.4.gtk")
-      export GHCVER=7.8.4 ;
-      export CABALVER=1.18 ;
-      export GTKVTY=gtk ;;
-
-    "7.8.4.vty")
-      export GHCVER=7.8.4 ;
-      export CABALVER=1.18 ;
-      export GTKVTY=vty ;;
-
-    "7.10.1.gtk")
-      export GHCVER=7.10.1 ;
-      export CABALVER=1.22 ;
-      export GTKVTY=gtk ;;
-
-    "7.10.1.vty")
-      export GHCVER=7.10.1 ;
-      export CABALVER=1.22 ;
-      export GTKVTY=vty ;;
-
-    "7.10.2.gtk")
-      export GHCVER=7.10.2 ;
-      export CABALVER=1.22 ;
-      export GTKVTY=gtk ;;
-
-    "7.10.2.vty")
-      export GHCVER=7.10.2 ;
-      export CABALVER=1.22 ;
-      export GTKVTY=vty ;;
-
-    *)
-      export GHCVER=unknown ;
-      echo "unknown/invalid Haskell Platform requested" ;
-      exit 1 ;;
-
-   esac
-
- - travis_retry sudo add-apt-repository -y ppa:hvr/ghc
- - travis_retry sudo apt-get update
- - travis_retry sudo apt-get install cabal-install-$CABALVER ghc-$GHCVER
+ - unset CC
  - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
+ - export PATH=/opt/alex/3.1.4/bin:/opt/happy/1.19.5/bin:$PATH
 
 install:
  - cabal --version
  - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
- - travis_retry cabal update
-
- - travis_retry sudo apt-get install happy-1.19.4 alex-3.1.3;
- - export PATH=/opt/alex/3.1.3/bin:/opt/happy/1.19.4/bin:$PATH;
-
-# mine:
+ - if [ -f $HOME/.cabal/packages/hackage.haskell.org/00-index.tar.gz ];
+   then
+     zcat $HOME/.cabal/packages/hackage.haskell.org/00-index.tar.gz >
+          $HOME/.cabal/packages/hackage.haskell.org/00-index.tar;
+   fi
+ - travis_retry cabal update -v
+ - sed -i 's/^jobs:/-- jobs:/' ${HOME}/.cabal/config
  - |
    if [ $GTKVTY = "gtk" ]; then
-     cabal install -j2 gtk2hs-buildtools;
-     cabal install -j2 -f-release --only-dependencies --force-reinstalls;
-     cabal configure -f-release --enable-tests;
+     cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v gtk2hs-buildtools > installplan.txt
+     cabal install -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    else
-     cabal install -fvty -j2 -frelease --only-dependencies --force-reinstalls;
-     cabal configure -fvty -frelease --enable-tests;
+     cabal install -fvty -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt
    fi
- - cabal build -j2
+
+
+ - sed -i -e '1,/^Resolving /d' installplan.txt; cat installplan.txt
+
+# check whether current requested install-plan matches cached package-db snapshot
+ - if diff -u installplan.txt $HOME/.cabsnap/installplan.txt;
+   then
+     echo "cabal build-cache HIT";
+     rm -rfv .ghc;
+     cp -a $HOME/.cabsnap/ghc $HOME/.ghc;
+     cp -a $HOME/.cabsnap/lib $HOME/.cabsnap/share $HOME/.cabsnap/bin $HOME/.cabal/;
+   else
+     echo "cabal build-cache MISS";
+     rm -rf $HOME/.cabsnap;
+     mkdir -p $HOME/.ghc $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin;
+     if [ $GTKVTY = "gtk" ]; then
+       cabal install gtk2hs-buildtools;
+       cabal install -frelease --only-dependencies --enable-tests --enable-benchmarks;
+     else
+       cabal install -fvty -frelease --only-dependencies --enable-tests --enable-benchmarks;
+     fi
+   fi
+
+# snapshot package-db on cache miss
+ - if [ ! -d $HOME/.cabsnap ];
+   then
+      echo "snapshotting package-db to build-cache";
+      mkdir $HOME/.cabsnap;
+      cp -a $HOME/.ghc $HOME/.cabsnap/ghc;
+      cp -a $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin installplan.txt $HOME/.cabsnap/;
+   fi
+
+# Here starts the actual work to be performed for the package under test;
+# any command which exits with a non-zero exit code causes the build to fail.
+script:
+ - if [ -f configure.ac ]; then autoreconf -i; fi
+
+ - |
+   if [ $GTKVTY = "gtk" ]; then
+     cabal configure -frelease --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+   else
+     cabal configure -fvty -frelease --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+   fi
+
+ - cabal build   # this builds all libraries and executables (including tests/benchmarks)
+
  - cabal test
 
-# - cabal install -j2 -frelease -fcurses --only-dependencies
-# - cabal configure -f-release -fcurses
-# - cabal build -j2
-
-# Here starts the actual work to be performed for the package under
-# test; any command which exits with a non-zero exit code causes the
-# build to fail.
-script:
  # tests that a source-distribution is correct; ignore -O2 warning
  - cabal check || true
 
@@ -108,7 +132,6 @@ script:
    fi;
    cd ..
 
-# mine:
  - touch /tmp/stdtest.log;
  - (make test-travis-medium-no-safari || (tail -n 200 /tmp/stdtest.log ; exit 77));
 
