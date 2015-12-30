@@ -129,7 +129,7 @@ rawAspectToSuff aspect =
     Periodic{} -> ""  -- printed specially
     Timeout{}  -> ""  -- printed specially
     AddHurtMelee t -> wrapInParens $ t <> "% melee"
-    AddHurtRanged  t -> wrapInParens $ t <> "% ranged"
+    AddHurtRanged t -> wrapInParens $ t <> "% ranged"
     AddArmorMelee t -> "[" <> t <> "%]"
     AddArmorRanged t -> "{" <> t <> "%}"
     AddMaxHP t -> wrapInParens $ t <+> "HP"
@@ -164,7 +164,7 @@ aspectToSuffix = rawAspectToSuff . fmap affixBonus
 
 affixBonus :: Int -> Text
 affixBonus p = case compare p 0 of
-  EQ -> ""
+  EQ -> "0"
   LT -> tshow p
   GT -> "+" <> tshow p
 

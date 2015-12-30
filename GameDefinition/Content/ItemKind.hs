@@ -104,7 +104,7 @@ paralizingProj = ItemKind
   , irarity  = [(5, 5), (10, 5)]
   , iverbHit = "entangle"
   , iweight  = 500
-  , iaspects = [AddHurtRanged (dl 2 |*| 20)]
+  , iaspects = [AddHurtRanged (1 + dl 2 |*| 20)]
   , ieffects = [Hurt (2 * d 1), Paralyze (5 + d 5), DropBestWeapon]
   , ifeature = [Identified]
   , idesc    = "Wood balls tied with hemp rope. The target enemy is tripped and bound to drop the main weapon, while fighting for balance."
@@ -134,7 +134,7 @@ net = ItemKind
   , irarity  = [(3, 5), (10, 4)]
   , iverbHit = "entangle"
   , iweight  = 1000
-  , iaspects = [AddHurtRanged (dl 2 |*| 20)]
+  , iaspects = [AddHurtRanged (1 + dl 2 |*| 20)]
   , ieffects = [ Hurt (d 1), toOrganGameTurn "slow 10" (3 + d 3)
                , DropItem CEqp "torso armor" False ]
   , ifeature = [Identified]
