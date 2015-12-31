@@ -5,6 +5,9 @@ module Game.LambdaHack.Client.UI.Frontend.Curses
   ( startup, frontendName
   ) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Control.Concurrent.Async
 import Control.Exception.Assert.Sugar
 import Control.Monad

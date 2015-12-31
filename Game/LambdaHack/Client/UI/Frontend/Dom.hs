@@ -4,6 +4,9 @@ module Game.LambdaHack.Client.UI.Frontend.Dom
   ( startup, frontendName
   ) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Control.Concurrent
 import Control.Monad
 import Control.Monad.Reader (ask, liftIO)
