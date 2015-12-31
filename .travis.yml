@@ -45,7 +45,7 @@ matrix:
       addons: {apt: {packages: [cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
 
   allow_failures:
-    - env: CABALVER=head GHCVER=head
+    - env: CABALVER=head GHCVER=head GTKVTY=gtk
 
 before_install:
  - unset CC
