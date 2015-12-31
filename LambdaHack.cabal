@@ -261,7 +261,11 @@ library
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
   ghc-prof-options:   -fprof-auto-calls
 
-  if impl(ghcjs) && flag(webkit) {
+  if impl(ghcjs) {
+    other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
+    build-depends:    ghcjs-dom >= 0.2
+    cpp-options:      -DUSE_BROWSER -DUSE_JSFILE_CLIENT -DUSE_JSFILE_SERVER
+  } else { if flag(webkit) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
     build-depends:    ghcjs-dom >= 0.2
     cpp-options:      -DUSE_WEBKIT
@@ -273,17 +277,13 @@ library
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Curses
     build-depends:    hscurses >= 1.4.1
     cpp-options:      -DUSE_CURSES
-  } else { if impl(ghcjs) {
-    other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
-    build-depends:    ghcjs-dom >= 0.2
-    cpp-options:      -DUSE_BROWSER -DUSE_JSFILE_CLIENT -DUSE_JSFILE_SERVER
   } else {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
     build-depends:    gtk >= 0.12.1
     pkgconfig-depends: gtk+-2.0
   } } } }
 
-  if impl(ghcjs) && !flag(webkit) {
+  if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Common.JSFile
 --TODO:    js-sources: a drop-in replacement for zlib when there is one
   } else {
@@ -359,7 +359,7 @@ executable LambdaHack
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
   ghc-options:        -threaded "-with-rtsopts=-C0.005" -rtsopts
 
-  if impl(ghcjs) && !flag(webkit) {
+  if impl(ghcjs) {
 --TODO:    js-sources: a drop-in replacement for zlib when there is one
     default-language:   Haskell2010
 -- dummy
@@ -415,7 +415,7 @@ test-suite test
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
   ghc-options:        -threaded "-with-rtsopts=-C0.005" -rtsopts
 
-  if impl(ghcjs) && !flag(webkit) {
+  if impl(ghcjs) {
 --TODO:    js-sources: a drop-in replacement for zlib when there is one
     default-language:   Haskell2010
 -- dummy
