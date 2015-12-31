@@ -94,7 +94,7 @@ install:
      elif [ $GTKVTY = "vty" ]; then
        cabal install -fvty -frelease --only-dependencies --enable-tests --enable-benchmarks;
      else
-       cabal install -fvurses -frelease --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install -fcurses -frelease --only-dependencies --enable-tests --enable-benchmarks;
      fi
    fi
 
