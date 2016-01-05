@@ -315,9 +315,7 @@ display DebugModeCli{scolorIsBold}
             _ -> setProp style "border-color" "transparent"
       acs = concat $ overlay sfLevel
   -- TODO: Sync or Async?
-  callback <- newRequestAnimationFrameCallbackSync $ \_ -> do
+  callback <- newRequestAnimationFrameCallback $ \_ -> do
     mapM_ setChar $ zip scharCells acs
   -- This ensure no frame redraws while callback executes.
   void $ requestAnimationFrame swebView (Just callback)
-  -- This delay is not enough to always induce UI refresh.
-  threadDelay $ 1000000 `div` (4 * 30)
