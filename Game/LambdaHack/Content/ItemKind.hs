@@ -54,7 +54,7 @@ data ItemKind = ItemKind
 -- are possible. Constructors are sorted vs increasing impact/danger.
 data Effect =
     -- Ordinary effects.
-    NoEffect !Text
+    ELabel !Text          -- ^ secret (learned as effect) label of the item
   | Hurt !Dice.Dice
   | Burn !Dice.Dice  -- TODO: generalize to other elements? ignite terrain?
   | Explode !(GroupName ItemKind)

@@ -446,7 +446,7 @@ strMelee effectBonus localTime itemFull =
       -- he has to manage this manually.
       p (IK.Hurt d) = [Dice.meanDice d]
       p (IK.Burn d) = [Dice.meanDice d]
-      p IK.NoEffect{} = []
+      p IK.ELabel{} = []
       p IK.OnSmash{} = []
       -- Hackish extra bonus to force Summon as first effect used
       -- before Calm of enemy is depleted.

@@ -285,7 +285,7 @@ necklace1 = necklace
   { ifreq    = [("treasure", 100)]
   , iaspects = [Unique, Timeout $ d 3 + 4 - dl 3 |*| 10]
                ++ iaspects necklace
-  , ieffects = [NoEffect "of Aromata", Recharging (RefillHP 1)]
+  , ieffects = [ELabel "of Aromata", Recharging (RefillHP 1)]
   , ifeature = Durable : ifeature necklace
   , idesc    = "A cord of freshly dried herbs and healing berries."
   }
@@ -320,7 +320,7 @@ necklace7 = necklace  -- TODO: teach AI to wear only for fight
                , AddArmorMelee 20, AddArmorRanged 20
                , Timeout $ d 2 + 5 - dl 3 ]
                ++ iaspects necklace
-  , ieffects = [ NoEffect "of Overdrive"
+  , ieffects = [ ELabel "of Overdrive"
                , Recharging (InsertMove $ 1 + d 2)
                , Recharging (RefillHP (-1))
                , Recharging (RefillCalm (-1)) ]
@@ -405,14 +405,14 @@ ring6 = ring
   , irarity  = [(10, 2)]
   , iaspects = [ Unique, AddSpeed $ 3 + d 4
                , AddMaxCalm $ - 20 - d 20, AddMaxHP $ - 20 - d 20 ]
-  , ieffects = [NoEffect "of Rush"]  -- no explosion, because Durable
+  , ieffects = [ELabel "of Rush"]  -- no explosion, because Durable
   , ifeature = ifeature ring ++ [Durable, EqpSlot EqpSlotAddSpeed ""]
   }
 ring7 = ring
   { ifreq    = [("useful", 100), ("ring of opportunity sniper", 1) ]
   , irarity  = [(1, 1)]
   , iaspects = [AddSkills $ EM.fromList [(AbProject, 8)]]
-  , ieffects = [ NoEffect "of opportunity sniper"
+  , ieffects = [ ELabel "of opportunity sniper"
                , Explode "distortion" ]  -- strong magic
   , ifeature = ifeature ring ++ [EqpSlot (EqpSlotAddSkills AbProject) ""]
   }
@@ -420,7 +420,7 @@ ring8 = ring
   { ifreq    = [("useful", 1), ("ring of opportunity grenadier", 1) ]
   , irarity  = [(1, 1)]
   , iaspects = [AddSkills $ EM.fromList [(AbProject, 11)]]
-  , ieffects = [ NoEffect "of opportunity grenadier"
+  , ieffects = [ ELabel "of opportunity grenadier"
                , Explode "distortion" ]  -- strong magic
   , ifeature = ifeature ring ++ [EqpSlot (EqpSlotAddSkills AbProject) ""]
   }
@@ -444,14 +444,14 @@ potion = ItemKind
   , ikit     = []
   }
 potion1 = potion
-  { ieffects = [ NoEffect "of rose water", Impress, RefillCalm (-3)
+  { ieffects = [ ELabel "of rose water", Impress, RefillCalm (-3)
                , OnSmash ApplyPerfume, OnSmash (Explode "fragrance") ]
   }
 potion2 = potion
   { ifreq    = [("treasure", 100)]
   , irarity  = [(6, 10), (10, 10)]
   , iaspects = [Unique]
-  , ieffects = [ NoEffect "of Attraction", Impress, OverfillCalm (-20)
+  , ieffects = [ ELabel "of Attraction", Impress, OverfillCalm (-20)
                , OnSmash (Explode "pheromone") ]
   }
 potion3 = potion
@@ -499,7 +499,7 @@ potion9 = potion
   { ifreq    = [("treasure", 100)]
   , irarity  = [(10, 5)]
   , iaspects = [Unique]
-  , ieffects = [ NoEffect "of Love", OverfillHP 60
+  , ieffects = [ ELabel "of Love", OverfillHP 60
                , Impress, OverfillCalm (-60)
                , OnSmash (Explode "healing mist 2")
                , OnSmash (Explode "pheromone") ]
@@ -528,34 +528,34 @@ flask = ItemKind
   }
 flask1 = flask
   { irarity  = [(10, 5)]
-  , ieffects = [ NoEffect "of strength brew"
+  , ieffects = [ ELabel "of strength brew"
                , toOrganActorTurn "strengthened" (20 + d 5)
                , toOrganNone "regenerating"
                , OnSmash (Explode "strength mist") ]
   }
 flask2 = flask
-  { ieffects = [ NoEffect "of weakness brew"
+  { ieffects = [ ELabel "of weakness brew"
                , toOrganGameTurn "weakened" (20 + d 5)
                , OnSmash (Explode "weakness mist") ]
   }
 flask3 = flask
-  { ieffects = [ NoEffect "of protecting balm"
+  { ieffects = [ ELabel "of protecting balm"
                , toOrganActorTurn "protected" (20 + d 5)
                , OnSmash (Explode "protecting balm") ]
   }
 flask4 = flask
-  { ieffects = [ NoEffect "of PhD defense questions"
+  { ieffects = [ ELabel "of PhD defense questions"
                , toOrganGameTurn "defenseless" (20 + d 5)
                , OnSmash (Explode "PhD defense question") ]
   }
 flask5 = flask
   { irarity  = [(10, 5)]
-  , ieffects = [ NoEffect "of haste brew"
+  , ieffects = [ ELabel "of haste brew"
                , toOrganActorTurn "fast 20" (20 + d 5)
                , OnSmash (Explode "haste spray") ]
   }
 flask6 = flask
-  { ieffects = [ NoEffect "of lethargy brew"
+  { ieffects = [ ELabel "of lethargy brew"
                , toOrganGameTurn "slow 10" (20 + d 5)
                , toOrganNone "regenerating"
                , RefillCalm 3
@@ -563,48 +563,48 @@ flask6 = flask
   }
 flask7 = flask  -- sight can be reduced from Calm, drunk, etc.
   { irarity  = [(10, 7)]
-  , ieffects = [ NoEffect "of eye drops"
+  , ieffects = [ ELabel "of eye drops"
                , toOrganActorTurn "far-sighted" (20 + d 5)
                , OnSmash (Explode "blast 10") ]
   }
 flask8 = flask
   { irarity  = [(10, 3)]
-  , ieffects = [ NoEffect "of smelly concoction"
+  , ieffects = [ ELabel "of smelly concoction"
                , toOrganActorTurn "keen-smelling" (20 + d 5)
                , OnSmash (Explode "blast 10") ]
   }
 flask9 = flask
-  { ieffects = [ NoEffect "of bait cocktail"
+  { ieffects = [ ELabel "of bait cocktail"
                , toOrganActorTurn "drunk" (5 + d 5)
                , OnSmash (Summon [("mobile animal", 1)] $ 1 + dl 2)
                , OnSmash (Explode "waste") ]
   }
 flask10 = flask
-  { ieffects = [ NoEffect "of whiskey"
+  { ieffects = [ ELabel "of whiskey"
                , toOrganActorTurn "drunk" (20 + d 5)
                , Impress, Burn 2, RefillHP 4
                , OnSmash (Explode "whiskey spray") ]
   }
 flask11 = flask
   { irarity  = [(1, 20), (10, 10)]
-  , ieffects = [ NoEffect "of regeneration brew"
+  , ieffects = [ ELabel "of regeneration brew"
                , toOrganNone "regenerating"
                , OnSmash (Explode "healing mist") ]
   }
 flask12 = flask  -- but not flask of Calm depletion, since Calm reduced often
-  { ieffects = [ NoEffect "of poison"
+  { ieffects = [ ELabel "of poison"
                , toOrganNone "poisoned"
                , OnSmash (Explode "wounding mist") ]
   }
 flask13 = flask
   { irarity  = [(10, 5)]
-  , ieffects = [ NoEffect "of slow resistance"
+  , ieffects = [ ELabel "of slow resistance"
                , toOrganNone "slow resistant"
                , OnSmash (Explode "anti-slow mist") ]
   }
 flask14 = flask
   { irarity  = [(10, 5)]
-  , ieffects = [ NoEffect "of poison resistance"
+  , ieffects = [ ELabel "of poison resistance"
                , toOrganNone "poison resistant"
                , OnSmash (Explode "antidote mist") ]
   }
@@ -631,7 +631,7 @@ scroll1 = scroll
   { ifreq    = [("treasure", 100)]
   , irarity  = [(5, 10), (10, 10)]  -- mixed blessing, so available early
   , iaspects = [Unique]
-  , ieffects = [ NoEffect "of Reckless Beacon"
+  , ieffects = [ ELabel "of Reckless Beacon"
                , CallFriend 1, Summon standardSummon (2 + d 2) ]
   }
 scroll2 = scroll
@@ -666,20 +666,20 @@ scroll8 = scroll
   }
 scroll9 = scroll  -- TODO: remove Calm when server can tell if anything IDed
   { irarity  = [(1, 15), (10, 10)]
-  , ieffects = [ NoEffect "of scientific explanation"
+  , ieffects = [ ELabel "of scientific explanation"
                , Identify, OverfillCalm 3 ]
   }
 scroll10 = scroll  -- TODO: firecracker only if an item really polymorphed?
                    -- But currently server can't tell.
   { irarity  = [(10, 10)]
-  , ieffects = [ NoEffect "transfiguration"
+  , ieffects = [ ELabel "transfiguration"
                , PolyItem, Explode "firecracker 7" ]
   }
 scroll11 = scroll
   { ifreq    = [("treasure", 100)]
   , irarity  = [(6, 10), (10, 10)]
   , iaspects = [Unique]
-  , ieffects = [NoEffect "of Prisoner Release", CallFriend 1]
+  , ieffects = [ELabel "of Prisoner Release", CallFriend 1]
   }
 
 standardSummon :: Freqs ItemKind
@@ -975,7 +975,7 @@ gem4 = gem
   , iflavour = zipPlain [BrYellow]
   , irarity  = [(1, 40), (10, 40)]
   , iaspects = []
-  , ieffects = [NoEffect "of youth", OverfillCalm 5, OverfillHP 15]
+  , ieffects = [ELabel "of youth", OverfillCalm 5, OverfillHP 15]
   , ifeature = [Identified, Applicable, Precious]  -- TODO: only heal humans
   , idesc    = "A crystal vial of amber liquid, supposedly granting eternal youth and fetching 100 gold per piece. The main effect seems to be mild euphoria, but it admittedly heals minor ailments rather well."
   }

@@ -207,7 +207,7 @@ effectSem source target iid recharged effect = do
   -- and we are likely to introduce more variety.
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
   case effect of
-    IK.NoEffect _ -> return False
+    IK.ELabel _ -> return False
     IK.Hurt nDm -> effectHurt nDm source target IK.RefillHP
     IK.Burn nDm -> effectBurn nDm source target
     IK.Explode t -> effectExplode execSfx t target

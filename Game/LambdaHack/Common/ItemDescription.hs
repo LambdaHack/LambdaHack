@@ -78,7 +78,7 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
           timeoutAspect IK.Timeout{} = True
           timeoutAspect _ = False
           noEffect :: IK.Effect -> Bool
-          noEffect IK.NoEffect{} = True
+          noEffect IK.ELabel{} = True
           noEffect _ = False
           hurtEffect :: IK.Effect -> Bool
           hurtEffect (IK.Hurt _) = True
@@ -130,7 +130,7 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                 onSmash = if T.null onSmashTs then ""
                           else "(on smash:" <+> onSmashTs <> ")"
                 noEff = case mnoEffect of
-                  Just (IK.NoEffect t) -> [t]
+                  Just (IK.ELabel t) -> [t]
                   _ -> []
             in noEff ++ if fullInfo >= 5 || fullInfo >= 2 && null noEff
                         then [periodicOrTimeout] ++ map ppE hurtEs ++ aes

@@ -665,7 +665,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                        else animate (blid b) $ deathBody $ bpos b
             displayActorStart b animDie
     else case effect of
-        IK.NoEffect{} -> return ()
+        IK.ELabel{} -> return ()
         IK.Hurt{} -> return ()  -- avoid spam; SfxStrike just sent
         IK.Burn{} -> do
           if fid == side then

@@ -29,7 +29,7 @@ import Game.LambdaHack.Content.ItemKind
 effectToSuff :: Effect -> Text
 effectToSuff effect =
   case effect of
-    NoEffect _ -> ""  -- printed specially
+    ELabel _ -> ""  -- printed specially
     Hurt dice -> wrapInParens (tshow dice)
     Burn d -> wrapInParens (tshow d
                             <+> if d > 1 then "burns" else "burn")

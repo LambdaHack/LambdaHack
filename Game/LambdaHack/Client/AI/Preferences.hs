@@ -28,7 +28,7 @@ effectToBenefit :: Kind.COps -> Actor -> [ItemFull] -> Faction
 effectToBenefit cops b activeItems fact eff =
   let dungeonDweller = not $ fcanEscape $ gplayer fact
   in case eff of
-    IK.NoEffect _ -> 0
+    IK.ELabel _ -> 0
     IK.Hurt d -> -(min 150 $ 10 * Dice.meanDice d)
     IK.Burn d -> -(min 200 $ 15 * Dice.meanDice d)
                    -- often splash damage, etc.
