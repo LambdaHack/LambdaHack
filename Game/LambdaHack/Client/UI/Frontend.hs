@@ -14,7 +14,7 @@ import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import Control.Exception.Assert.Sugar
-import Control.Monad (void, when)
+import Control.Monad (unless, when)
 import Data.IORef
 import Data.Maybe
 
@@ -49,7 +49,6 @@ newtype ChanFrontend = ChanFrontend (forall a. FrontReq a -> IO a)
 
 data FSession = FSession
   { fautoYesRef   :: !(IORef Bool)
-  , ftimeout      :: !(MVar Int)
   , fasyncTimeout :: !(Async ())
   , fdelay        :: !(IORef Bool)
   }
@@ -58,17 +57,17 @@ data FSession = FSession
 -- if the list is empty). Repeat if an unexpected key received.
 promptGetKey :: DebugModeCli -> FSession -> RawFrontend -> [K.KM] -> SingleFrame
              -> IO K.KM
-promptGetKey sdebugCli fs rf@RawFrontend{fchanKey} [] frame = do
-  display sdebugCli fs rf frame
+promptGetKey _sdebugCli _fs rf@RawFrontend{fchanKey} [] frame = do
+  display rf frame
   STM.atomically $ STM.readTQueue fchanKey
 promptGetKey sdebugCli fs@FSession{fautoYesRef} rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef fautoYesRef
   if autoYes && K.spaceKM `elem` keys then do
-    display sdebugCli fs rf frame
+    display rf frame
     return K.spaceKM
   else do
     -- Wait until timeout is up, not to skip the last frame of animation.
-    display sdebugCli fs rf frame
+    display rf frame
     km <- STM.atomically $ STM.readTQueue fchanKey
     if km{K.pointer=Nothing} `elem` keys
     then return km
@@ -78,7 +77,7 @@ promptGetKey sdebugCli fs@FSession{fautoYesRef} rf@RawFrontend{fchanKey} keys fr
 fchanFrontend :: DebugModeCli -> FSession -> RawFrontend -> ChanFrontend
 fchanFrontend sdebugCli fs@FSession{..} rf =
   ChanFrontend $ \req -> case req of
-    FrontFrame{..} -> display sdebugCli fs rf frontFrame
+    FrontFrame{..} -> display rf frontFrame
     FrontDelay -> writeIORef fdelay True
     FrontKey{..} -> promptGetKey sdebugCli fs rf frontKeyKeys frontKeyFrame
     FrontPressed -> do
@@ -93,21 +92,9 @@ fchanFrontend sdebugCli fs@FSession{..} rf =
       cancel fasyncTimeout
       fshutdown rf
 
-display :: DebugModeCli -> FSession -> RawFrontend -> SingleFrame -> IO ()
-display DebugModeCli{smaxFps}
-        FSession{..}
-        rf@RawFrontend{fshowNow}
-        frontFrame = do
-  let maxFps = fromMaybe defaultMaxFps smaxFps
-      delta = microInSec `div` maxFps
-  takeMVar fshowNow
-  noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
-  if noKeysPending then
-    -- For simplicity, not overwriting, even if @maxFps@ changed.
-    void $ tryPutMVar ftimeout delta
-  else
-    -- Keys pending, so instantly show any future frame waiting for display.
-    void $ tryPutMVar fshowNow ()
+display :: RawFrontend -> SingleFrame -> IO ()
+display rf frontFrame = do
+  takeMVar $ fshowNow rf
   fdisplay rf frontFrame
 
 defaultMaxFps :: Int
@@ -118,19 +105,22 @@ microInSec = 1000000
 
 -- This thread is canceled forcefully, because the @threadDelay@
 -- may be much longer than an acceptable shutdown time.
-forkFrameTimeout :: MVar Int -> IORef Bool -> RawFrontend -> IO ()
-forkFrameTimeout ftimeout fdelay RawFrontend{fshowNow} = do
+forkFrameTimeout :: Int -> IORef Bool -> RawFrontend -> IO ()
+forkFrameTimeout delta fdelay RawFrontend{..} = do
   let loop = do
-        timeout <- takeMVar ftimeout
-        threadDelay timeout
+        threadDelay delta
         delay <- readIORef fdelay
         when delay $ do
-          threadDelay timeout
+          threadDelay delta
           writeIORef fdelay False
         -- For simplicity, we don't care that occasionally a frame will be
         -- shown too early, when a keypress happens during the timeout,
         -- is handled and the next frame is ready before timeout expires.
-        void $ tryPutMVar fshowNow ()
+        let innerLoop = do
+              putMVar fshowNow ()
+              noKeysPending <- STM.atomically $ STM.isEmptyTQueue fchanKey
+              unless noKeysPending innerLoop
+        innerLoop
         loop
   loop
 
@@ -146,11 +136,12 @@ chanFrontend sdebugCli = do
   let startup | sfrontendNull sdebugCli = nullStartup
               | sfrontendStd sdebugCli = Std.startup sdebugCli
               | otherwise = Chosen.startup sdebugCli
+      maxFps = fromMaybe defaultMaxFps $ smaxFps sdebugCli
+      delta = microInSec `div` maxFps
   rf <- startup
   fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
-  ftimeout <- newEmptyMVar
   fdelay <- newIORef False
-  fasyncTimeout <- async $ forkFrameTimeout ftimeout fdelay rf
+  fasyncTimeout <- async $ forkFrameTimeout delta fdelay rf
   -- Warning: not linking @fasyncTimeout@, so it'd better not crash.
   let fs = FSession{..}
   return $ fchanFrontend sdebugCli fs rf
