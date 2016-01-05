@@ -16,7 +16,7 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
-import Control.Monad (void, unless, when)
+import Control.Monad (unless, void, when)
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)
@@ -464,19 +464,17 @@ reqApply aid iid cstore = do
 
 -- | Perform the effect specified for the tile in case it's triggered.
 reqTrigger :: (MonadAtomic m, MonadServer m)
-           => ActorId -> Maybe TK.Feature -> m ()
-reqTrigger aid mfeat = do
-  Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
+           => ActorId -> TK.Feature -> m ()
+reqTrigger aid feat = do
+  Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody aid
   let lid = blid sb
   lvl <- getLevel lid
   let tpos = bpos sb
       serverTile = lvl `at` tpos
-      feats = case mfeat of
-        Nothing -> TK.tfeature $ okind serverTile
-        Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
-        Just _ -> []
-      req = ReqTrigger mfeat
+      feats | Tile.hasFeature cotile feat serverTile = [feat]
+            | otherwise = []  -- client was wrong about tile features
+      req = ReqTrigger feat
   go <- triggerEffect aid tpos feats
   unless go $ execFailure aid req TriggerNothing
 

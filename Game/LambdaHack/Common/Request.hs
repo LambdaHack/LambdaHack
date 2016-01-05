@@ -68,7 +68,7 @@ data RequestTimed :: Ability -> * where
   ReqMoveItems :: ![(ItemId, Int, CStore, CStore)] -> RequestTimed 'AbMoveItem
   ReqProject :: !Point -> !Int -> !ItemId -> !CStore -> RequestTimed 'AbProject
   ReqApply :: !ItemId -> !CStore -> RequestTimed 'AbApply
-  ReqTrigger :: !(Maybe TK.Feature) -> RequestTimed 'AbTrigger
+  ReqTrigger :: !TK.Feature -> RequestTimed 'AbTrigger
 
 deriving instance Show (RequestTimed a)
 

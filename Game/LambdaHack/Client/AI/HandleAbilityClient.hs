@@ -10,11 +10,11 @@ import Prelude.Compat
 
 import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
-import Control.Monad (mzero, msum)
+import Control.Monad (msum, mzero)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
-import Data.List (groupBy, sortBy, intersect, foldl')
+import Data.List (foldl', groupBy, intersect, sortBy)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Ord
@@ -607,7 +607,7 @@ trigger aid fleeViaStairs = do
   benFeats <- mapM ben feats
   let benFeat = zip benFeats feats
   return $! liftFrequency $ toFreq "trigger"
-    [ (benefit, ReqTrigger (Just feat))
+    [ (benefit, ReqTrigger feat)
     | (benefit, feat) <- benFeat
     , benefit > 0 ]
 
