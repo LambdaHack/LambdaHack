@@ -54,7 +54,7 @@ standardKeys = KeyKind
            , TriggerFeature { verb = "escape"
                             , object = "dungeon"
                             , feature = TK.Cause (IK.Escape 1) } ]))
-      , ("CTRL-less", ([CmdInternal], TriggerTile
+      , ("CTRL-less", ([CmdInternal], TriggerTile  -- with lifts, not interal
            [ TriggerFeature { verb = "ascend"
                             , object = "10 levels"
                             , feature = TK.Cause (IK.Ascend 10) } ]))
@@ -111,14 +111,7 @@ standardKeys = KeyKind
       , ("a", ([CmdItem, CmdItemMenu], Apply
            [ ApplyItem { verb = "apply"
                        , object = "consumable"
-                       , symbol = ' ' }
-           , ApplyItem { verb = "quaff"
-                       , object = "potion"
-                       , symbol = '!' }
-           , ApplyItem { verb = "read"
-                       , object = "scroll"
-                       , symbol = '?' }
-           ]))
+                       , symbol = ' ' } ]))
       , ("e", ( [CmdItem, CmdItemMenu]
               , MoveItem [CGround, CInv, CSha] CEqp Nothing "item" False) )
       , ("p", ( [CmdItem, CmdItemMenu]
