@@ -314,8 +314,8 @@ display DebugModeCli{scolorIsBold}
               in setProp style "border-color" ourColor
             _ -> setProp style "border-color" "transparent"
       acs = concat $ overlay sfLevel
-  -- TODO: Sync or Async?
-  callback <- newRequestAnimationFrameCallback $ \_ -> do
+  -- Sync, no point mutitasking threads in the single-threaded JS
+  callback <- newRequestAnimationFrameCallbackSync $ \_ -> do
     mapM_ setChar $ zip scharCells acs
   -- This ensure no frame redraws while callback executes.
   void $ requestAnimationFrame swebView (Just callback)
