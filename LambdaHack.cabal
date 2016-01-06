@@ -263,11 +263,13 @@ library
 
   if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
-    build-depends:    ghcjs-dom >= 0.2
+    build-depends:    ghcjs-dom >= 0.2,
+                      jsaddle >= 0.3.0.0
     cpp-options:      -DUSE_BROWSER -DUSE_JSFILE_CLIENT -DUSE_JSFILE_SERVER
   } else { if flag(webkit) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
-    build-depends:    ghcjs-dom >= 0.2
+    build-depends:    ghcjs-dom >= 0.2,
+                      jsaddle >= 0.3.0.0
     cpp-options:      -DUSE_WEBKIT
   } else { if flag(vty) {
     other-modules:    Game.LambdaHack.Client.UI.Frontend.Vty
