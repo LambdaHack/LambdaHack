@@ -18,7 +18,7 @@ import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
 import GHCJS.DOM.CSSStyleDeclaration (removeProperty, setProperty)
 import GHCJS.DOM.Document (createElement, getBody, keyDown, keyPress)
-import GHCJS.DOM.Element (click, contextMenu, getStyle, setId, setInnerHTML)
+import GHCJS.DOM.Element (click, contextMenu, getStyle, setInnerHTML)
 import GHCJS.DOM.EventM (mouseAltKey, mouseButton, mouseCtrlKey, mouseMetaKey,
                          mouseShiftKey, on, preventDefault)
 import GHCJS.DOM.HTMLCollection (item)
@@ -44,7 +44,6 @@ import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
-import Language.Javascript.JSaddle (eval, runJSaddle)
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -101,7 +100,6 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
       rows = concat (replicate lysize row)
   Just tableElem <- fmap castToHTMLTableElement
                      <$> createElement doc (Just ("table" :: Text))
-  setId tableElem ("gameMap" :: Text)
   void $ appendChild divBlock (Just tableElem)
   Just scharStyle <- getStyle tableElem
   -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout
@@ -321,8 +319,3 @@ display DebugModeCli{scolorIsBold}
     mapM_ setChar $ zip scharCells acs
   -- This ensure no frame redraws while callback executes.
   void $ requestAnimationFrame swebView (Just callback)
-  -- http://www.eccesignum.org/blog/solving-display-refreshredrawrepaint-issues-in-webkit-browsers
-  let script = "var n = document.createTextNode(' ');"
-               <+> "document.getElementById('gameMap').appendChild(n);"
-               <+> "setTimeout(function(){n.parentNode.removeChild(n)}, 0);"
-  void $ runJSaddle swebView $ eval script
