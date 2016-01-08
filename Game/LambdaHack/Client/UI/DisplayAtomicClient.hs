@@ -824,24 +824,31 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
   SfxActorStart aid -> do
+    -- TODO: currently projectile move animations are not displayed
+    -- concurrently. With many projectiles onscreen, it generates enormous
+    -- number of frames per game clip.
     arena <- getArenaUI
     b <- getsState $ getActorBody aid
-    activeItems <- activeItemsClient aid
     when (blid b == arena) $ do
-      -- If time clip has passed since any actor advanced @timeCutOff@
-      -- or if the actor took some time since clip start and he seems so fast
-      -- that he is capable of already moving during that time
+      -- If time clip has passed since any actor advanced @sdisplayed@
+      -- or if the actor took some time since @sdisplayed@ and he seems so fast
+      -- that he is capable of already moving during that time (projectile)
       -- (for simplicity, we don't check if he actually did)
       -- or if the actor is newborn or is about to die,
-      -- we end the frame early, before his current move.
+      -- TODO: not true, currently we display *after* his move:
+      -- we end and display the frame early, before his next move.
       -- In the result, he moves at most once per frame, and thanks to this,
       -- his multiple moves are not collapsed into one frame.
       -- If the actor changes his speed this very clip, the test can faii,
       -- but it's rare and results in a minor UI issue, so we don't care.
-      localTime <- getsState $ getLocalTime (blid b)
-      timeCutOff <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
-      when (localTime >= timeShift timeCutOff (Delta timeClip)
-            || btime b >= timeShift timeCutOff
+      -- Also, if we haven't identified the items/organs he wears,
+      -- the calculations are off, but it can't be helped.
+      -- Note that if the actor just displayed an animation (e.g., projectile
+      -- movement animation), sdisplayed is updated and so no display here.
+      timeDisp <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
+      activeItems <- activeItemsClient aid
+      when (btime b >= timeShift timeDisp (Delta timeClip)
+            || btime b >= timeShift timeDisp
                                     (ticksPerMeter $ bspeed b activeItems)
             || actorNewBorn b
             || actorDying b) $ do
@@ -849,23 +856,15 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         -- the request extra message may be shown, so the other frame is better.
         mleader <- getsClient _sleader
         fact <- getsState $ (EM.! bfid b) . sfactionD
-        let underAI = isAIFact fact
-        unless (Just aid == mleader && not underAI) $ do
-          -- Something new is gonna happen on this level (otherwise we'd send
-          -- @UpdAgeLevel@ later on, with a larger time increment),
-          -- so show crrent game state, before it changes.
-          -- If considerable time passed, show delay. TODO: do this more
-          -- accurately --- check if, eg., projectiles generated enough
-          -- frames to cover the delay and if not, add here, too.
-          -- Right now, if even one projectile flies, the whole 4-clip delay
-          -- is skipped.
-          let delta = localTime `timeDeltaToFrom` timeCutOff
-          when (delta > Delta timeClip && not (bproj b))
-            displayDelay
+        when (Just aid /= mleader || isAIFact fact) $ do
+          -- Something interesting happened on this level
+          -- (otherwise we'd send @SfxActorStart@ later on, for another actor),
+          -- so display the new game state. If more time passed, add delay.
+          let delta = btime b `timeDeltaToFrom` timeDisp
+          when (delta > Delta timeClip) displayDelay
+          displayPush ""
           let ageDisp = EM.insert arena (btime b)
           modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}
-          unless (bproj b) $  -- projectiles display animations instead
-            displayPush ""
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do

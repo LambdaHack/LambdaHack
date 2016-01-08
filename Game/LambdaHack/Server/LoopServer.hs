@@ -245,13 +245,13 @@ handleActors lid = do
     _ | quit -> return ()
     Nothing -> return ()
     Just (aid, b) | bproj b && maybe True (null . fst) (btrajectory b) -> do
-      startActor aid
+      startActor aid  -- try displaying, while still alive
       -- A projectile drops to the ground due to obstacles or range.
       -- The carried item is not destroyed, but drops to the ground.
       dieSer aid b False
       handleActors lid
     Just (aid, b) | bhp b <= 0 -> do
-      startActor aid
+      startActor aid  -- try displaying, while still alive
       -- If @b@ is a projectile and it hits an actor,
       -- the carried item is destroyed and that's all.
       -- Otherwise, an actor dies, items drop to the ground
@@ -343,7 +343,8 @@ handleActors lid = do
         managePerTurn aidNew
       b3 <- getsState $ getActorBody aid
       -- If only waited this turn and not killed nor pushed nor teleported,
-      -- its appearance not changed, so no need to redisplay it.
+      -- actor's appearance not changed, so no need to redisplay screen.
+      -- Calm change not important enough to insert a frame.
       let appearanceUnchanged = waitedLastTurn b3
                                 && bhpDelta b3 == ResDelta 0 0
                                 && boldlid b3 == blid b3

@@ -19,9 +19,9 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Time
 
 -- | The information that is used across a client playing session,
@@ -40,7 +40,7 @@ data SessionUI = SessionUI
   , sreport         :: !Report        -- ^ current messages
   , shistory        :: !History       -- ^ history of messages
   , sdisplayed      :: !(EM.EnumMap LevelId Time)
-                                      -- ^ moves are displayed up to this time
+                                      -- ^ moves already displayed up to then
   , slastKM         :: !K.KM          -- ^ last issued key command
   , slastRecord     :: !LastRecord    -- ^ state of key sequence recording
   , slastPlay       :: ![K.KM]        -- ^ state of key sequence playback

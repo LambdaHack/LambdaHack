@@ -44,6 +44,7 @@ import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
@@ -54,7 +55,6 @@ import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
@@ -185,20 +185,20 @@ displayDelay :: MonadClientUI m =>  m ()
 displayDelay = displayFrame Nothing
 
 -- | Push frames or delays to the frame queue. Additionally set @sdisplayed@.
--- because animations not always happen after @SfxActorStart@ on the leader's
+-- because animations not always happen before @SfxActorStart@ on the leader's
 -- level (e.g., death can lead to leader change to another level mid-turn,
 -- and there could be melee and animations on that level at the same moment).
 -- Insert delays, so that the animations don't look rushed.
 displayActorStart :: MonadClientUI m => Actor -> Frames -> m ()
 displayActorStart b frs = do
-  timeCutOff <- getsSession $ EM.findWithDefault timeZero (blid b) . sdisplayed
-  localTime <- getsState $ getLocalTime (blid b)
-  let delta = localTime `timeDeltaToFrom` timeCutOff
-  when (delta > Delta timeClip && not (bproj b))
-    displayDelay
-  let ageDisp = EM.insert (blid b) (btime b)
-  modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}
+  arena <- getArenaUI
+  let !_A = assert (blid b == arena) ()
+  timeDisp <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
+  let delta = btime b `timeDeltaToFrom` timeDisp
+  when (delta > Delta timeClip) displayDelay
   mapM_ displayFrame frs
+  let ageDisp = EM.insert arena (btime b)
+  modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}
 
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadClientUI m
