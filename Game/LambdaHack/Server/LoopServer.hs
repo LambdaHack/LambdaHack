@@ -259,6 +259,15 @@ handleActors lid = do
       dieSer aid b (bproj b)
       handleActors lid
     Just (aid, body) -> do
+      -- If only waited previous turn and not killed nor pushed nor teleported,
+      -- actor's appearance not changed, so no need to redisplay screen.
+      -- Calm change not important enough to insert a frame.
+      -- Projectile moves handled via animations. (TODO: also birth?)
+      let appearanceUnchanged = waitedLastTurn body
+                                && bhpDelta body == ResDelta 0 0
+                                && boldlid body == blid body
+                                && boldpos body == Just (bpos body)
+      unless (bproj body || appearanceUnchanged) $ startActor aid
       let side = bfid body
           fact = factionD EM.! side
           mleader = gleader fact
@@ -341,15 +350,6 @@ handleActors lid = do
         advanceTime aidNew
         action
         managePerTurn aidNew
-      b3 <- getsState $ getActorBody aid
-      -- If only waited this turn and not killed nor pushed nor teleported,
-      -- actor's appearance not changed, so no need to redisplay screen.
-      -- Calm change not important enough to insert a frame.
-      let appearanceUnchanged = waitedLastTurn b3
-                                && bhpDelta b3 == ResDelta 0 0
-                                && boldlid b3 == blid b3
-                                && boldpos b3 == Just (bpos b3)
-      unless appearanceUnchanged $ startActor aid
       handleActors lid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()

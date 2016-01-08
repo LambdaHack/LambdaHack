@@ -826,30 +826,23 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxActorStart aid -> do
     -- TODO: currently projectile move animations are not displayed
     -- concurrently. With many projectiles onscreen, it generates enormous
-    -- number of frames per game clip.
+    -- number of frames per game clip. Instead handle animations somehow here.
+    -- TODO: we display an extra frame before displace animation frames, etc.
     arena <- getArenaUI
     b <- getsState $ getActorBody aid
     when (blid b == arena) $ do
       -- If time clip has passed since any actor advanced @sdisplayed@
-      -- or if the actor took some time since @sdisplayed@ and he seems so fast
-      -- that he is capable of already moving during that time (projectile)
-      -- (for simplicity, we don't check if he actually did)
       -- or if the actor is newborn or is about to die,
-      -- TODO: not true, currently we display *after* his move:
       -- we end and display the frame early, before his next move.
-      -- In the result, he moves at most once per frame, and thanks to this,
+      -- In the result, he moves at most once per frame
+      -- (unless he moves faster than one meter per clip,
+      -- which is 5 times normal speed), and thanks to this,
       -- his multiple moves are not collapsed into one frame.
-      -- If the actor changes his speed this very clip, the test can faii,
-      -- but it's rare and results in a minor UI issue, so we don't care.
-      -- Also, if we haven't identified the items/organs he wears,
-      -- the calculations are off, but it can't be helped.
-      -- Note that if the actor just displayed an animation (e.g., projectile
-      -- movement animation), sdisplayed is updated and so no display here.
+      -- Note that if the actor just displayed an animation (e.g., via
+      -- displacement animation), sdisplayed is updated and so no display here.
       timeDisp <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
-      activeItems <- activeItemsClient aid
-      when (btime b >= timeShift timeDisp (Delta timeClip)
-            || btime b >= timeShift timeDisp
-                                    (ticksPerMeter $ bspeed b activeItems)
+      localTime <- getsState $ getLocalTime (blid b)
+      when (localTime >= timeShift timeDisp (Delta timeClip)
             || actorNewBorn b
             || actorDying b) $ do
         -- If key will be requested, don't show the frame, because during
@@ -860,10 +853,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           -- Something interesting happened on this level
           -- (otherwise we'd send @SfxActorStart@ later on, for another actor),
           -- so display the new game state. If more time passed, add delay.
-          let delta = btime b `timeDeltaToFrom` timeDisp
+          let delta = localTime `timeDeltaToFrom` timeDisp
           when (delta > Delta timeClip) displayDelay
           displayPush ""
-          let ageDisp = EM.insert arena (btime b)
+          let ageDisp = EM.insert arena localTime
           modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()

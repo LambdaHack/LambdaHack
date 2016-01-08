@@ -194,10 +194,11 @@ displayActorStart b frs = do
   arena <- getArenaUI
   let !_A = assert (blid b == arena) ()
   timeDisp <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
-  let delta = btime b `timeDeltaToFrom` timeDisp
+  localTime <- getsState $ getLocalTime (blid b)
+  let delta = localTime `timeDeltaToFrom` timeDisp
   when (delta > Delta timeClip) displayDelay
   mapM_ displayFrame frs
-  let ageDisp = EM.insert arena (btime b)
+  let ageDisp = EM.insert arena localTime
   modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}
 
 -- | Draw the current level with the overlay on top.
