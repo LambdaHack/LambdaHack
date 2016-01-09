@@ -223,8 +223,10 @@ evalFrame FrontendSession{stags} SingleFrame{sfLevel} =
                 if fg /= Color.Blue
                 then (fg, Color.Blue)
                 else (fg, Color.BrBlack)
-              Color.BrYellow -> (Color.defBG, Color.defFG)
-                -- yellow highlighted tile
+              Color.BrYellow ->  -- yellow highlighted tile
+                if fg /= Color.BrBlack
+                then (fg, Color.BrBlack)
+                else (fg, Color.defFG)
               _ -> (fg, bg)
             acAttr1 = Color.Attr fg1 bg1
             !tag = stags M.! acAttr1
