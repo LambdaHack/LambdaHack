@@ -107,13 +107,8 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
             floorIids = EM.elems bagItemSlots  -- first slot will be shown
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeDeltaToFrom` ltime
-            viewActor aid Actor{bsymbol, bcolor, bhp, bproj} =
-              let bg = if mleader == Just aid
-                       then Color.BrRed
-                       else if ES.member aid selected
-                            then Color.BrBlue
-                            else Color.defBG
-              in (symbol, Color.Attr{fg=bcolor, bg})
+            viewActor Actor{bsymbol, bcolor, bhp, bproj} =
+              (symbol, Color.Attr{fg=bcolor, bg=Color.defBG})
              where
               symbol | bhp <= 0 && not bproj = '%'
                      | otherwise = bsymbol
@@ -133,29 +128,35 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
               (False, True)  -> Color.Green
               (False, False) -> Color.Red
             atttrOnPathOrLine = Color.defAttr {Color.fg = fgOnPathOrLine}
+            maidBody = find (\(_, m) -> pos0 == Actor.bpos m) actorsHere
             (char, attr0) =
-              case find (\(_, m) -> pos0 == Actor.bpos m) actorsHere of
+              case snd <$> maidBody of
                 _ | isJust stgtMode
                     && (elem pos0 bline || elem pos0 shiftedBTrajectory) ->
                   ('*', atttrOnPathOrLine)  -- line takes precedence over path
                 _ | isJust stgtMode
                     && maybe False (elem pos0) mpath ->
                   (';', atttrOnPathOrLine)
-                Just (aid, m) -> viewActor aid m
+                Just m -> viewActor m
                 _ | smarkSmell && sml > ltime ->
                   (timeDeltaToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
                   case floorIids of
-                    [] -> (TK.tsymbol tk, Color.defAttr {Color.fg = vcolor})
+                    [] -> (TK.tsymbol tk, Color.defAttr {Color.fg=vcolor})
                     iid : _ -> viewItem $ getItemBody iid s
             vis = ES.member pos0 $ totalVisible per
+            maid = fst <$> maidBody
             a = case dm of
                   ColorBW -> Color.defAttr
-                  ColorFull -> if Just pos0 == cursorPos
+                  ColorFull -> if mleader == maid && isJust maid
+                               then attr0 {Color.bg = Color.BrRed}
+                               else if Just pos0 == cursorPos
                                then attr0 {Color.bg = Color.BrYellow}
+                               else if maybe False (`ES.member` selected) maid
+                               then attr0 {Color.bg = Color.BrBlue}
                                else if smarkVision && vis
-                                    then attr0 {Color.bg = Color.Blue}
-                                    else attr0
+                               then attr0 {Color.bg = Color.Blue}
+                               else attr0
         in Color.AttrChar a char
       widthX = 80
       widthTgt = 39
