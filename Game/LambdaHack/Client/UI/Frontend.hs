@@ -55,12 +55,12 @@ data FSession = FSession
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
-promptGetKey :: DebugModeCli -> FSession -> RawFrontend -> [K.KM] -> SingleFrame
-             -> IO K.KM
-promptGetKey _sdebugCli _fs rf@RawFrontend{fchanKey} [] frame = do
+getKey :: DebugModeCli -> FSession -> RawFrontend -> [K.KM] -> SingleFrame
+       -> IO K.KM
+getKey _sdebugCli _fs rf@RawFrontend{fchanKey} [] frame = do
   display rf frame
   STM.atomically $ STM.readTQueue fchanKey
-promptGetKey sdebugCli fs@FSession{fautoYesRef} rf@RawFrontend{fchanKey} keys frame = do
+getKey sdebugCli fs@FSession{fautoYesRef} rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef fautoYesRef
   if autoYes && K.spaceKM `elem` keys then do
     display rf frame
@@ -71,7 +71,7 @@ promptGetKey sdebugCli fs@FSession{fautoYesRef} rf@RawFrontend{fchanKey} keys fr
     km <- STM.atomically $ STM.readTQueue fchanKey
     if km{K.pointer=Nothing} `elem` keys
     then return km
-    else promptGetKey sdebugCli fs rf keys frame
+    else getKey sdebugCli fs rf keys frame
 
 -- | Read UI requests from the client and send them to the frontend,
 fchanFrontend :: DebugModeCli -> FSession -> RawFrontend -> ChanFrontend
@@ -79,7 +79,7 @@ fchanFrontend sdebugCli fs@FSession{..} rf =
   ChanFrontend $ \req -> case req of
     FrontFrame{..} -> display rf frontFrame
     FrontDelay -> writeIORef fdelay True
-    FrontKey{..} -> promptGetKey sdebugCli fs rf frontKeyKeys frontKeyFrame
+    FrontKey{..} -> getKey sdebugCli fs rf frontKeyKeys frontKeyFrame
     FrontPressed -> do
       noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
       return $! not noKeysPending
