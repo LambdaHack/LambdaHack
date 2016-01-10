@@ -191,8 +191,9 @@ displayDelay = displayFrame Nothing
 -- Insert delays, so that the animations don't look rushed.
 displayActorStart :: MonadClientUI m => Actor -> Frames -> m ()
 displayActorStart b frs = do
-  arena <- getArenaUI
-  let !_A = assert (blid b == arena) ()
+  let arena = blid b
+  -- Can be different than getArenaUI, e.g., when our actor is attacked
+  -- on a remote level.
   timeDisp <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
   localTime <- getsState $ getLocalTime (blid b)
   let delta = localTime `timeDeltaToFrom` timeDisp
