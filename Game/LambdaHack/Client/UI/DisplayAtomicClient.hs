@@ -59,8 +59,8 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
 displayRespUpdAtomicUI :: MonadClientUI m
-                       => Bool -> State -> StateClient -> UpdAtomic -> m ()
-displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
+                       => Bool -> StateClient -> UpdAtomic -> m ()
+displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> do
     side <- getsClient sside
@@ -126,7 +126,7 @@ displayRespUpdAtomicUI verbose oldState oldStateClient cmd = case cmd of
       _ -> return ()  -- seen already (has a slot assigned)
   UpdLoseItem{} -> return ()
   -- Move actors and items.
-  UpdMoveActor aid source target -> moveActor oldState aid source target
+  UpdMoveActor aid _ _ -> lookAtMove aid
   UpdWaitActor aid _ -> when verbose $ aidVerbMU aid "wait"
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
@@ -427,21 +427,6 @@ anyActorsAlive fid maid = do
     else do
       as <- getsState $ fidActorNotProjAssocs fid
       return $! not $ null $ maybe as (\aid -> filter ((/= aid) . fst) as) maid
-
-moveActor :: MonadClientUI m => State -> ActorId -> Point -> Point -> m ()
-moveActor oldState aid source target = do
-  lookAtMove aid
-  body <- getsState $ getActorBody aid
-  when (bproj body) $ do
-    let oldpos = case EM.lookup aid $ sactorD oldState of
-          Nothing -> assert `failure` (sactorD oldState, aid)
-          -- If no old position, default to current, which is then overwritten
-          -- in the animation.
-          Just b -> fromMaybe source $ boldpos b
-    let ps = (oldpos, source, target)
-    animFrs <- animate (blid body)
-               $ moveProj ps (bsymbol body) (bcolor body)
-    displayActorStart body animFrs
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
@@ -824,6 +809,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
   SfxActorStart aid -> do
+    -- TODO: handle projectiles and insert *delay* between the same actor's move
     -- TODO: currently projectile move animations are not displayed
     -- concurrently. With many projectiles onscreen, it generates enormous
     -- number of frames per game clip. Instead handle animations somehow here.

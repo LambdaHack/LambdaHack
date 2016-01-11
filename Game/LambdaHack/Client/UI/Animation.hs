@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.Animation
   ( Animation, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, actorX
-  , swapPlaces, moveProj, fadeout
+  , swapPlaces, fadeout
   ) where
 
 import Prelude ()
@@ -17,7 +17,6 @@ import Data.Maybe
 
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Color
-import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
@@ -74,13 +73,6 @@ mzipPairs (p1, p2) (mattr1, mattr2) = map mapPosToScreenPos $
                  else -- If actor affects himself, show only the effect,
                       -- not the action.
                       [mzip (p1, mattr1)]
-
-mzipTriples :: (Point, Point, Point)
-            -> (Maybe AttrChar, Maybe AttrChar, Maybe AttrChar)
-            -> [(Point, AttrChar)]
-mzipTriples (p1, p2, p3) (mattr1, mattr2, mattr3) = map mapPosToScreenPos $
-  let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
-  in catMaybes [mzip (p1, mattr1), mzip (p2, mattr2), mzip (p3, mattr3)]
 
 restrictAnim :: ES.EnumSet Point -> Animation -> Animation
 restrictAnim vis (Animation as) =
@@ -192,14 +184,6 @@ swapPlaces poss = Animation $ map (EM.fromList . mzipPairs poss)
   , (cSym Magenta   'p', cSym BrMagenta 'd')
   , (cSym Magenta   'p', cSym BrMagenta 'd')
   , (cSym Magenta   'o', blank)
-  ]
-
-moveProj :: (Point, Point, Point) -> Char -> Color.Color -> Animation
-moveProj poss symbol color = Animation $ map (EM.fromList . mzipTriples poss)
-  [ (cSym BrBlack '.', cSym color symbol  , cSym color '.')
---  , (cSym BrBlack '.', cSym BrBlack symbol, cSym color symbol)
-  , (cSym BrBlack '.', cSym BrBlack '.'   , cSym color symbol)
-  , (blank           , cSym BrBlack '.'   , cSym color symbol)
   ]
 
 fadeout :: Bool -> Bool -> Int -> X -> Y -> Rnd Animation
