@@ -167,9 +167,9 @@ makeLine onlyFirst body fpos epsOld = do
                 all noActor (take 1 blDist)
                 && all (uncurry $ accessibleUnknown cops lvl) (take 1 blZip)
               nUnknown = length $ filter ((== unknownId) . (lvl `at`)) blDist
-          in if accessU then - nUnknown
-             else if accessFirst then -10000
-             else minBound
+          in if | accessU -> - nUnknown
+                | accessFirst -> -10000
+                | otherwise -> minBound
         Nothing -> assert `failure` (body, fpos, epsOld)
       tryLines curEps (acc, _) | curEps == epsOld + dist = acc
       tryLines curEps (acc, bestScore) =
@@ -178,9 +178,10 @@ makeLine onlyFirst body fpos epsOld = do
                      then (Just curEps, curScore)
                      else (acc, bestScore)
         in tryLines (curEps + 1) newAcc
-  return $! if dist <= 0 then Nothing  -- ProjectAimOnself
-            else if calcScore epsOld > minBound then Just epsOld  -- keep old
-            else tryLines (epsOld + 1) (Nothing, minBound)  -- generate best
+  return $! if | dist <= 0 -> Nothing  -- ProjectAimOnself
+               | calcScore epsOld > minBound -> Just epsOld  -- keep old
+               | otherwise ->
+                 tryLines (epsOld + 1) (Nothing, minBound)  -- generate best
 
 actorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 actorSkillsClient aid = do

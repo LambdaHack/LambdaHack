@@ -199,50 +199,54 @@ permittedProject triggerSyms forced skill itemFull@ItemFull{itemBase}
                  b activeItems =
   let calm10 = calmEnough10 b activeItems
       mhurtRanged = strengthFromEqpSlot IK.EqpSlotAddHurtRanged itemFull
-  in if not forced
-        && skill < 1 then Left ProjectUnskilled
-  else if not forced
-          && isNothing mhurtRanged
-          && skill < 2 then Left ProjectNotRanged
-  else if not forced
-          && IK.Fragile `elem` jfeature itemBase
-          && skill < 3 then Left ProjectFragile
-  else
-    let legal = permittedPrecious calm10 forced itemFull
-    in case legal of
-      Left{} -> legal
-      Right False -> legal
-      Right True -> Right $
-        let hasEffects = case itemDisco itemFull of
-              Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects=[]}} -> False
-              Just ItemDisco{ itemAE=Nothing
-                            , itemKind=IK.ItemKind{IK.ieffects=[]} } -> False
-              _ -> True
-            permittedSlot =
-              if ' ' `elem` triggerSyms
-              then case strengthEqpSlot itemBase of
-                Just (IK.EqpSlotAddLight, _) -> True
-                Just _ -> False
-                Nothing -> True
-              else jsymbol itemBase `elem` triggerSyms
-        in hasEffects && permittedSlot
+  in if
+    | not forced
+      && skill < 1 -> Left ProjectUnskilled
+    | not forced
+      && isNothing mhurtRanged
+      && skill < 2 -> Left ProjectNotRanged
+    | not forced
+      && IK.Fragile `elem` jfeature itemBase
+      && skill < 3 -> Left ProjectFragile
+    | otherwise ->
+      let legal = permittedPrecious calm10 forced itemFull
+      in case legal of
+        Left{} -> legal
+        Right False -> legal
+        Right True -> Right $
+          let hasEffects = case itemDisco itemFull of
+                Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects=[]}} ->
+                  False
+                Just ItemDisco{ itemAE=Nothing
+                              , itemKind=IK.ItemKind{IK.ieffects=[]} } ->
+                  False
+                _ -> True
+              permittedSlot =
+                if ' ' `elem` triggerSyms
+                then case strengthEqpSlot itemBase of
+                  Just (IK.EqpSlotAddLight, _) -> True
+                  Just _ -> False
+                  Nothing -> True
+                else jsymbol itemBase `elem` triggerSyms
+          in hasEffects && permittedSlot
 
 permittedApply :: [Char] -> Time -> Int -> ItemFull -> Actor -> [ItemFull]
                -> Either ReqFailure Bool
 permittedApply triggerSyms localTime skill itemFull@ItemFull{itemBase}
                b activeItems =
   let calm10 = calmEnough10 b activeItems
-  in if skill < 1 then Left ApplyUnskilled
-  else if jsymbol itemBase == '?' && skill < 2 then Left ApplyRead
-  -- We assume if the item has a timeout, all or most of interesting effects
-  -- are under Recharging, so no point activating if not recharged.
-  else if not $ hasCharge localTime itemFull
-       then Left ApplyCharging
-       else let legal = permittedPrecious calm10 False itemFull
-            in case legal of
-              Left{} -> legal
-              Right False -> legal
-              Right True -> Right $
-                if ' ' `elem` triggerSyms
-                then IK.Applicable `elem` jfeature itemBase
-                else jsymbol itemBase `elem` triggerSyms
+  in if
+    | skill < 1 -> Left ApplyUnskilled
+    | jsymbol itemBase == '?' && skill < 2 -> Left ApplyRead
+    -- We assume if the item has a timeout, all or most of interesting effects
+    -- are under Recharging, so no point activating if not recharged.
+    | not $ hasCharge localTime itemFull -> Left ApplyCharging
+    | otherwise ->
+     let legal = permittedPrecious calm10 False itemFull
+     in case legal of
+       Left{} -> legal
+       Right False -> legal
+       Right True -> Right $
+         if ' ' `elem` triggerSyms
+         then IK.Applicable `elem` jfeature itemBase
+         else jsymbol itemBase `elem` triggerSyms

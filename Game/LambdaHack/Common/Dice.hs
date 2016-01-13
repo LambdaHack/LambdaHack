@@ -109,9 +109,9 @@ instance Show Dice where
         signAndMult = case T.uncons scaled of
           Just ('-', _) -> scaled
           _ -> "+" <+> scaled
-    in (if nameFrequency diceLevel == "0" then nameFrequency diceConst
-        else if nameFrequency diceConst == "0" then scaled
-        else nameFrequency diceConst <+> signAndMult)
+    in (if | nameFrequency diceLevel == "0" -> nameFrequency diceConst
+           | nameFrequency diceConst == "0" -> scaled
+           | otherwise -> nameFrequency diceConst <+> signAndMult)
        <+> if diceMult == 1 then "" else "|*|" <+> tshow diceMult
 
 instance Hashable Dice

@@ -175,13 +175,14 @@ actionStrategy aid = do
           , (condTgtEnemyPresent || condThreatNearby)  -- can affect enemies
             && not condOnTriggerable )
         , ( [AbMove]
-          , stratToFreq (if not condTgtEnemyPresent
-                         then 3  -- if enemy only remembered, investigate anyway
-                         else if condTgtNonmoving
-                         then 0
-                         else if condTgtEnemyAdjFriend
-                         then 1000  -- friends probably pummeled, go to help
-                         else 100)
+          , stratToFreq (if | not condTgtEnemyPresent ->
+                              3  -- if enemy only remembered, investigate anyway
+                            | condTgtNonmoving ->
+                              0
+                            | condTgtEnemyAdjFriend ->
+                              1000  -- friends probably pummeled, go to help
+                            | otherwise ->
+                              100)
             $ chase aid True (condMeleeBad && condThreatNearby
                               && not aInAmbient && not actorShines)
           , (condTgtEnemyPresent || condTgtEnemyRemembered)
@@ -357,13 +358,13 @@ yieldUnneeded aid = do
       -- in play again.
   let yieldSingleUnneeded (iidEqp, itemEqp) =
         let csha = if calmE then CSha else CInv
-        in if harmful cops body activeItems fact itemEqp
-           then [(iidEqp, itemK itemEqp, CEqp, CInv)]
-           else if hinders condAnyFoeAdj condLightBetrays
-                           condTgtEnemyPresent (not calmE)
-                           body activeItems itemEqp
-           then [(iidEqp, itemK itemEqp, CEqp, csha)]
-           else []
+        in if | harmful cops body activeItems fact itemEqp ->
+                [(iidEqp, itemK itemEqp, CEqp, CInv)]
+              | hinders condAnyFoeAdj condLightBetrays
+                        condTgtEnemyPresent (not calmE)
+                        body activeItems itemEqp ->
+                [(iidEqp, itemK itemEqp, CEqp, csha)]
+              | otherwise -> []
       yieldAllUnneeded = concatMap yieldSingleUnneeded eqpAssocs
   return $! if null yieldAllUnneeded
             then reject
@@ -921,17 +922,17 @@ moveOrRunAid run source dir = do
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
       activeItems <- activeItemsClient target
       dEnemy <- getsState $ dispEnemy source target activeItems
-      if boldpos sb == Just tpos && not (waitedLastTurn sb)
-           -- avoid Displace loops
-         || not (accessible cops lvl spos tpos) -- DisplaceAccess
-      then return Nothing
-      else if isAtWar tfact (bfid sb) && not dEnemy  -- DisplaceDying, etc.
-      then do
-        wps <- pickWeaponClient source target
-        case wps of
-          Nothing -> return Nothing
-          Just wp -> return $! Just $ RequestAnyAbility wp
-      else return $! Just $ RequestAnyAbility $ ReqDisplace target
+      if | boldpos sb == Just tpos && not (waitedLastTurn sb)
+             -- avoid Displace loops
+           || not (accessible cops lvl spos tpos) ->  -- DisplaceAccess
+           return Nothing
+         | isAtWar tfact (bfid sb) && not dEnemy -> do  -- DisplaceDying, etc.
+           wps <- pickWeaponClient source target
+           case wps of
+             Nothing -> return Nothing
+             Just wp -> return $! Just $ RequestAnyAbility wp
+         | otherwise ->
+           return $! Just $ RequestAnyAbility $ ReqDisplace target
     (target, _) : _ -> do  -- can be a foe, as well as friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.

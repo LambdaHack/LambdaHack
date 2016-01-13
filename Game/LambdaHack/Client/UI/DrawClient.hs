@@ -148,15 +148,16 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
             maid = fst <$> maidBody
             a = case dm of
                   ColorBW -> Color.defAttr
-                  ColorFull -> if mleader == maid && isJust maid
-                               then attr0 {Color.bg = Color.BrRed}
-                               else if Just pos0 == cursorPos
-                               then attr0 {Color.bg = Color.BrYellow}
-                               else if maybe False (`ES.member` selected) maid
-                               then attr0 {Color.bg = Color.BrBlue}
-                               else if smarkVision && vis
-                               then attr0 {Color.bg = Color.Blue}
-                               else attr0
+                  ColorFull -> if | mleader == maid && isJust maid ->
+                                    attr0 {Color.bg = Color.BrRed}
+                                  | Just pos0 == cursorPos ->
+                                    attr0 {Color.bg = Color.BrYellow}
+                                  | maybe False (`ES.member` selected) maid ->
+                                    attr0 {Color.bg = Color.BrBlue}
+                                  | smarkVision && vis ->
+                                    attr0 {Color.bg = Color.Blue}
+                                  | otherwise ->
+                                    attr0
         in Color.AttrChar a char
       widthX = 80
       widthTgt = 39
@@ -347,11 +348,9 @@ drawSelected drawnLevelId width selected = do
   ours <- getsState $ filter (not . bproj . snd)
                       . actorAssocs (== side) drawnLevelId
   let viewOurs (aid, Actor{bsymbol, bcolor, bhp}) =
-        let bg = if mleader == Just aid
-                 then Color.BrRed
-                 else if ES.member aid selected
-                      then Color.BrBlue
-                      else Color.defBG
+        let bg = if | mleader == Just aid -> Color.BrRed
+                    | ES.member aid selected -> Color.BrBlue
+                    | otherwise -> Color.defBG
             sattr = Color.Attr {Color.fg = bcolor, bg}
         in Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%'
       maxViewed = width - 2

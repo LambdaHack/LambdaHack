@@ -532,56 +532,57 @@ effectAscend recursiveCall execSfx k source target = do
       pos1 = bpos b1
   (lid2, pos2) <- getsState $ whereTo lid1 pos1 k . sdungeon
   sb <- getsState $ getActorBody source
-  if braced b1 then do
-    execSfxAtomic $ SfxMsgFid (bfid sb)
-                              "Braced actors are immune to translocation."
-    return False
-  else if lid2 == lid1 && pos2 == pos1 then do
-    execSfxAtomic $ SfxMsgFid (bfid sb) "No more levels in this direction."
-    -- We keep it useful even in shallow dungeons.
-    recursiveCall $ IK.Teleport 30  -- powerful teleport
-  else do
-    let switch1 = void $ switchLevels1 (target, b1)
-        switch2 = do
-          -- Make the initiator of the stair move the leader,
-          -- to let him clear the stairs for others to follow.
-          let mlead = Just target
-          -- Move the actor to where the inhabitants were, if any.
-          switchLevels2 lid2 pos2 (target, b1) mlead
-          -- Verify only one non-projectile actor on every tile.
-          !_ <- getsState $ posToActors pos1 lid1  -- assertion is inside
-          !_ <- getsState $ posToActors pos2 lid2  -- assertion is inside
-          return ()
-    -- The actor will be added to the new level, but there can be other actors
-    -- at his new position.
-    inhabitants <- getsState $ posToActors pos2 lid2
-    case inhabitants of
-      [] -> do
-        switch1
-        switch2
-      (_, b2) : _ -> do
-        -- Alert about the switch.
-        let subjects = map (partActor . snd) inhabitants
-            subject = MU.WWandW subjects
-            verb = "be pushed to another level"
-            msg2 = makeSentence [MU.SubjectVerbSg subject verb]
-        -- Only tell one player, even if many actors, because then
-        -- they are projectiles, so not too important.
-        execSfxAtomic $ SfxMsgFid (bfid b2) msg2
-        -- Move the actor out of the way.
-        switch1
-        -- Move the inhabitant out of the way and to where the actor was.
-        let moveInh inh = do
-              -- Preserve old the leader, since the actor is pushed, so possibly
-              -- has nothing worhwhile to do on the new level (and could try
-              -- to switch back, if made a leader, leading to a loop).
-              inhMLead <- switchLevels1 inh
-              switchLevels2 lid1 pos1 inh inhMLead
-        mapM_ moveInh inhabitants
-        -- Move the actor to his destination.
-        switch2
-    execSfx
-    return True
+  if | braced b1 -> do
+       execSfxAtomic $ SfxMsgFid (bfid sb)
+                                 "Braced actors are immune to translocation."
+       return False
+     | lid2 == lid1 && pos2 == pos1 -> do
+       execSfxAtomic $ SfxMsgFid (bfid sb) "No more levels in this direction."
+       -- We keep it useful even in shallow dungeons.
+       recursiveCall $ IK.Teleport 30  -- powerful teleport
+     | otherwise -> do
+       let switch1 = void $ switchLevels1 (target, b1)
+           switch2 = do
+             -- Make the initiator of the stair move the leader,
+             -- to let him clear the stairs for others to follow.
+             let mlead = Just target
+             -- Move the actor to where the inhabitants were, if any.
+             switchLevels2 lid2 pos2 (target, b1) mlead
+             -- Verify only one non-projectile actor on every tile.
+             !_ <- getsState $ posToActors pos1 lid1  -- assertion is inside
+             !_ <- getsState $ posToActors pos2 lid2  -- assertion is inside
+             return ()
+       -- The actor will be added to the new level,
+       -- but there can be other actors at his new position.
+       inhabitants <- getsState $ posToActors pos2 lid2
+       case inhabitants of
+         [] -> do
+           switch1
+           switch2
+         (_, b2) : _ -> do
+           -- Alert about the switch.
+           let subjects = map (partActor . snd) inhabitants
+               subject = MU.WWandW subjects
+               verb = "be pushed to another level"
+               msg2 = makeSentence [MU.SubjectVerbSg subject verb]
+           -- Only tell one player, even if many actors, because then
+           -- they are projectiles, so not too important.
+           execSfxAtomic $ SfxMsgFid (bfid b2) msg2
+           -- Move the actor out of the way.
+           switch1
+           -- Move the inhabitant out of the way and to where the actor was.
+           let moveInh inh = do
+                 -- Preserve old the leader, since the actor is pushed,
+                 -- so possibly has nothing worhwhile to do on the new level
+                 -- (and could try to switch back, if made a leader,
+                 -- leading to a loop).
+                 inhMLead <- switchLevels1 inh
+                 switchLevels2 lid1 pos1 inh inhMLead
+           mapM_ moveInh inhabitants
+           -- Move the actor to his destination.
+           switch2
+       execSfx
+       return True
 
 switchLevels1 :: MonadAtomic m => (ActorId, Actor) -> m (Maybe ActorId)
 switchLevels1 (aid, bOld) = do
@@ -647,15 +648,15 @@ effectEscape source target = do
   b <- getsState $ getActorBody target
   let fid = bfid b
   fact <- getsState $ (EM.! fid) . sfactionD
-  if bproj b then
-    return False
-  else if not (fcanEscape $ gplayer fact) then do
-    execSfxAtomic $ SfxMsgFid (bfid sb)
-                              "This faction doesn't want to escape outside."
-    return False
-  else do
-    deduceQuits fid Nothing $ Status Escape (fromEnum $ blid b) Nothing
-    return True
+  if | bproj b ->
+       return False
+     | not (fcanEscape $ gplayer fact) -> do
+       execSfxAtomic $ SfxMsgFid (bfid sb)
+                                 "This faction doesn't want to escape outside."
+       return False
+     | otherwise -> do
+       deduceQuits fid Nothing $ Status Escape (fromEnum $ blid b) Nothing
+       return True
 
 -- ** Paralyze
 
@@ -720,17 +721,17 @@ effectTeleport execSfx nDm source target = do
     , dist 5
     , dist 7
     ]
-  if braced b then do
-    execSfxAtomic $ SfxMsgFid (bfid sb)
-                              "Braced actors are immune to translocation."
-    return False
-  else if not (dMinMax 9 tpos) then do  -- very rare
-    execSfxAtomic $ SfxMsgFid (bfid sb) "Translocation not possible."
-    return False
-  else do
-    execUpdAtomic $ UpdMoveActor target spos tpos
-    execSfx
-    return True
+  if | braced b -> do
+       execSfxAtomic $ SfxMsgFid (bfid sb)
+                                 "Braced actors are immune to translocation."
+       return False
+     | not (dMinMax 9 tpos) -> do  -- very rare
+       execSfxAtomic $ SfxMsgFid (bfid sb) "Translocation not possible."
+       return False
+     | otherwise -> do
+       execUpdAtomic $ UpdMoveActor target spos tpos
+       execSfx
+       return True
 
 -- ** CreateItem
 
@@ -865,21 +866,21 @@ effectPolyItem execSfx source target = do
         discoEffect <- getsServer sdiscoEffect
         let maxCount = Dice.maxDice $ IK.icount itemKind
             aspects = jaspects $ discoEffect EM.! iid
-        if itemK < maxCount then do
-          execSfxAtomic $ SfxMsgFid (bfid sb) $
-            "The purpose of repurpose is served by" <+> tshow maxCount
-            <+> "pieces of this item, not by" <+> tshow itemK <> "."
-          return False
-        else if IK.Unique `elem` aspects then do
-          execSfxAtomic $ SfxMsgFid (bfid sb)
-            "Unique items can't be repurposed."
-          return False
-        else do
-          let c = CActor target cstore
-              kit = (maxCount, take maxCount itemTimer)
-          identifyIid execSfx iid c itemKindId
-          execUpdAtomic $ UpdDestroyItem iid itemBase kit c
-          effectCreateItem target cstore "useful" IK.TimerNone
+        if | itemK < maxCount -> do
+             execSfxAtomic $ SfxMsgFid (bfid sb) $
+               "The purpose of repurpose is served by" <+> tshow maxCount
+               <+> "pieces of this item, not by" <+> tshow itemK <> "."
+             return False
+           | IK.Unique `elem` aspects -> do
+             execSfxAtomic $ SfxMsgFid (bfid sb)
+               "Unique items can't be repurposed."
+             return False
+           | otherwise -> do
+             let c = CActor target cstore
+                 kit = (maxCount, take maxCount itemTimer)
+             identifyIid execSfx iid c itemKindId
+             execUpdAtomic $ UpdDestroyItem iid itemBase kit c
+             effectCreateItem target cstore "useful" IK.TimerNone
       _ -> assert `failure` (target, iid, itemFull)
 
 -- ** Identify

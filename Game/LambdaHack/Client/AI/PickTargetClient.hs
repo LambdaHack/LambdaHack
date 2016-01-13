@@ -71,11 +71,10 @@ targetStrategy aid = do
       if isNothing mvalidPos then return Nothing  -- wrong level
       else return $! case path of
         (p : q : rest, (goal, len)) -> stepAccesible $
-          if bpos b == p
-          then Just (tgt, path)  -- no move last turn
-          else if bpos b == q
-               then Just (tgt, (q : rest, (goal, len - 1)))  -- step along path
-               else Nothing  -- veered off the path
+          if | bpos b == p -> Just (tgt, path)  -- no move last turn
+             | bpos b == q ->
+               Just (tgt, (q : rest, (goal, len - 1)))  -- step along path
+             | otherwise -> Nothing  -- veered off the path
         ([p], (goal, _)) -> do
           let !_A = assert (p == goal `blame` (aid, b, mtgtMPath)) ()
           if bpos b == p then
@@ -269,28 +268,28 @@ targetStrategy aid = do
       updateTgt oldTgt updatedPath@(_, (_, len)) = case oldTgt of
         TEnemy a permit -> do
           body <- getsState $ getActorBody a
-          if not focused  -- prefers closer foes
-             && a `notElem` map fst nearbyFoes  -- old one not close enough
-             || blid body /= blid b  -- wrong level
-             || actorDying body  -- foe already dying
-             || permit  -- never follow a friend more than 1 step
-          then pickNewTarget
-          else if bpos body == fst (snd updatedPath)
-               then return $! returN "TEnemy" (oldTgt, Just updatedPath)
-                      -- The enemy didn't move since the target acquired.
-                      -- If any walls were added that make the enemy
-                      -- unreachable, AI learns that the hard way,
-                      -- as soon as it bumps into them.
-               else do
-                 let p = bpos body
-                 (bfs, mpath) <- getCacheBfsAndPath aid p
-                 case mpath of
-                   Nothing -> pickNewTarget  -- enemy became unreachable
-                   Just path ->
-                      return $! returN "TEnemy"
-                        (oldTgt, Just ( bpos b : path
-                                      , (p, fromMaybe (assert `failure` mpath)
-                                            $ accessBfs bfs p) ))
+          if | not focused  -- prefers closer foes
+               && a `notElem` map fst nearbyFoes  -- old one not close enough
+               || blid body /= blid b  -- wrong level
+               || actorDying body  -- foe already dying
+               || permit ->  -- never follow a friend more than 1 step
+               pickNewTarget
+             | bpos body == fst (snd updatedPath) ->
+               return $! returN "TEnemy" (oldTgt, Just updatedPath)
+                 -- The enemy didn't move since the target acquired.
+                 -- If any walls were added that make the enemy
+                 -- unreachable, AI learns that the hard way,
+                 -- as soon as it bumps into them.
+             | otherwise -> do
+               let p = bpos body
+               (bfs, mpath) <- getCacheBfsAndPath aid p
+               case mpath of
+                 Nothing -> pickNewTarget  -- enemy became unreachable
+                 Just path ->
+                    return $! returN "TEnemy"
+                      (oldTgt, Just ( bpos b : path
+                                    , (p, fromMaybe (assert `failure` mpath)
+                                          $ accessBfs bfs p) ))
         TEnemyPos _ lid p permit
           -- Chase last position even if foe hides or dies,
           -- to find his companions, loot, etc.

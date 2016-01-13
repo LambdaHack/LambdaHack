@@ -23,6 +23,7 @@ import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.WidgetClient
@@ -34,7 +35,6 @@ import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
@@ -104,17 +104,16 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   localTime <- getsState $ getLocalTime lidV
   subject <- partAidLeader aid
   is <- getsState $ getCBag $ CFloor lidV pos
-  let verb = MU.Text $ if pos == bpos b
-                       then "stand on"
-                       else if canSee then "notice" else "remember"
+  let verb = MU.Text $ if | pos == bpos b -> "stand on"
+                          | canSee -> "notice"
+                          | otherwise -> "remember"
   let nWs (iid, kit@(k, _)) = partItemWs k CGround localTime (itemToF iid kit)
-      isd = case detailed of
-              _ | EM.size is == 0 -> ""
-              _ | EM.size is <= 2 ->
-                makeSentence [ MU.SubjectVerbSg subject verb
-                             , MU.WWandW $ map nWs $ EM.assocs is]
--- TODO: detailed unused here; disabled together with overlay in doLook
-              _ -> makeSentence [MU.Cardinal (EM.size is), "items here"]
+      isd = if | EM.size is == 0 -> ""
+               | EM.size is <= 2 ->
+                 makeSentence [ MU.SubjectVerbSg subject verb
+                              , MU.WWandW $ map nWs $ EM.assocs is]
+               | otherwise ->
+                 makeSentence [MU.Cardinal (EM.size is), "items here"]
       tile = lvl `at` pos
       obscured | knownLsecret lvl
                  && tile /= hideTile cops lvl pos = "partially obscured"
@@ -123,13 +122,14 @@ lookAt detailed tilePrefix canSee pos aid msg = do
       tilePart | T.null tilePrefix = MU.Text tileText
                | otherwise = MU.AW $ MU.Text tileText
       tileDesc = [MU.Text tilePrefix, tilePart]
-  if not (null (Tile.causeEffects cotile tile)) then
-    return $! makeSentence ("activable:" : tileDesc)
-              <+> msg <+> isd
-  else if detailed then
-    return $! makeSentence tileDesc
-              <+> msg <+> isd
-  else return $! msg <+> isd
+  if | not (null (Tile.causeEffects cotile tile)) ->
+       return $! makeSentence ("activable:" : tileDesc)
+                 <+> msg <+> isd
+     | detailed ->
+       return $! makeSentence tileDesc
+                 <+> msg <+> isd
+     | otherwise ->
+       return $! msg <+> isd
 
 -- | Create a list of item names.
 itemOverlay :: MonadClient m

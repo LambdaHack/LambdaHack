@@ -92,13 +92,10 @@ posUpdAtomic cmd = case cmd of
     tb <- getsState $ getActorBody target
     let ps = [bpos sb, bpos tb]
         lid = assert (blid sb == blid tb) $ blid sb
-    return $! if bproj sb && bproj tb
-              then PosSight lid ps
-              else if bproj sb
-              then PosFidAndSight [bfid tb] lid ps
-              else if bproj tb
-              then PosFidAndSight [bfid sb] lid ps
-              else PosFidAndSight [bfid sb, bfid tb] lid ps
+    return $! if | bproj sb && bproj tb -> PosSight lid ps
+                 | bproj sb -> PosFidAndSight [bfid tb] lid ps
+                 | bproj tb -> PosFidAndSight [bfid sb] lid ps
+                 | otherwise -> PosFidAndSight [bfid sb, bfid tb] lid ps
   UpdMoveItem _ _ aid _ CSha -> do  -- shared stash is private
     b <- getsState $ getActorBody aid
     return $! PosFidAndSer (Just $ blid b) (bfid b)

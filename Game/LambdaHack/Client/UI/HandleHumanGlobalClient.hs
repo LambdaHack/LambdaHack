@@ -202,25 +202,29 @@ displaceAid target = do
       tpos = bpos tb
       adj = checkAdjacent sb tb
       atWar = isAtWar tfact (bfid sb)
-  if not adj then failSer DisplaceDistant
-  else if not (bproj tb) && atWar
-          && actorDying tb then failSer DisplaceDying
-  else if not (bproj tb) && atWar
-          && braced tb then failSer DisplaceBraced
-  else if not (bproj tb) && atWar
-          && immobile then failSer DisplaceImmobile
-  else if not disp && atWar then failSer DisplaceSupported
-  else do
-    let lid = blid sb
-    lvl <- getLevel lid
-    -- Displacing requires full access.
-    if accessible cops lvl spos tpos then do
-      tgts <- getsState $ posToActors tpos lid
-      case tgts of
-        [] -> assert `failure` (leader, sb, target, tb)
-        [_] -> return $ Right $ ReqDisplace target
-        _ -> failSer DisplaceProjectiles
-    else failSer DisplaceAccess
+  if | not adj -> failSer DisplaceDistant
+     | not (bproj tb) && atWar
+       && actorDying tb ->
+       failSer DisplaceDying
+     | not (bproj tb) && atWar
+       && braced tb ->
+       failSer DisplaceBraced
+     | not (bproj tb) && atWar
+       && immobile ->
+       failSer DisplaceImmobile
+     | not disp && atWar ->
+       failSer DisplaceSupported
+     | otherwise -> do
+       let lid = blid sb
+       lvl <- getLevel lid
+       -- Displacing requires full access.
+       if accessible cops lvl spos tpos then do
+         tgts <- getsState $ posToActors tpos lid
+         case tgts of
+           [] -> assert `failure` (leader, sb, target, tb)
+           [_] -> return $ Right $ ReqDisplace target
+           _ -> failSer DisplaceProjectiles
+       else failSer DisplaceAccess
 
 -- | Actor moves or searches or alters. No visible actor at the position.
 moveSearchAlterAid :: MonadClient m
@@ -249,12 +253,12 @@ moveSearchAlterAid source dir = do
               || Tile.isOpenable cotile t
               || Tile.isClosable cotile t
               || Tile.isChangeable cotile t)
-          = if skill < 1 then
-              Left $ showReqFailure AlterUnskilled
-            else if EM.member tpos $ lfloor lvl then
-              Left $ showReqFailure AlterBlockItem
-            else
-              Right $ RequestAnyAbility $ ReqAlter tpos Nothing
+          = if | skill < 1 ->
+                 Left $ showReqFailure AlterUnskilled
+               | EM.member tpos $ lfloor lvl ->
+                 Left $ showReqFailure AlterBlockItem
+               | otherwise ->
+                 Right $ RequestAnyAbility $ ReqAlter tpos Nothing
             -- We don't use MoveSer, because we don't hit invisible actors.
             -- The potential invisible actor, e.g., in a wall or in
             -- an inaccessible doorway, is made known, taking a turn.
@@ -542,13 +546,13 @@ verifyTrigger leader feat = case feat of
 guessTrigger :: Kind.COps -> [TK.Feature] -> Kind.Id TileKind -> Msg
 guessTrigger Kind.COps{cotile} fs@(TK.Cause (IK.Ascend k) : _) t
   | Tile.hasFeature cotile (TK.Cause (IK.Ascend (-k))) t =
-    if k > 0 then "the way goes down, not up"
-    else if k < 0 then "the way goes up, not down"
-    else assert `failure` fs
+    if | k > 0 -> "the way goes down, not up"
+       | k < 0 -> "the way goes up, not down"
+       | otherwise -> assert `failure` fs
 guessTrigger _ fs@(TK.Cause (IK.Ascend k) : _) _ =
-    if k > 0 then "cannot ascend"
-    else if k < 0 then "cannot descend"
-    else assert `failure` fs
+    if | k > 0 -> "cannot ascend"
+       | k < 0 -> "cannot descend"
+       | otherwise -> assert `failure` fs
 guessTrigger _ _ _ = "never mind"
 
 -- * RunOnceAhead

@@ -16,9 +16,9 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.HumanCmd
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Client.UI.Msg
 
 -- | Bindings and other information about human player commands.
 data Binding = Binding
@@ -45,12 +45,13 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
            , (K.mkKM "CTRL-KP_Begin", ([CmdMove], Alias "" Wait))
            , (K.mkKM "KP_5", ([CmdMove], Alias "" Wait))
            , (K.mkKM "CTRL-KP_5", ([CmdMove], Alias "" Wait)) ]
-        ++ (if configVi
-            then [ (K.mkKM "period", ([CmdMove], Alias "" Wait)) ]
-            else if configLaptop
-            then [ (K.mkKM "i", ([CmdMove], Alias "" Wait))
+        ++ (if | configVi ->
+                 [ (K.mkKM "period", ([CmdMove], Alias "" Wait)) ]
+               | configLaptop ->
+                 [ (K.mkKM "i", ([CmdMove], Alias "" Wait))
                  , (K.mkKM "I", ([CmdMove], Alias "" Wait)) ]
-            else [])
+               | otherwise ->
+                 [])
         ++ K.moveBinding configVi configLaptop (\v -> ([CmdMove], Move v))
                                                (\v -> ([CmdMove], Run v))
         ++ fmap heroSelect [0..6]

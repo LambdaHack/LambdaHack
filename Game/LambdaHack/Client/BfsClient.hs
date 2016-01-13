@@ -14,7 +14,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List (sortBy, maximumBy)
+import Data.List (maximumBy, sortBy)
 import Data.Maybe
 import Data.Ord
 
@@ -148,15 +148,14 @@ condBFS aid = do
         let st = lvl `at` spos
             tt = lvl `at` tpos
             allOK = all (\f -> f spos tpos) conditions
-        in if tt == unknownId
-           then if not (Tile.isSuspect cotile st) && allOK
+        in if | tt == unknownId ->
+                if not (Tile.isSuspect cotile st) && allOK
                 then MoveToUnknown
                 else MoveBlocked
-           else if isPassable cotile tt
-                   && not (Tile.isChangeable cotile st)  -- takes time to change
-                   && allOK
-                then MoveToOpen
-                else MoveBlocked
+              | isPassable cotile tt
+                && not (Tile.isChangeable cotile st)  -- takes time to change
+                && allOK -> MoveToOpen
+              | otherwise -> MoveBlocked
       -- Legality of move from an unknown tile, assuming unknown are open.
       passUnknown :: Point -> Point -> Bool
       {-# INLINE passUnknown #-}
@@ -308,12 +307,12 @@ closestTriggers onlyDir aid = do
       -- unless the actor has just returned via the very stairs.
       triggers = filter ((/= bpos body) . snd) triggersAll
   bfs <- getCacheBfs aid
-  return $ case triggers of  -- keep lazy
-    [] -> mzero
-    _ | isNothing onlyDir && not escape && allExplored ->
+  return $ if  -- keep lazy
+    | null triggers -> mzero
+    | isNothing onlyDir && not escape && allExplored ->
       -- Distance also irrelevant, to ensure random wandering.
       toFreq "closestTriggers when allExplored" triggers
-    _ ->
+    | otherwise ->
       -- Prefer stairs to easier levels.
       -- If exactly one escape, these stairs will all be in one direction.
       let mix (k, p) dist =

@@ -111,11 +111,12 @@ switchLeader fid aidNew mtgtNew = do
     Just (leader, _) -> do
       b <- getsState $ getActorBody leader
       return $! blid b
-  if actorChanged && blid bPre /= arena && autoDun
-  then execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
-  else if actorChanged && autoLvl
-  then execFailure aidNew ReqWait{-hack-} NoChangeLvlLeader
-  else execUpdAtomic $ UpdLeadFaction fid mleader (Just (aidNew, mtgtNew))
+  if | actorChanged && blid bPre /= arena && autoDun ->
+       execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
+     | actorChanged && autoLvl ->
+       execFailure aidNew ReqWait{-hack-} NoChangeLvlLeader
+     | otherwise ->
+       execUpdAtomic $ UpdLeadFaction fid mleader (Just (aidNew, mtgtNew))
 
 -- * ReqMove
 
@@ -246,27 +247,26 @@ reqDisplace source target = do
       req = ReqDisplace target
   activeItems <- activeItemsServer target
   dEnemy <- getsState $ dispEnemy source target activeItems
-  if not adj then execFailure source req DisplaceDistant
-  else if atWar && not dEnemy
-  then do
-    mweapon <- pickWeaponServer source
-    case mweapon of
-      Nothing -> reqWait source
-      Just (wp, cstore)  -> reqMelee source target wp cstore
-        -- DisplaceDying, etc.
-  else do
-    let lid = blid sb
-    lvl <- getLevel lid
-    -- Displacing requires full access.
-    if accessible cops lvl spos tpos then do
-      tgts <- getsState $ posToActors tpos lid
-      case tgts of
-        [] -> assert `failure` (source, sb, target, tb)
-        [_] -> execUpdAtomic $ UpdDisplaceActor source target
-        _ -> execFailure source req DisplaceProjectiles
-    else
-      -- Client foolishly tries to displace an actor without access.
-      execFailure source req DisplaceAccess
+  if | not adj -> execFailure source req DisplaceDistant
+     | atWar && not dEnemy -> do
+       mweapon <- pickWeaponServer source
+       case mweapon of
+         Nothing -> reqWait source
+         Just (wp, cstore)  -> reqMelee source target wp cstore
+           -- DisplaceDying, etc.
+     | otherwise -> do
+       let lid = blid sb
+       lvl <- getLevel lid
+       -- Displacing requires full access.
+       if accessible cops lvl spos tpos then do
+         tgts <- getsState $ posToActors tpos lid
+         case tgts of
+           [] -> assert `failure` (source, sb, target, tb)
+           [_] -> execUpdAtomic $ UpdDisplaceActor source target
+           _ -> execFailure source req DisplaceProjectiles
+       else
+         -- Client foolishly tries to displace an actor without access.
+         execFailure source req DisplaceAccess
 
 -- * ReqAlter
 
@@ -359,12 +359,13 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
       toC = CActor aid toCStore
       req = ReqMoveItems [(iid, k, fromCStore, toCStore)]
   bagBefore <- getsState $ getCBag toC
-  if k < 1 || fromCStore == toCStore then execFailure aid req ItemNothing
-  else if toCStore == CEqp
-          && eqpOverfull b k then execFailure aid req EqpOverfull
-  else if (fromCStore == CSha || toCStore == CSha)
-          && not calmE then execFailure aid req ItemNotCalm
-  else do
+  if
+   | k < 1 || fromCStore == toCStore -> execFailure aid req ItemNothing
+   | toCStore == CEqp && eqpOverfull b k ->
+     execFailure aid req EqpOverfull
+   | (fromCStore == CSha || toCStore == CSha) && not calmE ->
+     execFailure aid req ItemNotCalm
+   | otherwise -> do
     when (fromCStore == CGround) $ do
       seed <- getsServer $ (EM.! iid) . sitemSeedD
       item <- getsState $ getItemBody iid

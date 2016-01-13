@@ -25,13 +25,13 @@ import Data.Maybe
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
@@ -61,31 +61,31 @@ continueRun arena paramOld = case paramOld of
         paramIni = paramOld {runInitial = runInitialNew}
     onLevel <- getsState $ memActor r arena
     onLevelLeader <- getsState $ memActor runLeader arena
-    if not onLevel then do
-      let paramNew = paramIni {runMembers = rs }
-      continueRun arena paramNew
-    else if not onLevelLeader then do
-      let paramNew = paramIni {runLeader = r}
-      continueRun arena paramNew
-    else do
-      mdirOrRunStopMsgCurrent <- continueRunDir paramOld
-      let runStopMsgCurrent =
-            either Just (const Nothing) mdirOrRunStopMsgCurrent
-          runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
-          -- We check @runStopMsgNew@, because even if the current actor
-          -- runs OK, we want to stop soon if some others had to stop.
-          runMembersNew = if isJust runStopMsgNew then rs else rs ++ [r]
-          paramNew = paramIni { runMembers = runMembersNew
-                              , runStopMsg = runStopMsgNew }
-      case mdirOrRunStopMsgCurrent of
-        Left _ -> continueRun arena paramNew
-                    -- run all others undisturbed; one time
-        Right dir -> do
-          s <- getState
-          modifyClient $ updateLeader r s
-          modifySession $ \sess -> sess {srunning = Just paramNew}
-          return $ Right $ RequestAnyAbility $ ReqMove dir
-      -- The potential invisible actor is hit. War is started without asking.
+    if | not onLevel -> do
+         let paramNew = paramIni {runMembers = rs }
+         continueRun arena paramNew
+       | not onLevelLeader -> do
+         let paramNew = paramIni {runLeader = r}
+         continueRun arena paramNew
+       | otherwise -> do
+         mdirOrRunStopMsgCurrent <- continueRunDir paramOld
+         let runStopMsgCurrent =
+               either Just (const Nothing) mdirOrRunStopMsgCurrent
+             runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
+             -- We check @runStopMsgNew@, because even if the current actor
+             -- runs OK, we want to stop soon if some others had to stop.
+             runMembersNew = if isJust runStopMsgNew then rs else rs ++ [r]
+             paramNew = paramIni { runMembers = runMembersNew
+                                 , runStopMsg = runStopMsgNew }
+         case mdirOrRunStopMsgCurrent of
+           Left _ -> continueRun arena paramNew
+                       -- run all others undisturbed; one time
+           Right dir -> do
+             s <- getState
+             modifyClient $ updateLeader r s
+             modifySession $ \sess -> sess {srunning = Just paramNew}
+             return $ Right $ RequestAnyAbility $ ReqMove dir
+         -- The potential invisible actor is hit. War is started without asking.
 
 -- | This function implements the actual logic of running. It checks if we
 -- have to stop running because something interesting cropped up,

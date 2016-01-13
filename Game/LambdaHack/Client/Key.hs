@@ -177,15 +177,15 @@ dirViShiftKey = map (Char . Char.toUpper) dirViChar
 
 dirMoveNoModifier :: Bool -> Bool -> [Key]
 dirMoveNoModifier configVi configLaptop =
-  dirKeypadKey ++ if configVi then dirViKey
-                  else if configLaptop then dirLaptopKey
-                  else []
+  dirKeypadKey ++ if | configVi -> dirViKey
+                     | configLaptop -> dirLaptopKey
+                     | otherwise -> []
 
 dirRunNoModifier :: Bool -> Bool -> [Key]
 dirRunNoModifier configVi configLaptop =
-  dirKeypadShiftKey ++ if configVi then dirViShiftKey
-                       else if configLaptop then dirLaptopShiftKey
-                       else []
+  dirKeypadShiftKey ++ if | configVi -> dirViShiftKey
+                          | configLaptop -> dirLaptopShiftKey
+                          | otherwise -> []
 
 dirRunControl :: [Key]
 dirRunControl = dirKeypadKey

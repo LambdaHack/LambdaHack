@@ -160,14 +160,14 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
   UpdFidImpressedActor aid _fidOld fidNew -> do
     b <- getsState $ getActorBody aid
     actorVerbMU aid b $
-      if fidNew == bfid b then
-        "get calmed and refocused"
+      if | fidNew == bfid b ->
+           "get calmed and refocused"
 -- TODO: only show for liquids; for others say 'flash', etc.
 --              "get refocused by the fragrant moisture"
-      else if fidNew == bfidOriginal b then
-        "remember forgone allegiance suddenly"
-      else
-        "experience anxiety that weakens resolve and erodes loyalty"
+         | fidNew == bfidOriginal b ->
+           "remember forgone allegiance suddenly"
+         | otherwise ->
+           "experience anxiety that weakens resolve and erodes loyalty"
 -- TODO     "inhale the sweet smell that weakens resolve and erodes loyalty"
   UpdTrajectory{} -> return ()
   UpdColorActor{} -> return ()
@@ -732,12 +732,12 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           -- For subsequent messages use the proper name, never "you".
           let subject = partActor b
           if fid /= fidSource then do  -- before domination
-            if bcalm b == 0 then  -- sometimes only a coincidence, but nm
-              aidVerbMU aid $ MU.Text "yield, under extreme pressure"
-            else if fid == side then
-              aidVerbMU aid $ MU.Text "black out, dominated by foes"
-            else
-              aidVerbMU aid $ MU.Text "decide abrubtly to switch allegiance"
+            if | bcalm b == 0 ->  -- sometimes only a coincidence, but nm
+                 aidVerbMU aid $ MU.Text "yield, under extreme pressure"
+               | fid == side ->
+                 aidVerbMU aid $ MU.Text "black out, dominated by foes"
+               | otherwise ->
+                 aidVerbMU aid $ MU.Text "decide abrubtly to switch allegiance"
             fidName <- getsState $ gname . (EM.! fid) . sfactionD
             let verb = "be no longer controlled by"
             msgAdd $ makeSentence

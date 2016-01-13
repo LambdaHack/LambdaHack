@@ -185,26 +185,26 @@ deduceQuits fid mbody status = do
         all (\(fid1, _) -> all (\(_, fact2) -> not $ isAtWar fact2 fid1)
                            nonHorrorAIG)
         nonHorrorAIG
-  case assocsKeepArena of
-    _ | null assocsUI ->
-      -- Only non-UI players left in the game and they all win.
-      mapQuitF status{stOutcome=Conquer} keysInGame
-    [] ->
-      -- Only leaderless and spawners remain (the latter may sometimes
-      -- have no leader, just as the former), so they win,
-      -- or we could get stuck in a state with no active arena and so no spawns.
-      mapQuitF status{stOutcome=Conquer} keysInGame
-    _ | worldPeace ->
-      -- Nobody is at war any more, so all win (e.g., horrors, but never mind).
-      mapQuitF status{stOutcome=Conquer} keysInGame
-    _ | stOutcome status == Escape -> do
-      -- Otherwise, in a game with many warring teams alive,
-      -- only complete Victory matters, until enough of them die.
-      let (victors, losers) =
-            partition (flip isAllied fid . snd) assocsInGame
-      mapQuitF status{stOutcome=Escape} $ map fst victors
-      mapQuitF status{stOutcome=Defeated} $ map fst losers
-    _ -> return ()
+  if | null assocsUI ->
+       -- Only non-UI players left in the game and they all win.
+       mapQuitF status{stOutcome=Conquer} keysInGame
+     | null assocsKeepArena ->
+       -- Only leaderless and spawners remain (the latter may sometimes
+       -- have no leader, just as the former), so they win,
+       -- or we could get stuck in a state with no active arena
+       -- and so no spawns.
+       mapQuitF status{stOutcome=Conquer} keysInGame
+     | worldPeace ->
+       -- Nobody is at war any more, so all win (e.g., horrors, but never mind).
+       mapQuitF status{stOutcome=Conquer} keysInGame
+     | stOutcome status == Escape -> do
+       -- Otherwise, in a game with many warring teams alive,
+       -- only complete Victory matters, until enough of them die.
+       let (victors, losers) =
+             partition (flip isAllied fid . snd) assocsInGame
+       mapQuitF status{stOutcome=Escape} $ map fst victors
+       mapQuitF status{stOutcome=Defeated} $ map fst losers
+     | otherwise -> return ()
 
 -- | Tell whether a faction that we know is still in game, keeps arena.
 -- Keeping arena means, if the faction is still in game,
