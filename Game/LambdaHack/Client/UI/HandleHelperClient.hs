@@ -24,6 +24,7 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
@@ -36,7 +37,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
@@ -133,7 +133,7 @@ cursorPointerFloor verbose addMoreMsg = do
         doLook addMoreMsg
       else do
         displayPush ""  -- flash the targeting line and path
-        displayDelay  -- for a bit longer
+        displayDelay 2  -- for a bit longer
         return mempty
     _ -> do
       void $ stopPlayBack
@@ -159,7 +159,7 @@ cursorPointerEnemy verbose addMoreMsg = do
         doLook addMoreMsg
       else do
         displayPush ""  -- flash the targeting line and path
-        displayDelay  -- for a bit longer
+        displayDelay 2 -- for a bit longer
         return mempty
     _ -> do
       void $ stopPlayBack

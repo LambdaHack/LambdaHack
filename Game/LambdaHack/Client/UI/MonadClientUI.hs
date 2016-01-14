@@ -177,12 +177,12 @@ getConfirmGeneric clearKeys frontKeyFrame = do
 displayFrame :: MonadClientUI m => Maybe SingleFrame -> m ()
 displayFrame mf = do
   let frame = case mf of
-        Nothing -> FrontDelay
+        Nothing -> FrontDelay 1
         Just fr -> FrontFrame fr
   connFrontend frame
 
-displayDelay :: MonadClientUI m =>  m ()
-displayDelay = displayFrame Nothing
+displayDelay :: MonadClientUI m => Int -> m ()
+displayDelay k = connFrontend $ FrontDelay k
 
 -- | Push frames or delays to the frame queue. Additionally set @sdisplayed@.
 -- because animations not always happen before @SfxActorStart@ on the leader's
@@ -197,7 +197,7 @@ displayActorStart b frs = do
   timeDisp <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
   localTime <- getsState $ getLocalTime (blid b)
   let delta = localTime `timeDeltaToFrom` timeDisp
-  when (delta > Delta timeClip) displayDelay
+  when (delta > Delta timeClip) $ displayDelay 4
   mapM_ displayFrame frs
   let ageDisp = EM.insert arena localTime
   modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}

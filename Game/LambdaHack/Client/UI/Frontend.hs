@@ -29,8 +29,8 @@ import Game.LambdaHack.Common.ClientOptions
 data FrontReq :: * -> * where
   FrontFrame :: {frontFrame :: !SingleFrame} -> FrontReq ()
     -- ^ show a frame
-  FrontDelay :: FrontReq ()
-    -- ^ perform a single explicit delay
+  FrontDelay :: !Int -> FrontReq ()
+    -- ^ perform an explicit delay of the given length
   FrontKey :: { frontKeyKeys  :: ![K.KM]
               , frontKeyFrame :: !SingleFrame } -> FrontReq K.KM
     -- ^ flush frames, display a frame and ask for a keypress
@@ -50,7 +50,7 @@ newtype ChanFrontend = ChanFrontend (forall a. FrontReq a -> IO a)
 data FSession = FSession
   { fautoYesRef   :: !(IORef Bool)
   , fasyncTimeout :: !(Async ())
-  , fdelay        :: !(IORef Bool)
+  , fdelay        :: !(IORef Int)
   }
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
@@ -78,7 +78,7 @@ fchanFrontend :: DebugModeCli -> FSession -> RawFrontend -> ChanFrontend
 fchanFrontend sdebugCli fs@FSession{..} rf =
   ChanFrontend $ \req -> case req of
     FrontFrame{..} -> display rf frontFrame
-    FrontDelay -> writeIORef fdelay True
+    FrontDelay k -> writeIORef fdelay k
     FrontKey{..} -> getKey sdebugCli fs rf frontKeyKeys frontKeyFrame
     FrontPressed -> do
       noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
@@ -105,14 +105,14 @@ microInSec = 1000000
 
 -- This thread is canceled forcefully, because the @threadDelay@
 -- may be much longer than an acceptable shutdown time.
-forkFrameTimeout :: Int -> IORef Bool -> RawFrontend -> IO ()
+forkFrameTimeout :: Int -> IORef Int -> RawFrontend -> IO ()
 forkFrameTimeout delta fdelay RawFrontend{..} = do
   let loop = do
         threadDelay delta
         delay <- readIORef fdelay
-        when delay $ do
-          threadDelay delta
-          writeIORef fdelay False
+        when (delay > 0) $ do
+          threadDelay $ delta * delay
+          writeIORef fdelay 0
         -- For simplicity, we don't care that occasionally a frame will be
         -- shown too early, when a keypress happens during the timeout,
         -- is handled and the next frame is ready before timeout expires.
@@ -140,7 +140,7 @@ chanFrontend sdebugCli = do
       delta = microInSec `div` maxFps
   rf <- startup
   fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
-  fdelay <- newIORef False
+  fdelay <- newIORef 0
   fasyncTimeout <- async $ forkFrameTimeout delta fdelay rf
   -- Warning: not linking @fasyncTimeout@, so it'd better not crash.
   let fs = FSession{..}

@@ -810,9 +810,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxMsgAll msg -> msgAdd msg
   SfxActorStart aid -> do
     -- TODO: handle projectiles and insert *delay* between the same actor's move
-    -- TODO: currently projectile move animations are not displayed
-    -- concurrently. With many projectiles onscreen, it generates enormous
-    -- number of frames per game clip. Instead handle animations somehow here.
     -- TODO: we display an extra frame before displace animation frames, etc.
     arena <- getArenaUI
     b <- getsState $ getActorBody aid
@@ -840,7 +837,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           -- (otherwise we'd send @SfxActorStart@ later on, for another actor),
           -- so display the new game state. If more time passed, add delay.
           let delta = localTime `timeDeltaToFrom` timeDisp
-          when (delta > Delta timeClip) displayDelay
+          when (delta > Delta timeClip) $ displayDelay 4
           displayPush ""
           let ageDisp = EM.insert arena localTime
           modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}
