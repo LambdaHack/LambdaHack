@@ -701,33 +701,21 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             actorVerbMU aid b "feel calmer"
           else
             actorVerbMU aid b "look calmer"
-          let ps = (bpos b, bpos b)
-          animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
-          displayActorStart b animFrs
         IK.RefillCalm _ -> do
           if fid == side then
             actorVerbMU aid b "feel agitated"
           else
             actorVerbMU aid b "look agitated"
-          let ps = (bpos b, bpos b)
-          animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
-          displayActorStart b animFrs
         IK.OverfillCalm p | p > 0 -> do
           if fid == side then
             actorVerbMU aid b "feel calmer"
           else
             actorVerbMU aid b "look calmer"
-          let ps = (bpos b, bpos b)
-          animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
-          displayActorStart b animFrs
         IK.OverfillCalm _ -> do
           if fid == side then
             actorVerbMU aid b "feel agitated"
           else
             actorVerbMU aid b "look agitated"
-          let ps = (bpos b, bpos b)
-          animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
-          displayActorStart b animFrs
         IK.Dominate -> do
           -- For subsequent messages use the proper name, never "you".
           let subject = partActor b
