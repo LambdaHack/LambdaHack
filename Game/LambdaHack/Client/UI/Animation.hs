@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.Animation
   ( Animation, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, actorX
-  , swapPlaces, fadeout
+  , swapPlaces, teleport, fadeout
   ) where
 
 import Prelude ()
@@ -172,6 +172,17 @@ actorX pos = Animation $ map (EM.fromList . mzipSingleton pos)
   , cSym BrRed 'X'
   , blank
   , blank
+  ]
+
+-- | Actor teleport animation.
+teleport :: (Point, Point) -> Animation
+teleport poss = Animation $ map (EM.fromList . mzipPairs poss)
+  [ (cSym BrMagenta 'o', cSym Magenta   '.')
+  , (cSym BrMagenta 'O', cSym Magenta   '.')
+  , (cSym Magenta   'o', cSym Magenta   'o')
+  , (cSym Magenta   '.', cSym BrMagenta 'O')
+  , (cSym Magenta   '.', cSym BrMagenta 'o')
+  , (cSym Magenta   '.', blank)
   ]
 
 -- | Swap-places animation, both hostile and friendly.

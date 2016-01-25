@@ -126,7 +126,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
       _ -> return ()  -- seen already (has a slot assigned)
   UpdLoseItem{} -> return ()
   -- Move actors and items.
-  UpdMoveActor aid _ _ -> lookAtMove aid
+  UpdMoveActor aid source target -> moveActor aid source target
   UpdWaitActor aid _ -> when verbose $ aidVerbMU aid "wait"
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
@@ -427,6 +427,21 @@ anyActorsAlive fid maid = do
     else do
       as <- getsState $ fidActorNotProjAssocs fid
       return $! not $ null $ maybe as (\aid -> filter ((/= aid) . fst) as) maid
+
+moveActor :: MonadClientUI m => ActorId -> Point -> Point -> m ()
+moveActor aid source target = do
+  -- If source and target tile distant, assume it's a teleportation
+  -- and display an animation. Note: jumps and pushes go through all
+  -- intervening tiles, so won't be considered. Note: if source or target
+  -- not seen, the (half of the) animation would be boring, just a delay,
+  -- not really showing a transition, so we skip it (via 'breakUpdAtomic').
+  -- The message about teleportation is sometimes shown anyway, just as the X.
+  unless (adjacent source target) $ do
+    body <- getsState $ getActorBody aid
+    let ps = (source, target)
+    animFrs <- animate (blid body) $ teleport ps
+    displayActorStart body animFrs
+    lookAtMove aid
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do

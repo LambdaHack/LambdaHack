@@ -267,9 +267,11 @@ breakUpdAtomic cmd = case cmd of
     tb <- getsState $ getActorBody target
     tais <- getsState $ getCarriedAssocs tb
     return [ UpdLoseActor source sb sais
-           , UpdSpotActor source sb {bpos = bpos tb, boldpos = Just $ bpos sb} sais
+           , UpdSpotActor source sb { bpos = bpos tb
+                                    , boldpos = Just $ bpos sb } sais
            , UpdLoseActor target tb tais
-           , UpdSpotActor target tb {bpos = bpos sb, boldpos = Just $ bpos tb} tais
+           , UpdSpotActor target tb { bpos = bpos sb
+                                    , boldpos = Just $ bpos tb } tais
            ]
   UpdMoveItem iid k aid cstore1 cstore2 | cstore1 == CSha  -- CSha is private
                                           || cstore2 == CSha ->
