@@ -50,7 +50,7 @@ newtype ChanFrontend = ChanFrontend (forall a. FrontReq a -> IO a)
 data FSession = FSession
   { fautoYesRef   :: !(IORef Bool)
   , fasyncTimeout :: !(Async ())
-  , fdelay        :: !(IORef Int)
+  , fdelay        :: !(MVar Int)
   }
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
@@ -78,7 +78,7 @@ fchanFrontend :: DebugModeCli -> FSession -> RawFrontend -> ChanFrontend
 fchanFrontend sdebugCli fs@FSession{..} rf =
   ChanFrontend $ \req -> case req of
     FrontFrame{..} -> display rf frontFrame
-    FrontDelay k -> writeIORef fdelay k
+    FrontDelay k -> modifyMVar_ fdelay $ return . (+ k)
     FrontKey{..} -> getKey sdebugCli fs rf frontKeyKeys frontKeyFrame
     FrontPressed -> do
       noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
@@ -105,22 +105,25 @@ microInSec = 1000000
 
 -- This thread is canceled forcefully, because the @threadDelay@
 -- may be much longer than an acceptable shutdown time.
-forkFrameTimeout :: Int -> IORef Int -> RawFrontend -> IO ()
-forkFrameTimeout delta fdelay RawFrontend{..} = do
+frameTimeoutThread :: Int -> MVar Int -> RawFrontend -> IO ()
+frameTimeoutThread delta fdelay RawFrontend{..} = do
   let loop = do
         threadDelay delta
-        delay <- readIORef fdelay
-        when (delay > 0) $ do
-          threadDelay $ delta * delay
-          writeIORef fdelay 0
+        let delayLoop = do
+              delay <- readMVar fdelay
+              when (delay > 0) $ do
+                threadDelay $ delta * delay
+                modifyMVar_ fdelay $ return . subtract delay
+                delayLoop
+        delayLoop
         -- For simplicity, we don't care that occasionally a frame will be
         -- shown too early, when a keypress happens during the timeout,
         -- is handled and the next frame is ready before timeout expires.
-        let innerLoop = do
+        let waitForKeysUsed = do
               putMVar fshowNow ()
               noKeysPending <- STM.atomically $ STM.isEmptyTQueue fchanKey
-              unless noKeysPending innerLoop
-        innerLoop
+              unless noKeysPending waitForKeysUsed
+        waitForKeysUsed
         loop
   loop
 
@@ -140,8 +143,8 @@ chanFrontend sdebugCli = do
       delta = microInSec `div` maxFps
   rf <- startup
   fautoYesRef <- newIORef $ not $ sdisableAutoYes sdebugCli
-  fdelay <- newIORef 0
-  fasyncTimeout <- async $ forkFrameTimeout delta fdelay rf
+  fdelay <- newMVar 0
+  fasyncTimeout <- async $ frameTimeoutThread delta fdelay rf
   -- Warning: not linking @fasyncTimeout@, so it'd better not crash.
   let fs = FSession{..}
   return $ fchanFrontend sdebugCli fs rf
