@@ -212,9 +212,9 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
   UpdRecordKill{} -> return ()
   -- Alter map.
   UpdAlterTile{} -> when verbose $ return ()  -- TODO: door opens
-  UpdAlterClear _ k -> msgAdd $ if k > 0
-                                then "You hear grinding noises."
-                                else "You hear fizzing noises."
+  UpdAlterClear _ k ->
+    msgAdd $ if k > 0 then "You hear grinding noises."
+                      else "You hear fizzing noises."
   UpdSearchTile aid p fromTile toTile -> do
     Kind.COps{cotile = Kind.Ops{okind}} <- getsState scops
     b <- getsState $ getActorBody aid
@@ -436,7 +436,9 @@ moveActor aid source target = do
   -- not seen, the (half of the) animation would be boring, just a delay,
   -- not really showing a transition, so we skip it (via 'breakUpdAtomic').
   -- The message about teleportation is sometimes shown anyway, just as the X.
-  unless (adjacent source target) $ do
+  if adjacent source target
+  then actorMoveDisplay aid
+  else do
     body <- getsState $ getActorBody aid
     let ps = (source, target)
     animFrs <- animate (blid body) $ teleport ps
@@ -622,6 +624,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxCheck aid iid cstore ->
     itemAidVerbMU aid "deapply" iid (Left $ Just 1) cstore
   SfxTrigger aid _p _feat ->
+    -- TODO: when more triggers that are not visible on the map, add msgs
     when verbose $ aidVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->
     when verbose $ aidVerbMU aid "shun"  -- TODO: shuns stairs down
@@ -659,10 +662,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
           msgAdd msgDie
           when (fid == side && not (bproj b)) $ do
-            animDie <- if deadBefore
-                       then animate (blid b)
-                            $ twirlSplash (bpos b, bpos b) Color.Red Color.Red
-                       else animate (blid b) $ deathBody $ bpos b
+            animDie <- animate (blid b) $
+              if deadBefore
+              then twirlSplash (bpos b, bpos b) Color.Red Color.Red
+              else deathBody $ bpos b
             displayActorStart b animDie
     else case effect of
         IK.ELabel{} -> return ()
@@ -812,38 +815,50 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
   SfxActorStart aid -> do
-    -- TODO: handle projectiles and insert *delay* between the same actor's move
-    -- TODO: we display an extra frame before displace animation frames, etc.
+    -- This is always sent before the state-changing commands.
     arena <- getArenaUI
     b <- getsState $ getActorBody aid
-    when (blid b == arena) $ do
-      -- If time clip has passed since any actor advanced @sdisplayed@
-      -- or if the actor is newborn or is about to die,
-      -- we end and display the frame early, before his next move.
-      -- In the result, he moves at most once per frame
-      -- (unless he moves faster than one meter per clip,
-      -- which is 5 times normal speed), and thanks to this,
-      -- his multiple moves are not collapsed into one frame.
-      -- Note that if the actor just displayed an animation (e.g., via
-      -- displacement animation), sdisplayed is updated and so no display here.
-      timeDisp <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
-      localTime <- getsState $ getLocalTime (blid b)
-      when (localTime >= timeShift timeDisp (Delta timeClip)
-            || actorNewBorn b
-            || actorDying b) $ do
-        -- If key will be requested, don't show the frame, because during
-        -- the request extra message may be shown, so the other frame is better.
-        mleader <- getsClient _sleader
-        fact <- getsState $ (EM.! bfid b) . sfactionD
-        when (Just aid /= mleader || isAIFact fact) $ do
-          -- Something interesting happened on this level
-          -- (otherwise we'd send @SfxActorStart@ later on, for another actor),
-          -- so display the new game state. If more time passed, add delay.
-          let delta = localTime `timeDeltaToFrom` timeDisp
-          when (delta > Delta timeClip) $ displayDelay 4
-          displayPush ""
-          let ageDisp = EM.insert arena localTime
-          modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}
+    when (blid b == arena) $
+      actorDisplay aid
+
+actorDisplay :: MonadClientUI m => ActorId -> m ()
+actorDisplay aid = do
+  mleader <- getsClient _sleader
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  -- If key will be requested, don't show the frame, because during
+  -- the request extra message may be shown, so the other frame is better.
+  when (Just aid /= mleader || isAIFact fact) $ do
+    -- Display the new game state. If more time passed, add delay.
+    localTime <- getsState $ getLocalTime (blid b)
+    timeDisp <- getsSession $ EM.findWithDefault timeZero (blid b) . sdisplayed
+    let delta = localTime `timeDeltaToFrom` timeDisp
+    when (delta > Delta timeClip) $ displayDelay 4
+    displayPush ""
+    let ageDisp = EM.insert (blid b) localTime
+    modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}
+
+actorMoveDisplay :: MonadClientUI m => ActorId -> m ()
+actorMoveDisplay aid = do
+  -- TODO: handle projectiles and insert *delay* between the same actor's move
+  arena <- getArenaUI
+  b <- getsState $ getActorBody aid
+  when (blid b == arena) $ do
+    -- If time clip has passed since any actor advanced @sdisplayed@
+    -- or if the actor is newborn or is about to die,
+    -- we end and display the frame early, before his next move.
+    -- In the result, he moves at most once per frame
+    -- (unless he moves faster than one meter per clip,
+    -- which is 5 times normal speed), and thanks to this,
+    -- his multiple moves are not collapsed into one frame.
+    -- Note that if the actor just displayed an animation (e.g., via
+    -- displacement animation), sdisplayed is updated and so no display here.
+    timeDisp <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
+    localTime <- getsState $ getLocalTime (blid b)
+    when (localTime >= timeShift timeDisp (Delta timeClip)
+          || actorNewBorn b
+          || actorDying b) $
+      actorDisplay aid
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do

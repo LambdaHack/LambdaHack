@@ -240,18 +240,21 @@ handleActors lid = do
             | otherwise = if atime > timeCutOff
                           then Nothing  -- no actor is ready for another move
                           else Just $ minimumBy order ams
-      startActor aid = execSfxAtomic $ SfxActorStart aid
   case mnext of
     _ | quit -> return ()
     Nothing -> return ()
     Just (aid, b) | bproj b && maybe True (null . fst) (btrajectory b) -> do
-      startActor aid  -- try displaying, while still alive
+      -- Try displaying, while still alive. This may result in a duplicated
+      -- frame, but it's OK since death is so important.
+      execSfxAtomic $ SfxActorStart aid
       -- A projectile drops to the ground due to obstacles or range.
       -- The carried item is not destroyed, but drops to the ground.
       dieSer aid b False
       handleActors lid
     Just (aid, b) | bhp b <= 0 -> do
-      startActor aid  -- try displaying, while still alive
+      -- Try displaying, while still alive. This may result in a duplicated
+      -- frame, but it's OK since death is so important.
+      execSfxAtomic $ SfxActorStart aid
       -- If @b@ is a projectile and it hits an actor,
       -- the carried item is destroyed and that's all.
       -- Otherwise, an actor dies, items drop to the ground
@@ -259,15 +262,6 @@ handleActors lid = do
       dieSer aid b (bproj b)
       handleActors lid
     Just (aid, body) -> do
-      -- If only waited previous turn and not killed nor pushed nor teleported,
-      -- actor's appearance not changed, so no need to redisplay screen.
-      -- Calm change not important enough to insert a frame.
-      -- Projectile moves handled via animations. (TODO: also birth?)
-      let appearanceUnchanged = waitedLastTurn body
-                                && bhpDelta body == ResDelta 0 0
-                                && boldlid body == blid body
-                                && boldpos body == Just (bpos body)
-      unless (bproj body || appearanceUnchanged) $ startActor aid
       let side = bfid body
           fact = factionD EM.! side
           mleader = gleader fact
