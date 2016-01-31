@@ -183,6 +183,7 @@ teleport poss = Animation $ map (EM.fromList . mzipPairs poss)
   , (cSym Magenta   '.', cSym BrMagenta 'O')
   , (cSym Magenta   '.', cSym BrMagenta 'o')
   , (cSym Magenta   '.', blank)
+  , (blank             , blank)
   ]
 
 -- | Swap-places animation, both hostile and friendly.
@@ -195,6 +196,7 @@ swapPlaces poss = Animation $ map (EM.fromList . mzipPairs poss)
   , (cSym Magenta   'p', cSym BrMagenta 'd')
   , (cSym Magenta   'p', cSym BrMagenta 'd')
   , (cSym Magenta   'o', blank)
+  , (blank             , blank)
   ]
 
 fadeout :: Bool -> Bool -> Int -> X -> Y -> Rnd Animation
