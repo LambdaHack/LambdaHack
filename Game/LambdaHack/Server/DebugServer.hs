@@ -37,7 +37,6 @@ debugResponseAI cmd = case cmd of
   RespQueryAI aid -> do
     d <- debugAid aid "RespQueryAI" cmd
     serverPrint d
-  RespPingAI -> serverPrint $ debugShow cmd
 
 debugResponseUI :: MonadServer m => ResponseUI -> m ()
 debugResponseUI cmd = case cmd of
@@ -49,7 +48,6 @@ debugResponseUI cmd = case cmd of
     ps <- posSfxAtomic sfx
     serverPrint $ debugShow (cmd, ps)
   RespQueryUI -> serverPrint $ "RespQueryUI:" <+> debugShow cmd
-  RespPingUI -> serverPrint $ debugShow cmd
 
 debugPretty :: (MonadServer m, Show a) => a -> UpdAtomic -> m ()
 debugPretty cmd cmdA = do
@@ -82,15 +80,12 @@ data DebugAid a = DebugAid
   deriving Show
 
 debugAid :: (MonadStateRead m, Show a) => ActorId -> Text -> a -> m Text
-debugAid aid label cmd =
-  if aid == toEnum (-1) then
-    return $ "Pong:" <+> debugShow label <+> debugShow cmd
-  else do
-    b <- getsState $ getActorBody aid
-    time <- getsState $ getLocalTime (blid b)
-    return $! debugShow DebugAid { label
-                                 , cmd
-                                 , lid = blid b
-                                 , time
-                                 , aid
-                                 , faction = bfid b }
+debugAid aid label cmd = do
+  b <- getsState $ getActorBody aid
+  time <- getsState $ getLocalTime (blid b)
+  return $! debugShow DebugAid { label
+                               , cmd
+                               , lid = blid b
+                               , time
+                               , aid
+                               , faction = bfid b }

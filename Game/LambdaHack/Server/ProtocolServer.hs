@@ -13,8 +13,8 @@ module Game.LambdaHack.Server.ProtocolServer
       , liftIO  -- exposed only to be implemented, not used
       )
     -- * Protocol
-  , sendUpdateAI, sendQueryAI, sendPingAI
-  , sendUpdateUI, sendQueryUI, sendPingUI
+  , sendUpdateAI, sendQueryAI
+  , sendUpdateUI, sendQueryUI
     -- * Assorted
   , killAllClients, childrenServer, updateConn
 #ifdef EXPOSE_INTERNAL
@@ -113,18 +113,6 @@ sendQueryAI fid aid = do
   when debug $ debugRequestAI aid req
   return $! req
 
-sendPingAI :: (MonadAtomic m, MonadServerReadRequest m)
-           => FactionId -> m ()
-sendPingAI fid = do
-  conn <- getsDict $ snd . (EM.! fid)
-  writeTQueueAI RespPingAI $ responseS conn
-  -- debugPrint $ "AI client" <+> tshow fid <+> "pinged..."
-  cmdPong <- readTQueueAI $ requestS conn
-  -- debugPrint $ "AI client" <+> tshow fid <+> "responded."
-  case cmdPong of
-    ReqAIPong -> return ()
-    _ -> assert `failure` (fid, cmdPong)
-
 sendUpdateUI :: MonadServerReadRequest m
              => FactionId -> ResponseUI -> m ()
 sendUpdateUI fid cmd = do
@@ -146,21 +134,6 @@ sendQueryUI fid aid = do
       debug <- getsServer $ sniffIn . sdebugSer
       when debug $ debugRequestUI aid req
       return $! req
-
-sendPingUI :: (MonadAtomic m, MonadServerReadRequest m)
-           => FactionId -> m ()
-sendPingUI fid = do
-  cs <- getsDict $ fst . (EM.! fid)
-  case cs of
-    Nothing -> assert `failure` "no channel for faction" `twith` fid
-    Just conn -> do
-      writeTQueueUI RespPingUI $ responseS conn
-      -- debugPrint $ "UI client" <+> tshow fid <+> "pinged..."
-      cmdPong <- readTQueueUI $ requestS conn
-      -- debugPrint $ "UI client" <+> tshow fid <+> "responded."
-      case cmdPong of
-        ReqUIPong ats -> mapM_ execAtomic ats
-        _ -> assert `failure` (fid, cmdPong)
 
 killAllClients :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 killAllClients = do

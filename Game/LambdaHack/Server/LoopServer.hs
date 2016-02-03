@@ -11,7 +11,6 @@ import Control.Exception.Assert.Sugar
 import Control.Monad (unless, when)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Key (mapWithKeyM_)
 import Data.List (minimumBy)
 import Data.Maybe
 import qualified Data.Ord as Ord
@@ -169,7 +168,8 @@ endClip arenas = do
     writeSaveAll False
   when (clipN `mod` leadLevelClips == 0) leadLevelSwitch
   if clipMod == 1 then do
-    -- Periodic activation only once per turn, for speed, but on all arenas.
+    -- Periodic activation only once per turn, for speed,
+    -- but on all active arenas.
     mapM_ applyPeriodicLevel arenas
     -- Add monsters each turn, not each clip.
     -- Do this on only one of the arenas to prevent micromanagement,
@@ -269,20 +269,8 @@ handleActors lid = do
           mainUIactor = fhasUI (gplayer fact)
                         && (aidIsLeader
                             || fleaderMode (gplayer fact) == LeaderNull)
-      queryUI <-
-        if mainUIactor then do
-          let underAI = isAIFact fact
-          if underAI then do
-            -- If UI client for the faction completely under AI control,
-            -- ping often to sync frames and to catch ESC,
-            -- which switches off Ai control.
-            sendPingUI side
-            fact2 <- getsState $ (EM.! side) . sfactionD
-            let underAI2 = isAIFact fact2
-            return $! not underAI2
-          else return True
-        else return False
-      let setBWait hasWait aidNew = do
+          queryUI = mainUIactor && not (isAIFact fact)
+          setBWait hasWait aidNew = do
             bPre <- getsState $ getActorBody aidNew
             when (hasWait /= bwait bPre) $
               execUpdAtomic $ UpdWaitActor aidNew hasWait
@@ -385,17 +373,11 @@ restartGame updConn loop mgameMode = do
 -- and by asking clients to prepare
 -- a save (in this way checking they have permissions, enough space, etc.)
 -- and when all report back, asking them to commit the save.
--- | Save game on server and all clients. Clients are pinged first,
--- which greatly reduced the chance of saves being out of sync.
+-- | Save game on server and all clients.
 writeSaveAll :: (MonadAtomic m, MonadServerReadRequest m) => Bool -> m ()
 writeSaveAll uiRequested = do
   bench <- getsServer $ sbenchmark . sdebugCli . sdebugSer
   when (uiRequested || not bench) $ do
-    factionD <- getsState sfactionD
-    let ping fid _ = do
-          sendPingAI fid
-          when (fhasUI $ gplayer $ factionD EM.! fid) $ sendPingUI fid
-    mapWithKeyM_ ping factionD
     execUpdAtomic UpdWriteSave
     saveServer
 

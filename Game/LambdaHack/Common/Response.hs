@@ -12,7 +12,6 @@ import Game.LambdaHack.Common.Actor
 data ResponseAI =
     RespUpdAtomicAI !UpdAtomic
   | RespQueryAI !ActorId
-  | RespPingAI
   deriving Show
 
 -- | Abstract syntax of client commands that use the UI.
@@ -20,5 +19,4 @@ data ResponseUI =
     RespUpdAtomicUI !UpdAtomic
   | RespSfxAtomicUI !SfxAtomic
   | RespQueryUI
-  | RespPingUI
   deriving Show

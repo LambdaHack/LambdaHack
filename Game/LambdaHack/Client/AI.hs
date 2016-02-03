@@ -2,7 +2,7 @@
 -- | Ways for the client to use AI to produce server requests, based on
 -- the client's view of the game state.
 module Game.LambdaHack.Client.AI
-  ( queryAI, pongAI
+  ( queryAI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , refreshTarget, pickAction
@@ -42,10 +42,6 @@ queryAI oldAid = do
   if wasLeader && mleader /= Just (aidToMove, mtgt2)
     then return $! ReqAILeader aidToMove mtgt2 req
     else return $! req
-
--- | Client signals to the server that it's still online.
-pongAI :: MonadClient m => m RequestAI
-pongAI = return ReqAIPong
 
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.

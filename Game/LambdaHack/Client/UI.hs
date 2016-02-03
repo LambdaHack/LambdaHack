@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI
   ( -- * Client UI monad
     MonadClientUI(putSession)
     -- * Assorted UI operations
-  , queryUI, pongUI
+  , queryUI
   , displayRespUpdAtomicUI, displayRespSfxAtomicUI
     -- * Startup
   , KeyKind, SessionUI(..)
@@ -26,7 +26,6 @@ import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import Data.Maybe
 
-import Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -46,7 +45,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of a UI player.
 queryUI :: MonadClientUI m => m RequestUI
@@ -133,20 +131,3 @@ humanCommand = do
                 return $ Left $ not go
             loop mLast
   loop $ Left False
-
--- | Client signals to the server that it's still online, flushes frames
--- (if needed) and sends some extra info.
-pongUI :: MonadClientUI m => m RequestUI
-pongUI = do
-  keyPressed <- anyKeyPressed
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  let pong ats = return $ ReqUIPong ats
-      underAI = isAIFact fact
-  if keyPressed && underAI && fleaderMode (gplayer fact) /= LeaderNull then do
-    -- Ask server to turn off AI for the faction's leader.
-    let atomicCmd = UpdAtomic $ UpdAutoFaction side False
-    pong [atomicCmd]
-  else do
-    -- Respond to the server normally.
-    pong []

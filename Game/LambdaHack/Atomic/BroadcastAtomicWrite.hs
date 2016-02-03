@@ -79,7 +79,9 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
                    `blame` (ps, resets)) ()
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
-  -- Update lights in the dungeon. This is lazy, may not be needed or partially.
+  -- Update lights in the dungeon. This is lazy, may not be needed
+  -- or only partially; in particular not needed if not @resets@.
+  -- This is needed every (even enemy) move to show thrown torches.
   persLit <- doResetLitInDungeon
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI =
@@ -114,6 +116,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
       posLevel fid lid = do
         let perOld = persOld EM.! fid EM.! lid
         if resets then do
+          -- Needed every move to show thrown torches in dark corridors.
           perNew <- doResetFidPerception persLit fid lid
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew

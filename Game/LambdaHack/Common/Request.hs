@@ -12,7 +12,6 @@ module Game.LambdaHack.Common.Request
 import Data.Maybe
 import Data.Text (Text)
 
-import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -34,7 +33,6 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 data RequestAI =
     forall a. ReqAITimed !(RequestTimed a)
   | ReqAILeader !ActorId !(Maybe Target) !RequestAI
-  | ReqAIPong
 
 deriving instance Show RequestAI
 
@@ -47,7 +45,6 @@ data RequestUI =
   | ReqUIGameSave
   | ReqUITactic !Tactic
   | ReqUIAutomate
-  | ReqUIPong [CmdAtomic]
 
 deriving instance Show RequestUI
 

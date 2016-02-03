@@ -56,7 +56,6 @@ handleRequestAI fid aid cmd = case cmd of
   ReqAILeader aidNew mtgtNew cmd2 -> do
     switchLeader fid aidNew mtgtNew
     handleRequestAI fid aidNew cmd2
-  ReqAIPong -> return (aid, return ())
 
 -- | The semantics of server commands. The resulting actor id
 -- is of the actor that carried out the request. @Nothing@ means
@@ -77,7 +76,6 @@ handleRequestUI fid cmd = case cmd of
   ReqUIGameSave -> return (Nothing, reqGameSave)
   ReqUITactic toT -> return (Nothing, reqTactic fid toT)
   ReqUIAutomate -> return (Nothing, reqAutomate fid)
-  ReqUIPong _ -> return (Nothing, return ())
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
                    => ActorId -> RequestTimed a -> m ()
