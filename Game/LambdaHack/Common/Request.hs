@@ -45,6 +45,7 @@ data RequestUI =
   | ReqUIGameSave
   | ReqUITactic !Tactic
   | ReqUIAutomate
+  | ReqUINop
 
 deriving instance Show RequestUI
 

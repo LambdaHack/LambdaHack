@@ -45,19 +45,31 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of a UI player.
 queryUI :: MonadClientUI m => m RequestUI
 queryUI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  let (leader, mtgt) = fromMaybe (assert `failure` fact) $ gleader fact
-  req <- humanCommand
-  leader2 <- getLeaderUI
-  mtgt2 <- getsClient $ fmap fst . EM.lookup leader2 . stargetD
-  if (leader2, mtgt2) /= (leader, mtgt)
-    then return $! ReqUILeader leader2 mtgt2 req
-    else return $! req
+  if isAIFact fact then do
+    -- TODO: allow any action that does not take time, e.g., changing
+    -- leaders, levels, moving cursor. Only ESC then stops AI.
+    keyPressed <- anyKeyPressed
+    if keyPressed then do
+      discardPressedKey
+      if fleaderMode (gplayer fact) /= LeaderNull then
+        return ReqUIAutomate  -- stop AI
+      else return ReqUINop  -- somehow stop? restart?
+    else return ReqUINop
+  else do
+    let (leader, mtgt) = fromMaybe (assert `failure` fact) $ gleader fact
+    req <- humanCommand
+    leader2 <- getLeaderUI
+    mtgt2 <- getsClient $ fmap fst . EM.lookup leader2 . stargetD
+    if (leader2, mtgt2) /= (leader, mtgt)
+      then return $! ReqUILeader leader2 mtgt2 req
+      else return $! req
 
 -- | Let the human player issue commands until any command takes time.
 humanCommand :: forall m. MonadClientUI m => m RequestUI

@@ -76,6 +76,7 @@ handleRequestUI fid cmd = case cmd of
   ReqUIGameSave -> return (Nothing, reqGameSave)
   ReqUITactic toT -> return (Nothing, reqTactic fid toT)
   ReqUIAutomate -> return (Nothing, reqAutomate fid)
+  ReqUINop -> return (Nothing, return ())
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
                    => ActorId -> RequestTimed a -> m ()

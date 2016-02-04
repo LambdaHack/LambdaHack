@@ -269,8 +269,19 @@ handleActors lid = do
           mainUIactor = fhasUI (gplayer fact)
                         && (aidIsLeader
                             || fleaderMode (gplayer fact) == LeaderNull)
-          queryUI = mainUIactor && not (isAIFact fact)
-          setBWait hasWait aidNew = do
+      queryUI <-
+        if mainUIactor then do
+          if isAIFact fact then do
+            cmdS <- sendQueryUI side aid
+            case cmdS of
+              ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
+              ReqUINop -> return ()
+              _ -> assert `failure` cmdS  -- TODO: handle more
+            fact2 <- getsState $ (EM.! side) . sfactionD
+            return $! not $ isAIFact fact2
+          else return True
+        else return False
+      let setBWait hasWait aidNew = do
             bPre <- getsState $ getActorBody aidNew
             when (hasWait /= bwait bPre) $
               execUpdAtomic $ UpdWaitActor aidNew hasWait

@@ -35,7 +35,7 @@ data FrontReq :: * -> * where
               , frontKeyFrame :: !SingleFrame } -> FrontReq K.KM
     -- ^ flush frames, display a frame and ask for a keypress
   FrontPressed :: FrontReq Bool
-    -- ^ inspect and reset the fkeyPressed MVar
+    -- ^ inspect the fkeyPressed MVar
   FrontDiscard :: FrontReq ()
     -- ^ discard a key in the queue; fail if queue empty
   FrontAutoYes :: Bool -> FrontReq ()
