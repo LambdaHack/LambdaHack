@@ -38,7 +38,7 @@ data State = State
   , _sitemD      :: !ItemDict     -- ^ remembered items in the dungeon
   , _sfactionD   :: !FactionDict  -- ^ remembered sides still in game
   , _stime       :: !Time         -- ^ global game time
-  , _scops       :: Kind.COps    -- ^ remembered content
+  , _scops       :: Kind.COps     -- ^ remembered content
   , _shigh       :: !HighScore.ScoreDict  -- ^ high score table
   , _sgameModeId :: !(Kind.Id ModeKind)  -- ^ current game mode
   }

@@ -234,9 +234,9 @@ populateDungeon = do
                      $ findEntryPoss cops lid lvl (length arenaAlliances)
         mapM_ placeAlliance $ zip3 arenaAlliances entryPoss [0..]
       placeActors lid ((fid3, fact3), ppos, timeOffset) = do
-        time <- getsState $ getLocalTime lid
+        localTime <- getsState $ getLocalTime lid
         let nmult = 1 + timeOffset `mod` 4
-            ntime = timeShift time (timeDeltaScale (Delta timeClip) nmult)
+            ntime = timeShift localTime (timeDeltaScale (Delta timeClip) nmult)
             validTile t = not $ Tile.hasFeature cotile TK.NoActor t
         psFree <- getsState $ nearbyFreePoints validTile ppos lid
         let ps = take (finitialActors $ gplayer fact3) $ zip [0..] psFree

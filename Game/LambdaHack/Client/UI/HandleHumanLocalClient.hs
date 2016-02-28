@@ -223,11 +223,11 @@ historyHuman = do
   history <- getsSession shistory
   arena <- getArenaUI
   Level{lxsize, lysize} <- getLevel arena
-  local <- getsState $ getLocalTime arena
+  localTime <- getsState $ getLocalTime arena
   global <- getsState stime
   let histLines = linesHistory history
       turnsGlobal = global `timeFitUp` timeTurn
-      turnsLocal = local `timeFitUp` timeTurn
+      turnsLocal = localTime `timeFitUp` timeTurn
       msg = makeSentence
         [ "You survived for"
         , MU.CarWs turnsGlobal "half-second turn"

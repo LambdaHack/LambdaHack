@@ -55,8 +55,8 @@ spawnMonster lid = do
   when rc $ do
     modifyServer $ \ser ->
       ser {snumSpawned = EM.insert lid (lvlSpawned + 1) $ snumSpawned ser}
-    time <- getsState $ getLocalTime lid
-    maid <- addAnyActor lactorFreq lid time Nothing
+    localTime <- getsState $ getLocalTime lid
+    maid <- addAnyActor lactorFreq lid localTime Nothing
     case maid of
       Nothing -> return ()
       Just aid -> do

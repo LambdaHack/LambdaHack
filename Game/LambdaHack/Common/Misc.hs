@@ -38,7 +38,7 @@ infixr 6 <+>  -- TODO: not needed when we require a very new minimorph
 (<+>) :: Text -> Text -> Text
 (<+>) = (MU.<+>)
 
--- Show and pack the result of @show@.
+-- | Show and pack the result.
 tshow :: Show a => a -> Text
 tshow x = T.pack $ show x
 

@@ -134,10 +134,10 @@ addSmell aid = do
     -- give humans the ability to smell (dominated monsters are rare enough).
     -- In the future smells should be marked by the faction that left them
     -- and actors shold only follow enemy smells.
-    time <- getsState $ getLocalTime $ blid b
+    localTime <- getsState $ getLocalTime $ blid b
     lvl <- getLevel $ blid b
     let oldS = EM.lookup (bpos b) . lsmell $ lvl
-        newTime = timeShift time smellTimeout
+        newTime = timeShift localTime smellTimeout
         newS = if smellRadius > 0
                then Nothing       -- smelling monster or hero
                else Just newTime  -- hero
