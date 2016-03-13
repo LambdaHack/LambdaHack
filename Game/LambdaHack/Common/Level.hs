@@ -79,7 +79,7 @@ data Level = Level
                                -- ^ positions of (up, down) stairs
   , lseen       :: !Int        -- ^ currently remembered clear tiles
   , lclear      :: !Int        -- ^ total number of initially clear tiles
-  , ltime       :: !Time       -- ^ date of the last activity on the level
+  , ltime       :: !Time       -- ^ local time on the level (possibly frozen)
   , lactorCoeff :: !Int        -- ^ the lower, the more monsters spawn
   , lactorFreq  :: !(Freqs ItemKind)
                                -- ^ frequency of spawned actors; [] for clients

@@ -621,6 +621,10 @@ switchLevels2 lidNew posNew (aid, bOld) mlead = do
   -- before, because the arena went inactive, so he moves now one more time.
   let delta = timeLastActive `timeDeltaToFrom` timeOld
       shiftByDelta = (`timeShift` delta)
+      -- FIXME: only @borgan@ and @beqp@ items have translated timeouts.
+      -- Fix or comment why. Should items have reset timers when they enter
+      -- or leave other containers?
+      -- FIXME: timeout in/out of sha should be reset or they can be huge.
       computeNewTimeout :: ItemQuant -> ItemQuant
       computeNewTimeout (k, it) = (k, map shiftByDelta it)
       setTimeout :: ItemBag -> ItemBag

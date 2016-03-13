@@ -156,6 +156,10 @@ endClip arenas = do
       ageProcessed lid = EM.insertWith absoluteTimeAdd lid timeClip
       ageServer lid ser = ser {sprocessed = ageProcessed lid $ sprocessed ser}
   mapM_ (modifyServer . ageServer) arenas
+  -- I need to send time updates, because I can't add time to each command,
+  -- because I'd need to send also all arenas, which should be updated,
+  -- and this is too expensive data for each, e.g., projectile move.
+  -- I send even if nothing changes so that UI time display can progress.
   execUpdAtomic $ UpdAgeGame (Delta timeClip) arenas
   -- Perform periodic dungeon maintenance.
   time <- getsState stime
