@@ -835,6 +835,12 @@ actorDisplay aid = do
     let delta = localTime `timeDeltaToFrom` timeDisp
     when (delta > Delta timeClip) $ displayDelay 4
     displayPush ""
+    -- Set display time to local time, which is quantized by the server.
+    -- Consequently, time-based displays are performed always
+    -- at server-determined moments, at most as often, as server ages time.
+    -- Performing extra displays at other moments doesn't reset that.
+    -- We could the skip next closest scheduled display, but more frames
+    -- for extra events is better and also, we'd need more acurate timing.
     let ageDisp = EM.insert (blid b) localTime
     modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}
 
@@ -844,20 +850,19 @@ actorMoveDisplay aid = do
   arena <- getArenaUI
   b <- getsState $ getActorBody aid
   when (blid b == arena) $ do
-    -- If time clip has passed since any actor advanced @sdisplayed@
-    -- or if the actor is newborn or is about to die,
+    -- If any time has passed (server quantizes this)
+    -- since any actor advanced @sdisplayed@ or if the actor is newborn,
     -- we end and display the frame early, before his next move.
-    -- In the result, he moves at most once per frame
-    -- (unless he moves faster than one meter per clip,
-    -- which is 5 times normal speed), and thanks to this,
+    -- In the result, he moves at most once per frame and thanks to this,
     -- his multiple moves are not collapsed into one frame.
+    -- The exception is when it moves faster than one meter per clip,
+    -- which is 5 times normal speed and then some move frames are not shown.
+    -- Otherwise lots of extremely fast bullets would freeze the game.
     -- Note that if the actor just displayed an animation (e.g., via
-    -- displacement animation), sdisplayed is updated and so no display here.
+    -- displacement animation), @sdisplayed@ is updated and so no display here.
     timeDisp <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
     localTime <- getsState $ getLocalTime (blid b)
-    when (localTime >= timeShift timeDisp (Delta timeClip)
-          || actorNewBorn b
-          || actorDying b) $
+    when (localTime > timeDisp || actorNewBorn b) $
       actorDisplay aid
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
