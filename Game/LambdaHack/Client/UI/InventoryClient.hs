@@ -741,8 +741,9 @@ describeItemC c = do
                 socK <- pickNumber True kToPick
                 case socK of
                   Left slides -> return $ Left slides
-                  Right kChosen -> return $ Right $ ReqUITimed $ ReqMoveItems
-                                     [(iid, kChosen, fromCStore, toCStore)]
+                  Right kChosen ->
+                    return $ Right $ timedToUI
+                           $ ReqMoveItems [(iid, kChosen, fromCStore, toCStore)]
               -- TODO: handle keys from config; take keys from keyb
               fstores :: [(K.Key, m (SlideOrCmd RequestUI))]
               fstores =
@@ -752,10 +753,10 @@ describeItemC c = do
                        ++ [ (K.Char 'e', CEqp) | eqpFree > 0 ]
                        ++ [ (K.Char 'p', CInv) ]
                        ++ [ (K.Char 's', CSha) | calmE ])
-                ++ [ (K.Char 'a', return $ Right $ ReqUITimed
-                                         $ ReqApply iid fromCStore) ]
+                ++ [ (K.Char 'a'
+                   , return $ Right $ timedToUI $ ReqApply iid fromCStore) ]
                 ++ [ ( K.Char 'f'
-                     , fmap ReqUITimed <$> projectHumanState [] INoAll ) ]
+                     , fmap timedToUI <$> projectHumanState [] INoAll ) ]
                 ++ [ (K.Esc, describeItemC c) ]
               (_, (ov, kyxs)) = keyHelp keyb
               renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))

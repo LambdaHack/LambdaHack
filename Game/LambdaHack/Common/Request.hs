@@ -1,11 +1,12 @@
-{-# LANGUAGE DataKinds, ExistentialQuantification, GADTs, KindSignatures,
+{-# LANGUAGE DataKinds, DeriveFoldable, GADTs, KindSignatures,
              StandaloneDeriving #-}
 -- | Abstract syntax of server commands.
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.Request
-  ( RequestAI(..), RequestUI(..), RequestTimed(..), RequestAnyAbility(..)
-  , ReqFailure(..), impossibleReqFailure, showReqFailure, anyToUI
+  ( RequestAI, RequestAIF(..), RequestUI, RequestUIF(..)
+  , RequestTimed(..), RequestAnyAbility(..), ReqFailure(..)
+  , impossibleReqFailure, showReqFailure, timedToUI
   , permittedPrecious, permittedProject, permittedApply
   ) where
 
@@ -30,15 +31,18 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- channel for Ping, probably, and then client sends as many commands
 -- as it wants at once
 -- | Client-server requests sent by AI clients.
-data RequestAI =
-    forall a. ReqAITimed !(RequestTimed a)
+data RequestAIF r =
+    ReqAITimed !r
   | ReqAILeader !ActorId !(Maybe Target) !RequestAI
+  deriving Foldable
 
-deriving instance Show RequestAI
+type RequestAI = RequestAIF RequestAnyAbility
+
+deriving instance Show r => Show (RequestAIF r)
 
 -- | Client-server requests sent by UI clients.
-data RequestUI =
-    forall a. ReqUITimed !(RequestTimed a)
+data RequestUIF r =
+    ReqUITimed !r
   | ReqUILeader !ActorId !(Maybe Target) !RequestUI
   | ReqUIGameRestart !ActorId !(GroupName ModeKind) !Int ![(Int, (Text, Text))]
   | ReqUIGameExit !ActorId
@@ -46,15 +50,18 @@ data RequestUI =
   | ReqUITactic !Tactic
   | ReqUIAutomate
   | ReqUINop
+  deriving Foldable
 
-deriving instance Show RequestUI
+type RequestUI = RequestUIF RequestAnyAbility
+
+deriving instance Show r => Show (RequestUIF r)
 
 data RequestAnyAbility = forall a. RequestAnyAbility !(RequestTimed a)
 
 deriving instance Show RequestAnyAbility
 
-anyToUI :: RequestAnyAbility -> RequestUI
-anyToUI (RequestAnyAbility cmd) = ReqUITimed cmd
+timedToUI :: RequestTimed a -> RequestUI
+timedToUI = ReqUITimed . RequestAnyAbility
 
 -- | Client-server requests that take game time. Sent by both AI and UI clients.
 data RequestTimed :: Ability -> * where

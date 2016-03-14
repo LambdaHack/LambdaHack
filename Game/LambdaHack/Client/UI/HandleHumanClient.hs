@@ -34,20 +34,20 @@ cmdHumanSem cmd =
 cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd RequestUI)
 cmdAction cmd = case cmd of
   -- Global.
-  Move v -> fmap anyToUI <$> moveRunHuman True True False False v
-  Run v -> fmap anyToUI <$> moveRunHuman True True True True v
-  Wait -> Right <$> fmap ReqUITimed waitHuman
+  Move v -> fmap ReqUITimed <$> moveRunHuman True True False False v
+  Run v -> fmap ReqUITimed <$> moveRunHuman True True True True v
+  Wait -> Right <$> fmap timedToUI waitHuman
   MoveItem cLegalRaw toCStore mverb _ auto ->
-    fmap ReqUITimed <$> moveItemHuman cLegalRaw toCStore mverb auto
+    fmap timedToUI <$> moveItemHuman cLegalRaw toCStore mverb auto
   DescribeItem cstore -> describeItemHuman cstore
-  Project ts -> fmap ReqUITimed <$> projectHuman ts
-  Apply ts -> fmap ReqUITimed <$> applyHuman ts
-  AlterDir ts -> fmap ReqUITimed <$> alterDirHuman ts
-  TriggerTile ts -> fmap ReqUITimed <$> triggerTileHuman ts
-  RunOnceAhead -> fmap anyToUI <$> runOnceAheadHuman
-  MoveOnceToCursor -> fmap anyToUI <$> moveOnceToCursorHuman
-  RunOnceToCursor  -> fmap anyToUI <$> runOnceToCursorHuman
-  ContinueToCursor -> fmap anyToUI <$> continueToCursorHuman
+  Project ts -> fmap timedToUI <$> projectHuman ts
+  Apply ts -> fmap timedToUI <$> applyHuman ts
+  AlterDir ts -> fmap timedToUI <$> alterDirHuman ts
+  TriggerTile ts -> fmap timedToUI <$> triggerTileHuman ts
+  RunOnceAhead -> fmap ReqUITimed <$> runOnceAheadHuman
+  MoveOnceToCursor -> fmap ReqUITimed <$> moveOnceToCursorHuman
+  RunOnceToCursor  -> fmap ReqUITimed <$> runOnceToCursorHuman
+  ContinueToCursor -> fmap ReqUITimed <$> continueToCursorHuman
 
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman

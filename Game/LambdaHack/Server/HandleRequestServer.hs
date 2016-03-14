@@ -52,7 +52,8 @@ import Game.LambdaHack.Server.State
 handleRequestAI :: (MonadAtomic m, MonadServer m)
                 => FactionId -> ActorId -> RequestAI -> m (ActorId, m ())
 handleRequestAI fid aid cmd = case cmd of
-  ReqAITimed cmdT -> return (aid, handleRequestTimed aid cmdT)
+  ReqAITimed (RequestAnyAbility cmdT) ->
+    return (aid, handleRequestTimed aid cmdT)
   ReqAILeader aidNew mtgtNew cmd2 -> do
     switchLeader fid aidNew mtgtNew
     handleRequestAI fid aidNew cmd2
@@ -63,7 +64,7 @@ handleRequestAI fid aid cmd = case cmd of
 handleRequestUI :: (MonadAtomic m, MonadServer m)
                 => FactionId -> RequestUI -> m (Maybe ActorId, m ())
 handleRequestUI fid cmd = case cmd of
-  ReqUITimed cmdT -> do
+  ReqUITimed (RequestAnyAbility cmdT) -> do
     fact <- getsState $ (EM.! fid) . sfactionD
     let (aid, _) = fromMaybe (assert `failure` fact) $ gleader fact
     return (Just aid, handleRequestTimed aid cmdT)

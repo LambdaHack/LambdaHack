@@ -285,10 +285,6 @@ handleActors lid = do
             return $! not $ isAIFact fact2
           else return True
         else return False
-      let setBWait hasWait aidNew = do
-            bPre <- getsState $ getActorBody aidNew
-            when (hasWait /= bwait bPre) $
-              execUpdAtomic $ UpdWaitActor aidNew hasWait
       if isJust $ btrajectory body then do
         setTrajectory aid
         b2 <- getsState $ getActorBody aid
@@ -299,10 +295,7 @@ handleActors lid = do
         -- TODO: check that the command is legal first, report and reject,
         -- but do not crash (currently server asserts things and crashes)
         (aidNew, action) <- handleRequestUI side cmdS
-        let hasWait (ReqUITimed ReqWait{}) = True
-            hasWait (ReqUILeader _ _ cmd) = hasWait cmd
-            hasWait _ = False
-        maybe (return ()) (setBWait (hasWait cmdS)) aidNew
+        maybe (return ()) (setBWait cmdS) aidNew
         -- Advance time once, after the leader switched perhaps many times.
         -- The following was true before, but now we badly want to avoid double
         -- moves against the UI player (especially deadly when using stairs),
@@ -339,15 +332,22 @@ handleActors lid = do
         when mainUIactor $ execUpdAtomic $ UpdRecordHistory side
         cmdS <- sendQueryAI side aid
         (aidNew, action) <- handleRequestAI side aid cmdS
-        let hasWait (ReqAITimed ReqWait{}) = True
-            hasWait (ReqAILeader _ _ cmd) = hasWait cmd
-            hasWait _ = False
-        setBWait (hasWait cmdS) aidNew
+        setBWait cmdS aidNew
         -- AI always takes time and so doesn't loop.
         advanceTime aidNew
         action
         managePerTurn aidNew
       handleActors lid
+
+setBWait :: (MonadAtomic m, Foldable f)
+         => f RequestAnyAbility -> ActorId -> m ()
+setBWait cmd aidNew = do
+  let hasWait = any hasReqWait cmd
+      hasReqWait (RequestAnyAbility ReqWait{}) = True
+      hasReqWait _ = False
+  bPre <- getsState $ getActorBody aidNew
+  when (hasWait /= bwait bPre) $
+    execUpdAtomic $ UpdWaitActor aidNew hasWait
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do
