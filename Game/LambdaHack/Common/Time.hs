@@ -43,15 +43,12 @@ _timeTick = Time 1
 timeEpsilon :: Time
 timeEpsilon = _timeTick
 
--- TODO: don't have a fixed time, but instead set it at 1/3 or 1/4
--- of timeTurn depending on level. Clips are a UI feature
--- after all, so should depend on the user situation.
--- | At least once per clip all moves are resolved and a frame
--- or a frame delay is generated.
--- Currently one clip is 0.1 s, but it may change,
+-- | At least once per clip all moves are resolved
+-- and a frame or a frame delay is generated.
+-- Currently one clip is 0.05 s, but it may change,
 -- and the code should not depend on this fixed value.
 timeClip :: Time
-timeClip = Time 100000
+timeClip = Time 50000
 
 -- | One turn is 0.5 s. The code may depend on that.
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).

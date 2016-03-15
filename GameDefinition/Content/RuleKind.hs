@@ -69,8 +69,8 @@ standard = RuleKind
       lift x)
   , rfirstDeathEnds = False
   , rfovMode = Digital
-  , rwriteSaveClips = 500
-  , rleadLevelClips = 100
+  , rwriteSaveClips = 1000
+  , rleadLevelClips = 200
   , rscoresFile = "scores"
   , rnearby = 20
   }

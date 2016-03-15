@@ -856,7 +856,7 @@ actorMoveDisplay aid = do
     -- In the result, he moves at most once per frame and thanks to this,
     -- his multiple moves are not collapsed into one frame.
     -- The exception is when it moves faster than one meter per clip,
-    -- which is 5 times normal speed and then some move frames are not shown.
+    -- which is 10 times normal speed, and then some move frames are not shown.
     -- Otherwise lots of extremely fast bullets would freeze the game.
     -- Note that if the actor just displayed an animation (e.g., via
     -- displacement animation), @sdisplayed@ is updated and so no display here.
