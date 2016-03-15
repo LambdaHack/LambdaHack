@@ -194,10 +194,8 @@ displayActorStart b frs = do
   let arena = blid b
   -- Can be different than getArenaUI, e.g., when our actor is attacked
   -- on a remote level.
-  timeDisp <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
   localTime <- getsState $ getLocalTime (blid b)
-  let delta = localTime `timeDeltaToFrom` timeDisp
-  when (delta > Delta timeClip) $ displayDelay 4
+  displayDelay 2
   mapM_ displayFrame frs
   let ageDisp = EM.insert arena localTime
   modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}

@@ -829,11 +829,8 @@ actorDisplay aid = do
   -- If key will be requested, don't show the frame, because during
   -- the request extra message may be shown, so the other frame is better.
   when (Just aid /= mleader || isAIFact fact) $ do
-    -- Display the new game state. If more time passed, add delay.
+    -- Display the new game state.
     localTime <- getsState $ getLocalTime (blid b)
-    timeDisp <- getsSession $ EM.findWithDefault timeZero (blid b) . sdisplayed
-    let delta = localTime `timeDeltaToFrom` timeDisp
-    when (delta > Delta timeClip) $ displayDelay 4
     displayPush ""
     -- Set display time to local time, which is quantized by the server.
     -- Consequently, time-based displays are performed always
