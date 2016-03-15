@@ -41,8 +41,6 @@ data StateServer = StateServer
   , sacounter     :: !ActorId       -- ^ stores next actor index
   , sicounter     :: !ItemId        -- ^ stores next item index
   , snumSpawned   :: !(EM.EnumMap LevelId Int)
-  , sprocessed    :: !(EM.EnumMap LevelId Time)
-                                    -- ^ actors are processed up to this time
   , sundo         :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sper          :: !Pers          -- ^ perception of all factions
   , srandom       :: !R.StdGen      -- ^ current random generator
@@ -122,7 +120,6 @@ emptyStateServer =
     , sacounter = toEnum 0
     , sicounter = toEnum 0
     , snumSpawned = EM.empty
-    , sprocessed = EM.empty
     , sundo = []
     , sper = EM.empty
     , srandom = R.mkStdGen 42
@@ -172,7 +169,6 @@ instance Binary StateServer where
     put sacounter
     put sicounter
     put snumSpawned
-    put sprocessed
     put sundo
     put (show srandom)
     put srngs
@@ -190,7 +186,6 @@ instance Binary StateServer where
     sacounter <- get
     sicounter <- get
     snumSpawned <- get
-    sprocessed <- get
     sundo <- get
     g <- get
     srngs <- get

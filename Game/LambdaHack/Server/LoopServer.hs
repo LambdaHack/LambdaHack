@@ -153,9 +153,6 @@ endClip arenas = do
   let stdRuleset = Kind.stdRuleset corule
       writeSaveClips = rwriteSaveClips stdRuleset
       leadLevelClips = rleadLevelClips stdRuleset
-      ageProcessed lid = EM.insertWith absoluteTimeAdd lid timeClip
-      ageServer lid ser = ser {sprocessed = ageProcessed lid $ sprocessed ser}
-  mapM_ (modifyServer . ageServer) arenas
   -- I need to send time updates, because I can't add time to each command,
   -- because I'd need to send also all arenas, which should be updated,
   -- and this is too expensive data for each, e.g., projectile move.
@@ -225,9 +222,7 @@ applyPeriodicLevel lid = do
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => LevelId -> m ()
 handleActors lid = do
-  -- The end of this clip, inclusive. This is used exclusively
-  -- to decide which actors to process this time. Transparent to clients.
-  timeCutOff <- getsServer $ EM.findWithDefault timeClip lid . sprocessed
+  localTime <- getsState $ getLocalTime lid
   Level{lprio} <- getLevel lid
   quit <- getsServer squit
   factionD <- getsState sfactionD
@@ -241,7 +236,7 @@ handleActors lid = do
       (atime, as) = EM.findMin lprio
       ams = map (\a -> (a, getActorBody a s)) as
       mnext | EM.null lprio = Nothing  -- no actor alive, wait until it spawns
-            | otherwise = if atime > timeCutOff
+            | otherwise = if atime > localTime
                           then Nothing  -- no actor is ready for another move
                           else Just $ minimumBy order ams
   case mnext of
