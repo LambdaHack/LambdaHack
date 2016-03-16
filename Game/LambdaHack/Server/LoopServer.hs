@@ -233,6 +233,7 @@ handleActors lid = do
       notLeader (aid, b) = Just aid /= fmap fst (gleader (factionD EM.! bfid b))
       order = Ord.comparing $
         notDead &&& notProj &&& bfid . snd &&& notLeader &&& bsymbol . snd
+        &&& fst
       (atime, as) = EM.findMin lprio
       ams = map (\a -> (a, getActorBody a s)) as
       mnext | EM.null lprio = Nothing  -- no actor alive, wait until it spawns

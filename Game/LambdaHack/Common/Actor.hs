@@ -168,8 +168,7 @@ actorDying b = bhp b <= 0
 
 actorNewBorn :: Actor -> Bool
 actorNewBorn b = isNothing (boldpos b)
-                 && not (waitedLastTurn b)
-                 && btime b >= timeTurn
+                 && btime b >= timeTurn  -- not already existing at game start
 
 hpTooLow :: Actor -> [ItemFull] -> Bool
 hpTooLow b activeItems =
