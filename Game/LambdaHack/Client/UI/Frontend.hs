@@ -60,8 +60,8 @@ getKey :: DebugModeCli -> FSession -> RawFrontend -> [K.KM] -> SingleFrame
 getKey _sdebugCli _fs rf@RawFrontend{fchanKey} [] frame = do
   display rf frame
   STM.atomically $ STM.readTQueue fchanKey
-getKey sdebugCli fs@FSession{fautoYesRef} rf@RawFrontend{fchanKey} keys frame = do
-  autoYes <- readIORef fautoYesRef
+getKey sdebugCli fs rf@RawFrontend{fchanKey} keys frame = do
+  autoYes <- readIORef $ fautoYesRef fs
   if autoYes && K.spaceKM `elem` keys then do
     display rf frame
     return K.spaceKM
@@ -93,8 +93,8 @@ fchanFrontend sdebugCli fs@FSession{..} rf =
       fshutdown rf
 
 display :: RawFrontend -> SingleFrame -> IO ()
-display rf frontFrame = do
-  takeMVar $ fshowNow rf
+display rf@RawFrontend{fshowNow} frontFrame = do
+  putMVar fshowNow () -- 1. wait for permission to display; 3. ack
   fdisplay rf frontFrame
 
 defaultMaxFps :: Int
@@ -116,11 +116,13 @@ frameTimeoutThread delta fdelay RawFrontend{..} = do
                 modifyMVar_ fdelay $ return . subtract delay
                 delayLoop
         delayLoop
-        -- For simplicity, we don't care that occasionally a frame will be
-        -- shown too early, when a keypress happens during the timeout,
-        -- is handled and the next frame is ready before timeout expires.
         let waitForKeysUsed = do
-              putMVar fshowNow ()
+              -- @fshowNow@ is full at this point, unless @saveKM@ emptied it,
+              -- in which case we wait below until @display@ fills it
+              takeMVar fshowNow  -- 2. permit display
+              -- @fshowNow@ is ever empty only here, unless @saveKM@ empties it
+              readMVar fshowNow  -- 4. wait for ack before starting delay
+              -- @fshowNow@ is full at this point
               noKeysPending <- STM.atomically $ STM.isEmptyTQueue fchanKey
               unless noKeysPending waitForKeysUsed
         waitForKeysUsed

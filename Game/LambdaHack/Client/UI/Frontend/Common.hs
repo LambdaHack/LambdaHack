@@ -43,7 +43,7 @@ createRawFrontend fdisplay fshutdown = do
   -- Set up the channel for keyboard input.
   fchanKey <- STM.atomically STM.newTQueue
   -- Create the session record.
-  fshowNow <- newMVar ()
+  fshowNow <- newEmptyMVar
   return $! RawFrontend
     { fdisplay
     , fshutdown
@@ -60,7 +60,7 @@ resetChanKey fchanKey = do
 saveKM :: RawFrontend -> K.KM -> IO ()
 saveKM rf km = do
   -- Instantly show any frame waiting for display.
-  void $ tryPutMVar (fshowNow rf) ()
+  void $ tryTakeMVar $ fshowNow rf
   unless (K.key km == K.DeadKey) $
     -- Store the key in the channel.
     STM.atomically $ STM.writeTQueue (fchanKey rf) km
