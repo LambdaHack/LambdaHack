@@ -6,8 +6,7 @@ module Game.LambdaHack.Common.Actor
     -- * The@ Acto@r type
   , Actor(..), ResDelta(..)
   , deltaSerious, deltaMild, xM, minusM, minusTwoM, oneM
-  , bspeed, actorTemplate, braced, waitedLastTurn
-  , actorDying, actorNewBorn, unoccupied
+  , bspeed, actorTemplate, braced, waitedLastTurn, actorDying, unoccupied
   , hpTooLow, hpHuge, calmEnough, calmEnough10, hpEnough, hpEnough10
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
@@ -18,7 +17,6 @@ import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
-import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
@@ -165,10 +163,6 @@ waitedLastTurn = bwait
 actorDying :: Actor -> Bool
 actorDying b = bhp b <= 0
                || bproj b && maybe True (null . fst) (btrajectory b)
-
-actorNewBorn :: Actor -> Bool
-actorNewBorn b = isNothing (boldpos b)
-                 && btime b >= timeTurn  -- not already existing at game start
 
 hpTooLow :: Actor -> [ItemFull] -> Bool
 hpTooLow b activeItems =

@@ -859,7 +859,7 @@ actorMoveDisplay aid = do
     -- displacement animation), @sdisplayed@ is updated and so no display here.
     timeDisp <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
     localTime <- getsState $ getLocalTime (blid b)
-    when (localTime > timeDisp || actorNewBorn b) $
+    when (localTime > timeDisp) $
       actorDisplay aid
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
