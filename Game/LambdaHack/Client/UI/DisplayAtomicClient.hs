@@ -65,7 +65,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
   UpdCreateActor aid body _ -> do
     side <- getsClient sside
     let verb = "appear" <+> if bfid body == side then "" else "suddenly"
-    createActorUI aid body verbose (MU.Text verb)
+    createActorUI aid body (MU.Text verb)
   UpdDestroyActor aid body _ -> do
     destroyActorUI aid body "die" "be destroyed" verbose
     side <- getsClient sside
@@ -101,7 +101,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
       CTrunk{} -> assert `failure` c
     void $ stopPlayBack
   UpdDestroyItem iid _ kit c -> itemVerbMU iid kit "disappear" c
-  UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
+  UpdSpotActor aid body _ -> createActorUI aid body "be spotted"
   UpdLoseActor aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
   UpdSpotItem iid _ kit c -> do
@@ -367,9 +367,8 @@ msgDuplicateScrap = do
     modifySession $ \sess -> sess {sreport = repRest}
 
 -- TODO: "XXX spots YYY"? or blink or show the changed cursor?
-createActorUI :: MonadClientUI m
-              => ActorId -> Actor -> Bool -> MU.Part -> m ()
-createActorUI aid body verbose verb = do
+createActorUI :: MonadClientUI m => ActorId -> Actor -> MU.Part -> m ()
+createActorUI aid body verb = do
   mapM_ (\(iid, store) -> void $ updateItemSlotSide store aid iid)
         (getCarriedIidCStore body)
   side <- getsClient sside
@@ -387,8 +386,9 @@ createActorUI aid body verbose verb = do
   -- invisible this turn (in that case move is broken down to lose+spot)
   -- or on a distant tile, via teleport while the observer teleported, too).
   lastLost <- getsSession slastLost
-  when (ES.notMember aid lastLost
-        && (not (bproj body) || verbose)) $ do
+  if ES.member aid lastLost || bproj body then
+    actorDisplay aid
+  else do
     actorVerbMU aid body verb
     animFrs <- animate (blid body) $ actorX (bpos body)
     displayActorStart body animFrs
