@@ -149,6 +149,13 @@ getConfirmsKey dm extraKeys slides = do
         x : xs -> do
           km@K.KM{..} <- getConfirmGeneric keys x
           case key of
+            -- Sapce enabled *only if* in @extraKeys@.
+            K.Space | km `elem` extraKeys -> case xs of
+              -- If Space permitted, only exits at the end of slideshow.
+              [] -> return km
+              _ -> displayFrs xs (x : srf)
+            _ | km `elem` extraKeys -> return km
+            -- Other scrolling keys enabled *unless* in @extraKeys@.
             K.Home -> displayFrs frontSlides []
             K.End -> case reverse frontSlides of
               [] -> assert `failure` slides
@@ -159,12 +166,6 @@ getConfirmsKey dm extraKeys slides = do
             K.PgDn -> case xs of
               [] -> displayFrs frs srf
               _ -> displayFrs xs (x : srf)
-            K.Space -> case xs of
-              -- If Space permitted, only exits at the end of slideshow.
-              [] | K.spaceKM `elem` extraKeys -> return km
-              [] -> displayFrs frs srf
-              _ -> displayFrs xs (x : srf)
-            _ | km `elem` extraKeys -> return km
             _ -> assert `failure` "unknown key" `twith` km
   displayFrs frontSlides []
 

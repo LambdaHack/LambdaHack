@@ -125,7 +125,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   rf <- createRawFrontend (display sdebugCli sess) shutdown
   -- Handle keypresses. http://unixpapa.com/js/key.html
   -- A bunch of fauity hacks; @keyPress@ doesn't handle non-character keys
-  -- while with @keeDown@ all of getKeyIdentifier, getWhich and getKeyCode
+  -- while with @keyDown@ all of getKeyIdentifier, getWhich and getKeyCode
   -- return absurd codes for, e.g., semicolon in Chromium.
   -- The new standard might help on newer browsers
   -- http://www.w3schools.com/jsref/event_key_keycode.asp

@@ -132,8 +132,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
        return $! msg <+> isd
 
 -- | Create a list of item names.
-itemOverlay :: MonadClient m
-            => CStore -> LevelId -> ItemBag -> m OKX
+itemOverlay :: MonadClient m => CStore -> LevelId -> ItemBag -> m OKX
 itemOverlay c lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
