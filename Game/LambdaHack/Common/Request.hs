@@ -10,6 +10,9 @@ module Game.LambdaHack.Common.Request
   , permittedPrecious, permittedProject, permittedApply
   ) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Data.Maybe
 import Data.Text (Text)
 
