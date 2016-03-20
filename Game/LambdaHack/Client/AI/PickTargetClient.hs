@@ -290,9 +290,7 @@ targetStrategy aid = do
                       (oldTgt, Just ( bpos b : path
                                     , (p, fromMaybe (assert `failure` mpath)
                                           $ accessBfs bfs p) ))
-        TEnemyPos _ lid p permit
-          -- Chase last position even if foe hides or dies,
-          -- to find his companions, loot, etc.
+        TEnemyPos _ lid p permit  -- chase last position even if foe hides
           | lid /= blid b  -- wrong level
             || chessDist (bpos b) p >= nearby  -- too far and not visible
             || permit  -- never follow a friend more than 1 step

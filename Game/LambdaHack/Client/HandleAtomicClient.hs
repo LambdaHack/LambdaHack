@@ -301,9 +301,9 @@ destroyActor aid b destroy = do
   when destroy $ modifyClient $ updateTarget aid (const Nothing)  -- gc
   modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}  -- gc
   let affect tgt = case tgt of
-        TEnemy a permit | a == aid -> TEnemyPos a (blid b) (bpos b) permit
-          -- Don't heed @destroy@, because even if actor dead, it makes
-          -- sense to go to last known location to loot or find others.
+        TEnemy a _ | a == aid -> TPoint (blid b) (bpos b)
+          -- If *really* nothing more interesting, the actor will
+          -- go to last known location to perhaps find other foes.
         _ -> tgt
       affect3 (tgt, mpath) =
         let newMPath = case mpath of
