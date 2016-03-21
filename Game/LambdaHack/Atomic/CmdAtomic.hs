@@ -132,7 +132,6 @@ data SfxAtomic =
   | SfxEffect !FactionId !ActorId !IK.Effect
   | SfxMsgFid !FactionId !Text
   | SfxMsgAll !Text
-  | SfxActorStart !ActorId
   deriving (Show, Eq, Generic)
 
 instance Binary SfxAtomic
@@ -213,7 +212,6 @@ undoSfxAtomic cmd = case cmd of
   SfxEffect{} -> cmd  -- not ideal?
   SfxMsgFid{} -> cmd
   SfxMsgAll{} -> cmd
-  SfxActorStart{} -> cmd
 
 undoCmdAtomic :: CmdAtomic -> Maybe CmdAtomic
 undoCmdAtomic (UpdAtomic cmd) = UpdAtomic <$> undoUpdAtomic cmd

@@ -625,11 +625,16 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     when verbose $ aidVerbMU aid "shun"  -- TODO: shuns stairs down
   SfxEffect fidSource aid effect -> do
     b <- getsState $ getActorBody aid
+    arena <- getArenaUI
     side <- getsClient sside
     let fid = bfid b
-    if bhp b <= 0 then do
+        isOurCharacter = fid == side && not (bproj b)
+    if bhp b <= 0 && (isOurCharacter || arena == blid b) then do
       -- We assume each non-projectile actor incapacitation is caused
-      -- by some effect, and so animate the event only here.
+      -- by some effect, and so we animate the event only here.
+      -- If the actor was already dead, even if the efect restores HP,
+      -- we assume he's only mauled further by it anyway (we know HP
+      -- didn't get above 0).
       let (firstFall, hurtExtra) = case (fid == side, bproj b) of
             (True, True) -> ("fall apart", "be reduced to dust")
             (True, False) -> ("fall down", "be stomped flat")
@@ -643,17 +648,18 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
       subject <- partActorLeader aid b
       let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
       msgAdd msgDie
-      when (fid == side && not (bproj b)) $ do
-        animDie <- animate (blid b) $
-          if alreadyDeadBefore
-          then twirlSplash (bpos b, bpos b) Color.Red Color.Red
-          else deathBody $ bpos b
-        displayActorStart b animDie
+      let deathAct = if isOurCharacter
+                     then if alreadyDeadBefore
+                          then twirlSplash (bpos b, bpos b) Color.Red Color.Red
+                          else deathBody (bpos b)
+                     else mempty  -- if not interesting, at least insert delay
+      animDie <- animate (blid b) deathAct
+      displayActorStart b animDie
     else case effect of
         IK.ELabel{} -> return ()
         IK.Hurt{} -> return ()  -- avoid spam; SfxStrike just sent
         IK.Burn{} -> do
-          if fid == side then
+          if isOurCharacter then
             actorVerbMU aid b "feel burned"
           else
             actorVerbMU aid b "look burned"
@@ -663,7 +669,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Explode{} -> return ()  -- lots of visual feedback
         IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
         IK.RefillHP p | p > 0 -> do
-          if fid == side then
+          if isOurCharacter then
             actorVerbMU aid b "feel healthier"
           else
             actorVerbMU aid b "look healthier"
@@ -672,7 +678,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           displayActorStart b animFrs
         IK.RefillHP p | p == -1 -> return ()  -- no spam from poison
         IK.RefillHP _ -> do
-          if fid == side then
+          if isOurCharacter then
             actorVerbMU aid b "feel wounded"
           else
             actorVerbMU aid b "look wounded"
@@ -680,7 +686,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs
         IK.OverfillHP p | p > 0 -> do
-          if fid == side then
+          if isOurCharacter then
             actorVerbMU aid b "feel healthier"
           else
             actorVerbMU aid b "look healthier"
@@ -688,7 +694,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
           displayActorStart b animFrs
         IK.OverfillHP _ -> do
-          if fid == side then
+          if isOurCharacter then
             actorVerbMU aid b "feel wounded"
           else
             actorVerbMU aid b "look wounded"
@@ -697,22 +703,22 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           displayActorStart b animFrs
         IK.RefillCalm p | p == 1 -> return ()  -- no spam from regen items
         IK.RefillCalm p | p > 0 -> do
-          if fid == side then
+          if isOurCharacter then
             actorVerbMU aid b "feel calmer"
           else
             actorVerbMU aid b "look calmer"
         IK.RefillCalm _ -> do
-          if fid == side then
+          if isOurCharacter then
             actorVerbMU aid b "feel agitated"
           else
             actorVerbMU aid b "look agitated"
         IK.OverfillCalm p | p > 0 -> do
-          if fid == side then
+          if isOurCharacter then
             actorVerbMU aid b "feel calmer"
           else
             actorVerbMU aid b "look calmer"
         IK.OverfillCalm _ -> do
-          if fid == side then
+          if isOurCharacter then
             actorVerbMU aid b "feel agitated"
           else
             actorVerbMU aid b "look agitated"
@@ -722,7 +728,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           if fid /= fidSource then do  -- before domination
             if | bcalm b == 0 ->  -- sometimes only a coincidence, but nm
                  aidVerbMU aid $ MU.Text "yield, under extreme pressure"
-               | fid == side ->
+               | isOurCharacter ->
                  aidVerbMU aid $ MU.Text "black out, dominated by foes"
                | otherwise ->
                  aidVerbMU aid $ MU.Text "decide abrubtly to switch allegiance"
@@ -730,7 +736,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             let verb = "be no longer controlled by"
             msgAdd $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidName]
-            when (fid == side) $ void $ displayMore ColorFull ""
+            when (isOurCharacter) $ void $ displayMore ColorFull ""
           else do
             fidSourceName <- getsState $ gname . (EM.! fidSource) . sfactionD
             let verb = "be now under"
@@ -796,12 +802,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Temporary t -> actorVerbMU aid b $ MU.Text t
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
-  SfxActorStart aid -> do
-    -- This is always sent before the state-changing commands.
-    arena <- getArenaUI
-    b <- getsState $ getActorBody aid
-    when (blid b == arena) $
-      actorDisplay aid
 
 actorDisplay :: MonadClientUI m => ActorId -> m ()
 actorDisplay aid = do

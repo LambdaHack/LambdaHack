@@ -151,10 +151,6 @@ itemEffectCause aid tpos ef = do
             Just ItemAspectEffect{jaspects} -> jaspects
             _ -> assert `failure` (aid, tpos, ef, iid)
       execSfxAtomic $ SfxTrigger aid tpos $ TK.Cause ef
-      -- Display unconditionally each tile triggering, even though
-      -- only some, e.g., door closing, are visible. At least the
-      -- "X tweaks tile Y" message will be visible longer.
-      execSfxAtomic $ SfxActorStart aid
       effectAndDestroy aid aid iid c False [ef] aspects kit
       return True
     ab -> assert `failure` (aid, tpos, ab)

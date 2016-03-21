@@ -244,17 +244,11 @@ handleActors lid = do
     _ | quit -> return ()
     Nothing -> return ()
     Just (aid, b) | bproj b && maybe True (null . fst) (btrajectory b) -> do
-      -- Try displaying, while still alive. This may result in a duplicated
-      -- frame, but it's OK since death is so important.
-      execSfxAtomic $ SfxActorStart aid
       -- A projectile drops to the ground due to obstacles or range.
       -- The carried item is not destroyed, but drops to the ground.
       dieSer aid b False
       handleActors lid
     Just (aid, b) | bhp b <= 0 -> do
-      -- Try displaying, while still alive. This may result in a duplicated
-      -- frame, but it's OK since death is so important.
-      execSfxAtomic $ SfxActorStart aid
       -- If @b@ is a projectile and it hits an actor,
       -- the carried item is destroyed and that's all.
       -- Otherwise, an actor dies, items drop to the ground
