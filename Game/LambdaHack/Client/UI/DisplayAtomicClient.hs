@@ -28,7 +28,6 @@ import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
@@ -67,7 +66,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
     let verb = "appear" <+> if bfid body == side then "" else "suddenly"
     createActorUI aid body (MU.Text verb)
   UpdDestroyActor aid body _ -> do
-    destroyActorUI aid body "die" "be destroyed" verbose
+    destroyActorUI True aid body
     side <- getsClient sside
     when (bfid body == side && not (bproj body)) $
       void $ stopPlayBack
@@ -102,8 +101,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
     void $ stopPlayBack
   UpdDestroyItem iid _ kit c -> itemVerbMU iid kit "disappear" c
   UpdSpotActor aid body _ -> createActorUI aid body "be spotted"
-  UpdLoseActor aid body _ ->
-    destroyActorUI aid body "be missing in action" "be lost" verbose
+  UpdLoseActor aid body _ -> destroyActorUI False aid body
   UpdSpotItem iid _ kit c -> do
     (itemSlots, _) <- getsClient sslots
     case lookup iid $ map swap $ EM.assocs itemSlots of
@@ -394,16 +392,14 @@ createActorUI aid body verb = do
     displayActorStart body animFrs
   lookAtMove aid
 
-destroyActorUI :: MonadClientUI m
-               => ActorId -> Actor -> MU.Part -> MU.Part -> Bool -> m ()
-destroyActorUI aid body verb verboseVerb verbose = do
+destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
+destroyActorUI died aid body = do
   Kind.COps{corule} <- getsState scops
   side <- getsClient sside
   when (bfid body == side) $ do
     let upd = ES.delete aid
     modifySession $ \sess -> sess {sselected = upd $ sselected sess}
-  if bfid body == side && bhp body <= 0 && not (bproj body) then do
-    when verbose $ actorVerbMU aid body verb
+  when (bfid body == side && died && not (bproj body)) $ do
     let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
         fid = bfid body
     fact <- getsState $ (EM.! fid) . sfactionD
@@ -413,7 +409,6 @@ destroyActorUI aid body verb verboseVerb verbose = do
     unless (fneverEmpty (gplayer fact)
             && (not actorsAlive || firstDeathEnds)) $
       void $ displayMore ColorBW ""
-  else when verbose $ actorVerbMU aid body verboseVerb
   -- If pushed, animate spotting again, to draw attention to pushing.
   when (isNothing $ btrajectory body) $
     modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
@@ -633,40 +628,27 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     side <- getsClient sside
     let fid = bfid b
     if bhp b <= 0 then do
-      -- We assume the effect is the cause of incapacitation, but in case
-      -- of projectile, to reduce spam, we verify with @canKill@.
-      let firstFall | fid == side && bproj b = "fall apart"
-                    | fid == side = "fall down"
-                    | bproj b = "break up"
-                    | otherwise = "collapse"
-          hurtExtra | fid == side && bproj b = "be reduced to dust"
-                    | fid == side = "be stomped flat"
-                    | bproj b = "be shattered into little pieces"
-                    | otherwise = "be reduced to a bloody pulp"
-          -- Aspect bonuses ignored, so hurtExtra will add variety sometimes.
-          deadPreviousTurn dp = bhp b <= dp
-          harm2 dp = if deadPreviousTurn dp
-                     then (True, Just hurtExtra)
-                     else (False, Just firstFall)
-          (deadBefore, mverbDie) =
-            case effect of
-              IK.Hurt p -> harm2 (- (xM $ Dice.maxDice p))
-              IK.RefillHP p | p < 0 -> harm2 (xM p)
-              IK.OverfillHP p | p < 0 -> harm2 (xM p)
-              IK.Burn p -> harm2 (- (xM $ Dice.maxDice p))
-              _ -> (False, Nothing)
-      case mverbDie of
-        Nothing -> return ()  -- only brutal effects work on dead/dying actor
-        Just verbDie -> do
-          subject <- partActorLeader aid b
-          let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
-          msgAdd msgDie
-          when (fid == side && not (bproj b)) $ do
-            animDie <- animate (blid b) $
-              if deadBefore
-              then twirlSplash (bpos b, bpos b) Color.Red Color.Red
-              else deathBody $ bpos b
-            displayActorStart b animDie
+      -- We assume each non-projectile actor incapacitation is caused
+      -- by some effect, and so animate the event only here.
+      let (firstFall, hurtExtra) = case (fid == side, bproj b) of
+            (True, True) -> ("fall apart", "be reduced to dust")
+            (True, False) -> ("fall down", "be stomped flat")
+            (False, True) -> ("break up", "be shattered into little pieces")
+            (False, False) -> ("collapse", "be reduced to a bloody pulp")
+          verbDie = if alreadyDeadBefore then hurtExtra else firstFall
+          -- @bhpDelta@ may record more attacks than the most recent
+          -- and also regeneration, etc. If so, the messages can be wrong,
+          -- but this is rare and only adds variety.
+          alreadyDeadBefore = bhp b - resCurrentTurn (bhpDelta b) <= 0
+      subject <- partActorLeader aid b
+      let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
+      msgAdd msgDie
+      when (fid == side && not (bproj b)) $ do
+        animDie <- animate (blid b) $
+          if alreadyDeadBefore
+          then twirlSplash (bpos b, bpos b) Color.Red Color.Red
+          else deathBody $ bpos b
+        displayActorStart b animDie
     else case effect of
         IK.ELabel{} -> return ()
         IK.Hurt{} -> return ()  -- avoid spam; SfxStrike just sent
