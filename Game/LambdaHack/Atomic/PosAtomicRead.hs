@@ -175,7 +175,7 @@ posSfxAtomic cmd = case cmd of
   SfxShun aid p _ -> do
     (lid, pa) <- posOfAid aid
     return $! PosSight lid [pa, p]
-  SfxEffect _ aid _ -> singleAid aid  -- sometimes we don't see source, OK
+  SfxEffect _ aid _ _ -> singleAid aid  -- sometimes we don't see source, OK
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxMsgAll _ -> return PosAll
 
@@ -288,9 +288,9 @@ breakSfxAtomic cmd = case cmd of
   SfxStrike source target _ _ _ -> do
     -- Hack: make a fight detectable even if one of combatants not visible.
     sb <- getsState $ getActorBody source
-    return $! [ SfxEffect (bfid sb) source (IK.RefillCalm (-1))
+    return $! [ SfxEffect (bfid sb) source (IK.RefillCalm (-1)) 0
               | not $ bproj sb ]
-              ++ [SfxEffect (bfid sb) target (IK.RefillHP (-1))]
+              ++ [SfxEffect (bfid sb) target (IK.RefillHP (-1)) (-1)]
   _ -> return [cmd]
 
 -- | Messages for some unseen game object creation/destruction/alteration.

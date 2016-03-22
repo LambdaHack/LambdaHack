@@ -205,14 +205,14 @@ effectSem source target iid recharged effect = do
   sb <- getsState $ getActorBody source
   -- @execSfx@ usually comes last in effect semantics, but not always
   -- and we are likely to introduce more variety.
-  let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
+  let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect 0
   case effect of
     IK.ELabel _ -> return False
     IK.Hurt nDm -> effectHurt nDm source target IK.RefillHP
     IK.Burn nDm -> effectBurn nDm source target
     IK.Explode t -> effectExplode execSfx t target
-    IK.RefillHP p -> effectRefillHP False execSfx p source target
-    IK.OverfillHP p -> effectRefillHP True execSfx p source target
+    IK.RefillHP p -> effectRefillHP False p source target
+    IK.OverfillHP p -> effectRefillHP True p source target
     IK.RefillCalm p -> effectRefillCalm False execSfx p source target
     IK.OverfillCalm p -> effectRefillCalm True execSfx p source target
     IK.Dominate -> effectDominate recursiveCall source target
@@ -267,12 +267,13 @@ effectHurt nDm source target verboseEffectConstructor = do
   -- Damage the target.
   execUpdAtomic $ UpdRefillHP target deltaHP
   when serious $ halveCalm target
-  execSfxAtomic $ SfxEffect (bfid sb) target $
-    if source == target
-    then verboseEffectConstructor deltaDiv
-           -- no SfxStrike, so treat as any heal/wound
-    else IK.Hurt (Dice.intToDice (- deltaDiv))
-           -- SfxStrike already sent, avoid spam
+  let reportedEffect =
+        if source == target
+        then verboseEffectConstructor deltaDiv
+               -- no SfxStrike, so treat as any heal/wound
+        else IK.Hurt (Dice.intToDice (- deltaDiv))
+               -- SfxStrike already sent, avoid spam
+  execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
   return True
 
 armorHurtBonus :: (MonadAtomic m, MonadServer m)
@@ -375,8 +376,8 @@ effectExplode execSfx cgroup target = do
 
 -- Unaffected by armor.
 effectRefillHP :: (MonadAtomic m, MonadServer m)
-               => Bool -> m () -> Int -> ActorId -> ActorId -> m Bool
-effectRefillHP overfill execSfx power source target = do
+               => Bool -> Int -> ActorId -> ActorId -> m Bool
+effectRefillHP overfill power source target = do
   tb <- getsState $ getActorBody target
   hpMax <- sumOrganEqpServer IK.EqpSlotAddMaxHP target
   let overMax | overfill = xM hpMax * 10  -- arbitrary limit to scumming
@@ -390,7 +391,10 @@ effectRefillHP overfill execSfx power source target = do
     then return False
     else do
       execUpdAtomic $ UpdRefillHP target deltaHP
-      execSfx
+      sb <- getsState $ getActorBody source
+      let effect | overfill = IK.OverfillHP power
+                 | otherwise = IK.RefillHP power
+      execSfxAtomic $ SfxEffect (bfid sb) target effect deltaHP
       when (deltaHP < 0 && serious) $ halveCalm target
       return True
 

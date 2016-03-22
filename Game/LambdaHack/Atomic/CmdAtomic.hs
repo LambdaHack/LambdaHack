@@ -129,7 +129,7 @@ data SfxAtomic =
   | SfxCheck !ActorId !ItemId !CStore
   | SfxTrigger !ActorId !Point !TK.Feature
   | SfxShun !ActorId !Point !TK.Feature
-  | SfxEffect !FactionId !ActorId !IK.Effect
+  | SfxEffect !FactionId !ActorId !IK.Effect !Int64
   | SfxMsgFid !FactionId !Text
   | SfxMsgAll !Text
   deriving (Show, Eq, Generic)

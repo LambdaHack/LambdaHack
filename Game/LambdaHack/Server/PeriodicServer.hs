@@ -154,7 +154,7 @@ dominateFidSfx fid target = do
   if canMove && not (bproj tb)
     then do
       let execSfx = execSfxAtomic
-                    $ SfxEffect (bfidImpressed tb) target IK.Dominate
+                    $ SfxEffect (bfidImpressed tb) target IK.Dominate 0
       execSfx
       dominateFid fid target
       execSfx
