@@ -167,8 +167,16 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
          | otherwise ->
            "experience anxiety that weakens resolve and erodes loyalty"
 -- TODO     "inhale the sweet smell that weakens resolve and erodes loyalty"
-  UpdTrajectory{} -> return ()
-  UpdColorActor{} -> return ()
+  UpdTrajectory{} -> return ()  -- if projectiles dies here, no animation
+  UpdColorActor aid fromCol toCol -> do
+    -- If color changed, make sure it's ever shown,
+    -- e.g., before projectile dies.
+    b <- getsState $ getActorBody aid
+    side <- getsClient sside
+    when (bfid b == side || not (bproj b)) $ do  -- ignore enemy projectiles
+      animColor <- animate (blid b)
+                   $ blinkColorActor (bpos b) (bsymbol b) fromCol toCol
+      displayActorStart b animColor
   -- Change faction attributes.
   UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt
   UpdLeadFaction fid (Just (source, _)) (Just (target, _)) -> do
@@ -647,7 +655,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                      then if alreadyDeadBefore
                           then twirlSplash (bpos b, bpos b) Color.Red Color.Red
                           else deathBody (bpos b)
-                     else mempty  -- if not interesting, at least insert delay
+                     else pushAndDelay  -- if boring, at least display
       animDie <- animate (blid b) deathAct
       displayActorStart b animDie
     else case effect of

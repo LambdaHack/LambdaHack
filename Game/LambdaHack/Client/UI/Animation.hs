@@ -2,8 +2,8 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Animation
   ( Animation, renderAnim, restrictAnim
-  , twirlSplash, blockHit, blockMiss, deathBody, actorX
-  , swapPlaces, teleport, fadeout
+  , pushAndDelay, blinkColorActor, twirlSplash, blockHit, blockMiss
+  , deathBody, actorX, swapPlaces, teleport, fadeout
   ) where
 
 import Prelude ()
@@ -83,6 +83,19 @@ restrictAnim vis (Animation as) =
 
 -- TODO: in all but moveProj duplicate first and/or last frame, if required,
 -- since they are no longer duplicated in renderAnim
+
+pushAndDelay :: Animation
+pushAndDelay = Animation [EM.empty]
+
+blinkColorActor :: Point -> Char -> Color -> Color -> Animation
+blinkColorActor pos symbol fromCol toCol =
+  Animation $ map (EM.fromList . mzipSingleton pos)
+  [ cSym fromCol symbol
+  , cSym toCol symbol
+  , cSym fromCol symbol
+  , cSym toCol symbol
+  , cSym fromCol symbol
+  ]
 
 -- | Attack animation. A part of it also reused for self-damage and healing.
 twirlSplash :: (Point, Point) -> Color -> Color -> Animation
