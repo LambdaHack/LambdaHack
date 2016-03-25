@@ -1,7 +1,7 @@
 -- | A set of widgets for UI clients.
 module Game.LambdaHack.Client.UI.WidgetClient
   ( displayMore, displayYesNo, displayChoiceScreen, displayChoiceLine
-  , displayPush, describeMainKeys
+  , describeMainKeys
   , promptToSlideshow, overlayToSlideshow
   , animate, fadeOutOrIn
   ) where
@@ -17,7 +17,6 @@ import Data.Maybe
 import Data.Monoid
 import qualified Data.Text as T
 
-import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
@@ -29,6 +28,7 @@ import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
@@ -37,7 +37,6 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 
@@ -147,18 +146,6 @@ displayChoiceLine prompt ov extraKeys = do
   slides <- overlayToSlideshow prompt ov
   getConfirmsKey ColorFull extraKeys slides
 
--- | Push the frame depicting the current level to the frame queue.
--- Only one screenful of the report is shown, the rest is ignored,
--- since the frames may be displayed during the enemy turn and so
--- we can't clear the prompts. In our turn, each screenful is displayed
--- and we need to confirm each page change (e.g., in 'getConfirms').
-displayPush :: MonadClientUI m => Msg -> m ()
-displayPush prompt = do
-  sls <- promptToSlideshow prompt
-  let slide = head $ slideshow sls  -- only the first slide shown
-  frame <- drawOverlay ColorFull False slide
-  displayFrame (Just frame)
-
 describeMainKeys :: MonadClientUI m => m Msg
 describeMainKeys = do
   side <- getsClient sside
@@ -227,24 +214,11 @@ overlayToSlideshow prompt overlay = do
 animate :: MonadClientUI m => LevelId -> Animation -> m Frames
 animate arena anim = do
   sreport <- getsSession sreport
-  mleader <- getsClient _sleader
-  tgtPos <- leaderTgtToPos
-  cursorPos <- cursorToPos
-  let anyPos = fromMaybe (Point 0 0) cursorPos
-        -- if cursor invalid, e.g., on a wrong level; @draw@ ignores it later on
-      pathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
-  bfsmpath <- maybe (return Nothing) pathFromLeader mleader
-  tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
-  cursorDesc <- targetDescCursor
   promptAI <- msgPromptAI
   let over = renderReport (prependMsg promptAI sreport)
       topLineOnly = truncateToOverlay over
-  SessionUI{sselected, stgtMode, smarkVision, smarkSmell, swaitTimes}
-    <- getSession
-  basicFrame <- overlayFrame topLineOnly <$>
-    Just <$> draw ColorFull arena cursorPos tgtPos
-                  bfsmpath cursorDesc tgtDesc
-                  sselected stgtMode smarkVision smarkSmell swaitTimes
+  baseFrame <- drawBaseFrame ColorFull arena
+  let basicFrame = overlayFrame topLineOnly $ Just baseFrame
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]
@@ -258,3 +232,4 @@ fadeOutOrIn out = do
   animMap <- rndToAction $ fadeout out topRight 2 lxsize lysize
   animFrs <- animate lid animMap
   mapM_ displayFrame animFrs
+  modifySession $ \sess -> sess {sdisplayNeeded = False}

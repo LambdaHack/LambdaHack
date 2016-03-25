@@ -11,7 +11,8 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , ColorMode(..)
   , mapStartY, promptGetKey, promptGetInt
   , getInitConfirms, getConfirms, getConfirmsKey
-  , displayFrame, displayDelay, displayActorStart, drawOverlay
+  , displayFrame, displayDelay, displayActorStart
+  , drawBaseFrame, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, frontendShutdown
@@ -103,7 +104,8 @@ promptGetKey ov sfBlank frontKeyKeys = do
       return km
   (seqCurrent, seqPrevious, k) <- getsSession slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)
-  modifySession $ \sess -> sess {slastRecord}
+  modifySession $ \sess -> sess { slastRecord
+                                , sdisplayNeeded = False }
   return km
 
 promptGetInt :: MonadClientUI m => SingleFrame -> m K.KM
@@ -185,33 +187,20 @@ displayFrame mf = do
 displayDelay :: MonadClientUI m => Int -> m ()
 displayDelay k = connFrontend $ FrontDelay k
 
--- | Push frames or delays to the frame queue. Additionally set @sdisplayed@.
--- because animations not always happen before @SfxActorStart@ on the leader's
--- level (e.g., death can lead to leader change to another level mid-turn,
--- and there could be melee and animations on that level at the same moment).
+-- | Push frames or delays to the frame queue.
 -- Insert delays, so that the animations don't look rushed.
 displayActorStart :: MonadClientUI m => Actor -> Frames -> m ()
 displayActorStart b frs = do
-  let arena = blid b
-  -- Can be different than getArenaUI, e.g., when our actor is attacked
-  -- on a remote level.
-  localTime <- getsState $ getLocalTime (blid b)
   displayDelay 2
   mapM_ displayFrame frs
-  let ageDisp = EM.insert arena localTime
-  modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}
+  -- Can be different than @blid b@, e.g., when our actor is attacked
+  -- on a remote level.
+  arena <- getArenaUI
+  when (arena == blid b) $
+    modifySession $ \sess -> sess {sdisplayNeeded = False}
 
--- | Draw the current level with the overlay on top.
-drawOverlay :: MonadClientUI m
-            => ColorMode -> Bool -> Overlay -> m SingleFrame
-drawOverlay dm sfBlank sfTop = do
-  mbaseFrame <- if sfBlank then return Nothing else Just <$> drawBaseFrame dm
-  return $! overlayFrame sfTop mbaseFrame
-  -- TODO: here sfTop is possibly truncated wrt length
-
-drawBaseFrame :: MonadClientUI m => ColorMode -> m SingleFrame
-drawBaseFrame dm = do
-  lid <- viewedLevel
+drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
+drawBaseFrame dm lid = do
   mleader <- getsClient _sleader
   tgtPos <- leaderTgtToPos
   cursorPos <- cursorToPos
@@ -226,11 +215,28 @@ drawBaseFrame dm = do
   draw dm lid cursorPos tgtPos bfsmpath cursorDesc tgtDesc
        sselected stgtMode smarkVision smarkSmell swaitTimes
 
+drawBaseFrameViewed :: MonadClientUI m => ColorMode -> m SingleFrame
+drawBaseFrameViewed dm = do
+  lid <- viewedLevel
+  drawBaseFrame dm lid
+
+-- | Draw the current level with the overlay on top.
+drawOverlay :: MonadClientUI m
+            => ColorMode -> Bool -> Overlay -> m SingleFrame
+drawOverlay dm sfBlank sfTop = do
+  mbaseFrame <- if sfBlank
+                then return Nothing
+                else Just <$> drawBaseFrameViewed dm
+  return $! overlayFrame sfTop mbaseFrame
+  -- TODO: here sfTop is possibly truncated wrt length
+
 drawOverlays :: MonadClientUI m
              => ColorMode -> Bool -> [Overlay] -> m [SingleFrame]
 drawOverlays _ _ [] = return []
 drawOverlays dm sfBlank ovs = do
-  mbaseFrame <- if sfBlank then return Nothing else Just <$> drawBaseFrame dm
+  mbaseFrame <- if sfBlank
+                then return Nothing
+                else Just <$> drawBaseFrameViewed dm
   let f topNext = overlayFrame topNext mbaseFrame
   return $! map f ovs  -- keep lazy for responsiveness
 

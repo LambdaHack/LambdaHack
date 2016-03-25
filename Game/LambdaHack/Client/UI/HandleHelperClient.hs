@@ -23,6 +23,7 @@ import Game.LambdaHack.Client.CommonClient
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
@@ -132,8 +133,11 @@ cursorPointerFloor verbose addMoreMsg = do
       if verbose then
         doLook addMoreMsg
       else do
-        displayPush ""  -- flash the targeting line and path
-        displayDelay 2  -- for a bit longer
+        --- Flash the targeting line and path.
+        leader <- getLeaderUI
+        b <- getsState $ getActorBody leader
+        animFrs <- animate (blid b) pushAndDelay
+        displayActorStart b animFrs
         return mempty
     _ -> do
       void $ stopPlayBack
@@ -158,8 +162,11 @@ cursorPointerEnemy verbose addMoreMsg = do
       if verbose then
         doLook addMoreMsg
       else do
-        displayPush ""  -- flash the targeting line and path
-        displayDelay 2 -- for a bit longer
+        --- Flash the targeting line and path.
+        leader <- getLeaderUI
+        b <- getsState $ getActorBody leader
+        animFrs <- animate (blid b) pushAndDelay
+        displayActorStart b animFrs
         return mempty
     _ -> do
       void $ stopPlayBack

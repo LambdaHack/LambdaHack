@@ -10,7 +10,6 @@ import Prelude ()
 import Prelude.Compat
 
 import Data.Binary
-import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
@@ -22,7 +21,6 @@ import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Time
 
 -- | The information that is used across a client playing session,
 -- including many consecutive games in a single session.
@@ -39,8 +37,6 @@ data SessionUI = SessionUI
                                       -- ^ parameters of the current run, if any
   , sreport         :: !Report        -- ^ current messages
   , shistory        :: !History       -- ^ history of messages
-  , sdisplayed      :: !(EM.EnumMap LevelId Time)
-                                      -- ^ moves already displayed up to then
   , slastKM         :: !K.KM          -- ^ last issued key command
   , slastRecord     :: !LastRecord    -- ^ state of key sequence recording
   , slastPlay       :: ![K.KM]        -- ^ state of key sequence playback
@@ -53,6 +49,7 @@ data SessionUI = SessionUI
   , smenuIxSettings :: !Int           -- ^ index of last used Settings Menu item
   , smenuIxHelp     :: !Int           -- ^ index of last used Help Menu item
   , smenuIxHistory  :: !Int           -- ^ index of last used History Menu item
+  , sdisplayNeeded  :: !Bool          -- ^ something to display on current level
   }
 
 -- | Current targeting mode of a client.
@@ -87,7 +84,6 @@ emptySessionUI sconfig =
     , srunning = Nothing
     , sreport = emptyReport
     , shistory = emptyHistory 0
-    , sdisplayed = EM.empty
     , slastKM = K.escKM
     , slastRecord = ([], [], 0)
     , slastPlay = []
@@ -99,6 +95,7 @@ emptySessionUI sconfig =
     , smenuIxSettings = 0
     , smenuIxHelp = 0
     , smenuIxHistory = 0
+    , sdisplayNeeded = False
     }
 
 toggleMarkVision :: SessionUI -> SessionUI
@@ -115,13 +112,13 @@ instance Binary SessionUI where
     put srunning
     put sreport
     put shistory
-    put sdisplayed
     put smarkVision
     put smarkSmell
     put smenuIxMain
     put smenuIxSettings
     put smenuIxHelp
     put smenuIxHistory
+    put sdisplayNeeded
   get = do
     sconfig <- get
     stgtMode <- get
@@ -129,13 +126,13 @@ instance Binary SessionUI where
     srunning <- get
     sreport <- get
     shistory <- get
-    sdisplayed <- get
     smarkVision <- get
     smarkSmell <- get
     smenuIxMain <- get
     smenuIxSettings <- get
     smenuIxHelp <- get
     smenuIxHistory <- get
+    sdisplayNeeded <- get
     let schanF = ChanFrontend $ const $ error "Binary: ChanFrontend"
         sbinding = Binding M.empty [] M.empty
         slastKM = K.escKM

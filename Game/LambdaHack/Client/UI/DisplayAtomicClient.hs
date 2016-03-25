@@ -23,6 +23,7 @@ import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
+import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
@@ -37,7 +38,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
@@ -61,10 +61,7 @@ displayRespUpdAtomicUI :: MonadClientUI m
                        => Bool -> StateClient -> UpdAtomic -> m ()
 displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
   -- Create/destroy actors and items.
-  UpdCreateActor aid body _ -> do
-    side <- getsClient sside
-    let verb = "appear" <+> if bfid body == side then "" else "suddenly"
-    createActorUI aid body (MU.Text verb)
+  UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> do
     destroyActorUI True aid body
     side <- getsClient sside
@@ -91,18 +88,24 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
               let newStore = store : delete store lastStore
               modifyClient $ \cli -> cli { slastSlot = l
                                          , slastStore = newStore }
-      CEmbed{} -> return ()
-      CFloor{} -> do
+      CEmbed lid _ -> markDisplayNeeded lid
+      CFloor lid _ -> do
         -- If you want an item to be assigned to @slastSlot@, create it
         -- in @CActor aid CGround@, not in @CFloor@.
         void $ updateItemSlot CGround Nothing iid
         itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
+        markDisplayNeeded lid
       CTrunk{} -> assert `failure` c
     void $ stopPlayBack
-  UpdDestroyItem iid _ kit c -> itemVerbMU iid kit "disappear" c
-  UpdSpotActor aid body _ -> createActorUI aid body "be spotted"
+  UpdDestroyItem iid _ kit c -> do
+    itemVerbMU iid kit "disappear" c
+    lid <- getsState $ lidFromC c
+    markDisplayNeeded lid
+  UpdSpotActor aid body _ -> createActorUI False aid body
   UpdLoseActor aid body _ -> destroyActorUI False aid body
   UpdSpotItem iid _ kit c -> do
+    -- This is due to a move, or similar, which will be displayed,
+    -- so no extra @markDisplayNeeded@ needed here and in similar places.
     (itemSlots, _) <- getsClient sslots
     case lookup iid $ map swap $ EM.assocs itemSlots of
       Nothing ->  -- never seen or would have a slot
@@ -167,13 +170,15 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
          | otherwise ->
            "experience anxiety that weakens resolve and erodes loyalty"
 -- TODO     "inhale the sweet smell that weakens resolve and erodes loyalty"
-  UpdTrajectory{} -> return ()  -- if projectiles dies here, no animation
+  UpdTrajectory{} -> return ()  -- if projectile dies here, no display
   UpdColorActor aid fromCol toCol -> do
     -- If color changed, make sure it's ever shown,
     -- e.g., before projectile dies.
     b <- getsState $ getActorBody aid
     side <- getsClient sside
-    when (bfid b == side || not (bproj b)) $ do  -- ignore enemy projectiles
+    arena <- getArenaUI
+    -- Ignore enemy projectiles and anything on other levels.
+    when (arena == blid b && (bfid b == side || not (bproj b))) $ do
       animColor <- animate (blid b)
                    $ blinkColorActor (bpos b) (bsymbol b) fromCol toCol
       displayActorStart b animColor
@@ -217,7 +222,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
     when (fid == side) $ setFrontAutoYes b
   UpdRecordKill{} -> return ()
   -- Alter map.
-  UpdAlterTile{} -> when verbose $ return ()  -- TODO: door opens
+  UpdAlterTile lid _ _ _ -> markDisplayNeeded lid
   UpdAlterClear _ k ->
     msgAdd $ if k > 0 then "You hear grinding noises."
                       else "You hear fizzing noises."
@@ -245,7 +250,19 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
   UpdLoseSmell{} -> return ()
   -- Assorted.
   UpdTimeItem{} -> return ()
-  UpdAgeGame{} -> return ()
+  UpdAgeGame{} -> do
+    sdisplayNeeded <- getsSession sdisplayNeeded
+    when sdisplayNeeded $ do
+      -- Push the frame depicting the current level to the frame queue.
+      -- Only one screenful of the report is shown, the rest is ignored,
+      -- since the frames may be displayed during the enemy turn and so
+      -- we can't clear the prompts. In our turn, each screenful is displayed
+      -- and we need to confirm each page change (e.g., in 'getConfirms').
+      sls <- promptToSlideshow ""
+      let slide = head $ slideshow sls  -- only the first slide shown
+      frame <- drawOverlay ColorFull False slide
+      displayFrame (Just frame)
+      modifySession $ \sess -> sess {sdisplayNeeded = False}
   UpdDiscover c iid _ _ _ -> discover c oldStateClient iid
   UpdCover{} -> return ()  -- don't spam when doing undo
   UpdDiscoverKind c iid _ -> discover c oldStateClient iid
@@ -271,6 +288,12 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
   UpdWriteSave -> when verbose $ msgAdd "Saving backup."
   UpdMsgAll msg -> msgAdd msg
   UpdRecordHistory _ -> recordHistory
+
+markDisplayNeeded :: MonadClientUI m => LevelId -> m ()
+markDisplayNeeded lid = do
+  arena <- getArenaUI
+  when (arena == lid) $
+     modifySession $ \sess -> sess {sdisplayNeeded = True}
 
 updateItemSlotSide :: MonadClient m
                    => CStore -> ActorId -> ItemId -> m SlotChar
@@ -373,11 +396,15 @@ msgDuplicateScrap = do
     modifySession $ \sess -> sess {sreport = repRest}
 
 -- TODO: "XXX spots YYY"? or blink or show the changed cursor?
-createActorUI :: MonadClientUI m => ActorId -> Actor -> MU.Part -> m ()
-createActorUI aid body verb = do
+createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
+createActorUI born aid body = do
+  side <- getsClient sside
+  let verb = if born
+             then MU.Text $ "appear"
+                            <+> if bfid body == side then "" else "suddenly"
+             else "be spotted"
   mapM_ (\(iid, store) -> void $ updateItemSlotSide store aid iid)
         (getCarriedIidCStore body)
-  side <- getsClient sside
   when (bfid body /= side) $ do
     fact <- getsState $ (EM.! bfid body) . sfactionD
     when (not (bproj body) && isAtWar fact side) $
@@ -393,7 +420,7 @@ createActorUI aid body verb = do
   -- or on a distant tile, via teleport while the observer teleported, too).
   lastLost <- getsSession slastLost
   if ES.member aid lastLost || bproj body then
-    actorDisplay aid
+    markDisplayNeeded (blid body)
   else do
     actorVerbMU aid body verb
     animFrs <- animate (blid body) $ actorX (bpos body)
@@ -420,6 +447,7 @@ destroyActorUI died aid body = do
   -- If pushed, animate spotting again, to draw attention to pushing.
   when (isNothing $ btrajectory body) $
     modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
+  markDisplayNeeded (blid body)
 
 -- TODO: deduplicate wrt Server
 anyActorsAlive :: MonadClient m => FactionId -> Maybe ActorId -> m Bool
@@ -439,14 +467,14 @@ moveActor aid source target = do
   -- not seen, the (half of the) animation would be boring, just a delay,
   -- not really showing a transition, so we skip it (via 'breakUpdAtomic').
   -- The message about teleportation is sometimes shown anyway, just as the X.
+  body <- getsState $ getActorBody aid
   if adjacent source target
-  then actorMoveDisplay aid
+  then markDisplayNeeded (blid body)
   else do
-    body <- getsState $ getActorBody aid
     let ps = (source, target)
     animFrs <- animate (blid body) $ teleport ps
     displayActorStart body animFrs
-    lookAtMove aid
+  lookAtMove aid
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
@@ -805,47 +833,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Temporary t -> actorVerbMU aid b $ MU.Text t
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
-
-actorDisplay :: MonadClientUI m => ActorId -> m ()
-actorDisplay aid = do
-  mleader <- getsClient _sleader
-  b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  -- If key will be requested, don't show the frame, because during
-  -- the request extra message may be shown, so the other frame is better.
-  when (Just aid /= mleader || isAIFact fact) $ do
-    -- Display the new game state.
-    localTime <- getsState $ getLocalTime (blid b)
-    displayPush ""
-    -- Set display time to local time, which is quantized by the server.
-    -- Consequently, time-based displays are performed always
-    -- at server-determined moments, at most as often, as server ages time.
-    -- Performing extra displays at other moments doesn't reset that.
-    -- We could the skip next closest scheduled display, but more frames
-    -- for extra events is better and also, we'd need more acurate timing.
-    let ageDisp = EM.insert (blid b) localTime
-    modifySession $ \sess -> sess {sdisplayed = ageDisp $ sdisplayed sess}
-
-actorMoveDisplay :: MonadClientUI m => ActorId -> m ()
-actorMoveDisplay aid = do
-  -- TODO: handle projectiles and insert *delay* between the same actor's move
-  arena <- getArenaUI
-  b <- getsState $ getActorBody aid
-  when (blid b == arena) $ do
-    -- If any time has passed (server quantizes this)
-    -- since any actor advanced @sdisplayed@ or if the actor is newborn,
-    -- we end and display the frame early, before his next move.
-    -- In the result, he moves at most once per frame and thanks to this,
-    -- his multiple moves are not collapsed into one frame.
-    -- The exception is when it moves faster than one meter per clip,
-    -- which is 10 times normal speed, and then some move frames are not shown.
-    -- Otherwise lots of extremely fast bullets would freeze the game.
-    -- Note that if the actor just displayed an animation (e.g., via
-    -- displacement animation), @sdisplayed@ is updated and so no display here.
-    timeDisp <- getsSession $ EM.findWithDefault timeZero arena . sdisplayed
-    localTime <- getsState $ getLocalTime (blid b)
-    when (localTime > timeDisp) $
-      actorDisplay aid
 
 setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do
