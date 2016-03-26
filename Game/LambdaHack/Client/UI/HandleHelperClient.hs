@@ -10,7 +10,7 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
-import Control.Monad (void, when)
+import Control.Monad (when)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List (find, findIndex, sortBy)
@@ -140,7 +140,7 @@ cursorPointerFloor verbose addMoreMsg = do
         displayActorStart b animFrs
         return mempty
     _ -> do
-      void $ stopPlayBack
+      stopPlayBack
       return mempty
 
 cursorPointerEnemy :: MonadClientUI m => Bool -> Bool -> m Slideshow
@@ -169,7 +169,7 @@ cursorPointerEnemy verbose addMoreMsg = do
         displayActorStart b animFrs
         return mempty
     _ -> do
-      void $ stopPlayBack
+      stopPlayBack
       return mempty
 
 -- | Move the cursor. Assumes targeting mode.

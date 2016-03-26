@@ -14,7 +14,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , displayFrame, displayDelay, displayActorStart
   , drawBaseFrame, drawOverlay
     -- * Assorted primitives
-  , stopPlayBack, askConfig, askBinding
+  , stopPlayBack, stopPlayBackGiveStatus, askConfig, askBinding
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, frontendShutdown
   , scoreToSlideshow, msgPromptAI, defaultHistory
   , getLeaderUI, getArenaUI, viewedLevel
@@ -26,7 +26,7 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
-import Control.Monad (when)
+import Control.Monad (void, when)
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
@@ -93,7 +93,7 @@ promptGetKey ov sfBlank frontKeyKeys = do
       return km
     _ -> do
       -- We can't continue playback; wipe out old srunning, etc.
-      interrupted <- stopPlayBack
+      interrupted <- stopPlayBackGiveStatus
       ov2 <- if keyPressed && interrupted then do
                discardPressedKey
                return $! toOverlay ["*interrupted*"] <> ov
@@ -240,8 +240,11 @@ drawOverlays dm sfBlank ovs = do
   let f topNext = overlayFrame topNext mbaseFrame
   return $! map f ovs  -- keep lazy for responsiveness
 
-stopPlayBack :: MonadClientUI m => m Bool
-stopPlayBack = do
+stopPlayBack :: MonadClientUI m => m ()
+stopPlayBack = void stopPlayBackGiveStatus
+
+stopPlayBackGiveStatus :: MonadClientUI m => m Bool
+stopPlayBackGiveStatus = do
   lastPlay <- getsSession slastPlay
   modifySession $ \sess -> sess
     { slastPlay = []

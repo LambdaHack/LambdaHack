@@ -35,6 +35,7 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.HandleHelperClient
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
@@ -47,7 +48,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
@@ -160,7 +160,7 @@ stopIfTgtModeHuman :: MonadClientUI m => m ()
 stopIfTgtModeHuman = do
   tgtMode <- getsSession stgtMode
   when (isJust tgtMode) $
-    void $ stopPlayBack
+    stopPlayBack
 
 -- * SelectWithPointer
 
@@ -180,7 +180,7 @@ selectWithPointer = do
         selectNoneHuman
       else
         selectAidHuman $ fst $ viewed !! (px - 1)
-      void $ stopPlayBack
+      stopPlayBack
     _ -> return ()
 
 -- * Repeat

@@ -66,7 +66,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
     destroyActorUI True aid body
     side <- getsClient sside
     when (bfid body == side && not (bproj body)) $
-      void $ stopPlayBack
+      stopPlayBack
   UpdCreateItem iid _ kit c -> do
     case c of
       CActor aid store -> do
@@ -96,7 +96,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
         itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
         markDisplayNeeded lid
       CTrunk{} -> assert `failure` c
-    void $ stopPlayBack
+    stopPlayBack
   UpdDestroyItem iid _ kit c -> do
     itemVerbMU iid kit "disappear" c
     lid <- getsState $ lidFromC c
@@ -122,7 +122,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
               TEnemyPos{} -> return ()
               _ -> modifyClient $ \cli -> cli {scursor = TPoint lid p}
             itemVerbMU iid kit "be spotted" c
-            void $ stopPlayBack
+            stopPlayBack
           CTrunk{} -> return ()
       _ -> return ()  -- seen already (has a slot assigned)
   UpdLoseItem{} -> return ()
@@ -145,7 +145,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
       when (bhp b >= xM hpMax && hpMax > 0
             && resCurrentTurn (bhpDelta b) > 0) $ do
         actorVerbMU aid b "recover your health fully"
-        void $ stopPlayBack
+        stopPlayBack
   UpdRefillCalm aid calmDelta ->
     when (calmDelta == minusM) $ do  -- lower deltas come from hits; obvious
       side <- getsClient sside
@@ -157,7 +157,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
         when (null closeFoes) $ do  -- obvious where the feeling comes from
           aidVerbMU aid "hear something"
           msgDuplicateScrap
-          void $ stopPlayBack
+          stopPlayBack
   UpdFidImpressedActor aid _fidOld fidNew -> do
     b <- getsState $ getActorBody aid
     actorVerbMU aid b $
@@ -192,7 +192,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
       -- a leader change while running, but rather server changing
       -- their leader, which the player should be alerted to.
       when (noRunWithMulti fact) $
-        void $ stopPlayBack
+        stopPlayBack
       actorD <- getsState sactorD
       case EM.lookup source actorD of
         Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do
@@ -318,11 +318,11 @@ lookAtMove aid = do
   if not (bproj body) && side == bfid body then do
     foes <- getsState $ actorList (isAtWar fact) (blid body)
     when (any (adjacent (bpos body) . bpos) foes) $
-      void $ stopPlayBack
+      stopPlayBack
   else when (isAtWar fact side) $ do
     friends <- getsState $ actorRegularList (== side) (blid body)
     when (any (adjacent (bpos body) . bpos) friends) $
-      void $ stopPlayBack
+      stopPlayBack
 
 -- | Sentences such as \"Dog barks loudly.\".
 actorVerbMU :: MonadClientUI m => ActorId -> Actor -> MU.Part -> m ()
@@ -414,7 +414,7 @@ createActorUI born aid body = do
       -- in-between turns and, e.g., leader's move has not yet been taken
       -- into account.
       modifyClient $ \cli -> cli {scursor = TEnemy aid False}
-    void $ stopPlayBack
+    stopPlayBack
   -- Don't spam if the actor was already visible (but, e.g., on a tile that is
   -- invisible this turn (in that case move is broken down to lose+spot)
   -- or on a distant tile, via teleport while the observer teleported, too).
@@ -773,7 +773,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             let verb = "be now under"
             msgAdd $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
-          void $ stopPlayBack
+          stopPlayBack
         IK.Impress -> return ()
         IK.CallFriend{} -> do
           let verb = if bproj b then "attract" else "call forth"

@@ -65,13 +65,13 @@ type SlideOrCmd a = Either Slideshow a
 
 failWith :: MonadClientUI m => Msg -> m (SlideOrCmd a)
 failWith msg = do
-  void $ stopPlayBack
+  stopPlayBack
   let starMsg = "*" <> msg <> "*"
   assert (not $ T.null msg) $ Left <$> promptToSlideshow starMsg
 
 failSlides :: MonadClientUI m => Slideshow -> m (SlideOrCmd a)
 failSlides slides = do
-  void $ stopPlayBack
+  stopPlayBack
   return $ Left slides
 
 failSer :: MonadClientUI m => ReqFailure -> m (SlideOrCmd a)
@@ -79,7 +79,7 @@ failSer = failWith . showReqFailure
 
 failMsg :: MonadClientUI m => Msg -> m Slideshow
 failMsg msg = do
-  void $ stopPlayBack
+  stopPlayBack
   let starMsg = "*" <> msg <> "*"
   assert (not $ T.null msg) $ promptToSlideshow starMsg
 
