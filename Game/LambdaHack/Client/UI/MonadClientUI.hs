@@ -11,8 +11,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , ColorMode(..)
   , mapStartY, promptGetKey, promptGetInt
   , getInitConfirms, getConfirms, getConfirmsKey
-  , displayFrame, displayDelay, displayActorStart
-  , drawBaseFrame, drawOverlay
+  , displayFrame, displayActorStart, drawBaseFrame, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, stopPlayBackGiveStatus, askConfig, askBinding
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, frontendShutdown
@@ -184,14 +183,9 @@ displayFrame mf = do
         Just fr -> FrontFrame fr
   connFrontend frame
 
-displayDelay :: MonadClientUI m => Int -> m ()
-displayDelay k = connFrontend $ FrontDelay k
-
 -- | Push frames or delays to the frame queue.
--- Insert delays, so that the animations don't look rushed.
 displayActorStart :: MonadClientUI m => Actor -> Frames -> m ()
 displayActorStart b frs = do
-  displayDelay 2
   mapM_ displayFrame frs
   -- Can be different than @blid b@, e.g., when our actor is attacked
   -- on a remote level.

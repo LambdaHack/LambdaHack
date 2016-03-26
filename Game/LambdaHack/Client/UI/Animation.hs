@@ -29,7 +29,7 @@ newtype Animation = Animation [AnimationDiff]
 
 -- | Render animations on top of a screen frame.
 renderAnim :: SingleFrame -> Animation -> Frames
-renderAnim SingleFrame{sfLevel = levelOld, ..} (Animation anim) =
+renderAnim basicFrame@SingleFrame{sfLevel = levelOld, ..} (Animation anim) =
   let modifyFrame :: AnimationDiff -> Maybe SingleFrame
       modifyFrame am =
         let fLine y lineOld =
@@ -48,7 +48,7 @@ renderAnim SingleFrame{sfLevel = levelOld, ..} (Animation anim) =
       modifyFrames (amPrevious, frs) am =
         let frame = if am == amPrevious then Nothing else modifyFrame am
         in (am, frame : frs)
-  in reverse $ snd $ foldl' modifyFrames (EM.empty, []) anim
+  in Just basicFrame : reverse (snd $ foldl' modifyFrames (EM.empty, []) anim)
 
 blank :: Maybe AttrChar
 blank = Nothing
@@ -78,11 +78,8 @@ restrictAnim :: ES.EnumSet Point -> Animation -> Animation
 restrictAnim vis (Animation as) =
   let f imap =
         let common = EM.intersection imap $ EM.fromSet (const ()) vis
-          in if EM.null common then Nothing else Just common
+        in if EM.null common then Nothing else Just common
   in Animation $ mapMaybe f as
-
--- TODO: in all but moveProj duplicate first and/or last frame, if required,
--- since they are no longer duplicated in renderAnim
 
 pushAndDelay :: Animation
 pushAndDelay = Animation [EM.empty]
