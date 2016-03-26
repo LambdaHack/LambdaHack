@@ -613,15 +613,11 @@ goToCursor initialStep run = do
     cursorPos <- cursorToPos
     case cursorPos of
       Nothing -> failWith "crosshair position invalid"
-      Just c | c == bpos b ->
+      Just c | c == bpos b -> do
+        stopPlayBack
         if initialStep
         then return $ Right $ RequestAnyAbility ReqWait
-        else do
-          report <- getsSession sreport
-          if nullReport report
-          then return $ Left mempty
-          -- Mark that the messages are accumulated, not just from last move.
-          else failWith "crosshair now reached"
+        else return $ Left mempty
       Just c -> do
         running <- getsSession srunning
         case running of
