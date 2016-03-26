@@ -231,5 +231,5 @@ fadeOutOrIn out = do
   Level{lxsize, lysize} <- getLevel lid
   animMap <- rndToAction $ fadeout out topRight 2 lxsize lysize
   animFrs <- animate lid animMap
-  mapM_ displayFrame animFrs
+  mapM_ displayFrame $ tail animFrs  -- no basic frame between fadeout and in
   modifySession $ \sess -> sess {sdisplayNeeded = False}
