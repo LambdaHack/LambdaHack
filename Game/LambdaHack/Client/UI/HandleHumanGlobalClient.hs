@@ -910,33 +910,27 @@ settingsMenuHuman cmdAction = do
 gameRestartHuman :: MonadClientUI m
                  => GroupName ModeKind -> m (SlideOrCmd RequestUI)
 gameRestartHuman t = do
-  let restart = do
-        leader <- getLeaderUI
-        snxtDiff <- getsClient snxtDiff
-        Config{configHeroNames} <- askConfig
-        return $ Right
-               $ ReqUIGameRestart leader t snxtDiff configHeroNames
-  let msg = "You just requested a new" <+> tshow t <+> "game."
-  b1 <- displayMore ColorFull msg
-  if not b1 then failWith "never mind"
+  b2 <- displayYesNo ColorBW $
+          "You just requested a new" <+> tshow t
+          <+> "game. The progress of the current game will be lost! Please confirm."
+  msg2 <- rndToAction $ oneOf
+            [ "yea, would be a pity to leave them all to die"
+            , "yea, a shame to get your team stranded" ]
+  if not b2
+  then failWith msg2
   else do
-    b2 <- displayYesNo ColorBW
-            "Current progress will be lost! Really restart the game?"
-    msg2 <- rndToAction $ oneOf
-              [ "yea, would be a pity to leave them all to die"
-              , "yea, a shame to get your own team stranded" ]
-    if not b2 then failWith msg2
-    else restart
+    leader <- getLeaderUI
+    snxtDiff <- getsClient snxtDiff
+    Config{configHeroNames} <- askConfig
+    return $ Right
+           $ ReqUIGameRestart leader t snxtDiff configHeroNames
 
 -- * GameExit; does not take time
 
 gameExitHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 gameExitHuman = do
-  go <- displayYesNo ColorFull "Really save and exit?"
-  if go then do
-    leader <- getLeaderUI
-    return $ Right $ ReqUIGameExit leader
-  else failWith "save and exit canceled"
+  leader <- getLeaderUI
+  return $ Right $ ReqUIGameExit leader
 
 -- * GameSave; does not take time
 
