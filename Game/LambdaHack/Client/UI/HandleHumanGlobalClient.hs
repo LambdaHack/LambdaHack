@@ -910,9 +910,11 @@ settingsMenuHuman cmdAction = do
 gameRestartHuman :: MonadClientUI m
                  => GroupName ModeKind -> m (SlideOrCmd RequestUI)
 gameRestartHuman t = do
+  gameMode <- getGameMode
   b2 <- displayYesNo ColorBW $
           "You just requested a new" <+> tshow t
-          <+> "game. The progress of the current game will be lost! Please confirm."
+          <+> "game. The progress of the current" <+> mname gameMode
+          <+> "game will be lost! Please confirm."
   msg2 <- rndToAction $ oneOf
             [ "yea, would be a pity to leave them all to die"
             , "yea, a shame to get your team stranded" ]
