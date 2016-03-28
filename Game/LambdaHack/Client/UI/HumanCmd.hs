@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Abstract syntax human player commands.
 module Game.LambdaHack.Client.UI.HumanCmd
-  ( CmdCategory(..), HumanCmd(..), Trigger(..)
+  ( CmdCategory(..), CmdArea(..), HumanCmd(..), Trigger(..)
   , noRemoteHumanCmd, categoryDescription, cmdDescription
   ) where
 
@@ -15,6 +15,7 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Actor (verbCStore)
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -42,11 +43,34 @@ categoryDescription CmdInternal = "Internal"
 categoryDescription CmdDebug = "Debug"
 categoryDescription CmdMinimal = "The minimal command set"
 
+data CmdArea =
+    CaMessage
+  | CaMapLeader
+  | CaMapParty
+  | CaMap
+  | CaArenaName
+  | CaXhairDesc
+  | CaSelected
+  | CaLeaderStatus
+  | CaTargetDesc
+  | CaRectangle !(X, Y, X, Y)
+  | CaUnion !CmdArea !CmdArea
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance NFData CmdArea
+
+instance Binary CmdArea
+
 -- | Abstract syntax of player commands.
 data HumanCmd =
+    -- Meta.
+    Macro !Text ![String]
+  | Alias !Text !HumanCmd
+  | ByArea !Text ![(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
+
     -- Global.
     -- These usually take time.
-    Move !Vector
+  | Move !Vector
   | Run !Vector
   | Wait
   | MoveItem ![CStore] !CStore !(Maybe MU.Part) !MU.Part !Bool
@@ -85,8 +109,6 @@ data HumanCmd =
   | Help
   | MainMenu
   | SettingsMenu
-  | Macro !Text ![String]
-  | Alias !Text !HumanCmd
     -- These are mostly related to targeting.
   | MoveCursor !Vector !Int
   | TgtFloor
@@ -138,6 +160,10 @@ noRemoteHumanCmd cmd = case cmd of
 -- | Description of player commands.
 cmdDescription :: HumanCmd -> Text
 cmdDescription cmd = case cmd of
+  Macro t _   -> t
+  Alias t _   -> t
+  ByArea t _  -> t
+
   Move v      -> "move" <+> compassText v
   Run v       -> "run" <+> compassText v
   Wait        -> "wait"
@@ -187,8 +213,6 @@ cmdDescription cmd = case cmd of
   Help        -> "display help"
   MainMenu    -> "display the Main Menu"
   SettingsMenu -> "display the Settings Menu"
-  Macro t _   -> t
-  Alias t _   -> t
 
   MoveCursor v 1 -> "move crosshair" <+> compassText v
   MoveCursor v k ->

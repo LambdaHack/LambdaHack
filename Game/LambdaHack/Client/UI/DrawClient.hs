@@ -241,7 +241,7 @@ drawArenaStatus explored Level{ldepth=AbsDepth ld, ldesc, lseen, lclear} width =
       lvlN = T.justifyLeft 2 ' ' (tshow ld)
       seenStatus = "[" <> seenTxt <+> "seen] "
   in toAttrLine $ T.justifyLeft width ' '
-             $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
+                $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
 
 drawLeaderStatus :: MonadClient m => Int -> Int -> m [Color.AttrChar]
 drawLeaderStatus waitT width = do

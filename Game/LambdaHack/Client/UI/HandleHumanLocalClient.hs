@@ -171,17 +171,15 @@ selectWithPointer = do
   side <- getsClient sside
   ours <- getsState $ filter (not . bproj . snd)
                       . actorAssocs (== side) lidV
-  -- Select even if no space in status line for the actor's symbol.
-  Point{..} <- getsSession spointer
   let viewed = sortBy (comparing keySelected) ours
-  if | not (py == lysize + 2 && px <= length viewed && px >= 0) ->
-         return ()
-     | px == 0 -> do
-         selectNoneHuman
-         stopPlayBack
-     | otherwise -> do
-         selectAidHuman $ fst $ viewed !! (px - 1)
-         stopPlayBack
+  Point{..} <- getsSession spointer
+  let !_A = assert (py == lysize + 2 `blame` (py, lysize + 2)) ()
+  -- Select even if no space in status line for the actor's symbol.
+  if | px == 0 -> selectNoneHuman
+     | otherwise ->
+         case drop (px - 1) viewed of
+           [] -> return ()
+           (aid, _) : _ -> selectAidHuman aid
 
 -- * Repeat
 

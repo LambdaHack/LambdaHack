@@ -33,6 +33,11 @@ cmdHumanSem cmd =
 -- | Compute the basic action for a command and mark whether it takes time.
 cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd RequestUI)
 cmdAction cmd = case cmd of
+  -- Meta.
+  Macro _ kms -> Left <$> macroHuman kms
+  Alias _ cmd2 -> cmdAction cmd2
+  ByArea _ l -> byAreaHuman cmdAction l
+
   -- Global.
   Move v -> fmap ReqUITimed <$> moveRunHuman True True False False v
   Run v -> fmap ReqUITimed <$> moveRunHuman True True True True v
@@ -76,8 +81,6 @@ cmdAction cmd = case cmd of
   MarkVision -> markVisionHuman >> settingsMenuHuman cmdAction
   MarkSmell -> markSmellHuman >> settingsMenuHuman cmdAction
   MarkSuspect -> markSuspectHuman >> settingsMenuHuman cmdAction
-  Macro _ kms -> Left <$> macroHuman kms
-  Alias _ cmd2 -> cmdAction cmd2
 
   MoveCursor v k -> Left <$> moveCursorHuman v k
   TgtFloor -> Left <$> tgtFloorHuman

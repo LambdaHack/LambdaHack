@@ -7,7 +7,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   ( -- * Commands that usually take time
-    moveRunHuman, waitHuman, moveItemHuman, describeItemHuman
+    byAreaHuman, moveRunHuman, waitHuman, moveItemHuman, describeItemHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , runOnceAheadHuman, moveOnceToCursorHuman
   , runOnceToCursorHuman, continueToCursorHuman
@@ -24,7 +24,7 @@ import Prelude.Compat
 import qualified Paths_LambdaHack as Self (version)
 
 import Control.Exception.Assert.Sugar
-import Control.Monad (when)
+import Control.Monad (filterM, liftM2, when)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List (delete, mapAccumL)
@@ -45,7 +45,7 @@ import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Frontend (frontendName)
 import Game.LambdaHack.Client.UI.HandleHelperClient
 import Game.LambdaHack.Client.UI.HandleHumanLocalClient
-import Game.LambdaHack.Client.UI.HumanCmd (Trigger (..))
+import Game.LambdaHack.Client.UI.HumanCmd (CmdArea (..), Trigger (..))
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.UI.InventoryClient
 import Game.LambdaHack.Client.UI.KeyBindings
@@ -77,6 +77,63 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
+
+-- * Pick command by area
+
+-- | Pick command depending on area the mouse pointer is in.
+-- The first matching area is chosen. If none match, only interrupt.
+byAreaHuman :: MonadClientUI m
+            => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
+            -> [(HumanCmd.CmdArea, HumanCmd.HumanCmd)]
+            -> m (SlideOrCmd RequestUI)
+byAreaHuman cmdAction l = do
+  pointer <- getsSession spointer
+  let pointerInArea a = do
+        rs <- areaToRectangles a
+        return $! any (inside pointer) rs
+  cmds <- filterM (pointerInArea . fst) l
+  case cmds of
+    [] -> do
+      stopPlayBack
+      return $ Left mempty
+    (_, cmd) : _ ->
+      cmdAction cmd
+
+areaToRectangles :: MonadClientUI m => HumanCmd.CmdArea -> m [(X, Y, X, Y)]
+areaToRectangles ca = case ca of
+  CaMessage -> return [(0, 0, fst normalLevelBound, 0)]
+  CaMapLeader -> do  -- takes preference over @CaMapParty@ and @CaMap@
+    leader <- getLeaderUI
+    b <- getsState $ getActorBody leader
+    let Point{..} = bpos b
+    return [(px, mapStartY + py, px, mapStartY + py)]
+  CaMapParty -> do  -- takes preference over @CaMap@
+    lidV <- viewedLevel
+    side <- getsClient sside
+    ours <- getsState $ filter (not . bproj . snd)
+                        . actorAssocs (== side) lidV
+    let rectFromB Point{..} = (px, mapStartY + py, px, mapStartY + py)
+    return $! map (rectFromB . bpos . snd) ours
+  CaMap -> return
+    [( 0, mapStartY, fst normalLevelBound, mapStartY + snd normalLevelBound )]
+  CaArenaName -> let y = snd normalLevelBound + 2
+                     x = fst normalLevelBound `div` 2
+                 in return [(0, y, x, y)]
+  CaXhairDesc -> let y = snd normalLevelBound + 2
+                     x = fst normalLevelBound `div` 2 + 2
+                 in return [(x, y, fst normalLevelBound, y)]
+  CaSelected -> let y = snd normalLevelBound + 3
+                    x = fst normalLevelBound `div` 2
+                in return [(0, y, x - 20, y)]  -- TODO
+  CaLeaderStatus -> let y = snd normalLevelBound + 3
+                        x = fst normalLevelBound `div` 2
+                    in return [(x - 19, y, x, y)]
+                      -- TODO: calculate and share with ClientDraw
+  CaTargetDesc -> let y = snd normalLevelBound + 3
+                      x = fst normalLevelBound `div` 2 + 2
+                  in return [(x, y, fst normalLevelBound, y)]
+  CaRectangle r -> return [r]
+  CaUnion ca1 ca2 -> liftM2 (++) (areaToRectangles ca1) (areaToRectangles ca2)
 
 -- * Move and Run
 
