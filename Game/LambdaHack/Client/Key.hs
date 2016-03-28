@@ -3,11 +3,14 @@
 module Game.LambdaHack.Client.Key
   ( Key(..), showKey, handleDir, dirAllKey
   , moveBinding, mkKM, keyTranslate, keyTranslateWeb
-  , Modifier(..), KM(..), toKM, showKM
+  , Modifier(..), KM(..), showKM, elemOrNull
   , escKM, spaceKM, returnKM
   , pgupKM, pgdnKM, upKM, downKM, homeKM, endKM, backspaceKM
   , leftButtonKM, rightButtonKM
   ) where
+
+import Prelude ()
+import Prelude.Compat hiding (Left, Right)
 
 import Control.DeepSeq
 import Control.Exception.Assert.Sugar
@@ -19,7 +22,6 @@ import GHC.Generics (Generic)
 import Prelude hiding (Left, Right)
 
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 
 -- | Frontend-independent datatype to represent keys.
@@ -48,7 +50,7 @@ data Key =
   | RightButtonPress   -- ^ right mouse button pressed
   | Unknown !Text -- ^ an unknown key, registered to warn the user
   | DeadKey
-  deriving (Read, Ord, Eq, Generic)
+  deriving (Ord, Eq, Generic)
 
 instance Binary Key
 
@@ -60,26 +62,26 @@ data Modifier =
   | Shift
   | Control
   | Alt
-  deriving (Show, Read, Ord, Eq, Generic)
+  deriving (Ord, Eq, Generic)
 
 instance Binary Modifier
 
 instance NFData Modifier
 
-data KM = KM { key      :: !Key
-             , modifier :: !Modifier
-             , pointer  :: !(Maybe Point) }
-  deriving (Read, Ord, Eq, Generic)
+data KM = KM { modifier :: !Modifier
+             , key      :: !Key }
+  deriving (Ord, Eq, Generic)
+
+instance Binary KM
 
 instance NFData KM
 
 instance Show KM where
   show = T.unpack . showKM
 
-instance Binary KM
-
-toKM :: Modifier -> Key -> KM
-toKM modifier key = KM{pointer=Nothing, ..}
+elemOrNull :: KM -> [KM] -> Bool
+elemOrNull _ [] = True
+elemOrNull km kms = elem km kms
 
 -- Common and terse names for keys.
 showKey :: Key -> Text
@@ -116,40 +118,40 @@ showKM KM{modifier=Alt, key} = "ALT-" <> showKey key
 showKM KM{modifier=NoModifier, key} = showKey key
 
 escKM :: KM
-escKM = toKM NoModifier Esc
+escKM = KM NoModifier Esc
 
 spaceKM :: KM
-spaceKM = toKM NoModifier Space
+spaceKM = KM NoModifier Space
 
 returnKM :: KM
-returnKM = toKM NoModifier Return
+returnKM = KM NoModifier Return
 
 pgupKM :: KM
-pgupKM = toKM NoModifier PgUp
+pgupKM = KM NoModifier PgUp
 
 pgdnKM :: KM
-pgdnKM = toKM NoModifier PgDn
+pgdnKM = KM NoModifier PgDn
 
 upKM :: KM
-upKM = toKM NoModifier Up
+upKM = KM NoModifier Up
 
 downKM :: KM
-downKM = toKM NoModifier Down
+downKM = KM NoModifier Down
 
 homeKM :: KM
-homeKM = toKM NoModifier Home
+homeKM = KM NoModifier Home
 
 endKM :: KM
-endKM = toKM NoModifier End
+endKM = KM NoModifier End
 
 backspaceKM :: KM
-backspaceKM = toKM NoModifier BackSpace
+backspaceKM = KM NoModifier BackSpace
 
 leftButtonKM :: KM
-leftButtonKM = toKM NoModifier LeftButtonPress
+leftButtonKM = KM NoModifier LeftButtonPress
 
 rightButtonKM :: KM
-rightButtonKM = toKM NoModifier RightButtonPress
+rightButtonKM = KM NoModifier RightButtonPress
 
 dirKeypadKey :: [Key]
 dirKeypadKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
@@ -215,9 +217,9 @@ moveBinding :: Bool -> Bool -> (Vector -> a) -> (Vector -> a)
 moveBinding configVi configLaptop move run =
   let assign f (km, dir) = (km, f dir)
       mapMove modifier keys =
-        map (assign move) (zip (map (toKM modifier) keys) $ cycle moves)
+        map (assign move) (zip (map (KM modifier) keys) $ cycle moves)
       mapRun modifier keys =
-        map (assign run) (zip (map (toKM modifier) keys) $ cycle moves)
+        map (assign run) (zip (map (KM modifier) keys) $ cycle moves)
   in mapMove NoModifier (dirMoveNoModifier configVi configLaptop)
      ++ mapRun NoModifier (dirRunNoModifier configVi configLaptop)
      ++ mapRun Control dirRunControl
@@ -229,10 +231,10 @@ mkKM s = let mkKey sk =
                  Unknown _ -> assert `failure` "unknown key" `twith` s
                  key -> key
          in case s of
-           ('S':'H':'I':'F':'T':'-':rest) -> toKM Shift (mkKey rest)
-           ('C':'T':'R':'L':'-':rest) -> toKM Control (mkKey rest)
-           ('A':'L':'T':'-':rest) -> toKM Alt (mkKey rest)
-           _ -> toKM NoModifier (mkKey s)
+           ('S':'H':'I':'F':'T':'-':rest) -> KM Shift (mkKey rest)
+           ('C':'T':'R':'L':'-':rest) -> KM Control (mkKey rest)
+           ('A':'L':'T':'-':rest) -> KM Alt (mkKey rest)
+           _ -> KM NoModifier (mkKey s)
 
 -- | Translate key from a GTK string description to our internal key type.
 -- To be used, in particular, for the command bindings and macros

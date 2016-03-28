@@ -21,6 +21,7 @@ import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Point
 
 -- | The information that is used across a client playing session,
 -- including many consecutive games in a single session.
@@ -37,7 +38,7 @@ data SessionUI = SessionUI
                                       -- ^ parameters of the current run, if any
   , sreport         :: !Report        -- ^ current messages
   , shistory        :: !History       -- ^ history of messages
-  , slastKM         :: !K.KM          -- ^ last issued key command
+  , spointer        :: !Point         -- ^ mouse pointer position
   , slastRecord     :: !LastRecord    -- ^ state of key sequence recording
   , slastPlay       :: ![K.KM]        -- ^ state of key sequence playback
   , slastLost       :: !(ES.EnumSet ActorId)
@@ -84,7 +85,7 @@ emptySessionUI sconfig =
     , srunning = Nothing
     , sreport = emptyReport
     , shistory = emptyHistory 0
-    , slastKM = K.escKM
+    , spointer = originPoint
     , slastRecord = ([], [], 0)
     , slastPlay = []
     , slastLost = ES.empty
@@ -135,7 +136,7 @@ instance Binary SessionUI where
     sdisplayNeeded <- get
     let schanF = ChanFrontend $ const $ error "Binary: ChanFrontend"
         sbinding = Binding M.empty [] M.empty
-        slastKM = K.escKM
+        spointer = originPoint
         slastRecord = ([], [], 0)
         slastPlay = []
         slastLost = ES.empty

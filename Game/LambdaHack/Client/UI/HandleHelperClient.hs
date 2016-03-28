@@ -20,7 +20,6 @@ import Data.Ord
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.CommonClient
-import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
@@ -121,56 +120,57 @@ pickLeader verbose aid = do
 
 cursorPointerFloor :: MonadClientUI m => Bool -> Bool -> m Slideshow
 cursorPointerFloor verbose addMoreMsg = do
-  km <- getsSession slastKM
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
-  case K.pointer km of
-    Just(Point{..}) | px >= 0 && py - mapStartY >= 0
-                      && px < lxsize && py - mapStartY < lysize -> do
-      let scursor = TPoint lidV $ Point px (py - mapStartY)
-      modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
-      modifyClient $ \cli -> cli {scursor}
-      if verbose then
-        doLook addMoreMsg
-      else do
-        --- Flash the targeting line and path.
-        leader <- getLeaderUI
-        b <- getsState $ getActorBody leader
-        animFrs <- animate (blid b) pushAndDelay
-        displayActorStart b animFrs
-        return mempty
-    _ -> do
-      stopPlayBack
+  Point{..} <- getsSession spointer
+  if px >= 0 && py - mapStartY >= 0
+     && px < lxsize && py - mapStartY < lysize
+  then do
+    let scursor = TPoint lidV $ Point px (py - mapStartY)
+    modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
+    modifyClient $ \cli -> cli {scursor}
+    if verbose then
+      doLook addMoreMsg
+    else do
+      --- Flash the targeting line and path.
+      leader <- getLeaderUI
+      b <- getsState $ getActorBody leader
+      animFrs <- animate (blid b) pushAndDelay
+      displayActorStart b animFrs
       return mempty
+  else do
+    stopPlayBack
+    return mempty
 
 cursorPointerEnemy :: MonadClientUI m => Bool -> Bool -> m Slideshow
 cursorPointerEnemy verbose addMoreMsg = do
-  km <- getsSession slastKM
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
-  case K.pointer km of
-    Just(Point{..}) | px >= 0 && py - mapStartY >= 0
-                      && px < lxsize && py - mapStartY < lysize -> do
-      bsAll <- getsState $ actorAssocs (const True) lidV
-      let newPos = Point px (py - mapStartY)
-          scursor =
-            case find (\(_, m) -> bpos m == newPos) bsAll of
-              Just (im, _) -> TEnemy im True
-              Nothing -> TPoint lidV newPos
-      modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
-      modifyClient $ \cli -> cli {scursor}
-      if verbose then
-        doLook addMoreMsg
-      else do
-        --- Flash the targeting line and path.
-        leader <- getLeaderUI
-        b <- getsState $ getActorBody leader
-        animFrs <- animate (blid b) pushAndDelay
-        displayActorStart b animFrs
-        return mempty
-    _ -> do
-      stopPlayBack
+  Point{..} <- getsSession spointer
+  if px >= 0 && py - mapStartY >= 0
+     && px < lxsize && py - mapStartY < lysize
+  then do
+    bsAll <- getsState $ actorAssocs (const True) lidV
+    let newPos = Point px (py - mapStartY)
+        scursor =
+          case find (\(_, m) -> bpos m == newPos) bsAll of
+            Just (im, _) -> TEnemy im True
+            Nothing -> TPoint lidV newPos
+    modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
+    modifyClient $ \cli -> cli {scursor}
+    if verbose then
+      doLook addMoreMsg
+    else do
+      --- Flash the targeting line and path.
+      leader <- getLeaderUI
+      b <- getsState $ getActorBody leader
+      animFrs <- animate (blid b) pushAndDelay
+      displayActorStart b animFrs
       return mempty
+  else do
+    stopPlayBack
+    return mempty
+
 
 -- | Move the cursor. Assumes targeting mode.
 moveCursorHuman :: MonadClientUI m => Vector -> Int -> m Slideshow

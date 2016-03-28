@@ -3,7 +3,7 @@
 -- using one of the available raw frontends and derived operations.
 module Game.LambdaHack.Client.UI.Frontend
   ( -- * Connection types
-    FrontReq(..), ChanFrontend(..)
+    FrontReq(..), ChanFrontend(..), KMP, kmpKeyMod, kmpPointer
     -- * Re-exported part of the raw frontend
   , frontendName
     -- * Derived operations
@@ -24,6 +24,7 @@ import Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Std as Std
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Common.Point
 
 -- | The instructions sent by clients to the raw frontend.
 data FrontReq :: * -> * where
@@ -32,7 +33,7 @@ data FrontReq :: * -> * where
   FrontDelay :: !Int -> FrontReq ()
     -- ^ perform an explicit delay of the given length
   FrontKey :: { frontKeyKeys  :: ![K.KM]
-              , frontKeyFrame :: !SingleFrame } -> FrontReq K.KM
+              , frontKeyFrame :: !SingleFrame } -> FrontReq KMP
     -- ^ flush frames, display a frame and ask for a keypress
   FrontPressed :: FrontReq Bool
     -- ^ inspect the fkeyPressed MVar
@@ -56,21 +57,18 @@ data FSession = FSession
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
 getKey :: DebugModeCli -> FSession -> RawFrontend -> [K.KM] -> SingleFrame
-       -> IO K.KM
-getKey _sdebugCli _fs rf@RawFrontend{fchanKey} [] frame = do
-  display rf frame
-  STM.atomically $ STM.readTQueue fchanKey
+       -> IO KMP
 getKey sdebugCli fs rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef $ fautoYesRef fs
-  if autoYes && K.spaceKM `elem` keys then do
+  if autoYes && K.spaceKM `K.elemOrNull` keys then do
     display rf frame
-    return K.spaceKM
+    return $! KMP{kmpKeyMod = K.spaceKM, kmpPointer=originPoint}
   else do
     -- Wait until timeout is up, not to skip the last frame of animation.
     display rf frame
-    km <- STM.atomically $ STM.readTQueue fchanKey
-    if km{K.pointer=Nothing} `elem` keys
-    then return km
+    kmp <- STM.atomically $ STM.readTQueue fchanKey
+    if kmpKeyMod kmp `K.elemOrNull` keys
+    then return kmp
     else getKey sdebugCli fs rf keys frame
 
 -- | Read UI requests from the client and send them to the frontend,

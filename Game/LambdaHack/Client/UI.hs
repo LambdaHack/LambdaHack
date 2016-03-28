@@ -106,7 +106,7 @@ humanCommand = do
         abortOrCmd <- do
           -- Look up the key.
           Binding{bcmdMap} <- askBinding
-          case M.lookup km{K.pointer=Nothing} bcmdMap of
+          case km `M.lookup` bcmdMap of
             Just (_, cats, cmd) | CmdMainMenu `notElem` cats
                                   && CmdSettingsMenu `notElem` cats -> do
               -- Query and clear the last command key.

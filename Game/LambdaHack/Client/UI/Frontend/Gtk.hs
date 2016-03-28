@@ -75,17 +75,14 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
         (any (`elem` mods) [Alt, Alt2, Alt3, Alt4, Alt5])
         (any (`elem` mods) [Meta, Super])
   sview `on` keyPressEvent $ do
-    let nextEvent = do
-          n <- eventKeyName
-          mods <- eventModifier
-          let !key = K.keyTranslate $ T.unpack n
-              !modifier =
-                let md = modTranslate mods
-                in if md == K.Shift then K.NoModifier else md
-              !pointer = Nothing
-          return $! K.KM{..}
-    km <- nextEvent
-    liftIO $ saveKM rf km
+    n <- eventKeyName
+    mods <- eventModifier
+    let !key = K.keyTranslate $ T.unpack n
+        !modifier =
+          let md = modTranslate mods
+          in if md == K.Shift then K.NoModifier else md
+        !pointer = originPoint
+    liftIO $ saveKMP rf modifier key pointer
     return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString
@@ -137,9 +134,9 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
             MiddleButton -> K.MiddleButtonPress
             RightButton -> K.RightButtonPress
             _ -> K.LeftButtonPress
-          !pointer = Just $! Point cx cy
+          !pointer = Point cx cy
       -- Store the mouse event coords in the keypress channel.
-      saveKM rf K.KM{..}
+      saveKMP rf modifier key pointer
     return $! but == RightButton  -- not to disable selection
   -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black

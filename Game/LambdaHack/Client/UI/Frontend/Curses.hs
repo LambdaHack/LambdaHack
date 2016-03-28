@@ -22,6 +22,7 @@ import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -55,18 +56,14 @@ startup _sdebugCli = do
   rf <- createRawFrontend (display sess) shutdown
   let storeKeys :: IO ()
       storeKeys = do
-        km <- nextEvent
-        saveKM rf km
+        K.KM{..} <- keyTranslate <$> C.getKey C.refresh
+        saveKMP rf modifier key originPoint
         storeKeys
   void $ async storeKeys
   return $! rf
 
 shutdown :: IO ()
 shutdown = C.end
-
--- | Input key via the frontend.
-nextEvent :: IO K.KM
-nextEvent = keyTranslate <$> C.getKey C.refresh
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data
@@ -104,7 +101,7 @@ display FrontendSession{..} SingleFrame{sfLevel} = do
   C.refresh
 
 keyTranslate :: C.Key -> K.KM
-keyTranslate e = (\(key, modifier) -> K.toKM modifier key) $
+keyTranslate e = (\(key, modifier) -> K.KM modifier key) $
   case e of
     C.KeyChar '\ESC' -> (K.Esc,     K.NoModifier)
     C.KeyExit        -> (K.Esc,     K.NoModifier)

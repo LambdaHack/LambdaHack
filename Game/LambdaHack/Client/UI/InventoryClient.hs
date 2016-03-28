@@ -33,6 +33,7 @@ import Game.LambdaHack.Client.UI.HandleHelperClient
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
@@ -47,7 +48,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
@@ -345,7 +345,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
         Just [] -> assert `failure` brevMap
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
-        [ (K.toKM K.NoModifier $ K.Char '?', DefItemKey
+        [ (K.KM K.NoModifier $ K.Char '?', DefItemKey
            { defLabel = "?"
            , defCond = not (EM.null bag)
            , defAction = \_ -> recCall numPrefix cCur cRest
@@ -355,7 +355,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                IAll -> if EM.null bag then INoSuitable else INoAll
                INoAll -> if suitsEverything then ISuitable else INoSuitable
            })
-        , (K.toKM K.NoModifier $ K.Char '/', DefItemKey
+        , (K.KM K.NoModifier $ K.Char '/', DefItemKey
            { defLabel = "/"
            , defCond = not $ null cRest
            , defAction = \_ -> do
@@ -369,7 +369,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                      [] -> assert `failure` cRest
                recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
            })
-        , (K.toKM K.NoModifier $ K.Char '*', DefItemKey
+        , (K.KM K.NoModifier $ K.Char '*', DefItemKey
            { defLabel = "*"
            , defCond = permitMulitple && not (EM.null multipleSlots)
            , defAction = \_ ->
@@ -400,7 +400,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                                               , slastStore = newStore }
                    recCall numPrefix cCur cRest itemDialogState
            })
-        , let km = revCmd (K.toKM K.NoModifier K.Tab) MemberCycle
+        , let km = revCmd (K.KM K.NoModifier K.Tab) MemberCycle
           in (km, DefItemKey
            { defLabel = K.showKM km
            , defCond = not (cCur == MOwned
@@ -412,7 +412,7 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall numPrefix cCurUpd cRestUpd itemDialogState
            })
-        , let km = revCmd (K.toKM K.NoModifier K.BackTab) MemberBack
+        , let km = revCmd (K.KM K.NoModifier K.BackTab) MemberBack
           in (km, DefItemKey
            { defLabel = K.showKM km
            , defCond = not (cCur == MOwned || autoDun || null hs)
@@ -422,39 +422,39 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall numPrefix cCurUpd cRestUpd itemDialogState
            })
-        , let km = revCmd (K.toKM K.NoModifier (K.KP '/')) TgtFloor
+        , let km = revCmd (K.KM K.NoModifier (K.KP '/')) TgtFloor
           in cursorCmdDef False km tgtFloorHuman
         , let hackyCmd = Alias "" TgtFloor  -- no keypad, but arrows enough
-              km = revCmd (K.toKM K.NoModifier K.RightButtonPress) hackyCmd
+              km = revCmd (K.KM K.NoModifier K.RightButtonPress) hackyCmd
           in cursorCmdDef False km tgtFloorHuman
-        , let km = revCmd (K.toKM K.NoModifier (K.KP '*')) TgtEnemy
+        , let km = revCmd (K.KM K.NoModifier (K.KP '*')) TgtEnemy
           in cursorCmdDef False km tgtEnemyHuman
         , let hackyCmd = Alias "" TgtEnemy  -- no keypad, but arrows enough
-              km = revCmd (K.toKM K.NoModifier K.RightButtonPress) hackyCmd
+              km = revCmd (K.KM K.NoModifier K.RightButtonPress) hackyCmd
           in cursorCmdDef False km tgtEnemyHuman
-        , let km = revCmd (K.toKM K.NoModifier K.BackSpace) TgtClear
+        , let km = revCmd (K.KM K.NoModifier K.BackSpace) TgtClear
           in cursorCmdDef False km tgtClearHuman
         ]
         ++ numberPrefixes
         ++ [ let plusMinus = K.Char $ if b then '+' else '-'
-                 km = revCmd (K.toKM K.NoModifier plusMinus) (EpsIncr b)
+                 km = revCmd (K.KM K.NoModifier plusMinus) (EpsIncr b)
              in cursorCmdDef False km (epsIncrHuman b)
            | b <- [True, False]
            ]
         ++ arrows
         ++ [
-          let km = revCmd (K.toKM K.NoModifier K.MiddleButtonPress)
+          let km = revCmd (K.KM K.NoModifier K.MiddleButtonPress)
                           CursorPointerEnemy
           in cursorCmdDef False km (cursorPointerEnemy False False)
-        , let km = revCmd (K.toKM K.Shift K.MiddleButtonPress)
+        , let km = revCmd (K.KM K.Shift K.MiddleButtonPress)
                           CursorPointerFloor
           in cursorCmdDef False km (cursorPointerFloor False False)
-        , let km = revCmd (K.toKM K.NoModifier K.RightButtonPress)
+        , let km = revCmd (K.KM K.NoModifier K.RightButtonPress)
                           TgtPointerEnemy
           in cursorCmdDef True km (cursorPointerEnemy True True)
         ]
       prefixCmdDef d =
-        (K.toKM K.NoModifier $ K.Char $ Char.intToDigit d, DefItemKey
+        (K.KM K.NoModifier $ K.Char $ Char.intToDigit d, DefItemKey
            { defLabel = ""
            , defCond = True
            , defAction = \_ ->
@@ -639,7 +639,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
              _ -> return ()
            return okm
   case ekm of
-    Left km -> case lookup km{K.pointer=Nothing} keyDefs of
+    Left km -> case km `lookup` keyDefs of
       Just keyDef -> defAction keyDef ekm
       Nothing -> defAction lettersDef ekm  -- pressed; with current prefix
     Right _slot -> defAction lettersDef ekm  -- selected; with the given prefix

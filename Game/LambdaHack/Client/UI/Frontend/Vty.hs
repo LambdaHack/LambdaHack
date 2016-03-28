@@ -17,6 +17,7 @@ import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -35,23 +36,14 @@ startup _sdebugCli = do
   rf <- createRawFrontend (display sess) (Vty.shutdown svty)
   let storeKeys :: IO ()
       storeKeys = do
-        km <- nextEvent0 sess
-        saveKM rf km
+        e <- nextEvent svty  -- blocks here, so no polling
+        case e of
+          EvKey n mods ->
+            saveKMP rf (modTranslate mods) (keyTranslate n) originPoint
+          _ -> return ()
         storeKeys
   void $ async storeKeys
   return $! rf
-
--- | Input key via the frontend.
-nextEvent0 :: FrontendSession -> IO K.KM
-nextEvent0 sess@FrontendSession{svty} = do
-  e <- nextEvent svty  -- blocks here, so no polling
-  case e of
-    EvKey n mods -> do
-      let !key = keyTranslate n
-          !modifier = modTranslate mods
-          !pointer = Nothing
-      return $! K.KM{..}
-    _ -> nextEvent0 sess
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data

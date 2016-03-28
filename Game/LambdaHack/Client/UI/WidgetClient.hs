@@ -54,8 +54,8 @@ displayYesNo :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayYesNo dm prompt = do
   slides <- promptToSlideshow $ prompt <+> yesnoMsg
   -- Two frames drawn total (unless @prompt@ very long).
-  getConfirms dm [K.toKM K.NoModifier (K.Char 'y')]
-                 [K.toKM K.NoModifier (K.Char 'n'), K.escKM] slides
+  getConfirms dm [K.KM K.NoModifier (K.Char 'y')]
+                 [K.KM K.NoModifier (K.Char 'n'), K.escKM] slides
 
 displayChoiceScreen :: forall m . MonadClientUI m
                     => Bool -> Int -> [OKX] -> [K.KM]
@@ -104,16 +104,15 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
                   K.Return | ekm /= Left K.returnKM -> case ekm of
                     Left km -> interpretKey km
                     _ -> return (ekm, pointer)
-                  K.LeftButtonPress -> case K.pointer ikm of
-                    Nothing -> ignoreKey
-                    Just Point{..} ->
-                      let onChoice (_, (cy, cx1, cx2)) =
-                            cy == py && cx1 <= px && cx2 > px
-                      in case find onChoice kyxs of
-                        Nothing -> ignoreKey
-                        Just (ckm, _) -> case ckm of
-                          Left km -> interpretKey km
-                          _ -> return (ckm, pointer)
+                  K.LeftButtonPress -> do
+                    Point{..} <- getsSession spointer
+                    let onChoice (_, (cy, cx1, cx2)) =
+                          cy == py && cx1 <= px && cx2 > px
+                    case find onChoice kyxs of
+                      Nothing -> ignoreKey
+                      Just (ckm, _) -> case ckm of
+                        Left km -> interpretKey km
+                        _ -> return (ckm, pointer)
                   K.Up | pointer == 0 -> page maxIx
                   K.Up -> page (max 0 (pointer - 1))
                   K.Down | pointer == maxIx -> page 0
@@ -129,7 +128,7 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
                     return (Left K.spaceKM, pointer)
                   K.Space ->
                     page (min maxIx (pointer + pageLen - ixOnPage))
-                  _ | ikm{K.pointer=Nothing} `elem` keys ->
+                  _ | ikm `K.elemOrNull` keys ->
                     return (Left ikm, pointer)
                   _ -> assert `failure` "unknown key" `twith` ikm
           pkm <- promptGetKey ov1 sfBlank legalKeys
@@ -156,15 +155,15 @@ describeMainKeys = do
   Config{configVi, configLaptop} <- askConfig
   cursor <- getsClient scursor
   let kmLeftButtonPress = head $
-        M.findWithDefault [K.toKM K.NoModifier K.LeftButtonPress]
+        M.findWithDefault [K.KM K.NoModifier K.LeftButtonPress]
                           macroLeftButtonPress brevMap
       kmEscape = head $
-        M.findWithDefault [K.toKM K.NoModifier K.Esc] Cancel brevMap
+        M.findWithDefault [K.KM K.NoModifier K.Esc] Cancel brevMap
       kmRightButtonPress = head $
-        M.findWithDefault [K.toKM K.NoModifier K.RightButtonPress]
+        M.findWithDefault [K.KM K.NoModifier K.RightButtonPress]
                           TgtPointerEnemy brevMap
       kmReturn = head $
-        M.findWithDefault [K.toKM K.NoModifier K.Return] Accept brevMap
+        M.findWithDefault [K.KM K.NoModifier K.Return] Accept brevMap
       moveKeys | configVi = "hjklyubn, "
                | configLaptop = "uk8o79jl, "
                | otherwise = ""

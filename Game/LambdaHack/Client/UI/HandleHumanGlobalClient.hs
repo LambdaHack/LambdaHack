@@ -428,7 +428,7 @@ alterDirHuman ts = do
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
-      keys = K.escKM : map (K.toKM K.NoModifier)
+      keys = K.escKM : map (K.KM K.NoModifier)
                            (K.dirAllKey configVi configLaptop)
       prompt = makePhrase ["What to", verb1 <> "? [movement key, ESC]"]
   km <- displayChoiceLine prompt mempty keys
@@ -723,8 +723,8 @@ helpHuman cmdAction = do
     displayChoiceScreen True menuIxHelp (fst $ keyHelp keyb) [K.spaceKM]
   modifySession $ \sess -> sess {smenuIxHelp = pointer}
   case ekm of
-    Left km -> case M.lookup km{K.pointer=Nothing} $ bcmdMap keyb of
-      _ | K.key km `elem` [K.Space, K.Esc] -> return $ Left mempty
+    Left km -> case km `M.lookup` bcmdMap keyb of
+      _ | km `K.elemOrNull` [K.spaceKM, K.escKM] -> return $ Left mempty
       Just (_desc, _cats, cmd) -> cmdAction cmd
       Nothing -> failWith "never mind"
     Right _slot -> assert `failure` ekm
@@ -834,7 +834,7 @@ mainMenuHuman cmdAction = do
   (ekm, pointer) <- displayChoiceScreen True menuIxMain [(ov, kyxs)] []
   modifySession $ \sess -> sess {smenuIxMain = pointer}
   case ekm of
-    Left km -> case lookup km{K.pointer=Nothing} kds of
+    Left km -> case km `lookup` kds of
       Just (_desc, cmd) -> cmdAction cmd
       Nothing -> failWith "never mind"
     Right _slot -> assert `failure` ekm
@@ -900,7 +900,7 @@ settingsMenuHuman cmdAction = do
   (ekm, pointer) <- displayChoiceScreen True menuIxSettings [(ov, kyxs)] []
   modifySession $ \sess -> sess {smenuIxSettings = pointer}
   case ekm of
-    Left km -> case lookup km{K.pointer=Nothing} kds of
+    Left km -> case km `lookup` kds of
       Just (_desc, cmd) -> cmdAction cmd
       Nothing -> failWith "never mind"
     Right _slot -> assert `failure` ekm

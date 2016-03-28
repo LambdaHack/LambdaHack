@@ -19,12 +19,12 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -181,7 +181,7 @@ type OKX = (Overlay, [KYX])
 keyOfEKM :: Int -> Either K.KM SlotChar -> Maybe K.KM
 keyOfEKM _ (Left km) = Just km
 keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
-  Just $ K.toKM K.NoModifier $ K.Char slotChar
+  Just $ K.KM K.NoModifier $ K.Char slotChar
 keyOfEKM _ _ = Nothing
 
 -- TODO: assert that ov0 nonempty and perhaps that kxs0 not too short

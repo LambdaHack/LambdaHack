@@ -160,8 +160,6 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
                                   -- until @key@ available in webkit DOM
     when (not $ null quirksN) $ do
       let !key = K.keyTranslateWeb quirksN False
-          !pointer = Nothing
-          !km = K.KM{..}
           _ks = T.unpack (K.showKey key)
       -- liftIO $ do
       --   putStrLn $ "keyId: " ++ keyId
@@ -170,7 +168,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
       --   putStrLn $ "which: " ++ show which
       --   putStrLn $ "keyCode: " ++ show keyCode
       --   putStrLn $ "modifier: " ++ show modifier
-      liftIO $ saveKM rf km
+      liftIO $ saveKMP rf modifier key originPoint
       -- Pass through Ctrl-+ and others, disable Tab.
       when (modifier `elem` [K.NoModifier, K.Shift]) preventDefault
   void $ doc `on` keyPress $ do
@@ -187,10 +185,8 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
             3 {-KEY_LOCATION_NUMPAD-} -> True
             _ -> False
           !key = K.keyTranslateWeb quirksN onKeyPad
-          !pointer = Nothing
           !modifierNoShift =  -- to prevent Shift-!, etc.
             if modifier == K.Shift then K.NoModifier else modifier
-          !km = K.KM{modifier=modifierNoShift, ..}
           _ks = T.unpack (K.showKey key)
       -- liftIO $ do
       --   putStrLn $ "charCode: " ++ show charCode
@@ -199,7 +195,7 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
       --   putStrLn $ "which: " ++ show which
       --   putStrLn $ "keyCode: " ++ show keyCode
       --   putStrLn $ "modifier: " ++ show modifier
-      liftIO $ saveKM rf km
+      liftIO $ saveKMP rf modifierNoShift key originPoint
       -- Pass through Ctrl-+ and others, disable Tab.
       when (modifier `elem` [K.NoModifier, K.Shift]) preventDefault
   -- Handle mouseclicks, per-cell.
@@ -249,12 +245,11 @@ handleMouse rf (cell, (cx, cy)) = do
                 1 -> K.MiddleButtonPress
                 2 -> K.RightButtonPress
                 _ -> K.LeftButtonPress
-              !pointer = Just $! Point cx cy
-              !km = K.KM{..}
+              !pointer = Point cx cy
               _ks = T.unpack (K.showKey key)
           -- liftIO $ putStrLn $ "m: " ++ _ks ++ show modifier ++ show pointer
           -- Store the mouse event coords in the keypress channel.
-          liftIO $ saveKM rf km
+          liftIO $ saveKMP rf modifier key pointer
   void $ cell `on` contextMenu $ do
     saveMouse
     preventDefault

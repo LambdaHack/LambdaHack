@@ -1,7 +1,7 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Frontend.Common
-  ( RawFrontend(..)
-  , startupAsync, startupBound, createRawFrontend, resetChanKey, saveKM
+  ( RawFrontend(..), KMP(..)
+  , startupAsync, startupBound, createRawFrontend, resetChanKey, saveKMP
   , modifierTranslate
   ) where
 
@@ -16,12 +16,16 @@ import Data.Maybe
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Common.Point
+
+data KMP = KMP { kmpKeyMod  :: !K.KM
+               , kmpPointer :: !Point }
 
 data RawFrontend = RawFrontend
   { fdisplay  :: SingleFrame -> IO ()
   , fshutdown :: IO ()
   , fshowNow  :: !(MVar ())
-  , fchanKey  :: !(STM.TQueue K.KM)
+  , fchanKey  :: !(STM.TQueue KMP)
   }
 
 startupAsync :: (MVar RawFrontend -> IO ()) -> IO RawFrontend
@@ -52,18 +56,19 @@ createRawFrontend fdisplay fshutdown = do
     }
 
 -- | Empty the keyboard channel.
-resetChanKey :: STM.TQueue K.KM -> IO ()
+resetChanKey :: STM.TQueue KMP -> IO ()
 resetChanKey fchanKey = do
   res <- STM.atomically $ STM.tryReadTQueue fchanKey
   when (isJust res) $ resetChanKey fchanKey
 
-saveKM :: RawFrontend -> K.KM -> IO ()
-saveKM rf km = do
+saveKMP :: RawFrontend -> K.Modifier -> K.Key -> Point -> IO ()
+saveKMP rf modifier key kmpPointer = do
   -- Instantly show any frame waiting for display.
   void $ tryTakeMVar $ fshowNow rf
-  unless (K.key km == K.DeadKey) $
+  let kmp = KMP{kmpKeyMod = K.KM{..}, kmpPointer}
+  unless (key == K.DeadKey) $
     -- Store the key in the channel.
-    STM.atomically $ STM.writeTQueue (fchanKey rf) km
+    STM.atomically $ STM.writeTQueue (fchanKey rf) kmp
 
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: Bool -> Bool -> Bool -> Bool -> K.Modifier

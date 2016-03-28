@@ -78,14 +78,21 @@ connFrontend req = do
   ChanFrontend f <- getsSession schanF
   liftIO $ f req
 
+-- | Write 'FrontKey' UI request to the frontend, read the reply,
+-- set pointer, return key.
+connFrontendFrontKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
+connFrontendFrontKey frontKeyKeys frontKeyFrame = do
+  ChanFrontend f <- getsSession schanF
+  kmp <- liftIO $ f FrontKey{..}
+  modifySession $ \sess -> sess {spointer = kmpPointer kmp}
+  return $! kmpKeyMod kmp
+
 promptGetKey :: MonadClientUI m => Overlay -> Bool -> [K.KM] -> m K.KM
 promptGetKey ov sfBlank frontKeyKeys = do
   keyPressed <- anyKeyPressed
   lastPlayOld <- getsSession slastPlay
   km <- case lastPlayOld of
-    km : kms | not keyPressed
-               && (null frontKeyKeys
-                   || km{K.pointer=Nothing} `elem` frontKeyKeys) -> do
+    km : kms | not keyPressed && km `K.elemOrNull` frontKeyKeys -> do
       frontKeyFrame <- drawOverlay ColorFull sfBlank ov
       displayFrame $ Just frontKeyFrame
       modifySession $ \sess -> sess {slastPlay = kms}
@@ -98,9 +105,7 @@ promptGetKey ov sfBlank frontKeyKeys = do
                return $! toOverlay ["*interrupted*"] <> ov
              else return ov
       frontKeyFrame <- drawOverlay ColorFull sfBlank ov2
-      km <- connFrontend FrontKey{..}
-      modifySession $ \sess -> sess {slastKM = km}
-      return km
+      connFrontendFrontKey frontKeyKeys frontKeyFrame
   (seqCurrent, seqPrevious, k) <- getsSession slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)
   modifySession $ \sess -> sess { slastRecord
@@ -112,9 +117,9 @@ promptGetInt frontKeyFrame = do
   -- We assume this is used inside a menu, so delays and cutoffs
   -- are already taken care of.
   let frontKeyKeys = K.escKM : K.returnKM : K.backspaceKM
-                     : map (K.toKM K.NoModifier)
+                     : map (K.KM K.NoModifier)
                          (map (K.Char . Char.intToDigit) [0..9])
-  connFrontend FrontKey{..}
+  connFrontendFrontKey frontKeyKeys frontKeyFrame
 
 -- | Display a slideshow, awaiting confirmation for each slide
 -- or not awaiting at all if there is only one.
@@ -134,7 +139,7 @@ getConfirms :: MonadClientUI m
             => ColorMode -> [K.KM] -> [K.KM] -> Slideshow -> m Bool
 getConfirms dm trueKeys falseKeys slides = do
   km <- getConfirmsKey dm (trueKeys ++ falseKeys) slides
-  return $! km `elem` trueKeys
+  return $! km `K.elemOrNull` trueKeys
 
 -- | Display a slideshow, awaiting confirmation for each slide
 -- and returning a key.
@@ -151,11 +156,11 @@ getConfirmsKey dm extraKeys slides = do
           km@K.KM{..} <- getConfirmGeneric keys x
           case key of
             -- Sapce enabled *only if* in @extraKeys@.
-            K.Space | km `elem` extraKeys -> case xs of
+            K.Space | km `K.elemOrNull` extraKeys -> case xs of
               -- If Space permitted, only exits at the end of slideshow.
               [] -> return km
               _ -> displayFrs xs (x : srf)
-            _ | km `elem` extraKeys -> return km
+            _ | km `K.elemOrNull` extraKeys -> return km
             -- Other scrolling keys enabled *unless* in @extraKeys@.
             K.Home -> displayFrs frontSlides []
             K.End -> case reverse frontSlides of
@@ -174,7 +179,7 @@ getConfirmGeneric :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 getConfirmGeneric clearKeys frontKeyFrame = do
   let extraKeys = [K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM]
       frontKeyKeys = clearKeys ++ extraKeys
-  connFrontend FrontKey {..}
+  connFrontendFrontKey frontKeyKeys frontKeyFrame
 
 displayFrame :: MonadClientUI m => Maybe SingleFrame -> m ()
 displayFrame mf = do

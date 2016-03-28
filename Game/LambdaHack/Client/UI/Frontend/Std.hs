@@ -14,6 +14,7 @@ import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.Point
 
 -- No session data maintained by this frontend
 
@@ -27,23 +28,18 @@ startup _sdebugCli = do
   rf <- createRawFrontend display shutdown
   let storeKeys :: IO ()
       storeKeys = do
-        km <- nextEvent  -- blocks here, so no polling
-        saveKM rf km
+        l <- BS.hGetLine SIO.stdin  -- blocks here, so no polling
+        let c = case BS.uncons l of
+              Nothing -> '\n'  -- empty line counts as RET
+              Just (hd, _) -> hd
+            K.KM{..} = keyTranslate c
+        saveKMP rf modifier key originPoint
         storeKeys
   void $ async storeKeys
   return $! rf
 
 shutdown :: IO ()
 shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
-
--- | Input key via the frontend.
-nextEvent :: IO K.KM
-nextEvent = do
-  l <- BS.hGetLine SIO.stdin
-  let c = case BS.uncons l of
-        Nothing -> '\n'  -- empty line counts as RET
-        Just (hd, _) -> hd
-  return $! keyTranslate c
 
 -- | Output to the screen via the frontend.
 display :: SingleFrame  -- ^ the screen frame to draw
@@ -53,7 +49,7 @@ display SingleFrame{sfLevel} =
   in mapM_ BS.putStrLn bs
 
 keyTranslate :: Char -> K.KM
-keyTranslate e = (\(key, modifier) -> K.toKM modifier key) $
+keyTranslate e = (\(key, modifier) -> K.KM modifier key) $
   case e of
     '\ESC' -> (K.Esc,     K.NoModifier)
     '\n'   -> (K.Return,  K.NoModifier)

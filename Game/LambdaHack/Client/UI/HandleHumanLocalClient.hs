@@ -166,22 +166,22 @@ stopIfTgtModeHuman = do
 
 selectWithPointer:: MonadClientUI m => m ()
 selectWithPointer = do
-  km <- getsSession slastKM
   lidV <- viewedLevel
   Level{lysize} <- getLevel lidV
   side <- getsClient sside
   ours <- getsState $ filter (not . bproj . snd)
                       . actorAssocs (== side) lidV
   -- Select even if no space in status line for the actor's symbol.
+  Point{..} <- getsSession spointer
   let viewed = sortBy (comparing keySelected) ours
-  case K.pointer km of
-    Just(Point{..}) | py == lysize + 2 && px <= length viewed && px >= 0 -> do
-      if px == 0 then
-        selectNoneHuman
-      else
-        selectAidHuman $ fst $ viewed !! (px - 1)
-      stopPlayBack
-    _ -> return ()
+  if | not (py == lysize + 2 && px <= length viewed && px >= 0) ->
+         return ()
+     | px == 0 -> do
+         selectNoneHuman
+         stopPlayBack
+     | otherwise -> do
+         selectAidHuman $ fst $ viewed !! (px - 1)
+         stopPlayBack
 
 -- * Repeat
 
@@ -245,7 +245,7 @@ historyHuman = do
           displayChoiceScreen True menuIxHistory okxs [K.spaceKM, K.escKM]
         modifySession $ \sess -> sess {smenuIxHistory = pointer}
         case ekm of
-          Left km | km `elem` [K.spaceKM, K.escKM] -> return ()
+          Left km | km `K.elemOrNull` [K.spaceKM, K.escKM] -> return ()
           Right slot | slot == dummySlot -> displayOneReport pointer
           _ -> assert `failure` ekm
       displayOneReport pointer = do
