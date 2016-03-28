@@ -3,6 +3,7 @@
 module Game.LambdaHack.Common.Point
   ( X, Y, Point(..), maxLevelDimExponent
   , chessDist, euclidDistSq, adjacent, inside, bla, fromTo
+  , originPoint
   ) where
 
 import Control.DeepSeq
@@ -140,3 +141,6 @@ fromTo (Point x0 y0) (Point x1 y1) =
        | otherwise = assert `failure` "diagonal fromTo"
                             `twith` ((x0, y0), (x1, y1))
  in result
+
+originPoint :: Point
+originPoint = Point 0 0

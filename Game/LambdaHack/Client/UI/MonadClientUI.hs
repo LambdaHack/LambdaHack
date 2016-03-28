@@ -198,7 +198,7 @@ drawBaseFrame dm lid = do
   mleader <- getsClient _sleader
   tgtPos <- leaderTgtToPos
   cursorPos <- cursorToPos
-  let anyPos = fromMaybe (Point 0 0) cursorPos
+  let anyPos = fromMaybe originPoint cursorPos
         -- if cursor invalid, e.g., on a wrong level; @draw@ ignores it later on
       pathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader

@@ -101,7 +101,7 @@ getCacheBfs aid = do
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
     Just (True, bfs, _, _, _) -> return bfs
-    _ -> fst <$> getCacheBfsAndPath aid (Point 0 0)
+    _ -> fst <$> getCacheBfsAndPath aid originPoint
       -- @undefined@ here crashes, because it's used to invalidate cache,
       -- but the paths is not computed, until needed (unlikely at (0, 0))
 

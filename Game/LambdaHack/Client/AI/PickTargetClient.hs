@@ -210,7 +210,7 @@ targetStrategy aid = do
                               , if length path == 1
                                 then Nothing
                                 else Just (path, (last path, length path - 1)) )
-                          oldpos = fromMaybe (Point 0 0) (boldpos b)
+                          oldpos = fromMaybe originPoint (boldpos b)
                           vOld = bpos b `vectorToFrom` oldpos
                           pNew = shiftBounded lxsize lysize (bpos b) vOld
                       if slackTactic && not isStuck

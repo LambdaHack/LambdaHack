@@ -999,7 +999,7 @@ sendFlyingVector :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> Maybe Bool -> m Vector
 sendFlyingVector source target modePush = do
   sb <- getsState $ getActorBody source
-  let boldpos_sb = fromMaybe (Point 0 0) (boldpos sb)
+  let boldpos_sb = fromMaybe originPoint (boldpos sb)
   if source == target then
     if boldpos_sb == bpos sb then rndToAction $ do
       z <- randomR (-10, 10)
