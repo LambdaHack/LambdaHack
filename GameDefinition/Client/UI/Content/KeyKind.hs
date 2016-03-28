@@ -11,6 +11,10 @@ import Game.LambdaHack.Common.Misc
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.TileKind as TK
 
+-- | Description of default key-command bindings.
+--
+-- In addition to these commands, mouse and keys have a standard meaning
+-- when navigating various menus.
 standardKeys :: KeyKind
 standardKeys = KeyKind
   { rhumanCommands = map (first K.mkKM)
@@ -174,13 +178,12 @@ standardKeys = KeyKind
       , ("apostrophe", ([CmdMeta], Record))
 
       -- Mouse
-      , ("LeftButtonPress",
-         ([CmdMouse], macroLeftButtonPress))
-      , ("SHIFT-LeftButtonPress",
-         ([CmdMouse], macroShiftLeftButtonPress))
-      , ("MiddleButtonPress", ([CmdMouse], CursorPointerEnemy))
-      , ("SHIFT-MiddleButtonPress", ([CmdMouse], CursorPointerFloor))
-      , ("RightButtonPress", ([CmdMouse], TgtPointerEnemy))
+      , ("LeftButtonPress", ([CmdMouse], defaultCmdLMB))
+      , ("SHIFT-LeftButtonPress", ([CmdMouse], defaultCmdShiftLMB))
+      , ("MiddleButtonPress", ([CmdMouse], defaultCmdMMB))
+      , ("SHIFT-MiddleButtonPress", ([CmdMouse], defaultCmdShiftMMB))
+      , ("RightButtonPress", ([CmdMouse], defaultCmdRMB))
+      , ("SHIFT-RightButtonPress", ([CmdMouse], defaultCmdShiftRMB))
 
       -- Debug and others not to display in help screens
       , ("CTRL-S", ([CmdDebug], GameSave))
@@ -188,10 +191,9 @@ standardKeys = KeyKind
       , ("CTRL-colon", ([CmdInternal], RunOnceToCursor))
       , ("CTRL-period", ([CmdInternal], ContinueToCursor))
       , ("CTRL-comma", ([CmdInternal], RunOnceAhead))
-      , ("CTRL-LeftButtonPress",
-         ([CmdInternal], Alias "" macroShiftLeftButtonPress))
-      , ("CTRL-MiddleButtonPress",
-         ([CmdInternal], Alias "" CursorPointerFloor))
+      , ("CTRL-LeftButtonPress", ([CmdInternal], defaultCmdShiftLMB))
+      , ("CTRL-MiddleButtonPress", ([CmdInternal], defaultCmdShiftMMB))
+      , ("CTRL-RightButtonPress", ([CmdInternal], defaultCmdShiftRMB))
       , ("ALT-space", ([CmdInternal], StopIfTgtMode))
       , ("ALT-minus", ([CmdInternal], SelectWithPointer))
      ]

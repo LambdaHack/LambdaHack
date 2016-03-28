@@ -156,7 +156,7 @@ describeMainKeys = do
   cursor <- getsClient scursor
   let kmLeftButtonPress = head $
         M.findWithDefault [K.KM K.NoModifier K.LeftButtonPress]
-                          macroLeftButtonPress brevMap
+                          defaultCmdLMB brevMap
       kmEscape = head $
         M.findWithDefault [K.KM K.NoModifier K.Esc] Cancel brevMap
       kmRightButtonPress = head $
