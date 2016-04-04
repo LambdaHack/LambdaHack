@@ -37,6 +37,8 @@ cmdAction cmd = case cmd of
   Macro _ kms -> Left <$> macroHuman kms
   Alias _ cmd2 -> cmdAction cmd2
   ByArea _ l -> byAreaHuman cmdAction l
+  ByMode _ cmdNormal cmdAiming ->
+    byModeHuman (cmdAction cmdNormal) (cmdAction cmdAiming)
 
   -- Global.
   Move v -> fmap ReqUITimed <$> moveRunHuman True True False False v

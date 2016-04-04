@@ -7,7 +7,8 @@
 -- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   ( -- * Commands that usually take time
-    byAreaHuman, moveRunHuman, waitHuman, moveItemHuman, describeItemHuman
+    byAreaHuman, byModeHuman, moveRunHuman, waitHuman
+  , moveItemHuman, describeItemHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , runOnceAheadHuman, moveOnceToCursorHuman
   , runOnceToCursorHuman, continueToCursorHuman
@@ -134,6 +135,15 @@ areaToRectangles ca = case ca of
                   in return [(x, y, fst normalLevelBound, y)]
   CaRectangle r -> return [r]
   CaUnion ca1 ca2 -> liftM2 (++) (areaToRectangles ca1) (areaToRectangles ca2)
+
+-- * Pick command by mode
+
+byModeHuman :: MonadClientUI m
+            => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
+            -> m (SlideOrCmd RequestUI)
+byModeHuman cmdNormalM cmdAimingM = do
+  tgtMode <- getsSession stgtMode
+  if isJust tgtMode then cmdAimingM else cmdNormalM
 
 -- * Move and Run
 
