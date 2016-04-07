@@ -94,12 +94,12 @@ data HumanCmd =
     -- Below this line, commands do not notify the server.
   | GameDifficultyIncr
   | PickLeader !Int
+  | PickLeaderWithPointer
   | MemberCycle
   | MemberBack
   | SelectActor
   | SelectNone
   | Clear
-  | StopIfTgtMode
   | SelectWithPointer
   | Repeat !Int
   | Record
@@ -198,13 +198,13 @@ cmdDescription cmd = case cmd of
   GameDifficultyIncr -> "cycle next difficulty"
 
   PickLeader{} -> "pick leader"
+  PickLeaderWithPointer -> "pick leader with mouse pointer"
   MemberCycle -> "cycle among party members on the level"
   MemberBack  -> "cycle among all party members"
   SelectActor -> "select (or deselect) a party member"
   SelectNone  -> "deselect (or select) all on the level"
   Clear       -> "clear messages"
-  StopIfTgtMode -> "stop playback if in aiming mode"
-  SelectWithPointer -> "select actors if pointer over actor list"
+  SelectWithPointer -> "select actors with mouse pointer"
   Repeat 1    -> "voice again the recorded commands"
   Repeat n    -> "voice the recorded commands" <+> tshow n <+> "times"
   Record      -> "start recording commands"

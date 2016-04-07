@@ -17,7 +17,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- when navigating various menus.
 standardKeys :: KeyKind
 standardKeys = KeyKind
-  { rhumanCommands = map (first K.mkKM)
+  { rhumanCommands = map (first K.mkKM) $
       -- All commands are defined here, except some movement and leader picking
       -- commands. All commands are shown on help screens except debug commands
       -- and macros with empty descriptions.
@@ -178,12 +178,12 @@ standardKeys = KeyKind
       , ("apostrophe", ([CmdMeta], Record))
 
       -- Mouse
+      -- Doubleclick acts as RMB and modifiers as MMB, which is optional.
       , ("LeftButtonPress", ([CmdMouse], defaultCmdLMB))
-      , ("SHIFT-LeftButtonPress", ([CmdMouse], defaultCmdShiftLMB))
+      , ("SHIFT-LeftButtonPress", ([CmdInternal], defaultCmdMMB))
+      , ("CTRL-LeftButtonPress", ([CmdInternal], defaultCmdMMB))
       , ("MiddleButtonPress", ([CmdMouse], defaultCmdMMB))
-      , ("SHIFT-MiddleButtonPress", ([CmdMouse], defaultCmdShiftMMB))
       , ("RightButtonPress", ([CmdMouse], defaultCmdRMB))
-      , ("SHIFT-RightButtonPress", ([CmdMouse], defaultCmdShiftRMB))
 
       -- Debug and others not to display in help screens
       , ("CTRL-S", ([CmdDebug], GameSave))
@@ -191,10 +191,6 @@ standardKeys = KeyKind
       , ("CTRL-colon", ([CmdInternal], RunOnceToCursor))
       , ("CTRL-period", ([CmdInternal], ContinueToCursor))
       , ("CTRL-comma", ([CmdInternal], RunOnceAhead))
-      , ("CTRL-LeftButtonPress", ([CmdInternal], defaultCmdShiftLMB))
-      , ("CTRL-MiddleButtonPress", ([CmdInternal], defaultCmdShiftMMB))
-      , ("CTRL-RightButtonPress", ([CmdInternal], defaultCmdShiftRMB))
-      , ("ALT-space", ([CmdInternal], StopIfTgtMode))
-      , ("ALT-minus", ([CmdInternal], SelectWithPointer))
-     ]
+      ]
+      ++ map defaultHeroSelect [0..6]
   }

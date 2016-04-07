@@ -6,7 +6,6 @@ module Game.LambdaHack.Client.UI.KeyBindings
 
 import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
-import qualified Data.Char as Char
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
@@ -36,9 +35,7 @@ stdBinding :: KeyKind  -- ^ default key bindings from the content
            -> Config   -- ^ game config
            -> Binding  -- ^ concrete binding
 stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
-  let heroSelect k = ( K.KM K.NoModifier (K.Char (Char.intToDigit k))
-                     , ([CmdMeta], PickLeader k) )
-      cmdWithHelp = rhumanCommands copsClient ++ configCommands
+  let cmdWithHelp = rhumanCommands copsClient ++ configCommands
       cmdAll =
         cmdWithHelp
         ++ [ (K.mkKM "KP_Begin", ([CmdMove], Wait))
@@ -54,7 +51,6 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
                  [])
         ++ K.moveBinding configVi configLaptop (\v -> ([CmdMove], Move v))
                                                (\v -> ([CmdMove], Run v))
-        ++ fmap heroSelect [0..6]
       mkDescribed (cats, cmd) = (cmdDescription cmd, cats, cmd)
   in Binding
   { bcmdMap = M.fromList $ map (second mkDescribed) cmdAll

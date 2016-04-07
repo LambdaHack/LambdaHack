@@ -70,12 +70,12 @@ cmdAction cmd = case cmd of
 
   -- Local.
   PickLeader k -> Left <$> pickLeaderHuman k
+  PickLeaderWithPointer -> Left <$> pickLeaderWithPointerHuman
   MemberCycle -> Left <$> memberCycleHuman
   MemberBack -> Left <$> memberBackHuman
   SelectActor -> addNoSlides selectActorHuman
   SelectNone -> addNoSlides selectNoneHuman
   Clear -> addNoSlides clearHuman
-  StopIfTgtMode -> addNoSlides stopIfTgtModeHuman
   SelectWithPointer -> addNoSlides selectWithPointer
   Repeat n -> addNoSlides $ repeatHuman n
   Record -> Left <$> recordHuman

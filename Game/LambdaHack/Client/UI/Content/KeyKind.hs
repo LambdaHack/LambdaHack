@@ -1,13 +1,15 @@
 -- | The type of key-command mappings to be used for the UI.
 module Game.LambdaHack.Client.UI.Content.KeyKind
   ( KeyKind(..)
-  , defaultCmdLMB, defaultCmdShiftLMB
-  , defaultCmdMMB, defaultCmdShiftMMB
-  , defaultCmdRMB, defaultCmdShiftRMB
+  , defaultCmdLMB, defaultCmdMMB, defaultCmdRMB
+  , defaultHeroSelect
   ) where
+
+import qualified Data.Char as Char
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.HumanCmd
+import Game.LambdaHack.Common.Misc
 
 -- | Key-command mappings to be used for the UI.
 data KeyKind = KeyKind
@@ -17,26 +19,44 @@ data KeyKind = KeyKind
 
 defaultCmdLMB :: HumanCmd
 defaultCmdLMB =
-  Macro "go to pointer for 100 steps"
-        [ "ALT-space", "ALT-minus"
-        , "SHIFT-MiddleButtonPress", "CTRL-semicolon"
-        , "CTRL-period", "V" ]
-
-defaultCmdShiftLMB :: HumanCmd
-defaultCmdShiftLMB =
-  Macro "run collectively to pointer for 100 steps"
-        [ "ALT-space"
-        , "SHIFT-MiddleButtonPress", "CTRL-colon"
-        , "CTRL-period", "V" ]
+  ByMode "go to pointer for 100 steps"
+    (ByArea "normal mode" $ common ++
+       [ (CaMapParty, PickLeaderWithPointer)
+       , (CaMap, Macro ""
+            ["MiddleButtonPress", "CTRL-semicolon", "CTRL-period", "V"]) ])
+    (ByArea "aiming mode" $ common ++
+       [ (CaMap, TgtPointerEnemy) ])
+ where
+  common =
+    [ (CaMessage, History)
+    , (CaMapLeader, Macro "" ["g"])
+    , (CaArenaName, Cancel)
+    , (CaXhairDesc, TgtEnemy)  -- inits aiming and then cycles enemies
+    , (CaSelected, PickLeaderWithPointer)
+    , (CaLeaderStatus, DescribeItem (MStore COrgan))
+    , (CaTargetDesc, TgtFloor) ]  -- inits aiming and then cycles aim mode
 
 defaultCmdMMB :: HumanCmd
-defaultCmdMMB = CursorPointerEnemy
-
-defaultCmdShiftMMB :: HumanCmd
-defaultCmdShiftMMB = CursorPointerFloor
+defaultCmdMMB = CursorPointerFloor
 
 defaultCmdRMB :: HumanCmd
-defaultCmdRMB = TgtPointerEnemy
+defaultCmdRMB =
+  ByMode "run collectively to pointer for 100 steps"
+    (ByArea "normal mode" $ common ++
+       [ (CaMapParty, SelectWithPointer)
+       , (CaMap, Macro ""
+            ["MiddleButtonPress", "CTRL-colon", "CTRL-period", "V"]) ])
+    (ByArea "aiming mode" $ common ++
+       [ (CaMap, CursorPointerEnemy) ])
+ where
+  common =
+    [ (CaMessage, Macro "" ["R"])
+    , (CaMapLeader, Macro "" ["a"])
+    , (CaArenaName, Accept)
+    , (CaXhairDesc, TgtEnemy)  -- inits aiming and then cycles enemies
+    , (CaSelected, SelectWithPointer)
+    , (CaLeaderStatus, DescribeItem MStats)
+    , (CaTargetDesc, TgtFloor) ]  -- inits aiming and then cycles aim mode
 
-defaultCmdShiftRMB :: HumanCmd
-defaultCmdShiftRMB = TgtPointerEnemy
+defaultHeroSelect :: Int -> (String, ([CmdCategory], HumanCmd))
+defaultHeroSelect k = ([Char.intToDigit k], ([CmdMeta], PickLeader k))

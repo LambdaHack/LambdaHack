@@ -4,9 +4,10 @@
 module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   ( -- * Assorted commands
     gameDifficultyIncr
-  , pickLeaderHuman, memberCycleHuman, memberBackHuman
+  , pickLeaderHuman, pickLeaderWithPointerHuman
+  , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, clearHuman
-  , stopIfTgtModeHuman, selectWithPointer, repeatHuman, recordHuman
+  , selectWithPointer, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
   , macroHuman
     -- * Commands specific to targeting
@@ -22,7 +23,6 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
-import Data.Maybe
 import Data.Monoid
 import Data.Ord
 import qualified Data.Text as T
@@ -95,6 +95,39 @@ pickLeaderHuman k = do
           void $ pickLeader True aid
           return mempty
 
+-- * PickLeaderWithPointer
+
+pickLeaderWithPointerHuman :: MonadClientUI m => m Slideshow
+pickLeaderWithPointerHuman = do
+  lidV <- viewedLevel
+  Level{lysize} <- getLevel lidV
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  arena <- getArenaUI
+  ours <- getsState $ filter (not . bproj . snd)
+                      . actorAssocs (== side) lidV
+  let viewed = sortBy (comparing keySelected) ours
+      (autoDun, autoLvl) = autoDungeonLevel fact
+      pick (aid, b) =
+        if | blid b /= arena && autoDun ->
+               failMsg $ showReqFailure NoChangeDunLeader
+           | autoLvl ->
+               failMsg $ showReqFailure NoChangeLvlLeader
+           | otherwise -> do
+               void $ pickLeader True aid
+               return mempty
+  Point{..} <- getsSession spointer
+  -- Pick even if no space in status line for the actor's symbol.
+  if | py == lysize + 2 && px == 0 -> memberBackHuman
+     | py == lysize + 2 ->
+         case drop (px - 1) viewed of
+           [] -> return mempty  -- relaxed, due to subtleties of selected display
+           aidb : _ -> pick aidb
+     | otherwise ->
+         case find (\(_, b) -> bpos b == Point px py) ours of
+           Nothing -> assert `failure` (px, py, lysize + 2)
+           Just aidb -> pick aidb
+
 -- * MemberCycle
 
 -- | Switches current member to the next on the level, if any, wrapping.
@@ -154,14 +187,6 @@ selectNoneHuman = do
 clearHuman :: Monad m => m ()
 clearHuman = return ()
 
--- * StopIfTgtMode
-
-stopIfTgtModeHuman :: MonadClientUI m => m ()
-stopIfTgtModeHuman = do
-  tgtMode <- getsSession stgtMode
-  when (isJust tgtMode) $
-    stopPlayBack
-
 -- * SelectWithPointer
 
 selectWithPointer:: MonadClientUI m => m ()
@@ -173,13 +198,16 @@ selectWithPointer = do
                       . actorAssocs (== side) lidV
   let viewed = sortBy (comparing keySelected) ours
   Point{..} <- getsSession spointer
-  let !_A = assert (py == lysize + 2 `blame` (py, lysize + 2)) ()
   -- Select even if no space in status line for the actor's symbol.
-  if | px == 0 -> selectNoneHuman
-     | otherwise ->
+  if | py == lysize + 2 && px == 0 -> selectNoneHuman
+     | py == lysize + 2 ->
          case drop (px - 1) viewed of
-           [] -> return ()
+           [] -> return ()  -- relaxed, due to subtleties of selected display
            (aid, _) : _ -> selectAidHuman aid
+     | otherwise ->
+         case find (\(_, b) -> bpos b == Point px py) ours of
+           Nothing -> assert `failure` (px, py, lysize + 2)
+           Just (aid, _) -> selectAidHuman aid
 
 -- * Repeat
 
