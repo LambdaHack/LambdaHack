@@ -257,9 +257,9 @@ pickWeaponClient source target = do
   sb <- getsState $ getActorBody source
   localTime <- getsState $ getLocalTime (blid sb)
   let allAssocs = eqpAssocs ++ bodyAssocs
-      calm10 = calmEnough10 sb $ map snd allAssocs
+      calmE = calmEnough sb $ map snd allAssocs
       forced = assert (not $ bproj sb) False
-      permitted = permittedPrecious calm10 forced
+      permitted = permittedPrecious calmE forced
       preferredPrecious = either (const False) id . permitted
       strongest = strongestMelee True localTime allAssocs
       strongestPreferred = filter (preferredPrecious . snd . snd) strongest

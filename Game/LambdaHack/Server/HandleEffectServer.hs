@@ -461,7 +461,7 @@ effectCallFriend execSfx nDm source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   activeItems <- activeItemsServer target
-  if not $ hpEnough10 tb activeItems then do
+  if not $ hpEnough tb activeItems then do
     unless (bproj tb) $ do
       let subject = partActor tb
           verb = "lack enough HP to call aid"
@@ -493,7 +493,7 @@ effectSummon execSfx actorFreq nDm source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   activeItems <- activeItemsServer target
-  if not $ calmEnough10 tb activeItems then do
+  if not $ calmEnough tb activeItems then do
     unless (bproj tb) $ do
       let subject = partActor tb
           verb = "lack enough Calm to summon"

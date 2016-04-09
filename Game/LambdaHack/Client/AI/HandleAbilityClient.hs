@@ -484,9 +484,9 @@ unneeded cops condAnyFoeAdj condLightBetrays
   || hinders condAnyFoeAdj condLightBetrays
              condTgtEnemyPresent condNotCalmEnough
              body activeItems itemFull
-  || let calm10 = calmEnough10 body activeItems  -- unneeded risk
+  || let calmE = calmEnough body activeItems  -- unneeded risk
          itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
-     in itemLit && not calm10
+     in itemLit && not calmE
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))

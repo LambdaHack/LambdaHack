@@ -456,9 +456,9 @@ pickWeaponServer source = do
   -- For projectiles we need to accept even items without any effect,
   -- so that the projectile dissapears and "No effect" feedback is produced.
   let allAssocs = eqpAssocs ++ bodyAssocs
-      calm10 = calmEnough10 sb $ map snd allAssocs
+      calmE = calmEnough sb $ map snd allAssocs
       forced = bproj sb
-      permitted = permittedPrecious calm10 forced
+      permitted = permittedPrecious calmE forced
       legalPrecious = either (const False) (const True) . permitted
       preferredPrecious = either (const False) id . permitted
       strongest = strongestMelee True localTime allAssocs

@@ -193,9 +193,9 @@ showReqFailure reqFailure = case reqFailure of
 -- The item should not be applied nor thrown because it's too delicate
 -- to operate when not calm or becuse it's too precious to identify by use.
 permittedPrecious :: Bool -> Bool -> ItemFull -> Either ReqFailure Bool
-permittedPrecious calm10 forced itemFull =
+permittedPrecious calmE forced itemFull =
   let isPrecious = IK.Precious `elem` jfeature (itemBase itemFull)
-  in if not calm10 && not forced && isPrecious then Left NotCalmPrecious
+  in if not calmE && not forced && isPrecious then Left NotCalmPrecious
      else Right $ IK.Durable `elem` jfeature (itemBase itemFull)
                   || case itemDisco itemFull of
                     Just ItemDisco{itemAE=Just _} -> True
@@ -205,7 +205,7 @@ permittedProject :: [Char] -> Bool -> Int -> ItemFull -> Actor -> [ItemFull]
                  -> Either ReqFailure Bool
 permittedProject triggerSyms forced skill itemFull@ItemFull{itemBase}
                  b activeItems =
-  let calm10 = calmEnough10 b activeItems
+  let calmE = calmEnough b activeItems
       mhurtRanged = strengthFromEqpSlot IK.EqpSlotAddHurtRanged itemFull
   in if
     | not forced
@@ -217,7 +217,7 @@ permittedProject triggerSyms forced skill itemFull@ItemFull{itemBase}
       && IK.Fragile `elem` jfeature itemBase
       && skill < 3 -> Left ProjectFragile
     | otherwise ->
-      let legal = permittedPrecious calm10 forced itemFull
+      let legal = permittedPrecious calmE forced itemFull
       in case legal of
         Left{} -> legal
         Right False -> legal
@@ -242,7 +242,7 @@ permittedApply :: [Char] -> Time -> Int -> ItemFull -> Actor -> [ItemFull]
                -> Either ReqFailure Bool
 permittedApply triggerSyms localTime skill itemFull@ItemFull{itemBase}
                b activeItems =
-  let calm10 = calmEnough10 b activeItems
+  let calmE = calmEnough b activeItems
   in if
     | skill < 1 -> Left ApplyUnskilled
     | jsymbol itemBase == '?' && skill < 2 -> Left ApplyRead
@@ -250,7 +250,7 @@ permittedApply triggerSyms localTime skill itemFull@ItemFull{itemBase}
     -- are under Recharging, so no point activating if not recharged.
     | not $ hasCharge localTime itemFull -> Left ApplyCharging
     | otherwise ->
-     let legal = permittedPrecious calm10 False itemFull
+     let legal = permittedPrecious calmE False itemFull
      in case legal of
        Left{} -> legal
        Right False -> legal

@@ -302,9 +302,9 @@ drawLeaderDamage width = do
       localTime <- getsState $ getLocalTime (blid b)
       allAssocs <- fullAssocsClient leader [CEqp, COrgan]
       let activeItems = map snd allAssocs
-          calm10 = calmEnough10 b $ map snd allAssocs
+          calmE = calmEnough b $ map snd allAssocs
           forced = assert (not $ bproj b) False
-          permitted = permittedPrecious calm10 forced
+          permitted = permittedPrecious calmE forced
           preferredPrecious = either (const False) id . permitted
           strongest = strongestMelee False localTime allAssocs
           strongestPreferred = filter (preferredPrecious . snd . snd) strongest
