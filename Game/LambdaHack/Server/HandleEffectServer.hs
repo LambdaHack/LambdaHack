@@ -2,7 +2,7 @@
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
   ( applyItem, itemEffectAndDestroy, effectAndDestroy, itemEffectCause
-  , dropCStoreItem, armorHurtBonus
+  , dropCStoreItem, pickDroppable, armorHurtBonus
   ) where
 
 import Prelude ()
@@ -850,9 +850,22 @@ dropCStoreItem store aid b hit iid kit@(k, _) = do
         effs = strengthOnSmash itemFull
     effectAndDestroy aid aid iid c False effs aspects kit
   else do
-    mvCmd <- generalMoveItem iid k (CActor aid store)
-                                   (CActor aid CGround)
+    cDrop <- pickDroppable aid b
+    mvCmd <- generalMoveItem iid k (CActor aid store) cDrop
     mapM_ execUpdAtomic mvCmd
+
+pickDroppable :: MonadStateRead m => ActorId -> Actor -> m Container
+pickDroppable aid b = do
+  Kind.COps{cotile} <- getsState scops
+  lvl <- getLevel (blid b)
+  let validTile t = not $ Tile.hasFeature cotile TK.NoItem t
+  if validTile $ lvl `at` bpos b
+  then return $! CActor aid CGround
+  else do
+    ps <- getsState $ nearbyFreePoints validTile (bpos b) (blid b)
+    return $! case ps of
+      [] -> CActor aid CGround  -- fallback; still correct, though not ideal
+      pos : _ -> CFloor (blid b) pos
 
 -- ** PolyItem
 

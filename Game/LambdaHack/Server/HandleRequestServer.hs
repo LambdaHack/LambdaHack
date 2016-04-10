@@ -356,8 +356,10 @@ reqMoveItem :: (MonadAtomic m, MonadServer m)
 reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
   b <- getsState $ getActorBody aid
   let fromC = CActor aid fromCStore
-      toC = CActor aid toCStore
       req = ReqMoveItems [(iid, k, fromCStore, toCStore)]
+  toC <- case toCStore of
+    CGround -> pickDroppable aid b
+    _ -> return $! CActor aid toCStore
   bagBefore <- getsState $ getCBag toC
   if
    | k < 1 || fromCStore == toCStore -> execFailure aid req ItemNothing
