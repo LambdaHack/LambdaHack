@@ -25,7 +25,7 @@ import Control.Exception.Assert.Sugar
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
-import Data.List (sortBy, nub, find, elemIndex, (\\))
+import Data.List (elemIndex, find, nub, sortBy, (\\))
 import Data.Maybe
 import qualified Data.Ord as Ord
 
@@ -115,9 +115,10 @@ posToActors pos lid s =
              `blame` "many actors at the same position" `twith` l)
      l
 
-nearbyFreePoints :: (Kind.Id TileKind -> Bool) -> Point -> LevelId -> State
+nearbyFreePoints :: Int
+                 -> (Kind.Id TileKind -> Bool) -> Point -> LevelId -> State
                  -> [Point]
-nearbyFreePoints f start lid s =
+nearbyFreePoints ntries f start lid s =
   let Kind.COps{cotile} = scops s
       lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
       as = actorList (const True) lid s
@@ -125,7 +126,7 @@ nearbyFreePoints f start lid s =
                && Tile.isWalkable cotile (lvl `at` p)
                && unoccupied as p
       ps = nub $ start : concatMap (vicinity lxsize lysize) ps
-  in filter good ps
+  in filter good $ take ntries ps
 
 -- | Calculate loot's worth for a faction of a given actor.
 calculateTotal :: Actor -> State -> (ItemBag, Int)
