@@ -749,7 +749,8 @@ describeItemC c = do
               fstores =
                 map (second moveItems)
                     (filter ((/= fromCStore) . snd)
-                     $ [ (K.Char 'd', CGround) ]
+                     -- TODO: harcoded for now:
+                     $ map (\ch -> (K.Char ch, CGround)) ['d', '>', '.']
                        ++ [ (K.Char 'e', CEqp) | eqpFree > 0 ]
                        ++ [ (K.Char 'p', CInv) ]
                        ++ [ (K.Char 's', CSha) | calmE ])
@@ -763,7 +764,7 @@ describeItemC c = do
               zipRenumber y = zipWith renumber [y..]
               okx = (io <> ov, zipRenumber (length (overlay io) + 2) kyxs)
               -- TODO: split okx; also handle io larger than screen size
-          (ekm, _) <- displayChoiceScreen False 0 [okx] [K.escKM]
+          (ekm, _) <- displayChoiceScreen False 0 [okx] [K.escKM, K.KM K.NoModifier (K.Char '.')]
           -- TODO: with throw, move cursor afterwards and press RET
           case ekm of
             Left km -> case lookup (K.key km) fstores of

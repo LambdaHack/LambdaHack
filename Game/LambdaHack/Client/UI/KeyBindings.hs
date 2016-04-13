@@ -61,7 +61,7 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
       , let cmd2 = case cmd of
               Alias _ cmd1 -> cmd1
               _ -> cmd
-      , any (`notElem` [CmdMainMenu, CmdSettingsMenu, CmdDebug, CmdInternal])
+      , all (`notElem` [CmdMainMenu, CmdSettingsMenu, CmdDebug, CmdInternal])
             cats ]
   }
 

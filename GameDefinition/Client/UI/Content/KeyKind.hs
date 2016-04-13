@@ -53,14 +53,14 @@ standardKeys = KeyKind
       -- Movement and terrain alteration
       , ("less", ([CmdMove, CmdItem, CmdMinimal], getAscend))
       , ("g", ([CmdMove, CmdItem], Alias "" getAscend))
-      , ("comma", ([CmdInternal], Macro "" ["less"]))
+      , ("comma", ([CmdInternal], Alias "" getAscend))
       , ("CTRL-less", ([CmdInternal], TriggerTile  -- with lifts, not interal
            [ TriggerFeature { verb = "ascend"
                             , object = "10 levels"
                             , feature = TK.Cause (IK.Ascend 10) } ]))
       , ("greater", ([CmdMove, CmdItem, CmdItemMenu, CmdMinimal], descendDrop))
       , ("d", ([CmdMove, CmdItem, CmdItemMenu], Alias "" descendDrop))
-      , ("period", ([CmdInternal, CmdItemMenu], Macro "" ["greater"]))
+      , ("period", ([CmdInternal, CmdItemMenu], Alias "" descendDrop))
       , ("CTRL-greater", ([CmdInternal], TriggerTile
            [ TriggerFeature { verb = "descend"
                             , object = "10 levels"
