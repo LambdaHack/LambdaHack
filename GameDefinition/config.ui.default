@@ -13,8 +13,6 @@
 ; or elsewhere.
 
 [extra_commands]
-; A handy shorthand with Vi keys
-Cmd_1 = ("comma", ([CmdItem], Alias "" (MoveItem [CGround] CEqp (Just "get") "items" True)))
 ; Angband compatibility (accept target)
 Cmd_2 = ("KP_Insert", ([CmdMeta], Alias "" Accept))
 

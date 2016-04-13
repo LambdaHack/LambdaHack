@@ -156,7 +156,7 @@ sequenceHuman cmdAction l =
       seqCmd acc (c : rest) = do
         slideOrCmd <- cmdAction c
         case slideOrCmd of
-          Left slides -> seqCmd (acc <> slides) rest
+          Left slides -> seqCmd (if slides == mempty then acc else slides) rest
           Right{} -> return slideOrCmd
   in seqCmd mempty l
 

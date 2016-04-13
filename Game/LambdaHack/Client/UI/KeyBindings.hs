@@ -120,7 +120,7 @@ keyHelp Binding{..} =
     casualDescription = "Minimal cheat sheet for casual play"
     fmt n k h = T.justifyRight 72 ' '
                 $ T.justifyLeft n ' ' k
-                  <> T.justifyLeft 48 ' ' h
+                  <+> T.justifyLeft 48 ' ' h
     fmts s = " " <> T.justifyLeft 71 ' ' s
     movText = map fmts movBlurb
     minimalText = map fmts minimalBlurb

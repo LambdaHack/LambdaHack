@@ -51,24 +51,16 @@ standardKeys = KeyKind
       , ("C", ([CmdSettingsMenu], MarkSmell))
 
       -- Movement and terrain alteration
-      , ("less", ([CmdMove, CmdMinimal], TriggerTile
-           [ TriggerFeature { verb = "ascend"
-                            , object = "a level"
-                            , feature = TK.Cause (IK.Ascend 1) }
-           , TriggerFeature { verb = "escape"
-                            , object = "dungeon"
-                            , feature = TK.Cause (IK.Escape 1) } ]))
+      , ("less", ([CmdMove, CmdItem, CmdMinimal], getAscend))
+      , ("g", ([CmdMove, CmdItem], Alias "" getAscend))
+      , ("comma", ([CmdInternal], Macro "" ["less"]))
       , ("CTRL-less", ([CmdInternal], TriggerTile  -- with lifts, not interal
            [ TriggerFeature { verb = "ascend"
                             , object = "10 levels"
                             , feature = TK.Cause (IK.Ascend 10) } ]))
-      , ("greater", ([CmdMove, CmdMinimal], TriggerTile
-           [ TriggerFeature { verb = "descend"
-                            , object = "a level"
-                            , feature = TK.Cause (IK.Ascend (-1)) }
-           , TriggerFeature { verb = "escape"
-                            , object = "dungeon"
-                            , feature = TK.Cause (IK.Escape (-1)) } ]))
+      , ("greater", ([CmdMove, CmdItem, CmdItemMenu, CmdMinimal], descendDrop))
+      , ("d", ([CmdMove, CmdItem, CmdItemMenu], Alias "" descendDrop))
+      , ("period", ([CmdInternal, CmdItemMenu], Macro "" ["greater"]))
       , ("CTRL-greater", ([CmdInternal], TriggerTile
            [ TriggerFeature { verb = "descend"
                             , object = "10 levels"
@@ -124,8 +116,6 @@ standardKeys = KeyKind
       , ("s", ( [CmdItem, CmdItemMenu]
               , MoveItem [CGround, CInv, CEqp] CSha Nothing
                          "and share item" False) )
-      , ("d", ( [CmdItem, CmdItemMenu]
-              , MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False) )
       , ("E", ([CmdItem, CmdMinimal], DescribeItem $ MStore CEqp))
       , ("P", ([CmdItem], DescribeItem $ MStore CInv))
       , ("S", ([CmdItem], DescribeItem $ MStore CSha))
@@ -133,8 +123,6 @@ standardKeys = KeyKind
       , ("G", ([CmdItem], DescribeItem $ MStore CGround))
       , ("@", ([CmdItem], DescribeItem $ MStore COrgan))
       , ("exclam", ([CmdItem], DescribeItem MStats))
-      , ("g", ([CmdItem, CmdMinimal],
-               MoveItem [CGround] CEqp (Just "get") "items" True))
       , ("q", ([CmdItem], Apply [ApplyItem { verb = "quaff"
                                            , object = "potion"
                                            , symbol = '!' }]))
