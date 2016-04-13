@@ -39,6 +39,7 @@ cmdAction cmd = case cmd of
   ByArea _ l -> byAreaHuman cmdAction l
   ByMode _ cmdNormal cmdAiming ->
     byModeHuman (cmdAction cmdNormal) (cmdAction cmdAiming)
+  Sequence _ l -> sequenceHuman cmdAction l
 
   -- Global.
   Move v -> fmap ReqUITimed <$> moveRunHuman True True False False v

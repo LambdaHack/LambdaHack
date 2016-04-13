@@ -7,7 +7,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   ( -- * Commands that usually take time
-    byAreaHuman, byModeHuman, moveRunHuman, waitHuman
+    byAreaHuman, byModeHuman, sequenceHuman, moveRunHuman, waitHuman
   , moveItemHuman, describeItemHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , runOnceAheadHuman, moveOnceToCursorHuman
@@ -144,6 +144,21 @@ byModeHuman :: MonadClientUI m
 byModeHuman cmdNormalM cmdAimingM = do
   tgtMode <- getsSession stgtMode
   if isJust tgtMode then cmdAimingM else cmdNormalM
+
+-- * Execute commands until any returns a server command.
+
+sequenceHuman :: MonadClientUI m
+             => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
+             -> [HumanCmd.HumanCmd]
+             -> m (SlideOrCmd RequestUI)
+sequenceHuman cmdAction l =
+  let seqCmd acc [] = return $ Left acc
+      seqCmd acc (c : rest) = do
+        slideOrCmd <- cmdAction c
+        case slideOrCmd of
+          Left slides -> seqCmd (acc <> slides) rest
+          Right{} -> return slideOrCmd
+  in seqCmd mempty l
 
 -- * Move and Run
 
