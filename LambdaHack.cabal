@@ -300,6 +300,8 @@ library
   if flag(release) {
     cpp-options:      -DEXPOSE_INTERNAL
     ghc-options:      -O2 -fno-ignore-asserts
+  } else {
+    ghc-options:      -O0
   }
 
 executable LambdaHack
@@ -370,6 +372,8 @@ executable LambdaHack
   if flag(release)
     ghc-options:      -O2 -fno-ignore-asserts "-with-rtsopts=-N1"
 -- TODO: -N
+  else
+    ghc-options:      -O0
 
 test-suite test
   type:               exitcode-stdio-1.0
@@ -426,3 +430,5 @@ test-suite test
   if flag(release)
     ghc-options:      -O2 -fno-ignore-asserts "-with-rtsopts=-N1"
 -- TODO: -N
+  else
+    ghc-options:      -O0
