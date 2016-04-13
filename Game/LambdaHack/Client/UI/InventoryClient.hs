@@ -10,7 +10,6 @@ module Game.LambdaHack.Client.UI.InventoryClient
 import Prelude ()
 import Prelude.Compat
 
-import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import Control.Monad (filterM, void, when)
 import qualified Data.Char as Char
@@ -734,6 +733,10 @@ describeItemC c = do
         MStore fromCStore -> do
           keyb <- askBinding
           let eqpFree = eqpFreeN b
+              moveItems toCStore | toCStore == fromCStore =
+                failWith "vacuus command"
+              moveItems CEqp | eqpFree == 0 = failWith "no free equipment slot"
+              moveItems CSha | not calmE = failWith "not calm enough"
               moveItems toCStore = do
                 let k = itemK itemFull
                     kToPick | toCStore == CEqp = min eqpFree k
@@ -744,32 +747,28 @@ describeItemC c = do
                   Right kChosen ->
                     return $ Right $ timedToUI
                            $ ReqMoveItems [(iid, kChosen, fromCStore, toCStore)]
-              -- TODO: handle keys from config; take keys from keyb
-              fstores :: [(K.Key, m (SlideOrCmd RequestUI))]
-              fstores =
-                map (second moveItems)
-                    (filter ((/= fromCStore) . snd)
-                     -- TODO: harcoded for now:
-                     $ map (\ch -> (K.Char ch, CGround)) ['d', '>', '.']
-                       ++ [ (K.Char 'e', CEqp) | eqpFree > 0 ]
-                       ++ [ (K.Char 'p', CInv) ]
-                       ++ [ (K.Char 's', CSha) | calmE ])
-                ++ [ (K.Char 'a'
-                   , return $ Right $ timedToUI $ ReqApply iid fromCStore) ]
-                ++ [ ( K.Char 'f'
-                     , fmap timedToUI <$> projectHumanState [] INoAll ) ]
-                ++ [ (K.Esc, describeItemC c) ]
               (_, (ov, kyxs)) = keyHelp keyb
               renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
               zipRenumber y = zipWith renumber [y..]
               okx = (io <> ov, zipRenumber (length (overlay io) + 2) kyxs)
               -- TODO: split okx; also handle io larger than screen size
-          (ekm, _) <- displayChoiceScreen False 0 [okx] [K.escKM, K.KM K.NoModifier (K.Char '.')]
-          -- TODO: with throw, move cursor afterwards and press RET
+              serverCmd cmd = case cmd of
+                Alias _ cmd2 -> serverCmd cmd2
+                MoveItem _ store _ _ _ -> moveItems store
+                Sequence _ (MoveItem _ store _ _ _ : _) -> moveItems store
+                Sequence _ (_ : (MoveItem _ store _ _ _) : _) -> moveItems store
+                -- TODO: with throw, move cursor afterwards and press RET
+                Project{} -> fmap timedToUI <$> projectHumanState [] INoAll
+                Apply{} -> return $ Right $ timedToUI $ ReqApply iid fromCStore
+                _ -> failWith "never mind"
+              hackAlias = [ K.KM K.NoModifier (K.Char '.')
+                          , K.KM K.NoModifier (K.Char 'd') ]
+          (ekm, _) <- displayChoiceScreen False 0 [okx] $ K.escKM : hackAlias
           case ekm of
-            Left km -> case lookup (K.key km) fstores of
-              Nothing -> failWith "never mind"  -- illegal
-              Just m -> m
+            Left km | km == K.escKM -> describeItemC c
+            Left km -> case km `M.lookup` bcmdMap keyb of
+              Nothing -> failWith "never mind"
+              Just (_desc, _cats, cmd) -> serverCmd cmd
             Right _slot -> assert `failure` ekm
         MOwned -> do
           -- We can't move items from MOwned, because different copies may come
