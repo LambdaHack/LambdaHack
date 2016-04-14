@@ -371,6 +371,37 @@ moveItemHuman :: forall m. MonadClientUI m
               => [CStore] -> CStore -> Maybe MU.Part -> Bool
               -> m (SlideOrCmd (RequestTimed 'AbMoveItem))
 moveItemHuman cLegalRaw destCStore mverb auto = do
+  itemSel <- getsSession sitemSel
+  case itemSel of
+    Just (fromCStore, iid) | cLegalRaw /= [CGround]  -- not normal pickup
+                             && fromCStore /= destCStore -> do  -- not vacuous
+      modifySession $ \sess -> sess {sitemSel = Nothing}
+      leader <- getLeaderUI
+      bag <- getsState $ getActorBag leader fromCStore
+      case iid `EM.lookup` bag of
+        Nothing -> moveItemHuman cLegalRaw destCStore mverb auto  -- used up
+        Just (k, it) -> do
+          itemToF <- itemToFullClient
+          b <- getsState $ getActorBody leader
+          let eqpFree = eqpFreeN b
+              kToPick | destCStore == CEqp = min eqpFree k
+                      | otherwise = k
+          socK <- pickNumber True kToPick
+          case socK of
+            Left slides -> return $ Left slides
+            Right kChosen ->
+              let is = (fromCStore, [(iid, itemToF iid (kChosen, it))])
+              in moveItems cLegalRaw is destCStore
+    _ -> do
+      mis <- selectItemsToMove cLegalRaw destCStore mverb auto
+      case mis of
+        Left slides -> return $ Left slides
+        Right is -> moveItems cLegalRaw is destCStore
+
+selectItemsToMove :: forall m. MonadClientUI m
+                  => [CStore] -> CStore -> Maybe MU.Part -> Bool
+                  -> m (SlideOrCmd (CStore, [(ItemId, ItemFull)]))
+selectItemsToMove cLegalRaw destCStore mverb auto = do
   let !_A = assert (destCStore `notElem` cLegalRaw) ()
   let verb = fromMaybe (MU.Text $ verbCStore destCStore) mverb
   leader <- getLeaderUI
@@ -387,16 +418,41 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
       cLegal | calmE = cLegalRaw
              | destCStore == CSha = []
              | otherwise = delete CSha cLegalRaw
+      prompt = makePhrase ["What to", verb]
+      promptEqp = makePhrase ["What consumable to", verb]
+      p :: CStore -> (Text, m Suitability)
+      p cstore = if cstore `elem` [CEqp, CSha] && cLegalRaw /= [CGround]
+                 then (promptEqp, return $ SuitsSomething goesIntoEqp)
+                 else (prompt, return SuitsEverything)
+      (promptGeneric, psuit) = p destCStore
+  ggi <-
+    if auto
+    then getAnyItems psuit prompt promptGeneric cLegalRaw cLegal False False
+    else getAnyItems psuit prompt promptGeneric cLegalRaw cLegal True True
+  case ggi of
+    Right (l, MStore fromCStore) -> return $ Right (fromCStore, l)
+    Left slides -> return $ Left slides
+    _ -> assert `failure` ggi
+
+moveItems :: forall m. MonadClientUI m
+          => [CStore] -> (CStore, [(ItemId, ItemFull)]) -> CStore
+          -> m (SlideOrCmd (RequestTimed 'AbMoveItem))
+moveItems cLegalRaw (fromCStore, l) destCStore = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  activeItems <- activeItemsClient leader
+  let calmE = calmEnough b activeItems
       ret4 :: MonadClientUI m
-           => CStore -> [(ItemId, ItemFull)]
+           => [(ItemId, ItemFull)]
            -> Int -> [(ItemId, Int, CStore, CStore)]
            -> m (Either Slideshow [(ItemId, Int, CStore, CStore)])
-      ret4 _ [] _ acc = return $ Right $ reverse acc
-      ret4 fromCStore ((iid, itemFull) : rest) oldN acc = do
+      ret4 [] _ acc = return $ Right $ reverse acc
+      ret4 ((iid, itemFull) : rest) oldN acc = do
         let k = itemK itemFull
+            !_A = assert (k > 0) ()
             retRec toCStore =
               let n = oldN + if toCStore == CEqp then k else 0
-              in ret4 fromCStore rest n ((iid, k, fromCStore, toCStore) : acc)
+              in ret4 rest n ((iid, k, fromCStore, toCStore) : acc)
         if cLegalRaw == [CGround]  -- normal pickup
         then case destCStore of
           CEqp | calmE && goesIntoSha itemFull ->
@@ -424,34 +480,13 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
                            else EqpStackFull
             failSer fullWarn
           _ -> retRec destCStore
-      prompt = makePhrase ["What to", verb]
-      promptEqp = makePhrase ["What consumable to", verb]
-      p :: CStore -> (Text, m Suitability)
-      p cstore = if cstore `elem` [CEqp, CSha] && cLegalRaw /= [CGround]
-                 then (promptEqp, return $ SuitsSomething goesIntoEqp)
-                 else (prompt, return SuitsEverything)
-      (promptGeneric, psuit) = p destCStore
-  ggi <-
-    if auto
-    then getAnyItems psuit prompt promptGeneric cLegalRaw cLegal False False
-    else getAnyItems psuit prompt promptGeneric cLegalRaw cLegal True True
-  case ggi of
-    Right (l, MStore fromCStore) -> do
-      leader2 <- getLeaderUI
-      b2 <- getsState $ getActorBody leader2
-      activeItems2 <- activeItemsClient leader2
-      let calmE2 = calmEnough b2 activeItems2
-      -- This is not ideal, because the failure message comes late,
-      -- but it's simple and good enough.
-      if not calmE2 && destCStore == CSha then failSer ItemNotCalm
-      else do
-        l4 <- ret4 fromCStore l 0 []
-        return $! case l4 of
-          Left sli -> Left sli
-          Right [] -> assert `failure` ggi
-          Right lr -> Right $ ReqMoveItems lr
-    Left slides -> return $ Left slides
-    _ -> assert `failure` ggi
+  if not calmE && destCStore == CSha then failSer ItemNotCalm
+  else do
+    l4 <- ret4 l 0 []
+    return $! case l4 of
+      Left sli -> Left sli
+      Right [] -> assert `failure` l
+      Right lr -> Right $ ReqMoveItems lr
 
 -- * DescribeItem
 

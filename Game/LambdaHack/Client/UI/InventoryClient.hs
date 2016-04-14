@@ -4,7 +4,7 @@
 module Game.LambdaHack.Client.UI.InventoryClient
   ( Suitability(..), ItemDialogState(..)
   , getGroupItem, getAnyItems, getStoreItem
-  , describeItemC, projectHumanState, triggerSymbols
+  , pickNumber, describeItemC, projectHumanState, triggerSymbols
   ) where
 
 import Prelude ()
@@ -660,9 +660,13 @@ pickNumber askNumber kAll = do
           K.Return -> return $ Right kDefault
           K.Esc -> failWith "never mind"
           _ -> assert `failure` "unexpected key:" `twith` kkm
-  if askNumber && kAll > 1
-  then gatherNumber kAll
-  else return $ Right kAll
+  if | kAll == 0 -> failWith "no number of items can be chosen"
+     | kAll == 1 || not askNumber -> return $ Right kAll
+     | otherwise -> do
+         num <- gatherNumber kAll
+         case num of
+           Right 0 -> failWith "zero items chosen"
+           _ -> return num
 
 -- | Create a list of item names.
 _floorItemOverlay :: MonadClientUI m

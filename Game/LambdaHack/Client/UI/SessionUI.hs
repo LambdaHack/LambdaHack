@@ -20,7 +20,9 @@ import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 
 -- | The information that is used across a client playing session,
@@ -32,6 +34,7 @@ data SessionUI = SessionUI
   , sbinding        :: !Binding            -- ^ binding of keys to commands
   , sconfig         :: !Config
   , stgtMode        :: !(Maybe TgtMode)    -- ^ targeting mode
+  , sitemSel        :: !(Maybe (CStore, ItemId))  -- ^ selected item, if any
   , sselected       :: !(ES.EnumSet ActorId)
                                       -- ^ the set of currently selected actors
   , srunning        :: !(Maybe RunParams)
@@ -81,6 +84,7 @@ emptySessionUI sconfig =
     , sbinding = Binding M.empty [] M.empty
     , sconfig
     , stgtMode = Nothing
+    , sitemSel = Nothing
     , sselected = ES.empty
     , srunning = Nothing
     , sreport = emptyReport
@@ -109,6 +113,7 @@ instance Binary SessionUI where
   put SessionUI{..} = do
     put sconfig
     put stgtMode
+    put sitemSel
     put sselected
     put srunning
     put sreport
@@ -123,6 +128,7 @@ instance Binary SessionUI where
   get = do
     sconfig <- get
     stgtMode <- get
+    sitemSel <- get
     sselected <- get
     srunning <- get
     sreport <- get
