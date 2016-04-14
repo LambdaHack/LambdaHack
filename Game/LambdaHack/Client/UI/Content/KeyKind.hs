@@ -37,7 +37,9 @@ defaultCmdLMB =
     , (CaXhairDesc, TgtEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
     , (CaLeaderStatus, DescribeItem (MStore COrgan))
-    , (CaTargetDesc, TgtFloor) ]  -- inits aiming and then cycles aim mode
+    , (CaTargetDesc, Project [ApplyItem { verb = "throw"
+                                        , object = "missile"
+                                        , symbol = '|' }]) ]
 
 defaultCmdMMB :: HumanCmd
 defaultCmdMMB = CursorPointerFloor
@@ -56,10 +58,12 @@ defaultCmdRMB =
     [ (CaMessage, Macro "" ["R"])
     , (CaMapLeader, descendDrop)
     , (CaArenaName, ByMode "accept target/choice or open Help" Help Accept)
-    , (CaXhairDesc, TgtEnemy)  -- inits aiming and then cycles enemies
+    , (CaXhairDesc, TgtFloor)  -- inits aiming and then cycles aim mode
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, DescribeItem MStats)
-    , (CaTargetDesc, TgtFloor) ]  -- inits aiming and then cycles aim mode
+    , (CaTargetDesc, Project [ApplyItem { verb = "fling"
+                                        , object = "projectile"
+                                        , symbol = ' ' }]) ]
 
 getAscend :: HumanCmd
 getAscend = Sequence "get items or ascend"
