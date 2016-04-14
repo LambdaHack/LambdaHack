@@ -32,7 +32,8 @@ defaultCmdLMB =
   common =
     [ (CaMessage, History)
     , (CaMapLeader, getAscend)
-    , (CaArenaName, Cancel)
+    , ( CaArenaName
+      , ByMode "cancel target/action or open Main Menu" MainMenu Cancel )
     , (CaXhairDesc, TgtEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
     , (CaLeaderStatus, DescribeItem (MStore COrgan))
@@ -54,11 +55,12 @@ defaultCmdRMB =
   common =
     [ (CaMessage, Macro "" ["R"])
     , (CaMapLeader, descendDrop)
-    , (CaArenaName, Accept)
+    , (CaArenaName, ByMode "accept target/choice or open Help" Help Accept)
     , (CaXhairDesc, TgtEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, DescribeItem MStats)
     , (CaTargetDesc, TgtFloor) ]  -- inits aiming and then cycles aim mode
+
 getAscend :: HumanCmd
 getAscend = Sequence "get items or ascend"
   [ MoveItem [CGround] CEqp (Just "get") "items" True

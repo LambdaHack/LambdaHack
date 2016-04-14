@@ -66,8 +66,8 @@ cmdAction cmd = case cmd of
   SettingsMenu -> settingsMenuHuman cmdAction
   Help -> helpHuman cmdAction
   GameDifficultyIncr -> gameDifficultyIncr >> mainMenuHuman cmdAction
-  Cancel -> cancelHuman $ mainMenuHuman cmdAction
-  Accept -> acceptHuman $ helpHuman cmdAction
+  Cancel -> cancelHuman
+  Accept -> acceptHuman
 
   -- Local.
   PickLeader k -> Left <$> pickLeaderHuman k

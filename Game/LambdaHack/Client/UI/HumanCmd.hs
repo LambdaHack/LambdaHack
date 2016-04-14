@@ -236,7 +236,7 @@ cmdDescription cmd = case cmd of
   CursorItem     -> "set crosshair to the closest item"
   CursorStair up -> "set crosshair to the closest stairs"
                     <+> if up then "up" else "down"
-  Cancel -> "cancel target/action or open Main Menu"
+  Cancel -> "cancel target/action"
   Accept -> "accept target/choice"
   CursorPointerFloor -> "set crosshair to floor under pointer"
   CursorPointerEnemy -> "set crosshair to enemy under pointer"

@@ -776,19 +776,11 @@ continueToCursorHuman = goToCursor False False{-irrelevant-}
 
 -- * Cancel
 
--- | Cancel something, e.g., targeting mode, resetting the cursor
--- to the position of the leader. Chosen target is not invalidated.
-cancelHuman :: MonadClientUI m
-            => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
-cancelHuman h = do
-  stgtMode <- getsSession stgtMode
-  if isJust stgtMode
-    then targetReject
-    else h  -- nothing to cancel right now, treat this as a command invocation
-
 -- | End targeting mode, rejecting the current position.
-targetReject :: MonadClientUI m => m (SlideOrCmd RequestUI)
-targetReject = do
+cancelHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
+cancelHuman = do
+  stgtMode <- getsSession stgtMode
+  let !_A = assert (isJust stgtMode) ()
   modifySession $ \sess -> sess {stgtMode = Nothing}
   failWith "target not set"
 
@@ -813,24 +805,15 @@ helpHuman cmdAction = do
 
 -- * Accept
 
--- | Accept something, e.g., targeting mode, keeping cursor where it was.
--- Or perform the default action, if nothing needs accepting.
-acceptHuman :: MonadClientUI m
-            => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
-acceptHuman h = do
-  stgtMode <- getsSession stgtMode
-  if isJust stgtMode
-    then do
-      targetAccept
-      return $ Left mempty
-    else h  -- nothing to accept right now, treat this as a command invocation
-
 -- | End targeting mode, accepting the current position.
-targetAccept :: MonadClientUI m => m ()
-targetAccept = do
+acceptHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
+acceptHuman = do
+  stgtMode <- getsSession stgtMode
+  let !_A = assert (isJust stgtMode) ()
   endTargeting
   endTargetingMsg
   modifySession $ \sess -> sess {stgtMode = Nothing}
+  return $ Left mempty
 
 -- | End targeting mode, accepting the current position.
 endTargeting :: MonadClientUI m => m ()

@@ -148,8 +148,12 @@ standardKeys = KeyKind
       , ("CTRL-braceleft", ([CmdTgt], CursorStair True))
       , ("CTRL-braceright", ([CmdTgt], CursorStair False))
       , ("BackSpace", ([CmdTgt], TgtClear))
-      , ("Escape", ([CmdTgt, CmdMinimal], Cancel))
-      , ("Return", ([CmdTgt, CmdMinimal], Accept))
+      , ( "Escape"
+        , ( [CmdTgt, CmdMinimal]
+          , ByMode "cancel target/action or open Main Menu" MainMenu Cancel ) )
+      , ( "Return"
+        , ( [CmdTgt, CmdMinimal]
+          , ByMode "accept target/choice or open Help" Help Accept ) )
 
       -- Assorted
       , ("space", ([CmdMeta], Clear))
