@@ -45,7 +45,6 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Frontend (frontendName)
 import Game.LambdaHack.Client.UI.HandleHelperClient
-import Game.LambdaHack.Client.UI.HandleHumanLocalClient
 import Game.LambdaHack.Client.UI.HumanCmd (CmdArea (..), Trigger (..))
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.UI.InventoryClient
@@ -644,22 +643,6 @@ guessAlter _ _ _ = "never mind"
 triggerTileHuman :: MonadClientUI m
                  => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbTrigger))
 triggerTileHuman ts = do
-  tgtMode <- getsSession stgtMode
-  if isJust tgtMode then do
-    let getK tfs = case tfs of
-          TriggerFeature {feature = TK.Cause (IK.Ascend k)} : _ -> Just k
-          _ : rest -> getK rest
-          [] -> Nothing
-        mk = getK ts
-    case mk of
-      Nothing -> failWith "never mind"
-      Just k -> Left <$> tgtAscendHuman k
-  else triggerTile ts
-
--- | Player tries to trigger a tile using a feature.
-triggerTile :: MonadClientUI m
-            => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbTrigger))
-triggerTile ts = do
   cops@Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader

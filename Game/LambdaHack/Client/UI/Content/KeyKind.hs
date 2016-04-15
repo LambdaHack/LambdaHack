@@ -68,23 +68,27 @@ defaultCmdRMB =
 getAscend :: HumanCmd
 getAscend = Sequence "get items or ascend"
   [ MoveItem [CGround] CEqp (Just "get") "items" True
-  , TriggerTile
-      [ TriggerFeature { verb = "ascend"
-                       , object = "a level"
-                       , feature = TK.Cause (IK.Ascend 1) }
-      , TriggerFeature { verb = "escape"
-                       , object = "dungeon"
-                       , feature = TK.Cause (IK.Escape 1) } ] ]
+  , ByMode ""
+      (TriggerTile
+         [ TriggerFeature { verb = "ascend"
+                          , object = "a level"
+                          , feature = TK.Cause (IK.Ascend 1) }
+         , TriggerFeature { verb = "escape"
+                          , object = "dungeon"
+                          , feature = TK.Cause (IK.Escape 1) } ])
+      (TgtAscend 1) ]
 
 descendDrop :: HumanCmd
 descendDrop = Sequence "descend or drop items"
-  [ TriggerTile
-      [ TriggerFeature { verb = "descend"
-                       , object = "a level"
-                       , feature = TK.Cause (IK.Ascend (-1)) }
-      , TriggerFeature { verb = "escape"
-                       , object = "dungeon"
-                       , feature = TK.Cause (IK.Escape (-1)) } ]
+  [ ByMode ""
+      (TriggerTile
+         [ TriggerFeature { verb = "descend"
+                          , object = "a level"
+                          , feature = TK.Cause (IK.Ascend (-1)) }
+         , TriggerFeature { verb = "escape"
+                          , object = "dungeon"
+                          , feature = TK.Cause (IK.Escape (-1)) } ])
+      (TgtAscend (-1))
   , MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False ]
 
 defaultHeroSelect :: Int -> (String, ([CmdCategory], HumanCmd))
