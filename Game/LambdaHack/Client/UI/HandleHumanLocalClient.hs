@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   , pickLeaderHuman, pickLeaderWithPointerHuman
   , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, clearHuman
-  , selectWithPointer, repeatHuman, recordHuman
+  , selectWithPointerHuman, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
   , macroHuman
     -- * Commands specific to targeting
@@ -124,7 +124,7 @@ pickLeaderWithPointerHuman = do
            [] -> return mempty  -- relaxed, due to subtleties of selected display
            aidb : _ -> pick aidb
      | otherwise ->
-         case find (\(_, b) -> bpos b == Point px py) ours of
+         case find (\(_, b) -> bpos b == Point px (py - mapStartY)) ours of
            Nothing -> assert `failure` (px, py, lysize + 2)
            Just aidb -> pick aidb
 
@@ -189,8 +189,8 @@ clearHuman = return ()
 
 -- * SelectWithPointer
 
-selectWithPointer:: MonadClientUI m => m ()
-selectWithPointer = do
+selectWithPointerHuman :: MonadClientUI m => m ()
+selectWithPointerHuman = do
   lidV <- viewedLevel
   Level{lysize} <- getLevel lidV
   side <- getsClient sside
@@ -205,7 +205,7 @@ selectWithPointer = do
            [] -> return ()  -- relaxed, due to subtleties of selected display
            (aid, _) : _ -> selectAidHuman aid
      | otherwise ->
-         case find (\(_, b) -> bpos b == Point px py) ours of
+         case find (\(_, b) -> bpos b == Point px (py - mapStartY)) ours of
            Nothing -> assert `failure` (px, py, lysize + 2)
            Just (aid, _) -> selectAidHuman aid
 

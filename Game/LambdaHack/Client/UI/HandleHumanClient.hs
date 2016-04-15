@@ -77,7 +77,7 @@ cmdAction cmd = case cmd of
   SelectActor -> addNoSlides selectActorHuman
   SelectNone -> addNoSlides selectNoneHuman
   Clear -> addNoSlides clearHuman
-  SelectWithPointer -> addNoSlides selectWithPointer
+  SelectWithPointer -> addNoSlides selectWithPointerHuman
   Repeat n -> addNoSlides $ repeatHuman n
   Record -> Left <$> recordHuman
   History -> addNoSlides historyHuman
