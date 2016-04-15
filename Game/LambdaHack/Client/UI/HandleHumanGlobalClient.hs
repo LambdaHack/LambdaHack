@@ -390,7 +390,8 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
           case socK of
             Left slides -> return $ Left slides
             Right kChosen ->
-              let is = (fromCStore, [(iid, itemToF iid (kChosen, it))])
+              let is = ( fromCStore
+                       , [(iid, itemToF iid (kChosen, take kChosen it))] )
               in moveItems cLegalRaw is destCStore
     _ -> do
       mis <- selectItemsToMove cLegalRaw destCStore mverb auto
@@ -480,7 +481,8 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
                            else EqpStackFull
             failSer fullWarn
           _ -> retRec destCStore
-  if not calmE && destCStore == CSha then failSer ItemNotCalm
+  if not calmE && CSha `elem` [fromCStore, destCStore]
+  then failSer ItemNotCalm
   else do
     l4 <- ret4 l 0 []
     return $! case l4 of
@@ -506,12 +508,42 @@ projectHuman ts = projectHumanState ts INoSuitable
 applyHuman :: MonadClientUI m
            => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbApply))
 applyHuman ts = do
+  itemSel <- getsSession sitemSel
+  case itemSel of
+    Just (fromCStore, iid) -> do
+      leader <- getLeaderUI
+      bag <- getsState $ getActorBag leader fromCStore
+      case iid `EM.lookup` bag of
+        Nothing -> do  -- used up
+          modifySession $ \sess -> sess {sitemSel = Nothing}
+          applyHuman ts
+        Just kit -> do
+          itemToF <- itemToFullClient
+          let i = (fromCStore, (iid, itemToF iid kit))
+          applyItem ts i
+    Nothing -> do
+      mis <- selectItemToApply ts
+      case mis of
+        Left slides -> return $ Left slides
+        Right i -> applyItem ts i
+
+permittedApplyClient :: MonadClientUI m
+                     => [Char] -> m (ItemFull -> Either ReqFailure Bool)
+permittedApplyClient triggerSyms = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorSk <- actorSkillsClient leader
   let skill = EM.findWithDefault 0 AbApply actorSk
   activeItems <- activeItemsClient leader
   localTime <- getsState $ getLocalTime (blid b)
+  return $ permittedApply localTime skill b activeItems triggerSyms
+
+selectItemToApply :: MonadClientUI m
+                  => [Trigger] -> m (SlideOrCmd (CStore, (ItemId, ItemFull)))
+selectItemToApply ts = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  activeItems <- activeItemsClient leader
   let calmE = calmEnough b activeItems
       cLegalRaw = [CGround, CInv, CEqp, CSha]
       cLegal | calmE = cLegalRaw
@@ -519,20 +551,36 @@ applyHuman ts = do
       (verb1, object1) = case ts of
         [] -> ("apply", "item")
         tr : _ -> (verb tr, object tr)
-      triggerSyms = triggerSymbols ts
-      p itemFull =
-        permittedApply triggerSyms localTime skill itemFull b activeItems
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What to apply"
-  ggi <- getGroupItem (return $ SuitsSomething $ either (const False) id . p)
-                      prompt promptGeneric False cLegalRaw cLegal ISuitable
+  p <- permittedApplyClient $ triggerSymbols ts
+  -- TODO: call permittedApplyClient inside suits to check non-leader skill
+  -- and fail somehow or refuse to switch leader or something
+  -- or at least not to show illegal items by default, only after ?
+  let suits = return $ SuitsSomething $ either (const False) id . p
+  ggi <- getGroupItem
+           suits prompt promptGeneric False cLegalRaw cLegal ISuitable
   case ggi of
     Right ((iid, itemFull), MStore fromCStore) ->
-      case p itemFull of
-        Left reqFail -> failSer reqFail
-        Right _ -> return $ Right $ ReqApply iid fromCStore
+      return $ Right (fromCStore, (iid, itemFull))
     Left slides -> return $ Left slides
     _ -> assert `failure` ggi
+
+applyItem :: MonadClientUI m
+          => [Trigger] -> (CStore, (ItemId, ItemFull))
+          -> m (SlideOrCmd (RequestTimed 'AbApply))
+applyItem ts (fromCStore, (iid, itemFull)) = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  activeItems <- activeItemsClient leader
+  let calmE = calmEnough b activeItems
+  if not calmE && fromCStore == CSha
+  then failSer ItemNotCalm
+  else do
+    p <- permittedApplyClient $ triggerSymbols ts
+    case p itemFull of
+      Left reqFail -> failSer reqFail
+      Right _ -> return $ Right $ ReqApply iid fromCStore
 
 -- * AlterDir
 

@@ -238,10 +238,10 @@ permittedProject triggerSyms forced skill itemFull@ItemFull{itemBase}
                 else jsymbol itemBase `elem` triggerSyms
           in hasEffects && permittedSlot
 
-permittedApply :: [Char] -> Time -> Int -> ItemFull -> Actor -> [ItemFull]
+permittedApply :: Time -> Int -> Actor -> [ItemFull] -> [Char] -> ItemFull
                -> Either ReqFailure Bool
-permittedApply triggerSyms localTime skill itemFull@ItemFull{itemBase}
-               b activeItems =
+permittedApply localTime skill b activeItems
+               triggerSyms itemFull@ItemFull{itemBase} =
   let calmE = calmEnough b activeItems
   in if
     | skill < 1 -> Left ApplyUnskilled

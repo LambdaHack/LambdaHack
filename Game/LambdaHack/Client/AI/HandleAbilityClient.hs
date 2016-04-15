@@ -692,7 +692,7 @@ applyItem aid applyGroup = do
               Just ItemDisco{itemKind} -> IK.ifreq itemKind
         in maybe True (<= 0) (lookup "gem" freq)
            && either (const False) id
-                (permittedApply " " localTime skill itemFull b activeItems)
+                (permittedApply localTime skill b activeItems " " itemFull)
   activeItems <- activeItemsClient aid
   let calmE = calmEnough b activeItems
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
