@@ -870,11 +870,10 @@ helpHuman cmdAction = do
 
 -- * Accept
 
--- | End targeting mode, accepting the current position.
+-- | Accept the current x-hair position as target, ending
+-- aiming mode, if active.
 acceptHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 acceptHuman = do
-  stgtMode <- getsSession stgtMode
-  let !_A = assert (isJust stgtMode) ()
   endTargeting
   endTargetingMsg
   modifySession $ \sess -> sess {stgtMode = Nothing}

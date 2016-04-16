@@ -31,6 +31,16 @@ import Game.LambdaHack.Common.Vector
 -- | Client state, belonging to a single faction.
 -- Some of the data, e.g, the history, carries over
 -- from game to game, even across playing sessions.
+--
+-- When many actors want to fling at the same target, they set
+-- their personal targets to follow the common crosshair (scursor).
+-- When each wants to kill a fleeing enemy they recently meleed,
+-- they keep the enemies as their personal targets.
+-- When graphical pointer (e.g., mouse) is used for aming (but not for moving),
+-- it sets both the x-hair and the personal target, bluring the distinction,
+-- to simplify keyboard-less operation. Pointing with a pointer is much easier
+-- than with a keyboard, so no harm is done.
+--
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
   { scursor      :: !Target        -- ^ the common, cursor target

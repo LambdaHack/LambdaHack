@@ -21,7 +21,7 @@ data KeyKind = KeyKind
 
 defaultCmdLMB :: HumanCmd
 defaultCmdLMB =
-  ByMode "go to pointer for 100 steps"
+  ByMode "go to pointer for 100 steps or set crosshair"
     (ByArea "normal mode" $ common ++
        [ (CaMapParty, PickLeaderWithPointer)
        , (CaMap, Macro ""
@@ -46,13 +46,13 @@ defaultCmdMMB = CursorPointerFloor
 
 defaultCmdRMB :: HumanCmd
 defaultCmdRMB =
-  ByMode "run collectively to pointer for 100 steps"
+  ByMode "run collectively to pointer or set target"
     (ByArea "normal mode" $ common ++
        [ (CaMapParty, SelectWithPointer)
        , (CaMap, Macro ""
             ["MiddleButtonPress", "CTRL-colon", "CTRL-period", "V"]) ])
     (ByArea "aiming mode" $ common ++
-       [ (CaMap, CursorPointerEnemy) ])
+       [ (CaMap, Sequence "" [CursorPointerEnemy, Accept]) ])
  where
   common =
     [ (CaMessage, Macro "" ["R"])
