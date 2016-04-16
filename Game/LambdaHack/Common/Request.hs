@@ -201,10 +201,10 @@ permittedPrecious calmE forced itemFull =
                     Just ItemDisco{itemAE=Just _} -> True
                     _ -> not isPrecious
 
-permittedProject :: [Char] -> Bool -> Int -> ItemFull -> Actor -> [ItemFull]
+permittedProject :: Bool -> Int -> Actor -> [ItemFull] -> [Char] -> ItemFull
                  -> Either ReqFailure Bool
-permittedProject triggerSyms forced skill itemFull@ItemFull{itemBase}
-                 b activeItems =
+permittedProject forced skill b activeItems
+                 triggerSyms itemFull@ItemFull{itemBase} =
   let calmE = calmEnough b activeItems
       mhurtRanged = strengthFromEqpSlot IK.EqpSlotAddHurtRanged itemFull
   in if

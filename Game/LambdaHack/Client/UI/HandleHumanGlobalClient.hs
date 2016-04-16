@@ -507,6 +507,7 @@ projectHuman ts = projectHumanState ts INoSuitable
 applyHuman :: MonadClientUI m
            => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbApply))
 applyHuman ts = do
+  -- TODO: factor all the code below out
   itemSel <- getsSession sitemSel
   case itemSel of
     Just (fromCStore, iid) -> do
@@ -537,7 +538,7 @@ permittedApplyClient triggerSyms = do
   localTime <- getsState $ getLocalTime (blid b)
   return $ permittedApply localTime skill b activeItems triggerSyms
 
-selectItemToApply :: MonadClientUI m
+selectItemToApply :: forall m. MonadClientUI m
                   => [Trigger] -> m (SlideOrCmd (CStore, (ItemId, ItemFull)))
 selectItemToApply ts = do
   leader <- getLeaderUI
@@ -552,13 +553,12 @@ selectItemToApply ts = do
         tr : _ -> (verb tr, object tr)
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What to apply"
-  p <- permittedApplyClient $ triggerSymbols ts
-  -- TODO: call permittedApplyClient inside suits to check non-leader skill
-  -- and fail somehow or refuse to switch leader or something
-  -- or at least not to show illegal items by default, only after ?
-  let suits = return $ SuitsSomething $ either (const False) id . p
+      psuit :: m Suitability
+      psuit = do
+        mp <- permittedApplyClient $ triggerSymbols ts
+        return $ SuitsSomething $ either (const False) id . mp
   ggi <- getGroupItem
-           suits prompt promptGeneric False cLegalRaw cLegal ISuitable
+           psuit prompt promptGeneric False cLegalRaw cLegal ISuitable
   case ggi of
     Right ((iid, itemFull), MStore fromCStore) ->
       return $ Right (fromCStore, (iid, itemFull))
@@ -573,8 +573,7 @@ applyItem ts (fromCStore, (iid, itemFull)) = do
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
   let calmE = calmEnough b activeItems
-  if not calmE && fromCStore == CSha
-  then failSer ItemNotCalm
+  if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
     p <- permittedApplyClient $ triggerSymbols ts
     case p itemFull of

@@ -788,7 +788,7 @@ describeItemC c = do
         MStats -> assert `failure` ggi
     Left slides -> return $ Left slides
 
-projectHumanState :: forall m. MonadClientUI m
+projectHumanState :: MonadClientUI m
                   => [Trigger] -> ItemDialogState
                   -> m (SlideOrCmd (RequestTimed 'Ability.AbProject))
 projectHumanState ts initalState = do
@@ -800,35 +800,46 @@ projectHumanState ts initalState = do
   -- Set cursor to the personal target, permanently.
   tgt <- getsClient $ getTarget leader
   modifyClient $ \cli -> cli {scursor = fromMaybe (scursor cli) tgt}
-  -- Let the user pick the item to fling.
-  let posFromCursor :: m (Either Msg Point)
-      posFromCursor = do
-        canAim <- aidTgtAims leader lidV Nothing
-        case canAim of
-          Right newEps -> do
-            -- Modify @seps@, permanently.
-            modifyClient $ \cli -> cli {seps = newEps}
-            mpos <- aidTgtToPos leader lidV Nothing
-            case mpos of
-              Nothing -> assert `failure` (tgt, leader, lidV)
-              Just pos -> do
-                munit <- projectCheck pos
-                case munit of
-                  Nothing -> return $ Right pos
-                  Just reqFail -> return $ Left $ showReqFailure reqFail
-          Left cause -> return $ Left cause
-  mitem <- projectItem ts initalState posFromCursor
-  outcome <- case mitem of
-    Right (iid, fromCStore) -> do
-      mpos <- posFromCursor
-      case mpos of
-        Right pos -> do
-          eps <- getsClient seps
-          return $ Right $ ReqProject pos eps iid fromCStore
-        Left cause -> failWith cause
-    Left sli -> return $ Left sli
+  -- Determine the item to project.
+  itemSel <- getsSession sitemSel
+  outcome <- case itemSel of
+    Just (fromCStore, iid) -> do
+      bag <- getsState $ getActorBag leader fromCStore
+      case iid `EM.lookup` bag of
+        Nothing -> do  -- used up
+          modifySession $ \sess -> sess {sitemSel = Nothing}
+          projectHumanState ts initalState
+        Just kit -> do
+          itemToF <- itemToFullClient
+          let i = (fromCStore, (iid, itemToF iid kit))
+          projectItem ts i
+    Nothing -> do
+      mis <- selectItemToProject ts initalState
+      case mis of
+        Left slides -> return $ Left slides
+        Right i -> projectItem ts i
+  -- Bring back old aiming mode.
   modifySession $ \sess -> sess {stgtMode = oldTgtMode}
   return outcome
+
+posFromCursor :: MonadClientUI m => m (Either Msg Point)
+posFromCursor = do
+  leader <- getLeaderUI
+  lidV <- viewedLevel
+  canAim <- aidTgtAims leader lidV Nothing
+  case canAim of
+    Right newEps -> do
+      -- Modify @seps@, permanently.
+      modifyClient $ \cli -> cli {seps = newEps}
+      mpos <- aidTgtToPos leader lidV Nothing
+      case mpos of
+        Nothing -> assert `failure` (leader, lidV)
+        Just pos -> do
+          munit <- projectCheck pos
+          case munit of
+            Nothing -> return $ Right pos
+            Just reqFail -> return $ Left $ showReqFailure reqFail
+    Left cause -> return $ Left cause
 
 projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
 projectCheck tpos = do
@@ -854,61 +865,82 @@ projectCheck tpos = do
           then return Nothing
           else return $ Just ProjectBlockActor
 
-projectItem :: forall m. MonadClientUI m
-            => [Trigger] -> ItemDialogState -> m (Either Msg Point)
-            -> m (SlideOrCmd (ItemId, CStore))
-projectItem ts initalState posFromCursor = do
+permittedProjectClient :: MonadClientUI m
+                       => [Char] -> m (ItemFull -> Either ReqFailure Bool)
+permittedProjectClient triggerSyms = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  actorSk <- actorSkillsClient leader
+  let skill = EM.findWithDefault 0 Ability.AbProject actorSk
+  activeItems <- activeItemsClient leader
+  return $ permittedProject False skill b activeItems triggerSyms
+
+psuitReq :: MonadClientUI m
+         => [Trigger] -> m (Either Msg (ItemFull -> Either ReqFailure (Point, Bool)))
+psuitReq ts = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  mpos <- posFromCursor
+  p <- permittedProjectClient $ triggerSymbols ts
+  case mpos of
+    Left err -> return $ Left err
+    Right pos -> return $ Right $ \itemFull@ItemFull{itemBase} ->
+      case p itemFull of
+        Left slides -> Left slides
+        Right False -> Right (pos, False)
+        Right True -> Right (pos, totalRange itemBase >= chessDist (bpos b) pos)
+
+selectItemToProject :: forall m. MonadClientUI m
+                    => [Trigger] -> ItemDialogState
+                    -> m (SlideOrCmd (CStore, (ItemId, ItemFull)))
+selectItemToProject ts initalState = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
-  actorSk <- actorSkillsClient leader
-  let skill = EM.findWithDefault 0 Ability.AbProject actorSk
-      calmE = calmEnough b activeItems
+  let calmE = calmEnough b activeItems
       cLegalRaw = [CGround, CInv, CEqp, CSha]
       cLegal | calmE = cLegalRaw
              | otherwise = delete CSha cLegalRaw
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
-      triggerSyms = triggerSymbols ts
-      psuitReq :: m (Either Msg (ItemFull -> Either ReqFailure Bool))
-      psuitReq = do
-        mpos <- posFromCursor
-        case mpos of
-          Left err -> return $ Left err
-          Right pos -> return $ Right $ \itemFull@ItemFull{itemBase} -> do
-            let legal = permittedProject triggerSyms False skill
-                                         itemFull b activeItems
-            case legal of
-              Left{} -> legal
-              Right False -> legal
-              Right True ->
-                Right $ totalRange itemBase >= chessDist (bpos b) pos
       psuit :: m Suitability
       psuit = do
-        mpsuitReq <- psuitReq
+        mpsuitReq <- psuitReq ts
         case mpsuitReq of
           -- If target invalid, no item is considered a (suitable) missile.
           Left err -> return $ SuitsNothing err
-          Right psuitReqFun -> return $ SuitsSomething $ \itemFull ->
-            case psuitReqFun itemFull of
-              Left _ -> False
-              Right suit -> suit
+          Right psuitReqFun ->
+            return $ SuitsSomething $ either (const False) snd . psuitReqFun
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What to fling"
-  ggi <- getGroupItem psuit prompt promptGeneric True
-                      cLegalRaw cLegal initalState
+  ggi <- getGroupItem
+           psuit prompt promptGeneric True cLegalRaw cLegal initalState
   case ggi of
-    Right ((iid, itemFull), MStore fromCStore) -> do
-      mpsuitReq <- psuitReq
-      case mpsuitReq of
-        Left err -> failWith err
-        Right psuitReqFun ->
-          case psuitReqFun itemFull of
-            Left reqFail -> failSer reqFail
-            Right _ -> return $ Right (iid, fromCStore)
+    Right ((iid, itemFull), MStore fromCStore) ->
+      return $ Right (fromCStore, (iid, itemFull))
     Left slides -> return $ Left slides
     _ -> assert `failure` ggi
+
+projectItem :: MonadClientUI m
+            => [Trigger] -> (CStore, (ItemId, ItemFull))
+            -> m (SlideOrCmd (RequestTimed 'Ability.AbProject))
+projectItem ts (fromCStore, (iid, itemFull)) = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  activeItems <- activeItemsClient leader
+  let calmE = calmEnough b activeItems
+  if not calmE && fromCStore == CSha then failSer ItemNotCalm
+  else do
+    mpsuitReq <- psuitReq ts
+    case mpsuitReq of
+      Left err -> failWith err
+      Right psuitReqFun ->
+        case psuitReqFun itemFull of
+          Left reqFail -> failSer reqFail
+          Right (pos, _) -> do
+            eps <- getsClient seps
+            return $ Right $ ReqProject pos eps iid fromCStore
 
 triggerSymbols :: [Trigger] -> [Char]
 triggerSymbols [] = []

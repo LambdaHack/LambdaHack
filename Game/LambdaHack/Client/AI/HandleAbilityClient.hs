@@ -630,7 +630,7 @@ projectItem aid = do
           -- and no actors or obstracles along the path.
           let q _ itemFull b2 activeItems =
                 either (const False) id
-                $ permittedProject " " False skill itemFull b2 activeItems
+                $ permittedProject False skill b2 activeItems " " itemFull
           activeItems <- activeItemsClient aid
           let calmE = calmEnough b activeItems
               stores = [CEqp, CInv, CGround] ++ [CSha | calmE]

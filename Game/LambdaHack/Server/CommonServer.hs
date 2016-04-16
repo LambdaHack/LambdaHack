@@ -283,7 +283,7 @@ projectFail source tpxy eps iid cstore isBlast = do
           let skill = EM.findWithDefault 0 Ability.AbProject actorSk
               itemFull@ItemFull{itemBase} = itemToF iid kit
               forced = isBlast || bproj sb
-              legal = permittedProject " " forced skill itemFull sb activeItems
+              legal = permittedProject forced skill sb activeItems " " itemFull
           case legal of
             Left reqFail ->  return $ Just reqFail
             Right _ -> do
