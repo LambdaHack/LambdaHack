@@ -1,7 +1,7 @@
 -- | Helper functions for both inventory management and human commands.
 module Game.LambdaHack.Client.UI.HandleHelperClient
   ( memberCycle, memberBack, pickLeader, partyAfterLeader
-  , cursorPointerFloor, cursorPointerEnemy
+  , endTargeting, cursorPointerFloor, cursorPointerEnemy
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman
   , epsIncrHuman, tgtClearHuman, doLook
   ) where
@@ -117,6 +117,13 @@ pickLeader verbose aid = do
       lookMsg <- lookAt False "" True (bpos pbody) aid ""
       when verbose $ msgAdd lookMsg
       return True
+
+-- | End targeting mode, accepting the current position.
+endTargeting :: MonadClientUI m => m ()
+endTargeting = do
+  leader <- getLeaderUI
+  scursor <- getsClient scursor
+  modifyClient $ updateTarget leader $ const $ Just scursor
 
 cursorPointerFloor :: MonadClientUI m => Bool -> Bool -> m Slideshow
 cursorPointerFloor verbose addMoreMsg = do

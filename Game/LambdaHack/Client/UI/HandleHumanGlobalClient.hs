@@ -251,7 +251,14 @@ meleeAid target = do
   case mel of
     Nothing -> failWith "nothing to melee with"
     Just wp -> do
-      let returnCmd = return $ Right wp
+      let returnCmd = do
+            -- Set personal target to the enemy position,
+            -- to easily him with a ranged attack when he flees.
+            let f (Just (TEnemy _ b)) = Just $ TEnemy target b
+                f (Just (TEnemyPos _ _ _ b)) = Just $ TEnemy target b
+                f _ = Just $ TEnemy target False
+            modifyClient $ updateTarget leader f
+            return $ Right wp
           res | bproj tb || isAtWar sfact (bfid tb) = returnCmd
               | isAllied sfact (bfid tb) = do
                 go1 <- displayYesNo ColorBW
@@ -878,13 +885,6 @@ acceptHuman = do
   endTargetingMsg
   modifySession $ \sess -> sess {stgtMode = Nothing}
   return $ Left mempty
-
--- | End targeting mode, accepting the current position.
-endTargeting :: MonadClientUI m => m ()
-endTargeting = do
-  leader <- getLeaderUI
-  scursor <- getsClient scursor
-  modifyClient $ updateTarget leader $ const $ Just scursor
 
 endTargetingMsg :: MonadClientUI m => m ()
 endTargetingMsg = do

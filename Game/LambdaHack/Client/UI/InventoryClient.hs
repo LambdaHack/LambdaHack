@@ -13,7 +13,7 @@ import Prelude.Compat
 import Control.Exception.Assert.Sugar
 import Control.Monad (filterM, void, when)
 import qualified Data.Char as Char
-import Data.Either (rights)
+import Data.Either (isRight, rights)
 import qualified Data.EnumMap.Strict as EM
 import Data.List (delete, find, findIndex, intersect, nub)
 import qualified Data.Map.Strict as M
@@ -820,6 +820,8 @@ projectHumanState ts initalState = do
         Right i -> projectItem ts i
   -- Bring back old aiming mode.
   modifySession $ \sess -> sess {stgtMode = oldTgtMode}
+  -- Set personal target to eventual cursor potision, permanently.
+  when (isRight outcome) $ endTargeting
   return outcome
 
 posFromCursor :: MonadClientUI m => m (Either Msg Point)
