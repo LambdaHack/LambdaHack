@@ -3,7 +3,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   ( -- * Assorted commands
-    gameDifficultyIncr
+    describeItemHuman, gameDifficultyIncr
   , pickLeaderHuman, pickLeaderWithPointerHuman
   , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, clearHuman
@@ -34,6 +34,7 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.HandleHelperClient
+import Game.LambdaHack.Client.UI.InventoryClient
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
@@ -55,6 +56,13 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.TileKind as TK
+
+-- * DescribeItem
+
+-- | Display items from a given container store and describe the chosen one.
+describeItemHuman :: MonadClientUI m
+                  => ItemDialogMode -> m Slideshow
+describeItemHuman = describeItemC
 
 -- * GameDifficultyIncr
 

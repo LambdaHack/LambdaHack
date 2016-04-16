@@ -8,8 +8,7 @@
 module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   ( -- * Commands that usually take time
     byAreaHuman, byModeHuman, sequenceHuman, moveRunHuman, waitHuman
-  , moveItemHuman, describeItemHuman
-  , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
+  , moveItemHuman, projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , runOnceAheadHuman, moveOnceToCursorHuman
   , runOnceToCursorHuman, continueToCursorHuman
     -- * Commands that never take time
@@ -496,13 +495,6 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
       Right [] -> assert `failure` l
       Right lr -> Right $ ReqMoveItems lr
 
--- * DescribeItem
-
--- | Display items from a given container store and describe the chosen one.
-describeItemHuman :: MonadClientUI m
-                  => ItemDialogMode -> m (SlideOrCmd RequestUI)
-describeItemHuman = describeItemC
-
 -- * Project
 
 projectHuman :: MonadClientUI m
@@ -866,7 +858,7 @@ helpHuman cmdAction = do
   keyb <- askBinding
   menuIxHelp <- getsSession smenuIxHelp
   (ekm, pointer) <-
-    displayChoiceScreen True menuIxHelp (fst $ keyHelp keyb) [K.spaceKM]
+    displayChoiceScreen True menuIxHelp (keyHelp keyb) [K.spaceKM]
   modifySession $ \sess -> sess {smenuIxHelp = pointer}
   case ekm of
     Left km -> case km `M.lookup` bcmdMap keyb of

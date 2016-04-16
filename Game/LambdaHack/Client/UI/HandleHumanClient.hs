@@ -47,7 +47,6 @@ cmdAction cmd = case cmd of
   Wait -> Right <$> fmap timedToUI waitHuman
   MoveItem cLegalRaw toCStore mverb _ auto ->
     fmap timedToUI <$> moveItemHuman cLegalRaw toCStore mverb auto
-  DescribeItem cstore -> describeItemHuman cstore
   Project ts -> fmap timedToUI <$> projectHuman ts
   Apply ts -> fmap timedToUI <$> applyHuman ts
   AlterDir ts -> fmap timedToUI <$> alterDirHuman ts
@@ -70,6 +69,7 @@ cmdAction cmd = case cmd of
   Accept -> acceptHuman
 
   -- Local.
+  DescribeItem cstore -> Left <$> describeItemHuman cstore
   PickLeader k -> Left <$> pickLeaderHuman k
   PickLeaderWithPointer -> Left <$> pickLeaderWithPointerHuman
   MemberCycle -> Left <$> memberCycleHuman

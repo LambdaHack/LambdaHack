@@ -58,9 +58,9 @@ standardKeys = KeyKind
            [ TriggerFeature { verb = "ascend"
                             , object = "10 levels"
                             , feature = TK.Cause (IK.Ascend 10) } ]))
-      , ("greater", ([CmdMove, CmdItem, CmdItemMenu, CmdMinimal], descendDrop))
-      , ("d", ([CmdMove, CmdItem, CmdItemMenu], Alias "" descendDrop))
-      , ("period", ([CmdInternal, CmdItemMenu], Alias "" descendDrop))
+      , ("greater", ([CmdMove, CmdItem, CmdMinimal], descendDrop))
+      , ("d", ([CmdMove, CmdItem], Alias "" descendDrop))
+      , ("period", ([CmdInternal], Alias "" descendDrop))
       , ("CTRL-greater", ([CmdInternal], TriggerTile
            [ TriggerFeature { verb = "descend"
                             , object = "10 levels"
@@ -100,20 +100,20 @@ standardKeys = KeyKind
            ]))
 
       -- Item use
-      , ("f", ([CmdItem, CmdItemMenu], Project
+      , ("f", ([CmdItem], Project
            [ApplyItem { verb = "fling"
                       , object = "projectile"
                       , symbol = ' ' }]))
-      , ("a", ([CmdItem, CmdItemMenu], Apply
+      , ("a", ([CmdItem], Apply
            [ ApplyItem { verb = "apply"
                        , object = "consumable"
                        , symbol = ' ' } ]))
-      , ("e", ( [CmdItem, CmdItemMenu]
+      , ("e", ( [CmdItem]
               , MoveItem [CGround, CInv, CSha] CEqp Nothing "item" False) )
-      , ("p", ( [CmdItem, CmdItemMenu]
+      , ("p", ( [CmdItem]
               , MoveItem [CGround, CEqp, CSha] CInv Nothing
                          "item into inventory" False) )
-      , ("s", ( [CmdItem, CmdItemMenu]
+      , ("s", ( [CmdItem]
               , MoveItem [CGround, CInv, CEqp] CSha Nothing
                          "and share item" False) )
       , ("E", ([CmdItem, CmdMinimal], DescribeItem $ MStore CEqp))

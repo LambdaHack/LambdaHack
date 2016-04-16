@@ -668,14 +668,8 @@ pickNumber askNumber kAll = do
            Right 0 -> failWith "zero items chosen"
            _ -> return num
 
--- | Create a list of item names.
-_floorItemOverlay :: MonadClientUI m
-                  => LevelId -> Point
-                  -> m (SlideOrCmd RequestUI)
-_floorItemOverlay _lid _p = describeItemC MOwned {-CFloor lid p-}
-
 describeItemC :: forall m. MonadClientUI m
-              => ItemDialogMode -> m (SlideOrCmd RequestUI)
+              => ItemDialogMode -> m Slideshow
 describeItemC c = do
   let subject = partActor
       verbSha body activeItems = if calmEnough body activeItems
@@ -729,51 +723,14 @@ describeItemC c = do
               blurb | symbol == '+' = "drop temporary conditions"
                     | otherwise = "amputate organs"
           -- TODO: also forbid on the server, except in special cases.
-          Left <$> overlayToSlideshow ("Can't"
-                                       <+> blurb
-                                       <> ", but here's the description.") io
+          overlayToSlideshow ("Can't"
+                              <+> blurb
+                              <> ", but here's the description.") io
         MStore CSha | not calmE ->
-          Left <$> overlayToSlideshow "Not enough calm to take items from the shared stash, but here's the description." io
+          overlayToSlideshow "Not enough calm to manipulate items in the shared stash, but here's the description." io
         MStore fromCStore -> do
-          keyb <- askBinding
-          let eqpFree = eqpFreeN b
-              moveItems toCStore | toCStore == fromCStore =
-                failWith "vacuus command"
-              moveItems CEqp | eqpFree == 0 = failWith "no free equipment slot"
-              moveItems CSha | not calmE = failWith "not calm enough"
-              moveItems toCStore = do
-                let k = itemK itemFull
-                    kToPick | toCStore == CEqp = min eqpFree k
-                            | otherwise = k
-                socK <- pickNumber True kToPick
-                case socK of
-                  Left slides -> return $ Left slides
-                  Right kChosen ->
-                    return $ Right $ timedToUI
-                           $ ReqMoveItems [(iid, kChosen, fromCStore, toCStore)]
-              (_, (ov, kyxs)) = keyHelp keyb
-              renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
-              zipRenumber y = zipWith renumber [y..]
-              okx = (io <> ov, zipRenumber (length (overlay io) + 2) kyxs)
-              -- TODO: split okx; also handle io larger than screen size
-              serverCmd cmd = case cmd of
-                Alias _ cmd2 -> serverCmd cmd2
-                MoveItem _ store _ _ _ -> moveItems store
-                Sequence _ (MoveItem _ store _ _ _ : _) -> moveItems store
-                Sequence _ (_ : (MoveItem _ store _ _ _) : _) -> moveItems store
-                -- TODO: with throw, move cursor afterwards and press RET
-                Project{} -> fmap timedToUI <$> projectHumanState [] INoAll
-                Apply{} -> return $ Right $ timedToUI $ ReqApply iid fromCStore
-                _ -> failWith "never mind"
-              hackAlias = [ K.KM K.NoModifier (K.Char '.')
-                          , K.KM K.NoModifier (K.Char 'd') ]
-          (ekm, _) <- displayChoiceScreen False 0 [okx] $ K.escKM : hackAlias
-          case ekm of
-            Left km | km == K.escKM -> describeItemC c
-            Left km -> case km `M.lookup` bcmdMap keyb of
-              Nothing -> failWith "never mind"
-              Just (_desc, _cats, cmd) -> serverCmd cmd
-            Right _slot -> assert `failure` ekm
+          modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+          overlayToSlideshow "" io
         MOwned -> do
           -- We can't move items from MOwned, because different copies may come
           -- from different stores and we can't guess player's intentions.
@@ -784,9 +741,9 @@ describeItemC c = do
                                                              <+> bname b2
               foundTexts = map ppLoc found
               prompt2 = makeSentence ["The item is", MU.WWandW foundTexts]
-          Left <$> overlayToSlideshow prompt2 io
+          overlayToSlideshow prompt2 io
         MStats -> assert `failure` ggi
-    Left slides -> return $ Left slides
+    Left slides -> return slides
 
 projectHumanState :: MonadClientUI m
                   => [Trigger] -> ItemDialogState

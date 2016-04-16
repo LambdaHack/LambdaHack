@@ -22,7 +22,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 
 data CmdCategory =
     CmdMainMenu | CmdSettingsMenu
-  | CmdMove | CmdItemMenu | CmdItem | CmdTgt | CmdMeta | CmdMouse
+  | CmdMove | CmdItem | CmdTgt | CmdMeta | CmdMouse
   | CmdInternal | CmdDebug | CmdMinimal
   deriving (Show, Read, Eq, Generic)
 
@@ -34,7 +34,6 @@ categoryDescription :: CmdCategory -> Text
 categoryDescription CmdMainMenu = "Main Menu"
 categoryDescription CmdSettingsMenu = "Settings Menu"
 categoryDescription CmdMove = "Terrain exploration and alteration"
-categoryDescription CmdItemMenu = "Item use"
 categoryDescription CmdItem = "Item use"
 categoryDescription CmdTgt = "Aiming and targeting"
 categoryDescription CmdMeta = "Assorted"
@@ -76,7 +75,6 @@ data HumanCmd =
   | Run !Vector
   | Wait
   | MoveItem ![CStore] !CStore !(Maybe MU.Part) !MU.Part !Bool
-  | DescribeItem !ItemDialogMode
   | Project     ![Trigger]
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]
@@ -93,6 +91,7 @@ data HumanCmd =
   | Automate
     -- Local.
     -- Below this line, commands do not notify the server.
+  | DescribeItem !ItemDialogMode
   | GameDifficultyIncr
   | PickLeader !Int
   | PickLeaderWithPointer
@@ -174,13 +173,6 @@ cmdDescription cmd = case cmd of
   MoveItem _ store2 mverb object _ ->
     let verb = fromMaybe (MU.Text $ verbCStore store2) mverb
     in makePhrase [verb, object]
-  DescribeItem (MStore CGround) -> "manage items on the ground"
-  DescribeItem (MStore COrgan) -> "describe organs of the leader"
-  DescribeItem (MStore CEqp) -> "manage equipment of the leader"
-  DescribeItem (MStore CInv) -> "manage inventory pack of the leader"
-  DescribeItem (MStore CSha) -> "manage the shared party stash"
-  DescribeItem MOwned -> "describe all owned items"
-  DescribeItem MStats -> "show the stats summary of the leader"
   Project ts  -> triggerDescription ts
   Apply ts    -> triggerDescription ts
   AlterDir ts -> triggerDescription ts
@@ -199,6 +191,13 @@ cmdDescription cmd = case cmd of
   Automate    -> "automate faction"
   GameDifficultyIncr -> "cycle next difficulty"
 
+  DescribeItem (MStore CGround) -> "manage items on the ground"
+  DescribeItem (MStore COrgan) -> "describe organs of the leader"
+  DescribeItem (MStore CEqp) -> "manage equipment of the leader"
+  DescribeItem (MStore CInv) -> "manage inventory pack of the leader"
+  DescribeItem (MStore CSha) -> "manage the shared party stash"
+  DescribeItem MOwned -> "describe all owned items"
+  DescribeItem MStats -> "show the stats summary of the leader"
   PickLeader{} -> "pick leader"
   PickLeaderWithPointer -> "pick leader with mouse pointer"
   MemberCycle -> "cycle among party members on the level"
