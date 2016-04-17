@@ -55,7 +55,8 @@ defaultCmdRMB =
   common =
     [ (CaMessage, Macro "" ["R"])
     , (CaMapLeader, descendDrop)
-    , (CaArenaName, ByMode "accept target/choice or open Help" Help Accept)
+    , ( CaArenaName
+      , ByMode "accept target/choice or open Help" (Help Nothing) Accept )
     , (CaXhairDesc, TgtFloor)  -- inits aiming and then cycles aim mode
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, ChooseItem MStats)

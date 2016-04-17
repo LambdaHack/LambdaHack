@@ -10,6 +10,7 @@ import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Maybe
 import Data.Text (Text)
+import qualified Data.Text as T
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
@@ -108,7 +109,7 @@ data HumanCmd =
   | MarkVision
   | MarkSmell
   | MarkSuspect
-  | Help
+  | Help !(Maybe Text)
   | MainMenu
   | SettingsMenu
     -- These are mostly related to targeting.
@@ -215,7 +216,9 @@ cmdDescription cmd = case cmd of
   MarkVision  -> "toggle visible zone"
   MarkSmell   -> "toggle smell clues"
   MarkSuspect -> "toggle suspect terrain"
-  Help        -> "display help"
+  Help mstart ->
+    let about = maybe "" (\t -> if T.null t then "" else "about" <+> t) mstart
+    in "display help" <+> about
   MainMenu    -> "display the Main Menu"
   SettingsMenu -> "display the Settings Menu"
 

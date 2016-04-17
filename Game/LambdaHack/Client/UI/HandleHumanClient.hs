@@ -64,7 +64,7 @@ cmdAction cmd = case cmd of
   Automate -> automateHuman
   MainMenu -> mainMenuHuman cmdAction
   SettingsMenu -> settingsMenuHuman cmdAction
-  Help -> helpHuman cmdAction
+  Help mstart -> helpHuman cmdAction mstart
   GameDifficultyIncr -> gameDifficultyIncr >> mainMenuHuman cmdAction
   Cancel -> cancelHuman
   Accept -> acceptHuman

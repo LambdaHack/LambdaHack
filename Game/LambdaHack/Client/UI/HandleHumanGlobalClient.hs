@@ -30,6 +30,7 @@ import Data.Either (isRight)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List (delete, mapAccumL)
+import Data.List (findIndex)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
@@ -40,6 +41,7 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -1024,13 +1026,22 @@ cancelHuman = do
 
 -- | Display command help.
 helpHuman :: MonadClientUI m
-          => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
+          => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI)) -> Maybe Text
           -> m (SlideOrCmd RequestUI)
-helpHuman cmdAction = do
+helpHuman cmdAction mstart = do
   keyb <- askBinding
-  menuIxHelp <- getsSession smenuIxHelp
+  let keyH = keyHelp keyb
+  menuIxHelp <- case mstart of
+    Nothing -> getsSession smenuIxHelp
+    Just "" -> return 0
+    Just t -> do
+      let tkm = K.mkKM (T.unpack t)
+          matchKeyOrSlot (Left km) = km == tkm
+          matchKeyOrSlot (Right slot) = slotLabel slot == t
+          mindex = findIndex (matchKeyOrSlot . fst) $ concat $ map snd keyH
+      return $! fromMaybe 0 mindex
   (ekm, pointer) <-
-    displayChoiceScreen True menuIxHelp (keyHelp keyb) [K.spaceKM]
+    displayChoiceScreen True menuIxHelp keyH [K.spaceKM]
   modifySession $ \sess -> sess {smenuIxHelp = pointer}
   case ekm of
     Left km -> case km `M.lookup` bcmdMap keyb of

@@ -27,7 +27,7 @@ standardKeys = KeyKind
 
       -- Main Menu
       [ ("Escape", ([CmdMainMenu], Alias "back to playing" Clear))
-      , ("?", ([CmdMainMenu], Alias "see command help" Help))
+      , ("?", ([CmdMainMenu], Alias "see command help" (Help $ Just "") ))
       , ("S", ([CmdMainMenu], Alias "enter settings menu" SettingsMenu))
       , ("X", ([CmdMainMenu], GameExit))
       , ("r", ([CmdMainMenu], GameRestart "raid"))
@@ -153,11 +153,12 @@ standardKeys = KeyKind
           , ByMode "cancel target/action or open Main Menu" MainMenu Cancel ) )
       , ( "Return"
         , ( [CmdTgt, CmdMinimal]
-          , ByMode "accept target/choice or open Help" Help Accept ) )
+          , ByMode "accept target/choice or open Help"
+                   (Help $ Just "") Accept ) )
 
       -- Assorted
       , ("space", ([CmdMeta], Clear))
-      , ("question", ([CmdMeta], Help))
+      , ("question", ([CmdMeta], Help Nothing))
       , ("D", ([CmdMeta, CmdMinimal], History))
       , ("Tab", ([CmdMeta], MemberCycle))
       , ("ISO_Left_Tab", ([CmdMeta, CmdMinimal], MemberBack))
