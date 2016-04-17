@@ -381,11 +381,12 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
   case itemSel of
     Just (fromCStore, iid) | cLegalRaw /= [CGround]  -- not normal pickup
                              && fromCStore /= destCStore -> do  -- not vacuous
-      modifySession $ \sess -> sess {sitemSel = Nothing}
       leader <- getLeaderUI
       bag <- getsState $ getActorBag leader fromCStore
       case iid `EM.lookup` bag of
-        Nothing -> moveItemHuman cLegalRaw destCStore mverb auto  -- used up
+        Nothing -> do  -- used up
+          modifySession $ \sess -> sess {sitemSel = Nothing}
+          moveItemHuman cLegalRaw destCStore mverb auto
         Just (k, it) -> do
           itemToF <- itemToFullClient
           b <- getsState $ getActorBody leader
@@ -393,6 +394,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
               kToPick | destCStore == CEqp = min eqpFree k
                       | otherwise = k
           socK <- pickNumber True kToPick
+          modifySession $ \sess -> sess {sitemSel = Nothing}
           case socK of
             Left slides -> return $ Left slides
             Right kChosen ->
