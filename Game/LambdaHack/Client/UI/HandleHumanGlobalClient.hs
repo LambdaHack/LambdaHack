@@ -7,7 +7,8 @@
 -- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   ( -- * Commands that usually take time
-    byAreaHuman, byModeHuman, sequenceHuman, moveRunHuman, waitHuman
+    byAreaHuman, byModeHuman, sequenceHuman, composeIfEmptyHuman
+  , moveRunHuman, waitHuman
   , moveItemHuman, projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , runOnceAheadHuman, moveOnceToCursorHuman
   , runOnceToCursorHuman, continueToCursorHuman
@@ -159,6 +160,18 @@ sequenceHuman cmdAction failureMsg l =
           Left{} -> seqCmd rest
           Right{} -> return slideOrCmd
   in seqCmd l
+
+-- * ComposeIfEmpty
+
+composeIfEmptyHuman :: MonadClientUI m
+                    => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
+                    -> HumanCmd.HumanCmd -> HumanCmd.HumanCmd
+                    -> m (SlideOrCmd RequestUI)
+composeIfEmptyHuman cmdAction cmd1 cmd2 = do
+  slideOrCmd1 <- cmdAction cmd1
+  case slideOrCmd1 of
+    Left slides | slides == mempty -> cmdAction cmd2
+    _ -> return slideOrCmd1
 
 -- * Move and Run
 

@@ -68,6 +68,7 @@ data HumanCmd =
   | ByArea !Text ![(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
   | ByMode !Text !HumanCmd !HumanCmd
   | Sequence !Text !Text ![HumanCmd]
+  | ComposeIfEmpty !Text !HumanCmd !HumanCmd
 
     -- Global.
     -- These usually take time.
@@ -166,6 +167,7 @@ cmdDescription cmd = case cmd of
   ByArea t _  -> t
   ByMode t _ _ -> t
   Sequence t _ _ -> t
+  ComposeIfEmpty t _ _ -> t
 
   Move v      -> "move" <+> compassText v
   Run v       -> "run" <+> compassText v
