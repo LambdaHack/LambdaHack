@@ -29,6 +29,7 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
+import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
@@ -45,6 +46,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -62,7 +64,80 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- | Display items from a given container store and describe the chosen one.
 describeItemHuman :: MonadClientUI m
                   => ItemDialogMode -> m Slideshow
-describeItemHuman = describeItemC
+describeItemHuman c = do
+  let subject = partActor
+      verbSha body activeItems = if calmEnough body activeItems
+                                 then "notice"
+                                 else "paw distractedly"
+      prompt body activeItems c2 =
+        let (tIn, t) = ppItemDialogMode c2
+        in case c2 of
+        MStore CGround ->  -- TODO: variant for actors without (unwounded) feet
+          makePhrase
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "notice"
+            , MU.Text "at"
+            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text "feet" ]
+        MStore CSha ->
+          makePhrase
+            [ MU.Capitalize
+              $ MU.SubjectVerbSg (subject body) (verbSha body activeItems)
+            , MU.Text tIn
+            , MU.Text t ]
+        MStore COrgan ->
+          makePhrase
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "feel"
+            , MU.Text tIn
+            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
+        MOwned ->
+          makePhrase
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "recall"
+            , MU.Text tIn
+            , MU.Text t ]
+        MStats ->
+          makePhrase
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "estimate"
+            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
+        _ ->
+          makePhrase
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"
+            , MU.Text tIn
+            , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
+  ggi <- getStoreItem prompt c
+  case ggi of
+    Right ((iid, itemFull), c2) -> do
+      leader <- getLeaderUI
+      b <- getsState $ getActorBody leader
+      activeItems <- activeItemsClient leader
+      let calmE = calmEnough b activeItems
+      localTime <- getsState $ getLocalTime (blid b)
+      let io = itemDesc (storeFromMode c2) localTime itemFull
+      case c2 of
+        MStore COrgan -> do
+          let symbol = jsymbol (itemBase itemFull)
+              blurb | symbol == '+' = "drop temporary conditions"
+                    | otherwise = "amputate organs"
+          -- TODO: also forbid on the server, except in special cases.
+          overlayToSlideshow ("Can't"
+                              <+> blurb
+                              <> ", but here's the description.") io
+        MStore CSha | not calmE ->
+          overlayToSlideshow "Not enough calm to manipulate items in the shared stash, but here's the description." io
+        MStore fromCStore -> do
+          modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+          overlayToSlideshow "" io
+        MOwned -> do
+          -- We can't move items from MOwned, because different copies may come
+          -- from different stores and we can't guess player's intentions.
+          found <- getsState $ findIid leader (bfid b) iid
+          let !_A = assert (not (null found) `blame` ggi) ()
+          let ppLoc (_, CSha) = MU.Text $ ppCStoreIn CSha <+> "of the party"
+              ppLoc (b2, store) = MU.Text $ ppCStoreIn store <+> "of"
+                                                             <+> bname b2
+              foundTexts = map ppLoc found
+              prompt2 = makeSentence ["The item is", MU.WWandW foundTexts]
+          overlayToSlideshow prompt2 io
+        MStats -> assert `failure` ggi
+    Left slides -> return slides
 
 -- * GameDifficultyIncr
 
