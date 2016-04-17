@@ -47,6 +47,7 @@ import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
+import qualified NLP.Miniutter.English as MU
 
 -- | Color mode for the display.
 data ColorMode =
@@ -63,11 +64,12 @@ draw :: MonadClient m
      -> Maybe Point -> Maybe Point
      -> Maybe (PointArray.Array BfsDistance, Maybe [Point])
      -> (Text, Maybe Text) -> (Text, Maybe Text)
-     -> ES.EnumSet ActorId -> Maybe TgtMode -> Bool -> Bool -> Int
+     -> ES.EnumSet ActorId -> Maybe TgtMode -> (Maybe (CStore, ItemId))
+     -> Bool -> Bool -> Int
      -> m SingleFrame
 draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
      (cursorDesc, mcursorHP) (targetDesc, mtargetHP)
-     selected stgtMode smarkVision smarkSmell swaitTimes = do
+     selected stgtMode sitemSel smarkVision smarkSmell swaitTimes = do
   cops <- getsState scops
   mleader <- getsClient _sleader
   s <- getState
@@ -205,16 +207,33 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
   nameStatus <- drawPlayerName (widthStats - length leaderStatus
                                            - length selectedStatus
                                            - length damageStatus)
-  let statusGap = toAttrLine $ T.replicate (widthStats - length leaderStatus
+  let tgtOrItem n | isJust stgtMode =
+        return $! "Target:" <+> trimTgtDesc (n - 8) targetDesc
+      tgtOrItem n = (\t -> "Item:" <+> trimTgtDesc (n - 6) t) <$> do
+        case (sitemSel, mleader) of
+          (Just (fromCStore, iid), Just leader) -> do  -- TODO: factor out
+            bag <- getsState $ getActorBag leader fromCStore
+            case iid `EM.lookup` bag of
+              Nothing -> return "invalid"
+              Just kit@(k, _) -> do
+                b <- getsState $ getActorBody leader
+                localTime <- getsState $ getLocalTime (blid b)
+                itemToF <- itemToFullClient
+                let (_, name, stats) =
+                      partItem fromCStore localTime (itemToF iid kit)
+                return $! makePhrase
+                       $ if k == 1
+                         then [name, stats]  -- "a sword" too wordy
+                         else [MU.CarWs k name, stats]
+          _ -> return "not chosen"
+      statusGap = toAttrLine $ T.replicate (widthStats - length leaderStatus
                                                     - length selectedStatus
                                                     - length damageStatus
                                                     - length nameStatus) " "
       -- The indicators must fit, they are the actual information.
       pathTgt = displayPathText tgtPos mtargetHP
-      targetText =
-        let n = widthTgt - T.length pathTgt - 8
-        in "Target:" <+> trimTgtDesc n targetDesc
-      targetGap = T.replicate (widthTgt - T.length pathTgt
+  targetText <- tgtOrItem $ widthTgt - T.length pathTgt
+  let targetGap = T.replicate (widthTgt - T.length pathTgt
                                         - T.length targetText) " "
       targetStatus = toAttrLine $ targetText <> targetGap <> pathTgt
       sfBottom =

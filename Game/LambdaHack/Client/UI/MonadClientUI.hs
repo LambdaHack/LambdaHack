@@ -208,11 +208,12 @@ drawBaseFrame dm lid = do
       pathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
+  sitemSel <- getsSession sitemSel
   cursorDesc <- targetDescCursor
   SessionUI{sselected, stgtMode, smarkVision, smarkSmell, swaitTimes}
     <- getSession
   draw dm lid cursorPos tgtPos bfsmpath cursorDesc tgtDesc
-       sselected stgtMode smarkVision smarkSmell swaitTimes
+       sselected stgtMode sitemSel smarkVision smarkSmell swaitTimes
 
 drawBaseFrameViewed :: MonadClientUI m => ColorMode -> m SingleFrame
 drawBaseFrameViewed dm = do
