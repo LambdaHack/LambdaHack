@@ -208,8 +208,8 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
                                            - length selectedStatus
                                            - length damageStatus)
   let tgtOrItem n | isJust stgtMode =
-        return $! "Target:" <+> trimTgtDesc (n - 8) targetDesc
-      tgtOrItem n = (\t -> "Item:" <+> trimTgtDesc (n - 6) t) <$> do
+        return $! "Target:" <+> trimTgtDesc n targetDesc
+      tgtOrItem n = (\t -> "Object:" <+> trimTgtDesc n t) <$> do
         case (sitemSel, mleader) of
           (Just (fromCStore, iid), Just leader) -> do  -- TODO: factor out
             bag <- getsState $ getActorBag leader fromCStore
@@ -232,7 +232,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
                                                     - length nameStatus) " "
       -- The indicators must fit, they are the actual information.
       pathTgt = displayPathText tgtPos mtargetHP
-  targetText <- tgtOrItem $ widthTgt - T.length pathTgt
+  targetText <- tgtOrItem $ widthTgt - T.length pathTgt - 8
   let targetGap = T.replicate (widthTgt - T.length pathTgt
                                         - T.length targetText) " "
       targetStatus = toAttrLine $ targetText <> targetGap <> pathTgt
