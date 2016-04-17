@@ -148,16 +148,17 @@ byModeHuman cmdNormalM cmdAimingM = do
 
 sequenceHuman :: MonadClientUI m
              => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
+             -> Text
              -> [HumanCmd.HumanCmd]
              -> m (SlideOrCmd RequestUI)
-sequenceHuman cmdAction l =
-  let seqCmd acc [] = return $ Left acc
-      seqCmd acc (c : rest) = do
+sequenceHuman cmdAction failureMsg l =
+  let seqCmd [] = failWith failureMsg
+      seqCmd (c : rest) = do
         slideOrCmd <- cmdAction c
         case slideOrCmd of
-          Left slides -> seqCmd (if slides == mempty then acc else slides) rest
+          Left{} -> seqCmd rest
           Right{} -> return slideOrCmd
-  in seqCmd mempty l
+  in seqCmd l
 
 -- * Move and Run
 

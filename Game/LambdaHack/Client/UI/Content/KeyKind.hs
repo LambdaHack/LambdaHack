@@ -50,7 +50,7 @@ defaultCmdRMB =
        , (CaMap, Macro ""
             ["MiddleButtonPress", "CTRL-colon", "CTRL-period", "V"]) ])
     (ByArea "aiming mode" $ common ++
-       [ (CaMap, Sequence "" [CursorPointerEnemy, Accept]) ])
+       [ (CaMap, Sequence "" "never mind" [CursorPointerEnemy, Accept]) ])
  where
   common =
     [ (CaMessage, Macro "" ["R"])
@@ -62,7 +62,7 @@ defaultCmdRMB =
     , (CaTargetDesc, ChooseItem $ MStore CEqp) ]
 
 getAscend :: HumanCmd
-getAscend = Sequence "get items or ascend"
+getAscend = Sequence "get items or ascend" "cannot get items nor ascend"
   [ MoveItem [CGround] CEqp (Just "get") "items" True
   , ByMode ""
       (TriggerTile
@@ -75,7 +75,7 @@ getAscend = Sequence "get items or ascend"
       (TgtAscend 1) ]
 
 descendDrop :: HumanCmd
-descendDrop = Sequence "descend or drop items"
+descendDrop = Sequence "descend or drop items" "cannot descend nor drop items"
   [ ByMode ""
       (TriggerTile
          [ TriggerFeature { verb = "descend"

@@ -67,7 +67,7 @@ data HumanCmd =
   | Alias !Text !HumanCmd
   | ByArea !Text ![(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
   | ByMode !Text !HumanCmd !HumanCmd
-  | Sequence !Text ![HumanCmd]
+  | Sequence !Text !Text ![HumanCmd]
 
     -- Global.
     -- These usually take time.
@@ -165,7 +165,7 @@ cmdDescription cmd = case cmd of
   Alias t _   -> t
   ByArea t _  -> t
   ByMode t _ _ -> t
-  Sequence t _ -> t
+  Sequence t _ _ -> t
 
   Move v      -> "move" <+> compassText v
   Run v       -> "run" <+> compassText v
