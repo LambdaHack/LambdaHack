@@ -3,7 +3,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   ( -- * Assorted commands
-    describeItemHuman, gameDifficultyIncr
+    chooseItemHuman, gameDifficultyIncr
   , pickLeaderHuman, pickLeaderWithPointerHuman
   , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, clearHuman
@@ -29,7 +29,6 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
-import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
@@ -59,12 +58,13 @@ import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.TileKind as TK
 
--- * DescribeItem
+-- * ChooseItem
 
--- | Display items from a given container store and describe the chosen one.
-describeItemHuman :: MonadClientUI m
+-- | Display items from a given container store and possibly let the user
+-- chose one.
+chooseItemHuman :: MonadClientUI m
                   => ItemDialogMode -> m Slideshow
-describeItemHuman c = do
+chooseItemHuman c = do
   let subject = partActor
       verbSha body activeItems = if calmEnough body activeItems
                                  then "notice"
@@ -107,34 +107,35 @@ describeItemHuman c = do
     Right ((iid, itemFull), c2) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
-      activeItems <- activeItemsClient leader
-      let calmE = calmEnough b activeItems
       localTime <- getsState $ getLocalTime (blid b)
       let io = itemDesc (storeFromMode c2) localTime itemFull
       case c2 of
         MStore COrgan -> do
           let symbol = jsymbol (itemBase itemFull)
-              blurb | symbol == '+' = "drop temporary conditions"
-                    | otherwise = "amputate organs"
+              blurb | symbol == '+' = "choose temporary conditions"
+                    | otherwise = "choose organs"
           -- TODO: also forbid on the server, except in special cases.
           overlayToSlideshow ("Can't"
                               <+> blurb
                               <> ", but here's the description.") io
-        MStore CSha | not calmE ->
-          overlayToSlideshow "Not enough calm to manipulate items in the shared stash, but here's the description." io
         MStore fromCStore -> do
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
-          overlayToSlideshow "" io
+          return mempty
         MOwned -> do
-          -- We can't move items from MOwned, because different copies may come
-          -- from different stores and we can't guess player's intentions.
           found <- getsState $ findIid leader (bfid b) iid
           let !_A = assert (not (null found) `blame` ggi) ()
-          let ppLoc (_, CSha) = MU.Text $ ppCStoreIn CSha <+> "of the party"
+              ppLoc (_, CSha) = MU.Text $ ppCStoreIn CSha <+> "of the party"
               ppLoc (b2, store) = MU.Text $ ppCStoreIn store <+> "of"
                                                              <+> bname b2
-              foundTexts = map ppLoc found
+              foundTexts = map (ppLoc . snd) found
               prompt2 = makeSentence ["The item is", MU.WWandW foundTexts]
+              (newAid, bestStore) = case leader `lookup` found of
+                Just (_, store) -> (leader, store)
+                Nothing -> case found of
+                  (aid, (_, store)) : _ -> (aid, store)
+                  [] -> assert `failure` iid
+          modifySession $ \sess -> sess {sitemSel = Just (bestStore, iid)}
+          void $ pickLeader True newAid
           overlayToSlideshow prompt2 io
         MStats -> assert `failure` ggi
     Left slides -> return slides

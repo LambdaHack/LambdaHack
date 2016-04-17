@@ -36,8 +36,8 @@ defaultCmdLMB =
       , ByMode "cancel target/action or open Main Menu" MainMenu Cancel )
     , (CaXhairDesc, TgtEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
-    , (CaLeaderStatus, DescribeItem (MStore COrgan))
-    , (CaTargetDesc, DescribeItem $ MStore CInv) ]
+    , (CaLeaderStatus, ChooseItem (MStore COrgan))
+    , (CaTargetDesc, ChooseItem $ MStore CInv) ]
 
 defaultCmdMMB :: HumanCmd
 defaultCmdMMB = CursorPointerFloor
@@ -58,8 +58,8 @@ defaultCmdRMB =
     , (CaArenaName, ByMode "accept target/choice or open Help" Help Accept)
     , (CaXhairDesc, TgtFloor)  -- inits aiming and then cycles aim mode
     , (CaSelected, SelectWithPointer)
-    , (CaLeaderStatus, DescribeItem MStats)
-    , (CaTargetDesc, DescribeItem $ MStore CEqp) ]
+    , (CaLeaderStatus, ChooseItem MStats)
+    , (CaTargetDesc, ChooseItem $ MStore CEqp) ]
 
 getAscend :: HumanCmd
 getAscend = Sequence "get items or ascend"

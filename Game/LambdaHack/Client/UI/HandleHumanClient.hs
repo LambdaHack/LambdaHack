@@ -69,7 +69,7 @@ cmdAction cmd = case cmd of
   Accept -> acceptHuman
 
   -- Local.
-  DescribeItem cstore -> Left <$> describeItemHuman cstore
+  ChooseItem cstore -> Left <$> chooseItemHuman cstore
   PickLeader k -> Left <$> pickLeaderHuman k
   PickLeaderWithPointer -> Left <$> pickLeaderWithPointerHuman
   MemberCycle -> Left <$> memberCycleHuman

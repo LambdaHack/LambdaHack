@@ -91,7 +91,7 @@ data HumanCmd =
   | Automate
     -- Local.
     -- Below this line, commands do not notify the server.
-  | DescribeItem !ItemDialogMode
+  | ChooseItem !ItemDialogMode
   | GameDifficultyIncr
   | PickLeader !Int
   | PickLeaderWithPointer
@@ -191,13 +191,13 @@ cmdDescription cmd = case cmd of
   Automate    -> "automate faction"
   GameDifficultyIncr -> "cycle next difficulty"
 
-  DescribeItem (MStore CGround) -> "manage items on the ground"
-  DescribeItem (MStore COrgan) -> "describe organs of the leader"
-  DescribeItem (MStore CEqp) -> "manage equipment of the leader"
-  DescribeItem (MStore CInv) -> "manage inventory pack of the leader"
-  DescribeItem (MStore CSha) -> "manage the shared party stash"
-  DescribeItem MOwned -> "describe all owned items"
-  DescribeItem MStats -> "show the stats summary of the leader"
+  ChooseItem (MStore CGround) -> "manage items on the ground"
+  ChooseItem (MStore COrgan) -> "describe organs of the leader"
+  ChooseItem (MStore CEqp) -> "manage equipment of the leader"
+  ChooseItem (MStore CInv) -> "manage inventory pack of the leader"
+  ChooseItem (MStore CSha) -> "manage the shared party stash"
+  ChooseItem MOwned -> "describe all owned items"
+  ChooseItem MStats -> "show the stats summary of the leader"
   PickLeader{} -> "pick leader"
   PickLeaderWithPointer -> "pick leader with mouse pointer"
   MemberCycle -> "cycle among party members on the level"

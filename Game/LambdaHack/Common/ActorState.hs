@@ -164,13 +164,14 @@ sharedAllOwnedFid onlyOrgans fid s =
        then map borgan bs
        else map binv bs ++ map beqp bs ++ [shaBag]
 
-findIid :: ActorId -> FactionId -> ItemId -> State -> [(Actor, CStore)]
+findIid :: ActorId -> FactionId -> ItemId -> State
+        -> [(ActorId, (Actor, CStore))]
 findIid leader fid iid s =
   let actors = fidActorNotProjAssocs fid s
       itemsOfActor (aid, b) =
         let itemsOfCStore store =
               let bag = getBodyActorBag b store s
-              in map (\iid2 -> (iid2, (b, store))) (EM.keys bag)
+              in map (\iid2 -> (iid2, (aid, (b, store)))) (EM.keys bag)
             stores = [CInv, CEqp] ++ [CSha | aid == leader]
         in concatMap itemsOfCStore stores
       items = concatMap itemsOfActor actors
