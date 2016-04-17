@@ -116,13 +116,13 @@ standardKeys = KeyKind
       , ("s", ( [CmdItem]
               , MoveItem [CGround, CInv, CEqp] CSha Nothing
                          "and share item" False) )
-      , ("E", ([CmdItem], ChooseItem $ MStore CEqp))
-      , ("P", ([CmdItem, CmdMinimal], ChooseItem $ MStore CInv))
-      , ("S", ([CmdItem], ChooseItem $ MStore CSha))
-      , ("A", ([CmdItem], ChooseItem MOwned))
-      , ("G", ([CmdItem], ChooseItem $ MStore CGround))
-      , ("@", ([CmdItem], ChooseItem $ MStore COrgan))
-      , ("exclam", ([CmdItem], ChooseItem MStats))
+      , ("E", ([CmdItem], chooseAndHelp $ MStore CEqp))
+      , ("P", ([CmdItem, CmdMinimal], chooseAndHelp $ MStore CInv))
+      , ("S", ([CmdItem], chooseAndHelp $ MStore CSha))
+      , ("A", ([CmdItem], chooseAndHelp MOwned))
+      , ("G", ([CmdItem], chooseAndHelp $ MStore CGround))
+      , ("@", ([CmdItem], chooseAndHelp $ MStore COrgan))
+      , ("exclam", ([CmdItem], chooseAndHelp MStats))
       , ("q", ([CmdItem], Apply [ApplyItem { verb = "quaff"
                                            , object = "potion"
                                            , symbol = '!' }]))

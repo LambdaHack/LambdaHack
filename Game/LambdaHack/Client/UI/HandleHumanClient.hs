@@ -40,7 +40,7 @@ cmdAction cmd = case cmd of
   ByMode _ cmdNormal cmdAiming ->
     byModeHuman (cmdAction cmdNormal) (cmdAction cmdAiming)
   Sequence _ failureMsg l -> sequenceHuman cmdAction failureMsg l
-  ComposeIfEmpty _ cmd1 cmd2 -> composeIfEmptyHuman cmdAction cmd1 cmd2
+  ComposeIfEmpty cmd1 cmd2 -> composeIfEmptyHuman cmdAction cmd1 cmd2
 
   -- Global.
   Move v -> fmap ReqUITimed <$> moveRunHuman True True False False v

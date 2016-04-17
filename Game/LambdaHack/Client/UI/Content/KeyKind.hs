@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.Content.KeyKind
   ( KeyKind(..)
   , defaultCmdLMB, defaultCmdMMB, defaultCmdRMB
-  , getAscend, descendDrop, defaultHeroSelect
+  , getAscend, descendDrop, chooseAndHelp, defaultHeroSelect
   ) where
 
 import qualified Data.Char as Char
@@ -87,6 +87,10 @@ descendDrop = Sequence "descend or drop items" "cannot descend nor drop items"
                           , feature = TK.Cause (IK.Escape (-1)) } ])
       (TgtAscend (-1))
   , MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False ]
+
+chooseAndHelp :: ItemDialogMode -> HumanCmd
+chooseAndHelp dialogMode =
+  ComposeIfEmpty (ChooseItem dialogMode) (Help $ Just "f")
 
 defaultHeroSelect :: Int -> (String, ([CmdCategory], HumanCmd))
 defaultHeroSelect k =

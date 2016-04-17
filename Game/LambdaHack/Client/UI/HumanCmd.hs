@@ -69,7 +69,7 @@ data HumanCmd =
   | ByArea !Text ![(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
   | ByMode !Text !HumanCmd !HumanCmd
   | Sequence !Text !Text ![HumanCmd]
-  | ComposeIfEmpty !Text !HumanCmd !HumanCmd
+  | ComposeIfEmpty !HumanCmd !HumanCmd
 
     -- Global.
     -- These usually take time.
@@ -168,7 +168,7 @@ cmdDescription cmd = case cmd of
   ByArea t _  -> t
   ByMode t _ _ -> t
   Sequence t _ _ -> t
-  ComposeIfEmpty t _ _ -> t
+  ComposeIfEmpty cmd1 _ -> cmdDescription cmd1
 
   Move v      -> "move" <+> compassText v
   Run v       -> "run" <+> compassText v
@@ -199,7 +199,7 @@ cmdDescription cmd = case cmd of
   ChooseItem (MStore CEqp) -> "manage equipment of the leader"
   ChooseItem (MStore CInv) -> "manage inventory pack of the leader"
   ChooseItem (MStore CSha) -> "manage the shared party stash"
-  ChooseItem MOwned -> "describe all owned items"
+  ChooseItem MOwned -> "manage all owned items"
   ChooseItem MStats -> "show the stats summary of the leader"
   PickLeader{} -> "pick leader"
   PickLeaderWithPointer -> "pick leader with mouse pointer"
