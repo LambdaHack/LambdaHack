@@ -37,9 +37,7 @@ defaultCmdLMB =
     , (CaXhairDesc, TgtEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
     , (CaLeaderStatus, DescribeItem (MStore COrgan))
-    , (CaTargetDesc, Project [ApplyItem { verb = "throw"
-                                        , object = "missile"
-                                        , symbol = '|' }]) ]
+    , (CaTargetDesc, DescribeItem $ MStore CInv) ]
 
 defaultCmdMMB :: HumanCmd
 defaultCmdMMB = CursorPointerFloor
@@ -61,9 +59,7 @@ defaultCmdRMB =
     , (CaXhairDesc, TgtFloor)  -- inits aiming and then cycles aim mode
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, DescribeItem MStats)
-    , (CaTargetDesc, Project [ApplyItem { verb = "fling"
-                                        , object = "projectile"
-                                        , symbol = ' ' }]) ]
+    , (CaTargetDesc, DescribeItem $ MStore CEqp) ]
 
 getAscend :: HumanCmd
 getAscend = Sequence "get items or ascend"
@@ -92,4 +88,5 @@ descendDrop = Sequence "descend or drop items"
   , MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False ]
 
 defaultHeroSelect :: Int -> (String, ([CmdCategory], HumanCmd))
-defaultHeroSelect k = ([Char.intToDigit k], ([CmdMeta], PickLeader k))
+defaultHeroSelect k =
+  ([Char.intToDigit k], ([CmdMeta], Alias "" $ PickLeader k))

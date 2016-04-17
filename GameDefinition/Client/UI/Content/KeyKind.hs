@@ -116,8 +116,8 @@ standardKeys = KeyKind
       , ("s", ( [CmdItem]
               , MoveItem [CGround, CInv, CEqp] CSha Nothing
                          "and share item" False) )
-      , ("E", ([CmdItem, CmdMinimal], DescribeItem $ MStore CEqp))
-      , ("P", ([CmdItem], DescribeItem $ MStore CInv))
+      , ("E", ([CmdItem], DescribeItem $ MStore CEqp))
+      , ("P", ([CmdItem, CmdMinimal], DescribeItem $ MStore CInv))
       , ("S", ([CmdItem], DescribeItem $ MStore CSha))
       , ("A", ([CmdItem], DescribeItem MOwned))
       , ("G", ([CmdItem], DescribeItem $ MStore CGround))
