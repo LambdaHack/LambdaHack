@@ -32,8 +32,8 @@ defaultCmdLMB =
   common =
     [ (CaMessage, History)
     , (CaMapLeader, getAscend)
-    , ( CaArenaName
-      , ByMode "cancel target/action or open Main Menu" MainMenu Cancel )
+    , (CaArenaName, ByMode "cancel target/action or open Main Menu"
+                           MainMenu Cancel)
     , (CaXhairDesc, TgtEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
     , (CaLeaderStatus, ChooseItem (MStore COrgan))
@@ -55,8 +55,8 @@ defaultCmdRMB =
   common =
     [ (CaMessage, Macro "" ["R"])
     , (CaMapLeader, descendDrop)
-    , ( CaArenaName
-      , ByMode "accept target/choice or open Help" (Help Nothing) Accept )
+    , (CaArenaName, ByMode "accept target/choice or open Help"
+                           (Help Nothing) Accept)
     , (CaXhairDesc, TgtFloor)  -- inits aiming and then cycles aim mode
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, ChooseItem MStats)
