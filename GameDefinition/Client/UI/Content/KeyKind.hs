@@ -66,19 +66,19 @@ standardKeys = KeyKind
                            , object = "10 levels"
                            , feature = TK.Cause (IK.Ascend (-10)) }]))
       , ("semicolon", ( [CmdMove]
-                      , Macro "go to crosshair for 100 steps"
-                              ["CTRL-semicolon", "CTRL-period", "V"] ))
+                      , Alias "go to crosshair for 100 steps"
+                        $ Macro ["CTRL-semicolon", "CTRL-period", "V"] ))
       , ("colon", ( [CmdMove]
-                  , Macro "run selected to crosshair for 100 steps"
-                          ["CTRL-colon", "CTRL-period", "V"] ))
+                  , Alias "run selected to crosshair for 100 steps"
+                    $ Macro ["CTRL-colon", "CTRL-period", "V"] ))
       , ("x", ( [CmdMove]
-              , Macro "explore the closest unknown spot"
-                      [ "CTRL-?"  -- no semicolon
+              , Alias "explore the closest unknown spot"
+                $ Macro [ "CTRL-?"  -- no semicolon
                       , "CTRL-period", "V" ] ))
       , ("X", ( [CmdMove]
-              , Macro "autoexplore 100 times"
-                      ["'", "CTRL-?", "CTRL-period", "'", "V"] ))
-      , ("R", ([CmdMove], Macro "rest (wait 100 times)" ["KP_5", "V"]))
+              , Alias "autoexplore 100 times"
+                $ Macro  ["'", "CTRL-?", "CTRL-period", "'", "V"] ))
+      , ("R", ([CmdMove], Alias"rest (wait 100 times)" $ Macro ["KP_5", "V"]))
       , ("c", ([CmdMove, CmdMinimal], AlterDir
            [ AlterFeature { verb = "close"
                           , object = "door"
@@ -142,11 +142,11 @@ standardKeys = KeyKind
       , ("CTRL-}", ([CmdTgt], CursorStair False))
       , ("BackSpace", ([CmdTgt], TgtClear))
       , ("Escape", ( [CmdTgt, CmdMinimal]
-                   , ByMode "cancel target/action or open Main Menu"
-                            MainMenu Cancel ))
+                   , Alias "cancel target/action or open Main Menu"
+                     $ ByMode MainMenu Cancel ))
       , ("Return", ( [CmdTgt, CmdMinimal]
-                   , ByMode "accept target/choice or open Help"
-                            (Help $ Just "") Accept ))
+                   , Alias "accept target/choice or open Help"
+                     $ ByMode (Help $ Just "") Accept ))
 
       -- Assorted
       , ("space", ([CmdMeta], Clear))

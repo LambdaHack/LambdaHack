@@ -20,73 +20,75 @@ data KeyKind = KeyKind
   }
 
 defaultCmdLMB :: HumanCmd
-defaultCmdLMB =
-  ByMode "go to pointer for 100 steps or set crosshair"
-    (ByArea "normal mode" $ common ++
+defaultCmdLMB = Alias "go to pointer for 100 steps or set crosshair" $
+  ByMode
+    (ByArea $ common ++  -- normal mode
        [ (CaMapParty, PickLeaderWithPointer)
-       , (CaMap, Macro ""
+       , (CaMap, Macro
             ["MiddleButtonPress", "CTRL-semicolon", "CTRL-period", "V"]) ])
-    (ByArea "aiming mode" $ common ++
+    (ByArea $ common ++  -- aiming mode
        [ (CaMap, TgtPointerEnemy) ])
  where
   common =
     [ (CaMessage, History)
     , (CaMapLeader, getAscend)
-    , (CaArenaName, ByMode "cancel target/action or open Main Menu"
-                           MainMenu Cancel)
+    , (CaArenaName, ByMode MainMenu Cancel)
     , (CaXhairDesc, TgtEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
-    , (CaLeaderStatus, ChooseItem (MStore COrgan))
+    , (CaLeaderStatus, ChooseItem $ MStore COrgan)
     , (CaTargetDesc, ChooseItem $ MStore CInv) ]
 
 defaultCmdMMB :: HumanCmd
 defaultCmdMMB = CursorPointerFloor
 
 defaultCmdRMB :: HumanCmd
-defaultCmdRMB =
-  ByMode "run collectively to pointer or set target"
-    (ByArea "normal mode" $ common ++
+defaultCmdRMB = Alias "run collectively to pointer or set target" $
+  ByMode
+    (ByArea $ common ++
        [ (CaMapParty, SelectWithPointer)
-       , (CaMap, Macro ""
+       , (CaMap, Macro
             ["MiddleButtonPress", "CTRL-colon", "CTRL-period", "V"]) ])
-    (ByArea "aiming mode" $ common ++
-       [ (CaMap, Sequence "" "never mind" [CursorPointerEnemy, Accept]) ])
+    (ByArea $ common ++
+       [ (CaMap, ComposeIfLeft CursorPointerEnemy Accept) ])
  where
   common =
-    [ (CaMessage, Macro "" ["R"])
+    [ (CaMessage, Macro ["R"])
     , (CaMapLeader, descendDrop)
-    , (CaArenaName, ByMode "accept target/choice or open Help"
-                           (Help Nothing) Accept)
+    , (CaArenaName, ByMode (Help Nothing) Accept)
     , (CaXhairDesc, TgtFloor)  -- inits aiming and then cycles aim mode
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, ChooseItem MStats)
     , (CaTargetDesc, ChooseItem $ MStore CEqp) ]
 
 getAscend :: HumanCmd
-getAscend = Sequence "get items or ascend" "cannot get items nor ascend"
-  [ MoveItem [CGround] CEqp (Just "get") "items" True
-  , ByMode ""
-      (TriggerTile
-         [ TriggerFeature { verb = "ascend"
-                          , object = "a level"
-                          , feature = TK.Cause (IK.Ascend 1) }
-         , TriggerFeature { verb = "escape"
-                          , object = "dungeon"
-                          , feature = TK.Cause (IK.Escape 1) } ])
-      (TgtAscend 1) ]
+getAscend = Alias "get items or ascend"
+            $ ReplaceFail "cannot get items nor ascend"
+            $ ComposeIfLeft
+  (MoveItem [CGround] CEqp (Just "get") "items" True)
+  (ByMode
+     (TriggerTile
+        [ TriggerFeature { verb = "ascend"
+                         , object = "a level"
+                         , feature = TK.Cause (IK.Ascend 1) }
+        , TriggerFeature { verb = "escape"
+                         , object = "dungeon"
+                         , feature = TK.Cause (IK.Escape 1) } ])
+     (TgtAscend 1))
 
 descendDrop :: HumanCmd
-descendDrop = Sequence "descend or drop items" "cannot descend nor drop items"
-  [ ByMode ""
-      (TriggerTile
-         [ TriggerFeature { verb = "descend"
-                          , object = "a level"
-                          , feature = TK.Cause (IK.Ascend (-1)) }
-         , TriggerFeature { verb = "escape"
-                          , object = "dungeon"
-                          , feature = TK.Cause (IK.Escape (-1)) } ])
-      (TgtAscend (-1))
-  , MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False ]
+descendDrop = Alias "descend or drop items"
+            $ ReplaceFail "cannot descend nor drop items"
+            $ ComposeIfLeft
+  (ByMode
+     (TriggerTile
+        [ TriggerFeature { verb = "descend"
+                         , object = "a level"
+                         , feature = TK.Cause (IK.Ascend (-1)) }
+        , TriggerFeature { verb = "escape"
+                         , object = "dungeon"
+                         , feature = TK.Cause (IK.Escape (-1)) } ])
+     (TgtAscend (-1)))
+  (MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False)
 
 chooseAndHelp :: ItemDialogMode -> HumanCmd
 chooseAndHelp dialogMode =

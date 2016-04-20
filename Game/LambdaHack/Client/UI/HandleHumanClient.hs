@@ -34,13 +34,17 @@ cmdHumanSem cmd =
 cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd RequestUI)
 cmdAction cmd = case cmd of
   -- Meta.
-  Macro _ kms -> Left <$> macroHuman kms
-  Alias _ cmd2 -> cmdAction cmd2
-  ByArea _ l -> byAreaHuman cmdAction l
-  ByMode _ cmdNormal cmdAiming ->
+  ReplaceFail failureMsg cmd1 ->
+    cmdAction cmd1 >>= either (const $ failWith failureMsg) (return . Right)
+  Alias _ cmd1 -> cmdAction cmd1
+  Macro kms -> Left <$> macroHuman kms
+  ByArea l -> byAreaHuman cmdAction l
+  ByMode cmdNormal cmdAiming ->
     byModeHuman (cmdAction cmdNormal) (cmdAction cmdAiming)
-  Sequence _ failureMsg l -> sequenceHuman cmdAction failureMsg l
-  ComposeIfEmpty cmd1 cmd2 -> composeIfEmptyHuman cmdAction cmd1 cmd2
+  ComposeIfLeft cmd1 cmd2 ->
+    composeIfLeftHuman (cmdAction cmd1) (cmdAction cmd2)
+  ComposeIfEmpty cmd1 cmd2 ->
+    composeIfEmptyHuman (cmdAction cmd1) (cmdAction cmd2)
 
   -- Global.
   Move v -> fmap ReqUITimed <$> moveRunHuman True True False False v

@@ -64,11 +64,12 @@ instance Binary CmdArea
 -- | Abstract syntax of player commands.
 data HumanCmd =
     -- Meta.
-    Macro !Text ![String]
+    ReplaceFail !Text !HumanCmd
   | Alias !Text !HumanCmd
-  | ByArea !Text ![(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
-  | ByMode !Text !HumanCmd !HumanCmd
-  | Sequence !Text !Text ![HumanCmd]
+  | Macro ![String]
+  | ByArea ![(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
+  | ByMode !HumanCmd !HumanCmd
+  | ComposeIfLeft !HumanCmd !HumanCmd
   | ComposeIfEmpty !HumanCmd !HumanCmd
 
     -- Global.
@@ -163,11 +164,12 @@ noRemoteHumanCmd cmd = case cmd of
 -- | Description of player commands.
 cmdDescription :: HumanCmd -> Text
 cmdDescription cmd = case cmd of
-  Macro t _   -> t
-  Alias t _   -> t
-  ByArea t _  -> t
-  ByMode t _ _ -> t
-  Sequence t _ _ -> t
+  ReplaceFail _ cmd1 -> cmdDescription cmd1
+  Alias t _ -> t
+  Macro{} -> ""
+  ByArea{} -> ""
+  ByMode cmd1 _ -> cmdDescription cmd1
+  ComposeIfLeft cmd1 _ -> cmdDescription cmd1
   ComposeIfEmpty cmd1 _ -> cmdDescription cmd1
 
   Move v      -> "move" <+> compassText v

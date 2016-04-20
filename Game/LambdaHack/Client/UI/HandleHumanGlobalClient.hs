@@ -7,7 +7,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   ( -- * Commands that usually take time
-    byAreaHuman, byModeHuman, sequenceHuman, composeIfEmptyHuman
+    byAreaHuman, byModeHuman, composeIfLeftHuman, composeIfEmptyHuman
   , moveRunHuman, waitHuman
   , moveItemHuman, projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , runOnceAheadHuman, moveOnceToCursorHuman
@@ -147,32 +147,26 @@ byModeHuman cmdNormalM cmdAimingM = do
   tgtMode <- getsSession stgtMode
   if isJust tgtMode then cmdAimingM else cmdNormalM
 
--- * Execute commands until any returns a server command.
+-- * ComposeIfLeft
 
-sequenceHuman :: MonadClientUI m
-             => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
-             -> Text
-             -> [HumanCmd.HumanCmd]
-             -> m (SlideOrCmd RequestUI)
-sequenceHuman cmdAction failureMsg l =
-  let seqCmd [] = failWith failureMsg
-      seqCmd (c : rest) = do
-        slideOrCmd <- cmdAction c
-        case slideOrCmd of
-          Left{} -> seqCmd rest
-          Right{} -> return slideOrCmd
-  in seqCmd l
+composeIfLeftHuman :: MonadClientUI m
+                    => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
+                    -> m (SlideOrCmd RequestUI)
+composeIfLeftHuman c1 c2 = do
+  slideOrCmd1 <- c1
+  case slideOrCmd1 of
+    Left _slides -> c2
+    _ -> return slideOrCmd1
 
 -- * ComposeIfEmpty
 
 composeIfEmptyHuman :: MonadClientUI m
-                    => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
-                    -> HumanCmd.HumanCmd -> HumanCmd.HumanCmd
+                    => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
                     -> m (SlideOrCmd RequestUI)
-composeIfEmptyHuman cmdAction cmd1 cmd2 = do
-  slideOrCmd1 <- cmdAction cmd1
+composeIfEmptyHuman c1 c2 = do
+  slideOrCmd1 <- c1
   case slideOrCmd1 of
-    Left slides | slides == mempty -> cmdAction cmd2
+    Left slides | slides == mempty -> c2
     _ -> return slideOrCmd1
 
 -- * Move and Run
