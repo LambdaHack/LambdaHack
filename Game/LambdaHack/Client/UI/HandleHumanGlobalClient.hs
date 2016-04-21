@@ -26,7 +26,6 @@ import qualified Paths_LambdaHack as Self (version)
 
 import Control.Exception.Assert.Sugar
 import Control.Monad (filterM, liftM2, when)
-import Data.Either (isRight)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List (delete, mapAccumL)
@@ -513,18 +512,26 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
 projectHuman :: MonadClientUI m
              => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbProject))
 projectHuman ts = do
-  leader <- getLeaderUI
-  lidV <- viewedLevel
-  oldTgtMode <- getsSession stgtMode
-  -- Show the targeting line, temporarily.
-  modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
-  -- Set cursor to the personal target, permanently.
-  tgt <- getsClient $ getTarget leader
-  modifyClient $ \cli -> cli {scursor = fromMaybe (scursor cli) tgt}
-  -- Determine the item to project.
+  -- If already in aiming mode, project the item.
+  let ifAimingThenProject i = do
+        oldTgtMode <- getsSession stgtMode
+        lidV <- viewedLevel
+        let newTgtMode = Just $ TgtMode lidV
+        -- Start the aiming mode, if not started.
+        modifySession $ \sess -> sess {stgtMode = newTgtMode}
+        -- Set cursor to the personal target, permanently.
+        leader <- getLeaderUI
+        tgt <- getsClient $ getTarget leader
+        modifyClient $ \cli -> cli {scursor = fromMaybe (scursor cli) tgt}
+        -- Possibly, project.
+        if oldTgtMode == newTgtMode
+        then projectItem ts i
+        else return $ Left mempty
+  -- Determine the item to project and, possibly, project.
   itemSel <- getsSession sitemSel
-  outcome <- case itemSel of
+  case itemSel of
     Just (fromCStore, iid) -> do
+      leader <- getLeaderUI
       bag <- getsState $ getActorBag leader fromCStore
       case iid `EM.lookup` bag of
         Nothing -> do  -- used up
@@ -533,17 +540,14 @@ projectHuman ts = do
         Just kit -> do
           itemToF <- itemToFullClient
           let i = (fromCStore, (iid, itemToF iid kit))
-          projectItem ts i
+          ifAimingThenProject i
     Nothing -> do
       mis <- selectItemToProject ts
       case mis of
         Left slides -> return $ Left slides
-        Right i -> projectItem ts i
-  -- Bring back old aiming mode.
-  modifySession $ \sess -> sess {stgtMode = oldTgtMode}
-  -- Set personal target to eventual cursor potision, permanently.
-  when (isRight outcome) $ endTargeting
-  return outcome
+        Right i@(fromCStore, (iid, _)) -> do
+          modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+          ifAimingThenProject i
 
 posFromCursor :: MonadClientUI m => m (Either Msg Point)
 posFromCursor = do
@@ -599,7 +603,8 @@ permittedProjectClient triggerSyms = do
   return $ permittedProject False skill b activeItems triggerSyms
 
 psuitReq :: MonadClientUI m
-         => [Trigger] -> m (Either Msg (ItemFull -> Either ReqFailure (Point, Bool)))
+         => [Trigger]
+         -> m (Either Msg (ItemFull -> Either ReqFailure (Point, Bool)))
 psuitReq ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -636,8 +641,7 @@ selectItemToProject ts = do
             return $ SuitsSomething $ either (const False) snd . psuitReqFun
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What to fling"
-  ggi <- getGroupItem
-           psuit prompt promptGeneric True cLegalRaw cLegal INoSuitable
+  ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
   case ggi of
     Right ((iid, itemFull), MStore fromCStore) ->
       return $ Right (fromCStore, (iid, itemFull))
@@ -724,8 +728,7 @@ selectItemToApply ts = do
       psuit = do
         mp <- permittedApplyClient $ triggerSymbols ts
         return $ SuitsSomething $ either (const False) id . mp
-  ggi <- getGroupItem
-           psuit prompt promptGeneric False cLegalRaw cLegal ISuitable
+  ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
   case ggi of
     Right ((iid, itemFull), MStore fromCStore) ->
       return $ Right (fromCStore, (iid, itemFull))

@@ -11,7 +11,7 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
-import Control.Monad (filterM, void, when)
+import Control.Monad (filterM, void)
 import qualified Data.Char as Char
 import Data.Either (rights)
 import qualified Data.EnumMap.Strict as EM
@@ -84,17 +84,15 @@ getGroupItem :: MonadClientUI m
                           -- ^ which items to consider suitable
              -> Text      -- ^ specific prompt for only suitable items
              -> Text      -- ^ generic prompt
-             -> Bool      -- ^ whether to enable setting cursor with mouse
              -> [CStore]  -- ^ initial legal modes
              -> [CStore]  -- ^ legal modes after Calm taken into account
-             -> ItemDialogState  -- ^ the dialog state to start in
              -> m (SlideOrCmd ((ItemId, ItemFull), ItemDialogMode))
 getGroupItem psuit prompt promptGeneric
-             cursor cLegalRaw cLegalAfterCalm initalState = do
+             cLegalRaw cLegalAfterCalm = do
   soc <- getFull psuit
                  (\_ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
                  (\_ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
-                 cursor cLegalRaw cLegalAfterCalm True False initalState
+                 cLegalRaw cLegalAfterCalm True False
   case soc of
     Left sli -> return $ Left sli
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
@@ -118,8 +116,7 @@ getAnyItems psuit prompt promptGeneric cLegalRaw cLegalAfterCalm askWhenLone ask
   soc <- getFull psuit
                  (\_ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
                  (\_ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
-                 False cLegalRaw cLegalAfterCalm
-                 askWhenLone True ISuitable
+                 cLegalRaw cLegalAfterCalm askWhenLone True
   case soc of
     Left _ -> return soc
     Right ([(iid, itemFull)], c) -> do
@@ -147,8 +144,8 @@ getStoreItem prompt cInitial = do
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
   soc <- getItem (return SuitsEverything)
-                 prompt prompt False cInitial remCs
-                 True False (cInitial:remCs) ISuitable
+                 prompt prompt cInitial remCs
+                 True False (cInitial:remCs)
   case soc of
     Left sli -> return $ Left sli
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
@@ -164,16 +161,14 @@ getFull :: MonadClientUI m
                             -- ^ specific prompt for only suitable items
         -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
                             -- ^ generic prompt
-        -> Bool             -- ^ whether to enable setting cursor with mouse
         -> [CStore]         -- ^ initial legal modes
         -> [CStore]         -- ^ legal modes with Calm taken into account
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
-        -> ItemDialogState  -- ^ the dialog state to start in
         -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
-getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
-        askWhenLone permitMulitple initalState = do
+getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
+        askWhenLone permitMulitple = do
   side <- getsClient sside
   leader <- getLeaderUI
   let aidNotEmpty store aid = do
@@ -221,8 +216,8 @@ getFull psuit prompt promptGeneric cursor cLegalRaw cLegalAfterCalm
                                    then CGround
                                    else lastStore
       let (modeFirst, modeRest) = breakStores firstStore
-      getItem psuit prompt promptGeneric cursor modeFirst modeRest
-              askWhenLone permitMulitple (map MStore cLegal) initalState
+      getItem psuit prompt promptGeneric modeFirst modeRest
+              askWhenLone permitMulitple (map MStore cLegal)
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
@@ -233,17 +228,15 @@ getItem :: MonadClientUI m
                             -- ^ specific prompt for only suitable items
         -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
                             -- ^ generic prompt
-        -> Bool             -- ^ whether to enable setting cursor with mouse
         -> ItemDialogMode   -- ^ first mode, legal or not
         -> [ItemDialogMode] -- ^ the (rest of) legal modes
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
         -> [ItemDialogMode] -- ^ all legal modes
-        -> ItemDialogState  -- ^ the dialog state to start in
         -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
-getItem psuit prompt promptGeneric cursor cCur cRest askWhenLone permitMulitple
-        cLegal initalState = do
+getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
+        cLegal = do
   leader <- getLeaderUI
   accessCBag <- getsState $ accessModeBag leader
   let storeAssocs = EM.assocs . accessCBag
@@ -253,8 +246,8 @@ getItem psuit prompt promptGeneric cursor cCur cRest askWhenLone permitMulitple
       itemToF <- itemToFullClient
       return $ Right ([(iid, itemToF iid k)], cCur)
     _ ->
-      transition psuit prompt promptGeneric cursor permitMulitple cLegal
-                 0 cCur cRest initalState
+      transition psuit prompt promptGeneric permitMulitple cLegal
+                 0 cCur cRest ISuitable
 
 data DefItemKey m = DefItemKey
   { defLabel  :: Text  -- ^ can be undefined if not @defCond@
@@ -273,17 +266,16 @@ transition :: forall m. MonadClientUI m
            -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
            -> (Actor -> [ItemFull] -> ItemDialogMode -> Text)
            -> Bool
-           -> Bool
            -> [ItemDialogMode]
            -> Int
            -> ItemDialogMode
            -> [ItemDialogMode]
            -> ItemDialogState
            -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
-transition psuit prompt promptGeneric cursor permitMulitple cLegal
+transition psuit prompt promptGeneric permitMulitple cLegal
            numPrefix cCur cRest itemDialogState = do
   let recCall =
-        transition psuit prompt promptGeneric cursor permitMulitple cLegal
+        transition psuit prompt promptGeneric permitMulitple cLegal
   (itemSlots, organSlots) <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -417,37 +409,8 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall numPrefix cCurUpd cRestUpd itemDialogState
            })
-        , let km = revCmd (K.KM K.NoModifier (K.KP '/')) TgtFloor
-          in cursorCmdDef False km tgtFloorHuman
-        , let hackyCmd = Alias "" TgtFloor  -- no keypad, but arrows enough
-              km = revCmd (K.KM K.NoModifier K.RightButtonPress) hackyCmd
-          in cursorCmdDef False km tgtFloorHuman
-        , let km = revCmd (K.KM K.NoModifier (K.KP '*')) TgtEnemy
-          in cursorCmdDef False km tgtEnemyHuman
-        , let hackyCmd = Alias "" TgtEnemy  -- no keypad, but arrows enough
-              km = revCmd (K.KM K.NoModifier K.RightButtonPress) hackyCmd
-          in cursorCmdDef False km tgtEnemyHuman
-        , let km = revCmd (K.KM K.NoModifier K.BackSpace) TgtClear
-          in cursorCmdDef False km tgtClearHuman
         ]
         ++ numberPrefixes
-        ++ [ let plusMinus = K.Char $ if b then '+' else '-'
-                 km = revCmd (K.KM K.NoModifier plusMinus) (EpsIncr b)
-             in cursorCmdDef False km (epsIncrHuman b)
-           | b <- [True, False]
-           ]
-        ++ arrows
-        ++ [
-          let km = revCmd (K.KM K.NoModifier K.MiddleButtonPress)
-                          CursorPointerEnemy
-          in cursorCmdDef False km (cursorPointerEnemy False False)
-        , let km = revCmd (K.KM K.Shift K.MiddleButtonPress)
-                          CursorPointerFloor
-          in cursorCmdDef False km (cursorPointerFloor False False)
-        , let km = revCmd (K.KM K.NoModifier K.RightButtonPress)
-                          TgtPointerEnemy
-          in cursorCmdDef True km (cursorPointerEnemy True True)
-        ]
       prefixCmdDef d =
         (K.KM K.NoModifier $ K.Char $ Char.intToDigit d, DefItemKey
            { defLabel = ""
@@ -456,20 +419,6 @@ transition psuit prompt promptGeneric cursor permitMulitple cLegal
                recCall (10 * numPrefix + d) cCur cRest itemDialogState
            })
       numberPrefixes = map prefixCmdDef [0..9]
-      cursorCmdDef verbose km cmd =
-        (km, DefItemKey
-           { defLabel = "keypad, mouse"
-           , defCond = cursor && EM.null bagFiltered
-           , defAction = \_ -> do
-               look <- cmd
-               when verbose $
-                 void $ getConfirms ColorFull [K.spaceKM] [K.escKM] look
-               recCall numPrefix cCur cRest itemDialogState
-           })
-      arrows =
-        let kCmds = K.moveBinding False False
-                                  (`moveCursorHuman` 1) (`moveCursorHuman` 10)
-        in map (uncurry $ cursorCmdDef False) kCmds
       lettersDef :: DefItemKey m
       lettersDef = DefItemKey
         { defLabel = slotRange $ EM.keys labelItemSlots
