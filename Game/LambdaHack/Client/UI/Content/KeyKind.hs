@@ -62,33 +62,33 @@ defaultCmdRMB = Alias "run collectively to pointer or set target" $
 
 getAscend :: HumanCmd
 getAscend = Alias "get items or ascend"
-            $ ReplaceFail "cannot get items nor ascend"
-            $ ComposeIfLeft
-  (MoveItem [CGround] CEqp (Just "get") "items" True)
-  (ByMode
-     (TriggerTile
-        [ TriggerFeature { verb = "ascend"
-                         , object = "a level"
-                         , feature = TK.Cause (IK.Ascend 1) }
-        , TriggerFeature { verb = "escape"
-                         , object = "dungeon"
-                         , feature = TK.Cause (IK.Escape 1) } ])
-     (TgtAscend 1))
+            $ ByMode
+  (ReplaceFail "cannot get items nor ascend"
+   $ ComposeIfLeft
+       (MoveItem [CGround] CEqp (Just "get") "items" True)
+       (TriggerTile
+          [ TriggerFeature { verb = "ascend"
+                           , object = "a level"
+                           , feature = TK.Cause (IK.Ascend 1) }
+          , TriggerFeature { verb = "escape"
+                           , object = "dungeon"
+                           , feature = TK.Cause (IK.Escape 1) } ]))
+  (TgtAscend 1)
 
 descendDrop :: HumanCmd
 descendDrop = Alias "descend or drop items"
-            $ ReplaceFail "cannot descend nor drop items"
-            $ ComposeIfLeft
-  (ByMode
-     (TriggerTile
-        [ TriggerFeature { verb = "descend"
-                         , object = "a level"
-                         , feature = TK.Cause (IK.Ascend (-1)) }
-        , TriggerFeature { verb = "escape"
-                         , object = "dungeon"
-                         , feature = TK.Cause (IK.Escape (-1)) } ])
-     (TgtAscend (-1)))
-  (MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False)
+              $ ByMode
+  (ReplaceFail "cannot descend nor drop items"
+   $ ComposeIfLeft
+       (TriggerTile
+          [ TriggerFeature { verb = "descend"
+                           , object = "a level"
+                           , feature = TK.Cause (IK.Ascend (-1)) }
+          , TriggerFeature { verb = "escape"
+                           , object = "dungeon"
+                           , feature = TK.Cause (IK.Escape (-1)) } ])
+       (MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False))
+  (TgtAscend (-1))
 
 chooseAndHelp :: ItemDialogMode -> HumanCmd
 chooseAndHelp dialogMode =

@@ -54,17 +54,21 @@ standardKeys = KeyKind
       , ("<", ([CmdMove, CmdItem, CmdMinimal], getAscend))
       , ("g", ([CmdMove, CmdItem], Alias "" getAscend))
       , ("comma", ([CmdInternal], Alias "" getAscend))
-      , ("CTRL-<", ([CmdInternal], TriggerTile  -- with lifts, not interal
-           [TriggerFeature { verb = "ascend"
-                           , object = "10 levels"
-                           , feature = TK.Cause (IK.Ascend 10) }]))
+      , ("CTRL-<", ([CmdInternal], ByMode
+           (TriggerTile
+              [TriggerFeature { verb = "ascend"
+                              , object = "10 levels"
+                              , feature = TK.Cause (IK.Ascend 10) }])
+           (TgtAscend 10)))
       , (">", ([CmdMove, CmdItem, CmdMinimal], descendDrop))
       , ("d", ([CmdMove, CmdItem], Alias "" descendDrop))
       , ("period", ([CmdInternal], Alias "" descendDrop))
-      , ("CTRL->", ([CmdInternal], TriggerTile
-           [TriggerFeature { verb = "descend"
-                           , object = "10 levels"
-                           , feature = TK.Cause (IK.Ascend (-10)) }]))
+      , ("CTRL->", ([CmdInternal], ByMode
+           (TriggerTile
+              [TriggerFeature { verb = "descend"
+                              , object = "10 levels"
+                              , feature = TK.Cause (IK.Ascend (-10)) }])
+           (TgtAscend (-10))))
       , ("semicolon", ( [CmdMove]
                       , Alias "go to crosshair for 100 steps"
                         $ Macro ["CTRL-semicolon", "CTRL-period", "V"] ))
@@ -74,11 +78,11 @@ standardKeys = KeyKind
       , ("x", ( [CmdMove]
               , Alias "explore the closest unknown spot"
                 $ Macro [ "CTRL-?"  -- no semicolon
-                      , "CTRL-period", "V" ] ))
+                        , "CTRL-period", "V" ] ))
       , ("X", ( [CmdMove]
               , Alias "autoexplore 100 times"
                 $ Macro  ["'", "CTRL-?", "CTRL-period", "'", "V"] ))
-      , ("R", ([CmdMove], Alias"rest (wait 100 times)" $ Macro ["KP_5", "V"]))
+      , ("R", ([CmdMove], Alias "rest (wait 100 times)" $ Macro ["KP_5", "V"]))
       , ("c", ([CmdMove, CmdMinimal], AlterDir
            [ AlterFeature { verb = "close"
                           , object = "door"
