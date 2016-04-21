@@ -55,12 +55,11 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   in Binding
   { bcmdMap = M.fromList $ map (second mkDescribed) cmdAll
   , bcmdList = map (second mkDescribed) cmdWithHelp
-  , brevMap = M.fromListWith (flip (++))
-      [ (cmd2, [k])
+  , brevMap = M.fromListWith (flip (++)) $ concat
+      [ (cmd, [k]) : case cmd of
+                       Alias _ cmd1 -> [(cmd1, [k])]
+                       _ -> []
       | (k, (cats, cmd)) <- cmdAll
-      , let cmd2 = case cmd of
-              Alias _ cmd1 -> cmd1
-              _ -> cmd
       , all (`notElem` [CmdMainMenu, CmdSettingsMenu, CmdDebug, CmdInternal])
             cats ]
   }

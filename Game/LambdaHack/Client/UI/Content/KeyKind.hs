@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.Content.KeyKind
   ( KeyKind(..)
   , defaultCmdLMB, defaultCmdMMB, defaultCmdRMB
-  , getAscend, descendDrop, chooseAndHelp, defaultHeroSelect
+  , projectFling, getAscend, descendDrop, chooseAndHelp, defaultHeroSelect
   ) where
 
 import qualified Data.Char as Char
@@ -49,16 +49,21 @@ defaultCmdRMB = Alias "run collectively to pointer or set target" $
        , (CaMap, Macro
             ["MiddleButtonPress", "CTRL-colon", "CTRL-period", "V"]) ])
     (ByArea $ common ++
-       [ (CaMap, ComposeIfLeft CursorPointerEnemy Accept) ])
+       [ (CaMap, ComposeIfLeft TgtPointerEnemy projectFling) ])
  where
   common =
     [ (CaMessage, Macro ["R"])
     , (CaMapLeader, descendDrop)
     , (CaArenaName, ByMode (Help Nothing) Accept)
-    , (CaXhairDesc, TgtFloor)  -- inits aiming and then cycles aim mode
+    , (CaXhairDesc, projectFling)
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, ChooseItem MStats)
     , (CaTargetDesc, ChooseItem $ MStore CEqp) ]
+
+projectFling :: HumanCmd
+projectFling = Project [ApplyItem { verb = "fling"
+                                  , object = "projectile"
+                                  , symbol = ' ' }]
 
 getAscend :: HumanCmd
 getAscend = Alias "get items or ascend"

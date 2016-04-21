@@ -99,10 +99,7 @@ standardKeys = KeyKind
            ]))
 
       -- Item use
-      , ("f", ([CmdItem], Project
-           [ApplyItem { verb = "fling"
-                      , object = "projectile"
-                      , symbol = ' ' }]))
+      , ("f", ([CmdItem], projectFling))
       , ("a", ([CmdItem], Apply
            [ApplyItem { verb = "apply"
                       , object = "consumable"
