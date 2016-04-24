@@ -71,38 +71,38 @@ data HumanCmd =
   | ByMode !HumanCmd !HumanCmd
   | ComposeIfLeft !HumanCmd !HumanCmd
   | ComposeIfEmpty !HumanCmd !HumanCmd
-
     -- Global.
     -- These usually take time.
+  | Wait
   | Move !Vector
   | Run !Vector
-  | Wait
+  | RunOnceAhead
+  | MoveOnceToCursor
+  | RunOnceToCursor
+  | ContinueToCursor
   | MoveItem ![CStore] !CStore !(Maybe MU.Part) !MU.Part !Bool
   | Project     ![Trigger]
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]
   | TriggerTile ![Trigger]
-  | RunOnceAhead
-  | MoveOnceToCursor
-  | RunOnceToCursor
-  | ContinueToCursor
+  | Help !(Maybe Text)
+  | MainMenu
+  | GameDifficultyIncr
     -- Below this line, commands do not take time.
   | GameRestart !(GroupName ModeKind)
   | GameExit
   | GameSave
   | Tactic
   | Automate
-    -- Local.
-    -- Below this line, commands do not notify the server.
+    -- Local. Below this line, commands do not notify the server.
+  | Clear
   | ChooseItem !ItemDialogMode
-  | GameDifficultyIncr
   | PickLeader !Int
   | PickLeaderWithPointer
   | MemberCycle
   | MemberBack
   | SelectActor
   | SelectNone
-  | Clear
   | SelectWithPointer
   | Repeat !Int
   | Record
@@ -110,21 +110,19 @@ data HumanCmd =
   | MarkVision
   | MarkSmell
   | MarkSuspect
-  | Help !(Maybe Text)
-  | MainMenu
   | SettingsMenu
-    -- These are mostly related to targeting.
+    -- These are mostly related to aiming.
+  | Cancel
+  | Accept
+  | TgtClear
   | MoveCursor !Vector !Int
   | TgtFloor
   | TgtEnemy
   | TgtAscend !Int
   | EpsIncr !Bool
-  | TgtClear
   | CursorUnknown
   | CursorItem
   | CursorStair !Bool
-  | Cancel
-  | Accept
   | CursorPointerFloor
   | CursorPointerEnemy
   | TgtPointerFloor
@@ -172,9 +170,13 @@ cmdDescription cmd = case cmd of
   ComposeIfLeft cmd1 _ -> cmdDescription cmd1
   ComposeIfEmpty cmd1 _ -> cmdDescription cmd1
 
+  Wait        -> "wait"
   Move v      -> "move" <+> compassText v
   Run v       -> "run" <+> compassText v
-  Wait        -> "wait"
+  RunOnceAhead -> "run once ahead"
+  MoveOnceToCursor -> "move one step towards the crosshair"
+  RunOnceToCursor -> "run selected one step towards the crosshair"
+  ContinueToCursor -> "continue towards the crosshair"
   MoveItem _ store2 mverb object _ ->
     let verb = fromMaybe (MU.Text $ verbCStore store2) mverb
     in makePhrase [verb, object]
@@ -182,10 +184,11 @@ cmdDescription cmd = case cmd of
   Apply ts    -> triggerDescription ts
   AlterDir ts -> triggerDescription ts
   TriggerTile ts -> triggerDescription ts
-  RunOnceAhead -> "run once ahead"
-  MoveOnceToCursor -> "move one step towards the crosshair"
-  RunOnceToCursor -> "run selected one step towards the crosshair"
-  ContinueToCursor -> "continue towards the crosshair"
+  Help mstart ->
+    let about = maybe "" (\t -> if T.null t then "" else "about" <+> t) mstart
+    in "display help" <+> about
+  MainMenu    -> "display the Main Menu"
+  GameDifficultyIncr -> "cycle next difficulty"
 
   GameRestart t ->
     -- TODO: use mname for the game mode instead of t
@@ -194,8 +197,8 @@ cmdDescription cmd = case cmd of
   GameSave    -> "save game"
   Tactic      -> "cycle henchmen tactic"
   Automate    -> "automate faction"
-  GameDifficultyIncr -> "cycle next difficulty"
 
+  Clear       -> "clear messages"
   ChooseItem (MStore CGround) -> "manage items on the ground"
   ChooseItem (MStore COrgan) -> "describe organs of the leader"
   ChooseItem (MStore CEqp) -> "manage equipment of the leader"
@@ -209,7 +212,6 @@ cmdDescription cmd = case cmd of
   MemberBack  -> "cycle among all party members"
   SelectActor -> "select (or deselect) a party member"
   SelectNone  -> "deselect (or select) all on the level"
-  Clear       -> "clear messages"
   SelectWithPointer -> "select actors with mouse pointer"
   Repeat 1    -> "voice again the recorded commands"
   Repeat n    -> "voice the recorded commands" <+> tshow n <+> "times"
@@ -218,12 +220,11 @@ cmdDescription cmd = case cmd of
   MarkVision  -> "toggle visible zone"
   MarkSmell   -> "toggle smell clues"
   MarkSuspect -> "toggle suspect terrain"
-  Help mstart ->
-    let about = maybe "" (\t -> if T.null t then "" else "about" <+> t) mstart
-    in "display help" <+> about
-  MainMenu    -> "display the Main Menu"
   SettingsMenu -> "display the Settings Menu"
 
+  Cancel -> "cancel target/action"
+  Accept -> "accept target/choice"
+  TgtClear       -> "reset target/crosshair"
   MoveCursor v 1 -> "move crosshair" <+> compassText v
   MoveCursor v k ->
     "move crosshair up to" <+> tshow k <+> "steps" <+> compassText v
@@ -237,13 +238,10 @@ cmdDescription cmd = case cmd of
                         `twith` cmd
   EpsIncr True   -> "swerve the aiming line"
   EpsIncr False  -> "unswerve the aiming line"
-  TgtClear       -> "reset target/crosshair"
   CursorUnknown  -> "set crosshair to the closest unknown spot"
   CursorItem     -> "set crosshair to the closest item"
   CursorStair up -> "set crosshair to the closest stairs"
                     <+> if up then "up" else "down"
-  Cancel -> "cancel target/action"
-  Accept -> "accept target/choice"
   CursorPointerFloor -> "set crosshair to floor under pointer"
   CursorPointerEnemy -> "set crosshair to enemy under pointer"
   TgtPointerFloor -> "enter aiming mode and describe a tile"

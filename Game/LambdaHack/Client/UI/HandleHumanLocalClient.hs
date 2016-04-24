@@ -2,21 +2,29 @@
 -- server commands. None of such commands takes game time.
 -- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanLocalClient
-  ( -- * Assorted commands
-    chooseItemHuman, gameDifficultyIncr
+  ( -- * Meta commands
+    macroHuman
+    -- * Local commands
+  , clearHuman, chooseItemHuman
   , pickLeaderHuman, pickLeaderWithPointerHuman
   , memberCycleHuman, memberBackHuman
-  , selectActorHuman, selectNoneHuman, clearHuman
-  , selectWithPointerHuman, repeatHuman, recordHuman
-  , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
-  , macroHuman
-    -- * Commands specific to targeting
+  , selectActorHuman, selectNoneHuman, selectWithPointerHuman
+  , repeatHuman, recordHuman, historyHuman
+  , markVisionHuman, markSmellHuman, markSuspectHuman, settingsMenuHuman
+    -- * Commands specific to aiming
+  , cancelHuman, acceptHuman, tgtClearHuman
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman
-  , tgtAscendHuman, epsIncrHuman, tgtClearHuman
+  , tgtAscendHuman, epsIncrHuman
   , cursorUnknownHuman, cursorItemHuman, cursorStairHuman
   , cursorPointerFloorHuman, cursorPointerEnemyHuman
   , tgtPointerFloorHuman, tgtPointerEnemyHuman
   ) where
+
+import Prelude ()
+import Prelude.Compat
+
+-- Cabal
+import qualified Paths_LambdaHack as Self (version)
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
@@ -25,16 +33,22 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Monoid
 import Data.Ord
+import Data.Maybe
 import qualified Data.Text as T
+import Data.Version
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
+import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.Frontend (frontendName)
 import Game.LambdaHack.Client.UI.HandleHelperClient
+import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.UI.InventoryClient
+import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
@@ -56,7 +70,21 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
+
+-- * Macro
+
+macroHuman :: MonadClientUI m => [String] -> m Slideshow
+macroHuman kms = do
+  modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
+  promptToSlideshow $ "Macro activated:" <+> T.pack (intercalate " " kms)
+
+-- * Clear
+
+-- | Clear current messages, show the next screen if any.
+clearHuman :: Monad m => m ()
+clearHuman = return ()
 
 -- * ChooseItem
 
@@ -139,17 +167,6 @@ chooseItemHuman c = do
           overlayToSlideshow prompt2 io
         MStats -> assert `failure` ggi
     Left slides -> return slides
-
--- * GameDifficultyIncr
-
-gameDifficultyIncr :: MonadClientUI m => m ()
-gameDifficultyIncr = do
-  let delta = 1
-  snxtDiff <- getsClient snxtDiff
-  let d | snxtDiff + delta > difficultyBound = 1
-        | snxtDiff + delta < 1 = difficultyBound
-        | otherwise = snxtDiff + delta
-  modifyClient $ \cli -> cli {snxtDiff = d}
 
 -- * PickLeader
 
@@ -265,12 +282,6 @@ selectNoneHuman = do
                                   then "selected"
                                   else "deselected"]
 
--- * Clear
-
--- | Clear current messages, show the next screen if any.
-clearHuman :: Monad m => m ()
-clearHuman = return ()
-
 -- * SelectWithPointer
 
 selectWithPointerHuman :: MonadClientUI m => m ()
@@ -373,7 +384,7 @@ historyHuman = do
         displayAllHistory
   displayAllHistory
 
--- * MarkVision, MarkSmell, MarkSuspect
+-- * MarkVision
 
 markVisionHuman :: MonadClientUI m => m ()
 markVisionHuman = do
@@ -381,11 +392,15 @@ markVisionHuman = do
   cur <- getsSession smarkVision
   msgAdd $ "Visible area display toggled" <+> if cur then "on." else "off."
 
+-- * MarkSmell
+
 markSmellHuman :: MonadClientUI m => m ()
 markSmellHuman = do
   modifySession toggleMarkSmell
   cur <- getsSession smarkSmell
   msgAdd $ "Smell display toggled" <+> if cur then "on." else "off."
+
+-- * MarkSuspect
 
 markSuspectHuman :: MonadClientUI m => m ()
 markSuspectHuman = do
@@ -395,12 +410,103 @@ markSuspectHuman = do
   cur <- getsClient smarkSuspect
   msgAdd $ "Suspect terrain display toggled" <+> if cur then "on." else "off."
 
--- * Macro
+-- * SettingsMenu
 
-macroHuman :: MonadClientUI m => [String] -> m Slideshow
-macroHuman kms = do
-  modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
-  promptToSlideshow $ "Macro activated:" <+> T.pack (intercalate " " kms)
+-- TODO: display "on"/"off" after Mark* commands
+-- TODO: display tactics at the top; somehow return to this menu after Tactics
+-- | Display the settings menu.
+settingsMenuHuman :: MonadClientUI m
+                  => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
+                  -> m (SlideOrCmd RequestUI)
+settingsMenuHuman cmdAction = do
+  Kind.COps{corule} <- getsState scops
+  Binding{bcmdList} <- askBinding
+  let stripFrame t = tail . init $ T.lines t
+      pasteVersion art =  -- TODO: factor out
+        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
+            version = " Version " ++ showVersion pathsVersion
+                      ++ " (frontend: " ++ frontendName
+                      ++ ", engine: LambdaHack " ++ showVersion Self.version
+                      ++ ") "
+            versionLen = length version
+        in init art ++ [take (80 - versionLen) (last art) ++ version]
+      -- Key-description-command tuples.
+      kds = [ (km, (desc, cmd))
+            | (km, (desc, [HumanCmd.CmdSettingsMenu], cmd)) <- bcmdList ]
+      statusLen = 30
+      bindingLen = 28
+      gameInfo = replicate 4 $ T.justifyLeft statusLen ' ' ""
+      emptyInfo = repeat $ T.justifyLeft bindingLen ' ' ""
+      bindings =  -- key bindings to display
+        let fmt (k, (d, _)) =
+              ( Just k
+              , T.justifyLeft bindingLen ' '
+                  $ T.justifyLeft 3 ' ' (K.showKM k) <> " " <> d )
+        in map fmt kds
+      overwrite =  -- overwrite the art with key bindings and other lines
+        let over [] (_, line) = ([], (T.pack line, Nothing))
+            over bs@((mkey, binding) : bsRest) (y, line) =
+              let (prefix, lineRest) = break (=='{') line
+                  (braces, suffix)   = span  (=='{') lineRest
+              in if length braces >= bindingLen
+                 then
+                   let lenB = T.length binding
+                       pre = T.pack prefix
+                       post = T.drop (lenB - bindingLen) (T.pack suffix)
+                       len = T.length pre
+                       yxx key = (Left key, (y, len, len + lenB))
+                       myxx = yxx <$> mkey
+                   in (bsRest, (pre <> binding <> post, myxx))
+                 else (bs, (T.pack line, Nothing))
+        in snd . mapAccumL over (zip (repeat Nothing) gameInfo
+                                 ++ bindings
+                                 ++ zip (repeat Nothing) emptyInfo)
+      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
+      artWithVersion = pasteVersion $ map T.unpack $ stripFrame mainMenuArt
+      menuOverwritten = overwrite $ zip [0..] artWithVersion
+      (menuOvLines, mkyxs) = unzip menuOverwritten
+      kyxs = catMaybes mkyxs
+      ov = toOverlay menuOvLines
+  menuIxSettings <- getsSession smenuIxSettings
+  (ekm, pointer) <- displayChoiceScreen True menuIxSettings [(ov, kyxs)] []
+  modifySession $ \sess -> sess {smenuIxSettings = pointer}
+  case ekm of
+    Left km -> case km `lookup` kds of
+      Just (_desc, cmd) -> cmdAction cmd
+      Nothing -> failWith "never mind"
+    Right _slot -> assert `failure` ekm
+
+-- * Cancel
+
+-- | End targeting mode, rejecting the current position.
+cancelHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
+cancelHuman = do
+  stgtMode <- getsSession stgtMode
+  let !_A = assert (isJust stgtMode) ()
+  modifySession $ \sess -> sess {stgtMode = Nothing}
+  failWith "target not set"
+
+-- * Accept
+
+-- | Accept the current x-hair position as target, ending
+-- aiming mode, if active.
+acceptHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
+acceptHuman = do
+  endTargeting
+  endTargetingMsg
+  modifySession $ \sess -> sess {stgtMode = Nothing}
+  return $ Left mempty
+
+endTargetingMsg :: MonadClientUI m => m ()
+endTargetingMsg = do
+  leader <- getLeaderUI
+  (targetMsg, _) <- targetDescLeader leader
+  subject <- partAidLeader leader
+  msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
+
+-- * TgtClear
+
+-- in InventoryClient
 
 -- * MoveCursor
 
@@ -456,10 +562,6 @@ tgtAscendHuman k = do
           doLook False
 
 -- * EpsIncr
-
--- in InventoryClient
-
--- * TgtClear
 
 -- in InventoryClient
 

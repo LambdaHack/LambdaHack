@@ -33,7 +33,6 @@ cmdHumanSem cmd =
 -- | Compute the basic action for a command and mark whether it takes time.
 cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd RequestUI)
 cmdAction cmd = case cmd of
-  -- Meta.
   ReplaceFail failureMsg cmd1 ->
     cmdAction cmd1 >>= either (const $ failWith failureMsg) (return . Right)
   Alias _ cmd1 -> cmdAction cmd1
@@ -46,34 +45,30 @@ cmdAction cmd = case cmd of
   ComposeIfEmpty cmd1 cmd2 ->
     composeIfEmptyHuman (cmdAction cmd1) (cmdAction cmd2)
 
-  -- Global.
+  Wait -> Right <$> fmap timedToUI waitHuman
   Move v -> fmap ReqUITimed <$> moveRunHuman True True False False v
   Run v -> fmap ReqUITimed <$> moveRunHuman True True True True v
-  Wait -> Right <$> fmap timedToUI waitHuman
+  RunOnceAhead -> fmap ReqUITimed <$> runOnceAheadHuman
+  MoveOnceToCursor -> fmap ReqUITimed <$> moveOnceToCursorHuman
+  RunOnceToCursor  -> fmap ReqUITimed <$> runOnceToCursorHuman
+  ContinueToCursor -> fmap ReqUITimed <$> continueToCursorHuman
   MoveItem cLegalRaw toCStore mverb _ auto ->
     fmap timedToUI <$> moveItemHuman cLegalRaw toCStore mverb auto
   Project ts -> fmap timedToUI <$> projectHuman ts
   Apply ts -> fmap timedToUI <$> applyHuman ts
   AlterDir ts -> fmap timedToUI <$> alterDirHuman ts
   TriggerTile ts -> fmap timedToUI <$> triggerTileHuman ts
-  RunOnceAhead -> fmap ReqUITimed <$> runOnceAheadHuman
-  MoveOnceToCursor -> fmap ReqUITimed <$> moveOnceToCursorHuman
-  RunOnceToCursor  -> fmap ReqUITimed <$> runOnceToCursorHuman
-  ContinueToCursor -> fmap ReqUITimed <$> continueToCursorHuman
+  Help mstart -> helpHuman cmdAction mstart
+  MainMenu -> mainMenuHuman cmdAction
+  GameDifficultyIncr -> gameDifficultyIncr >> mainMenuHuman cmdAction
 
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman
   GameSave -> fmap Right gameSaveHuman
   Tactic -> tacticHuman
   Automate -> automateHuman
-  MainMenu -> mainMenuHuman cmdAction
-  SettingsMenu -> settingsMenuHuman cmdAction
-  Help mstart -> helpHuman cmdAction mstart
-  GameDifficultyIncr -> gameDifficultyIncr >> mainMenuHuman cmdAction
-  Cancel -> cancelHuman
-  Accept -> acceptHuman
 
-  -- Local.
+  Clear -> addNoSlides clearHuman
   ChooseItem cstore -> Left <$> chooseItemHuman cstore
   PickLeader k -> Left <$> pickLeaderHuman k
   PickLeaderWithPointer -> Left <$> pickLeaderWithPointerHuman
@@ -81,7 +76,6 @@ cmdAction cmd = case cmd of
   MemberBack -> Left <$> memberBackHuman
   SelectActor -> addNoSlides selectActorHuman
   SelectNone -> addNoSlides selectNoneHuman
-  Clear -> addNoSlides clearHuman
   SelectWithPointer -> addNoSlides selectWithPointerHuman
   Repeat n -> addNoSlides $ repeatHuman n
   Record -> Left <$> recordHuman
@@ -89,13 +83,16 @@ cmdAction cmd = case cmd of
   MarkVision -> markVisionHuman >> settingsMenuHuman cmdAction
   MarkSmell -> markSmellHuman >> settingsMenuHuman cmdAction
   MarkSuspect -> markSuspectHuman >> settingsMenuHuman cmdAction
+  SettingsMenu -> settingsMenuHuman cmdAction
 
+  Cancel -> cancelHuman
+  Accept -> acceptHuman
+  TgtClear -> Left <$> tgtClearHuman
   MoveCursor v k -> Left <$> moveCursorHuman v k
   TgtFloor -> Left <$> tgtFloorHuman
   TgtEnemy -> Left <$> tgtEnemyHuman
   TgtAscend k -> Left <$> tgtAscendHuman k
   EpsIncr b -> Left <$> epsIncrHuman b
-  TgtClear -> Left <$> tgtClearHuman
   CursorUnknown -> Left <$> cursorUnknownHuman
   CursorItem -> Left <$> cursorItemHuman
   CursorStair up -> Left <$> cursorStairHuman up

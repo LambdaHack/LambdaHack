@@ -6,14 +6,15 @@
 -- for all clients that witness the results of the commands.
 -- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
-  ( -- * Commands that usually take time
+  ( -- * Meta commands
     byAreaHuman, byModeHuman, composeIfLeftHuman, composeIfEmptyHuman
-  , moveRunHuman, waitHuman
-  , moveItemHuman, projectHuman, applyHuman, alterDirHuman, triggerTileHuman
+    -- * Global commands that usually take time
+  , waitHuman, moveRunHuman
   , runOnceAheadHuman, moveOnceToCursorHuman
   , runOnceToCursorHuman, continueToCursorHuman
-    -- * Commands that never take time
-  , cancelHuman, acceptHuman, mainMenuHuman, settingsMenuHuman, helpHuman
+  , moveItemHuman, projectHuman, applyHuman, alterDirHuman, triggerTileHuman
+  , helpHuman, mainMenuHuman, gameDifficultyIncr
+    -- * Global commands that never take time
   , gameRestartHuman, gameExitHuman, gameSaveHuman
   , tacticHuman, automateHuman
   ) where
@@ -80,7 +81,7 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
--- * Pick command by area
+-- * ByArea
 
 -- | Pick command depending on area the mouse pointer is in.
 -- The first matching area is chosen. If none match, only interrupt.
@@ -137,7 +138,7 @@ areaToRectangles ca = case ca of
   CaRectangle r -> return [r]
   CaUnion ca1 ca2 -> liftM2 (++) (areaToRectangles ca1) (areaToRectangles ca2)
 
--- * Pick command by mode
+-- * ByMode
 
 byModeHuman :: MonadClientUI m
             => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
@@ -167,6 +168,14 @@ composeIfEmptyHuman c1 c2 = do
   case slideOrCmd1 of
     Left slides | slides == mempty -> c2
     _ -> return slideOrCmd1
+
+-- * Wait
+
+-- | Leader waits a turn (and blocks, etc.).
+waitHuman :: MonadClientUI m => m (RequestTimed 'AbWait)
+waitHuman = do
+  modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
+  return ReqWait
 
 -- * Move and Run
 
@@ -372,13 +381,142 @@ moveSearchAlterAid source dir = do
         | otherwise = Left "never mind"
   return $! runStopOrCmd
 
--- * Wait
+-- * RunOnceAhead
 
--- | Leader waits a turn (and blocks, etc.).
-waitHuman :: MonadClientUI m => m (RequestTimed 'AbWait)
-waitHuman = do
-  modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
-  return ReqWait
+runOnceAheadHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+runOnceAheadHuman = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  leader <- getLeaderUI
+  keyPressed <- anyKeyPressed
+  srunning <- getsSession srunning
+  -- When running, stop if disturbed. If not running, stop at once.
+  case srunning of
+    Nothing -> do
+      stopPlayBack
+      return $ Left mempty
+    Just RunParams{runMembers}
+      | noRunWithMulti fact && runMembers /= [leader] -> do
+      stopPlayBack
+      Config{configRunStopMsgs} <- askConfig
+      if configRunStopMsgs
+      then failWith "run stop: automatic leader change"
+      else return $ Left mempty
+    Just _runParams | keyPressed -> do
+      discardPressedKey
+      stopPlayBack
+      Config{configRunStopMsgs} <- askConfig
+      if configRunStopMsgs
+      then failWith "run stop: key pressed"
+      else failWith "interrupted"
+    Just runParams -> do
+      arena <- getArenaUI
+      runOutcome <- continueRun arena runParams
+      case runOutcome of
+        Left stopMsg -> do
+          stopPlayBack
+          Config{configRunStopMsgs} <- askConfig
+          if configRunStopMsgs
+          then failWith $ "run stop:" <+> stopMsg
+          else return $ Left mempty
+        Right runCmd ->
+          return $ Right runCmd
+
+-- * MoveOnceToCursor
+
+moveOnceToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+moveOnceToCursorHuman = goToCursor True False
+
+goToCursor :: MonadClientUI m
+           => Bool -> Bool -> m (SlideOrCmd RequestAnyAbility)
+goToCursor initialStep run = do
+  tgtMode <- getsSession stgtMode
+  -- Movement is legal only outside targeting mode.
+  if isJust tgtMode then failWith "cannot move in aiming mode"
+  else do
+    leader <- getLeaderUI
+    b <- getsState $ getActorBody leader
+    cursorPos <- cursorToPos
+    case cursorPos of
+      Nothing -> failWith "crosshair position invalid"
+      Just c | c == bpos b -> do
+        stopPlayBack
+        if initialStep
+        then return $ Right $ RequestAnyAbility ReqWait
+        else return $ Left mempty
+      Just c -> do
+        running <- getsSession srunning
+        case running of
+          -- Don't use running params from previous run or goto-cursor.
+          Just paramOld | not initialStep -> do
+            arena <- getArenaUI
+            runOutcome <- multiActorGoTo arena c paramOld
+            case runOutcome of
+              Left stopMsg -> failWith stopMsg
+              Right (finalGoal, dir) ->
+                moveRunHuman initialStep finalGoal run False dir
+          _ -> do
+            let !_A = assert (initialStep || not run) ()
+            (_, mpath) <- getCacheBfsAndPath leader c
+            case mpath of
+              Nothing -> failWith "no route to crosshair"
+              Just [] -> assert `failure` (leader, b, c)
+              Just (p1 : _) -> do
+                let finalGoal = p1 == c
+                    dir = towards (bpos b) p1
+                moveRunHuman initialStep finalGoal run False dir
+
+multiActorGoTo :: MonadClientUI m
+               => LevelId -> Point -> RunParams
+               -> m (Either Msg (Bool, Vector))
+multiActorGoTo arena c paramOld =
+  case paramOld of
+    RunParams{runMembers = []} ->
+      return $ Left "selected actors no longer there"
+    RunParams{runMembers = r : rs, runWaiting} -> do
+      onLevel <- getsState $ memActor r arena
+      if not onLevel then do
+        let paramNew = paramOld {runMembers = rs}
+        multiActorGoTo arena c paramNew
+      else do
+        s <- getState
+        modifyClient $ updateLeader r s
+        let runMembersNew = rs ++ [r]
+            paramNew = paramOld { runMembers = runMembersNew
+                                , runWaiting = 0}
+        b <- getsState $ getActorBody r
+        (_, mpath) <- getCacheBfsAndPath r c
+        case mpath of
+          Nothing -> return $ Left "no route to crosshair"
+          Just [] ->
+            -- This actor already at goal; will be caught in goToCursor.
+            return $ Left ""
+          Just (p1 : _) -> do
+            let finalGoal = p1 == c
+                dir = towards (bpos b) p1
+                tpos = bpos b `shift` dir
+            tgts <- getsState $ posToActors tpos arena
+            case tgts of
+              [] -> do
+                modifySession $ \sess -> sess {srunning = Just paramNew}
+                return $ Right (finalGoal, dir)
+              [(target, _)]
+                | target `elem` rs || runWaiting <= length rs ->
+                -- Let r wait until all others move. Mark it in runWaiting
+                -- to avoid cycles. When all wait for each other, fail.
+                multiActorGoTo arena c paramNew{runWaiting=runWaiting + 1}
+              _ ->
+                 return $ Left "actor in the way"
+
+-- * RunOnceToCursor
+
+runOnceToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+runOnceToCursorHuman = goToCursor True True
+
+-- * ContinueToCursor
+
+continueToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+continueToCursorHuman = goToCursor False False{-irrelevant-}
 
 -- * MoveItem
 
@@ -872,154 +1010,7 @@ guessTrigger _ fs@(TK.Cause (IK.Ascend k) : _) _ =
        | otherwise -> assert `failure` fs
 guessTrigger _ _ _ = "never mind"
 
--- * RunOnceAhead
-
-runOnceAheadHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
-runOnceAheadHuman = do
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  leader <- getLeaderUI
-  keyPressed <- anyKeyPressed
-  srunning <- getsSession srunning
-  -- When running, stop if disturbed. If not running, stop at once.
-  case srunning of
-    Nothing -> do
-      stopPlayBack
-      return $ Left mempty
-    Just RunParams{runMembers}
-      | noRunWithMulti fact && runMembers /= [leader] -> do
-      stopPlayBack
-      Config{configRunStopMsgs} <- askConfig
-      if configRunStopMsgs
-      then failWith "run stop: automatic leader change"
-      else return $ Left mempty
-    Just _runParams | keyPressed -> do
-      discardPressedKey
-      stopPlayBack
-      Config{configRunStopMsgs} <- askConfig
-      if configRunStopMsgs
-      then failWith "run stop: key pressed"
-      else failWith "interrupted"
-    Just runParams -> do
-      arena <- getArenaUI
-      runOutcome <- continueRun arena runParams
-      case runOutcome of
-        Left stopMsg -> do
-          stopPlayBack
-          Config{configRunStopMsgs} <- askConfig
-          if configRunStopMsgs
-          then failWith $ "run stop:" <+> stopMsg
-          else return $ Left mempty
-        Right runCmd ->
-          return $ Right runCmd
-
--- * MoveOnceToCursor
-
-moveOnceToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
-moveOnceToCursorHuman = goToCursor True False
-
-goToCursor :: MonadClientUI m
-           => Bool -> Bool -> m (SlideOrCmd RequestAnyAbility)
-goToCursor initialStep run = do
-  tgtMode <- getsSession stgtMode
-  -- Movement is legal only outside targeting mode.
-  if isJust tgtMode then failWith "cannot move in aiming mode"
-  else do
-    leader <- getLeaderUI
-    b <- getsState $ getActorBody leader
-    cursorPos <- cursorToPos
-    case cursorPos of
-      Nothing -> failWith "crosshair position invalid"
-      Just c | c == bpos b -> do
-        stopPlayBack
-        if initialStep
-        then return $ Right $ RequestAnyAbility ReqWait
-        else return $ Left mempty
-      Just c -> do
-        running <- getsSession srunning
-        case running of
-          -- Don't use running params from previous run or goto-cursor.
-          Just paramOld | not initialStep -> do
-            arena <- getArenaUI
-            runOutcome <- multiActorGoTo arena c paramOld
-            case runOutcome of
-              Left stopMsg -> failWith stopMsg
-              Right (finalGoal, dir) ->
-                moveRunHuman initialStep finalGoal run False dir
-          _ -> do
-            let !_A = assert (initialStep || not run) ()
-            (_, mpath) <- getCacheBfsAndPath leader c
-            case mpath of
-              Nothing -> failWith "no route to crosshair"
-              Just [] -> assert `failure` (leader, b, c)
-              Just (p1 : _) -> do
-                let finalGoal = p1 == c
-                    dir = towards (bpos b) p1
-                moveRunHuman initialStep finalGoal run False dir
-
-multiActorGoTo :: MonadClientUI m
-               => LevelId -> Point -> RunParams
-               -> m (Either Msg (Bool, Vector))
-multiActorGoTo arena c paramOld =
-  case paramOld of
-    RunParams{runMembers = []} ->
-      return $ Left "selected actors no longer there"
-    RunParams{runMembers = r : rs, runWaiting} -> do
-      onLevel <- getsState $ memActor r arena
-      if not onLevel then do
-        let paramNew = paramOld {runMembers = rs}
-        multiActorGoTo arena c paramNew
-      else do
-        s <- getState
-        modifyClient $ updateLeader r s
-        let runMembersNew = rs ++ [r]
-            paramNew = paramOld { runMembers = runMembersNew
-                                , runWaiting = 0}
-        b <- getsState $ getActorBody r
-        (_, mpath) <- getCacheBfsAndPath r c
-        case mpath of
-          Nothing -> return $ Left "no route to crosshair"
-          Just [] ->
-            -- This actor already at goal; will be caught in goToCursor.
-            return $ Left ""
-          Just (p1 : _) -> do
-            let finalGoal = p1 == c
-                dir = towards (bpos b) p1
-                tpos = bpos b `shift` dir
-            tgts <- getsState $ posToActors tpos arena
-            case tgts of
-              [] -> do
-                modifySession $ \sess -> sess {srunning = Just paramNew}
-                return $ Right (finalGoal, dir)
-              [(target, _)]
-                | target `elem` rs || runWaiting <= length rs ->
-                -- Let r wait until all others move. Mark it in runWaiting
-                -- to avoid cycles. When all wait for each other, fail.
-                multiActorGoTo arena c paramNew{runWaiting=runWaiting + 1}
-              _ ->
-                 return $ Left "actor in the way"
-
--- * RunOnceToCursor
-
-runOnceToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
-runOnceToCursorHuman = goToCursor True True
-
--- * ContinueToCursor
-
-continueToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
-continueToCursorHuman = goToCursor False False{-irrelevant-}
-
--- * Cancel
-
--- | End targeting mode, rejecting the current position.
-cancelHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
-cancelHuman = do
-  stgtMode <- getsSession stgtMode
-  let !_A = assert (isJust stgtMode) ()
-  modifySession $ \sess -> sess {stgtMode = Nothing}
-  failWith "target not set"
-
--- * Help; does not take time, but some of the commands do
+-- * Help
 
 -- | Display command help.
 helpHuman :: MonadClientUI m
@@ -1047,25 +1038,7 @@ helpHuman cmdAction mstart = do
       Nothing -> failWith "never mind"
     Right _slot -> assert `failure` ekm
 
--- * Accept
-
--- | Accept the current x-hair position as target, ending
--- aiming mode, if active.
-acceptHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
-acceptHuman = do
-  endTargeting
-  endTargetingMsg
-  modifySession $ \sess -> sess {stgtMode = Nothing}
-  return $ Left mempty
-
-endTargetingMsg :: MonadClientUI m => m ()
-endTargetingMsg = do
-  leader <- getLeaderUI
-  (targetMsg, _) <- targetDescLeader leader
-  subject <- partAidLeader leader
-  msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
-
--- * MainMenu; does not take time, but some of the commands do
+-- * MainMenu
 
 -- TODO: avoid String
 -- | Display the main menu.
@@ -1140,73 +1113,18 @@ mainMenuHuman cmdAction = do
       Nothing -> failWith "never mind"
     Right _slot -> assert `failure` ekm
 
--- * SettingsMenu; does not take time
+-- * GameDifficultyIncr
 
--- TODO: display "on"/"off" after Mark* commands
--- TODO: display tactics at the top; somehow return to this menu after Tactics
--- | Display the settings menu.
-settingsMenuHuman :: MonadClientUI m
-                  => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
-                  -> m (SlideOrCmd RequestUI)
-settingsMenuHuman cmdAction = do
-  Kind.COps{corule} <- getsState scops
-  Binding{bcmdList} <- askBinding
-  let stripFrame t = tail . init $ T.lines t
-      pasteVersion art =  -- TODO: factor out
-        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
-            version = " Version " ++ showVersion pathsVersion
-                      ++ " (frontend: " ++ frontendName
-                      ++ ", engine: LambdaHack " ++ showVersion Self.version
-                      ++ ") "
-            versionLen = length version
-        in init art ++ [take (80 - versionLen) (last art) ++ version]
-      -- Key-description-command tuples.
-      kds = [ (km, (desc, cmd))
-            | (km, (desc, [HumanCmd.CmdSettingsMenu], cmd)) <- bcmdList ]
-      statusLen = 30
-      bindingLen = 28
-      gameInfo = replicate 4 $ T.justifyLeft statusLen ' ' ""
-      emptyInfo = repeat $ T.justifyLeft bindingLen ' ' ""
-      bindings =  -- key bindings to display
-        let fmt (k, (d, _)) =
-              ( Just k
-              , T.justifyLeft bindingLen ' '
-                  $ T.justifyLeft 3 ' ' (K.showKM k) <> " " <> d )
-        in map fmt kds
-      overwrite =  -- overwrite the art with key bindings and other lines
-        let over [] (_, line) = ([], (T.pack line, Nothing))
-            over bs@((mkey, binding) : bsRest) (y, line) =
-              let (prefix, lineRest) = break (=='{') line
-                  (braces, suffix)   = span  (=='{') lineRest
-              in if length braces >= bindingLen
-                 then
-                   let lenB = T.length binding
-                       pre = T.pack prefix
-                       post = T.drop (lenB - bindingLen) (T.pack suffix)
-                       len = T.length pre
-                       yxx key = (Left key, (y, len, len + lenB))
-                       myxx = yxx <$> mkey
-                   in (bsRest, (pre <> binding <> post, myxx))
-                 else (bs, (T.pack line, Nothing))
-        in snd . mapAccumL over (zip (repeat Nothing) gameInfo
-                                 ++ bindings
-                                 ++ zip (repeat Nothing) emptyInfo)
-      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
-      artWithVersion = pasteVersion $ map T.unpack $ stripFrame mainMenuArt
-      menuOverwritten = overwrite $ zip [0..] artWithVersion
-      (menuOvLines, mkyxs) = unzip menuOverwritten
-      kyxs = catMaybes mkyxs
-      ov = toOverlay menuOvLines
-  menuIxSettings <- getsSession smenuIxSettings
-  (ekm, pointer) <- displayChoiceScreen True menuIxSettings [(ov, kyxs)] []
-  modifySession $ \sess -> sess {smenuIxSettings = pointer}
-  case ekm of
-    Left km -> case km `lookup` kds of
-      Just (_desc, cmd) -> cmdAction cmd
-      Nothing -> failWith "never mind"
-    Right _slot -> assert `failure` ekm
+gameDifficultyIncr :: MonadClientUI m => m ()
+gameDifficultyIncr = do
+  let delta = 1
+  snxtDiff <- getsClient snxtDiff
+  let d | snxtDiff + delta > difficultyBound = 1
+        | snxtDiff + delta < 1 = difficultyBound
+        | otherwise = snxtDiff + delta
+  modifyClient $ \cli -> cli {snxtDiff = d}
 
--- * GameRestart; does not take time
+-- * GameRestart
 
 gameRestartHuman :: MonadClientUI m
                  => GroupName ModeKind -> m (SlideOrCmd RequestUI)
@@ -1228,14 +1146,14 @@ gameRestartHuman t = do
     return $ Right
            $ ReqUIGameRestart leader t snxtDiff configHeroNames
 
--- * GameExit; does not take time
+-- * GameExit
 
 gameExitHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 gameExitHuman = do
   leader <- getLeaderUI
   return $ Right $ ReqUIGameExit leader
 
--- * GameSave; does not take time
+-- * GameSave
 
 gameSaveHuman :: MonadClientUI m => m RequestUI
 gameSaveHuman = do
@@ -1245,7 +1163,7 @@ gameSaveHuman = do
   msgAdd "Saving game backup."
   return ReqUIGameSave
 
--- * Tactic; does not take time
+-- * Tactic
 
 -- Note that the difference between seek-target and follow-the-leader tactic
 -- can influence even a faction with passive actors. E.g., if a passive actor
@@ -1266,7 +1184,7 @@ tacticHuman = do
     then failWith "tactic change canceled"
     else return $ Right $ ReqUITactic toT
 
--- * Automate; does not take time
+-- * Automate
 
 automateHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 automateHuman = do
