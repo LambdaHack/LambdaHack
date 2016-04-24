@@ -158,12 +158,9 @@ describeMainKeys = do
         M.findWithDefault [K.KM K.NoModifier K.LeftButtonPress]
                           defaultCmdLMB brevMap
       kmEscape = head $
-        M.findWithDefault [K.KM K.NoModifier K.Esc] Cancel brevMap
-      kmRightButtonPress = head $
-        M.findWithDefault [K.KM K.NoModifier K.RightButtonPress]
-                          TgtPointerEnemy brevMap
+        M.findWithDefault [K.KM K.NoModifier K.Esc] (ByMode MainMenu Cancel) brevMap
       kmReturn = head $
-        M.findWithDefault [K.KM K.NoModifier K.Return] Accept brevMap
+        M.findWithDefault [K.KM K.NoModifier K.Return] (ByMode (Help $ Just "") Accept) brevMap
       moveKeys | configVi = "hjklyubn, "
                | configLaptop = "uk8o79jl, "
                | otherwise = ""
@@ -185,7 +182,7 @@ describeMainKeys = do
         "Aim" <+> tgtKind <+> "with keypad or keys or mouse: ["
         <> moveKeys
         <> T.intercalate ", "
-             (map K.showKM [kmRightButtonPress, kmReturn, kmEscape])
+             (map K.showKM [kmLeftButtonPress, kmReturn, kmEscape])
         <> "]"
   report <- getsSession sreport
   return $! if nullReport report then keys else ""

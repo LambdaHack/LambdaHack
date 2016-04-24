@@ -35,10 +35,10 @@ stdBinding :: KeyKind  -- ^ default key bindings from the content
            -> Config   -- ^ game config
            -> Binding  -- ^ concrete binding
 stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
-  let cmdWithHelp = rhumanCommands copsClient ++ configCommands
-      cmdAll =
-        cmdWithHelp
-        ++ [ (K.mkKM "KP_Begin", ([CmdMove], Wait))
+  let cmdAll =
+        rhumanCommands copsClient
+        ++ configCommands
+        ++ [ (K.mkKM "KP_Begin", ([CmdMove], Alias "" Wait))
            , (K.mkKM "CTRL-KP_Begin", ([CmdMove], Alias "" Wait))
            , (K.mkKM "KP_5", ([CmdMove], Alias "" Wait))
            , (K.mkKM "CTRL-KP_5", ([CmdMove], Alias "" Wait)) ]
@@ -49,19 +49,22 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
                  , (K.mkKM "I", ([CmdMove], Alias "" Wait)) ]
                | otherwise ->
                  [])
-        ++ K.moveBinding configVi configLaptop (\v -> ([CmdMove], Move v))
-                                               (\v -> ([CmdMove], Run v))
+        ++ K.moveBinding configVi configLaptop
+                         (\v -> ([CmdMove], Alias "" $ Move v))
+                         (\v -> ([CmdMove], Alias "" $ Run v))
       mkDescribed (cats, cmd) = (cmdDescription cmd, cats, cmd)
   in Binding
   { bcmdMap = M.fromList $ map (second mkDescribed) cmdAll
-  , bcmdList = map (second mkDescribed) cmdWithHelp
+  , bcmdList = map (second mkDescribed) cmdAll
   , brevMap = M.fromListWith (flip (++)) $ concat
-      [ (cmd, [k]) : case cmd of
-                       Alias _ cmd1 -> [(cmd1, [k])]
-                       _ -> []
+      [ fromAlias cmd
       | (k, (cats, cmd)) <- cmdAll
       , all (`notElem` [CmdMainMenu, CmdSettingsMenu, CmdDebug, CmdInternal])
-            cats ]
+            cats
+      , let fromAlias cmd1 = [(cmd1, [k])] ++ case cmd1 of
+              Alias _ cmd2 -> fromAlias cmd2
+              _ -> []
+      ]
   }
 
 -- | Produce a set of help screens from the key bindings.
@@ -127,6 +130,7 @@ keyHelp Binding{..} =
     categoryText = map fmts categoryBlurb
     lastText = map fmts lastBlurb
     coImage :: HumanCmd -> [K.KM]
+    coImage (Alias _ cmd) = coImage cmd
     coImage cmd = M.findWithDefault (assert `failure` cmd) cmd brevMap
     disp cmd = T.concat $ intersperse " or " $ map K.showKM $ coImage cmd
     keysN n cat = [ (Left k, fmt n (disp cmd) h)
