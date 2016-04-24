@@ -455,7 +455,7 @@ settingsMenuHuman cmdAction = do
                  then
                    let lenB = T.length binding
                        pre = T.pack prefix
-                       post = T.drop (lenB - bindingLen) (T.pack suffix)
+                       post = T.drop (lenB - length braces) (T.pack suffix)
                        len = T.length pre
                        yxx key = (Left key, (y, len, len + lenB))
                        myxx = yxx <$> mkey
