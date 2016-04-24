@@ -2,8 +2,8 @@
 -- | Inventory management and party cycling.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( Suitability(..), ItemDialogState(..)
-  , getGroupItem, getAnyItems, getStoreItem, pickNumber
+  ( Suitability(..)
+  , getGroupItem, getAnyItems, getStoreItem
   , storeFromMode, ppItemDialogMode
   ) where
 
@@ -587,28 +587,3 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
       Just keyDef -> defAction keyDef ekm
       Nothing -> defAction lettersDef ekm  -- pressed; with current prefix
     Right _slot -> defAction lettersDef ekm  -- selected; with the given prefix
-
-pickNumber :: MonadClientUI m => Bool -> Int -> m (SlideOrCmd Int)
-pickNumber askNumber kAll = do
-  let gatherNumber kDefaultRaw = do
-        let kDefault = min kAll kDefaultRaw
-            kprompt = "Choose number [digits, BACKSPACE, RET("
-                      <> tshow kDefault
-                      <> "), ESC]"
-        ov : _ <- slideshow <$> overlayToSlideshow kprompt mempty
-        frame <- drawOverlay ColorFull False ov
-        kkm <- promptGetInt frame
-        case K.key kkm of
-          K.Char l | kDefault == kAll -> gatherNumber $ Char.digitToInt l
-          K.Char l -> gatherNumber $ kDefault * 10 + Char.digitToInt l
-          K.BackSpace -> gatherNumber $ kDefault `div` 10
-          K.Return -> return $ Right kDefault
-          K.Esc -> failWith "never mind"
-          _ -> assert `failure` "unexpected key:" `twith` kkm
-  if | kAll == 0 -> failWith "no number of items can be chosen"
-     | kAll == 1 || not askNumber -> return $ Right kAll
-     | otherwise -> do
-         num <- gatherNumber kAll
-         case num of
-           Right 0 -> failWith "zero items chosen"
-           _ -> return num

@@ -48,6 +48,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Frontend (frontendName)
 import Game.LambdaHack.Client.UI.HandleHelperClient
+import Game.LambdaHack.Client.UI.HandleHumanLocalClient
 import Game.LambdaHack.Client.UI.HumanCmd (CmdArea (..), Trigger (..))
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.UI.InventoryClient
