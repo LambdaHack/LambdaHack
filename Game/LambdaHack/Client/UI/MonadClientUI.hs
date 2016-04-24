@@ -153,15 +153,13 @@ getConfirmsKey dm extraKeys slides = do
   let displayFrs frs srf = case frs of
         [] -> assert `failure` slides
         x : xs -> do
-          km@K.KM{..} <- getConfirmGeneric keys x
+          km@K.KM{..} <- connFrontendFrontKey keys x
           case key of
-            -- Sapce enabled *only if* in @extraKeys@.
-            K.Space | km `K.elemOrNull` extraKeys -> case xs of
-              -- If Space permitted, only exits at the end of slideshow.
-              [] -> return km
+            K.Space -> case xs of
+              -- Space exits at the end of slideshow and only if in @extraKeys@.
+              [] | km `elem` extraKeys -> return km
+              [] -> displayFrs frs srf
               _ -> displayFrs xs (x : srf)
-            _ | km `K.elemOrNull` extraKeys -> return km
-            -- Other scrolling keys enabled *unless* in @extraKeys@.
             K.Home -> displayFrs frontSlides []
             K.End -> case reverse frontSlides of
               [] -> assert `failure` slides
@@ -172,14 +170,9 @@ getConfirmsKey dm extraKeys slides = do
             K.PgDn -> case xs of
               [] -> displayFrs frs srf
               _ -> displayFrs xs (x : srf)
+            _ | km `K.elemOrNull` extraKeys -> return km
             _ -> assert `failure` "unknown key" `twith` km
   displayFrs frontSlides []
-
-getConfirmGeneric :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
-getConfirmGeneric clearKeys frontKeyFrame = do
-  let extraKeys = [K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM]
-      frontKeyKeys = clearKeys ++ extraKeys
-  connFrontendFrontKey frontKeyKeys frontKeyFrame
 
 displayFrame :: MonadClientUI m => Maybe SingleFrame -> m ()
 displayFrame mf = do

@@ -1030,7 +1030,7 @@ helpHuman cmdAction mstart = do
           mindex = findIndex (matchKeyOrSlot . fst) $ concat $ map snd keyH
       return $! fromMaybe 0 mindex
   (ekm, pointer) <-
-    displayChoiceScreen True menuIxHelp keyH [K.spaceKM]
+    displayChoiceScreen True menuIxHelp keyH [K.spaceKM, K.escKM]
   modifySession $ \sess -> sess {smenuIxHelp = pointer}
   case ekm of
     Left km -> case km `M.lookup` bcmdMap keyb of
@@ -1134,7 +1134,7 @@ gameRestartHuman t = do
   b2 <- displayYesNo ColorBW $
           "You just requested a new" <+> tshow t
           <+> "game. The progress of the current" <+> mname gameMode
-          <+> "game will be lost! Please confirm."
+          <+> "game will be lost! Are you sure?"
   msg2 <- rndToAction $ oneOf
             [ "yea, would be a pity to leave them all to die"
             , "yea, a shame to get your team stranded" ]
