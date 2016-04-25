@@ -7,7 +7,8 @@
 -- TODO: document
 module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   ( -- * Meta commands
-    byAreaHuman, byModeHuman, composeIfLeftHuman, composeIfEmptyHuman
+    byAreaHuman, byAimModeHuman, byItemModeHuman
+  , composeIfLeftHuman, composeIfEmptyHuman
     -- * Global commands that usually take time
   , waitHuman, moveRunHuman
   , runOnceAheadHuman, moveOnceToCursorHuman
@@ -139,14 +140,23 @@ areaToRectangles ca = case ca of
   CaRectangle r -> return [r]
   CaUnion ca1 ca2 -> liftM2 (++) (areaToRectangles ca1) (areaToRectangles ca2)
 
--- * ByMode
+-- * ByAimMode
 
-byModeHuman :: MonadClientUI m
-            => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
-            -> m (SlideOrCmd RequestUI)
-byModeHuman cmdNormalM cmdAimingM = do
+byAimModeHuman :: MonadClientUI m
+               => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
+               -> m (SlideOrCmd RequestUI)
+byAimModeHuman cmdNotAimingM cmdAimingM = do
   tgtMode <- getsSession stgtMode
-  if isJust tgtMode then cmdAimingM else cmdNormalM
+  if isNothing tgtMode then cmdNotAimingM else cmdAimingM
+
+-- * ByItemMode
+
+byItemModeHuman :: MonadClientUI m
+                => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
+                -> m (SlideOrCmd RequestUI)
+byItemModeHuman cmdNotChosenM cmdChosenM = do
+  itemSel <- getsSession sitemSel
+  if isNothing itemSel then cmdNotChosenM else cmdChosenM
 
 -- * ComposeIfLeft
 

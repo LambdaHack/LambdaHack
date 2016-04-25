@@ -54,21 +54,21 @@ standardKeys = KeyKind
       , ("<", ([CmdMove, CmdItem, CmdMinimal], getAscend))
       , ("g", ([CmdMove, CmdItem], Alias "" getAscend))
       , ("comma", ([CmdInternal], Alias "" getAscend))
-      , ("CTRL-<", ([CmdInternal], ByMode
-           (TriggerTile
-              [TriggerFeature { verb = "ascend"
-                              , object = "10 levels"
-                              , feature = TK.Cause (IK.Ascend 10) }])
-           (TgtAscend 10)))
+      , ("CTRL-<", ([CmdInternal], ByAimMode
+           { notAiming = TriggerTile
+               [TriggerFeature { verb = "ascend"
+                               , object = "10 levels"
+                               , feature = TK.Cause (IK.Ascend 10) }]
+           , aiming = TgtAscend 10}))
       , (">", ([CmdMove, CmdItem, CmdMinimal], descendDrop))
       , ("d", ([CmdMove, CmdItem], Alias "" descendDrop))
       , ("period", ([CmdInternal], Alias "" descendDrop))
-      , ("CTRL->", ([CmdInternal], ByMode
-           (TriggerTile
-              [TriggerFeature { verb = "descend"
-                              , object = "10 levels"
-                              , feature = TK.Cause (IK.Ascend (-10)) }])
-           (TgtAscend (-10))))
+      , ("CTRL->", ([CmdInternal], ByAimMode
+           { notAiming = TriggerTile
+               [TriggerFeature { verb = "descend"
+                               , object = "10 levels"
+                               , feature = TK.Cause (IK.Ascend (-10)) }]
+           , aiming = TgtAscend (-10) }))
       , ("semicolon", ( [CmdMove]
                       , Alias "go to crosshair for 100 steps"
                         $ Macro ["CTRL-semicolon", "CTRL-period", "V"] ))
@@ -144,10 +144,10 @@ standardKeys = KeyKind
       , ("BackSpace", ([CmdTgt], TgtClear))
       , ("Escape", ( [CmdTgt, CmdMinimal]
                    , Alias "cancel target/action or open Main Menu"
-                     $ ByMode MainMenu Cancel ))
+                     $ ByAimMode {notAiming = MainMenu, aiming = Cancel} ))
       , ("Return", ( [CmdTgt, CmdMinimal]
                    , Alias "accept target/choice or open Help"
-                     $ ByMode (Help $ Just "") Accept ))
+                     $ ByAimMode {notAiming = Help $ Just "", aiming=Accept} ))
 
       -- Assorted
       , ("space", ([CmdMeta], Clear))

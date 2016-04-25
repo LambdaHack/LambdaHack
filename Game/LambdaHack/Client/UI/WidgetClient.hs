@@ -156,11 +156,16 @@ describeMainKeys = do
   cursor <- getsClient scursor
   let kmLeftButtonPress = head $
         M.findWithDefault [K.KM K.NoModifier K.LeftButtonPress]
-                          defaultCmdLMB brevMap
+                          defaultCmdLMB
+                          brevMap
       kmEscape = head $
-        M.findWithDefault [K.KM K.NoModifier K.Esc] (ByMode MainMenu Cancel) brevMap
+        M.findWithDefault [K.KM K.NoModifier K.Esc]
+                          ByAimMode {notAiming = MainMenu, aiming = Cancel}
+                          brevMap
       kmReturn = head $
-        M.findWithDefault [K.KM K.NoModifier K.Return] (ByMode (Help $ Just "") Accept) brevMap
+        M.findWithDefault [K.KM K.NoModifier K.Return]
+                          ByAimMode {notAiming = Help $ Just "", aiming = Accept}
+                          brevMap
       moveKeys | configVi = "hjklyubn, "
                | configLaptop = "uk8o79jl, "
                | otherwise = ""

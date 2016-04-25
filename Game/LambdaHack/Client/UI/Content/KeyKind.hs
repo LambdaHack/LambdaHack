@@ -21,18 +21,18 @@ data KeyKind = KeyKind
 
 defaultCmdLMB :: HumanCmd
 defaultCmdLMB = Alias "go to pointer for 100 steps or set crosshair" $
-  ByMode
-    (ByArea $ common ++  -- normal mode
-       [ (CaMapParty, PickLeaderWithPointer)
-       , (CaMap, Macro
-            ["MiddleButtonPress", "CTRL-semicolon", "CTRL-period", "V"]) ])
-    (ByArea $ common ++  -- aiming mode
-       [ (CaMap, TgtPointerEnemy) ])
+  ByAimMode
+    { notAiming = ByArea $ common ++  -- normal mode
+        [ (CaMapParty, PickLeaderWithPointer)
+        , (CaMap, Macro
+             ["MiddleButtonPress", "CTRL-semicolon", "CTRL-period", "V"]) ]
+    , aiming = ByArea $ common ++  -- aiming mode
+        [ (CaMap, TgtPointerEnemy) ] }
  where
   common =
     [ (CaMessage, History)
     , (CaMapLeader, getAscend)
-    , (CaArenaName, ByMode MainMenu Cancel)
+    , (CaArenaName, ByAimMode {notAiming = MainMenu, aiming = Cancel})
     , (CaXhairDesc, TgtEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
     , (CaLeaderStatus, ChooseItem $ MStore COrgan)
@@ -43,18 +43,18 @@ defaultCmdMMB = CursorPointerFloor
 
 defaultCmdRMB :: HumanCmd
 defaultCmdRMB = Alias "run collectively to pointer or set target" $
-  ByMode
-    (ByArea $ common ++
-       [ (CaMapParty, SelectWithPointer)
-       , (CaMap, Macro
-            ["MiddleButtonPress", "CTRL-colon", "CTRL-period", "V"]) ])
-    (ByArea $ common ++
-       [ (CaMap, ComposeIfLeft TgtPointerEnemy projectFling) ])
+  ByAimMode
+    { notAiming = ByArea $ common ++
+        [ (CaMapParty, SelectWithPointer)
+        , (CaMap, Macro
+             ["MiddleButtonPress", "CTRL-colon", "CTRL-period", "V"]) ]
+    , aiming = ByArea $ common ++
+       [ (CaMap, ComposeIfLeft TgtPointerEnemy projectFling) ] }
  where
   common =
     [ (CaMessage, Macro ["R"])
     , (CaMapLeader, descendDrop)
-    , (CaArenaName, ByMode (Help Nothing) Accept)
+    , (CaArenaName, ByAimMode {notAiming = Help Nothing, aiming = Accept})
     , (CaXhairDesc, projectFling)
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, ChooseItem MStats)
@@ -67,33 +67,33 @@ projectFling = Project [ApplyItem { verb = "fling"
 
 getAscend :: HumanCmd
 getAscend = Alias "get items or ascend"
-            $ ByMode
-  (ReplaceFail "cannot get items nor ascend"
-   $ ComposeIfLeft
-       (MoveItem [CGround] CEqp (Just "get") "items" True)
-       (TriggerTile
-          [ TriggerFeature { verb = "ascend"
-                           , object = "a level"
-                           , feature = TK.Cause (IK.Ascend 1) }
-          , TriggerFeature { verb = "escape"
-                           , object = "dungeon"
-                           , feature = TK.Cause (IK.Escape 1) } ]))
-  (TgtAscend 1)
+            $ ByAimMode
+  { notAiming = ReplaceFail "cannot get items nor ascend"
+      $ ComposeIfLeft
+          (MoveItem [CGround] CEqp (Just "get") "items" True)
+          (TriggerTile
+             [ TriggerFeature { verb = "ascend"
+                              , object = "a level"
+                              , feature = TK.Cause (IK.Ascend 1) }
+             , TriggerFeature { verb = "escape"
+                              , object = "dungeon"
+                              , feature = TK.Cause (IK.Escape 1) } ])
+  , aiming = TgtAscend 1 }
 
 descendDrop :: HumanCmd
 descendDrop = Alias "descend or drop items"
-              $ ByMode
-  (ReplaceFail "cannot descend nor drop items"
-   $ ComposeIfLeft
-       (TriggerTile
-          [ TriggerFeature { verb = "descend"
-                           , object = "a level"
-                           , feature = TK.Cause (IK.Ascend (-1)) }
-          , TriggerFeature { verb = "escape"
-                           , object = "dungeon"
-                           , feature = TK.Cause (IK.Escape (-1)) } ])
-       (MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False))
-  (TgtAscend (-1))
+              $ ByAimMode
+  { notAiming = ReplaceFail "cannot descend nor drop items"
+      $ ComposeIfLeft
+          (TriggerTile
+             [ TriggerFeature { verb = "descend"
+                              , object = "a level"
+                              , feature = TK.Cause (IK.Ascend (-1)) }
+             , TriggerFeature { verb = "escape"
+                              , object = "dungeon"
+                              , feature = TK.Cause (IK.Escape (-1)) } ])
+          (MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False)
+  , aiming = TgtAscend (-1) }
 
 chooseAndHelp :: ItemDialogMode -> HumanCmd
 chooseAndHelp dialogMode =

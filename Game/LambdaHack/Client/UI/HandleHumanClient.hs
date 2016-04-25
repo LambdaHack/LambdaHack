@@ -38,8 +38,10 @@ cmdAction cmd = case cmd of
   Alias _ cmd1 -> cmdAction cmd1
   Macro kms -> Left <$> macroHuman kms
   ByArea l -> byAreaHuman cmdAction l
-  ByMode cmdNormal cmdAiming ->
-    byModeHuman (cmdAction cmdNormal) (cmdAction cmdAiming)
+  ByAimMode{..} ->
+    byAimModeHuman (cmdAction notAiming) (cmdAction aiming)
+  ByItemMode{..} ->
+    byItemModeHuman (cmdAction notChosen) (cmdAction chosen)
   ComposeIfLeft cmd1 cmd2 ->
     composeIfLeftHuman (cmdAction cmd1) (cmdAction cmd2)
   ComposeIfEmpty cmd1 cmd2 ->

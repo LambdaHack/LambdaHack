@@ -68,7 +68,8 @@ data HumanCmd =
   | Alias !Text !HumanCmd
   | Macro ![String]
   | ByArea ![(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
-  | ByMode !HumanCmd !HumanCmd
+  | ByAimMode {notAiming :: !HumanCmd, aiming :: !HumanCmd}
+  | ByItemMode {notChosen :: !HumanCmd, chosen :: !HumanCmd}
   | ComposeIfLeft !HumanCmd !HumanCmd
   | ComposeIfEmpty !HumanCmd !HumanCmd
     -- Global.
@@ -166,7 +167,8 @@ cmdDescription cmd = case cmd of
   Alias t _ -> t
   Macro{} -> ""
   ByArea{} -> ""
-  ByMode cmd1 _ -> cmdDescription cmd1
+  ByAimMode {notAiming} -> cmdDescription notAiming
+  ByItemMode {notChosen} -> cmdDescription notChosen
   ComposeIfLeft cmd1 _ -> cmdDescription cmd1
   ComposeIfEmpty cmd1 _ -> cmdDescription cmd1
 
