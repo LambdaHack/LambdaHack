@@ -30,7 +30,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List
+import Data.List.Compat
 import Data.Monoid
 import Data.Ord
 import Data.Maybe
