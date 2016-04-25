@@ -83,8 +83,8 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
   Just pageStyle <- getStyle body
   setProp pageStyle "background-color" (Color.colorToRGB Color.Black)
   setProp pageStyle "color" (Color.colorToRGB Color.White)
-  Just divBlock <- fmap castToHTMLDivElement
-                   <$> createElement doc (Just ("div" :: Text))
+  Just divBlock <-
+    castToHTMLDivElement <$$> createElement doc (Just ("div" :: Text))
   Just divStyle <- getStyle divBlock
   setProp divStyle "text-align" "center"
   case (saddress, stitle) of
@@ -98,8 +98,8 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
       cell = "<td>" ++ [chr 160]
       row = "<tr>" ++ concat (replicate lxsize cell)
       rows = concat (replicate lysize row)
-  Just tableElem <- fmap castToHTMLTableElement
-                     <$> createElement doc (Just ("table" :: Text))
+  Just tableElem <-
+    castToHTMLTableElement <$$> createElement doc (Just ("table" :: Text))
   void $ appendChild divBlock (Just tableElem)
   Just scharStyle <- getStyle tableElem
   -- Speed: http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout

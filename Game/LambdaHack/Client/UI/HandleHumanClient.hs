@@ -6,6 +6,8 @@ module Game.LambdaHack.Client.UI.HandleHumanClient
 import Prelude ()
 import Prelude.Compat
 
+import Data.Functor.Infix ((<$$>))
+
 import Game.LambdaHack.Client.UI.HandleHumanGlobalClient
 import Game.LambdaHack.Client.UI.HandleHumanLocalClient
 import Game.LambdaHack.Client.UI.HumanCmd
@@ -48,18 +50,18 @@ cmdAction cmd = case cmd of
     composeIfEmptyHuman (cmdAction cmd1) (cmdAction cmd2)
 
   Wait -> Right <$> fmap timedToUI waitHuman
-  Move v -> fmap ReqUITimed <$> moveRunHuman True True False False v
-  Run v -> fmap ReqUITimed <$> moveRunHuman True True True True v
-  RunOnceAhead -> fmap ReqUITimed <$> runOnceAheadHuman
-  MoveOnceToCursor -> fmap ReqUITimed <$> moveOnceToCursorHuman
-  RunOnceToCursor  -> fmap ReqUITimed <$> runOnceToCursorHuman
-  ContinueToCursor -> fmap ReqUITimed <$> continueToCursorHuman
+  Move v -> ReqUITimed <$$> moveRunHuman True True False False v
+  Run v -> ReqUITimed <$$> moveRunHuman True True True True v
+  RunOnceAhead -> ReqUITimed <$$> runOnceAheadHuman
+  MoveOnceToCursor -> ReqUITimed <$$> moveOnceToCursorHuman
+  RunOnceToCursor  -> ReqUITimed <$$> runOnceToCursorHuman
+  ContinueToCursor -> ReqUITimed <$$> continueToCursorHuman
   MoveItem cLegalRaw toCStore mverb _ auto ->
-    fmap timedToUI <$> moveItemHuman cLegalRaw toCStore mverb auto
-  Project ts -> fmap timedToUI <$> projectHuman ts
-  Apply ts -> fmap timedToUI <$> applyHuman ts
-  AlterDir ts -> fmap timedToUI <$> alterDirHuman ts
-  TriggerTile ts -> fmap timedToUI <$> triggerTileHuman ts
+    timedToUI <$$> moveItemHuman cLegalRaw toCStore mverb auto
+  Project ts -> timedToUI <$$> projectHuman ts
+  Apply ts -> timedToUI <$$> applyHuman ts
+  AlterDir ts -> timedToUI <$$> alterDirHuman ts
+  TriggerTile ts -> timedToUI <$$> triggerTileHuman ts
   Help mstart -> helpHuman cmdAction mstart
   MainMenu -> mainMenuHuman cmdAction
   GameDifficultyIncr -> gameDifficultyIncr >> mainMenuHuman cmdAction

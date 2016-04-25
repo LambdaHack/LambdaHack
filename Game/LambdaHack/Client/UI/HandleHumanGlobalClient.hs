@@ -30,6 +30,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad (filterM, liftM2, when)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Functor.Infix ((<$$>))
 import Data.List (delete, mapAccumL)
 import Data.List (findIndex)
 import qualified Data.Map.Strict as M
@@ -245,7 +246,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
       [(target, _)] | run && initialStep ->
         -- No @stopPlayBack@: initial displace is benign enough.
         -- Displacing requires accessibility, but it's checked later on.
-        fmap RequestAnyAbility <$> displaceAid target
+        RequestAnyAbility <$$> displaceAid target
       _ : _ : _ | run && initialStep -> do
         let !_A = assert (all (bproj . snd) tgts) ()
         failSer DisplaceProjectiles
@@ -265,7 +266,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
             return $ Left mempty
         else
           -- Attacking does not require full access, adjacency is enough.
-          fmap RequestAnyAbility <$> meleeAid target
+          RequestAnyAbility <$$> meleeAid target
       _ : _ -> failWith "actor in the way"
 
 -- | Actor atttacks an enemy actor or his own projectile.
