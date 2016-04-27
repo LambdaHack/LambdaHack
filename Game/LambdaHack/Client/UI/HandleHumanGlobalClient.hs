@@ -662,17 +662,6 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
 projectHuman :: MonadClientUI m
              => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbProject))
 projectHuman ts = do
-  itemSel <- getsSession sitemSel
-  case itemSel of
-    Just _ -> projectItem ts
-    Nothing -> do
-      slides <- chooseItemProjectHuman ts
-      if slides == mempty then projectItem ts else return $ Left slides
-
-projectItem :: MonadClientUI m
-            => [Trigger]
-            -> m (SlideOrCmd (RequestTimed 'AbProject))
-projectItem ts = do
   -- If already in aiming mode, project the item.
   let ifAimingThenProject i = do
         oldTgtMode <- getsSession stgtMode
@@ -729,17 +718,6 @@ projectI ts (fromCStore, (iid, itemFull)) = do
 applyHuman :: MonadClientUI m
            => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbApply))
 applyHuman ts = do
-  itemSel <- getsSession sitemSel
-  case itemSel of
-    Just _ -> applyItem ts
-    Nothing -> do
-      slides <- chooseItemApplyHuman ts
-      if slides == mempty then applyItem ts else return $ Left slides
-
-applyItem :: MonadClientUI m
-          => [Trigger]
-          -> m (SlideOrCmd (RequestTimed 'AbApply))
-applyItem ts = do
   itemSel <- getsSession sitemSel
   case itemSel of
     Just (fromCStore, iid) -> do

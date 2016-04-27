@@ -2,7 +2,8 @@
 module Game.LambdaHack.Client.UI.Content.KeyKind
   ( KeyKind(..)
   , defaultCmdLMB, defaultCmdMMB, defaultCmdRMB
-  , projectFling, getAscend, descendDrop, chooseAndHelp, defaultHeroSelect
+  , projectTS, projectFling, applyTS
+  , getAscend, descendDrop, chooseAndHelp, defaultHeroSelect
   ) where
 
 import qualified Data.Char as Char
@@ -60,10 +61,20 @@ defaultCmdRMB = Alias "run collectively to pointer or set target" $
     , (CaLeaderStatus, ChooseItem MStats)
     , (CaTargetDesc, ChooseItem $ MStore CEqp) ]
 
+projectTS :: [Trigger] -> HumanCmd
+projectTS ts = ByItemMode
+  { notChosen = ComposeIfEmpty (ChooseItemProject ts) (Project ts)
+  , chosen = Project ts }
+
 projectFling :: HumanCmd
-projectFling = Project [ApplyItem { verb = "fling"
-                                  , object = "projectile"
-                                  , symbol = ' ' }]
+projectFling = projectTS [ApplyItem { verb = "fling"
+                                    , object = "projectile"
+                                    , symbol = ' ' }]
+
+applyTS :: [Trigger] -> HumanCmd
+applyTS ts = ByItemMode
+  { notChosen = ComposeIfEmpty (ChooseItemApply ts) (Apply ts)
+  , chosen = Apply ts }
 
 getAscend :: HumanCmd
 getAscend = Alias "get items or ascend"

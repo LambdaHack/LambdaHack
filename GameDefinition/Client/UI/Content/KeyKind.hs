@@ -100,7 +100,7 @@ standardKeys = KeyKind
 
       -- Item use
       , ("f", ([CmdItem], projectFling))
-      , ("a", ([CmdItem], Apply
+      , ("a", ([CmdItem], applyTS
            [ApplyItem { verb = "apply"
                       , object = "consumable"
                       , symbol = ' ' }]))
@@ -117,18 +117,18 @@ standardKeys = KeyKind
       , ("G", ([CmdItem], chooseAndHelp $ MStore CGround))
       , ("@", ([CmdItem], chooseAndHelp $ MStore COrgan))
       , ("!", ([CmdItem], chooseAndHelp MStats))
-      , ("q", ([CmdItem], Apply [ApplyItem { verb = "quaff"
-                                           , object = "potion"
-                                           , symbol = '!' }]))
-      , ("r", ([CmdItem], Apply [ApplyItem { verb = "read"
-                                           , object = "scroll"
-                                           , symbol = '?' }]))
-      , ("t", ([CmdItem], Project [ApplyItem { verb = "throw"
-                                             , object = "missile"
-                                             , symbol = '|' }]))
---      , ("z", ([CmdItem], Project [ApplyItem { verb = "zap"
---                                             , object = "wand"
---                                             , symbol = '/' }]))
+      , ("q", ([CmdItem], applyTS [ApplyItem { verb = "quaff"
+                                             , object = "potion"
+                                             , symbol = '!' }]))
+      , ("r", ([CmdItem], applyTS [ApplyItem { verb = "read"
+                                             , object = "scroll"
+                                             , symbol = '?' }]))
+      , ("t", ([CmdItem], projectTS [ApplyItem { verb = "throw"
+                                               , object = "missile"
+                                               , symbol = '|' }]))
+--      , ("z", ([CmdItem], projectTS [ApplyItem { verb = "zap"
+--                                               , object = "wand"
+--                                               , symbol = '/' }]))
 
       -- Targeting
       , ("KP_Multiply", ([CmdTgt], TgtEnemy))

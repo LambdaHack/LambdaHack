@@ -169,8 +169,8 @@ cmdDescription cmd = case cmd of
   Alias t _ -> t
   Macro{} -> ""
   ByArea{} -> ""
-  ByAimMode {notAiming} -> cmdDescription notAiming
-  ByItemMode {notChosen} -> cmdDescription notChosen
+  ByAimMode {aiming} -> cmdDescription aiming
+  ByItemMode {chosen} -> cmdDescription chosen
   ComposeIfLeft cmd1 _ -> cmdDescription cmd1
   ComposeIfEmpty cmd1 _ -> cmdDescription cmd1
 
