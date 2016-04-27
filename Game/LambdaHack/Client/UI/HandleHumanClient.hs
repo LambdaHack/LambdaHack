@@ -95,6 +95,7 @@ cmdAction cmd = case cmd of
   Accept -> acceptHuman
   TgtClear -> Left <$> tgtClearHuman
   MoveCursor v k -> Left <$> moveCursorHuman v k
+  TgtTgt -> Left <$> tgtTgtHuman
   TgtFloor -> Left <$> tgtFloorHuman
   TgtEnemy -> Left <$> tgtEnemyHuman
   TgtAscend k -> Left <$> tgtAscendHuman k

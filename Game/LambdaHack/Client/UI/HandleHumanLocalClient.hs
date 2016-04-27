@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   , markVisionHuman, markSmellHuman, markSuspectHuman, settingsMenuHuman
     -- * Commands specific to aiming
   , cancelHuman, acceptHuman, tgtClearHuman
-  , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman
+  , moveCursorHuman, tgtTgtHuman, tgtFloorHuman, tgtEnemyHuman
   , tgtAscendHuman, epsIncrHuman
   , cursorUnknownHuman, cursorItemHuman, cursorStairHuman
   , cursorPointerFloorHuman, cursorPointerEnemyHuman
@@ -764,6 +764,21 @@ moveCursorHuman dir n = do
           _ -> TPoint lidV newPos
     modifyClient $ \cli -> cli {scursor = tgt}
     doLook False
+
+-- * TgtLevel
+
+-- | Start targetting mode, setting cursor to personal leader' target.
+-- To be used in conjuction with other commands.
+tgtTgtHuman :: MonadClientUI m => m Slideshow
+tgtTgtHuman = do
+  -- (Re)start targetting at the current level.
+  lidV <- viewedLevel
+  modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
+  -- Set cursor to the personal target, permanently.
+  leader <- getLeaderUI
+  tgt <- getsClient $ getTarget leader
+  modifyClient $ \cli -> cli {scursor = fromMaybe (scursor cli) tgt}
+  doLook False
 
 -- * TgtFloor
 

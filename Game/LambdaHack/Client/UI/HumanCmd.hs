@@ -119,6 +119,7 @@ data HumanCmd =
   | Accept
   | TgtClear
   | MoveCursor !Vector !Int
+  | TgtTgt
   | TgtFloor
   | TgtEnemy
   | TgtAscend !Int
@@ -234,6 +235,7 @@ cmdDescription cmd = case cmd of
   MoveCursor v 1 -> "move crosshair" <+> compassText v
   MoveCursor v k ->
     "move crosshair up to" <+> tshow k <+> "steps" <+> compassText v
+  TgtTgt -> "start aiming mode on the current level"
   TgtFloor -> "cycle aiming styles"
   TgtEnemy -> "aim at an enemy"
   TgtAscend k | k == 1  -> "aim at next shallower level"
