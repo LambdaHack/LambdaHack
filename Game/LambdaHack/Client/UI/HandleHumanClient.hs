@@ -74,6 +74,8 @@ cmdAction cmd = case cmd of
 
   Clear -> addNoSlides clearHuman
   ChooseItem cstore -> Left <$> chooseItemHuman cstore
+  ChooseItemProject ts -> Left <$> chooseItemProjectHuman ts
+  ChooseItemApply ts -> Left <$> chooseItemApplyHuman ts
   PickLeader k -> Left <$> pickLeaderHuman k
   PickLeaderWithPointer -> Left <$> pickLeaderWithPointerHuman
   MemberCycle -> Left <$> memberCycleHuman

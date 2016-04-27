@@ -98,6 +98,8 @@ data HumanCmd =
     -- Local. Below this line, commands do not notify the server.
   | Clear
   | ChooseItem !ItemDialogMode
+  | ChooseItemProject ![Trigger]
+  | ChooseItemApply ![Trigger]
   | PickLeader !Int
   | PickLeaderWithPointer
   | MemberCycle
@@ -208,6 +210,8 @@ cmdDescription cmd = case cmd of
   ChooseItem (MStore CSha) -> "manage the shared party stash"
   ChooseItem MOwned -> "manage all owned items"
   ChooseItem MStats -> "show the stats summary of the leader"
+  ChooseItemProject _ -> "choose item to fling"
+  ChooseItemApply _ -> "choose item to apply"
   PickLeader{} -> "pick leader"
   PickLeaderWithPointer -> "pick leader with mouse pointer"
   MemberCycle -> "cycle among party members on the level"

@@ -6,6 +6,8 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
     macroHuman
     -- * Local commands
   , clearHuman, chooseItemHuman
+  , chooseItemProjectHuman, chooseItemApplyHuman
+  , psuitReq, triggerSymbols, permittedApplyClient
   , pickLeaderHuman, pickLeaderWithPointerHuman
   , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, selectWithPointerHuman
@@ -47,6 +49,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Frontend (frontendName)
 import Game.LambdaHack.Client.UI.HandleHelperClient
+import Game.LambdaHack.Client.UI.HumanCmd (Trigger (..))
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.UI.InventoryClient
 import Game.LambdaHack.Client.UI.KeyBindings
@@ -56,11 +59,13 @@ import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.WidgetClient
+import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -94,7 +99,7 @@ clearHuman = return ()
 -- | Display items from a given container store and possibly let the user
 -- chose one.
 chooseItemHuman :: MonadClientUI m
-                  => ItemDialogMode -> m Slideshow
+                => ItemDialogMode -> m Slideshow
 chooseItemHuman c = do
   let subject = partActor
       verbSha body activeItems = if calmEnough body activeItems
@@ -170,6 +175,152 @@ chooseItemHuman c = do
           overlayToSlideshow prompt2 io
         MStats -> assert `failure` ggi
     Left slides -> return slides
+
+-- * ChooseItemProject
+
+chooseItemProjectHuman :: forall m. MonadClientUI m
+                       => [Trigger] -> m Slideshow
+chooseItemProjectHuman ts = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  activeItems <- activeItemsClient leader
+  let calmE = calmEnough b activeItems
+      cLegalRaw = [CGround, CInv, CEqp, CSha]
+      cLegal | calmE = cLegalRaw
+             | otherwise = delete CSha cLegalRaw
+      (verb1, object1) = case ts of
+        [] -> ("aim", "item")
+        tr : _ -> (verb tr, object tr)
+      psuit :: m Suitability
+      psuit = do
+        mpsuitReq <- psuitReq ts
+        case mpsuitReq of
+          -- If target invalid, no item is considered a (suitable) missile.
+          Left err -> return $ SuitsNothing err
+          Right psuitReqFun ->
+            return $ SuitsSomething $ either (const False) snd . psuitReqFun
+      prompt = makePhrase ["What", object1, "to", verb1]
+      promptGeneric = "What to fling"
+  ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
+  case ggi of
+    Right ((iid, _itemFull), MStore fromCStore) -> do
+      modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+      return mempty
+    Left slides -> return slides
+    _ -> assert `failure` ggi
+
+permittedProjectClient :: MonadClientUI m
+                       => [Char] -> m (ItemFull -> Either ReqFailure Bool)
+permittedProjectClient triggerSyms = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  actorSk <- actorSkillsClient leader
+  let skill = EM.findWithDefault 0 AbProject actorSk
+  activeItems <- activeItemsClient leader
+  return $ permittedProject False skill b activeItems triggerSyms
+
+projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
+projectCheck tpos = do
+  Kind.COps{cotile} <- getsState scops
+  leader <- getLeaderUI
+  eps <- getsClient seps
+  sb <- getsState $ getActorBody leader
+  let lid = blid sb
+      spos = bpos sb
+  Level{lxsize, lysize} <- getLevel lid
+  case bla lxsize lysize eps spos tpos of
+    Nothing -> return $ Just ProjectAimOnself
+    Just [] -> assert `failure` "project from the edge of level"
+                      `twith` (spos, tpos, sb)
+    Just (pos : _) -> do
+      lvl <- getLevel lid
+      let t = lvl `at` pos
+      if not $ Tile.isWalkable cotile t
+        then return $ Just ProjectBlockTerrain
+        else do
+          lab <- getsState $ posToActors pos lid
+          if all (bproj . snd) lab
+          then return Nothing
+          else return $ Just ProjectBlockActor
+
+posFromCursor :: MonadClientUI m => m (Either Msg Point)
+posFromCursor = do
+  leader <- getLeaderUI
+  lidV <- viewedLevel
+  canAim <- aidTgtAims leader lidV Nothing
+  case canAim of
+    Right newEps -> do
+      -- Modify @seps@, permanently.
+      modifyClient $ \cli -> cli {seps = newEps}
+      mpos <- aidTgtToPos leader lidV Nothing
+      case mpos of
+        Nothing -> assert `failure` (leader, lidV)
+        Just pos -> do
+          munit <- projectCheck pos
+          case munit of
+            Nothing -> return $ Right pos
+            Just reqFail -> return $ Left $ showReqFailure reqFail
+    Left cause -> return $ Left cause
+
+psuitReq :: MonadClientUI m
+         => [Trigger]
+         -> m (Either Msg (ItemFull -> Either ReqFailure (Point, Bool)))
+psuitReq ts = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  mpos <- posFromCursor
+  p <- permittedProjectClient $ triggerSymbols ts
+  case mpos of
+    Left err -> return $ Left err
+    Right pos -> return $ Right $ \itemFull@ItemFull{itemBase} ->
+      case p itemFull of
+        Left slides -> Left slides
+        Right False -> Right (pos, False)
+        Right True -> Right (pos, totalRange itemBase >= chessDist (bpos b) pos)
+
+triggerSymbols :: [Trigger] -> [Char]
+triggerSymbols [] = []
+triggerSymbols (ApplyItem{symbol} : ts) = symbol : triggerSymbols ts
+triggerSymbols (_ : ts) = triggerSymbols ts
+
+-- * ChooseItemApply
+
+chooseItemApplyHuman :: forall m. MonadClientUI m => [Trigger] -> m Slideshow
+chooseItemApplyHuman ts = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  activeItems <- activeItemsClient leader
+  let calmE = calmEnough b activeItems
+      cLegalRaw = [CGround, CInv, CEqp, CSha]
+      cLegal | calmE = cLegalRaw
+             | otherwise = delete CSha cLegalRaw
+      (verb1, object1) = case ts of
+        [] -> ("apply", "item")
+        tr : _ -> (verb tr, object tr)
+      prompt = makePhrase ["What", object1, "to", verb1]
+      promptGeneric = "What to apply"
+      psuit :: m Suitability
+      psuit = do
+        mp <- permittedApplyClient $ triggerSymbols ts
+        return $ SuitsSomething $ either (const False) id . mp
+  ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
+  case ggi of
+    Right ((iid, _itemFull), MStore fromCStore) -> do
+      modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+      return mempty
+    Left slides -> return slides
+    _ -> assert `failure` ggi
+
+permittedApplyClient :: MonadClientUI m
+                     => [Char] -> m (ItemFull -> Either ReqFailure Bool)
+permittedApplyClient triggerSyms = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  actorSk <- actorSkillsClient leader
+  let skill = EM.findWithDefault 0 AbApply actorSk
+  activeItems <- activeItemsClient leader
+  localTime <- getsState $ getLocalTime (blid b)
+  return $ permittedApply localTime skill b activeItems triggerSyms
 
 -- * PickLeader
 
@@ -484,8 +635,6 @@ settingsMenuHuman cmdAction = do
 -- | End targeting mode, rejecting the current position.
 cancelHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 cancelHuman = do
-  stgtMode <- getsSession stgtMode
-  let !_A = assert (isJust stgtMode) ()
   modifySession $ \sess -> sess {stgtMode = Nothing}
   failWith "target not set"
 
