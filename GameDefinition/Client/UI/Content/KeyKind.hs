@@ -150,16 +150,16 @@ standardKeys = KeyKind
       , ("-", ([CmdTgt], "unswerve the aiming line", EpsIncr False))
       , ("CTRL-?", ( [CmdTgt]
                    , "set crosshair to the closest unknown spot"
-                   , CursorUnknown ))
+                   , XhairUnknown ))
       , ("CTRL-I", ( [CmdTgt]
                    , "set crosshair to the closest item"
-                   , CursorItem ))
+                   , XhairItem ))
       , ("CTRL-{", ( [CmdTgt]
                    , "set crosshair to the closest stairs up"
-                   , CursorStair True ))
+                   , XhairStair True ))
       , ("CTRL-}", ( [CmdTgt]
                    , "set crosshair to the closest stairs down"
-                   , CursorStair False ))
+                   , XhairStair False ))
       , ("BackSpace", ([CmdTgt], "reset target/crosshair", TgtClear))
       , ("Escape", ( [CmdTgt, CmdMinimal]
                    , "cancel target/action or open Main Menu"
@@ -200,13 +200,13 @@ standardKeys = KeyKind
       , ("CTRL-S", ([CmdDebug], "save game", GameSave))
       , ("CTRL-semicolon", ( [CmdInternal]
                            , "move one step towards the crosshair"
-                           , MoveOnceToCursor ))
+                           , MoveOnceToXhair ))
       , ("CTRL-colon", ( [CmdInternal]
                        , "run selected one step towards the crosshair"
-                       , RunOnceToCursor ))
+                       , RunOnceToXhair ))
       , ("CTRL-period", ( [CmdInternal]
                         , "continue towards the crosshair"
-                        , ContinueToCursor ))
+                        , ContinueToXhair ))
       , ("CTRL-comma", ([CmdInternal], "run once ahead", RunOnceAhead))
       ]
       ++ map defaultHeroSelect [0..6]

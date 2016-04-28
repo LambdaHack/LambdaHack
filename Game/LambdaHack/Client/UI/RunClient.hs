@@ -93,10 +93,10 @@ continueRun arena paramOld = case paramOld of
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
 --
--- Note that while goto-cursor commands ignore items on the way,
+-- Note that while goto-xhair commands ignore items on the way,
 -- here we stop wnenever we touch an item. Running is more cautious
 -- to compensate that the player cannot specify the end-point of running.
--- It's also more suited to open, already explored terrain. Goto-cursor
+-- It's also more suited to open, already explored terrain. Goto-xhair
 -- works better with unknown terrain, e.g., it stops whenever an item
 -- is spotted, but then ignores the item, leaving it to the player
 -- to mark the item position as a goal of the next goto.

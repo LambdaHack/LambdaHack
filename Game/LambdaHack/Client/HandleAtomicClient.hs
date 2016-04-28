@@ -294,7 +294,7 @@ createActor aid _b = do
         TEnemyPos a _ _ permit | a == aid -> (TEnemy a permit, Nothing)
         _ -> (tgt, mpath)
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
-  modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
+  modifyClient $ \cli -> cli {sxhair = affect $ sxhair cli}
 
 destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActor aid b destroy = do
@@ -311,7 +311,7 @@ destroyActor aid b destroy = do
               _ -> mpath  -- foe slow enough, so old path good
         in (affect tgt, newMPath)
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
-  modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
+  modifyClient $ \cli -> cli {sxhair = affect $ sxhair cli}
 
 perception :: MonadClient m => LevelId -> Perception -> Perception -> m ()
 perception lid outPer inPer = do

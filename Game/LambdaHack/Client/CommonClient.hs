@@ -95,8 +95,8 @@ aidTgtToPos aid lidV tgt =
                 then Nothing
                 else Just shifted
     Nothing -> do
-      scursor <- getsClient scursor
-      aidTgtToPos aid lidV $ Just scursor
+      sxhair <- getsClient sxhair
+      aidTgtToPos aid lidV $ Just sxhair
 
 -- | Check whether one is permitted to aim at a target
 -- (this is only checked for actors; positions let player
@@ -140,8 +140,8 @@ aidTgtAims aid lidV tgt = do
       then return $ Left "selected translation is void"
       else findNewEps True shifted
     Nothing -> do
-      scursor <- getsClient scursor
-      aidTgtAims aid lidV $ Just scursor
+      sxhair <- getsClient sxhair
+      aidTgtAims aid lidV $ Just sxhair
 
 -- | Counts the number of steps until the projectile would hit
 -- an actor or obstacle. Starts searching with the given eps and returns

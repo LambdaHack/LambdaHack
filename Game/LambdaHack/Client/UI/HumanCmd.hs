@@ -76,9 +76,9 @@ data HumanCmd =
   | MoveDir !Vector
   | RunDir !Vector
   | RunOnceAhead
-  | MoveOnceToCursor
-  | RunOnceToCursor
-  | ContinueToCursor
+  | MoveOnceToXhair
+  | RunOnceToXhair
+  | ContinueToXhair
   | MoveItem ![CStore] !CStore !(Maybe MU.Part) !MU.Part !Bool
   | Project     ![Trigger]
   | Apply       ![Trigger]
@@ -116,17 +116,17 @@ data HumanCmd =
   | Cancel
   | Accept
   | TgtClear
-  | MoveCursor !Vector !Int
+  | MoveXhair !Vector !Int
   | TgtTgt
   | TgtFloor
   | TgtEnemy
   | TgtAscend !Int
   | EpsIncr !Bool
-  | CursorUnknown
-  | CursorItem
-  | CursorStair !Bool
-  | CursorPointerFloor
-  | CursorPointerEnemy
+  | XhairUnknown
+  | XhairItem
+  | XhairStair !Bool
+  | XhairPointerFloor
+  | XhairPointerEnemy
   | TgtPointerFloor
   | TgtPointerEnemy
   deriving (Show, Read, Eq, Ord, Generic)
@@ -156,7 +156,7 @@ noRemoteHumanCmd cmd = case cmd of
   MoveItem{}    -> True
   Apply{}       -> True
   AlterDir{}    -> True
-  MoveOnceToCursor -> True
-  RunOnceToCursor  -> True
-  ContinueToCursor -> True
+  MoveOnceToXhair -> True
+  RunOnceToXhair  -> True
+  ContinueToXhair -> True
   _             -> False

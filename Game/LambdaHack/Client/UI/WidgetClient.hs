@@ -153,7 +153,7 @@ describeMainKeys = do
   stgtMode <- getsSession stgtMode
   Binding{brevMap} <- askBinding
   Config{configVi, configLaptop} <- askConfig
-  cursor <- getsClient scursor
+  xhair <- getsClient sxhair
   let kmLeftButtonPress = head $
         M.findWithDefault [K.KM K.NoModifier K.LeftButtonPress]
                           ((\(_, _, cmd) -> cmd) defaultCmdLMB)
@@ -169,7 +169,7 @@ describeMainKeys = do
       moveKeys | configVi = "hjklyubn, "
                | configLaptop = "uk8o79jl, "
                | otherwise = ""
-      tgtKind = case cursor of
+      tgtKind = case xhair of
         TEnemy _ True -> "at actor"
         TEnemy _ False -> "at enemy"
         TEnemyPos _ _ _ True -> "at actor"

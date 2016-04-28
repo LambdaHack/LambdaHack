@@ -52,9 +52,9 @@ cmdAction cmd = case cmd of
   MoveDir v -> ReqUITimed <$$> moveRunHuman True True False False v
   RunDir v -> ReqUITimed <$$> moveRunHuman True True True True v
   RunOnceAhead -> ReqUITimed <$$> runOnceAheadHuman
-  MoveOnceToCursor -> ReqUITimed <$$> moveOnceToCursorHuman
-  RunOnceToCursor  -> ReqUITimed <$$> runOnceToCursorHuman
-  ContinueToCursor -> ReqUITimed <$$> continueToCursorHuman
+  MoveOnceToXhair -> ReqUITimed <$$> moveOnceToXhairHuman
+  RunOnceToXhair  -> ReqUITimed <$$> runOnceToXhairHuman
+  ContinueToXhair -> ReqUITimed <$$> continueToXhairHuman
   MoveItem cLegalRaw toCStore mverb _ auto ->
     timedToUI <$$> moveItemHuman cLegalRaw toCStore mverb auto
   Project ts -> timedToUI <$$> projectHuman ts
@@ -93,17 +93,17 @@ cmdAction cmd = case cmd of
   Cancel -> cancelHuman
   Accept -> acceptHuman
   TgtClear -> Left <$> tgtClearHuman
-  MoveCursor v k -> Left <$> moveCursorHuman v k
+  MoveXhair v k -> Left <$> moveXhairHuman v k
   TgtTgt -> Left <$> tgtTgtHuman
   TgtFloor -> Left <$> tgtFloorHuman
   TgtEnemy -> Left <$> tgtEnemyHuman
   TgtAscend k -> Left <$> tgtAscendHuman k
   EpsIncr b -> Left <$> epsIncrHuman b
-  CursorUnknown -> Left <$> cursorUnknownHuman
-  CursorItem -> Left <$> cursorItemHuman
-  CursorStair up -> Left <$> cursorStairHuman up
-  CursorPointerFloor -> addNoSlides cursorPointerFloorHuman
-  CursorPointerEnemy -> addNoSlides cursorPointerEnemyHuman
+  XhairUnknown -> Left <$> xhairUnknownHuman
+  XhairItem -> Left <$> xhairItemHuman
+  XhairStair up -> Left <$> xhairStairHuman up
+  XhairPointerFloor -> addNoSlides xhairPointerFloorHuman
+  XhairPointerEnemy -> addNoSlides xhairPointerEnemyHuman
   TgtPointerFloor -> Left <$> tgtPointerFloorHuman
   TgtPointerEnemy -> Left <$> tgtPointerEnemyHuman
 

@@ -15,10 +15,10 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   , markVisionHuman, markSmellHuman, markSuspectHuman, settingsMenuHuman
     -- * Commands specific to aiming
   , cancelHuman, acceptHuman, tgtClearHuman
-  , moveCursorHuman, tgtTgtHuman, tgtFloorHuman, tgtEnemyHuman
+  , moveXhairHuman, tgtTgtHuman, tgtFloorHuman, tgtEnemyHuman
   , tgtAscendHuman, epsIncrHuman
-  , cursorUnknownHuman, cursorItemHuman, cursorStairHuman
-  , cursorPointerFloorHuman, cursorPointerEnemyHuman
+  , xhairUnknownHuman, xhairItemHuman, xhairStairHuman
+  , xhairPointerFloorHuman, xhairPointerEnemyHuman
   , tgtPointerFloorHuman, tgtPointerEnemyHuman
   ) where
 
@@ -243,8 +243,8 @@ projectCheck tpos = do
           then return Nothing
           else return $ Just ProjectBlockActor
 
-posFromCursor :: MonadClientUI m => m (Either Msg Point)
-posFromCursor = do
+posFromXhair :: MonadClientUI m => m (Either Msg Point)
+posFromXhair = do
   leader <- getLeaderUI
   lidV <- viewedLevel
   canAim <- aidTgtAims leader lidV Nothing
@@ -268,7 +268,7 @@ psuitReq :: MonadClientUI m
 psuitReq ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  mpos <- posFromCursor
+  mpos <- posFromXhair
   p <- permittedProjectClient $ triggerSymbols ts
   case mpos of
     Left err -> return $ Left err
@@ -653,8 +653,8 @@ acceptHuman = do
 endTargeting :: MonadClientUI m => m ()
 endTargeting = do
   leader <- getLeaderUI
-  scursor <- getsClient scursor
-  modifyClient $ updateTarget leader $ const $ Just scursor
+  sxhair <- getsClient sxhair
+  modifyClient $ updateTarget leader $ const $ Just sxhair
 
 endTargetingMsg :: MonadClientUI m => m ()
 endTargetingMsg = do
@@ -675,17 +675,17 @@ tgtClearHuman = do
       modifyClient $ updateTarget leader (const Nothing)
       return mempty
     Nothing -> do
-      scursorOld <- getsClient scursor
+      sxhairOld <- getsClient sxhair
       b <- getsState $ getActorBody leader
-      let scursor = case scursorOld of
+      let sxhair = case sxhairOld of
             TEnemy _ permit -> TEnemy leader permit
             TEnemyPos _ _ _ permit -> TEnemy leader permit
             TPoint{} -> TPoint (blid b) (bpos b)
             TVector{} -> TVector (Vector 0 0)
-      modifyClient $ \cli -> cli {scursor}
+      modifyClient $ \cli -> cli {sxhair}
       doLook False
 
--- | Perform look around in the current position of the cursor.
+-- | Perform look around in the current position of the xhair.
 -- Normally expects targeting mode and so that a leader is picked.
 doLook :: MonadClientUI m => Bool -> m Slideshow
 doLook addMoreMsg = do
@@ -698,10 +698,10 @@ doLook addMoreMsg = do
       leader <- getLeaderUI
       let lidV = tgtLevelId tgtMode
       lvl <- getLevel lidV
-      cursorPos <- cursorToPos
+      xhairPos <- xhairToPos
       per <- getPerFid lidV
       b <- getsState $ getActorBody leader
-      let p = fromMaybe (bpos b) cursorPos
+      let p = fromMaybe (bpos b) xhairPos
           canSee = ES.member p (totalVisible per)
       inhabitants <- if canSee
                      then getsState $ posToActors p lidV
@@ -743,74 +743,74 @@ doLook addMoreMsg = do
 -}
       promptToSlideshow $ lookMsg <+> if addMoreMsg then moreMsg else ""
 
--- * MoveCursor
+-- * MoveXhair
 
--- | Move the cursor. Assumes targeting mode.
-moveCursorHuman :: MonadClientUI m => Vector -> Int -> m Slideshow
-moveCursorHuman dir n = do
+-- | Move the xhair. Assumes targeting mode.
+moveXhairHuman :: MonadClientUI m => Vector -> Int -> m Slideshow
+moveXhairHuman dir n = do
   leader <- getLeaderUI
   stgtMode <- getsSession stgtMode
   let lidV = maybe (assert `failure` leader) tgtLevelId stgtMode
   Level{lxsize, lysize} <- getLevel lidV
   lpos <- getsState $ bpos . getActorBody leader
-  scursor <- getsClient scursor
-  cursorPos <- cursorToPos
-  let cpos = fromMaybe lpos cursorPos
+  sxhair <- getsClient sxhair
+  xhairPos <- xhairToPos
+  let cpos = fromMaybe lpos xhairPos
       shiftB pos = shiftBounded lxsize lysize pos dir
       newPos = iterate shiftB cpos !! n
   if newPos == cpos then failMsg "never mind"
   else do
-    let tgt = case scursor of
+    let tgt = case sxhair of
           TVector{} -> TVector $ newPos `vectorToFrom` lpos
           _ -> TPoint lidV newPos
-    modifyClient $ \cli -> cli {scursor = tgt}
+    modifyClient $ \cli -> cli {sxhair = tgt}
     doLook False
 
 -- * TgtLevel
 
--- | Start targetting mode, setting cursor to personal leader' target.
+-- | Start targetting mode, setting xhair to personal leader' target.
 -- To be used in conjuction with other commands.
 tgtTgtHuman :: MonadClientUI m => m Slideshow
 tgtTgtHuman = do
   -- (Re)start targetting at the current level.
   lidV <- viewedLevel
   modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
-  -- Set cursor to the personal target, permanently.
+  -- Set xhair to the personal target, permanently.
   leader <- getLeaderUI
   tgt <- getsClient $ getTarget leader
-  modifyClient $ \cli -> cli {scursor = fromMaybe (scursor cli) tgt}
+  modifyClient $ \cli -> cli {sxhair = fromMaybe (sxhair cli) tgt}
   doLook False
 
 -- * TgtFloor
 
--- | Cycle targeting mode. Do not change position of the cursor,
+-- | Cycle targeting mode. Do not change position of the xhair,
 -- switch among things at that position.
 tgtFloorHuman :: MonadClientUI m => m Slideshow
 tgtFloorHuman = do
   lidV <- viewedLevel
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
-  cursorPos <- cursorToPos
-  scursor <- getsClient scursor
+  xhairPos <- xhairToPos
+  sxhair <- getsClient sxhair
   stgtMode <- getsSession stgtMode
   bsAll <- getsState $ actorAssocs (const True) lidV
-  let cursor = fromMaybe lpos cursorPos
-      tgt = case scursor of
+  let xhair = fromMaybe lpos xhairPos
+      tgt = case sxhair of
         _ | isNothing stgtMode ->  -- first key press: keep target
-          scursor
+          sxhair
         TEnemy a True -> TEnemy a False
-        TEnemy{} -> TPoint lidV cursor
-        TEnemyPos{} -> TPoint lidV cursor
-        TPoint{} -> TVector $ cursor `vectorToFrom` lpos
+        TEnemy{} -> TPoint lidV xhair
+        TEnemyPos{} -> TPoint lidV xhair
+        TPoint{} -> TVector $ xhair `vectorToFrom` lpos
         TVector{} ->
           -- For projectiles, we pick here the first that would be picked
           -- by '*', so that all other projectiles on the tile come next,
           -- without any intervening actors from other tiles.
-          case find (\(_, m) -> Just (bpos m) == cursorPos) bsAll of
+          case find (\(_, m) -> Just (bpos m) == xhairPos) bsAll of
             Just (im, _) -> TEnemy im True
-            Nothing -> TPoint lidV cursor
+            Nothing -> TPoint lidV xhair
   modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
-  modifyClient $ \cli -> cli {scursor = tgt}
+  modifyClient $ \cli -> cli {sxhair = tgt}
   doLook False
 
 -- * TgtEnemy
@@ -820,27 +820,27 @@ tgtEnemyHuman = do
   lidV <- viewedLevel
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
-  cursorPos <- cursorToPos
-  scursor <- getsClient scursor
+  xhairPos <- xhairToPos
+  sxhair <- getsClient sxhair
   stgtMode <- getsSession stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   bsAll <- getsState $ actorAssocs (const True) lidV
   let ordPos (_, b) = (chessDist lpos $ bpos b, bpos b)
       dbs = sortBy (comparing ordPos) bsAll
-      pickUnderCursor =  -- switch to the actor under cursor, if any
+      pickUnderXhair =  -- switch to the actor under xhair, if any
         let i = fromMaybe (-1)
-                $ findIndex ((== cursorPos) . Just . bpos . snd) dbs
+                $ findIndex ((== xhairPos) . Just . bpos . snd) dbs
         in splitAt i dbs
-      (permitAnyActor, (lt, gt)) = case scursor of
+      (permitAnyActor, (lt, gt)) = case sxhair of
         TEnemy a permit | isJust stgtMode ->  -- pick next enemy
           let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
           in (permit, splitAt (i + 1) dbs)
         TEnemy a permit ->  -- first key press, retarget old enemy
           let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
           in (permit, splitAt i dbs)
-        TEnemyPos _ _ _ permit -> (permit, pickUnderCursor)
-        _ -> (False, pickUnderCursor)  -- the sensible default is only-foes
+        TEnemyPos _ _ _ permit -> (permit, pickUnderXhair)
+        _ -> (False, pickUnderXhair)  -- the sensible default is only-foes
       gtlt = gt ++ lt
       isEnemy b = isAtWar fact (bfid b)
                   && not (bproj b)
@@ -848,13 +848,13 @@ tgtEnemyHuman = do
       lf = filter (isEnemy . snd) gtlt
       tgt | permitAnyActor = case gtlt of
         (a, _) : _ -> TEnemy a True
-        [] -> scursor  -- no actors in sight, stick to last target
+        [] -> sxhair  -- no actors in sight, stick to last target
           | otherwise = case lf of
         (a, _) : _ -> TEnemy a False
-        [] -> scursor  -- no seen foes in sight, stick to last target
+        [] -> sxhair  -- no seen foes in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
   modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
-  modifyClient $ \cli -> cli {scursor = tgt}
+  modifyClient $ \cli -> cli {sxhair = tgt}
   doLook False
 
 -- * TgtAscend
@@ -865,11 +865,11 @@ tgtAscendHuman :: MonadClientUI m => Int -> m Slideshow
 tgtAscendHuman k = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
-  scursorOld <- getsClient scursor
-  cursorPos <- cursorToPos
+  sxhairOld <- getsClient sxhair
+  xhairPos <- xhairToPos
   lidV <- viewedLevel
   lvl <- getLevel lidV
-  let rightStairs = case cursorPos of
+  let rightStairs = case xhairPos of
         Nothing -> Nothing
         Just cpos ->
           let tile = lvl `at` cpos
@@ -884,11 +884,11 @@ tgtAscendHuman k = do
       -- Do not freely reveal the other end of the stairs.
       let ascDesc (TK.Cause (IK.Ascend _)) = True
           ascDesc _ = False
-          scursor =
+          sxhair =
             if any ascDesc $ TK.tfeature $ okind (nlvl `at` npos)
             then TPoint nln npos  -- already known as an exit, focus on it
-            else scursorOld  -- unknown, do not reveal
-      modifyClient $ \cli -> cli {scursor}
+            else sxhairOld  -- unknown, do not reveal
+      modifyClient $ \cli -> cli {sxhair}
       modifySession $ \sess -> sess {stgtMode = Just (TgtMode nln)}
       doLook False
     Nothing ->  -- no stairs in the right direction
@@ -910,10 +910,10 @@ epsIncrHuman b = do
       return mempty
     else failMsg "never mind"  -- no visual feedback, so no sense
 
--- * CursorUnknown
+-- * XhairUnknown
 
-cursorUnknownHuman :: MonadClientUI m => m Slideshow
-cursorUnknownHuman = do
+xhairUnknownHuman :: MonadClientUI m => m Slideshow
+xhairUnknownHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   mpos <- closestUnknown leader
@@ -921,13 +921,13 @@ cursorUnknownHuman = do
     Nothing -> failMsg "no more unknown spots left"
     Just p -> do
       let tgt = TPoint (blid b) p
-      modifyClient $ \cli -> cli {scursor = tgt}
+      modifyClient $ \cli -> cli {sxhair = tgt}
       doLook False
 
--- * CursorItem
+-- * XhairItem
 
-cursorItemHuman :: MonadClientUI m => m Slideshow
-cursorItemHuman = do
+xhairItemHuman :: MonadClientUI m => m Slideshow
+xhairItemHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   items <- closestItems leader
@@ -935,13 +935,13 @@ cursorItemHuman = do
     [] -> failMsg "no more items remembered or visible"
     (_, (p, _)) : _ -> do
       let tgt = TPoint (blid b) p
-      modifyClient $ \cli -> cli {scursor = tgt}
+      modifyClient $ \cli -> cli {sxhair = tgt}
       doLook False
 
--- * CursorStair
+-- * XhairStair
 
-cursorStairHuman :: MonadClientUI m => Bool -> m Slideshow
-cursorStairHuman up = do
+xhairStairHuman :: MonadClientUI m => Bool -> m Slideshow
+xhairStairHuman up = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   stairs <- closestTriggers (Just up) leader
@@ -949,28 +949,28 @@ cursorStairHuman up = do
     [] -> failMsg $ "no stairs" <+> if up then "up" else "down"
     (_, p) : _ -> do
       let tgt = TPoint (blid b) p
-      modifyClient $ \cli -> cli {scursor = tgt}
+      modifyClient $ \cli -> cli {sxhair = tgt}
       doLook False
 
--- * CursorPointerFloor
+-- * XhairPointerFloor
 
-cursorPointerFloorHuman :: MonadClientUI m => m ()
-cursorPointerFloorHuman = do
-  look <- cursorPointerFloor False False
+xhairPointerFloorHuman :: MonadClientUI m => m ()
+xhairPointerFloorHuman = do
+  look <- xhairPointerFloor False False
   let !_A = assert (look == mempty `blame` look) ()
   modifySession $ \sess -> sess {stgtMode = Nothing}
 
-cursorPointerFloor :: MonadClientUI m => Bool -> Bool -> m Slideshow
-cursorPointerFloor verbose addMoreMsg = do
+xhairPointerFloor :: MonadClientUI m => Bool -> Bool -> m Slideshow
+xhairPointerFloor verbose addMoreMsg = do
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
   Point{..} <- getsSession spointer
   if px >= 0 && py - mapStartY >= 0
      && px < lxsize && py - mapStartY < lysize
   then do
-    let scursor = TPoint lidV $ Point px (py - mapStartY)
+    let sxhair = TPoint lidV $ Point px (py - mapStartY)
     modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
-    modifyClient $ \cli -> cli {scursor}
+    modifyClient $ \cli -> cli {sxhair}
     if verbose then
       doLook addMoreMsg
     else do
@@ -984,16 +984,16 @@ cursorPointerFloor verbose addMoreMsg = do
     stopPlayBack
     return mempty
 
--- * CursorPointerEnemy
+-- * XhairPointerEnemy
 
-cursorPointerEnemyHuman :: MonadClientUI m => m ()
-cursorPointerEnemyHuman = do
-  look <- cursorPointerEnemy False False
+xhairPointerEnemyHuman :: MonadClientUI m => m ()
+xhairPointerEnemyHuman = do
+  look <- xhairPointerEnemy False False
   let !_A = assert (look == mempty `blame` look) ()
   modifySession $ \sess -> sess {stgtMode = Nothing}
 
-cursorPointerEnemy :: MonadClientUI m => Bool -> Bool -> m Slideshow
-cursorPointerEnemy verbose addMoreMsg = do
+xhairPointerEnemy :: MonadClientUI m => Bool -> Bool -> m Slideshow
+xhairPointerEnemy verbose addMoreMsg = do
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
   Point{..} <- getsSession spointer
@@ -1002,12 +1002,12 @@ cursorPointerEnemy verbose addMoreMsg = do
   then do
     bsAll <- getsState $ actorAssocs (const True) lidV
     let newPos = Point px (py - mapStartY)
-        scursor =
+        sxhair =
           case find (\(_, m) -> bpos m == newPos) bsAll of
             Just (im, _) -> TEnemy im True
             Nothing -> TPoint lidV newPos
     modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
-    modifyClient $ \cli -> cli {scursor}
+    modifyClient $ \cli -> cli {sxhair}
     if verbose then
       doLook addMoreMsg
     else do
@@ -1024,9 +1024,9 @@ cursorPointerEnemy verbose addMoreMsg = do
 -- * TgtPointerFloor
 
 tgtPointerFloorHuman :: MonadClientUI m => m Slideshow
-tgtPointerFloorHuman = cursorPointerFloor True False
+tgtPointerFloorHuman = xhairPointerFloor True False
 
 -- * TgtPointerEnemy
 
 tgtPointerEnemyHuman :: MonadClientUI m => m Slideshow
-tgtPointerEnemyHuman = cursorPointerEnemy True False
+tgtPointerEnemyHuman = xhairPointerEnemy True False

@@ -17,8 +17,8 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, frontendShutdown
   , scoreToSlideshow, msgPromptAI, defaultHistory
   , getLeaderUI, getArenaUI, viewedLevel
-  , targetDescLeader, targetDescCursor
-  , leaderTgtToPos, leaderTgtAims, cursorToPos, splitOKX
+  , targetDescLeader, targetDescXhair
+  , leaderTgtToPos, leaderTgtAims, xhairToPos, splitOKX
   ) where
 
 import Prelude ()
@@ -195,17 +195,17 @@ drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
 drawBaseFrame dm lid = do
   mleader <- getsClient _sleader
   tgtPos <- leaderTgtToPos
-  cursorPos <- cursorToPos
-  let anyPos = fromMaybe originPoint cursorPos
-        -- if cursor invalid, e.g., on a wrong level; @draw@ ignores it later on
+  xhairPos <- xhairToPos
+  let anyPos = fromMaybe originPoint xhairPos
+        -- if xhair invalid, e.g., on a wrong level; @draw@ ignores it later on
       pathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
   sitemSel <- getsSession sitemSel
-  cursorDesc <- targetDescCursor
+  xhairDesc <- targetDescXhair
   SessionUI{sselected, stgtMode, smarkVision, smarkSmell, swaitTimes}
     <- getSession
-  draw dm lid cursorPos tgtPos bfsmpath cursorDesc tgtDesc
+  draw dm lid xhairPos tgtPos bfsmpath xhairDesc tgtDesc
        sselected stgtMode sitemSel smarkVision smarkSmell swaitTimes
 
 drawBaseFrameViewed :: MonadClientUI m => ColorMode -> m SingleFrame
@@ -396,10 +396,10 @@ targetDescLeader leader = do
   tgt <- getsClient $ getTarget leader
   targetDesc tgt
 
-targetDescCursor :: MonadClientUI m => m (Text, Maybe Text)
-targetDescCursor = do
-  scursor <- getsClient scursor
-  targetDesc $ Just scursor
+targetDescXhair :: MonadClientUI m => m (Text, Maybe Text)
+targetDescXhair = do
+  sxhair <- getsClient sxhair
+  targetDesc $ Just sxhair
 
 leaderTgtToPos :: MonadClientUI m => m (Maybe Point)
 leaderTgtToPos = do
@@ -421,14 +421,14 @@ leaderTgtAims = do
       tgt <- getsClient $ getTarget aid
       aidTgtAims aid lidV tgt
 
-cursorToPos :: MonadClientUI m => m (Maybe Point)
-cursorToPos = do
+xhairToPos :: MonadClientUI m => m (Maybe Point)
+xhairToPos = do
   lidV <- viewedLevel
   mleader <- getsClient _sleader
-  scursor <- getsClient scursor
+  sxhair <- getsClient sxhair
   case mleader of
     Nothing -> return Nothing
-    Just aid -> aidTgtToPos aid lidV $ Just scursor
+    Just aid -> aidTgtToPos aid lidV $ Just sxhair
 
 splitOKX :: MonadClientUI m => Y -> Msg -> OKX -> m [OKX]
 splitOKX y prompt okx = do

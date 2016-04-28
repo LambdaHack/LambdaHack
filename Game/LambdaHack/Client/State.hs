@@ -33,7 +33,7 @@ import Game.LambdaHack.Common.Vector
 -- from game to game, even across playing sessions.
 --
 -- When many actors want to fling at the same target, they set
--- their personal targets to follow the common crosshair (scursor).
+-- their personal targets to follow the common xhair.
 -- When each wants to kill a fleeing enemy they recently meleed,
 -- they keep the enemies as their personal targets.
 -- When graphical pointer (e.g., mouse) is used for aming (but not for moving),
@@ -43,7 +43,7 @@ import Game.LambdaHack.Common.Vector
 --
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
-  { scursor      :: !Target        -- ^ the common, cursor target
+  { sxhair      :: !Target        -- ^ the common, xhair target
   , seps         :: !Int           -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId (Target, Maybe PathEtc))
                                    -- ^ targets of our actors in the dungeon
@@ -80,7 +80,7 @@ type PathEtc = ([Point], (Point, Int))
 emptyStateClient :: FactionId -> StateClient
 emptyStateClient _sside =
   StateClient
-    { scursor = TVector $ Vector 30000 30000  -- invalid; AI recomputes ASAP
+    { sxhair = TVector $ Vector 30000 30000  -- invalid; AI recomputes ASAP
     , seps = fromEnum _sside
     , stargetD = EM.empty
     , sexplored = ES.empty
@@ -134,7 +134,7 @@ sside = _sside
 
 instance Binary StateClient where
   put StateClient{..} = do
-    put scursor
+    put sxhair
     put seps
     put stargetD
     put sexplored
@@ -153,7 +153,7 @@ instance Binary StateClient where
     put smarkSuspect
     put sdebugCli  -- TODO: this is overwritten at once
   get = do
-    scursor <- get
+    sxhair <- get
     seps <- get
     stargetD <- get
     sexplored <- get

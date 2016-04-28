@@ -96,7 +96,7 @@ pickLeader verbose aid = do
       -- Update client state.
       s <- getState
       modifyClient $ updateLeader aid s
-      -- Move the cursor, if active, to the new level.
+      -- Move the xhair, if active, to the new level.
       case stgtMode of
         Nothing -> return ()
         Just _ ->

@@ -33,8 +33,8 @@ stdBinding :: KeyKind  -- ^ default key bindings from the content
            -> Binding  -- ^ concrete binding
 stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   let waitTriple = ([CmdMove], "", Wait)
-      moveCursorOr n cmd v = ByAimMode { notAiming = cmd v
-                                       , aiming = MoveCursor v n }
+      moveXhairOr n cmd v = ByAimMode { notAiming = cmd v
+                                       , aiming = MoveXhair v n }
       cmdAll =
         rhumanCommands copsClient
         ++ configCommands
@@ -50,8 +50,8 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
                | otherwise ->
                  [])
         ++ K.moveBinding configVi configLaptop
-             (\v -> ([CmdMove], "", moveCursorOr 1 MoveDir v))
-             (\v -> ([CmdMove], "", moveCursorOr 10 RunDir v))
+             (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
+             (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
   in Binding
   { bcmdMap = M.fromList cmdAll
   , bcmdList = cmdAll

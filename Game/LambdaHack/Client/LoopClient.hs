@@ -107,7 +107,7 @@ loopUI :: ( MonadClientSetup m
 loopUI copsClient sconfig sdebugCli = do
   modifyClient $ \cli ->
     cli { sisAI = False
-        , scursor = TVector $ Vector 1 1 }  -- a step south-east, less alarming
+        , sxhair = TVector $ Vector 1 1 }  -- a step south-east, less alarming
   -- Start the frontend.
   schanF <- liftIO $ chanFrontend sdebugCli
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors

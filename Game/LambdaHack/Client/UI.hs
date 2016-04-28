@@ -54,7 +54,7 @@ queryUI = do
   fact <- getsState $ (EM.! side) . sfactionD
   if isAIFact fact then do
     -- TODO: allow any action that does not take time, e.g., changing
-    -- leaders, levels, moving cursor. Only ESC then stops AI.
+    -- leaders, levels, moving xhair. Only ESC then stops AI.
     keyPressed <- anyKeyPressed
     if keyPressed then do
       discardPressedKey

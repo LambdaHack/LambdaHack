@@ -286,7 +286,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   lastSlot <- getsClient slastSlot
   itemToF <- itemToFullClient
   Binding{brevMap} <- askBinding
-  mpsuit <- psuit  -- when throwing, this sets eps and checks cursor validity
+  mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
   (suitsEverything, psuitFun) <- case mpsuit of
     SuitsEverything -> return (True, const True)
     SuitsNothing err -> do

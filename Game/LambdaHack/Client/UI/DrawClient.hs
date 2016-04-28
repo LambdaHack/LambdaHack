@@ -67,8 +67,8 @@ draw :: MonadClient m
      -> ES.EnumSet ActorId -> Maybe TgtMode -> (Maybe (CStore, ItemId))
      -> Bool -> Bool -> Int
      -> m SingleFrame
-draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
-     (cursorDesc, mcursorHP) (targetDesc, mtargetHP)
+draw dm drawnLevelId xhairPos tgtPos bfsmpathRaw
+     (xhairDesc, mxhairHP) (targetDesc, mtargetHP)
      selected stgtMode sitemSel smarkVision smarkSmell swaitTimes = do
   cops <- getsState scops
   mleader <- getsClient _sleader
@@ -78,26 +78,26 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
   per <- getPerFid drawnLevelId
   let Kind.COps{cotile=cotile@Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
-      (bline, mblid, mbpos) = case (cursorPos, mleader) of
-        (Just cursor, Just leader) ->
+      (bline, mblid, mbpos) = case (xhairPos, mleader) of
+        (Just xhair, Just leader) ->
           let Actor{bpos, blid} = getActorBody leader s
           in if blid /= drawnLevelId
              then ( [], Just blid, Just bpos )
-             else ( maybe [] (delete cursor)
-                    $ bla lxsize lysize seps bpos cursor
+             else ( maybe [] (delete xhair)
+                    $ bla lxsize lysize seps bpos xhair
                   , Just blid
                   , Just bpos )
         _ -> ([], Nothing, Nothing)
-      deleteCursor = maybe id (\cursor -> delete cursor) cursorPos
+      deleteXhair = maybe id (\xhair -> delete xhair) xhairPos
       mpath = maybe Nothing (\(_, mp) -> if null bline
                                          then Nothing
-                                         else deleteCursor <$> mp) bfsmpathRaw
+                                         else deleteXhair <$> mp) bfsmpathRaw
       actorsHere = actorAssocs (const True) drawnLevelId s
-      cursorHere = find (\(_, m) -> cursorPos == Just (Actor.bpos m))
+      xhairHere = find (\(_, m) -> xhairPos == Just (Actor.bpos m))
                         actorsHere
-      shiftedBTrajectory = case cursorHere of
+      shiftedBTrajectory = case xhairHere of
         Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
-          deleteCursor $ trajectoryToPath prPos (fst p)
+          deleteXhair $ trajectoryToPath prPos (fst p)
         _ -> []
       unknownId = ouniqGroup "unknown space"
       dis pos0 =
@@ -152,7 +152,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
                   ColorBW -> Color.defAttr
                   ColorFull -> if | mleader == maid && isJust maid ->
                                     attr0 {Color.bg = Color.BrRed}
-                                  | Just pos0 == cursorPos ->
+                                  | Just pos0 == xhairPos ->
                                     attr0 {Color.bg = Color.BrYellow}
                                   | maybe False (`ES.member` selected) maid ->
                                     attr0 {Color.bg = Color.BrBlue}
@@ -179,7 +179,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
             text = fromMaybe (pText <+> lText) mt
         in if T.null text then "" else " " <> text
       -- The indicators must fit, they are the actual information.
-      pathCsr = displayPathText cursorPos mcursorHP
+      pathCsr = displayPathText xhairPos mxhairHP
       trimTgtDesc n t = assert (not (T.null t) && n > 2) $
         if T.length t <= n then t
         else let ellipsis = "..."
@@ -189,13 +189,13 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
                         else let lw = T.words fitsPlusOne
                              in T.unwords $ init lw
              in fits <> ellipsis
-      cursorText =
+      xhairText =
         let n = widthTgt - T.length pathCsr - 8
         in (if isJust stgtMode then "x-hair>" else "X-hair:")
-           <+> trimTgtDesc n cursorDesc
-      cursorGap = T.replicate (widthTgt - T.length pathCsr
-                                        - T.length cursorText) " "
-      cursorStatus = toAttrLine $ cursorText <> cursorGap <> pathCsr
+           <+> trimTgtDesc n xhairDesc
+      xhairGap = T.replicate (widthTgt - T.length pathCsr
+                                        - T.length xhairText) " "
+      xhairStatus = toAttrLine $ xhairText <> xhairGap <> pathCsr
       minLeaderStatusWidth = 19  -- covers 3-digit HP
   selectedStatus <- drawSelected drawnLevelId
                                  (widthStats - minLeaderStatusWidth)
@@ -237,7 +237,7 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
                                         - T.length targetText) " "
       targetStatus = toAttrLine $ targetText <> targetGap <> pathTgt
       sfBottom =
-        [ arenaStatus ++ cursorStatus
+        [ arenaStatus ++ xhairStatus
         , selectedStatus ++ nameStatus ++ statusGap
           ++ damageStatus ++ leaderStatus
           ++ targetStatus ]

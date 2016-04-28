@@ -11,8 +11,8 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   , composeIfLeftHuman, composeIfEmptyHuman
     -- * Global commands that usually take time
   , waitHuman, moveRunHuman
-  , runOnceAheadHuman, moveOnceToCursorHuman
-  , runOnceToCursorHuman, continueToCursorHuman
+  , runOnceAheadHuman, moveOnceToXhairHuman
+  , runOnceToXhairHuman, continueToXhairHuman
   , moveItemHuman, projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , helpHuman, mainMenuHuman, gameDifficultyIncr
     -- * Global commands that never take time
@@ -433,22 +433,22 @@ runOnceAheadHuman = do
         Right runCmd ->
           return $ Right runCmd
 
--- * MoveOnceToCursor
+-- * MoveOnceToXhair
 
-moveOnceToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
-moveOnceToCursorHuman = goToCursor True False
+moveOnceToXhairHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+moveOnceToXhairHuman = goToXhair True False
 
-goToCursor :: MonadClientUI m
+goToXhair :: MonadClientUI m
            => Bool -> Bool -> m (SlideOrCmd RequestAnyAbility)
-goToCursor initialStep run = do
+goToXhair initialStep run = do
   tgtMode <- getsSession stgtMode
   -- Movement is legal only outside targeting mode.
   if isJust tgtMode then failWith "cannot move in aiming mode"
   else do
     leader <- getLeaderUI
     b <- getsState $ getActorBody leader
-    cursorPos <- cursorToPos
-    case cursorPos of
+    xhairPos <- xhairToPos
+    case xhairPos of
       Nothing -> failWith "crosshair position invalid"
       Just c | c == bpos b -> do
         stopPlayBack
@@ -458,7 +458,7 @@ goToCursor initialStep run = do
       Just c -> do
         running <- getsSession srunning
         case running of
-          -- Don't use running params from previous run or goto-cursor.
+          -- Don't use running params from previous run or goto-xhair.
           Just paramOld | not initialStep -> do
             arena <- getArenaUI
             runOutcome <- multiActorGoTo arena c paramOld
@@ -500,7 +500,7 @@ multiActorGoTo arena c paramOld =
         case mpath of
           Nothing -> return $ Left "no route to crosshair"
           Just [] ->
-            -- This actor already at goal; will be caught in goToCursor.
+            -- This actor already at goal; will be caught in goToXhair.
             return $ Left ""
           Just (p1 : _) -> do
             let finalGoal = p1 == c
@@ -519,15 +519,15 @@ multiActorGoTo arena c paramOld =
               _ ->
                  return $ Left "actor in the way"
 
--- * RunOnceToCursor
+-- * RunOnceToXhair
 
-runOnceToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
-runOnceToCursorHuman = goToCursor True True
+runOnceToXhairHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+runOnceToXhairHuman = goToXhair True True
 
--- * ContinueToCursor
+-- * ContinueToXhair
 
-continueToCursorHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
-continueToCursorHuman = goToCursor False False{-irrelevant-}
+continueToXhairHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+continueToXhairHuman = goToXhair False False{-irrelevant-}
 
 -- * MoveItem
 
@@ -696,8 +696,8 @@ projectItem ts (fromCStore, (iid, itemFull)) = do
             -- Set personal target to the aim position, to easily repeat.
             mposTgt <- leaderTgtToPos
             unless (Just pos == mposTgt) $ do
-              scursor <- getsClient scursor
-              modifyClient $ updateTarget leader (const $ Just scursor)
+              sxhair <- getsClient sxhair
+              modifyClient $ updateTarget leader (const $ Just sxhair)
             -- Project.
             eps <- getsClient seps
             return $ Right $ ReqProject pos eps iid fromCStore

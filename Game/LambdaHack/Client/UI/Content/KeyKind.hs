@@ -65,7 +65,7 @@ defaultCmdLMB =
           , (CaPercentSeen, Macro ["CTRL-?", "CTRL-period", "V"]) ]
       , aiming = ByArea $ common ++  -- aiming mode
           [ (CaMap, TgtPointerEnemy)
-          , (CaPercentSeen, CursorStair True) ] } )
+          , (CaPercentSeen, XhairStair True) ] } )
  where
   common =
     [ (CaMessage, History)
@@ -79,7 +79,7 @@ defaultCmdLMB =
 defaultCmdMMB :: CmdTriple
 defaultCmdMMB = ( [CmdMouse]
                 , "set crosshair to floor under pointer"
-                , CursorPointerFloor )
+                , XhairPointerFloor )
 
 defaultCmdRMB :: CmdTriple
 defaultCmdRMB =
@@ -95,7 +95,7 @@ defaultCmdRMB =
       , aiming = ByArea $ common ++
           [ (CaMap, ComposeIfLeft TgtPointerEnemy (projectICmd flingTs))
           , (CaXhairDesc, (projectICmd flingTs))
-          , (CaPercentSeen, CursorStair False) ] } )
+          , (CaPercentSeen, XhairStair False) ] } )
  where
   common =
     [ (CaMessage, Macro ["R"])

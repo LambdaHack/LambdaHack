@@ -116,11 +116,11 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
           CEmbed{} -> return ()
           CFloor lid p -> do
             void $ updateItemSlot CGround Nothing iid
-            scursorOld <- getsClient scursor
-            case scursorOld of
+            sxhairOld <- getsClient sxhair
+            case sxhairOld of
               TEnemy{} -> return ()  -- probably too important to overwrite
               TEnemyPos{} -> return ()
-              _ -> modifyClient $ \cli -> cli {scursor = TPoint lid p}
+              _ -> modifyClient $ \cli -> cli {sxhair = TPoint lid p}
             itemVerbMU iid kit "be spotted" c
             stopPlayBack
           CTrunk{} -> return ()
@@ -395,7 +395,7 @@ msgDuplicateScrap = do
   when lastDuplicated $
     modifySession $ \sess -> sess {sreport = repRest}
 
--- TODO: "XXX spots YYY"? or blink or show the changed cursor?
+-- TODO: "XXX spots YYY"? or blink or show the changed xhair?
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
   side <- getsClient sside
@@ -413,7 +413,7 @@ createActorUI born aid body = do
       -- technically very hard to check aimability here, because we are
       -- in-between turns and, e.g., leader's move has not yet been taken
       -- into account.
-      modifyClient $ \cli -> cli {scursor = TEnemy aid False}
+      modifyClient $ \cli -> cli {sxhair = TEnemy aid False}
     stopPlayBack
   -- Don't spam if the actor was already visible (but, e.g., on a tile that is
   -- invisible this turn (in that case move is broken down to lose+spot)

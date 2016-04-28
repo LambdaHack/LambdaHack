@@ -35,7 +35,7 @@ wall = TileKind
       -- Bedrock being dark is bad for AI (forces it to backtrack to explore
       -- bedrock at corridor turns) and induces human micromanagement
       -- if there can be corridors joined diagonally (humans have to check
-      -- with the cursor if the dark space is bedrock or unexplored).
+      -- with the xhair if the dark space is bedrock or unexplored).
       -- Lit bedrock would be even worse for humans, because it's harder
       -- to guess which tiles are unknown and which can be explored bedrock.
       -- The setup of Allure is ideal, with lit bedrock that is easily
