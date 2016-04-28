@@ -749,11 +749,22 @@ alterDirHuman ts = do
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
-      keys = K.escKM : map (K.KM K.NoModifier)
-                           (K.dirAllKey configVi configLaptop)
-      prompt = makePhrase ["What to", verb1 <> "? [movement key, ESC]"]
+      keys = K.escKM
+             : K.leftButtonKM
+             : map (K.KM K.NoModifier) (K.dirAllKey configVi configLaptop)
+      prompt = makePhrase ["What to", verb1 <> "? [movement key, left mouse button, ESC]"]
   km <- displayChoiceLine prompt mempty keys
-  K.handleDir configVi configLaptop km (`alterTile` ts) (failWith "never mind")
+  case K.key km of
+    K.LeftButtonPress -> do
+      leader <- getLeaderUI
+      b <- getsState $ getActorBody leader
+      Point x y <- getsSession spointer
+      let v = Point x (y -  mapStartY) `vectorToFrom` bpos b
+      if isUnit v
+      then v `alterTile` ts
+      else failWith "never mind"
+    _ -> K.handleDir configVi configLaptop km
+                     (`alterTile` ts) (failWith "never mind")
 
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m
