@@ -207,29 +207,29 @@ draw dm drawnLevelId cursorPos tgtPos bfsmpathRaw
   nameStatus <- drawPlayerName (widthStats - length leaderStatus
                                            - length selectedStatus
                                            - length damageStatus)
-  let tgtOrItem n | isJust stgtMode =
-        return $! "Target:" <+> trimTgtDesc n targetDesc
-      tgtOrItem n = (\t -> "Object:" <+> trimTgtDesc n t) <$> do
+  let tgtOrItem n = do
+        let tgtBlurb = "Target:" <+> trimTgtDesc n targetDesc
         case (sitemSel, mleader) of
           (Just (fromCStore, iid), Just leader) -> do  -- TODO: factor out
             bag <- getsState $ getActorBag leader fromCStore
             case iid `EM.lookup` bag of
-              Nothing -> return "invalid"
+              Nothing -> return $! tgtBlurb
               Just kit@(k, _) -> do
                 b <- getsState $ getActorBody leader
                 localTime <- getsState $ getLocalTime (blid b)
                 itemToF <- itemToFullClient
                 let (_, name, stats) =
                       partItem fromCStore localTime (itemToF iid kit)
-                return $! makePhrase
-                       $ if k == 1
-                         then [name, stats]  -- "a sword" too wordy
-                         else [MU.CarWs k name, stats]
-          _ -> return "not chosen"
+                    t = makePhrase
+                        $ if k == 1
+                          then [name, stats]  -- "a sword" too wordy
+                          else [MU.CarWs k name, stats]
+                return $! "Object:" <+> trimTgtDesc n t
+          _ -> return $! tgtBlurb
       statusGap = toAttrLine $ T.replicate (widthStats - length leaderStatus
-                                                    - length selectedStatus
-                                                    - length damageStatus
-                                                    - length nameStatus) " "
+                                                       - length selectedStatus
+                                                       - length damageStatus
+                                                       - length nameStatus) " "
       -- The indicators must fit, they are the actual information.
       pathTgt = displayPathText tgtPos mtargetHP
   targetText <- tgtOrItem $ widthTgt - T.length pathTgt - 8

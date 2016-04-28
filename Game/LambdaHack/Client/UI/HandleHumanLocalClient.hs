@@ -667,6 +667,7 @@ endTargetingMsg = do
 
 tgtClearHuman :: MonadClientUI m => m Slideshow
 tgtClearHuman = do
+  modifySession $ \sess -> sess {sitemSel = Nothing}
   leader <- getLeaderUI
   tgt <- getsClient $ getTarget leader
   case tgt of
