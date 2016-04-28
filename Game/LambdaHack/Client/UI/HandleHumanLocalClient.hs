@@ -33,9 +33,9 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List.Compat
+import Data.Maybe
 import Data.Monoid
 import Data.Ord
-import Data.Maybe
 import qualified Data.Text as T
 import Data.Version
 import qualified NLP.Miniutter.English as MU
@@ -586,7 +586,7 @@ settingsMenuHuman cmdAction = do
         in init art ++ [take (80 - versionLen) (last art) ++ version]
       -- Key-description-command tuples.
       kds = [ (km, (desc, cmd))
-            | (km, (desc, [HumanCmd.CmdSettingsMenu], cmd)) <- bcmdList ]
+            | (km, ([HumanCmd.CmdSettingsMenu], desc, cmd)) <- bcmdList ]
       statusLen = 30
       bindingLen = 28
       gameInfo = replicate 4 $ T.justifyLeft statusLen ' ' ""

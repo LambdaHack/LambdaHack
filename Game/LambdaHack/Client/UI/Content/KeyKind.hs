@@ -1,121 +1,169 @@
 -- | The type of key-command mappings to be used for the UI.
 module Game.LambdaHack.Client.UI.Content.KeyKind
   ( KeyKind(..)
+  , addCmdCategory, replaceDesc, gameRestartTriple, moveItemTriple, repeatTriple
   , defaultCmdLMB, defaultCmdMMB, defaultCmdRMB
-  , projectI, projectA, flingTS, applyI
-  , getAscend, descendDrop, chooseAndHelp, defaultHeroSelect
+  , projectI, projectA, flingTs, applyI
+  , getAscend, descendDrop, chooseAndHelp, descTs, defaultHeroSelect
   ) where
 
 import qualified Data.Char as Char
+import Data.Maybe
+import Data.Text (Text)
+import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.HumanCmd
+import Game.LambdaHack.Common.Actor (verbCStore)
 import Game.LambdaHack.Common.Misc
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Key-command mappings to be used for the UI.
 data KeyKind = KeyKind
-  { rhumanCommands :: ![(K.KM, ([CmdCategory], HumanCmd))]
-      -- ^ default client UI commands
+  { rhumanCommands :: ![(K.KM, CmdTriple)]  -- ^ default client UI commands
   }
 
-defaultCmdLMB :: HumanCmd
-defaultCmdLMB = Alias "go to pointer for 100 steps or set crosshair" $
-  ByAimMode
-    { notAiming = ByArea $ common ++  -- normal mode
-        [ (CaMapParty, PickLeaderWithPointer)
-        , (CaMap, Macro
-             ["MiddleButtonPress", "CTRL-semicolon", "CTRL-period", "V"]) ]
-    , aiming = ByArea $ common ++  -- aiming mode
-        [ (CaMap, TgtPointerEnemy) ] }
+addCmdCategory :: CmdCategory -> CmdTriple -> CmdTriple
+addCmdCategory cat (cats, desc, cmd) = (cat : cats, desc, cmd)
+
+replaceDesc :: Text -> CmdTriple -> CmdTriple
+replaceDesc desc (cats, _, cmd) = (cats, desc, cmd)
+
+replaceCmd :: HumanCmd -> CmdTriple -> CmdTriple
+replaceCmd cmd (cats, desc, _) = (cats, desc, cmd)
+
+-- TODO: use mname for the game mode instead of t
+gameRestartTriple :: GroupName ModeKind -> CmdTriple
+gameRestartTriple t =
+  ( [CmdMainMenu]
+  , makePhrase ["new", MU.Capitalize $ MU.Text $ tshow t, "game"]
+  , GameRestart t )
+
+moveItemTriple :: [CStore] -> CStore -> (Maybe MU.Part) -> MU.Part -> Bool
+               -> CmdTriple
+moveItemTriple stores1 store2 mverb object auto =
+  let verb = fromMaybe (MU.Text $ verbCStore store2) mverb
+      desc = makePhrase [verb, object]
+  in ([CmdItem], desc, MoveItem stores1 store2 mverb object auto)
+
+repeatTriple :: Int -> CmdTriple
+repeatTriple n = ( [CmdMeta]
+                 , "voice the recorded commands" <+> tshow n <+> "times"
+                 , Repeat n )
+
+defaultCmdLMB :: CmdTriple
+defaultCmdLMB =
+  ( [CmdMouse]
+  , "go to pointer for 100 steps or set crosshair"
+  , ByAimMode
+      { notAiming = ByArea $ common ++  -- normal mode
+          [ (CaMapParty, PickLeaderWithPointer)
+          , (CaMap, Macro
+               ["MiddleButtonPress", "CTRL-semicolon", "CTRL-period", "V"]) ]
+      , aiming = ByArea $ common ++  -- aiming mode
+          [ (CaMap, TgtPointerEnemy) ] } )
  where
   common =
     [ (CaMessage, History)
-    , (CaMapLeader, getAscend)
+    , (CaMapLeader, getAscendCmd)
     , (CaArenaName, ByAimMode {notAiming = MainMenu, aiming = Cancel})
     , (CaXhairDesc, TgtEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
     , (CaLeaderStatus, ChooseItem $ MStore COrgan)
     , (CaTargetDesc, ChooseItem $ MStore CInv) ]
 
-defaultCmdMMB :: HumanCmd
-defaultCmdMMB = CursorPointerFloor
+defaultCmdMMB :: CmdTriple
+defaultCmdMMB = ( [CmdMouse]
+                , "set crosshair to floor under pointer"
+                , CursorPointerFloor )
 
-defaultCmdRMB :: HumanCmd
-defaultCmdRMB = Alias "run collectively to pointer or set target" $
-  ByAimMode
-    { notAiming = ByArea $ common ++
-        [ (CaMapParty, SelectWithPointer)
-        , (CaMap, Macro
-             ["MiddleButtonPress", "CTRL-colon", "CTRL-period", "V"])
-        , (CaXhairDesc, TgtFloor) ]
-    , aiming = ByArea $ common ++
-        [ (CaMap, ComposeIfLeft TgtPointerEnemy (projectI flingTS))
-        , (CaXhairDesc, (projectI flingTS)) ] }
+defaultCmdRMB :: CmdTriple
+defaultCmdRMB =
+  ( [CmdMouse]
+  , "run collectively to pointer or set target"
+  , ByAimMode
+      { notAiming = ByArea $ common ++
+          [ (CaMapParty, SelectWithPointer)
+          , (CaMap, Macro
+               ["MiddleButtonPress", "CTRL-colon", "CTRL-period", "V"])
+          , (CaXhairDesc, TgtFloor) ]
+      , aiming = ByArea $ common ++
+          [ (CaMap, ComposeIfLeft TgtPointerEnemy (projectICmd flingTs))
+          , (CaXhairDesc, (projectICmd flingTs)) ] } )
  where
   common =
     [ (CaMessage, Macro ["R"])
-    , (CaMapLeader, descendDrop)
+    , (CaMapLeader, descendDropCmd)
     , (CaArenaName, ByAimMode {notAiming = Help Nothing, aiming = Accept})
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, ChooseItem MStats)
     , (CaTargetDesc, ChooseItem $ MStore CEqp) ]
 
-projectI :: [Trigger] -> HumanCmd
-projectI ts = ByItemMode
+projectICmd :: [Trigger] -> HumanCmd
+projectICmd ts = ByItemMode
   { notChosen = ComposeIfEmpty (ChooseItemProject ts) (Project ts)
   , chosen = Project ts }
 
-projectA :: [Trigger] -> HumanCmd
-projectA ts = ByAimMode
-  { notAiming = TgtTgt
-  , aiming = projectI ts }
+projectI :: [Trigger] -> CmdTriple
+projectI ts = ([CmdItem], descTs ts, projectICmd ts)
 
-flingTS :: [Trigger]
-flingTS = [ApplyItem { verb = "fling"
+projectA :: [Trigger] -> CmdTriple
+projectA ts = replaceCmd (ByAimMode { notAiming = TgtTgt
+                                    , aiming = projectICmd ts }) (projectI ts)
+
+flingTs :: [Trigger]
+flingTs = [ApplyItem { verb = "fling"
                      , object = "projectile"
                      , symbol = ' ' }]
 
-applyI :: [Trigger] -> HumanCmd
-applyI ts = ByItemMode
+applyI :: [Trigger] -> CmdTriple
+applyI ts = ([CmdItem], descTs ts, ByItemMode
   { notChosen = ComposeIfEmpty (ChooseItemApply ts) (Apply ts)
-  , chosen = Apply ts }
+  , chosen = Apply ts })
 
-getAscend :: HumanCmd
-getAscend = Alias "get items or ascend"
-            $ ByAimMode
-  { notAiming = ReplaceFail "cannot get items nor ascend"
-      $ ComposeIfLeft
-          (MoveItem [CGround] CEqp (Just "get") "items" True)
-          (TriggerTile
-             [ TriggerFeature { verb = "ascend"
-                              , object = "a level"
-                              , feature = TK.Cause (IK.Ascend 1) }
-             , TriggerFeature { verb = "escape"
-                              , object = "dungeon"
-                              , feature = TK.Cause (IK.Escape 1) } ])
+getAscendCmd :: HumanCmd
+getAscendCmd = ByAimMode
+  { notAiming = ReplaceFail "cannot get items nor ascend" $
+      ComposeIfLeft
+        (MoveItem [CGround] CEqp (Just "get") "items" True)
+        (TriggerTile
+           [ TriggerFeature { verb = "ascend"
+                            , object = "a level"
+                            , feature = TK.Cause (IK.Ascend 1) }
+           , TriggerFeature { verb = "escape"
+                            , object = "dungeon"
+                            , feature = TK.Cause (IK.Escape 1) } ])
   , aiming = TgtAscend 1 }
 
-descendDrop :: HumanCmd
-descendDrop = Alias "descend or drop items"
-              $ ByAimMode
-  { notAiming = ReplaceFail "cannot descend nor drop items"
-      $ ComposeIfLeft
-          (TriggerTile
-             [ TriggerFeature { verb = "descend"
-                              , object = "a level"
-                              , feature = TK.Cause (IK.Ascend (-1)) }
-             , TriggerFeature { verb = "escape"
-                              , object = "dungeon"
-                              , feature = TK.Cause (IK.Escape (-1)) } ])
-          (MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False)
+getAscend :: Text -> CmdTriple
+getAscend t = ([CmdMove, CmdItem], t, getAscendCmd)
+
+descendDropCmd :: HumanCmd
+descendDropCmd = ByAimMode
+  { notAiming = ReplaceFail "cannot descend nor drop items" $
+      ComposeIfLeft
+        (TriggerTile
+           [ TriggerFeature { verb = "descend"
+                            , object = "a level"
+                            , feature = TK.Cause (IK.Ascend (-1)) }
+           , TriggerFeature { verb = "escape"
+                            , object = "dungeon"
+                            , feature = TK.Cause (IK.Escape (-1)) } ])
+        (MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False)
   , aiming = TgtAscend (-1) }
 
-chooseAndHelp :: ItemDialogMode -> HumanCmd
-chooseAndHelp dialogMode =
-  ComposeIfEmpty (ChooseItem dialogMode) (Help $ Just "f")
+descendDrop :: Text -> CmdTriple
+descendDrop t = ([CmdMove, CmdItem], t, descendDropCmd)
 
-defaultHeroSelect :: Int -> (String, ([CmdCategory], HumanCmd))
-defaultHeroSelect k =
-  ([Char.intToDigit k], ([CmdMeta], Alias "" $ PickLeader k))
+chooseAndHelp :: Text -> ItemDialogMode -> CmdTriple
+chooseAndHelp desc dialogMode =
+  ([CmdItem], desc, ComposeIfEmpty (ChooseItem dialogMode) (Help $ Just "f"))
+
+descTs :: [Trigger] -> Text
+descTs [] = "trigger a thing"
+descTs (t : _) = makePhrase [verb t, object t]
+
+defaultHeroSelect :: Int -> (String, CmdTriple)
+defaultHeroSelect k = ([Char.intToDigit k], ([CmdMeta], "", PickLeader k))

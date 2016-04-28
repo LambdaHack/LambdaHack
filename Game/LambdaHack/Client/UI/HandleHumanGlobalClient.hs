@@ -912,7 +912,7 @@ mainMenuHuman cmdAction = do
         in init art ++ [take (80 - versionLen) (last art) ++ version]
       -- Key-description-command tuples.
       kds = [ (km, (desc, cmd))
-            | (km, (desc, [HumanCmd.CmdMainMenu], cmd)) <- bcmdList ]
+            | (km, ([HumanCmd.CmdMainMenu], desc, cmd)) <- bcmdList ]
       statusLen = 30
       bindingLen = 28
       gameName = makePhrase [MU.Capitalize $ MU.Text $ mname gameMode]

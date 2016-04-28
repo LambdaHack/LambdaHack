@@ -1,25 +1,23 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Abstract syntax human player commands.
 module Game.LambdaHack.Client.UI.HumanCmd
-  ( CmdCategory(..), CmdArea(..), HumanCmd(..), Trigger(..)
-  , noRemoteHumanCmd, categoryDescription, cmdDescription
+  ( CmdTriple, CmdCategory(..), CmdArea(..), HumanCmd(..), Trigger(..)
+  , noRemoteHumanCmd, categoryDescription
   ) where
 
 import Control.DeepSeq
-import Control.Exception.Assert.Sugar
 import Data.Binary
-import Data.Maybe
 import Data.Text (Text)
-import qualified Data.Text as T
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Actor (verbCStore)
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
+
+type CmdTriple = ([CmdCategory], Text, HumanCmd)
 
 data CmdCategory =
     CmdMainMenu | CmdSettingsMenu
@@ -65,7 +63,6 @@ instance Binary CmdArea
 data HumanCmd =
     -- Meta.
     ReplaceFail !Text !HumanCmd
-  | Alias !Text !HumanCmd
   | Macro ![String]
   | ByArea ![(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
   | ByAimMode {notAiming :: !HumanCmd, aiming :: !HumanCmd}
@@ -162,99 +159,3 @@ noRemoteHumanCmd cmd = case cmd of
   RunOnceToCursor  -> True
   ContinueToCursor -> True
   _             -> False
-
--- | Description of player commands.
-cmdDescription :: HumanCmd -> Text
-cmdDescription cmd = case cmd of
-  ReplaceFail _ cmd1 -> cmdDescription cmd1
-  Alias t _ -> t
-  Macro{} -> ""
-  ByArea{} -> ""
-  ByAimMode {aiming} -> cmdDescription aiming
-  ByItemMode {chosen} -> cmdDescription chosen
-  ComposeIfLeft cmd1 _ -> cmdDescription cmd1
-  ComposeIfEmpty cmd1 _ -> cmdDescription cmd1
-
-  Wait        -> "wait"
-  Move v      -> "move" <+> compassText v
-  Run v       -> "run" <+> compassText v
-  RunOnceAhead -> "run once ahead"
-  MoveOnceToCursor -> "move one step towards the crosshair"
-  RunOnceToCursor -> "run selected one step towards the crosshair"
-  ContinueToCursor -> "continue towards the crosshair"
-  MoveItem _ store2 mverb object _ ->
-    let verb = fromMaybe (MU.Text $ verbCStore store2) mverb
-    in makePhrase [verb, object]
-  Project ts  -> triggerDescription ts
-  Apply ts    -> triggerDescription ts
-  AlterDir ts -> triggerDescription ts
-  TriggerTile ts -> triggerDescription ts
-  Help mstart ->
-    let about = maybe "" (\t -> if T.null t then "" else "about" <+> t) mstart
-    in "display help" <+> about
-  MainMenu    -> "display the Main Menu"
-  GameDifficultyIncr -> "cycle next difficulty"
-
-  GameRestart t ->
-    -- TODO: use mname for the game mode instead of t
-    makePhrase ["new", MU.Capitalize $ MU.Text $ tshow t, "game"]
-  GameExit    -> "save and exit"
-  GameSave    -> "save game"
-  Tactic      -> "cycle henchmen tactic"
-  Automate    -> "automate faction"
-
-  Clear       -> "clear messages"
-  ChooseItem (MStore CGround) -> "manage items on the ground"
-  ChooseItem (MStore COrgan) -> "describe organs of the leader"
-  ChooseItem (MStore CEqp) -> "manage equipment of the leader"
-  ChooseItem (MStore CInv) -> "manage inventory pack of the leader"
-  ChooseItem (MStore CSha) -> "manage the shared party stash"
-  ChooseItem MOwned -> "manage all owned items"
-  ChooseItem MStats -> "show the stats summary of the leader"
-  ChooseItemProject _ -> "choose item to fling"
-  ChooseItemApply _ -> "choose item to apply"
-  PickLeader{} -> "pick leader"
-  PickLeaderWithPointer -> "pick leader with mouse pointer"
-  MemberCycle -> "cycle among party members on the level"
-  MemberBack  -> "cycle among all party members"
-  SelectActor -> "select (or deselect) a party member"
-  SelectNone  -> "deselect (or select) all on the level"
-  SelectWithPointer -> "select actors with mouse pointer"
-  Repeat 1    -> "voice again the recorded commands"
-  Repeat n    -> "voice the recorded commands" <+> tshow n <+> "times"
-  Record      -> "start recording commands"
-  History     -> "display player diary"
-  MarkVision  -> "toggle visible zone"
-  MarkSmell   -> "toggle smell clues"
-  MarkSuspect -> "toggle suspect terrain"
-  SettingsMenu -> "display the Settings Menu"
-
-  Cancel -> "cancel target/action"
-  Accept -> "accept target/choice"
-  TgtClear       -> "reset target/crosshair"
-  MoveCursor v 1 -> "move crosshair" <+> compassText v
-  MoveCursor v k ->
-    "move crosshair up to" <+> tshow k <+> "steps" <+> compassText v
-  TgtTgt -> "start aiming mode on the current level"
-  TgtFloor -> "cycle aiming styles"
-  TgtEnemy -> "aim at an enemy"
-  TgtAscend k | k == 1  -> "aim at next shallower level"
-  TgtAscend k | k >= 2  -> "aim at" <+> tshow k    <+> "levels shallower"
-  TgtAscend k | k == -1 -> "aim at next deeper level"
-  TgtAscend k | k <= -2 -> "aim at" <+> tshow (-k) <+> "levels deeper"
-  TgtAscend _ -> assert `failure` "void level change when aiming"
-                        `twith` cmd
-  EpsIncr True   -> "swerve the aiming line"
-  EpsIncr False  -> "unswerve the aiming line"
-  CursorUnknown  -> "set crosshair to the closest unknown spot"
-  CursorItem     -> "set crosshair to the closest item"
-  CursorStair up -> "set crosshair to the closest stairs"
-                    <+> if up then "up" else "down"
-  CursorPointerFloor -> "set crosshair to floor under pointer"
-  CursorPointerEnemy -> "set crosshair to enemy under pointer"
-  TgtPointerFloor -> "enter aiming mode and describe a tile"
-  TgtPointerEnemy -> "enter aiming mode and describe an enemy"
-
-triggerDescription :: [Trigger] -> Text
-triggerDescription [] = "trigger a thing"
-triggerDescription (t : _) = makePhrase [verb t, object t]

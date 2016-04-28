@@ -107,7 +107,7 @@ humanCommand = do
           -- Look up the key.
           Binding{bcmdMap} <- askBinding
           case km `M.lookup` bcmdMap of
-            Just (_, cats, cmd) | CmdMainMenu `notElem` cats
+            Just (cats, _, cmd) | CmdMainMenu `notElem` cats
                                   && CmdSettingsMenu `notElem` cats -> do
               -- Query and clear the last command key.
               modifySession $ \sess -> sess

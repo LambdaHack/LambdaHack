@@ -37,7 +37,6 @@ cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd RequestUI)
 cmdAction cmd = case cmd of
   ReplaceFail failureMsg cmd1 ->
     cmdAction cmd1 >>= either (const $ failWith failureMsg) (return . Right)
-  Alias _ cmd1 -> cmdAction cmd1
   Macro kms -> Left <$> macroHuman kms
   ByArea l -> byAreaHuman cmdAction l
   ByAimMode{..} ->
