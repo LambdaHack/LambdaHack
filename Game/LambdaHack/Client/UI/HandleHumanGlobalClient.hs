@@ -123,8 +123,11 @@ areaToRectangles ca = case ca of
   CaMap -> return
     [( 0, mapStartY, fst normalLevelBound, mapStartY + snd normalLevelBound )]
   CaArenaName -> let y = snd normalLevelBound + 2
-                     x = fst normalLevelBound `div` 2
+                     x = fst normalLevelBound `div` 2 - 12
                  in return [(0, y, x, y)]
+  CaPercentSeen -> let y = snd normalLevelBound + 2
+                       x = fst normalLevelBound `div` 2
+                   in return [(x - 11, y, x, y)]
   CaXhairDesc -> let y = snd normalLevelBound + 2
                      x = fst normalLevelBound `div` 2 + 2
                  in return [(x, y, fst normalLevelBound, y)]

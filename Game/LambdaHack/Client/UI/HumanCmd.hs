@@ -47,6 +47,7 @@ data CmdArea =
   | CaMapParty
   | CaMap
   | CaArenaName
+  | CaPercentSeen
   | CaXhairDesc
   | CaSelected
   | CaLeaderStatus

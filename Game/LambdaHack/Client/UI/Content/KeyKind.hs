@@ -61,9 +61,11 @@ defaultCmdLMB =
       { notAiming = ByArea $ common ++  -- normal mode
           [ (CaMapParty, PickLeaderWithPointer)
           , (CaMap, Macro
-               ["MiddleButtonPress", "CTRL-semicolon", "CTRL-period", "V"]) ]
+               ["MiddleButtonPress", "CTRL-semicolon", "CTRL-period", "V"])
+          , (CaPercentSeen, Macro ["CTRL-?", "CTRL-period", "V"]) ]
       , aiming = ByArea $ common ++  -- aiming mode
-          [ (CaMap, TgtPointerEnemy) ] } )
+          [ (CaMap, TgtPointerEnemy)
+          , (CaPercentSeen, CursorStair True) ] } )
  where
   common =
     [ (CaMessage, History)
@@ -88,10 +90,12 @@ defaultCmdRMB =
           [ (CaMapParty, SelectWithPointer)
           , (CaMap, Macro
                ["MiddleButtonPress", "CTRL-colon", "CTRL-period", "V"])
+          , (CaPercentSeen, Macro ["'", "CTRL-?", "CTRL-period", "'", "V"])
           , (CaXhairDesc, TgtFloor) ]
       , aiming = ByArea $ common ++
           [ (CaMap, ComposeIfLeft TgtPointerEnemy (projectICmd flingTs))
-          , (CaXhairDesc, (projectICmd flingTs)) ] } )
+          , (CaXhairDesc, (projectICmd flingTs))
+          , (CaPercentSeen, CursorStair False) ] } )
  where
   common =
     [ (CaMessage, Macro ["R"])
