@@ -72,8 +72,8 @@ data HumanCmd =
     -- Global.
     -- These usually take time.
   | Wait
-  | Move !Vector
-  | Run !Vector
+  | MoveDir !Vector
+  | RunDir !Vector
   | RunOnceAhead
   | MoveOnceToCursor
   | RunOnceToCursor

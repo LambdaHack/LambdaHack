@@ -189,85 +189,81 @@ waitHuman = do
   modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
   return ReqWait
 
--- * Move and Run
+-- * MoveDir and RunDir
 
 moveRunHuman :: MonadClientUI m
              => Bool -> Bool -> Bool -> Bool -> Vector
              -> m (SlideOrCmd RequestAnyAbility)
 moveRunHuman initialStep finalGoal run runAhead dir = do
-  tgtMode <- getsSession stgtMode
-  if isJust tgtMode then
-    Left <$> moveCursorHuman dir (if run then 10 else 1)
-  else do
-    arena <- getArenaUI
-    leader <- getLeaderUI
-    sb <- getsState $ getActorBody leader
-    fact <- getsState $ (EM.! bfid sb) . sfactionD
-    -- Start running in the given direction. The first turn of running
-    -- succeeds much more often than subsequent turns, because we ignore
-    -- most of the disturbances, since the player is mostly aware of them
-    -- and still explicitly requests a run, knowing how it behaves.
-    sel <- getsSession sselected
-    let runMembers = if runAhead || noRunWithMulti fact
-                     then [leader]  -- TODO: warn?
-                     else ES.toList (ES.delete leader sel) ++ [leader]
-        runParams = RunParams { runLeader = leader
-                              , runMembers
-                              , runInitial = True
-                              , runStopMsg = Nothing
-                              , runWaiting = 0 }
-        macroRun25 = ["CTRL-comma", "CTRL-V"]
-    when (initialStep && run) $ do
+  arena <- getArenaUI
+  leader <- getLeaderUI
+  sb <- getsState $ getActorBody leader
+  fact <- getsState $ (EM.! bfid sb) . sfactionD
+  -- Start running in the given direction. The first turn of running
+  -- succeeds much more often than subsequent turns, because we ignore
+  -- most of the disturbances, since the player is mostly aware of them
+  -- and still explicitly requests a run, knowing how it behaves.
+  sel <- getsSession sselected
+  let runMembers = if runAhead || noRunWithMulti fact
+                   then [leader]  -- TODO: warn?
+                   else ES.toList (ES.delete leader sel) ++ [leader]
+      runParams = RunParams { runLeader = leader
+                            , runMembers
+                            , runInitial = True
+                            , runStopMsg = Nothing
+                            , runWaiting = 0 }
+      macroRun25 = ["CTRL-comma", "CTRL-V"]
+  when (initialStep && run) $ do
+    modifySession $ \cli ->
+      cli {srunning = Just runParams}
+    when runAhead $
       modifySession $ \cli ->
-        cli {srunning = Just runParams}
-      when runAhead $
-        modifySession $ \cli ->
-          cli {slastPlay = map K.mkKM macroRun25 ++ slastPlay cli}
-    -- When running, the invisible actor is hit (not displaced!),
-    -- so that running in the presence of roving invisible
-    -- actors is equivalent to moving (with visible actors
-    -- this is not a problem, since runnning stops early enough).
-    -- TODO: stop running at invisible actor
-    let tpos = bpos sb `shift` dir
-    -- We start by checking actors at the the target position,
-    -- which gives a partial information (actors can be invisible),
-    -- as opposed to accessibility (and items) which are always accurate
-    -- (tiles can't be invisible).
-    tgts <- getsState $ posToActors tpos arena
-    case tgts of
-      [] -> do  -- move or search or alter
-        runStopOrCmd <- moveSearchAlterAid leader dir
-        case runStopOrCmd of
-          Left stopMsg -> failWith stopMsg
-          Right runCmd ->
-            -- Don't check @initialStep@ and @finalGoal@
-            -- and don't stop going to target: door opening is mundane enough.
-            return $ Right runCmd
-      [(target, _)] | run && initialStep ->
-        -- No @stopPlayBack@: initial displace is benign enough.
-        -- Displacing requires accessibility, but it's checked later on.
-        RequestAnyAbility <$$> displaceAid target
-      _ : _ : _ | run && initialStep -> do
-        let !_A = assert (all (bproj . snd) tgts) ()
-        failSer DisplaceProjectiles
-      (target, tb) : _ | initialStep && finalGoal -> do
-        stopPlayBack  -- don't ever auto-repeat melee
-        -- No problem if there are many projectiles at the spot. We just
-        -- attack the first one.
-        -- We always see actors from our own faction.
-        if bfid tb == bfid sb && not (bproj tb) then do
-          let autoLvl = snd $ autoDungeonLevel fact
-          if autoLvl then failSer NoChangeLvlLeader
-          else do
-            -- Select adjacent actor by bumping into him. Takes no time.
-            success <- pickLeader True target
-            let !_A = assert (success `blame` "bump self"
-                                      `twith` (leader, target, tb)) ()
-            return $ Left mempty
-        else
-          -- Attacking does not require full access, adjacency is enough.
-          RequestAnyAbility <$$> meleeAid target
-      _ : _ -> failWith "actor in the way"
+        cli {slastPlay = map K.mkKM macroRun25 ++ slastPlay cli}
+  -- When running, the invisible actor is hit (not displaced!),
+  -- so that running in the presence of roving invisible
+  -- actors is equivalent to moving (with visible actors
+  -- this is not a problem, since runnning stops early enough).
+  -- TODO: stop running at invisible actor
+  let tpos = bpos sb `shift` dir
+  -- We start by checking actors at the the target position,
+  -- which gives a partial information (actors can be invisible),
+  -- as opposed to accessibility (and items) which are always accurate
+  -- (tiles can't be invisible).
+  tgts <- getsState $ posToActors tpos arena
+  case tgts of
+    [] -> do  -- move or search or alter
+      runStopOrCmd <- moveSearchAlterAid leader dir
+      case runStopOrCmd of
+        Left stopMsg -> failWith stopMsg
+        Right runCmd ->
+          -- Don't check @initialStep@ and @finalGoal@
+          -- and don't stop going to target: door opening is mundane enough.
+          return $ Right runCmd
+    [(target, _)] | run && initialStep ->
+      -- No @stopPlayBack@: initial displace is benign enough.
+      -- Displacing requires accessibility, but it's checked later on.
+      RequestAnyAbility <$$> displaceAid target
+    _ : _ : _ | run && initialStep -> do
+      let !_A = assert (all (bproj . snd) tgts) ()
+      failSer DisplaceProjectiles
+    (target, tb) : _ | initialStep && finalGoal -> do
+      stopPlayBack  -- don't ever auto-repeat melee
+      -- No problem if there are many projectiles at the spot. We just
+      -- attack the first one.
+      -- We always see actors from our own faction.
+      if bfid tb == bfid sb && not (bproj tb) then do
+        let autoLvl = snd $ autoDungeonLevel fact
+        if autoLvl then failSer NoChangeLvlLeader
+        else do
+          -- Select adjacent actor by bumping into him. Takes no time.
+          success <- pickLeader True target
+          let !_A = assert (success `blame` "bump self"
+                                    `twith` (leader, target, tb)) ()
+          return $ Left mempty
+      else
+        -- Attacking does not require full access, adjacency is enough.
+        RequestAnyAbility <$$> meleeAid target
+    _ : _ -> failWith "actor in the way"
 
 -- | Actor atttacks an enemy actor or his own projectile.
 meleeAid :: MonadClientUI m
@@ -705,6 +701,7 @@ projectItem ts (fromCStore, (iid, itemFull)) = do
 
 -- * Apply
 
+-- TODO: factor out item getting
 applyHuman :: MonadClientUI m
            => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbApply))
 applyHuman ts = do

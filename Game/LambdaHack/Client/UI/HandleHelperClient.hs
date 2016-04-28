@@ -45,7 +45,8 @@ memberCycle verbose = do
     [] -> failMsg "cannot pick any other member on this level"
     (np, b) : _ -> do
       success <- pickLeader verbose np
-      let !_A = assert (success `blame` "same leader" `twith` (leader, np, b)) ()
+      let !_A = assert (success `blame` "same leader"
+                                `twith` (leader, np, b)) ()
       return mempty
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.

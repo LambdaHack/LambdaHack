@@ -49,8 +49,8 @@ cmdAction cmd = case cmd of
     composeIfEmptyHuman (cmdAction cmd1) (cmdAction cmd2)
 
   Wait -> Right <$> fmap timedToUI waitHuman
-  Move v -> ReqUITimed <$$> moveRunHuman True True False False v
-  Run v -> ReqUITimed <$$> moveRunHuman True True True True v
+  MoveDir v -> ReqUITimed <$$> moveRunHuman True True False False v
+  RunDir v -> ReqUITimed <$$> moveRunHuman True True True True v
   RunOnceAhead -> ReqUITimed <$$> runOnceAheadHuman
   MoveOnceToCursor -> ReqUITimed <$$> moveOnceToCursorHuman
   RunOnceToCursor  -> ReqUITimed <$$> runOnceToCursorHuman
