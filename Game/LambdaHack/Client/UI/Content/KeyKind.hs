@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.Content.KeyKind
   ( KeyKind(..)
   , defaultCmdLMB, defaultCmdMMB, defaultCmdRMB
-  , projectTS, projectFling, applyTS
+  , projectI, projectA, flingTS, applyI
   , getAscend, descendDrop, chooseAndHelp, defaultHeroSelect
   ) where
 
@@ -48,31 +48,37 @@ defaultCmdRMB = Alias "run collectively to pointer or set target" $
     { notAiming = ByArea $ common ++
         [ (CaMapParty, SelectWithPointer)
         , (CaMap, Macro
-             ["MiddleButtonPress", "CTRL-colon", "CTRL-period", "V"]) ]
+             ["MiddleButtonPress", "CTRL-colon", "CTRL-period", "V"])
+        , (CaXhairDesc, TgtFloor) ]
     , aiming = ByArea $ common ++
-       [ (CaMap, ComposeIfLeft TgtPointerEnemy projectFling) ] }
+        [ (CaMap, ComposeIfLeft TgtPointerEnemy (projectI flingTS))
+        , (CaXhairDesc, (projectI flingTS)) ] }
  where
   common =
     [ (CaMessage, Macro ["R"])
     , (CaMapLeader, descendDrop)
     , (CaArenaName, ByAimMode {notAiming = Help Nothing, aiming = Accept})
-    , (CaXhairDesc, projectFling)
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, ChooseItem MStats)
     , (CaTargetDesc, ChooseItem $ MStore CEqp) ]
 
-projectTS :: [Trigger] -> HumanCmd
-projectTS ts = ByItemMode
+projectI :: [Trigger] -> HumanCmd
+projectI ts = ByItemMode
   { notChosen = ComposeIfEmpty (ChooseItemProject ts) (Project ts)
   , chosen = Project ts }
 
-projectFling :: HumanCmd
-projectFling = projectTS [ApplyItem { verb = "fling"
-                                    , object = "projectile"
-                                    , symbol = ' ' }]
+projectA :: [Trigger] -> HumanCmd
+projectA ts = ByAimMode
+  { notAiming = TgtTgt
+  , aiming = projectI ts }
 
-applyTS :: [Trigger] -> HumanCmd
-applyTS ts = ByItemMode
+flingTS :: [Trigger]
+flingTS = [ApplyItem { verb = "fling"
+                     , object = "projectile"
+                     , symbol = ' ' }]
+
+applyI :: [Trigger] -> HumanCmd
+applyI ts = ByItemMode
   { notChosen = ComposeIfEmpty (ChooseItemApply ts) (Apply ts)
   , chosen = Apply ts }
 

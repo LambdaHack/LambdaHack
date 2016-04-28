@@ -27,7 +27,7 @@ import Prelude.Compat
 import qualified Paths_LambdaHack as Self (version)
 
 import Control.Exception.Assert.Sugar
-import Control.Monad (filterM, liftM2, when)
+import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Functor.Infix ((<$$>))
@@ -662,22 +662,6 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
 projectHuman :: MonadClientUI m
              => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbProject))
 projectHuman ts = do
-  -- If already in aiming mode, project the item.
-  let ifAimingThenProject i = do
-        oldTgtMode <- getsSession stgtMode
-        lidV <- viewedLevel
-        let newTgtMode = Just $ TgtMode lidV
-        -- Start the aiming mode, if not started.
-        modifySession $ \sess -> sess {stgtMode = newTgtMode}
-        -- Set cursor to the personal target, permanently.
-        leader <- getLeaderUI
-        tgt <- getsClient $ getTarget leader
-        modifyClient $ \cli -> cli {scursor = fromMaybe (scursor cli) tgt}
-        -- Possibly, project.
-        if oldTgtMode == newTgtMode
-        then projectI ts i
-        else return $ Left mempty
-  -- Determine the item to project and, possibly, project.
   itemSel <- getsSession sitemSel
   case itemSel of
     Just (fromCStore, iid) -> do
@@ -690,13 +674,13 @@ projectHuman ts = do
         Just kit -> do
           itemToF <- itemToFullClient
           let i = (fromCStore, (iid, itemToF iid kit))
-          ifAimingThenProject i
+          projectItem ts i
     Nothing -> failWith "no item to fling"
 
-projectI :: MonadClientUI m
-         => [Trigger] -> (CStore, (ItemId, ItemFull))
-         -> m (SlideOrCmd (RequestTimed 'AbProject))
-projectI ts (fromCStore, (iid, itemFull)) = do
+projectItem :: MonadClientUI m
+            => [Trigger] -> (CStore, (ItemId, ItemFull))
+            -> m (SlideOrCmd (RequestTimed 'AbProject))
+projectItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
@@ -710,6 +694,12 @@ projectI ts (fromCStore, (iid, itemFull)) = do
         case psuitReqFun itemFull of
           Left reqFail -> failSer reqFail
           Right (pos, _) -> do
+            -- Set personal target to the aim position, to easily repeat.
+            mposTgt <- leaderTgtToPos
+            unless (Just pos == mposTgt) $ do
+              scursor <- getsClient scursor
+              modifyClient $ updateTarget leader (const $ Just scursor)
+            -- Project.
             eps <- getsClient seps
             return $ Right $ ReqProject pos eps iid fromCStore
 
@@ -730,13 +720,13 @@ applyHuman ts = do
         Just kit -> do
           itemToF <- itemToFullClient
           let i = (fromCStore, (iid, itemToF iid kit))
-          applyI ts i
+          applyItem ts i
     Nothing -> failWith "no item to apply"
 
-applyI :: MonadClientUI m
-       => [Trigger] -> (CStore, (ItemId, ItemFull))
-       -> m (SlideOrCmd (RequestTimed 'AbApply))
-applyI ts (fromCStore, (iid, itemFull)) = do
+applyItem :: MonadClientUI m
+          => [Trigger] -> (CStore, (ItemId, ItemFull))
+          -> m (SlideOrCmd (RequestTimed 'AbApply))
+applyItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader

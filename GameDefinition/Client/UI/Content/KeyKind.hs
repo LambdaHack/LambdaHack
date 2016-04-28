@@ -99,8 +99,9 @@ standardKeys = KeyKind
            ]))
 
       -- Item use
-      , ("f", ([CmdItem], projectFling))
-      , ("a", ([CmdItem], applyTS
+      , ("f", ([CmdItem], projectA flingTS))
+      , ("CTRL-f", ([CmdItem], Alias "fling without aiming" (projectI flingTS)))
+      , ("a", ([CmdItem], applyI
            [ApplyItem { verb = "apply"
                       , object = "consumable"
                       , symbol = ' ' }]))
@@ -117,18 +118,18 @@ standardKeys = KeyKind
       , ("G", ([CmdItem], chooseAndHelp $ MStore CGround))
       , ("@", ([CmdItem], chooseAndHelp $ MStore COrgan))
       , ("!", ([CmdItem], chooseAndHelp MStats))
-      , ("q", ([CmdItem], applyTS [ApplyItem { verb = "quaff"
-                                             , object = "potion"
-                                             , symbol = '!' }]))
-      , ("r", ([CmdItem], applyTS [ApplyItem { verb = "read"
-                                             , object = "scroll"
-                                             , symbol = '?' }]))
-      , ("t", ([CmdItem], projectTS [ApplyItem { verb = "throw"
-                                               , object = "missile"
-                                               , symbol = '|' }]))
---      , ("z", ([CmdItem], projectTS [ApplyItem { verb = "zap"
---                                               , object = "wand"
---                                               , symbol = '/' }]))
+      , ("q", ([CmdItem], applyI [ApplyItem { verb = "quaff"
+                                            , object = "potion"
+                                            , symbol = '!' }]))
+      , ("r", ([CmdItem], applyI [ApplyItem { verb = "read"
+                                            , object = "scroll"
+                                            , symbol = '?' }]))
+      , ("t", ([CmdItem], projectA [ApplyItem { verb = "throw"
+                                              , object = "missile"
+                                              , symbol = '|' }]))
+--      , ("z", ([CmdItem], projectA [ApplyItem { verb = "zap"
+--                                              , object = "wand"
+--                                              , symbol = '/' }]))
 
       -- Targeting
       , ("KP_Multiply", ([CmdTgt], TgtEnemy))
