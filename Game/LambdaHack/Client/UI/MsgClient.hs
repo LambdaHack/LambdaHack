@@ -1,8 +1,9 @@
 -- | Client monad for interacting with a human through UI.
 module Game.LambdaHack.Client.UI.MsgClient
-  ( msgAdd, msgReset, recordHistory
+  ( msgAdd, promptAdd, recordHistory
   , SlideOrCmd, failWith, failSlides, failSer, failMsg
   , lookAt, itemOverlay
+  , promptToSlideshow, overlayToSlideshow
   ) where
 
 import Prelude ()
@@ -26,7 +27,6 @@ import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
-import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
@@ -46,10 +46,10 @@ msgAdd :: MonadClientUI m => Text -> m ()
 msgAdd msg = modifySession $ \sess ->
   sess {sreport = addMsg (sreport sess) (toMsg msg)}
 
--- | Wipe out and set a new value for the current report.
-msgReset :: MonadClientUI m => Msg -> m ()
-msgReset msg = modifySession $ \sess ->
-  sess {sreport = singletonReport msg}
+-- | Add a prompt to the current report.
+promptAdd :: MonadClientUI m => Text -> m ()
+promptAdd msg = modifySession $ \sess ->
+  sess {sreport = addMsg (sreport sess) (toPrompt $ toAttrLine msg)}
 
 -- | Store current report in the history and reset report.
 recordHistory :: MonadClientUI m => m ()
@@ -57,9 +57,9 @@ recordHistory = do
   time <- getsState stime
   SessionUI{sreport, shistory} <- getSession
   unless (nullReport sreport) $ do
-    msgReset $ toMsg ""
     let nhistory = addReport shistory time sreport
-    modifySession $ \sess -> sess {shistory = nhistory}
+    modifySession $ \sess -> sess { sreport = singletonReport $ toMsg ""
+                                  , shistory = nhistory }
 
 type SlideOrCmd a = Either Slideshow a
 
@@ -160,3 +160,23 @@ itemOverlay c lid bag = do
             in Just (ov, kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
   return (mconcat ts, kxs)
+
+
+-- | The prompt is shown after the current message, but not added to history.
+-- This is useful, e.g., in aiming mode, not to spam history.
+promptToSlideshow :: MonadClientUI m => AttrLine -> m Slideshow
+promptToSlideshow prompt = overlayToSlideshow prompt mempty
+
+-- | The prompt is shown after the current message at the top of each slide.
+-- Together they may take more than one line. The prompt is not added
+-- to history. The portions of overlay that fit on the the rest
+-- of the screen are displayed below. As many slides as needed are shown.
+overlayToSlideshow :: MonadClientUI m => AttrLine -> Overlay -> m Slideshow
+overlayToSlideshow prompt overlay = do
+  promptAI <- msgPromptAI
+  lid <- getArenaUI
+  Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
+  sreport <- getsSession sreport
+  let msg = splitReport lxsize
+                        (prependMsg promptAI (addMsg sreport (toPrompt prompt)))
+  return $! splitOverlay (lysize + 1) msg overlay

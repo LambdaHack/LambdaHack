@@ -290,11 +290,11 @@ meleeAid target = do
             return $ Right wp
           res | bproj tb || isAtWar sfact (bfid tb) = returnCmd
               | isAllied sfact (bfid tb) = do
-                go1 <- displayYesNo ColorBW $ toAttrLine
+                go1 <- displayYesNo ColorBW
                          "You are bound by an alliance. Really attack?"
                 if not go1 then failWith "attack canceled" else returnCmd
               | otherwise = do
-                go2 <- displayYesNo ColorBW $ toAttrLine
+                go2 <- displayYesNo ColorBW
                          "This attack will start a war. Are you sure?"
                 if not go2 then failWith "attack canceled" else returnCmd
       res
@@ -842,17 +842,17 @@ verifyTrigger leader feat = case feat of
       "This is the way out, but where would you go in this alien world?"
     else do
       go <- displayYesNo ColorFull
-            $ toAttrLine "This is the way out. Really leave now?"
+              "This is the way out. Really leave now?"
       if not go then failWith "game resumed"
       else do
         (_, total) <- getsState $ calculateTotal b
         if total == 0 then do
           -- The player can back off at each of these steps.
-          go1 <- displayMore ColorBW $ toAttrLine
+          go1 <- displayMore ColorBW
                    "Afraid of the challenge? Leaving so soon and empty-handed?"
           if not go1 then failWith "brave soul!"
           else do
-             go2 <- displayMore ColorBW $ toAttrLine
+             go2 <- displayMore ColorBW
                      "Next time try to grab some loot before escape!"
              if not go2 then failWith "here's your chance!"
              else return $ Right ()
@@ -998,7 +998,6 @@ gameRestartHuman t = do
   b <- if isNoConfirms
        then return True
        else displayYesNo ColorBW
-            $ toAttrLine
             $ "You just requested a new" <+> tshow t
               <+> "game. The progress of the current" <+> mname gameMode
               <+> "game will be lost! Are you sure?"
@@ -1046,7 +1045,6 @@ tacticHuman = do
   fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
   let toT = if fromT == maxBound then minBound else succ fromT
   go <- displayMore ColorFull
-        $ toAttrLine
         $ "Current tactic is '" <> tshow fromT
           <> "'. Switching tactic to '" <> tshow toT
           <> "'. (This clears targets.)"
@@ -1061,7 +1059,7 @@ automateHuman = do
   -- BFS is not updated while automated, which would lead to corruption.
   modifySession $ \sess -> sess {saimMode = Nothing}
   go <- displayMore ColorBW
-        $ toAttrLine "Ceding control to AI (press any key to regain)."
+          "Ceding control to AI (press any key to regain)."
   if not go
     then failWith "automation canceled"
     else return $ Right ReqUIAutomate

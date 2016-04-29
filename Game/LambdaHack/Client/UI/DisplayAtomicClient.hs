@@ -443,7 +443,7 @@ destroyActorUI died aid body = do
     -- TODO; actually show the --more- prompt, but not between fadeout frames
     unless (fneverEmpty (gplayer fact)
             && (not actorsAlive || firstDeathEnds)) $
-      void $ displayMore ColorBW []
+      void $ displayMore ColorBW ""
   -- If pushed, animate spotting again, to draw attention to pushing.
   when (isNothing $ btrajectory body) $
     modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
@@ -770,7 +770,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             let verb = "be no longer controlled by"
             msgAdd $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidName]
-            when isOurAlive $ void $ displayMore ColorFull []
+            when isOurAlive $ void $ displayMore ColorFull ""
           else do
             fidSourceName <- getsState $ gname . (EM.! fidSource) . sfactionD
             let verb = "be now under"

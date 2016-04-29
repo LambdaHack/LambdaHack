@@ -20,7 +20,6 @@ import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
@@ -161,7 +160,7 @@ loopUI copsClient sconfig sdebugCli = do
   fact <- getsState $ (EM.! side) . sfactionD
   when (isAIFact fact) $
     -- Prod the frontend to flush frames and start showing then continuously.
-    void $ displayMore ColorFull $ toAttrLine
+    void $ displayMore ColorFull
       "The team is under AI control (press any key to stop)."
   -- State and client state now valid.
   debugPrint $ "UI client" <+> tshow side <+> "started."

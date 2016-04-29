@@ -2,7 +2,7 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Client.UI.Msg
   ( -- * AttrLine and Msg
-    tmoreMsg, tendMsg
+    tmoreMsg, tendMsg, tyesnoMsg
   , AttrLine, (<+:>), moreMsg, endMsg, yesnoMsg, toAttrLine, splitAttrLine
   , Msg(..), toMsg, toPrompt
     -- * Report
@@ -42,6 +42,9 @@ tmoreMsg = "--more--  "
 -- tmp, until help in colour
 tendMsg :: Text
 tendMsg = "--end--  "
+
+tyesnoMsg :: Text
+tyesnoMsg = "[yn]"
 
 type AttrLine = [Color.AttrChar]
 
