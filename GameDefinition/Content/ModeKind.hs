@@ -131,7 +131,7 @@ boardgame = ModeKind
 
 screensaverSafari = safari
   { mname   = "safari"
-  , mfreq   = [("starting", 1)]
+  , mfreq   = [("starting", 1), ("no confirms", 1)]
   , mroster = rosterSafari
       { rosterList = (head (rosterList rosterSafari))
                        -- changing leader by client needed, because of TFollow
@@ -143,7 +143,7 @@ screensaverSafari = safari
 
 screensaverSkirmish = skirmish
   { mname   = "skirmish"
-  , mfreq   = [("starting JS", 1)]
+  , mfreq   = [("starting JS", 1), ("no confirms", 1)]
   , mroster = rosterSkirmish
       { rosterList = (head (rosterList rosterSkirmish))
                        {fleaderMode = LeaderAI $ AutoLeader False False}

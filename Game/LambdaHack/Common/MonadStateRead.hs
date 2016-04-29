@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
   , getLevel, nUI, posOfAid, factionCanEscape
-  , getGameMode, getEntryArena
+  , getGameMode, isNoConfirmsGame, getEntryArena
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -47,6 +47,11 @@ getGameMode = do
   Kind.COps{comode=Kind.Ops{okind}} <- getsState scops
   t <- getsState sgameModeId
   return $! okind t
+
+isNoConfirmsGame :: MonadStateRead m => m Bool
+isNoConfirmsGame = do
+  gameMode <- getGameMode
+  return $! maybe False (> 0) $ lookup "no confirms" $ mfreq gameMode
 
 getEntryArena :: MonadStateRead m => Faction -> m LevelId
 getEntryArena fact = do

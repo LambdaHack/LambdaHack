@@ -990,22 +990,26 @@ gameDifficultyIncr = do
 gameRestartHuman :: MonadClientUI m
                  => GroupName ModeKind -> m (SlideOrCmd RequestUI)
 gameRestartHuman t = do
+  isNoConfirms <- isNoConfirmsGame
   gameMode <- getGameMode
-  b2 <- displayYesNo ColorBW $
-          "You just requested a new" <+> tshow t
-          <+> "game. The progress of the current" <+> mname gameMode
-          <+> "game will be lost! Are you sure?"
-  msg2 <- rndToAction $ oneOf
-            [ "yea, would be a pity to leave them all to die"
-            , "yea, a shame to get your team stranded" ]
-  if not b2
-  then failWith msg2
-  else do
+  b <- if isNoConfirms
+       then return True
+       else displayYesNo ColorBW $
+              "You just requested a new" <+> tshow t
+              <+> "game. The progress of the current" <+> mname gameMode
+              <+> "game will be lost! Are you sure?"
+  if b
+  then do
     leader <- getLeaderUI
     snxtDiff <- getsClient snxtDiff
     Config{configHeroNames} <- askConfig
     return $ Right
            $ ReqUIGameRestart leader t snxtDiff configHeroNames
+  else do
+    msg2 <- rndToAction $ oneOf
+              [ "yea, would be a pity to leave them all to die"
+              , "yea, a shame to get your team stranded" ]
+    failWith msg2
 
 -- * GameExit
 

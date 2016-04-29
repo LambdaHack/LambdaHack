@@ -523,6 +523,7 @@ quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Actor -> Maybe Status -> m ()
 quitFactionUI fid mbody toSt = do
   Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
+  isNoConfirms <- isNoConfirmsGame
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact
       horror = isHorrorFact fact
@@ -530,8 +531,9 @@ quitFactionUI fid mbody toSt = do
   let msgIfSide _ | fid /= side = Nothing
       msgIfSide s = Just s
       (startingPart, partingPart) = case toSt of
-        _ | horror ->
-          (Nothing, Nothing)  -- Ignore summoned actors' factions.
+        _ | isNoConfirms || horror ->
+          -- Ignore screensavers and summoned actors' factions.
+          (Nothing, Nothing)
         Just Status{stOutcome=Killed} ->
           ( Just "be eliminated"
           , msgIfSide "Let's hope another party can save the day!" )

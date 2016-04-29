@@ -507,7 +507,8 @@ reqGameRestart aid groupName d configHeroNames = do
   modifyServer $ \ser ->
     ser { squit = True  -- do this at once
         , sheroNames = EM.insert fid configHeroNames $ sheroNames ser }
-  revealItems Nothing Nothing
+  isNoConfirms <- isNoConfirmsGame
+  unless isNoConfirms $ revealItems Nothing Nothing
   execUpdAtomic $ UpdQuitFaction fid (Just b) oldSt
                 $ Just $ Status Restart (fromEnum $ blid b) (Just groupName)
 

@@ -39,7 +39,7 @@ import Game.LambdaHack.Common.Vector
 --
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
-  { sxhair      :: !Target         -- ^ the common xhair
+  { sxhair       :: !Target        -- ^ the common xhair
   , seps         :: !Int           -- ^ a parameter of the aiming digital line
   , stargetD     :: !(EM.EnumMap ActorId (Target, Maybe PathEtc))
                                    -- ^ targets of our actors in the dungeon

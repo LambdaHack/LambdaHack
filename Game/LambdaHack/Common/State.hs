@@ -111,7 +111,7 @@ emptyState _scops =
     , _stime = timeZero
     , _scops
     , _shigh = HighScore.empty
-    , _sgameModeId = toEnum 0  -- the initial value is unused
+    , _sgameModeId = minBound  -- the initial value is unused
     }
 
 -- TODO: make lstair secret until discovered; use this later on for
