@@ -21,7 +21,7 @@ type CmdTriple = ([CmdCategory], Text, HumanCmd)
 
 data CmdCategory =
     CmdMainMenu | CmdSettingsMenu
-  | CmdMove | CmdItem | CmdTgt | CmdMeta | CmdMouse
+  | CmdMove | CmdItem | CmdAim | CmdMeta | CmdMouse
   | CmdInternal | CmdDebug | CmdMinimal
   deriving (Show, Read, Eq, Generic)
 
@@ -34,7 +34,7 @@ categoryDescription CmdMainMenu = "Main Menu"
 categoryDescription CmdSettingsMenu = "Settings Menu"
 categoryDescription CmdMove = "Terrain exploration and alteration"
 categoryDescription CmdItem = "Item use"
-categoryDescription CmdTgt = "Aiming"
+categoryDescription CmdAim = "Aiming"
 categoryDescription CmdMeta = "Assorted"
 categoryDescription CmdMouse = "Mouse"
 categoryDescription CmdInternal = "Internal"

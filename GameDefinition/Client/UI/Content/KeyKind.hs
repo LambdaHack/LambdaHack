@@ -142,30 +142,30 @@ standardKeys = KeyKind
 --                                  , symbol = '/' }])
 
       -- Aiming
-      , ("KP_Multiply", ([CmdTgt], "aim at an enemy", TgtEnemy))
-      , ("\\", ([CmdTgt], "", TgtEnemy))
-      , ("KP_Divide", ([CmdTgt], "cycle aiming styles", TgtFloor))
-      , ("|", ([CmdTgt], "", TgtFloor))
-      , ("+", ([CmdTgt, CmdMinimal], "swerve the aiming line", EpsIncr True))
-      , ("-", ([CmdTgt], "unswerve the aiming line", EpsIncr False))
-      , ("CTRL-?", ( [CmdTgt]
+      , ("KP_Multiply", ([CmdAim], "aim at an enemy", TgtEnemy))
+      , ("\\", ([CmdAim], "", TgtEnemy))
+      , ("KP_Divide", ([CmdAim], "cycle aiming styles", TgtFloor))
+      , ("|", ([CmdAim], "", TgtFloor))
+      , ("+", ([CmdAim, CmdMinimal], "swerve the aiming line", EpsIncr True))
+      , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
+      , ("CTRL-?", ( [CmdAim]
                    , "set crosshair to the closest unknown spot"
                    , XhairUnknown ))
-      , ("CTRL-I", ( [CmdTgt]
+      , ("CTRL-I", ( [CmdAim]
                    , "set crosshair to the closest item"
                    , XhairItem ))
-      , ("CTRL-{", ( [CmdTgt]
+      , ("CTRL-{", ( [CmdAim]
                    , "set crosshair to the closest stairs up"
                    , XhairStair True ))
-      , ("CTRL-}", ( [CmdTgt]
+      , ("CTRL-}", ( [CmdAim]
                    , "set crosshair to the closest stairs down"
                    , XhairStair False ))
       , ( "BackSpace"
-        , ([CmdTgt], "clear target/crosshair/chosen item", TgtClear) )
-      , ("Escape", ( [CmdTgt, CmdMinimal]
+        , ([CmdAim], "clear target/crosshair/chosen item", TgtClear) )
+      , ("Escape", ( [CmdAim, CmdMinimal]
                    , "cancel target/action or open Main Menu"
                    , ByAimMode {notAiming = MainMenu, aiming = Cancel} ))
-      , ("Return", ( [CmdTgt, CmdMinimal]
+      , ("Return", ( [CmdAim, CmdMinimal]
                    , "accept target/choice or open Help"
                    , ByAimMode {notAiming = Help $ Just "", aiming=Accept} ))
 

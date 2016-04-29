@@ -159,8 +159,8 @@ keyHelp Binding{..} =
         ([categoryDescription CmdItem <> ". [press SPACE to advance]"]
          ++ [""] ++ [keyCaptionN 10])
         (categoryText ++ [moreMsg])
-    , okxs CmdTgt
-        ([categoryDescription CmdTgt <> ". [press SPACE to advance]"]
+    , okxs CmdAim
+        ([categoryDescription CmdAim <> ". [press SPACE to advance]"]
          ++ [""] ++ [keyCaption])
         (categoryText ++ [moreMsg])
     , okxs CmdMeta
