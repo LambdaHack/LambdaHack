@@ -416,7 +416,7 @@ leaderTgtAims = do
   lidV <- viewedLevel
   mleader <- getsClient _sleader
   case mleader of
-    Nothing -> return $ Left "no leader to target with"
+    Nothing -> return $ Left "no leader to aim with"
     Just aid -> do
       tgt <- getsClient $ getTarget aid
       aidTgtAims aid lidV tgt

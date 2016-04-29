@@ -34,7 +34,7 @@ categoryDescription CmdMainMenu = "Main Menu"
 categoryDescription CmdSettingsMenu = "Settings Menu"
 categoryDescription CmdMove = "Terrain exploration and alteration"
 categoryDescription CmdItem = "Item use"
-categoryDescription CmdTgt = "Aiming and targeting"
+categoryDescription CmdTgt = "Aiming"
 categoryDescription CmdMeta = "Assorted"
 categoryDescription CmdMouse = "Mouse"
 categoryDescription CmdInternal = "Internal"
@@ -149,7 +149,7 @@ instance Binary Trigger
 -- | Commands that are forbidden on a remote level, because they
 -- would usually take time when invoked on one.
 -- Note that some commands that take time are not included,
--- because they don't take time in targeting mode.
+-- because they don't take time in aiming mode.
 noRemoteHumanCmd :: HumanCmd -> Bool
 noRemoteHumanCmd cmd = case cmd of
   Wait          -> True

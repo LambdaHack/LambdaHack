@@ -311,7 +311,7 @@ lookAtMove aid = do
   tgtMode <- getsSession stgtMode
   when (not (bproj body)
         && bfid body == side
-        && isNothing tgtMode) $ do  -- targeting does a more extensive look
+        && isNothing tgtMode) $ do  -- aiming does a more extensive look
     lookMsg <- lookAt False "" True (bpos body) aid ""
     msgAdd lookMsg
   fact <- getsState $ (EM.! bfid body) . sfactionD
@@ -408,7 +408,7 @@ createActorUI born aid body = do
   when (bfid body /= side) $ do
     fact <- getsState $ (EM.! bfid body) . sfactionD
     when (not (bproj body) && isAtWar fact side) $
-      -- Target even if nobody can aim at the enemy. Let's home in on him
+      -- Aim even if nobody can shoot at the enemy. Let's home in on him
       -- and then we can aim or melee. We set permit to False, because it's
       -- technically very hard to check aimability here, because we are
       -- in-between turns and, e.g., leader's move has not yet been taken

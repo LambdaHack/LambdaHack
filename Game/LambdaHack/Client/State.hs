@@ -36,14 +36,14 @@ import Game.LambdaHack.Common.Vector
 -- their personal targets to follow the common xhair.
 -- When each wants to kill a fleeing enemy they recently meleed,
 -- they keep the enemies as their personal targets.
--- When graphical pointer (e.g., mouse) is used for aming (but not for moving),
+-- When graphical pointer (e.g., mouse) is used for aiming (but not for moving),
 -- it sets both the x-hair and the personal target, bluring the distinction,
 -- to simplify keyboard-less operation. Pointing with a pointer is much easier
 -- than with a keyboard, so no harm is done.
 --
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
-  { sxhair      :: !Target        -- ^ the common, xhair target
+  { sxhair      :: !Target         -- ^ the common xhair
   , seps         :: !Int           -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId (Target, Maybe PathEtc))
                                    -- ^ targets of our actors in the dungeon

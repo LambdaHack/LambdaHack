@@ -195,7 +195,7 @@ chooseItemProjectHuman ts = do
       psuit = do
         mpsuitReq <- psuitReq ts
         case mpsuitReq of
-          -- If target invalid, no item is considered a (suitable) missile.
+          -- If xhair aim invalid, no item is considered a (suitable) missile.
           Left err -> return $ SuitsNothing err
           Right psuitReqFun ->
             return $ SuitsSomething $ either (const False) snd . psuitReqFun
@@ -632,7 +632,7 @@ settingsMenuHuman cmdAction = do
 
 -- * Cancel
 
--- | End targeting mode, rejecting the current position.
+-- | End aiming mode, rejecting the current position.
 cancelHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 cancelHuman = do
   modifySession $ \sess -> sess {stgtMode = Nothing}
@@ -644,20 +644,20 @@ cancelHuman = do
 -- aiming mode, if active.
 acceptHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 acceptHuman = do
-  endTargeting
-  endTargetingMsg
+  endAiming
+  endAimingMsg
   modifySession $ \sess -> sess {stgtMode = Nothing}
   return $ Left mempty
 
--- | End targeting mode, accepting the current position.
-endTargeting :: MonadClientUI m => m ()
-endTargeting = do
+-- | End aiming mode, accepting the current position.
+endAiming :: MonadClientUI m => m ()
+endAiming = do
   leader <- getLeaderUI
   sxhair <- getsClient sxhair
   modifyClient $ updateTarget leader $ const $ Just sxhair
 
-endTargetingMsg :: MonadClientUI m => m ()
-endTargetingMsg = do
+endAimingMsg :: MonadClientUI m => m ()
+endAimingMsg = do
   leader <- getLeaderUI
   (targetMsg, _) <- targetDescLeader leader
   subject <- partAidLeader leader
@@ -686,7 +686,7 @@ tgtClearHuman = do
       doLook False
 
 -- | Perform look around in the current position of the xhair.
--- Normally expects targeting mode and so that a leader is picked.
+-- Normally expects aiming mode and so that a leader is picked.
 doLook :: MonadClientUI m => Bool -> m Slideshow
 doLook addMoreMsg = do
   Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
@@ -731,7 +731,7 @@ doLook addMoreMsg = do
               | otherwise = "you see"
       -- Show general info about current position.
       lookMsg <- lookAt True vis canSee p leader enemyMsg
-{- targeting is kind of a menu (or at least mode), so this is menu inside
+{- aiming is kind of a menu (or at least mode), so this is menu inside
    a menu, which is messy, hence disabled until UI overhauled:
       -- Check if there's something lying around at current position.
       is <- getsState $ getCBag $ CFloor lidV p
@@ -745,7 +745,7 @@ doLook addMoreMsg = do
 
 -- * MoveXhair
 
--- | Move the xhair. Assumes targeting mode.
+-- | Move the xhair. Assumes aiming mode.
 moveXhairHuman :: MonadClientUI m => Vector -> Int -> m Slideshow
 moveXhairHuman dir n = do
   leader <- getLeaderUI
@@ -768,11 +768,11 @@ moveXhairHuman dir n = do
 
 -- * TgtLevel
 
--- | Start targetting mode, setting xhair to personal leader' target.
+-- | Start aiming, setting xhair to personal leader' target.
 -- To be used in conjuction with other commands.
 tgtTgtHuman :: MonadClientUI m => m Slideshow
 tgtTgtHuman = do
-  -- (Re)start targetting at the current level.
+  -- (Re)start aiming at the current level.
   lidV <- viewedLevel
   modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
   -- Set xhair to the personal target, permanently.
@@ -783,7 +783,7 @@ tgtTgtHuman = do
 
 -- * TgtFloor
 
--- | Cycle targeting mode. Do not change position of the xhair,
+-- | Cycle aiming mode. Do not change position of the xhair,
 -- switch among things at that position.
 tgtFloorHuman :: MonadClientUI m => m Slideshow
 tgtFloorHuman = do
@@ -859,8 +859,8 @@ tgtEnemyHuman = do
 
 -- * TgtAscend
 
--- | Change the displayed level in targeting mode to (at most)
--- k levels shallower. Enters targeting mode, if not already in one.
+-- | Change the displayed level in aiming mode to (at most)
+-- k levels shallower. Enters aiming mode, if not already in one.
 tgtAscendHuman :: MonadClientUI m => Int -> m Slideshow
 tgtAscendHuman k = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
@@ -900,7 +900,7 @@ tgtAscendHuman k = do
 
 -- * EpsIncr
 
--- | Tweak the @eps@ parameter of the targeting digital line.
+-- | Tweak the @eps@ parameter of the aiming digital line.
 epsIncrHuman :: MonadClientUI m => Bool -> m Slideshow
 epsIncrHuman b = do
   stgtMode <- getsSession stgtMode
@@ -974,7 +974,7 @@ xhairPointerFloor verbose addMoreMsg = do
     if verbose then
       doLook addMoreMsg
     else do
-      --- Flash the targeting line and path.
+      --- Flash the aiming line and path.
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       animFrs <- animate (blid b) pushAndDelay
@@ -1011,7 +1011,7 @@ xhairPointerEnemy verbose addMoreMsg = do
     if verbose then
       doLook addMoreMsg
     else do
-      --- Flash the targeting line and path.
+      --- Flash the aiming line and path.
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       animFrs <- animate (blid b) pushAndDelay

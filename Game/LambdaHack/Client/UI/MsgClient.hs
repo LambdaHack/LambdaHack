@@ -85,7 +85,7 @@ failMsg msg = do
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.
--- The detailed variant is for use in the targeting mode.
+-- The detailed variant is for use in the aiming mode.
 lookAt :: MonadClientUI m
        => Bool       -- ^ detailed?
        -> Text       -- ^ how to start tile description

@@ -250,7 +250,7 @@ keyTranslate "dollar"        = Char '$'
 keyTranslate "parenleft"     = Char '('
 keyTranslate "parenright"    = Char ')'
 keyTranslate "asterisk"      = Char '*'  -- for latop movement keys
-keyTranslate "KP_Multiply"   = KP '*'    -- for keypad targeting
+keyTranslate "KP_Multiply"   = KP '*'    -- for keypad aiming
 keyTranslate "slash"         = Char '/'
 keyTranslate "KP_Divide"     = KP '/'
 keyTranslate "bar"           = Char '|'
@@ -368,7 +368,7 @@ keyTranslateWeb "Insert"     _ = Insert
 keyTranslateWeb "space"      _ = Space
 keyTranslateWeb "Equals"     _ = Char '='
 keyTranslateWeb "Multiply"   False = Char '*'  -- for latop movement keys
-keyTranslateWeb "Multiply"   True = KP '*'     -- for keypad targeting
+keyTranslateWeb "Multiply"   True = KP '*'     -- for keypad aiming
 keyTranslateWeb "Add"        _ = Char '+'
 keyTranslateWeb "Subtract"   _ = Char '-'
 keyTranslateWeb "Divide"     False = Char '/'

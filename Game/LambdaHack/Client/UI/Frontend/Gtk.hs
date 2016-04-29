@@ -94,7 +94,7 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
   -- Take care of the mouse events.
   currentfont <- newIORef f
   Just defDisplay <- displayGetDefault
-  -- TODO: change cursor depending on targeting mode, etc.; hard
+  -- TODO: change cursor depending on aiming mode, etc.; hard
   cursor <- cursorNewForDisplay defDisplay Tcross  -- Target Crosshair Arrow
   sview `on` buttonPressEvent $ do
     liftIO $ resetChanKey (fchanKey rf)

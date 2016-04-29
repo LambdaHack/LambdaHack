@@ -33,7 +33,7 @@ data SessionUI = SessionUI
   { schanF          :: !ChanFrontend       -- ^ connection with the frontend
   , sbinding        :: !Binding            -- ^ binding of keys to commands
   , sconfig         :: !Config
-  , stgtMode        :: !(Maybe TgtMode)    -- ^ targeting mode
+  , stgtMode        :: !(Maybe TgtMode)    -- ^ aiming mode
   , sitemSel        :: !(Maybe (CStore, ItemId))  -- ^ selected item, if any
   , sselected       :: !(ES.EnumSet ActorId)
                                       -- ^ the set of currently selected actors
@@ -56,7 +56,7 @@ data SessionUI = SessionUI
   , sdisplayNeeded  :: !Bool          -- ^ something to display on current level
   }
 
--- | Current targeting mode of a client.
+-- | Current aiming mode of a client.
 newtype TgtMode = TgtMode { tgtLevelId :: LevelId }
   deriving (Show, Eq, Binary)
 

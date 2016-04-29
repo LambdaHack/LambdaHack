@@ -22,7 +22,7 @@ standardKeys = KeyKind
       -- commands. All commands are shown on help screens except debug commands
       -- and macros with empty descriptions.
       -- The order below determines the order on the help screens.
-      -- Remember to put commands that show information (e.g., enter targeting
+      -- Remember to put commands that show information (e.g., enter aiming
       -- mode) first.
 
       -- Main Menu
@@ -141,7 +141,7 @@ standardKeys = KeyKind
 --                                  , object = "wand"
 --                                  , symbol = '/' }])
 
-      -- Targeting
+      -- Aiming
       , ("KP_Multiply", ([CmdTgt], "aim at an enemy", TgtEnemy))
       , ("\\", ([CmdTgt], "", TgtEnemy))
       , ("KP_Divide", ([CmdTgt], "cycle aiming styles", TgtFloor))
@@ -160,7 +160,8 @@ standardKeys = KeyKind
       , ("CTRL-}", ( [CmdTgt]
                    , "set crosshair to the closest stairs down"
                    , XhairStair False ))
-      , ("BackSpace", ([CmdTgt], "reset target/crosshair", TgtClear))
+      , ( "BackSpace"
+        , ([CmdTgt], "clear target/crosshair/chosen item", TgtClear) )
       , ("Escape", ( [CmdTgt, CmdMinimal]
                    , "cancel target/action or open Main Menu"
                    , ByAimMode {notAiming = MainMenu, aiming = Cancel} ))

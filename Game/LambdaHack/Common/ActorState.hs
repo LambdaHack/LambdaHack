@@ -208,7 +208,7 @@ whereTo :: LevelId  -- ^ level of the stairs
         -> Int      -- ^ jump up this many levels
         -> Dungeon  -- ^ current game dungeon
         -> (LevelId, Point)
-                    -- ^ target level and the position of its receiving stairs
+                    -- ^ destination level and the pos of its receiving stairs
 whereTo lid pos k dungeon = assert (k /= 0) $
   let lvl = dungeon EM.! lid
       stairs = (if k < 0 then snd else fst) (lstair lvl)

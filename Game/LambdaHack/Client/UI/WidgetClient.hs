@@ -193,7 +193,7 @@ describeMainKeys = do
   return $! if nullReport report then keys else ""
 
 -- | The prompt is shown after the current message, but not added to history.
--- This is useful, e.g., in targeting mode, not to spam history.
+-- This is useful, e.g., in aiming mode, not to spam history.
 promptToSlideshow :: MonadClientUI m => Msg -> m Slideshow
 promptToSlideshow prompt = overlayToSlideshow prompt mempty
 

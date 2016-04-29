@@ -137,7 +137,7 @@ of non-leader party members. You don't need it, unless your non-leader actors
 can move or fire opportunistically (via innate skills or rare equipment).
 If really needed, you can manually set party tactics with `CTRL-T`
 and you can assign individual targets to party members using the aiming
-and targeting commands listed below.
+commands listed below.
 
         keys            command
         KEYPAD_* or \   aim at an enemy

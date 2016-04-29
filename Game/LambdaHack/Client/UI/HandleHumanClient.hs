@@ -17,13 +17,13 @@ import Game.LambdaHack.Common.Request
 
 -- | The semantics of human player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.
--- Some time cosuming commands are enabled in targeting mode, but cannot be
--- invoked in targeting mode on a remote level (level different than
+-- Some time cosuming commands are enabled in aiming mode, but cannot be
+-- invoked in aiming mode on a remote level (level different than
 -- the level of the leader).
 cmdHumanSem :: MonadClientUI m => HumanCmd -> m (SlideOrCmd RequestUI)
 cmdHumanSem cmd =
   if noRemoteHumanCmd cmd then do
-    -- If in targeting mode, check if the current level is the same
+    -- If in aiming mode, check if the current level is the same
     -- as player level and refuse performing the action otherwise.
     arena <- getArenaUI
     lidV <- viewedLevel

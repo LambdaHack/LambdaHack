@@ -442,7 +442,7 @@ goToXhair :: MonadClientUI m
            => Bool -> Bool -> m (SlideOrCmd RequestAnyAbility)
 goToXhair initialStep run = do
   tgtMode <- getsSession stgtMode
-  -- Movement is legal only outside targeting mode.
+  -- Movement is legal only outside aiming mode.
   if isJust tgtMode then failWith "cannot move in aiming mode"
   else do
     leader <- getLeaderUI
