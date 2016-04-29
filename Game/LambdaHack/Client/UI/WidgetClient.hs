@@ -150,7 +150,7 @@ describeMainKeys = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
-  stgtMode <- getsSession stgtMode
+  saimMode <- getsSession saimMode
   Binding{brevMap} <- askBinding
   Config{configVi, configLaptop} <- askConfig
   xhair <- getsClient sxhair
@@ -177,7 +177,7 @@ describeMainKeys = do
         TPoint{} -> "at position"
         TVector{} -> "with a vector"
       keys | underAI = ""
-           | isNothing stgtMode =
+           | isNothing saimMode =
         "Explore with keypad or keys or mouse: ["
         <> moveKeys
         <> T.intercalate ", "

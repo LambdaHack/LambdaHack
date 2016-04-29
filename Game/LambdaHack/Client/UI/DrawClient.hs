@@ -64,12 +64,12 @@ draw :: MonadClient m
      -> Maybe Point -> Maybe Point
      -> Maybe (PointArray.Array BfsDistance, Maybe [Point])
      -> (Text, Maybe Text) -> (Text, Maybe Text)
-     -> ES.EnumSet ActorId -> Maybe TgtMode -> (Maybe (CStore, ItemId))
+     -> ES.EnumSet ActorId -> Maybe AimMode -> (Maybe (CStore, ItemId))
      -> Bool -> Bool -> Int
      -> m SingleFrame
 draw dm drawnLevelId xhairPos tgtPos bfsmpathRaw
      (xhairDesc, mxhairHP) (targetDesc, mtargetHP)
-     selected stgtMode sitemSel smarkVision smarkSmell swaitTimes = do
+     selected saimMode sitemSel smarkVision smarkSmell swaitTimes = do
   cops <- getsState scops
   mleader <- getsClient _sleader
   s <- getState
@@ -133,10 +133,10 @@ draw dm drawnLevelId xhairPos tgtPos bfsmpathRaw
             maidBody = find (\(_, m) -> pos0 == Actor.bpos m) actorsHere
             (char, attr0) =
               case snd <$> maidBody of
-                _ | isJust stgtMode
+                _ | isJust saimMode
                     && (elem pos0 bline || elem pos0 shiftedBTrajectory) ->
                   ('*', atttrOnPathOrLine)  -- line takes precedence over path
-                _ | isJust stgtMode
+                _ | isJust saimMode
                     && maybe False (elem pos0) mpath ->
                   (';', atttrOnPathOrLine)
                 Just m -> viewActor m
@@ -191,7 +191,7 @@ draw dm drawnLevelId xhairPos tgtPos bfsmpathRaw
              in fits <> ellipsis
       xhairText =
         let n = widthTgt - T.length pathCsr - 8
-        in (if isJust stgtMode then "x-hair>" else "X-hair:")
+        in (if isJust saimMode then "x-hair>" else "X-hair:")
            <+> trimTgtDesc n xhairDesc
       xhairGap = T.replicate (widthTgt - T.length pathCsr
                                         - T.length xhairText) " "

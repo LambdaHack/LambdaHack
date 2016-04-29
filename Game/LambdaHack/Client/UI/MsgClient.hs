@@ -98,8 +98,8 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
-  stgtMode <- getsSession stgtMode
-  let lidV = maybe (blid b) tgtLevelId stgtMode
+  saimMode <- getsSession saimMode
+  let lidV = maybe (blid b) tgtLevelId saimMode
   lvl <- getLevel lidV
   localTime <- getsState $ getLocalTime lidV
   subject <- partAidLeader aid

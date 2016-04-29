@@ -2,7 +2,7 @@
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), emptySessionUI
-  , TgtMode(..), RunParams(..), LastRecord
+  , AimMode(..), RunParams(..), LastRecord
   , toggleMarkVision, toggleMarkSmell
   ) where
 
@@ -33,7 +33,7 @@ data SessionUI = SessionUI
   { schanF          :: !ChanFrontend       -- ^ connection with the frontend
   , sbinding        :: !Binding            -- ^ binding of keys to commands
   , sconfig         :: !Config
-  , stgtMode        :: !(Maybe TgtMode)    -- ^ aiming mode
+  , saimMode        :: !(Maybe AimMode)    -- ^ aiming mode
   , sitemSel        :: !(Maybe (CStore, ItemId))  -- ^ selected item, if any
   , sselected       :: !(ES.EnumSet ActorId)
                                       -- ^ the set of currently selected actors
@@ -57,7 +57,7 @@ data SessionUI = SessionUI
   }
 
 -- | Current aiming mode of a client.
-newtype TgtMode = TgtMode { tgtLevelId :: LevelId }
+newtype AimMode = AimMode { tgtLevelId :: LevelId }
   deriving (Show, Eq, Binary)
 
 -- | Parameters of the current run.
@@ -83,7 +83,7 @@ emptySessionUI sconfig =
     { schanF = ChanFrontend $ const $ error "emptySessionUI: ChanFrontend "
     , sbinding = Binding M.empty [] M.empty
     , sconfig
-    , stgtMode = Nothing
+    , saimMode = Nothing
     , sitemSel = Nothing
     , sselected = ES.empty
     , srunning = Nothing
@@ -112,7 +112,7 @@ toggleMarkSmell s@SessionUI{smarkSmell} = s {smarkSmell = not smarkSmell}
 instance Binary SessionUI where
   put SessionUI{..} = do
     put sconfig
-    put stgtMode
+    put saimMode
     put sitemSel
     put sselected
     put srunning
@@ -127,7 +127,7 @@ instance Binary SessionUI where
     put sdisplayNeeded
   get = do
     sconfig <- get
-    stgtMode <- get
+    saimMode <- get
     sitemSel <- get
     sselected <- get
     srunning <- get

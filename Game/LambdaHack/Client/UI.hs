@@ -130,8 +130,8 @@ humanCommand = do
             let sli = slideshow slides
             mLast <- case sli of
               [] -> do
-                stgtMode <- getsSession stgtMode
-                return $ Left $ isJust stgtMode
+                saimMode <- getsSession saimMode
+                return $ Left $ isJust saimMode
               [sLast] ->
                 -- Avoid displaying the single slide twice.
                 return $ Right sLast

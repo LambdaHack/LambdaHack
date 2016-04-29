@@ -218,12 +218,12 @@ whereTo lid pos k dungeon = assert (k /= 0) $
   in case ascendInBranch dungeon k lid of
     [] | isNothing mindex -> (lid, pos)  -- spell fizzles
     [] -> assert `failure` "no dungeon level to go to" `twith` (lid, pos, k)
-    ln : _ -> let lvlTgt = dungeon EM.! ln
-                  stairsTgt = (if k < 0 then fst else snd) (lstair lvlTgt)
-              in if length stairsTgt < i + 1
+    ln : _ -> let lvlDest = dungeon EM.! ln
+                  stairsDest = (if k < 0 then fst else snd) (lstair lvlDest)
+              in if length stairsDest < i + 1
                  then assert `failure` "no stairs at index"
-                             `twith` (lid, pos, k, ln, stairsTgt, i)
-                 else (ln, stairsTgt !! i)
+                             `twith` (lid, pos, k, ln, stairsDest, i)
+                 else (ln, stairsDest !! i)
 
 -- * The operations below disregard levels other than the current.
 

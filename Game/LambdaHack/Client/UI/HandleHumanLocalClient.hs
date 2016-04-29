@@ -635,7 +635,7 @@ settingsMenuHuman cmdAction = do
 -- | End aiming mode, rejecting the current position.
 cancelHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 cancelHuman = do
-  modifySession $ \sess -> sess {stgtMode = Nothing}
+  modifySession $ \sess -> sess {saimMode = Nothing}
   failWith "target not set"
 
 -- * Accept
@@ -646,7 +646,7 @@ acceptHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 acceptHuman = do
   endAiming
   endAimingMsg
-  modifySession $ \sess -> sess {stgtMode = Nothing}
+  modifySession $ \sess -> sess {saimMode = Nothing}
   return $ Left mempty
 
 -- | End aiming mode, accepting the current position.
@@ -691,12 +691,12 @@ doLook :: MonadClientUI m => Bool -> m Slideshow
 doLook addMoreMsg = do
   Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
   let unknownId = ouniqGroup "unknown space"
-  stgtMode <- getsSession stgtMode
-  case stgtMode of
+  saimMode <- getsSession saimMode
+  case saimMode of
     Nothing -> return mempty
-    Just tgtMode -> do
+    Just aimMode -> do
       leader <- getLeaderUI
-      let lidV = tgtLevelId tgtMode
+      let lidV = tgtLevelId aimMode
       lvl <- getLevel lidV
       xhairPos <- xhairToPos
       per <- getPerFid lidV
@@ -749,8 +749,8 @@ doLook addMoreMsg = do
 moveXhairHuman :: MonadClientUI m => Vector -> Int -> m Slideshow
 moveXhairHuman dir n = do
   leader <- getLeaderUI
-  stgtMode <- getsSession stgtMode
-  let lidV = maybe (assert `failure` leader) tgtLevelId stgtMode
+  saimMode <- getsSession saimMode
+  let lidV = maybe (assert `failure` leader) tgtLevelId saimMode
   Level{lxsize, lysize} <- getLevel lidV
   lpos <- getsState $ bpos . getActorBody leader
   sxhair <- getsClient sxhair
@@ -774,7 +774,7 @@ tgtTgtHuman :: MonadClientUI m => m Slideshow
 tgtTgtHuman = do
   -- (Re)start aiming at the current level.
   lidV <- viewedLevel
-  modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
+  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
   -- Set xhair to the personal target, permanently.
   leader <- getLeaderUI
   tgt <- getsClient $ getTarget leader
@@ -792,11 +792,11 @@ tgtFloorHuman = do
   lpos <- getsState $ bpos . getActorBody leader
   xhairPos <- xhairToPos
   sxhair <- getsClient sxhair
-  stgtMode <- getsSession stgtMode
+  saimMode <- getsSession saimMode
   bsAll <- getsState $ actorAssocs (const True) lidV
   let xhair = fromMaybe lpos xhairPos
       tgt = case sxhair of
-        _ | isNothing stgtMode ->  -- first key press: keep target
+        _ | isNothing saimMode ->  -- first key press: keep target
           sxhair
         TEnemy a True -> TEnemy a False
         TEnemy{} -> TPoint lidV xhair
@@ -809,7 +809,7 @@ tgtFloorHuman = do
           case find (\(_, m) -> Just (bpos m) == xhairPos) bsAll of
             Just (im, _) -> TEnemy im True
             Nothing -> TPoint lidV xhair
-  modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
+  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
   modifyClient $ \cli -> cli {sxhair = tgt}
   doLook False
 
@@ -822,7 +822,7 @@ tgtEnemyHuman = do
   lpos <- getsState $ bpos . getActorBody leader
   xhairPos <- xhairToPos
   sxhair <- getsClient sxhair
-  stgtMode <- getsSession stgtMode
+  saimMode <- getsSession saimMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   bsAll <- getsState $ actorAssocs (const True) lidV
@@ -833,7 +833,7 @@ tgtEnemyHuman = do
                 $ findIndex ((== xhairPos) . Just . bpos . snd) dbs
         in splitAt i dbs
       (permitAnyActor, (lt, gt)) = case sxhair of
-        TEnemy a permit | isJust stgtMode ->  -- pick next enemy
+        TEnemy a permit | isJust saimMode ->  -- pick next enemy
           let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
           in (permit, splitAt (i + 1) dbs)
         TEnemy a permit ->  -- first key press, retarget old enemy
@@ -853,7 +853,7 @@ tgtEnemyHuman = do
         (a, _) : _ -> TEnemy a False
         [] -> sxhair  -- no seen foes in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
-  modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
+  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
   modifyClient $ \cli -> cli {sxhair = tgt}
   doLook False
 
@@ -889,13 +889,13 @@ tgtAscendHuman k = do
             then TPoint nln npos  -- already known as an exit, focus on it
             else sxhairOld  -- unknown, do not reveal
       modifyClient $ \cli -> cli {sxhair}
-      modifySession $ \sess -> sess {stgtMode = Just (TgtMode nln)}
+      modifySession $ \sess -> sess {saimMode = Just (AimMode nln)}
       doLook False
     Nothing ->  -- no stairs in the right direction
       case ascendInBranch dungeon k lidV of
         [] -> failMsg "no more levels in this direction"
         nln : _ -> do
-          modifySession $ \sess -> sess {stgtMode = Just (TgtMode nln)}
+          modifySession $ \sess -> sess {saimMode = Just (AimMode nln)}
           doLook False
 
 -- * EpsIncr
@@ -903,8 +903,8 @@ tgtAscendHuman k = do
 -- | Tweak the @eps@ parameter of the aiming digital line.
 epsIncrHuman :: MonadClientUI m => Bool -> m Slideshow
 epsIncrHuman b = do
-  stgtMode <- getsSession stgtMode
-  if isJust stgtMode
+  saimMode <- getsSession saimMode
+  if isJust saimMode
     then do
       modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
       return mempty
@@ -958,7 +958,7 @@ xhairPointerFloorHuman :: MonadClientUI m => m ()
 xhairPointerFloorHuman = do
   look <- xhairPointerFloor False False
   let !_A = assert (look == mempty `blame` look) ()
-  modifySession $ \sess -> sess {stgtMode = Nothing}
+  modifySession $ \sess -> sess {saimMode = Nothing}
 
 xhairPointerFloor :: MonadClientUI m => Bool -> Bool -> m Slideshow
 xhairPointerFloor verbose addMoreMsg = do
@@ -969,7 +969,7 @@ xhairPointerFloor verbose addMoreMsg = do
      && px < lxsize && py - mapStartY < lysize
   then do
     let sxhair = TPoint lidV $ Point px (py - mapStartY)
-    modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
+    modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
     modifyClient $ \cli -> cli {sxhair}
     if verbose then
       doLook addMoreMsg
@@ -990,7 +990,7 @@ xhairPointerEnemyHuman :: MonadClientUI m => m ()
 xhairPointerEnemyHuman = do
   look <- xhairPointerEnemy False False
   let !_A = assert (look == mempty `blame` look) ()
-  modifySession $ \sess -> sess {stgtMode = Nothing}
+  modifySession $ \sess -> sess {saimMode = Nothing}
 
 xhairPointerEnemy :: MonadClientUI m => Bool -> Bool -> m Slideshow
 xhairPointerEnemy verbose addMoreMsg = do
@@ -1006,7 +1006,7 @@ xhairPointerEnemy verbose addMoreMsg = do
           case find (\(_, m) -> bpos m == newPos) bsAll of
             Just (im, _) -> TEnemy im True
             Nothing -> TPoint lidV newPos
-    modifySession $ \sess -> sess {stgtMode = Just $ TgtMode lidV}
+    modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
     modifyClient $ \cli -> cli {sxhair}
     if verbose then
       doLook addMoreMsg

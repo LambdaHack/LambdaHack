@@ -308,10 +308,10 @@ lookAtMove :: MonadClientUI m => ActorId -> m ()
 lookAtMove aid = do
   body <- getsState $ getActorBody aid
   side <- getsClient sside
-  tgtMode <- getsSession stgtMode
+  aimMode <- getsSession saimMode
   when (not (bproj body)
         && bfid body == side
-        && isNothing tgtMode) $ do  -- aiming does a more extensive look
+        && isNothing aimMode) $ do  -- aiming does a more extensive look
     lookMsg <- lookAt False "" True (bpos body) aid ""
     msgAdd lookMsg
   fact <- getsState $ (EM.! bfid body) . sfactionD

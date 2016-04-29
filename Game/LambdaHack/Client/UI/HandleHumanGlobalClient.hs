@@ -150,8 +150,8 @@ byAimModeHuman :: MonadClientUI m
                => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
                -> m (SlideOrCmd RequestUI)
 byAimModeHuman cmdNotAimingM cmdAimingM = do
-  tgtMode <- getsSession stgtMode
-  if isNothing tgtMode then cmdNotAimingM else cmdAimingM
+  aimMode <- getsSession saimMode
+  if isNothing aimMode then cmdNotAimingM else cmdAimingM
 
 -- * ByItemMode
 
@@ -441,9 +441,9 @@ moveOnceToXhairHuman = goToXhair True False
 goToXhair :: MonadClientUI m
            => Bool -> Bool -> m (SlideOrCmd RequestAnyAbility)
 goToXhair initialStep run = do
-  tgtMode <- getsSession stgtMode
+  aimMode <- getsSession saimMode
   -- Movement is legal only outside aiming mode.
-  if isJust tgtMode then failWith "cannot move in aiming mode"
+  if isJust aimMode then failWith "cannot move in aiming mode"
   else do
     leader <- getLeaderUI
     b <- getsState $ getActorBody leader
@@ -1050,7 +1050,7 @@ tacticHuman = do
 automateHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 automateHuman = do
   -- BFS is not updated while automated, which would lead to corruption.
-  modifySession $ \sess -> sess {stgtMode = Nothing}
+  modifySession $ \sess -> sess {saimMode = Nothing}
   go <- displayMore ColorBW "Ceding control to AI (press any key to regain)."
   if not go
     then failWith "automation canceled"

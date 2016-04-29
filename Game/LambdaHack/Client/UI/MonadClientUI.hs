@@ -203,10 +203,10 @@ drawBaseFrame dm lid = do
   tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
   sitemSel <- getsSession sitemSel
   xhairDesc <- targetDescXhair
-  SessionUI{sselected, stgtMode, smarkVision, smarkSmell, swaitTimes}
+  SessionUI{sselected, saimMode, smarkVision, smarkSmell, swaitTimes}
     <- getSession
   draw dm lid xhairPos tgtPos bfsmpath xhairDesc tgtDesc
-       sselected stgtMode sitemSel smarkVision smarkSmell swaitTimes
+       sselected saimMode sitemSel smarkVision smarkSmell swaitTimes
 
 drawBaseFrameViewed :: MonadClientUI m => ColorMode -> m SingleFrame
 drawBaseFrameViewed dm = do
@@ -339,8 +339,8 @@ getArenaUI = do
 viewedLevel :: MonadClientUI m => m LevelId
 viewedLevel = do
   arena <- getArenaUI
-  stgtMode <- getsSession stgtMode
-  return $! maybe arena tgtLevelId stgtMode
+  saimMode <- getsSession saimMode
+  return $! maybe arena tgtLevelId saimMode
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Text, Maybe Text)
 targetDesc target = do
