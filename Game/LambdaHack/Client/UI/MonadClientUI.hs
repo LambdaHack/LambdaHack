@@ -448,7 +448,7 @@ msgPromptAI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
-  return $! if underAI then "[press ESC for Main Menu]" else ""
+  return $! if underAI then "[press any key for Main Menu]" else ""
 
 defaultHistory :: MonadClient m => Int -> m History
 defaultHistory configHistoryMax = liftIO $ do

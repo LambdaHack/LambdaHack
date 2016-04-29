@@ -36,6 +36,7 @@ import Game.LambdaHack.Client.UI.HandleHumanClient
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
@@ -104,6 +105,7 @@ humanCommand = do
         lastPlay <- getsSession slastPlay
         km <- promptGetKey over False []
         -- Messages shown, so update history and reset current report.
+        lastReport <- getsSession sreport
         when (null lastPlay) recordHistory
         abortOrCmd <- do
           -- Look up the key.
@@ -131,9 +133,8 @@ humanCommand = do
             -- Analyse the obtained slides.
             let sli = slideshow slides
             mLast <- case sli of
-              [] -> do
-                saimMode <- getsSession saimMode
-                return $ Left $ isJust saimMode
+              [] ->
+                return $ Left $ nullReport lastReport && mover /= Left True
               [sLast] ->
                 -- Avoid displaying the single slide twice.
                 return $ Right sLast
