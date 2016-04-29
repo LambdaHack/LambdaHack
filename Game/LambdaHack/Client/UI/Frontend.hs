@@ -3,7 +3,7 @@
 -- using one of the available raw frontends and derived operations.
 module Game.LambdaHack.Client.UI.Frontend
   ( -- * Connection types
-    FrontReq(..), ChanFrontend(..), KMP, kmpKeyMod, kmpPointer
+    FrontReq(..), ChanFrontend(..), KMP(..)
     -- * Re-exported part of the raw frontend
   , frontendName
     -- * Derived operations
@@ -39,6 +39,8 @@ data FrontReq :: * -> * where
     -- ^ inspect the fkeyPressed MVar
   FrontDiscard :: FrontReq ()
     -- ^ discard a key in the queue; fail if queue empty
+  FrontAdd :: KMP -> FrontReq ()
+    -- ^ add a key to the queue
   FrontAutoYes :: Bool -> FrontReq ()
     -- ^ set in the frontend that it should auto-answer prompts
   FrontShutdown :: FrontReq ()
@@ -85,6 +87,7 @@ fchanFrontend sdebugCli fs@FSession{..} rf =
       mkey <- STM.atomically $ STM.tryReadTQueue (fchanKey rf)
       when (isNothing mkey) $
         assert `failure` "empty queue of pressed keys" `twith` ()
+    FrontAdd kmp -> STM.atomically $ STM.writeTQueue (fchanKey rf) kmp
     FrontAutoYes b -> writeIORef fautoYesRef b
     FrontShutdown -> do
       cancel fasyncTimeout

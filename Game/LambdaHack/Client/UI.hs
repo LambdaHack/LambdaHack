@@ -43,6 +43,7 @@ import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
@@ -54,13 +55,14 @@ queryUI = do
   fact <- getsState $ (EM.! side) . sfactionD
   if isAIFact fact then do
     -- TODO: allow any action that does not take time, e.g., changing
-    -- leaders, levels, moving xhair. Only ESC then stops AI.
+    -- leaders, levels, moving xhair. Only ESC and mouse then stops AI.
     keyPressed <- anyKeyPressed
     if keyPressed then do
       discardPressedKey
+      addPressedKey KMP {kmpKeyMod = K.escKM, kmpPointer = originPoint}
       if fleaderMode (gplayer fact) /= LeaderNull then
         return ReqUIAutomate  -- stop AI
-      else return ReqUINop  -- somehow stop? restart?
+      else return ReqUINop  -- TODO: somehow stop? restart?
     else return ReqUINop
   else do
     let (leader, mtgt) = fromMaybe (assert `failure` fact) $ gleader fact
