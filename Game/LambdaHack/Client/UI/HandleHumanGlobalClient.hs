@@ -965,7 +965,9 @@ mainMenuHuman cmdAction = do
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
       ov = toOverlay menuOvLines
-  menuIxMain <- getsSession smenuIxMain
+  isNoConfirms <- isNoConfirmsGame
+  -- TODO: pick the first game that was not yet won
+  menuIxMain <- if isNoConfirms then return 4 else getsSession smenuIxMain
   (ekm, pointer) <- displayChoiceScreen True menuIxMain [(ov, kyxs)] []
   modifySession $ \sess -> sess {smenuIxMain = pointer}
   case ekm of
