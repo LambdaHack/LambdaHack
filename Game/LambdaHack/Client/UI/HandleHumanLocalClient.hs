@@ -15,11 +15,11 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   , markVisionHuman, markSmellHuman, markSuspectHuman, settingsMenuHuman
     -- * Commands specific to aiming
   , cancelHuman, acceptHuman, tgtClearHuman
-  , moveXhairHuman, xhairTgtHuman, aimFloorHuman, aimEnemyHuman
+  , moveXhairHuman, aimTgtHuman, aimFloorHuman, aimEnemyHuman
   , aimAscendHuman, epsIncrHuman
   , xhairUnknownHuman, xhairItemHuman, xhairStairHuman
   , xhairPointerFloorHuman, xhairPointerEnemyHuman
-  , tgtPointerFloorHuman, tgtPointerEnemyHuman
+  , aimPointerFloorHuman, aimPointerEnemyHuman
   ) where
 
 import Prelude ()
@@ -770,8 +770,8 @@ moveXhairHuman dir n = do
 
 -- | Start aiming, setting xhair to personal leader' target.
 -- To be used in conjuction with other commands.
-xhairTgtHuman :: MonadClientUI m => m Slideshow
-xhairTgtHuman = do
+aimTgtHuman :: MonadClientUI m => m Slideshow
+aimTgtHuman = do
   -- (Re)start aiming at the current level.
   lidV <- viewedLevel
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
@@ -956,12 +956,12 @@ xhairStairHuman up = do
 
 xhairPointerFloorHuman :: MonadClientUI m => m ()
 xhairPointerFloorHuman = do
-  look <- xhairPointerFloor False False
+  look <- xhairPointerFloor False
   let !_A = assert (look == mempty `blame` look) ()
   modifySession $ \sess -> sess {saimMode = Nothing}
 
-xhairPointerFloor :: MonadClientUI m => Bool -> Bool -> m Slideshow
-xhairPointerFloor verbose addMoreMsg = do
+xhairPointerFloor :: MonadClientUI m => Bool -> m Slideshow
+xhairPointerFloor verbose = do
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
   Point{..} <- getsSession spointer
@@ -972,7 +972,7 @@ xhairPointerFloor verbose addMoreMsg = do
     modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
     modifyClient $ \cli -> cli {sxhair}
     if verbose then
-      doLook addMoreMsg
+      doLook False
     else do
       --- Flash the aiming line and path.
       leader <- getLeaderUI
@@ -988,12 +988,12 @@ xhairPointerFloor verbose addMoreMsg = do
 
 xhairPointerEnemyHuman :: MonadClientUI m => m ()
 xhairPointerEnemyHuman = do
-  look <- xhairPointerEnemy False False
+  look <- xhairPointerEnemy False
   let !_A = assert (look == mempty `blame` look) ()
   modifySession $ \sess -> sess {saimMode = Nothing}
 
-xhairPointerEnemy :: MonadClientUI m => Bool -> Bool -> m Slideshow
-xhairPointerEnemy verbose addMoreMsg = do
+xhairPointerEnemy :: MonadClientUI m => Bool -> m Slideshow
+xhairPointerEnemy verbose = do
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
   Point{..} <- getsSession spointer
@@ -1009,7 +1009,7 @@ xhairPointerEnemy verbose addMoreMsg = do
     modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
     modifyClient $ \cli -> cli {sxhair}
     if verbose then
-      doLook addMoreMsg
+      doLook False
     else do
       --- Flash the aiming line and path.
       leader <- getLeaderUI
@@ -1021,12 +1021,12 @@ xhairPointerEnemy verbose addMoreMsg = do
     stopPlayBack
     return mempty
 
--- * TgtPointerFloor
+-- * AimPointerFloor
 
-tgtPointerFloorHuman :: MonadClientUI m => m Slideshow
-tgtPointerFloorHuman = xhairPointerFloor True False
+aimPointerFloorHuman :: MonadClientUI m => m Slideshow
+aimPointerFloorHuman = xhairPointerFloor True
 
--- * TgtPointerEnemy
+-- * AimPointerEnemy
 
-tgtPointerEnemyHuman :: MonadClientUI m => m Slideshow
-tgtPointerEnemyHuman = xhairPointerEnemy True False
+aimPointerEnemyHuman :: MonadClientUI m => m Slideshow
+aimPointerEnemyHuman = xhairPointerEnemy True

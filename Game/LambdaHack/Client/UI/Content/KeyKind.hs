@@ -64,7 +64,7 @@ defaultCmdLMB =
                ["MiddleButtonPress", "CTRL-semicolon", "CTRL-period", "V"])
           , (CaPercentSeen, Macro ["CTRL-?", "CTRL-period", "V"]) ]
       , aiming = ByArea $ common ++  -- aiming mode
-          [ (CaMap, TgtPointerEnemy)
+          [ (CaMap, AimPointerEnemy)
           , (CaPercentSeen, XhairStair True) ] } )
  where
   common =
@@ -93,7 +93,7 @@ defaultCmdRMB =
           , (CaPercentSeen, Macro ["'", "CTRL-?", "CTRL-period", "'", "V"])
           , (CaXhairDesc, AimFloor) ]
       , aiming = ByArea $ common ++
-          [ (CaMap, ComposeIfLeft TgtPointerEnemy (projectICmd flingTs))
+          [ (CaMap, ComposeIfLeft AimPointerEnemy (projectICmd flingTs))
           , (CaXhairDesc, (projectICmd flingTs))
           , (CaPercentSeen, XhairStair False) ] } )
  where
@@ -114,7 +114,7 @@ projectI :: [Trigger] -> CmdTriple
 projectI ts = ([CmdItem], descTs ts, projectICmd ts)
 
 projectA :: [Trigger] -> CmdTriple
-projectA ts = replaceCmd (ByAimMode { notAiming = XhairTgt
+projectA ts = replaceCmd (ByAimMode { notAiming = AimTgt
                                     , aiming = projectICmd ts }) (projectI ts)
 
 flingTs :: [Trigger]

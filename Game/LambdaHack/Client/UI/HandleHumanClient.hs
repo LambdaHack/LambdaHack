@@ -94,7 +94,7 @@ cmdAction cmd = case cmd of
   Accept -> acceptHuman
   TgtClear -> Left <$> tgtClearHuman
   MoveXhair v k -> Left <$> moveXhairHuman v k
-  XhairTgt -> Left <$> xhairTgtHuman
+  AimTgt -> Left <$> aimTgtHuman
   AimFloor -> Left <$> aimFloorHuman
   AimEnemy -> Left <$> aimEnemyHuman
   AimAscend k -> Left <$> aimAscendHuman k
@@ -104,8 +104,8 @@ cmdAction cmd = case cmd of
   XhairStair up -> Left <$> xhairStairHuman up
   XhairPointerFloor -> addNoSlides xhairPointerFloorHuman
   XhairPointerEnemy -> addNoSlides xhairPointerEnemyHuman
-  TgtPointerFloor -> Left <$> tgtPointerFloorHuman
-  TgtPointerEnemy -> Left <$> tgtPointerEnemyHuman
+  AimPointerFloor -> Left <$> aimPointerFloorHuman
+  AimPointerEnemy -> Left <$> aimPointerEnemyHuman
 
 addNoSlides :: Monad m => m () -> m (SlideOrCmd RequestUI)
 addNoSlides cmdCli = cmdCli >> return (Left mempty)

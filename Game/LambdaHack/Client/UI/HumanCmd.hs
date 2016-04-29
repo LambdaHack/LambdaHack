@@ -117,7 +117,7 @@ data HumanCmd =
   | Accept
   | TgtClear
   | MoveXhair !Vector !Int
-  | XhairTgt
+  | AimTgt
   | AimFloor
   | AimEnemy
   | AimAscend !Int
@@ -127,8 +127,8 @@ data HumanCmd =
   | XhairStair !Bool
   | XhairPointerFloor
   | XhairPointerEnemy
-  | TgtPointerFloor
-  | TgtPointerEnemy
+  | AimPointerFloor
+  | AimPointerEnemy
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance NFData HumanCmd
