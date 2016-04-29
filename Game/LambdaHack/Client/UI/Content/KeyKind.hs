@@ -71,7 +71,7 @@ defaultCmdLMB =
     [ (CaMessage, History)
     , (CaMapLeader, getAscendCmd)
     , (CaArenaName, ByAimMode {notAiming = MainMenu, aiming = Cancel})
-    , (CaXhairDesc, TgtEnemy)  -- inits aiming and then cycles enemies
+    , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
     , (CaLeaderStatus, ChooseItem $ MStore COrgan)
     , (CaTargetDesc, ChooseItem $ MStore CInv) ]
@@ -91,7 +91,7 @@ defaultCmdRMB =
           , (CaMap, Macro
                ["MiddleButtonPress", "CTRL-colon", "CTRL-period", "V"])
           , (CaPercentSeen, Macro ["'", "CTRL-?", "CTRL-period", "'", "V"])
-          , (CaXhairDesc, TgtFloor) ]
+          , (CaXhairDesc, AimFloor) ]
       , aiming = ByArea $ common ++
           [ (CaMap, ComposeIfLeft TgtPointerEnemy (projectICmd flingTs))
           , (CaXhairDesc, (projectICmd flingTs))
@@ -114,7 +114,7 @@ projectI :: [Trigger] -> CmdTriple
 projectI ts = ([CmdItem], descTs ts, projectICmd ts)
 
 projectA :: [Trigger] -> CmdTriple
-projectA ts = replaceCmd (ByAimMode { notAiming = TgtTgt
+projectA ts = replaceCmd (ByAimMode { notAiming = XhairTgt
                                     , aiming = projectICmd ts }) (projectI ts)
 
 flingTs :: [Trigger]
@@ -139,7 +139,7 @@ getAscendCmd = ByAimMode
            , TriggerFeature { verb = "escape"
                             , object = "dungeon"
                             , feature = TK.Cause (IK.Escape 1) } ])
-  , aiming = TgtAscend 1 }
+  , aiming = AimAscend 1 }
 
 getAscend :: Text -> CmdTriple
 getAscend t = ([CmdMove, CmdItem], t, getAscendCmd)
@@ -156,7 +156,7 @@ descendDropCmd = ByAimMode
                             , object = "dungeon"
                             , feature = TK.Cause (IK.Escape (-1)) } ])
         (MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False)
-  , aiming = TgtAscend (-1) }
+  , aiming = AimAscend (-1) }
 
 descendDrop :: Text -> CmdTriple
 descendDrop t = ([CmdMove, CmdItem], t, descendDropCmd)

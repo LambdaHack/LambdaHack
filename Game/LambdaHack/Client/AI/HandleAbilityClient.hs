@@ -63,9 +63,9 @@ actionStrategy aid = do
   body <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  condTgtEnemyPresent <- condTgtEnemyPresentM aid
-  condTgtEnemyRemembered <- condTgtEnemyRememberedM aid
-  condTgtEnemyAdjFriend <- condTgtEnemyAdjFriendM aid
+  condAimEnemyPresent <- condAimEnemyPresentM aid
+  condAimEnemyRemembered <- condAimEnemyRememberedM aid
+  condAimEnemyAdjFriend <- condAimEnemyAdjFriendM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
   threatDistL <- threatDistList aid
   condHpTooLow <- condHpTooLowM aid
@@ -119,7 +119,7 @@ actionStrategy aid = do
               -- may return via different stairs
           , condOnTriggerable
             && ((condNotCalmEnough || condHpTooLow)
-                && condThreatNearby && not condTgtEnemyPresent
+                && condThreatNearby && not condAimEnemyPresent
                 || condMeleeBad && condThreatAdj) )
         , ( [AbDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
@@ -134,12 +134,12 @@ actionStrategy aid = do
           , condAnyFoeAdj
             || not (abInMaxSkill AbDisplace)  -- melee friends, not displace
                && fleaderMode (gplayer fact) == LeaderNull  -- not restrained
-               && condTgtEnemyPresent )  -- excited
+               && condAimEnemyPresent )  -- excited
         , ( [AbTrigger], (toAny :: ToAny 'AbTrigger)
             <$> trigger aid False
           , condOnTriggerable && not condDesirableFloorItem
             && (lidExplored || condEnoughGear)
-            && not condTgtEnemyPresent )
+            && not condAimEnemyPresent )
         , ( [AbMove]
           , flee aid fleeL
           , condMeleeBad && not condFastThreatAdj
@@ -168,24 +168,24 @@ actionStrategy aid = do
         , ( [AbProject]  -- for high-value target, shoot even in melee
           , stratToFreq 2 $ (toAny :: ToAny 'AbProject)
             <$> projectItem aid
-          , condTgtEnemyPresent && condCanProject && not condOnTriggerable )
+          , condAimEnemyPresent && condCanProject && not condOnTriggerable )
         , ( [AbApply]
           , stratToFreq 2 $ (toAny :: ToAny 'AbApply)
             <$> applyItem aid ApplyAll  -- use any potion or scroll
-          , (condTgtEnemyPresent || condThreatNearby)  -- can affect enemies
+          , (condAimEnemyPresent || condThreatNearby)  -- can affect enemies
             && not condOnTriggerable )
         , ( [AbMove]
-          , stratToFreq (if | not condTgtEnemyPresent ->
+          , stratToFreq (if | not condAimEnemyPresent ->
                               3  -- if enemy only remembered, investigate anyway
                             | condTgtNonmoving ->
                               0
-                            | condTgtEnemyAdjFriend ->
+                            | condAimEnemyAdjFriend ->
                               1000  -- friends probably pummeled, go to help
                             | otherwise ->
                               100)
             $ chase aid True (condMeleeBad && condThreatNearby
                               && not aInAmbient && not actorShines)
-          , (condTgtEnemyPresent || condTgtEnemyRemembered)
+          , (condAimEnemyPresent || condAimEnemyRemembered)
             && not (condDesirableFloorItem && not condThreatAtHand)
             && abInMaxSkill AbMelee
             && not condNoUsableWeapon )
@@ -205,7 +205,7 @@ actionStrategy aid = do
             <$> unEquipItems aid  -- late, because these items not bad
           , True )
         , ( [AbMove]
-          , chase aid True (condTgtEnemyPresent
+          , chase aid True (condAimEnemyPresent
                             -- Don't keep hiding in darkness if hit right now,
                             -- unless can't melee at all.
                             && not (heavilyDistressed
@@ -294,7 +294,7 @@ equipItems aid = do
   shaAssocs <- fullAssocsClient aid [CSha]
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condLightBetrays <- condLightBetraysM aid
-  condTgtEnemyPresent <- condTgtEnemyPresentM aid
+  condAimEnemyPresent <- condAimEnemyPresentM aid
   let improve :: CStore
               -> (Int, [(ItemId, Int, CStore, CStore)])
               -> ( IK.EqpSlot
@@ -316,7 +316,7 @@ equipItems aid = do
       -- items should be removed in yieldUnneeded earlier or soon after.
       filterNeeded (_, itemFull) =
         not $ unneeded cops condAnyFoeAdj condLightBetrays
-                       condTgtEnemyPresent (not calmE)
+                       condAimEnemyPresent (not calmE)
                        body activeItems fact itemFull
       bestThree = bestByEqpSlot (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded invAssocs)
@@ -349,7 +349,7 @@ yieldUnneeded aid = do
   eqpAssocs <- fullAssocsClient aid [CEqp]
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condLightBetrays <- condLightBetraysM aid
-  condTgtEnemyPresent <- condTgtEnemyPresentM aid
+  condAimEnemyPresent <- condAimEnemyPresentM aid
       -- Here AI hides from the human player the Ring of Speed And Bleeding,
       -- which is a bit harsh, but fair. However any subsequent such
       -- rings will not be picked up at all, so the human player
@@ -361,7 +361,7 @@ yieldUnneeded aid = do
         in if | harmful cops body activeItems fact itemEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, CInv)]
               | hinders condAnyFoeAdj condLightBetrays
-                        condTgtEnemyPresent (not calmE)
+                        condAimEnemyPresent (not calmE)
                         body activeItems itemEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, csha)]
               | otherwise -> []
@@ -383,7 +383,7 @@ unEquipItems aid = do
   shaAssocs <- fullAssocsClient aid [CSha]
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condLightBetrays <- condLightBetraysM aid
-  condTgtEnemyPresent <- condTgtEnemyPresentM aid
+  condAimEnemyPresent <- condAimEnemyPresentM aid
       -- Here AI hides from the human player the Ring of Speed And Bleeding,
       -- which is a bit harsh, but fair. However any subsequent such
       -- rings will not be picked up at all, so the human player
@@ -424,7 +424,7 @@ unEquipItems aid = do
       worseThanSha vEOrI ((vSha, _) : _) = vEOrI < vSha
       filterNeeded (_, itemFull) =
         not $ unneeded cops condAnyFoeAdj condLightBetrays
-                       condTgtEnemyPresent (not calmE)
+                       condAimEnemyPresent (not calmE)
                        body activeItems fact itemFull
       bestThree =
         bestByEqpSlot eqpAssocs invAssocs (filter filterNeeded shaAssocs)
@@ -478,11 +478,11 @@ unneeded :: Kind.COps -> Bool -> Bool -> Bool -> Bool
          -> Actor -> [ItemFull] -> Faction -> ItemFull
          -> Bool
 unneeded cops condAnyFoeAdj condLightBetrays
-         condTgtEnemyPresent condNotCalmEnough
+         condAimEnemyPresent condNotCalmEnough
          body activeItems fact itemFull =
   harmful cops body activeItems fact itemFull
   || hinders condAnyFoeAdj condLightBetrays
-             condTgtEnemyPresent condNotCalmEnough
+             condAimEnemyPresent condNotCalmEnough
              body activeItems itemFull
   || let calmE = calmEnough body activeItems  -- unneeded risk
          itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull

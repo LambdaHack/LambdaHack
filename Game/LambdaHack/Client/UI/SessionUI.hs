@@ -57,7 +57,7 @@ data SessionUI = SessionUI
   }
 
 -- | Current aiming mode of a client.
-newtype AimMode = AimMode { tgtLevelId :: LevelId }
+newtype AimMode = AimMode { aimLevelId :: LevelId }
   deriving (Show, Eq, Binary)
 
 -- | Parameters of the current run.

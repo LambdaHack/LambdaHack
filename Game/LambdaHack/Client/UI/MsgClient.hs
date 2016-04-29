@@ -99,7 +99,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
   saimMode <- getsSession saimMode
-  let lidV = maybe (blid b) tgtLevelId saimMode
+  let lidV = maybe (blid b) aimLevelId saimMode
   lvl <- getLevel lidV
   localTime <- getsState $ getLocalTime lidV
   subject <- partAidLeader aid

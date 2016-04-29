@@ -60,7 +60,7 @@ standardKeys = KeyKind
                               , feature = TK.Cause (IK.Ascend 10) }]
         in ("CTRL-<", ([CmdInternal], descTs triggerAscend10 , ByAimMode
               { notAiming = TriggerTile triggerAscend10
-              , aiming = TgtAscend 10 }))
+              , aiming = AimAscend 10 }))
       , (">", addCmdCategory CmdMinimal $ descendDrop "descend or drop items")
       , ("d", descendDrop "")
       , ("period", addCmdCategory CmdInternal $ descendDrop "")
@@ -70,7 +70,7 @@ standardKeys = KeyKind
                               , feature = TK.Cause (IK.Ascend (-10)) }]
         in ("CTRL->", ([CmdInternal], descTs triggerAscendMinus10, ByAimMode
              { notAiming = TriggerTile triggerAscendMinus10
-             , aiming = TgtAscend (-10) }))
+             , aiming = AimAscend (-10) }))
       , ("semicolon", ( [CmdMove]
                       , "go to crosshair for 100 steps"
                       , Macro ["CTRL-semicolon", "CTRL-period", "V"] ))
@@ -142,10 +142,10 @@ standardKeys = KeyKind
 --                                  , symbol = '/' }])
 
       -- Aiming
-      , ("KP_Multiply", ([CmdAim], "aim at an enemy", TgtEnemy))
-      , ("\\", ([CmdAim], "", TgtEnemy))
-      , ("KP_Divide", ([CmdAim], "cycle aiming styles", TgtFloor))
-      , ("|", ([CmdAim], "", TgtFloor))
+      , ("KP_Multiply", ([CmdAim], "aim at an enemy", AimEnemy))
+      , ("\\", ([CmdAim], "", AimEnemy))
+      , ("KP_Divide", ([CmdAim], "cycle aiming styles", AimFloor))
+      , ("|", ([CmdAim], "", AimFloor))
       , ("+", ([CmdAim, CmdMinimal], "swerve the aiming line", EpsIncr True))
       , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
       , ("CTRL-?", ( [CmdAim]

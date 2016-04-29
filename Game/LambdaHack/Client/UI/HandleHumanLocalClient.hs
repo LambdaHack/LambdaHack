@@ -15,8 +15,8 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   , markVisionHuman, markSmellHuman, markSuspectHuman, settingsMenuHuman
     -- * Commands specific to aiming
   , cancelHuman, acceptHuman, tgtClearHuman
-  , moveXhairHuman, tgtTgtHuman, tgtFloorHuman, tgtEnemyHuman
-  , tgtAscendHuman, epsIncrHuman
+  , moveXhairHuman, xhairTgtHuman, aimFloorHuman, aimEnemyHuman
+  , aimAscendHuman, epsIncrHuman
   , xhairUnknownHuman, xhairItemHuman, xhairStairHuman
   , xhairPointerFloorHuman, xhairPointerEnemyHuman
   , tgtPointerFloorHuman, tgtPointerEnemyHuman
@@ -696,7 +696,7 @@ doLook addMoreMsg = do
     Nothing -> return mempty
     Just aimMode -> do
       leader <- getLeaderUI
-      let lidV = tgtLevelId aimMode
+      let lidV = aimLevelId aimMode
       lvl <- getLevel lidV
       xhairPos <- xhairToPos
       per <- getPerFid lidV
@@ -750,7 +750,7 @@ moveXhairHuman :: MonadClientUI m => Vector -> Int -> m Slideshow
 moveXhairHuman dir n = do
   leader <- getLeaderUI
   saimMode <- getsSession saimMode
-  let lidV = maybe (assert `failure` leader) tgtLevelId saimMode
+  let lidV = maybe (assert `failure` leader) aimLevelId saimMode
   Level{lxsize, lysize} <- getLevel lidV
   lpos <- getsState $ bpos . getActorBody leader
   sxhair <- getsClient sxhair
@@ -766,12 +766,12 @@ moveXhairHuman dir n = do
     modifyClient $ \cli -> cli {sxhair = tgt}
     doLook False
 
--- * TgtLevel
+-- * XHairTgt
 
 -- | Start aiming, setting xhair to personal leader' target.
 -- To be used in conjuction with other commands.
-tgtTgtHuman :: MonadClientUI m => m Slideshow
-tgtTgtHuman = do
+xhairTgtHuman :: MonadClientUI m => m Slideshow
+xhairTgtHuman = do
   -- (Re)start aiming at the current level.
   lidV <- viewedLevel
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
@@ -781,12 +781,12 @@ tgtTgtHuman = do
   modifyClient $ \cli -> cli {sxhair = fromMaybe (sxhair cli) tgt}
   doLook False
 
--- * TgtFloor
+-- * AimFloor
 
 -- | Cycle aiming mode. Do not change position of the xhair,
 -- switch among things at that position.
-tgtFloorHuman :: MonadClientUI m => m Slideshow
-tgtFloorHuman = do
+aimFloorHuman :: MonadClientUI m => m Slideshow
+aimFloorHuman = do
   lidV <- viewedLevel
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
@@ -813,10 +813,10 @@ tgtFloorHuman = do
   modifyClient $ \cli -> cli {sxhair = tgt}
   doLook False
 
--- * TgtEnemy
+-- * AimEnemy
 
-tgtEnemyHuman :: MonadClientUI m => m Slideshow
-tgtEnemyHuman = do
+aimEnemyHuman :: MonadClientUI m => m Slideshow
+aimEnemyHuman = do
   lidV <- viewedLevel
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
@@ -857,12 +857,12 @@ tgtEnemyHuman = do
   modifyClient $ \cli -> cli {sxhair = tgt}
   doLook False
 
--- * TgtAscend
+-- * AimAscend
 
 -- | Change the displayed level in aiming mode to (at most)
 -- k levels shallower. Enters aiming mode, if not already in one.
-tgtAscendHuman :: MonadClientUI m => Int -> m Slideshow
-tgtAscendHuman k = do
+aimAscendHuman :: MonadClientUI m => Int -> m Slideshow
+aimAscendHuman k = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
   sxhairOld <- getsClient sxhair

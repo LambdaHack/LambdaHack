@@ -1,9 +1,9 @@
 -- | Semantics of abilities in terms of actions and the AI procedure
 -- for picking the best action for an actor.
 module Game.LambdaHack.Client.AI.ConditionClient
-  ( condTgtEnemyPresentM
-  , condTgtEnemyRememberedM
-  , condTgtEnemyAdjFriendM
+  ( condAimEnemyPresentM
+  , condAimEnemyRememberedM
+  , condAimEnemyAdjFriendM
   , condTgtNonmovingM
   , condAnyFoeAdjM
   , condHpTooLowM
@@ -59,16 +59,16 @@ import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | Require that the target enemy is visible by the party.
-condTgtEnemyPresentM :: MonadClient m => ActorId -> m Bool
-condTgtEnemyPresentM aid = do
+condAimEnemyPresentM :: MonadClient m => ActorId -> m Bool
+condAimEnemyPresentM aid = do
   btarget <- getsClient $ getTarget aid
   return $! case btarget of
     Just (TEnemy _ permit) -> not permit
     _ -> False
 
 -- | Require that the target enemy is remembered on the actor's level.
-condTgtEnemyRememberedM :: MonadClient m => ActorId -> m Bool
-condTgtEnemyRememberedM aid = do
+condAimEnemyRememberedM :: MonadClient m => ActorId -> m Bool
+condAimEnemyRememberedM aid = do
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
   return $! case btarget of
@@ -76,8 +76,8 @@ condTgtEnemyRememberedM aid = do
     _ -> False
 
 -- | Require that the target enemy is adjacent to at least one friend.
-condTgtEnemyAdjFriendM :: MonadClient m => ActorId -> m Bool
-condTgtEnemyAdjFriendM aid = do
+condAimEnemyAdjFriendM :: MonadClient m => ActorId -> m Bool
+condAimEnemyAdjFriendM aid = do
   btarget <- getsClient $ getTarget aid
   case btarget of
     Just (TEnemy enemy _) -> do
@@ -210,7 +210,7 @@ benAvailableItems aid permitted cstores = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   condAnyFoeAdj <- condAnyFoeAdjM aid
   condLightBetrays <- condLightBetraysM aid
-  condTgtEnemyPresent <- condTgtEnemyPresentM aid
+  condAimEnemyPresent <- condAimEnemyPresentM aid
   condNotCalmEnough <- condNotCalmEnoughM aid
   let ben cstore bag =
         [ ((benefit, (k, cstore)), (iid, itemFull))
@@ -218,7 +218,7 @@ benAvailableItems aid permitted cstores = do
         , let itemFull = itemToF iid kit
               benefit = totalUsefulness cops b activeItems fact itemFull
               hind = hinders condAnyFoeAdj condLightBetrays
-                             condTgtEnemyPresent condNotCalmEnough
+                             condAimEnemyPresent condNotCalmEnough
                              b activeItems itemFull
         , permitted (fst <$> benefit) itemFull b activeItems
           && (cstore /= CEqp || hind) ]
@@ -232,7 +232,7 @@ benAvailableItems aid permitted cstores = do
 -- TODO: also take into account dynamic lights *not* wielded by the actor
 hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> [ItemFull] -> ItemFull
         -> Bool
-hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
+hinders condAnyFoeAdj condLightBetrays condAimEnemyPresent
         condNotCalmEnough  -- perhaps enemies don't have projectiles
         body activeItems itemFull =
   let itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
@@ -248,7 +248,7 @@ hinders condAnyFoeAdj condLightBetrays condTgtEnemyPresent
      || let heavilyDistressed =  -- actor hit by a proj or similarly distressed
               deltaSerious (bcalmDelta body)
         in itemLitBad && condLightBetrays
-           && (heavilyDistressed || condTgtEnemyPresent)
+           && (heavilyDistressed || condAimEnemyPresent)
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
   -- (friends close, only one enemy close)
@@ -309,8 +309,8 @@ condMeleeBadM aid = do
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
   mtgtPos <- aidTgtToPos aid (blid b) btarget
-  condTgtEnemyPresent <- condTgtEnemyPresentM aid
-  condTgtEnemyRemembered <- condTgtEnemyRememberedM aid
+  condAimEnemyPresent <- condAimEnemyPresentM aid
+  condAimEnemyRemembered <- condAimEnemyRememberedM aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   activeItems <- activeItemsClient aid
   let condNoUsableWeapon = all (not . isMelee) activeItems
@@ -320,7 +320,7 @@ condMeleeBadM aid = do
                        in dist > 0 && (dist <= 2 || approaching b2)
       -- 3 is the condThreatAtHand distance that AI keeps when alone.
       approaching = case mtgtPos of
-        Just tgtPos | condTgtEnemyPresent || condTgtEnemyRemembered ->
+        Just tgtPos | condAimEnemyPresent || condAimEnemyRemembered ->
           \b1 -> chessDist (bpos b1) tgtPos <= 3
         _ -> const False
       closeFriends = filter (closeEnough . snd) friends

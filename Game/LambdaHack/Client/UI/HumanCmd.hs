@@ -117,10 +117,10 @@ data HumanCmd =
   | Accept
   | TgtClear
   | MoveXhair !Vector !Int
-  | TgtTgt
-  | TgtFloor
-  | TgtEnemy
-  | TgtAscend !Int
+  | XhairTgt
+  | AimFloor
+  | AimEnemy
+  | AimAscend !Int
   | EpsIncr !Bool
   | XhairUnknown
   | XhairItem

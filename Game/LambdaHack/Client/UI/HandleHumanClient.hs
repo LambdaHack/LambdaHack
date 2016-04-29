@@ -94,10 +94,10 @@ cmdAction cmd = case cmd of
   Accept -> acceptHuman
   TgtClear -> Left <$> tgtClearHuman
   MoveXhair v k -> Left <$> moveXhairHuman v k
-  TgtTgt -> Left <$> tgtTgtHuman
-  TgtFloor -> Left <$> tgtFloorHuman
-  TgtEnemy -> Left <$> tgtEnemyHuman
-  TgtAscend k -> Left <$> tgtAscendHuman k
+  XhairTgt -> Left <$> xhairTgtHuman
+  AimFloor -> Left <$> aimFloorHuman
+  AimEnemy -> Left <$> aimEnemyHuman
+  AimAscend k -> Left <$> aimAscendHuman k
   EpsIncr b -> Left <$> epsIncrHuman b
   XhairUnknown -> Left <$> xhairUnknownHuman
   XhairItem -> Left <$> xhairItemHuman

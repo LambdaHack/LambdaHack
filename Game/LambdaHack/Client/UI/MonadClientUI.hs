@@ -340,7 +340,7 @@ viewedLevel :: MonadClientUI m => m LevelId
 viewedLevel = do
   arena <- getArenaUI
   saimMode <- getsSession saimMode
-  return $! maybe arena tgtLevelId saimMode
+  return $! maybe arena aimLevelId saimMode
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Text, Maybe Text)
 targetDesc target = do
