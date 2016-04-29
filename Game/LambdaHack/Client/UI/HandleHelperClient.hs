@@ -19,6 +19,7 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
@@ -110,9 +111,10 @@ pickNumber :: MonadClientUI m => Bool -> Int -> m (SlideOrCmd Int)
 pickNumber askNumber kAll = do
   let gatherNumber kDefaultRaw = do
         let kDefault = min kAll kDefaultRaw
-            kprompt = "Choose number [digits, BACKSPACE, RET("
-                      <> tshow kDefault
-                      <> "), ESC]"
+            kprompt = toAttrLine
+                      $ "Choose number [digits, BACKSPACE, RET("
+                        <> tshow kDefault
+                        <> "), ESC]"
         ov : _ <- slideshow <$> overlayToSlideshow kprompt mempty
         frame <- drawOverlay ColorFull False ov
         kkm <- promptGetInt frame

@@ -16,11 +16,11 @@ module Game.LambdaHack.Client.UI.RunClient
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import qualified Data.ByteString.Char8 as BS
 import qualified Data.EnumMap.Strict as EM
 import Data.Function
 import Data.List
 import Data.Maybe
+import Data.Text (Text)
 
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -29,6 +29,7 @@ import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
@@ -42,7 +43,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- | Continue running in the given direction.
 continueRun :: MonadClientUI m
             => LevelId -> RunParams
-            -> m (Either Msg RequestAnyAbility)
+            -> m (Either Text RequestAnyAbility)
 continueRun arena paramOld = case paramOld of
   RunParams{ runMembers = []
            , runStopMsg = Just stopMsg } -> return $ Left stopMsg
@@ -101,16 +102,16 @@ continueRun arena paramOld = case paramOld of
 -- is spotted, but then ignores the item, leaving it to the player
 -- to mark the item position as a goal of the next goto.
 continueRunDir :: MonadClientUI m
-               => RunParams -> m (Either Msg Vector)
+               => RunParams -> m (Either Text Vector)
 continueRunDir params = case params of
   RunParams{ runMembers = [] } -> assert `failure` params
   RunParams{ runLeader
            , runMembers = aid : _
            , runInitial } -> do
     sreport <- getsSession sreport -- TODO: check the message before it goes into history
-    let boringMsgs = map BS.pack [ "You hear a distant"
-                                 , "reveals that the" ]
-        boring repLine = any (`BS.isInfixOf` repLine) boringMsgs
+    let boringMsgs = [ "You hear a distant"
+                     , "reveals that the" ]
+        boring l = any (`isInfixOf` map Color.acChar l) boringMsgs
         -- TODO: use a regexp from the UI config instead
         -- or have symbolic messages and pattern-match
         msgShown  = isJust $ findInReport (not . boring) sreport
@@ -148,7 +149,7 @@ continueRunDir params = case params of
       check
 
 tryTurning :: MonadClient m
-           => ActorId -> m (Either Msg Vector)
+           => ActorId -> m (Either Text Vector)
 tryTurning aid = do
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
@@ -175,7 +176,7 @@ tryTurning aid = do
 -- The direction is different than the original, if called from @tryTurning@
 -- and the same if from @continueRunDir@.
 checkAndRun :: MonadClient m
-            => ActorId -> Vector -> m (Either Msg Vector)
+            => ActorId -> Vector -> m (Either Text Vector)
 checkAndRun aid dir = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   body <- getsState $ getActorBody aid

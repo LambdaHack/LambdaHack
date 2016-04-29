@@ -42,9 +42,9 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Add a message to the current report.
-msgAdd :: MonadClientUI m => Msg -> m ()
+msgAdd :: MonadClientUI m => Text -> m ()
 msgAdd msg = modifySession $ \sess ->
-  sess {sreport = addMsg (sreport sess) msg}
+  sess {sreport = addMsg (sreport sess) (toMsg msg)}
 
 -- | Wipe out and set a new value for the current report.
 msgReset :: MonadClientUI m => Msg -> m ()
@@ -57,17 +57,14 @@ recordHistory = do
   time <- getsState stime
   SessionUI{sreport, shistory} <- getSession
   unless (nullReport sreport) $ do
-    msgReset ""
+    msgReset $ toMsg ""
     let nhistory = addReport shistory time sreport
     modifySession $ \sess -> sess {shistory = nhistory}
 
 type SlideOrCmd a = Either Slideshow a
 
-failWith :: MonadClientUI m => Msg -> m (SlideOrCmd a)
-failWith msg = do
-  stopPlayBack
-  let starMsg = "*" <> msg <> "*"
-  assert (not $ T.null msg) $ Left <$> promptToSlideshow starMsg
+failWith :: MonadClientUI m => Text -> m (SlideOrCmd a)
+failWith msg = Left <$> failMsg msg
 
 failSlides :: MonadClientUI m => Slideshow -> m (SlideOrCmd a)
 failSlides slides = do
@@ -77,11 +74,11 @@ failSlides slides = do
 failSer :: MonadClientUI m => ReqFailure -> m (SlideOrCmd a)
 failSer = failWith . showReqFailure
 
-failMsg :: MonadClientUI m => Msg -> m Slideshow
+failMsg :: MonadClientUI m => Text -> m Slideshow
 failMsg msg = do
   stopPlayBack
   let starMsg = "*" <> msg <> "*"
-  assert (not $ T.null msg) $ promptToSlideshow starMsg
+  assert (not $ T.null msg) $ promptToSlideshow $ toAttrLine starMsg
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.

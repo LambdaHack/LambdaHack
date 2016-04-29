@@ -144,35 +144,35 @@ keyHelp Binding{..} =
   in
     [ ( toOverlay $
           [casualDescription <+> "(1/2). [press SPACE to see more]"]
-          ++ [""] ++ movText ++ [moreMsg]
+          ++ [""] ++ movText ++ [tmoreMsg]
       , [(Left K.spaceKM, (length movText + 1, 0, maxBound))])
     , okxs CmdMinimal
         ([casualDescription <+> "(2/2). [press SPACE to see all commands]"]
          ++ [""] ++ minimalText ++ [keyCaption])
-        (casualEndText ++ [moreMsg])
+        (casualEndText ++ [tmoreMsg])
     , okxsN 10 CmdMove
         (["All terrain exploration and alteration commands"
          <> ". [press SPACE to advance]"]
          ++ [""] ++ [keyCaptionN 10])
-        (categoryText ++ [moreMsg])
+        (categoryText ++ [tmoreMsg])
     , okxsN 10 CmdItem
         ([categoryDescription CmdItem <> ". [press SPACE to advance]"]
          ++ [""] ++ [keyCaptionN 10])
-        (categoryText ++ [moreMsg])
+        (categoryText ++ [tmoreMsg])
     , okxs CmdAim
         ([categoryDescription CmdAim <> ". [press SPACE to advance]"]
          ++ [""] ++ [keyCaption])
-        (categoryText ++ [moreMsg])
+        (categoryText ++ [tmoreMsg])
     , okxs CmdMeta
         ([categoryDescription CmdMeta <> ". [press SPACE to advance]"]
          ++ [""] ++ [keyCaption])
-        (pickLeaderDescription ++ categoryText ++ [moreMsg])
+        (pickLeaderDescription ++ categoryText ++ [tmoreMsg])
     , let (ov, _) =
             okxsN 21 CmdMouse
               ([categoryDescription CmdMouse
                <> ". [press PGUP to see previous, ESC to cancel]"]
                ++ [""] ++ [keyCaptionN 21])
-              (lastText ++ [endMsg])
+              (lastText ++ [tendMsg])
           len = 4 + length (keysN 0 CmdMouse)
       in ( ov
          , [ (Left K.pgupKM, (len + 1, 0, maxBound))

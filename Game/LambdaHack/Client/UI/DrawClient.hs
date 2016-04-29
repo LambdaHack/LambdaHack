@@ -21,6 +21,7 @@ import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import qualified Game.LambdaHack.Common.Ability as Ability

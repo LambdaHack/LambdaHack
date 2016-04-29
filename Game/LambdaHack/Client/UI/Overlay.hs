@@ -1,8 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Screen overlays and frames.
 module Game.LambdaHack.Client.UI.Overlay
-  ( AttrLine, toAttrLine, moreMsgAttr
-  , Overlay(overlay), toOverlayRaw, truncateToOverlay, toOverlay
+  ( Overlay(overlay), toOverlayRaw, truncateToOverlay, toOverlay
   , updateOverlayLine, splitReport, renderHistory, itemDesc
   , SingleFrame(..), Frames, overlayFrame
   , Slideshow(slideshow), splitOverlay, toSlideshow
@@ -29,15 +28,6 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
-type AttrLine = [AttrChar]
-
-toAttrLine :: Text -> AttrLine
-toAttrLine = map (AttrChar defAttr) . T.unpack
-
--- | The \"press something to see more\" mark.
-moreMsgAttr :: AttrLine
-moreMsgAttr = toAttrLine moreMsg
-
 -- | A series of screen lines that either fit the width of the screen
 -- or are intended for truncation when displayed. The length of overlay
 -- may exceed the length of the screen, unlike in @SingleFrame@.
@@ -48,8 +38,8 @@ newtype Overlay = Overlay {overlay :: [AttrLine]}
 toOverlayRaw :: [AttrLine] -> Overlay
 toOverlayRaw = Overlay
 
-truncateToOverlay :: Text -> Overlay
-truncateToOverlay msg = toOverlay [msg]
+truncateToOverlay :: AttrLine -> Overlay
+truncateToOverlay l = Overlay [l]
 
 toOverlay :: [Text] -> Overlay
 toOverlay = Overlay . map toAttrLine
@@ -66,7 +56,7 @@ updateOverlayLine n f Overlay{overlay} =
 -- | Split a messages into chunks that fit in one line.
 -- We assume the width of the messages line is the same as of level map.
 splitReport :: X -> Report -> Overlay
-splitReport w r = toOverlay $ splitText w $ renderReport r
+splitReport w r = Overlay $ splitAttrLine w $ renderReport r
 
 itemDesc :: CStore -> Time -> ItemFull -> Overlay
 itemDesc c localTime itemFull =
@@ -85,16 +75,16 @@ itemDesc c localTime itemFull =
       colorSymbol = uncurry (flip Color.AttrChar) (viewItem $ itemBase itemFull)
       lxsize = fst normalLevelBound + 1  -- TODO
       blurb =
-        "D"  -- dummy
-        <+> nstats
+        " "
+        <> nstats
         <> ":"
         <+> desc
         <+> makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]
-      splitBlurb = splitText lxsize blurb
-      attrBlurb = toOverlay splitBlurb
+      splitBlurb = Overlay $ splitAttrLine lxsize
+                   $ colorSymbol : toAttrLine blurb
       f line = [colorSymbol] ++ drop 1 line
-  in updateOverlayLine 0 f attrBlurb
+  in updateOverlayLine 0 f splitBlurb
 
 -- | An overlay that fits on the screen (or is meant to be truncated on display)
 -- and is padded to fill the whole screen
@@ -116,7 +106,7 @@ splitOverlay yspace (Overlay msg) (Overlay ls0) =
                 then [Overlay $ msg ++ ls]
                        -- all fits on screen
                 else let rest = splitO post
-                     in Overlay (pre ++ [moreMsgAttr]) : rest
+                     in Overlay (pre ++ [moreMsg]) : rest
        in Slideshow (splitO ls0)
 
 -- | A few overlays, displayed one by one upon keypress.
@@ -206,7 +196,7 @@ splitOverlayOKX yspace omsg (ov0, kxs0) =
                  , zipRenumber len kxs )]
            else let (preX, postX) = splitAt (yspace - len - 1) kxs
                     rest = splitO post postX
-                in ( toOverlayRaw (pre ++ [moreMsgAttr])
+                in ( toOverlayRaw (pre ++ [moreMsg])
                    , zipRenumber len preX )
                    : rest
   in splitO ls0 kxs0

@@ -9,6 +9,8 @@ module Game.LambdaHack.Common.Color
   ) where
 
 import Data.Binary
+import Data.Binary.Get
+import Data.Binary.Put
 import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import Data.Hashable (Hashable)
 import Data.Text (Text)
@@ -39,6 +41,10 @@ data Color =
   | BrWhite
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
+instance Binary Color where
+  put = putWord8 . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) getWord8
+
 instance Hashable Color
 
 -- | The default colours, to optimize attribute setting.
@@ -55,8 +61,12 @@ data Attr = Attr
 
 instance Enum Attr where
   fromEnum Attr{..} = fromEnum fg + unsafeShiftL (fromEnum bg) 8
-  toEnum n = Attr (toEnum $ n .&. (2 ^ (8 :: Int)  - 1))
+  toEnum n = Attr (toEnum $ n .&. (2 ^ (8 :: Int) - 1))
                   (toEnum $ unsafeShiftR n 8)
+
+instance Binary Attr where
+  put = putWord16le . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) getWord16le
 
 -- | The default attribute, to optimize attribute setting.
 defAttr :: Attr
@@ -72,6 +82,10 @@ instance Enum AttrChar where
   fromEnum AttrChar{..} = fromEnum acAttr + unsafeShiftL (fromEnum acChar) 16
   toEnum n = AttrChar (toEnum $ n .&. (2 ^ (16 :: Int) - 1))
                       (toEnum $ unsafeShiftR n 16)
+
+instance Binary AttrChar where
+  put = putWord32le . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) getWord32le
 
 -- | A helper for the terminal frontends that display bright via bold.
 isBright :: Color -> Bool
@@ -127,7 +141,3 @@ _olorToRGB BrBlue    = "#5555FF"
 _olorToRGB BrMagenta = "#FF55FF"
 _olorToRGB BrCyan    = "#55FFFF"
 _olorToRGB BrWhite   = "#FFFFFF"
-
-instance Binary Color where
-  put = putWord8 . toEnum . fromEnum
-  get = fmap (toEnum . fromEnum) getWord8

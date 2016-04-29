@@ -434,13 +434,13 @@ xhairToPos = do
     Nothing -> return Nothing
     Just aid -> aidTgtToPos aid lidV $ Just sxhair
 
-splitOKX :: MonadClientUI m => Y -> Msg -> OKX -> m [OKX]
+splitOKX :: MonadClientUI m => Y -> AttrLine -> OKX -> m [OKX]
 splitOKX y prompt okx = do
   promptAI <- msgPromptAI
   lid <- getArenaUI
   Level{lxsize} <- getLevel lid  -- TODO: screen length or viewLevel
   sreport <- getsSession sreport
-  let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
+  let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport (toPrompt prompt)))
   return $! splitOverlayOKX y msg okx
 
 msgPromptAI :: MonadClientUI m => m Msg
@@ -448,7 +448,8 @@ msgPromptAI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
-  return $! if underAI then "[press any key for Main Menu]" else ""
+  return $! toPrompt $ toAttrLine
+         $ if underAI then "[press any key for Main Menu]" else ""
 
 defaultHistory :: MonadClient m => Int -> m History
 defaultHistory configHistoryMax = liftIO $ do
@@ -457,5 +458,5 @@ defaultHistory configHistoryMax = liftIO $ do
   let curDate = MU.Text $ tshow $ utcToLocalTime timezone utcTime
   let emptyHist = emptyHistory configHistoryMax
   return $! addReport emptyHist timeZero
-         $! singletonReport
-         $! makeSentence ["Human history log started on", curDate]
+         $ singletonReport
+         $ toMsg $ makeSentence ["Human history log started on", curDate]

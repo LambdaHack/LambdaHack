@@ -15,6 +15,7 @@ import Data.List (find)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
+import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.ItemSlot
@@ -42,17 +43,17 @@ import Game.LambdaHack.Common.State
 
 -- | Display a message with a @-more-@ prompt.
 -- Return value indicates if the player tried to cancel/escape.
-displayMore :: MonadClientUI m => ColorMode -> Msg -> m Bool
+displayMore :: MonadClientUI m => ColorMode -> AttrLine -> m Bool
 displayMore dm prompt = do
-  slides <- promptToSlideshow $ prompt <+> moreMsg
+  slides <- promptToSlideshow $ prompt <+:> moreMsg
   -- Two frames drawn total (unless @prompt@ very long).
   getConfirms dm [K.spaceKM] [K.escKM] slides
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
-displayYesNo :: MonadClientUI m => ColorMode -> Msg -> m Bool
+displayYesNo :: MonadClientUI m => ColorMode -> AttrLine -> m Bool
 displayYesNo dm prompt = do
-  slides <- promptToSlideshow $ prompt <+> yesnoMsg
+  slides <- promptToSlideshow $ prompt <+:> yesnoMsg
   -- Two frames drawn total (unless @prompt@ very long).
   getConfirms dm [K.KM K.NoModifier (K.Char 'y')]
                  [K.KM K.NoModifier (K.Char 'n'), K.escKM] slides
@@ -140,12 +141,12 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
 --       don't truncate then, but
 -- If many overlays, scroll screenfuls with SPACE, etc.
 -- | Print a prompt and an overlay and wait for a player keypress.
-displayChoiceLine :: MonadClientUI m => Msg -> Overlay -> [K.KM] -> m K.KM
+displayChoiceLine :: MonadClientUI m => AttrLine -> Overlay -> [K.KM] -> m K.KM
 displayChoiceLine prompt ov extraKeys = do
   slides <- overlayToSlideshow prompt ov
   getConfirmsKey ColorFull extraKeys slides
 
-describeMainKeys :: MonadClientUI m => m Msg
+describeMainKeys :: MonadClientUI m => m Text
 describeMainKeys = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -194,20 +195,21 @@ describeMainKeys = do
 
 -- | The prompt is shown after the current message, but not added to history.
 -- This is useful, e.g., in aiming mode, not to spam history.
-promptToSlideshow :: MonadClientUI m => Msg -> m Slideshow
+promptToSlideshow :: MonadClientUI m => AttrLine -> m Slideshow
 promptToSlideshow prompt = overlayToSlideshow prompt mempty
 
 -- | The prompt is shown after the current message at the top of each slide.
 -- Together they may take more than one line. The prompt is not added
 -- to history. The portions of overlay that fit on the the rest
 -- of the screen are displayed below. As many slides as needed are shown.
-overlayToSlideshow :: MonadClientUI m => Msg -> Overlay -> m Slideshow
+overlayToSlideshow :: MonadClientUI m => AttrLine -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
   promptAI <- msgPromptAI
   lid <- getArenaUI
   Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
   sreport <- getsSession sreport
-  let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport prompt))
+  let msg = splitReport lxsize
+                        (prependMsg promptAI (addMsg sreport (toPrompt prompt)))
   return $! splitOverlay (lysize + 1) msg overlay
 
 -- TODO: restrict the animation to 'per' before drawing.

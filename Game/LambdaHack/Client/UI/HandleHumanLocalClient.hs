@@ -36,6 +36,7 @@ import Data.List.Compat
 import Data.Maybe
 import Data.Monoid
 import Data.Ord
+import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Version
 import qualified NLP.Miniutter.English as MU
@@ -86,7 +87,8 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 macroHuman :: MonadClientUI m => [String] -> m Slideshow
 macroHuman kms = do
   modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
-  promptToSlideshow $ "Macro activated:" <+> T.pack (intercalate " " kms)
+  promptToSlideshow $ toAttrLine
+                    $ "Macro activated:" <+> T.pack (intercalate " " kms)
 
 -- * Clear
 
@@ -151,9 +153,10 @@ chooseItemHuman c = do
               blurb | symbol == '+' = "choose temporary conditions"
                     | otherwise = "choose organs"
           -- TODO: also forbid on the server, except in special cases.
-          overlayToSlideshow ("Can't"
-                              <+> blurb
-                              <> ", but here's the description.") io
+          overlayToSlideshow (toAttrLine
+                              $"Can't"
+                                <+> blurb
+                                <> ", but here's the description.") io
         MStore fromCStore -> do
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
           return mempty
@@ -164,7 +167,8 @@ chooseItemHuman c = do
               ppLoc (b2, store) = MU.Text $ ppCStoreIn store <+> "of"
                                                              <+> bname b2
               foundTexts = map (ppLoc . snd) found
-              prompt2 = makeSentence ["The item is", MU.WWandW foundTexts]
+              prompt2 = toAttrLine
+                        $ makeSentence ["The item is", MU.WWandW foundTexts]
               (newAid, bestStore) = case leader `lookup` found of
                 Just (_, store) -> (leader, store)
                 Nothing -> case found of
@@ -243,7 +247,7 @@ projectCheck tpos = do
           then return Nothing
           else return $ Just ProjectBlockActor
 
-posFromXhair :: MonadClientUI m => m (Either Msg Point)
+posFromXhair :: MonadClientUI m => m (Either Text Point)
 posFromXhair = do
   leader <- getLeaderUI
   lidV <- viewedLevel
@@ -264,7 +268,7 @@ posFromXhair = do
 
 psuitReq :: MonadClientUI m
          => [Trigger]
-         -> m (Either Msg (ItemFull -> Either ReqFailure (Point, Bool)))
+         -> m (Either Text (ItemFull -> Either ReqFailure (Point, Bool)))
 psuitReq ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -483,12 +487,14 @@ recordHuman = do
     0 -> do
       let slastRecord = ([], [], maxK)
       modifySession $ \sess -> sess {slastRecord}
-      promptToSlideshow $ "Macro will be recorded for up to"
+      promptToSlideshow $ toAttrLine
+                        $ "Macro will be recorded for up to"
                           <+> tshow maxK <+> "actions."  -- no MU, poweruser
     _ -> do
       let slastRecord = (seqPrevious, [], 0)
       modifySession $ \sess -> sess {slastRecord}
-      promptToSlideshow $ "Macro recording interrupted after"
+      promptToSlideshow $ toAttrLine
+                        $ "Macro recording interrupted after"
                           <+> tshow (maxK - k - 1) <+> "actions."
 
 -- * History
@@ -503,7 +509,7 @@ historyHuman = do
   let histLines = linesHistory history
       turnsGlobal = global `timeFitUp` timeTurn
       turnsLocal = localTime `timeFitUp` timeTurn
-      msg = makeSentence
+      msg = toAttrLine $ makeSentence
         [ "You survived for"
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
@@ -513,7 +519,7 @@ historyHuman = do
       rh = renderHistory history
       kxs = replicate (length rh)
                       (Right dummySlot, (undefined, 0, lxsize))
-  okxs <- splitOKX (lysize + 3) msg (toOverlay rh, kxs)
+  okxs <- splitOKX (lysize + 3) msg (toOverlayRaw rh, kxs)
   let displayAllHistory = do
         menuIxHistory <- getsSession smenuIxHistory
         (ekm, pointer) <-
@@ -527,12 +533,12 @@ historyHuman = do
         let timeReport = case drop pointer histLines of
               [] -> assert `failure` pointer
               tR : _ -> tR
-            (tturns, rep) =   splitReportForHistory lxsize timeReport
-            ov0 = toOverlay rep
+            (tturns, rep) = splitReportForHistory lxsize timeReport
+            ov0 = toOverlayRaw rep
             -- TODO: print over history, not over dungeon;
             -- expand this history item, not switch views completely;
-            prompt = "The full past message at time"
-                     <+> tturns <> ". [ESC to go back]"
+            prompt = toAttrLine "The full past message at time "
+                     ++ tturns ++ toAttrLine ". [ESC to go back]"
         escK <- displayChoiceLine prompt ov0 [K.escKM]
         let !_A = assert (escK == K.escKM) ()
         displayAllHistory
@@ -741,7 +747,8 @@ doLook addMoreMsg = do
         msgAdd lookMsg  -- TODO: do not add to history
         floorItemOverlay lidV p
 -}
-      promptToSlideshow $ lookMsg <+> if addMoreMsg then moreMsg else ""
+      promptToSlideshow $ toAttrLine
+                        $ lookMsg <+> if addMoreMsg then tmoreMsg else ""
 
 -- * MoveXhair
 

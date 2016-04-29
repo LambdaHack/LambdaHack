@@ -258,7 +258,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
       -- since the frames may be displayed during the enemy turn and so
       -- we can't clear the prompts. In our turn, each screenful is displayed
       -- and we need to confirm each page change (e.g., in 'getConfirms').
-      sls <- promptToSlideshow ""
+      sls <- promptToSlideshow []
       let slide = head $ slideshow sls  -- only the first slide shown
       frame <- drawOverlay ColorFull False slide
       displayFrame (Just frame)
@@ -389,7 +389,7 @@ msgDuplicateScrap = do
   report <- getsSession sreport
   history <- getsSession shistory
   let (lastMsg, repRest) = lastMsgOfReport report
-      lastDup = isJust . findInReport (== lastMsg)
+      lastDup = isJust . findInReport (== msgLine lastMsg)
       lastDuplicated = lastDup repRest
                        || maybe False lastDup (lastReportOfHistory history)
   when lastDuplicated $
@@ -443,7 +443,7 @@ destroyActorUI died aid body = do
     -- TODO; actually show the --more- prompt, but not between fadeout frames
     unless (fneverEmpty (gplayer fact)
             && (not actorsAlive || firstDeathEnds)) $
-      void $ displayMore ColorBW ""
+      void $ displayMore ColorBW []
   -- If pushed, animate spotting again, to draw attention to pushing.
   when (isNothing $ btrajectory body) $
     modifySession $ \sess -> sess {slastLost = ES.insert aid $ slastLost sess}
@@ -573,9 +573,10 @@ quitFactionUI fid mbody toSt = do
             (bag, tot) <- getsState $ calculateTotal b
             let currencyName = MU.Text $ IK.iname $ okind
                                $ ouniqGroup "currency"
-                itemMsg = makeSentence [ "Your loot is worth"
-                                       , MU.CarWs tot currencyName ]
-                          <+> moreMsg
+                itemMsg = toAttrLine
+                          $ makeSentence [ "Your loot is worth"
+                                         , MU.CarWs tot currencyName ]
+                            <+> tmoreMsg
             if EM.null bag then return (mempty, 0)
             else do
               io <- itemOverlay CGround (blid b) bag
@@ -592,7 +593,7 @@ quitFactionUI fid mbody toSt = do
       -- Show score for any UI client (except after ESC),
       -- even though it is saved only for human UI clients.
       scoreSlides <- scoreToSlideshow total status
-      partingSlide <- promptToSlideshow $ pp <+> moreMsg
+      partingSlide <- promptToSlideshow $ toAttrLine $ pp <+> tmoreMsg
       -- TODO: First ESC cancels items display.
       void $ getConfirms ColorFull [K.spaceKM] [K.escKM]
            $ startingSlide <> itemSlides
@@ -769,7 +770,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             let verb = "be no longer controlled by"
             msgAdd $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidName]
-            when isOurAlive $ void $ displayMore ColorFull ""
+            when isOurAlive $ void $ displayMore ColorFull []
           else do
             fidSourceName <- getsState $ gname . (EM.! fidSource) . sfactionD
             let verb = "be now under"

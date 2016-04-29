@@ -290,11 +290,11 @@ meleeAid target = do
             return $ Right wp
           res | bproj tb || isAtWar sfact (bfid tb) = returnCmd
               | isAllied sfact (bfid tb) = do
-                go1 <- displayYesNo ColorBW
+                go1 <- displayYesNo ColorBW $ toAttrLine
                          "You are bound by an alliance. Really attack?"
                 if not go1 then failWith "attack canceled" else returnCmd
               | otherwise = do
-                go2 <- displayYesNo ColorBW
+                go2 <- displayYesNo ColorBW $ toAttrLine
                          "This attack will start a war. Are you sure?"
                 if not go2 then failWith "attack canceled" else returnCmd
       res
@@ -345,7 +345,7 @@ displaceAid target = do
 
 -- | Actor moves or searches or alters. No visible actor at the position.
 moveSearchAlterAid :: MonadClient m
-                   => ActorId -> Vector -> m (Either Msg RequestAnyAbility)
+                   => ActorId -> Vector -> m (Either Text RequestAnyAbility)
 moveSearchAlterAid source dir = do
   cops@Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -479,7 +479,7 @@ goToXhair initialStep run = do
 
 multiActorGoTo :: MonadClientUI m
                => LevelId -> Point -> RunParams
-               -> m (Either Msg (Bool, Vector))
+               -> m (Either Text (Bool, Vector))
 multiActorGoTo arena c paramOld =
   case paramOld of
     RunParams{runMembers = []} ->
@@ -753,7 +753,7 @@ alterDirHuman ts = do
              : K.leftButtonKM
              : map (K.KM K.NoModifier) (K.dirAllKey configVi configLaptop)
       prompt = makePhrase ["What to", verb1 <> "? [movement key, left mouse button, ESC]"]
-  km <- displayChoiceLine prompt mempty keys
+  km <- displayChoiceLine (toAttrLine prompt) mempty keys
   case K.key km of
     K.LeftButtonPress -> do
       leader <- getLeaderUI
@@ -796,7 +796,7 @@ alterFeatures (AlterFeature{feature} : ts) = feature : alterFeatures ts
 alterFeatures (_ : ts) = alterFeatures ts
 
 -- | Guess and report why the bump command failed.
-guessAlter :: Kind.COps -> [TK.Feature] -> Kind.Id TileKind -> Msg
+guessAlter :: Kind.COps -> [TK.Feature] -> Kind.Id TileKind -> Text
 guessAlter Kind.COps{cotile} (TK.OpenTo _ : _) t
   | Tile.isClosable cotile t = "already open"
 guessAlter _ (TK.OpenTo _ : _) _ = "cannot be opened"
@@ -841,17 +841,18 @@ verifyTrigger leader feat = case feat of
     if not (fcanEscape $ gplayer fact) then failWith
       "This is the way out, but where would you go in this alien world?"
     else do
-      go <- displayYesNo ColorFull "This is the way out. Really leave now?"
+      go <- displayYesNo ColorFull
+            $ toAttrLine "This is the way out. Really leave now?"
       if not go then failWith "game resumed"
       else do
         (_, total) <- getsState $ calculateTotal b
         if total == 0 then do
           -- The player can back off at each of these steps.
-          go1 <- displayMore ColorBW
+          go1 <- displayMore ColorBW $ toAttrLine
                    "Afraid of the challenge? Leaving so soon and empty-handed?"
           if not go1 then failWith "brave soul!"
           else do
-             go2 <- displayMore ColorBW
+             go2 <- displayMore ColorBW $ toAttrLine
                      "Next time try to grab some loot before escape!"
              if not go2 then failWith "here's your chance!"
              else return $ Right ()
@@ -859,7 +860,7 @@ verifyTrigger leader feat = case feat of
   _ -> return $ Right ()
 
 -- | Guess and report why the bump command failed.
-guessTrigger :: Kind.COps -> [TK.Feature] -> Kind.Id TileKind -> Msg
+guessTrigger :: Kind.COps -> [TK.Feature] -> Kind.Id TileKind -> Text
 guessTrigger Kind.COps{cotile} fs@(TK.Cause (IK.Ascend k) : _) t
   | Tile.hasFeature cotile (TK.Cause (IK.Ascend (-k))) t =
     if | k > 0 -> "the way goes down, not up"
@@ -996,8 +997,9 @@ gameRestartHuman t = do
   gameMode <- getGameMode
   b <- if isNoConfirms
        then return True
-       else displayYesNo ColorBW $
-              "You just requested a new" <+> tshow t
+       else displayYesNo ColorBW
+            $ toAttrLine
+            $ "You just requested a new" <+> tshow t
               <+> "game. The progress of the current" <+> mname gameMode
               <+> "game will be lost! Are you sure?"
   if b
@@ -1044,6 +1046,7 @@ tacticHuman = do
   fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
   let toT = if fromT == maxBound then minBound else succ fromT
   go <- displayMore ColorFull
+        $ toAttrLine
         $ "Current tactic is '" <> tshow fromT
           <> "'. Switching tactic to '" <> tshow toT
           <> "'. (This clears targets.)"
@@ -1057,7 +1060,8 @@ automateHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 automateHuman = do
   -- BFS is not updated while automated, which would lead to corruption.
   modifySession $ \sess -> sess {saimMode = Nothing}
-  go <- displayMore ColorBW "Ceding control to AI (press any key to regain)."
+  go <- displayMore ColorBW
+        $ toAttrLine "Ceding control to AI (press any key to regain)."
   if not go
     then failWith "automation canceled"
     else return $ Right ReqUIAutomate

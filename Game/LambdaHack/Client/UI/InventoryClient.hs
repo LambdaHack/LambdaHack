@@ -258,7 +258,7 @@ data DefItemKey m = DefItemKey
 
 data Suitability =
     SuitsEverything
-  | SuitsNothing Msg
+  | SuitsNothing Text
   | SuitsSomething (ItemFull -> Bool)
 
 transition :: forall m. MonadClientUI m
@@ -290,7 +290,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   (suitsEverything, psuitFun) <- case mpsuit of
     SuitsEverything -> return (True, const True)
     SuitsNothing err -> do
-      slides <- promptToSlideshow $ err <+> moreMsg
+      slides <- promptToSlideshow $ toAttrLine $ err <+> tmoreMsg
       void $ getConfirms ColorFull [K.spaceKM] [K.escKM] slides
       return (False, const False)
     -- When throwing, this function takes missile range into accout.
@@ -558,18 +558,19 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
                    keyLabelsRaw = letterRange : map (defLabel . snd) keyDefs
                    keyLabels = filter (not . T.null) keyLabelsRaw
                in "[" <> T.intercalate ", " (nub keyLabels) <> ", ESC]"
+      attrL = toAttrLine $ prompt <+> choice
   arena <- getArenaUI
   Level{lysize} <- getLevel arena
   ekm <- if null $ overlay $ fst okx
          then
-           Left <$> displayChoiceLine (prompt <+> choice) (fst okx) itemKeys
+           Left <$> displayChoiceLine attrL (fst okx) itemKeys
          else do
            lastSlot <- getsClient slastSlot
            let lastPointer = case findIndex ((== Right lastSlot) . fst)
                                             (snd okx) of
                  Just p | cCur /= MStats -> p
                  _ -> 0
-           okxs <- splitOKX (lysize + 1) (prompt <+> choice) okx
+           okxs <- splitOKX (lysize + 1) attrL okx
            (okm, pointer) <- displayChoiceScreen False lastPointer okxs itemKeys
            -- Only remember item pointer, if moved and if not stats.
            case drop pointer $ snd okx of
