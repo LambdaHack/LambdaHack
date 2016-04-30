@@ -258,7 +258,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
       -- since the frames may be displayed during the enemy turn and so
       -- we can't clear the prompts. In our turn, each screenful is displayed
       -- and we need to confirm each page change (e.g., in 'getConfirms').
-      sls <- promptToSlideshow []
+      sls <- overlayToSlideshow mempty
       let slide = head $ slideshow sls  -- only the first slide shown
       frame <- drawOverlay ColorFull False slide
       displayFrame (Just frame)
@@ -567,21 +567,22 @@ quitFactionUI fid mbody toSt = do
       msgAdd msg
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
-      startingSlide <- promptToSlideshow moreMsg
+      promptAdd tmoreMsg
+      startingSlide <- overlayToSlideshow mempty
       recordHistory  -- we are going to exit or restart, so record
       let bodyToItemSlides b = do
             (bag, tot) <- getsState $ calculateTotal b
             let currencyName = MU.Text $ IK.iname $ okind
                                $ ouniqGroup "currency"
-                itemMsg = toAttrLine
-                          $ makeSentence [ "Your loot is worth"
-                                         , MU.CarWs tot currencyName ]
-                            <+> tmoreMsg
+                itemMsg = makeSentence [ "Your loot is worth"
+                                       , MU.CarWs tot currencyName ]
+                          <+> tmoreMsg
             if EM.null bag then return (mempty, 0)
             else do
+              promptAdd itemMsg
               io <- itemOverlay CGround (blid b) bag
               -- TODO: treat as menu and display item description
-              sli <- overlayToSlideshow itemMsg $ fst io
+              sli <- overlayToSlideshow $ fst io
               return (sli, tot)
       (itemSlides, total) <- case mbody of
         Just b | fid == side -> bodyToItemSlides b
@@ -593,7 +594,8 @@ quitFactionUI fid mbody toSt = do
       -- Show score for any UI client (except after ESC),
       -- even though it is saved only for human UI clients.
       scoreSlides <- scoreToSlideshow total status
-      partingSlide <- promptToSlideshow $ toAttrLine $ pp <+> tmoreMsg
+      promptAdd $ pp <+> tmoreMsg
+      partingSlide <- overlayToSlideshow mempty
       -- TODO: First ESC cancels items display.
       void $ getConfirms ColorFull [K.spaceKM] [K.escKM]
            $ startingSlide <> itemSlides

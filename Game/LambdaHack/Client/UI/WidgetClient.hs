@@ -61,7 +61,7 @@ displayConfirm :: MonadClientUI m
 displayConfirm dm trueKeys falseKeys prompt = do
   promptAdd prompt
   -- Two frames drawn total (unless @prompt@ very long).
-  slides <- overlayToSlideshow [] mempty
+  slides <- overlayToSlideshow mempty
   b <- getConfirms dm trueKeys falseKeys slides
   recordHistory  -- clear messages
   return b
@@ -151,7 +151,8 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
 -- | Print a prompt and an overlay and wait for a player keypress.
 displayChoiceLine :: MonadClientUI m => AttrLine -> Overlay -> [K.KM] -> m K.KM
 displayChoiceLine prompt ov extraKeys = do
-  slides <- overlayToSlideshow prompt ov
+  promptAddAttr prompt
+  slides <- overlayToSlideshow ov
   getConfirmsKey ColorFull extraKeys slides
 
 describeMainKeys :: MonadClientUI m => m Text
@@ -173,7 +174,7 @@ describeMainKeys = do
                           brevMap
       kmReturn = head $
         M.findWithDefault [K.KM K.NoModifier K.Return]
-                          ByAimMode {notAiming = Help $ Just "", aiming = Accept}
+                          ByAimMode{notAiming = Help $ Just "", aiming = Accept}
                           brevMap
       moveKeys | configVi = "hjklyubn, "
                | configLaptop = "uk8o79jl, "

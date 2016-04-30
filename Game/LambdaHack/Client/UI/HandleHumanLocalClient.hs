@@ -87,8 +87,8 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 macroHuman :: MonadClientUI m => [String] -> m Slideshow
 macroHuman kms = do
   modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
-  promptToSlideshow $ toAttrLine
-                    $ "Macro activated:" <+> T.pack (intercalate " " kms)
+  promptAdd $ "Macro activated:" <+> T.pack (intercalate " " kms)
+  overlayToSlideshow mempty
 
 -- * Clear
 
@@ -153,10 +153,9 @@ chooseItemHuman c = do
               blurb | symbol == '+' = "choose temporary conditions"
                     | otherwise = "choose organs"
           -- TODO: also forbid on the server, except in special cases.
-          overlayToSlideshow (toAttrLine
-                              $"Can't"
-                                <+> blurb
-                                <> ", but here's the description.") io
+          promptAdd $ "Can't" <+> blurb
+                      <> ", but here's the description."
+          overlayToSlideshow io
         MStore fromCStore -> do
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
           return mempty
@@ -167,8 +166,7 @@ chooseItemHuman c = do
               ppLoc (b2, store) = MU.Text $ ppCStoreIn store <+> "of"
                                                              <+> bname b2
               foundTexts = map (ppLoc . snd) found
-              prompt2 = toAttrLine
-                        $ makeSentence ["The item is", MU.WWandW foundTexts]
+              prompt2 = makeSentence ["The item is", MU.WWandW foundTexts]
               (newAid, bestStore) = case leader `lookup` found of
                 Just (_, store) -> (leader, store)
                 Nothing -> case found of
@@ -176,7 +174,8 @@ chooseItemHuman c = do
                   [] -> assert `failure` iid
           modifySession $ \sess -> sess {sitemSel = Just (bestStore, iid)}
           void $ pickLeader True newAid
-          overlayToSlideshow prompt2 io
+          promptAdd prompt2
+          overlayToSlideshow io
         MStats -> assert `failure` ggi
     Left slides -> return slides
 
@@ -487,15 +486,15 @@ recordHuman = do
     0 -> do
       let slastRecord = ([], [], maxK)
       modifySession $ \sess -> sess {slastRecord}
-      promptToSlideshow $ toAttrLine
-                        $ "Macro will be recorded for up to"
-                          <+> tshow maxK <+> "actions."  -- no MU, poweruser
+      promptAdd $ "Macro will be recorded for up to"
+                  <+> tshow maxK <+> "actions."  -- no MU, poweruser
+      overlayToSlideshow mempty
     _ -> do
       let slastRecord = (seqPrevious, [], 0)
       modifySession $ \sess -> sess {slastRecord}
-      promptToSlideshow $ toAttrLine
-                        $ "Macro recording interrupted after"
-                          <+> tshow (maxK - k - 1) <+> "actions."
+      promptAdd $ "Macro recording interrupted after"
+                  <+> tshow (maxK - k - 1) <+> "actions."
+      overlayToSlideshow mempty
 
 -- * History
 
@@ -747,8 +746,8 @@ doLook addMoreMsg = do
         msgAdd lookMsg  -- TODO: do not add to history
         floorItemOverlay lidV p
 -}
-      promptToSlideshow $ toAttrLine
-                        $ lookMsg <+> if addMoreMsg then tmoreMsg else ""
+      promptAdd $ lookMsg <+> if addMoreMsg then tmoreMsg else ""
+      overlayToSlideshow mempty
 
 -- * MoveXhair
 

@@ -1,9 +1,8 @@
 -- | Client monad for interacting with a human through UI.
 module Game.LambdaHack.Client.UI.MsgClient
-  ( msgAdd, promptAdd, recordHistory
+  ( msgAdd, promptAdd, promptAddAttr, recordHistory
   , SlideOrCmd, failWith, failSlides, failSer, failMsg
-  , lookAt, itemOverlay
-  , promptToSlideshow, overlayToSlideshow
+  , lookAt, itemOverlay, overlayToSlideshow
   ) where
 
 import Prelude ()
@@ -51,6 +50,11 @@ promptAdd :: MonadClientUI m => Text -> m ()
 promptAdd msg = modifySession $ \sess ->
   sess {sreport = addMsg (sreport sess) (toPrompt $ toAttrLine msg)}
 
+-- | Add a prompt to the current report.
+promptAddAttr :: MonadClientUI m => AttrLine -> m ()
+promptAddAttr msg = modifySession $ \sess ->
+  sess {sreport = addMsg (sreport sess) (toPrompt msg)}
+
 -- | Store current report in the history and reset report.
 recordHistory :: MonadClientUI m => m ()
 recordHistory = do
@@ -77,8 +81,8 @@ failSer = failWith . showReqFailure
 failMsg :: MonadClientUI m => Text -> m Slideshow
 failMsg msg = do
   stopPlayBack
-  let starMsg = "*" <> msg <> "*"
-  assert (not $ T.null msg) $ promptToSlideshow $ toAttrLine starMsg
+  promptAdd $ "*" <> msg <> "*"
+  assert (not $ T.null msg) $ overlayToSlideshow mempty
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.
@@ -161,22 +165,15 @@ itemOverlay c lid bag = do
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
   return (mconcat ts, kxs)
 
-
--- | The prompt is shown after the current message, but not added to history.
--- This is useful, e.g., in aiming mode, not to spam history.
-promptToSlideshow :: MonadClientUI m => AttrLine -> m Slideshow
-promptToSlideshow prompt = overlayToSlideshow prompt mempty
-
 -- | The prompt is shown after the current message at the top of each slide.
 -- Together they may take more than one line. The prompt is not added
 -- to history. The portions of overlay that fit on the the rest
 -- of the screen are displayed below. As many slides as needed are shown.
-overlayToSlideshow :: MonadClientUI m => AttrLine -> Overlay -> m Slideshow
-overlayToSlideshow prompt overlay = do
+overlayToSlideshow :: MonadClientUI m => Overlay -> m Slideshow
+overlayToSlideshow overlay = do
   promptAI <- msgPromptAI
   lid <- getArenaUI
   Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
   sreport <- getsSession sreport
-  let msg = splitReport lxsize
-                        (prependMsg promptAI (addMsg sreport (toPrompt prompt)))
+  let msg = splitReport lxsize (prependMsg promptAI sreport)
   return $! splitOverlay (lysize + 1) msg overlay

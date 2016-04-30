@@ -290,7 +290,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   (suitsEverything, psuitFun) <- case mpsuit of
     SuitsEverything -> return (True, const True)
     SuitsNothing err -> do
-      slides <- promptToSlideshow $ toAttrLine $ err <+> tmoreMsg
+      promptAdd $ err <+> tmoreMsg
+      slides <- overlayToSlideshow mempty
       void $ getConfirms ColorFull [K.spaceKM] [K.escKM] slides
       return (False, const False)
     -- When throwing, this function takes missile range into accout.
