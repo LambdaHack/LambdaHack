@@ -508,7 +508,7 @@ historyHuman = do
   let histLines = linesHistory history
       turnsGlobal = global `timeFitUp` timeTurn
       turnsLocal = localTime `timeFitUp` timeTurn
-      msg = toAttrLine $ makeSentence
+      msg = makeSentence
         [ "You survived for"
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
@@ -518,7 +518,8 @@ historyHuman = do
       rh = renderHistory history
       kxs = replicate (length rh)
                       (Right dummySlot, (undefined, 0, lxsize))
-  okxs <- splitOKX (lysize + 3) msg (toOverlayRaw rh, kxs)
+  promptAdd msg
+  okxs <- splitOKX (lysize + 3) (toOverlayRaw rh, kxs)
   let displayAllHistory = do
         menuIxHistory <- getsSession smenuIxHistory
         (ekm, pointer) <-

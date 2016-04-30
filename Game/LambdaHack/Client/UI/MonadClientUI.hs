@@ -440,12 +440,12 @@ xhairToPos = do
     Nothing -> return Nothing
     Just aid -> aidTgtToPos aid lidV $ Just sxhair
 
-splitOKX :: MonadClientUI m => Y -> AttrLine -> OKX -> m [OKX]
-splitOKX y prompt okx = do
+splitOKX :: MonadClientUI m => Y -> OKX -> m [OKX]
+splitOKX y okx = do
   lid <- getArenaUI
   Level{lxsize} <- getLevel lid  -- TODO: screen length or viewLevel
   report <- getReport
-  let msg = splitReport lxsize (addMsg report (toPrompt prompt))
+  let msg = splitReport lxsize report
   return $! splitOverlayOKX y msg okx
 
 msgPromptAI :: MonadClientUI m => m Msg

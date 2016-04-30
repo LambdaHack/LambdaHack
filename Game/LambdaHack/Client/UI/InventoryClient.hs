@@ -571,7 +571,8 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
                                             (snd okx) of
                  Just p | cCur /= MStats -> p
                  _ -> 0
-           okxs <- splitOKX (lysize + 1) attrL okx
+           promptAddAttr attrL
+           okxs <- splitOKX (lysize + 1) okx
            (okm, pointer) <- displayChoiceScreen False lastPointer okxs itemKeys
            -- Only remember item pointer, if moved and if not stats.
            case drop pointer $ snd okx of
