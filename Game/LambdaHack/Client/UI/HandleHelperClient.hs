@@ -113,7 +113,7 @@ pickNumber askNumber kAll = do
                       <> tshow kDefault
                       <> "), ESC]"
         promptAdd kprompt
-        ov : _ <- slideshow <$> overlayToSlideshow mempty
+        ov : _ <- slideshow <$> reportToSlideshow
         frame <- drawOverlay ColorFull False ov
         kkm <- promptGetInt frame
         case K.key kkm of

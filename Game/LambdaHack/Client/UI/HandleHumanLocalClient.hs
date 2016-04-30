@@ -88,7 +88,7 @@ macroHuman :: MonadClientUI m => [String] -> m Slideshow
 macroHuman kms = do
   modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
   promptAdd $ "Macro activated:" <+> T.pack (intercalate " " kms)
-  overlayToSlideshow mempty
+  reportToSlideshow
 
 -- * Clear
 
@@ -488,13 +488,13 @@ recordHuman = do
       modifySession $ \sess -> sess {slastRecord}
       promptAdd $ "Macro will be recorded for up to"
                   <+> tshow maxK <+> "actions."  -- no MU, poweruser
-      overlayToSlideshow mempty
+      reportToSlideshow
     _ -> do
       let slastRecord = (seqPrevious, [], 0)
       modifySession $ \sess -> sess {slastRecord}
       promptAdd $ "Macro recording interrupted after"
                   <+> tshow (maxK - k - 1) <+> "actions."
-      overlayToSlideshow mempty
+      reportToSlideshow
 
 -- * History
 
@@ -747,7 +747,7 @@ doLook addMoreMsg = do
         floorItemOverlay lidV p
 -}
       promptAdd $ lookMsg <+> if addMoreMsg then tmoreMsg else ""
-      overlayToSlideshow mempty
+      reportToSlideshow
 
 -- * MoveXhair
 

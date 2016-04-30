@@ -90,7 +90,7 @@ humanCommand = do
             -- Display current state and keys if no slideshow or if interrupted.
             keys <- if b then describeMainKeys else return ""
             promptAdd keys
-            sli <- overlayToSlideshow mempty
+            sli <- reportToSlideshow
             return $! head $ slideshow sli  -- only the first slide of keys; OK
           Right bLast ->
             -- Display the last generated slide while waiting for the next key.

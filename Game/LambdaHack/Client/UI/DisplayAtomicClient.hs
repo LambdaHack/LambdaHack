@@ -258,7 +258,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
       -- since the frames may be displayed during the enemy turn and so
       -- we can't clear the prompts. In our turn, each screenful is displayed
       -- and we need to confirm each page change (e.g., in 'getConfirms').
-      sls <- overlayToSlideshow mempty
+      sls <- reportToSlideshow
       let slide = head $ slideshow sls  -- only the first slide shown
       frame <- drawOverlay ColorFull False slide
       displayFrame (Just frame)
@@ -568,7 +568,7 @@ quitFactionUI fid mbody toSt = do
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
       promptAdd tmoreMsg
-      startingSlide <- overlayToSlideshow mempty
+      startingSlide <- reportToSlideshow
       recordHistory  -- we are going to exit or restart, so record
       let bodyToItemSlides b = do
             (bag, tot) <- getsState $ calculateTotal b
@@ -595,7 +595,7 @@ quitFactionUI fid mbody toSt = do
       -- even though it is saved only for human UI clients.
       scoreSlides <- scoreToSlideshow total status
       promptAdd $ pp <+> tmoreMsg
-      partingSlide <- overlayToSlideshow mempty
+      partingSlide <- reportToSlideshow
       -- TODO: First ESC cancels items display.
       void $ getConfirms ColorFull [K.spaceKM] [K.escKM]
            $ startingSlide <> itemSlides

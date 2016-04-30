@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.MsgClient
   ( msgAdd, promptAdd, promptAddAttr, recordHistory
   , SlideOrCmd, failWith, failSlides, failSer, failMsg
-  , lookAt, itemOverlay, overlayToSlideshow
+  , lookAt, itemOverlay, overlayToSlideshow, reportToSlideshow
   ) where
 
 import Prelude ()
@@ -82,7 +82,7 @@ failMsg :: MonadClientUI m => Text -> m Slideshow
 failMsg msg = do
   stopPlayBack
   promptAdd $ "*" <> msg <> "*"
-  assert (not $ T.null msg) $ overlayToSlideshow mempty
+  assert (not $ T.null msg) reportToSlideshow
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.
@@ -176,3 +176,6 @@ overlayToSlideshow overlay = do
   report <- getReport
   let msg = splitReport lxsize report
   return $! splitOverlay (lysize + 1) msg overlay
+
+reportToSlideshow :: MonadClientUI m => m Slideshow
+reportToSlideshow = overlayToSlideshow mempty
