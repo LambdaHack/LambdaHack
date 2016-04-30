@@ -106,7 +106,7 @@ humanCommand = do
         lastPlay <- getsSession slastPlay
         km <- promptGetKey over False []
         -- Messages shown, so update history and reset current report.
-        lastReport <- getsSession sreport
+        lastReport <- getsSession _sreport
         when (null lastPlay) recordHistory
         abortOrCmd <- do
           -- Look up the key.

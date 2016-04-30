@@ -39,7 +39,7 @@ data SessionUI = SessionUI
                                       -- ^ the set of currently selected actors
   , srunning        :: !(Maybe RunParams)
                                       -- ^ parameters of the current run, if any
-  , sreport         :: !Report        -- ^ current messages
+  , _sreport        :: !Report        -- ^ current messages
   , shistory        :: !History       -- ^ history of messages
   , spointer        :: !Point         -- ^ mouse pointer position
   , slastRecord     :: !LastRecord    -- ^ state of key sequence recording
@@ -87,7 +87,7 @@ emptySessionUI sconfig =
     , sitemSel = Nothing
     , sselected = ES.empty
     , srunning = Nothing
-    , sreport = emptyReport
+    , _sreport = emptyReport
     , shistory = emptyHistory 0
     , spointer = originPoint
     , slastRecord = ([], [], 0)
@@ -116,7 +116,7 @@ instance Binary SessionUI where
     put sitemSel
     put sselected
     put srunning
-    put sreport
+    put _sreport
     put shistory
     put smarkVision
     put smarkSmell
@@ -131,7 +131,7 @@ instance Binary SessionUI where
     sitemSel <- get
     sselected <- get
     srunning <- get
-    sreport <- get
+    _sreport <- get
     shistory <- get
     smarkVision <- get
     smarkSmell <- get

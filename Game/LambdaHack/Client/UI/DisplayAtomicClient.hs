@@ -386,14 +386,14 @@ itemAidVerbMU aid verb iid ek cstore = do
 
 msgDuplicateScrap :: MonadClientUI m => m ()
 msgDuplicateScrap = do
-  report <- getsSession sreport
+  report <- getsSession _sreport
   history <- getsSession shistory
   let (lastMsg, repRest) = lastMsgOfReport report
       lastDup = isJust . findInReport (== msgLine lastMsg)
       lastDuplicated = lastDup repRest
                        || maybe False lastDup (lastReportOfHistory history)
   when lastDuplicated $
-    modifySession $ \sess -> sess {sreport = repRest}
+    modifySession $ \sess -> sess {_sreport = repRest}
 
 -- TODO: "XXX spots YYY"? or blink or show the changed xhair?
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()

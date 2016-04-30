@@ -144,10 +144,6 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
           interpretKey pkm
   page pointer0
 
--- TODO: generalize displayChoiceLine and getInitConfirms to a single op?
---       but don't enable SPACE, etc. if only one screen (or only prompt)
---       don't truncate then, but
--- If many overlays, scroll screenfuls with SPACE, etc.
 -- | Print a prompt and an overlay and wait for a player keypress.
 displayChoiceLine :: MonadClientUI m => AttrLine -> Overlay -> [K.KM] -> m K.KM
 displayChoiceLine prompt ov extraKeys = do
@@ -199,16 +195,15 @@ describeMainKeys = do
         <> T.intercalate ", "
              (map K.showKM [kmLeftButtonPress, kmReturn, kmEscape])
         <> "]"
-  report <- getsSession sreport
+  report <- getsSession _sreport
   return $! if nullReport report then keys else ""
 
 -- TODO: restrict the animation to 'per' before drawing.
 -- | Render animations on top of the current screen frame.
 animate :: MonadClientUI m => LevelId -> Animation -> m Frames
 animate arena anim = do
-  sreport <- getsSession sreport
-  promptAI <- msgPromptAI
-  let over = renderReport (prependMsg promptAI sreport)
+  report <- getReport
+  let over = renderReport report
       topLineOnly = truncateToOverlay over
   baseFrame <- drawBaseFrame ColorFull arena
   let basicFrame = overlayFrame topLineOnly $ Just baseFrame

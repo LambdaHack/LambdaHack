@@ -43,26 +43,26 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- | Add a message to the current report.
 msgAdd :: MonadClientUI m => Text -> m ()
 msgAdd msg = modifySession $ \sess ->
-  sess {sreport = addMsg (sreport sess) (toMsg msg)}
+  sess {_sreport = addMsg (_sreport sess) (toMsg msg)}
 
 -- | Add a prompt to the current report.
 promptAdd :: MonadClientUI m => Text -> m ()
 promptAdd msg = modifySession $ \sess ->
-  sess {sreport = addMsg (sreport sess) (toPrompt $ toAttrLine msg)}
+  sess {_sreport = addMsg (_sreport sess) (toPrompt $ toAttrLine msg)}
 
 -- | Add a prompt to the current report.
 promptAddAttr :: MonadClientUI m => AttrLine -> m ()
 promptAddAttr msg = modifySession $ \sess ->
-  sess {sreport = addMsg (sreport sess) (toPrompt msg)}
+  sess {_sreport = addMsg (_sreport sess) (toPrompt msg)}
 
 -- | Store current report in the history and reset report.
 recordHistory :: MonadClientUI m => m ()
 recordHistory = do
   time <- getsState stime
-  SessionUI{sreport, shistory} <- getSession
-  unless (nullReport sreport) $ do
-    let nhistory = addReport shistory time sreport
-    modifySession $ \sess -> sess { sreport = singletonReport $ toMsg ""
+  SessionUI{_sreport, shistory} <- getSession
+  unless (nullReport _sreport) $ do
+    let nhistory = addReport shistory time _sreport
+    modifySession $ \sess -> sess { _sreport = singletonReport $ toMsg ""
                                   , shistory = nhistory }
 
 type SlideOrCmd a = Either Slideshow a
@@ -171,9 +171,8 @@ itemOverlay c lid bag = do
 -- of the screen are displayed below. As many slides as needed are shown.
 overlayToSlideshow :: MonadClientUI m => Overlay -> m Slideshow
 overlayToSlideshow overlay = do
-  promptAI <- msgPromptAI
   lid <- getArenaUI
   Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
-  sreport <- getsSession sreport
-  let msg = splitReport lxsize (prependMsg promptAI sreport)
+  report <- getReport
+  let msg = splitReport lxsize report
   return $! splitOverlay (lysize + 1) msg overlay

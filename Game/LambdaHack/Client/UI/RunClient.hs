@@ -108,13 +108,13 @@ continueRunDir params = case params of
   RunParams{ runLeader
            , runMembers = aid : _
            , runInitial } -> do
-    sreport <- getsSession sreport -- TODO: check the message before it goes into history
+    report <- getsSession _sreport -- TODO: check the message before it goes into history
     let boringMsgs = [ "You hear a distant"
                      , "reveals that the" ]
         boring l = any (`isInfixOf` map Color.acChar l) boringMsgs
         -- TODO: use a regexp from the UI config instead
         -- or have symbolic messages and pattern-match
-        msgShown  = isJust $ findInReport (not . boring) sreport
+        msgShown  = isJust $ findInReport (not . boring) report
     if msgShown then return $ Left "message shown"
     else do
       cops@Kind.COps{cotile} <- getsState scops

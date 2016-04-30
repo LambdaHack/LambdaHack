@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
                  )
     -- * Display and key input
   , ColorMode(..)
-  , mapStartY, promptGetKey, promptGetInt
+  , mapStartY, getReport, promptGetKey, promptGetInt
   , getInitConfirms, getConfirms, getConfirmsKey
   , displayFrame, displayActorStart, drawBaseFrame, drawOverlay
     -- * Assorted primitives
@@ -72,6 +72,12 @@ class MonadClient m => MonadClientUI m where
   getsSession  :: (SessionUI -> a) -> m a
   modifySession :: (SessionUI -> SessionUI) -> m ()
   putSession  :: SessionUI -> m ()
+
+getReport :: MonadClientUI m => m Report
+getReport = do
+  promptAI <- msgPromptAI
+  report <- getsSession _sreport
+  return $! prependMsg promptAI report
 
 -- | Write a UI request to the frontend and read a corresponding reply.
 connFrontend :: MonadClientUI m => FrontReq a -> m a
@@ -436,11 +442,10 @@ xhairToPos = do
 
 splitOKX :: MonadClientUI m => Y -> AttrLine -> OKX -> m [OKX]
 splitOKX y prompt okx = do
-  promptAI <- msgPromptAI
   lid <- getArenaUI
   Level{lxsize} <- getLevel lid  -- TODO: screen length or viewLevel
-  sreport <- getsSession sreport
-  let msg = splitReport lxsize (prependMsg promptAI (addMsg sreport (toPrompt prompt)))
+  report <- getReport
+  let msg = splitReport lxsize (addMsg report (toPrompt prompt))
   return $! splitOverlayOKX y msg okx
 
 msgPromptAI :: MonadClientUI m => m Msg
