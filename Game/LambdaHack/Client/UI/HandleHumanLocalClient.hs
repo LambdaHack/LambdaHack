@@ -539,7 +539,8 @@ historyHuman = do
             -- expand this history item, not switch views completely;
             prompt = toAttrLine "The full past message at time "
                      ++ tturns ++ toAttrLine ". [ESC to go back]"
-        escK <- displayChoiceLine prompt ov0 [K.escKM]
+        promptAddAttr prompt
+        escK <- displayChoiceLine ov0 [K.escKM]
         let !_A = assert (escK == K.escKM) ()
         displayAllHistory
   displayAllHistory

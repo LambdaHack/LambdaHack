@@ -145,9 +145,8 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
   page pointer0
 
 -- | Print a prompt and an overlay and wait for a player keypress.
-displayChoiceLine :: MonadClientUI m => AttrLine -> Overlay -> [K.KM] -> m K.KM
-displayChoiceLine prompt ov extraKeys = do
-  promptAddAttr prompt
+displayChoiceLine :: MonadClientUI m => Overlay -> [K.KM] -> m K.KM
+displayChoiceLine ov extraKeys = do
   slides <- overlayToSlideshow ov
   getConfirmsKey ColorFull extraKeys slides
 

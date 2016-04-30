@@ -559,19 +559,18 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
                    keyLabelsRaw = letterRange : map (defLabel . snd) keyDefs
                    keyLabels = filter (not . T.null) keyLabelsRaw
                in "[" <> T.intercalate ", " (nub keyLabels) <> ", ESC]"
-      attrL = toAttrLine $ prompt <+> choice
+  promptAdd $ prompt <+> choice
   arena <- getArenaUI
   Level{lysize} <- getLevel arena
   ekm <- if null $ overlay $ fst okx
          then
-           Left <$> displayChoiceLine attrL (fst okx) itemKeys
+           Left <$> displayChoiceLine (fst okx) itemKeys
          else do
            lastSlot <- getsClient slastSlot
            let lastPointer = case findIndex ((== Right lastSlot) . fst)
                                             (snd okx) of
                  Just p | cCur /= MStats -> p
                  _ -> 0
-           promptAddAttr attrL
            okxs <- splitOKX (lysize + 1) okx
            (okm, pointer) <- displayChoiceScreen False lastPointer okxs itemKeys
            -- Only remember item pointer, if moved and if not stats.
