@@ -83,10 +83,10 @@ humanCommand = do
   -- but not human.
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
   modifySession $ \sess -> sess {slastLost = ES.empty}
-  let loop :: Either Bool Overlay -> m RequestUI
+  let loop :: Maybe Overlay -> m RequestUI
       loop mover = do
         over <- case mover of
-          Left _ -> do
+          Nothing -> do
             -- Display keys sometimes, alternating with empty screen.
             lastReport <- getsSession _sreport
             unless (nullReport lastReport) $
@@ -96,7 +96,7 @@ humanCommand = do
               describeMainKeys >>= promptAdd
             sli <- reportToSlideshow
             return $! head $ slideshow sli  -- only the first slide of keys; OK
-          Right bLast ->
+          Just bLast ->
             -- Display the last generated slide while waiting for the next key.
             return bLast
         (seqCurrent, seqPrevious, k) <- getsSession slastRecord
@@ -138,16 +138,13 @@ humanCommand = do
             -- Analyse the obtained slides.
             let sli = slideshow slides
             mLast <- case sli of
-              [] ->
-                return $ Left False
+              [] -> return Nothing
               [sLast] ->
                 -- Avoid displaying the single slide twice.
-                return $ Right sLast
+                return $ Just sLast
               _ -> do
                 -- Show, one by one, all slides, awaiting confirmation for each.
-                -- Note: the code that generates the slides is responsible
-                -- for inserting the @more@ prompt.
                 void $ getConfirms ColorFull [K.spaceKM] [K.escKM] slides
-                return $ Left False
+                return Nothing
             loop mLast
-  loop $ Left False
+  loop Nothing
