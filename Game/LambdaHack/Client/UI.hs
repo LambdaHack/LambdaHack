@@ -88,8 +88,8 @@ humanCommand = do
         over <- case mover of
           Nothing -> do
             -- Display keys sometimes, alternating with empty screen.
-            lastReport <- getsSession _sreport
-            unless (nullReport lastReport) $
+            report <- getsSession _sreport
+            unless (nullReport report) $
               modifySession $ \sess -> sess {skeysHintMode = KeysHintBlocked}
             keysHintMode <- getsSession skeysHintMode
             when (keysHintMode == KeysHintPresent) $
@@ -133,7 +133,10 @@ humanCommand = do
             -- and no slides could have been generated.
             return cmdS
           Left () -> do
-            slides <- reportToSlideshow
+            report <- getsSession _sreport
+            slides <- if nullReport report
+                      then return $ toSlideshow []
+                      else reportToSlideshow
             -- If no time taken, rinse and repeat.
             -- Analyse the obtained slides.
             let sli = slideshow slides
