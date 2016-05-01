@@ -1,8 +1,10 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Screen overlays and frames.
 module Game.LambdaHack.Client.UI.Overlay
-  ( Overlay(overlay), toOverlayRaw, truncateToOverlay, toOverlay
-  , updateOverlayLine, splitReport, renderHistory, itemDesc
+  ( AttrLine, toAttrLine, (<+:>)
+  , tmoreMsg, tendMsg, tyesnoMsg, moreMsg, endMsg, yesnoMsg
+  , Overlay(overlay), toOverlayRaw, toOverlay
+  , updateOverlayLine, itemDesc
   , SingleFrame(..), Frames, overlayFrame
   , Slideshow(slideshow), splitOverlay, toSlideshow
   , KYX, OKX, keyOfEKM, splitOverlayOKX
@@ -18,7 +20,6 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Item
@@ -27,6 +28,41 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
+
+type AttrLine = [Color.AttrChar]
+
+toAttrLine :: Text -> AttrLine
+toAttrLine = map (Color.AttrChar Color.defAttr) . T.unpack
+
+-- TODO: make a class, for monoids with neutral elements
+infixr 6 <+:>  -- matches Monoid.<>
+(<+:>) :: AttrLine -> AttrLine -> AttrLine
+(<+:>) [] l2 = l2
+(<+:>) l1 [] = l1
+(<+:>) l1 l2 = l1 ++ toAttrLine " " ++ l2
+
+-- tmp, until help in colour
+tmoreMsg :: Text
+tmoreMsg = "--more--  "
+
+-- tmp, until help in colour
+tendMsg :: Text
+tendMsg = "--end--  "
+
+tyesnoMsg :: Text
+tyesnoMsg = "[yn]"
+
+-- | The \"press something to see more\" mark.
+moreMsg :: AttrLine
+moreMsg = toAttrLine "--more--  "
+
+-- | The \"end of screenfuls of text\" mark.
+endMsg :: AttrLine
+endMsg = toAttrLine"--end--  "
+
+-- | The confirmation request message.
+yesnoMsg :: AttrLine
+yesnoMsg = toAttrLine "[yn]"
 
 -- | A series of screen lines that either fit the width of the screen
 -- or are intended for truncation when displayed. The length of overlay
@@ -37,9 +73,6 @@ newtype Overlay = Overlay {overlay :: [AttrLine]}
 -- TODO: get rid of
 toOverlayRaw :: [AttrLine] -> Overlay
 toOverlayRaw = Overlay
-
-truncateToOverlay :: AttrLine -> Overlay
-truncateToOverlay l = Overlay [l]
 
 toOverlay :: [Text] -> Overlay
 toOverlay = Overlay . map toAttrLine
@@ -52,11 +85,6 @@ updateOverlayLine n f Overlay{overlay} =
                        else l : upd (k - 1) ls
       upd _ [] = []
   in Overlay $ upd n overlay
-
--- | Split a messages into chunks that fit in one line.
--- We assume the width of the messages line is the same as of level map.
-splitReport :: X -> Report -> Overlay
-splitReport w r = Overlay $ splitAttrLine w $ renderReport r
 
 itemDesc :: CStore -> Time -> ItemFull -> AttrLine
 itemDesc c localTime itemFull =

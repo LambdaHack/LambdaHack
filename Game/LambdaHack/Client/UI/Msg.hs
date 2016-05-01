@@ -2,12 +2,10 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Client.UI.Msg
   ( -- * AttrLine and Msg
-    tmoreMsg, tendMsg, tyesnoMsg
-  , AttrLine, (<+:>), moreMsg, endMsg, yesnoMsg, toAttrLine, splitAttrLine
-  , Msg, toMsg, toPrompt
+    Msg, toMsg, toPrompt
     -- * Report
   , Report, emptyReport, nullReport, singletonReport, snocReport, consReport
-  , renderReport, findInReport, lastMsgOfReport
+  , splitReport, truncateReport, findInReport, lastMsgOfReport
     -- * History
   , History, emptyHistory, addReport, lengthHistory, linesHistory
   , lastReportOfHistory, renderHistory, splitReportForHistory
@@ -23,77 +21,16 @@ import Data.Char
 import Data.List (dropWhileEnd, find)
 import Data.Monoid
 import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Game.LambdaHack.Common.Color as Color
 import GHC.Generics (Generic)
 
+import Game.LambdaHack.Client.UI.Overlay
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.RingBuffer as RB
 import Game.LambdaHack.Common.Time
 
--- * AttrLine and Msg
-
--- tmp, until help in colour
-tmoreMsg :: Text
-tmoreMsg = "--more--  "
-
--- tmp, until help in colour
-tendMsg :: Text
-tendMsg = "--end--  "
-
-tyesnoMsg :: Text
-tyesnoMsg = "[yn]"
-
-type AttrLine = [Color.AttrChar]
-
-toAttrLine :: Text -> AttrLine
-toAttrLine = map (Color.AttrChar Color.defAttr) . T.unpack
-
--- TODO: make a class, for monoids with neutral elements
-infixr 6 <+:>  -- matches Monoid.<>
-(<+:>) :: AttrLine -> AttrLine -> AttrLine
-(<+:>) [] l2 = l2
-(<+:>) l1 [] = l1
-(<+:>) l1 l2 = l1 ++ toAttrLine " " ++ l2
-
--- | The \"press something to see more\" mark.
-moreMsg :: AttrLine
-moreMsg = toAttrLine "--more--  "
-
--- | The \"end of screenfuls of text\" mark.
-endMsg :: AttrLine
-endMsg = toAttrLine"--end--  "
-
--- | The confirmation request message.
-yesnoMsg :: AttrLine
-yesnoMsg = toAttrLine "[yn]"
-
--- | Split a string into lines. Avoids ending the line with a character
--- other than whitespace or punctuation. Space characters are removed
--- from the start, but never from the end of lines. Newlines are respected.
-splitAttrLine :: X -> AttrLine -> [AttrLine]
-splitAttrLine w l =
-  concatMap (splitAttrLine' w . dropWhile (isSpace . Color.acChar))
-  $ linesAttr l
-
-linesAttr :: AttrLine -> [AttrLine]
-linesAttr l | null l = []
-            | otherwise = h : if null t
-                              then []
-                              else linesAttr (tail t)
- where (h, t) = span ((/= '\n') . Color.acChar) l
-
-splitAttrLine' :: X -> AttrLine -> [AttrLine]
-splitAttrLine' w xs
-  | w >= length xs = [xs]  -- no problem, everything fits
-  | otherwise =
-      let (pre, post) = splitAt w xs
-          (ppre, ppost) = break ((== ' ') . Color.acChar) $ reverse pre
-          testPost = dropWhileEnd (isSpace . Color.acChar) ppost
-      in if null testPost
-         then pre : splitAttrLine w post
-         else reverse ppost : splitAttrLine w (reverse ppre ++ post)
+-- * Msg
 
 -- | The type of a single message.
 data Msg = Msg
@@ -160,6 +97,40 @@ lastMsgOfReport (Report rep) = case rep of
   [] -> ([], Report [])
   (lmsg, 1) : repRest -> (msgLine lmsg, Report repRest)
   (lmsg, n) : repRest -> (msgLine lmsg, Report $ (lmsg, n - 1) : repRest)
+
+-- | Split a messages into chunks that fit in one line.
+-- We assume the width of the messages line is the same as of level map.
+splitReport :: X -> Report -> Overlay
+splitReport w r = toOverlayRaw $ splitAttrLine w $ renderReport r
+
+-- | Split a string into lines. Avoids ending the line with a character
+-- other than whitespace or punctuation. Space characters are removed
+-- from the start, but never from the end of lines. Newlines are respected.
+splitAttrLine :: X -> AttrLine -> [AttrLine]
+splitAttrLine w l =
+  concatMap (splitAttrLine' w . dropWhile (isSpace . Color.acChar))
+  $ linesAttr l
+
+linesAttr :: AttrLine -> [AttrLine]
+linesAttr l | null l = []
+            | otherwise = h : if null t
+                              then []
+                              else linesAttr (tail t)
+ where (h, t) = span ((/= '\n') . Color.acChar) l
+
+splitAttrLine' :: X -> AttrLine -> [AttrLine]
+splitAttrLine' w xs
+  | w >= length xs = [xs]  -- no problem, everything fits
+  | otherwise =
+      let (pre, post) = splitAt w xs
+          (ppre, ppost) = break ((== ' ') . Color.acChar) $ reverse pre
+          testPost = dropWhileEnd (isSpace . Color.acChar) ppost
+      in if null testPost
+         then pre : splitAttrLine w post
+         else reverse ppost : splitAttrLine w (reverse ppre ++ post)
+
+truncateReport :: Report -> Overlay
+truncateReport r = toOverlayRaw [renderReport r]
 
 -- * History
 
