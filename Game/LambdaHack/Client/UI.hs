@@ -132,7 +132,8 @@ humanCommand = do
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
             return cmdS
-          Left slides -> do
+          Left () -> do
+            slides <- reportToSlideshow
             -- If no time taken, rinse and repeat.
             -- Analyse the obtained slides.
             let sli = slideshow slides

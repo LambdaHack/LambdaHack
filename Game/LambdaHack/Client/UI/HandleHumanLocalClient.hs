@@ -84,11 +84,10 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * Macro
 
-macroHuman :: MonadClientUI m => [String] -> m Slideshow
+macroHuman :: MonadClientUI m => [String] -> m ()
 macroHuman kms = do
   modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
   promptAdd $ "Macro activated:" <+> T.pack (intercalate " " kms)
-  reportToSlideshow
 
 -- * Clear
 
@@ -106,7 +105,7 @@ clearHuman = do
 -- | Display items from a given container store and possibly let the user
 -- chose one.
 chooseItemHuman :: MonadClientUI m
-                => ItemDialogMode -> m Slideshow
+                => ItemDialogMode -> m ()
 chooseItemHuman c = do
   let subject = partActor
       verbSha body activeItems = if calmEnough body activeItems
@@ -151,19 +150,18 @@ chooseItemHuman c = do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       localTime <- getsState $ getLocalTime (blid b)
-      let io = itemDesc (storeFromMode c2) localTime itemFull
+      let attrLine = itemDesc (storeFromMode c2) localTime itemFull
       case c2 of
         MStore COrgan -> do
           let symbol = jsymbol (itemBase itemFull)
               blurb | symbol == '+' = "choose temporary conditions"
                     | otherwise = "choose organs"
           -- TODO: also forbid on the server, except in special cases.
-          promptAdd $ "Can't" <+> blurb
-                      <> ", but here's the description."
-          overlayToSlideshow io
-        MStore fromCStore -> do
+              prompt2 = "Can't" <+> blurb
+                        <> ", but here's the description.\n"
+          promptAddAttr $ toAttrLine prompt2 ++ attrLine
+        MStore fromCStore ->
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
-          return mempty
         MOwned -> do
           found <- getsState $ findIid leader (bfid b) iid
           let !_A = assert (not (null found) `blame` ggi) ()
@@ -172,6 +170,7 @@ chooseItemHuman c = do
                                                              <+> bname b2
               foundTexts = map (ppLoc . snd) found
               prompt2 = makeSentence ["The item is", MU.WWandW foundTexts]
+                        <> "\n"
               (newAid, bestStore) = case leader `lookup` found of
                 Just (_, store) -> (leader, store)
                 Nothing -> case found of
@@ -179,15 +178,14 @@ chooseItemHuman c = do
                   [] -> assert `failure` iid
           modifySession $ \sess -> sess {sitemSel = Just (bestStore, iid)}
           void $ pickLeader True newAid
-          promptAdd prompt2
-          overlayToSlideshow io
+          promptAddAttr $ toAttrLine prompt2 ++ attrLine
         MStats -> assert `failure` ggi
-    Left slides -> return slides
+    Left () -> return ()
 
 -- * ChooseItemProject
 
 chooseItemProjectHuman :: forall m. MonadClientUI m
-                       => [Trigger] -> m Slideshow
+                       => [Trigger] -> m ()
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -293,7 +291,7 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 
 -- * ChooseItemApply
 
-chooseItemApplyHuman :: forall m. MonadClientUI m => [Trigger] -> m Slideshow
+chooseItemApplyHuman :: forall m. MonadClientUI m => [Trigger] -> m ()
 chooseItemApplyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -332,7 +330,7 @@ permittedApplyClient triggerSyms = do
 
 -- * PickLeader
 
-pickLeaderHuman :: MonadClientUI m => Int -> m Slideshow
+pickLeaderHuman :: MonadClientUI m => Int -> m ()
 pickLeaderHuman k = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -360,7 +358,7 @@ pickLeaderHuman k = do
 
 -- * PickLeaderWithPointer
 
-pickLeaderWithPointerHuman :: MonadClientUI m => m Slideshow
+pickLeaderWithPointerHuman :: MonadClientUI m => m ()
 pickLeaderWithPointerHuman = do
   lidV <- viewedLevel
   Level{lysize} <- getLevel lidV
@@ -394,13 +392,13 @@ pickLeaderWithPointerHuman = do
 -- * MemberCycle
 
 -- | Switches current member to the next on the level, if any, wrapping.
-memberCycleHuman :: MonadClientUI m => m Slideshow
+memberCycleHuman :: MonadClientUI m => m ()
 memberCycleHuman = memberCycle True
 
 -- * MemberBack
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
-memberBackHuman :: MonadClientUI m => m Slideshow
+memberBackHuman :: MonadClientUI m => m ()
 memberBackHuman = memberBack True
 
 -- * SelectActor
@@ -484,7 +482,7 @@ maxK = 100
 
 -- * Record
 
-recordHuman :: MonadClientUI m => m Slideshow
+recordHuman :: MonadClientUI m => m ()
 recordHuman = do
   (_seqCurrent, seqPrevious, k) <- getsSession slastRecord
   case k of
@@ -493,13 +491,11 @@ recordHuman = do
       modifySession $ \sess -> sess {slastRecord}
       promptAdd $ "Macro will be recorded for up to"
                   <+> tshow maxK <+> "actions."  -- no MU, poweruser
-      reportToSlideshow
     _ -> do
       let slastRecord = (seqPrevious, [], 0)
       modifySession $ \sess -> sess {slastRecord}
       promptAdd $ "Macro recording interrupted after"
                   <+> tshow (maxK - k - 1) <+> "actions."
-      reportToSlideshow
 
 -- * History
 
@@ -681,7 +677,7 @@ endAimingMsg = do
 
 -- * TgtClear
 
-tgtClearHuman :: MonadClientUI m => m Slideshow
+tgtClearHuman :: MonadClientUI m => m ()
 tgtClearHuman = do
   modifySession $ \sess -> sess {sitemSel = Nothing}
   leader <- getLeaderUI
@@ -703,7 +699,7 @@ tgtClearHuman = do
 
 -- | Perform look around in the current position of the xhair.
 -- Normally expects aiming mode and so that a leader is picked.
-doLook :: MonadClientUI m => Bool -> m Slideshow
+doLook :: MonadClientUI m => Bool -> m ()
 doLook addMoreMsg = do
   Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
   let unknownId = ouniqGroup "unknown space"
@@ -758,12 +754,11 @@ doLook addMoreMsg = do
         floorItemOverlay lidV p
 -}
       promptAdd $ lookMsg <+> if addMoreMsg then tmoreMsg else ""
-      reportToSlideshow
 
 -- * MoveXhair
 
 -- | Move the xhair. Assumes aiming mode.
-moveXhairHuman :: MonadClientUI m => Vector -> Int -> m Slideshow
+moveXhairHuman :: MonadClientUI m => Vector -> Int -> m ()
 moveXhairHuman dir n = do
   leader <- getLeaderUI
   saimMode <- getsSession saimMode
@@ -787,7 +782,7 @@ moveXhairHuman dir n = do
 
 -- | Start aiming, setting xhair to personal leader' target.
 -- To be used in conjuction with other commands.
-aimTgtHuman :: MonadClientUI m => m Slideshow
+aimTgtHuman :: MonadClientUI m => m ()
 aimTgtHuman = do
   -- (Re)start aiming at the current level.
   lidV <- viewedLevel
@@ -802,7 +797,7 @@ aimTgtHuman = do
 
 -- | Cycle aiming mode. Do not change position of the xhair,
 -- switch among things at that position.
-aimFloorHuman :: MonadClientUI m => m Slideshow
+aimFloorHuman :: MonadClientUI m => m ()
 aimFloorHuman = do
   lidV <- viewedLevel
   leader <- getLeaderUI
@@ -832,7 +827,7 @@ aimFloorHuman = do
 
 -- * AimEnemy
 
-aimEnemyHuman :: MonadClientUI m => m Slideshow
+aimEnemyHuman :: MonadClientUI m => m ()
 aimEnemyHuman = do
   lidV <- viewedLevel
   leader <- getLeaderUI
@@ -878,7 +873,7 @@ aimEnemyHuman = do
 
 -- | Change the displayed level in aiming mode to (at most)
 -- k levels shallower. Enters aiming mode, if not already in one.
-aimAscendHuman :: MonadClientUI m => Int -> m Slideshow
+aimAscendHuman :: MonadClientUI m => Int -> m ()
 aimAscendHuman k = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
@@ -918,7 +913,7 @@ aimAscendHuman k = do
 -- * EpsIncr
 
 -- | Tweak the @eps@ parameter of the aiming digital line.
-epsIncrHuman :: MonadClientUI m => Bool -> m Slideshow
+epsIncrHuman :: MonadClientUI m => Bool -> m ()
 epsIncrHuman b = do
   saimMode <- getsSession saimMode
   if isJust saimMode
@@ -929,7 +924,7 @@ epsIncrHuman b = do
 
 -- * XhairUnknown
 
-xhairUnknownHuman :: MonadClientUI m => m Slideshow
+xhairUnknownHuman :: MonadClientUI m => m ()
 xhairUnknownHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -943,7 +938,7 @@ xhairUnknownHuman = do
 
 -- * XhairItem
 
-xhairItemHuman :: MonadClientUI m => m Slideshow
+xhairItemHuman :: MonadClientUI m => m ()
 xhairItemHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -957,7 +952,7 @@ xhairItemHuman = do
 
 -- * XhairStair
 
-xhairStairHuman :: MonadClientUI m => Bool -> m Slideshow
+xhairStairHuman :: MonadClientUI m => Bool -> m ()
 xhairStairHuman up = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -977,7 +972,7 @@ xhairPointerFloorHuman = do
   let !_A = assert (look == mempty `blame` look) ()
   modifySession $ \sess -> sess {saimMode = Nothing}
 
-xhairPointerFloor :: MonadClientUI m => Bool -> m Slideshow
+xhairPointerFloor :: MonadClientUI m => Bool -> m ()
 xhairPointerFloor verbose = do
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
@@ -1009,7 +1004,7 @@ xhairPointerEnemyHuman = do
   let !_A = assert (look == mempty `blame` look) ()
   modifySession $ \sess -> sess {saimMode = Nothing}
 
-xhairPointerEnemy :: MonadClientUI m => Bool -> m Slideshow
+xhairPointerEnemy :: MonadClientUI m => Bool -> m ()
 xhairPointerEnemy verbose = do
   lidV <- viewedLevel
   Level{lxsize, lysize} <- getLevel lidV
@@ -1040,10 +1035,10 @@ xhairPointerEnemy verbose = do
 
 -- * AimPointerFloor
 
-aimPointerFloorHuman :: MonadClientUI m => m Slideshow
+aimPointerFloorHuman :: MonadClientUI m => m ()
 aimPointerFloorHuman = xhairPointerFloor True
 
 -- * AimPointerEnemy
 
-aimPointerEnemyHuman :: MonadClientUI m => m Slideshow
+aimPointerEnemyHuman :: MonadClientUI m => m ()
 aimPointerEnemyHuman = xhairPointerEnemy True

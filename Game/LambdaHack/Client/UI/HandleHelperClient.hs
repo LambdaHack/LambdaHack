@@ -31,7 +31,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 
 -- | Switches current member to the next on the level, if any, wrapping.
-memberCycle :: MonadClientUI m => Bool -> m Slideshow
+memberCycle :: MonadClientUI m => Bool -> m ()
 memberCycle verbose = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -46,10 +46,10 @@ memberCycle verbose = do
       success <- pickLeader verbose np
       let !_A = assert (success `blame` "same leader"
                                 `twith` (leader, np, b)) ()
-      return mempty
+      return ()
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
-memberBack :: MonadClientUI m => Bool -> m Slideshow
+memberBack :: MonadClientUI m => Bool -> m ()
 memberBack verbose = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -64,7 +64,7 @@ memberBack verbose = do
       success <- pickLeader verbose np
       let !_A = assert (success `blame` "same leader"
                                 `twith` (leader, np, b)) ()
-      return mempty
+      return ()
 
 partyAfterLeader :: MonadStateRead m => ActorId -> m [(ActorId, Actor)]
 partyAfterLeader leader = do

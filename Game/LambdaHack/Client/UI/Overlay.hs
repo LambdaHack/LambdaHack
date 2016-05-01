@@ -58,7 +58,7 @@ updateOverlayLine n f Overlay{overlay} =
 splitReport :: X -> Report -> Overlay
 splitReport w r = Overlay $ splitAttrLine w $ renderReport r
 
-itemDesc :: CStore -> Time -> ItemFull -> Overlay
+itemDesc :: CStore -> Time -> ItemFull -> AttrLine
 itemDesc c localTime itemFull =
   let (_, name, stats) = partItemN 10 100 c localTime itemFull
       nstats = makePhrase [name, stats]
@@ -73,7 +73,6 @@ itemDesc c localTime itemFull =
         | otherwise = ("", "")
       ln = abs $ fromEnum $ jlid (itemBase itemFull)
       colorSymbol = uncurry (flip Color.AttrChar) (viewItem $ itemBase itemFull)
-      lxsize = fst normalLevelBound + 1  -- TODO
       blurb =
         " "
         <> nstats
@@ -81,10 +80,7 @@ itemDesc c localTime itemFull =
         <+> desc
         <+> makeSentence ["Weighs", MU.Text scaledWeight <> unitWeight]
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]
-      splitBlurb = Overlay $ splitAttrLine lxsize
-                   $ colorSymbol : toAttrLine blurb
-      f line = [colorSymbol] ++ drop 1 line
-  in updateOverlayLine 0 f splitBlurb
+  in colorSymbol : toAttrLine blurb
 
 -- | An overlay that fits on the screen (or is meant to be truncated on display)
 -- and is padded to fill the whole screen

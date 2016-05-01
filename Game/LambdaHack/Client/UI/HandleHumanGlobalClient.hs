@@ -611,7 +611,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
       ret4 :: MonadClientUI m
            => [(ItemId, ItemFull)]
            -> Int -> [(ItemId, Int, CStore, CStore)]
-           -> m (Either Slideshow [(ItemId, Int, CStore, CStore)])
+           -> m (Either () [(ItemId, Int, CStore, CStore)])
       ret4 [] _ acc = return $ Right $ reverse acc
       ret4 ((iid, itemFull) : rest) oldN acc = do
         let k = itemK itemFull
@@ -651,7 +651,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
   else do
     l4 <- ret4 l 0 []
     return $! case l4 of
-      Left sli -> Left sli
+      Left () -> Left ()
       Right [] -> assert `failure` l
       Right lr -> Right $ ReqMoveItems lr
 
