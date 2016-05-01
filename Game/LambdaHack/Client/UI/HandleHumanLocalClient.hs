@@ -526,7 +526,7 @@ historyHuman = do
           displayChoiceScreen True menuIxHistory okxs [K.spaceKM, K.escKM]
         modifySession $ \sess -> sess {smenuIxHistory = pointer}
         case ekm of
-          Left km | km `K.elemOrNull` [K.spaceKM, K.escKM] -> return ()
+          Left km | km `elem` [K.spaceKM, K.escKM] -> promptAdd ""
           Right slot | slot == dummySlot -> displayOneReport pointer
           _ -> assert `failure` ekm
       displayOneReport pointer = do
