@@ -16,7 +16,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , stopPlayBack, stopPlayBackGiveStatus, askConfig, askBinding
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, addPressedKey
   , frontendShutdown
-  , scoreToSlideshow, msgPromptAI, defaultHistory
+  , scoreToSlideshow, defaultHistory
   , getLeaderUI, getArenaUI, viewedLevel
   , targetDescLeader, targetDescXhair
   , leaderTgtToPos, leaderTgtAims, xhairToPos, splitOKX
@@ -75,9 +75,12 @@ class MonadClient m => MonadClientUI m where
 
 getReport :: MonadClientUI m => m Report
 getReport = do
-  promptAI <- msgPromptAI
   report <- getsSession _sreport
-  return $! prependMsg promptAI report
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  let underAI = isAIFact fact
+      promptAI = toPrompt $ toAttrLine $ "[press any key for Main Menu]"
+  return $! if underAI then consReport promptAI report else report
 
 -- | Write a UI request to the frontend and read a corresponding reply.
 connFrontend :: MonadClientUI m => FrontReq a -> m a
@@ -447,14 +450,6 @@ splitOKX y okx = do
   report <- getReport
   let msg = splitReport lxsize report
   return $! splitOverlayOKX y msg okx
-
-msgPromptAI :: MonadClientUI m => m Msg
-msgPromptAI = do
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  let underAI = isAIFact fact
-  return $! toPrompt $ toAttrLine
-         $ if underAI then "[press any key for Main Menu]" else ""
 
 defaultHistory :: MonadClient m => Int -> m History
 defaultHistory configHistoryMax = liftIO $ do

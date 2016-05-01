@@ -389,7 +389,7 @@ msgDuplicateScrap = do
   report <- getsSession _sreport
   history <- getsSession shistory
   let (lastMsg, repRest) = lastMsgOfReport report
-      lastDup = isJust . findInReport (== msgLine lastMsg)
+      lastDup = isJust . findInReport (== lastMsg)
       lastDuplicated = lastDup repRest
                        || maybe False lastDup (lastReportOfHistory history)
   when lastDuplicated $
@@ -564,12 +564,11 @@ quitFactionUI fid mbody toSt = do
     Nothing -> return ()
     Just sp -> do
       let msg = makeSentence [MU.SubjectVerbSg fidName sp]
-      msgAdd msg
+      promptAdd $ msg <+> tmoreMsg
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
-      promptAdd tmoreMsg
       startingSlide <- reportToSlideshow
-      recordHistory  -- we are going to exit or restart, so record
+      recordHistory  -- we are going to exit or restart, so record and clear
       let bodyToItemSlides b = do
             (bag, tot) <- getsState $ calculateTotal b
             let currencyName = MU.Text $ IK.iname $ okind
@@ -605,7 +604,7 @@ quitFactionUI fid mbody toSt = do
       -- TODO: perhaps use a vertical animation instead, e.g., roll down
       -- and put it before item and score screens (on blank background)
       unless (fmap stOutcome toSt == Just Camping) $ do
-        msgAdd pp  -- TODO: mark for non-inclusion in history
+        promptAdd pp
         fadeOutOrIn True
     _ -> return ()
 

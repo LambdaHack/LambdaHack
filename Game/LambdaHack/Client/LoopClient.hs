@@ -139,7 +139,7 @@ loopUI copsClient sconfig sdebugCli = do
   case (restored, cmd1) of
     (True, RespUpdAtomicUI UpdResume{}) -> do
       mode <- getGameMode
-      msgAdd $ mdesc mode  -- the long description of the mode
+      promptAdd $ mdesc mode  -- the long description of the mode
       handleResponseUI cmd1
     (True, RespUpdAtomicUI UpdRestart{}) -> do
       msgAdd $

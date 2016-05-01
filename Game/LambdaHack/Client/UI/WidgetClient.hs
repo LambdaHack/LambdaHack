@@ -9,7 +9,6 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
-import qualified Data.EnumMap.Strict as EM
 import Data.List (find)
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -39,7 +38,6 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.State
 
 -- | Display a message with a @-more-@ prompt.
 -- Return value indicates if the player tried to cancel/escape.
@@ -151,9 +149,6 @@ displayChoiceLine ov extraKeys = do
 
 describeMainKeys :: MonadClientUI m => m Text
 describeMainKeys = do
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  let underAI = isAIFact fact
   saimMode <- getsSession saimMode
   Binding{brevMap} <- askBinding
   Config{configVi, configLaptop} <- askConfig
@@ -180,8 +175,7 @@ describeMainKeys = do
         TEnemyPos _ _ _ False -> "at enemy"
         TPoint{} -> "at position"
         TVector{} -> "with a vector"
-      keys | underAI = ""
-           | isNothing saimMode =
+      keys | isNothing saimMode =
         "Explore with keypad or keys or mouse: ["
         <> moveKeys
         <> T.intercalate ", "
@@ -193,8 +187,7 @@ describeMainKeys = do
         <> T.intercalate ", "
              (map K.showKM [kmLeftButtonPress, kmReturn, kmEscape])
         <> "]"
-  report <- getsSession _sreport
-  return $! if nullReport report then keys else ""
+  return $! keys
 
 -- TODO: restrict the animation to 'per' before drawing.
 -- | Render animations on top of the current screen frame.

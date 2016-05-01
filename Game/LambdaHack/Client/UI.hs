@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI
   , KeyKind, SessionUI(..)
   , ChanFrontend, chanFrontend, frontendShutdown
     -- * Operations exposed for LoopClient
-  , ColorMode(..), displayMore, msgAdd
+  , ColorMode(..), displayMore, msgAdd, promptAdd
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , humanCommand
@@ -85,11 +85,11 @@ humanCommand = do
   modifySession $ \sess -> sess {slastLost = ES.empty}
   let loop :: Either Bool Overlay -> m RequestUI
       loop mover = do
+        lastReport <- getsSession _sreport
         over <- case mover of
           Left b -> do
             -- Display current state and keys if no slideshow or if interrupted.
-            keys <- if b then describeMainKeys else return ""
-            promptAdd keys
+            when (b && nullReport lastReport) $ describeMainKeys >>= promptAdd
             sli <- reportToSlideshow
             return $! head $ slideshow sli  -- only the first slide of keys; OK
           Right bLast ->
@@ -106,7 +106,6 @@ humanCommand = do
         lastPlay <- getsSession slastPlay
         km <- promptGetKey over False []
         -- Messages shown, so update history and reset current report.
-        lastReport <- getsSession _sreport
         when (null lastPlay) recordHistory
         abortOrCmd <- do
           -- Look up the key.

@@ -4,9 +4,9 @@ module Game.LambdaHack.Client.UI.Msg
   ( -- * AttrLine and Msg
     tmoreMsg, tendMsg, tyesnoMsg
   , AttrLine, (<+:>), moreMsg, endMsg, yesnoMsg, toAttrLine, splitAttrLine
-  , Msg(..), toMsg, toPrompt
+  , Msg, toMsg, toPrompt
     -- * Report
-  , Report, emptyReport, nullReport, singletonReport, addMsg, prependMsg
+  , Report, emptyReport, nullReport, singletonReport, snocReport, consReport
   , renderReport, findInReport, lastMsgOfReport
     -- * History
   , History, emptyHistory, addReport, lengthHistory, linesHistory
@@ -17,7 +17,6 @@ module Game.LambdaHack.Client.UI.Msg
 import Prelude ()
 import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Binary.Orphans ()
 import Data.Char
@@ -128,19 +127,19 @@ nullReport (Report l) = null l
 
 -- | Construct a singleton set of messages.
 singletonReport :: Msg -> Report
-singletonReport = addMsg emptyReport
+singletonReport = snocReport emptyReport
 
--- TODO: Differentiate from msgAdd. Generally, invent more informative names.
 -- | Add message to the end of report. Deletes old prompt messages.
-addMsg :: Report -> Msg -> Report
-addMsg r m | null $ msgLine m = r
-addMsg (Report ((x, n) : xns)) y | x == y =
-  Report $ (x, n + 1) : filter (msgHist . fst) xns
-addMsg (Report xns) y = Report $ (y, 1) : filter (msgHist . fst) xns
+snocReport :: Report -> Msg -> Report
+snocReport (Report r) y =
+  case filter (msgHist . fst) r of
+    xns | null $ msgLine y -> Report xns
+    (x, n) : xns | x == y -> Report $ (x, n + 1) : xns
+    xns -> Report $ (y, 1) : xns
 
-prependMsg :: Msg -> Report -> Report
-prependMsg m (Report ms) =
-  let Report ms2 = addMsg (Report $ reverse ms) m
+consReport :: Msg -> Report -> Report
+consReport m (Report ms) =
+  let Report ms2 = snocReport (Report $ reverse ms) m
   in Report $ reverse ms2
 
 -- | Render a report as a (possibly very long) 'AttrLine'.
@@ -156,11 +155,11 @@ renderRepetition (s, n) = msgLine s ++ toAttrLine ("<x" <> tshow n <> ">")
 findInReport :: (AttrLine -> Bool) -> Report -> Maybe Msg
 findInReport f (Report xns) = find (f . msgLine) $ map fst xns
 
-lastMsgOfReport :: Report -> (Msg, Report)
+lastMsgOfReport :: Report -> (AttrLine, Report)
 lastMsgOfReport (Report rep) = case rep of
-  [] -> assert `failure` rep
-  (lmsg, 1) : repRest -> (lmsg, Report repRest)
-  (lmsg, n) : repRest -> (lmsg, Report $ (lmsg, n - 1) : repRest)
+  [] -> ([], Report [])
+  (lmsg, 1) : repRest -> (msgLine lmsg, Report repRest)
+  (lmsg, n) : repRest -> (msgLine lmsg, Report $ (lmsg, n - 1) : repRest)
 
 -- * History
 
@@ -174,12 +173,13 @@ emptyHistory size = History $ RB.empty size (timeZero, Report [])
 
 -- | Add a report to history, handling repetitions.
 addReport :: History -> Time -> Report -> History
-addReport !(History rb) !time !rep@(Report m) =
-  case RB.uncons rb of
+addReport !(History rb) !time !(Report m') =
+  let rep@(Report m) = Report $ filter (msgHist . fst) m'
+  in case RB.uncons rb of
+    _ | null m -> History rb
     Nothing -> History $ RB.cons (time, rep) rb
     Just ((oldTime, Report h), hRest) ->
-      case (reverse (filter (msgHist . fst) m), h) of
-        ([], _) -> History rb
+      case (reverse m, h) of
         ((s1, n1) : rs, (s2, n2) : hhs) | s1 == s2 ->
           let hist = RB.cons (oldTime, Report ((s2, n1 + n2) : hhs)) hRest
           in History $ if null rs

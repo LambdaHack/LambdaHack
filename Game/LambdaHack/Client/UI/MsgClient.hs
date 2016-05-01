@@ -43,17 +43,17 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- | Add a message to the current report.
 msgAdd :: MonadClientUI m => Text -> m ()
 msgAdd msg = modifySession $ \sess ->
-  sess {_sreport = addMsg (_sreport sess) (toMsg msg)}
+  sess {_sreport = snocReport (_sreport sess) (toMsg msg)}
 
 -- | Add a prompt to the current report.
 promptAdd :: MonadClientUI m => Text -> m ()
 promptAdd msg = modifySession $ \sess ->
-  sess {_sreport = addMsg (_sreport sess) (toPrompt $ toAttrLine msg)}
+  sess {_sreport = snocReport (_sreport sess) (toPrompt $ toAttrLine msg)}
 
 -- | Add a prompt to the current report.
 promptAddAttr :: MonadClientUI m => AttrLine -> m ()
 promptAddAttr msg = modifySession $ \sess ->
-  sess {_sreport = addMsg (_sreport sess) (toPrompt msg)}
+  sess {_sreport = snocReport (_sreport sess) (toPrompt msg)}
 
 -- | Store current report in the history and reset report.
 recordHistory :: MonadClientUI m => m ()
@@ -62,7 +62,7 @@ recordHistory = do
   SessionUI{_sreport, shistory} <- getSession
   unless (nullReport _sreport) $ do
     let nhistory = addReport shistory time _sreport
-    modifySession $ \sess -> sess { _sreport = singletonReport $ toMsg ""
+    modifySession $ \sess -> sess { _sreport = emptyReport
                                   , shistory = nhistory }
 
 type SlideOrCmd a = Either Slideshow a
