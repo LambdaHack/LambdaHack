@@ -92,9 +92,12 @@ macroHuman kms = do
 
 -- * Clear
 
--- | Clear current messages, show the next screen if any.
-clearHuman :: Monad m => m ()
-clearHuman = return ()
+-- | Clear current messages, cycle key hints mode.
+clearHuman :: MonadClientUI m => m ()
+clearHuman =
+  modifySession $ \sess -> sess {skeysHintMode =
+    let n = fromEnum (skeysHintMode sess) + 1
+    in toEnum $ if n > fromEnum (maxBound :: KeysHintMode) then 1 else n}
 
 -- * ChooseItem
 
@@ -526,7 +529,8 @@ historyHuman = do
           displayChoiceScreen True menuIxHistory okxs [K.spaceKM, K.escKM]
         modifySession $ \sess -> sess {smenuIxHistory = pointer}
         case ekm of
-          Left km | km `elem` [K.spaceKM, K.escKM] -> promptAdd ""
+          Left km | km `elem` [K.spaceKM, K.escKM] ->
+            promptAdd "Try to survive a few seconds more, if you can."
           Right slot | slot == dummySlot -> displayOneReport pointer
           _ -> assert `failure` ekm
       displayOneReport pointer = do
@@ -642,8 +646,11 @@ settingsMenuHuman cmdAction = do
 -- | End aiming mode, rejecting the current position.
 cancelHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 cancelHuman = do
-  modifySession $ \sess -> sess {saimMode = Nothing}
-  failWith "target not set"
+  saimMode <- getsSession saimMode
+  if isJust saimMode then do
+    modifySession $ \sess -> sess {saimMode = Nothing}
+    failWith "target not set"
+  else return $ Left mempty
 
 -- * Accept
 

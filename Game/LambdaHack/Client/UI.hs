@@ -85,11 +85,15 @@ humanCommand = do
   modifySession $ \sess -> sess {slastLost = ES.empty}
   let loop :: Either Bool Overlay -> m RequestUI
       loop mover = do
-        lastReport <- getsSession _sreport
         over <- case mover of
-          Left b -> do
-            -- Display current state and keys if no slideshow or if interrupted.
-            when (b && nullReport lastReport) $ describeMainKeys >>= promptAdd
+          Left _ -> do
+            -- Display keys sometimes, alternating with empty screen.
+            lastReport <- getsSession _sreport
+            unless (nullReport lastReport) $
+              modifySession $ \sess -> sess {skeysHintMode = KeysHintBlocked}
+            keysHintMode <- getsSession skeysHintMode
+            when (keysHintMode == KeysHintPresent) $
+              describeMainKeys >>= promptAdd
             sli <- reportToSlideshow
             return $! head $ slideshow sli  -- only the first slide of keys; OK
           Right bLast ->
@@ -134,7 +138,7 @@ humanCommand = do
             let sli = slideshow slides
             mLast <- case sli of
               [] ->
-                return $ Left $ nullReport lastReport && mover /= Left True
+                return $ Left False
               [sLast] ->
                 -- Avoid displaying the single slide twice.
                 return $ Right sLast
@@ -142,7 +146,7 @@ humanCommand = do
                 -- Show, one by one, all slides, awaiting confirmation for each.
                 -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
-                go <- getConfirms ColorFull [K.spaceKM] [K.escKM] slides
-                return $ Left $ not go
+                void $ getConfirms ColorFull [K.spaceKM] [K.escKM] slides
+                return $ Left False
             loop mLast
   loop $ Left False

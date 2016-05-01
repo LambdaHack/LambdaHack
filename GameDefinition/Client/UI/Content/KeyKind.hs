@@ -26,7 +26,7 @@ standardKeys = KeyKind
       -- mode) first.
 
       -- Main Menu
-      [ ("Escape", ([CmdMainMenu], "back to playing", Clear))
+      [ ("Escape", ([CmdMainMenu], "back to playing", Cancel))
       , ("?", ([CmdMainMenu], "see command help", Help Nothing))
       , ("S", ([CmdMainMenu], "enter settings menu", SettingsMenu))
       , ("X", ([CmdMainMenu], "save and exit", GameExit))

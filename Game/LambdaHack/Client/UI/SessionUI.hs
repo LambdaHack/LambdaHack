@@ -2,7 +2,7 @@
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), emptySessionUI
-  , AimMode(..), RunParams(..), LastRecord
+  , AimMode(..), RunParams(..), LastRecord, KeysHintMode(..)
   , toggleMarkVision, toggleMarkSmell
   ) where
 
@@ -54,6 +54,7 @@ data SessionUI = SessionUI
   , smenuIxHelp     :: !Int           -- ^ index of last used Help Menu item
   , smenuIxHistory  :: !Int           -- ^ index of last used History Menu item
   , sdisplayNeeded  :: !Bool          -- ^ something to display on current level
+  , skeysHintMode   :: !KeysHintMode  -- ^ how to show keys hints when no messages
   }
 
 -- | Current aiming mode of a client.
@@ -75,6 +76,9 @@ type LastRecord = ( [K.KM]  -- accumulated keys of the current command
                   , [K.KM]  -- keys of the rest of the recorded command batch
                   , Int     -- commands left to record for this batch
                   )
+
+data KeysHintMode = KeysHintBlocked | KeysHintAbsent | KeysHintPresent
+  deriving (Eq, Enum, Bounded)
 
 -- | Initial empty game client state.
 emptySessionUI :: Config -> SessionUI
@@ -101,6 +105,7 @@ emptySessionUI sconfig =
     , smenuIxHelp = 0
     , smenuIxHistory = 0
     , sdisplayNeeded = False
+    , skeysHintMode = KeysHintPresent
     }
 
 toggleMarkVision :: SessionUI -> SessionUI
@@ -147,6 +152,7 @@ instance Binary SessionUI where
         slastPlay = []
         slastLost = ES.empty
         swaitTimes = 0
+        skeysHintMode = KeysHintAbsent
     return $! SessionUI{..}
 
 instance Binary RunParams where
