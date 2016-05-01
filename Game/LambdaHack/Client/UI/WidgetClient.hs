@@ -63,7 +63,6 @@ displayConfirm dm trueKeys falseKeys prompt = do
   -- Two frames drawn total (unless @prompt@ very long).
   slides <- reportToSlideshow
   b <- getConfirms dm trueKeys falseKeys slides
-  recordHistory  -- clear messages
   return b
 
 displayChoiceScreen :: forall m . MonadClientUI m

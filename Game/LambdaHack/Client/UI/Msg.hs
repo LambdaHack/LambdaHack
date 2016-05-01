@@ -131,11 +131,12 @@ singletonReport :: Msg -> Report
 singletonReport = addMsg emptyReport
 
 -- TODO: Differentiate from msgAdd. Generally, invent more informative names.
--- | Add message to the end of report.
+-- | Add message to the end of report. Deletes old prompt messages.
 addMsg :: Report -> Msg -> Report
 addMsg r m | null $ msgLine m = r
-addMsg (Report ((x, n) : xns)) y | x == y = Report $ (x, n + 1) : xns
-addMsg (Report xns) y = Report $ (y, 1) : xns
+addMsg (Report ((x, n) : xns)) y | x == y =
+  Report $ (x, n + 1) : filter (msgHist . fst) xns
+addMsg (Report xns) y = Report $ (y, 1) : filter (msgHist . fst) xns
 
 prependMsg :: Msg -> Report -> Report
 prependMsg m (Report ms) =
