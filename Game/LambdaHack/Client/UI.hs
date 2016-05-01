@@ -83,22 +83,30 @@ humanCommand = do
   -- but not human.
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
   modifySession $ \sess -> sess {slastLost = ES.empty}
-  let loop :: Maybe Overlay -> m RequestUI
-      loop mover = do
-        over <- case mover of
-          Nothing -> do
+  modifySession $ \sess -> sess {skeysHintMode = KeysHintBlocked}
+  let loop :: m RequestUI
+      loop = do
+        report <- getsSession _sreport
+        over <-
+          if nullReport report then do
             -- Display keys sometimes, alternating with empty screen.
-            report <- getsSession _sreport
-            unless (nullReport report) $
-              modifySession $ \sess -> sess {skeysHintMode = KeysHintBlocked}
             keysHintMode <- getsSession skeysHintMode
             when (keysHintMode == KeysHintPresent) $
               describeMainKeys >>= promptAdd
             sli <- reportToSlideshow
             return $! head $ slideshow sli  -- only the first slide of keys; OK
-          Just bLast ->
-            -- Display the last generated slide while waiting for the next key.
-            return bLast
+          else do
+            modifySession $ \sess -> sess {skeysHintMode = KeysHintBlocked}
+            sli <- reportToSlideshow
+            case slideshow sli of
+              [] -> assert `failure` report
+              [sLast] ->
+                -- Display the last generated slide while waiting for next key.
+                return sLast
+              _ -> do
+                -- Show, one by one, all slides, awaiting confirmation for each.
+                void $ getConfirms ColorFull [K.spaceKM] [K.escKM] sli
+                return $! toOverlay []
         (seqCurrent, seqPrevious, k) <- getsSession slastRecord
         case k of
           0 -> do
@@ -130,24 +138,7 @@ humanCommand = do
         case abortOrCmd of
           Right cmdS ->
             -- Exit the loop and let other actors act. No next key needed
-            -- and no slides could have been generated.
+            -- and no report could have been generated.
             return cmdS
-          Left () -> do
-            report <- getsSession _sreport
-            slides <- if nullReport report
-                      then return $ toSlideshow []
-                      else reportToSlideshow
-            -- If no time taken, rinse and repeat.
-            -- Analyse the obtained slides.
-            let sli = slideshow slides
-            mLast <- case sli of
-              [] -> return Nothing
-              [sLast] ->
-                -- Avoid displaying the single slide twice.
-                return $ Just sLast
-              _ -> do
-                -- Show, one by one, all slides, awaiting confirmation for each.
-                void $ getConfirms ColorFull [K.spaceKM] [K.escKM] slides
-                return Nothing
-            loop mLast
-  loop Nothing
+          Left () -> loop
+  loop
