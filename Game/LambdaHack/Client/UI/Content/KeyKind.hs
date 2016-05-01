@@ -68,7 +68,7 @@ defaultCmdLMB =
           , (CaPercentSeen, XhairStair True) ] } )
  where
   common =
-    [ (CaMessage, History)
+    [ (CaMessage, Clear)
     , (CaMapLeader, getAscendCmd)
     , (CaArenaName, ByAimMode {notAiming = MainMenu, aiming = Cancel})
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies

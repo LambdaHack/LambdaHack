@@ -77,7 +77,11 @@ type LastRecord = ( [K.KM]  -- accumulated keys of the current command
                   , Int     -- commands left to record for this batch
                   )
 
-data KeysHintMode = KeysHintBlocked | KeysHintAbsent | KeysHintPresent
+data KeysHintMode =
+    KeysHintBlocked
+  | KeysHintAbsent
+  | KeysHintPresent
+  | KeysHintHistory
   deriving (Eq, Enum, Bounded)
 
 -- | Initial empty game client state.

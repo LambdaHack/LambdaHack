@@ -170,9 +170,8 @@ standardKeys = KeyKind
                    , ByAimMode {notAiming = Help $ Just "", aiming=Accept} ))
 
       -- Assorted
-      , ("space", ([CmdMeta], "clear messages", Clear))
+      , ("space", ([CmdMeta], "clear/display hints and history", Clear))
       , ("?", ([CmdMeta], "display help", Help Nothing))
-      , ("D", ([CmdMeta, CmdMinimal], "display player diary", History))
       , ("Tab", ( [CmdMeta]
                 , "cycle among party members on the level"
                 , MemberCycle ))
