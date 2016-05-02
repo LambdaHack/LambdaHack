@@ -262,7 +262,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
           success <- pickLeader True target
           let !_A = assert (success `blame` "bump self"
                                     `twith` (leader, target, tb)) ()
-          return $ Left mempty
+          failWith "by bumping"
       else
         -- Attacking does not require full access, adjacency is enough.
         RequestAnyAbility <$$> meleeAid target
@@ -394,44 +394,42 @@ moveSearchAlterAid source dir = do
 
 -- * RunOnceAhead
 
-runOnceAheadHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+runOnceAheadHuman :: MonadClientUI m => m (Either MError RequestUI)
 runOnceAheadHuman = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
+  Config{configRunStopMsgs} <- askConfig
   keyPressed <- anyKeyPressed
   srunning <- getsSession srunning
   -- When running, stop if disturbed. If not running, stop at once.
   case srunning of
     Nothing -> do
       stopPlayBack
-      return $ Left mempty
+      return $ Left Nothing
     Just RunParams{runMembers}
       | noRunWithMulti fact && runMembers /= [leader] -> do
       stopPlayBack
-      Config{configRunStopMsgs} <- askConfig
       if configRunStopMsgs
-      then failWith "run stop: automatic leader change"
-      else return $ Left mempty
+      then return $ Left $ Just "run stop: automatic leader change"
+      else return $ Left Nothing
     Just _runParams | keyPressed -> do
       discardPressedKey
       stopPlayBack
-      Config{configRunStopMsgs} <- askConfig
       if configRunStopMsgs
-      then failWith "run stop: key pressed"
-      else failWith "interrupted"
+      then return $ Left $ Just "run stop: key pressed"
+      else return $ Left $ Just "interrupted"
     Just runParams -> do
       arena <- getArenaUI
       runOutcome <- continueRun arena runParams
       case runOutcome of
         Left stopMsg -> do
           stopPlayBack
-          Config{configRunStopMsgs} <- askConfig
           if configRunStopMsgs
-          then failWith $ "run stop:" <+> stopMsg
-          else return $ Left mempty
+          then return $ Left $ Just $ "run stop:" <+> stopMsg
+          else return $ Left Nothing
         Right runCmd ->
-          return $ Right runCmd
+          return $ Right $ ReqUITimed runCmd
 
 -- * MoveOnceToXhair
 
@@ -451,10 +449,9 @@ goToXhair initialStep run = do
     case xhairPos of
       Nothing -> failWith "crosshair position invalid"
       Just c | c == bpos b -> do
-        stopPlayBack
         if initialStep
         then return $ Right $ RequestAnyAbility ReqWait
-        else return $ Left mempty
+        else failWith "position reached"
       Just c -> do
         running <- getsSession srunning
         case running of
@@ -554,7 +551,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
           socK <- pickNumber True kToPick
           modifySession $ \sess -> sess {sitemSel = Nothing}
           case socK of
-            Left slides -> return $ Left slides
+            Left err -> failWith err
             Right kChosen ->
               let is = ( fromCStore
                        , [(iid, itemToF iid (kChosen, take kChosen it))] )
@@ -598,7 +595,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
     else getAnyItems psuit prompt promptGeneric cLegalRaw cLegal True True
   case ggi of
     Right (l, MStore fromCStore) -> return $ Right (fromCStore, l)
-    Left slides -> return $ Left slides
+    Left err -> failWith err
     _ -> assert `failure` ggi
 
 moveItems :: forall m. MonadClientUI m

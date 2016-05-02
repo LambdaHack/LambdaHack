@@ -66,19 +66,22 @@ recordHistory = do
 
 type MError = Maybe Text
 
-type SlideOrCmd a = Either Text a
+newtype FailError = FailError Text
+  deriving Show
+
+type SlideOrCmd a = Either FailError a
 
 failWith :: MonadClientUI m => Text -> m (SlideOrCmd a)
-failWith msg = assert (not $ T.null msg) $ return $ Left msg
+failWith err = assert (not $ T.null err) $ return $ Left $ FailError err
 
 failSer :: MonadClientUI m => ReqFailure -> m (SlideOrCmd a)
 failSer = failWith . showReqFailure
 
 failMsg :: MonadClientUI m => Text -> m MError
-failMsg msg = assert (not $ T.null msg) $ return $ Just msg
+failMsg err = assert (not $ T.null err) $ return $ Just err
 
 weaveJust :: SlideOrCmd RequestUI -> Either MError RequestUI
-weaveJust (Left err) = Left $ Just err
+weaveJust (Left (FailError err)) = Left $ Just err
 weaveJust (Right a) = Right a
 
 -- | Produces a textual description of the terrain and items at an already

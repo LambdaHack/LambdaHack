@@ -314,7 +314,7 @@ chooseItemApplyHuman ts = do
     Right ((iid, _itemFull), MStore fromCStore) -> do
       modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
       return mempty
-    Left slides -> return $ Just slides
+    Left err -> return $ Just err
     _ -> assert `failure` ggi
 
 permittedApplyClient :: MonadClientUI m

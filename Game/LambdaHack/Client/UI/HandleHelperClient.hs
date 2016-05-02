@@ -14,6 +14,7 @@ import Data.List (findIndex, sortBy)
 import Data.Maybe
 import Data.Monoid
 import Data.Ord
+import Data.Text (Text)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
@@ -105,7 +106,7 @@ pickLeader verbose aid = do
       when verbose $ msgAdd lookMsg
       return True
 
-pickNumber :: MonadClientUI m => Bool -> Int -> m (SlideOrCmd Int)
+pickNumber :: MonadClientUI m => Bool -> Int -> m (Either Text Int)
 pickNumber askNumber kAll = do
   let gatherNumber kDefaultRaw = do
         let kDefault = min kAll kDefaultRaw
@@ -121,12 +122,12 @@ pickNumber askNumber kAll = do
           K.Char l -> gatherNumber $ kDefault * 10 + Char.digitToInt l
           K.BackSpace -> gatherNumber $ kDefault `div` 10
           K.Return -> return $ Right kDefault
-          K.Esc -> failWith "never mind"
+          K.Esc -> return $ Left "never mind"
           _ -> assert `failure` "unexpected key:" `twith` kkm
-  if | kAll == 0 -> failWith "no number of items can be chosen"
+  if | kAll == 0 -> return $ Left "no number of items can be chosen"
      | kAll == 1 || not askNumber -> return $ Right kAll
      | otherwise -> do
          num <- gatherNumber kAll
          case num of
-           Right 0 -> failWith "zero items chosen"
+           Right 0 -> return $ Left "zero items chosen"
            _ -> return num

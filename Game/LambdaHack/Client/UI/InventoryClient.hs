@@ -85,7 +85,7 @@ getGroupItem :: MonadClientUI m
              -> Text      -- ^ generic prompt
              -> [CStore]  -- ^ initial legal modes
              -> [CStore]  -- ^ legal modes after Calm taken into account
-             -> m (SlideOrCmd ((ItemId, ItemFull), ItemDialogMode))
+             -> m (Either Text ((ItemId, ItemFull), ItemDialogMode))
 getGroupItem psuit prompt promptGeneric
              cLegalRaw cLegalAfterCalm = do
   soc <- getFull psuit
@@ -110,7 +110,7 @@ getAnyItems :: MonadClientUI m
             -> Bool      -- ^ whether to ask, when the only item
                          --   in the starting mode is suitable
             -> Bool      -- ^ whether to ask for the number of items
-            -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
+            -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
 getAnyItems psuit prompt promptGeneric cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
   soc <- getFull psuit
                  (\_ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
@@ -121,7 +121,7 @@ getAnyItems psuit prompt promptGeneric cLegalRaw cLegalAfterCalm askWhenLone ask
     Right ([(iid, itemFull)], c) -> do
       socK <- pickNumber askNumber $ itemK itemFull
       case socK of
-        Left slides -> return $ Left slides
+        Left err -> return $ Left err
         Right k ->
           return $ Right ([(iid, itemFull{itemK=k})], c)
     Right _ -> return soc
@@ -133,7 +133,7 @@ getStoreItem :: MonadClientUI m
              => (Actor -> [ItemFull] -> ItemDialogMode -> Text)
                                  -- ^ how to describe suitable items
              -> ItemDialogMode   -- ^ initial mode
-             -> m (SlideOrCmd ((ItemId, ItemFull), ItemDialogMode))
+             -> m (Either Text ((ItemId, ItemFull), ItemDialogMode))
 getStoreItem prompt cInitial = do
   let allCs = map MStore [CEqp, CInv, CSha]
               ++ [MOwned]
@@ -165,7 +165,7 @@ getFull :: MonadClientUI m
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
-        -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
+        -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
 getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
         askWhenLone permitMulitple = do
   side <- getsClient sside
@@ -192,8 +192,8 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
         let contLegalRaw = map MStore cLegalRaw
             tLegal = map (MU.Text . ppItemDialogModeIn) contLegalRaw
             ppLegal = makePhrase [MU.WWxW "nor" tLegal]
-        failWith $ "no items" <+> ppLegal
-      else failSer ItemNotCalm
+        return $ Left $ "no items" <+> ppLegal
+      else return $ Left $ showReqFailure ItemNotCalm
     haveThis@(headThisActor : _) -> do
       itemToF <- itemToFullClient
       let suitsThisActor store =
@@ -233,7 +233,7 @@ getItem :: MonadClientUI m
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
         -> [ItemDialogMode] -- ^ all legal modes
-        -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
+        -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
 getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
         cLegal = do
   leader <- getLeaderUI
@@ -252,7 +252,7 @@ data DefItemKey m = DefItemKey
   { defLabel  :: Text  -- ^ can be undefined if not @defCond@
   , defCond   :: !Bool
   , defAction :: Either K.KM SlotChar
-                 -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
+                 -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
   }
 
 data Suitability =
@@ -270,7 +270,7 @@ transition :: forall m. MonadClientUI m
            -> ItemDialogMode
            -> [ItemDialogMode]
            -> ItemDialogState
-           -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
+           -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
 transition psuit prompt promptGeneric permitMulitple cLegal
            numPrefix cCur cRest itemDialogState = do
   let recCall =
@@ -366,7 +366,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         , (K.escKM, DefItemKey
            { defLabel = ""
            , defCond = True
-           , defAction = \_ -> failWith "never mind"
+           , defAction = \_ -> return $ Left "never mind"
            })
         , (K.returnKM, DefItemKey
            { defLabel = if lastSlot `EM.member` labelItemSlotsOpen
@@ -469,7 +469,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                     _ -> assert `failure` "unexpected key:"
                                 `twith` K.showKey key
                   Right sl -> sl
-            in failWith "stats affect character actions"  -- TODO
+            in return $ Left "stats affect character actions"  -- TODO
             }
       runDefItemKey keyDefs statsDef io slotKeys promptChosen MStats
     _ -> do
@@ -551,7 +551,7 @@ runDefItemKey :: MonadClientUI m
               -> [K.KM]
               -> Text
               -> ItemDialogMode
-              -> m (SlideOrCmd ([(ItemId, ItemFull)], ItemDialogMode))
+              -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
 runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   let itemKeys = slotKeys ++ map fst keyDefs
       choice = let letterRange = defLabel lettersDef

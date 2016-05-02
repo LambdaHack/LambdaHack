@@ -54,7 +54,7 @@ cmdAction cmd = case cmd of
   Wait -> weaveJust <$> Right <$> fmap timedToUI waitHuman
   MoveDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True False False v)
   RunDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True True True v)
-  RunOnceAhead -> weaveJust <$> (ReqUITimed <$$> runOnceAheadHuman)
+  RunOnceAhead -> runOnceAheadHuman
   MoveOnceToXhair -> weaveJust <$> (ReqUITimed <$$> moveOnceToXhairHuman)
   RunOnceToXhair  -> weaveJust <$> (ReqUITimed <$$> runOnceToXhairHuman)
   ContinueToXhair -> weaveJust <$> (ReqUITimed <$$> continueToXhairHuman)
