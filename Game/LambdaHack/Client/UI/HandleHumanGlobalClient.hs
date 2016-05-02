@@ -196,7 +196,7 @@ waitHuman = do
 
 moveRunHuman :: MonadClientUI m
              => Bool -> Bool -> Bool -> Bool -> Vector
-             -> m (SlideOrCmd RequestAnyAbility)
+             -> m (FailOrCmd RequestAnyAbility)
 moveRunHuman initialStep finalGoal run runAhead dir = do
   arena <- getArenaUI
   leader <- getLeaderUI
@@ -270,7 +270,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
 
 -- | Actor atttacks an enemy actor or his own projectile.
 meleeAid :: MonadClientUI m
-         => ActorId -> m (SlideOrCmd (RequestTimed 'AbMelee))
+         => ActorId -> m (FailOrCmd (RequestTimed 'AbMelee))
 meleeAid target = do
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
@@ -304,7 +304,7 @@ meleeAid target = do
 
 -- | Actor swaps position with another.
 displaceAid :: MonadClientUI m
-            => ActorId -> m (SlideOrCmd (RequestTimed 'AbDisplace))
+            => ActorId -> m (FailOrCmd (RequestTimed 'AbDisplace))
 displaceAid target = do
   cops <- getsState scops
   leader <- getLeaderUI
@@ -433,11 +433,11 @@ runOnceAheadHuman = do
 
 -- * MoveOnceToXhair
 
-moveOnceToXhairHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+moveOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
 moveOnceToXhairHuman = goToXhair True False
 
 goToXhair :: MonadClientUI m
-           => Bool -> Bool -> m (SlideOrCmd RequestAnyAbility)
+           => Bool -> Bool -> m (FailOrCmd RequestAnyAbility)
 goToXhair initialStep run = do
   aimMode <- getsSession saimMode
   -- Movement is legal only outside aiming mode.
@@ -518,19 +518,19 @@ multiActorGoTo arena c paramOld =
 
 -- * RunOnceToXhair
 
-runOnceToXhairHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+runOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
 runOnceToXhairHuman = goToXhair True True
 
 -- * ContinueToXhair
 
-continueToXhairHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
+continueToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
 continueToXhairHuman = goToXhair False False{-irrelevant-}
 
 -- * MoveItem
 
 moveItemHuman :: forall m. MonadClientUI m
               => [CStore] -> CStore -> Maybe MU.Part -> Bool
-              -> m (SlideOrCmd (RequestTimed 'AbMoveItem))
+              -> m (FailOrCmd (RequestTimed 'AbMoveItem))
 moveItemHuman cLegalRaw destCStore mverb auto = do
   itemSel <- getsSession sitemSel
   case itemSel of
@@ -564,7 +564,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
 
 selectItemsToMove :: forall m. MonadClientUI m
                   => [CStore] -> CStore -> Maybe MU.Part -> Bool
-                  -> m (SlideOrCmd (CStore, [(ItemId, ItemFull)]))
+                  -> m (FailOrCmd (CStore, [(ItemId, ItemFull)]))
 selectItemsToMove cLegalRaw destCStore mverb auto = do
   let !_A = assert (destCStore `notElem` cLegalRaw) ()
   let verb = fromMaybe (MU.Text $ verbCStore destCStore) mverb
@@ -600,7 +600,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
 
 moveItems :: forall m. MonadClientUI m
           => [CStore] -> (CStore, [(ItemId, ItemFull)]) -> CStore
-          -> m (SlideOrCmd (RequestTimed 'AbMoveItem))
+          -> m (FailOrCmd (RequestTimed 'AbMoveItem))
 moveItems cLegalRaw (fromCStore, l) destCStore = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -609,7 +609,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
       ret4 :: MonadClientUI m
            => [(ItemId, ItemFull)]
            -> Int -> [(ItemId, Int, CStore, CStore)]
-           -> m (SlideOrCmd [(ItemId, Int, CStore, CStore)])
+           -> m (FailOrCmd [(ItemId, Int, CStore, CStore)])
       ret4 [] _ acc = return $ Right $ reverse acc
       ret4 ((iid, itemFull) : rest) oldN acc = do
         let k = itemK itemFull
@@ -656,7 +656,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
 -- * Project
 
 projectHuman :: MonadClientUI m
-             => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbProject))
+             => [Trigger] -> m (FailOrCmd (RequestTimed 'AbProject))
 projectHuman ts = do
   itemSel <- getsSession sitemSel
   case itemSel of
@@ -675,7 +675,7 @@ projectHuman ts = do
 
 projectItem :: MonadClientUI m
             => [Trigger] -> (CStore, (ItemId, ItemFull))
-            -> m (SlideOrCmd (RequestTimed 'AbProject))
+            -> m (FailOrCmd (RequestTimed 'AbProject))
 projectItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -703,7 +703,7 @@ projectItem ts (fromCStore, (iid, itemFull)) = do
 
 -- TODO: factor out item getting
 applyHuman :: MonadClientUI m
-           => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbApply))
+           => [Trigger] -> m (FailOrCmd (RequestTimed 'AbApply))
 applyHuman ts = do
   itemSel <- getsSession sitemSel
   case itemSel of
@@ -722,7 +722,7 @@ applyHuman ts = do
 
 applyItem :: MonadClientUI m
           => [Trigger] -> (CStore, (ItemId, ItemFull))
-          -> m (SlideOrCmd (RequestTimed 'AbApply))
+          -> m (FailOrCmd (RequestTimed 'AbApply))
 applyItem ts (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -740,7 +740,7 @@ applyItem ts (fromCStore, (iid, itemFull)) = do
 -- TODO: accept mouse, too
 -- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: MonadClientUI m
-              => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbAlter))
+              => [Trigger] -> m (FailOrCmd (RequestTimed 'AbAlter))
 alterDirHuman ts = do
   Config{configVi, configLaptop} <- askConfig
   let verb1 = case ts of
@@ -766,7 +766,7 @@ alterDirHuman ts = do
 
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m
-          => Vector -> [Trigger] -> m (SlideOrCmd (RequestTimed 'AbAlter))
+          => Vector -> [Trigger] -> m (FailOrCmd (RequestTimed 'AbAlter))
 alterTile dir ts = do
   cops@Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI
@@ -807,7 +807,7 @@ guessAlter _ _ _ = "never mind"
 
 -- | Leader tries to trigger the tile he's standing on.
 triggerTileHuman :: MonadClientUI m
-                 => [Trigger] -> m (SlideOrCmd (RequestTimed 'AbTrigger))
+                 => [Trigger] -> m (FailOrCmd (RequestTimed 'AbTrigger))
 triggerTileHuman ts = do
   cops@Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI
@@ -830,7 +830,7 @@ triggerFeatures (_ : ts) = triggerFeatures ts
 
 -- | Verify important feature triggers, such as fleeing the dungeon.
 verifyTrigger :: MonadClientUI m
-              => ActorId -> TK.Feature -> m (SlideOrCmd ())
+              => ActorId -> TK.Feature -> m (FailOrCmd ())
 verifyTrigger leader feat = case feat of
   TK.Cause IK.Escape{} -> do
     b <- getsState $ getActorBody leader
@@ -989,7 +989,7 @@ gameDifficultyIncr = do
 -- * GameRestart
 
 gameRestartHuman :: MonadClientUI m
-                 => GroupName ModeKind -> m (SlideOrCmd RequestUI)
+                 => GroupName ModeKind -> m (FailOrCmd RequestUI)
 gameRestartHuman t = do
   isNoConfirms <- isNoConfirmsGame
   gameMode <- getGameMode
@@ -1014,7 +1014,7 @@ gameRestartHuman t = do
 
 -- * GameExit
 
-gameExitHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
+gameExitHuman :: MonadClientUI m => m (FailOrCmd RequestUI)
 gameExitHuman = do
   leader <- getLeaderUI
   return $ Right $ ReqUIGameExit leader
@@ -1037,7 +1037,7 @@ gameSaveHuman = do
 -- TODO: set tactic for allied passive factions, too or all allied factions
 -- and perhaps even factions with a leader should follow our leader
 -- and his target, not their leader.
-tacticHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
+tacticHuman :: MonadClientUI m => m (FailOrCmd RequestUI)
 tacticHuman = do
   fid <- getsClient sside
   fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
@@ -1052,7 +1052,7 @@ tacticHuman = do
 
 -- * Automate
 
-automateHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
+automateHuman :: MonadClientUI m => m (FailOrCmd RequestUI)
 automateHuman = do
   -- BFS is not updated while automated, which would lead to corruption.
   modifySession $ \sess -> sess {saimMode = Nothing}

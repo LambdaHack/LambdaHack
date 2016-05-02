@@ -40,7 +40,7 @@ cmdAction cmd = case cmd of
   ReplaceFail failureMsg cmd1 ->
     cmdAction cmd1 >>= either (const $ weaveJust <$> failWith failureMsg)
                               (return . Right)
-  Macro kms -> addNoSlides $ macroHuman kms
+  Macro kms -> addNoError $ macroHuman kms
   ByArea l -> byAreaHuman cmdAction l
   ByAimMode{..} ->
     byAimModeHuman (cmdAction notAiming) (cmdAction aiming)
@@ -74,7 +74,7 @@ cmdAction cmd = case cmd of
   Tactic -> weaveJust <$> tacticHuman
   Automate -> weaveJust <$> automateHuman
 
-  Clear -> addNoSlides clearHuman
+  Clear -> addNoError clearHuman
   ChooseItem cstore -> Left <$> chooseItemHuman cstore
   ChooseItemProject ts -> Left <$> chooseItemProjectHuman ts
   ChooseItemApply ts -> Left <$> chooseItemApplyHuman ts
@@ -82,33 +82,33 @@ cmdAction cmd = case cmd of
   PickLeaderWithPointer -> Left <$> pickLeaderWithPointerHuman
   MemberCycle -> Left <$> memberCycleHuman
   MemberBack -> Left <$> memberBackHuman
-  SelectActor -> addNoSlides selectActorHuman
-  SelectNone -> addNoSlides selectNoneHuman
-  SelectWithPointer -> addNoSlides selectWithPointerHuman
-  Repeat n -> addNoSlides $ repeatHuman n
-  Record -> addNoSlides recordHuman
-  History -> addNoSlides historyHuman
+  SelectActor -> addNoError selectActorHuman
+  SelectNone -> addNoError selectNoneHuman
+  SelectWithPointer -> addNoError selectWithPointerHuman
+  Repeat n -> addNoError $ repeatHuman n
+  Record -> addNoError recordHuman
+  History -> addNoError historyHuman
   MarkVision -> markVisionHuman >> settingsMenuHuman cmdAction
   MarkSmell -> markSmellHuman >> settingsMenuHuman cmdAction
   MarkSuspect -> markSuspectHuman >> settingsMenuHuman cmdAction
   SettingsMenu -> settingsMenuHuman cmdAction
 
-  Cancel -> addNoSlides cancelHuman
-  Accept -> addNoSlides acceptHuman
-  TgtClear -> addNoSlides tgtClearHuman
+  Cancel -> addNoError cancelHuman
+  Accept -> addNoError acceptHuman
+  TgtClear -> addNoError tgtClearHuman
   MoveXhair v k -> Left <$> moveXhairHuman v k
-  AimTgt -> addNoSlides aimTgtHuman
-  AimFloor -> addNoSlides aimFloorHuman
-  AimEnemy -> addNoSlides aimEnemyHuman
+  AimTgt -> addNoError aimTgtHuman
+  AimFloor -> addNoError aimFloorHuman
+  AimEnemy -> addNoError aimEnemyHuman
   AimAscend k -> Left <$> aimAscendHuman k
   EpsIncr b -> Left <$> epsIncrHuman b
   XhairUnknown -> Left <$> xhairUnknownHuman
   XhairItem -> Left <$> xhairItemHuman
   XhairStair up -> Left <$> xhairStairHuman up
-  XhairPointerFloor -> addNoSlides xhairPointerFloorHuman
-  XhairPointerEnemy -> addNoSlides xhairPointerEnemyHuman
-  AimPointerFloor -> addNoSlides aimPointerFloorHuman
-  AimPointerEnemy -> addNoSlides aimPointerEnemyHuman
+  XhairPointerFloor -> addNoError xhairPointerFloorHuman
+  XhairPointerEnemy -> addNoError xhairPointerEnemyHuman
+  AimPointerFloor -> addNoError aimPointerFloorHuman
+  AimPointerEnemy -> addNoError aimPointerEnemyHuman
 
-addNoSlides :: Monad m => m () -> m (Either MError RequestUI)
-addNoSlides cmdCli = cmdCli >> return (Left Nothing)
+addNoError :: Monad m => m () -> m (Either MError RequestUI)
+addNoError cmdCli = cmdCli >> return (Left Nothing)
