@@ -19,6 +19,9 @@ module Game.LambdaHack.Client.UI
 #endif
   ) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
