@@ -411,14 +411,14 @@ runOnceAheadHuman = do
       | noRunWithMulti fact && runMembers /= [leader] -> do
       stopPlayBack
       if configRunStopMsgs
-      then return $ Left $ Just "run stop: automatic leader change"
+      then weaveJust <$> failWith "run stop: automatic leader change"
       else return $ Left Nothing
     Just _runParams | keyPressed -> do
       discardPressedKey
       stopPlayBack
       if configRunStopMsgs
-      then return $ Left $ Just "run stop: key pressed"
-      else return $ Left $ Just "interrupted"
+      then weaveJust <$> failWith "run stop: key pressed"
+      else weaveJust <$> failWith "interrupted"
     Just runParams -> do
       arena <- getArenaUI
       runOutcome <- continueRun arena runParams
@@ -426,7 +426,7 @@ runOnceAheadHuman = do
         Left stopMsg -> do
           stopPlayBack
           if configRunStopMsgs
-          then return $ Left $ Just $ "run stop:" <+> stopMsg
+          then weaveJust <$> failWith ("run stop:" <+> stopMsg)
           else return $ Left Nothing
         Right runCmd ->
           return $ Right $ ReqUITimed runCmd

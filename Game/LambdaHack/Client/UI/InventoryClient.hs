@@ -395,7 +395,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                             || not (any (\(_, b) -> blid b == blid body) hs))
            , defAction = \_ -> do
                err <- memberCycle False
-               let !_A = assert (err == mempty `blame` err) ()
+               let !_A = assert (isNothing err `blame` err) ()
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall numPrefix cCurUpd cRestUpd itemDialogState
            })
@@ -405,7 +405,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
            , defCond = not (cCur == MOwned || autoDun || null hs)
            , defAction = \_ -> do
                err <- memberBack False
-               let !_A = assert (err == mempty `blame` err) ()
+               let !_A = assert (isNothing err `blame` err) ()
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall numPrefix cCurUpd cRestUpd itemDialogState
            })

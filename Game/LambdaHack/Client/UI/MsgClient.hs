@@ -1,7 +1,8 @@
 -- | Client monad for interacting with a human through UI.
 module Game.LambdaHack.Client.UI.MsgClient
   ( msgAdd, promptAdd, promptAddAttr, recordHistory
-  , MError, SlideOrCmd, failWith, failSer, failMsg, weaveJust
+  , MError, SlideOrCmd
+  , showFailError, failWith, failSer, failMsg, weaveJust
   , lookAt, itemOverlay, overlayToSlideshow, reportToSlideshow
   ) where
 
@@ -64,10 +65,13 @@ recordHistory = do
     modifySession $ \sess -> sess { _sreport = emptyReport
                                   , shistory = nhistory }
 
-type MError = Maybe Text
-
 newtype FailError = FailError Text
   deriving Show
+
+showFailError :: FailError -> Text
+showFailError (FailError err) = "*" <> err <> "*"
+
+type MError = Maybe FailError
 
 type SlideOrCmd a = Either FailError a
 
@@ -78,10 +82,10 @@ failSer :: MonadClientUI m => ReqFailure -> m (SlideOrCmd a)
 failSer = failWith . showReqFailure
 
 failMsg :: MonadClientUI m => Text -> m MError
-failMsg err = assert (not $ T.null err) $ return $ Just err
+failMsg err = assert (not $ T.null err) $ return $ Just $ FailError err
 
 weaveJust :: SlideOrCmd RequestUI -> Either MError RequestUI
-weaveJust (Left (FailError err)) = Left $ Just err
+weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
 
 -- | Produces a textual description of the terrain and items at an already

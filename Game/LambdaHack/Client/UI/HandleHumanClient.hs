@@ -38,7 +38,7 @@ cmdAction :: MonadClientUI m
           => HumanCmd -> m (Either MError RequestUI)
 cmdAction cmd = case cmd of
   ReplaceFail failureMsg cmd1 ->
-    cmdAction cmd1 >>= either (const $ return $ Left $ Just failureMsg)
+    cmdAction cmd1 >>= either (const $ weaveJust <$> failWith failureMsg)
                               (return . Right)
   Macro kms -> addNoSlides $ macroHuman kms
   ByArea l -> byAreaHuman cmdAction l

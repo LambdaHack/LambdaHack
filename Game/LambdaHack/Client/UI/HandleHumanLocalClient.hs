@@ -180,7 +180,7 @@ chooseItemHuman c = do
           promptAddAttr $ toAttrLine prompt2 ++ attrLine
         MStats -> assert `failure` ggi
       return Nothing
-    Left slides -> return $ Just slides
+    Left err -> failMsg err
 
 -- * ChooseItemProject
 
@@ -211,8 +211,8 @@ chooseItemProjectHuman ts = do
   case ggi of
     Right ((iid, _itemFull), MStore fromCStore) -> do
       modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
-      return mempty
-    Left slides -> return $ Just slides
+      return Nothing
+    Left err -> failMsg err
     _ -> assert `failure` ggi
 
 permittedProjectClient :: MonadClientUI m
@@ -313,8 +313,8 @@ chooseItemApplyHuman ts = do
   case ggi of
     Right ((iid, _itemFull), MStore fromCStore) -> do
       modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
-      return mempty
-    Left err -> return $ Just err
+      return Nothing
+    Left err -> failMsg err
     _ -> assert `failure` ggi
 
 permittedApplyClient :: MonadClientUI m
@@ -354,7 +354,7 @@ pickLeaderHuman k = do
           failMsg $ showReqFailure NoChangeLvlLeader
       | otherwise -> do
           void $ pickLeader True aid
-          return mempty
+          return Nothing
 
 -- * PickLeaderWithPointer
 
@@ -376,13 +376,13 @@ pickLeaderWithPointerHuman = do
                failMsg $ showReqFailure NoChangeLvlLeader
            | otherwise -> do
                void $ pickLeader True aid
-               return mempty
+               return Nothing
   Point{..} <- getsSession spointer
   -- Pick even if no space in status line for the actor's symbol.
   if | py == lysize + 2 && px == 0 -> memberBackHuman
      | py == lysize + 2 ->
          case drop (px - 1) viewed of
-           [] -> return mempty  -- relaxed, due to subtleties of selected display
+           [] -> return Nothing  -- relaxed, due to subtleties of selected display
            aidb : _ -> pick aidb
      | otherwise ->
          case find (\(_, b) -> bpos b == Point px (py - mapStartY)) ours of
