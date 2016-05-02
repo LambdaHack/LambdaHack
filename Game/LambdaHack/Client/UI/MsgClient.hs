@@ -1,7 +1,7 @@
 -- | Client monad for interacting with a human through UI.
 module Game.LambdaHack.Client.UI.MsgClient
   ( msgAdd, promptAdd, promptAddAttr, recordHistory
-  , SlideOrCmd, failWith, failSer, failMsg
+  , MError, SlideOrCmd, failWith, failSer, failMsg, weaveJust
   , lookAt, itemOverlay, overlayToSlideshow, reportToSlideshow
   ) where
 
@@ -12,7 +12,6 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
-import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -65,18 +64,22 @@ recordHistory = do
     modifySession $ \sess -> sess { _sreport = emptyReport
                                   , shistory = nhistory }
 
-type SlideOrCmd a = Either () a
+type MError = Maybe Text
+
+type SlideOrCmd a = Either Text a
 
 failWith :: MonadClientUI m => Text -> m (SlideOrCmd a)
-failWith msg = Left <$> failMsg msg
+failWith msg = assert (not $ T.null msg) $ return $ Left msg
 
 failSer :: MonadClientUI m => ReqFailure -> m (SlideOrCmd a)
 failSer = failWith . showReqFailure
 
-failMsg :: MonadClientUI m => Text -> m ()
-failMsg msg = assert (not $ T.null msg) $ do
-  stopPlayBack
-  promptAdd $ "*" <> msg <> "*"
+failMsg :: MonadClientUI m => Text -> m MError
+failMsg msg = assert (not $ T.null msg) $ return $ Just msg
+
+weaveJust :: SlideOrCmd RequestUI -> Either MError RequestUI
+weaveJust (Left err) = Left $ Just err
+weaveJust (Right a) = Right a
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.

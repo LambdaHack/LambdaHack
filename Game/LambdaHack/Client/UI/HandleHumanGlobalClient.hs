@@ -88,9 +88,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- | Pick command depending on area the mouse pointer is in.
 -- The first matching area is chosen. If none match, only interrupt.
 byAreaHuman :: MonadClientUI m
-            => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
+            => (HumanCmd.HumanCmd -> m (Either MError RequestUI))
             -> [(HumanCmd.CmdArea, HumanCmd.HumanCmd)]
-            -> m (SlideOrCmd RequestUI)
+            -> m (Either MError RequestUI)
 byAreaHuman cmdAction l = do
   pointer <- getsSession spointer
   let pointerInArea a = do
@@ -100,7 +100,7 @@ byAreaHuman cmdAction l = do
   case cmds of
     [] -> do
       stopPlayBack
-      return $ Left mempty
+      return $ Left Nothing
     (_, cmd) : _ ->
       cmdAction cmd
 
@@ -146,8 +146,8 @@ areaToRectangles ca = case ca of
 -- * ByAimMode
 
 byAimModeHuman :: MonadClientUI m
-               => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
-               -> m (SlideOrCmd RequestUI)
+               => m (Either MError RequestUI) -> m (Either MError RequestUI)
+               -> m (Either MError RequestUI)
 byAimModeHuman cmdNotAimingM cmdAimingM = do
   aimMode <- getsSession saimMode
   if isNothing aimMode then cmdNotAimingM else cmdAimingM
@@ -155,8 +155,9 @@ byAimModeHuman cmdNotAimingM cmdAimingM = do
 -- * ByItemMode
 
 byItemModeHuman :: MonadClientUI m
-                => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
-                -> m (SlideOrCmd RequestUI)
+                => m (Either MError RequestUI) -> m (Either MError RequestUI)
+                -> m (Either MError RequestUI)
+
 byItemModeHuman cmdNotChosenM cmdChosenM = do
   itemSel <- getsSession sitemSel
   if isNothing itemSel then cmdNotChosenM else cmdChosenM
@@ -164,23 +165,23 @@ byItemModeHuman cmdNotChosenM cmdChosenM = do
 -- * ComposeIfLeft
 
 composeIfLeftHuman :: MonadClientUI m
-                    => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
-                    -> m (SlideOrCmd RequestUI)
+                    => m (Either MError RequestUI) -> m (Either MError RequestUI)
+                    -> m (Either MError RequestUI)
 composeIfLeftHuman c1 c2 = do
   slideOrCmd1 <- c1
   case slideOrCmd1 of
-    Left _slides -> c2
+    Left _merr -> c2
     _ -> return slideOrCmd1
 
 -- * ComposeIfEmpty
 
 composeIfEmptyHuman :: MonadClientUI m
-                    => m (SlideOrCmd RequestUI) -> m (SlideOrCmd RequestUI)
-                    -> m (SlideOrCmd RequestUI)
+                    => m (Either MError RequestUI) -> m (Either MError RequestUI)
+                    -> m (Either MError RequestUI)
 composeIfEmptyHuman c1 c2 = do
   slideOrCmd1 <- c1
   case slideOrCmd1 of
-    Left slides | slides == mempty -> c2
+    Left merr | isNothing merr -> c2
     _ -> return slideOrCmd1
 
 -- * Wait
@@ -611,7 +612,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
       ret4 :: MonadClientUI m
            => [(ItemId, ItemFull)]
            -> Int -> [(ItemId, Int, CStore, CStore)]
-           -> m (Either () [(ItemId, Int, CStore, CStore)])
+           -> m (SlideOrCmd [(ItemId, Int, CStore, CStore)])
       ret4 [] _ acc = return $ Right $ reverse acc
       ret4 ((iid, itemFull) : rest) oldN acc = do
         let k = itemK itemFull
@@ -651,7 +652,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
   else do
     l4 <- ret4 l 0 []
     return $! case l4 of
-      Left () -> Left ()
+      Left slides -> Left slides
       Right [] -> assert `failure` l
       Right lr -> Right $ ReqMoveItems lr
 
@@ -876,8 +877,8 @@ guessTrigger _ _ _ = "never mind"
 
 -- | Display command help.
 helpHuman :: MonadClientUI m
-          => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI)) -> Maybe Text
-          -> m (SlideOrCmd RequestUI)
+          => (HumanCmd.HumanCmd -> m (Either MError RequestUI)) -> Maybe Text
+          -> m (Either MError RequestUI)
 helpHuman cmdAction mstart = do
   keyb <- askBinding
   let keyH = keyHelp keyb
@@ -895,9 +896,9 @@ helpHuman cmdAction mstart = do
   modifySession $ \sess -> sess {smenuIxHelp = pointer}
   case ekm of
     Left km -> case km `M.lookup` bcmdMap keyb of
-      _ | km `K.elemOrNull` [K.spaceKM, K.escKM] -> return $ Left mempty
+      _ | km `K.elemOrNull` [K.spaceKM, K.escKM] -> return $ Left Nothing
       Just (_desc, _cats, cmd) -> cmdAction cmd
-      Nothing -> failWith "never mind"
+      Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> assert `failure` ekm
 
 -- * MainMenu
@@ -905,8 +906,8 @@ helpHuman cmdAction mstart = do
 -- TODO: avoid String
 -- | Display the main menu.
 mainMenuHuman :: MonadClientUI m
-              => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
-              -> m (SlideOrCmd RequestUI)
+              => (HumanCmd.HumanCmd -> m (Either MError RequestUI))
+              -> m (Either MError RequestUI)
 mainMenuHuman cmdAction = do
   Kind.COps{corule} <- getsState scops
   Binding{bcmdList} <- askBinding
@@ -974,7 +975,7 @@ mainMenuHuman cmdAction = do
   case ekm of
     Left km -> case km `lookup` kds of
       Just (_desc, cmd) -> cmdAction cmd
-      Nothing -> failWith "never mind"
+      Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> assert `failure` ekm
 
 -- * GameDifficultyIncr

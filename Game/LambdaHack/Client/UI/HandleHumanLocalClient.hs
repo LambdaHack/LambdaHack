@@ -104,8 +104,7 @@ clearHuman = do
 
 -- | Display items from a given container store and possibly let the user
 -- chose one.
-chooseItemHuman :: MonadClientUI m
-                => ItemDialogMode -> m ()
+chooseItemHuman :: MonadClientUI m => ItemDialogMode -> m MError
 chooseItemHuman c = do
   let subject = partActor
       verbSha body activeItems = if calmEnough body activeItems
@@ -180,12 +179,13 @@ chooseItemHuman c = do
           void $ pickLeader True newAid
           promptAddAttr $ toAttrLine prompt2 ++ attrLine
         MStats -> assert `failure` ggi
-    Left () -> return ()
+      return Nothing
+    Left slides -> return $ Just slides
 
 -- * ChooseItemProject
 
 chooseItemProjectHuman :: forall m. MonadClientUI m
-                       => [Trigger] -> m ()
+                       => [Trigger] -> m MError
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -212,7 +212,7 @@ chooseItemProjectHuman ts = do
     Right ((iid, _itemFull), MStore fromCStore) -> do
       modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
       return mempty
-    Left slides -> return slides
+    Left slides -> return $ Just slides
     _ -> assert `failure` ggi
 
 permittedProjectClient :: MonadClientUI m
@@ -291,7 +291,7 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 
 -- * ChooseItemApply
 
-chooseItemApplyHuman :: forall m. MonadClientUI m => [Trigger] -> m ()
+chooseItemApplyHuman :: forall m. MonadClientUI m => [Trigger] -> m MError
 chooseItemApplyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -314,7 +314,7 @@ chooseItemApplyHuman ts = do
     Right ((iid, _itemFull), MStore fromCStore) -> do
       modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
       return mempty
-    Left slides -> return slides
+    Left slides -> return $ Just slides
     _ -> assert `failure` ggi
 
 permittedApplyClient :: MonadClientUI m
@@ -330,7 +330,7 @@ permittedApplyClient triggerSyms = do
 
 -- * PickLeader
 
-pickLeaderHuman :: MonadClientUI m => Int -> m ()
+pickLeaderHuman :: MonadClientUI m => Int -> m MError
 pickLeaderHuman k = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -358,7 +358,7 @@ pickLeaderHuman k = do
 
 -- * PickLeaderWithPointer
 
-pickLeaderWithPointerHuman :: MonadClientUI m => m ()
+pickLeaderWithPointerHuman :: MonadClientUI m => m MError
 pickLeaderWithPointerHuman = do
   lidV <- viewedLevel
   Level{lysize} <- getLevel lidV
@@ -392,13 +392,13 @@ pickLeaderWithPointerHuman = do
 -- * MemberCycle
 
 -- | Switches current member to the next on the level, if any, wrapping.
-memberCycleHuman :: MonadClientUI m => m ()
+memberCycleHuman :: MonadClientUI m => m MError
 memberCycleHuman = memberCycle True
 
 -- * MemberBack
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
-memberBackHuman :: MonadClientUI m => m ()
+memberBackHuman :: MonadClientUI m => m MError
 memberBackHuman = memberBack True
 
 -- * SelectActor
@@ -579,8 +579,8 @@ markSuspectHuman = do
 -- TODO: display tactics at the top; somehow return to this menu after Tactics
 -- | Display the settings menu.
 settingsMenuHuman :: MonadClientUI m
-                  => (HumanCmd.HumanCmd -> m (SlideOrCmd RequestUI))
-                  -> m (SlideOrCmd RequestUI)
+                  => (HumanCmd.HumanCmd -> m (Either MError RequestUI))
+                  -> m (Either MError RequestUI)
 settingsMenuHuman cmdAction = do
   Kind.COps{corule} <- getsState scops
   Binding{bcmdList} <- askBinding
@@ -636,30 +636,28 @@ settingsMenuHuman cmdAction = do
   case ekm of
     Left km -> case km `lookup` kds of
       Just (_desc, cmd) -> cmdAction cmd
-      Nothing -> failWith "never mind"
+      Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> assert `failure` ekm
 
 -- * Cancel
 
 -- | End aiming mode, rejecting the current position.
-cancelHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
+cancelHuman :: MonadClientUI m => m ()
 cancelHuman = do
   saimMode <- getsSession saimMode
-  if isJust saimMode then do
+  when (isJust saimMode) $ do
     modifySession $ \sess -> sess {saimMode = Nothing}
-    failWith "target not set"
-  else return $ Left mempty
+    promptAdd "Target not set."
 
 -- * Accept
 
 -- | Accept the current x-hair position as target, ending
 -- aiming mode, if active.
-acceptHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
+acceptHuman :: MonadClientUI m => m ()
 acceptHuman = do
   endAiming
   endAimingMsg
   modifySession $ \sess -> sess {saimMode = Nothing}
-  return $ Left mempty
 
 -- | End aiming mode, accepting the current position.
 endAiming :: MonadClientUI m => m ()
@@ -758,7 +756,7 @@ doLook addMoreMsg = do
 -- * MoveXhair
 
 -- | Move the xhair. Assumes aiming mode.
-moveXhairHuman :: MonadClientUI m => Vector -> Int -> m ()
+moveXhairHuman :: MonadClientUI m => Vector -> Int -> m MError
 moveXhairHuman dir n = do
   leader <- getLeaderUI
   saimMode <- getsSession saimMode
@@ -777,6 +775,7 @@ moveXhairHuman dir n = do
           _ -> TPoint lidV newPos
     modifyClient $ \cli -> cli {sxhair = tgt}
     doLook False
+    return Nothing
 
 -- * XHairTgt
 
@@ -873,7 +872,7 @@ aimEnemyHuman = do
 
 -- | Change the displayed level in aiming mode to (at most)
 -- k levels shallower. Enters aiming mode, if not already in one.
-aimAscendHuman :: MonadClientUI m => Int -> m ()
+aimAscendHuman :: MonadClientUI m => Int -> m MError
 aimAscendHuman k = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
@@ -903,28 +902,30 @@ aimAscendHuman k = do
       modifyClient $ \cli -> cli {sxhair}
       modifySession $ \sess -> sess {saimMode = Just (AimMode nln)}
       doLook False
+      return Nothing
     Nothing ->  -- no stairs in the right direction
       case ascendInBranch dungeon k lidV of
         [] -> failMsg "no more levels in this direction"
         nln : _ -> do
           modifySession $ \sess -> sess {saimMode = Just (AimMode nln)}
           doLook False
+          return Nothing
 
 -- * EpsIncr
 
 -- | Tweak the @eps@ parameter of the aiming digital line.
-epsIncrHuman :: MonadClientUI m => Bool -> m ()
+epsIncrHuman :: MonadClientUI m => Bool -> m MError
 epsIncrHuman b = do
   saimMode <- getsSession saimMode
   if isJust saimMode
     then do
       modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
-      return mempty
+      return Nothing
     else failMsg "never mind"  -- no visual feedback, so no sense
 
 -- * XhairUnknown
 
-xhairUnknownHuman :: MonadClientUI m => m ()
+xhairUnknownHuman :: MonadClientUI m => m MError
 xhairUnknownHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -935,10 +936,11 @@ xhairUnknownHuman = do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {sxhair = tgt}
       doLook False
+      return Nothing
 
 -- * XhairItem
 
-xhairItemHuman :: MonadClientUI m => m ()
+xhairItemHuman :: MonadClientUI m => m MError
 xhairItemHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -949,10 +951,11 @@ xhairItemHuman = do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {sxhair = tgt}
       doLook False
+      return Nothing
 
 -- * XhairStair
 
-xhairStairHuman :: MonadClientUI m => Bool -> m ()
+xhairStairHuman :: MonadClientUI m => Bool -> m MError
 xhairStairHuman up = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -963,13 +966,13 @@ xhairStairHuman up = do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {sxhair = tgt}
       doLook False
+      return Nothing
 
 -- * XhairPointerFloor
 
 xhairPointerFloorHuman :: MonadClientUI m => m ()
 xhairPointerFloorHuman = do
-  look <- xhairPointerFloor False
-  let !_A = assert (look == mempty `blame` look) ()
+  xhairPointerFloor False
   modifySession $ \sess -> sess {saimMode = Nothing}
 
 xhairPointerFloor :: MonadClientUI m => Bool -> m ()
@@ -991,17 +994,13 @@ xhairPointerFloor verbose = do
       b <- getsState $ getActorBody leader
       animFrs <- animate (blid b) pushAndDelay
       displayActorStart b animFrs
-      return mempty
-  else do
-    stopPlayBack
-    return mempty
+  else stopPlayBack
 
 -- * XhairPointerEnemy
 
 xhairPointerEnemyHuman :: MonadClientUI m => m ()
 xhairPointerEnemyHuman = do
-  look <- xhairPointerEnemy False
-  let !_A = assert (look == mempty `blame` look) ()
+  xhairPointerEnemy False
   modifySession $ \sess -> sess {saimMode = Nothing}
 
 xhairPointerEnemy :: MonadClientUI m => Bool -> m ()
@@ -1028,10 +1027,7 @@ xhairPointerEnemy verbose = do
       b <- getsState $ getActorBody leader
       animFrs <- animate (blid b) pushAndDelay
       displayActorStart b animFrs
-      return mempty
-  else do
-    stopPlayBack
-    return mempty
+  else stopPlayBack
 
 -- * AimPointerFloor
 

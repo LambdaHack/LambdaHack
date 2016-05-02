@@ -132,7 +132,7 @@ humanCommand = do
                               else 0}
               cmdHumanSem cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
-                 in failWith msgKey
+                 in weaveJust <$> failWith msgKey
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
         case abortOrCmd of
@@ -140,5 +140,9 @@ humanCommand = do
             -- Exit the loop and let other actors act. No next key needed
             -- and no report could have been generated.
             return cmdS
-          Left () -> loop
+          Left Nothing -> loop
+          Left (Just err) -> do
+            stopPlayBack
+            promptAdd $ "*" <> err <> "*"
+            loop
   loop
