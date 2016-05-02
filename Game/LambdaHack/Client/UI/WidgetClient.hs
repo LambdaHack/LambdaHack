@@ -22,7 +22,6 @@ import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
@@ -153,11 +152,7 @@ describeMainKeys = do
   Binding{brevMap} <- askBinding
   Config{configVi, configLaptop} <- askConfig
   xhair <- getsClient sxhair
-  let kmLeftButtonPress = head $
-        M.findWithDefault [K.KM K.NoModifier K.LeftButtonPress]
-                          ((\(_, _, cmd) -> cmd) defaultCmdLMB)
-                          brevMap
-      kmEscape = head $
+  let kmEscape = head $
         M.findWithDefault [K.KM K.NoModifier K.Esc]
                           ByAimMode {notAiming = MainMenu, aiming = Cancel}
                           brevMap
@@ -165,9 +160,9 @@ describeMainKeys = do
         M.findWithDefault [K.KM K.NoModifier K.Return]
                           ByAimMode{notAiming = Help $ Just "", aiming = Accept}
                           brevMap
-      moveKeys | configVi = "hjklyubn, "
-               | configLaptop = "uk8o79jl, "
-               | otherwise = ""
+      (mkp, moveKeys) | configVi = ("keypad or", "hjklyubn,")
+                      | configLaptop = ("keypad or", "uk8o79jl,")
+                      | otherwise = ("", "keypad keys,")
       tgtKind = case xhair of
         TEnemy _ True -> "at actor"
         TEnemy _ False -> "at enemy"
@@ -176,16 +171,16 @@ describeMainKeys = do
         TPoint{} -> "at position"
         TVector{} -> "with a vector"
       keys | isNothing saimMode =
-        "Explore with keypad or keys or mouse: ["
+        "Explore with" <+> mkp <+> "keys or mouse: ["
         <> moveKeys
-        <> T.intercalate ", "
-             (map K.showKM [kmLeftButtonPress, kmEscape])
+        <+> T.intercalate ", "
+             (map K.showKM [kmReturn, kmEscape])
         <> "]"
            | otherwise =
-        "Aim" <+> tgtKind <+> "with keypad or keys or mouse: ["
+        "Aim" <+> tgtKind <+> "with" <+> mkp <+> "keys or mouse: ["
         <> moveKeys
-        <> T.intercalate ", "
-             (map K.showKM [kmLeftButtonPress, kmReturn, kmEscape])
+        <+> T.intercalate ", "
+             (map K.showKM [kmReturn, kmEscape])
         <> "]"
   return $! keys
 
