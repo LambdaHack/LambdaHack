@@ -280,7 +280,7 @@ psuitReq ts = do
     Left err -> return $ Left err
     Right pos -> return $ Right $ \itemFull@ItemFull{itemBase} ->
       case p itemFull of
-        Left slides -> Left slides
+        Left err -> Left err
         Right False -> Right (pos, False)
         Right True -> Right (pos, totalRange itemBase >= chessDist (bpos b) pos)
 
@@ -683,7 +683,6 @@ tgtClearHuman = do
   case tgt of
     Just _ -> do
       modifyClient $ updateTarget leader (const Nothing)
-      return mempty
     Nothing -> do
       sxhairOld <- getsClient sxhair
       b <- getsState $ getActorBody leader
@@ -703,7 +702,7 @@ doLook addMoreMsg = do
   let unknownId = ouniqGroup "unknown space"
   saimMode <- getsSession saimMode
   case saimMode of
-    Nothing -> return mempty
+    Nothing -> return ()
     Just aimMode -> do
       leader <- getLeaderUI
       let lidV = aimLevelId aimMode

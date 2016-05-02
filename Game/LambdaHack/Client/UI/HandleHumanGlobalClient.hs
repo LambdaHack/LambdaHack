@@ -181,7 +181,7 @@ composeIfEmptyHuman :: MonadClientUI m
 composeIfEmptyHuman c1 c2 = do
   slideOrCmd1 <- c1
   case slideOrCmd1 of
-    Left merr | isNothing merr -> c2
+    Left Nothing -> c2
     _ -> return slideOrCmd1
 
 -- * Wait
@@ -559,7 +559,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
     _ -> do
       mis <- selectItemsToMove cLegalRaw destCStore mverb auto
       case mis of
-        Left slides -> return $ Left slides
+        Left err -> return $ Left err
         Right is -> moveItems cLegalRaw is destCStore
 
 selectItemsToMove :: forall m. MonadClientUI m
@@ -649,7 +649,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
   else do
     l4 <- ret4 l 0 []
     return $! case l4 of
-      Left slides -> Left slides
+      Left err -> Left err
       Right [] -> assert `failure` l
       Right lr -> Right $ ReqMoveItems lr
 
@@ -821,7 +821,7 @@ triggerTileHuman ts = do
       go <- verifyTrigger leader feat
       case go of
         Right () -> return $ Right $ ReqTrigger feat
-        Left slides -> return $ Left slides
+        Left err -> return $ Left err
 
 triggerFeatures :: [Trigger] -> [TK.Feature]
 triggerFeatures [] = []

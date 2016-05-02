@@ -93,7 +93,7 @@ getGroupItem psuit prompt promptGeneric
                  (\_ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
                  cLegalRaw cLegalAfterCalm True False
   case soc of
-    Left sli -> return $ Left sli
+    Left err -> return $ Left err
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
     Right _ -> assert `failure` soc
 
@@ -146,7 +146,7 @@ getStoreItem prompt cInitial = do
                  prompt prompt cInitial remCs
                  True False (cInitial:remCs)
   case soc of
-    Left sli -> return $ Left sli
+    Left err -> return $ Left err
     Right ([(iid, itemFull)], c) -> return $ Right ((iid, itemFull), c)
     Right _ -> assert `failure` soc
 
