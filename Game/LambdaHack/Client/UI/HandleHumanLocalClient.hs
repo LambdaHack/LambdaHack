@@ -48,6 +48,7 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
+import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Frontend (frontendName)
 import Game.LambdaHack.Client.UI.HandleHelperClient
 import Game.LambdaHack.Client.UI.HumanCmd (Trigger (..))
@@ -87,7 +88,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 macroHuman :: MonadClientUI m => [String] -> m ()
 macroHuman kms = do
   modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
-  promptAdd $ "Macro activated:" <+> T.pack (intercalate " " kms)
+  Config{configRunStopMsgs} <- askConfig
+  when configRunStopMsgs $
+    promptAdd $ "Macro activated:" <+> T.pack (intercalate " " kms)
 
 -- * Clear
 

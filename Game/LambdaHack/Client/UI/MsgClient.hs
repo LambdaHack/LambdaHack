@@ -1,7 +1,6 @@
 -- | Client monad for interacting with a human through UI.
 module Game.LambdaHack.Client.UI.MsgClient
-  ( msgAdd, promptAdd, promptAddAttr, recordHistory
-  , MError, FailOrCmd
+  ( MError, FailOrCmd
   , showFailError, failWith, failSer, failMsg, weaveJust
   , lookAt, itemOverlay, overlayToSlideshow, reportToSlideshow
   ) where
@@ -10,7 +9,6 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
-import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)
@@ -39,31 +37,6 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.TileKind as TK
-
--- | Add a message to the current report.
-msgAdd :: MonadClientUI m => Text -> m ()
-msgAdd msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (_sreport sess) (toMsg msg)}
-
--- | Add a prompt to the current report.
-promptAdd :: MonadClientUI m => Text -> m ()
-promptAdd msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (_sreport sess) (toPrompt $ toAttrLine msg)}
-
--- | Add a prompt to the current report.
-promptAddAttr :: MonadClientUI m => AttrLine -> m ()
-promptAddAttr msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (_sreport sess) (toPrompt msg)}
-
--- | Store current report in the history and reset report.
-recordHistory :: MonadClientUI m => m ()
-recordHistory = do
-  time <- getsState stime
-  SessionUI{_sreport, shistory} <- getSession
-  unless (nullReport _sreport) $ do
-    let nhistory = addReport shistory time _sreport
-    modifySession $ \sess -> sess { _sreport = emptyReport
-                                  , shistory = nhistory }
 
 newtype FailError = FailError Text
   deriving Show

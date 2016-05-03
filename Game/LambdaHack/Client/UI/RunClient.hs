@@ -110,7 +110,10 @@ continueRunDir params = case params of
            , runInitial } -> do
     report <- getsSession _sreport -- TODO: check the message before it goes into history
     let boringMsgs = [ "You hear a distant"
-                     , "reveals that the" ]
+                     , "reveals that the"
+                     , "Macro will be recorded"
+                     , "Macro activated"
+                     , "Voicing '" ]
         boring l = any (`isInfixOf` map Color.acChar l) boringMsgs
         -- TODO: use a regexp from the UI config instead
         -- or have symbolic messages and pattern-match

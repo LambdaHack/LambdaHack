@@ -98,7 +98,7 @@ defaultCmdRMB =
           , (CaPercentSeen, XhairStair False) ] } )
  where
   common =
-    [ (CaMessage, Macro ["R"])
+    [ (CaMessage, Macro ["KP_5", "V"])
     , (CaMapLeader, descendDropCmd)
     , (CaArenaName, ByAimMode {notAiming = Help Nothing, aiming = Accept})
     , (CaSelected, SelectWithPointer)

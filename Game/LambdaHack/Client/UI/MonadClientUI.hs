@@ -9,11 +9,12 @@ module Game.LambdaHack.Client.UI.MonadClientUI
                  )
     -- * Display and key input
   , ColorMode(..)
+  , msgAdd, promptAdd, promptAddAttr, recordHistory
   , mapStartY, getReport, promptGetKey, promptGetInt
   , getInitConfirms, getConfirms, getConfirmsKey
   , displayFrame, displayActorStart, drawBaseFrame, drawOverlay
     -- * Assorted primitives
-  , stopPlayBack, stopPlayBackGiveStatus, askConfig, askBinding
+  , stopPlayBack, askConfig, askBinding
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, addPressedKey
   , frontendShutdown
   , scoreToSlideshow, defaultHistory
@@ -26,7 +27,7 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Exception.Assert.Sugar
-import Control.Monad (void, when)
+import Control.Monad
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
@@ -82,6 +83,31 @@ getReport = do
       promptAI = toPrompt $ toAttrLine $ "[press any key for Main Menu]"
   return $! if underAI then consReport promptAI report else report
 
+-- | Add a message to the current report.
+msgAdd :: MonadClientUI m => Text -> m ()
+msgAdd msg = modifySession $ \sess ->
+  sess {_sreport = snocReport (_sreport sess) (toMsg msg)}
+
+-- | Add a prompt to the current report.
+promptAdd :: MonadClientUI m => Text -> m ()
+promptAdd msg = modifySession $ \sess ->
+  sess {_sreport = snocReport (_sreport sess) (toPrompt $ toAttrLine msg)}
+
+-- | Add a prompt to the current report.
+promptAddAttr :: MonadClientUI m => AttrLine -> m ()
+promptAddAttr msg = modifySession $ \sess ->
+  sess {_sreport = snocReport (_sreport sess) (toPrompt msg)}
+
+-- | Store current report in the history and reset report.
+recordHistory :: MonadClientUI m => m ()
+recordHistory = do
+  time <- getsState stime
+  SessionUI{_sreport, shistory} <- getSession
+  unless (nullReport _sreport) $ do
+    let nhistory = addReport shistory time _sreport
+    modifySession $ \sess -> sess { _sreport = emptyReport
+                                  , shistory = nhistory }
+
 -- | Write a UI request to the frontend and read a corresponding reply.
 connFrontend :: MonadClientUI m => FrontReq a -> m a
 connFrontend req = do
@@ -106,13 +132,15 @@ promptGetKey ov sfBlank frontKeyKeys = do
       frontKeyFrame <- drawOverlay ColorFull sfBlank ov
       displayFrame $ Just frontKeyFrame
       modifySession $ \sess -> sess {slastPlay = kms}
+      Config{configRunStopMsgs} <- askConfig
+      when configRunStopMsgs $ promptAdd $ "Voicing '" <> tshow km <> "'."
       return km
     _ -> do
       -- We can't continue playback; wipe out old srunning, etc.
       interrupted <- stopPlayBackGiveStatus
       ov2 <- if keyPressed && interrupted then do
                discardPressedKey
-               return $! toOverlay ["*interrupted*"] <> ov
+               return $! ov <> toOverlay ["*interrupted*"]
              else return ov
       frontKeyFrame <- drawOverlay ColorFull sfBlank ov2
       connFrontendFrontKey frontKeyKeys frontKeyFrame

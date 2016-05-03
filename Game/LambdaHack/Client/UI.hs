@@ -131,7 +131,6 @@ humanCommand = do
           case km `M.lookup` bcmdMap of
             Just (cats, _, cmd) | CmdMainMenu `notElem` cats
                                   && CmdSettingsMenu `notElem` cats -> do
-              -- Query and clear the last command key.
               modifySession $ \sess -> sess
                 {swaitTimes = if swaitTimes sess > 0
                               then - swaitTimes sess
