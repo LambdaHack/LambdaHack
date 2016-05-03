@@ -659,7 +659,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     itemAidVerbMU aid "deapply" iid (Left $ Just 1) cstore
   SfxTrigger aid _p _feat ->
     -- TODO: when more triggers that are not visible on the map, add msgs
-    when verbose $ aidVerbMU aid "trigger"  -- TODO: opens door, etc.
+    when verbose $ aidVerbMU aid "trigger"
   SfxShun aid _p _ ->
     when verbose $ aidVerbMU aid "shun"  -- TODO: shuns stairs down
   SfxEffect fidSource aid effect hpDelta -> do

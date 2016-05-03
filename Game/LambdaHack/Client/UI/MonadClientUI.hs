@@ -195,6 +195,8 @@ getConfirmsKey dm extraKeys slides = do
               [] | km `elem` extraKeys -> return km
               [] -> displayFrs frs srf
               _ -> displayFrs xs (x : srf)
+            _ | km `K.elemOrNull` extraKeys -> return km
+              -- Other keys exit only if in @extraKeys@.
             K.Home -> displayFrs frontSlides []
             K.End -> case reverse frontSlides of
               [] -> assert `failure` slides
@@ -205,7 +207,6 @@ getConfirmsKey dm extraKeys slides = do
             K.PgDn -> case xs of
               [] -> displayFrs frs srf
               _ -> displayFrs xs (x : srf)
-            _ | km `K.elemOrNull` extraKeys -> return km
             _ -> assert `failure` "unknown key" `twith` km
   displayFrs frontSlides []
 

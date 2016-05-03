@@ -743,7 +743,8 @@ alterDirHuman ts = do
       keys = K.escKM
              : K.leftButtonKM
              : map (K.KM K.NoModifier) (K.dirAllKey configVi configLaptop)
-      prompt = makePhrase ["What to", verb1 <> "? [movement key, left mouse button, ESC]"]
+      prompt = makePhrase
+        ["Where to", verb1 <> "? [movement key, left mouse button, ESC]"]
   promptAdd prompt
   km <- displayChoiceLine mempty keys
   case K.key km of
@@ -751,17 +752,19 @@ alterDirHuman ts = do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       Point x y <- getsSession spointer
-      let v = Point x (y -  mapStartY) `vectorToFrom` bpos b
-      if isUnit v
-      then v `alterTile` ts
+      let dir = Point x (y -  mapStartY) `vectorToFrom` bpos b
+      if isUnit dir
+      then alterTile ts dir
       else failWith "never mind"
-    _ -> K.handleDir configVi configLaptop km
-                     (`alterTile` ts) (failWith "never mind")
+    _ ->
+      case K.handleDir configVi configLaptop km of
+        Nothing -> failWith "never mind"
+        Just dir -> alterTile ts dir
 
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m
-          => Vector -> [Trigger] -> m (FailOrCmd (RequestTimed 'AbAlter))
-alterTile dir ts = do
+          => [Trigger] -> Vector -> m (FailOrCmd (RequestTimed 'AbAlter))
+alterTile ts dir = do
   cops@Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -772,12 +775,17 @@ alterTile dir ts = do
       tpos = bpos b `shift` dir
       t = lvl `at` tpos
       alterFeats = alterFeatures ts
+      verb1 = case ts of
+        [] -> "alter"
+        tr : _ -> verb tr
+      msg = makeSentence ["you", verb1, "towards", MU.Text $ compassText dir]
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
     _ | skill < 1 -> failSer AlterUnskilled
     [] -> failWith $ guessAlter cops alterFeats t
     feat : _ ->
       if EM.notMember tpos $ lfloor lvl then
-        if unoccupied as tpos then
+        if unoccupied as tpos then do
+          msgAdd msg
           return $ Right $ ReqAlter tpos $ Just feat
         else failSer AlterBlockActor
       else failSer AlterBlockItem

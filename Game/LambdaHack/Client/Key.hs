@@ -202,11 +202,11 @@ dirAllKey configVi configLaptop =
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
-handleDir :: Bool -> Bool -> KM -> (Vector -> a) -> a -> a
-handleDir configVi configLaptop KM{modifier=NoModifier, key} h k =
+handleDir :: Bool -> Bool -> KM -> Maybe Vector
+handleDir configVi configLaptop KM{modifier=NoModifier, key} =
   let assocs = zip (dirAllKey configVi configLaptop) $ cycle moves
-  in maybe k h (lookup key assocs)
-handleDir _ _ _ _ k = k
+  in lookup key assocs
+handleDir _ _ _ = Nothing
 
 -- | Binding of both sets of movement keys.
 moveBinding :: Bool -> Bool -> (Vector -> a) -> (Vector -> a)
