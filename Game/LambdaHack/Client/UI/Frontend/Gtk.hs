@@ -137,7 +137,7 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
           !pointer = Point cx cy
       -- Store the mouse event coords in the keypress channel.
       saveKMP rf modifier key pointer
-    return $! but == RightButton  -- not to disable selection
+    return True  -- disable selection
   -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
       white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
