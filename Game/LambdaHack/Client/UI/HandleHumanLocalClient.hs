@@ -94,11 +94,11 @@ macroHuman kms = do
 -- | Clear current messages, cycle key hints mode.
 clearHuman :: MonadClientUI m => m ()
 clearHuman = do
+  keysHintMode <- getsSession skeysHintMode
+  when (keysHintMode == KeysHintPresent) $ historyHuman
   modifySession $ \sess -> sess {skeysHintMode =
     let n = fromEnum (skeysHintMode sess) + 1
-    in toEnum $ if n > fromEnum (maxBound :: KeysHintMode) then 1 else n}
-  keysHintMode <- getsSession skeysHintMode
-  when (keysHintMode == KeysHintHistory) historyHuman
+    in toEnum $ if n > fromEnum (maxBound :: KeysHintMode) then 0 else n}
 
 -- * ChooseItem
 

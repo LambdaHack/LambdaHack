@@ -86,7 +86,7 @@ humanCommand = do
   -- but not human.
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
   modifySession $ \sess -> sess {slastLost = ES.empty}
-  modifySession $ \sess -> sess {skeysHintMode = KeysHintBlocked}
+  modifySession $ \sess -> sess {skeysHintMode = KeysHintAbsent}
   let loop :: m RequestUI
       loop = do
         report <- getsSession _sreport
@@ -94,8 +94,11 @@ humanCommand = do
           if nullReport report then do
             -- Display keys sometimes, alternating with empty screen.
             keysHintMode <- getsSession skeysHintMode
-            when (keysHintMode == KeysHintPresent) $
-              describeMainKeys >>= promptAdd
+            case keysHintMode of
+              KeysHintPresent -> describeMainKeys >>= promptAdd
+              KeysHintBlocked ->
+                modifySession $ \sess -> sess {skeysHintMode = KeysHintAbsent}
+              _ -> return ()
             sli <- reportToSlideshow
             return $! head $ slideshow sli  -- only the first slide of keys; OK
           else do

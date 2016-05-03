@@ -81,7 +81,6 @@ data KeysHintMode =
     KeysHintBlocked
   | KeysHintAbsent
   | KeysHintPresent
-  | KeysHintHistory
   deriving (Eq, Enum, Bounded)
 
 -- | Initial empty game client state.
