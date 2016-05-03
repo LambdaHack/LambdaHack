@@ -132,14 +132,15 @@ promptGetKey ov sfBlank frontKeyKeys = do
       Config{configRunStopMsgs} <- askConfig
       when configRunStopMsgs $ promptAdd $ "Voicing '" <> tshow km <> "'."
       return km
-    _ -> do
-      -- We can't continue playback; wipe out old srunning, etc.
-      interrupted <- stopPlayBackGiveStatus
-      ov2 <- if keyPressed && interrupted then do
-               discardPressedKey
-               return $! ov <> toOverlay ["*interrupted*"]
-             else return ov
+    _ : _ -> do
+      -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
+      stopPlayBack
+      discardPressedKey
+      let ov2 = ov <> if keyPressed then toOverlay ["*interrupted*"] else mempty
       frontKeyFrame <- drawOverlay ColorFull sfBlank ov2
+      connFrontendFrontKey frontKeyKeys frontKeyFrame
+    [] -> do
+      frontKeyFrame <- drawOverlay ColorFull sfBlank ov
       connFrontendFrontKey frontKeyKeys frontKeyFrame
   (seqCurrent, seqPrevious, k) <- getsSession slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)
@@ -270,20 +271,16 @@ drawOverlays dm sfBlank ovs = do
   return $! map f ovs  -- keep lazy for responsiveness
 
 stopPlayBack :: MonadClientUI m => m ()
-stopPlayBack = void stopPlayBackGiveStatus
-
-stopPlayBackGiveStatus :: MonadClientUI m => m Bool
-stopPlayBackGiveStatus = do
-  lastPlay <- getsSession slastPlay
+stopPlayBack = do
   modifySession $ \sess -> sess
     { slastPlay = []
     , slastRecord = ([], [], 0)
-        -- TODO: not ideal, but needed to cancel macros that contain apostrophes
+        -- Needed to cancel macros that contain apostrophes.
     , swaitTimes = - abs (swaitTimes sess)
     }
   srunning <- getsSession srunning
   case srunning of
-    Nothing -> return $! not $ null lastPlay
+    Nothing -> return ()
     Just RunParams{runLeader} -> do
       -- Switch to the original leader, from before the run start,
       -- unless dead or unless the faction never runs with multiple
@@ -295,7 +292,6 @@ stopPlayBackGiveStatus = do
       when (memActor runLeader arena s && not (noRunWithMulti fact)) $
         modifyClient $ updateLeader runLeader s
       modifySession (\sess -> sess {srunning = Nothing})
-      return True
 
 askConfig :: MonadClientUI m => m Config
 askConfig = getsSession sconfig

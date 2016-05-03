@@ -111,13 +111,9 @@ humanCommand = do
                 void $ getConfirms ColorFull [K.spaceKM] [K.escKM] sli
                 return $! toOverlay []
         (seqCurrent, seqPrevious, k) <- getsSession slastRecord
-        case k of
-          0 -> do
-            let slastRecord = ([], seqCurrent, 0)
-            modifySession $ \sess -> sess {slastRecord}
-          _ -> do
-            let slastRecord = ([], seqCurrent ++ seqPrevious, k - 1)
-            modifySession $ \sess -> sess {slastRecord}
+        let slastRecord | k == 0 = ([], seqCurrent, 0)
+                        | otherwise = ([], seqCurrent ++ seqPrevious, k - 1)
+        modifySession $ \sess -> sess {slastRecord}
         lastPlay <- getsSession slastPlay
         km <- promptGetKey over False []
         -- Messages shown, so update history and reset current report.

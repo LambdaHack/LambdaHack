@@ -39,7 +39,7 @@ data FrontReq :: * -> * where
   FrontPressed :: FrontReq Bool
     -- ^ inspect the fkeyPressed MVar
   FrontDiscard :: FrontReq ()
-    -- ^ discard a key in the queue; fail if queue empty
+    -- ^ discard a key in the queue, if any
   FrontAdd :: KMP -> FrontReq ()
     -- ^ add a key to the queue
   FrontAutoYes :: Bool -> FrontReq ()
@@ -84,10 +84,8 @@ fchanFrontend sdebugCli fs@FSession{..} rf =
     FrontPressed -> do
       noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
       return $! not noKeysPending
-    FrontDiscard -> do
-      mkey <- STM.atomically $ STM.tryReadTQueue (fchanKey rf)
-      when (isNothing mkey) $
-        assert `failure` "empty queue of pressed keys" `twith` ()
+    FrontDiscard ->
+      void $ STM.atomically $ STM.tryReadTQueue (fchanKey rf)
     FrontAdd kmp -> STM.atomically $ STM.writeTQueue (fchanKey rf) kmp
     FrontAutoYes b -> writeIORef fautoYesRef b
     FrontShutdown -> do

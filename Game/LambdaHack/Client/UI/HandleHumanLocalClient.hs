@@ -488,11 +488,12 @@ recordHuman = do
       let slastRecord = ([], [], maxK)
       modifySession $ \sess -> sess {slastRecord}
       promptAdd $ "Macro will be recorded for up to"
-                  <+> tshow maxK <+> "actions."  -- no MU, poweruser
+                  <+> tshow maxK
+                  <+> "actions. Stop recording with the same key."
     _ -> do
       let slastRecord = (seqPrevious, [], 0)
       modifySession $ \sess -> sess {slastRecord}
-      promptAdd $ "Macro recording interrupted after"
+      promptAdd $ "Macro recording stopped after"
                   <+> tshow (maxK - k - 1) <+> "actions."
 
 -- * History
