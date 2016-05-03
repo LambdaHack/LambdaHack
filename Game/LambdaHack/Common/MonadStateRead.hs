@@ -21,7 +21,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 
-class (Monad m, Functor m) => MonadStateRead m where
+class (Monad m, Functor m, Applicative m) => MonadStateRead m where
   getState  :: m State
   getsState :: (State -> a) -> m a
 
