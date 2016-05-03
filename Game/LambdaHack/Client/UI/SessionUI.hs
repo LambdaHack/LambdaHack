@@ -7,12 +7,12 @@ module Game.LambdaHack.Client.UI.SessionUI
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
-import Data.Text (Text)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Config

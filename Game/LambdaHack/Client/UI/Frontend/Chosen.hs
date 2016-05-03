@@ -5,6 +5,8 @@ module Game.LambdaHack.Client.UI.Frontend.Chosen
   ( startup, frontendName
   ) where
 
+import Prelude ()
+
 #ifdef USE_CURSES
 import Game.LambdaHack.Client.UI.Frontend.Curses
 #elif USE_VTY

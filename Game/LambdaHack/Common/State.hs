@@ -10,10 +10,12 @@ module Game.LambdaHack.Common.State
   , updateFactionD, updateTime, updateCOps
   ) where
 
-import Control.Exception.Assert.Sugar
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
-import Data.Text (Text)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction

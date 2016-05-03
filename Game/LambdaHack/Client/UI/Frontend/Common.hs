@@ -6,13 +6,12 @@ module Game.LambdaHack.Client.UI.Frontend.Common
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
-import Control.Monad (unless, void, when)
-import Data.Maybe
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Overlay

@@ -4,17 +4,12 @@ module Game.LambdaHack.Client.UI.HandleHelperClient
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
-import Control.Monad (when)
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
-import Data.List (findIndex, sortBy)
-import Data.Maybe
-import Data.Monoid
 import Data.Ord
-import Data.Text (Text)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient

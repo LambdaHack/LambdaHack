@@ -7,13 +7,12 @@ module Game.LambdaHack.Client.UI.Animation
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Data.Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List (foldl')
-import Data.Maybe
 
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Color

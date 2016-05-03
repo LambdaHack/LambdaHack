@@ -8,12 +8,15 @@ module Game.LambdaHack.Common.Color
   , Attr(..), defAttr, AttrChar(..)
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
 import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import Data.Hashable (Hashable)
-import Data.Text (Text)
 import GHC.Generics (Generic)
 
 -- TODO: since this type may be essential to speed, consider implementing

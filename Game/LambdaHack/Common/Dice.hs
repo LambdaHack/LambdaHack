@@ -14,20 +14,21 @@ module Game.LambdaHack.Common.Dice
 #endif
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Control.Applicative
 import Control.DeepSeq
 import Data.Binary
 import qualified Data.Char as Char
 import Data.Hashable (Hashable)
 import qualified Data.IntMap.Strict as IM
-import Data.Maybe
-import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.Misc
 
 type SimpleDice = Frequency Int
 

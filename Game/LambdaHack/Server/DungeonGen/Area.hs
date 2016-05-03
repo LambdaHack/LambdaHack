@@ -3,6 +3,10 @@ module Game.LambdaHack.Server.DungeonGen.Area
   ( Area, toArea, fromArea, trivialArea, grid, shrink
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 
 import Game.LambdaHack.Common.Point

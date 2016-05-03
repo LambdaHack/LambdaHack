@@ -9,7 +9,10 @@ module Game.LambdaHack.Client.AI
 #endif
   ) where
 
-import Control.Exception.Assert.Sugar
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
@@ -22,7 +25,6 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request

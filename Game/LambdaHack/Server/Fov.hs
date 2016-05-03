@@ -11,11 +11,13 @@ module Game.LambdaHack.Server.Fov
 #endif
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Lazy as EML
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List
-import Data.Maybe
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState

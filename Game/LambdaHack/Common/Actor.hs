@@ -13,12 +13,14 @@ module Game.LambdaHack.Common.Actor
   , keySelected, ppContainer, ppCStore, ppCStoreIn, verbCStore
   ) where
 
-import Control.Exception.Assert.Sugar
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int64)
 import Data.Ratio
-import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color

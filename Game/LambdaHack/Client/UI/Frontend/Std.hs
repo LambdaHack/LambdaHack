@@ -3,8 +3,11 @@ module Game.LambdaHack.Client.UI.Frontend.Std
   ( startup, frontendName
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Control.Concurrent.Async
-import Control.Monad (void)
 import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
 import qualified System.IO as SIO

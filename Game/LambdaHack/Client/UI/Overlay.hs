@@ -11,10 +11,9 @@ module Game.LambdaHack.Client.UI.Overlay
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Data.Maybe
-import Data.Text (Text)
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 

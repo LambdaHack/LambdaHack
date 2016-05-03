@@ -5,6 +5,10 @@ module Game.LambdaHack.Common.Response
   ( ResponseAI(..), ResponseUI(..)
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 

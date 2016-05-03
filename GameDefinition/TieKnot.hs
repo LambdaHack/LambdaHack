@@ -1,6 +1,12 @@
 -- | Here the knot of engine code pieces and the game-specific
 -- content definitions is tied, resulting in an executable game.
-module TieKnot ( tieKnot ) where
+module TieKnot
+  ( tieKnot
+  ) where
+
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 import qualified Client.UI.Content.KeyKind as Content.KeyKind
 import qualified Content.CaveKind

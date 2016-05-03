@@ -8,18 +8,13 @@ module Game.LambdaHack.Client.UI.InventoryClient
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
-import Control.Monad (filterM, void)
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.Char as Char
 import Data.Either (rights)
 import qualified Data.EnumMap.Strict as EM
-import Data.List (delete, find, findIndex, intersect, nub)
 import qualified Data.Map.Strict as M
-import Data.Maybe
-import Data.Monoid
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 

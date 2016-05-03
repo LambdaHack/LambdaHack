@@ -12,14 +12,14 @@ module Game.LambdaHack.Common.Item
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Monad.State as St
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Hashable (Hashable)
 import qualified Data.Ix as Ix
-import Data.Text (Text)
 import GHC.Generics (Generic)
 import System.Random (mkStdGen)
 

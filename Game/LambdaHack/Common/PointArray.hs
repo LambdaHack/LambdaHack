@@ -8,8 +8,11 @@ module Game.LambdaHack.Common.PointArray
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Control.Arrow ((***))
-import Control.Monad
 import Control.Monad.ST.Strict
 import Data.Binary
 import Data.Binary.Orphans ()

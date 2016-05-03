@@ -12,7 +12,8 @@ module Game.LambdaHack.SampleImplementation.SampleMonadServer
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent
 import qualified Control.Exception as Ex

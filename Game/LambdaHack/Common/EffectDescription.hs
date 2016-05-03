@@ -5,9 +5,11 @@ module Game.LambdaHack.Common.EffectDescription
   , kindEffectToSuffix, kindAspectToSuffix
   ) where
 
-import Control.Exception.Assert.Sugar
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 

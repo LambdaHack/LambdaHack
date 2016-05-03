@@ -4,8 +4,11 @@ module Game.LambdaHack.Common.ClientOptions
   ( DebugModeCli(..), defDebugModeCli
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
-import Data.Text (Text)
 import GHC.Generics (Generic)
 
 data DebugModeCli = DebugModeCli

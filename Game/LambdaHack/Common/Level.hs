@@ -10,14 +10,15 @@ module Game.LambdaHack.Common.Level
   , accessible, accessibleUnknown, accessibleDir
   , knownLsecret, isSecretPos, hideTile
   , findPos, findPosTry, mapLevelActors_, mapDungeonActors_
- ) where
+  ) where
 
-import Control.Exception.Assert.Sugar
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe
-import Data.Text (Text)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Item

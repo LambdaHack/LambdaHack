@@ -11,9 +11,12 @@ module Game.LambdaHack.Common.Flavour
   , colorToTeamName, colorToPlainName, colorToFancyName
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import Data.Hashable (Hashable)
-import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color

@@ -11,10 +11,8 @@ module Game.LambdaHack.Common.Request
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Data.Maybe
-import Data.Text (Text)
+import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor

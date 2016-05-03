@@ -23,20 +23,15 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 -- Cabal
 import qualified Paths_LambdaHack as Self (version)
 
-import Control.Exception.Assert.Sugar
-import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List.Compat
-import Data.Maybe
-import Data.Monoid
 import Data.Ord
-import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Version
 import qualified NLP.Miniutter.English as MU

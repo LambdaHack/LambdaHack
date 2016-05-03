@@ -14,10 +14,12 @@ module Game.LambdaHack.Common.Faction
 #endif
   ) where
 
-import Control.Monad
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
-import Data.Text (Text)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor

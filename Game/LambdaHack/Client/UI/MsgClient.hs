@@ -6,12 +6,10 @@ module Game.LambdaHack.Client.UI.MsgClient
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Game.LambdaHack.Common.Kind as Kind
 import qualified NLP.Miniutter.English as MU

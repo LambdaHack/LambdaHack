@@ -4,7 +4,8 @@ module Game.LambdaHack.Client.UI.HandleHumanClient
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Data.Functor.Infix ((<$$>))
 

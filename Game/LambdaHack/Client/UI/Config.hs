@@ -4,17 +4,16 @@ module Game.LambdaHack.Client.UI.Config
   ( Config(..), mkConfig, applyConfigToDebug
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Control.DeepSeq
-import Control.Exception.Assert.Sugar
-import Control.Monad
 import Data.Binary
 import qualified Data.Ini as Ini
 import qualified Data.Ini.Reader as Ini
 import qualified Data.Ini.Types as Ini
-import Data.List
 import qualified Data.Map.Strict as M
-import Data.Maybe
-import Data.Text (Text)
 import qualified Data.Text as T
 import Game.LambdaHack.Common.ClientOptions
 import GHC.Generics (Generic)
@@ -26,7 +25,6 @@ import Game.LambdaHack.Client.FileClient
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.RuleKind
 
 -- | Fully typed contents of the UI config file. This config

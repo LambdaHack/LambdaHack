@@ -5,16 +5,16 @@ module Game.LambdaHack.Client.ItemSlot
   , allSlots, allZeroSlots, slotLabel, slotRange, assignSlot
   ) where
 
-import Control.Exception.Assert.Sugar
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import Data.Bits (shiftL, shiftR)
 import Data.Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List
-import Data.Monoid
 import Data.Ord (comparing)
-import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Actor

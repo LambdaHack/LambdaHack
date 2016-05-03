@@ -13,7 +13,8 @@ module Game.LambdaHack.SampleImplementation.SampleMonadClient
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent.STM
 import qualified Control.Monad.IO.Class as IO

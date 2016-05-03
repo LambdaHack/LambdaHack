@@ -6,7 +6,10 @@ module Game.LambdaHack.Client.State
   , PathEtc, toggleMarkSuspect
   ) where
 
-import Control.Exception.Assert.Sugar
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES

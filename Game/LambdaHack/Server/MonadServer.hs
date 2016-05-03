@@ -17,13 +17,13 @@ module Game.LambdaHack.Server.MonadServer
   , tryRestore, speedupCOps, rndToAction, getSetGen
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Control.Exception as Ex hiding (handle)
-import Control.Exception.Assert.Sugar
-import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Time.Clock.POSIX

@@ -5,6 +5,10 @@ module Game.LambdaHack.Common.RingBuffer
   , empty, cons, uncons, toList
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude hiding (uncons)
+
 import Data.Binary
 import Data.Binary.Orphans ()
 import qualified Data.Vector as V

@@ -1,5 +1,11 @@
 -- | Cave layouts.
-module Content.CaveKind ( cdefs ) where
+module Content.CaveKind
+  ( cdefs
+  ) where
+
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 import Data.Ratio
 

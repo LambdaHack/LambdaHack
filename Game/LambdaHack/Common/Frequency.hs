@@ -13,19 +13,15 @@ module Game.LambdaHack.Common.Frequency
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Applicative
 import Control.Arrow (first, second)
 import Control.DeepSeq
-import Control.Exception.Assert.Sugar
-import Control.Monad
 import Data.Binary
 import Data.Hashable (Hashable)
-import Data.Text (Text)
 import GHC.Generics (Generic)
-
-import Game.LambdaHack.Common.Misc
 
 -- TODO: do not expose runFrequency
 -- | The frequency distribution type. Not normalized (operations may

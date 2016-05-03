@@ -28,11 +28,10 @@ module Game.LambdaHack.Common.Tile
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.Array.Unboxed as A
-import Data.Maybe
 
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc

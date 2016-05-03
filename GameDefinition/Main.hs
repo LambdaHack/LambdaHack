@@ -1,6 +1,12 @@
 -- | The main source code file of LambdaHack the game.
 -- Module "TieKnot" is separated to make it usable in tests.
-module Main ( main ) where
+module Main
+  ( main
+  ) where
+
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 import System.Environment (getArgs)
 

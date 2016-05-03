@@ -4,7 +4,10 @@ module Game.LambdaHack.Server.DebugServer
   , debugRequestAI, debugRequestUI
   ) where
 
-import Data.Text (Text)
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.Text as T
 import qualified Text.Show.Pretty as Show.Pretty
 
@@ -13,7 +16,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response

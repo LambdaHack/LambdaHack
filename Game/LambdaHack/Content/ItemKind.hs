@@ -11,13 +11,13 @@ module Game.LambdaHack.Content.ItemKind
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.DeepSeq
 import Data.Binary
 import Data.Hashable (Hashable)
 import qualified Data.Set as S
-import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU

@@ -1,5 +1,11 @@
 -- | Actor (or rather actor body trunk) definitions.
-module Content.ItemKindActor ( actors ) where
+module Content.ItemKindActor
+  ( actors
+  ) where
+
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 

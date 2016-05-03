@@ -4,7 +4,10 @@ module Game.LambdaHack.Content.PlaceKind
   , validateSinglePlaceKind, validateAllPlaceKind
   ) where
 
-import Data.Text (Text)
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Misc

@@ -6,14 +6,10 @@ module Game.LambdaHack.Client.UI.WidgetClient
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
-import Data.List (find)
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.Map.Strict as M
-import Data.Maybe
-import Data.Monoid
-import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.ItemSlot
@@ -34,7 +30,6 @@ import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 

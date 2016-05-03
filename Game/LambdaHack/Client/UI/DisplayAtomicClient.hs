@@ -3,13 +3,12 @@ module Game.LambdaHack.Client.UI.DisplayAtomicClient
   ( displayRespUpdAtomicUI, displayRespSfxAtomicUI
   ) where
 
-import Control.Exception.Assert.Sugar
-import Control.Monad
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List (delete)
-import Data.Maybe
-import Data.Monoid
 import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 

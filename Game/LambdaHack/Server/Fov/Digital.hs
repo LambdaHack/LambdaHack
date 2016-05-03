@@ -10,9 +10,10 @@ module Game.LambdaHack.Server.Fov.Digital
 #endif
   ) where
 
-import Control.Exception.Assert.Sugar
+import Prelude ()
 
-import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Prelude hiding (intersect)
+
 import Game.LambdaHack.Server.Fov.Common
 
 -- | Calculates the list of tiles, in @Bump@ coordinates, visible from (0, 0),

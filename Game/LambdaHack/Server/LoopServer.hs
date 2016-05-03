@@ -1,18 +1,17 @@
 {-# LANGUAGE GADTs #-}
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
-module Game.LambdaHack.Server.LoopServer (loopSer) where
+module Game.LambdaHack.Server.LoopServer
+  ( loopSer
+  ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Arrow ((&&&))
-import Control.Exception.Assert.Sugar
-import Control.Monad (unless, when)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List (minimumBy)
-import Data.Maybe
 import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Atomic

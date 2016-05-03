@@ -5,12 +5,13 @@ module Game.LambdaHack.Atomic.BroadcastAtomicWrite
   ( handleAndBroadcast
   ) where
 
-import Control.Exception.Assert.Sugar
-import Control.Monad
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM_)
-import Data.Maybe
 
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.HandleAtomicWrite

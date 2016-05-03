@@ -5,6 +5,8 @@ module Game.LambdaHack.Client.ProtocolClient
   ( MonadClientReadResponse(..), MonadClientWriteRequest(..)
   ) where
 
+import Prelude ()
+
 import Game.LambdaHack.Client.MonadClient
 
 class MonadClient m => MonadClientReadResponse resp m | m -> resp where

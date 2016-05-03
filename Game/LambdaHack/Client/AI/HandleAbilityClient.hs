@@ -6,20 +6,16 @@ module Game.LambdaHack.Client.AI.HandleAbilityClient
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Arrow (second)
-import Control.Exception.Assert.Sugar
-import Control.Monad (msum, mzero)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
-import Data.List (foldl', groupBy, intersect, sortBy)
 import qualified Data.Map.Strict as M
-import Data.Maybe
 import Data.Ord
 import Data.Ratio
-import Data.Text (Text)
 
 import Game.LambdaHack.Client.AI.ConditionClient
 import Game.LambdaHack.Client.AI.Preferences

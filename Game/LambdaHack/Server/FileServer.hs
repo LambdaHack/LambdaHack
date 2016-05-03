@@ -4,6 +4,8 @@ module Game.LambdaHack.Server.FileServer
   ( encodeEOF, strictDecodeEOF, tryCreateDir, tryCopyDataFiles, appDataDir
   ) where
 
+import Prelude ()
+
 #ifdef USE_JSFILE_SERVER
 import Game.LambdaHack.Common.JSFile
 #else

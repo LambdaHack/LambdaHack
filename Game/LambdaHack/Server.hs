@@ -13,6 +13,8 @@ module Game.LambdaHack.Server
   , sdebugCli
   ) where
 
+import Prelude ()
+
 import Game.LambdaHack.Server.Commandline
 import Game.LambdaHack.Server.LoopServer
 import Game.LambdaHack.Server.MonadServer

@@ -13,6 +13,8 @@ module Game.LambdaHack.Atomic
   , posProjBody
   ) where
 
+import Prelude ()
+
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.PosAtomicRead

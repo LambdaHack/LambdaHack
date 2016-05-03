@@ -4,9 +4,11 @@ module Game.LambdaHack.Server.EndServer
   ( endOrLoop, dieSer
   ) where
 
-import Control.Monad
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor

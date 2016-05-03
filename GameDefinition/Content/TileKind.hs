@@ -1,8 +1,13 @@
 -- | Terrain tile definitions.
-module Content.TileKind ( cdefs ) where
+module Content.TileKind
+  ( cdefs
+  ) where
+
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Arrow (first)
-import Data.Maybe
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Color

@@ -5,19 +5,15 @@ module Game.LambdaHack.Server.StartServer
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
-import Control.Monad (forM, forM_, mplus, unless, when)
+import Game.LambdaHack.Common.Prelude
+
 import qualified Control.Monad.State as St
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List (elemIndex, find, findIndex, sortBy, (\\))
 import qualified Data.Map.Strict as M
-import Data.Maybe
 import Data.Ord
-import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple (swap)
 import qualified System.Random as R

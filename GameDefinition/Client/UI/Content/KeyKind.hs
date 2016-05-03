@@ -1,6 +1,12 @@
 -- | The default game key-command mapping to be used for UI. Can be overridden
 -- via macros in the config file.
-module Client.UI.Content.KeyKind ( standardKeys ) where
+module Client.UI.Content.KeyKind
+  ( standardKeys
+  ) where
+
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Arrow (first)
 

@@ -1,5 +1,9 @@
 -- | Room, hall and passage definitions.
-module Content.PlaceKind ( cdefs ) where
+module Content.PlaceKind
+  ( cdefs
+  ) where
+
+import Prelude ()
 
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Content.PlaceKind

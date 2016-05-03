@@ -12,7 +12,9 @@ module Game.LambdaHack.Server.Fov.Common
   , maximal, steeper, addHull
   ) where
 
-import Data.List
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 -- | Distance from the (0, 0) point where FOV originates.
 type Distance = Int

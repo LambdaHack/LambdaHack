@@ -5,13 +5,11 @@ module Game.LambdaHack.Client.HandleAtomicClient
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
-import Control.Monad (when)
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Maybe
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic

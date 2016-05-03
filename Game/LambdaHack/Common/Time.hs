@@ -11,11 +11,13 @@ module Game.LambdaHack.Common.Time
   , speedFromWeight, rangeFromSpeed, rangeFromSpeedAndLinger
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import qualified Data.Char as Char
 import Data.Int (Int64)
-
-import Game.LambdaHack.Common.Misc
 
 -- | Game time in ticks. The time dimension.
 -- One tick is 1 microsecond (one millionth of a second),

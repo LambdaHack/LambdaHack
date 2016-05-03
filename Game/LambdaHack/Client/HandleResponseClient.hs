@@ -4,6 +4,10 @@ module Game.LambdaHack.Client.HandleResponseClient
   ( handleResponseAI, handleResponseUI
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.AI
 import Game.LambdaHack.Client.HandleAtomicClient

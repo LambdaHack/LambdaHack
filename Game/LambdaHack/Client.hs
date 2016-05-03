@@ -8,4 +8,6 @@ module Game.LambdaHack.Client
     loopAI, loopUI
   ) where
 
+import Prelude ()
+
 import Game.LambdaHack.Client.LoopClient

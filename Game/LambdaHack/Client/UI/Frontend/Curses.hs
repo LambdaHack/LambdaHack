@@ -6,11 +6,10 @@ module Game.LambdaHack.Client.UI.Frontend.Curses
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent.Async
-import Control.Exception.Assert.Sugar
-import Control.Monad (void, when)
 import Data.Char (chr, ord)
 import qualified Data.Map.Strict as M
 import qualified UI.HSCurses.Curses as C

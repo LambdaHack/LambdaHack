@@ -6,8 +6,11 @@ module Game.LambdaHack.Common.Point
   , originPoint
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Control.DeepSeq
-import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import Data.Int (Int32)

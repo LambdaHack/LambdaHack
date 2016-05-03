@@ -6,10 +6,13 @@ module Game.LambdaHack.Content.ModeKind
   , validateSingleModeKind, validateAllModeKind
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
-import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU ()

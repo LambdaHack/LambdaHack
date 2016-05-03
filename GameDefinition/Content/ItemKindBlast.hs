@@ -1,5 +1,11 @@
 -- | Blast definitions.
-module Content.ItemKindBlast ( blasts ) where
+module Content.ItemKindBlast
+  ( blasts
+  ) where
+
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Dice

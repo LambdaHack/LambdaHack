@@ -4,6 +4,8 @@ module Game.LambdaHack.Client.FileClient
   ( encodeEOF, strictDecodeEOF, tryCreateDir, tryCopyDataFiles, appDataDir
   ) where
 
+import Prelude ()
+
 #ifdef USE_JSFILE_CLIENT
 import Game.LambdaHack.Common.JSFile
 #else

@@ -5,14 +5,11 @@ module Game.LambdaHack.Client.AI.PickActorClient
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Arrow
-import Control.Exception.Assert.Sugar
-import Control.Monad (void, unless, unless, filterM)
 import qualified Data.EnumMap.Strict as EM
-import Data.List (partition, sortBy)
-import Data.Maybe
 import Data.Ord
 
 import Game.LambdaHack.Client.AI.ConditionClient

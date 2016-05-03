@@ -24,14 +24,11 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
-import Control.Monad
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe
-import Data.Text (Text)
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import Data.Time.LocalTime

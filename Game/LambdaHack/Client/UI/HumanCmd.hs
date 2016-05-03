@@ -5,9 +5,12 @@ module Game.LambdaHack.Client.UI.HumanCmd
   , noRemoteHumanCmd, categoryDescription
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Control.DeepSeq
 import Data.Binary
-import Data.Text (Text)
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 

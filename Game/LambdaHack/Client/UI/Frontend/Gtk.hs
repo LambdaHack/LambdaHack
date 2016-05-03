@@ -5,16 +5,14 @@ module Game.LambdaHack.Client.UI.Frontend.Gtk
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude hiding (Alt)
 
 import Control.Concurrent
-import Control.Monad (when)
 import Control.Monad.Reader (liftIO)
 import qualified Data.ByteString.Char8 as BS
 import Data.IORef
-import Data.List (foldl')
 import qualified Data.Map.Strict as M
-import Data.Maybe
 import qualified Data.Text as T
 import Graphics.UI.Gtk hiding (Point)
 
@@ -23,7 +21,6 @@ import Game.LambdaHack.Client.UI.Frontend.Common
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.

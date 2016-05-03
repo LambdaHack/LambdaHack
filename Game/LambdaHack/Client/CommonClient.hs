@@ -8,13 +8,10 @@ module Game.LambdaHack.Client.CommonClient
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
-import Control.Monad
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe
-import Data.Text (Text)
 import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 

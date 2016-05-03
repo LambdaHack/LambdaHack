@@ -26,14 +26,11 @@ module Game.LambdaHack.Client.AI.ConditionClient
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Arrow ((&&&))
-import Control.Exception.Assert.Sugar
-import Control.Monad (filterM)
 import qualified Data.EnumMap.Strict as EM
-import Data.List (sortBy)
-import Data.Maybe
 import Data.Ord
 
 import Game.LambdaHack.Client.AI.Preferences

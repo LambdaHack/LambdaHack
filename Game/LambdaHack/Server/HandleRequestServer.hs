@@ -13,13 +13,10 @@ module Game.LambdaHack.Server.HandleRequestServer
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
-import Control.Monad (unless, void, when)
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe
-import Data.Text (Text)
 
 import Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Common.Ability as Ability

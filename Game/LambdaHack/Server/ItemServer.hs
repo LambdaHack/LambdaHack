@@ -5,13 +5,14 @@ module Game.LambdaHack.Server.ItemServer
   , activeItemsServer, itemToFullServer, mapActorCStore_
   ) where
 
-import Control.Monad
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
 import qualified Data.HashMap.Strict as HM
-import Data.List
-import Data.Maybe
 import Data.Ord
 import qualified NLP.Miniutter.English as MU
 

@@ -3,6 +3,10 @@ module Game.LambdaHack.Common.JSFile
   ( encodeEOF, strictDecodeEOF, tryCreateDir, tryCopyDataFiles, appDataDir
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import qualified Data.Char as Char
 import System.Directory

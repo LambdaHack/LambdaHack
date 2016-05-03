@@ -5,13 +5,13 @@ module Game.LambdaHack.Server.PeriodicServer
   , advanceTime, swapTime, managePerTurn, leadLevelSwitch, udpateCalm
   ) where
 
-import Control.Exception.Assert.Sugar
-import Control.Monad
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Int (Int64)
-import Data.List
-import Data.Maybe
 
 import Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Common.Ability as Ability

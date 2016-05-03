@@ -5,14 +5,15 @@ module Game.LambdaHack.Content.TileKind
   , validateSingleTileKind, validateAllTileKind, actionFeatures
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Control.DeepSeq
-import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Hashable
 import qualified Data.IntSet as IS
 import qualified Data.Map.Strict as M
-import Data.Maybe
-import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color

@@ -6,7 +6,10 @@ module Game.LambdaHack.Common.MonadStateRead
   , getGameMode, isNoConfirmsGame, getEntryArena
   ) where
 
-import Control.Exception.Assert.Sugar
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Common.Actor

@@ -10,13 +10,14 @@ module Game.LambdaHack.Client.UI.Frontend
   , chanFrontend
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Control.Concurrent
 import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
-import Control.Exception.Assert.Sugar
-import Control.Monad (unless, when)
 import Data.IORef
-import Data.Maybe
 
 import qualified Game.LambdaHack.Client.Key as K
 import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen

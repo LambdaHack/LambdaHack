@@ -11,14 +11,11 @@ module Game.LambdaHack.Common.ItemStrongest
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
-import Data.List (sortBy)
-import Data.Maybe
 import qualified Data.Ord as Ord
-import Data.Text (Text)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice

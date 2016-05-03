@@ -10,17 +10,15 @@ module Game.LambdaHack.Client.Key
   ) where
 
 import Prelude ()
-import Prelude.Compat hiding (Left, Right)
+
+import Game.LambdaHack.Common.Prelude hiding (Alt, Left, Right)
 
 import Control.DeepSeq
-import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.Char as Char
-import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Vector
 
 -- | Frontend-independent datatype to represent keys.

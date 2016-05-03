@@ -1,6 +1,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 -- | Game rules and assorted game setup data.
-module Content.RuleKind ( cdefs ) where
+module Content.RuleKind
+  ( cdefs
+  ) where
+
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 import Language.Haskell.TH.Syntax
 import System.FilePath

@@ -18,11 +18,11 @@ module Game.LambdaHack.Atomic.CmdAtomic
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
 import Data.Int (Int64)
-import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor

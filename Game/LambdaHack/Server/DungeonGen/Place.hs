@@ -5,13 +5,12 @@ module Game.LambdaHack.Server.DungeonGen.Place
   ) where
 
 import Prelude ()
-import Prelude.Compat
 
-import Control.Exception.Assert.Sugar
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Maybe
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Frequency

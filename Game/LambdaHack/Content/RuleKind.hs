@@ -3,8 +3,11 @@ module Game.LambdaHack.Content.RuleKind
   ( RuleKind(..), FovMode(..), validateSingleRuleKind, validateAllRuleKind
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
-import Data.Text (Text)
 import Data.Version
 
 import Game.LambdaHack.Common.Misc

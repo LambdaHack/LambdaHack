@@ -4,7 +4,8 @@ module Game.LambdaHack.Client.AI.Preferences
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 

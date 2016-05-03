@@ -7,40 +7,29 @@ module Game.LambdaHack.Common.Misc
     -- * Item containers
   , Container(..), CStore(..), ItemDialogMode(..)
     -- * Assorted
-  , tshow, (<+>), (<>), makePhrase, makeSentence
-  , normalLevelBound, divUp, GroupName, toGroupName, Freqs, breturn
+  , makePhrase, makeSentence
+  , normalLevelBound, GroupName, toGroupName, Freqs, breturn
   , serverSaveName, Rarity, validateRarity, Tactic(..)
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.DeepSeq
-import Control.Monad (MonadPlus, liftM, mzero)
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
 import Data.Hashable
 import Data.Key
-import Data.List (nubBy, sortBy)
-import Data.Monoid
 import Data.Ord
 import Data.String (IsString (..))
-import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Point
-
-infixr 6 <+>  -- TODO: not needed when we require a very new minimorph
-(<+>) :: Text -> Text -> Text
-(<+>) = (MU.<+>)
-
--- | Show and pack the result.
-tshow :: Show a => a -> Text
-tshow x = T.pack $ show x
 
 -- | Re-exported English phrase creation functions, applied to default
 -- irregular word sets.
@@ -54,12 +43,6 @@ serverSaveName = "server.sav"
 -- | Level bounds. TODO: query terminal size instead and scroll view.
 normalLevelBound :: (Int, Int)
 normalLevelBound = (79, 20)
-
-infixl 7 `divUp`
--- | Integer division, rounding up.
-divUp :: Integral a => a -> a -> a
-{-# INLINE divUp #-}
-divUp n k = (n + k - 1) `div` k
 
 -- If ever needed, we can use a symbol table here, since content
 -- is never serialized. But we'd need to cover the few cases

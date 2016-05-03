@@ -23,15 +23,16 @@ module Game.LambdaHack.Server.ProtocolServer
 #endif
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.STM (TQueue, atomically)
 import qualified Control.Concurrent.STM as STM
-import Control.Exception.Assert.Sugar
-import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM, mapWithKeyM_)
-import Data.Maybe
 import Game.LambdaHack.Common.Thread
 import System.IO.Unsafe (unsafePerformIO)
 

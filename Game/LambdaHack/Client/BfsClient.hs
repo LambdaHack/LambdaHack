@@ -7,15 +7,12 @@ module Game.LambdaHack.Client.BfsClient
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Arrow ((&&&))
-import Control.Exception.Assert.Sugar
-import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List (maximumBy, sortBy)
-import Data.Maybe
 import Data.Ord
 
 import Game.LambdaHack.Client.Bfs

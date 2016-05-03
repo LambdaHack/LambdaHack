@@ -4,11 +4,13 @@ module Game.LambdaHack.Common.Kind
   ( Id, Speedup, Ops(..), COps(..), createOps, stdRuleset
   ) where
 
-import Control.Exception.Assert.Sugar
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ix as Ix
-import Data.List
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 

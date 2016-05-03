@@ -9,23 +9,19 @@ module Game.LambdaHack.Client.UI.Msg
     -- * History
   , History, emptyHistory, addReport, lengthHistory, linesHistory
   , lastReportOfHistory, renderHistory, splitReportForHistory
-  )
-  where
+  ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
 import Data.Binary.Orphans ()
 import Data.Char
-import Data.List (dropWhileEnd, find)
-import Data.Monoid
-import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.RingBuffer as RB
 import Game.LambdaHack.Common.Time

@@ -5,14 +5,12 @@ module Game.LambdaHack.Client.UI.Frontend.Dom
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent
-import Control.Monad
 import Control.Monad.Reader (ask, liftIO)
 import Data.Char (chr)
-import Data.Maybe
-import Data.Text (Text)
 import qualified Data.Text as T
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)

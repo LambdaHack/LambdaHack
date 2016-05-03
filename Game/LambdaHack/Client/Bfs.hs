@@ -9,11 +9,12 @@ module Game.LambdaHack.Client.Bfs
 #endif
   ) where
 
-import Control.Exception.Assert.Sugar
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import Data.Bits (Bits, complement, (.&.), (.|.))
-import Data.List
-import Data.Maybe
 
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray

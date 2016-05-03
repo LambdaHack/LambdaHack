@@ -1,7 +1,11 @@
 -- | Temporary aspect pseudo-item definitions.
-module Content.ItemKindTemporary ( temporaries ) where
+module Content.ItemKindTemporary
+  ( temporaries
+  ) where
 
-import Data.Text (Text)
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Dice

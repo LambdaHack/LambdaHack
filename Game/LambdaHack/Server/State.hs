@@ -5,11 +5,14 @@ module Game.LambdaHack.Server.State
   , RNGs(..), FovCache3(..), emptyFovCache3
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
-import Data.Text (Text)
 import Data.Time.Clock.POSIX
 import qualified System.Random as R
 

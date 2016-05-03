@@ -1,5 +1,11 @@
 -- | Organ definitions.
-module Content.ItemKindOrgan ( organs ) where
+module Content.ItemKindOrgan
+  ( organs
+  ) where
+
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 

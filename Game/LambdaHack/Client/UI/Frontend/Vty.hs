@@ -4,10 +4,10 @@ module Game.LambdaHack.Client.UI.Frontend.Vty
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent.Async
-import Control.Monad
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 

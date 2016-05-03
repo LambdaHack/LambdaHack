@@ -7,9 +7,11 @@ module Game.LambdaHack.Client.UI.Content.KeyKind
   , getAscend, descendDrop, chooseAndHelp, descTs, defaultHeroSelect
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.Char as Char
-import Data.Maybe
-import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Client.Key as K

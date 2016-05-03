@@ -4,10 +4,11 @@ module Game.LambdaHack.Client.UI.KeyBindings
   ( Binding(..), stdBinding, keyHelp
   ) where
 
-import Control.Exception.Assert.Sugar
-import Data.List
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.Map.Strict as M
-import Data.Text (Text)
 import qualified Data.Text as T
 
 import qualified Game.LambdaHack.Client.Key as K
@@ -15,7 +16,6 @@ import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Common.Misc
 
 -- | Bindings and other information about human player commands.
 data Binding = Binding

@@ -11,9 +11,11 @@ module Game.LambdaHack.Client.MonadClient
   , debugPrint, saveName, removeServerSave, rndToAction
   ) where
 
-import Control.Monad
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Control.Monad.State as St
-import Data.Text (Text)
 import System.Directory
 import System.FilePath
 

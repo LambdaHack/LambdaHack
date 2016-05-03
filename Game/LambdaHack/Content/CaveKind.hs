@@ -3,7 +3,10 @@ module Game.LambdaHack.Content.CaveKind
   ( CaveKind(..), validateSingleCaveKind, validateAllCaveKind
   ) where
 
-import Data.Text (Text)
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.Text as T
 
 import qualified Game.LambdaHack.Common.Dice as Dice

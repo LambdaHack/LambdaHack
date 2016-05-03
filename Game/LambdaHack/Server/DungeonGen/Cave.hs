@@ -4,16 +4,13 @@ module Game.LambdaHack.Server.DungeonGen.Cave
   ) where
 
 import Prelude ()
-import Prelude.Compat
+
+import Game.LambdaHack.Common.Prelude
 
 import Control.Arrow ((&&&))
-import Control.Exception.Assert.Sugar
-import Control.Monad (replicateM, foldM)
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM)
-import Data.List (union)
 import qualified Data.Map.Strict as M
-import Data.Maybe
 
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level

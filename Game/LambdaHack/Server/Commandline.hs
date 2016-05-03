@@ -3,6 +3,10 @@ module Game.LambdaHack.Server.Commandline
   ( debugArgs
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.ClientOptions

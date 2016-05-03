@@ -8,7 +8,9 @@ module Content.ModeKindPlayer
   , hiHero, hiDweller, hiRaid
   ) where
 
-import Data.List
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Dice

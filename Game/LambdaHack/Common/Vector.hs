@@ -9,12 +9,14 @@ module Game.LambdaHack.Common.Vector
   , RadianAngle, rotate, towards
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Control.DeepSeq
-import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int32)
-import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Point

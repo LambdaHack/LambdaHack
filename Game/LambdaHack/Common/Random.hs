@@ -10,7 +10,10 @@ module Game.LambdaHack.Common.Random
   , castDice, chanceDice, castDiceXY
   ) where
 
-import Control.Exception.Assert.Sugar
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Control.Monad.State as St
 import Data.Ratio
 import qualified System.Random as R

@@ -3,6 +3,10 @@ module Game.LambdaHack.Common.Thread
   ( forkChild, waitForChildren
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Control.Concurrent.Async
 import Control.Concurrent.MVar
 

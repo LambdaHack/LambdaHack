@@ -3,9 +3,12 @@ module Game.LambdaHack.Common.HSFile
   ( encodeEOF, strictDecodeEOF, tryCreateDir, tryCopyDataFiles, appDataDir
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Codec.Compression.Zlib as Z
 import qualified Control.Exception as Ex
-import Control.Monad
 import Data.Binary
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Char as Char

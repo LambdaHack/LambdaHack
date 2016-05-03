@@ -1,8 +1,13 @@
 -- | Item and treasure definitions.
-module Content.ItemKind ( cdefs ) where
+module Content.ItemKind
+  ( cdefs
+  ) where
+
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import Data.List
 
 import Content.ItemKindActor
 import Content.ItemKindBlast

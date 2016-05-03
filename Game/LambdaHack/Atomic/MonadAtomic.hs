@@ -4,6 +4,10 @@ module Game.LambdaHack.Atomic.MonadAtomic
   , broadcastUpdAtomic,  broadcastSfxAtomic
   ) where
 
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import Data.Key (mapWithKeyM_)
 
 import Game.LambdaHack.Atomic.CmdAtomic

@@ -4,9 +4,10 @@ module Game.LambdaHack.Common.ItemDescription
   , textAllAE, viewItem
   ) where
 
-import Data.List
-import Data.Maybe
-import Data.Text (Text)
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 

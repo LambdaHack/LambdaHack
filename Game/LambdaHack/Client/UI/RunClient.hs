@@ -14,13 +14,12 @@ module Game.LambdaHack.Client.UI.RunClient
   ( continueRun
   ) where
 
-import Control.Exception.Assert.Sugar
-import Control.Monad
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
+
 import qualified Data.EnumMap.Strict as EM
 import Data.Function
-import Data.List
-import Data.Maybe
-import Data.Text (Text)
 
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State

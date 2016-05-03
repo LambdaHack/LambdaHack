@@ -1,5 +1,11 @@
 -- | Game mode definitions.
-module Content.ModeKind ( cdefs ) where
+module Content.ModeKind
+  ( cdefs
+  ) where
+
+import Prelude ()
+
+import Game.LambdaHack.Common.Prelude
 
 import qualified Data.IntMap.Strict as IM
 
