@@ -122,20 +122,20 @@ areaToRectangles ca = case ca of
   CaMap -> return
     [( 0, mapStartY, fst normalLevelBound, mapStartY + snd normalLevelBound )]
   CaArenaName -> let y = snd normalLevelBound + 2
-                     x = fst normalLevelBound `div` 2 - 12
+                     x = fst normalLevelBound `div` 2 - 11
                  in return [(0, y, x, y)]
   CaPercentSeen -> let y = snd normalLevelBound + 2
                        x = fst normalLevelBound `div` 2
-                   in return [(x - 11, y, x, y)]
+                   in return [(x - 9, y, x, y)]
   CaXhairDesc -> let y = snd normalLevelBound + 2
                      x = fst normalLevelBound `div` 2 + 2
                  in return [(x, y, fst normalLevelBound, y)]
   CaSelected -> let y = snd normalLevelBound + 3
                     x = fst normalLevelBound `div` 2
-                in return [(0, y, x - 20, y)]  -- TODO
+                in return [(0, y, x - 22, y)]  -- TODO
   CaLeaderStatus -> let y = snd normalLevelBound + 3
                         x = fst normalLevelBound `div` 2
-                    in return [(x - 19, y, x, y)]
+                    in return [(x - 20, y, x, y)]
                       -- TODO: calculate and share with ClientDraw
   CaTargetDesc -> let y = snd normalLevelBound + 3
                       x = fst normalLevelBound `div` 2 + 2
