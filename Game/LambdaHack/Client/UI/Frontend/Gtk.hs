@@ -89,6 +89,27 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
     textViewSetLeftMargin sview 3
     textViewSetRightMargin sview 3
   -- Take care of the mouse events.
+  sview `on` scrollEvent $ do
+    liftIO $ resetChanKey (fchanKey rf)
+    scrollDir <- eventScrollDirection
+    (wx, wy) <- eventCoordinates
+    mods <- eventModifier
+    let !modifier = modTranslate mods  -- Shift included
+    liftIO $ do
+      (bx, by) <-
+        textViewWindowToBufferCoords sview TextWindowText
+                                     (round wx, round wy)
+      (iter, _) <- textViewGetIterAtPosition sview bx by
+      cx <- textIterGetLineOffset iter
+      cy <- textIterGetLine iter
+      let !key = case scrollDir of
+            ScrollUp -> K.WheelNorth
+            ScrollDown -> K.WheelSouth
+            _ -> K.Esc  -- probably a glitch
+          !pointer = Point cx cy
+      -- Store the mouse event coords in the keypress channel.
+      saveKMP rf modifier key pointer
+    return True  -- disable selection
   currentfont <- newIORef f
   Just defDisplay <- displayGetDefault
   -- TODO: change cursor depending on aiming mode, etc.; hard
@@ -96,6 +117,7 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
   sview `on` buttonPressEvent $ do
     liftIO $ resetChanKey (fchanKey rf)
     but <- eventButton
+    clickKind <- eventClick
     (wx, wy) <- eventCoordinates
     mods <- eventModifier
     let !modifier = modTranslate mods  -- Shift included
@@ -127,10 +149,13 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
       cx <- textIterGetLineOffset iter
       cy <- textIterGetLine iter
       let !key = case but of
+            LeftButton | clickKind == TripleClick  -- finger slip
+                         && clickKind == DoubleClick -> K.RightButtonPress
+                           -- in LH double click counts as RMB
             LeftButton -> K.LeftButtonPress
             MiddleButton -> K.MiddleButtonPress
             RightButton -> K.RightButtonPress
-            _ -> K.LeftButtonPress
+            _ -> K.Esc  -- probably a glitch
           !pointer = Point cx cy
       -- Store the mouse event coords in the keypress channel.
       saveKMP rf modifier key pointer

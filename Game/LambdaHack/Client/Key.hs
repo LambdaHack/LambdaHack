@@ -45,6 +45,8 @@ data Key =
   | LeftButtonPress    -- ^ left mouse button pressed
   | MiddleButtonPress  -- ^ middle mouse button pressed
   | RightButtonPress   -- ^ right mouse button pressed
+  | WheelNorth  -- ^ mouse wheel rotated north
+  | WheelSouth  -- ^ mouse wheel rotated south
   | Unknown !Text -- ^ an unknown key, registered to warn the user
   | DeadKey
   deriving (Ord, Eq, Generic)
@@ -104,6 +106,8 @@ showKey (Char c) = T.singleton c
 showKey LeftButtonPress = "LEFT-BUTTON"
 showKey MiddleButtonPress = "MIDDLE-BUTTON"
 showKey RightButtonPress = "RIGHT-BUTTON"
+showKey WheelNorth = "WHEEL-NORTH"
+showKey WheelSouth = "WHEEL-SOUTH"
 showKey (Unknown s) = "'" <> s <> "'"
 showKey DeadKey      = "DEADKEY"
 
@@ -236,6 +240,8 @@ mkKM s = let mkKey sk =
 -- | Translate key from a GTK string description to our internal key type.
 -- To be used, in particular, for the command bindings and macros
 -- in the config file.
+--
+-- See https://github.com/twobob/gtk-/blob/master/gdk/keyname-table.h
 keyTranslate :: String -> Key
 keyTranslate "less"          = Char '<'
 keyTranslate "greater"       = Char '>'
@@ -309,6 +315,8 @@ keyTranslate "KP_Enter"      = Return
 keyTranslate "LeftButtonPress" = LeftButtonPress
 keyTranslate "MiddleButtonPress" = MiddleButtonPress
 keyTranslate "RightButtonPress" = RightButtonPress
+keyTranslate "WheelNorth"    = WheelNorth
+keyTranslate "WheelSouth"    = WheelSouth
 -- dead keys
 keyTranslate "Shift_L"          = DeadKey
 keyTranslate "Shift_R"          = DeadKey
