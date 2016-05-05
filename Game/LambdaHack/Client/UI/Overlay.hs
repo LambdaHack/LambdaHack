@@ -49,7 +49,7 @@ tendMsg :: Text
 tendMsg = "--end--  "
 
 tyesnoMsg :: Text
-tyesnoMsg = "[yn]"
+tyesnoMsg = "[y, n, ESC]"
 
 -- | The \"press something to see more\" mark.
 moreMsg :: AttrLine
@@ -61,7 +61,7 @@ endMsg = toAttrLine"--end--  "
 
 -- | The confirmation request message.
 yesnoMsg :: AttrLine
-yesnoMsg = toAttrLine "[yn]"
+yesnoMsg = toAttrLine "[y, n, ESC]"
 
 -- | A series of screen lines that either fit the width of the screen
 -- or are intended for truncation when displayed. The length of overlay
