@@ -17,7 +17,7 @@ import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
 import GHCJS.DOM.CSSStyleDeclaration (removeProperty, setProperty)
 import GHCJS.DOM.Document (createElement, getBody, keyDown, keyPress)
-import GHCJS.DOM.Element (contextMenu, dblClick, getStyle, mouseDown,
+import GHCJS.DOM.Element (contextMenu, dblClick, getStyle, mouseUp,
                           setInnerHTML, wheel)
 import GHCJS.DOM.EventM (EventM, mouseAltKey, mouseButton, mouseCtrlKey,
                          mouseMetaKey, mouseShiftKey, on, preventDefault)
@@ -255,9 +255,9 @@ handleMouse rf (cell, (cx, cy)) = do
       --       drawWindowSetCursor drawWin (Just cursor)
       -- maybe (return ()) setCursor mdrawWin
           let mkey = case but of
-                0 -> Just K.LeftButtonPress
-                1 -> Just K.MiddleButtonPress
-                2 -> Just K.RightButtonPress  -- not handled in contextMenu
+                0 -> Just K.LeftButtonRelease
+                1 -> Just K.MiddleButtonRelease
+                2 -> Just K.RightButtonRelease  -- not handled in contextMenu
                 _ -> Nothing  -- probably a glitch
               pointer = Point cx cy
           -- _ks = T.unpack (K.showKey key)
@@ -269,7 +269,7 @@ handleMouse rf (cell, (cx, cy)) = do
     preventDefault
   void $ cell `on` contextMenu $
     preventDefault
-  void $ cell `on` mouseDown $ do
+  void $ cell `on` mouseUp $ do
     saveMouse
     preventDefault
 

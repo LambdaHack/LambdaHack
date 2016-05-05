@@ -64,7 +64,7 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
   -- We don't create keys from slots, so they have to be @in extraKeys@.
   let keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) frs
              ++ extraKeys
-      scrollKeys = [K.leftButtonKM, K.returnKM, K.upKM, K.downKM]
+      scrollKeys = [K.leftButtonReleaseKM, K.returnKM, K.upKM, K.downKM]
       pageKeys = [K.spaceKM, K.pgupKM, K.pgdnKM, K.homeKM, K.endKM]
       legalKeys = keys ++ scrollKeys ++ pageKeys
       -- The arguments go from first menu line and menu page to the last,
@@ -104,7 +104,7 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
                   K.Return | ekm /= Left K.returnKM -> case ekm of
                     Left km -> interpretKey km
                     _ -> return (ekm, pointer)
-                  K.LeftButtonPress -> do
+                  K.LeftButtonRelease -> do
                     Point{..} <- getsSession spointer
                     let onChoice (_, (cy, cx1, cx2)) =
                           cy == py && cx1 <= px && cx2 > px

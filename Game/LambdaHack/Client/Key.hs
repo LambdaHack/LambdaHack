@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.Key
   , Modifier(..), KM(..), showKM, elemOrNull
   , escKM, spaceKM, returnKM
   , pgupKM, pgdnKM, upKM, downKM, homeKM, endKM, backspaceKM
-  , leftButtonKM, rightButtonKM
+  , leftButtonReleaseKM
   ) where
 
 import Prelude ()
@@ -45,6 +45,9 @@ data Key =
   | LeftButtonPress    -- ^ left mouse button pressed
   | MiddleButtonPress  -- ^ middle mouse button pressed
   | RightButtonPress   -- ^ right mouse button pressed
+  | LeftButtonRelease    -- ^ left mouse button released
+  | MiddleButtonRelease  -- ^ middle mouse button released
+  | RightButtonRelease   -- ^ right mouse button released
   | LeftDblClick       -- ^ left mouse button double click
   | WheelNorth  -- ^ mouse wheel rotated north
   | WheelSouth  -- ^ mouse wheel rotated south
@@ -107,6 +110,9 @@ showKey (Char c) = T.singleton c
 showKey LeftButtonPress = "LEFT-BUTTON"
 showKey MiddleButtonPress = "MIDDLE-BUTTON"
 showKey RightButtonPress = "RIGHT-BUTTON"
+showKey LeftButtonRelease = "LMB"
+showKey MiddleButtonRelease = "MMB"
+showKey RightButtonRelease = "RMB"
 showKey LeftDblClick = "LEFT-DBLCLICK"
 showKey WheelNorth = "WHEEL-NORTH"
 showKey WheelSouth = "WHEEL-SOUTH"
@@ -150,11 +156,8 @@ endKM = KM NoModifier End
 backspaceKM :: KM
 backspaceKM = KM NoModifier BackSpace
 
-leftButtonKM :: KM
-leftButtonKM = KM NoModifier LeftButtonPress
-
-rightButtonKM :: KM
-rightButtonKM = KM NoModifier RightButtonPress
+leftButtonReleaseKM :: KM
+leftButtonReleaseKM = KM NoModifier LeftButtonRelease
 
 dirKeypadKey :: [Key]
 dirKeypadKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
@@ -317,6 +320,9 @@ keyTranslate "KP_Enter"      = Return
 keyTranslate "LeftButtonPress" = LeftButtonPress
 keyTranslate "MiddleButtonPress" = MiddleButtonPress
 keyTranslate "RightButtonPress" = RightButtonPress
+keyTranslate "LeftButtonRelease" = LeftButtonRelease
+keyTranslate "MiddleButtonRelease" = MiddleButtonRelease
+keyTranslate "RightButtonRelease" = RightButtonRelease
 keyTranslate "LeftDblClick"  = LeftDblClick
 keyTranslate "WheelNorth"    = WheelNorth
 keyTranslate "WheelSouth"    = WheelSouth

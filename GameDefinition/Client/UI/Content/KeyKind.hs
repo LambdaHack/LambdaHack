@@ -194,15 +194,15 @@ standardKeys = KeyKind
 
       -- Mouse
       -- Doubleclick acts as RMB and modifiers as MMB, which is optional.
-      , ("LeftButtonPress", defaultCmdLMB)
+      , ("LeftButtonRelease", defaultCmdLMB)
       , ( "LeftDblClick"
         , replaceDesc "" $ addCmdCategory CmdInternal defaultCmdRMB )
-      , ( "SHIFT-LeftButtonPress"
+      , ( "SHIFT-LeftButtonRelease"
         , replaceDesc "" $ addCmdCategory CmdInternal defaultCmdMMB )
-      , ( "CTRL-LeftButtonPress"
+      , ( "CTRL-LeftButtonRelease"
         , replaceDesc "" $ addCmdCategory CmdInternal defaultCmdMMB )
-      , ("MiddleButtonPress", defaultCmdMMB)
-      , ("RightButtonPress", defaultCmdRMB)
+      , ("MiddleButtonRelease", defaultCmdMMB)
+      , ("RightButtonRelease", defaultCmdRMB)
 
       -- Debug and others not to display in help screens
       , ("CTRL-S", ([CmdDebug], "save game", GameSave))

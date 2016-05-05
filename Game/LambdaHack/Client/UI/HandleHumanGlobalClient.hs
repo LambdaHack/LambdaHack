@@ -741,14 +741,14 @@ alterDirHuman ts = do
         [] -> "alter"
         tr : _ -> verb tr
       keys = K.escKM
-             : K.leftButtonKM
+             : K.leftButtonReleaseKM
              : map (K.KM K.NoModifier) (K.dirAllKey configVi configLaptop)
       prompt = makePhrase
         ["Where to", verb1 <> "? [movement key, left mouse button, ESC]"]
   promptAdd prompt
   km <- displayChoiceLine mempty keys
   case K.key km of
-    K.LeftButtonPress -> do
+    K.LeftButtonRelease -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       Point x y <- getsSession spointer

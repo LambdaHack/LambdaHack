@@ -114,7 +114,8 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
   Just defDisplay <- displayGetDefault
   -- TODO: change cursor depending on aiming mode, etc.; hard
   cursor <- cursorNewForDisplay defDisplay Tcross  -- Target Crosshair Arrow
-  sview `on` buttonPressEvent $ do
+  sview `on` buttonPressEvent $ return True  -- disable selection
+  sview `on` buttonReleaseEvent $ do
     liftIO $ resetChanKey (fchanKey rf)
     but <- eventButton
     (wx, wy) <- eventCoordinates
@@ -148,15 +149,15 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
       cx <- textIterGetLineOffset iter
       cy <- textIterGetLine iter
       let mkey = case but of
-            LeftButton -> Just K.LeftButtonPress
-            MiddleButton -> Just K.MiddleButtonPress
-            RightButton -> Just K.RightButtonPress
+            LeftButton -> Just K.LeftButtonRelease
+            MiddleButton -> Just K.MiddleButtonRelease
+            RightButton -> Just K.RightButtonRelease
             _ -> Nothing  -- probably a glitch
           pointer = Point cx cy
       -- Store the mouse event coords in the keypress channel.
       maybe (return ())
             (\key -> liftIO $ saveKMP rf modifier key pointer) mkey
-    return True  -- disable selection
+    return True
   -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
       white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
