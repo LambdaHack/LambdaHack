@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.Key
   , moveBinding, mkKM, keyTranslate, keyTranslateWeb
   , Modifier(..), KM(..), showKM, elemOrNull
   , escKM, spaceKM, returnKM
-  , pgupKM, pgdnKM, upKM, downKM, homeKM, endKM, backspaceKM
+  , pgupKM, pgdnKM, wheelNorthKM, wheelSouthKM, upKM, downKM, homeKM, endKM, backspaceKM
   , leftButtonReleaseKM
   ) where
 
@@ -140,6 +140,12 @@ pgupKM = KM NoModifier PgUp
 
 pgdnKM :: KM
 pgdnKM = KM NoModifier PgDn
+
+wheelNorthKM :: KM
+wheelNorthKM = KM NoModifier WheelNorth
+
+wheelSouthKM :: KM
+wheelSouthKM = KM NoModifier WheelSouth
 
 upKM :: KM
 upKM = KM NoModifier Up

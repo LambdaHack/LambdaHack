@@ -183,7 +183,8 @@ getConfirmsKey :: MonadClientUI m
                => ColorMode -> [K.KM] -> Slideshow -> m K.KM
 getConfirmsKey dm extraKeys slides = do
   let ovs = slideshow slides
-      keys = [K.spaceKM, K.pgupKM, K.pgdnKM, K.homeKM, K.endKM]
+      keys = [ K.spaceKM, K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
+             , K.homeKM, K.endKM ]
              ++ extraKeys
   frontSlides <- drawOverlays dm False ovs
   let displayFrs frs srf = case frs of
@@ -202,10 +203,10 @@ getConfirmsKey dm extraKeys slides = do
             K.End -> case reverse frontSlides of
               [] -> assert `failure` slides
               y : ys -> displayFrs [y] ys
-            K.PgUp -> case srf of
+            _ | key `elem` [K.PgUp, K.WheelNorth] -> case srf of
               [] -> displayFrs frs srf
               y : ys -> displayFrs (y : frs) ys
-            K.PgDn -> case xs of
+            _ | key `elem` [K.PgDn, K.WheelSouth] -> case xs of
               [] -> displayFrs frs srf
               _ -> displayFrs xs (x : srf)
             _ -> assert `failure` "unknown key" `twith` km

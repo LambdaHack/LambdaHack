@@ -65,7 +65,8 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
   let keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) frs
              ++ extraKeys
       scrollKeys = [K.leftButtonReleaseKM, K.returnKM, K.upKM, K.downKM]
-      pageKeys = [K.spaceKM, K.pgupKM, K.pgdnKM, K.homeKM, K.endKM]
+      pageKeys = [ K.spaceKM, K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
+                 , K.homeKM, K.endKM ]
       legalKeys = keys ++ scrollKeys ++ pageKeys
       -- The arguments go from first menu line and menu page to the last,
       -- in order. Their indexing is from 0. We select the closest item
@@ -119,9 +120,9 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
                   K.Down -> page (min maxIx (pointer + 1))
                   K.Home -> page 0
                   K.End -> page maxIx
-                  K.PgUp ->
+                  _ | K.key ikm `elem` [K.PgUp, K.WheelNorth] ->
                     page (max 0 (pointer - ixOnPage - 1))
-                  K.PgDn ->
+                  _ | K.key ikm `elem` [K.PgDn, K.WheelSouth] ->
                     page (min maxIx (pointer + pageLen - ixOnPage))
                   K.Space | pointer == maxIx && K.spaceKM `elem` extraKeys ->
                     -- If Space permitted, only exits at the end of slideshow.
