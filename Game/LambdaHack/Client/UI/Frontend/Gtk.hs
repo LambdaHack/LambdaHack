@@ -117,7 +117,6 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
   sview `on` buttonPressEvent $ do
     liftIO $ resetChanKey (fchanKey rf)
     but <- eventButton
-    clickKind <- eventClick
     (wx, wy) <- eventCoordinates
     mods <- eventModifier
     let !modifier = modTranslate mods  -- Shift included
@@ -149,8 +148,6 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
       cx <- textIterGetLineOffset iter
       cy <- textIterGetLine iter
       let mkey = case but of
-            LeftButton | clickKind == TripleClick  -- finger slip
-                         || clickKind == DoubleClick -> Just K.LeftDblClick
             LeftButton -> Just K.LeftButtonPress
             MiddleButton -> Just K.MiddleButtonPress
             RightButton -> Just K.RightButtonPress
@@ -158,7 +155,7 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
           pointer = Point cx cy
       -- Store the mouse event coords in the keypress channel.
       maybe (return ())
-            (\key -> liftIO $ saveDblKMP rf modifier key pointer) mkey
+            (\key -> liftIO $ saveKMP rf modifier key pointer) mkey
     return True  -- disable selection
   -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black

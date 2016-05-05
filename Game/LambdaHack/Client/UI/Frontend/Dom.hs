@@ -245,7 +245,7 @@ handleMouse rf (cell, (cx, cy)) = do
               pointer = Point cx cy
           maybe (return ())
                 (\key -> liftIO $ saveKMP rf modifier key pointer) mkey
-      saveMouse evMouse = do
+      saveMouse = do
         -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
         but <- mouseButton
         modifier <- readMod
@@ -254,35 +254,24 @@ handleMouse rf (cell, (cx, cy)) = do
       -- let setCursor (drawWin, _, _) =
       --       drawWindowSetCursor drawWin (Just cursor)
       -- maybe (return ()) setCursor mdrawWin
-          let mkey = case evMouse of
-                EvDblClick -> case but of
-                    -- In saveDomKMP, the preceding LeftButtonPress is deleted.
-                    0 -> Just K.LeftDblClick
-                    -- Any clicks are legal only for LMB.
-                    _ -> Nothing
-                EvMouseDown -> case but of
-                    0 -> Just K.LeftButtonPress
-                    1 -> Just K.MiddleButtonPress
-                    2 -> Just K.RightButtonPress  -- not handled in contextMenu
-                    _ -> Nothing  -- probably a glitch
+          let mkey = case but of
+                0 -> Just K.LeftButtonPress
+                1 -> Just K.MiddleButtonPress
+                2 -> Just K.RightButtonPress  -- not handled in contextMenu
+                _ -> Nothing  -- probably a glitch
               pointer = Point cx cy
           -- _ks = T.unpack (K.showKey key)
           -- liftIO $ putStrLn $ "m: " ++ _ks ++ show modifier ++ show pointer
           maybe (return ())
-                (\key -> liftIO $ saveDblKMP rf modifier key pointer) mkey
+                (\key -> liftIO $ saveKMP rf modifier key pointer) mkey
   void $ cell `on` wheel $ do
     saveWheel
     preventDefault
   void $ cell `on` contextMenu $
     preventDefault
-  void $ cell `on` dblClick $ do
-    saveMouse EvDblClick
-    preventDefault
   void $ cell `on` mouseDown $ do
-    saveMouse EvMouseDown
+    saveMouse
     preventDefault
-
-data EvMouse = EvDblClick | EvMouseDown
 
 -- | Get the list of all cells of an HTML table.
 flattenTable :: HTMLTableElement -> IO [HTMLTableCellElement]
