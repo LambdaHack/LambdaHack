@@ -148,17 +148,17 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
       (iter, _) <- textViewGetIterAtPosition sview bx by
       cx <- textIterGetLineOffset iter
       cy <- textIterGetLine iter
-      let !key = case but of
+      let mkey = case but of
             LeftButton | clickKind == TripleClick  -- finger slip
-                         && clickKind == DoubleClick -> K.RightButtonPress
-                           -- in LH double click counts as RMB
-            LeftButton -> K.LeftButtonPress
-            MiddleButton -> K.MiddleButtonPress
-            RightButton -> K.RightButtonPress
-            _ -> K.Esc  -- probably a glitch
-          !pointer = Point cx cy
+                         || clickKind == DoubleClick -> Just K.LeftDblClick
+            LeftButton -> Just K.LeftButtonPress
+            MiddleButton -> Just K.MiddleButtonPress
+            RightButton -> Just K.RightButtonPress
+            _ -> Nothing  -- probably a glitch
+          pointer = Point cx cy
       -- Store the mouse event coords in the keypress channel.
-      saveKMP rf modifier key pointer
+      maybe (return ())
+            (\key -> liftIO $ saveDblKMP rf modifier key pointer) mkey
     return True  -- disable selection
   -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black

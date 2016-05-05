@@ -1,7 +1,8 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Frontend.Common
   ( RawFrontend(..), KMP(..)
-  , startupAsync, startupBound, createRawFrontend, resetChanKey, saveKMP
+  , startupAsync, startupBound, createRawFrontend, resetChanKey
+  , saveKMP, saveDblKMP
   , modifierTranslate
   ) where
 
@@ -68,6 +69,31 @@ saveKMP rf modifier key kmpPointer = do
   unless (key == K.DeadKey) $
     -- Store the key in the channel.
     STM.atomically $ STM.writeTQueue (fchanKey rf) kmp
+
+-- From Web standards:
+-- "The click event MAY also be followed by the dblclick event"
+-- "The click event MAY be preceded by the mousedown and mouseup
+-- events on the same element"
+-- Gtk behaves similarly. We handle the problem here.
+saveDblKMP :: RawFrontend -> K.Modifier -> K.Key -> Point -> IO ()
+saveDblKMP rf modifier key kmpPointer = do
+  -- Instantly show any frame waiting for display.
+  void $ tryTakeMVar $ fshowNow rf
+  let kmp = KMP{kmpKeyMod = K.KM{..}, kmpPointer}
+  unless (key == K.DeadKey) $ case key of
+    K.LeftDblClick -> STM.atomically $ do
+      -- Remove the mouseDown events that are a part of the double click.
+      mleftButton <- STM.tryReadTQueue (fchanKey rf)
+      case mleftButton of
+        Just KMP{kmpKeyMod = K.KM{key=K.LeftButtonPress}} -> do
+          mleftButton2 <- STM.tryReadTQueue (fchanKey rf)
+          case mleftButton2 of
+            Just KMP{kmpKeyMod = K.KM{key=K.LeftButtonPress}} ->
+              -- Store the key in the channel.
+              STM.writeTQueue (fchanKey rf) kmp
+            _ -> return ()  -- too long dblclick delay, a click already consumed
+        _ -> return ()  -- both clicks already consumed; separately
+    _ -> STM.atomically $ STM.writeTQueue (fchanKey rf) kmp
 
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: Bool -> Bool -> Bool -> Bool -> K.Modifier

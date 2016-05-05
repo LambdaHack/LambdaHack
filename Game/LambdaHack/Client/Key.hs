@@ -45,6 +45,7 @@ data Key =
   | LeftButtonPress    -- ^ left mouse button pressed
   | MiddleButtonPress  -- ^ middle mouse button pressed
   | RightButtonPress   -- ^ right mouse button pressed
+  | LeftDblClick       -- ^ left mouse button double click
   | WheelNorth  -- ^ mouse wheel rotated north
   | WheelSouth  -- ^ mouse wheel rotated south
   | Unknown !Text -- ^ an unknown key, registered to warn the user
@@ -106,6 +107,7 @@ showKey (Char c) = T.singleton c
 showKey LeftButtonPress = "LEFT-BUTTON"
 showKey MiddleButtonPress = "MIDDLE-BUTTON"
 showKey RightButtonPress = "RIGHT-BUTTON"
+showKey LeftDblClick = "LEFT-DBLCLICK"
 showKey WheelNorth = "WHEEL-NORTH"
 showKey WheelSouth = "WHEEL-SOUTH"
 showKey (Unknown s) = "'" <> s <> "'"
@@ -315,6 +317,7 @@ keyTranslate "KP_Enter"      = Return
 keyTranslate "LeftButtonPress" = LeftButtonPress
 keyTranslate "MiddleButtonPress" = MiddleButtonPress
 keyTranslate "RightButtonPress" = RightButtonPress
+keyTranslate "LeftDblClick"  = LeftDblClick
 keyTranslate "WheelNorth"    = WheelNorth
 keyTranslate "WheelSouth"    = WheelSouth
 -- dead keys

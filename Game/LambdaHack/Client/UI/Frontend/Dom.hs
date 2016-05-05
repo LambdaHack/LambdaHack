@@ -11,14 +11,16 @@ import Game.LambdaHack.Common.Prelude
 import Control.Concurrent
 import Control.Monad.Reader (ask, liftIO)
 import Data.Char (chr)
+import Data.Functor.Infix ((<$$>))
 import qualified Data.Text as T
 import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
 import GHCJS.DOM.CSSStyleDeclaration (removeProperty, setProperty)
 import GHCJS.DOM.Document (createElement, getBody, keyDown, keyPress)
-import GHCJS.DOM.Element (click, contextMenu, getStyle, setInnerHTML)
-import GHCJS.DOM.EventM (mouseAltKey, mouseButton, mouseCtrlKey, mouseMetaKey,
-                         mouseShiftKey, on, preventDefault)
+import GHCJS.DOM.Element (contextMenu, dblClick, getStyle, mouseDown,
+                          setInnerHTML, wheel)
+import GHCJS.DOM.EventM (EventM, mouseAltKey, mouseButton, mouseCtrlKey,
+                         mouseMetaKey, mouseShiftKey, on, preventDefault)
 import GHCJS.DOM.HTMLCollection (item)
 import GHCJS.DOM.HTMLTableCellElement (HTMLTableCellElement,
                                        castToHTMLTableCellElement)
@@ -32,8 +34,9 @@ import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey,
                                 getKeyIdentifier, getKeyLocation, getMetaKey,
                                 getShiftKey)
 import GHCJS.DOM.Node (appendChild)
-import GHCJS.DOM.Types (CSSStyleDeclaration, castToHTMLDivElement)
+import GHCJS.DOM.Types (CSSStyleDeclaration, IsMouseEvent, castToHTMLDivElement)
 import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
+import GHCJS.DOM.WheelEvent (getDeltaY)
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Frontend.Common
@@ -225,34 +228,61 @@ removeProp style propRef = do
 -- | Let each table cell handle mouse events inside.
 handleMouse :: RawFrontend -> (HTMLTableCellElement, (Int, Int)) -> IO ()
 handleMouse rf (cell, (cx, cy)) = do
-  let saveMouse = do
-        -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
-        but <- mouseButton
+  let readMod :: IsMouseEvent e => EventM HTMLTableCellElement e K.Modifier
+      readMod = do
         modCtrl <- mouseCtrlKey
         modShift <- mouseShiftKey
         modAlt <- mouseAltKey
         modMeta <- mouseMetaKey
-        let !modifier = modifierTranslate modCtrl modShift modAlt modMeta
+        return $! modifierTranslate modCtrl modShift modAlt modMeta
+      saveWheel = do
+        wheelY <- ask >>= getDeltaY
+        modifier <- readMod
+        liftIO $ do
+          let mkey = if | wheelY < -0.01 -> Just K.WheelNorth
+                        | wheelY > 0.01 -> Just K.WheelSouth
+                        | otherwise -> Nothing  -- probably a glitch
+              pointer = Point cx cy
+          maybe (return ())
+                (\key -> liftIO $ saveKMP rf modifier key pointer) mkey
+      saveMouse evMouse = do
+        -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
+        but <- mouseButton
+        modifier <- readMod
         liftIO $ do
       -- TODO: mdrawWin <- displayGetWindowAtPointer display
       -- let setCursor (drawWin, _, _) =
       --       drawWindowSetCursor drawWin (Just cursor)
       -- maybe (return ()) setCursor mdrawWin
-          let !key = case but of
-                0 -> K.LeftButtonPress
-                1 -> K.MiddleButtonPress
-                2 -> K.RightButtonPress
-                _ -> K.LeftButtonPress
-              !pointer = Point cx cy
-              _ks = T.unpack (K.showKey key)
+          let mkey = case evMouse of
+                EvDblClick -> case but of
+                    -- In saveDomKMP, the preceding LeftButtonPress is deleted.
+                    0 -> Just K.LeftDblClick
+                    -- Any clicks are legal only for LMB.
+                    _ -> Nothing
+                EvMouseDown -> case but of
+                    0 -> Just K.LeftButtonPress
+                    1 -> Just K.MiddleButtonPress
+                    2 -> Just K.RightButtonPress  -- not handled in contextMenu
+                    _ -> Nothing  -- probably a glitch
+              pointer = Point cx cy
+          -- _ks = T.unpack (K.showKey key)
           -- liftIO $ putStrLn $ "m: " ++ _ks ++ show modifier ++ show pointer
-          -- Store the mouse event coords in the keypress channel.
-          liftIO $ saveKMP rf modifier key pointer
-  void $ cell `on` contextMenu $ do
-    saveMouse
+          maybe (return ())
+                (\key -> liftIO $ saveDblKMP rf modifier key pointer) mkey
+  void $ cell `on` wheel $ do
+    saveWheel
     preventDefault
-  void $ cell `on` click $
-    saveMouse
+  void $ cell `on` contextMenu $
+    preventDefault
+  void $ cell `on` dblClick $ do
+    saveMouse EvDblClick
+    preventDefault
+  void $ cell `on` mouseDown $ do
+    saveMouse EvMouseDown
+    preventDefault
+
+data EvMouse = EvDblClick | EvMouseDown
 
 -- | Get the list of all cells of an HTML table.
 flattenTable :: HTMLTableElement -> IO [HTMLTableCellElement]

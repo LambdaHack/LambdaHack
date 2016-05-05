@@ -195,6 +195,8 @@ standardKeys = KeyKind
       -- Mouse
       -- Doubleclick acts as RMB and modifiers as MMB, which is optional.
       , ("LeftButtonPress", defaultCmdLMB)
+      , ( "LeftDblClick"
+        , replaceDesc "" $ addCmdCategory CmdInternal defaultCmdRMB )
       , ( "SHIFT-LeftButtonPress"
         , replaceDesc "" $ addCmdCategory CmdInternal defaultCmdMMB )
       , ( "CTRL-LeftButtonPress"
