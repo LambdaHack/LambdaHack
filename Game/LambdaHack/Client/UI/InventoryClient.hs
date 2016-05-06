@@ -12,7 +12,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Char as Char
-import Data.Either (rights)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
@@ -314,7 +313,6 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       suitableItemSlotsAll = EM.filter (`EM.member` bagAllSuit) lSlots
       suitableItemSlotsOpen =
         EM.filterWithKey hasPrefixOpen suitableItemSlotsAll
-      suitableItemSlots = EM.filterWithKey hasPrefix suitableItemSlotsOpen
       bagSuit = EM.fromList $ map (\iid -> (iid, bagAllSuit EM.! iid))
                                   (EM.elems suitableItemSlotsOpen)
       (autoDun, autoLvl) = autoDungeonLevel fact
@@ -416,7 +414,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       numberPrefixes = map prefixCmdDef [0..9]
       lettersDef :: DefItemKey m
       lettersDef = DefItemKey
-        { defLabel = slotRange $ EM.keys labelItemSlots
+        { defLabel = ""
         , defCond = True
         , defAction = \ekm ->
             let slot = case ekm of
@@ -430,22 +428,18 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                                 `twith` (slot, bagItemSlots)
               Just iid -> return $ Right $ getResult iid
         }
-      (labelItemSlotsOpen, labelItemSlots, bagFiltered, promptChosen) =
+      (labelItemSlotsOpen, bagFiltered, promptChosen) =
         case itemDialogState of
           ISuitable   -> (suitableItemSlotsOpen,
-                          suitableItemSlots,
                           bagSuit,
                           prompt body activeItems cCur <> ":")
           IAll        -> (bagItemSlotsOpen,
-                          bagItemSlots,
                           bag,
                           promptGeneric body activeItems cCur <> ":")
           INoSuitable -> (suitableItemSlotsOpen,
-                          suitableItemSlots,
                           EM.empty,
                           prompt body activeItems cCur <> ":")
           INoAll      -> (bagItemSlotsOpen,
-                          bagItemSlots,
                           EM.empty,
                           promptGeneric body activeItems cCur <> ":")
   case cCur of
@@ -455,7 +449,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
           slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
           statsDef :: DefItemKey m
           statsDef = DefItemKey
-            { defLabel = slotRange $ rights slotLabels
+            { defLabel = ""
             , defCond = True
             , defAction = \ekm ->
             let _slot = case ekm of

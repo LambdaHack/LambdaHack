@@ -2,7 +2,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.ItemSlot
   ( ItemSlots, SlotChar(..)
-  , allSlots, allZeroSlots, slotLabel, slotRange, assignSlot
+  , allSlots, allZeroSlots, slotLabel, assignSlot
   ) where
 
 import Prelude ()
@@ -45,27 +45,6 @@ instance Enum SlotChar where
 
 type ItemSlots = ( EM.EnumMap SlotChar ItemId
                  , EM.EnumMap SlotChar ItemId )
-
-slotRange :: [SlotChar] -> Text
-slotRange ls =
-  sectionBy (sort ls) Nothing
- where
-  succSlot c d = ord (slotChar d) - ord (slotChar c) == 1
-  succ2Slot c d = ord (slotChar d) - ord (slotChar c) == 2
-
-  sectionBy []     Nothing       = T.empty
-  sectionBy []     (Just (c, d)) = finish (c,d)
-  sectionBy (x:xs) Nothing       = sectionBy xs (Just (x, x))
-  sectionBy (x:xs) (Just (c, d))
-    | succSlot d x               = sectionBy xs (Just (c, x))
-    | otherwise                  = finish (c,d) <> sectionBy xs (Just (x, x))
-
-  finish (c, d) | c == d         = T.pack [slotChar c]
-                | succSlot c d   = T.pack [slotChar c, slotChar d]
-                | succ2Slot c d  = T.pack [ slotChar c
-                                          , chr (1 + ord (slotChar c))
-                                          , slotChar d ]
-                | otherwise      = T.pack [slotChar c, '-', slotChar d]
 
 allSlots :: Int -> [SlotChar]
 allSlots n = map (SlotChar n) $ ['a'..'z'] ++ ['A'..'Z']
