@@ -332,32 +332,10 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                                    ISuitable -> IAll
                                    IAll -> ISuitable
            })
-        , (K.KM K.NoModifier $ K.Char '/', DefItemKey
-           { defLabel = "/"
-           , defCond = not $ null cRest
-           , defAction = \_ -> do
-               let calmE = calmEnough body activeItems
-                   mcCur = filter (`elem` cLegal) [cCur]
-                   (cCurAfterCalm, cRestAfterCalm) = case cRest ++ mcCur of
-                     c1@(MStore CSha) : c2 : rest | not calmE ->
-                       (c2, c1 : rest)
-                     [MStore CSha] | not calmE -> assert `failure` cRest
-                     c1 : rest -> (c1, rest)
-                     [] -> assert `failure` cRest
-               recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
-           })
-        , (K.KM K.NoModifier $ K.Char '!', DefItemKey
-           { defLabel = "!"
-           , defCond = permitMulitple && not (EM.null multipleSlots)
-           , defAction = \_ ->
-               let eslots = EM.elems multipleSlots
-               in return $ Right $ getMultResult eslots
-           })
-        , (K.escKM, DefItemKey
-           { defLabel = ""
-           , defCond = True
-           , defAction = \_ -> return $ Left "never mind"
-           })
+        , (K.KM K.NoModifier $ K.Char '/', changeContainerDef "/")
+        , (K.KM K.NoModifier $ K.KP '/', changeContainerDef "")
+        , (K.KM K.NoModifier $ K.Char '!', useMultipleDef "!")
+        , (K.KM K.NoModifier $ K.KP '*', useMultipleDef "")
         , let km = revCmd (K.KM K.NoModifier K.Tab) MemberCycle
           in (km, DefItemKey
            { defLabel = K.showKM km
@@ -380,8 +358,34 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                recCall numPrefix cCurUpd cRestUpd itemDialogState
            })
+        , (K.escKM, DefItemKey
+           { defLabel = "ESC"
+           , defCond = True
+           , defAction = \_ -> return $ Left "never mind"
+           })
         ]
         ++ numberPrefixes
+      changeContainerDef defLabel = DefItemKey
+        { defLabel
+        , defCond = not $ null cRest
+        , defAction = \_ -> do
+            let calmE = calmEnough body activeItems
+                mcCur = filter (`elem` cLegal) [cCur]
+                (cCurAfterCalm, cRestAfterCalm) = case cRest ++ mcCur of
+                  c1@(MStore CSha) : c2 : rest | not calmE ->
+                    (c2, c1 : rest)
+                  [MStore CSha] | not calmE -> assert `failure` cRest
+                  c1 : rest -> (c1, rest)
+                  [] -> assert `failure` cRest
+            recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
+        }
+      useMultipleDef defLabel = DefItemKey
+        { defLabel
+        , defCond = permitMulitple && not (EM.null multipleSlots)
+        , defAction = \_ ->
+            let eslots = EM.elems multipleSlots
+            in return $ Right $ getMultResult eslots
+        }
       prefixCmdDef d =
         (K.KM K.NoModifier $ K.Char $ Char.intToDigit d, DefItemKey
            { defLabel = ""
@@ -516,7 +520,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
       choice = let letterRange = defLabel lettersDef
                    keyLabelsRaw = letterRange : map (defLabel . snd) keyDefs
                    keyLabels = filter (not . T.null) keyLabelsRaw
-               in "[" <> T.intercalate ", " (nub keyLabels) <> ", ESC]"
+               in "[" <> T.intercalate ", " (nub keyLabels) <> "]"
   promptAdd $ prompt <+> choice
   arena <- getArenaUI
   Level{lysize} <- getLevel arena
