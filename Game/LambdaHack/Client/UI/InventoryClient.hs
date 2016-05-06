@@ -346,8 +346,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                      [] -> assert `failure` cRest
                recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
            })
-        , (K.KM K.NoModifier $ K.Char '*', DefItemKey
-           { defLabel = "*"
+        , (K.KM K.NoModifier $ K.Char '!', DefItemKey
+           { defLabel = "!"
            , defCond = permitMulitple && not (EM.null multipleSlots)
            , defAction = \_ ->
                let eslots = EM.elems multipleSlots

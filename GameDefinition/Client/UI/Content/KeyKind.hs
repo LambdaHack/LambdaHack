@@ -133,7 +133,7 @@ standardKeys = KeyKind
       , ("A", chooseAndHelp "manage all owned items" MOwned)
       , ("G", chooseAndHelp "manage items on the ground" (MStore CGround))
       , ("@", chooseAndHelp "describe organs of the leader" (MStore COrgan))
-      , ("!", chooseAndHelp "show the stats summary of the leader" MStats)
+      , ("#", chooseAndHelp "show the stats summary of the leader" MStats)
       , ("q", applyI [ApplyItem { verb = "quaff"
                                 , object = "potion"
                                 , symbol = '!' }])
@@ -149,9 +149,9 @@ standardKeys = KeyKind
 
       -- Aiming
       , ("KP_Multiply", ([CmdAim], "aim at an enemy", AimEnemy))
-      , ("\\", ([CmdAim], "", AimEnemy))
+      , ("!", ([CmdAim], "", AimEnemy))
       , ("KP_Divide", ([CmdAim], "cycle aiming styles", AimFloor))
-      , ("|", ([CmdAim], "", AimFloor))
+      , ("/", ([CmdAim], "", AimFloor))
       , ("+", ([CmdAim, CmdMinimal], "swerve the aiming line", EpsIncr True))
       , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
       , ("CTRL-?", ( [CmdAim]
