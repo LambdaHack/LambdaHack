@@ -42,7 +42,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
-data ItemDialogState = ISuitable | IAll | INoSuitable | INoAll
+data ItemDialogState = ISuitable | IAll
   deriving (Show, Eq)
 
 ppItemDialogMode :: ItemDialogMode -> (Text, Text)
@@ -280,15 +280,15 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   itemToF <- itemToFullClient
   Binding{brevMap} <- askBinding
   mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
-  (suitsEverything, psuitFun) <- case mpsuit of
-    SuitsEverything -> return (True, const True)
+  psuitFun <- case mpsuit of
+    SuitsEverything -> return $ const True
     SuitsNothing err -> do
       promptAdd $ err <+> tmoreMsg
       slides <- reportToSlideshow
       void $ getConfirms ColorFull [K.spaceKM] [K.escKM] slides
-      return (False, const False)
+      return $ const False
     -- When throwing, this function takes missile range into accout.
-    SuitsSomething f -> return (False, f)
+    SuitsSomething f -> return f
   let getSingleResult :: ItemId -> (ItemId, ItemFull)
       getSingleResult iid = (iid, itemToF iid (bagAll EM.! iid))
       getResult :: ItemId -> ([(ItemId, ItemFull)], ItemDialogMode)
@@ -316,7 +316,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       bagSuit = EM.fromList $ map (\iid -> (iid, bagAllSuit EM.! iid))
                                   (EM.elems suitableItemSlotsOpen)
       (autoDun, autoLvl) = autoDungeonLevel fact
-      multipleSlots = if itemDialogState `elem` [IAll, INoAll]
+      multipleSlots = if itemDialogState == IAll
                       then bagItemSlotsAll
                       else suitableItemSlotsAll
       revCmd dflt cmd = case M.lookup cmd brevMap of
@@ -327,13 +327,11 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       keyDefs = filter (defCond . snd) $
         [ (K.KM K.NoModifier $ K.Char '?', DefItemKey
            { defLabel = "?"
-           , defCond = not (EM.null bag)
+           , defCond = bag /= bagSuit
            , defAction = \_ -> recCall numPrefix cCur cRest
                                $ case itemDialogState of
-               INoSuitable -> if EM.null bagSuit then IAll else ISuitable
-               ISuitable -> if suitsEverything then INoAll else IAll
-               IAll -> if EM.null bag then INoSuitable else INoAll
-               INoAll -> if suitsEverything then ISuitable else INoSuitable
+                                   ISuitable -> IAll
+                                   IAll -> ISuitable
            })
         , (K.KM K.NoModifier $ K.Char '/', DefItemKey
            { defLabel = "/"
@@ -435,12 +433,6 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                           prompt body activeItems cCur <> ":")
           IAll        -> (bagItemSlotsOpen,
                           bag,
-                          promptGeneric body activeItems cCur <> ":")
-          INoSuitable -> (suitableItemSlotsOpen,
-                          EM.empty,
-                          prompt body activeItems cCur <> ":")
-          INoAll      -> (bagItemSlotsOpen,
-                          EM.empty,
                           promptGeneric body activeItems cCur <> ":")
   case cCur of
     MStats -> do
