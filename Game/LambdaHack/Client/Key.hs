@@ -92,7 +92,7 @@ showKey Esc      = "ESC"
 showKey Return   = "RET"
 showKey Space    = "SPACE"
 showKey Tab      = "TAB"
-showKey BackTab  = "SHIFT-TAB"
+showKey BackTab  = "S-TAB"
 showKey BackSpace = "BACKSPACE"
 showKey Up       = "UP"
 showKey Down     = "DOWN"
@@ -101,19 +101,19 @@ showKey Right    = "RIGHT"
 showKey Home     = "HOME"
 showKey End      = "END"
 showKey PgUp     = "PGUP"
-showKey PgDn     = "PGDOWN"
+showKey PgDn     = "PGDN"
 showKey Begin    = "BEGIN"
 showKey Insert   = "INS"
 showKey Delete   = "DELETE"
-showKey (KP c)   = "KEYPAD_" <> T.singleton c
+showKey (KP c)   = "KP_" <> T.singleton c
 showKey (Char c) = T.singleton c
-showKey LeftButtonPress = "LEFT-BUTTON"
-showKey MiddleButtonPress = "MIDDLE-BUTTON"
-showKey RightButtonPress = "RIGHT-BUTTON"
+showKey LeftButtonPress = "LMB-PRESS"
+showKey MiddleButtonPress = "MMB-PRESS"
+showKey RightButtonPress = "RMB-PRESS"
 showKey LeftButtonRelease = "LMB"
 showKey MiddleButtonRelease = "MMB"
 showKey RightButtonRelease = "RMB"
-showKey LeftDblClick = "LEFT-DBLCLICK"
+showKey LeftDblClick = "LMB-DBLCLICK"
 showKey WheelNorth = "WHEEL-NORTH"
 showKey WheelSouth = "WHEEL-SOUTH"
 showKey (Unknown s) = "'" <> s <> "'"
@@ -121,9 +121,9 @@ showKey DeadKey      = "DEADKEY"
 
 -- | Show a key with a modifier, if any.
 showKM :: KM -> Text
-showKM KM{modifier=Shift, key} = "SHIFT-" <> showKey key
-showKM KM{modifier=Control, key} = "CTRL-" <> showKey key
-showKM KM{modifier=Alt, key} = "ALT-" <> showKey key
+showKM KM{modifier=Shift, key} = "S-" <> showKey key
+showKM KM{modifier=Control, key} = "C-" <> showKey key
+showKM KM{modifier=Alt, key} = "A-" <> showKey key
 showKM KM{modifier=NoModifier, key} = showKey key
 
 escKM :: KM
