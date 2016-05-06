@@ -276,7 +276,6 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
-  lastSlot <- getsClient slastSlot
   itemToF <- itemToFullClient
   Binding{brevMap} <- askBinding
   mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
@@ -359,25 +358,6 @@ transition psuit prompt promptGeneric permitMulitple cLegal
            , defCond = True
            , defAction = \_ -> return $ Left "never mind"
            })
-        , (K.returnKM, DefItemKey
-           { defLabel = if lastSlot `EM.member` labelItemSlotsOpen
-                        then "RET(" <> slotLabel lastSlot
-                        else "RET"
-           , defCond = not (EM.null labelItemSlotsOpen)
-                       && EM.null bagFiltered
-           , defAction = \_ -> case EM.lookup lastSlot labelItemSlotsOpen of
-               Just iid -> return $ Right $ getResult iid
-               Nothing -> case EM.minViewWithKey labelItemSlotsOpen of
-                 Nothing -> assert `failure` "labelItemSlotsOpen empty"
-                                   `twith` labelItemSlotsOpen
-                 Just ((l, _), _) -> do
-                   lastStore <- getsClient slastStore
-                   let store = storeFromMode cCur
-                       newStore = store : delete store lastStore
-                   modifyClient $ \cli -> cli { slastSlot = l
-                                              , slastStore = newStore }
-                   recCall numPrefix cCur cRest itemDialogState
-           })
         , let km = revCmd (K.KM K.NoModifier K.Tab) MemberCycle
           in (km, DefItemKey
            { defLabel = K.showKM km
@@ -426,13 +406,11 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                                 `twith` (slot, bagItemSlots)
               Just iid -> return $ Right $ getResult iid
         }
-      (labelItemSlotsOpen, bagFiltered, promptChosen) =
+      (bagFiltered, promptChosen) =
         case itemDialogState of
-          ISuitable   -> (suitableItemSlotsOpen,
-                          bagSuit,
+          ISuitable   -> (bagSuit,
                           prompt body activeItems cCur <> ":")
-          IAll        -> (bagItemSlotsOpen,
-                          bag,
+          IAll        -> (bag,
                           promptGeneric body activeItems cCur <> ":")
   case cCur of
     MStats -> do
