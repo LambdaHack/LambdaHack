@@ -459,8 +459,7 @@ splitOKX y okx = do
   lid <- getArenaUI
   Level{lxsize} <- getLevel lid  -- TODO: screen length or viewLevel
   report <- getReport
-  let msg = splitReport lxsize report
-  return $! splitOverlayOKX y msg okx
+  return $! splitOverlayOKX lxsize y report okx
 
 defaultHistory :: MonadClient m => Int -> m History
 defaultHistory configHistoryMax = liftIO $ do

@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.Overlay
   , updateOverlayLine, itemDesc
   , SingleFrame(..), Frames, overlayFrame
   , Slideshow(slideshow), splitOverlay, toSlideshow
-  , KYX, OKX, keyOfEKM, splitOverlayOKX
+  , KYX, OKX, keyOfEKM
   ) where
 
 import Prelude ()
@@ -196,30 +196,3 @@ keyOfEKM _ (Left km) = Just km
 keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
   Just $ K.KM K.NoModifier $ K.Char slotChar
 keyOfEKM _ _ = Nothing
-
--- TODO: assert that ov0 nonempty and perhaps that kxs0 not too short
--- (or should we just keep the rest of the overlay unclickable?)
-splitOverlayOKX :: Y -> Overlay -> OKX -> [OKX]
-splitOverlayOKX yspace omsg (ov0, kxs0) =
-  let msg = overlay omsg
-      msg0 = if yspace - length msg - 1 <= 0  -- all space taken by @msg@
-             then take 1 msg
-             else msg
-      ls0 = overlay ov0
-      len = length msg0
-      renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
-      zipRenumber y = zipWith renumber [y..]
-      splitO ls kxs =
-        let (pre, post) = splitAt (yspace - 1) $ msg0 ++ ls
-        in if null post
-           then  -- all fits on screen
-             let bottomMsgAttr = toAttrLine $
-                   T.replicate (length $ last pre) " "
-             in [( toOverlayRaw $ pre ++ [bottomMsgAttr]
-                 , zipRenumber len kxs )]
-           else let (preX, postX) = splitAt (yspace - len - 1) kxs
-                    rest = splitO post postX
-                in ( toOverlayRaw (pre ++ [moreMsg])
-                   , zipRenumber len preX )
-                   : rest
-  in splitO ls0 kxs0
