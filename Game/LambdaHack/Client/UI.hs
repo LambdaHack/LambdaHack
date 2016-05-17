@@ -115,7 +115,7 @@ humanCommand = do
                         | otherwise = ([], seqCurrent ++ seqPrevious, k - 1)
         modifySession $ \sess -> sess {slastRecord}
         lastPlay <- getsSession slastPlay
-        km <- promptGetKey over False []
+        km <- promptGetKey ColorFull over False []
         -- Messages shown, so update history and reset current report.
         when (null lastPlay) recordHistory
         abortOrCmd <- do

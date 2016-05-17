@@ -120,13 +120,14 @@ connFrontendFrontKey frontKeyKeys frontKeyFrame = do
   modifySession $ \sess -> sess {spointer = kmpPointer kmp}
   return $! kmpKeyMod kmp
 
-promptGetKey :: MonadClientUI m => Overlay -> Bool -> [K.KM] -> m K.KM
-promptGetKey ov sfBlank frontKeyKeys = do
+promptGetKey :: MonadClientUI m
+             => ColorMode -> Overlay -> Bool -> [K.KM] -> m K.KM
+promptGetKey dm ov sfBlank frontKeyKeys = do
   keyPressed <- anyKeyPressed
   lastPlayOld <- getsSession slastPlay
   km <- case lastPlayOld of
     km : kms | not keyPressed && km `K.elemOrNull` frontKeyKeys -> do
-      frontKeyFrame <- drawOverlay ColorFull sfBlank ov
+      frontKeyFrame <- drawOverlay dm sfBlank ov
       displayFrame $ Just frontKeyFrame
       modifySession $ \sess -> sess {slastPlay = kms}
       Config{configRunStopMsgs} <- askConfig
@@ -137,10 +138,10 @@ promptGetKey ov sfBlank frontKeyKeys = do
       stopPlayBack
       discardPressedKey
       let ov2 = ov <> if keyPressed then toOverlay ["*interrupted*"] else mempty
-      frontKeyFrame <- drawOverlay ColorFull sfBlank ov2
+      frontKeyFrame <- drawOverlay dm sfBlank ov2
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     [] -> do
-      frontKeyFrame <- drawOverlay ColorFull sfBlank ov
+      frontKeyFrame <- drawOverlay dm sfBlank ov
       connFrontendFrontKey frontKeyKeys frontKeyFrame
   (seqCurrent, seqPrevious, k) <- getsSession slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)
@@ -148,14 +149,12 @@ promptGetKey ov sfBlank frontKeyKeys = do
                                 , sdisplayNeeded = False }
   return km
 
-promptGetInt :: MonadClientUI m => SingleFrame -> m K.KM
-promptGetInt frontKeyFrame = do
-  -- We assume this is used inside a menu, so delays and cutoffs
-  -- are already taken care of.
+promptGetInt :: MonadClientUI m => Overlay -> m K.KM
+promptGetInt ov = do
   let frontKeyKeys = K.escKM : K.returnKM : K.backspaceKM
                      : map (K.KM K.NoModifier)
                          (map (K.Char . Char.intToDigit) [0..9])
-  connFrontendFrontKey frontKeyKeys frontKeyFrame
+  promptGetKey ColorFull ov False frontKeyKeys
 
 -- | Display a slideshow, awaiting confirmation for each slide
 -- or not awaiting at all if there is only one.
@@ -186,11 +185,10 @@ getConfirmsKey dm extraKeys slides = do
       keys = [ K.spaceKM, K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
              , K.homeKM, K.endKM ]
              ++ extraKeys
-  frontSlides <- drawOverlays dm False ovs
-  let displayFrs frs srf = case frs of
+      displayFrs frs srf = case frs of
         [] -> assert `failure` slides
         x : xs -> do
-          km@K.KM{..} <- connFrontendFrontKey keys x
+          km@K.KM{..} <- promptGetKey dm x False keys
           case key of
             K.Space -> case xs of
               -- Space exits at the end of slideshow and only if in @extraKeys@.
@@ -199,8 +197,8 @@ getConfirmsKey dm extraKeys slides = do
               _ -> displayFrs xs (x : srf)
             _ | km `K.elemOrNull` extraKeys -> return km
               -- Other keys exit only if in @extraKeys@.
-            K.Home -> displayFrs frontSlides []
-            K.End -> case reverse frontSlides of
+            K.Home -> displayFrs ovs []
+            K.End -> case reverse ovs of
               [] -> assert `failure` slides
               y : ys -> displayFrs [y] ys
             _ | key `elem` [K.PgUp, K.WheelNorth] -> case srf of
@@ -210,7 +208,7 @@ getConfirmsKey dm extraKeys slides = do
               [] -> displayFrs frs srf
               _ -> displayFrs xs (x : srf)
             _ -> assert `failure` "unknown key" `twith` km
-  displayFrs frontSlides []
+  displayFrs ovs []
 
 displayFrame :: MonadClientUI m => Maybe SingleFrame -> m ()
 displayFrame mf = do
@@ -260,16 +258,6 @@ drawOverlay dm sfBlank sfTop = do
                 else Just <$> drawBaseFrameViewed dm
   return $! overlayFrame sfTop mbaseFrame
   -- TODO: here sfTop is possibly truncated wrt length
-
-drawOverlays :: MonadClientUI m
-             => ColorMode -> Bool -> [Overlay] -> m [SingleFrame]
-drawOverlays _ _ [] = return []
-drawOverlays dm sfBlank ovs = do
-  mbaseFrame <- if sfBlank
-                then return Nothing
-                else Just <$> drawBaseFrameViewed dm
-  let f topNext = overlayFrame topNext mbaseFrame
-  return $! map f ovs  -- keep lazy for responsiveness
 
 stopPlayBack :: MonadClientUI m => m ()
 stopPlayBack = do

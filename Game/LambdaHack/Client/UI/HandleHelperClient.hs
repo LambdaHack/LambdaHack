@@ -110,8 +110,7 @@ pickNumber askNumber kAll = do
                       <> "), ESC]"
         promptAdd kprompt
         ov : _ <- slideshow <$> reportToSlideshow
-        frame <- drawOverlay ColorFull False ov
-        kkm <- promptGetInt frame
+        kkm <- promptGetInt ov
         case K.key kkm of
           K.Char l | kDefault == kAll -> gatherNumber $ Char.digitToInt l
           K.Char l -> gatherNumber $ kDefault * 10 + Char.digitToInt l
