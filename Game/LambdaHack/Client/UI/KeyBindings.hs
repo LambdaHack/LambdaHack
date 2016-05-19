@@ -63,7 +63,7 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   }
 
 -- | Produce a set of help screens from the key bindings.
-keyHelp :: Binding -> [OKX]
+keyHelp :: Binding -> SlideshowX
 keyHelp Binding{..} =
   let
     movBlurb =
@@ -138,40 +138,40 @@ keyHelp Binding{..} =
     okxsN n cat header footer =
       let (ks, keyTable) = unzip $ keysN n cat
           kxs = zip ks [(y, 0, maxBound) | y <- [length header..]]
-      in (toOverlay $ header ++ keyTable ++ footer, kxs)
+      in (map toAttrLine $ header ++ keyTable ++ footer, kxs)
     okxs = okxsN 16
-  in
-    [ ( toOverlay $
+  in toSlideshowX $
+    [ ( map toAttrLine $
           [casualDescription <+> "(1/2). [press SPACE to see more]"]
-          ++ [""] ++ movText ++ [tmoreMsg]
+          ++ [""] ++ movText
       , [(Left K.spaceKM, (length movText + 1, 0, maxBound))])
     , okxs CmdMinimal
         ([casualDescription <+> "(2/2). [press SPACE to see all commands]"]
          ++ [""] ++ minimalText ++ [keyCaption])
-        (casualEndText ++ [tmoreMsg])
+        casualEndText
     , okxsN 10 CmdMove
         (["All terrain exploration and alteration commands"
          <> ". [press SPACE to advance]"]
          ++ [""] ++ [keyCaptionN 10])
-        (categoryText ++ [tmoreMsg])
+        categoryText
     , okxsN 10 CmdItem
         ([categoryDescription CmdItem <> ". [press SPACE to advance]"]
          ++ [""] ++ [keyCaptionN 10])
-        (categoryText ++ [tmoreMsg])
+        categoryText
     , okxs CmdAim
         ([categoryDescription CmdAim <> ". [press SPACE to advance]"]
          ++ [""] ++ [keyCaption])
-        (categoryText ++ [tmoreMsg])
+        categoryText
     , okxs CmdMeta
         ([categoryDescription CmdMeta <> ". [press SPACE to advance]"]
          ++ [""] ++ [keyCaption])
-        (pickLeaderDescription ++ categoryText ++ [tmoreMsg])
+        (pickLeaderDescription ++ categoryText)
     , let (ov, _) =
             okxsN 21 CmdMouse
               ([categoryDescription CmdMouse
                <> ". [press PGUP to see previous, ESC to cancel]"]
                ++ [""] ++ [keyCaptionN 21])
-              (lastText ++ [tendMsg])
+              lastText
           len = 4 + length (keysN 0 CmdMouse)
       in ( ov
          , [ (Left K.pgupKM, (len + 1, 0, maxBound))

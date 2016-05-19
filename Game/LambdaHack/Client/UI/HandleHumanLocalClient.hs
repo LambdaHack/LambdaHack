@@ -514,12 +514,10 @@ historyHuman = do
         , "(this level:"
         , MU.Text (tshow turnsLocal) <> ")" ]
         <+> "[ESC to cancel]"
-      dummySlot = head allZeroSlots
       rh = renderHistory history
-      kxs = replicate (length rh)
-                      (Right dummySlot, (undefined, 0, lxsize))
+      kxs = [(Right n, (undefined, 0, lxsize)) | n <- take (length rh) intSlots]
   promptAdd msg
-  okxs <- splitOKX (lysize + 3) (toOverlayRaw rh, kxs)
+  okxs <- splitOKX (lysize + 3) (rh, kxs)
   let displayAllHistory = do
         menuIxHistory <- getsSession smenuIxHistory
         (ekm, pointer) <-
@@ -528,11 +526,11 @@ historyHuman = do
         case ekm of
           Left km | km `elem` [K.spaceKM, K.escKM] ->
             promptAdd "Try to survive a few seconds more, if you can."
-          Right slot | slot == dummySlot -> displayOneReport pointer
+          Right SlotChar{..} | slotChar == 'a' -> displayOneReport slotPrefix
           _ -> assert `failure` ekm
-      displayOneReport pointer = do
-        let timeReport = case drop pointer histLines of
-              [] -> assert `failure` pointer
+      displayOneReport histSlot = do
+        let timeReport = case drop histSlot histLines of
+              [] -> assert `failure` histSlot
               tR : _ -> tR
             (tturns, rep) = splitReportForHistory lxsize timeReport
             ov0 = toOverlayRaw rep
@@ -628,9 +626,9 @@ settingsMenuHuman cmdAction = do
       menuOverwritten = overwrite $ zip [0..] artWithVersion
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
-      ov = toOverlay menuOvLines
+      ov = map toAttrLine menuOvLines
   menuIxSettings <- getsSession smenuIxSettings
-  (ekm, pointer) <- displayChoiceScreen True menuIxSettings [(ov, kyxs)] []
+  (ekm, pointer) <- displayChoiceScreen True menuIxSettings (menuToSlideshowX (ov, kyxs)) []
   modifySession $ \sess -> sess {smenuIxSettings = pointer}
   case ekm of
     Left km -> case km `lookup` kds of

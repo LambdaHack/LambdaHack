@@ -33,7 +33,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 
--- | Display a message with a @-more-@ prompt.
+-- | Display a message with a @more@ prompt.
 -- Return value indicates if the player tried to cancel/escape.
 displayMore :: MonadClientUI m => ColorMode -> Text -> m Bool
 displayMore dm prompt =
@@ -58,11 +58,12 @@ displayConfirm dm trueKeys falseKeys prompt = do
   return b
 
 displayChoiceScreen :: forall m . MonadClientUI m
-                    => Bool -> Int -> [OKX] -> [K.KM]
+                    => Bool -> Int -> SlideshowX -> [K.KM]
                     -> m (Either K.KM SlotChar, Int)
-displayChoiceScreen sfBlank pointer0 frs extraKeys = do
+displayChoiceScreen sfBlank pointer0 frsX extraKeys = do
   -- We don't create keys from slots, so they have to be @in extraKeys@.
-  let keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) frs
+  let frs = slideshowX frsX
+      keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) frs
              ++ extraKeys
       scrollKeys = [K.leftButtonReleaseKM, K.returnKM, K.upKM, K.downKM]
       pageKeys = [ K.spaceKM, K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
@@ -96,7 +97,7 @@ displayChoiceScreen sfBlank pointer0 frs extraKeys = do
                 let (xs1, xsRest) = splitAt x1 xs
                     (xs2, xs3) = splitAt (x2 - x1) xsRest
                 in xs1 ++ map greyBG xs2 ++ xs3
-              ov1 = updateOverlayLine y drawHighlight ov
+              ov1 = updateOverlayLine y drawHighlight $ toOverlayRaw ov
               ignoreKey = page pointer
               pageLen = length kyxs
               interpretKey :: K.KM -> m (Either K.KM SlotChar, Int)

@@ -19,7 +19,6 @@ import Game.LambdaHack.Common.Prelude
 import Data.Binary
 import Data.Binary.Orphans ()
 import Data.Char
-import qualified Data.Text as T
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Client.UI.Overlay
@@ -190,29 +189,21 @@ renderHistory (History rb) =
 
 -- TODO: assert that ov0 nonempty and perhaps that kxs0 not too short
 -- (or should we just keep the rest of the overlay unclickable?)
-splitOverlayOKX :: X -> Y -> Report -> OKX -> [OKX]
-splitOverlayOKX lxsize yspace report (ov0, kxs0) =
+splitOverlayOKX :: X -> Y -> Report -> OKX -> SlideshowX
+splitOverlayOKX lxsize yspace report (ls0, kxs0) =
   assert (not $ nullReport report) $
   let msg = overlay $ splitReport lxsize report
       msg0 = if yspace - length msg - 1 <= 0  -- all space taken by @msg@
              then [renderReport report]  -- will display "$" (unless has EOLs)
              else msg
-      ls0 = overlay ov0
       len = length msg0
       renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
-      zipRenumber y = zipWith renumber [y..]
+      zipRenumber = zipWith renumber [len..]
       splitO ls kxs =
         let (pre, post) = splitAt (yspace - 1) $ msg0 ++ ls
         in if null post
-           then -- all fits on one screen
-                let bottomMsgAttr = toAttrLine $
-                      T.replicate (length $ last pre) " "
-                in [( toOverlayRaw $ pre ++ [bottomMsgAttr]
-                    , zipRenumber len kxs )]
+           then [(pre, zipRenumber kxs)]  -- all fits on one screen
            else let (preX, postX) = splitAt (yspace - len - 1) kxs
-                    rest = splitO post postX
-                in ( toOverlayRaw (pre ++ [moreMsg])
-                   , zipRenumber len preX )
-                   : rest
+                in (pre, zipRenumber preX) : splitO post postX
       okxs = splitO ls0 kxs0
-  in assert (not $ null okxs) okxs
+  in assert (not $ null okxs) $ toSlideshowX okxs

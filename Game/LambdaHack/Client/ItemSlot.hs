@@ -2,7 +2,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.ItemSlot
   ( ItemSlots, SlotChar(..)
-  , allSlots, allZeroSlots, slotLabel, assignSlot
+  , allSlots, allZeroSlots, intSlots, slotLabel, assignSlot
   ) where
 
 import Prelude ()
@@ -51,6 +51,9 @@ allSlots n = map (SlotChar n) $ ['a'..'z'] ++ ['A'..'Z']
 
 allZeroSlots :: [SlotChar]
 allZeroSlots = allSlots 0
+
+intSlots :: [SlotChar]
+intSlots = map (flip SlotChar 'a') [0..]
 
 -- | Assigns a slot to an item, for inclusion in the inventory or equipment
 -- of a hero. Tries to to use the requested slot, if any.

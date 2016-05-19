@@ -454,7 +454,7 @@ xhairToPos = do
     Nothing -> return Nothing
     Just aid -> aidTgtToPos aid lidV $ Just sxhair
 
-splitOKX :: MonadClientUI m => Y -> OKX -> m [OKX]
+splitOKX :: MonadClientUI m => Y -> OKX -> m SlideshowX
 splitOKX y okx = do
   lid <- getArenaUI
   Level{lxsize} <- getLevel lid  -- TODO: screen length or viewLevel

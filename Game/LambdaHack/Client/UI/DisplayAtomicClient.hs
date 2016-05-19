@@ -580,7 +580,7 @@ quitFactionUI fid mbody toSt = do
               promptAdd itemMsg
               io <- itemOverlay CGround (blid b) bag
               -- TODO: treat as menu and display item description
-              sli <- overlayToSlideshow $ fst io
+              sli <- overlayToSlideshow $ toOverlayRaw $ fst io
               return (sli, tot)
       (itemSlides, total) <- case mbody of
         Just b | fid == side -> bodyToItemSlides b

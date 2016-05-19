@@ -133,12 +133,12 @@ itemOverlay c lid bag = do
                   in take (T.length label + 1) line
                      ++ [colorSymbol]
                      ++ drop (T.length label + 2) line
-                ov = updateOverlayLine 0 insertSymbol $ toOverlay [phrase]
+                ov = overlay $ updateOverlayLine 0 insertSymbol $ toOverlay [phrase]
                 ekm = Right l
                 kx = (ekm, (undefined, 0, T.length phrase))
             in Just (ov, kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
-  return (mconcat ts, kxs)
+  return (concat ts, kxs)
 
 -- | The prompt is shown after the current message at the top of each slide.
 -- Together they may take more than one line. The prompt is not added

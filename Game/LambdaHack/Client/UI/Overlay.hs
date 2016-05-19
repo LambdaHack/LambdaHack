@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.Overlay
   , updateOverlayLine, itemDesc
   , SingleFrame(..), Frames, overlayFrame
   , Slideshow(slideshow), splitOverlay, toSlideshow
-  , KYX, OKX, keyOfEKM
+  , KYX, OKX, SlideshowX, toSlideshowX, menuToSlideshowX, slideshowX, keyOfEKM
   ) where
 
 import Prelude ()
@@ -189,7 +189,25 @@ truncateAttrLine w xs =
 
 type KYX = (Either K.KM SlotChar, (Y, X, X))
 
-type OKX = (Overlay, [KYX])
+type OKX = ([AttrLine], [KYX])
+
+newtype SlideshowX = SlideshowX {slideshowX :: [OKX]}
+
+toSlideshowX :: [OKX] -> SlideshowX
+toSlideshowX okxs = SlideshowX $ addFooters okxs
+ where
+  addFooters [] = assert `failure` okxs
+  addFooters [(als, kxs)] =
+    [( als ++ [endMsg]
+     , kxs ++ [(Left K.escKM, (length als, 0, 8))] )]
+  addFooters ((als, kxs) : rest) =
+    ( als ++ [moreMsg]
+    , kxs ++ [(Left K.pgdnKM, (length als, 0, 8))] )
+    : addFooters rest
+
+menuToSlideshowX :: OKX -> SlideshowX
+menuToSlideshowX (als, kxs) =
+  assert (not (null als || null kxs)) $ SlideshowX [(als, kxs)]
 
 keyOfEKM :: Int -> Either K.KM SlotChar -> Maybe K.KM
 keyOfEKM _ (Left km) = Just km

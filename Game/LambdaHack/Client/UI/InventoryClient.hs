@@ -488,7 +488,7 @@ statsOverlay aid = do
       reslot c = either (prSlot c) (prAbility c)
       zipReslot = zipWith reslot allZeroSlots
       (ts, kxs) = unzip $ zipReslot $ map Left slotList ++ map Right abilityList
-  return (toOverlay ts, kxs)
+  return (map toAttrLine ts, kxs)
 
 legalWithUpdatedLeader :: MonadClientUI m
                        => ItemDialogMode
@@ -524,9 +524,9 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   promptAdd $ prompt <+> choice
   arena <- getArenaUI
   Level{lysize} <- getLevel arena
-  ekm <- if null $ overlay $ fst okx
+  ekm <- if null $ fst okx
          then
-           Left <$> displayChoiceLine (fst okx) itemKeys
+           Left <$> displayChoiceLine (toOverlayRaw $ fst okx) itemKeys
          else do
            lastSlot <- getsClient slastSlot
            let lastPointer = case findIndex ((== Right lastSlot) . fst)
