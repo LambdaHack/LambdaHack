@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.Msg
     -- * History
   , History, emptyHistory, addReport, lengthHistory, linesHistory
   , lastReportOfHistory, renderHistory, splitReportForHistory
-  , splitOverlayOKX
+  , splitOverlay
   ) where
 
 import Prelude ()
@@ -184,8 +184,8 @@ renderHistory (History rb) =
 
 -- TODO: assert that ov0 nonempty and perhaps that kxs0 not too short
 -- (or should we just keep the rest of the overlay unclickable?)
-splitOverlayOKX :: X -> Y -> Report -> OKX -> SlideshowX
-splitOverlayOKX lxsize yspace report (ls0, kxs0) =
+splitOverlay :: X -> Y -> Report -> OKX -> Slideshow
+splitOverlay lxsize yspace report (ls0, kxs0) =
   let rrep = renderReport report
       msg = splitAttrLine lxsize rrep
       msg0 = if yspace - length msg - 1 <= 0  -- all space taken by @msg@
@@ -201,4 +201,4 @@ splitOverlayOKX lxsize yspace report (ls0, kxs0) =
            else let (preX, postX) = splitAt (yspace - len - 1) kxs
                 in (pre, zipRenumber preX) : splitO post postX
       okxs = splitO ls0 kxs0
-  in assert (not $ null okxs) $ toSlideshowX okxs
+  in assert (not $ null okxs) $ toSlideshow okxs

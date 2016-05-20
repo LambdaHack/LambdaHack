@@ -145,12 +145,11 @@ itemOverlay c lid bag = do
 -- to history. The portions of overlay that fit on the the rest
 -- of the screen are displayed below. As many slides as needed are shown.
 overlayToSlideshow :: MonadClientUI m => Overlay -> m Slideshow
-overlayToSlideshow overlay = do
+overlayToSlideshow ov = do
   lid <- getArenaUI
   Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
   report <- getReport
-  let msg = undefined -- TODO: splitReport lxsize report
-  return $! splitOverlay (lysize + 1) msg overlay
+  return $! splitOverlay lxsize (lysize + 1) report (overlay ov, [])
 
 reportToSlideshow :: MonadClientUI m => m Slideshow
 reportToSlideshow = overlayToSlideshow mempty

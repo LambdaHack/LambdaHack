@@ -628,7 +628,7 @@ settingsMenuHuman cmdAction = do
       kyxs = catMaybes mkyxs
       ov = map toAttrLine menuOvLines
   menuIxSettings <- getsSession smenuIxSettings
-  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxSettings (menuToSlideshowX (ov, kyxs)) []
+  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxSettings (menuToSlideshow (ov, kyxs)) []
   modifySession $ \sess -> sess {smenuIxSettings = pointer}
   case ekm of
     Left km -> case km `lookup` kds of

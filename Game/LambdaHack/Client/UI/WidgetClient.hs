@@ -1,6 +1,7 @@
 -- | A set of widgets for UI clients.
 module Game.LambdaHack.Client.UI.WidgetClient
-  ( displayMore, displayYesNo, displayChoiceScreen, displayChoiceLine
+  ( displayMore, displayYesNo, getConfirms
+  , displayChoiceScreen, displayChoiceLine
   , describeMainKeys
   , animate, fadeOutOrIn
   ) where
@@ -47,6 +48,17 @@ displayYesNo dm prompt =
                     [K.KM K.NoModifier (K.Char 'n'), K.escKM]
                     (prompt <+> tyesnoMsg)
 
+-- | Display a slideshow, awaiting confirmation for each slide
+-- and returning a boolean.
+getConfirms :: MonadClientUI m
+            => ColorMode -> [K.KM] -> [K.KM] -> Slideshow -> m Bool
+getConfirms dm trueKeys falseKeys slides = do
+  if slides == mempty then return False else do
+    (ekm, _) <- displayChoiceScreen dm False 0 slides (trueKeys ++ falseKeys)
+    case ekm of
+      Left km -> return $! km `K.elemOrNull` trueKeys
+      Right slot -> assert `failure` slot
+
 -- | Add a prompt to report and wait for a player keypress.
 displayConfirm :: MonadClientUI m
                => ColorMode -> [K.KM] -> [K.KM] -> Text -> m Bool
@@ -58,11 +70,11 @@ displayConfirm dm trueKeys falseKeys prompt = do
   return b
 
 displayChoiceScreen :: forall m . MonadClientUI m
-                    => ColorMode -> Bool -> Int -> SlideshowX -> [K.KM]
+                    => ColorMode -> Bool -> Int -> Slideshow -> [K.KM]
                     -> m (Either K.KM SlotChar, Int)
 displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
   -- We don't create keys from slots, so they have to be @in extraKeys@.
-  let frs = slideshowX frsX
+  let frs = slideshow frsX
       keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) frs
              ++ extraKeys
       scrollKeys = [K.leftButtonReleaseKM, K.returnKM, K.upKM, K.downKM]
@@ -141,7 +153,8 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
 displayChoiceLine :: MonadClientUI m => Overlay -> [K.KM] -> m K.KM
 displayChoiceLine ov extraKeys = do
   slides <- overlayToSlideshow ov
-  getConfirmsKey ColorFull extraKeys slides
+  (ekm, _) <- displayChoiceScreen ColorFull False 0 slides extraKeys
+  return $! either id (assert `failure` ekm) ekm
 
 describeMainKeys :: MonadClientUI m => m Text
 describeMainKeys = do

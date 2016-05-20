@@ -148,7 +148,7 @@ showTable :: TimeZone -> ScoreTable -> Int -> Int -> [Text]
 showTable tz (ScoreTable table) start height =
   let zipped    = zip [1..] table
       screenful = take height . drop (start - 1) $ zipped
-  in intercalate [""] (map (showScore tz) screenful) ++ ["--more--  "]  --TODO
+  in intercalate [""] (map (showScore tz) screenful)
 
 -- | Produce a couple of renderings of the high scores table.
 showNearbyScores :: TimeZone -> Int -> ScoreTable -> Int -> [[Text]]

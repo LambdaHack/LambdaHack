@@ -100,7 +100,7 @@ humanCommand = do
         over <- case slideshow sli of
           [sLast] ->
             -- Display the last generated slide while waiting for next key.
-            return $! sLast
+            return $! toOverlayRaw $ fst $ sLast
           _ -> do
             -- Show, one by one, all slides, awaiting confirmation for each.
             void $ getConfirms ColorFull [K.spaceKM] [K.escKM] sli

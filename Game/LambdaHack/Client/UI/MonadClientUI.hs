@@ -11,7 +11,6 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , ColorMode(..)
   , msgAdd, promptAdd, promptAddAttr, recordHistory
   , mapStartY, getReport, promptGetKey, promptGetInt
-  , getConfirms, getConfirmsKey
   , displayFrame, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
@@ -157,48 +156,6 @@ promptGetInt ov = do
                          (map (K.Char . Char.intToDigit) [0..9])
   promptGetKey ColorFull ov False frontKeyKeys
 
--- | Display a slideshow, awaiting confirmation for each slide
--- and returning a boolean.
-getConfirms :: MonadClientUI m
-            => ColorMode -> [K.KM] -> [K.KM] -> Slideshow -> m Bool
-getConfirms dm trueKeys falseKeys slides = do
-  km <- getConfirmsKey dm (trueKeys ++ falseKeys) slides
-  return $! km `K.elemOrNull` trueKeys
-
--- | Display a slideshow, awaiting confirmation for each slide
--- and returning a key.
-getConfirmsKey :: MonadClientUI m
-               => ColorMode -> [K.KM] -> Slideshow -> m K.KM
-getConfirmsKey dm extraKeys slides = do
-  let ovs = slideshow slides
-      keys = [ K.spaceKM, K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
-             , K.homeKM, K.endKM ]
-             ++ extraKeys
-      displayFrs frs srf = case frs of
-        [] -> assert `failure` slides
-        x : xs -> do
-          km@K.KM{..} <- promptGetKey dm x False keys
-          case key of
-            K.Space -> case xs of
-              -- Space exits at the end of slideshow and only if in @extraKeys@.
-              [] | km `elem` extraKeys -> return km
-              [] -> displayFrs frs srf
-              _ -> displayFrs xs (x : srf)
-            _ | km `K.elemOrNull` extraKeys -> return km
-              -- Other keys exit only if in @extraKeys@.
-            K.Home -> displayFrs ovs []
-            K.End -> case reverse ovs of
-              [] -> assert `failure` slides
-              y : ys -> displayFrs [y] ys
-            _ | key `elem` [K.PgUp, K.WheelNorth] -> case srf of
-              [] -> displayFrs frs srf
-              y : ys -> displayFrs (y : frs) ys
-            _ | key `elem` [K.PgDn, K.WheelSouth] -> case xs of
-              [] -> displayFrs frs srf
-              _ -> displayFrs xs (x : srf)
-            _ -> assert `failure` "unknown key" `twith` km
-  displayFrs ovs []
-
 displayFrame :: MonadClientUI m => Maybe SingleFrame -> m ()
 displayFrame mf = do
   let frame = case mf of
@@ -322,8 +279,9 @@ scoreToSlideshow total status = do
                            (fname $ gplayer fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
-  return $! toSlideshow  -- TODO: split dynamically, for changing ysize
-         $ if worthMentioning then showScore rScore else mempty
+  return $! if worthMentioning
+            then textsToSlideshow $ showScore rScore
+            else mempty
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
@@ -438,12 +396,12 @@ xhairToPos = do
     Nothing -> return Nothing
     Just aid -> aidTgtToPos aid lidV $ Just sxhair
 
-splitOKX :: MonadClientUI m => Y -> OKX -> m SlideshowX
+splitOKX :: MonadClientUI m => Y -> OKX -> m Slideshow
 splitOKX y okx = do
   lid <- getArenaUI
   Level{lxsize} <- getLevel lid  -- TODO: screen length or viewLevel
   report <- getReport
-  return $! splitOverlayOKX lxsize y report okx
+  return $! splitOverlay lxsize y report okx
 
 defaultHistory :: MonadClient m => Int -> m History
 defaultHistory configHistoryMax = liftIO $ do

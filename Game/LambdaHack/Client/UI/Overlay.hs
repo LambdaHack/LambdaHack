@@ -6,8 +6,8 @@ module Game.LambdaHack.Client.UI.Overlay
   , Overlay(overlay), toOverlayRaw, toOverlay
   , updateOverlayLine, itemDesc
   , SingleFrame(..), Frames, overlayFrame
-  , Slideshow(slideshow), splitOverlay, toSlideshow
-  , KYX, OKX, SlideshowX, toSlideshowX, menuToSlideshowX, slideshowX, keyOfEKM
+  , Slideshow(slideshow), toSlideshow, menuToSlideshow, textsToSlideshow
+  , KYX, OKX, keyOfEKM
   ) where
 
 import Prelude ()
@@ -115,40 +115,8 @@ itemDesc c localTime itemFull =
 newtype SingleFrame = SingleFrame { sfLevel :: Overlay }
   deriving (Eq, Show)
 
--- | Split an overlay into a slideshow in which each overlay,
--- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,
--- fits on the screen wrt height (but lines may be too wide).
-splitOverlay :: Y -> Overlay -> Overlay -> Slideshow
-splitOverlay yspace (Overlay msg) (Overlay ls0) =
-  if length msg > yspace `div` 2
-  then  -- too long msg, no sense repeating it on each page
-    splitOverlay yspace mempty (Overlay msg <> Overlay ls0)
-  else let splitO ls =
-             let (pre, post) = splitAt (yspace - 1) $ msg ++ ls
-             in if null (drop 1 post)  -- (don't call @length@ on @ls0@)
-                then [Overlay $ msg ++ ls]
-                       -- all fits on screen
-                else let rest = splitO post
-                     in Overlay (pre ++ [moreMsg]) : rest
-       in Slideshow (splitO ls0)
-
--- | A few overlays, displayed one by one upon keypress.
--- When displayed, they are trimmed, not wrapped
--- and any lines below the lower screen edge are not visible.
--- The first pair element determines if the overlay is displayed
--- over a blank screen, including the bottom lines.
-newtype Slideshow = Slideshow {slideshow :: [Overlay]}
-  deriving (Show, Eq, Monoid)
-
 -- | Sequences of screen frames, including delays.
 type Frames = [Maybe SingleFrame]
-
--- | Declare the list of raw overlays to be fit for display on the screen.
--- In particular, current @Report@ is eiter empty or unimportant
--- or contained in the overlays and if any vertical or horizontal
--- trimming of the overlays happens, this is intended.
-toSlideshow :: [[Text]] -> Slideshow
-toSlideshow l = Slideshow $ map toOverlay l
 
 -- | Overlays with a given overlay either the top line and level map area
 -- of a screen frame or the whole area of a completely empty screen frame.
@@ -189,12 +157,15 @@ truncateAttrLine w xs =
 
 type KYX = (Either K.KM SlotChar, (Y, X, X))
 
+-- Neither list may be empty.
 type OKX = ([AttrLine], [KYX])
 
-newtype SlideshowX = SlideshowX {slideshowX :: [OKX]}
+-- May be empty, but nothing inside may be empty.
+newtype Slideshow = Slideshow {slideshow :: [OKX]}
+  deriving (Show, Eq, Monoid)
 
-toSlideshowX :: [OKX] -> SlideshowX
-toSlideshowX okxs = SlideshowX $ addFooters okxs
+toSlideshow :: [OKX] -> Slideshow
+toSlideshow okxs = Slideshow $ addFooters okxs
  where
   addFooters [] = assert `failure` okxs
   addFooters [(als, kxs)] =
@@ -205,9 +176,12 @@ toSlideshowX okxs = SlideshowX $ addFooters okxs
     , kxs ++ [(Left K.pgdnKM, (length als, 0, 8))] )
     : addFooters rest
 
-menuToSlideshowX :: OKX -> SlideshowX
-menuToSlideshowX (als, kxs) =
-  assert (not (null als || null kxs)) $ SlideshowX [(als, kxs)]
+menuToSlideshow :: OKX -> Slideshow
+menuToSlideshow (als, kxs) =
+  assert (not (null als || null kxs)) $ Slideshow [(als, kxs)]
+
+textsToSlideshow :: [[Text]] -> Slideshow
+textsToSlideshow = toSlideshow . map (\t -> (map toAttrLine t, []))
 
 keyOfEKM :: Int -> Either K.KM SlotChar -> Maybe K.KM
 keyOfEKM _ (Left km) = Just km

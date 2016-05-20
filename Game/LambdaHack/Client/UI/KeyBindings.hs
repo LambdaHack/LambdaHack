@@ -63,7 +63,7 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   }
 
 -- | Produce a set of help screens from the key bindings.
-keyHelp :: Binding -> SlideshowX
+keyHelp :: Binding -> Slideshow
 keyHelp Binding{..} =
   let
     movBlurb =
@@ -140,7 +140,7 @@ keyHelp Binding{..} =
           kxs = zip ks [(y, 0, maxBound) | y <- [length header..]]
       in (map toAttrLine $ header ++ keyTable ++ footer, kxs)
     okxs = okxsN 16
-  in toSlideshowX $
+  in toSlideshow $
     [ ( map toAttrLine $
           [casualDescription <+> "(1/2). [press SPACE to see more]"]
           ++ [""] ++ movText
