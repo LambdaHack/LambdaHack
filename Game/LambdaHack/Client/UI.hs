@@ -87,29 +87,24 @@ humanCommand = do
   let loop :: m RequestUI
       loop = do
         report <- getsSession _sreport
-        over <-
-          if nullReport report then do
-            -- Display keys sometimes, alternating with empty screen.
-            keysHintMode <- getsSession skeysHintMode
-            case keysHintMode of
-              KeysHintPresent -> describeMainKeys >>= promptAdd
-              KeysHintBlocked ->
-                modifySession $ \sess -> sess {skeysHintMode = KeysHintAbsent}
-              _ -> return ()
-            sli <- reportToSlideshow
-            return $! head $ slideshow sli  -- only the first slide of keys; OK
-          else do
-            modifySession $ \sess -> sess {skeysHintMode = KeysHintBlocked}
-            sli <- reportToSlideshow
-            case slideshow sli of
-              [] -> assert `failure` report
-              [sLast] ->
-                -- Display the last generated slide while waiting for next key.
-                return sLast
-              _ -> do
-                -- Show, one by one, all slides, awaiting confirmation for each.
-                void $ getConfirms ColorFull [K.spaceKM] [K.escKM] sli
-                return $! toOverlay []
+        if nullReport report then do
+          -- Display keys sometimes, alternating with empty screen.
+          keysHintMode <- getsSession skeysHintMode
+          case keysHintMode of
+            KeysHintPresent -> describeMainKeys >>= promptAdd
+            KeysHintBlocked ->
+              modifySession $ \sess -> sess {skeysHintMode = KeysHintAbsent}
+            _ -> return ()
+        else modifySession $ \sess -> sess {skeysHintMode = KeysHintBlocked}
+        sli <- reportToSlideshow
+        over <- case slideshow sli of
+          [sLast] ->
+            -- Display the last generated slide while waiting for next key.
+            return $! sLast
+          _ -> do
+            -- Show, one by one, all slides, awaiting confirmation for each.
+            void $ getConfirms ColorFull [K.spaceKM] [K.escKM] sli
+            return $! toOverlay []
         (seqCurrent, seqPrevious, k) <- getsSession slastRecord
         let slastRecord | k == 0 = ([], seqCurrent, 0)
                         | otherwise = ([], seqCurrent ++ seqPrevious, k - 1)
