@@ -258,7 +258,8 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
       -- to see what is underneath.
       lid <- viewedLevel
       report <- getReport
-      frame <- drawOverlay ColorFull False (truncateReport report) lid
+      let truncRep = toOverlayRaw [renderReport report]
+      frame <- drawOverlay ColorFull False truncRep lid
       displayFrame (Just frame)
       modifySession $ \sess -> sess {sdisplayNeeded = False}
   UpdDiscover c iid _ _ _ -> discover c oldStateClient iid

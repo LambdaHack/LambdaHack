@@ -26,6 +26,7 @@ import Game.LambdaHack.Client.UI.HandleHelperClient
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.WidgetClient

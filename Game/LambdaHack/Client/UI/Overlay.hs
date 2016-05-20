@@ -1,13 +1,13 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Screen overlays and frames.
 module Game.LambdaHack.Client.UI.Overlay
-  ( AttrLine, toAttrLine, (<+:>)
-  , tmoreMsg, tendMsg, tyesnoMsg, moreMsg, endMsg, yesnoMsg
+  ( tmoreMsg, tendMsg, tyesnoMsg, moreMsg, endMsg, yesnoMsg
   , Overlay(overlay), toOverlayRaw, toOverlay
   , updateOverlayLine, itemDesc
   , SingleFrame(..), Frames, overlayFrame
   , Slideshow(slideshow), toSlideshow, menuToSlideshow, textsToSlideshow
   , KYX, OKX, keyOfEKM
+  , splitOverlay
   ) where
 
 import Prelude ()
@@ -19,6 +19,7 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Item
@@ -27,18 +28,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
-
-type AttrLine = [Color.AttrChar]
-
-toAttrLine :: Text -> AttrLine
-toAttrLine = map (Color.AttrChar Color.defAttr) . T.unpack
-
--- TODO: make a class, for monoids with neutral elements
-infixr 6 <+:>  -- matches Monoid.<>
-(<+:>) :: AttrLine -> AttrLine -> AttrLine
-(<+:>) [] l2 = l2
-(<+:>) l1 [] = l1
-(<+:>) l1 l2 = l1 ++ toAttrLine " " ++ l2
 
 -- tmp, until help in colour
 tmoreMsg :: Text
@@ -188,3 +177,24 @@ keyOfEKM _ (Left km) = Just km
 keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
   Just $ K.KM K.NoModifier $ K.Char slotChar
 keyOfEKM _ _ = Nothing
+
+-- TODO: assert that ov0 nonempty and perhaps that kxs0 not too short
+-- (or should we just keep the rest of the overlay unclickable?)
+splitOverlay :: X -> Y -> Report -> OKX -> Slideshow
+splitOverlay lxsize yspace report (ls0, kxs0) =
+  let rrep = renderReport report
+      msg = splitAttrLine lxsize rrep
+      msg0 = if yspace - length msg - 1 <= 0  -- all space taken by @msg@
+             then [rrep]  -- will display "$" (unless has EOLs)
+             else msg
+      len = length msg0
+      renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
+      zipRenumber = zipWith renumber [len..]
+      splitO ls kxs =
+        let (pre, post) = splitAt (yspace - 1) $ msg0 ++ ls
+        in if null post
+           then [(pre, zipRenumber kxs)]  -- all fits on one screen
+           else let (preX, postX) = splitAt (yspace - len - 1) kxs
+                in (pre, zipRenumber preX) : splitO post postX
+      okxs = splitO ls0 kxs0
+  in assert (not $ null okxs) $ toSlideshow okxs

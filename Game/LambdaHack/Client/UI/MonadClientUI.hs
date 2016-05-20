@@ -82,7 +82,7 @@ getReport = do
 -- | Add a message to the current report.
 msgAdd :: MonadClientUI m => Text -> m ()
 msgAdd msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (_sreport sess) (toMsg msg)}
+  sess {_sreport = snocReport (_sreport sess) (toMsg $ toAttrLine msg)}
 
 -- | Add a prompt to the current report.
 promptAdd :: MonadClientUI m => Text -> m ()
@@ -410,5 +410,5 @@ defaultHistory configHistoryMax = liftIO $ do
   let curDate = MU.Text $ tshow $ utcToLocalTime timezone utcTime
   let emptyHist = emptyHistory configHistoryMax
   return $! addReport emptyHist timeZero
-         $ singletonReport
-         $ toMsg $ makeSentence ["Human history log started on", curDate]
+         $ singletonReport $ toMsg $ toAttrLine
+         $ makeSentence ["Human history log started on", curDate]

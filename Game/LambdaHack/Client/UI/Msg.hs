@@ -1,15 +1,16 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Client.UI.Msg
-  ( -- * AttrLine and Msg
-    Msg, toMsg, toPrompt
+  ( -- * AttrLine
+    AttrLine, toAttrLine, splitAttrLine
+    -- * Msg
+  , Msg, toMsg, toPrompt
     -- * Report
   , Report, emptyReport, nullReport, singletonReport, snocReport, consReport
-  , truncateReport, findInReport, lastMsgOfReport
+  , renderReport, findInReport, lastMsgOfReport
     -- * History
   , History, emptyHistory, addReport, lengthHistory, linesHistory
   , lastReportOfHistory, renderHistory, splitReportForHistory
-  , splitOverlay
   ) where
 
 import Prelude ()
@@ -19,26 +20,58 @@ import Game.LambdaHack.Common.Prelude
 import Data.Binary
 import Data.Binary.Orphans ()
 import Data.Char
+import qualified Data.Text as T
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.RingBuffer as RB
 import Game.LambdaHack.Common.Time
 
+-- * AttrLine
+
+type AttrLine = [Color.AttrChar]
+
+toAttrLine :: Text -> AttrLine
+toAttrLine = map (Color.AttrChar Color.defAttr) . T.unpack
+
+-- | Split a string into lines. Avoids ending the line with a character
+-- other than whitespace or punctuation. Space characters are removed
+-- from the start, but never from the end of lines. Newlines are respected.
+splitAttrLine :: X -> AttrLine -> [AttrLine]
+splitAttrLine w l =
+  concatMap (splitAttrPhrase w . dropWhile (isSpace . Color.acChar))
+  $ linesAttr l
+
+linesAttr :: AttrLine -> [AttrLine]
+linesAttr l | null l = []
+            | otherwise = h : if null t then [] else linesAttr (tail t)
+ where (h, t) = span ((/= '\n') . Color.acChar) l
+
+splitAttrPhrase :: X -> AttrLine -> [AttrLine]
+splitAttrPhrase w xs
+  | w >= length xs = [xs]  -- no problem, everything fits
+  | otherwise =
+      let (pre, post) = splitAt w xs
+          (ppre, ppost) = break ((== ' ') . Color.acChar) $ reverse pre
+          testPost = dropWhileEnd (isSpace . Color.acChar) ppost
+      in if null testPost
+         then pre : splitAttrPhrase w post
+         else reverse ppost : splitAttrPhrase w (reverse ppre ++ post)
+
 -- * Msg
 
--- | The type of a single message.
+-- | The type of a single game message.
 data Msg = Msg
-  { msgLine :: AttrLine
-  , msgHist :: Bool }
+  { msgLine :: AttrLine  -- ^ the colours and characters of the message
+  , msgHist :: Bool      -- ^ whether the message should be recorded in history
+  }
   deriving (Show, Eq, Generic)
 
 instance Binary Msg
 
-toMsg :: Text -> Msg
-toMsg t = Msg { msgLine = toAttrLine t
+toMsg :: AttrLine -> Msg
+toMsg l = Msg { msgLine = l
               , msgHist = True }
 
 toPrompt :: AttrLine -> Msg
@@ -47,7 +80,7 @@ toPrompt l = Msg { msgLine = l
 
 -- * Report
 
--- | The type of a set of messages to show at the screen at once.
+-- | The set of messages, with repetitions, to show at the screen at once.
 newtype Report = Report [(Msg, Int)]
   deriving (Show, Binary)
 
@@ -77,11 +110,17 @@ consReport m (Report ms) =
   let Report ms2 = snocReport (Report $ reverse ms) m
   in Report $ reverse ms2
 
+infixr 6 <+:>  -- matches Monoid.<>
+(<+:>) :: AttrLine -> AttrLine -> AttrLine
+(<+:>) [] l2 = l2
+(<+:>) l1 [] = l1
+(<+:>) l1 l2 = l1 ++ toAttrLine " " ++ l2
+
 -- | Render a report as a (possibly very long) 'AttrLine'.
 renderReport :: Report  -> AttrLine
 renderReport (Report []) = []
-renderReport (Report (xn : xs)) =
-  renderReport (Report xs) <+:> renderRepetition xn
+renderReport (Report (x : xs)) =
+  renderReport (Report xs) <+:> renderRepetition x
 
 renderRepetition :: (Msg, Int) -> AttrLine
 renderRepetition (s, 1) = msgLine s
@@ -95,35 +134,6 @@ lastMsgOfReport (Report rep) = case rep of
   [] -> ([], Report [])
   (lmsg, 1) : repRest -> (msgLine lmsg, Report repRest)
   (lmsg, n) : repRest -> (msgLine lmsg, Report $ (lmsg, n - 1) : repRest)
-
--- | Split a string into lines. Avoids ending the line with a character
--- other than whitespace or punctuation. Space characters are removed
--- from the start, but never from the end of lines. Newlines are respected.
-splitAttrLine :: X -> AttrLine -> [AttrLine]
-splitAttrLine w l =
-  concatMap (splitAttrLine' w . dropWhile (isSpace . Color.acChar))
-  $ linesAttr l
-
-linesAttr :: AttrLine -> [AttrLine]
-linesAttr l | null l = []
-            | otherwise = h : if null t
-                              then []
-                              else linesAttr (tail t)
- where (h, t) = span ((/= '\n') . Color.acChar) l
-
-splitAttrLine' :: X -> AttrLine -> [AttrLine]
-splitAttrLine' w xs
-  | w >= length xs = [xs]  -- no problem, everything fits
-  | otherwise =
-      let (pre, post) = splitAt w xs
-          (ppre, ppost) = break ((== ' ') . Color.acChar) $ reverse pre
-          testPost = dropWhileEnd (isSpace . Color.acChar) ppost
-      in if null testPost
-         then pre : splitAttrLine w post
-         else reverse ppost : splitAttrLine w (reverse ppre ++ post)
-
-truncateReport :: Report -> Overlay
-truncateReport r = toOverlayRaw [renderReport r]
 
 -- * History
 
@@ -181,24 +191,3 @@ renderHistory (History rb) =
         let turns = time `timeFitUp` timeTurn
         in toAttrLine (tshow turns <> ": ") ++ renderReport r
   in map truncateForHistory $ RB.toList rb
-
--- TODO: assert that ov0 nonempty and perhaps that kxs0 not too short
--- (or should we just keep the rest of the overlay unclickable?)
-splitOverlay :: X -> Y -> Report -> OKX -> Slideshow
-splitOverlay lxsize yspace report (ls0, kxs0) =
-  let rrep = renderReport report
-      msg = splitAttrLine lxsize rrep
-      msg0 = if yspace - length msg - 1 <= 0  -- all space taken by @msg@
-             then [rrep]  -- will display "$" (unless has EOLs)
-             else msg
-      len = length msg0
-      renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
-      zipRenumber = zipWith renumber [len..]
-      splitO ls kxs =
-        let (pre, post) = splitAt (yspace - 1) $ msg0 ++ ls
-        in if null post
-           then [(pre, zipRenumber kxs)]  -- all fits on one screen
-           else let (preX, postX) = splitAt (yspace - len - 1) kxs
-                in (pre, zipRenumber preX) : splitO post postX
-      okxs = splitO ls0 kxs0
-  in assert (not $ null okxs) $ toSlideshow okxs
