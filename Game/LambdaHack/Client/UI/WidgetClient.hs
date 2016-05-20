@@ -186,9 +186,7 @@ describeMainKeys = do
 animate :: MonadClientUI m => LevelId -> Animation -> m Frames
 animate arena anim = do
   report <- getReport
-  let topLineOnly = truncateReport report
-  baseFrame <- drawBaseFrame ColorFull arena
-  let basicFrame = overlayFrame topLineOnly $ Just baseFrame
+  basicFrame <- drawOverlay ColorFull False (truncateReport report) arena
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]

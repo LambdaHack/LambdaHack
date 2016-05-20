@@ -11,8 +11,8 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , ColorMode(..)
   , msgAdd, promptAdd, promptAddAttr, recordHistory
   , mapStartY, getReport, promptGetKey, promptGetInt
-  , getInitConfirms, getConfirms, getConfirmsKey
-  , displayFrame, displayActorStart, drawBaseFrame, drawOverlay
+  , getConfirms, getConfirmsKey
+  , displayFrame, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, addPressedKey
@@ -123,11 +123,12 @@ connFrontendFrontKey frontKeyKeys frontKeyFrame = do
 promptGetKey :: MonadClientUI m
              => ColorMode -> Overlay -> Bool -> [K.KM] -> m K.KM
 promptGetKey dm ov sfBlank frontKeyKeys = do
+  lid <- viewedLevel
   keyPressed <- anyKeyPressed
   lastPlayOld <- getsSession slastPlay
   km <- case lastPlayOld of
     km : kms | not keyPressed && km `K.elemOrNull` frontKeyKeys -> do
-      frontKeyFrame <- drawOverlay dm sfBlank ov
+      frontKeyFrame <- drawOverlay dm sfBlank ov lid
       displayFrame $ Just frontKeyFrame
       modifySession $ \sess -> sess {slastPlay = kms}
       Config{configRunStopMsgs} <- askConfig
@@ -138,10 +139,10 @@ promptGetKey dm ov sfBlank frontKeyKeys = do
       stopPlayBack
       discardPressedKey
       let ov2 = ov <> if keyPressed then toOverlay ["*interrupted*"] else mempty
-      frontKeyFrame <- drawOverlay dm sfBlank ov2
+      frontKeyFrame <- drawOverlay dm sfBlank ov2 lid
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     [] -> do
-      frontKeyFrame <- drawOverlay dm sfBlank ov
+      frontKeyFrame <- drawOverlay dm sfBlank ov lid
       connFrontendFrontKey frontKeyKeys frontKeyFrame
   (seqCurrent, seqPrevious, k) <- getsSession slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)
@@ -155,18 +156,6 @@ promptGetInt ov = do
                      : map (K.KM K.NoModifier)
                          (map (K.Char . Char.intToDigit) [0..9])
   promptGetKey ColorFull ov False frontKeyKeys
-
--- | Display a slideshow, awaiting confirmation for each slide
--- or not awaiting at all if there is only one.
-getInitConfirms :: MonadClientUI m
-                => ColorMode -> [K.KM] -> [K.KM] -> Slideshow -> m Bool
-getInitConfirms dm trueKeys falseKeys slides = do
-  case slideshow slides of
-    [ov] -> do
-      frame <- drawOverlay dm False ov
-      connFrontend $ FrontFrame frame
-      return True
-    _ -> getConfirms dm trueKeys falseKeys slides
 
 -- | Display a slideshow, awaiting confirmation for each slide
 -- and returning a boolean.
@@ -244,18 +233,13 @@ drawBaseFrame dm lid = do
   draw dm lid xhairPos tgtPos bfsmpath xhairDesc tgtDesc
        sselected saimMode sitemSel smarkVision smarkSmell swaitTimes
 
-drawBaseFrameViewed :: MonadClientUI m => ColorMode -> m SingleFrame
-drawBaseFrameViewed dm = do
-  lid <- viewedLevel
-  drawBaseFrame dm lid
-
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadClientUI m
-            => ColorMode -> Bool -> Overlay -> m SingleFrame
-drawOverlay dm sfBlank sfTop = do
+            => ColorMode -> Bool -> Overlay -> LevelId -> m SingleFrame
+drawOverlay dm sfBlank sfTop lid = do
   mbaseFrame <- if sfBlank
                 then return Nothing
-                else Just <$> drawBaseFrameViewed dm
+                else Just <$> drawBaseFrame dm lid
   return $! overlayFrame sfTop mbaseFrame
   -- TODO: here sfTop is possibly truncated wrt length
 

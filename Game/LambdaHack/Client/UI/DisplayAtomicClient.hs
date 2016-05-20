@@ -253,13 +253,12 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
     sdisplayNeeded <- getsSession sdisplayNeeded
     when sdisplayNeeded $ do
       -- Push the frame depicting the current level to the frame queue.
-      -- Only one screenful of the report is shown, the rest is ignored,
-      -- since the frames may be displayed during the enemy turn and so
-      -- we can't clear the prompts. In our turn, each screenful is displayed
-      -- and we need to confirm each page change (e.g., in 'getConfirms').
-      sls <- reportToSlideshow
-      let slide = head $ slideshow sls  -- only the first slide shown
-      frame <- drawOverlay ColorFull False slide
+      -- Only one line of the report is shown, as in animations,
+      -- because it may not be our turn, so we can't clear the message
+      -- to see what is underneath.
+      lid <- viewedLevel
+      report <- getReport
+      frame <- drawOverlay ColorFull False (truncateReport report) lid
       displayFrame (Just frame)
       modifySession $ \sess -> sess {sdisplayNeeded = False}
   UpdDiscover c iid _ _ _ -> discover c oldStateClient iid
