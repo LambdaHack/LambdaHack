@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.Msg
     Msg, toMsg, toPrompt
     -- * Report
   , Report, emptyReport, nullReport, singletonReport, snocReport, consReport
-  , splitReport, truncateReport, findInReport, lastMsgOfReport
+  , truncateReport, findInReport, lastMsgOfReport
     -- * History
   , History, emptyHistory, addReport, lengthHistory, linesHistory
   , lastReportOfHistory, renderHistory, splitReportForHistory
@@ -95,11 +95,6 @@ lastMsgOfReport (Report rep) = case rep of
   [] -> ([], Report [])
   (lmsg, 1) : repRest -> (msgLine lmsg, Report repRest)
   (lmsg, n) : repRest -> (msgLine lmsg, Report $ (lmsg, n - 1) : repRest)
-
--- | Split a messages into chunks that fit in one line.
--- We assume the width of the messages line is the same as of level map.
-splitReport :: X -> Report -> Overlay
-splitReport w r = toOverlayRaw $ splitAttrLine w $ renderReport r
 
 -- | Split a string into lines. Avoids ending the line with a character
 -- other than whitespace or punctuation. Space characters are removed
@@ -191,10 +186,10 @@ renderHistory (History rb) =
 -- (or should we just keep the rest of the overlay unclickable?)
 splitOverlayOKX :: X -> Y -> Report -> OKX -> SlideshowX
 splitOverlayOKX lxsize yspace report (ls0, kxs0) =
-  assert (not $ nullReport report) $
-  let msg = overlay $ splitReport lxsize report
+  let rrep = renderReport report
+      msg = splitAttrLine lxsize rrep
       msg0 = if yspace - length msg - 1 <= 0  -- all space taken by @msg@
-             then [renderReport report]  -- will display "$" (unless has EOLs)
+             then [rrep]  -- will display "$" (unless has EOLs)
              else msg
       len = length msg0
       renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))

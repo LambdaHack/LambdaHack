@@ -149,7 +149,7 @@ overlayToSlideshow overlay = do
   lid <- getArenaUI
   Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
   report <- getReport
-  let msg = splitReport lxsize report
+  let msg = undefined -- TODO: splitReport lxsize report
   return $! splitOverlay (lysize + 1) msg overlay
 
 reportToSlideshow :: MonadClientUI m => m Slideshow
