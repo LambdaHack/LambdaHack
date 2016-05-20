@@ -891,7 +891,7 @@ helpHuman cmdAction mstart = do
           mindex = findIndex (matchKeyOrSlot . fst) $ concat $ map snd $ slideshowX keyH
       return $! fromMaybe 0 mindex
   (ekm, pointer) <-
-    displayChoiceScreen True menuIxHelp keyH [K.spaceKM, K.escKM]
+    displayChoiceScreen ColorFull True menuIxHelp keyH [K.spaceKM, K.escKM]
   modifySession $ \sess -> sess {smenuIxHelp = pointer}
   case ekm of
     Left km -> case km `M.lookup` bcmdMap keyb of
@@ -969,7 +969,7 @@ mainMenuHuman cmdAction = do
   isNoConfirms <- isNoConfirmsGame
   -- TODO: pick the first game that was not yet won
   menuIxMain <- if isNoConfirms then return 4 else getsSession smenuIxMain
-  (ekm, pointer) <- displayChoiceScreen True menuIxMain (menuToSlideshowX (ov, kyxs)) []
+  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxMain (menuToSlideshowX (ov, kyxs)) []
   modifySession $ \sess -> sess {smenuIxMain = pointer}
   case ekm of
     Left km -> case km `lookup` kds of

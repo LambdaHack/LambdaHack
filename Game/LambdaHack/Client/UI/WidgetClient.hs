@@ -58,9 +58,9 @@ displayConfirm dm trueKeys falseKeys prompt = do
   return b
 
 displayChoiceScreen :: forall m . MonadClientUI m
-                    => Bool -> Int -> SlideshowX -> [K.KM]
+                    => ColorMode -> Bool -> Int -> SlideshowX -> [K.KM]
                     -> m (Either K.KM SlotChar, Int)
-displayChoiceScreen sfBlank pointer0 frsX extraKeys = do
+displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
   -- We don't create keys from slots, so they have to be @in extraKeys@.
   let frs = slideshowX frsX
       keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) frs
@@ -133,7 +133,7 @@ displayChoiceScreen sfBlank pointer0 frsX extraKeys = do
                   _ | ikm `K.elemOrNull` keys ->
                     return (Left ikm, pointer)
                   _ -> assert `failure` "unknown key" `twith` ikm
-          pkm <- promptGetKey ColorFull ov1 sfBlank legalKeys
+          pkm <- promptGetKey dm ov1 sfBlank legalKeys
           interpretKey pkm
   page pointer0
 

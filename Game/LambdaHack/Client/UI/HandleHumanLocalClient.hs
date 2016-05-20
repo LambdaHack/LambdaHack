@@ -521,7 +521,7 @@ historyHuman = do
   let displayAllHistory = do
         menuIxHistory <- getsSession smenuIxHistory
         (ekm, pointer) <-
-          displayChoiceScreen True menuIxHistory okxs [K.spaceKM, K.escKM]
+          displayChoiceScreen ColorFull True menuIxHistory okxs [K.spaceKM, K.escKM]
         modifySession $ \sess -> sess {smenuIxHistory = pointer}
         case ekm of
           Left km | km `elem` [K.spaceKM, K.escKM] ->
@@ -628,7 +628,7 @@ settingsMenuHuman cmdAction = do
       kyxs = catMaybes mkyxs
       ov = map toAttrLine menuOvLines
   menuIxSettings <- getsSession smenuIxSettings
-  (ekm, pointer) <- displayChoiceScreen True menuIxSettings (menuToSlideshowX (ov, kyxs)) []
+  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxSettings (menuToSlideshowX (ov, kyxs)) []
   modifySession $ \sess -> sess {smenuIxSettings = pointer}
   case ekm of
     Left km -> case km `lookup` kds of
