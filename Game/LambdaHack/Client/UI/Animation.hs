@@ -14,7 +14,7 @@ import Data.Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
-import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -28,7 +28,7 @@ newtype Animation = Animation [AnimationDiff]
 
 -- | Render animations on top of a screen frame.
 renderAnim :: SingleFrame -> Animation -> Frames
-renderAnim basicFrame@SingleFrame{sfLevel = levelOld, ..} (Animation anim) =
+renderAnim basicFrame@SingleFrame{singleFrame = levelOld, ..} (Animation anim) =
   let modifyFrame :: AnimationDiff -> Maybe SingleFrame
       modifyFrame am =
         let fLine y lineOld =
@@ -37,10 +37,9 @@ renderAnim basicFrame@SingleFrame{sfLevel = levelOld, ..} (Animation anim) =
                         !ac = EM.findWithDefault acOld pos am
                     in ac : l
               in foldl' f [] $ reverse $ zip [0..] lineOld
-            sfLevel =  -- fully evaluated inside
+            singleFrame =  -- fully evaluated inside
               let f l (y, lineOld) = let !line = fLine y lineOld in line : l
-              in toOverlayRaw
-                 $ foldl' f [] (reverse $ zip [0..] $ overlay levelOld)
+              in foldl' f [] (reverse $ zip [0..] levelOld)
         in Just SingleFrame{..}  -- a thunk within Just
       modifyFrames :: (AnimationDiff, Frames) -> AnimationDiff
                    -> (AnimationDiff, Frames)

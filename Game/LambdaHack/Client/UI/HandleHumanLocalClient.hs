@@ -55,6 +55,7 @@ import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
+import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
@@ -532,8 +533,7 @@ historyHuman = do
         let timeReport = case drop histSlot histLines of
               [] -> assert `failure` histSlot
               tR : _ -> tR
-            (tturns, rep) = splitReportForHistory lxsize timeReport
-            ov0 = toOverlayRaw rep
+            (tturns, ov0) = splitReportForHistory lxsize timeReport
             -- TODO: print over history, not over dungeon;
             -- expand this history item, not switch views completely;
             prompt = toAttrLine "The full past message at time "

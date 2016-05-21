@@ -20,6 +20,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.DrawClient
+import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
@@ -27,6 +28,7 @@ import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
+import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
@@ -109,7 +111,7 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                 let (xs1, xsRest) = splitAt x1 xs
                     (xs2, xs3) = splitAt (x2 - x1) xsRest
                 in xs1 ++ map greyBG xs2 ++ xs3
-              ov1 = updateOverlayLine y drawHighlight $ toOverlayRaw ov
+              ov1 = updateOverlayLine y drawHighlight ov
               ignoreKey = page pointer
               pageLen = length kyxs
               interpretKey :: K.KM -> m (Either K.KM SlotChar, Int)
@@ -199,7 +201,7 @@ describeMainKeys = do
 animate :: MonadClientUI m => LevelId -> Animation -> m Frames
 animate arena anim = do
   report <- getReport
-  let truncRep = toOverlayRaw [renderReport report]
+  let truncRep = [renderReport report]
   basicFrame <- drawOverlay ColorFull False truncRep arena
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $! if fromMaybe False snoAnim

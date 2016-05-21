@@ -13,8 +13,8 @@ import Data.Char (chr, ord)
 import qualified System.IO as SIO
 
 import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
-import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Point
@@ -47,8 +47,8 @@ shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 -- | Output to the screen via the frontend.
 display :: SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display SingleFrame{sfLevel} =
-  let bs = map (BS.pack . map Color.acChar) (overlay sfLevel) ++ [BS.empty]
+display SingleFrame{singleFrame} =
+  let bs = map (BS.pack . map Color.acChar) singleFrame ++ [BS.empty]
   in mapM_ BS.putStrLn bs
 
 keyTranslate :: Char -> K.KM

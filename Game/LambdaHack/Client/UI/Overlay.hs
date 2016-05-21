@@ -1,26 +1,20 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
--- | Screen overlays and frames.
+-- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
-  ( tmoreMsg, tendMsg, tyesnoMsg, moreMsg, endMsg, yesnoMsg
-  , Overlay(overlay), toOverlayRaw, toOverlay
-  , updateOverlayLine, itemDesc
-  , SingleFrame(..), Frames, overlayFrame
-  , Slideshow(slideshow), toSlideshow, menuToSlideshow, textsToSlideshow
-  , KYX, OKX, keyOfEKM
-  , splitOverlay
+  ( tmoreMsg, tendMsg, tyesnoMsg
+    -- * AttrLine
+  , AttrLine, toAttrLine, splitAttrLine, itemDesc
+    -- * Overlay
+  , Overlay, updateOverlayLine
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Data.Char
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.ItemSlot
-import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.UI.Msg
-import Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
@@ -29,50 +23,45 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
--- tmp, until help in colour
 tmoreMsg :: Text
 tmoreMsg = "--more--  "
 
--- tmp, until help in colour
 tendMsg :: Text
 tendMsg = "--end--  "
 
 tyesnoMsg :: Text
 tyesnoMsg = "[y, n, ESC]"
 
--- | The \"press something to see more\" mark.
-moreMsg :: AttrLine
-moreMsg = toAttrLine "--more--  "
+-- * AttrLine
 
--- | The \"end of screenfuls of text\" mark.
-endMsg :: AttrLine
-endMsg = toAttrLine"--end--  "
+type AttrLine = [Color.AttrChar]
 
--- | The confirmation request message.
-yesnoMsg :: AttrLine
-yesnoMsg = toAttrLine "[y, n, ESC]"
+toAttrLine :: Text -> AttrLine
+toAttrLine = map (Color.AttrChar Color.defAttr) . T.unpack
 
--- | A series of screen lines that either fit the width of the screen
--- or are intended for truncation when displayed. The length of overlay
--- may exceed the length of the screen, unlike in @SingleFrame@.
-newtype Overlay = Overlay {overlay :: [AttrLine]}
-  deriving (Show, Eq, Monoid)
+-- | Split a string into lines. Avoids ending the line with a character
+-- other than whitespace or punctuation. Space characters are removed
+-- from the start, but never from the end of lines. Newlines are respected.
+splitAttrLine :: X -> AttrLine -> [AttrLine]
+splitAttrLine w l =
+  concatMap (splitAttrPhrase w . dropWhile (isSpace . Color.acChar))
+  $ linesAttr l
 
--- TODO: get rid of
-toOverlayRaw :: [AttrLine] -> Overlay
-toOverlayRaw = Overlay
+linesAttr :: AttrLine -> [AttrLine]
+linesAttr l | null l = []
+            | otherwise = h : if null t then [] else linesAttr (tail t)
+ where (h, t) = span ((/= '\n') . Color.acChar) l
 
-toOverlay :: [Text] -> Overlay
-toOverlay = Overlay . map toAttrLine
-
--- @f@ should not enlarge the line beyond screen width.
-updateOverlayLine :: Int -> (AttrLine -> AttrLine) -> Overlay -> Overlay
-updateOverlayLine n f Overlay{overlay} =
-  let upd k (l : ls) = if k == 0
-                       then f l : ls
-                       else l : upd (k - 1) ls
-      upd _ [] = []
-  in Overlay $ upd n overlay
+splitAttrPhrase :: X -> AttrLine -> [AttrLine]
+splitAttrPhrase w xs
+  | w >= length xs = [xs]  -- no problem, everything fits
+  | otherwise =
+      let (pre, post) = splitAt w xs
+          (ppre, ppost) = break ((== ' ') . Color.acChar) $ reverse pre
+          testPost = dropWhileEnd (isSpace . Color.acChar) ppost
+      in if null testPost
+         then pre : splitAttrPhrase w post
+         else reverse ppost : splitAttrPhrase w (reverse ppre ++ post)
 
 itemDesc :: CStore -> Time -> ItemFull -> AttrLine
 itemDesc c localTime itemFull =
@@ -98,103 +87,18 @@ itemDesc c localTime itemFull =
         <+> makeSentence ["First found on level", MU.Text $ tshow ln]
   in colorSymbol : toAttrLine blurb
 
--- | An overlay that fits on the screen (or is meant to be truncated on display)
--- and is padded to fill the whole screen
--- and is displayed as a single game screen frame.
-newtype SingleFrame = SingleFrame { sfLevel :: Overlay }
-  deriving (Eq, Show)
+-- * Overlay
 
--- | Sequences of screen frames, including delays.
-type Frames = [Maybe SingleFrame]
+-- | A series of screen lines that either fit the width of the screen
+-- or are intended for truncation when displayed. The length of overlay
+-- may exceed the length of the screen, unlike in @SingleFrame@.
+type Overlay = [AttrLine]
 
--- | Overlays with a given overlay either the top line and level map area
--- of a screen frame or the whole area of a completely empty screen frame.
-overlayFrame :: Overlay -> Maybe SingleFrame -> SingleFrame
-overlayFrame sfTop msf =
-  let lxsize = fst normalLevelBound + 1  -- TODO
-      lysize = snd normalLevelBound + 1
-      emptyLine = toAttrLine $ T.replicate lxsize " "
-      canvasLength = if isNothing msf then lysize + 3 else lysize + 1
-      canvas = maybe (replicate canvasLength emptyLine)
-                     (\sf -> overlay (sfLevel sf))
-                     msf
-      topTrunc = overlay sfTop
-      topLayer = if length topTrunc <= canvasLength
-                 then topTrunc
-                 else take (canvasLength - 1) topTrunc
-                      ++ overlay (toOverlay ["--a portion of the text trimmed--"])
-      f layerLine canvasLine =
-        let truncated = truncateAttrLine lxsize layerLine
-        in truncated ++ drop (length truncated) canvasLine
-      picture = zipWith f topLayer canvas
-      newLevel = picture ++ drop (length picture) canvas
-  in SingleFrame $ toOverlayRaw newLevel
-
--- | Add a space at the message end, for display overlayed over the level map.
--- Also trim (do not wrap!) too long lines.
-truncateAttrLine :: X -> AttrLine -> AttrLine
-truncateAttrLine w xs =
-  case compare w (length xs) of
-    LT -> let discarded = drop w xs
-          in if all ((== ' ') . acChar) discarded
-             then take w xs
-             else take (w - 1) xs ++ [AttrChar (Attr BrBlack defBG) '$']
-    EQ -> xs
-    GT -> if null xs || acChar (last xs) == ' '
-          then xs
-          else xs ++ [AttrChar Color.defAttr ' ']
-
-type KYX = (Either K.KM SlotChar, (Y, X, X))
-
--- Neither list may be empty.
-type OKX = ([AttrLine], [KYX])
-
--- May be empty, but nothing inside may be empty.
-newtype Slideshow = Slideshow {slideshow :: [OKX]}
-  deriving (Show, Eq, Monoid)
-
-toSlideshow :: [OKX] -> Slideshow
-toSlideshow okxs = Slideshow $ addFooters okxs
- where
-  addFooters [] = assert `failure` okxs
-  addFooters [(als, kxs)] =
-    [( als ++ [endMsg]
-     , kxs ++ [(Left K.escKM, (length als, 0, 8))] )]
-  addFooters ((als, kxs) : rest) =
-    ( als ++ [moreMsg]
-    , kxs ++ [(Left K.pgdnKM, (length als, 0, 8))] )
-    : addFooters rest
-
-menuToSlideshow :: OKX -> Slideshow
-menuToSlideshow (als, kxs) =
-  assert (not (null als || null kxs)) $ Slideshow [(als, kxs)]
-
-textsToSlideshow :: [[Text]] -> Slideshow
-textsToSlideshow = toSlideshow . map (\t -> (map toAttrLine t, []))
-
-keyOfEKM :: Int -> Either K.KM SlotChar -> Maybe K.KM
-keyOfEKM _ (Left km) = Just km
-keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
-  Just $ K.KM K.NoModifier $ K.Char slotChar
-keyOfEKM _ _ = Nothing
-
--- TODO: assert that ov0 nonempty and perhaps that kxs0 not too short
--- (or should we just keep the rest of the overlay unclickable?)
-splitOverlay :: X -> Y -> Report -> OKX -> Slideshow
-splitOverlay lxsize yspace report (ls0, kxs0) =
-  let rrep = renderReport report
-      msg = splitAttrLine lxsize rrep
-      msg0 = if yspace - length msg - 1 <= 0  -- all space taken by @msg@
-             then [rrep]  -- will display "$" (unless has EOLs)
-             else msg
-      len = length msg0
-      renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
-      zipRenumber = zipWith renumber [len..]
-      splitO ls kxs =
-        let (pre, post) = splitAt (yspace - 1) $ msg0 ++ ls
-        in if null post
-           then [(pre, zipRenumber kxs)]  -- all fits on one screen
-           else let (preX, postX) = splitAt (yspace - len - 1) kxs
-                in (pre, zipRenumber preX) : splitO post postX
-      okxs = splitO ls0 kxs0
-  in assert (not $ null okxs) $ toSlideshow okxs
+-- @f@ should not enlarge the line beyond screen width.
+updateOverlayLine :: Int -> (AttrLine -> AttrLine) -> Overlay -> Overlay
+updateOverlayLine n f ov =
+  let upd k (l : ls) = if k == 0
+                       then f l : ls
+                       else l : upd (k - 1) ls
+      upd _ [] = []
+  in upd n ov

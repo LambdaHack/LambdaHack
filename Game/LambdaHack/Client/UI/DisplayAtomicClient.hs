@@ -258,7 +258,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
       -- to see what is underneath.
       lid <- viewedLevel
       report <- getReport
-      let truncRep = toOverlayRaw [renderReport report]
+      let truncRep = [renderReport report]
       frame <- drawOverlay ColorFull False truncRep lid
       displayFrame (Just frame)
       modifySession $ \sess -> sess {sdisplayNeeded = False}
@@ -580,7 +580,7 @@ quitFactionUI fid mbody toSt = do
               promptAdd itemMsg
               io <- itemOverlay CGround (blid b) bag
               -- TODO: treat as menu and display item description
-              sli <- overlayToSlideshow $ toOverlayRaw $ fst io
+              sli <- overlayToSlideshow $ fst io
               return (sli, tot)
       (itemSlides, total) <- case mbody of
         Just b | fid == side -> bodyToItemSlides b

@@ -17,8 +17,8 @@ import qualified Data.Text as T
 import Graphics.UI.Gtk hiding (Point)
 
 import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
-import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Point
@@ -227,11 +227,11 @@ setTo tb defAttr lx (ly, attr:attrs) = do
   setIter attr 1 attrs
 
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
-evalFrame FrontendSession{stags} SingleFrame{sfLevel} =
-  let levelChar = unlines $ map (map Color.acChar) $ overlay sfLevel
+evalFrame FrontendSession{stags} SingleFrame{singleFrame} =
+  let levelChar = unlines $ map (map Color.acChar) singleFrame
       gfChar = BS.pack $ init levelChar
       -- Strict version of @map (map ((stags M.!) . fst)) sfLeve
-      gfAttr  = reverse $ foldl' ff [] $ overlay sfLevel
+      gfAttr  = reverse $ foldl' ff [] singleFrame
       ff ll l = reverse (foldl' f [] l) : ll
       f l Color.AttrChar{acAttr=Color.Attr{..}} =
         let (fg1, bg1) = case bg of

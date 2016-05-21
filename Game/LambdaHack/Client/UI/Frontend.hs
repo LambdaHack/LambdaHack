@@ -20,10 +20,10 @@ import qualified Control.Concurrent.STM as STM
 import Data.IORef
 
 import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Client.UI.Frame
 import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
 import Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Std as Std
-import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Point
 

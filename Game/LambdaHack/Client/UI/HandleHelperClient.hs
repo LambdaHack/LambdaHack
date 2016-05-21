@@ -16,8 +16,8 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
-import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
+import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -110,7 +110,7 @@ pickNumber askNumber kAll = do
                       <> "), ESC]"
         promptAdd kprompt
         (al, _) : _ <- slideshow <$> reportToSlideshow
-        kkm <- promptGetInt $ toOverlayRaw al
+        kkm <- promptGetInt al
         case K.key kkm of
           K.Char l | kDefault == kAll -> gatherNumber $ Char.digitToInt l
           K.Char l -> gatherNumber $ kDefault * 10 + Char.digitToInt l

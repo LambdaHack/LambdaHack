@@ -131,6 +131,7 @@ library
                       Game.LambdaHack.Client.UI.Content.KeyKind
                       Game.LambdaHack.Client.UI.DrawClient,
                       Game.LambdaHack.Client.UI.DisplayAtomicClient,
+                      Game.LambdaHack.Client.UI.Frame,
                       Game.LambdaHack.Client.UI.Frontend,
                       Game.LambdaHack.Client.UI.Frontend.Chosen,
                       Game.LambdaHack.Client.UI.Frontend.Common
@@ -147,6 +148,7 @@ library
                       Game.LambdaHack.Client.UI.Overlay,
                       Game.LambdaHack.Client.UI.RunClient,
                       Game.LambdaHack.Client.UI.SessionUI,
+                      Game.LambdaHack.Client.UI.Slideshow,
                       Game.LambdaHack.Client.UI.WidgetClient,
                       Game.LambdaHack.Common.Ability,
                       Game.LambdaHack.Common.Actor,

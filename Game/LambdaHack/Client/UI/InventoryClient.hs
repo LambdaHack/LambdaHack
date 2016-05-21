@@ -26,9 +26,9 @@ import Game.LambdaHack.Client.UI.HandleHelperClient
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Client.UI.WidgetClient
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
@@ -527,7 +527,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   Level{lysize} <- getLevel arena
   ekm <- if null $ fst okx
          then
-           Left <$> displayChoiceLine (toOverlayRaw $ fst okx) itemKeys
+           Left <$> displayChoiceLine (fst okx) itemKeys
          else do
            lastSlot <- getsClient slastSlot
            let lastPointer = case findIndex ((== Right lastSlot) . fst)

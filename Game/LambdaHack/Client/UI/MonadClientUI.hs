@@ -40,11 +40,13 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.DrawClient
+import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
+import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -137,7 +139,7 @@ promptGetKey dm ov sfBlank frontKeyKeys = do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
       stopPlayBack
       discardPressedKey
-      let ov2 = ov <> if keyPressed then toOverlay ["*interrupted*"] else mempty
+      let ov2 = ov <> if keyPressed then [toAttrLine "*interrupted*"] else mempty
       frontKeyFrame <- drawOverlay dm sfBlank ov2 lid
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     [] -> do

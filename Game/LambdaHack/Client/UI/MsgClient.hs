@@ -21,6 +21,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
+import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
@@ -132,7 +133,7 @@ itemOverlay c lid bag = do
                   in take (T.length label + 1) line
                      ++ [colorSymbol]
                      ++ drop (T.length label + 2) line
-                ov = overlay $ updateOverlayLine 0 insertSymbol $ toOverlay [phrase]
+                ov = updateOverlayLine 0 insertSymbol [toAttrLine phrase]
                 ekm = Right l
                 kx = (ekm, (undefined, 0, T.length phrase))
             in Just (ov, kx)
@@ -148,7 +149,7 @@ overlayToSlideshow ov = do
   lid <- getArenaUI
   Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
   report <- getReport
-  return $! splitOverlay lxsize (lysize + 1) report (overlay ov, [])
+  return $! splitOverlay lxsize (lysize + 1) report (ov, [])
 
 reportToSlideshow :: MonadClientUI m => m Slideshow
 reportToSlideshow = overlayToSlideshow mempty

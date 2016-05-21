@@ -39,8 +39,8 @@ import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgClient
-import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
+import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
@@ -100,11 +100,11 @@ humanCommand = do
         over <- case slideshow sli of
           [sLast] ->
             -- Display the last generated slide while waiting for next key.
-            return $! toOverlayRaw $ fst $ sLast
+            return $! fst $ sLast
           _ -> do
             -- Show, one by one, all slides, awaiting confirmation for each.
             void $ getConfirms ColorFull [K.spaceKM] [K.escKM] sli
-            return $! toOverlay []
+            return []
         (seqCurrent, seqPrevious, k) <- getsSession slastRecord
         let slastRecord | k == 0 = ([], seqCurrent, 0)
                         | otherwise = ([], seqCurrent ++ seqPrevious, k - 1)

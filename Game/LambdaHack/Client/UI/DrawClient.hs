@@ -18,7 +18,7 @@ import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.Msg
+import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -243,9 +243,9 @@ draw dm drawnLevelId xhairPos tgtPos bfsmpathRaw
         let f l x = let ac = dis $ Point x y in ac : l
         in foldl' f [] [lxsize-1,lxsize-2..0]
       emptyLine = toAttrLine $ T.replicate lxsize " "
-      sfLevel = toOverlayRaw $ emptyLine :
+      singleFrame =
         let f l y = let !line = fLine y in line : l
-        in foldl' f [] [lysize-1,lysize-2..0] ++ sfBottom
+        in emptyLine : foldl' f [] [lysize-1,lysize-2..0] ++ sfBottom
   return $! SingleFrame{..}
 
 -- Comfortably accomodates 3-digit level numbers and 25-character

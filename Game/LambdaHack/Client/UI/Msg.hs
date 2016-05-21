@@ -1,16 +1,14 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Client.UI.Msg
-  ( -- * AttrLine
-    AttrLine, toAttrLine, splitAttrLine
-    -- * Msg
-  , Msg, toMsg, toPrompt
+  ( -- * Msg
+    Msg, toMsg, toPrompt
     -- * Report
   , Report, emptyReport, nullReport, singletonReport, snocReport, consReport
   , renderReport, findInReport, lastMsgOfReport
     -- * History
   , History, emptyHistory, addReport, lengthHistory, linesHistory
-  , lastReportOfHistory, renderHistory, splitReportForHistory
+  , lastReportOfHistory, splitReportForHistory, renderHistory
   ) where
 
 import Prelude ()
@@ -19,45 +17,12 @@ import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
 import Data.Binary.Orphans ()
-import Data.Char
-import qualified Data.Text as T
 import GHC.Generics (Generic)
 
-import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.RingBuffer as RB
 import Game.LambdaHack.Common.Time
-
--- * AttrLine
-
-type AttrLine = [Color.AttrChar]
-
-toAttrLine :: Text -> AttrLine
-toAttrLine = map (Color.AttrChar Color.defAttr) . T.unpack
-
--- | Split a string into lines. Avoids ending the line with a character
--- other than whitespace or punctuation. Space characters are removed
--- from the start, but never from the end of lines. Newlines are respected.
-splitAttrLine :: X -> AttrLine -> [AttrLine]
-splitAttrLine w l =
-  concatMap (splitAttrPhrase w . dropWhile (isSpace . Color.acChar))
-  $ linesAttr l
-
-linesAttr :: AttrLine -> [AttrLine]
-linesAttr l | null l = []
-            | otherwise = h : if null t then [] else linesAttr (tail t)
- where (h, t) = span ((/= '\n') . Color.acChar) l
-
-splitAttrPhrase :: X -> AttrLine -> [AttrLine]
-splitAttrPhrase w xs
-  | w >= length xs = [xs]  -- no problem, everything fits
-  | otherwise =
-      let (pre, post) = splitAt w xs
-          (ppre, ppost) = break ((== ' ') . Color.acChar) $ reverse pre
-          testPost = dropWhileEnd (isSpace . Color.acChar) ppost
-      in if null testPost
-         then pre : splitAttrPhrase w post
-         else reverse ppost : splitAttrPhrase w (reverse ppre ++ post)
 
 -- * Msg
 
@@ -183,7 +148,7 @@ splitReportForHistory w (time, r) =
   in (tturns, rep)
 
 -- | Render history as many lines of text, wrapping if necessary.
-renderHistory :: History -> [AttrLine]
+renderHistory :: History -> Overlay
 renderHistory (History rb) =
   let truncateForHistory (time, r) =
         -- TODO: display time fractions with granularity enough to differ
