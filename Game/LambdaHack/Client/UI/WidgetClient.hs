@@ -16,7 +16,7 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.MonadClient hiding (liftIO)
+import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Config

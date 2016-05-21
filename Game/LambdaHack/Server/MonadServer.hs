@@ -58,7 +58,7 @@ class MonadStateRead m => MonadServer m where
   getsServer     :: (StateServer -> a) -> m a
   modifyServer   :: (StateServer -> StateServer) -> m ()
   putServer      :: StateServer -> m ()
-  -- We do not provide a MonadIO instance, so that outside of Action/
+  -- We do not provide a MonadIO instance, so that outside
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO         :: IO a -> m a
   saveChanServer :: m (Save.ChanSave (State, StateServer))

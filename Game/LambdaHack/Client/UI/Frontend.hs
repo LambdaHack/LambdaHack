@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.Frontend
     -- * Re-exported part of the raw frontend
   , frontendName
     -- * Derived operations
-  , chanFrontend
+  , chanFrontendIO
   ) where
 
 import Prelude ()
@@ -136,8 +136,8 @@ frontendName = Chosen.frontendName
 nullStartup :: IO RawFrontend
 nullStartup = createRawFrontend (\_ -> return ()) (return ())
 
-chanFrontend :: DebugModeCli -> IO ChanFrontend
-chanFrontend sdebugCli = do
+chanFrontendIO :: DebugModeCli -> IO ChanFrontend
+chanFrontendIO sdebugCli = do
   let startup | sfrontendNull sdebugCli = nullStartup
               | sfrontendStd sdebugCli = Std.startup sdebugCli
               | otherwise = Chosen.startup sdebugCli

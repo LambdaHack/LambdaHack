@@ -2,10 +2,8 @@
 -- | Client monad for interacting with a human through UI.
 module Game.LambdaHack.Client.UI.MonadClientUI
   ( -- * Client UI monad
-    MonadClientUI( getSession
-                 , getsSession
-                 , modifySession
-                 , putSession
+    MonadClientUI( getSession, getsSession, modifySession, putSession
+                 , liftIO  -- exposed only to be implemented, not used,
                  )
     -- * Display and key input
   , msgAdd, promptAdd, promptAddAttr, recordHistory
@@ -14,7 +12,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
     -- * Assorted primitives
   , stopPlayBack, askConfig, askBinding
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, addPressedKey
-  , frontendShutdown
+  , frontendShutdown, chanFrontend
   , scoreToSlideshow, defaultHistory
   , getLeaderUI, getArenaUI, viewedLevel
   , targetDescLeader, targetDescXhair
@@ -35,12 +33,13 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.CommonClient
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend
+import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
@@ -48,6 +47,7 @@ import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.ItemDescription
@@ -70,6 +70,7 @@ class MonadClient m => MonadClientUI m where
   getsSession  :: (SessionUI -> a) -> m a
   modifySession :: (SessionUI -> SessionUI) -> m ()
   putSession  :: SessionUI -> m ()
+  liftIO        :: IO a -> m a
 
 getReport :: MonadClientUI m => m Report
 getReport = do
@@ -246,6 +247,9 @@ addPressedKey = connFrontend . FrontAdd
 frontendShutdown :: MonadClientUI m => m ()
 frontendShutdown = connFrontend FrontShutdown
 
+chanFrontend :: MonadClientUI m => DebugModeCli -> m ChanFrontend
+chanFrontend = liftIO . Frontend.chanFrontendIO
+
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
   fid <- getsClient sside
@@ -404,7 +408,7 @@ splitOKX y okx = do
   report <- getReport
   return $! splitOverlay lxsize y report okx
 
-defaultHistory :: MonadClient m => Int -> m History
+defaultHistory :: MonadClientUI m => Int -> m History
 defaultHistory configHistoryMax = liftIO $ do
   utcTime <- getCurrentTime
   timezone <- getTimeZone utcTime

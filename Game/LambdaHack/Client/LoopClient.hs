@@ -9,13 +9,10 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
-import System.FilePath
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.FileClient
 import Game.LambdaHack.Client.HandleResponseClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
@@ -31,30 +28,10 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
-import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-
-restoreGame :: (Binary sess, MonadClient m)
-            => m (Maybe (State, StateClient, sess))
-restoreGame = do
-  bench <- getsClient $ sbenchmark . sdebugCli
-  if bench then return Nothing
-  else do
-    Kind.COps{corule} <- getsState scops
-    let stdRuleset = Kind.stdRuleset corule
-        pathsDataFile = rpathsDataFile stdRuleset
-        cfgUIName = rcfgUIName stdRuleset
-    side <- getsClient sside
-    isAI <- getsClient sisAI
-    prefix <- getsClient $ ssavePrefixCli . sdebugCli
-    let copies = [( "GameDefinition" </> cfgUIName <.> "default"
-                  , cfgUIName <.> "ini" )]
-        name = prefix <.> saveName side isAI
-    liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF
-                              name copies pathsDataFile
 
 -- | The main game loop for an AI client.
 loopAI :: ( MonadClientSetup m
@@ -69,7 +46,7 @@ loopAI sdebugCli = do
   -- and sper are empty.
   cops <- getsState scops
   modifyClient $ \cli -> cli {sdebugCli}
-  restoredG <- restoreGame
+  restoredG <- tryRestore
   restored <- case restoredG of
     Just (s, cli, ()) | not $ snewGameCli sdebugCli -> do  -- Restore game.
       let sCops = updateCOps (const cops) s
@@ -112,13 +89,13 @@ loopUI copsClient sconfig sdebugCli = do
     cli { sisAI = False
         , sxhair = TVector $ Vector 1 1 }  -- a step south-east, less alarming
   -- Start the frontend.
-  schanF <- liftIO $ chanFrontend sdebugCli
+  schanF <- chanFrontend sdebugCli
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
   modifyClient $ \cli -> cli {sdebugCli}
-  restoredG <- restoreGame
+  restoredG <- tryRestore
   restored <- case restoredG of
     Just (s, cli, sess) | not $ snewGameCli sdebugCli -> do  -- Restore game.
       let sCops = updateCOps (const cops) s

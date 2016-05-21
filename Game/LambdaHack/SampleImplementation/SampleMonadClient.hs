@@ -111,6 +111,7 @@ instance MonadClientUI (CliImplementation SessionUI resp req) where
   putSession   s = CliImplementation $ state $ \cliS ->
     let newCliS = cliS {cliSession = s}
     in newCliS `seq` ((), newCliS)
+  liftIO         = CliImplementation . IO.liftIO
 
 instance MonadClientReadResponse resp (CliImplementation sess resp req) where
   receiveResponse     = CliImplementation $ do

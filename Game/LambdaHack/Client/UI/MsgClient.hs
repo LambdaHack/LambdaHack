@@ -16,7 +16,7 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.ItemSlot
-import Game.LambdaHack.Client.MonadClient hiding (liftIO)
+import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Overlay
