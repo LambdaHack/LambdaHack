@@ -24,8 +24,9 @@ newtype SingleFrame = SingleFrame {singleFrame :: Overlay}
 -- | Sequences of screen frames, including delays.
 type Frames = [Maybe SingleFrame]
 
--- | Overlays with a given overlay either the top line and level map area
--- of a screen frame or the whole area of a completely empty screen frame.
+-- | Overlays with a given overlay either the complete game map and UI screen
+-- or the empty screen frame.
+-- For each line of the overlay, if it's too long, it's truncated.
 overlayFrame :: Overlay -> Maybe SingleFrame -> SingleFrame
 overlayFrame topTrunc msf =
   let lxsize = fst normalLevelBound + 1  -- TODO

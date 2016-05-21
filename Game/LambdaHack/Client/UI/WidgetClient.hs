@@ -40,14 +40,15 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 
 -- | Draw the current level with the overlay on top.
+-- If the overlay is high long, it's truncated.
+-- Similarly, for each line of the overlay, if it's too long, it's truncated.
 drawOverlay :: MonadClientUI m
             => ColorMode -> Bool -> Overlay -> LevelId -> m SingleFrame
-drawOverlay dm sfBlank sfTop lid = do
+drawOverlay dm sfBlank topTrunc lid = do
   mbaseFrame <- if sfBlank
                 then return Nothing
                 else Just <$> drawBaseFrame dm lid
-  return $! overlayFrame sfTop mbaseFrame
-  -- TODO: here sfTop is possibly truncated wrt length
+  return $! overlayFrame topTrunc mbaseFrame
 
 promptGetKey :: MonadClientUI m
              => ColorMode -> Overlay -> Bool -> [K.KM] -> m K.KM
@@ -67,7 +68,9 @@ promptGetKey dm ov sfBlank frontKeyKeys = do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
       stopPlayBack
       discardPressedKey
-      let ov2 = ov <> if keyPressed then [toAttrLine "*interrupted*"] else mempty
+      let ov2 = ov <> if keyPressed
+                      then [toAttrLine "*interrupted*"]
+                      else mempty
       frontKeyFrame <- drawOverlay dm sfBlank ov2 lid
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     [] -> do
@@ -86,10 +89,8 @@ promptGetInt ov = do
                          (map (K.Char . Char.intToDigit) [0..9])
   promptGetKey ColorFull ov False frontKeyKeys
 
--- | The prompt is shown after the current message at the top of each slide.
--- Together they may take more than one line. The prompt is not added
--- to history. The portions of overlay that fit on the the rest
--- of the screen are displayed below. As many slides as needed are shown.
+-- | Add current report to the overlay, split the result and produce,
+-- possibly, many slides.
 overlayToSlideshow :: MonadClientUI m => Overlay -> m Slideshow
 overlayToSlideshow ov = do
   lid <- getArenaUI
@@ -97,6 +98,7 @@ overlayToSlideshow ov = do
   report <- getReportUI
   return $! splitOverlay lxsize (lysize + 1) report (ov, [])
 
+-- | Split current report into a slideshow.
 reportToSlideshow :: MonadClientUI m => m Slideshow
 reportToSlideshow = overlayToSlideshow mempty
 
@@ -114,6 +116,16 @@ displayYesNo dm prompt =
                     [K.KM K.NoModifier (K.Char 'n'), K.escKM]
                     (prompt <+> tyesnoMsg)
 
+-- | Add a prompt to report and wait for a player keypress.
+displayConfirm :: MonadClientUI m
+               => ColorMode -> [K.KM] -> [K.KM] -> Text -> m Bool
+displayConfirm dm trueKeys falseKeys prompt = do
+  promptAdd prompt
+  -- Two frames drawn total (unless @prompt@ very long).
+  slides <- reportToSlideshow
+  b <- getConfirms dm trueKeys falseKeys slides
+  return b
+
 -- | Display a slideshow, awaiting confirmation for each slide
 -- and returning a boolean.
 getConfirms :: MonadClientUI m
@@ -124,16 +136,6 @@ getConfirms dm trueKeys falseKeys slides = do
     case ekm of
       Left km -> return $! km `K.elemOrNull` trueKeys
       Right slot -> assert `failure` slot
-
--- | Add a prompt to report and wait for a player keypress.
-displayConfirm :: MonadClientUI m
-               => ColorMode -> [K.KM] -> [K.KM] -> Text -> m Bool
-displayConfirm dm trueKeys falseKeys prompt = do
-  promptAdd prompt
-  -- Two frames drawn total (unless @prompt@ very long).
-  slides <- reportToSlideshow
-  b <- getConfirms dm trueKeys falseKeys slides
-  return b
 
 displayChoiceScreen :: forall m . MonadClientUI m
                     => ColorMode -> Bool -> Int -> Slideshow -> [K.KM]

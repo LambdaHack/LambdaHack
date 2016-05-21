@@ -21,7 +21,7 @@ type KYX = (Either K.KM SlotChar, (Y, X, X))
 -- Neither list may be empty.
 type OKX = (Overlay, [KYX])
 
--- May be empty, but nothing inside may be empty.
+-- May be empty, but nothing inside may be empty. TODO: assert in constructors
 newtype Slideshow = Slideshow {slideshow :: [OKX]}
   deriving (Show, Eq, Monoid)
 
@@ -44,8 +44,6 @@ menuToSlideshow (als, kxs) =
 textsToSlideshow :: [[Text]] -> Slideshow
 textsToSlideshow = toSlideshow . map (\t -> (map toAttrLine t, []))
 
--- TODO: assert that ov0 nonempty and perhaps that kxs0 not too short
--- (or should we just keep the rest of the overlay unclickable?)
 splitOverlay :: X -> Y -> Report -> OKX -> Slideshow
 splitOverlay lxsize yspace report (ls0, kxs0) =
   let rrep = renderReport report
@@ -63,4 +61,4 @@ splitOverlay lxsize yspace report (ls0, kxs0) =
            else let (preX, postX) = splitAt (yspace - len - 1) kxs
                 in (pre, zipRenumber preX) : splitO post postX
       okxs = splitO ls0 kxs0
-  in assert (not $ null okxs) $ toSlideshow okxs
+  in toSlideshow okxs

@@ -523,7 +523,8 @@ historyHuman = do
   let displayAllHistory = do
         menuIxHistory <- getsSession smenuIxHistory
         (ekm, pointer) <-
-          displayChoiceScreen ColorFull True menuIxHistory okxs [K.spaceKM, K.escKM]
+          displayChoiceScreen ColorFull True menuIxHistory okxs
+                              [K.spaceKM, K.escKM]
         modifySession $ \sess -> sess {smenuIxHistory = pointer}
         case ekm of
           Left km | km `elem` [K.spaceKM, K.escKM] ->
