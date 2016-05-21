@@ -1,8 +1,7 @@
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.DrawClient
-  ( ColorMode(..)
-  , draw
+  ( draw
   ) where
 
 import Prelude ()
@@ -46,11 +45,6 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified NLP.Miniutter.English as MU
-
--- | Color mode for the display.
-data ColorMode =
-    ColorFull  -- ^ normal, with full colours
-  | ColorBW    -- ^ black+white only
 
 -- TODO: split up and generally rewrite.
 -- | Draw the whole screen: level map and status area.

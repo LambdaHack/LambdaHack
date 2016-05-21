@@ -20,7 +20,6 @@ import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings

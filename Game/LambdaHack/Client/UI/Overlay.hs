@@ -1,10 +1,11 @@
 -- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
-  ( tmoreMsg, tendMsg, tyesnoMsg
-    -- * AttrLine
-  , AttrLine, toAttrLine, splitAttrLine, itemDesc
+  ( -- * AttrLine
+    AttrLine, toAttrLine, splitAttrLine, itemDesc
     -- * Overlay
   , Overlay, updateOverlayLine
+    -- * Misc
+  , ColorMode(..), tmoreMsg, tendMsg, tyesnoMsg
   ) where
 
 import Prelude ()
@@ -22,15 +23,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
-
-tmoreMsg :: Text
-tmoreMsg = "--more--  "
-
-tendMsg :: Text
-tendMsg = "--end--  "
-
-tyesnoMsg :: Text
-tyesnoMsg = "[y, n, ESC]"
 
 -- * AttrLine
 
@@ -102,3 +94,19 @@ updateOverlayLine n f ov =
                        else l : upd (k - 1) ls
       upd _ [] = []
   in upd n ov
+
+-- * Misc
+
+-- | Color mode for the display.
+data ColorMode =
+    ColorFull  -- ^ normal, with full colours
+  | ColorBW    -- ^ black+white only
+
+tmoreMsg :: Text
+tmoreMsg = "--more--  "
+
+tendMsg :: Text
+tendMsg = "--end--  "
+
+tyesnoMsg :: Text
+tyesnoMsg = "[y, n, ESC]"

@@ -8,7 +8,6 @@ module Game.LambdaHack.Client.UI.MonadClientUI
                  , putSession
                  )
     -- * Display and key input
-  , ColorMode(..)
   , msgAdd, promptAdd, promptAddAttr, recordHistory
   , mapStartY, getReport, promptGetKey, promptGetInt
   , displayFrame, displayActorStart, drawOverlay
