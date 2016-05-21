@@ -1,6 +1,7 @@
 -- | A set of widgets for UI clients.
 module Game.LambdaHack.Client.UI.WidgetClient
-  ( displayMore, displayYesNo, getConfirms
+  ( overlayToSlideshow, reportToSlideshow
+  , displayMore, displayYesNo, getConfirms
   , displayChoiceScreen, displayChoiceLine
   , describeMainKeys
   , animate, fadeOutOrIn
@@ -25,7 +26,6 @@ import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
-import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
@@ -35,6 +35,20 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
+
+-- | The prompt is shown after the current message at the top of each slide.
+-- Together they may take more than one line. The prompt is not added
+-- to history. The portions of overlay that fit on the the rest
+-- of the screen are displayed below. As many slides as needed are shown.
+overlayToSlideshow :: MonadClientUI m => Overlay -> m Slideshow
+overlayToSlideshow ov = do
+  lid <- getArenaUI
+  Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
+  report <- getReport
+  return $! splitOverlay lxsize (lysize + 1) report (ov, [])
+
+reportToSlideshow :: MonadClientUI m => m Slideshow
+reportToSlideshow = overlayToSlideshow mempty
 
 -- | Display a message with a @more@ prompt.
 -- Return value indicates if the player tried to cancel/escape.

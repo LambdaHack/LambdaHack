@@ -250,7 +250,7 @@ draw dm drawnLevelId xhairPos tgtPos bfsmpathRaw
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
 -- level descriptions (currently enforced max).
-drawArenaStatus :: Bool -> Level -> Int -> [Color.AttrChar]
+drawArenaStatus :: Bool -> Level -> Int -> AttrLine
 drawArenaStatus explored Level{ldepth=AbsDepth ld, ldesc, lseen, lclear} width =
   let seenN = 100 * lseen `div` max 1 lclear
       seenTxt | explored || seenN >= 100 = "all"
@@ -260,7 +260,7 @@ drawArenaStatus explored Level{ldepth=AbsDepth ld, ldesc, lseen, lclear} width =
   in toAttrLine $ T.justifyLeft width ' '
                 $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
 
-drawLeaderStatus :: MonadClient m => Int -> Int -> m [Color.AttrChar]
+drawLeaderStatus :: MonadClient m => Int -> Int -> m AttrLine
 drawLeaderStatus waitT width = do
   mleader <- getsClient _sleader
   s <- getState
@@ -307,7 +307,7 @@ drawLeaderStatus waitT width = do
     Nothing -> return $! toAttrLine $ calmHeaderText <> ": --/-- "
                                    <> hpHeaderText <> ": --/-- "
 
-drawLeaderDamage :: MonadClient m => Int -> m [Color.AttrChar]
+drawLeaderDamage :: MonadClient m => Int -> m AttrLine
 drawLeaderDamage width = do
   mleader <- getsClient _sleader
   let addColor t = map (Color.AttrChar $ Color.Attr Color.BrCyan Color.defBG)
@@ -357,7 +357,7 @@ drawLeaderDamage width = do
 
 -- TODO: colour some texts using the faction's colour
 drawSelected :: MonadClient m
-             => LevelId -> Int -> ES.EnumSet ActorId -> m [Color.AttrChar]
+             => LevelId -> Int -> ES.EnumSet ActorId -> m AttrLine
 drawSelected drawnLevelId width selected = do
   mleader <- getsClient _sleader
   side <- getsClient sside
@@ -386,7 +386,7 @@ drawSelected drawnLevelId width selected = do
               else [star] ++ viewed ++ toAttrLine " "
   return $! party
 
-drawPlayerName :: MonadClient m => Int -> m [Color.AttrChar]
+drawPlayerName :: MonadClient m => Int -> m AttrLine
 drawPlayerName width = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD

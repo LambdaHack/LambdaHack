@@ -12,7 +12,6 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Color
-import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 
@@ -59,4 +58,4 @@ truncateAttrLine w xs =
     EQ -> xs
     GT -> if null xs || acChar (last xs) == ' '
           then xs
-          else xs ++ [AttrChar Color.defAttr ' ']
+          else xs ++ [AttrChar defAttr ' ']

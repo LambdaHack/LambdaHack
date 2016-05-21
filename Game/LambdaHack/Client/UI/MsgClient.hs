@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.MsgClient
   ( MError, FailOrCmd
   , showFailError, failWith, failSer, failMsg, weaveJust
-  , lookAt, itemOverlay, overlayToSlideshow, reportToSlideshow
+  , lookAt, itemOverlay
   ) where
 
 import Prelude ()
@@ -139,17 +139,3 @@ itemOverlay c lid bag = do
             in Just (ov, kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
   return (concat ts, kxs)
-
--- | The prompt is shown after the current message at the top of each slide.
--- Together they may take more than one line. The prompt is not added
--- to history. The portions of overlay that fit on the the rest
--- of the screen are displayed below. As many slides as needed are shown.
-overlayToSlideshow :: MonadClientUI m => Overlay -> m Slideshow
-overlayToSlideshow ov = do
-  lid <- getArenaUI
-  Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
-  report <- getReport
-  return $! splitOverlay lxsize (lysize + 1) report (ov, [])
-
-reportToSlideshow :: MonadClientUI m => m Slideshow
-reportToSlideshow = overlayToSlideshow mempty
