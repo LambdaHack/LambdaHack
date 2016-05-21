@@ -77,7 +77,7 @@ displayChoiceScreen :: forall m . MonadClientUI m
 displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
   -- We don't create keys from slots, so they have to be @in extraKeys@.
   let frs = slideshow frsX
-      keys = concatMap (mapMaybe (keyOfEKM (-1) . fst) . snd) frs
+      keys = concatMap (mapMaybe (either Just (const Nothing) . fst) . snd) frs
              ++ extraKeys
       scrollKeys = [K.leftButtonReleaseKM, K.returnKM, K.upKM, K.downKM]
       pageKeys = [ K.spaceKM, K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM

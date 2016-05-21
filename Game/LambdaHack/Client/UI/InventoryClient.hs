@@ -442,6 +442,12 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                      $ EM.keys bagItemSlots
       runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur
 
+keyOfEKM :: Int -> Either K.KM SlotChar -> Maybe K.KM
+keyOfEKM _ (Left km) = Just km
+keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
+  Just $ K.KM K.NoModifier $ K.Char slotChar
+keyOfEKM _ _ = Nothing
+
 statsOverlay :: MonadClient m => ActorId -> m OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid

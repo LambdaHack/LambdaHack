@@ -1,8 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
-  ( KYX, OKX, keyOfEKM
-  , Slideshow(slideshow), toSlideshow, menuToSlideshow, textsToSlideshow
+  ( KYX, OKX, Slideshow(slideshow)
+  , toSlideshow, menuToSlideshow, textsToSlideshow
   , splitOverlay
   ) where
 
@@ -20,12 +20,6 @@ type KYX = (Either K.KM SlotChar, (Y, X, X))
 
 -- Neither list may be empty.
 type OKX = (Overlay, [KYX])
-
-keyOfEKM :: Int -> Either K.KM SlotChar -> Maybe K.KM
-keyOfEKM _ (Left km) = Just km
-keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
-  Just $ K.KM K.NoModifier $ K.Char slotChar
-keyOfEKM _ _ = Nothing
 
 -- May be empty, but nothing inside may be empty.
 newtype Slideshow = Slideshow {slideshow :: [OKX]}
