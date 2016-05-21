@@ -28,6 +28,7 @@ import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Client.UI.WidgetClient
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -278,7 +279,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
   itemToF <- itemToFullClient
-  Binding{brevMap} <- askBinding
+  Binding{brevMap} <- getsSession sbinding
   mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
   psuitFun <- case mpsuit of
     SuitsEverything -> return $ const True

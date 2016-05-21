@@ -1,7 +1,8 @@
 -- | Client monad for interacting with a human through UI.
 module Game.LambdaHack.Client.UI.MsgClient
   ( MError, FailOrCmd
-  , showFailError, failWith, failSer, failMsg, weaveJust
+  , showFailError, failWith, failSer, failMsg, weaveJust, stopPlayBack
+  , msgAdd, promptAdd, promptAddAttr, recordHistory
   , lookAt, itemOverlay
   ) where
 
@@ -19,12 +20,14 @@ import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.Level
@@ -58,6 +61,55 @@ failMsg err = assert (not $ T.null err) $ return $ Just $ FailError err
 weaveJust :: FailOrCmd RequestUI -> Either MError RequestUI
 weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
+
+stopPlayBack :: MonadClientUI m => m ()
+stopPlayBack = do
+  modifySession $ \sess -> sess
+    { slastPlay = []
+    , slastRecord = ([], [], 0)
+        -- Needed to cancel macros that contain apostrophes.
+    , swaitTimes = - abs (swaitTimes sess)
+    }
+  srunning <- getsSession srunning
+  case srunning of
+    Nothing -> return ()
+    Just RunParams{runLeader} -> do
+      -- Switch to the original leader, from before the run start,
+      -- unless dead or unless the faction never runs with multiple
+      -- (but could have the leader changed automatically meanwhile).
+      side <- getsClient sside
+      fact <- getsState $ (EM.! side) . sfactionD
+      arena <- getArenaUI
+      s <- getState
+      when (memActor runLeader arena s && not (noRunWithMulti fact)) $
+        modifyClient $ updateLeader runLeader s
+      modifySession (\sess -> sess {srunning = Nothing})
+
+-- | Add a message to the current report.
+msgAdd :: MonadClientUI m => Text -> m ()
+msgAdd msg = modifySession $ \sess ->
+  sess {_sreport = snocReport (_sreport sess) (toMsg $ toAttrLine msg)}
+
+-- | Add a prompt to the current report.
+promptAdd :: MonadClientUI m => Text -> m ()
+promptAdd msg = modifySession $ \sess ->
+  sess {_sreport = snocReport (_sreport sess) (toPrompt $ toAttrLine msg)}
+
+-- | Add a prompt to the current report.
+promptAddAttr :: MonadClientUI m => AttrLine -> m ()
+promptAddAttr msg = modifySession $ \sess ->
+  sess {_sreport = snocReport (_sreport sess) (toPrompt msg)}
+
+-- | Store current report in the history and reset report.
+recordHistory :: MonadClientUI m => m ()
+recordHistory = do
+  time <- getsState stime
+  SessionUI{_sreport, shistory} <- getSession
+  unless (nullReport _sreport) $ do
+    let nhistory = addReport shistory time _sreport
+    modifySession $ \sess -> sess { _sreport = emptyReport
+                                  , shistory = nhistory }
+
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.

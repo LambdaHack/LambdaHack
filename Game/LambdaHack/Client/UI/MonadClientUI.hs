@@ -6,13 +6,10 @@ module Game.LambdaHack.Client.UI.MonadClientUI
                  , liftIO  -- exposed only to be implemented, not used,
                  )
     -- * Display and key input
-  , msgAdd, promptAdd, promptAddAttr, recordHistory
-  , mapStartY, getReport, promptGetKey, promptGetInt
-  , displayFrame, displayActorStart, drawOverlay
+  , mapStartY, getReport, displayFrame, displayActorStart
     -- * Assorted primitives
-  , stopPlayBack, askConfig, askBinding
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, addPressedKey
-  , frontendShutdown, chanFrontend
+  , connFrontendFrontKey, frontendShutdown, chanFrontend
   , scoreToSlideshow, defaultHistory
   , getLeaderUI, getArenaUI, viewedLevel
   , targetDescLeader, targetDescXhair
@@ -23,24 +20,19 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import Data.Time.LocalTime
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.CommonClient
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend
 import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
-import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
@@ -81,83 +73,6 @@ getReport = do
       promptAI = toPrompt $ toAttrLine $ "[press any key for Main Menu]"
   return $! if underAI then consReport promptAI report else report
 
--- | Add a message to the current report.
-msgAdd :: MonadClientUI m => Text -> m ()
-msgAdd msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (_sreport sess) (toMsg $ toAttrLine msg)}
-
--- | Add a prompt to the current report.
-promptAdd :: MonadClientUI m => Text -> m ()
-promptAdd msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (_sreport sess) (toPrompt $ toAttrLine msg)}
-
--- | Add a prompt to the current report.
-promptAddAttr :: MonadClientUI m => AttrLine -> m ()
-promptAddAttr msg = modifySession $ \sess ->
-  sess {_sreport = snocReport (_sreport sess) (toPrompt msg)}
-
--- | Store current report in the history and reset report.
-recordHistory :: MonadClientUI m => m ()
-recordHistory = do
-  time <- getsState stime
-  SessionUI{_sreport, shistory} <- getSession
-  unless (nullReport _sreport) $ do
-    let nhistory = addReport shistory time _sreport
-    modifySession $ \sess -> sess { _sreport = emptyReport
-                                  , shistory = nhistory }
-
--- | Write a UI request to the frontend and read a corresponding reply.
-connFrontend :: MonadClientUI m => FrontReq a -> m a
-connFrontend req = do
-  ChanFrontend f <- getsSession schanF
-  liftIO $ f req
-
--- | Write 'FrontKey' UI request to the frontend, read the reply,
--- set pointer, return key.
-connFrontendFrontKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
-connFrontendFrontKey frontKeyKeys frontKeyFrame = do
-  ChanFrontend f <- getsSession schanF
-  kmp <- liftIO $ f FrontKey{..}
-  modifySession $ \sess -> sess {spointer = kmpPointer kmp}
-  return $! kmpKeyMod kmp
-
-promptGetKey :: MonadClientUI m
-             => ColorMode -> Overlay -> Bool -> [K.KM] -> m K.KM
-promptGetKey dm ov sfBlank frontKeyKeys = do
-  lid <- viewedLevel
-  keyPressed <- anyKeyPressed
-  lastPlayOld <- getsSession slastPlay
-  km <- case lastPlayOld of
-    km : kms | not keyPressed && km `K.elemOrNull` frontKeyKeys -> do
-      frontKeyFrame <- drawOverlay dm sfBlank ov lid
-      displayFrame $ Just frontKeyFrame
-      modifySession $ \sess -> sess {slastPlay = kms}
-      Config{configRunStopMsgs} <- askConfig
-      when configRunStopMsgs $ promptAdd $ "Voicing '" <> tshow km <> "'."
-      return km
-    _ : _ -> do
-      -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
-      stopPlayBack
-      discardPressedKey
-      let ov2 = ov <> if keyPressed then [toAttrLine "*interrupted*"] else mempty
-      frontKeyFrame <- drawOverlay dm sfBlank ov2 lid
-      connFrontendFrontKey frontKeyKeys frontKeyFrame
-    [] -> do
-      frontKeyFrame <- drawOverlay dm sfBlank ov lid
-      connFrontendFrontKey frontKeyKeys frontKeyFrame
-  (seqCurrent, seqPrevious, k) <- getsSession slastRecord
-  let slastRecord = (km : seqCurrent, seqPrevious, k)
-  modifySession $ \sess -> sess { slastRecord
-                                , sdisplayNeeded = False }
-  return km
-
-promptGetInt :: MonadClientUI m => Overlay -> m K.KM
-promptGetInt ov = do
-  let frontKeyKeys = K.escKM : K.returnKM : K.backspaceKM
-                     : map (K.KM K.NoModifier)
-                         (map (K.Char . Char.intToDigit) [0..9])
-  promptGetKey ColorFull ov False frontKeyKeys
-
 displayFrame :: MonadClientUI m => Maybe SingleFrame -> m ()
 displayFrame mf = do
   let frame = case mf of
@@ -175,62 +90,19 @@ displayActorStart b frs = do
   when (arena == blid b) $
     modifySession $ \sess -> sess {sdisplayNeeded = False}
 
-drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
-drawBaseFrame dm lid = do
-  mleader <- getsClient _sleader
-  tgtPos <- leaderTgtToPos
-  xhairPos <- xhairToPos
-  let anyPos = fromMaybe originPoint xhairPos
-        -- if xhair invalid, e.g., on a wrong level; @draw@ ignores it later on
-      pathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
-  bfsmpath <- maybe (return Nothing) pathFromLeader mleader
-  tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
-  sitemSel <- getsSession sitemSel
-  xhairDesc <- targetDescXhair
-  SessionUI{sselected, saimMode, smarkVision, smarkSmell, swaitTimes}
-    <- getSession
-  draw dm lid xhairPos tgtPos bfsmpath xhairDesc tgtDesc
-       sselected saimMode sitemSel smarkVision smarkSmell swaitTimes
+-- | Write a UI request to the frontend and read a corresponding reply.
+connFrontend :: MonadClientUI m => FrontReq a -> m a
+connFrontend req = do
+  ChanFrontend f <- getsSession schanF
+  liftIO $ f req
 
--- | Draw the current level with the overlay on top.
-drawOverlay :: MonadClientUI m
-            => ColorMode -> Bool -> Overlay -> LevelId -> m SingleFrame
-drawOverlay dm sfBlank sfTop lid = do
-  mbaseFrame <- if sfBlank
-                then return Nothing
-                else Just <$> drawBaseFrame dm lid
-  return $! overlayFrame sfTop mbaseFrame
-  -- TODO: here sfTop is possibly truncated wrt length
-
-stopPlayBack :: MonadClientUI m => m ()
-stopPlayBack = do
-  modifySession $ \sess -> sess
-    { slastPlay = []
-    , slastRecord = ([], [], 0)
-        -- Needed to cancel macros that contain apostrophes.
-    , swaitTimes = - abs (swaitTimes sess)
-    }
-  srunning <- getsSession srunning
-  case srunning of
-    Nothing -> return ()
-    Just RunParams{runLeader} -> do
-      -- Switch to the original leader, from before the run start,
-      -- unless dead or unless the faction never runs with multiple
-      -- (but could have the leader changed automatically meanwhile).
-      side <- getsClient sside
-      fact <- getsState $ (EM.! side) . sfactionD
-      arena <- getArenaUI
-      s <- getState
-      when (memActor runLeader arena s && not (noRunWithMulti fact)) $
-        modifyClient $ updateLeader runLeader s
-      modifySession (\sess -> sess {srunning = Nothing})
-
-askConfig :: MonadClientUI m => m Config
-askConfig = getsSession sconfig
-
--- | Get the key binding.
-askBinding :: MonadClientUI m => m Binding
-askBinding = getsSession sbinding
+-- | Write 'FrontKey' UI request to the frontend, read the reply,
+-- set pointer, return key.
+connFrontendFrontKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
+connFrontendFrontKey frontKeyKeys frontKeyFrame = do
+  kmp <- connFrontend $ FrontKey{..}
+  modifySession $ \sess -> sess {spointer = kmpPointer kmp}
+  return $! kmpKeyMod kmp
 
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
 setFrontAutoYes b = connFrontend $ FrontAutoYes b
@@ -249,6 +121,9 @@ frontendShutdown = connFrontend FrontShutdown
 
 chanFrontend :: MonadClientUI m => DebugModeCli -> m ChanFrontend
 chanFrontend = liftIO . Frontend.chanFrontendIO
+
+
+
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do

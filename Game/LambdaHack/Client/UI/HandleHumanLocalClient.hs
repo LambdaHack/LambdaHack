@@ -84,7 +84,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 macroHuman :: MonadClientUI m => [String] -> m ()
 macroHuman kms = do
   modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
-  Config{configRunStopMsgs} <- askConfig
+  Config{configRunStopMsgs} <- getsSession sconfig
   when configRunStopMsgs $
     promptAdd $ "Macro activated:" <+> T.pack (intercalate " " kms)
 
@@ -580,7 +580,7 @@ settingsMenuHuman :: MonadClientUI m
                   -> m (Either MError RequestUI)
 settingsMenuHuman cmdAction = do
   Kind.COps{corule} <- getsState scops
-  Binding{bcmdList} <- askBinding
+  Binding{bcmdList} <- getsSession sbinding
   let stripFrame t = tail . init $ T.lines t
       pasteVersion art =  -- TODO: factor out
         let pathsVersion = rpathsVersion $ Kind.stdRuleset corule

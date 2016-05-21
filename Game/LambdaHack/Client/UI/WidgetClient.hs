@@ -1,6 +1,7 @@
 -- | A set of widgets for UI clients.
 module Game.LambdaHack.Client.UI.WidgetClient
-  ( overlayToSlideshow, reportToSlideshow
+  ( drawOverlay, promptGetKey, promptGetInt
+  , overlayToSlideshow, reportToSlideshow
   , displayMore, displayYesNo, getConfirms
   , displayChoiceScreen, displayChoiceLine
   , describeMainKeys
@@ -11,20 +12,24 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.Char as Char
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
+import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Config
+import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
+import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
@@ -34,6 +39,70 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
+
+drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
+drawBaseFrame dm lid = do
+  mleader <- getsClient _sleader
+  tgtPos <- leaderTgtToPos
+  xhairPos <- xhairToPos
+  let anyPos = fromMaybe originPoint xhairPos
+        -- if xhair invalid, e.g., on a wrong level; @draw@ ignores it later on
+      pathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
+  bfsmpath <- maybe (return Nothing) pathFromLeader mleader
+  tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
+  sitemSel <- getsSession sitemSel
+  xhairDesc <- targetDescXhair
+  SessionUI{sselected, saimMode, smarkVision, smarkSmell, swaitTimes}
+    <- getSession
+  draw dm lid xhairPos tgtPos bfsmpath xhairDesc tgtDesc
+       sselected saimMode sitemSel smarkVision smarkSmell swaitTimes
+
+-- | Draw the current level with the overlay on top.
+drawOverlay :: MonadClientUI m
+            => ColorMode -> Bool -> Overlay -> LevelId -> m SingleFrame
+drawOverlay dm sfBlank sfTop lid = do
+  mbaseFrame <- if sfBlank
+                then return Nothing
+                else Just <$> drawBaseFrame dm lid
+  return $! overlayFrame sfTop mbaseFrame
+  -- TODO: here sfTop is possibly truncated wrt length
+
+promptGetKey :: MonadClientUI m
+             => ColorMode -> Overlay -> Bool -> [K.KM] -> m K.KM
+promptGetKey dm ov sfBlank frontKeyKeys = do
+  lid <- viewedLevel
+  keyPressed <- anyKeyPressed
+  lastPlayOld <- getsSession slastPlay
+  km <- case lastPlayOld of
+    km : kms | not keyPressed && km `K.elemOrNull` frontKeyKeys -> do
+      frontKeyFrame <- drawOverlay dm sfBlank ov lid
+      displayFrame $ Just frontKeyFrame
+      modifySession $ \sess -> sess {slastPlay = kms}
+      Config{configRunStopMsgs} <- getsSession sconfig
+      when configRunStopMsgs $ promptAdd $ "Voicing '" <> tshow km <> "'."
+      return km
+    _ : _ -> do
+      -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
+      stopPlayBack
+      discardPressedKey
+      let ov2 = ov <> if keyPressed then [toAttrLine "*interrupted*"] else mempty
+      frontKeyFrame <- drawOverlay dm sfBlank ov2 lid
+      connFrontendFrontKey frontKeyKeys frontKeyFrame
+    [] -> do
+      frontKeyFrame <- drawOverlay dm sfBlank ov lid
+      connFrontendFrontKey frontKeyKeys frontKeyFrame
+  (seqCurrent, seqPrevious, k) <- getsSession slastRecord
+  let slastRecord = (km : seqCurrent, seqPrevious, k)
+  modifySession $ \sess -> sess { slastRecord
+                                , sdisplayNeeded = False }
+  return km
+
+promptGetInt :: MonadClientUI m => Overlay -> m K.KM
+promptGetInt ov = do
+  let frontKeyKeys = K.escKM : K.returnKM : K.backspaceKM
+                     : map (K.KM K.NoModifier)
+                         (map (K.Char . Char.intToDigit) [0..9])
+  promptGetKey ColorFull ov False frontKeyKeys
 
 -- | The prompt is shown after the current message at the top of each slide.
 -- Together they may take more than one line. The prompt is not added
@@ -174,8 +243,8 @@ displayChoiceLine ov extraKeys = do
 describeMainKeys :: MonadClientUI m => m Text
 describeMainKeys = do
   saimMode <- getsSession saimMode
-  Binding{brevMap} <- askBinding
-  Config{configVi, configLaptop} <- askConfig
+  Binding{brevMap} <- getsSession sbinding
+  Config{configVi, configLaptop} <- getsSession sconfig
   xhair <- getsClient sxhair
   let kmEscape = head $
         M.findWithDefault [K.KM K.NoModifier K.Esc]

@@ -116,7 +116,7 @@ humanCommand = do
         when (null lastPlay) recordHistory
         abortOrCmd <- do
           -- Look up the key.
-          Binding{bcmdMap} <- askBinding
+          Binding{bcmdMap} <- getsSession sbinding
           case km `M.lookup` bcmdMap of
             Just (cats, _, cmd) | CmdMainMenu `notElem` cats
                                   && CmdSettingsMenu `notElem` cats -> do

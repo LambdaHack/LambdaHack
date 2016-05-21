@@ -394,7 +394,7 @@ runOnceAheadHuman = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
-  Config{configRunStopMsgs} <- askConfig
+  Config{configRunStopMsgs} <- getsSession sconfig
   keyPressed <- anyKeyPressed
   srunning <- getsSession srunning
   -- When running, stop if disturbed. If not running, stop at once.
@@ -737,7 +737,7 @@ applyItem ts (fromCStore, (iid, itemFull)) = do
 alterDirHuman :: MonadClientUI m
               => [Trigger] -> m (FailOrCmd (RequestTimed 'AbAlter))
 alterDirHuman ts = do
-  Config{configVi, configLaptop} <- askConfig
+  Config{configVi, configLaptop} <- getsSession sconfig
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
@@ -880,7 +880,7 @@ helpHuman :: MonadClientUI m
           => (HumanCmd.HumanCmd -> m (Either MError RequestUI)) -> Maybe Text
           -> m (Either MError RequestUI)
 helpHuman cmdAction mstart = do
-  keyb <- askBinding
+  keyb <- getsSession sbinding
   let keyH = keyHelp keyb
   menuIxHelp <- case mstart of
     Nothing -> getsSession smenuIxHelp
@@ -910,7 +910,7 @@ mainMenuHuman :: MonadClientUI m
               -> m (Either MError RequestUI)
 mainMenuHuman cmdAction = do
   Kind.COps{corule} <- getsState scops
-  Binding{bcmdList} <- askBinding
+  Binding{bcmdList} <- getsSession sbinding
   gameMode <- getGameMode
   scurDiff <- getsClient scurDiff
   snxtDiff <- getsClient snxtDiff
@@ -1006,7 +1006,7 @@ gameRestartHuman t = do
   then do
     leader <- getLeaderUI
     snxtDiff <- getsClient snxtDiff
-    Config{configHeroNames} <- askConfig
+    Config{configHeroNames} <- getsSession sconfig
     return $ Right
            $ ReqUIGameRestart leader t snxtDiff configHeroNames
   else do
