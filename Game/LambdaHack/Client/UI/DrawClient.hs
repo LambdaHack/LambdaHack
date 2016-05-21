@@ -1,7 +1,7 @@
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.DrawClient
-  ( draw
+  ( targetDescLeader, drawBaseFrame
   ) where
 
 import Prelude ()
@@ -14,10 +14,12 @@ import Data.Ord
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Bfs
+import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Frame
+import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -35,7 +37,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -46,24 +47,85 @@ import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified NLP.Miniutter.English as MU
 
+targetDesc :: MonadClientUI m => Maybe Target -> m (Text, Maybe Text)
+targetDesc target = do
+  lidV <- viewedLevelUI
+  mleader <- getsClient _sleader
+  case target of
+    Just (TEnemy aid _) -> do
+      side <- getsClient sside
+      b <- getsState $ getActorBody aid
+      maxHP <- sumOrganEqpClient IK.EqpSlotAddMaxHP aid
+      let percentage = 100 * bhp b `div` xM (max 5 maxHP)
+          stars | percentage < 20  = "[____]"
+                | percentage < 40  = "[*___]"
+                | percentage < 60  = "[**__]"
+                | percentage < 80  = "[***_]"
+                | otherwise        = "[****]"
+          hpIndicator = if bfid b == side then Nothing else Just stars
+      return (bname b, hpIndicator)
+    Just (TEnemyPos _ lid p _) -> do
+      let hotText = if lid == lidV
+                    then "hot spot" <+> tshow p
+                    else "a hot spot on level" <+> tshow (abs $ fromEnum lid)
+      return (hotText, Nothing)
+    Just (TPoint lid p) -> do
+      pointedText <-
+        if lid == lidV
+        then do
+          bag <- getsState $ getCBag (CFloor lid p)
+          case EM.assocs bag of
+            [] -> return $! "exact spot" <+> tshow p
+            [(iid, kit@(k, _))] -> do
+              localTime <- getsState $ getLocalTime lid
+              itemToF <- itemToFullClient
+              let (_, name, stats) = partItem CGround localTime (itemToF iid kit)
+              return $! makePhrase $ if k == 1
+                                     then [name, stats]  -- "a sword" too wordy
+                                     else [MU.CarWs k name, stats]
+            _ -> return $! "many items at" <+> tshow p
+        else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
+      return (pointedText, Nothing)
+    Just TVector{} ->
+      case mleader of
+        Nothing -> return ("a relative shift", Nothing)
+        Just aid -> do
+          tgtPos <- aidTgtToPos aid lidV target
+          let invalidMsg = "an invalid relative shift"
+              validMsg p = "shift to" <+> tshow p
+          return (maybe invalidMsg validMsg tgtPos, Nothing)
+    Nothing -> return ("crosshair location", Nothing)
+
+targetDescLeader :: MonadClientUI m => ActorId -> m (Text, Maybe Text)
+targetDescLeader leader = do
+  tgt <- getsClient $ getTarget leader
+  targetDesc tgt
+
+targetDescXhair :: MonadClientUI m => m (Text, Maybe Text)
+targetDescXhair = do
+  sxhair <- getsClient sxhair
+  targetDesc $ Just sxhair
+
 -- TODO: split up and generally rewrite.
 -- | Draw the whole screen: level map and status area.
 -- Pass at most a single page if overlay of text unchanged
 -- to the frontends to display separately or overlay over map,
 -- depending on the frontend.
-draw :: MonadClient m
-     => ColorMode -> LevelId
-     -> Maybe Point -> Maybe Point
-     -> Maybe (PointArray.Array BfsDistance, Maybe [Point])
-     -> (Text, Maybe Text) -> (Text, Maybe Text)
-     -> ES.EnumSet ActorId -> Maybe AimMode -> (Maybe (CStore, ItemId))
-     -> Bool -> Bool -> Int
-     -> m SingleFrame
-draw dm drawnLevelId xhairPos tgtPos bfsmpathRaw
-     (xhairDesc, mxhairHP) (targetDesc, mtargetHP)
-     selected saimMode sitemSel smarkVision smarkSmell swaitTimes = do
+drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
+drawBaseFrame dm drawnLevelId = do
   cops <- getsState scops
+  SessionUI{sselected, saimMode, smarkVision, smarkSmell, swaitTimes}
+    <- getSession
+  sitemSel <- getsSession sitemSel
   mleader <- getsClient _sleader
+  tgtPos <- leaderTgtToPos
+  xhairPos <- xhairToPos
+  let anyPos = fromMaybe originPoint xhairPos
+        -- if xhair invalid, e.g., on a wrong level; @draw@ ignores it later on
+      pathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
+  bfsmpath <- maybe (return Nothing) pathFromLeader mleader
+  (tgtDesc, mtargetHP) <- maybe (return ("------", Nothing)) targetDescLeader mleader
+  (xhairDesc, mxhairHP) <- targetDescXhair
   s <- getState
   cli@StateClient{ seps, sexplored, smarkSuspect}
     <- getClient
@@ -83,7 +145,7 @@ draw dm drawnLevelId xhairPos tgtPos bfsmpathRaw
       deleteXhair = maybe id (\xhair -> delete xhair) xhairPos
       mpath = maybe Nothing (\(_, mp) -> if null bline
                                          then Nothing
-                                         else deleteXhair <$> mp) bfsmpathRaw
+                                         else deleteXhair <$> mp) bfsmpath
       actorsHere = actorAssocs (const True) drawnLevelId s
       xhairHere = find (\(_, m) -> xhairPos == Just (Actor.bpos m))
                         actorsHere
@@ -146,7 +208,7 @@ draw dm drawnLevelId xhairPos tgtPos bfsmpathRaw
                                     attr0 {Color.bg = Color.BrRed}
                                   | Just pos0 == xhairPos ->
                                     attr0 {Color.bg = Color.BrYellow}
-                                  | maybe False (`ES.member` selected) maid ->
+                                  | maybe False (`ES.member` sselected) maid ->
                                     attr0 {Color.bg = Color.BrBlue}
                                   | smarkVision && vis ->
                                     attr0 {Color.bg = Color.Blue}
@@ -159,7 +221,7 @@ draw dm drawnLevelId xhairPos tgtPos bfsmpathRaw
       arenaStatus = drawArenaStatus (ES.member drawnLevelId sexplored) lvl
                                     widthStats
       displayPathText mp mt =
-        let (plen, llen) = case (mp, bfsmpathRaw, mbpos) of
+        let (plen, llen) = case (mp, bfsmpath, mbpos) of
               (Just target, Just (bfs, _), Just bpos)
                 | mblid == Just drawnLevelId ->
                   (fromMaybe 0 (accessBfs bfs target), chessDist bpos target)
@@ -191,7 +253,7 @@ draw dm drawnLevelId xhairPos tgtPos bfsmpathRaw
       minLeaderStatusWidth = 19  -- covers 3-digit HP
   selectedStatus <- drawSelected drawnLevelId
                                  (widthStats - minLeaderStatusWidth)
-                                 selected
+                                 sselected
   leaderStatus <- drawLeaderStatus swaitTimes
                                    (widthStats - length selectedStatus)
   damageStatus <- drawLeaderDamage (widthStats - length leaderStatus
@@ -200,7 +262,7 @@ draw dm drawnLevelId xhairPos tgtPos bfsmpathRaw
                                            - length selectedStatus
                                            - length damageStatus)
   let tgtOrItem n = do
-        let tgtBlurb = "Target:" <+> trimTgtDesc n targetDesc
+        let tgtBlurb = "Target:" <+> trimTgtDesc n tgtDesc
         case (sitemSel, mleader) of
           (Just (fromCStore, iid), Just leader) -> do  -- TODO: factor out
             bag <- getsState $ getActorBag leader fromCStore
