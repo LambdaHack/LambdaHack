@@ -1,6 +1,6 @@
 -- | A set of widgets for UI clients.
 module Game.LambdaHack.Client.UI.WidgetClient
-  ( drawOverlay, promptGetKey, promptGetInt
+  ( targetDescLeader, drawOverlay, promptGetKey, promptGetInt
   , overlayToSlideshow, reportToSlideshow
   , displayMore, displayYesNo, getConfirms
   , displayChoiceScreen, displayChoiceLine
@@ -13,10 +13,13 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Char as Char
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
+import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
@@ -33,12 +36,76 @@ import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Content.ItemKind as IK
+
+targetDesc :: MonadClientUI m => Maybe Target -> m (Text, Maybe Text)
+targetDesc target = do
+  lidV <- viewedLevelUI
+  mleader <- getsClient _sleader
+  case target of
+    Just (TEnemy aid _) -> do
+      side <- getsClient sside
+      b <- getsState $ getActorBody aid
+      maxHP <- sumOrganEqpClient IK.EqpSlotAddMaxHP aid
+      let percentage = 100 * bhp b `div` xM (max 5 maxHP)
+          stars | percentage < 20  = "[____]"
+                | percentage < 40  = "[*___]"
+                | percentage < 60  = "[**__]"
+                | percentage < 80  = "[***_]"
+                | otherwise        = "[****]"
+          hpIndicator = if bfid b == side then Nothing else Just stars
+      return (bname b, hpIndicator)
+    Just (TEnemyPos _ lid p _) -> do
+      let hotText = if lid == lidV
+                    then "hot spot" <+> tshow p
+                    else "a hot spot on level" <+> tshow (abs $ fromEnum lid)
+      return (hotText, Nothing)
+    Just (TPoint lid p) -> do
+      pointedText <-
+        if lid == lidV
+        then do
+          bag <- getsState $ getCBag (CFloor lid p)
+          case EM.assocs bag of
+            [] -> return $! "exact spot" <+> tshow p
+            [(iid, kit@(k, _))] -> do
+              localTime <- getsState $ getLocalTime lid
+              itemToF <- itemToFullClient
+              let (_, name, stats) = partItem CGround localTime (itemToF iid kit)
+              return $! makePhrase $ if k == 1
+                                     then [name, stats]  -- "a sword" too wordy
+                                     else [MU.CarWs k name, stats]
+            _ -> return $! "many items at" <+> tshow p
+        else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
+      return (pointedText, Nothing)
+    Just TVector{} ->
+      case mleader of
+        Nothing -> return ("a relative shift", Nothing)
+        Just aid -> do
+          tgtPos <- aidTgtToPos aid lidV target
+          let invalidMsg = "an invalid relative shift"
+              validMsg p = "shift to" <+> tshow p
+          return (maybe invalidMsg validMsg tgtPos, Nothing)
+    Nothing -> return ("crosshair location", Nothing)
+
+targetDescLeader :: MonadClientUI m => ActorId -> m (Text, Maybe Text)
+targetDescLeader leader = do
+  tgt <- getsClient $ getTarget leader
+  targetDesc tgt
+
+targetDescXhair :: MonadClientUI m => m (Text, Maybe Text)
+targetDescXhair = do
+  sxhair <- getsClient sxhair
+  targetDesc $ Just sxhair
 
 drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
 drawBaseFrame dm lid = do
@@ -70,7 +137,7 @@ drawOverlay dm sfBlank sfTop lid = do
 promptGetKey :: MonadClientUI m
              => ColorMode -> Overlay -> Bool -> [K.KM] -> m K.KM
 promptGetKey dm ov sfBlank frontKeyKeys = do
-  lid <- viewedLevel
+  lid <- viewedLevelUI
   keyPressed <- anyKeyPressed
   lastPlayOld <- getsSession slastPlay
   km <- case lastPlayOld of
@@ -112,7 +179,7 @@ overlayToSlideshow :: MonadClientUI m => Overlay -> m Slideshow
 overlayToSlideshow ov = do
   lid <- getArenaUI
   Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
-  report <- getReport
+  report <- getReportUI
   return $! splitOverlay lxsize (lysize + 1) report (ov, [])
 
 reportToSlideshow :: MonadClientUI m => m Slideshow
@@ -282,7 +349,7 @@ describeMainKeys = do
 -- | Render animations on top of the current screen frame.
 animate :: MonadClientUI m => LevelId -> Animation -> m Frames
 animate arena anim = do
-  report <- getReport
+  report <- getReportUI
   let truncRep = [renderReport report]
   basicFrame <- drawOverlay ColorFull False truncRep arena
   snoAnim <- getsClient $ snoAnim . sdebugCli

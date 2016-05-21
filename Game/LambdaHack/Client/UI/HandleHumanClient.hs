@@ -27,7 +27,7 @@ cmdHumanSem cmd =
     -- If in aiming mode, check if the current level is the same
     -- as player level and refuse performing the action otherwise.
     arena <- getArenaUI
-    lidV <- viewedLevel
+    lidV <- viewedLevelUI
     if arena /= lidV then
       weaveJust <$> failWith
         "command disabled on a remote level, press ESC to switch back"

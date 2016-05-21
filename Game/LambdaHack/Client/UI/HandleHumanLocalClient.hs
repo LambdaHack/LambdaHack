@@ -251,7 +251,7 @@ projectCheck tpos = do
 posFromXhair :: MonadClientUI m => m (Either Text Point)
 posFromXhair = do
   leader <- getLeaderUI
-  lidV <- viewedLevel
+  lidV <- viewedLevelUI
   canAim <- aidTgtAims leader lidV Nothing
   case canAim of
     Right newEps -> do
@@ -359,7 +359,7 @@ pickLeaderHuman k = do
 
 pickLeaderWithPointerHuman :: MonadClientUI m => m MError
 pickLeaderWithPointerHuman = do
-  lidV <- viewedLevel
+  lidV <- viewedLevelUI
   Level{lysize} <- getLevel lidV
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -427,7 +427,7 @@ selectAidHuman leader = do
 selectNoneHuman :: (MonadClientUI m, MonadClient m) => m ()
 selectNoneHuman = do
   side <- getsClient sside
-  lidV <- viewedLevel
+  lidV <- viewedLevelUI
   oursAssocs <- getsState $ actorRegularAssocs (== side) lidV
   let ours = ES.fromList $ map fst oursAssocs
   oldSel <- getsSession sselected
@@ -445,7 +445,7 @@ selectNoneHuman = do
 
 selectWithPointerHuman :: MonadClientUI m => m ()
 selectWithPointerHuman = do
-  lidV <- viewedLevel
+  lidV <- viewedLevelUI
   Level{lysize} <- getLevel lidV
   side <- getsClient sside
   ours <- getsState $ filter (not . bproj . snd)
@@ -780,7 +780,7 @@ moveXhairHuman dir n = do
 aimTgtHuman :: MonadClientUI m => m ()
 aimTgtHuman = do
   -- (Re)start aiming at the current level.
-  lidV <- viewedLevel
+  lidV <- viewedLevelUI
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
   -- Set xhair to the personal target, permanently.
   leader <- getLeaderUI
@@ -794,7 +794,7 @@ aimTgtHuman = do
 -- switch among things at that position.
 aimFloorHuman :: MonadClientUI m => m ()
 aimFloorHuman = do
-  lidV <- viewedLevel
+  lidV <- viewedLevelUI
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   xhairPos <- xhairToPos
@@ -824,7 +824,7 @@ aimFloorHuman = do
 
 aimEnemyHuman :: MonadClientUI m => m ()
 aimEnemyHuman = do
-  lidV <- viewedLevel
+  lidV <- viewedLevelUI
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   xhairPos <- xhairToPos
@@ -874,7 +874,7 @@ aimAscendHuman k = do
   dungeon <- getsState sdungeon
   sxhairOld <- getsClient sxhair
   xhairPos <- xhairToPos
-  lidV <- viewedLevel
+  lidV <- viewedLevelUI
   lvl <- getLevel lidV
   let rightStairs = case xhairPos of
         Nothing -> Nothing
@@ -973,7 +973,7 @@ xhairPointerFloorHuman = do
 
 xhairPointerFloor :: MonadClientUI m => Bool -> m ()
 xhairPointerFloor verbose = do
-  lidV <- viewedLevel
+  lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
   Point{..} <- getsSession spointer
   if px >= 0 && py - mapStartY >= 0
@@ -1001,7 +1001,7 @@ xhairPointerEnemyHuman = do
 
 xhairPointerEnemy :: MonadClientUI m => Bool -> m ()
 xhairPointerEnemy verbose = do
-  lidV <- viewedLevel
+  lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
   Point{..} <- getsSession spointer
   if px >= 0 && py - mapStartY >= 0

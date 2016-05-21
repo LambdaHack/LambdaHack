@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.MsgClient
   ( MError, FailOrCmd
   , showFailError, failWith, failSer, failMsg, weaveJust, stopPlayBack
-  , msgAdd, promptAdd, promptAddAttr, recordHistory
+  , splitOKX, msgAdd, promptAdd, promptAddAttr, recordHistory
   , lookAt, itemOverlay
   ) where
 
@@ -85,6 +85,13 @@ stopPlayBack = do
         modifyClient $ updateLeader runLeader s
       modifySession (\sess -> sess {srunning = Nothing})
 
+splitOKX :: MonadClientUI m => Y -> OKX -> m Slideshow
+splitOKX y okx = do
+  lid <- getArenaUI
+  Level{lxsize} <- getLevel lid  -- TODO: screen length or viewLevel
+  report <- getReportUI
+  return $! splitOverlay lxsize y report okx
+
 -- | Add a message to the current report.
 msgAdd :: MonadClientUI m => Text -> m ()
 msgAdd msg = modifySession $ \sess ->
@@ -109,7 +116,6 @@ recordHistory = do
     let nhistory = addReport shistory time _sreport
     modifySession $ \sess -> sess { _sreport = emptyReport
                                   , shistory = nhistory }
-
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.

@@ -256,8 +256,8 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
       -- Only one line of the report is shown, as in animations,
       -- because it may not be our turn, so we can't clear the message
       -- to see what is underneath.
-      lid <- viewedLevel
-      report <- getReport
+      lid <- viewedLevelUI
+      report <- getReportUI
       let truncRep = [renderReport report]
       frame <- drawOverlay ColorFull False truncRep lid
       displayFrame (Just frame)
