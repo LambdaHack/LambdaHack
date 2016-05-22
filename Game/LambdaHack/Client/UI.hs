@@ -108,7 +108,7 @@ humanCommand = do
             return $! init $ fst $ sLast
           _ -> do
             -- Show, one by one, all slides, awaiting confirmation for each.
-            void $ getConfirms ColorFull [K.spaceKM] [K.escKM] sli
+            void $ getConfirms ColorFull [K.spaceKM, K.escKM] sli
             return []
         (seqCurrent, seqPrevious, k) <- getsSession slastRecord
         let slastRecord | k == 0 = ([], seqCurrent, 0)

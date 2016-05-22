@@ -543,7 +543,8 @@ historyHuman = do
             prompt = toAttrLine "The full past message at time "
                      ++ tturns ++ toAttrLine ". [ESC to go back]"
         promptAddAttr prompt
-        escK <- displayChoiceLine (ov0, []) [K.escKM]
+        slides <- overlayToSlideshow (lysize + 1) (ov0, [])
+        escK <- getConfirms ColorFull [K.escKM] slides
         let !_A = assert (escK == K.escKM) ()
         displayAllHistory
   displayAllHistory

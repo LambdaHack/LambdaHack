@@ -283,7 +283,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
     SuitsNothing err -> do
       promptAdd $ err <+> tmoreMsg
       slides <- reportToSlideshow
-      void $ getConfirms ColorFull [K.spaceKM] [K.escKM] slides
+      void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
       return $ const False
     -- When throwing, this function takes missile range into accout.
     SuitsSomething f -> return f
@@ -481,8 +481,9 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   arena <- getArenaUI
   Level{lysize} <- getLevel arena
   ekm <- if null $ fst okx
-         then
-           Left <$> displayChoiceLine okx itemKeys
+         then do
+           slides <- overlayToSlideshow (lysize + 1) okx
+           Left <$> getConfirms ColorFull itemKeys slides
          else do
            lastSlot <- getsClient slastSlot
            let lastPointer = case findIndex ((== Right lastSlot) . fst)
@@ -490,7 +491,8 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
                  Just p | cCur /= MStats -> p
                  _ -> 0
            okxs <- overlayToSlideshow (lysize + 1) okx
-           (okm, pointer) <- displayChoiceScreen ColorFull False lastPointer okxs itemKeys
+           (okm, pointer) <- displayChoiceScreen ColorFull False lastPointer
+                                                 okxs itemKeys
            -- Only remember item pointer, if moved and if not stats.
            case drop pointer $ snd okx of
              (Right newSlot, _) : _ | pointer /= lastPointer

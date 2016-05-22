@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.SlideshowM
   ( overlayToSlideshow, reportToSlideshow
   , displayMore, displayYesNo, getConfirms
-  , displayChoiceScreen, displayChoiceLine, pickNumber
+  , displayChoiceScreen, pickNumber
   ) where
 
 import Prelude ()
@@ -61,19 +61,14 @@ displayConfirm dm trueKeys falseKeys prompt = do
   promptAdd prompt
   -- Two frames drawn total (unless @prompt@ very long).
   slides <- reportToSlideshow
-  b <- getConfirms dm trueKeys falseKeys slides
-  return b
+  km <- getConfirms dm (trueKeys ++ falseKeys) slides
+  return $! km `K.elemOrNull` trueKeys
 
--- | Display a slideshow, awaiting confirmation for each slide
--- and returning a boolean.
 getConfirms :: MonadClientUI m
-            => ColorMode -> [K.KM] -> [K.KM] -> Slideshow -> m Bool
-getConfirms dm trueKeys falseKeys slides = do
-  if slides == mempty then return False else do
-    (ekm, _) <- displayChoiceScreen dm False 0 slides (trueKeys ++ falseKeys)
-    case ekm of
-      Left km -> return $! km `K.elemOrNull` trueKeys
-      Right slot -> assert `failure` slot
+            => ColorMode -> [K.KM] -> Slideshow -> m K.KM
+getConfirms dm extraKeys slides = do
+  (ekm, _) <- displayChoiceScreen dm False 0 slides extraKeys
+  return $! either id (assert `failure` ekm) ekm
 
 displayChoiceScreen :: forall m . MonadClientUI m
                     => ColorMode -> Bool -> Int -> Slideshow -> [K.KM]
@@ -154,15 +149,6 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
           pkm <- promptGetKey dm ov1 sfBlank legalKeys
           interpretKey pkm
   page pointer0
-
--- | Print a prompt and an overlay and wait for a player keypress.
-displayChoiceLine :: MonadClientUI m => OKX -> [K.KM] -> m K.KM
-displayChoiceLine okx extraKeys = do
-  arena <- getArenaUI
-  Level{lysize} <- getLevel arena
-  slides <- overlayToSlideshow (lysize + 1) okx
-  (ekm, _) <- displayChoiceScreen ColorFull False 0 slides extraKeys
-  return $! either id (assert `failure` ekm) ekm
 
 promptGetInt :: MonadClientUI m => Overlay -> m K.KM
 promptGetInt ov = do

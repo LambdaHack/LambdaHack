@@ -584,7 +584,6 @@ quitFactionUI fid mbody toSt = do
               arena <- getArenaUI
               Level{lysize} <- getLevel arena
               io <- itemOverlay CGround (blid b) bag
-              -- TODO: treat as menu and display item description
               sli <- overlayToSlideshow (lysize + 1) io
               return (sli, tot)
       (itemSlides, total) <- case mbody of
@@ -600,7 +599,10 @@ quitFactionUI fid mbody toSt = do
       promptAdd $ pp <+> tmoreMsg
       partingSlide <- reportToSlideshow
       -- TODO: First ESC cancels items display.
-      void $ getConfirms ColorFull [K.spaceKM] [K.escKM]
+      -- TODO: instead of void, display item description, etc.
+      --       also, don't mappend so much, not to mix up menus;
+      --       then also take care of --end- in the middle of the slideshow
+      void $ getConfirms ColorFull [K.spaceKM, K.escKM]
            $ startingSlide <> itemSlides
       -- TODO: Second ESC cancels high score and parting message display.
       -- The last slide stays onscreen during shutdown, etc.

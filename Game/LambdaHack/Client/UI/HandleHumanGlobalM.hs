@@ -748,7 +748,8 @@ alterDirHuman ts = do
       prompt = makePhrase
         ["Where to", verb1 <> "? [movement key, left mouse button, ESC]"]
   promptAdd prompt
-  km <- displayChoiceLine mempty keys
+  slides <- reportToSlideshow
+  km <- getConfirms ColorFull keys slides
   case K.key km of
     K.LeftButtonRelease -> do
       leader <- getLeaderUI
