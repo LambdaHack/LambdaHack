@@ -1,11 +1,8 @@
--- | A set of widgets for UI clients.
-module Game.LambdaHack.Client.UI.WidgetM
-  ( drawOverlay, promptGetKey, promptGetInt
-  , overlayToSlideshow, reportToSlideshow
+-- | A set of Slideshow monad operations.
+module Game.LambdaHack.Client.UI.SlideshowM
+  ( overlayToSlideshow, reportToSlideshow
   , displayMore, displayYesNo, getConfirms
-  , displayChoiceScreen, displayChoiceLine
-  , describeMainKeys
-  , animate, fadeOutOrIn
+  , displayChoiceScreen, displayChoiceLine, pickNumber
   ) where
 
 import Prelude ()
@@ -13,81 +10,19 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Char as Char
-import qualified Data.Map.Strict as M
-import qualified Data.Text as T
 
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.Animation
-import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.DrawM
-import Game.LambdaHack.Client.UI.Frame
-import Game.LambdaHack.Client.UI.HumanCmd
-import Game.LambdaHack.Client.UI.KeyBindings
+import Game.LambdaHack.Client.UI.FrameM
 import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
-import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
-
--- | Draw the current level with the overlay on top.
--- If the overlay is high long, it's truncated.
--- Similarly, for each line of the overlay, if it's too long, it's truncated.
-drawOverlay :: MonadClientUI m
-            => ColorMode -> Bool -> Overlay -> LevelId -> m SingleFrame
-drawOverlay dm sfBlank topTrunc lid = do
-  mbaseFrame <- if sfBlank
-                then return Nothing
-                else Just <$> drawBaseFrame dm lid
-  return $! overlayFrame topTrunc mbaseFrame
-
-promptGetKey :: MonadClientUI m
-             => ColorMode -> Overlay -> Bool -> [K.KM] -> m K.KM
-promptGetKey dm ov sfBlank frontKeyKeys = do
-  lid <- viewedLevelUI
-  keyPressed <- anyKeyPressed
-  lastPlayOld <- getsSession slastPlay
-  km <- case lastPlayOld of
-    km : kms | not keyPressed && km `K.elemOrNull` frontKeyKeys -> do
-      frontKeyFrame <- drawOverlay dm sfBlank ov lid
-      displayFrame $ Just frontKeyFrame
-      modifySession $ \sess -> sess {slastPlay = kms}
-      Config{configRunStopMsgs} <- getsSession sconfig
-      when configRunStopMsgs $ promptAdd $ "Voicing '" <> tshow km <> "'."
-      return km
-    _ : _ -> do
-      -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
-      stopPlayBack
-      discardPressedKey
-      let ov2 = ov <> if keyPressed
-                      then [toAttrLine "*interrupted*"]
-                      else mempty
-      frontKeyFrame <- drawOverlay dm sfBlank ov2 lid
-      connFrontendFrontKey frontKeyKeys frontKeyFrame
-    [] -> do
-      frontKeyFrame <- drawOverlay dm sfBlank ov lid
-      connFrontendFrontKey frontKeyKeys frontKeyFrame
-  (seqCurrent, seqPrevious, k) <- getsSession slastRecord
-  let slastRecord = (km : seqCurrent, seqPrevious, k)
-  modifySession $ \sess -> sess { slastRecord
-                                , sdisplayNeeded = False }
-  return km
-
-promptGetInt :: MonadClientUI m => Overlay -> m K.KM
-promptGetInt ov = do
-  let frontKeyKeys = K.escKM : K.returnKM : K.backspaceKM
-                     : map (K.KM K.NoModifier)
-                         (map (K.Char . Char.intToDigit) [0..9])
-  promptGetKey ColorFull ov False frontKeyKeys
 
 -- | Add current report to the overlay, split the result and produce,
 -- possibly, many slides.
@@ -224,62 +159,34 @@ displayChoiceLine ov extraKeys = do
   (ekm, _) <- displayChoiceScreen ColorFull False 0 slides extraKeys
   return $! either id (assert `failure` ekm) ekm
 
-describeMainKeys :: MonadClientUI m => m Text
-describeMainKeys = do
-  saimMode <- getsSession saimMode
-  Binding{brevMap} <- getsSession sbinding
-  Config{configVi, configLaptop} <- getsSession sconfig
-  xhair <- getsClient sxhair
-  let kmEscape = head $
-        M.findWithDefault [K.KM K.NoModifier K.Esc]
-                          ByAimMode {notAiming = MainMenu, aiming = Cancel}
-                          brevMap
-      kmReturn = head $
-        M.findWithDefault [K.KM K.NoModifier K.Return]
-                          ByAimMode{notAiming = Help $ Just "", aiming = Accept}
-                          brevMap
-      (mkp, moveKeys) | configVi = ("keypad or", "hjklyubn,")
-                      | configLaptop = ("keypad or", "uk8o79jl,")
-                      | otherwise = ("", "keypad keys,")
-      tgtKind = case xhair of
-        TEnemy _ True -> "at actor"
-        TEnemy _ False -> "at enemy"
-        TEnemyPos _ _ _ True -> "at actor"
-        TEnemyPos _ _ _ False -> "at enemy"
-        TPoint{} -> "at position"
-        TVector{} -> "with a vector"
-      keys | isNothing saimMode =
-        "Explore with" <+> mkp <+> "keys or mouse: ["
-        <> moveKeys
-        <+> T.intercalate ", "
-             (map K.showKM [kmReturn, kmEscape])
-        <> "]"
-           | otherwise =
-        "Aim" <+> tgtKind <+> "with" <+> mkp <+> "keys or mouse: ["
-        <> moveKeys
-        <+> T.intercalate ", "
-             (map K.showKM [kmReturn, kmEscape])
-        <> "]"
-  return $! keys
+promptGetInt :: MonadClientUI m => Overlay -> m K.KM
+promptGetInt ov = do
+  let frontKeyKeys = K.escKM : K.returnKM : K.backspaceKM
+                     : map (K.KM K.NoModifier)
+                         (map (K.Char . Char.intToDigit) [0..9])
+  promptGetKey ColorFull ov False frontKeyKeys
 
--- TODO: restrict the animation to 'per' before drawing.
--- | Render animations on top of the current screen frame.
-animate :: MonadClientUI m => LevelId -> Animation -> m Frames
-animate arena anim = do
-  report <- getReportUI
-  let truncRep = [renderReport report]
-  basicFrame <- drawOverlay ColorFull False truncRep arena
-  snoAnim <- getsClient $ snoAnim . sdebugCli
-  return $! if fromMaybe False snoAnim
-            then [Just basicFrame]
-            else renderAnim basicFrame anim
-
-fadeOutOrIn :: MonadClientUI m => Bool -> m ()
-fadeOutOrIn out = do
-  let topRight = True
-  lid <- getArenaUI
-  Level{lxsize, lysize} <- getLevel lid
-  animMap <- rndToAction $ fadeout out topRight 2 lxsize lysize
-  animFrs <- animate lid animMap
-  mapM_ displayFrame $ tail animFrs  -- no basic frame between fadeout and in
-  modifySession $ \sess -> sess {sdisplayNeeded = False}
+pickNumber :: MonadClientUI m => Bool -> Int -> m (Either Text Int)
+pickNumber askNumber kAll = do
+  let gatherNumber kDefaultRaw = do
+        let kDefault = min kAll kDefaultRaw
+            kprompt = "Choose number [digits, BACKSPACE, RET("
+                      <> tshow kDefault
+                      <> "), ESC]"
+        promptAdd kprompt
+        (al, _) : _ <- slideshow <$> reportToSlideshow
+        kkm <- promptGetInt al
+        case K.key kkm of
+          K.Char l | kDefault == kAll -> gatherNumber $ Char.digitToInt l
+          K.Char l -> gatherNumber $ kDefault * 10 + Char.digitToInt l
+          K.BackSpace -> gatherNumber $ kDefault `div` 10
+          K.Return -> return $ Right kDefault
+          K.Esc -> return $ Left "never mind"
+          _ -> assert `failure` "unexpected key:" `twith` kkm
+  if | kAll == 0 -> return $ Left "no number of items can be chosen"
+     | kAll == 1 || not askNumber -> return $ Right kAll
+     | otherwise -> do
+         num <- gatherNumber kAll
+         case num of
+           Right 0 -> return $ Left "zero items chosen"
+           _ -> return num

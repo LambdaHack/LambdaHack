@@ -1,31 +1,66 @@
 -- | Helper functions for both inventory management and human commands.
 module Game.LambdaHack.Client.UI.HandleHelperM
-  ( memberCycle, memberBack, partyAfterLeader, pickLeader, pickNumber
+  ( MError, FailOrCmd
+  , showFailError, failWith, failSer, failMsg, weaveJust
+  , memberCycle, memberBack, partyAfterLeader, pickLeader
+  , itemOverlay, statsOverlay
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Ord
+import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
 
-import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Client.CommonM
+import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgM
+import Game.LambdaHack.Client.UI.Overlay
+import Game.LambdaHack.Client.UI.OverlayM
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
-import Game.LambdaHack.Client.UI.WidgetM
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.ItemDescription
+import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Content.ItemKind as IK
+
+newtype FailError = FailError Text
+  deriving Show
+
+showFailError :: FailError -> Text
+showFailError (FailError err) = "*" <> err <> "*"
+
+type MError = Maybe FailError
+
+type FailOrCmd a = Either FailError a
+
+failWith :: MonadClientUI m => Text -> m (FailOrCmd a)
+failWith err = assert (not $ T.null err) $ return $ Left $ FailError err
+
+failSer :: MonadClientUI m => ReqFailure -> m (FailOrCmd a)
+failSer = failWith . showReqFailure
+
+failMsg :: MonadClientUI m => Text -> m MError
+failMsg err = assert (not $ T.null err) $ return $ Just $ FailError err
+
+weaveJust :: FailOrCmd RequestUI -> Either MError RequestUI
+weaveJust (Left ferr) = Left $ Just ferr
+weaveJust (Right a) = Right a
 
 -- | Switches current member to the next on the level, if any, wrapping.
 memberCycle :: MonadClientUI m => Bool -> m MError
@@ -102,27 +137,84 @@ pickLeader verbose aid = do
       when verbose $ msgAdd lookMsg
       return True
 
-pickNumber :: MonadClientUI m => Bool -> Int -> m (Either Text Int)
-pickNumber askNumber kAll = do
-  let gatherNumber kDefaultRaw = do
-        let kDefault = min kAll kDefaultRaw
-            kprompt = "Choose number [digits, BACKSPACE, RET("
-                      <> tshow kDefault
-                      <> "), ESC]"
-        promptAdd kprompt
-        (al, _) : _ <- slideshow <$> reportToSlideshow
-        kkm <- promptGetInt al
-        case K.key kkm of
-          K.Char l | kDefault == kAll -> gatherNumber $ Char.digitToInt l
-          K.Char l -> gatherNumber $ kDefault * 10 + Char.digitToInt l
-          K.BackSpace -> gatherNumber $ kDefault `div` 10
-          K.Return -> return $ Right kDefault
-          K.Esc -> return $ Left "never mind"
-          _ -> assert `failure` "unexpected key:" `twith` kkm
-  if | kAll == 0 -> return $ Left "no number of items can be chosen"
-     | kAll == 1 || not askNumber -> return $ Right kAll
-     | otherwise -> do
-         num <- gatherNumber kAll
-         case num of
-           Right 0 -> return $ Left "zero items chosen"
-           _ -> return num
+-- | Create a list of item names.
+itemOverlay :: MonadClient m => CStore -> LevelId -> ItemBag -> m OKX
+itemOverlay c lid bag = do
+  localTime <- getsState $ getLocalTime lid
+  itemToF <- itemToFullClient
+  (itemSlots, organSlots) <- getsClient sslots
+  let isOrgan = c == COrgan
+      lSlots = if isOrgan then organSlots else itemSlots
+      !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
+                    `blame` (c, lid, bag, lSlots)) ()
+      pr (l, iid) =
+        case EM.lookup iid bag of
+          Nothing -> Nothing
+          Just kit@(k, _) ->
+            let itemFull = itemToF iid kit
+                label = slotLabel l
+                phrase = makePhrase
+                           [ MU.Text label
+                           , "D"  -- dummy
+                           , partItemWs k c localTime itemFull ]
+                insertSymbol line =
+                  let colorSymbol = uncurry (flip Color.AttrChar)
+                                            (viewItem $ itemBase itemFull)
+                  in take (T.length label + 1) line
+                     ++ [colorSymbol]
+                     ++ drop (T.length label + 2) line
+                ov = updateOverlayLine 0 insertSymbol [toAttrLine phrase]
+                ekm = Right l
+                kx = (ekm, (undefined, 0, T.length phrase))
+            in Just (ov, kx)
+      (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
+  return (concat ts, kxs)
+
+statsOverlay :: MonadClient m => ActorId -> m OKX
+statsOverlay aid = do
+  b <- getsState $ getActorBody aid
+  activeItems <- activeItemsClient aid
+  let block n = n + if braced b then 50 else 0
+      prSlot :: SlotChar -> (IK.EqpSlot, Int -> Text) -> (Text, KYX)
+      prSlot c (eqpSlot, f) =
+        let fullText t =
+              makePhrase [ MU.Text $ slotLabel c
+                         , MU.Text $ T.justifyLeft 22 ' '
+                                   $ IK.slotName eqpSlot
+                         , MU.Text t ]
+            valueText = f $ sumSlotNoFilter eqpSlot activeItems
+            ft = fullText valueText
+        in (ft, (Right c, (undefined, 0, T.length ft)))
+      -- Some values can be negative, for others 0 is equivalent but shorter.
+      slotList =  -- TODO:  [IK.EqpSlotAddHurtMelee..IK.EqpSlotAddLight]
+        [ (IK.EqpSlotAddHurtMelee, \t -> tshow t <> "%")
+        -- TODO: not applicable right now, IK.EqpSlotAddHurtRanged
+        , (IK.EqpSlotAddArmorMelee, \t -> "[" <> tshow (block t) <> "%]")
+        , (IK.EqpSlotAddArmorRanged, \t -> "{" <> tshow (block t) <> "%}")
+        , (IK.EqpSlotAddMaxHP, \t -> tshow $ max 0 t)
+        , (IK.EqpSlotAddMaxCalm, \t -> tshow $ max 0 t)
+        , (IK.EqpSlotAddSpeed, \t -> tshow (max 0 t) <> "m/10s")
+        , (IK.EqpSlotAddSight, \t ->
+            tshow (max 0 $ min (fromIntegral $ bcalm b `div` (5 * oneM)) t)
+            <> "m")
+        , (IK.EqpSlotAddSmell, \t -> tshow (max 0 t) <> "m")
+        , (IK.EqpSlotAddLight, \t -> tshow (max 0 t) <> "m")
+        ]
+      skills = sumSkills activeItems
+      -- TODO: are negative total skills meaningful?
+      -- TODO: unduplicate with prSlot
+      prAbility :: SlotChar -> Ability.Ability -> (Text, KYX)
+      prAbility c ability =
+        let fullText t =
+              makePhrase [ MU.Text $ slotLabel c
+                         , MU.Text $ T.justifyLeft 22 ' '
+                           $ "ability" <+> tshow ability
+                         , MU.Text t ]
+            valueText = tshow $ EM.findWithDefault 0 ability skills
+            ft = fullText valueText
+        in (ft, (Right c, (undefined, 0, T.length ft)))
+      abilityList = [minBound..maxBound]
+      reslot c = either (prSlot c) (prAbility c)
+      zipReslot = zipWith reslot allZeroSlots
+      (ts, kxs) = unzip $ zipReslot $ map Left slotList ++ map Right abilityList
+  return (map toAttrLine ts, kxs)

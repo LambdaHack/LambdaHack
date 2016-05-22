@@ -30,19 +30,16 @@ import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
-import Game.LambdaHack.Client.UI.WidgetM
-import qualified Game.LambdaHack.Common.Ability as Ability
+import Game.LambdaHack.Client.UI.SlideshowM
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Content.ItemKind as IK
 
 data ItemDialogState = ISuitable | IAll
   deriving (Show, Eq)
@@ -448,55 +445,6 @@ keyOfEKM _ (Left km) = Just km
 keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
   Just $ K.KM K.NoModifier $ K.Char slotChar
 keyOfEKM _ _ = Nothing
-
-statsOverlay :: MonadClient m => ActorId -> m OKX
-statsOverlay aid = do
-  b <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
-  let block n = n + if braced b then 50 else 0
-      prSlot :: SlotChar -> (IK.EqpSlot, Int -> Text) -> (Text, KYX)
-      prSlot c (eqpSlot, f) =
-        let fullText t =
-              makePhrase [ MU.Text $ slotLabel c
-                         , MU.Text $ T.justifyLeft 22 ' '
-                                   $ IK.slotName eqpSlot
-                         , MU.Text t ]
-            valueText = f $ sumSlotNoFilter eqpSlot activeItems
-            ft = fullText valueText
-        in (ft, (Right c, (undefined, 0, T.length ft)))
-      -- Some values can be negative, for others 0 is equivalent but shorter.
-      slotList =  -- TODO:  [IK.EqpSlotAddHurtMelee..IK.EqpSlotAddLight]
-        [ (IK.EqpSlotAddHurtMelee, \t -> tshow t <> "%")
-        -- TODO: not applicable right now, IK.EqpSlotAddHurtRanged
-        , (IK.EqpSlotAddArmorMelee, \t -> "[" <> tshow (block t) <> "%]")
-        , (IK.EqpSlotAddArmorRanged, \t -> "{" <> tshow (block t) <> "%}")
-        , (IK.EqpSlotAddMaxHP, \t -> tshow $ max 0 t)
-        , (IK.EqpSlotAddMaxCalm, \t -> tshow $ max 0 t)
-        , (IK.EqpSlotAddSpeed, \t -> tshow (max 0 t) <> "m/10s")
-        , (IK.EqpSlotAddSight, \t ->
-            tshow (max 0 $ min (fromIntegral $ bcalm b `div` (5 * oneM)) t)
-            <> "m")
-        , (IK.EqpSlotAddSmell, \t -> tshow (max 0 t) <> "m")
-        , (IK.EqpSlotAddLight, \t -> tshow (max 0 t) <> "m")
-        ]
-      skills = sumSkills activeItems
-      -- TODO: are negative total skills meaningful?
-      -- TODO: unduplicate with prSlot
-      prAbility :: SlotChar -> Ability.Ability -> (Text, KYX)
-      prAbility c ability =
-        let fullText t =
-              makePhrase [ MU.Text $ slotLabel c
-                         , MU.Text $ T.justifyLeft 22 ' '
-                           $ "ability" <+> tshow ability
-                         , MU.Text t ]
-            valueText = tshow $ EM.findWithDefault 0 ability skills
-            ft = fullText valueText
-        in (ft, (Right c, (undefined, 0, T.length ft)))
-      abilityList = [minBound..maxBound]
-      reslot c = either (prSlot c) (prAbility c)
-      zipReslot = zipWith reslot allZeroSlots
-      (ts, kxs) = unzip $ zipReslot $ map Left slotList ++ map Right abilityList
-  return (map toAttrLine ts, kxs)
 
 legalWithUpdatedLeader :: MonadClientUI m
                        => ItemDialogMode

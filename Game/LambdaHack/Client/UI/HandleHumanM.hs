@@ -9,11 +9,11 @@ import Game.LambdaHack.Common.Prelude
 
 import Data.Functor.Infix ((<$$>))
 
+import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.HandleHumanGlobalM
 import Game.LambdaHack.Client.UI.HandleHumanLocalM
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Common.Request
 
 -- | The semantics of human player commands in terms of the @Action@ monad.

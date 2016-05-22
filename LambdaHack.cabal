@@ -132,6 +132,7 @@ library
                       Game.LambdaHack.Client.UI.DrawM
                       Game.LambdaHack.Client.UI.DisplayAtomicM
                       Game.LambdaHack.Client.UI.Frame
+                      Game.LambdaHack.Client.UI.FrameM
                       Game.LambdaHack.Client.UI.Frontend
                       Game.LambdaHack.Client.UI.Frontend.Chosen
                       Game.LambdaHack.Client.UI.Frontend.Common
@@ -147,10 +148,11 @@ library
                       Game.LambdaHack.Client.UI.Msg
                       Game.LambdaHack.Client.UI.MsgM
                       Game.LambdaHack.Client.UI.Overlay
+                      Game.LambdaHack.Client.UI.OverlayM
                       Game.LambdaHack.Client.UI.RunM
                       Game.LambdaHack.Client.UI.SessionUI
                       Game.LambdaHack.Client.UI.Slideshow
-                      Game.LambdaHack.Client.UI.WidgetM
+                      Game.LambdaHack.Client.UI.SlideshowM
                       Game.LambdaHack.Common.Ability
                       Game.LambdaHack.Common.Actor
                       Game.LambdaHack.Common.ActorState
