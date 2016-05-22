@@ -17,8 +17,7 @@ import GHCJS.DOM (WebView, enableInspector, postGUISync, runWebGUI,
                   webViewGetDomDocument)
 import GHCJS.DOM.CSSStyleDeclaration (removeProperty, setProperty)
 import GHCJS.DOM.Document (createElement, getBody, keyDown, keyPress)
-import GHCJS.DOM.Element (contextMenu, dblClick, getStyle, mouseUp,
-                          setInnerHTML, wheel)
+import GHCJS.DOM.Element (contextMenu, getStyle, mouseUp, setInnerHTML, wheel)
 import GHCJS.DOM.EventM (EventM, mouseAltKey, mouseButton, mouseCtrlKey,
                          mouseMetaKey, mouseShiftKey, on, preventDefault)
 import GHCJS.DOM.HTMLCollection (item)
@@ -39,8 +38,8 @@ import GHCJS.DOM.UIEvent (getCharCode, getKeyCode, getWhich)
 import GHCJS.DOM.WheelEvent (getDeltaY)
 
 import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Frontend.Common
-import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
@@ -296,7 +295,7 @@ display :: DebugModeCli
         -> IO ()
 display DebugModeCli{scolorIsBold}
         FrontendSession{..}
-        SingleFrame{sfLevel} = postGUISync $ do
+        SingleFrame{singleFrame} = postGUISync $ do
   let setChar :: (HTMLTableCellElement, Color.AttrChar) -> IO ()
       setChar (cell, Color.AttrChar{acAttr=acAttr@Color.Attr{..}, acChar}) = do
         let s = if acChar == ' ' then [chr 160] else [acChar]
@@ -325,7 +324,7 @@ display DebugModeCli{scolorIsBold}
               let ourColor = Color.colorToRGB Color.BrYellow
               in setProp style "border-color" ourColor
             _ -> setProp style "border-color" "transparent"
-      acs = concat $ overlay sfLevel
+      acs = concat singleFrame
   -- Sync, no point mutitasking threads in the single-threaded JS
   callback <- newRequestAnimationFrameCallbackSync $ \_ -> do
     mapM_ setChar $ zip scharCells acs
