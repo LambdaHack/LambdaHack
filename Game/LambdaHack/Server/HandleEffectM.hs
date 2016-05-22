@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
-module Game.LambdaHack.Server.HandleEffectServer
+module Game.LambdaHack.Server.HandleEffectM
   ( applyItem, itemEffectAndDestroy, effectAndDestroy, itemEffectCause
   , dropCStoreItem, pickDroppable, armorHurtBonus
   ) where
@@ -38,11 +38,11 @@ import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
-import Game.LambdaHack.Server.CommonServer
-import Game.LambdaHack.Server.ItemServer
+import Game.LambdaHack.Server.CommonM
+import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.PeriodicServer
-import Game.LambdaHack.Server.StartServer
+import Game.LambdaHack.Server.PeriodicM
+import Game.LambdaHack.Server.StartM
 import Game.LambdaHack.Server.State
 
 -- + Semantics of effects

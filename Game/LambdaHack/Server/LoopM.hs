@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs #-}
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
-module Game.LambdaHack.Server.LoopServer
+module Game.LambdaHack.Server.LoopM
   ( loopSer
   ) where
 
@@ -35,14 +35,14 @@ import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Server.EndServer
+import Game.LambdaHack.Server.EndM
 import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.HandleEffectServer
-import Game.LambdaHack.Server.HandleRequestServer
+import Game.LambdaHack.Server.HandleEffectM
+import Game.LambdaHack.Server.HandleRequestM
 import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.PeriodicServer
-import Game.LambdaHack.Server.ProtocolServer
-import Game.LambdaHack.Server.StartServer
+import Game.LambdaHack.Server.PeriodicM
+import Game.LambdaHack.Server.ProtocolM
+import Game.LambdaHack.Server.StartM
 import Game.LambdaHack.Server.State
 
 -- | Start a game session, including the clients, and then loop,

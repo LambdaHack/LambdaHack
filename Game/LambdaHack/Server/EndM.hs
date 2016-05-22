@@ -1,6 +1,6 @@
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
-module Game.LambdaHack.Server.EndServer
+module Game.LambdaHack.Server.EndM
   ( endOrLoop, dieSer
   ) where
 
@@ -19,9 +19,9 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Server.CommonServer
-import Game.LambdaHack.Server.HandleEffectServer
-import Game.LambdaHack.Server.ItemServer
+import Game.LambdaHack.Server.CommonM
+import Game.LambdaHack.Server.HandleEffectM
+import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 

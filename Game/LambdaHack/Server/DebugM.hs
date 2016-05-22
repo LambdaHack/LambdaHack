@@ -1,5 +1,5 @@
 -- | Debug output for requests and responseQs.
-module Game.LambdaHack.Server.DebugServer
+module Game.LambdaHack.Server.DebugM
   ( debugResponseAI, debugResponseUI
   , debugRequestAI, debugRequestUI
   ) where

@@ -1,6 +1,6 @@
 -- | Server operations performed periodically in the game loop
 -- and related operations.
-module Game.LambdaHack.Server.PeriodicServer
+module Game.LambdaHack.Server.PeriodicM
   ( spawnMonster, addAnyActor, dominateFidSfx
   , advanceTime, swapTime, managePerTurn, leadLevelSwitch, udpateCalm
   ) where
@@ -35,8 +35,8 @@ import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
-import Game.LambdaHack.Server.CommonServer
-import Game.LambdaHack.Server.ItemServer
+import Game.LambdaHack.Server.CommonM
+import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 

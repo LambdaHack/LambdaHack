@@ -37,7 +37,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Server.ProtocolServer
+import Game.LambdaHack.Server.ProtocolM
 
 data CliState sess resp req = CliState
   { cliState   :: !State        -- ^ current global state

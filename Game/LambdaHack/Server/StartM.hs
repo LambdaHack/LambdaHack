@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 -- | Operations for starting and restarting the game.
-module Game.LambdaHack.Server.StartServer
+module Game.LambdaHack.Server.StartM
   ( gameReset, reinitGame, initPer, recruitActors, applyDebug, initDebug
   ) where
 
@@ -41,11 +41,11 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
-import Game.LambdaHack.Server.CommonServer
+import Game.LambdaHack.Server.CommonM
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ItemRev
-import Game.LambdaHack.Server.ItemServer
+import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 

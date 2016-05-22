@@ -8,7 +8,7 @@
 -- are already issued by the point an expression is evaluated, they do not
 -- influence the outcome of the evaluation.
 -- TODO: document
-module Game.LambdaHack.Server.HandleRequestServer
+module Game.LambdaHack.Server.HandleRequestM
   ( handleRequestAI, handleRequestUI, reqMove, reqDisplace
   ) where
 
@@ -38,9 +38,9 @@ import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
-import Game.LambdaHack.Server.CommonServer
-import Game.LambdaHack.Server.HandleEffectServer
-import Game.LambdaHack.Server.ItemServer
+import Game.LambdaHack.Server.CommonM
+import Game.LambdaHack.Server.HandleEffectM
+import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 

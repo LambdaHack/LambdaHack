@@ -16,6 +16,6 @@ module Game.LambdaHack.Server
 import Prelude ()
 
 import Game.LambdaHack.Server.Commandline
-import Game.LambdaHack.Server.LoopServer
+import Game.LambdaHack.Server.LoopM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State

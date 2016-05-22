@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 -- | Server operations common to many modules.
-module Game.LambdaHack.Server.CommonServer
+module Game.LambdaHack.Server.CommonM
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, moveStores, deduceQuits, deduceKilled, electLeader
   , addActor, addActorIid, projectFail
@@ -42,7 +42,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.ItemServer
+import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 

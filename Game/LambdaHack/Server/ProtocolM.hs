@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 -- | The server definitions for the server-client communication protocol.
-module Game.LambdaHack.Server.ProtocolServer
+module Game.LambdaHack.Server.ProtocolM
   ( -- * The communication channels
     ChanServer(..)
   , ConnServerDict  -- exposed only to be implemented, not used
@@ -44,7 +44,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Server.DebugServer
+import Game.LambdaHack.Server.DebugM
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
 import Game.LambdaHack.Server.State
 

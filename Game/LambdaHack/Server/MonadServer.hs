@@ -50,7 +50,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Server.FileServer
+import Game.LambdaHack.Server.FileM
 import Game.LambdaHack.Server.State
 
 class MonadStateRead m => MonadServer m where

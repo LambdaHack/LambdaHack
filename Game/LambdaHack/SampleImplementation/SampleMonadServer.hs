@@ -31,10 +31,10 @@ import Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Thread
-import Game.LambdaHack.Server.CommonServer
-import Game.LambdaHack.Server.FileServer
+import Game.LambdaHack.Server.CommonM
+import Game.LambdaHack.Server.FileM
 import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.ProtocolServer
+import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.State
 
 data SerState = SerState
