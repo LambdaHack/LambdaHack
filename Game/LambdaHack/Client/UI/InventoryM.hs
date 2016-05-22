@@ -482,14 +482,14 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   Level{lysize} <- getLevel arena
   ekm <- if null $ fst okx
          then
-           Left <$> displayChoiceLine (fst okx) itemKeys
+           Left <$> displayChoiceLine okx itemKeys
          else do
            lastSlot <- getsClient slastSlot
            let lastPointer = case findIndex ((== Right lastSlot) . fst)
                                             (snd okx) of
                  Just p | cCur /= MStats -> p
                  _ -> 0
-           okxs <- splitOKX (lysize + 1) okx
+           okxs <- overlayToSlideshow (lysize + 1) okx
            (okm, pointer) <- displayChoiceScreen ColorFull False lastPointer okxs itemKeys
            -- Only remember item pointer, if moved and if not stats.
            case drop pointer $ snd okx of

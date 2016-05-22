@@ -521,7 +521,7 @@ historyHuman = do
       rh = renderHistory history
       kxs = [(Right n, (undefined, 0, lxsize)) | n <- take (length rh) intSlots]
   promptAdd msg
-  okxs <- splitOKX (lysize + 3) (rh, kxs)
+  okxs <- overlayToSlideshow (lysize + 3) (rh, kxs)
   let displayAllHistory = do
         menuIxHistory <- getsSession smenuIxHistory
         (ekm, pointer) <-
@@ -543,7 +543,7 @@ historyHuman = do
             prompt = toAttrLine "The full past message at time "
                      ++ tturns ++ toAttrLine ". [ESC to go back]"
         promptAddAttr prompt
-        escK <- displayChoiceLine ov0 [K.escKM]
+        escK <- displayChoiceLine (ov0, []) [K.escKM]
         let !_A = assert (escK == K.escKM) ()
         displayAllHistory
   displayAllHistory

@@ -581,9 +581,11 @@ quitFactionUI fid mbody toSt = do
             if EM.null bag then return (mempty, 0)
             else do
               promptAdd itemMsg
+              arena <- getArenaUI
+              Level{lysize} <- getLevel arena
               io <- itemOverlay CGround (blid b) bag
               -- TODO: treat as menu and display item description
-              sli <- overlayToSlideshow $ fst io
+              sli <- overlayToSlideshow (lysize + 1) io
               return (sli, tot)
       (itemSlides, total) <- case mbody of
         Just b | fid == side -> bodyToItemSlides b

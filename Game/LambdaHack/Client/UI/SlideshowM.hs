@@ -26,16 +26,19 @@ import Game.LambdaHack.Common.Point
 
 -- | Add current report to the overlay, split the result and produce,
 -- possibly, many slides.
-overlayToSlideshow :: MonadClientUI m => Overlay -> m Slideshow
-overlayToSlideshow ov = do
-  lid <- getArenaUI
-  Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
+overlayToSlideshow :: MonadClientUI m => Y -> OKX -> m Slideshow
+overlayToSlideshow y okx = do
+  arena <- getArenaUI
+  Level{lxsize} <- getLevel arena  -- TODO: screen length or viewLevel
   report <- getReportUI
-  return $! splitOverlay lxsize (lysize + 1) report (ov, [])
+  return $! splitOverlay lxsize y report okx
 
 -- | Split current report into a slideshow.
 reportToSlideshow :: MonadClientUI m => m Slideshow
-reportToSlideshow = overlayToSlideshow mempty
+reportToSlideshow = do
+  arena <- getArenaUI
+  Level{lysize} <- getLevel arena
+  overlayToSlideshow (lysize + 1) ([], [])
 
 -- | Display a message with a @more@ prompt.
 -- Return value indicates if the player tried to cancel/escape.
@@ -153,9 +156,11 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
   page pointer0
 
 -- | Print a prompt and an overlay and wait for a player keypress.
-displayChoiceLine :: MonadClientUI m => Overlay -> [K.KM] -> m K.KM
-displayChoiceLine ov extraKeys = do
-  slides <- overlayToSlideshow ov
+displayChoiceLine :: MonadClientUI m => OKX -> [K.KM] -> m K.KM
+displayChoiceLine okx extraKeys = do
+  arena <- getArenaUI
+  Level{lysize} <- getLevel arena
+  slides <- overlayToSlideshow (lysize + 1) okx
   (ekm, _) <- displayChoiceScreen ColorFull False 0 slides extraKeys
   return $! either id (assert `failure` ekm) ekm
 
