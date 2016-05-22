@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 -- | Handle atomic commands received by the client.
-module Game.LambdaHack.Client.HandleAtomicClient
+module Game.LambdaHack.Client.HandleAtomicM
   ( cmdAtomicSemCli, cmdAtomicFilterCli
   ) where
 
@@ -13,7 +13,7 @@ import qualified Data.EnumSet as ES
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor

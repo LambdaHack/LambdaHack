@@ -1,5 +1,5 @@
 -- | Client monad for interacting with a human through UI.
-module Game.LambdaHack.Client.UI.MsgClient
+module Game.LambdaHack.Client.UI.MsgM
   ( MError, FailOrCmd
   , showFailError, failWith, failSer, failMsg, weaveJust, stopPlayBack
   , splitOKX, msgAdd, promptAdd, promptAddAttr, recordHistory
@@ -15,7 +15,7 @@ import qualified Data.Text as T
 import qualified Game.LambdaHack.Common.Kind as Kind
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State

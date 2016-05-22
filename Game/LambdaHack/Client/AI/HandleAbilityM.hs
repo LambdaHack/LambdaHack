@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 -- | Semantics of abilities in terms of actions and the AI procedure
 -- for picking the best action for an actor.
-module Game.LambdaHack.Client.AI.HandleAbilityClient
+module Game.LambdaHack.Client.AI.HandleAbilityM
   ( actionStrategy
   ) where
 
@@ -17,11 +17,11 @@ import qualified Data.Map.Strict as M
 import Data.Ord
 import Data.Ratio
 
-import Game.LambdaHack.Client.AI.ConditionClient
+import Game.LambdaHack.Client.AI.ConditionM
 import Game.LambdaHack.Client.AI.Preferences
 import Game.LambdaHack.Client.AI.Strategy
-import Game.LambdaHack.Client.BfsClient
-import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.BfsM
+import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability

@@ -1,5 +1,5 @@
 -- | Semantics of human player commands.
-module Game.LambdaHack.Client.UI.HandleHumanClient
+module Game.LambdaHack.Client.UI.HandleHumanM
   ( cmdHumanSem
   ) where
 
@@ -9,11 +9,11 @@ import Game.LambdaHack.Common.Prelude
 
 import Data.Functor.Infix ((<$$>))
 
-import Game.LambdaHack.Client.UI.HandleHumanGlobalClient
-import Game.LambdaHack.Client.UI.HandleHumanLocalClient
+import Game.LambdaHack.Client.UI.HandleHumanGlobalM
+import Game.LambdaHack.Client.UI.HandleHumanLocalM
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.MsgClient
+import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Common.Request
 
 -- | The semantics of human player commands in terms of the @Action@ monad.

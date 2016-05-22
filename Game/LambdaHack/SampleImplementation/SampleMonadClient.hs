@@ -25,9 +25,9 @@ import System.FilePath
 import Game.LambdaHack.Atomic.HandleAtomicWrite
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
-import Game.LambdaHack.Client.FileClient
+import Game.LambdaHack.Client.FileM
 import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.ProtocolClient
+import Game.LambdaHack.Client.ProtocolM
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.SessionUI

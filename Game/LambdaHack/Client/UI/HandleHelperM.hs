@@ -1,5 +1,5 @@
 -- | Helper functions for both inventory management and human commands.
-module Game.LambdaHack.Client.UI.HandleHelperClient
+module Game.LambdaHack.Client.UI.HandleHelperM
   ( memberCycle, memberBack, partyAfterLeader, pickLeader, pickNumber
   ) where
 
@@ -15,10 +15,10 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.MsgClient
+import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
-import Game.LambdaHack.Client.UI.WidgetClient
+import Game.LambdaHack.Client.UI.WidgetM
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction

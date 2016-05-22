@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP, TupleSections #-}
 -- | Breadth first search and realted algorithms using the client monad.
-module Game.LambdaHack.Client.BfsClient
+module Game.LambdaHack.Client.BfsM
   ( invalidateBfs, getCacheBfsAndPath, getCacheBfs, accessCacheBfs
   , unexploredDepth, closestUnknown, closestSuspect, closestSmell, furthestKnown
   , closestTriggers, closestItems, closestFoes
@@ -16,7 +16,7 @@ import qualified Data.EnumSet as ES
 import Data.Ord
 
 import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability

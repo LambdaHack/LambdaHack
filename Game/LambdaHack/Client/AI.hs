@@ -16,9 +16,9 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
-import Game.LambdaHack.Client.AI.HandleAbilityClient
-import Game.LambdaHack.Client.AI.PickActorClient
-import Game.LambdaHack.Client.AI.PickTargetClient
+import Game.LambdaHack.Client.AI.HandleAbilityM
+import Game.LambdaHack.Client.AI.PickActorM
+import Game.LambdaHack.Client.AI.PickTargetM
 import Game.LambdaHack.Client.AI.Strategy
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State

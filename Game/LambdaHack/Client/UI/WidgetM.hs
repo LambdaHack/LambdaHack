@@ -1,5 +1,5 @@
 -- | A set of widgets for UI clients.
-module Game.LambdaHack.Client.UI.WidgetClient
+module Game.LambdaHack.Client.UI.WidgetM
   ( drawOverlay, promptGetKey, promptGetInt
   , overlayToSlideshow, reportToSlideshow
   , displayMore, displayYesNo, getConfirms
@@ -22,13 +22,13 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.DrawClient
+import Game.LambdaHack.Client.UI.DrawM
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
-import Game.LambdaHack.Client.UI.MsgClient
+import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow

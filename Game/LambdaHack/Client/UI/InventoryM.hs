@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 -- | Inventory management and party cycling.
 -- TODO: document
-module Game.LambdaHack.Client.UI.InventoryClient
+module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..)
   , getGroupItem, getAnyItems, getStoreItem
   , storeFromMode, ppItemDialogMode
@@ -17,20 +17,20 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.HandleHelperClient
+import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.MsgClient
+import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
-import Game.LambdaHack.Client.UI.WidgetClient
+import Game.LambdaHack.Client.UI.WidgetM
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState

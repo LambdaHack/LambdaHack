@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, FunctionalDependencies, RankNTypes, TupleSections
              #-}
 -- | The client-server communication monads.
-module Game.LambdaHack.Client.ProtocolClient
+module Game.LambdaHack.Client.ProtocolM
   ( MonadClientReadResponse(..), MonadClientWriteRequest(..)
   ) where
 

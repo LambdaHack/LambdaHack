@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 -- | Saving/loading with serialization and compression.
-module Game.LambdaHack.Client.FileClient
+module Game.LambdaHack.Client.FileM
   ( encodeEOF, strictDecodeEOF, tryCreateDir, tryCopyDataFiles, appDataDir
   ) where
 

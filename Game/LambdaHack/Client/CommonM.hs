@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 -- | Common client monad operations.
-module Game.LambdaHack.Client.CommonClient
+module Game.LambdaHack.Client.CommonM
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
   , actorSkillsClient, updateItemSlot, fullAssocsClient, activeItemsClient

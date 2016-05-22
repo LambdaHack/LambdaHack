@@ -10,4 +10,4 @@ module Game.LambdaHack.Client
 
 import Prelude ()
 
-import Game.LambdaHack.Client.LoopClient
+import Game.LambdaHack.Client.LoopM

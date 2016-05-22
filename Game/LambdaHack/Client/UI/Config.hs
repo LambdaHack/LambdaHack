@@ -21,7 +21,7 @@ import System.Directory
 import System.FilePath
 import Text.Read
 
-import Game.LambdaHack.Client.FileClient
+import Game.LambdaHack.Client.FileM
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Common.Kind as Kind

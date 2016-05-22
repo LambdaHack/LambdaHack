@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- | Semantics of client commands.
-module Game.LambdaHack.Client.HandleResponseClient
+module Game.LambdaHack.Client.HandleResponseM
   ( handleResponseAI, handleResponseUI
   ) where
 
@@ -10,9 +10,9 @@ import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.AI
-import Game.LambdaHack.Client.HandleAtomicClient
+import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.ProtocolClient
+import Game.LambdaHack.Client.ProtocolM
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Common.Request

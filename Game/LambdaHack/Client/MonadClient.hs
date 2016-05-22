@@ -20,7 +20,7 @@ import Data.Binary
 import System.Directory
 import System.FilePath
 
-import Game.LambdaHack.Client.FileClient
+import Game.LambdaHack.Client.FileM
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction

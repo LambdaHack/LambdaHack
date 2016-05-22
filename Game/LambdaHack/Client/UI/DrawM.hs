@@ -1,6 +1,6 @@
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
-module Game.LambdaHack.Client.UI.DrawClient
+module Game.LambdaHack.Client.UI.DrawM
   ( targetDescLeader, drawBaseFrame
   ) where
 
@@ -14,8 +14,8 @@ import Data.Ord
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Client.BfsClient
-import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.BfsM
+import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Frame

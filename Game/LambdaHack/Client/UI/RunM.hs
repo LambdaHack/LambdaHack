@@ -10,7 +10,7 @@
 --
 -- Some things are never ignored, such as: enemies seen, imporant messages
 -- heard, solid tiles and actors in the way.
-module Game.LambdaHack.Client.UI.RunClient
+module Game.LambdaHack.Client.UI.RunM
   ( continueRun
   ) where
 

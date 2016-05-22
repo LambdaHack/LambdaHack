@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 -- | Let AI pick the best target for an actor.
-module Game.LambdaHack.Client.AI.PickTargetClient
+module Game.LambdaHack.Client.AI.PickTargetM
   ( targetStrategy, createPath
   ) where
 
@@ -11,12 +11,12 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
-import Game.LambdaHack.Client.AI.ConditionClient
+import Game.LambdaHack.Client.AI.ConditionM
 import Game.LambdaHack.Client.AI.Preferences
 import Game.LambdaHack.Client.AI.Strategy
 import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Client.BfsClient
-import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.BfsM
+import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability

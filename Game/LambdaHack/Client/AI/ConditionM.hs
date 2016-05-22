@@ -1,6 +1,6 @@
 -- | Semantics of abilities in terms of actions and the AI procedure
 -- for picking the best action for an actor.
-module Game.LambdaHack.Client.AI.ConditionClient
+module Game.LambdaHack.Client.AI.ConditionM
   ( condAimEnemyPresentM
   , condAimEnemyRememberedM
   , condAimEnemyAdjFriendM
@@ -34,7 +34,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Ord
 
 import Game.LambdaHack.Client.AI.Preferences
-import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability

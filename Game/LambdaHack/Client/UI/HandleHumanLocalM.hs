@@ -1,7 +1,7 @@
 -- | Semantics of 'HumanCmd' client commands that do not return
 -- server commands. None of such commands takes game time.
 -- TODO: document
-module Game.LambdaHack.Client.UI.HandleHumanLocalClient
+module Game.LambdaHack.Client.UI.HandleHumanLocalM
   ( -- * Meta commands
     macroHuman
     -- * Local commands
@@ -36,28 +36,28 @@ import qualified Data.Text as T
 import Data.Version
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.BfsClient
-import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.BfsM
+import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.DrawClient
+import Game.LambdaHack.Client.UI.DrawM
 import Game.LambdaHack.Client.UI.Frontend (frontendName)
-import Game.LambdaHack.Client.UI.HandleHelperClient
+import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.HumanCmd (Trigger (..))
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
-import Game.LambdaHack.Client.UI.InventoryClient
+import Game.LambdaHack.Client.UI.InventoryM
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
-import Game.LambdaHack.Client.UI.MsgClient
+import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
-import Game.LambdaHack.Client.UI.WidgetClient
+import Game.LambdaHack.Client.UI.WidgetM
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState

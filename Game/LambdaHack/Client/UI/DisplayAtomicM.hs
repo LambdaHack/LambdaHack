@@ -1,5 +1,5 @@
 -- | Display atomic commands received by the client.
-module Game.LambdaHack.Client.UI.DisplayAtomicClient
+module Game.LambdaHack.Client.UI.DisplayAtomicM
   ( displayRespUpdAtomicUI, displayRespSfxAtomicUI
   ) where
 
@@ -13,7 +13,7 @@ import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
@@ -21,10 +21,10 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
-import Game.LambdaHack.Client.UI.MsgClient
+import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.SessionUI
-import Game.LambdaHack.Client.UI.WidgetClient
+import Game.LambdaHack.Client.UI.WidgetM
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color

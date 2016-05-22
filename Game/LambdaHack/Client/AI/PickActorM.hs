@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 -- | Semantics of most 'ResponseAI' client commands.
-module Game.LambdaHack.Client.AI.PickActorClient
+module Game.LambdaHack.Client.AI.PickActorM
   ( pickActorToMove
   ) where
 
@@ -12,10 +12,10 @@ import Control.Arrow
 import qualified Data.EnumMap.Strict as EM
 import Data.Ord
 
-import Game.LambdaHack.Client.AI.ConditionClient
-import Game.LambdaHack.Client.AI.PickTargetClient
-import Game.LambdaHack.Client.BfsClient
-import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.AI.ConditionM
+import Game.LambdaHack.Client.AI.PickTargetM
+import Game.LambdaHack.Client.BfsM
+import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability

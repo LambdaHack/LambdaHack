@@ -23,7 +23,7 @@ import Data.Time.Clock.POSIX
 import Data.Time.LocalTime
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.CommonM
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
