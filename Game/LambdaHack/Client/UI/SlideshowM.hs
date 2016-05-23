@@ -26,25 +26,25 @@ import Game.LambdaHack.Common.Point
 
 -- | Add current report to the overlay, split the result and produce,
 -- possibly, many slides.
-overlayToSlideshow :: MonadClientUI m => Y -> OKX -> m Slideshow
-overlayToSlideshow y okx = do
+overlayToSlideshow :: MonadClientUI m => Y -> [K.KM] -> OKX -> m Slideshow
+overlayToSlideshow y keys okx = do
   arena <- getArenaUI
   Level{lxsize} <- getLevel arena  -- TODO: screen length or viewLevel
   report <- getReportUI
-  return $! splitOverlay lxsize y report okx
+  return $! splitOverlay lxsize y report keys okx
 
 -- | Split current report into a slideshow.
-reportToSlideshow :: MonadClientUI m => m Slideshow
-reportToSlideshow = do
+reportToSlideshow :: MonadClientUI m => [K.KM] -> m Slideshow
+reportToSlideshow keys = do
   arena <- getArenaUI
   Level{lysize} <- getLevel arena
-  overlayToSlideshow (lysize + 1) ([], [])
+  overlayToSlideshow (lysize + 1) keys ([], [])
 
 -- | Display a message with a @more@ prompt.
 -- Return value indicates if the player tried to cancel/escape.
 displayMore :: MonadClientUI m => ColorMode -> Text -> m Bool
 displayMore dm prompt =
-  displayConfirm dm [K.spaceKM] [K.escKM] (prompt <+> tmoreMsg)
+  displayConfirm dm [K.spaceKM] [K.escKM] prompt
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
@@ -52,7 +52,7 @@ displayYesNo :: MonadClientUI m => ColorMode -> Text -> m Bool
 displayYesNo dm prompt =
   displayConfirm dm [K.KM K.NoModifier (K.Char 'y')]
                     [K.KM K.NoModifier (K.Char 'n'), K.escKM]
-                    (prompt <+> tyesnoMsg)
+                    prompt
 
 -- | Add a prompt to report and wait for a player keypress.
 displayConfirm :: MonadClientUI m
@@ -60,7 +60,7 @@ displayConfirm :: MonadClientUI m
 displayConfirm dm trueKeys falseKeys prompt = do
   promptAdd prompt
   -- Two frames drawn total (unless @prompt@ very long).
-  slidesRaw <- reportToSlideshow
+  slidesRaw <- reportToSlideshow (trueKeys ++ falseKeys)
   let stripEnd (rest, (ov, okx)) = menuToSlideshow (init ov, init okx) <> rest
       slides = maybe slidesRaw stripEnd $ unsnoc slidesRaw
   km <- getConfirms dm (trueKeys ++ falseKeys) slides
@@ -153,16 +153,17 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either Text Int)
 pickNumber askNumber kAll = do
-  let frontKeyKeys = K.escKM : K.returnKM : K.backspaceKM
-                     : map (K.KM K.NoModifier)
-                         (map (K.Char . Char.intToDigit) [0..9])
+  let shownKeys = [K.returnKM, K.backspaceKM, K.escKM]
+      frontKeyKeys = shownKeys
+                     ++ map (K.KM K.NoModifier)
+                          (map (K.Char . Char.intToDigit) [0..9])
       gatherNumber kDefaultRaw = do
         let kDefault = min kAll kDefaultRaw
-            kprompt = "Choose number [digits, BACKSPACE, RET("
-                      <> tshow kDefault
-                      <> "), ESC]"
+            kprompt = "Choose number (default"
+                      <+> tshow kDefault
+                      <> ") [digits]"
         promptAdd kprompt
-        (ov, _) : _ <- slideshow <$> reportToSlideshow
+        (ov, _) : _ <- slideshow <$> reportToSlideshow shownKeys
         kkm <- promptGetKey ColorFull ov False frontKeyKeys
         case K.key kkm of
           K.Char l | kDefault == kAll -> gatherNumber $ Char.digitToInt l

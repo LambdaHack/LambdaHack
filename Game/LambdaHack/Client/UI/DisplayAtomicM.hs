@@ -569,7 +569,7 @@ quitFactionUI fid mbody toSt = do
       promptAdd $ msg <+> tmoreMsg
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
-      startingSlide <- reportToSlideshow
+      startingSlide <- reportToSlideshow []
       recordHistory  -- we are going to exit or restart, so record and clear
       let bodyToItemSlides b = do
             (bag, tot) <- getsState $ calculateTotal b
@@ -584,7 +584,7 @@ quitFactionUI fid mbody toSt = do
               arena <- getArenaUI
               Level{lysize} <- getLevel arena
               io <- itemOverlay CGround (blid b) bag
-              sli <- overlayToSlideshow (lysize + 1) io
+              sli <- overlayToSlideshow (lysize + 1) [] io
               return (sli, tot)
       (itemSlides, total) <- case mbody of
         Just b | fid == side -> bodyToItemSlides b
@@ -596,8 +596,8 @@ quitFactionUI fid mbody toSt = do
       -- Show score for any UI client (except after ESC),
       -- even though it is saved only for human UI clients.
       scoreSlides <- scoreToSlideshow total status
-      promptAdd $ pp <+> tmoreMsg
-      partingSlide <- reportToSlideshow
+      promptAdd $ pp
+      partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
       -- TODO: First ESC cancels items display.
       -- TODO: instead of void, display item description, etc.
       --       also, don't mappend so much, not to mix up menus;

@@ -100,7 +100,7 @@ humanCommand = do
               modifySession $ \sess -> sess {skeysHintMode = KeysHintAbsent}
             _ -> return ()
         else modifySession $ \sess -> sess {skeysHintMode = KeysHintBlocked}
-        slidesRaw <- reportToSlideshow
+        slidesRaw <- reportToSlideshow []
         over <- case unsnoc slidesRaw of
           Nothing -> return []
           Just (allButLast, (ov, _)) -> do

@@ -75,12 +75,6 @@ consReport m (Report ms) =
   let Report ms2 = snocReport (Report $ reverse ms) m
   in Report $ reverse ms2
 
-infixr 6 <+:>  -- matches Monoid.<>
-(<+:>) :: AttrLine -> AttrLine -> AttrLine
-(<+:>) [] l2 = l2
-(<+:>) l1 [] = l1
-(<+:>) l1 l2 = l1 ++ toAttrLine " " ++ l2
-
 -- | Render a report as a (possibly very long) 'AttrLine'.
 renderReport :: Report  -> AttrLine
 renderReport (Report []) = []

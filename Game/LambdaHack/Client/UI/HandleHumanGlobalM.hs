@@ -746,9 +746,9 @@ alterDirHuman ts = do
              : K.leftButtonReleaseKM
              : map (K.KM K.NoModifier) (K.dirAllKey configVi configLaptop)
       prompt = makePhrase
-        ["Where to", verb1 <> "? [movement key, left mouse button, ESC]"]
+        ["Where to", verb1 <> "? [movement key] [LMB]"]
   promptAdd prompt
-  slides <- reportToSlideshow
+  slides <- reportToSlideshow [K.escKM]
   km <- getConfirms ColorFull keys slides
   case K.key km of
     K.LeftButtonRelease -> do

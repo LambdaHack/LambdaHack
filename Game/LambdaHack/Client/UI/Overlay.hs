@@ -1,11 +1,11 @@
 -- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
   ( -- * AttrLine
-    AttrLine, toAttrLine, splitAttrLine, itemDesc
+    AttrLine, toAttrLine, (<+:>), splitAttrLine, itemDesc
     -- * Overlay
   , Overlay, updateOverlayLine
     -- * Misc
-  , ColorMode(..), tmoreMsg, tendMsg, tyesnoMsg
+  , ColorMode(..), tmoreMsg, tendMsg
   ) where
 
 import Prelude ()
@@ -30,6 +30,12 @@ type AttrLine = [Color.AttrChar]
 
 toAttrLine :: Text -> AttrLine
 toAttrLine = map (Color.AttrChar Color.defAttr) . T.unpack
+
+infixr 6 <+:>  -- matches Monoid.<>
+(<+:>) :: AttrLine -> AttrLine -> AttrLine
+(<+:>) [] l2 = l2
+(<+:>) l1 [] = l1
+(<+:>) l1 l2 = l1 ++ toAttrLine " " ++ l2
 
 -- | Split a string into lines. Avoids ending the line with a character
 -- other than whitespace or punctuation. Space characters are removed
@@ -107,6 +113,3 @@ tmoreMsg = "--more--  "
 
 tendMsg :: Text
 tendMsg = "--end--  "
-
-tyesnoMsg :: Text
-tyesnoMsg = "[y, n, ESC]"

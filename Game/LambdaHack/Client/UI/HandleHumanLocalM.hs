@@ -517,11 +517,10 @@ historyHuman = do
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
         , MU.Text (tshow turnsLocal) <> ")" ]
-        <+> "[ESC to cancel]"
       rh = renderHistory history
       kxs = [(Right n, (undefined, 0, lxsize)) | n <- take (length rh) intSlots]
   promptAdd msg
-  okxs <- overlayToSlideshow (lysize + 3) (rh, kxs)
+  okxs <- overlayToSlideshow (lysize + 3) [K.escKM] (rh, kxs)
   let displayAllHistory = do
         menuIxHistory <- getsSession smenuIxHistory
         (ekm, pointer) <-
@@ -541,9 +540,9 @@ historyHuman = do
             -- TODO: print over history, not over dungeon;
             -- expand this history item, not switch views completely;
             prompt = toAttrLine "The full past message at time "
-                     ++ tturns ++ toAttrLine ". [ESC to go back]"
+                     ++ tturns ++ toAttrLine "."
         promptAddAttr prompt
-        slides <- overlayToSlideshow (lysize + 1) (ov0, [])
+        slides <- overlayToSlideshow (lysize + 1) [K.escKM] (ov0, [])
         escK <- getConfirms ColorFull [K.escKM] slides
         let !_A = assert (escK == K.escKM) ()
         displayAllHistory
