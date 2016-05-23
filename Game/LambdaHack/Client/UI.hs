@@ -100,16 +100,15 @@ humanCommand = do
               modifySession $ \sess -> sess {skeysHintMode = KeysHintAbsent}
             _ -> return ()
         else modifySession $ \sess -> sess {skeysHintMode = KeysHintBlocked}
-        sli <- reportToSlideshow
-        over <- case slideshow sli of
-          [sLast] ->
+        slidesRaw <- reportToSlideshow
+        over <- case unsnoc slidesRaw of
+          Nothing -> return []
+          Just (allButLast, (ov, _)) -> do
+            -- Show, one by one, all but last, awaiting confirmation for each.
+            void $ getConfirms ColorFull [K.spaceKM, K.escKM] allButLast
             -- Display the last generated slide while waiting for next key.
             -- Strip the "--end-" prompt from it.
-            return $! init $ fst $ sLast
-          _ -> do
-            -- Show, one by one, all slides, awaiting confirmation for each.
-            void $ getConfirms ColorFull [K.spaceKM, K.escKM] sli
-            return []
+            return $ init ov
         (seqCurrent, seqPrevious, k) <- getsSession slastRecord
         let slastRecord | k == 0 = ([], seqCurrent, 0)
                         | otherwise = ([], seqCurrent ++ seqPrevious, k - 1)

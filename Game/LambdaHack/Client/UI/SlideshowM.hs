@@ -60,7 +60,9 @@ displayConfirm :: MonadClientUI m
 displayConfirm dm trueKeys falseKeys prompt = do
   promptAdd prompt
   -- Two frames drawn total (unless @prompt@ very long).
-  slides <- reportToSlideshow
+  slidesRaw <- reportToSlideshow
+  let stripEnd (rest, (ov, okx)) = menuToSlideshow (init ov, init okx) <> rest
+      slides = maybe slidesRaw stripEnd $ unsnoc slidesRaw
   km <- getConfirms dm (trueKeys ++ falseKeys) slides
   return $! km `K.elemOrNull` trueKeys
 
@@ -70,6 +72,7 @@ getConfirms dm extraKeys slides = do
   (ekm, _) <- displayChoiceScreen dm False 0 slides extraKeys
   return $! either id (assert `failure` ekm) ekm
 
+-- The resulting key either is space or belongs to @extraKeys@.
 displayChoiceScreen :: forall m . MonadClientUI m
                     => ColorMode -> Bool -> Int -> Slideshow -> [K.KM]
                     -> m (Either K.KM SlotChar, Int)
@@ -138,35 +141,29 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                     page (max 0 (pointer - ixOnPage - 1))
                   _ | K.key ikm `elem` [K.PgDn, K.WheelSouth] ->
                     page (min maxIx (pointer + pageLen - ixOnPage))
-                  K.Space | pointer == maxIx && K.spaceKM `elem` extraKeys ->
-                    -- If Space permitted, only exits at the end of slideshow.
-                    return (Left K.spaceKM, pointer)
                   K.Space ->
-                    page (min maxIx (pointer + pageLen - ixOnPage))
+                    if pointer == maxIx then return (Left K.spaceKM, pointer)
+                    else page (min maxIx (pointer + pageLen - ixOnPage))
                   _ | ikm `K.elemOrNull` keys ->
                     return (Left ikm, pointer)
                   _ -> assert `failure` "unknown key" `twith` ikm
           pkm <- promptGetKey dm ov1 sfBlank legalKeys
           interpretKey pkm
-  page pointer0
-
-promptGetInt :: MonadClientUI m => Overlay -> m K.KM
-promptGetInt ov = do
-  let frontKeyKeys = K.escKM : K.returnKM : K.backspaceKM
-                     : map (K.KM K.NoModifier)
-                         (map (K.Char . Char.intToDigit) [0..9])
-  promptGetKey ColorFull ov False frontKeyKeys
+  if null frs then return (Left K.spaceKM, pointer0) else page pointer0
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either Text Int)
 pickNumber askNumber kAll = do
-  let gatherNumber kDefaultRaw = do
+  let frontKeyKeys = K.escKM : K.returnKM : K.backspaceKM
+                     : map (K.KM K.NoModifier)
+                         (map (K.Char . Char.intToDigit) [0..9])
+      gatherNumber kDefaultRaw = do
         let kDefault = min kAll kDefaultRaw
             kprompt = "Choose number [digits, BACKSPACE, RET("
                       <> tshow kDefault
                       <> "), ESC]"
         promptAdd kprompt
-        (al, _) : _ <- slideshow <$> reportToSlideshow
-        kkm <- promptGetInt al
+        (ov, _) : _ <- slideshow <$> reportToSlideshow
+        kkm <- promptGetKey ColorFull ov False frontKeyKeys
         case K.key kkm of
           K.Char l | kDefault == kAll -> gatherNumber $ Char.digitToInt l
           K.Char l -> gatherNumber $ kDefault * 10 + Char.digitToInt l

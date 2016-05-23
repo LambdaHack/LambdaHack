@@ -2,7 +2,7 @@
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
   ( KYX, OKX, Slideshow(slideshow)
-  , toSlideshow, menuToSlideshow, textsToSlideshow
+  , unsnoc, toSlideshow, menuToSlideshow, textsToSlideshow
   , splitOverlay
   ) where
 
@@ -18,12 +18,18 @@ import Game.LambdaHack.Common.Point
 
 type KYX = (Either K.KM SlotChar, (Y, X, X))
 
--- Neither list may be empty.
 type OKX = (Overlay, [KYX])
 
--- May be empty, but nothing inside may be empty. TODO: assert in constructors
+-- May be empty, but both of each @OKX@ list have to be nonempty.
+-- Guaranteed by construction.
 newtype Slideshow = Slideshow {slideshow :: [OKX]}
   deriving (Show, Eq, Monoid)
+
+unsnoc :: Slideshow -> Maybe (Slideshow, OKX)
+unsnoc Slideshow{slideshow} =
+  case reverse slideshow of
+    [] -> Nothing
+    okx : rest -> Just (Slideshow $ reverse rest, okx)
 
 toSlideshow :: [OKX] -> Slideshow
 toSlideshow okxs = Slideshow $ addFooters okxs
@@ -31,10 +37,10 @@ toSlideshow okxs = Slideshow $ addFooters okxs
   addFooters [] = assert `failure` okxs
   addFooters [(als, kxs)] =
     [( als ++ [toAttrLine tendMsg]
-     , kxs ++ [(Left K.escKM, (length als, 0, 8))] )]
+     , kxs ++ [(Left K.spaceKM, (length als, 0, 8))] )]
   addFooters ((als, kxs) : rest) =
     ( als ++ [toAttrLine tmoreMsg]
-    , kxs ++ [(Left K.pgdnKM, (length als, 0, 8))] )
+    , kxs ++ [(Left K.spaceKM, (length als, 0, 8))] )
     : addFooters rest
 
 menuToSlideshow :: OKX -> Slideshow
