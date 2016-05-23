@@ -105,7 +105,7 @@ humanCommand = do
           Nothing -> return []
           Just (allButLast, (ov, _)) -> do
             -- Show, one by one, all but last, awaiting confirmation for each.
-            void $ getConfirms ColorFull [K.spaceKM, K.escKM] allButLast
+            void $ getConfirms ColorFull [K.escKM] allButLast
             -- Display the last generated slide while waiting for next key.
             -- Strip the "--end-" prompt from it.
             return $ init ov

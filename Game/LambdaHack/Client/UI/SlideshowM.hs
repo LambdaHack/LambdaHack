@@ -43,28 +43,22 @@ reportToSlideshow keys = do
 -- | Display a message with a @more@ prompt.
 -- Return value indicates if the player tried to cancel/escape.
 displayMore :: MonadClientUI m => ColorMode -> Text -> m Bool
-displayMore dm prompt =
-  displayConfirm dm [K.spaceKM] [K.escKM] prompt
+displayMore dm prompt = do
+  promptAdd prompt
+  -- Two frames drawn total (unless @prompt@ very long).
+  slides <- reportToSlideshow [K.spaceKM, K.escKM]
+  km <- getConfirms dm [K.spaceKM, K.escKM] slides
+  return $! km == K.spaceKM
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
 displayYesNo :: MonadClientUI m => ColorMode -> Text -> m Bool
-displayYesNo dm prompt =
-  displayConfirm dm [K.KM K.NoModifier (K.Char 'y')]
-                    [K.KM K.NoModifier (K.Char 'n'), K.escKM]
-                    prompt
-
--- | Add a prompt to report and wait for a player keypress.
-displayConfirm :: MonadClientUI m
-               => ColorMode -> [K.KM] -> [K.KM] -> Text -> m Bool
-displayConfirm dm trueKeys falseKeys prompt = do
+displayYesNo dm prompt = do
   promptAdd prompt
-  -- Two frames drawn total (unless @prompt@ very long).
-  slidesRaw <- reportToSlideshow (trueKeys ++ falseKeys)
-  let stripEnd (rest, (ov, okx)) = menuToSlideshow (init ov, init okx) <> rest
-      slides = maybe slidesRaw stripEnd $ unsnoc slidesRaw
-  km <- getConfirms dm (trueKeys ++ falseKeys) slides
-  return $! km `K.elemOrNull` trueKeys
+  let yn = map (K.KM K.NoModifier . K.Char) ['y', 'n']
+  slides <- reportToSlideshow yn
+  km <- getConfirms dm (K.escKM : yn) slides
+  return $! km == K.KM K.NoModifier (K.Char 'y')
 
 getConfirms :: MonadClientUI m
             => ColorMode -> [K.KM] -> Slideshow -> m K.KM

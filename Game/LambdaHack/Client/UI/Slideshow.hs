@@ -37,9 +37,10 @@ toSlideshow :: [OKX] -> Slideshow
 toSlideshow okxs = Slideshow $ addFooters okxs
  where
   addFooters [] = assert `failure` okxs
-  addFooters [(als, kxs)] =
+  addFooters [(als, [])] =
     [( als ++ [toAttrLine tendMsg]
-     , kxs ++ [(Left K.spaceKM, (length als, 0, 8))] )]
+     , [(Left K.spaceKM, (length als, 0, 8))] )]
+  addFooters [(als, kxs)] = [(als, kxs)]
   addFooters ((als, kxs) : rest) =
     ( als ++ [toAttrLine tmoreMsg]
     , kxs ++ [(Left K.spaceKM, (length als, 0, 8))] )
