@@ -75,7 +75,8 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
   let frs = slideshow frsX
       keys = concatMap (mapMaybe (either Just (const Nothing) . fst) . snd) frs
              ++ extraKeys
-      scrollKeys = [K.leftButtonReleaseKM, K.returnKM, K.upKM, K.downKM]
+      scrollKeys = [ K.leftButtonReleaseKM, K.returnKM
+                   , K.upKM, K.leftKM, K.downKM, K.rightKM ]
       pageKeys = [ K.spaceKM, K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
                  , K.homeKM, K.endKM ]
       legalKeys = keys ++ scrollKeys ++ pageKeys
@@ -125,10 +126,12 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                       Just (ckm, _) -> case ckm of
                         Left km -> interpretKey km
                         _ -> return (ckm, pointer)
-                  K.Up | pointer == 0 -> page maxIx
-                  K.Up -> page (max 0 (pointer - 1))
-                  K.Down | pointer == maxIx -> page 0
-                  K.Down -> page (min maxIx (pointer + 1))
+                  _ | K.key ikm `elem` [K.Up, K.Left] ->
+                    if pointer == 0 then page maxIx
+                    else page (max 0 (pointer - 1))
+                  _ | K.key ikm `elem` [K.Down, K.Right] ->
+                    if pointer == maxIx then page 0
+                    else page (min maxIx (pointer + 1))
                   K.Home -> page 0
                   K.End -> page maxIx
                   _ | K.key ikm `elem` [K.PgUp, K.WheelNorth] ->
