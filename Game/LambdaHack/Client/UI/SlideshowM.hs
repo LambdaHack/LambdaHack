@@ -1,7 +1,7 @@
 -- | A set of Slideshow monad operations.
 module Game.LambdaHack.Client.UI.SlideshowM
   ( overlayToSlideshow, reportToSlideshow
-  , displayMore, displayYesNo, getConfirms
+  , displaySpaceEsc, displayMore, displayYesNo, getConfirms
   , displayChoiceScreen, pickNumber
   ) where
 
@@ -40,15 +40,23 @@ reportToSlideshow keys = do
   Level{lysize} <- getLevel arena
   overlayToSlideshow (lysize + 1) keys ([], [])
 
--- | Display a message with a @more@ prompt.
--- Return value indicates if the player tried to cancel/escape.
-displayMore :: MonadClientUI m => ColorMode -> Text -> m Bool
-displayMore dm prompt = do
+-- | Display a message. Return value indicates if the player tried to cancel.
+-- Feature: if many pages, only the last SPACE exits (but first ESC).
+displaySpaceEsc :: MonadClientUI m => ColorMode -> Text -> m Bool
+displaySpaceEsc dm prompt = do
   promptAdd prompt
   -- Two frames drawn total (unless @prompt@ very long).
   slides <- reportToSlideshow [K.spaceKM, K.escKM]
-  km <- getConfirms dm [] slides
+  km <- getConfirms dm [K.spaceKM] slides
   return $! km == K.spaceKM
+
+-- | Display a message. Ignore keypresses.
+-- Feature: if many pages, only the last SPACE exits (but first ESC).
+displayMore :: MonadClientUI m => ColorMode -> Text -> m ()
+displayMore dm prompt = do
+  promptAdd prompt
+  slides <- reportToSlideshow [K.spaceKM]
+  void $ getConfirms dm [K.spaceKM] slides
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
@@ -66,7 +74,7 @@ getConfirms dm extraKeys slides = do
   (ekm, _) <- displayChoiceScreen dm False 0 slides extraKeys
   return $! either id (assert `failure` ekm) ekm
 
--- The resulting key either is SPACE or ESC or belongs to @extraKeys@.
+-- The resulting key either is ESC or belongs to @extraKeys@.
 displayChoiceScreen :: forall m . MonadClientUI m
                     => ColorMode -> Bool -> Int -> Slideshow -> [K.KM]
                     -> m (Either K.KM SlotChar, Int)
@@ -74,12 +82,11 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
   let frs = slideshow frsX
       keys = concatMap (mapMaybe (either Just (const Nothing) . fst) . snd) frs
              ++ extraKeys
-      scrollKeys = [ K.leftButtonReleaseKM, K.returnKM
-                   , K.upKM, K.leftKM, K.downKM, K.rightKM ]
-      pageKeys = [ K.escKM, K.spaceKM
-                 , K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
-                 , K.homeKM, K.endKM ]
-      legalKeys = keys ++ scrollKeys ++ pageKeys
+      navigationKeys = [ K.escKM, K.leftButtonReleaseKM, K.returnKM, K.spaceKM
+                       , K.upKM, K.leftKM, K.downKM, K.rightKM
+                       , K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
+                       , K.homeKM, K.endKM ]
+      legalKeys = keys ++ navigationKeys
       -- The arguments go from first menu line and menu page to the last,
       -- in order. Their indexing is from 0. We select the closest item
       -- with the index equal or less to the pointer, or if there is none,
@@ -138,16 +145,16 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                     page (max 0 (pointer - ixOnPage - 1))
                   _ | K.key ikm `elem` [K.PgDn, K.WheelSouth] ->
                     page (min maxIx (pointer + pageLen - ixOnPage))
-                  K.Space ->
-                    if pointer == maxIx then return (Left K.spaceKM, pointer)
-                    else page (min maxIx (pointer + pageLen - ixOnPage))
+                  K.Space | pointer + pageLen - ixOnPage <= maxIx ->
+                    page (pointer + pageLen - ixOnPage)
                   K.Esc -> return (Left K.escKM, pointer)
                   _ | ikm `K.elemOrNull` keys ->
                     return (Left ikm, pointer)
+                  K.Space -> page pointer
                   _ -> assert `failure` "unknown key" `twith` ikm
           pkm <- promptGetKey dm ov1 sfBlank legalKeys
           interpretKey pkm
-  if null frs then return (Left K.spaceKM, pointer0) else page pointer0
+  if null frs then return (Left K.escKM, pointer0) else page pointer0
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either Text Int)
 pickNumber askNumber kAll = do

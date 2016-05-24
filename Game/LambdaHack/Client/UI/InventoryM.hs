@@ -282,9 +282,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   psuitFun <- case mpsuit of
     SuitsEverything -> return $ const True
     SuitsNothing err -> do
-      promptAdd err
-      slides <- reportToSlideshow [K.escKM]
-      void $ getConfirms ColorFull [] slides
+      displayMore ColorFull err
       return $ const False
     -- When throwing, this function takes missile range into accout.
     SuitsSomething f -> return f

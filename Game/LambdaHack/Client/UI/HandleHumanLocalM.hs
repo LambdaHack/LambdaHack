@@ -522,14 +522,14 @@ historyHuman = do
             | sn <- take (length rh) intSlots ]
   promptAdd msg
   okxs <- overlayToSlideshow (lysize + 3) [K.escKM] (rh, kxs)
-  let displayAllHistory = do
+  let promptExit = promptAdd "Try to survive a few seconds more, if you can."
+      displayAllHistory = do
         menuIxHistory <- getsSession smenuIxHistory
         (ekm, pointer) <-
           displayChoiceScreen ColorFull True menuIxHistory okxs []
         modifySession $ \sess -> sess {smenuIxHistory = pointer}
         case ekm of
-          Left km | km `elem` [K.spaceKM, K.escKM] ->
-            promptAdd "Try to survive a few seconds more, if you can."
+          Left km | km `elem` [K.escKM] -> promptExit
           Right SlotChar{..} | slotChar == 'a' -> displayOneReport slotPrefix
           _ -> assert `failure` ekm
       displayOneReport histSlot = do
@@ -540,10 +540,10 @@ historyHuman = do
             prompt = toAttrLine "The full past message at time "
                      ++ tturns ++ toAttrLine "."
         promptAddAttr prompt
-        slides <- overlayToSlideshow (lysize + 1) [K.escKM] (ov0, [])
-        escK <- getConfirms ColorFull [] slides
-        let !_A = assert (escK == K.escKM) ()
-        displayAllHistory
+        slides <-
+          overlayToSlideshow (lysize + 1) [K.backspaceKM, K.escKM] (ov0, [])
+        km <- getConfirms ColorFull [K.backspaceKM] slides
+        if km == K.backspaceKM then displayAllHistory else promptExit
   displayAllHistory
 
 -- * MarkVision

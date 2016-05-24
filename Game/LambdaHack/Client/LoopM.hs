@@ -140,7 +140,7 @@ loopUI copsClient sconfig sdebugCli = do
   fact <- getsState $ (EM.! side) . sfactionD
   when (isAIFact fact) $
     -- Prod the frontend to flush frames and start showing then continuously.
-    void $ displayMore ColorFull
+    displayMore ColorFull
       "The team is under AI control (press any key to stop)."
   -- State and client state now valid.
   debugPrint $ "UI client" <+> tshow side <+> "started."

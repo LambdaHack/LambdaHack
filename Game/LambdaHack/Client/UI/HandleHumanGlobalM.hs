@@ -849,11 +849,11 @@ verifyTrigger leader feat = case feat of
         (_, total) <- getsState $ calculateTotal b
         if total == 0 then do
           -- The player can back off at each of these steps.
-          go1 <- displayMore ColorBW
+          go1 <- displaySpaceEsc ColorBW
                    "Afraid of the challenge? Leaving so soon and empty-handed?"
           if not go1 then failWith "brave soul!"
           else do
-             go2 <- displayMore ColorBW
+             go2 <- displaySpaceEsc ColorBW
                      "Next time try to grab some loot before escape!"
              if not go2 then failWith "here's your chance!"
              else return $ Right ()
@@ -1045,7 +1045,7 @@ tacticHuman = do
   fid <- getsClient sside
   fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
   let toT = if fromT == maxBound then minBound else succ fromT
-  go <- displayMore ColorFull
+  go <- displaySpaceEsc ColorFull
         $ "Current tactic is '" <> tshow fromT
           <> "'. Switching tactic to '" <> tshow toT
           <> "'. (This clears targets.)"
@@ -1059,7 +1059,7 @@ automateHuman :: MonadClientUI m => m (FailOrCmd RequestUI)
 automateHuman = do
   -- BFS is not updated while automated, which would lead to corruption.
   modifySession $ \sess -> sess {saimMode = Nothing}
-  go <- displayMore ColorBW
+  go <- displaySpaceEsc ColorBW
           "Ceding control to AI (press any key to regain)."
   if not go
     then failWith "automation canceled"
