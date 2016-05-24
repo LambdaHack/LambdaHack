@@ -12,6 +12,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Char as Char
+import Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
@@ -242,7 +243,7 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
                  0 cCur cRest ISuitable
 
 data DefItemKey m = DefItemKey
-  { defLabel  :: Text  -- ^ can be undefined if not @defCond@
+  { defLabel  :: Either Text K.KM  -- ^ can be undefined if not @defCond@
   , defCond   :: !Bool
   , defAction :: Either K.KM SlotChar
                  -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
@@ -323,21 +324,24 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         Just [] -> assert `failure` brevMap
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
-        [ (K.KM K.NoModifier $ K.Char '?', DefItemKey
-           { defLabel = "?"
+        [ let km = K.KM K.NoModifier $ K.Char '?'
+          in (km, DefItemKey
+           { defLabel = Right km
            , defCond = bag /= bagSuit
            , defAction = \_ -> recCall numPrefix cCur cRest
                                $ case itemDialogState of
                                    ISuitable -> IAll
                                    IAll -> ISuitable
            })
-        , (K.KM K.NoModifier $ K.Char '/', changeContainerDef "/")
-        , (K.KM K.NoModifier $ K.KP '/', changeContainerDef "")
-        , (K.KM K.NoModifier $ K.Char '!', useMultipleDef "!")
-        , (K.KM K.NoModifier $ K.KP '*', useMultipleDef "")
+        , let km = K.KM K.NoModifier $ K.Char '/'
+          in (km, changeContainerDef $ Right km)
+        , (K.KM K.NoModifier $ K.KP '/', changeContainerDef $ Left "")
+        , let km = K.KM K.NoModifier $ K.Char '!'
+          in (km, useMultipleDef $ Right km)
+        , (K.KM K.NoModifier $ K.KP '*', useMultipleDef $ Left "")
         , let km = revCmd (K.KM K.NoModifier K.Tab) MemberCycle
           in (km, DefItemKey
-           { defLabel = K.showKM km
+           { defLabel = Right km
            , defCond = not (cCur == MOwned
                             || autoLvl
                             || not (any (\(_, b) -> blid b == blid body) hs))
@@ -349,7 +353,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
            })
         , let km = revCmd (K.KM K.NoModifier K.BackTab) MemberBack
           in (km, DefItemKey
-           { defLabel = K.showKM km
+           { defLabel = Right km
            , defCond = not (cCur == MOwned || autoDun || null hs)
            , defAction = \_ -> do
                err <- memberBack False
@@ -358,7 +362,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                recCall numPrefix cCurUpd cRestUpd itemDialogState
            })
         , (K.escKM, DefItemKey
-           { defLabel = "ESC"
+           { defLabel = Right K.escKM
            , defCond = True
            , defAction = \_ -> return $ Left "never mind"
            })
@@ -387,7 +391,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         }
       prefixCmdDef d =
         (K.KM K.NoModifier $ K.Char $ Char.intToDigit d, DefItemKey
-           { defLabel = ""
+           { defLabel = Left ""
            , defCond = True
            , defAction = \_ ->
                recCall (10 * numPrefix + d) cCur cRest itemDialogState
@@ -395,7 +399,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       numberPrefixes = map prefixCmdDef [0..9]
       lettersDef :: DefItemKey m
       lettersDef = DefItemKey
-        { defLabel = ""
+        { defLabel = Left ""
         , defCond = True
         , defAction = \ekm ->
             let slot = case ekm of
@@ -422,7 +426,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
           slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
           statsDef :: DefItemKey m
           statsDef = DefItemKey
-            { defLabel = ""
+            { defLabel = Left ""
             , defCond = True
             , defAction = \ekm ->
             let _slot = case ekm of
@@ -473,11 +477,10 @@ runDefItemKey :: MonadClientUI m
               -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
 runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   let itemKeys = slotKeys ++ map fst keyDefs
-      choice = let letterRange = defLabel lettersDef
-                   keyLabelsRaw = letterRange : map (defLabel . snd) keyDefs
-                   keyLabels = filter (not . T.null) keyLabelsRaw
-               in "[" <> T.intercalate ", " (nub keyLabels) <> "]"
-      keys = []  -- TODO
+      wrapB s = "[" <> s <> "]"
+      (keyLabelsRaw, keys) = partitionEithers $ map (defLabel . snd) keyDefs
+      keyLabels = filter (not . T.null) keyLabelsRaw
+      choice = T.intercalate " " $ map wrapB $ nub keyLabels
   promptAdd $ prompt <+> choice
   arena <- getArenaUI
   Level{lysize} <- getLevel arena
