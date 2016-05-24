@@ -56,8 +56,8 @@ menuToSlideshow (als, kxs) =
 textsToSlideshow :: [[Text]] -> Slideshow
 textsToSlideshow = toSlideshow . map (\t -> (map toAttrLine t, []))
 
-splitKeys :: Y -> X -> X -> [K.KM] -> OKX
-splitKeys ystart xstart xBound keys =
+keysOKX :: Y -> X -> X -> [K.KM] -> OKX
+keysOKX ystart xstart xBound keys =
   let wrapB s = "[" <> s <> "]"
       f ((y, x), (kL, kV, kX)) key =
         let ks = wrapB $ K.showKM key
@@ -73,26 +73,24 @@ splitOverlay :: X -> Y -> Report -> [K.KM] -> OKX -> Slideshow
 splitOverlay lxsize yspace report keys (ls0, kxs0) =
   assert (length ls0 == length kxs0 && yspace > 2) $
   let rrep = renderReport report
-      (lX0, keysX0) = splitKeys 0 0 maxBound keys
       msgRaw = splitAttrLine lxsize rrep
-      (msg, rkxs) =
-        -- Check whether all space taken by report and keys.
-        if yspace - length msgRaw - length lX0 - 1 <= 0
-        then ([intercalate (toAttrLine " ") lX0 <+:> rrep], keysX0)
+      (lX0, keysX0) = keysOKX 0 0 maxBound keys
+      (lX, keysX) = keysOKX (length msgRaw - 1) (length (last msgRaw) + 1)
+                            lxsize keys
+      msgOkx = (glueOverlay msgRaw lX, keysX)
+      (okxInit, (header, rkxs)) =
+        -- Check whether most space taken by report and keys.
+        if (length msgRaw + length lX0) * 2 > yspace
+        then (msgOkx, ([intercalate (toAttrLine " ") lX0 <+:> rrep], keysX0))
                -- will display "$" (unless has EOLs)
-        else let (lX, keysX) = splitKeys (length msgRaw - 1)
-                                         (length (last msgRaw) + 1)
-                                         lxsize
-                                         keys
-             in (glueOverlay msgRaw lX, keysX)
-      len = length msg
+        else (([], []), msgOkx)
       renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
-      zipRenumber = zipWith renumber [len..]
-      splitO ls kxs =
-        let (pre, post) = splitAt (yspace - 1) $ msg ++ ls
+      splitO (hdr, rk) (ls, kxs) =
+        let zipRenumber = zipWith renumber [length hdr..]
+            (pre, post) = splitAt (yspace - 1) $ hdr ++ ls
         in if null post
-           then [(pre, rkxs ++ zipRenumber kxs)]  -- all fits on one screen
-           else let (preX, postX) = splitAt (yspace - len - 1) kxs
-                in (pre, rkxs ++ zipRenumber preX) : splitO post postX
-      okxs = splitO ls0 kxs0
-  in toSlideshow okxs
+           then [(pre, rk ++ zipRenumber kxs)]  -- all fits on one screen
+           else let (preX, postX) = splitAt (yspace - length hdr - 1) kxs
+                in (pre, rk ++ zipRenumber preX)
+                   : splitO (hdr, rk) (post, postX)
+  in toSlideshow $ splitO ([], []) okxInit ++ splitO (header, rkxs) (ls0, kxs0)
