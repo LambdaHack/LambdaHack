@@ -529,7 +529,7 @@ historyHuman = do
           displayChoiceScreen ColorFull True menuIxHistory okxs []
         modifySession $ \sess -> sess {smenuIxHistory = pointer}
         case ekm of
-          Left km | km `elem` [K.escKM] -> promptExit
+          Left km | km == K.escKM -> promptExit
           Right SlotChar{..} | slotChar == 'a' -> displayOneReport slotPrefix
           _ -> assert `failure` ekm
       displayOneReport histSlot = do
@@ -541,9 +541,9 @@ historyHuman = do
                      ++ tturns ++ toAttrLine "."
         promptAddAttr prompt
         slides <-
-          overlayToSlideshow (lysize + 1) [K.backspaceKM, K.escKM] (ov0, [])
-        km <- getConfirms ColorFull [K.backspaceKM] slides
-        if km == K.backspaceKM then displayAllHistory else promptExit
+          overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov0, [])
+        km <- getConfirms ColorFull [K.spaceKM] slides
+        if km == K.spaceKM then displayAllHistory else promptExit
   displayAllHistory
 
 -- * MarkVision

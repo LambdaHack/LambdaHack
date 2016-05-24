@@ -42,11 +42,11 @@ toSlideshow okxs = Slideshow $ addFooters okxs
   addFooters [] = assert `failure` okxs
   addFooters [(als, [])] =
     [( als ++ [toAttrLine tendMsg]
-     , [(Left K.spaceKM, (length als, 0, 8))] )]
+     , [(Left K.pgdnKM, (length als, 0, 8))] )]
   addFooters [(als, kxs)] = [(als, kxs)]
   addFooters ((als, kxs) : rest) =
     ( als ++ [toAttrLine tmoreMsg]
-    , kxs ++ [(Left K.spaceKM, (length als, 0, 8))] )
+    , kxs ++ [(Left K.pgdnKM, (length als, 0, 8))] )
     : addFooters rest
 
 menuToSlideshow :: OKX -> Slideshow
@@ -80,7 +80,7 @@ splitOverlay lxsize yspace report keys (ls0, kxs0) =
       msgOkx = (glueOverlay msgRaw lX, keysX)
       ((lsInit, kxsInit), (header, rkxs)) =
         -- Check whether most space taken by report and keys.
-        if (length msgRaw + length lX0) * 2 > yspace
+        if (length $ glueOverlay msgRaw lX0) * 2 > yspace
         then (msgOkx, ([intercalate (toAttrLine " ") lX0 <+:> rrep], keysX0))
                -- will display "$" (unless has EOLs)
         else (([], []), msgOkx)
