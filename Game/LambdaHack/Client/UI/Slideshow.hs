@@ -53,36 +53,35 @@ menuToSlideshow (als, kxs) =
 textsToSlideshow :: [[Text]] -> Slideshow
 textsToSlideshow = toSlideshow . map (\t -> (map toAttrLine t, []))
 
+splitKeys :: Y -> X -> X -> [K.KM] -> OKX
+splitKeys ystart xstart xBound keys =
+  let wrapB s = "[" <> s <> "]"
+      f ((y, x), (kL, kV, kX)) key =
+        let ks = wrapB $ K.showKM key
+        in if x + T.length ks > xBound
+           then f ((y + 1, 0), ([], kL : kV, kX)) key
+           else ( (y, x + T.length ks + 1)
+                , (ks : kL, kV, (Left key, (y, x, x + T.length ks)) : kX) )
+      (kL1, kV1, kX1) = snd $ foldl' f ((ystart, xstart), ([], [], [])) keys
+      catL = toAttrLine . T.intercalate " " . reverse
+  in (reverse $ map catL $ kL1 : kV1, reverse kX1)
+
 splitOverlay :: X -> Y -> Report -> [K.KM] -> OKX -> Slideshow
 splitOverlay lxsize yspace report keys (ls0, kxs0) =
   assert (length ls0 == length kxs0 && yspace > 2) $
   let rrep = renderReport report
-      wrapB s = "[" <> s <> "]"
-      f ((y, x, xBound), (kL, kV, kX)) key =
-        let ks = wrapB $ K.showKM key
-        in if x + T.length ks > xBound
-           then f ((y + 1, 0, xBound), ([], kL : kV, kX)) key
-           else ( (y, x + T.length ks + 1, xBound)
-                , (ks : kL, kV, (Left key, (y, x, x + T.length ks)) : kX) )
-      splitKeys y x xBound =
-        let (kL, kV, kX) = snd $ foldl' f ((y, x, xBound), ([], [], [])) keys
-            catL = toAttrLine . T.intercalate " " . reverse
-        in (reverse kX, reverse $ map catL $ kL : kV)
-      (keysX0, lX0) = splitKeys 0 0 maxBound
+      (lX0, keysX0) = splitKeys 0 0 maxBound keys
       msgRaw = splitAttrLine lxsize rrep
-      appendX m l = reverse $ arX (reverse m) l
-      arX [] l = l
-      arX m [] = m
-      arX (mh : mt) (lh : lt) = reverse lt ++ (mh <+:> lh) : mt
-      (rkxs, msg) =
+      (msg, rkxs) =
         -- Check whether all space taken by report and keys.
         if yspace - length msgRaw - length lX0 - 1 <= 0
-        then (keysX0, [intercalate (toAttrLine " ") lX0 <+:> rrep])
+        then ([intercalate (toAttrLine " ") lX0 <+:> rrep], keysX0)
                -- will display "$" (unless has EOLs)
-        else let (keysX, lX) = splitKeys (length msgRaw - 1)
+        else let (lX, keysX) = splitKeys (length msgRaw - 1)
                                          (length (last msgRaw) + 1)
                                          lxsize
-             in (keysX, appendX msgRaw lX)
+                                         keys
+             in (glueOverlay msgRaw lX, keysX)
       len = length msg
       renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
       zipRenumber = zipWith renumber [len..]

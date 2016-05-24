@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.Overlay
   ( -- * AttrLine
     AttrLine, toAttrLine, (<+:>), splitAttrLine, itemDesc
     -- * Overlay
-  , Overlay, updateOverlayLine
+  , Overlay, glueOverlay, updateOverlayLine
     -- * Misc
   , ColorMode(..), tmoreMsg, tendMsg
   ) where
@@ -91,6 +91,12 @@ itemDesc c localTime itemFull =
 -- or are intended for truncation when displayed. The length of overlay
 -- may exceed the length of the screen, unlike in @SingleFrame@.
 type Overlay = [AttrLine]
+
+glueOverlay :: Overlay -> Overlay -> Overlay
+glueOverlay ov1 ov2 = reverse $ glue (reverse ov1) ov2
+ where glue [] l = l
+       glue m [] = m
+       glue (mh : mt) (lh : lt) = reverse lt ++ (mh <+:> lh) : mt
 
 -- @f@ should not enlarge the line beyond screen width.
 updateOverlayLine :: Int -> (AttrLine -> AttrLine) -> Overlay -> Overlay
