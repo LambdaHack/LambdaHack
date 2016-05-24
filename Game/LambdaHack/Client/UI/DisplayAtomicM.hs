@@ -288,7 +288,7 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
     setFrontAutoYes $ isAIFact fact
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> return ()
-  UpdWriteSave -> when verbose $ msgAdd "Saving backup."
+  UpdWriteSave -> when verbose $ promptAdd "Saving backup."
   UpdMsgAll msg -> msgAdd msg
   UpdRecordHistory _ -> recordHistory
 

@@ -421,9 +421,9 @@ selectAidHuman leader = do
             else ES.insert leader
   modifySession $ \sess -> sess {sselected = upd $ sselected sess}
   let subject = partActor body
-  msgAdd $ makeSentence [subject, if wasMemeber
-                                  then "deselected"
-                                  else "selected"]
+  promptAdd $ makeSentence [subject, if wasMemeber
+                                     then "deselected"
+                                     else "selected"]
 
 -- * SelectNone
 
@@ -440,9 +440,9 @@ selectNoneHuman = do
             else ES.difference
   modifySession $ \sess -> sess {sselected = upd (sselected sess) ours}
   let subject = "all party members on the level"
-  msgAdd $ makeSentence [subject, if wasNone
-                                  then "selected"
-                                  else "deselected"]
+  promptAdd $ makeSentence [subject, if wasNone
+                                     then "selected"
+                                     else "deselected"]
 
 -- * SelectWithPointer
 
@@ -538,8 +538,6 @@ historyHuman = do
               [] -> assert `failure` histSlot
               tR : _ -> tR
             (tturns, ov0) = splitReportForHistory lxsize timeReport
-            -- TODO: print over history, not over dungeon;
-            -- expand this history item, not switch views completely;
             prompt = toAttrLine "The full past message at time "
                      ++ tturns ++ toAttrLine "."
         promptAddAttr prompt
@@ -555,7 +553,7 @@ markVisionHuman :: MonadClientUI m => m ()
 markVisionHuman = do
   modifySession toggleMarkVision
   cur <- getsSession smarkVision
-  msgAdd $ "Visible area display toggled" <+> if cur then "on." else "off."
+  promptAdd $ "Visible area display toggled" <+> if cur then "on." else "off."
 
 -- * MarkSmell
 
@@ -563,7 +561,7 @@ markSmellHuman :: MonadClientUI m => m ()
 markSmellHuman = do
   modifySession toggleMarkSmell
   cur <- getsSession smarkSmell
-  msgAdd $ "Smell display toggled" <+> if cur then "on." else "off."
+  promptAdd $ "Smell display toggled" <+> if cur then "on." else "off."
 
 -- * MarkSuspect
 
@@ -573,7 +571,8 @@ markSuspectHuman = do
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
   modifyClient toggleMarkSuspect
   cur <- getsClient smarkSuspect
-  msgAdd $ "Suspect terrain display toggled" <+> if cur then "on." else "off."
+  promptAdd $
+    "Suspect terrain display toggled" <+> if cur then "on." else "off."
 
 -- * SettingsMenu
 
@@ -673,7 +672,8 @@ endAimingMsg = do
   leader <- getLeaderUI
   (targetMsg, _) <- targetDescLeader leader
   subject <- partAidLeader leader
-  msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
+  promptAdd $
+    makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
 
 -- * TgtClear
 
@@ -749,7 +749,7 @@ doLook addMoreMsg = do
       if EM.size is <= 2 then
         promptToSlideshow lookMsg
       else do
-        msgAdd lookMsg  -- TODO: do not add to history
+        promptAdd lookMsg
         floorItemOverlay lidV p
 -}
       promptAdd $ lookMsg <+> if addMoreMsg then tmoreMsg else ""

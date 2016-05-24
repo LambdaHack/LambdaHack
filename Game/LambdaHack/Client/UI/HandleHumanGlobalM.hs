@@ -733,7 +733,6 @@ applyItem ts (fromCStore, (iid, itemFull)) = do
 
 -- * AlterDir
 
--- TODO: accept mouse, too
 -- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: MonadClientUI m
               => [Trigger] -> m (FailOrCmd (RequestTimed 'AbAlter))
@@ -1030,8 +1029,7 @@ gameSaveHuman :: MonadClientUI m => m RequestUI
 gameSaveHuman = do
   -- Announce before the saving started, since it can take some time
   -- and may slow down the machine, even if not block the client.
-  -- TODO: do not save to history:
-  msgAdd "Saving game backup."
+  promptAdd "Saving game backup."
   return ReqUIGameSave
 
 -- * Tactic
