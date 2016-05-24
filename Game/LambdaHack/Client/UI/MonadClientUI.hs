@@ -207,7 +207,7 @@ scoreToSlideshow total status = do
                            (fhiCondPoly $ gplayer fact)
   return $! if worthMentioning
             then textsToSlideshow $ showScore rScore
-            else mempty
+            else emptySlideshow
 
 defaultHistory :: MonadClientUI m => Int -> m History
 defaultHistory configHistoryMax = liftIO $ do

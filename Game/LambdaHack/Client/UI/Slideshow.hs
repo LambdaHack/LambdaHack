@@ -2,7 +2,7 @@
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
   ( KYX, OKX, Slideshow(slideshow)
-  , unsnoc, toSlideshow, menuToSlideshow, textsToSlideshow
+  , emptySlideshow, unsnoc, toSlideshow, menuToSlideshow, textsToSlideshow
   , splitOverlay
   ) where
 
@@ -25,7 +25,10 @@ type OKX = (Overlay, [KYX])
 -- May be empty, but both of each @OKX@ list have to be nonempty.
 -- Guaranteed by construction.
 newtype Slideshow = Slideshow {slideshow :: [OKX]}
-  deriving (Show, Eq, Monoid)
+  deriving (Show, Eq)
+
+emptySlideshow :: Slideshow
+emptySlideshow = Slideshow []
 
 unsnoc :: Slideshow -> Maybe (Slideshow, OKX)
 unsnoc Slideshow{slideshow} =

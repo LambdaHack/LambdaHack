@@ -59,7 +59,7 @@ promptGetKey dm ov sfBlank frontKeyKeys = do
       discardPressedKey
       let ov2 = ov <> if keyPressed
                       then [toAttrLine "*interrupted*"]
-                      else mempty
+                      else []
       frontKeyFrame <- drawOverlay dm sfBlank ov2 lid
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     [] -> do

@@ -24,7 +24,7 @@ type AnimationDiff = EM.EnumMap Point AttrChar
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
 newtype Animation = Animation [AnimationDiff]
-  deriving (Eq, Show, Monoid)
+  deriving (Eq, Show)
 
 -- | Render animations on top of a screen frame.
 renderAnim :: SingleFrame -> Animation -> Frames

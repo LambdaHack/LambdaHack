@@ -27,6 +27,7 @@ import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.OverlayM
 import Game.LambdaHack.Client.UI.SessionUI
+import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Client.UI.SlideshowM
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -578,7 +579,7 @@ quitFactionUI fid mbody toSt = do
                 itemMsg = makeSentence [ "Your loot is worth"
                                        , MU.CarWs tot currencyName ]
                           <+> tmoreMsg
-            if EM.null bag then return (mempty, 0)
+            if EM.null bag then return (emptySlideshow, 0)
             else do
               promptAdd itemMsg
               arena <- getArenaUI
@@ -589,7 +590,7 @@ quitFactionUI fid mbody toSt = do
       (itemSlides, total) <- case mbody of
         Just b | fid == side -> bodyToItemSlides b
         _ -> case gleader fact of
-          Nothing -> return (mempty, 0)
+          Nothing -> return (emptySlideshow, 0)
           Just (aid, _) -> do
             b <- getsState $ getActorBody aid
             bodyToItemSlides b
@@ -600,13 +601,12 @@ quitFactionUI fid mbody toSt = do
       partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
       -- TODO: First ESC cancels items display.
       -- TODO: instead of void, display item description, etc.
-      --       also, don't mappend so much, not to mix up menus;
-      --       then also take care of --end- in the middle of the slideshow
-      void $ getConfirms ColorFull [K.spaceKM, K.escKM]
-           $ startingSlide <> itemSlides
+      void $ getConfirms ColorFull [K.spaceKM, K.escKM] startingSlide
+      void $ getConfirms ColorFull [K.spaceKM, K.escKM] itemSlides
       -- TODO: Second ESC cancels high score and parting message display.
       -- The last slide stays onscreen during shutdown, etc.
-             <> scoreSlides <> partingSlide
+      void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
+      void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
       -- TODO: perhaps use a vertical animation instead, e.g., roll down
       -- and put it before item and score screens (on blank background)
       unless (fmap stOutcome toSt == Just Camping) $ do
