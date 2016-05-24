@@ -71,26 +71,33 @@ keysOKX ystart xstart xBound keys =
 
 splitOverlay :: X -> Y -> Report -> [K.KM] -> OKX -> Slideshow
 splitOverlay lxsize yspace report keys (ls0, kxs0) =
-  assert (length ls0 == length kxs0 && yspace > 2) $
+  assert (yspace > 2) $  -- and kxs0 is sorted
   let rrep = renderReport report
       msgRaw = splitAttrLine lxsize rrep
       (lX0, keysX0) = keysOKX 0 0 maxBound keys
       (lX, keysX) = keysOKX (length msgRaw - 1) (length (last msgRaw) + 1)
                             lxsize keys
       msgOkx = (glueOverlay msgRaw lX, keysX)
-      (okxInit, (header, rkxs)) =
+      ((lsInit, kxsInit), (header, rkxs)) =
         -- Check whether most space taken by report and keys.
         if (length msgRaw + length lX0) * 2 > yspace
         then (msgOkx, ([intercalate (toAttrLine " ") lX0 <+:> rrep], keysX0))
                -- will display "$" (unless has EOLs)
         else (([], []), msgOkx)
-      renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
-      splitO (hdr, rk) (ls, kxs) =
-        let zipRenumber = zipWith renumber [length hdr..]
+      renumber y (km, (y0, x1, x2)) = (km, (y0 + y, x1, x2))
+      splitO yoffset (hdr, rk) (ls, kxs) =
+        let zipRenumber = map $ renumber $ length hdr - yoffset
             (pre, post) = splitAt (yspace - 1) $ hdr ++ ls
+            yoffsetNew = yoffset + yspace - length hdr - 1
         in if null post
            then [(pre, rk ++ zipRenumber kxs)]  -- all fits on one screen
-           else let (preX, postX) = splitAt (yspace - length hdr - 1) kxs
+           else let (preX, postX) =
+                      break (\(_, (y1, _, _)) -> y1 >= yoffsetNew) kxs
                 in (pre, rk ++ zipRenumber preX)
-                   : splitO (hdr, rk) (post, postX)
-  in toSlideshow $ splitO ([], []) okxInit ++ splitO (header, rkxs) (ls0, kxs0)
+                   : splitO yoffsetNew (hdr, rk) (post, postX)
+  in toSlideshow $ (if null lsInit
+                    then assert (null kxsInit) []
+                    else splitO 0 ([], []) (lsInit, kxsInit))
+                   ++ (if null ls0 && not (null lsInit)
+                       then assert (null kxs0) []
+                       else splitO 0 (header, rkxs) (ls0, kxs0))

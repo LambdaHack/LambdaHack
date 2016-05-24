@@ -518,7 +518,8 @@ historyHuman = do
         , "(this level:"
         , MU.Text (tshow turnsLocal) <> ")" ]
       rh = renderHistory history
-      kxs = [(Right n, (undefined, 0, lxsize)) | n <- take (length rh) intSlots]
+      kxs = [ (Right sn, (slotPrefix sn, 0, lxsize))
+            | sn <- take (length rh) intSlots ]
   promptAdd msg
   okxs <- overlayToSlideshow (lysize + 3) [K.escKM] (rh, kxs)
   let displayAllHistory = do

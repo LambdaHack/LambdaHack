@@ -35,6 +35,7 @@ import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -168,15 +169,16 @@ itemOverlay c lid bag = do
                 kx = (ekm, (undefined, 0, T.length phrase))
             in Just (ov, kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
-  return (concat ts, kxs)
+      renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
+  return (concat ts, zipWith renumber [0..] kxs)
 
 statsOverlay :: MonadClient m => ActorId -> m OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
   let block n = n + if braced b then 50 else 0
-      prSlot :: SlotChar -> (IK.EqpSlot, Int -> Text) -> (Text, KYX)
-      prSlot c (eqpSlot, f) =
+      prSlot :: (Y, SlotChar) -> (IK.EqpSlot, Int -> Text) -> (Text, KYX)
+      prSlot (y, c) (eqpSlot, f) =
         let fullText t =
               makePhrase [ MU.Text $ slotLabel c
                          , MU.Text $ T.justifyLeft 22 ' '
@@ -184,7 +186,7 @@ statsOverlay aid = do
                          , MU.Text t ]
             valueText = f $ sumSlotNoFilter eqpSlot activeItems
             ft = fullText valueText
-        in (ft, (Right c, (undefined, 0, T.length ft)))
+        in (ft, (Right c, (y, 0, T.length ft)))
       -- Some values can be negative, for others 0 is equivalent but shorter.
       slotList =  -- TODO:  [IK.EqpSlotAddHurtMelee..IK.EqpSlotAddLight]
         [ (IK.EqpSlotAddHurtMelee, \t -> tshow t <> "%")
@@ -203,8 +205,8 @@ statsOverlay aid = do
       skills = sumSkills activeItems
       -- TODO: are negative total skills meaningful?
       -- TODO: unduplicate with prSlot
-      prAbility :: SlotChar -> Ability.Ability -> (Text, KYX)
-      prAbility c ability =
+      prAbility :: (Y, SlotChar) -> Ability.Ability -> (Text, KYX)
+      prAbility (y, c) ability =
         let fullText t =
               makePhrase [ MU.Text $ slotLabel c
                          , MU.Text $ T.justifyLeft 22 ' '
@@ -212,9 +214,9 @@ statsOverlay aid = do
                          , MU.Text t ]
             valueText = tshow $ EM.findWithDefault 0 ability skills
             ft = fullText valueText
-        in (ft, (Right c, (undefined, 0, T.length ft)))
+        in (ft, (Right c, (y, 0, T.length ft)))
       abilityList = [minBound..maxBound]
       reslot c = either (prSlot c) (prAbility c)
-      zipReslot = zipWith reslot allZeroSlots
+      zipReslot = zipWith reslot $ zip [0..] allZeroSlots
       (ts, kxs) = unzip $ zipReslot $ map Left slotList ++ map Right abilityList
   return (map toAttrLine ts, kxs)
