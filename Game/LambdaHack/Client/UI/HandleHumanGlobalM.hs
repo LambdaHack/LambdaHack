@@ -741,8 +741,7 @@ alterDirHuman ts = do
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
-      keys = K.escKM
-             : K.leftButtonReleaseKM
+      keys = K.leftButtonReleaseKM
              : map (K.KM K.NoModifier) (K.dirAllKey configVi configLaptop)
       prompt = makePhrase
         ["Where to", verb1 <> "? [movement key] [LMB]"]
@@ -893,7 +892,7 @@ helpHuman cmdAction mstart = do
           mindex = findIndex (matchKeyOrSlot . fst) $ concat $ map snd $ slideshow keyH
       return $! fromMaybe 0 mindex
   (ekm, pointer) <-
-    displayChoiceScreen ColorFull True menuIxHelp keyH [K.spaceKM, K.escKM]
+    displayChoiceScreen ColorFull True menuIxHelp keyH []
   modifySession $ \sess -> sess {smenuIxHelp = pointer}
   case ekm of
     Left km -> case km `M.lookup` bcmdMap keyb of
@@ -971,7 +970,8 @@ mainMenuHuman cmdAction = do
   isNoConfirms <- isNoConfirmsGame
   -- TODO: pick the first game that was not yet won
   menuIxMain <- if isNoConfirms then return 4 else getsSession smenuIxMain
-  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxMain (menuToSlideshow (ov, kyxs)) []
+  (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxMain
+                                        (menuToSlideshow (ov, kyxs)) []
   modifySession $ \sess -> sess {smenuIxMain = pointer}
   case ekm of
     Left km -> case km `lookup` kds of

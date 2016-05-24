@@ -47,7 +47,7 @@ displayMore dm prompt = do
   promptAdd prompt
   -- Two frames drawn total (unless @prompt@ very long).
   slides <- reportToSlideshow [K.spaceKM, K.escKM]
-  km <- getConfirms dm [K.spaceKM, K.escKM] slides
+  km <- getConfirms dm [] slides
   return $! km == K.spaceKM
 
 -- | Print a yes/no question and return the player's answer. Use black
@@ -57,7 +57,7 @@ displayYesNo dm prompt = do
   promptAdd prompt
   let yn = map (K.KM K.NoModifier . K.Char) ['y', 'n']
   slides <- reportToSlideshow yn
-  km <- getConfirms dm (K.escKM : yn) slides
+  km <- getConfirms dm yn slides
   return $! km == K.KM K.NoModifier (K.Char 'y')
 
 getConfirms :: MonadClientUI m
@@ -66,18 +66,18 @@ getConfirms dm extraKeys slides = do
   (ekm, _) <- displayChoiceScreen dm False 0 slides extraKeys
   return $! either id (assert `failure` ekm) ekm
 
--- The resulting key either is space or belongs to @extraKeys@.
+-- The resulting key either is SPACE or ESC or belongs to @extraKeys@.
 displayChoiceScreen :: forall m . MonadClientUI m
                     => ColorMode -> Bool -> Int -> Slideshow -> [K.KM]
                     -> m (Either K.KM SlotChar, Int)
 displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
-  -- We don't create keys from slots, so they have to be @in extraKeys@.
   let frs = slideshow frsX
       keys = concatMap (mapMaybe (either Just (const Nothing) . fst) . snd) frs
              ++ extraKeys
       scrollKeys = [ K.leftButtonReleaseKM, K.returnKM
                    , K.upKM, K.leftKM, K.downKM, K.rightKM ]
-      pageKeys = [ K.spaceKM, K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
+      pageKeys = [ K.escKM, K.spaceKM
+                 , K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
                  , K.homeKM, K.endKM ]
       legalKeys = keys ++ scrollKeys ++ pageKeys
       -- The arguments go from first menu line and menu page to the last,
@@ -141,6 +141,7 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                   K.Space ->
                     if pointer == maxIx then return (Left K.spaceKM, pointer)
                     else page (min maxIx (pointer + pageLen - ixOnPage))
+                  K.Esc -> return (Left K.escKM, pointer)
                   _ | ikm `K.elemOrNull` keys ->
                     return (Left ikm, pointer)
                   _ -> assert `failure` "unknown key" `twith` ikm

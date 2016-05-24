@@ -283,8 +283,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
     SuitsEverything -> return $ const True
     SuitsNothing err -> do
       promptAdd err
-      slides <- reportToSlideshow [K.spaceKM, K.escKM]
-      void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
+      slides <- reportToSlideshow [K.escKM]
+      void $ getConfirms ColorFull [] slides
       return $ const False
     -- When throwing, this function takes missile range into accout.
     SuitsSomething f -> return f
@@ -391,7 +391,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         }
       prefixCmdDef d =
         (K.KM K.NoModifier $ K.Char $ Char.intToDigit d, DefItemKey
-           { defLabel = Left ""
+           { defLabel = Left ""  -- TODO: "digits", when defCond precise
            , defCond = True
            , defAction = \_ ->
                recCall (10 * numPrefix + d) cCur cRest itemDialogState
@@ -467,6 +467,8 @@ legalWithUpdatedLeader cCur cRest = do
         [] -> assert `failure` (cCur, cRest)
   return legalAfterCalm
 
+-- We don't create keys from slots in @okx@, so they have to be
+-- exolicitly given in @slotKeys@.
 runDefItemKey :: MonadClientUI m
               => [(K.KM, DefItemKey m)]
               -> DefItemKey m
@@ -484,11 +486,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   promptAdd $ prompt <+> choice
   arena <- getArenaUI
   Level{lysize} <- getLevel arena
-  ekm <- if null $ fst okx
-         then do
-           slides <- overlayToSlideshow (lysize + 1) keys okx
-           Left <$> getConfirms ColorFull itemKeys slides
-         else do
+  ekm <- do
            lastSlot <- getsClient slastSlot
            let lastPointer = case findIndex ((== Right lastSlot) . fst)
                                             (snd okx) of
