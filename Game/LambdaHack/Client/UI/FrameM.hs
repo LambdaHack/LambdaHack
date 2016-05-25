@@ -46,7 +46,8 @@ promptGetKey dm ov sfBlank frontKeyKeys = do
   keyPressed <- anyKeyPressed
   lastPlayOld <- getsSession slastPlay
   km <- case lastPlayOld of
-    km : kms | not keyPressed && km `K.elemOrNull` frontKeyKeys -> do
+    km : kms | not keyPressed && (null frontKeyKeys
+                                  || km `elem` frontKeyKeys) -> do
       frontKeyFrame <- drawOverlay dm sfBlank ov lid
       displayFrame $ Just frontKeyFrame
       modifySession $ \sess -> sess {slastPlay = kms}

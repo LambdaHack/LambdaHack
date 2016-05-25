@@ -63,14 +63,14 @@ getKey :: DebugModeCli -> FSession -> RawFrontend -> [K.KM] -> SingleFrame
        -> IO KMP
 getKey sdebugCli fs rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef $ fautoYesRef fs
-  if autoYes && K.spaceKM `K.elemOrNull` keys then do
+  if autoYes && (null keys || K.spaceKM `elem` keys) then do
     display rf frame
     return $! KMP{kmpKeyMod = K.spaceKM, kmpPointer=originPoint}
   else do
     -- Wait until timeout is up, not to skip the last frame of animation.
     display rf frame
     kmp <- STM.atomically $ STM.readTQueue fchanKey
-    if kmpKeyMod kmp `K.elemOrNull` keys
+    if null keys || kmpKeyMod kmp `elem` keys
     then return kmp
     else getKey sdebugCli fs rf keys frame
 

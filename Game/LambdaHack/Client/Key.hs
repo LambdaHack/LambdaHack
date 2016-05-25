@@ -3,8 +3,8 @@
 module Game.LambdaHack.Client.Key
   ( Key(..), showKey, handleDir, dirAllKey
   , moveBinding, mkKM, keyTranslate, keyTranslateWeb
-  , Modifier(..), KM(..), showKM, elemOrNull
-  , escKM, spaceKM, returnKM
+  , Modifier(..), KM(..), showKM
+  , escKM, spaceKM, safeSpaceKM, returnKM
   , pgupKM, pgdnKM, wheelNorthKM, wheelSouthKM
   , upKM, downKM, leftKM, rightKM
   , homeKM, endKM, backspaceKM
@@ -84,10 +84,6 @@ instance NFData KM
 instance Show KM where
   show = T.unpack . showKM
 
-elemOrNull :: KM -> [KM] -> Bool
-elemOrNull _ [] = True
-elemOrNull km kms = elem km kms
-
 -- Common and terse names for keys.
 showKey :: Key -> Text
 showKey Esc      = "ESC"
@@ -133,6 +129,9 @@ escKM = KM NoModifier Esc
 
 spaceKM :: KM
 spaceKM = KM NoModifier Space
+
+safeSpaceKM :: KM
+safeSpaceKM = KM NoModifier $ Unknown "Space"
 
 returnKM :: KM
 returnKM = KM NoModifier Return

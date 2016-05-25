@@ -34,7 +34,7 @@ stdBinding :: KeyKind  -- ^ default key bindings from the content
 stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   let waitTriple = ([CmdMove], "", Wait)
       moveXhairOr n cmd v = ByAimMode { notAiming = cmd v
-                                       , aiming = MoveXhair v n }
+                                      , aiming = MoveXhair v n }
       cmdAll =
         rhumanCommands copsClient
         ++ configCommands
@@ -175,6 +175,5 @@ keyHelp Binding{..} =
               lastText
           len = 4 + length (keysN 0 CmdMouse)
       in ( ov
-         , [ (Left K.pgupKM, (len + 1, 0, maxBound))
-           , (Left K.escKM, (len + 2, 0, maxBound))] )
+         , [ (Left K.escKM, (len + 2, 0, maxBound))] )
     ]

@@ -526,7 +526,7 @@ historyHuman = do
       displayAllHistory = do
         menuIxHistory <- getsSession smenuIxHistory
         (ekm, pointer) <-
-          displayChoiceScreen ColorFull True menuIxHistory okxs []
+          displayChoiceScreen ColorFull True menuIxHistory okxs [K.escKM]
         modifySession $ \sess -> sess {smenuIxHistory = pointer}
         case ekm of
           Left km | km == K.escKM -> promptExit
@@ -542,7 +542,7 @@ historyHuman = do
         promptAddAttr prompt
         slides <-
           overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov0, [])
-        km <- getConfirms ColorFull [K.spaceKM] slides
+        km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
         if km == K.spaceKM then displayAllHistory else promptExit
   displayAllHistory
 
@@ -632,7 +632,7 @@ settingsMenuHuman cmdAction = do
       ov = map toAttrLine menuOvLines
   menuIxSettings <- getsSession smenuIxSettings
   (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxSettings
-                                        (menuToSlideshow (ov, kyxs)) []
+                                        (menuToSlideshow (ov, kyxs)) [K.escKM]
   modifySession $ \sess -> sess {smenuIxSettings = pointer}
   case ekm of
     Left km -> case km `lookup` kds of

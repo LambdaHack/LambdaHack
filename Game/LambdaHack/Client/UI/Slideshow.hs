@@ -42,11 +42,11 @@ toSlideshow okxs = Slideshow $ addFooters okxs
   addFooters [] = assert `failure` okxs
   addFooters [(als, [])] =
     [( als ++ [toAttrLine tendMsg]
-     , [(Left K.pgdnKM, (length als, 0, 8))] )]
+     , [(Left K.safeSpaceKM, (length als, 0, 8))] )]
   addFooters [(als, kxs)] = [(als, kxs)]
   addFooters ((als, kxs) : rest) =
     ( als ++ [toAttrLine tmoreMsg]
-    , kxs ++ [(Left K.pgdnKM, (length als, 0, 8))] )
+    , kxs ++ [(Left K.safeSpaceKM, (length als, 0, 8))] )
     : addFooters rest
 
 menuToSlideshow :: OKX -> Slideshow

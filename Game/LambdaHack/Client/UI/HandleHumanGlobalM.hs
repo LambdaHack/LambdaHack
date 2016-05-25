@@ -741,10 +741,11 @@ alterDirHuman ts = do
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
-      keys = K.leftButtonReleaseKM
+      keys = K.escKM
+             : K.leftButtonReleaseKM
              : map (K.KM K.NoModifier) (K.dirAllKey configVi configLaptop)
       prompt = makePhrase
-        ["Where to", verb1 <> "? [movement key] [LMB]"]
+        ["Where to", verb1 <> "? [movement key] [pointer]"]
   promptAdd prompt
   slides <- reportToSlideshow [K.escKM]
   km <- getConfirms ColorFull keys slides
@@ -892,11 +893,11 @@ helpHuman cmdAction mstart = do
           mindex = findIndex (matchKeyOrSlot . fst) $ concat $ map snd $ slideshow keyH
       return $! fromMaybe 0 mindex
   (ekm, pointer) <-
-    displayChoiceScreen ColorFull True menuIxHelp keyH []
+    displayChoiceScreen ColorFull True menuIxHelp keyH [K.escKM]
   modifySession $ \sess -> sess {smenuIxHelp = pointer}
   case ekm of
     Left km -> case km `M.lookup` bcmdMap keyb of
-      _ | km `K.elemOrNull` [K.spaceKM, K.escKM] -> return $ Left Nothing
+      _ | km `elem` [K.escKM] -> return $ Left Nothing
       Just (_desc, _cats, cmd) -> cmdAction cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> assert `failure` ekm
@@ -971,7 +972,7 @@ mainMenuHuman cmdAction = do
   -- TODO: pick the first game that was not yet won
   menuIxMain <- if isNoConfirms then return 4 else getsSession smenuIxMain
   (ekm, pointer) <- displayChoiceScreen ColorFull True menuIxMain
-                                        (menuToSlideshow (ov, kyxs)) []
+                                        (menuToSlideshow (ov, kyxs)) [K.escKM]
   modifySession $ \sess -> sess {smenuIxMain = pointer}
   case ekm of
     Left km -> case km `lookup` kds of
