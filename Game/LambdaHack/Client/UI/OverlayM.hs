@@ -8,17 +8,13 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.CommonM
-import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
-import Game.LambdaHack.Client.UI.HumanCmd
-import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Common.Actor
@@ -37,20 +33,11 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 describeMainKeys :: MonadClientUI m => m Text
 describeMainKeys = do
   saimMode <- getsSession saimMode
-  Binding{brevMap} <- getsSession sbinding
   Config{configVi, configLaptop} <- getsSession sconfig
   xhair <- getsClient sxhair
-  let kmEscape = head $
-        M.findWithDefault [K.KM K.NoModifier K.Esc]
-                          ByAimMode {notAiming = MainMenu, aiming = Cancel}
-                          brevMap
-      kmReturn = head $
-        M.findWithDefault [K.KM K.NoModifier K.Return]
-                          ByAimMode{notAiming = Help $ Just "", aiming = Accept}
-                          brevMap
-      (mkp, moveKeys) | configVi = ("keypad or", "hjklyubn,")
-                      | configLaptop = ("keypad or", "uk8o79jl,")
-                      | otherwise = ("", "keypad keys,")
+  let moveKeys | configVi = "keypad or hjklyubn"
+               | configLaptop = "keypad or uk8o79jl"
+               | otherwise = "keypad"
       tgtKind = case xhair of
         TEnemy _ True -> "at actor"
         TEnemy _ False -> "at enemy"
@@ -59,17 +46,9 @@ describeMainKeys = do
         TPoint{} -> "at position"
         TVector{} -> "with a vector"
       keys | isNothing saimMode =
-        "Explore with" <+> mkp <+> "keys or pointer: ["
-        <> moveKeys
-        <+> T.intercalate ", "
-             (map K.showKM [kmReturn, kmEscape])
-        <> "]"
+        "Explore with" <+> moveKeys <+> "keys or pointer."
            | otherwise =
-        "Aim" <+> tgtKind <+> "with" <+> mkp <+> "keys or pointer: ["
-        <> moveKeys
-        <+> T.intercalate ", "
-             (map K.showKM [kmReturn, kmEscape])
-        <> "]"
+        "Aim" <+> tgtKind <+> "with" <+> moveKeys <+> "keys or pointer."
   return $! keys
 
 -- | Produces a textual description of the terrain and items at an already
