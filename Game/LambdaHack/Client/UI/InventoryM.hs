@@ -485,25 +485,26 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   arena <- getArenaUI
   Level{lysize} <- getLevel arena
   ekm <- do
-           lastSlot <- getsClient slastSlot
-           let lastPointer = case findIndex ((== Right lastSlot) . fst)
-                                            (snd okx) of
-                 Just p | cCur /= MStats -> p
-                 _ -> 0
-           okxs <- overlayToSlideshow (lysize + 1) keys okx
-           (okm, pointer) <- displayChoiceScreen ColorFull False lastPointer
-                                                 okxs itemKeys
-           -- Only remember item pointer, if moved and if not stats.
-           case drop pointer $ snd okx of
-             (Right newSlot, _) : _ | pointer /= lastPointer
-                                      && cCur /= MStats -> do
-               lastStore <- getsClient slastStore
-               let store = storeFromMode cCur
-                   newStore = store : delete store lastStore
-               modifyClient $ \cli -> cli { slastSlot = newSlot
-                                          , slastStore = newStore }
-             _ -> return ()
-           return okm
+    okxs <- overlayToSlideshow (lysize + 1) keys okx
+    lastSlot <- getsClient slastSlot
+    let allOKX = concatMap snd $ slideshow okxs
+        pointer =
+          case findIndex ((== Right lastSlot) . fst) allOKX of
+            Just p | cCur /= MStats -> p
+            _ -> case findIndex (isRight . fst) allOKX of
+              Just p -> p
+              _ -> 0
+    (okm, pointer2) <- displayChoiceScreen ColorFull False pointer okxs itemKeys
+    -- Only remember item pointer, if moved and if not stats.
+    case drop pointer2 $ snd okx of
+      (Right newSlot, _) : _ | pointer2 /= pointer && cCur /= MStats -> do
+        lastStore <- getsClient slastStore
+        let store = storeFromMode cCur
+            newStore = store : delete store lastStore
+        modifyClient $ \cli -> cli { slastSlot = newSlot
+                                   , slastStore = newStore }
+      _ -> return ()
+    return okm
   case ekm of
     Left km -> case km `lookup` keyDefs of
       Just keyDef -> defAction keyDef ekm
