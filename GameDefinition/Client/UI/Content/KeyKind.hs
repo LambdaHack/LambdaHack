@@ -33,7 +33,7 @@ standardKeys = KeyKind
 
       -- Main Menu
       [ ("Escape", ([CmdMainMenu], "back to playing", Cancel))
-      , ("?", ([CmdMainMenu], "see command help", Help Nothing))
+      , ("?", ([CmdMainMenu], "see command help", Help))
       , ("S", ([CmdMainMenu], "enter settings menu", SettingsMenu))
       , ("X", ([CmdMainMenu], "save and exit", GameExit))
       , ("r", gameRestartTriple "raid")
@@ -173,11 +173,11 @@ standardKeys = KeyKind
                    , ByAimMode {notAiming = MainMenu, aiming = Cancel} ))
       , ("Return", ( [CmdAim, CmdMinimal]
                    , "accept target/choice or open Help"
-                   , ByAimMode {notAiming = Help $ Just "", aiming=Accept} ))
+                   , ByAimMode {notAiming = Help, aiming=Accept} ))
 
       -- Assorted
       , ("space", ([CmdMeta], "clear/display hints and history", Clear))
-      , ("?", ([CmdMeta], "display help", Help Nothing))
+      , ("?", ([CmdMeta], "display help", Help))
       , ("Tab", ( [CmdMeta]
                 , "cycle among party members on the level"
                 , MemberCycle ))

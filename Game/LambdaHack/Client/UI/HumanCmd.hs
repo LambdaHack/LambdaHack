@@ -87,7 +87,7 @@ data HumanCmd =
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]
   | TriggerTile ![Trigger]
-  | Help !(Maybe Text)
+  | Help
   | MainMenu
   | GameDifficultyIncr
     -- Below this line, commands do not take time.

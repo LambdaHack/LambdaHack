@@ -65,7 +65,7 @@ cmdAction cmd = case cmd of
   Apply ts -> weaveJust <$> (timedToUI <$$> applyHuman ts)
   AlterDir ts -> weaveJust <$> (timedToUI <$$> alterDirHuman ts)
   TriggerTile ts -> weaveJust <$> (timedToUI <$$> triggerTileHuman ts)
-  Help mstart -> helpHuman cmdAction mstart
+  Help -> helpHuman cmdAction
   MainMenu -> mainMenuHuman cmdAction
   GameDifficultyIncr -> gameDifficultyIncr >> mainMenuHuman cmdAction
 

@@ -37,7 +37,6 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
-import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -878,24 +877,15 @@ guessTrigger _ _ _ = "never mind"
 
 -- | Display command help.
 helpHuman :: MonadClientUI m
-          => (HumanCmd.HumanCmd -> m (Either MError RequestUI)) -> Maybe Text
+          => (HumanCmd.HumanCmd -> m (Either MError RequestUI))
           -> m (Either MError RequestUI)
-helpHuman cmdAction mstart = do
-  keyb <- getsSession sbinding
-  let keyH = keyHelp keyb
-  menuIxHelp <- case mstart of
-    Nothing -> getsSession smenuIxHelp
-    Just "" -> return 0
-    Just t -> do
-      let tkm = K.mkKM (T.unpack t)
-          matchKeyOrSlot (Left km) = km == tkm
-          matchKeyOrSlot (Right slot) = slotLabel slot == t
-          mindex = findIndex (matchKeyOrSlot . fst)
-                   $ concat $ map (snd . snd) $ keyH
-      return $! fromMaybe 0 mindex
+helpHuman cmdAction = do
   arena <- getArenaUI
   Level{lxsize, lysize} <- getLevel arena  -- TODO: screen length or viewLevel
-  let splitHelp (t, okx) =
+  menuIxHelp <- getsSession smenuIxHelp
+  keyb <- getsSession sbinding
+  let keyH = keyHelp keyb
+      splitHelp (t, okx) =
         splitOKX lxsize (lysize + 3) (toAttrLine t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
   (ekm, pointer) <-

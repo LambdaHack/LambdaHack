@@ -102,7 +102,7 @@ defaultCmdRMB =
   common =
     [ (CaMessage, Macro ["KP_5", "V"])
     , (CaMapLeader, descendDropCmd)
-    , (CaArenaName, ByAimMode {notAiming = Help Nothing, aiming = Accept})
+    , (CaArenaName, ByAimMode {notAiming = Help, aiming = Accept})
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, ChooseItem MStats)
     , (CaTargetDesc, ChooseItem $ MStore CEqp) ]
@@ -165,7 +165,7 @@ descendDrop t = ([CmdMove, CmdItem], t, descendDropCmd)
 
 chooseAndHelp :: Text -> ItemDialogMode -> CmdTriple
 chooseAndHelp desc dialogMode =
-  ([CmdItem], desc, ComposeIfEmpty (ChooseItem dialogMode) (Help $ Just "f"))
+  ([CmdItem], desc, ComposeIfEmpty (ChooseItem dialogMode) Help)
 
 descTs :: [Trigger] -> Text
 descTs [] = "trigger a thing"
