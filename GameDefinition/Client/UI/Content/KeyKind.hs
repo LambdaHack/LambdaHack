@@ -57,9 +57,9 @@ standardKeys = KeyKind
       , ("C", ([CmdSettingsMenu], "toggle smell clues", MarkSmell))
 
       -- Movement and terrain alteration
-      , ("<", addCmdCategory CmdMinimal $ getAscend "get items or ascend")
-      , ("g", getAscend "")
-      , ("comma", addCmdCategory CmdInternal $ getAscend "")
+      , ("<", addCmdCategory CmdMinimal $ grabAscend "grab items or ascend")
+      , ("g", grabAscend "")
+      , ("comma", addCmdCategory CmdInternal $ grabAscend "")
       , let triggerAscend10 =
               [TriggerFeature { verb = "ascend"
                               , object = "10 levels"

@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.Content.KeyKind
   , addCmdCategory, replaceDesc, gameRestartTriple, moveItemTriple, repeatTriple
   , defaultCmdLMB, defaultCmdMMB, defaultCmdRMB
   , projectI, projectA, flingTs, applyI
-  , getAscend, descendDrop, chooseAndHelp, descTs, defaultHeroSelect
+  , grabAscend, descendDrop, chooseAndHelp, descTs, defaultHeroSelect
   ) where
 
 import Prelude ()
@@ -71,7 +71,7 @@ defaultCmdLMB =
  where
   common =
     [ (CaMessage, Clear)
-    , (CaMapLeader, getAscendCmd)
+    , (CaMapLeader, grabAscendCmd)
     , (CaArenaName, ByAimMode {notAiming = MainMenu, aiming = Cancel})
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
@@ -129,11 +129,11 @@ applyI ts = ([CmdItem], descTs ts, ByItemMode
   { notChosen = ComposeIfEmpty (ChooseItemApply ts) (Apply ts)
   , chosen = Apply ts })
 
-getAscendCmd :: HumanCmd
-getAscendCmd = ByAimMode
-  { notAiming = ReplaceFail "cannot get items nor ascend" $
+grabAscendCmd :: HumanCmd
+grabAscendCmd = ByAimMode
+  { notAiming = ReplaceFail "cannot grab items nor ascend" $
       ComposeIfLeft
-        (MoveItem [CGround] CEqp (Just "get") "items" True)
+        (MoveItem [CGround] CEqp (Just "grab") "items" True)
         (TriggerTile
            [ TriggerFeature { verb = "ascend"
                             , object = "a level"
@@ -143,8 +143,8 @@ getAscendCmd = ByAimMode
                             , feature = TK.Cause (IK.Escape 1) } ])
   , aiming = AimAscend 1 }
 
-getAscend :: Text -> CmdTriple
-getAscend t = ([CmdMove, CmdItem], t, getAscendCmd)
+grabAscend :: Text -> CmdTriple
+grabAscend t = ([CmdMove, CmdItem], t, grabAscendCmd)
 
 descendDropCmd :: HumanCmd
 descendDropCmd = ByAimMode
