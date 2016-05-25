@@ -61,7 +61,7 @@ instance Binary Key
 
 instance NFData Key
 
--- | Our own encoding of modifiers. Incomplete.
+-- | Our own encoding of modifiers.
 data Modifier =
     NoModifier
   | Shift

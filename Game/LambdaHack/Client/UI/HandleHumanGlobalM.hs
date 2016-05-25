@@ -890,10 +890,16 @@ helpHuman cmdAction mstart = do
       let tkm = K.mkKM (T.unpack t)
           matchKeyOrSlot (Left km) = km == tkm
           matchKeyOrSlot (Right slot) = slotLabel slot == t
-          mindex = findIndex (matchKeyOrSlot . fst) $ concat $ map snd $ slideshow keyH
+          mindex = findIndex (matchKeyOrSlot . fst)
+                   $ concat $ map (snd . snd) $ keyH
       return $! fromMaybe 0 mindex
+  arena <- getArenaUI
+  Level{lxsize, lysize} <- getLevel arena  -- TODO: screen length or viewLevel
+  let splitHelp (t, okx) =
+        splitOKX lxsize (lysize + 3) (toAttrLine t) [K.spaceKM, K.escKM] okx
+      sli = toSlideshow $ concat $ map splitHelp keyH
   (ekm, pointer) <-
-    displayChoiceScreen ColorFull True menuIxHelp keyH [K.escKM]
+    displayChoiceScreen ColorFull True menuIxHelp sli [K.spaceKM, K.escKM]
   modifySession $ \sess -> sess {smenuIxHelp = pointer}
   case ekm of
     Left km -> case km `M.lookup` bcmdMap keyb of

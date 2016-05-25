@@ -59,13 +59,13 @@ describeMainKeys = do
         TPoint{} -> "at position"
         TVector{} -> "with a vector"
       keys | isNothing saimMode =
-        "Explore with" <+> mkp <+> "keys or mouse: ["
+        "Explore with" <+> mkp <+> "keys or pointer: ["
         <> moveKeys
         <+> T.intercalate ", "
              (map K.showKM [kmReturn, kmEscape])
         <> "]"
            | otherwise =
-        "Aim" <+> tgtKind <+> "with" <+> mkp <+> "keys or mouse: ["
+        "Aim" <+> tgtKind <+> "with" <+> mkp <+> "keys or pointer: ["
         <> moveKeys
         <+> T.intercalate ", "
              (map K.showKM [kmReturn, kmEscape])

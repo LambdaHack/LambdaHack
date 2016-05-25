@@ -64,11 +64,12 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   }
 
 -- | Produce a set of help screens from the key bindings.
-keyHelp :: Binding -> Slideshow
+keyHelp :: Binding -> [(Text, OKX)]
 keyHelp Binding{..} =
   let
     movBlurb =
-      [ "Walk throughout a level with mouse or numeric keypad (left diagram)"
+      [ ""
+      , "Walk throughout a level with mouse or numeric keypad (left diagram)"
       , "or its compact laptop replacement (middle) or the Vi text editor keys"
       , "(right, also known as \"Rogue-like keys\"; can be enabled in config.ui.ini)."
       , "Run, until disturbed, with left mouse button or SHIFT (or CTRL) and a key."
@@ -79,7 +80,7 @@ keyHelp Binding{..} =
       , "                /|\\            /|\\            /|\\"
       , "               1 2 3          j k l          b j n"
       , ""
-      , "In aiming mode (KEYPAD_* or \\) the same keys (or mouse) move the crosshair."
+      , "In aiming mode (KEYPAD_* or !) the same keys (or mouse) move the crosshair."
       , "Press 'KEYPAD_5' (or 'i' or '.') to wait, bracing for blows, which reduces"
       , "any damage taken and makes it impossible for foes to displace you."
       , "You displace enemies or friends by bumping into them with SHIFT (or CTRL)."
@@ -91,7 +92,8 @@ keyHelp Binding{..} =
       , "Press SPACE to see the minimal command set."
       ]
     minimalBlurb =
-      [ "The following minimal command set lets you accomplish anything in the game,"
+      [ ""
+      , "The following minimal command set lets you accomplish anything in the game,"
       , "though not necessarily with the fewest number of keystrokes."
       , "Most of the other commands are shorthands, defined as macros"
       , "(with the exception of the advanced commands for assigning non-default"
@@ -110,7 +112,7 @@ keyHelp Binding{..} =
       [ ""
       , "For more playing instructions see file PLAYING.md."
       , "Press PGUP to return to previous pages"
-      , "or ESC to see the map again."
+      , "and SPACE or ESC to see the map again."
       ]
     pickLeaderDescription =
       [ fmt 16 "0, 1 ... 6" "pick a particular actor as the new leader"
@@ -141,39 +143,21 @@ keyHelp Binding{..} =
           kxs = zip ks [(y, 0, maxBound) | y <- [length header..]]
       in (map toAttrLine $ header ++ keyTable ++ footer, kxs)
     okxs = okxsN 16
-  in toSlideshow $
-    [ ( map toAttrLine $
-          [casualDescription <+> "(1/2). [press SPACE to see more]"]
-          ++ [""] ++ movText
-      , [(Left K.spaceKM, (length movText + 1, 0, maxBound))])
-    , okxs CmdMinimal
-        ([casualDescription <+> "(2/2). [press SPACE to see all commands]"]
-         ++ [""] ++ minimalText ++ [keyCaption])
-        casualEndText
-    , okxsN 10 CmdMove
-        (["All terrain exploration and alteration commands"
-         <> ". [press SPACE to advance]"]
-         ++ [""] ++ [keyCaptionN 10])
-        categoryText
-    , okxsN 10 CmdItem
-        ([categoryDescription CmdItem <> ". [press SPACE to advance]"]
-         ++ [""] ++ [keyCaptionN 10])
-        categoryText
-    , okxs CmdAim
-        ([categoryDescription CmdAim <> ". [press SPACE to advance]"]
-         ++ [""] ++ [keyCaption])
-        categoryText
-    , okxs CmdMeta
-        ([categoryDescription CmdMeta <> ". [press SPACE to advance]"]
-         ++ [""] ++ [keyCaption])
-        (pickLeaderDescription ++ categoryText)
-    , let (ov, _) =
-            okxsN 21 CmdMouse
-              ([categoryDescription CmdMouse
-               <> ". [press PGUP to see previous, ESC to cancel]"]
-               ++ [""] ++ [keyCaptionN 21])
-              lastText
-          len = 4 + length (keysN 0 CmdMouse)
-      in ( ov
-         , [ (Left K.escKM, (len + 2, 0, maxBound))] )
+  in
+    [ ( casualDescription <+> "(1/2)."
+      , (map toAttrLine $ movText, []) )
+    , ( casualDescription <+> "(2/2)."
+      , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEndText )
+    , ( "All terrain exploration and alteration commands."
+      , okxsN 10 CmdMove ([""] ++ [keyCaptionN 10]) categoryText )
+    , ( categoryDescription CmdItem <> "."
+      , okxsN 10 CmdItem ([""] ++ [keyCaptionN 10]) categoryText )
+    , ( categoryDescription CmdAim <> "."
+      , okxs CmdAim ([""] ++ [keyCaption]) categoryText )
+    , ( categoryDescription CmdMeta <> "."
+      , okxs CmdMeta ([""] ++ [keyCaption])
+             (pickLeaderDescription ++ categoryText) )
+    , ( categoryDescription CmdMouse <> "."
+      , let (ov, _) = okxsN 21 CmdMouse ([""] ++ [keyCaptionN 21]) lastText
+        in (ov, []) )
     ]

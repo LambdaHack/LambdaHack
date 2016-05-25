@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.Slideshow
   ( KYX, OKX, Slideshow(slideshow)
   , emptySlideshow, unsnoc, toSlideshow, menuToSlideshow, textsToSlideshow
-  , splitOverlay
+  , splitOverlay, splitOKX
   ) where
 
 import Prelude ()
@@ -71,9 +71,12 @@ keysOKX ystart xstart xBound keys =
 
 splitOverlay :: X -> Y -> Report -> [K.KM] -> OKX -> Slideshow
 splitOverlay lxsize yspace report keys (ls0, kxs0) =
+  toSlideshow $ splitOKX lxsize yspace (renderReport report) keys (ls0, kxs0)
+
+splitOKX :: X -> Y -> AttrLine -> [K.KM] -> OKX -> [OKX]
+splitOKX lxsize yspace rrep keys (ls0, kxs0) =
   assert (yspace > 2) $  -- and kxs0 is sorted
-  let rrep = renderReport report
-      msgRaw = splitAttrLine lxsize rrep
+  let msgRaw = splitAttrLine lxsize rrep
       (lX0, keysX0) = keysOKX 0 0 maxBound keys
       (lX, keysX) = keysOKX (length msgRaw - 1) (length (last msgRaw) + 1)
                             lxsize keys
@@ -95,9 +98,10 @@ splitOverlay lxsize yspace report keys (ls0, kxs0) =
                       break (\(_, (y1, _, _)) -> y1 >= yoffsetNew) kxs
                 in (pre, rk ++ zipRenumber preX)
                    : splitO yoffsetNew (hdr, rk) (post, postX)
-  in toSlideshow $ (if null lsInit
-                    then assert (null kxsInit) []
-                    else splitO 0 ([], []) (lsInit, kxsInit))
-                   ++ (if null ls0 && not (null lsInit)
-                       then assert (null kxs0) []
-                       else splitO 0 (header, rkxs) (ls0, kxs0))
+      initSlides = if null lsInit
+                   then assert (null kxsInit) []
+                   else splitO 0 ([], []) (lsInit, kxsInit)
+      mainSlides = if null ls0 && not (null lsInit)
+                   then assert (null kxs0) []
+                   else splitO 0 (header, rkxs) (ls0, kxs0)
+  in initSlides ++ mainSlides
