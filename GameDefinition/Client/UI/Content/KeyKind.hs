@@ -56,8 +56,17 @@ standardKeys = KeyKind
       , ("V", ([CmdSettingsMenu], "toggle visible zone", MarkVision))
       , ("C", ([CmdSettingsMenu], "toggle smell clues", MarkSmell))
 
+      -- Item use, 1st part
+      , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
+      , ("CTRL-f", replaceDesc "fling without aiming" $ projectI flingTs)
+      , ("a", addCmdCategory CmdItemMenu $ applyI [ApplyItem
+                { verb = "apply"
+                , object = "consumable"
+                , symbol = ' ' }])
+
       -- Movement and terrain alteration
-      , ("<", addCmdCategory CmdMinimal $ grabAscend "grab items or ascend")
+      , ("<", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
+              $ grabAscend "grab items or ascend")
       , ("g", grabAscend "")
       , ("comma", addCmdCategory CmdInternal $ grabAscend "")
       , let triggerAscend10 =
@@ -67,7 +76,8 @@ standardKeys = KeyKind
         in ("CTRL-<", ([CmdInternal], descTs triggerAscend10 , ByAimMode
               { notAiming = TriggerTile triggerAscend10
               , aiming = AimAscend 10 }))
-      , (">", addCmdCategory CmdMinimal $ descendDrop "descend or drop items")
+      , (">", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
+              $ descendDrop "descend or drop items")
       , ("d", descendDrop "")
       , ("period", addCmdCategory CmdInternal $ descendDrop "")
       , let triggerAscendMinus10 =
@@ -113,18 +123,16 @@ standardKeys = KeyKind
                  , descTs triggerClose
                  , AlterDir triggerClose ))
 
-      -- Item use
-      , ("f", projectA flingTs)
-      , ("CTRL-f", replaceDesc "fling without aiming" $ projectI flingTs)
-      , ("a", applyI [ApplyItem { verb = "apply"
-                                , object = "consumable"
-                                , symbol = ' ' }])
-      , ("e", moveItemTriple [CGround, CInv, CSha] CEqp Nothing
-                             "item" False)
-      , ("p", moveItemTriple [CGround, CEqp, CSha] CInv Nothing
-                             "item into inventory" False)
-      , ("s", moveItemTriple [CGround, CInv, CEqp] CSha Nothing
-                             "and share item" False)
+      -- Item use, continued
+      , ("e", addCmdCategory CmdItemMenu
+              $ moveItemTriple [CGround, CInv, CSha] CEqp Nothing
+                               "item" False)
+      , ("p", addCmdCategory CmdItemMenu
+              $ moveItemTriple [CGround, CEqp, CSha] CInv Nothing
+                               "item into inventory" False)
+      , ("s", addCmdCategory CmdItemMenu
+              $ moveItemTriple [CGround, CInv, CEqp] CSha Nothing
+                               "and share item" False)
       , ("E", chooseAndHelp "manage equipment of the leader" (MStore CEqp))
       , ("P", addCmdCategory CmdMinimal
               $ chooseAndHelp "manage inventory pack of the leader"

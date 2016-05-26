@@ -23,7 +23,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 type CmdTriple = ([CmdCategory], Text, HumanCmd)
 
 data CmdCategory =
-    CmdMainMenu | CmdSettingsMenu
+    CmdMainMenu | CmdSettingsMenu | CmdItemMenu
   | CmdMove | CmdItem | CmdAim | CmdMeta | CmdMouse
   | CmdInternal | CmdDebug | CmdMinimal
   deriving (Show, Read, Eq, Generic)
@@ -35,6 +35,7 @@ instance Binary CmdCategory
 categoryDescription :: CmdCategory -> Text
 categoryDescription CmdMainMenu = "Main Menu"
 categoryDescription CmdSettingsMenu = "Settings Menu"
+categoryDescription CmdItemMenu = "Item Manipulation Menu"
 categoryDescription CmdMove = "Terrain exploration and alteration"
 categoryDescription CmdItem = "Item use"
 categoryDescription CmdAim = "Aiming"
