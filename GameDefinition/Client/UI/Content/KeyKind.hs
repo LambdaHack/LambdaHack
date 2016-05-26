@@ -133,15 +133,15 @@ standardKeys = KeyKind
       , ("s", addCmdCategory CmdItemMenu
               $ moveItemTriple [CGround, CInv, CEqp] CSha Nothing
                                "and share item" False)
-      , ("E", chooseAndHelp "manage equipment of the leader" (MStore CEqp))
+      , ("E", chooseAndUse "manage equipment of the leader" (MStore CEqp))
       , ("P", addCmdCategory CmdMinimal
-              $ chooseAndHelp "manage inventory pack of the leader"
+              $ chooseAndUse "manage inventory pack of the leader"
                               (MStore CInv))
-      , ("S", chooseAndHelp "manage the shared party stash" (MStore CSha))
-      , ("A", chooseAndHelp "manage all owned items" MOwned)
-      , ("G", chooseAndHelp "manage items on the ground" (MStore CGround))
-      , ("@", chooseAndHelp "describe organs of the leader" (MStore COrgan))
-      , ("#", chooseAndHelp "show the stats summary of the leader" MStats)
+      , ("S", chooseAndUse "manage the shared party stash" (MStore CSha))
+      , ("A", chooseAndUse "manage all owned items" MOwned)
+      , ("G", chooseAndUse "manage items on the ground" (MStore CGround))
+      , ("@", chooseAndUse "describe organs of the leader" (MStore COrgan))
+      , ("#", chooseAndUse "show the stats summary of the leader" MStats)
       , ("q", applyI [ApplyItem { verb = "quaff"
                                 , object = "potion"
                                 , symbol = '!' }])

@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.Content.KeyKind
   , addCmdCategory, replaceDesc, gameRestartTriple, moveItemTriple, repeatTriple
   , defaultCmdLMB, defaultCmdMMB, defaultCmdRMB
   , projectI, projectA, flingTs, applyI
-  , grabAscend, descendDrop, chooseAndHelp, descTs, defaultHeroSelect
+  , grabAscend, descendDrop, chooseAndUse, descTs, defaultHeroSelect
   ) where
 
 import Prelude ()
@@ -95,7 +95,7 @@ defaultCmdRMB =
           , (CaPercentSeen, Macro ["'", "CTRL-?", "CTRL-period", "'", "V"])
           , (CaXhairDesc, AimFloor) ]
       , aiming = ByArea $ common ++
-          [ (CaMap, ComposeIfLeft AimPointerEnemy (projectICmd flingTs))
+          [ (CaMap, ComposeIfLocal AimPointerEnemy (projectICmd flingTs))
           , (CaXhairDesc, (projectICmd flingTs))
           , (CaPercentSeen, XhairStair False) ] } )
  where
@@ -109,7 +109,7 @@ defaultCmdRMB =
 
 projectICmd :: [Trigger] -> HumanCmd
 projectICmd ts = ByItemMode
-  { notChosen = ComposeIfEmpty (ChooseItemProject ts) (Project ts)
+  { notChosen = ComposeUnlessError (ChooseItemProject ts) (Project ts)
   , chosen = Project ts }
 
 projectI :: [Trigger] -> CmdTriple
@@ -126,13 +126,13 @@ flingTs = [ApplyItem { verb = "fling"
 
 applyI :: [Trigger] -> CmdTriple
 applyI ts = ([CmdItem], descTs ts, ByItemMode
-  { notChosen = ComposeIfEmpty (ChooseItemApply ts) (Apply ts)
+  { notChosen = ComposeUnlessError (ChooseItemApply ts) (Apply ts)
   , chosen = Apply ts })
 
 grabAscendCmd :: HumanCmd
 grabAscendCmd = ByAimMode
   { notAiming = ReplaceFail "cannot grab items nor ascend" $
-      ComposeIfLeft
+      ComposeIfLocal
         (MoveItem [CGround] CEqp (Just "grab") "items" True)
         (TriggerTile
            [ TriggerFeature { verb = "ascend"
@@ -149,7 +149,7 @@ grabAscend t = ([CmdMove, CmdItem], t, grabAscendCmd)
 descendDropCmd :: HumanCmd
 descendDropCmd = ByAimMode
   { notAiming = ReplaceFail "cannot descend nor drop items" $
-      ComposeIfLeft
+      ComposeIfLocal
         (TriggerTile
            [ TriggerFeature { verb = "descend"
                             , object = "a level"
@@ -163,9 +163,9 @@ descendDropCmd = ByAimMode
 descendDrop :: Text -> CmdTriple
 descendDrop t = ([CmdMove, CmdItem], t, descendDropCmd)
 
-chooseAndHelp :: Text -> ItemDialogMode -> CmdTriple
-chooseAndHelp desc dialogMode =
-  ([CmdItem], desc, ComposeIfEmpty (ChooseItem dialogMode) Help)
+chooseAndUse :: Text -> ItemDialogMode -> CmdTriple
+chooseAndUse desc dialogMode =
+  ([CmdItem], desc, ComposeUnlessError (ChooseItem dialogMode) Help)
 
 descTs :: [Trigger] -> Text
 descTs [] = "trigger a thing"

@@ -8,7 +8,7 @@
 module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   ( -- * Meta commands
     byAreaHuman, byAimModeHuman, byItemModeHuman
-  , composeIfLeftHuman, composeIfEmptyHuman
+  , composeIfLocalHuman, composeUnlessErrorHuman
     -- * Global commands that usually take time
   , waitHuman, moveRunHuman
   , runOnceAheadHuman, moveOnceToXhairHuman
@@ -159,21 +159,21 @@ byItemModeHuman cmdNotChosenM cmdChosenM = do
 
 -- * ComposeIfLeft
 
-composeIfLeftHuman :: MonadClientUI m
+composeIfLocalHuman :: MonadClientUI m
                     => m (Either MError RequestUI) -> m (Either MError RequestUI)
                     -> m (Either MError RequestUI)
-composeIfLeftHuman c1 c2 = do
+composeIfLocalHuman c1 c2 = do
   slideOrCmd1 <- c1
   case slideOrCmd1 of
     Left _merr -> c2
     _ -> return slideOrCmd1
 
--- * ComposeIfEmpty
+-- * ComposeUnlessError
 
-composeIfEmptyHuman :: MonadClientUI m
-                    => m (Either MError RequestUI) -> m (Either MError RequestUI)
-                    -> m (Either MError RequestUI)
-composeIfEmptyHuman c1 c2 = do
+composeUnlessErrorHuman :: MonadClientUI m
+                        => m (Either MError RequestUI) -> m (Either MError RequestUI)
+                        -> m (Either MError RequestUI)
+composeUnlessErrorHuman c1 c2 = do
   slideOrCmd1 <- c1
   case slideOrCmd1 of
     Left Nothing -> c2

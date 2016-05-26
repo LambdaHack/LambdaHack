@@ -72,8 +72,8 @@ data HumanCmd =
   | ByArea ![(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
   | ByAimMode {notAiming :: !HumanCmd, aiming :: !HumanCmd}
   | ByItemMode {notChosen :: !HumanCmd, chosen :: !HumanCmd}
-  | ComposeIfLeft !HumanCmd !HumanCmd
-  | ComposeIfEmpty !HumanCmd !HumanCmd
+  | ComposeIfLocal !HumanCmd !HumanCmd
+  | ComposeUnlessError !HumanCmd !HumanCmd
     -- Global.
     -- These usually take time.
   | Wait

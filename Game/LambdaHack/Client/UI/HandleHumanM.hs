@@ -47,10 +47,10 @@ cmdAction cmd = case cmd of
     byAimModeHuman (cmdAction notAiming) (cmdAction aiming)
   ByItemMode{..} ->
     byItemModeHuman (cmdAction notChosen) (cmdAction chosen)
-  ComposeIfLeft cmd1 cmd2 ->
-    composeIfLeftHuman (cmdAction cmd1) (cmdAction cmd2)
-  ComposeIfEmpty cmd1 cmd2 ->
-    composeIfEmptyHuman (cmdAction cmd1) (cmdAction cmd2)
+  ComposeIfLocal cmd1 cmd2 ->
+    composeIfLocalHuman (cmdAction cmd1) (cmdAction cmd2)
+  ComposeUnlessError cmd1 cmd2 ->
+    composeUnlessErrorHuman (cmdAction cmd1) (cmdAction cmd2)
 
   Wait -> weaveJust <$> Right <$> fmap timedToUI waitHuman
   MoveDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True False False v)
