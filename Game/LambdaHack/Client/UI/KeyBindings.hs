@@ -64,12 +64,11 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   }
 
 -- | Produce a set of help screens from the key bindings.
-keyHelp :: Binding -> [(Text, OKX)]
-keyHelp Binding{..} =
+keyHelp :: Binding -> Int -> [(Text, OKX)]
+keyHelp Binding{..} offset = assert (offset > 0) $
   let
     movBlurb =
-      [ ""
-      , "Walk throughout a level with mouse or numeric keypad (left diagram)"
+      [ "Walk throughout a level with mouse or numeric keypad (left diagram)"
       , "or its compact laptop replacement (middle) or the Vi text editor keys"
       , "(right, also known as \"Rogue-like keys\"; can be enabled in config.ui.ini)."
       , "Run, until disturbed, with left mouse button or SHIFT (or CTRL) and a key."
@@ -92,8 +91,7 @@ keyHelp Binding{..} =
       , "Press SPACE to see the minimal command set."
       ]
     minimalBlurb =
-      [ ""
-      , "The following minimal command set lets you accomplish anything in the game,"
+      [ "The following minimal command set lets you accomplish anything in the game,"
       , "though not necessarily with the fewest number of keystrokes."
       , "Most of the other commands are shorthands, defined as macros"
       , "(with the exception of the advanced commands for assigning non-default"
@@ -140,24 +138,26 @@ keyHelp Binding{..} =
     okxsN :: Int -> CmdCategory -> [Text] -> [Text] -> OKX
     okxsN n cat header footer =
       let (ks, keyTable) = unzip $ keysN n cat
-          kxs = zip ks [(y, 0, maxBound) | y <- [length header..]]
-      in (map toAttrLine $ header ++ keyTable ++ footer, kxs)
+          kxs = zip ks [(y, 0, maxBound) | y <- [offset + length header..]]
+      in (map toAttrLine $ "" : header ++ keyTable ++ footer, kxs)
     okxs = okxsN 16
   in
-    [ ( casualDescription <+> "(1/2)."
+    [ ( "Decide what to do with the chosen object."
+      , okxs CmdItemMenu [keyCaption] [] )
+    , ( casualDescription <+> "(1/2)."
       , (map toAttrLine $ movText, []) )
     , ( casualDescription <+> "(2/2)."
       , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEndText )
     , ( "All terrain exploration and alteration commands."
-      , okxsN 10 CmdMove ([""] ++ [keyCaptionN 10]) categoryText )
+      , okxsN 10 CmdMove [keyCaptionN 10] categoryText )
     , ( categoryDescription CmdItem <> "."
-      , okxsN 10 CmdItem ([""] ++ [keyCaptionN 10]) categoryText )
+      , okxsN 10 CmdItem [keyCaptionN 10] categoryText )
     , ( categoryDescription CmdAim <> "."
-      , okxs CmdAim ([""] ++ [keyCaption]) categoryText )
+      , okxs CmdAim [keyCaption] categoryText )
     , ( categoryDescription CmdMeta <> "."
-      , okxs CmdMeta ([""] ++ [keyCaption])
+      , okxs CmdMeta [keyCaption]
              (pickLeaderDescription ++ categoryText) )
     , ( categoryDescription CmdMouse <> "."
-      , let (ov, _) = okxsN 21 CmdMouse ([""] ++ [keyCaptionN 21]) lastText
+      , let (ov, _) = okxsN 21 CmdMouse [keyCaptionN 21] lastText
         in (ov, []) )
     ]

@@ -78,8 +78,10 @@ splitOKX lxsize yspace rrep keys (ls0, kxs0) =
   assert (yspace > 2) $  -- and kxs0 is sorted
   let msgRaw = splitAttrLine lxsize rrep
       (lX0, keysX0) = keysOKX 0 0 maxBound keys
-      (lX, keysX) = keysOKX (length msgRaw - 1) (length (last msgRaw) + 1)
-                            lxsize keys
+      (lX, keysX) | null msgRaw = (lX0, keysX0)
+                  | otherwise = keysOKX (length msgRaw - 1)
+                                        (length (last msgRaw) + 1)
+                                        lxsize keys
       msgOkx = (glueOverlay msgRaw lX, keysX)
       ((lsInit, kxsInit), (header, rkxs)) =
         -- Check whether most space taken by report and keys.

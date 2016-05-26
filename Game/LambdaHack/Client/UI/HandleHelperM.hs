@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   ( MError, FailOrCmd
   , showFailError, failWith, failSer, failMsg, weaveJust
   , memberCycle, memberBack, partyAfterLeader, pickLeader
-  , itemOverlay, statsOverlay
+  , itemIsFound, itemOverlay, statsOverlay
   ) where
 
 import Prelude ()
@@ -137,6 +137,18 @@ pickLeader verbose aid = do
       lookMsg <- lookAt False "" True (bpos pbody) aid ""
       when verbose $ msgAdd lookMsg
       return True
+
+-- TODO: deduplicate parts of the result sentence.
+itemIsFound :: MonadClientUI m => ItemId -> ActorId -> m Text
+itemIsFound iid leader = do
+  b <- getsState $ getActorBody leader
+  found <- getsState $ findIid leader (bfid b) iid
+  let !_A = assert (not (null found) `blame` (iid, leader)) ()
+      ppLoc (_, CSha) = MU.Text $ ppCStoreIn CSha <+> "of the party"
+      ppLoc (b2, store) = MU.Text $ ppCStoreIn store <+> "of"
+                                                     <+> bname b2
+      foundTexts = map (ppLoc . snd) found
+  return $! makeSentence ["The item is", MU.WWandW foundTexts]
 
 -- | Create a list of item names.
 itemOverlay :: MonadClient m => CStore -> LevelId -> ItemBag -> m OKX

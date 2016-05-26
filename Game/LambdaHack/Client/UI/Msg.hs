@@ -66,7 +66,7 @@ snocReport :: Report -> Msg -> Report
 snocReport (Report r) y =
   let scrubPrompts = filter (msgHist . fst)
   in case scrubPrompts r of
-    xns | null $ msgLine y -> Report xns
+    _ | null $ msgLine y -> Report r
     (x, n) : xns | x == y -> Report $ (x, n + 1) : xns
     xns -> Report $ (y, 1) : xns
 

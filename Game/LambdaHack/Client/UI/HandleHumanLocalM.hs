@@ -150,38 +150,41 @@ chooseItemHuman c = do
     Right ((iid, itemFull), c2) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
-      localTime <- getsState $ getLocalTime (blid b)
-      let attrLine = itemDesc (storeFromMode c2) localTime itemFull
       case c2 of
         MStore COrgan -> do
           let symbol = jsymbol (itemBase itemFull)
               blurb | symbol == '+' = "choose temporary conditions"
                     | otherwise = "choose organs"
-          -- TODO: also forbid on the server, except in special cases.
+              -- TODO: also forbid on the server, except in special cases.
               prompt2 = "Can't" <+> blurb
                         <> ", but here's the description.\n"
-          promptAddAttr $ toAttrLine prompt2 ++ attrLine
-        MStore fromCStore ->
+          promptAdd prompt2
+          arena <- getArenaUI
+          Level{lxsize, lysize} <- getLevel arena
+          localTime <- getsState $ getLocalTime (blid b)
+          foundText <- itemIsFound iid leader
+          let attrLine = itemDesc COrgan localTime itemFull
+              ov = splitAttrLine lxsize $ attrLine <+:> toAttrLine foundText
+          slides <-
+            overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov, [])
+          km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
+          if km == K.spaceKM
+          then chooseItemHuman c2
+          else failMsg "never mind"
+        MStore fromCStore -> do
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+          return Nothing
         MOwned -> do
           found <- getsState $ findIid leader (bfid b) iid
-          let !_A = assert (not (null found) `blame` ggi) ()
-              ppLoc (_, CSha) = MU.Text $ ppCStoreIn CSha <+> "of the party"
-              ppLoc (b2, store) = MU.Text $ ppCStoreIn store <+> "of"
-                                                             <+> bname b2
-              foundTexts = map (ppLoc . snd) found
-              prompt2 = makeSentence ["The item is", MU.WWandW foundTexts]
-                        <> "\n"
-              (newAid, bestStore) = case leader `lookup` found of
+          let (newAid, bestStore) = case leader `lookup` found of
                 Just (_, store) -> (leader, store)
                 Nothing -> case found of
                   (aid, (_, store)) : _ -> (aid, store)
                   [] -> assert `failure` iid
           modifySession $ \sess -> sess {sitemSel = Just (bestStore, iid)}
           void $ pickLeader True newAid
-          promptAddAttr $ toAttrLine prompt2 ++ attrLine
+          return Nothing
         MStats -> assert `failure` ggi
-      return Nothing
     Left err -> failMsg err
 
 -- * ChooseItemProject

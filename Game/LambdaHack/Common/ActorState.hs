@@ -170,7 +170,7 @@ findIid leader fid iid s =
         let itemsOfCStore store =
               let bag = getBodyActorBag b store s
               in map (\iid2 -> (iid2, (aid, (b, store)))) (EM.keys bag)
-            stores = [CInv, CEqp] ++ [CSha | aid == leader]
+            stores = [CInv, CEqp, COrgan] ++ [CSha | aid == leader]
         in concatMap itemsOfCStore stores
       items = concatMap itemsOfActor actors
   in map snd $ filter ((== iid) . fst) items

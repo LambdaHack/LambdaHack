@@ -14,7 +14,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , runOnceAheadHuman, moveOnceToXhairHuman
   , runOnceToXhairHuman, continueToXhairHuman
   , moveItemHuman, projectHuman, applyHuman, alterDirHuman, triggerTileHuman
-  , helpHuman, mainMenuHuman, gameDifficultyIncr
+  , helpHuman, itemMenuHuman, mainMenuHuman, gameDifficultyIncr
     -- * Global commands that never take time
   , gameRestartHuman, gameExitHuman, gameSaveHuman
   , tacticHuman, automateHuman
@@ -884,19 +884,62 @@ helpHuman cmdAction = do
   Level{lxsize, lysize} <- getLevel arena  -- TODO: screen length or viewLevel
   menuIxHelp <- getsSession smenuIxHelp
   keyb <- getsSession sbinding
-  let keyH = keyHelp keyb
+  let keyH = tail $ keyHelp keyb 1  -- the first screen is for ItemMenu
       splitHelp (t, okx) =
         splitOKX lxsize (lysize + 3) (toAttrLine t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
   (ekm, pointer) <-
     displayChoiceScreen ColorFull True menuIxHelp sli [K.spaceKM, K.escKM]
-  modifySession $ \sess -> sess {smenuIxHelp = pointer}
+  modifySession $ \sess -> sess { smenuIxHelp = pointer
+                                , skeysHintMode = KeysHintBlocked }
   case ekm of
     Left km -> case km `M.lookup` bcmdMap keyb of
-      _ | km `elem` [K.escKM] -> return $ Left Nothing
+      _ | km == K.escKM -> return $ Left Nothing
       Just (_desc, _cats, cmd) -> cmdAction cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> assert `failure` ekm
+
+-- * ItemMenu
+
+itemMenuHuman :: MonadClientUI m
+              => (HumanCmd.HumanCmd -> m (Either MError RequestUI))
+              -> m (Either MError RequestUI)
+itemMenuHuman cmdAction = do
+  itemSel <- getsSession sitemSel
+  case itemSel of
+    Just (fromCStore, iid) -> do
+      leader <- getLeaderUI
+      b <- getsState $ getActorBody leader
+      bag <- getsState $ getActorBag leader fromCStore
+      case iid `EM.lookup` bag of
+        Nothing -> do  -- used up
+          modifySession $ \sess -> sess {sitemSel = Nothing}
+          weaveJust <$> failWith "no object to open Item Menu for"
+        Just kit -> do
+          itemToF <- itemToFullClient
+          arena <- getArenaUI
+          Level{lxsize, lysize} <- getLevel arena
+          localTime <- getsState $ getLocalTime (blid b)
+          foundText <- itemIsFound iid leader
+          let itemFull = itemToF iid kit
+              attrLine = itemDesc fromCStore localTime itemFull
+              ov = splitAttrLine lxsize $ attrLine <+:> toAttrLine foundText
+          keyb <- getsSession sbinding
+          let (t0, (ov0, kxs0)) = head $ keyHelp keyb (1 + length ov)
+              splitHelp (t, okx) =
+                splitOKX lxsize (lysize + 1) (toAttrLine t)
+                         [K.spaceKM, K.escKM] okx
+              sli = toSlideshow $ splitHelp (t0, (ov ++ ov0, kxs0))
+          (ekm, _) <-
+            displayChoiceScreen ColorFull False 2 sli [K.spaceKM, K.escKM]
+          case ekm of
+            Left km -> case km `M.lookup` bcmdMap keyb of
+              _ | km == K.escKM -> weaveJust <$> failWith "never mind"
+              _ | km == K.spaceKM -> return $ Left Nothing
+              Just (_desc, _cats, cmd) -> cmdAction cmd
+              Nothing -> weaveJust <$> failWith "never mind"
+            Right _slot -> assert `failure` ekm
+    Nothing -> weaveJust <$> failWith "no object to open Item Menu for"
 
 -- * MainMenu
 
