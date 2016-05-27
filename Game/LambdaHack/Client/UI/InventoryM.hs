@@ -267,8 +267,7 @@ transition :: forall m. MonadClientUI m
            -> m (Either Text ([(ItemId, ItemFull)], ItemDialogMode))
 transition psuit prompt promptGeneric permitMulitple cLegal
            numPrefix cCur cRest itemDialogState = do
-  let recCall =
-        transition psuit prompt promptGeneric permitMulitple cLegal
+  let recCall = transition psuit prompt promptGeneric permitMulitple cLegal
   (itemSlots, organSlots) <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -496,7 +495,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
               _ -> 0
     (okm, pointer2) <- displayChoiceScreen ColorFull False pointer okxs itemKeys
     -- Only remember item pointer, if moved and if not stats.
-    case drop pointer2 $ snd okx of
+    case drop pointer2 allOKX of
       (Right newSlot, _) : _ | pointer2 /= pointer && cCur /= MStats -> do
         lastStore <- getsClient slastStore
         let store = storeFromMode cCur
