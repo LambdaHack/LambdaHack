@@ -167,21 +167,14 @@ itemOverlay c lid bag = do
           Nothing -> Nothing
           Just kit@(k, _) ->
             let itemFull = itemToF iid kit
-                label = slotLabel l
-                phrase = makePhrase
-                           [ MU.Text label
-                           , "D"  -- dummy
-                           , partItemWs k c localTime itemFull ]
-                insertSymbol line =
-                  let colorSymbol = uncurry (flip Color.AttrChar)
-                                            (viewItem $ itemBase itemFull)
-                  in take (T.length label + 1) line
-                     ++ [colorSymbol]
-                     ++ drop (T.length label + 2) line
-                ov = updateOverlayLine 0 insertSymbol [toAttrLine phrase]
-                ekm = Right l
-                kx = (ekm, (undefined, 0, T.length phrase))
-            in Just (ov, kx)
+                colorSymbol = uncurry (flip Color.AttrChar)
+                                      (viewItem $ itemBase itemFull)
+                phrase = makePhrase [partItemWs k c localTime itemFull]
+                al = toAttrLine (slotLabel l)
+                     <+:> [colorSymbol]
+                     <+:> toAttrLine phrase
+                kx = (Right l, (undefined, 0, length al))
+            in Just ([al], kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
       renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
   return (concat ts, zipWith renumber [0..] kxs)
