@@ -142,7 +142,7 @@ keyHelp Binding{..} offset = assert (offset > 0) $
       in (map toAttrLine $ fmts "" : header ++ keyTable ++ footer, kxs)
     okxs = okxsN 16
   in
-    [ ( "Decide what to do with the chosen object."
+    [ ( ""  -- the first screen is for ItemMenu
       , okxs CmdItemMenu [keyCaption] [] )
     , ( casualDescription <+> "(1/2)."
       , (map toAttrLine $ movText, []) )

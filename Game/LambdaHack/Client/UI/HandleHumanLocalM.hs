@@ -153,16 +153,16 @@ chooseItemHuman c = do
       case c2 of
         MStore COrgan -> do
           let symbol = jsymbol (itemBase itemFull)
-              blurb | symbol == '+' = "choose temporary conditions"
-                    | otherwise = "choose organs"
+              blurb | symbol == '+' = "temporary condition"
+                    | otherwise = "organ"
               -- TODO: also forbid on the server, except in special cases.
-              prompt2 = "Can't" <+> blurb
-                        <> ", but here's the description.\n"
+              prompt2 = makeSentence [ partActor b, "can't choose"
+                                     , MU.AW blurb ]
           promptAdd prompt2
           arena <- getArenaUI
           Level{lxsize, lysize} <- getLevel arena
           localTime <- getsState $ getLocalTime (blid b)
-          foundText <- itemIsFound iid leader
+          foundText <- itemIsFound iid leader COrgan
           let attrLine = itemDesc COrgan localTime itemFull
               ov = splitAttrLine lxsize $ attrLine <+:> toAttrLine foundText
           slides <-

@@ -931,12 +931,14 @@ itemMenuHuman cmdAction = do
           arena <- getArenaUI
           Level{lxsize, lysize} <- getLevel arena
           localTime <- getsState $ getLocalTime (blid b)
-          foundText <- itemIsFound iid leader
+          foundText <- itemIsFound iid leader fromCStore
           let itemFull = itemToF iid kit
               attrLine = itemDesc fromCStore localTime itemFull
               ov = splitAttrLine lxsize $ attrLine <+:> toAttrLine foundText
           keyb <- getsSession sbinding
-          let (t0, (ov0, kxs0)) = head $ keyHelp keyb (1 + length ov)
+          let (_, (ov0, kxs0)) = head $ keyHelp keyb (1 + length ov)
+              t0 = makeSentence [ MU.SubjectVerbSg (partActor b) "choose"
+                                , "an object", MU.Text $ ppCStoreIn fromCStore ]
               splitHelp (t, okx) =
                 splitOKX lxsize (lysize + 1) (toAttrLine t)
                          [K.spaceKM, K.escKM] okx
