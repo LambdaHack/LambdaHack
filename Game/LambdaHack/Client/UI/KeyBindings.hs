@@ -139,7 +139,7 @@ keyHelp Binding{..} offset = assert (offset > 0) $
     okxsN n cat header footer =
       let (ks, keyTable) = unzip $ keysN n cat
           kxs = zip ks [(y, 0, maxBound) | y <- [offset + length header..]]
-      in (map toAttrLine $ "" : header ++ keyTable ++ footer, kxs)
+      in (map toAttrLine $ fmts "" : header ++ keyTable ++ footer, kxs)
     okxs = okxsN 16
   in
     [ ( "Decide what to do with the chosen object."

@@ -37,7 +37,9 @@ overlayFrame topTrunc msf =
                      (\sf -> singleFrame sf)
                      msf
       topLayer = if length topTrunc <= canvasLength
-                 then topTrunc
+                 then topTrunc ++ if length topTrunc < canvasLength
+                                  then [emptyLine]
+                                  else []
                  else take (canvasLength - 1) topTrunc
                       ++ [toAttrLine "--a portion of the text trimmed--"]
       f layerLine canvasLine =
