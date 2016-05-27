@@ -165,7 +165,8 @@ descendDrop t = ([CmdMove, CmdItem], t, descendDropCmd)
 
 chooseAndUse :: Text -> ItemDialogMode -> CmdTriple
 chooseAndUse desc dialogMode =
-  ([CmdItem], desc, ComposeUnlessError (ChooseItem dialogMode) ItemMenu)
+  ([CmdItem], desc, LoopOnNothing
+                    $ ComposeUnlessError (ChooseItem dialogMode) ItemMenu)
 
 descTs :: [Trigger] -> Text
 descTs [] = "trigger a thing"

@@ -51,6 +51,8 @@ cmdAction cmd = case cmd of
     composeIfLocalHuman (cmdAction cmd1) (cmdAction cmd2)
   ComposeUnlessError cmd1 cmd2 ->
     composeUnlessErrorHuman (cmdAction cmd1) (cmdAction cmd2)
+  LoopOnNothing cmd1 ->
+    loopOnNothingHuman (cmdAction cmd1)
 
   Wait -> weaveJust <$> Right <$> fmap timedToUI waitHuman
   MoveDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True False False v)

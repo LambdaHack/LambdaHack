@@ -74,6 +74,7 @@ data HumanCmd =
   | ByItemMode {notChosen :: !HumanCmd, chosen :: !HumanCmd}
   | ComposeIfLocal !HumanCmd !HumanCmd
   | ComposeUnlessError !HumanCmd !HumanCmd
+  | LoopOnNothing !HumanCmd
     -- Global.
     -- These usually take time.
   | Wait

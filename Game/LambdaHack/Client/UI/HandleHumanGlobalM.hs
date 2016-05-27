@@ -8,7 +8,7 @@
 module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   ( -- * Meta commands
     byAreaHuman, byAimModeHuman, byItemModeHuman
-  , composeIfLocalHuman, composeUnlessErrorHuman
+  , composeIfLocalHuman, composeUnlessErrorHuman, loopOnNothingHuman
     -- * Global commands that usually take time
   , waitHuman, moveRunHuman
   , runOnceAheadHuman, moveOnceToXhairHuman
@@ -178,6 +178,17 @@ composeUnlessErrorHuman c1 c2 = do
   case slideOrCmd1 of
     Left Nothing -> c2
     _ -> return slideOrCmd1
+
+-- * LoopOnNothing
+
+loopOnNothingHuman :: MonadClientUI m
+                   => m (Either MError RequestUI)
+                   -> m (Either MError RequestUI)
+loopOnNothingHuman cmd = do
+  res <- cmd
+  case res of
+    Left Nothing -> loopOnNothingHuman cmd
+    _ -> return res
 
 -- * Wait
 
