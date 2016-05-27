@@ -133,15 +133,27 @@ standardKeys = KeyKind
       , ("s", addCmdCategory CmdItemMenu
               $ moveItemTriple [CGround, CInv, CEqp] CSha Nothing
                                "and share item" False)
-      , ("E", chooseAndUse "manage equipment of the leader" (MStore CEqp))
-      , ("P", addCmdCategory CmdMinimal
-              $ chooseAndUse "manage inventory pack of the leader"
-                              (MStore CInv))
-      , ("S", chooseAndUse "manage the shared party stash" (MStore CSha))
-      , ("A", chooseAndUse "manage all owned items" MOwned)
-      , ("G", chooseAndUse "manage items on the ground" (MStore CGround))
-      , ("@", chooseAndUse "describe organs of the leader" (MStore COrgan))
-      , ("#", chooseAndUse "show the stats summary of the leader" MStats)
+      , ("E", ( [CmdItem]
+              , "manage equipment of the leader"
+              , ChooseItemMenu (MStore CEqp) ))
+      , ("P", ( [CmdMinimal, CmdItem]
+              , "manage inventory pack of the leader"
+              , ChooseItemMenu (MStore CInv) ))
+      , ("S", ( [CmdItem]
+              , "manage the shared party stash"
+              , ChooseItemMenu (MStore CSha) ))
+      , ("A", ( [CmdItem]
+              , "manage all owned items"
+              , ChooseItemMenu MOwned ))
+      , ("G", ( [CmdItem]
+              , "manage items on the ground"
+              , ChooseItemMenu (MStore CGround) ))
+      , ("@", ( [CmdItem]
+              , "describe organs of the leader"
+              , ChooseItemMenu (MStore COrgan) ))
+      , ("#", ( [CmdItem]
+              , "show the stats summary of the leader"
+              , ChooseItemMenu MStats ))
       , ("q", applyI [ApplyItem { verb = "quaff"
                                 , object = "potion"
                                 , symbol = '!' }])

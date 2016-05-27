@@ -102,6 +102,7 @@ data HumanCmd =
     -- Local. Below this line, commands do not notify the server.
   | Clear
   | ChooseItem !ItemDialogMode
+  | ChooseItemMenu !ItemDialogMode
   | ChooseItemProject ![Trigger]
   | ChooseItemApply ![Trigger]
   | PickLeader !Int

@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Semantics of 'HumanCmd' client commands that do not return
 -- server commands. None of such commands takes game time.
 -- TODO: document
@@ -5,7 +6,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   ( -- * Meta commands
     macroHuman
     -- * Local commands
-  , clearHuman, chooseItemHuman
+  , clearHuman, chooseItemHuman, chooseItemDialogMode
   , chooseItemProjectHuman, chooseItemApplyHuman
   , psuitReq, triggerSymbols, permittedApplyClient
   , pickLeaderHuman, pickLeaderWithPointerHuman
@@ -107,7 +108,11 @@ clearHuman = do
 -- | Display items from a given container store and possibly let the user
 -- chose one.
 chooseItemHuman :: MonadClientUI m => ItemDialogMode -> m MError
-chooseItemHuman c = do
+chooseItemHuman c = fst <$> chooseItemDialogMode c
+
+chooseItemDialogMode :: MonadClientUI m
+                     => ItemDialogMode -> m (MError, ItemDialogMode)
+chooseItemDialogMode c = do
   let subject = partActor
       verbSha body activeItems = if calmEnough body activeItems
                                  then "notice"
@@ -169,11 +174,11 @@ chooseItemHuman c = do
             overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] (ov, [])
           km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
           if km == K.spaceKM
-          then chooseItemHuman c2
-          else failMsg "never mind"
+          then chooseItemDialogMode c2
+          else (, c2) <$> failMsg "never mind"
         MStore fromCStore -> do
           modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
-          return Nothing
+          return (Nothing, c2)
         MOwned -> do
           found <- getsState $ findIid leader (bfid b) iid
           let (newAid, bestStore) = case leader `lookup` found of
@@ -183,9 +188,9 @@ chooseItemHuman c = do
                   [] -> assert `failure` iid
           modifySession $ \sess -> sess {sitemSel = Just (bestStore, iid)}
           void $ pickLeader True newAid
-          return Nothing
+          return (Nothing, c2)
         MStats -> assert `failure` ggi
-    Left err -> failMsg err
+    Left err -> (, c) <$> failMsg err
 
 -- * ChooseItemProject
 

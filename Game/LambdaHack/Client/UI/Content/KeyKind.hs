@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.Content.KeyKind
   , addCmdCategory, replaceDesc, gameRestartTriple, moveItemTriple, repeatTriple
   , defaultCmdLMB, defaultCmdMMB, defaultCmdRMB
   , projectI, projectA, flingTs, applyI
-  , grabAscend, descendDrop, chooseAndUse, descTs, defaultHeroSelect
+  , grabAscend, descendDrop, descTs, defaultHeroSelect
   ) where
 
 import Prelude ()
@@ -75,8 +75,8 @@ defaultCmdLMB =
     , (CaArenaName, ByAimMode {notAiming = MainMenu, aiming = Cancel})
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
-    , (CaLeaderStatus, ChooseItem $ MStore COrgan)
-    , (CaTargetDesc, ChooseItem $ MStore CInv) ]
+    , (CaLeaderStatus, ChooseItemMenu $ MStore COrgan)
+    , (CaTargetDesc, ChooseItemMenu $ MStore CInv) ]
 
 defaultCmdMMB :: CmdTriple
 defaultCmdMMB = ( [CmdMouse]
@@ -104,8 +104,8 @@ defaultCmdRMB =
     , (CaMapLeader, descendDropCmd)
     , (CaArenaName, ByAimMode {notAiming = Help, aiming = Accept})
     , (CaSelected, SelectWithPointer)
-    , (CaLeaderStatus, ChooseItem MStats)
-    , (CaTargetDesc, ChooseItem $ MStore CEqp) ]
+    , (CaLeaderStatus, ChooseItemMenu MStats)
+    , (CaTargetDesc, ChooseItemMenu $ MStore CEqp) ]
 
 projectICmd :: [Trigger] -> HumanCmd
 projectICmd ts = ByItemMode
@@ -162,11 +162,6 @@ descendDropCmd = ByAimMode
 
 descendDrop :: Text -> CmdTriple
 descendDrop t = ([CmdMove, CmdItem], t, descendDropCmd)
-
-chooseAndUse :: Text -> ItemDialogMode -> CmdTriple
-chooseAndUse desc dialogMode =
-  ([CmdItem], desc, LoopOnNothing
-                    $ ComposeUnlessError (ChooseItem dialogMode) ItemMenu)
 
 descTs :: [Trigger] -> Text
 descTs [] = "trigger a thing"

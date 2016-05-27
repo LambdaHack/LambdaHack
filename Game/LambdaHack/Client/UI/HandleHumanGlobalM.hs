@@ -14,7 +14,8 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , runOnceAheadHuman, moveOnceToXhairHuman
   , runOnceToXhairHuman, continueToXhairHuman
   , moveItemHuman, projectHuman, applyHuman, alterDirHuman, triggerTileHuman
-  , helpHuman, itemMenuHuman, mainMenuHuman, gameDifficultyIncr
+  , helpHuman, itemMenuHuman, chooseItemMenuHuman, mainMenuHuman
+  , gameDifficultyIncr
     -- * Global commands that never take time
   , gameRestartHuman, gameExitHuman, gameSaveHuman
   , tacticHuman, automateHuman
@@ -953,6 +954,22 @@ itemMenuHuman cmdAction = do
               Nothing -> weaveJust <$> failWith "never mind"
             Right _slot -> assert `failure` ekm
     Nothing -> weaveJust <$> failWith "no object to open Item Menu for"
+
+-- * ChooseItemMenu
+
+chooseItemMenuHuman :: MonadClientUI m
+                    => (HumanCmd.HumanCmd -> m (Either MError RequestUI))
+                    -> ItemDialogMode
+                    -> m (Either MError RequestUI)
+chooseItemMenuHuman cmdAction c = do
+  (res, c2) <- chooseItemDialogMode c
+  case res of
+    Nothing -> do
+      res2 <- itemMenuHuman cmdAction
+      case res2 of
+        Left Nothing -> chooseItemMenuHuman cmdAction c2
+        _ -> return res2
+    _ -> return $ Left $ res
 
 -- * MainMenu
 

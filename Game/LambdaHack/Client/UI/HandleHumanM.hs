@@ -69,6 +69,7 @@ cmdAction cmd = case cmd of
   TriggerTile ts -> weaveJust <$> (timedToUI <$$> triggerTileHuman ts)
   Help -> helpHuman cmdAction
   ItemMenu -> itemMenuHuman cmdAction
+  ChooseItemMenu dialogMode -> chooseItemMenuHuman cmdAction dialogMode
   MainMenu -> mainMenuHuman cmdAction
   GameDifficultyIncr -> gameDifficultyIncr >> mainMenuHuman cmdAction
 
@@ -79,7 +80,7 @@ cmdAction cmd = case cmd of
   Automate -> weaveJust <$> automateHuman
 
   Clear -> addNoError clearHuman
-  ChooseItem cstore -> Left <$> chooseItemHuman cstore
+  ChooseItem dialogMode -> Left <$> chooseItemHuman dialogMode
   ChooseItemProject ts -> Left <$> chooseItemProjectHuman ts
   ChooseItemApply ts -> Left <$> chooseItemApplyHuman ts
   PickLeader k -> Left <$> pickLeaderHuman k
