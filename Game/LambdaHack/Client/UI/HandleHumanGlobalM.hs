@@ -51,6 +51,7 @@ import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.UI.InventoryM
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.MsgM
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.RunM
@@ -936,14 +937,16 @@ itemMenuHuman cmdAction = do
           let itemFull = itemToF iid kit
               attrLine = itemDesc fromCStore localTime itemFull
               ov = splitAttrLine lxsize $ attrLine <+:> toAttrLine foundText
+          report <- getReportUI
           keyb <- getsSession sbinding
           let (_, (ov0, kxs0)) = head $ keyHelp keyb (1 + length ov)
               t0 = makeSentence [ MU.SubjectVerbSg (partActor b) "choose"
                                 , "an object", MU.Text $ ppCStoreIn fromCStore ]
-              splitHelp (t, okx) =
-                splitOKX lxsize (lysize + 1) (toAttrLine t)
-                         [K.spaceKM, K.escKM] okx
-              sli = toSlideshow $ splitHelp (t0, (ov ++ ov0, kxs0))
+              al1 = renderReport report <+:> toAttrLine t0
+              splitHelp (al, okx) =
+                splitOKX lxsize (lysize + 1) al [K.spaceKM, K.escKM] okx
+              sli = toSlideshow $ splitHelp (al1, (ov ++ ov0, kxs0))
+          recordHistory  -- report shown, remove it to history
           (ekm, _) <-
             displayChoiceScreen ColorFull False 2 sli [K.spaceKM, K.escKM]
           case ekm of

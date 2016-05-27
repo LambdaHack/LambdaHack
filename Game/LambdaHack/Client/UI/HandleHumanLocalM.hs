@@ -151,6 +151,7 @@ chooseItemDialogMode c = do
             , MU.Text tIn
             , MU.WownW (MU.Text $ bpronoun body) $ MU.Text t ]
   ggi <- getStoreItem prompt c
+  recordHistory  -- object chosen, wipe out already shown msgs
   case ggi of
     Right ((iid, itemFull), c2) -> do
       leader <- getLeaderUI
