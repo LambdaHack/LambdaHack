@@ -58,9 +58,9 @@ promptGetKey dm ov sfBlank frontKeyKeys = do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
       stopPlayBack
       discardPressedKey
-      let ov2 = ov <> if keyPressed
-                      then [toAttrLine "*interrupted*"]
-                      else []
+      let ov2 = ov `glueOverlay` if keyPressed
+                                 then [toAttrLine "*interrupted*"]
+                                 else []
       frontKeyFrame <- drawOverlay dm sfBlank ov2 lid
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     [] -> do
