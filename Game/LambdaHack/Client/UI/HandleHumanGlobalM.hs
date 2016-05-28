@@ -559,7 +559,8 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
           socK <- pickNumber True kToPick
           modifySession $ \sess -> sess {sitemSel = Nothing}
           case socK of
-            Left err -> failWith err
+            Left Nothing -> moveItemHuman cLegalRaw destCStore mverb auto
+            Left (Just err) -> return $ Left err
             Right kChosen ->
               let is = ( fromCStore
                        , [(iid, itemToF iid (kChosen, take kChosen it))] )

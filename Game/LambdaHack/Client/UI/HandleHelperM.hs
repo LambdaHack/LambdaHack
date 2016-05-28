@@ -1,15 +1,17 @@
 -- | Helper functions for both inventory management and human commands.
 module Game.LambdaHack.Client.UI.HandleHelperM
   ( MError, FailOrCmd
+  , failError  -- TODO: remove
   , showFailError, failWith, failSer, failMsg, weaveJust
   , memberCycle, memberBack, partyAfterLeader, pickLeader
-  , itemIsFound, itemOverlay, statsOverlay
+  , itemIsFound, itemOverlay, statsOverlay, pickNumber
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Ord
 import qualified Data.Text as T
@@ -17,6 +19,7 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.ItemSlot
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
@@ -25,6 +28,7 @@ import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Client.UI.OverlayM
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
+import Game.LambdaHack.Client.UI.SlideshowM
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -40,7 +44,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
-newtype FailError = FailError Text
+newtype FailError = FailError {failError :: Text}
   deriving Show
 
 showFailError :: FailError -> Text
@@ -59,7 +63,7 @@ failSer = failWith . showReqFailure
 failMsg :: MonadClientUI m => Text -> m MError
 failMsg err = assert (not $ T.null err) $ return $ Just $ FailError err
 
-weaveJust :: FailOrCmd RequestUI -> Either MError RequestUI
+weaveJust :: FailOrCmd a -> Either MError a
 weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
 
@@ -227,3 +231,35 @@ statsOverlay aid = do
       zipReslot = zipWith reslot $ zip [0..] allZeroSlots
       (ts, kxs) = unzip $ zipReslot $ map Left slotList ++ map Right abilityList
   return (map toAttrLine ts, kxs)
+
+pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
+pickNumber askNumber kAll = do
+  let shownKeys = [ K.returnKM, K.mkChar '+', K.mkChar '-'
+                  , K.backspaceKM, K.spaceKM, K.escKM ]
+      frontKeyKeys = shownKeys ++ map K.mkChar ['0'..'9']
+      gatherNumber pointer kCurRaw = do
+        let kCur = min kAll $ max 1 kCurRaw
+            kprompt = "Choose number:" <+> tshow kCur
+        promptAdd kprompt
+        sli <- reportToSlideshow shownKeys
+        (Left kkm, pointer2) <-
+          displayChoiceScreen ColorFull False pointer sli frontKeyKeys
+        case K.key kkm of
+          K.Char '+' ->
+            gatherNumber pointer2 $ if kCur + 1 > kAll then 1 else kCur + 1
+          K.Char '-' ->
+            gatherNumber pointer2 $ if kCur - 1 < 1 then kAll else kCur - 1
+          K.Char l | kCur == kAll ->  gatherNumber pointer2 $ Char.digitToInt l
+          K.Char l -> gatherNumber pointer2 $ kCur * 10 + Char.digitToInt l
+          K.BackSpace -> gatherNumber pointer2 $ kCur `div` 10
+          K.Return -> return $ Right kCur
+          K.Esc -> weaveJust <$> failWith "never mind"
+          K.Space -> return $ Left Nothing
+          _ -> assert `failure` "unexpected key:" `twith` kkm
+  if | kAll == 0 -> weaveJust <$> failWith "no number of items can be chosen"
+     | kAll == 1 || not askNumber -> return $ Right kAll
+     | otherwise -> do
+         res <- gatherNumber 0 kAll
+         case res of
+           Right k | k <= 0 -> assert `failure` (res, kAll)
+           _ -> return res

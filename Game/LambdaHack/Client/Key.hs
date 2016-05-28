@@ -2,7 +2,7 @@
 -- | Frontend-independent keyboard input operations.
 module Game.LambdaHack.Client.Key
   ( Key(..), showKey, handleDir, dirAllKey
-  , moveBinding, mkKM, keyTranslate, keyTranslateWeb
+  , moveBinding, mkKM, mkChar, keyTranslate, keyTranslateWeb
   , Modifier(..), KM(..), showKM
   , escKM, spaceKM, safeSpaceKM, returnKM
   , pgupKM, pgdnKM, wheelNorthKM, wheelSouthKM
@@ -254,6 +254,9 @@ mkKM s = let mkKey sk =
            'C':'T':'R':'L':'-':rest -> KM Control (mkKey rest)
            'A':'L':'T':'-':rest -> KM Alt (mkKey rest)
            _ -> KM NoModifier (mkKey s)
+
+mkChar :: Char -> KM
+mkChar c = KM NoModifier $ Char c
 
 -- | Translate key from a GTK string description to our internal key type.
 -- To be used, in particular, for the command bindings and macros

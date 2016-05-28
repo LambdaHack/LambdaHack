@@ -2,14 +2,12 @@
 module Game.LambdaHack.Client.UI.SlideshowM
   ( overlayToSlideshow, reportToSlideshow
   , displaySpaceEsc, displayMore, displayYesNo, getConfirms
-  , displayChoiceScreen, pickNumber
+  , displayChoiceScreen
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
-
-import qualified Data.Char as Char
 
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
@@ -161,32 +159,3 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                    then return (Left K.escKM, pointer0)
                    else page pointer0
   assert (either (`elem` keys) (const True) km) $ return (km, pointer)
-
-pickNumber :: MonadClientUI m => Bool -> Int -> m (Either Text Int)
-pickNumber askNumber kAll = do
-  let shownKeys = [K.returnKM, K.backspaceKM, K.escKM]
-      frontKeyKeys = shownKeys
-                     ++ map (K.KM K.NoModifier)
-                          (map (K.Char . Char.intToDigit) [0..9])
-      gatherNumber kDefaultRaw = do
-        let kDefault = min kAll kDefaultRaw
-            kprompt = "Choose number (default"
-                      <+> tshow kDefault
-                      <> ") [digits]"
-        promptAdd kprompt
-        (ov, _) : _ <- slideshow <$> reportToSlideshow shownKeys
-        kkm <- promptGetKey ColorFull ov False frontKeyKeys
-        case K.key kkm of
-          K.Char l | kDefault == kAll -> gatherNumber $ Char.digitToInt l
-          K.Char l -> gatherNumber $ kDefault * 10 + Char.digitToInt l
-          K.BackSpace -> gatherNumber $ kDefault `div` 10
-          K.Return -> return $ Right kDefault
-          K.Esc -> return $ Left "never mind"
-          _ -> assert `failure` "unexpected key:" `twith` kkm
-  if | kAll == 0 -> return $ Left "no number of items can be chosen"
-     | kAll == 1 || not askNumber -> return $ Right kAll
-     | otherwise -> do
-         num <- gatherNumber kAll
-         case num of
-           Right 0 -> return $ Left "zero items chosen"
-           _ -> return num

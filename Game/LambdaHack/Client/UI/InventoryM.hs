@@ -115,7 +115,10 @@ getAnyItems psuit prompt promptGeneric cLegalRaw cLegalAfterCalm askWhenLone ask
     Right ([(iid, itemFull)], c) -> do
       socK <- pickNumber askNumber $ itemK itemFull
       case socK of
-        Left err -> return $ Left err
+        Left Nothing ->
+          getAnyItems psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
+                      askWhenLone askNumber
+        Left (Just err) -> return $ Left $ failError err
         Right k ->
           return $ Right ([(iid, itemFull{itemK=k})], c)
     Right _ -> return soc
@@ -494,9 +497,10 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
               Just p -> p
               _ -> 0
     (okm, pointer2) <- displayChoiceScreen ColorFull False pointer okxs itemKeys
-    -- Only remember item pointer, if moved and if not stats.
+    -- Remember item pointer, unless stats. Remember even if not moved,
+    -- in case the initial position was a default.
     case drop pointer2 allOKX of
-      (Right newSlot, _) : _ | pointer2 /= pointer && cCur /= MStats -> do
+      (Right newSlot, _) : _ | cCur /= MStats -> do
         lastStore <- getsClient slastStore
         let store = storeFromMode cCur
             newStore = store : delete store lastStore
