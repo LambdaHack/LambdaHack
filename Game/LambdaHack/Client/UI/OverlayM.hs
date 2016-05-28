@@ -76,12 +76,9 @@ lookAt detailed tilePrefix canSee pos aid msg = do
                           | canSee -> "notice"
                           | otherwise -> "remember"
   let nWs (iid, kit@(k, _)) = partItemWs k CGround localTime (itemToF iid kit)
-      isd = if | EM.size is == 0 -> ""
-               | EM.size is <= 2 ->
-                 makeSentence [ MU.SubjectVerbSg subject verb
+      isd = if EM.size is == 0 then ""
+            else makeSentence [ MU.SubjectVerbSg subject verb
                               , MU.WWandW $ map nWs $ EM.assocs is]
-               | otherwise ->
-                 makeSentence [MU.Cardinal (EM.size is), "items here"]
       tile = lvl `at` pos
       obscured | knownLsecret lvl
                  && tile /= hideTile cops lvl pos = "partially obscured"

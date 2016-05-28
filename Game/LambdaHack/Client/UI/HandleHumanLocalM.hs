@@ -753,16 +753,6 @@ doLook = do
               | otherwise = "you see"
       -- Show general info about current position.
       lookMsg <- lookAt True vis canSee p leader enemyMsg
-{- aiming is kind of a menu (or at least mode), so this is menu inside
-   a menu, which is messy, hence disabled until UI overhauled:
-      -- Check if there's something lying around at current position.
-      is <- getsState $ getCBag $ CFloor lidV p
-      if EM.size is <= 2 then
-        promptToSlideshow lookMsg
-      else do
-        promptAdd lookMsg
-        floorItemOverlay lidV p
--}
       promptAdd lookMsg
 
 -- * MoveXhair
