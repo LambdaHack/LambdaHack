@@ -42,23 +42,26 @@ overlayFrame topTrunc msf =
                                   else []
                  else take (canvasLength - 1) topTrunc
                       ++ [toAttrLine "--a portion of the text trimmed--"]
-      f layerLine canvasLine =
-        let truncated = truncateAttrLine lxsize layerLine
+      f lenPrev lenNext layerLine canvasLine =
+        let truncated = truncateAttrLine lxsize layerLine (max lenPrev lenNext)
         in truncated ++ drop (length truncated) canvasLine
-      picture = zipWith f topLayer canvas
+      lens = map length topLayer
+      picture = zipWith4 f (0 : lens) (drop 1 lens) topLayer canvas
       newLevel = picture ++ drop (length picture) canvas
   in SingleFrame newLevel
 
 -- | Add a space at the message end, for display overlayed over the level map.
 -- Also trim (do not wrap!) too long lines.
-truncateAttrLine :: X -> AttrLine -> AttrLine
-truncateAttrLine w xs =
+truncateAttrLine :: X -> AttrLine -> X -> AttrLine
+truncateAttrLine w xs lenMax =
   case compare w (length xs) of
     LT -> let discarded = drop w xs
           in if all ((== ' ') . acChar) discarded
              then take w xs
              else take (w - 1) xs ++ [AttrChar (Attr BrBlack defBG) '$']
     EQ -> xs
-    GT -> if null xs || acChar (last xs) == ' '
-          then xs
-          else xs ++ [AttrChar defAttr ' ']
+    GT -> let xsSpace = if null xs || acChar (last xs) == ' '
+                        then xs
+                        else xs ++ toAttrLine " "
+          in xsSpace
+             ++ replicate (1 + lenMax - length xsSpace) (AttrChar defAttr ' ')
