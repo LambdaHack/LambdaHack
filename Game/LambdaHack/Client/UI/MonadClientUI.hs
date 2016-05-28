@@ -173,6 +173,8 @@ xhairToPos = do
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
+  arena <- getArenaUI
+  Level{lxsize, lysize} <- getLevel arena
   fid <- getsClient sside
   fact <- getsState $ (EM.! fid) . sfactionD
   -- TODO: Re-read the table in case it's changed by a concurrent game.
@@ -189,8 +191,6 @@ scoreToSlideshow total status = do
   factionD <- getsState sfactionD
   let table = HighScore.getTable gameModeId scoreDict
       gameModeName = mname gameMode
-      showScore (ntable, pos) =
-        HighScore.highSlideshow ntable pos gameModeName tz
       diff | fhasUI $ gplayer fact = scurDiff
            | otherwise = difficultyInverse scurDiff
       theirVic (fi, fa) | isAtWar fact fi
@@ -200,13 +200,18 @@ scoreToSlideshow total status = do
       ourVic (fi, fa) | isAllied fact fi || fi == fid = Just $ gvictims fa
                       | otherwise = Nothing
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
-      (worthMentioning, rScore) =
+      (worthMentioning, (ntable, pos)) =
         HighScore.register table total time status date diff
                            (fname $ gplayer fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
+      (msg, tts) = HighScore.highSlideshow ntable pos gameModeName tz
+      al = toAttrLine msg
+      splitScreen ts =
+        splitOKX lxsize (lysize + 3) al [K.spaceKM, K.escKM] (ts, [])
+      sli = toSlideshow $ concat $ map (splitScreen . map toAttrLine) tts
   return $! if worthMentioning
-            then textsToSlideshow $ showScore rScore
+            then sli
             else emptySlideshow
 
 defaultHistory :: MonadClientUI m => Int -> m History

@@ -522,6 +522,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
         itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
     Nothing -> assert `failure` (iid, itemFull)
 
+-- TODO: split into many top-level functions; factor out common parts
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Actor -> Maybe Status -> m ()
 quitFactionUI fid mbody toSt = do
@@ -565,53 +566,89 @@ quitFactionUI fid mbody toSt = do
           (Nothing, Nothing)  -- Wipe out the quit flag for the savegame files.
   case startingPart of
     Nothing -> return ()
-    Just sp -> do
-      let msg = makeSentence [MU.SubjectVerbSg fidName sp]
-      promptAdd $ msg <+> tmoreMsg
+    Just sp -> promptAdd $ makeSentence [MU.SubjectVerbSg fidName sp]
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
-      startingSlide <- reportToSlideshow []
+      go <- displaySpaceEsc ColorFull ""
       recordHistory  -- we are going to exit or restart, so record and clear
-      let bodyToItemSlides b = do
-            (bag, tot) <- getsState $ calculateTotal b
-            let currencyName = MU.Text $ IK.iname $ okind
-                               $ ouniqGroup "currency"
-                itemMsg = makeSentence [ "Your loot is worth"
-                                       , MU.CarWs tot currencyName ]
-                          <+> tmoreMsg
-            if EM.null bag then return (emptySlideshow, 0)
-            else do
-              promptAdd itemMsg
-              arena <- getArenaUI
-              Level{lysize} <- getLevel arena
-              io <- itemOverlay CGround (blid b) bag
-              sli <- overlayToSlideshow (lysize + 1) [] io
-              return (sli, tot)
-      (itemSlides, total) <- case mbody of
-        Just b | fid == side -> bodyToItemSlides b
-        _ -> case gleader fact of
-          Nothing -> return (emptySlideshow, 0)
-          Just (aid, _) -> do
-            b <- getsState $ getActorBody aid
-            bodyToItemSlides b
-      -- Show score for any UI client (except after ESC),
-      -- even though it is saved only for human UI clients.
-      scoreSlides <- scoreToSlideshow total status
-      promptAdd $ pp
-      partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
-      -- TODO: First ESC cancels items display.
-      -- TODO: instead of void, display item description, etc.
-      void $ getConfirms ColorFull [K.spaceKM, K.escKM] startingSlide
-      void $ getConfirms ColorFull [K.spaceKM, K.escKM] itemSlides
-      -- TODO: Second ESC cancels high score and parting message display.
-      -- The last slide stays onscreen during shutdown, etc.
-      void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
-      void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
-      -- TODO: perhaps use a vertical animation instead, e.g., roll down
-      -- and put it before item and score screens (on blank background)
-      unless (fmap stOutcome toSt == Just Camping) $ do
-        promptAdd pp
-        fadeOutOrIn True
+      when go $ do
+        let store = CGround  -- only matters for UI details; all items shown
+            currencyName = MU.Text $ IK.iname $ okind $ ouniqGroup "currency"
+            bodyToItemSlides b = do
+              (bag, tot) <- getsState $ calculateTotal b
+              if EM.null bag then return (EM.empty, emptySlideshow, 0)
+              else do
+                let spoilsMsg = makeSentence [ "Your spoils are worth"
+                                             , MU.CarWs tot currencyName ]
+                promptAdd spoilsMsg
+                arena <- getArenaUI
+                Level{lysize} <- getLevel arena
+                io <- itemOverlay store (blid b) bag
+                sli <- overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] io
+                return (bag, sli, tot)
+        (bag, itemSlides, total) <- case mbody of
+          Just b | fid == side -> bodyToItemSlides b
+          _ -> case gleader fact of
+            Nothing -> return (EM.empty, emptySlideshow, 0)
+            Just (aid, _) -> do
+              b <- getsState $ getActorBody aid
+              bodyToItemSlides b
+        arena <- getArenaUI
+        Level{lxsize, lysize} <- getLevel arena
+        localTime <- getsState $ getLocalTime arena
+        itemToF <- itemToFullClient
+        (lSlots, _) <- getsClient sslots
+        let keyOfEKM (Left km) = Just km
+            keyOfEKM (Right SlotChar{slotChar}) =
+              Just $ K.KM K.NoModifier $ K.Char slotChar
+            allOKX = concatMap snd $ slideshow itemSlides
+            keys = [K.spaceKM, K.escKM] ++ mapMaybe (keyOfEKM . fst) allOKX
+            examItem slot =
+              case EM.lookup slot lSlots of
+                Nothing -> assert `failure` slot
+                Just iid -> case EM.lookup iid bag of
+                  Nothing -> assert `failure` iid
+                  Just kit@(k, _) -> do
+                    let itemFull = itemToF iid kit
+                        attrLine = itemDesc store localTime itemFull
+                        ov = splitAttrLine lxsize attrLine
+                        worth = itemPrice (itemBase itemFull, 1)
+                        lootMsg = makeSentence $
+                          ["This particular loot is worth"]
+                          ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
+                          ++ [MU.CarWs worth currencyName]
+                    promptAdd lootMsg
+                    slides <- overlayToSlideshow (lysize + 1)
+                                                 [K.spaceKM, K.escKM]
+                                                 (ov, [])
+                    km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
+                    return $! km == K.spaceKM
+            viewItems pointer = do
+              (ekm, pointer2) <- displayChoiceScreen ColorFull False pointer
+                                                     itemSlides keys
+              case ekm of
+                Left km | km == K.spaceKM -> return True
+                Left km | km == K.escKM -> return False
+                Left _ -> assert `failure` ekm
+                Right slot -> do
+                  go2 <- examItem slot
+                  if go2 then viewItems pointer2 else return True
+        go3 <- viewItems 2
+        when go3 $ do
+          -- Show score for any UI client after any kind of game exit,
+          -- even though it is saved only for human UI clients at game over.
+          -- TODO: click on score and get more details and highlight
+          -- current score
+          scoreSlides <- scoreToSlideshow total status
+          void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
+          -- The last prompt stays onscreen during shutdown, etc.
+          promptAdd pp
+          partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
+          void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
+          -- TODO: perhaps use a vertical animation instead, e.g., roll down
+          -- and put it before item and score screens (on blank background)
+          unless (fmap stOutcome toSt == Just Camping) $
+            fadeOutOrIn True
     _ -> return ()
 
 discover :: MonadClientUI m

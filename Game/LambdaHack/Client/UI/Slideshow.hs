@@ -2,7 +2,7 @@
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
   ( KYX, OKX, Slideshow(slideshow)
-  , emptySlideshow, unsnoc, toSlideshow, menuToSlideshow, textsToSlideshow
+  , emptySlideshow, unsnoc, toSlideshow, menuToSlideshow
   , splitOverlay, splitOKX
   ) where
 
@@ -52,9 +52,6 @@ toSlideshow okxs = Slideshow $ addFooters okxs
 menuToSlideshow :: OKX -> Slideshow
 menuToSlideshow (als, kxs) =
   assert (not (null als || null kxs)) $ Slideshow [(als, kxs)]
-
-textsToSlideshow :: [[Text]] -> Slideshow
-textsToSlideshow = toSlideshow . map (\t -> (map toAttrLine t, []))
 
 keysOKX :: Y -> X -> X -> [K.KM] -> OKX
 keysOKX ystart xstart xBound keys =

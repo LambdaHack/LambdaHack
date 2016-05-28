@@ -154,14 +154,14 @@ itemIsFound iid leader storeLeader = do
 
 -- | Create a list of item names.
 itemOverlay :: MonadClient m => CStore -> LevelId -> ItemBag -> m OKX
-itemOverlay c lid bag = do
+itemOverlay store lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   (itemSlots, organSlots) <- getsClient sslots
-  let isOrgan = c == COrgan
+  let isOrgan = store == COrgan
       lSlots = if isOrgan then organSlots else itemSlots
       !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
-                    `blame` (c, lid, bag, lSlots)) ()
+                    `blame` (store, lid, bag, lSlots)) ()
       pr (l, iid) =
         case EM.lookup iid bag of
           Nothing -> Nothing
@@ -169,7 +169,7 @@ itemOverlay c lid bag = do
             let itemFull = itemToF iid kit
                 colorSymbol = uncurry (flip Color.AttrChar)
                                       (viewItem $ itemBase itemFull)
-                phrase = makePhrase [partItemWs k c localTime itemFull]
+                phrase = makePhrase [partItemWs k store localTime itemFull]
                 al = toAttrLine (slotLabel l)
                      <+:> [colorSymbol]
                      <+:> toAttrLine phrase

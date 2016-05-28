@@ -148,7 +148,7 @@ showTable :: TimeZone -> ScoreTable -> Int -> Int -> [Text]
 showTable tz (ScoreTable table) start height =
   let zipped    = zip [1..] table
       screenful = take height . drop (start - 1) $ zipped
-  in intercalate [""] (map (showScore tz) screenful)
+  in "" : intercalate [""] (map (showScore tz) screenful)
 
 -- | Produce a couple of renderings of the high scores table.
 showNearbyScores :: TimeZone -> Int -> ScoreTable -> Int -> [[Text]]
@@ -164,7 +164,7 @@ highSlideshow :: ScoreTable -- ^ current score table
               -> Int        -- ^ position of the current score in the table
               -> Text       -- ^ the name of the game mode
               -> TimeZone   -- ^ the timezone where the game is run
-              -> [[Text]]
+              -> (Text, [[Text]])
 highSlideshow table pos gameModeName tz =
   let (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
       height = nlines `div` 3
@@ -198,4 +198,4 @@ highSlideshow table pos gameModeName tz =
       msg = makeSentence
         [ MU.SubjectVerb person MU.Yes (MU.Text subject) "award you"
         , MU.Ordinal pos, "place", msgUnless ]
-  in map ([msg, ""] ++) $ showNearbyScores tz pos table height
+  in (msg, showNearbyScores tz pos table height)
