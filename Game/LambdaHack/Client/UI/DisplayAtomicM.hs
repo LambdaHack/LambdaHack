@@ -599,8 +599,7 @@ quitFactionUI fid mbody toSt = do
         itemToF <- itemToFullClient
         (lSlots, _) <- getsClient sslots
         let keyOfEKM (Left km) = Just km
-            keyOfEKM (Right SlotChar{slotChar}) =
-              Just $ K.KM K.NoModifier $ K.Char slotChar
+            keyOfEKM (Right SlotChar{slotChar}) = Just $ K.mkChar slotChar
             allOKX = concatMap snd $ slideshow itemSlides
             keys = [K.spaceKM, K.escKM] ++ mapMaybe (keyOfEKM . fst) allOKX
             examItem slot =

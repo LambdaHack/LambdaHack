@@ -61,10 +61,10 @@ displayMore dm prompt = do
 displayYesNo :: MonadClientUI m => ColorMode -> Text -> m Bool
 displayYesNo dm prompt = do
   promptAdd prompt
-  let yn = map (K.KM K.NoModifier . K.Char) ['y', 'n']
+  let yn = map K.mkChar ['y', 'n']
   slides <- reportToSlideshow yn
   km <- getConfirms dm (K.escKM : yn) slides
-  return $! km == K.KM K.NoModifier (K.Char 'y')
+  return $! km == K.mkChar 'y'
 
 getConfirms :: MonadClientUI m
             => ColorMode -> [K.KM] -> Slideshow -> m K.KM

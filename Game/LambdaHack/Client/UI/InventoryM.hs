@@ -324,7 +324,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         Just [] -> assert `failure` brevMap
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
-        [ let km = K.KM K.NoModifier $ K.Char '?'
+        [ let km = K.mkChar '?'
           in (km, DefItemKey
            { defLabel = Right km
            , defCond = bag /= bagSuit
@@ -333,12 +333,12 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                                    ISuitable -> IAll
                                    IAll -> ISuitable
            })
-        , let km = K.KM K.NoModifier $ K.Char '/'
+        , let km = K.mkChar '/'
           in (km, changeContainerDef $ Right km)
-        , (K.KM K.NoModifier $ K.KP '/', changeContainerDef $ Left "")
-        , let km = K.KM K.NoModifier $ K.Char '!'
+        , (K.mkKP '/', changeContainerDef $ Left "")
+        , let km = K.mkChar '!'
           in (km, useMultipleDef $ Right km)
-        , (K.KM K.NoModifier $ K.KP '*', useMultipleDef $ Left "")
+        , (K.mkKP '*', useMultipleDef $ Left "")
         , let km = revCmd (K.KM K.NoModifier K.Tab) MemberCycle
           in (km, DefItemKey
            { defLabel = Right km
@@ -390,7 +390,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
             in return $ Right $ getMultResult eslots
         }
       prefixCmdDef d =
-        (K.KM K.NoModifier $ K.Char $ Char.intToDigit d, DefItemKey
+        (K.mkChar $ Char.intToDigit d, DefItemKey
            { defLabel = Left ""  -- TODO: "digits", when defCond precise
            , defCond = True
            , defAction = \_ ->
@@ -447,7 +447,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
 keyOfEKM :: Int -> Either K.KM SlotChar -> Maybe K.KM
 keyOfEKM _ (Left km) = Just km
 keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
-  Just $ K.KM K.NoModifier $ K.Char slotChar
+  Just $ K.mkChar slotChar
 keyOfEKM _ _ = Nothing
 
 legalWithUpdatedLeader :: MonadClientUI m
