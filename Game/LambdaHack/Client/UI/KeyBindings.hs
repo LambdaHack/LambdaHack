@@ -68,7 +68,8 @@ keyHelp :: Binding -> Int -> [(Text, OKX)]
 keyHelp Binding{..} offset = assert (offset > 0) $
   let
     movBlurb =
-      [ "Walk throughout a level with mouse or numeric keypad (left diagram)"
+      [ ""
+      , "Walk throughout a level with mouse or numeric keypad (left diagram)"
       , "or its compact laptop replacement (middle) or the Vi text editor keys"
       , "(right, also known as \"Rogue-like keys\"; can be enabled in config.ui.ini)."
       , "Run, until disturbed, with left mouse button or SHIFT (or CTRL) and a key."

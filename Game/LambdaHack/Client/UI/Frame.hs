@@ -46,7 +46,7 @@ overlayFrame topTrunc msf =
         let truncated = truncateAttrLine lxsize layerLine (max lenPrev lenNext)
         in truncated ++ drop (length truncated) canvasLine
       lens = map length topLayer
-      picture = zipWith4 f (0 : lens) (drop 1 lens) topLayer canvas
+      picture = zipWith4 f (0 : lens) (drop 1 lens ++ [0]) topLayer canvas
       newLevel = picture ++ drop (length picture) canvas
   in SingleFrame newLevel
 
