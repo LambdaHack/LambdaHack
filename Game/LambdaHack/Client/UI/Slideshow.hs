@@ -49,6 +49,12 @@ toSlideshow okxs = Slideshow $ addFooters okxs
     , kxs ++ [(Left K.safeSpaceKM, (length als, 0, 8))] )
     : addFooters rest
 
+tmoreMsg :: Text
+tmoreMsg = "--more--  "
+
+tendMsg :: Text
+tendMsg = "--end--  "
+
 menuToSlideshow :: OKX -> Slideshow
 menuToSlideshow (als, kxs) =
   assert (not (null als || null kxs)) $ Slideshow [(als, kxs)]

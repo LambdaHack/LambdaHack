@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.Overlay
     -- * Overlay
   , Overlay, glueOverlay, updateOverlayLine
     -- * Misc
-  , ColorMode(..), tmoreMsg, tendMsg
+  , ColorMode(..)
   ) where
 
 import Prelude ()
@@ -113,9 +113,3 @@ updateOverlayLine n f ov =
 data ColorMode =
     ColorFull  -- ^ normal, with full colours
   | ColorBW    -- ^ black+white only
-
-tmoreMsg :: Text
-tmoreMsg = "--more--  "
-
-tendMsg :: Text
-tendMsg = "--end--  "

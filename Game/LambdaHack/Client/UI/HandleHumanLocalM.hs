@@ -705,12 +705,12 @@ tgtClearHuman = do
             TPoint{} -> TPoint (blid b) (bpos b)
             TVector{} -> TVector (Vector 0 0)
       modifyClient $ \cli -> cli {sxhair}
-      doLook False
+      doLook
 
 -- | Perform look around in the current position of the xhair.
--- Normally expects aiming mode and so that a leader is picked.
-doLook :: MonadClientUI m => Bool -> m ()
-doLook addMoreMsg = do
+-- Does nothing outside aiming mode.
+doLook :: MonadClientUI m => m ()
+doLook = do
   Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
   let unknownId = ouniqGroup "unknown space"
   saimMode <- getsSession saimMode
@@ -763,7 +763,7 @@ doLook addMoreMsg = do
         promptAdd lookMsg
         floorItemOverlay lidV p
 -}
-      promptAdd $ lookMsg <+> if addMoreMsg then tmoreMsg else ""
+      promptAdd lookMsg
 
 -- * MoveXhair
 
@@ -786,7 +786,7 @@ moveXhairHuman dir n = do
           TVector{} -> TVector $ newPos `vectorToFrom` lpos
           _ -> TPoint lidV newPos
     modifyClient $ \cli -> cli {sxhair = tgt}
-    doLook False
+    doLook
     return Nothing
 
 -- * XHairTgt
@@ -802,7 +802,7 @@ aimTgtHuman = do
   leader <- getLeaderUI
   tgt <- getsClient $ getTarget leader
   modifyClient $ \cli -> cli {sxhair = fromMaybe (sxhair cli) tgt}
-  doLook False
+  doLook
 
 -- * AimFloor
 
@@ -834,7 +834,7 @@ aimFloorHuman = do
             Nothing -> TPoint lidV xhair
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
   modifyClient $ \cli -> cli {sxhair = tgt}
-  doLook False
+  doLook
 
 -- * AimEnemy
 
@@ -878,7 +878,7 @@ aimEnemyHuman = do
   -- Register the chosen enemy, to pick another on next invocation.
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
   modifyClient $ \cli -> cli {sxhair = tgt}
-  doLook False
+  doLook
 
 -- * AimAscend
 
@@ -913,14 +913,14 @@ aimAscendHuman k = do
             else sxhairOld  -- unknown, do not reveal
       modifyClient $ \cli -> cli {sxhair}
       modifySession $ \sess -> sess {saimMode = Just (AimMode nln)}
-      doLook False
+      doLook
       return Nothing
     Nothing ->  -- no stairs in the right direction
       case ascendInBranch dungeon k lidV of
         [] -> failMsg "no more levels in this direction"
         nln : _ -> do
           modifySession $ \sess -> sess {saimMode = Just (AimMode nln)}
-          doLook False
+          doLook
           return Nothing
 
 -- * EpsIncr
@@ -947,7 +947,7 @@ xhairUnknownHuman = do
     Just p -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {sxhair = tgt}
-      doLook False
+      doLook
       return Nothing
 
 -- * XhairItem
@@ -962,7 +962,7 @@ xhairItemHuman = do
     (_, (p, _)) : _ -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {sxhair = tgt}
-      doLook False
+      doLook
       return Nothing
 
 -- * XhairStair
@@ -977,7 +977,7 @@ xhairStairHuman up = do
     (_, p) : _ -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {sxhair = tgt}
-      doLook False
+      doLook
       return Nothing
 
 -- * XhairPointerFloor
@@ -998,8 +998,7 @@ xhairPointerFloor verbose = do
     let sxhair = TPoint lidV $ Point px (py - mapStartY)
     modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
     modifyClient $ \cli -> cli {sxhair}
-    if verbose then
-      doLook False
+    if verbose then doLook
     else do
       --- Flash the aiming line and path.
       leader <- getLeaderUI
@@ -1031,8 +1030,7 @@ xhairPointerEnemy verbose = do
             Nothing -> TPoint lidV newPos
     modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
     modifyClient $ \cli -> cli {sxhair}
-    if verbose then
-      doLook False
+    if verbose then doLook
     else do
       --- Flash the aiming line and path.
       leader <- getLeaderUI
