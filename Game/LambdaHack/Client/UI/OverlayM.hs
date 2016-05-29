@@ -46,9 +46,9 @@ describeMainKeys = do
         TPoint{} -> "at position"
         TVector{} -> "with a vector"
       keys | isNothing saimMode =
-        "Explore with" <+> moveKeys <+> "keys or pointer."
+        "Explore with" <+> moveKeys <+> "keys or mouse."
            | otherwise =
-        "Aim" <+> tgtKind <+> "with" <+> moveKeys <+> "keys or pointer."
+        "Aim" <+> tgtKind <+> "with" <+> moveKeys <+> "keys or mouse."
   return $! keys
 
 -- | Produces a textual description of the terrain and items at an already

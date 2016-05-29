@@ -72,7 +72,7 @@ keyHelp Binding{..} offset = assert (offset > 0) $
       , "Walk throughout a level with mouse or numeric keypad (left diagram)"
       , "or its compact laptop replacement (middle) or the Vi text editor keys"
       , "(right, also known as \"Rogue-like keys\"; can be enabled in config.ui.ini)."
-      , "Run, until disturbed, with left mouse button or SHIFT (or CTRL) and a key."
+      , "Run, until disturbed, with LMB (left mouse button) or SHIFT/CTRL and a key."
       , ""
       , "               7 8 9          7 8 9          y k u"
       , "                \\|/            \\|/            \\|/"
@@ -114,7 +114,7 @@ keyHelp Binding{..} offset = assert (offset > 0) $
       , "and SPACE or ESC to see the map again."
       ]
     pickLeaderDescription =
-      [ fmt 16 "0, 1 ... 6" "pick a particular actor as the new leader"
+      [ fmt 12 "0, 1 ... 6" "pick a particular actor as the new leader"
       ]
     casualDescription = "Minimal cheat sheet for casual play"
     fmt n k h = T.justifyRight 72 ' '
@@ -135,13 +135,13 @@ keyHelp Binding{..} offset = assert (offset > 0) $
                   , desc /= "" ]
     -- TODO: measure the longest key sequence and set the caption automatically
     keyCaptionN n = fmt n "keys" "command"
-    keyCaption = keyCaptionN 16
+    keyCaption = keyCaptionN 12
     okxsN :: Int -> CmdCategory -> [Text] -> [Text] -> OKX
     okxsN n cat header footer =
       let (ks, keyTable) = unzip $ keysN n cat
           kxs = zip ks [(y, 0, maxBound) | y <- [offset + length header..]]
       in (map toAttrLine $ fmts "" : header ++ keyTable ++ footer, kxs)
-    okxs = okxsN 16
+    okxs = okxsN 12
   in
     [ ( ""  -- the first screen is for ItemMenu
       , okxs CmdItemMenu [keyCaption] [] )
@@ -150,15 +150,14 @@ keyHelp Binding{..} offset = assert (offset > 0) $
     , ( casualDescription <+> "(2/2)."
       , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEndText )
     , ( "All terrain exploration and alteration commands."
-      , okxsN 10 CmdMove [keyCaptionN 10] categoryText )
+      , okxs CmdMove [keyCaption] categoryText )
     , ( categoryDescription CmdItem <> "."
-      , okxsN 10 CmdItem [keyCaptionN 10] categoryText )
+      , okxs CmdItem [keyCaption] categoryText )
     , ( categoryDescription CmdAim <> "."
       , okxs CmdAim [keyCaption] categoryText )
     , ( categoryDescription CmdMeta <> "."
-      , okxs CmdMeta [keyCaption]
-             (pickLeaderDescription ++ categoryText) )
+      , okxs CmdMeta [keyCaption] (pickLeaderDescription ++ categoryText) )
     , ( categoryDescription CmdMouse <> "."
-      , let (ov, _) = okxsN 21 CmdMouse [keyCaptionN 21] lastText
+      , let (ov, _) = okxs CmdMouse [keyCaption] lastText
         in (ov, []) )
     ]
