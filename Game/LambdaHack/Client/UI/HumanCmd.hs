@@ -1,8 +1,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Abstract syntax human player commands.
 module Game.LambdaHack.Client.UI.HumanCmd
-  ( CmdTriple, CmdCategory(..), CmdArea(..), HumanCmd(..), Trigger(..)
-  , noRemoteHumanCmd, categoryDescription
+  ( CmdCategory(..), categoryDescription
+  , CmdArea(..), areaDescription
+  , CmdTriple, HumanCmd(..), noRemoteHumanCmd
+  , Trigger(..)
   ) where
 
 import Prelude ()
@@ -18,8 +20,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
-
-type CmdTriple = ([CmdCategory], Text, HumanCmd)
 
 data CmdCategory =
     CmdMainMenu | CmdSettingsMenu | CmdItemMenu
@@ -44,6 +44,8 @@ categoryDescription CmdInternal = "Internal"
 categoryDescription CmdDebug = "Debug"
 categoryDescription CmdMinimal = "The minimal command set"
 
+-- The constructors are sorted, roughly, wrt inclusion, then top to bottom,
+-- the left to right.
 data CmdArea =
     CaMessage
   | CaMapLeader
@@ -60,6 +62,21 @@ data CmdArea =
 instance NFData CmdArea
 
 instance Binary CmdArea
+
+areaDescription :: CmdArea -> Text
+areaDescription ca = case ca of
+  CaMessage -> "message line"
+  CaMapLeader -> "leader on the map"
+  CaMapParty -> "party on the map"
+  CaMap -> "the map area"
+  CaArenaName -> "current arena name"
+  CaPercentSeen -> "map percent seen"
+  CaXhairDesc -> "xhair description"
+  CaSelected -> "party roster"
+  CaLeaderStatus -> "leader status"
+  CaTargetDesc -> "target description"
+
+type CmdTriple = ([CmdCategory], Text, HumanCmd)
 
 -- | Abstract syntax of player commands.
 data HumanCmd =
@@ -139,17 +156,6 @@ instance NFData HumanCmd
 
 instance Binary HumanCmd
 
-data Trigger =
-    ApplyItem {verb :: !MU.Part, object :: !MU.Part, symbol :: !Char}
-  | AlterFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
-  | TriggerFeature
-      {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
-  deriving (Show, Read, Eq, Ord, Generic)
-
-instance NFData Trigger
-
-instance Binary Trigger
-
 -- | Commands that are forbidden on a remote level, because they
 -- would usually take time when invoked on one.
 -- Note that some commands that take time are not included,
@@ -164,3 +170,14 @@ noRemoteHumanCmd cmd = case cmd of
   RunOnceToXhair  -> True
   ContinueToXhair -> True
   _             -> False
+
+data Trigger =
+    ApplyItem {verb :: !MU.Part, object :: !MU.Part, symbol :: !Char}
+  | AlterFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
+  | TriggerFeature
+      {verb :: !MU.Part, object :: !MU.Part, feature :: !TK.Feature}
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance NFData Trigger
+
+instance Binary Trigger
