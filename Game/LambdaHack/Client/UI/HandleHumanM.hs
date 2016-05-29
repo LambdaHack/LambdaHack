@@ -106,7 +106,7 @@ cmdAction cmd = case cmd of
   AimFloor -> addNoError aimFloorHuman
   AimEnemy -> addNoError aimEnemyHuman
   AimAscend k -> Left <$> aimAscendHuman k
-  EpsIncr b -> Left <$> epsIncrHuman b
+  EpsIncr b -> addNoError $ epsIncrHuman b
   XhairUnknown -> Left <$> xhairUnknownHuman
   XhairItem -> Left <$> xhairItemHuman
   XhairStair up -> Left <$> xhairStairHuman up

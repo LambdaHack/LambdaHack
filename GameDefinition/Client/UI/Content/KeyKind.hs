@@ -216,6 +216,8 @@ standardKeys = KeyKind
       , ("LeftButtonRelease", mouseLMB)
       , ("MiddleButtonRelease", mouseMMB)
       , ("RightButtonRelease", mouseRMB)
+      , ("WheelNorth", ([CmdMouse], "swerve the aiming line", Macro ["+"]))
+      , ("WheelSouth", ([CmdMouse], "unswerve the aiming line", Macro ["-"]))
       , ( "LeftDblClick"
         , replaceDesc "" $ addCmdCategory CmdInternal mouseRMB )
 

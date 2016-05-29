@@ -916,14 +916,22 @@ aimAscendHuman k = do
 -- * EpsIncr
 
 -- | Tweak the @eps@ parameter of the aiming digital line.
-epsIncrHuman :: MonadClientUI m => Bool -> m MError
+epsIncrHuman :: MonadClientUI m => Bool -> m ()
 epsIncrHuman b = do
   saimMode <- getsSession saimMode
-  if isJust saimMode
-    then do
-      modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
-      return Nothing
-    else failMsg "never mind"  -- no visual feedback, so no sense
+  lidV <- viewedLevelUI
+  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
+  modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
+  flashAiming
+  modifySession $ \sess -> sess {saimMode}
+
+--- Flash the aiming line and path.
+flashAiming :: MonadClientUI m => m ()
+flashAiming = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  animFrs <- animate (blid b) pushAndDelay
+  displayActorStart b animFrs
 
 -- * XhairUnknown
 
@@ -974,8 +982,9 @@ xhairStairHuman up = do
 
 xhairPointerFloorHuman :: MonadClientUI m => m ()
 xhairPointerFloorHuman = do
+  saimMode <- getsSession saimMode
   xhairPointerFloor False
-  modifySession $ \sess -> sess {saimMode = Nothing}
+  modifySession $ \sess -> sess {saimMode}
 
 xhairPointerFloor :: MonadClientUI m => Bool -> m ()
 xhairPointerFloor verbose = do
@@ -988,21 +997,16 @@ xhairPointerFloor verbose = do
     let sxhair = TPoint lidV $ Point px (py - mapStartY)
     modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
     modifyClient $ \cli -> cli {sxhair}
-    if verbose then doLook
-    else do
-      --- Flash the aiming line and path.
-      leader <- getLeaderUI
-      b <- getsState $ getActorBody leader
-      animFrs <- animate (blid b) pushAndDelay
-      displayActorStart b animFrs
+    if verbose then doLook else flashAiming
   else stopPlayBack
 
 -- * XhairPointerEnemy
 
 xhairPointerEnemyHuman :: MonadClientUI m => m ()
 xhairPointerEnemyHuman = do
+  saimMode <- getsSession saimMode
   xhairPointerEnemy False
-  modifySession $ \sess -> sess {saimMode = Nothing}
+  modifySession $ \sess -> sess {saimMode}
 
 xhairPointerEnemy :: MonadClientUI m => Bool -> m ()
 xhairPointerEnemy verbose = do
@@ -1020,13 +1024,7 @@ xhairPointerEnemy verbose = do
             Nothing -> TPoint lidV newPos
     modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
     modifyClient $ \cli -> cli {sxhair}
-    if verbose then doLook
-    else do
-      --- Flash the aiming line and path.
-      leader <- getLeaderUI
-      b <- getsState $ getActorBody leader
-      animFrs <- animate (blid b) pushAndDelay
-      displayActorStart b animFrs
+    if verbose then doLook else flashAiming
   else stopPlayBack
 
 -- * AimPointerFloor
