@@ -15,7 +15,6 @@ import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -56,8 +55,6 @@ data CmdArea =
   | CaSelected
   | CaLeaderStatus
   | CaTargetDesc
-  | CaRectangle !(X, Y, X, Y)
-  | CaUnion !CmdArea !CmdArea
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance NFData CmdArea

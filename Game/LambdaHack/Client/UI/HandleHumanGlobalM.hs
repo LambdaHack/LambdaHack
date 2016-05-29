@@ -137,8 +137,6 @@ areaToRectangles ca = case ca of
   CaTargetDesc -> let y = snd normalLevelBound + 3
                       x = fst normalLevelBound `div` 2 + 2
                   in return [(x, y, fst normalLevelBound, y)]
-  CaRectangle r -> return [r]
-  CaUnion ca1 ca2 -> liftM2 (++) (areaToRectangles ca1) (areaToRectangles ca2)
 
 -- * ByAimMode
 
