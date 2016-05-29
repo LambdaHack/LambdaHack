@@ -64,7 +64,7 @@ standardKeys = KeyKind
                 , object = "consumable"
                 , symbol = ' ' }])
 
-      -- Movement and terrain alteration
+      -- Terrain exploration and alteration
       , ("<", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
               $ grabAscend "grab items or ascend")
       , ("g", grabAscend "")
@@ -89,17 +89,17 @@ standardKeys = KeyKind
              , aiming = AimAscend (-10) }))
       , ("semicolon", ( [CmdMove]
                       , "go to crosshair for 100 steps"
-                      , Macro ["CTRL-semicolon", "CTRL-period", "V"] ))
+                      , autoexploreCmd ))
       , ("colon", ( [CmdMove]
                   , "run selected to crosshair for 100 steps"
                   , Macro ["CTRL-colon", "CTRL-period", "V"] ))
       , ("x", ( [CmdMove]
-              , "explore the closest unknown spot"
+              , "autoexplore the closest unknown spot"
               , Macro [ "CTRL-?"  -- no semicolon
                       , "CTRL-period", "V" ] ))
       , ("X", ( [CmdMove]
               , "autoexplore 100 times"
-              , Macro  ["'", "CTRL-?", "CTRL-period", "'", "V"] ))
+              , autoexplore100Cmd ))
       , ("R", ([CmdMove], "rest (wait 100 times)", Macro ["KP_5", "V"]))
       , let triggerClose =
               [ AlterFeature { verb = "close"
@@ -213,16 +213,11 @@ standardKeys = KeyKind
       , ("'", ([CmdMeta], "start recording commands", Record))
 
       -- Mouse
-      -- Doubleclick acts as RMB and modifiers as MMB, which is optional.
-      , ("LeftButtonRelease", defaultCmdLMB)
+      , ("LeftButtonRelease", mouseLMB)
+      , ("MiddleButtonRelease", mouseMMB)
+      , ("RightButtonRelease", mouseRMB)
       , ( "LeftDblClick"
-        , replaceDesc "" $ addCmdCategory CmdInternal defaultCmdRMB )
-      , ( "SHIFT-LeftButtonRelease"
-        , replaceDesc "" $ addCmdCategory CmdInternal defaultCmdMMB )
-      , ( "CTRL-LeftButtonRelease"
-        , replaceDesc "" $ addCmdCategory CmdInternal defaultCmdMMB )
-      , ("MiddleButtonRelease", defaultCmdMMB)
-      , ("RightButtonRelease", defaultCmdRMB)
+        , replaceDesc "" $ addCmdCategory CmdInternal mouseRMB )
 
       -- Debug and others not to display in help screens
       , ("CTRL-S", ([CmdDebug], "save game", GameSave))
@@ -236,6 +231,12 @@ standardKeys = KeyKind
                         , "continue towards the crosshair"
                         , ContinueToXhair ))
       , ("CTRL-comma", ([CmdInternal], "run once ahead", RunOnceAhead))
+      , ("SHIFT-MiddleButtonRelease", ( [CmdInternal]
+                                      , "go to pointer for 100 step"
+                                      , goToCmd ))
+      , ("CTRL-MiddleButtonRelease", ( [CmdInternal]
+                                     , "run collectively to pointer"
+                                     , goToAllCmd ))
       ]
       ++ map defaultHeroSelect [0..6]
   }

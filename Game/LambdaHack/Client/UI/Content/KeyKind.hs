@@ -2,7 +2,8 @@
 module Game.LambdaHack.Client.UI.Content.KeyKind
   ( KeyKind(..)
   , addCmdCategory, replaceDesc, gameRestartTriple, moveItemTriple, repeatTriple
-  , defaultCmdLMB, defaultCmdMMB, defaultCmdRMB
+  , mouseLMB, mouseMMB, mouseRMB
+  , goToCmd, goToAllCmd, autoexploreCmd, autoexplore100Cmd
   , projectI, projectA, flingTs, applyI
   , grabAscend, descendDrop, descTs, defaultHeroSelect
   ) where
@@ -55,57 +56,69 @@ repeatTriple n = ( [CmdMeta]
                  , "voice the recorded commands" <+> tshow n <+> "times"
                  , Repeat n )
 
-defaultCmdLMB :: CmdTriple
-defaultCmdLMB =
+mouseLMB :: CmdTriple
+mouseLMB =
   ( [CmdMouse]
   , "go to pointer for 100 steps or set crosshair"
   , ByAimMode
-      { notAiming = ByArea $ common ++  -- normal mode
+      { notAiming = ByArea $ common ++  -- exploration mode
           [ (CaMapParty, PickLeaderWithPointer)
-          , (CaMap, Macro
-               ["MiddleButtonRelease", "CTRL-semicolon", "CTRL-period", "V"])
-          , (CaPercentSeen, Macro ["CTRL-?", "CTRL-period", "V"]) ]
+          , (CaMap, goToCmd)
+          , (CaArenaName, MainMenu)
+          , (CaPercentSeen, autoexploreCmd) ]
       , aiming = ByArea $ common ++  -- aiming mode
           [ (CaMap, AimPointerEnemy)
+          , (CaArenaName, Cancel)
           , (CaPercentSeen, XhairStair True) ] } )
  where
   common =
     [ (CaMessage, Clear)
     , (CaMapLeader, grabAscendCmd)
-    , (CaArenaName, ByAimMode {notAiming = MainMenu, aiming = Cancel})
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
     , (CaLeaderStatus, ChooseItemMenu $ MStore COrgan)
     , (CaTargetDesc, ChooseItemMenu $ MStore CInv) ]
 
-defaultCmdMMB :: CmdTriple
-defaultCmdMMB = ( [CmdMouse]
-                , "set crosshair to floor under pointer"
-                , XhairPointerFloor )
+mouseMMB :: CmdTriple
+mouseMMB = ( [CmdMouse]
+           , "set crosshair to floor under pointer"
+           , XhairPointerFloor )
 
-defaultCmdRMB :: CmdTriple
-defaultCmdRMB =
+mouseRMB :: CmdTriple
+mouseRMB =
   ( [CmdMouse]
   , "run collectively to pointer or set target"
   , ByAimMode
       { notAiming = ByArea $ common ++
           [ (CaMapParty, SelectWithPointer)
-          , (CaMap, Macro
-               ["MiddleButtonRelease", "CTRL-colon", "CTRL-period", "V"])
-          , (CaPercentSeen, Macro ["'", "CTRL-?", "CTRL-period", "'", "V"])
+          , (CaMap, goToAllCmd)
+          , (CaArenaName, Help)
+          , (CaPercentSeen, autoexplore100Cmd)
           , (CaXhairDesc, AimFloor) ]
       , aiming = ByArea $ common ++
           [ (CaMap, ComposeIfLocal AimPointerEnemy (projectICmd flingTs))
-          , (CaXhairDesc, (projectICmd flingTs))
-          , (CaPercentSeen, XhairStair False) ] } )
+          , (CaArenaName, Accept)
+          , (CaPercentSeen, XhairStair False)
+          , (CaXhairDesc, projectICmd flingTs) ] } )
  where
   common =
     [ (CaMessage, Macro ["KP_5", "V"])
     , (CaMapLeader, descendDropCmd)
-    , (CaArenaName, ByAimMode {notAiming = Help, aiming = Accept})
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, ChooseItemMenu MStats)
     , (CaTargetDesc, ChooseItemMenu $ MStore CEqp) ]
+
+goToCmd :: HumanCmd
+goToCmd = Macro ["MiddleButtonRelease", "CTRL-semicolon", "CTRL-period", "V"]
+
+goToAllCmd :: HumanCmd
+goToAllCmd = Macro ["MiddleButtonRelease", "CTRL-colon", "CTRL-period", "V"]
+
+autoexploreCmd :: HumanCmd
+autoexploreCmd = Macro ["CTRL-?", "CTRL-period", "V"]
+
+autoexplore100Cmd :: HumanCmd
+autoexplore100Cmd = Macro ["'", "CTRL-?", "CTRL-period", "'", "V"]
 
 projectICmd :: [Trigger] -> HumanCmd
 projectICmd ts = ByItemMode
