@@ -61,7 +61,7 @@ mouseLMB =
   ( [CmdMouse]
   , "go to pointer for 100 steps or set crosshair"
   , ByAimMode
-      { notAiming = ByArea $ common ++  -- exploration mode
+      { exploration = ByArea $ common ++  -- exploration mode
           [ (CaMapParty, PickLeaderWithPointer)
           , (CaMap, goToCmd)
           , (CaArenaName, MainMenu)
@@ -89,7 +89,7 @@ mouseRMB =
   ( [CmdMouse]
   , "run collectively to pointer or set target"
   , ByAimMode
-      { notAiming = ByArea $ common ++
+      { exploration = ByArea $ common ++
           [ (CaMapParty, SelectWithPointer)
           , (CaMap, goToAllCmd)
           , (CaArenaName, Help)
@@ -129,7 +129,7 @@ projectI :: [Trigger] -> CmdTriple
 projectI ts = ([CmdItem], descTs ts, projectICmd ts)
 
 projectA :: [Trigger] -> CmdTriple
-projectA ts = replaceCmd (ByAimMode { notAiming = AimTgt
+projectA ts = replaceCmd (ByAimMode { exploration = AimTgt
                                     , aiming = projectICmd ts }) (projectI ts)
 
 flingTs :: [Trigger]
@@ -144,7 +144,7 @@ applyI ts = ([CmdItem], descTs ts, ByItemMode
 
 grabAscendCmd :: HumanCmd
 grabAscendCmd = ByAimMode
-  { notAiming = ReplaceFail "cannot grab items nor ascend" $
+  { exploration = ReplaceFail "cannot grab items nor ascend" $
       ComposeIfLocal
         (MoveItem [CGround] CEqp (Just "grab") "items" True)
         (TriggerTile
@@ -161,7 +161,7 @@ grabAscend t = ([CmdMove, CmdItem], t, grabAscendCmd)
 
 descendDropCmd :: HumanCmd
 descendDropCmd = ByAimMode
-  { notAiming = ReplaceFail "cannot descend nor drop items" $
+  { exploration = ReplaceFail "cannot descend nor drop items" $
       ComposeIfLocal
         (TriggerTile
            [ TriggerFeature { verb = "descend"

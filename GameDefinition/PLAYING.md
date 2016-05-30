@@ -96,7 +96,7 @@ which have to be enabled in config.ui.ini).
                 1 2 3          j k l          b j n
 
 In aiming mode (`KEYPAD_*` or `\`) the same keys (or the middle and right
-mouse buttons) move the crosshair (the white box). In normal mode,
+mouse buttons) move the crosshair (the white box). In exploration mode,
 `SHIFT` (or `CTRL`) and a movement key make the current party leader
 run in the indicated direction, until anything of interest is spotted.
 The `5` keypad key and the `i` and `.` keys consume a turn and make you

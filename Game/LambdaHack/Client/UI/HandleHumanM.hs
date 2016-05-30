@@ -44,7 +44,7 @@ cmdAction cmd = case cmd of
   Macro kms -> addNoError $ macroHuman kms
   ByArea l -> byAreaHuman cmdAction l
   ByAimMode{..} ->
-    byAimModeHuman (cmdAction notAiming) (cmdAction aiming)
+    byAimModeHuman (cmdAction exploration) (cmdAction aiming)
   ByItemMode{..} ->
     byItemModeHuman (cmdAction notChosen) (cmdAction chosen)
   ComposeIfLocal cmd1 cmd2 ->

@@ -33,7 +33,7 @@ stdBinding :: KeyKind  -- ^ default key bindings from the content
            -> Binding  -- ^ concrete binding
 stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   let waitTriple = ([CmdMove], "", Wait)
-      moveXhairOr n cmd v = ByAimMode { notAiming = cmd v
+      moveXhairOr n cmd v = ByAimMode { exploration = cmd v
                                       , aiming = MoveXhair v n }
       cmdAll =
         rhumanCommands copsClient

@@ -84,7 +84,7 @@ data HumanCmd =
     ReplaceFail !Text !HumanCmd
   | Macro ![String]
   | ByArea ![(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
-  | ByAimMode {notAiming :: !HumanCmd, aiming :: !HumanCmd}
+  | ByAimMode {exploration :: !HumanCmd, aiming :: !HumanCmd}
   | ByItemMode {notChosen :: !HumanCmd, chosen :: !HumanCmd}
   | ComposeIfLocal !HumanCmd !HumanCmd
   | ComposeUnlessError !HumanCmd !HumanCmd

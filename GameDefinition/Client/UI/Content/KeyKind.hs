@@ -74,7 +74,7 @@ standardKeys = KeyKind
                               , object = "10 levels"
                               , feature = TK.Cause (IK.Ascend 10) }]
         in ("CTRL-<", ([CmdInternal], descTs triggerAscend10 , ByAimMode
-              { notAiming = TriggerTile triggerAscend10
+              { exploration = TriggerTile triggerAscend10
               , aiming = AimAscend 10 }))
       , (">", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
               $ descendDrop "descend or drop items")
@@ -85,7 +85,7 @@ standardKeys = KeyKind
                               , object = "10 levels"
                               , feature = TK.Cause (IK.Ascend (-10)) }]
         in ("CTRL->", ([CmdInternal], descTs triggerAscendMinus10, ByAimMode
-             { notAiming = TriggerTile triggerAscendMinus10
+             { exploration = TriggerTile triggerAscendMinus10
              , aiming = AimAscend (-10) }))
       , ("semicolon", ( [CmdMove]
                       , "go to crosshair for 100 steps"
@@ -190,10 +190,10 @@ standardKeys = KeyKind
         , ([CmdAim], "clear target/crosshair/chosen item", TgtClear) )
       , ("Escape", ( [CmdAim, CmdMinimal]
                    , "cancel target/action or open Main Menu"
-                   , ByAimMode {notAiming = MainMenu, aiming = Cancel} ))
+                   , ByAimMode {exploration = MainMenu, aiming = Cancel} ))
       , ("Return", ( [CmdAim, CmdMinimal]
                    , "accept target/choice or open Help"
-                   , ByAimMode {notAiming = Help, aiming=Accept} ))
+                   , ByAimMode {exploration = Help, aiming=Accept} ))
 
       -- Assorted
       , ("space", ([CmdMeta], "clear/display hints and history", Clear))
