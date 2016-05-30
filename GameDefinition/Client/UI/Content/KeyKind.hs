@@ -89,14 +89,13 @@ standardKeys = KeyKind
              , aiming = AimAscend (-10) }))
       , ("semicolon", ( [CmdMove]
                       , "go to crosshair for 100 steps"
-                      , autoexploreCmd ))
+                      , Macro ["CTRL-semicolon", "CTRL-period", "V"] ))
       , ("colon", ( [CmdMove]
                   , "run selected to crosshair for 100 steps"
                   , Macro ["CTRL-colon", "CTRL-period", "V"] ))
       , ("x", ( [CmdMove]
               , "autoexplore the closest unknown spot"
-              , Macro [ "CTRL-?"  -- no semicolon
-                      , "CTRL-period", "V" ] ))
+              , autoexploreCmd ))
       , ("X", ( [CmdMove]
               , "autoexplore 100 times"
               , autoexplore100Cmd ))
