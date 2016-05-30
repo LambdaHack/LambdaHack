@@ -24,7 +24,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 data CmdCategory =
     CmdMainMenu | CmdSettingsMenu | CmdItemMenu
   | CmdMove | CmdItem | CmdAim | CmdMeta | CmdMouse
-  | CmdInternal | CmdDebug | CmdMinimal
+  | CmdInternal | CmdNoHelp | CmdDebug | CmdMinimal
   deriving (Show, Read, Eq, Generic)
 
 instance NFData CmdCategory
@@ -41,6 +41,7 @@ categoryDescription CmdAim = "Aiming"
 categoryDescription CmdMeta = "Assorted"
 categoryDescription CmdMouse = "Mouse"
 categoryDescription CmdInternal = "Internal"
+categoryDescription CmdNoHelp = "Ignored in Help"
 categoryDescription CmdDebug = "Debug"
 categoryDescription CmdMinimal = "The minimal command set"
 

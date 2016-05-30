@@ -68,23 +68,23 @@ standardKeys = KeyKind
       , ("<", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
               $ grabAscend "grab items or ascend")
       , ("g", grabAscend "")
-      , ("comma", addCmdCategory CmdInternal $ grabAscend "")
+      , ("comma", addCmdCategory CmdNoHelp $ grabAscend "")
       , let triggerAscend10 =
               [TriggerFeature { verb = "ascend"
                               , object = "10 levels"
                               , feature = TK.Cause (IK.Ascend 10) }]
-        in ("CTRL-<", ([CmdInternal], descTs triggerAscend10 , ByAimMode
+        in ("CTRL-<", ([CmdNoHelp], descTs triggerAscend10 , ByAimMode
               { exploration = TriggerTile triggerAscend10
               , aiming = AimAscend 10 }))
       , (">", addCmdCategory CmdItemMenu $ addCmdCategory CmdMinimal
               $ descendDrop "descend or drop items")
       , ("d", descendDrop "")
-      , ("period", addCmdCategory CmdInternal $ descendDrop "")
+      , ("period", addCmdCategory CmdNoHelp $ descendDrop "")
       , let triggerAscendMinus10 =
               [TriggerFeature { verb = "descend"
                               , object = "10 levels"
                               , feature = TK.Cause (IK.Ascend (-10)) }]
-        in ("CTRL->", ([CmdInternal], descTs triggerAscendMinus10, ByAimMode
+        in ("CTRL->", ([CmdNoHelp], descTs triggerAscendMinus10, ByAimMode
              { exploration = TriggerTile triggerAscendMinus10
              , aiming = AimAscend (-10) }))
       , ("semicolon", ( [CmdMove]
@@ -218,7 +218,7 @@ standardKeys = KeyKind
       , ("WheelNorth", ([CmdMouse], "swerve the aiming line", Macro ["+"]))
       , ("WheelSouth", ([CmdMouse], "unswerve the aiming line", Macro ["-"]))
       , ( "LeftDblClick"
-        , replaceDesc "" $ addCmdCategory CmdInternal mouseRMB )
+        , replaceDesc "" $ addCmdCategory CmdNoHelp mouseRMB )
 
       -- Debug and others not to display in help screens
       , ("CTRL-S", ([CmdDebug], "save game", GameSave))

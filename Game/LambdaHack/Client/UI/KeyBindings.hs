@@ -59,7 +59,7 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   , brevMap = M.fromListWith (flip (++)) $ concat
       [ [(cmd, [k])]
       | (k, (cats, _desc, cmd)) <- cmdAll
-      , all (`notElem` [CmdMainMenu, CmdSettingsMenu, CmdDebug, CmdInternal])
+      , all (`notElem` [CmdMainMenu, CmdSettingsMenu, CmdDebug, CmdNoHelp])
             cats
       ]
   }
