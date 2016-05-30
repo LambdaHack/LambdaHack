@@ -59,7 +59,7 @@ repeatTriple n = ( [CmdMeta]
 mouseLMB :: CmdTriple
 mouseLMB =
   ( [CmdMouse]
-  , "go to pointer for 100 steps or set crosshair"
+  , "set aiming crosshair/go to pointer for 100 steps"
   , ByAimMode
       { exploration = ByArea $ common ++  -- exploration mode
           [ (CaMapParty, PickLeaderWithPointer)
@@ -81,13 +81,13 @@ mouseLMB =
 
 mouseMMB :: CmdTriple
 mouseMMB = ( [CmdMouse]
-           , "set crosshair to floor under pointer"
+           , "snap aiming crosshair to floor under pointer"
            , XhairPointerFloor )
 
 mouseRMB :: CmdTriple
 mouseRMB =
   ( [CmdMouse]
-  , "run collectively to pointer or set target"
+  , "set leader target/go to collectively to pointer for 100 steps"
   , ByAimMode
       { exploration = ByArea $ common ++
           [ (CaMapParty, SelectWithPointer)

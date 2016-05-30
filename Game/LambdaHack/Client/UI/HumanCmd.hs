@@ -65,16 +65,17 @@ instance Binary CmdArea
 
 areaDescription :: CmdArea -> Text
 areaDescription ca = case ca of
-  CaMessage -> "message line"
-  CaMapLeader -> "leader on the map"
-  CaMapParty -> "party on the map"
-  CaMap -> "the map area"
-  CaArenaName -> "current arena name"
-  CaPercentSeen -> "map percent seen"
-  CaXhairDesc -> "xhair description"
-  CaSelected -> "party roster"
+  CaMessage ->      "message line"
+  CaMapLeader ->    "leader on map"
+  CaMapParty ->     "party on map"
+  CaMap ->          "the map area"
+  CaArenaName ->    "level caption"
+  CaPercentSeen ->  "percent seen"
+  CaXhairDesc ->    "x-hair info"
+  CaSelected ->     "party roster"
   CaLeaderStatus -> "leader status"
-  CaTargetDesc -> "target description"
+  CaTargetDesc ->   "target info"
+  --                 1234567890123
 
 type CmdTriple = ([CmdCategory], Text, HumanCmd)
 

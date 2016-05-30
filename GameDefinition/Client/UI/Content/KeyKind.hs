@@ -91,7 +91,7 @@ standardKeys = KeyKind
                       , "go to crosshair for 100 steps"
                       , Macro ["CTRL-semicolon", "CTRL-period", "V"] ))
       , ("colon", ( [CmdMove]
-                  , "run selected to crosshair for 100 steps"
+                  , "go to collectively to crosshair for 100 steps"
                   , Macro ["CTRL-colon", "CTRL-period", "V"] ))
       , ("x", ( [CmdMove]
               , "autoexplore the closest unknown spot"
@@ -213,8 +213,8 @@ standardKeys = KeyKind
 
       -- Mouse
       , ("LeftButtonRelease", mouseLMB)
-      , ("MiddleButtonRelease", mouseMMB)
       , ("RightButtonRelease", mouseRMB)
+      , ("MiddleButtonRelease", mouseMMB)
       , ("WheelNorth", ([CmdMouse], "swerve the aiming line", Macro ["+"]))
       , ("WheelSouth", ([CmdMouse], "unswerve the aiming line", Macro ["-"]))
       , ( "LeftDblClick"
@@ -226,7 +226,7 @@ standardKeys = KeyKind
                            , "move one step towards the crosshair"
                            , MoveOnceToXhair ))
       , ("CTRL-colon", ( [CmdInternal]
-                       , "run selected one step towards the crosshair"
+                       , "move collectively one step towards the crosshair"
                        , RunOnceToXhair ))
       , ("CTRL-period", ( [CmdInternal]
                         , "continue towards the crosshair"
@@ -236,7 +236,7 @@ standardKeys = KeyKind
                                       , "go to pointer for 100 step"
                                       , goToCmd ))
       , ("CTRL-MiddleButtonRelease", ( [CmdInternal]
-                                     , "run collectively to pointer"
+                                     , "go to collectively to pointer for 100 steps"
                                      , goToAllCmd ))
       ]
       ++ map defaultHeroSelect [0..6]

@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.Key
   , pgupKM, pgdnKM, wheelNorthKM, wheelSouthKM
   , upKM, downKM, leftKM, rightKM
   , homeKM, endKM, backspaceKM
-  , leftButtonReleaseKM
+  , leftButtonReleaseKM, rightButtonReleaseKM
   ) where
 
 import Prelude ()
@@ -171,6 +171,9 @@ backspaceKM = KM NoModifier BackSpace
 
 leftButtonReleaseKM :: KM
 leftButtonReleaseKM = KM NoModifier LeftButtonRelease
+
+rightButtonReleaseKM :: KM
+rightButtonReleaseKM = KM NoModifier RightButtonRelease
 
 dirKeypadKey :: [Key]
 dirKeypadKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
