@@ -235,8 +235,8 @@ statsOverlay aid = do
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = do
   let shownKeys = [ K.returnKM, K.mkChar '+', K.mkChar '-'
-                  , K.backspaceKM, K.spaceKM, K.escKM ]
-      frontKeyKeys = shownKeys ++ map K.mkChar ['0'..'9']
+                  , K.spaceKM, K.escKM ]
+      frontKeyKeys = K.backspaceKM : shownKeys ++ map K.mkChar ['0'..'9']
       gatherNumber pointer kCurRaw = do
         let kCur = min kAll $ max 1 kCurRaw
             kprompt = "Choose number:" <+> tshow kCur
