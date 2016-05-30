@@ -1,10 +1,10 @@
 -- | The type of key-command mappings to be used for the UI.
 module Game.LambdaHack.Client.UI.Content.KeyKind
-  ( KeyKind(..)
+  ( KeyKind(..), evalKeyDef
   , addCmdCategory, replaceDesc, gameRestartTriple, moveItemTriple, repeatTriple
   , mouseLMB, mouseMMB, mouseRMB
   , goToCmd, goToAllCmd, autoexploreCmd, autoexplore100Cmd
-  , projectI, projectA, flingTs, applyI
+  , aimFlingCmd, projectI, projectA, flingTs, applyI
   , grabAscend, descendDrop, descTs, defaultHeroSelect
   ) where
 
@@ -13,6 +13,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Char as Char
+import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Client.Key as K
@@ -27,6 +28,13 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 data KeyKind = KeyKind
   { rhumanCommands :: ![(K.KM, CmdTriple)]  -- ^ default client UI commands
   }
+
+evalKeyDef :: (String, CmdTriple) -> (K.KM, CmdTriple)
+evalKeyDef (t, triple@(cats, _, _)) =
+  let km = if CmdInternal `elem` cats
+           then K.KM K.NoModifier $ K.Unknown $ T.pack t
+           else K.mkKM t
+  in (km, triple)
 
 addCmdCategory :: CmdCategory -> CmdTriple -> CmdTriple
 addCmdCategory cat (cats, desc, cmd) = (cat : cats, desc, cmd)
@@ -53,7 +61,7 @@ moveItemTriple stores1 store2 mverb object auto =
 
 repeatTriple :: Int -> CmdTriple
 repeatTriple n = ( [CmdMeta]
-                 , "voice the recorded commands" <+> tshow n <+> "times"
+                 , "voice recorded commands" <+> tshow n <+> "times"
                  , Repeat n )
 
 mouseLMB :: CmdTriple
@@ -87,7 +95,7 @@ mouseMMB = ( [CmdMouse]
 mouseRMB :: CmdTriple
 mouseRMB =
   ( [CmdMouse]
-  , "set leader target/go to collectively to pointer for 100 steps"
+  , "set leader target/go to pointer collectively for 100 steps"
   , ByAimMode
       { exploration = ByArea $ common ++
           [ (CaMapParty, SelectWithPointer)
@@ -96,7 +104,7 @@ mouseRMB =
           , (CaPercentSeen, autoexplore100Cmd)
           , (CaXhairDesc, AimFloor) ]
       , aiming = ByArea $ common ++
-          [ (CaMap, ComposeIfLocal AimPointerEnemy (projectICmd flingTs))
+          [ (CaMap, aimFlingCmd)
           , (CaArenaName, Accept)
           , (CaPercentSeen, XhairStair False)
           , (CaXhairDesc, projectICmd flingTs) ] } )
@@ -119,6 +127,9 @@ autoexploreCmd = Macro ["CTRL-?", "CTRL-period", "V"]
 
 autoexplore100Cmd :: HumanCmd
 autoexplore100Cmd = Macro ["'", "CTRL-?", "CTRL-period", "'", "V"]
+
+aimFlingCmd :: HumanCmd
+aimFlingCmd = ComposeIfLocal AimPointerEnemy (projectICmd flingTs)
 
 projectICmd :: [Trigger] -> HumanCmd
 projectICmd ts = ByItemMode

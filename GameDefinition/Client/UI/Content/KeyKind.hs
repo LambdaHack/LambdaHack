@@ -8,9 +8,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Arrow (first)
-
-import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Common.Misc
@@ -23,7 +20,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- when navigating various menus.
 standardKeys :: KeyKind
 standardKeys = KeyKind
-  { rhumanCommands = map (first K.mkKM) $
+  { rhumanCommands = map evalKeyDef $
       -- All commands are defined here, except some movement and leader picking
       -- commands. All commands are shown on help screens except debug commands
       -- and macros with empty descriptions.
@@ -33,7 +30,7 @@ standardKeys = KeyKind
 
       -- Main Menu
       [ ("Escape", ([CmdMainMenu], "back to playing", Cancel))
-      , ("?", ([CmdMainMenu], "see command help", Help))
+      , ("?", ([CmdMainMenu], "see command Help", Help))
       , ("S", ([CmdMainMenu], "enter settings menu", SettingsMenu))
       , ("X", ([CmdMainMenu], "save and exit", GameExit))
       , ("r", gameRestartTriple "raid")
@@ -91,10 +88,10 @@ standardKeys = KeyKind
                       , "go to crosshair for 100 steps"
                       , Macro ["CTRL-semicolon", "CTRL-period", "V"] ))
       , ("colon", ( [CmdMove]
-                  , "go to collectively to crosshair for 100 steps"
+                  , "go to crosshair collectively for 100 steps"
                   , Macro ["CTRL-colon", "CTRL-period", "V"] ))
       , ("x", ( [CmdMove]
-              , "autoexplore the closest unknown spot"
+              , "explore nearest unknown spot"
               , autoexploreCmd ))
       , ("X", ( [CmdMove]
               , "autoexplore 100 times"
@@ -136,7 +133,7 @@ standardKeys = KeyKind
               , "manage equipment of the leader"
               , ChooseItemMenu (MStore CEqp) ))
       , ("P", ( [CmdMinimal, CmdItem]
-              , "manage inventory pack of the leader"
+              , "manage inventory pack of leader"
               , ChooseItemMenu (MStore CInv) ))
       , ("S", ( [CmdItem]
               , "manage the shared party stash"
@@ -151,7 +148,7 @@ standardKeys = KeyKind
               , "describe organs of the leader"
               , ChooseItemMenu (MStore COrgan) ))
       , ("#", ( [CmdItem]
-              , "show the stats summary of the leader"
+              , "show stat summary of the leader"
               , ChooseItemMenu MStats ))
       , ("q", applyI [ApplyItem { verb = "quaff"
                                 , object = "potion"
@@ -167,43 +164,43 @@ standardKeys = KeyKind
 --                                  , symbol = '/' }])
 
       -- Aiming
-      , ("KP_Multiply", ([CmdAim], "aim at an enemy", AimEnemy))
+      , ("KP_Multiply", ([CmdAim], "cycle x-hair among enemies", AimEnemy))
       , ("!", ([CmdAim], "", AimEnemy))
       , ("KP_Divide", ([CmdAim], "cycle aiming styles", AimFloor))
       , ("/", ([CmdAim], "", AimFloor))
       , ("+", ([CmdAim, CmdMinimal], "swerve the aiming line", EpsIncr True))
       , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
       , ("CTRL-?", ( [CmdAim]
-                   , "set crosshair to the closest unknown spot"
+                   , "set crosshair to nearest unknown spot"
                    , XhairUnknown ))
       , ("CTRL-I", ( [CmdAim]
-                   , "set crosshair to the closest item"
+                   , "set crosshair to nearest item"
                    , XhairItem ))
       , ("CTRL-{", ( [CmdAim]
-                   , "set crosshair to the closest stairs up"
+                   , "set x-hair to nearest upstairs"
                    , XhairStair True ))
       , ("CTRL-}", ( [CmdAim]
-                   , "set crosshair to the closest stairs down"
+                   , "set x-hair to nearest downstairs"
                    , XhairStair False ))
       , ( "BackSpace"
-        , ([CmdAim], "clear target/crosshair/chosen item", TgtClear) )
+        , ([CmdAim], "clear target or chosen item", TgtClear) )
       , ("Escape", ( [CmdAim, CmdMinimal]
-                   , "cancel target/action or open Main Menu"
+                   , "cancel aiming/open Main Menu"
                    , ByAimMode {exploration = MainMenu, aiming = Cancel} ))
       , ("Return", ( [CmdAim, CmdMinimal]
-                   , "accept target/choice or open Help"
+                   , "accept target/open Help"
                    , ByAimMode {exploration = Help, aiming=Accept} ))
 
       -- Assorted
-      , ("space", ([CmdMeta], "clear/display hints and history", Clear))
-      , ("?", ([CmdMeta], "display help", Help))
+      , ("space", ([CmdMeta], "clear messages, display history", Clear))
+      , ("?", ([CmdMeta], "display Help", Help))
       , ("Tab", ( [CmdMeta]
                 , "cycle among party members on the level"
                 , MemberCycle ))
       , ("ISO_Left_Tab", ( [CmdMeta, CmdMinimal]
                          , "cycle among all party members"
                          , MemberBack ))
-      , ("=", ([CmdMeta], "select (or deselect) a party member", SelectActor))
+      , ("=", ([CmdMeta], "select (or deselect) party member", SelectActor))
       , ("_", ([CmdMeta], "deselect (or select) all on the level", SelectNone))
       , ("v", ([CmdMeta], "voice again the recorded commands", Repeat 1))
       , ("V", repeatTriple 100)
@@ -222,22 +219,43 @@ standardKeys = KeyKind
 
       -- Debug and others not to display in help screens
       , ("CTRL-S", ([CmdDebug], "save game", GameSave))
-      , ("CTRL-semicolon", ( [CmdInternal]
+      , ("CTRL-semicolon", ( [CmdNoHelp]
                            , "move one step towards the crosshair"
                            , MoveOnceToXhair ))
-      , ("CTRL-colon", ( [CmdInternal]
+      , ("CTRL-colon", ( [CmdNoHelp]
                        , "move collectively one step towards the crosshair"
                        , RunOnceToXhair ))
-      , ("CTRL-period", ( [CmdInternal]
+      , ("CTRL-period", ( [CmdNoHelp]
                         , "continue towards the crosshair"
                         , ContinueToXhair ))
-      , ("CTRL-comma", ([CmdInternal], "run once ahead", RunOnceAhead))
-      , ("SHIFT-MiddleButtonRelease", ( [CmdInternal]
-                                      , "go to pointer for 100 step"
-                                      , goToCmd ))
-      , ("CTRL-MiddleButtonRelease", ( [CmdInternal]
-                                     , "go to collectively to pointer for 100 steps"
-                                     , goToAllCmd ))
+      , ("CTRL-comma", ([CmdNoHelp], "run once ahead", RunOnceAhead))
+      , ("safe1", ( [CmdInternal]
+                  , "go to pointer for 100 steps"
+                  , goToCmd ))
+      , ("safe2", ( [CmdInternal]
+                  , "go to pointer collectively"
+                  , goToAllCmd ))
+      , ("safe3", ( [CmdInternal]
+                  , "pick new leader on screen"
+                  , PickLeaderWithPointer ))
+      , ("safe4", ( [CmdInternal]
+                  , "select party member on screen"
+                  , SelectWithPointer ))
+      , ("safe5", ( [CmdInternal]
+                  , "set crosshair to enemy"
+                  , AimPointerEnemy ))
+      , ("safe6", ( [CmdInternal]
+                  , "fling at enemy under pointer"
+                  , aimFlingCmd ))
+      , ("safe7", ( [CmdInternal]
+                  , "open Main Menu"
+                  , MainMenu ))
+      , ("safe8", ( [CmdInternal]
+                  , "cancel aiming"
+                  , Cancel ))
+      , ("safe9", ( [CmdInternal]
+                  , "accept target"
+                  , Accept ))
       ]
       ++ map defaultHeroSelect [0..6]
   }
