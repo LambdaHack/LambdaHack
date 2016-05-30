@@ -42,14 +42,14 @@ drawOverlay dm sfBlank topTrunc lid = do
 promptGetKey :: MonadClientUI m
              => ColorMode -> Overlay -> Bool -> [K.KM] -> m K.KM
 promptGetKey dm ov sfBlank frontKeyKeys = do
-  lid <- viewedLevelUI
+  lidV <- viewedLevelUI
   keyPressed <- anyKeyPressed
   lastPlayOld <- getsSession slastPlay
   km <- case lastPlayOld of
     km : kms | not keyPressed && (null frontKeyKeys
                                   || km `elem` frontKeyKeys) -> do
-      frontKeyFrame <- drawOverlay dm sfBlank ov lid
-      displayFrame $ Just frontKeyFrame
+      frontKeyFrame <- drawOverlay dm sfBlank ov lidV
+      displayFrames (lidV, [Just frontKeyFrame])
       modifySession $ \sess -> sess {slastPlay = kms}
       Config{configRunStopMsgs} <- getsSession sconfig
       when configRunStopMsgs $ promptAdd $ "Voicing '" <> tshow km <> "'."
@@ -61,10 +61,10 @@ promptGetKey dm ov sfBlank frontKeyKeys = do
       let ov2 = ov `glueOverlay` if keyPressed
                                  then [toAttrLine "*interrupted*"]
                                  else []
-      frontKeyFrame <- drawOverlay dm sfBlank ov2 lid
+      frontKeyFrame <- drawOverlay dm sfBlank ov2 lidV
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     [] -> do
-      frontKeyFrame <- drawOverlay dm sfBlank ov lid
+      frontKeyFrame <- drawOverlay dm sfBlank ov lidV
       connFrontendFrontKey frontKeyKeys frontKeyFrame
   (seqCurrent, seqPrevious, k) <- getsSession slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)
@@ -97,8 +97,8 @@ stopPlayBack = do
 
 -- TODO: restrict the animation to 'per' before drawing.
 -- | Render animations on top of the current screen frame.
-animate :: MonadClientUI m => LevelId -> Animation -> m Frames
-animate arena anim = do
+renderFrames :: MonadClientUI m => LevelId -> Animation -> m Frames
+renderFrames arena anim = do
   report <- getReportUI
   let truncRep = [renderReport report]
   basicFrame <- drawOverlay ColorFull False truncRep arena
@@ -107,12 +107,17 @@ animate arena anim = do
             then [Just basicFrame]
             else renderAnim basicFrame anim
 
+-- | Render and display animations on top of the current screen frame.
+animate :: MonadClientUI m => LevelId -> Animation -> m ()
+animate arena anim = do
+  frames <- renderFrames arena anim
+  displayFrames (arena, frames)
+
 fadeOutOrIn :: MonadClientUI m => Bool -> m ()
 fadeOutOrIn out = do
   let topRight = True
-  lid <- getArenaUI
-  Level{lxsize, lysize} <- getLevel lid
+  arena <- getArenaUI
+  Level{lxsize, lysize} <- getLevel arena
   animMap <- rndToAction $ fadeout out topRight 2 lxsize lysize
-  animFrs <- animate lid animMap
-  mapM_ displayFrame $ tail animFrs  -- no basic frame between fadeout and in
-  modifySession $ \sess -> sess {sdisplayNeeded = False}
+  animFrs <- renderFrames arena animMap
+  displayFrames (arena, tail animFrs)  -- no basic frame between fadeout and in

@@ -26,16 +26,16 @@ import Game.LambdaHack.Common.Point
 -- possibly, many slides.
 overlayToSlideshow :: MonadClientUI m => Y -> [K.KM] -> OKX -> m Slideshow
 overlayToSlideshow y keys okx = do
-  arena <- getArenaUI
-  Level{lxsize} <- getLevel arena  -- TODO: screen length or viewLevel
+  lidV <- viewedLevelUI
+  Level{lxsize} <- getLevel lidV  -- TODO: screen length or viewLevel
   report <- getReportUI
   return $! splitOverlay lxsize y report keys okx
 
 -- | Split current report into a slideshow.
 reportToSlideshow :: MonadClientUI m => [K.KM] -> m Slideshow
 reportToSlideshow keys = do
-  arena <- getArenaUI
-  Level{lysize} <- getLevel arena
+  lidV <- viewedLevelUI
+  Level{lysize} <- getLevel lidV
   overlayToSlideshow (lysize + 1) keys ([], [])
 
 -- | Display a message. Return value indicates if the player tried to cancel.

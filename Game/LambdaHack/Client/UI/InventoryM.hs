@@ -484,8 +484,8 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
       keyLabels = filter (not . T.null) keyLabelsRaw
       choice = T.intercalate " " $ map wrapB $ nub keyLabels
   promptAdd $ prompt <+> choice
-  arena <- getArenaUI
-  Level{lysize} <- getLevel arena
+  lidV <- viewedLevelUI
+  Level{lysize} <- getLevel lidV
   ekm <- do
     okxs <- overlayToSlideshow (lysize + 1) keys okx
     lastSlot <- getsClient slastSlot

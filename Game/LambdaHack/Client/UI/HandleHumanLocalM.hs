@@ -165,8 +165,8 @@ chooseItemDialogMode c = do
               prompt2 = makeSentence [ partActor b, "can't choose"
                                      , MU.AW blurb ]
           promptAdd prompt2
-          arena <- getArenaUI
-          Level{lxsize, lysize} <- getLevel arena
+          lidV <- viewedLevelUI
+          Level{lxsize, lysize} <- getLevel lidV
           localTime <- getsState $ getLocalTime (blid b)
           foundText <- itemIsFound iid leader COrgan
           let attrLine = itemDesc COrgan localTime itemFull
@@ -928,10 +928,8 @@ epsIncrHuman b = do
 --- Flash the aiming line and path.
 flashAiming :: MonadClientUI m => m ()
 flashAiming = do
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  animFrs <- animate (blid b) pushAndDelay
-  displayActorStart b animFrs
+  lidV <- viewedLevelUI
+  animate lidV pushAndDelay
 
 -- * XhairUnknown
 

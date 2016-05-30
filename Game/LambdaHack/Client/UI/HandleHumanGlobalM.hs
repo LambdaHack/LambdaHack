@@ -892,8 +892,8 @@ helpHuman :: MonadClientUI m
           => (HumanCmd.HumanCmd -> m (Either MError RequestUI))
           -> m (Either MError RequestUI)
 helpHuman cmdAction = do
-  arena <- getArenaUI
-  Level{lxsize, lysize} <- getLevel arena  -- TODO: screen length or viewLevel
+  lidV <- viewedLevelUI
+  Level{lxsize, lysize} <- getLevel lidV  -- TODO: screen length or viewLevel
   menuIxHelp <- getsSession smenuIxHelp
   keyb <- getsSession sbinding
   let keyH = tail $ keyHelp keyb 1  -- the first screen is for ItemMenu
@@ -929,8 +929,8 @@ itemMenuHuman cmdAction = do
           weaveJust <$> failWith "no object to open Item Menu for"
         Just kit -> do
           itemToF <- itemToFullClient
-          arena <- getArenaUI
-          Level{lxsize, lysize} <- getLevel arena
+          lidV <- viewedLevelUI
+          Level{lxsize, lysize} <- getLevel lidV
           localTime <- getsState $ getLocalTime (blid b)
           foundText <- itemIsFound iid leader fromCStore
           let itemFull = itemToF iid kit

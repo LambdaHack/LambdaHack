@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
                  , liftIO  -- exposed only to be implemented, not used,
                  )
     -- * Assorted primitives
-  , mapStartY, displayFrame, displayActorStart
+  , mapStartY, displayFrames
   , setFrontAutoYes, anyKeyPressed, discardPressedKey, addPressedKey
   , connFrontendFrontKey, frontendShutdown, chanFrontend
   , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
@@ -72,14 +72,15 @@ displayFrame mf = do
         Just fr -> FrontFrame fr
   connFrontend frame
 
--- | Push frames or delays to the frame queue.
-displayActorStart :: MonadClientUI m => Actor -> Frames -> m ()
-displayActorStart b frs = do
+-- | Push frames or delays to the frame queue. The frames depict
+-- the @lid@ level.
+displayFrames :: MonadClientUI m => (LevelId, Frames) -> m ()
+displayFrames (lid, frs) = do
   mapM_ displayFrame frs
   -- Can be different than @blid b@, e.g., when our actor is attacked
   -- on a remote level.
-  arena <- getArenaUI
-  when (arena == blid b) $
+  lidV <- viewedLevelUI
+  when (lidV == lid) $
     modifySession $ \sess -> sess {sdisplayNeeded = False}
 
 -- | Write 'FrontKey' UI request to the frontend, read the reply,
@@ -173,8 +174,8 @@ xhairToPos = do
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
-  arena <- getArenaUI
-  Level{lxsize, lysize} <- getLevel arena
+  lidV <- viewedLevelUI
+  Level{lxsize, lysize} <- getLevel lidV
   fid <- getsClient sside
   fact <- getsState $ (EM.! fid) . sfactionD
   -- TODO: Re-read the table in case it's changed by a concurrent game.

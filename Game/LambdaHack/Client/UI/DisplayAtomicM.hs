@@ -181,10 +181,8 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
     side <- getsClient sside
     arena <- getArenaUI
     -- Ignore enemy projectiles and anything on other levels.
-    when (arena == blid b && (bfid b == side || not (bproj b))) $ do
-      animColor <- animate (blid b)
-                   $ blinkColorActor (bpos b) (bsymbol b) fromCol toCol
-      displayActorStart b animColor
+    when (arena == blid b && (bfid b == side || not (bproj b))) $
+      animate (blid b) $ blinkColorActor (bpos b) (bsymbol b) fromCol toCol
   -- Change faction attributes.
   UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt
   UpdLeadFaction fid (Just (source, _)) (Just (target, _)) -> do
@@ -260,12 +258,11 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
       -- Only one line of the report is shown, as in animations,
       -- because it may not be our turn, so we can't clear the message
       -- to see what is underneath.
-      lid <- viewedLevelUI
+      lidV <- viewedLevelUI
       report <- getReportUI
       let truncRep = [renderReport report]
-      frame <- drawOverlay ColorFull False truncRep lid
-      displayFrame (Just frame)
-      modifySession $ \sess -> sess {sdisplayNeeded = False}
+      frame <- drawOverlay ColorFull False truncRep lidV
+      displayFrames (lidV, [Just frame])
   UpdDiscover c iid _ _ _ -> discover c oldStateClient iid
   UpdCover{} -> return ()  -- don't spam when doing undo
   UpdDiscoverKind c iid _ -> discover c oldStateClient iid
@@ -294,8 +291,8 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
 
 markDisplayNeeded :: MonadClientUI m => LevelId -> m ()
 markDisplayNeeded lid = do
-  arena <- getArenaUI
-  when (arena == lid) $
+  lidV <- viewedLevelUI
+  when (lidV == lid) $
      modifySession $ \sess -> sess {sdisplayNeeded = True}
 
 updateItemSlotSide :: MonadClient m
@@ -426,8 +423,7 @@ createActorUI born aid body = do
     markDisplayNeeded (blid body)
   else do
     actorVerbMU aid body verb
-    animFrs <- animate (blid body) $ actorX (bpos body)
-    displayActorStart body animFrs
+    animate (blid body) $ actorX (bpos body)
   lookAtMove aid
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
@@ -475,8 +471,7 @@ moveActor aid source target = do
   then markDisplayNeeded (blid body)
   else do
     let ps = (source, target)
-    animFrs <- animate (blid body) $ teleport ps
-    displayActorStart body animFrs
+    animate (blid body) $ teleport ps
   lookAtMove aid
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
@@ -491,8 +486,7 @@ displaceActorUI source target = do
     lookAtMove source
     lookAtMove target
   let ps = (bpos tb, bpos sb)
-  animFrs <- animate (blid sb) $ swapPlaces ps
-  displayActorStart sb animFrs
+  animate (blid sb) $ swapPlaces ps
 
 moveItemUI :: MonadClientUI m
            => ItemId -> Int -> ActorId -> CStore -> CStore
@@ -572,6 +566,8 @@ quitFactionUI fid mbody toSt = do
       go <- displaySpaceEsc ColorFull ""
       recordHistory  -- we are going to exit or restart, so record and clear
       when go $ do
+        lidV <- viewedLevelUI
+        Level{lxsize, lysize} <- getLevel lidV
         let store = CGround  -- only matters for UI details; all items shown
             currencyName = MU.Text $ IK.iname $ okind $ ouniqGroup "currency"
             bodyToItemSlides b = do
@@ -581,8 +577,6 @@ quitFactionUI fid mbody toSt = do
                 let spoilsMsg = makeSentence [ "Your spoils are worth"
                                              , MU.CarWs tot currencyName ]
                 promptAdd spoilsMsg
-                arena <- getArenaUI
-                Level{lysize} <- getLevel arena
                 io <- itemOverlay store (blid b) bag
                 sli <- overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] io
                 return (bag, sli, tot)
@@ -594,7 +588,6 @@ quitFactionUI fid mbody toSt = do
               b <- getsState $ getActorBody aid
               bodyToItemSlides b
         arena <- getArenaUI
-        Level{lxsize, lysize} <- getLevel arena
         localTime <- getsState $ getLocalTime arena
         itemToF <- itemToFullClient
         (lSlots, _) <- getsClient sslots
@@ -730,19 +723,16 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                           then twirlSplash (bpos b, bpos b) Color.Red Color.Red
                           else deathBody (bpos b)
                      else pushAndDelay  -- if boring, at least display
-      animDie <- animate (blid b) deathAct
-      displayActorStart b animDie
+      animate (blid b) deathAct
     else case effect of
         IK.ELabel{} -> return ()
         IK.Hurt{} -> return ()  -- avoid spam; SfxStrike just sent
         IK.Burn{} -> do
-          if isOurAlive then
-            actorVerbMU aid b "feel burned"
-          else
-            actorVerbMU aid b "look burned"
+          if isOurAlive
+          then actorVerbMU aid b "feel burned"
+          else actorVerbMU aid b "look burned"
           let ps = (bpos b, bpos b)
-          animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
-          displayActorStart b animFrs
+          animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
         IK.Explode{} -> return ()  -- lots of visual feedback
         IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
         IK.RefillHP p | p == -1 -> return ()  -- no spam from poison
@@ -752,32 +742,28 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           else
             actorVerbMU aid b "look healthier"
           let ps = (bpos b, bpos b)
-          animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
-          displayActorStart b animFrs
+          animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
         IK.RefillHP{} -> do
           if isOurAlive then
             actorVerbMU aid b "feel wounded"
           else
             actorVerbMU aid b "look wounded"
           let ps = (bpos b, bpos b)
-          animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
-          displayActorStart b animFrs
+          animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
         IK.OverfillHP{} | hpDelta > 0 -> do
           if isOurAlive then
             actorVerbMU aid b "feel healthier"
           else
             actorVerbMU aid b "look healthier"
           let ps = (bpos b, bpos b)
-          animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
-          displayActorStart b animFrs
+          animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
         IK.OverfillHP{} -> do
           if isOurAlive then
             actorVerbMU aid b "feel wounded"
           else
             actorVerbMU aid b "look wounded"
           let ps = (bpos b, bpos b)
-          animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
-          displayActorStart b animFrs
+          animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
         IK.RefillCalm p | p == 1 -> return ()  -- no spam from regen items
         IK.RefillCalm p | p > 0 -> do
           if isOurAlive then
@@ -943,5 +929,4 @@ strike source target iid cstore hitStatus = assert (source /= target) $ do
       anim HitClear = twirlSplash ps Color.BrRed Color.Red
       anim (HitBlock 1) = blockHit ps Color.BrRed Color.Red
       anim (HitBlock _) = blockMiss ps
-  animFrs <- animate (blid sb) $ anim hitStatus
-  displayActorStart sb animFrs
+  animate (blid sb) $ anim hitStatus
