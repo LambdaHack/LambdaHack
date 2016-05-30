@@ -112,8 +112,8 @@ showKey LeftButtonRelease = "LMB"
 showKey MiddleButtonRelease = "MMB"
 showKey RightButtonRelease = "RMB"
 showKey LeftDblClick = "LMB-DBLCLICK"
-showKey WheelNorth = "WHEEL-NORTH"
-showKey WheelSouth = "WHEEL-SOUTH"
+showKey WheelNorth = "WHEEL-UP"
+showKey WheelSouth = "WHEEL-DN"
 showKey (Unknown s) = "'" <> s <> "'"
 showKey DeadKey      = "DEADKEY"
 
@@ -131,7 +131,7 @@ spaceKM :: KM
 spaceKM = KM NoModifier Space
 
 safeSpaceKM :: KM
-safeSpaceKM = KM NoModifier $ Unknown "Space"
+safeSpaceKM = KM NoModifier $ Unknown "SAFE_SPACE"
 
 returnKM :: KM
 returnKM = KM NoModifier Return

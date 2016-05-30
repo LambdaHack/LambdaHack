@@ -114,13 +114,11 @@ keyHelp Binding{..} offset = assert (offset > 0) $
       , "and SPACE or ESC to see the map again."
       ]
     pickLeaderDescription =
-      [ fmt 12 "0, 1 ... 6" "pick a particular actor as the new leader"
+      [ fmt 11 "0, 1 ... 6" "pick a particular actor as the new leader"
       ]
     casualDescription = "Minimal cheat sheet for casual play"
-    fmt n k h = T.justifyRight 72 ' '
-                $ T.justifyLeft n ' ' k
-                  <+> T.justifyLeft 48 ' ' h
-    fmts s = " " <> T.justifyLeft 71 ' ' s
+    fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
+    fmts s = " " <> s
     movText = map fmts movBlurb
     minimalText = map fmts minimalBlurb
     casualEndText = map fmts casualEndBlurb
@@ -135,13 +133,14 @@ keyHelp Binding{..} offset = assert (offset > 0) $
                   , desc /= "" ]
     -- TODO: measure the longest key sequence and set the caption automatically
     keyCaptionN n = fmt n "keys" "command"
-    keyCaption = keyCaptionN 12
+    keyCaption = keyCaptionN 11
     okxsN :: Int -> CmdCategory -> [Text] -> [Text] -> OKX
     okxsN n cat header footer =
-      let (ks, keyTable) = unzip $ keysN n cat
-          kxs = zip ks [(y, 0, maxBound) | y <- [offset + length header..]]
-      in (map toAttrLine $ fmts "" : header ++ keyTable ++ footer, kxs)
-    okxs = okxsN 12
+      let kst = keysN n cat
+          f (ks, tkey) y = (ks, (y, 0, T.length tkey))
+          kxs = zipWith f kst [offset + length header..]
+      in (map toAttrLine $ "" : header ++ map snd kst ++ footer, kxs)
+    okxs = okxsN 11
   in
     [ ( ""  -- the first screen is for ItemMenu
       , okxs CmdItemMenu [keyCaption] [] )

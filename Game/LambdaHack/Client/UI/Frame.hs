@@ -34,11 +34,11 @@ overlayFrame topTrunc msf =
       emptyLine = toAttrLine $ T.replicate lxsize " "
       canvasLength = if isNothing msf then lysize + 3 else lysize + 1
       canvas = maybe (replicate canvasLength emptyLine)
-                     (\sf -> singleFrame sf)
+                     singleFrame
                      msf
       topLayer = if length topTrunc <= canvasLength
                  then topTrunc ++ if length topTrunc < canvasLength
-                                  then [emptyLine]
+                                  then [[]]
                                   else []
                  else take (canvasLength - 1) topTrunc
                       ++ [toAttrLine "--a portion of the text trimmed--"]
@@ -63,5 +63,5 @@ truncateAttrLine w xs lenMax =
     GT -> let xsSpace = if null xs || acChar (last xs) == ' '
                         then xs
                         else xs ++ toAttrLine " "
-          in xsSpace
-             ++ replicate (1 + lenMax - length xsSpace) (AttrChar defAttr ' ')
+              whiteN = max (40 - length xsSpace) (1 + lenMax - length xsSpace)
+          in xsSpace ++ replicate whiteN (AttrChar defAttr ' ')
