@@ -3,7 +3,7 @@
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Status(..)
-  , Target(..)
+  , Target(..), tgtKindDescription
   , isHorrorFact
   , noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
   , isAtWar, isAllied
@@ -76,6 +76,15 @@ data Target =
   | TPoint !LevelId !Point  -- ^ target a concrete spot
   | TVector !Vector         -- ^ target position relative to actor
   deriving (Show, Eq, Ord)
+
+tgtKindDescription :: Target -> Text
+tgtKindDescription tgt = case tgt of
+  TEnemy _ True -> "at actor"
+  TEnemy _ False -> "at enemy"
+  TEnemyPos _ _ _ True -> "at actor"
+  TEnemyPos _ _ _ False -> "at enemy"
+  TPoint{} -> "at position"
+  TVector{} -> "with a vector"
 
 -- | Tell whether the faction consists of summoned horrors only.
 --

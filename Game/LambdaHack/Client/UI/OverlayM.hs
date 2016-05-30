@@ -38,17 +38,11 @@ describeMainKeys = do
   let moveKeys | configVi = "keypad or hjklyubn"
                | configLaptop = "keypad or uk8o79jl"
                | otherwise = "keypad"
-      tgtKind = case xhair of
-        TEnemy _ True -> "at actor"
-        TEnemy _ False -> "at enemy"
-        TEnemyPos _ _ _ True -> "at actor"
-        TEnemyPos _ _ _ False -> "at enemy"
-        TPoint{} -> "at position"
-        TVector{} -> "with a vector"
       keys | isNothing saimMode =
         "Explore with" <+> moveKeys <+> "keys or mouse."
            | otherwise =
-        "Aim" <+> tgtKind <+> "with" <+> moveKeys <+> "keys or mouse."
+        "Aim" <+> tgtKindDescription xhair
+        <+> "with" <+> moveKeys <+> "keys or mouse."
   return $! keys
 
 -- | Produces a textual description of the terrain and items at an already

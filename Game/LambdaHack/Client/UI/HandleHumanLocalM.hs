@@ -766,7 +766,8 @@ moveXhairHuman dir n = do
   Level{lxsize, lysize} <- getLevel lidV
   lpos <- getsState $ bpos . getActorBody leader
   sxhair <- getsClient sxhair
-  xhairPos <- xhairToPos
+  lidTgt <- lidOfTarget $ Just sxhair  -- hack to get valid pos from invalid tgt
+  xhairPos <- aidTgtToPos leader lidTgt $ Just sxhair
   let cpos = fromMaybe lpos xhairPos
       shiftB pos = shiftBounded lxsize lysize pos dir
       newPos = iterate shiftB cpos !! n
@@ -778,6 +779,20 @@ moveXhairHuman dir n = do
     modifyClient $ \cli -> cli {sxhair = tgt}
     doLook
     return Nothing
+
+lidOfTarget :: MonadClientUI m => Maybe Target -> m LevelId
+lidOfTarget tgt = case tgt of
+  Just (TEnemy a _) -> do
+    body <- getsState $ getActorBody a
+    return $! blid body
+  Just (TEnemyPos _ lid _ _) -> return lid
+  Just (TPoint lid _) -> return lid
+  Just (TVector _) -> do
+    leader <- getLeaderUI
+    getsState $ blid . getActorBody leader
+  Nothing -> do
+    sxhair <- getsClient sxhair
+    lidOfTarget $ Just sxhair
 
 -- * XHairTgt
 
