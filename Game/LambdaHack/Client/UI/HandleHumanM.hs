@@ -89,7 +89,7 @@ cmdAction cmd = case cmd of
   MemberBack -> Left <$> memberBackHuman
   SelectActor -> addNoError selectActorHuman
   SelectNone -> addNoError selectNoneHuman
-  SelectWithPointer -> addNoError selectWithPointerHuman
+  SelectWithPointer -> Left <$> selectWithPointerHuman
   Repeat n -> addNoError $ repeatHuman n
   Record -> addNoError recordHuman
   History -> addNoError historyHuman

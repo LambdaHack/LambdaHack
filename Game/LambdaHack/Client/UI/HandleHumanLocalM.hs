@@ -397,7 +397,7 @@ pickLeaderWithPointerHuman = do
            aidb : _ -> pick aidb
      | otherwise ->
          case find (\(_, b) -> bpos b == Point px (py - mapStartY)) ours of
-           Nothing -> assert `failure` (px, py, lysize + 2)
+           Nothing -> failMsg "not pointing at an actor"
            Just aidb -> pick aidb
 
 -- * MemberCycle
@@ -455,7 +455,7 @@ selectNoneHuman = do
 
 -- * SelectWithPointer
 
-selectWithPointerHuman :: MonadClientUI m => m ()
+selectWithPointerHuman :: MonadClientUI m => m MError
 selectWithPointerHuman = do
   lidV <- viewedLevelUI
   Level{lysize} <- getLevel lidV
@@ -465,15 +465,15 @@ selectWithPointerHuman = do
   let viewed = sortBy (comparing keySelected) ours
   Point{..} <- getsSession spointer
   -- Select even if no space in status line for the actor's symbol.
-  if | py == lysize + 2 && px == 0 -> selectNoneHuman
+  if | py == lysize + 2 && px == 0 -> selectNoneHuman >> return Nothing
      | py == lysize + 2 ->
          case drop (px - 1) viewed of
-           [] -> return ()  -- relaxed, due to subtleties of selected display
-           (aid, _) : _ -> selectAidHuman aid
+           [] -> failMsg "not pointing at an actor"
+           (aid, _) : _ -> selectAidHuman aid >> return Nothing
      | otherwise ->
          case find (\(_, b) -> bpos b == Point px (py - mapStartY)) ours of
-           Nothing -> assert `failure` (px, py, lysize + 2)
-           Just (aid, _) -> selectAidHuman aid
+           Nothing -> failMsg "not pointing at an actor"
+           Just (aid, _) -> selectAidHuman aid >> return Nothing
 
 -- * Repeat
 
