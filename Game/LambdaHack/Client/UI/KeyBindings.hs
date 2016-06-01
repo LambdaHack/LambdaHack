@@ -151,7 +151,7 @@ keyHelp Binding{..} offset = assert (offset > 0) $
     okxsN :: Int -> CmdCategory -> [Text] -> [Text] -> OKX
     okxsN n cat header footer =
       let kst = keysN n cat
-          f (ks, tkey) y = (ks, (y, 0, T.length tkey))
+          f (ks, tkey) y = (ks, (y, 1, T.length tkey))
           kxs = zipWith f kst [offset + length header..]
       in (map toAttrLine $ "" : header ++ map snd kst ++ footer, kxs)
     okxs = okxsN keyL

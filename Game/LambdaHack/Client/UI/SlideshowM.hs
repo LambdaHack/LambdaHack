@@ -115,6 +115,7 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
               ov1 = updateOverlayLine y drawHighlight ov
               ignoreKey = page pointer
               pageLen = length kyxs
+              xix (_, (_, x1', _)) = x1' == x1
               interpretKey :: K.KM -> m (Either K.KM SlotChar, Int)
               interpretKey ikm =
                 case K.key ikm of
@@ -137,12 +138,17 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                     page (pointer + pageLen - ixOnPage)
                   _ | ikm `elem` keys ->
                     return (Left ikm, pointer)
-                  _ | K.key ikm `elem` [K.Up, K.Left] ->
-                    if pointer == 0 then page maxIx
-                    else page (max 0 (pointer - 1))
-                  _ | K.key ikm `elem` [K.Down, K.Right] ->
-                    if pointer == maxIx then page 0
-                    else page (min maxIx (pointer + 1))
+                  K.Up -> case findIndex xix $ reverse
+                               $ take ixOnPage kyxs of
+                    Nothing -> ignoreKey
+                    Just ix -> page (max 0 (pointer - ix - 1))
+                  K.Left -> if pointer == 0 then page maxIx
+                            else page (max 0 (pointer - 1))
+                  K.Down -> case findIndex xix $ drop (ixOnPage + 1) kyxs of
+                    Nothing -> ignoreKey
+                    Just ix -> page (pointer + ix + 1)
+                  K.Right -> if pointer == maxIx then page 0
+                             else page (min maxIx (pointer + 1))
                   K.Home -> page 0
                   K.End -> page maxIx
                   _ | K.key ikm `elem` [K.PgUp, K.WheelNorth] ->
