@@ -86,9 +86,8 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                        , K.homeKM, K.endKM ]
       legalKeys = keys ++ navigationKeys
       -- The arguments go from first menu line and menu page to the last,
-      -- in order. Their indexing is from 0. We select the closest item
-      -- with the index equal or less to the pointer, or if there is none,
-      -- with a larger index.
+      -- in order. Their indexing is from 0. We select the nearest item
+      -- with the index equal or less to the pointer.
       findKYX :: Int -> [OKX] -> Maybe (OKX, KYX, Int)
       findKYX _ [] = Nothing
       findKYX pointer (okx@(_, kyxs) : frs2) =
@@ -98,12 +97,12 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
               Nothing ->  -- no more menu items in later pages
                 case reverse kyxs of
                   [] -> Nothing
-                  kyx : _ -> Just (okx, kyx, length kyxs)
-              okyx -> okyx
+                  kyx : _ -> Just (okx, kyx, length kyxs - 1)
+              res -> res
           kyx : _ -> Just (okx, kyx, pointer)
       maxIx = length (concatMap snd frs) - 1
       page :: Int -> m (Either K.KM SlotChar, Int)
-      page pointer = case findKYX pointer frs of
+      page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
         Nothing -> assert `failure` "no menu keys" `twith` frs
         Just ((ov, kyxs), (ekm, (y, x1, x2)), ixOnPage) -> do
           let greyBG x | Color.acAttr x /= Color.defAttr = x
