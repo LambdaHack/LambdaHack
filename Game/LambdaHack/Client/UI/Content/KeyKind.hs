@@ -5,7 +5,8 @@ module Game.LambdaHack.Client.UI.Content.KeyKind
   , mouseLMB, mouseMMB, mouseRMB
   , goToCmd, goToAllCmd, autoexploreCmd, autoexplore100Cmd
   , aimFlingCmd, projectI, projectA, flingTs, applyI
-  , grabAscend, descendDrop, descTs, defaultHeroSelect
+  , exploreGrabAscendCmd, exploreDescendDropCmd, grabAscend, descendDrop
+  , descTs, defaultHeroSelect
   ) where
 
 import Prelude ()
@@ -70,18 +71,19 @@ mouseLMB =
   , "set aiming crosshair/go to pointer for 100 steps"
   , ByAimMode
       { exploration = ByArea $ common ++  -- exploration mode
-          [ (CaMapParty, PickLeaderWithPointer)
+          [ (CaMapLeader, exploreGrabAscendCmd)
+          , (CaMapParty, PickLeaderWithPointer)
           , (CaMap, goToCmd)
           , (CaArenaName, MainMenu)
           , (CaPercentSeen, autoexploreCmd) ]
       , aiming = ByArea $ common ++  -- aiming mode
-          [ (CaMap, AimPointerEnemy)
+          [ (CaMapLeader, AimAscend 1)
+          , (CaMap, AimPointerEnemy)
           , (CaArenaName, Cancel)
           , (CaPercentSeen, XhairStair True) ] } )
  where
   common =
     [ (CaMessage, Clear)
-    , (CaMapLeader, grabAscendCmd)
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
     , (CaLeaderStatus, ChooseItemMenu $ MStore COrgan)
@@ -98,20 +100,21 @@ mouseRMB =
   , "set leader target/go to pointer collectively for 100 steps"
   , ByAimMode
       { exploration = ByArea $ common ++
-          [ (CaMapParty, SelectWithPointer)
+          [ (CaMapLeader, exploreDescendDropCmd)
+          , (CaMapParty, SelectWithPointer)
           , (CaMap, goToAllCmd)
           , (CaArenaName, Help)
           , (CaPercentSeen, autoexplore100Cmd)
           , (CaXhairDesc, AimFloor) ]
       , aiming = ByArea $ common ++
-          [ (CaMap, aimFlingCmd)
+          [ (CaMapLeader, AimAscend (-1))
+          , (CaMap, aimFlingCmd)
           , (CaArenaName, Accept)
           , (CaPercentSeen, XhairStair False)
           , (CaXhairDesc, projectICmd flingTs) ] } )
  where
   common =
     [ (CaMessage, Macro ["KP_5", "V"])
-    , (CaMapLeader, descendDropCmd)
     , (CaSelected, SelectWithPointer)
     , (CaLeaderStatus, ChooseItemMenu MStats)
     , (CaTargetDesc, ChooseItemMenu $ MStore CEqp) ]
@@ -155,34 +158,40 @@ applyI ts = ([CmdItem], descTs ts, ByItemMode
 
 grabAscendCmd :: HumanCmd
 grabAscendCmd = ByAimMode
-  { exploration = ReplaceFail "cannot grab items nor ascend" $
-      ComposeIfLocal
-        (MoveItem [CGround] CEqp (Just "grab") "items" True)
-        (TriggerTile
-           [ TriggerFeature { verb = "ascend"
-                            , object = "a level"
-                            , feature = TK.Cause (IK.Ascend 1) }
-           , TriggerFeature { verb = "escape"
-                            , object = "dungeon"
-                            , feature = TK.Cause (IK.Escape 1) } ])
+  { exploration = exploreGrabAscendCmd
   , aiming = AimAscend 1 }
+
+exploreGrabAscendCmd :: HumanCmd
+exploreGrabAscendCmd = ReplaceFail "cannot grab items nor ascend" $
+  ComposeIfLocal
+    (MoveItem [CGround] CEqp (Just "grab") "items" True)
+    (TriggerTile
+       [ TriggerFeature { verb = "ascend"
+                        , object = "a level"
+                        , feature = TK.Cause (IK.Ascend 1) }
+       , TriggerFeature { verb = "escape"
+                        , object = "dungeon"
+                        , feature = TK.Cause (IK.Escape 1) } ])
 
 grabAscend :: Text -> CmdTriple
 grabAscend t = ([CmdMove, CmdItem], t, grabAscendCmd)
 
 descendDropCmd :: HumanCmd
 descendDropCmd = ByAimMode
-  { exploration = ReplaceFail "cannot descend nor drop items" $
-      ComposeIfLocal
-        (TriggerTile
-           [ TriggerFeature { verb = "descend"
-                            , object = "a level"
-                            , feature = TK.Cause (IK.Ascend (-1)) }
-           , TriggerFeature { verb = "escape"
-                            , object = "dungeon"
-                            , feature = TK.Cause (IK.Escape (-1)) } ])
-        (MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False)
+  { exploration = exploreDescendDropCmd
   , aiming = AimAscend (-1) }
+
+exploreDescendDropCmd :: HumanCmd
+exploreDescendDropCmd = ReplaceFail "cannot descend nor drop items" $
+  ComposeIfLocal
+    (TriggerTile
+       [ TriggerFeature { verb = "descend"
+                        , object = "a level"
+                        , feature = TK.Cause (IK.Ascend (-1)) }
+       , TriggerFeature { verb = "escape"
+                        , object = "dungeon"
+                        , feature = TK.Cause (IK.Escape (-1)) } ])
+    (MoveItem [CEqp, CInv, CSha] CGround Nothing "item" False)
 
 descendDrop :: Text -> CmdTriple
 descendDrop t = ([CmdMove, CmdItem], t, descendDropCmd)

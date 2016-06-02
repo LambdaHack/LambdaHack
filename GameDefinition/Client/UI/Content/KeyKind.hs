@@ -189,7 +189,7 @@ standardKeys = KeyKind
                    , ByAimMode {exploration = MainMenu, aiming = Cancel} ))
       , ("Return", ( [CmdAim, CmdMinimal]
                    , "accept target/open Help"
-                   , ByAimMode {exploration = Help, aiming=Accept} ))
+                   , ByAimMode {exploration = Help, aiming = Accept} ))
 
       -- Assorted
       , ("space", ([CmdMeta], "clear messages, display history", Clear))
@@ -256,6 +256,18 @@ standardKeys = KeyKind
       , ("safe9", ( [CmdInternal]
                   , "accept target"
                   , Accept ))
+      , ("safe11", ( [CmdInternal]
+                   , "grab items or ascend"
+                   , exploreGrabAscendCmd ))
+      , ("safe12", ( [CmdInternal]
+                   , "switch view to one level higher"
+                   , AimAscend 1 ))
+      , ("safe13", ( [CmdInternal]
+                   , "descend or drop items"
+                   , exploreDescendDropCmd ))
+      , ("safe14", ( [CmdInternal]
+                   , "switch view to one level lower"
+                   , AimAscend (-1) ))
       ]
       ++ map defaultHeroSelect [0..6]
   }
