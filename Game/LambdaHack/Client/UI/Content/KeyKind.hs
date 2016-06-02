@@ -105,13 +105,13 @@ mouseRMB =
           , (CaMap, runToAllCmd)
           , (CaArenaName, Help)
           , (CaPercentSeen, autoexplore100Cmd)
-          , (CaXhairDesc, AimFloor) ]
+          , (CaXhairDesc, projectICmd flingTs) ]
       , aiming = ByArea $ common ++
           [ (CaMapLeader, AimAscend (-1))
           , (CaMap, aimFlingCmd)
           , (CaArenaName, Accept)
           , (CaPercentSeen, XhairStair False)
-          , (CaXhairDesc, projectICmd flingTs) ] } )
+          , (CaXhairDesc, AimFloor) ] } )
  where
   common =
     [ (CaMessage, Macro ["KP_5", "V"])
