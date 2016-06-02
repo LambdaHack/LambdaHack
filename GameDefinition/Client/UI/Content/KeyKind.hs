@@ -55,7 +55,8 @@ standardKeys = KeyKind
 
       -- Item use, 1st part
       , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
-      , ("CTRL-f", replaceDesc "fling without aiming" $ projectI flingTs)
+      , ("CTRL-f", addCmdCategory CmdItemMenu
+                   $ replaceDesc "fling without aiming" $ projectI flingTs)
       , ("a", addCmdCategory CmdItemMenu $ applyI [ApplyItem
                 { verb = "apply"
                 , object = "consumable"

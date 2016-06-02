@@ -685,7 +685,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
   SfxProject aid iid cstore -> do
     setLastSlot aid iid cstore
-    itemAidVerbMU aid "aim" iid (Left $ Just 1) cstore
+    itemAidVerbMU aid "fling" iid (Left $ Just 1) cstore
   SfxCatch aid iid cstore ->
     itemAidVerbMU aid "catch" iid (Left $ Just 1) cstore
   SfxApply aid iid cstore -> do

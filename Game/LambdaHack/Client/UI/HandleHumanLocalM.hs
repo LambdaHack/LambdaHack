@@ -794,11 +794,11 @@ lidOfTarget tgt = case tgt of
     sxhair <- getsClient sxhair
     lidOfTarget $ Just sxhair
 
--- * XHairTgt
+-- * AimTgt
 
 -- | Start aiming, setting xhair to personal leader' target.
 -- To be used in conjuction with other commands.
-aimTgtHuman :: MonadClientUI m => m ()
+aimTgtHuman :: MonadClientUI m => m MError
 aimTgtHuman = do
   -- (Re)start aiming at the current level.
   lidV <- viewedLevelUI
@@ -808,6 +808,7 @@ aimTgtHuman = do
   tgt <- getsClient $ getTarget leader
   modifyClient $ \cli -> cli {sxhair = fromMaybe (sxhair cli) tgt}
   doLook
+  failMsg "aiming started"
 
 -- * AimFloor
 
