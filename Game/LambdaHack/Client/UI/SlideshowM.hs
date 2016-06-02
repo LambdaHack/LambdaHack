@@ -134,7 +134,8 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                         _ -> return (ckm, pointer)
                   K.Space | pointer + pageLen - ixOnPage <= maxIx ->
                     page (pointer + pageLen - ixOnPage)
-                  K.Unknown "Space" | pointer + pageLen - ixOnPage <= maxIx ->
+                  K.Unknown "SAFE_SPACE"
+                    | pointer + pageLen - ixOnPage <= maxIx ->
                     page (pointer + pageLen - ixOnPage)
                   _ | ikm `elem` keys ->
                     return (Left ikm, pointer)
@@ -156,7 +157,7 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                   _ | K.key ikm `elem` [K.PgDn, K.WheelSouth] ->
                     page (min maxIx (pointer + pageLen - ixOnPage))
                   K.Space -> ignoreKey
-                  K.Unknown "Space" -> ignoreKey
+                  K.Unknown "SAFE_SPACE" -> ignoreKey
                   _ -> assert `failure` "unknown key" `twith` ikm
           pkm <- promptGetKey dm ov1 sfBlank legalKeys
           interpretKey pkm
