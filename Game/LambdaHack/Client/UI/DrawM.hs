@@ -49,6 +49,7 @@ import qualified NLP.Miniutter.English as MU
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Text, Maybe Text)
 targetDesc target = do
+  arena <- getArenaUI
   lidV <- viewedLevelUI
   mleader <- getsClient _sleader
   case target of
@@ -65,13 +66,13 @@ targetDesc target = do
           hpIndicator = if bfid b == side then Nothing else Just stars
       return (bname b, hpIndicator)
     Just (TEnemyPos _ lid p _) -> do
-      let hotText = if lid == lidV
+      let hotText = if lid == lidV && arena == lidV
                     then "hot spot" <+> tshow p
                     else "a hot spot on level" <+> tshow (abs $ fromEnum lid)
       return (hotText, Nothing)
     Just (TPoint lid p) -> do
       pointedText <-
-        if lid == lidV
+        if lid == lidV && arena == lidV
         then do
           bag <- getsState $ getCBag (CFloor lid p)
           case EM.assocs bag of
