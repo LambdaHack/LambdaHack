@@ -90,7 +90,7 @@ keyHelp Binding{..} offset = assert (offset > 0) $
       , "The best item to attack with is automatically chosen from among"
       , "weapons in your personal equipment and your unwounded organs."
       , ""
-      , "Press SPACE to see the minimal command set."
+      , "Press SPACE or scroll the mouse wheel to see the minimal command set."
       ]
     minimalBlurb =
       [ "The following minimal command set lets you accomplish anything in the game,"
@@ -121,8 +121,8 @@ keyHelp Binding{..} offset = assert (offset > 0) $
     lastHelpBlurb =
       [ ""
       , "For more playing instructions see file PLAYING.md."
-      , "Press PGUP to return to previous pages"
-      , "and SPACE or ESC to see the map again."
+      , "Press PGUP or scroll the mouse wheel to return to previous pages"
+      , "and press SPACE or ESC to see the map again."
       ]
     keyL = 11
     pickLeaderDescription =
