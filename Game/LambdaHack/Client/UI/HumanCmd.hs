@@ -98,7 +98,6 @@ data HumanCmd =
   | RunDir !Vector
   | RunOnceAhead
   | MoveOnceToXhair
-  | RunOnceToXhair
   | ContinueToXhair
   | MoveItem ![CStore] !CStore !(Maybe MU.Part) !MU.Part !Bool
   | Project     ![Trigger]
@@ -169,7 +168,6 @@ noRemoteHumanCmd cmd = case cmd of
   Apply{}       -> True
   AlterDir{}    -> True
   MoveOnceToXhair -> True
-  RunOnceToXhair  -> True
   ContinueToXhair -> True
   _             -> False
 

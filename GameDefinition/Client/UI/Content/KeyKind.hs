@@ -224,7 +224,7 @@ standardKeys = KeyKind
                            , MoveOnceToXhair ))
       , ("CTRL-colon", ( [CmdNoHelp]
                        , "move collectively one step towards the crosshair"
-                       , RunOnceToXhair ))
+                       , MoveOnceToXhair ))
       , ("CTRL-period", ( [CmdNoHelp]
                         , "continue towards the crosshair"
                         , ContinueToXhair ))

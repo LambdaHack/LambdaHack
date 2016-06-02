@@ -59,7 +59,6 @@ cmdAction cmd = case cmd of
   RunDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True True True v)
   RunOnceAhead -> runOnceAheadHuman
   MoveOnceToXhair -> weaveJust <$> (ReqUITimed <$$> moveOnceToXhairHuman)
-  RunOnceToXhair  -> weaveJust <$> (ReqUITimed <$$> runOnceToXhairHuman)
   ContinueToXhair -> weaveJust <$> (ReqUITimed <$$> continueToXhairHuman)
   MoveItem cLegalRaw toCStore mverb _ auto ->
     weaveJust <$> (timedToUI <$$> moveItemHuman cLegalRaw toCStore mverb auto)

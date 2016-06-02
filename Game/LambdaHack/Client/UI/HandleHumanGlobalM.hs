@@ -11,8 +11,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , composeIfLocalHuman, composeUnlessErrorHuman, loopOnNothingHuman
     -- * Global commands that usually take time
   , waitHuman, moveRunHuman
-  , runOnceAheadHuman, moveOnceToXhairHuman
-  , runOnceToXhairHuman, continueToXhairHuman
+  , runOnceAheadHuman, moveOnceToXhairHuman, continueToXhairHuman
   , moveItemHuman, projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , helpHuman, itemMenuHuman, chooseItemMenuHuman, mainMenuHuman
   , gameDifficultyIncr
@@ -440,11 +439,10 @@ runOnceAheadHuman = do
 -- * MoveOnceToXhair
 
 moveOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
-moveOnceToXhairHuman = goToXhair True False
+moveOnceToXhairHuman = goToXhair True
 
-goToXhair :: MonadClientUI m
-           => Bool -> Bool -> m (FailOrCmd RequestAnyAbility)
-goToXhair initialStep run = do
+goToXhair :: MonadClientUI m => Bool -> m (FailOrCmd RequestAnyAbility)
+goToXhair initialStep = do
   aimMode <- getsSession saimMode
   -- Movement is legal only outside aiming mode.
   if isJust aimMode then failWith "cannot move in aiming mode"
@@ -468,9 +466,8 @@ goToXhair initialStep run = do
             case runOutcome of
               Left stopMsg -> failWith stopMsg
               Right (finalGoal, dir) ->
-                moveRunHuman initialStep finalGoal run False dir
+                moveRunHuman initialStep finalGoal False False dir
           _ -> do
-            let !_A = assert (initialStep || not run) ()
             (_, mpath) <- getCacheBfsAndPath leader c
             case mpath of
               Nothing -> failWith "no route to crosshair"
@@ -478,7 +475,7 @@ goToXhair initialStep run = do
               Just (p1 : _) -> do
                 let finalGoal = p1 == c
                     dir = towards (bpos b) p1
-                moveRunHuman initialStep finalGoal run False dir
+                moveRunHuman initialStep finalGoal False False dir
 
 multiActorGoTo :: MonadClientUI m
                => LevelId -> Point -> RunParams
@@ -520,17 +517,12 @@ multiActorGoTo arena c paramOld =
                 -- to avoid cycles. When all wait for each other, fail.
                 multiActorGoTo arena c paramNew{runWaiting=runWaiting + 1}
               _ ->
-                 return $ Left "actor in the way"
-
--- * RunOnceToXhair
-
-runOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
-runOnceToXhairHuman = goToXhair True True
+                return $ Left "actor in the way"
 
 -- * ContinueToXhair
 
 continueToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
-continueToXhairHuman = goToXhair False False{-irrelevant-}
+continueToXhairHuman = goToXhair False
 
 -- * MoveItem
 
