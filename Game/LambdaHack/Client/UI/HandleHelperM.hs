@@ -147,7 +147,8 @@ itemIsFound :: MonadClientUI m => ItemId -> ActorId -> CStore -> m Text
 itemIsFound iid leader storeLeader = do
   b <- getsState $ getActorBody leader
   found <- getsState $ findIid leader (bfid b) iid
-  let !_A = assert (not (null found) `blame` (iid, leader)) ()
+  let !_A = assert (not (null found) || storeLeader == CGround
+                    `blame` (iid, leader)) ()
       ppLoc (_, CSha) = MU.Text $ ppCStoreIn CSha <+> "of the party"
       ppLoc (b2, store) = MU.Text $ ppCStoreIn store <+> "of"
                                                      <+> bname b2
