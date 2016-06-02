@@ -89,7 +89,7 @@ standardKeys = KeyKind
                       , "go to crosshair for 100 steps"
                       , Macro ["CTRL-semicolon", "CTRL-period", "V"] ))
       , ("colon", ( [CmdMove]
-                  , "go to crosshair collectively for 100 steps"
+                  , "run to crosshair collectively for 100 steps"
                   , Macro ["CTRL-colon", "CTRL-period", "V"] ))
       , ("x", ( [CmdMove]
               , "explore nearest unknown spot"
@@ -224,7 +224,7 @@ standardKeys = KeyKind
                            , "move one step towards the crosshair"
                            , MoveOnceToXhair ))
       , ("CTRL-colon", ( [CmdNoHelp]
-                       , "move collectively one step towards the crosshair"
+                       , "run collectively one step towards the crosshair"
                        , RunOnceToXhair ))
       , ("CTRL-period", ( [CmdNoHelp]
                         , "continue towards the crosshair"
@@ -234,8 +234,8 @@ standardKeys = KeyKind
                   , "go to pointer for 100 steps"
                   , goToCmd ))
       , ("safe2", ( [CmdInternal]
-                  , "go to pointer collectively"
-                  , goToAllCmd ))
+                  , "run to pointer collectively"
+                  , runToAllCmd ))
       , ("safe3", ( [CmdInternal]
                   , "pick new leader on screen"
                   , PickLeaderWithPointer ))
