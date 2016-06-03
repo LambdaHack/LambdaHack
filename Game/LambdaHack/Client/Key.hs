@@ -44,6 +44,7 @@ data Key =
   | Home
   | KP !Char      -- ^ a keypad key for a character (digits and operators)
   | Char !Char    -- ^ a single printable character
+  | Fun !Int      -- ^ function key
   | LeftButtonPress    -- ^ left mouse button pressed
   | MiddleButtonPress  -- ^ middle mouse button pressed
   | RightButtonPress   -- ^ right mouse button pressed
@@ -105,6 +106,7 @@ showKey Insert   = "INS"
 showKey Delete   = "DELETE"
 showKey (KP c)   = "KP_" <> T.singleton c
 showKey (Char c) = T.singleton c
+showKey (Fun n) = "F" <> tshow n
 showKey LeftButtonPress = "LMB-PRESS"
 showKey MiddleButtonPress = "MMB-PRESS"
 showKey RightButtonPress = "RMB-PRESS"
@@ -340,6 +342,7 @@ keyTranslate "KP_Insert"     = Insert
 keyTranslate "Delete"        = Delete
 keyTranslate "KP_Delete"     = Delete
 keyTranslate "KP_Enter"      = Return
+keyTranslate "F1"            = Fun 1
 keyTranslate "LeftButtonPress" = LeftButtonPress
 keyTranslate "MiddleButtonPress" = MiddleButtonPress
 keyTranslate "RightButtonPress" = RightButtonPress
@@ -411,6 +414,7 @@ keyTranslateWeb "Add"        _ = Char '+'
 keyTranslateWeb "Subtract"   _ = Char '-'
 keyTranslateWeb "Divide"     False = Char '/'
 keyTranslateWeb "Divide"     True = KP '/'
+keyTranslateWeb "F1"         _ = Fun 1
 -- dead keys
 keyTranslateWeb "Dead"        _ = DeadKey
 keyTranslateWeb "Shift"       _ = DeadKey

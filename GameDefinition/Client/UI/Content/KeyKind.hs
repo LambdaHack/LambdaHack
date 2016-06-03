@@ -195,6 +195,7 @@ standardKeys = KeyKind
       -- Assorted
       , ("space", ([CmdMeta], "clear messages, display history", Clear))
       , ("?", ([CmdMeta], "display Help", Help))
+      , ("F1", ([CmdNoHelp], "", Help))
       , ("Tab", ( [CmdMeta]
                 , "cycle among party members on the level"
                 , MemberCycle ))
