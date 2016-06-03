@@ -36,7 +36,6 @@ import Game.LambdaHack.Client.UI.FrameM
 import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.HandleHumanM
-import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.Msg
@@ -126,8 +125,7 @@ humanCommand = do
           -- Look up the key.
           Binding{bcmdMap} <- getsSession sbinding
           case km `M.lookup` bcmdMap of
-            Just (cats, _, cmd) | CmdMainMenu `notElem` cats
-                                  && CmdSettingsMenu `notElem` cats -> do
+            Just (_, _, cmd) -> do
               modifySession $ \sess -> sess
                 {swaitTimes = if swaitTimes sess > 0
                               then - swaitTimes sess
