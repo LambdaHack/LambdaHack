@@ -116,7 +116,7 @@ getReportUI = do
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
       promptAI = toPrompt $ toAttrLine $ "[press any key for Main Menu]"
-  return $! if underAI then consReport promptAI report else report
+  return $! if underAI then consReportNoScrub promptAI report else report
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
