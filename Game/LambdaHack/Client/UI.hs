@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI
   , KeyKind, SessionUI(..)
   , ChanFrontend, chanFrontend, frontendShutdown
     -- * Operations exposed for LoopClient
-  , ColorMode(..), displayMore, msgAdd, promptAdd
+  , ColorMode(..), reportToSlideshow, getConfirms, msgAdd, promptAdd
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , humanCommand

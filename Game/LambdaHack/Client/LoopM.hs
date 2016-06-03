@@ -14,6 +14,7 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.HandleResponseM
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolM
 import Game.LambdaHack.Client.State
@@ -138,10 +139,10 @@ loopUI copsClient sconfig sdebugCli = do
       handleResponseUI cmd1
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
   fact <- getsState $ (EM.! side) . sfactionD
-  when (isAIFact fact) $
+  when (isAIFact fact) $ do
     -- Prod the frontend to flush frames and start showing then continuously.
-    displayMore ColorFull
-      "The team is under AI control (press any key to stop)."
+    slides <- reportToSlideshow []
+    void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
   -- State and client state now valid.
   debugPrint $ "UI client" <+> tshow side <+> "started."
   loop
