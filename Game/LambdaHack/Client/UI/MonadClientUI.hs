@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
                  )
     -- * Assorted primitives
   , mapStartY, displayFrames
-  , setFrontAutoYes, anyKeyPressed, discardPressedKey, addPressedKey
+  , setFrontAutoYes, anyKeyPressed, discardPressedKey, addPressedEsc
   , connFrontendFrontKey, frontendShutdown, chanFrontend
   , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
   , leaderTgtToPos, leaderTgtAims, xhairToPos
@@ -102,6 +102,10 @@ discardPressedKey = connFrontend FrontDiscard
 
 addPressedKey :: MonadClientUI m => KMP -> m ()
 addPressedKey = connFrontend . FrontAdd
+
+addPressedEsc :: MonadClientUI m => m ()
+addPressedEsc = addPressedKey$ KMP { kmpKeyMod = K.escKM
+                                   , kmpPointer = originPoint }
 
 frontendShutdown :: MonadClientUI m => m ()
 frontendShutdown = connFrontend FrontShutdown

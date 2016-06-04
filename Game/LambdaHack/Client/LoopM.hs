@@ -118,9 +118,7 @@ loopUI copsClient sconfig sdebugCli = do
   side <- getsClient sside
   cmd1 <- receiveResponse
   case (restored, cmd1) of
-    (True, RespUpdAtomicUI UpdResume{}) -> do
-      mode <- getGameMode
-      promptAdd $ mdesc mode  -- the long description of the mode
+    (True, RespUpdAtomicUI UpdResume{}) ->
       handleResponseUI cmd1
     (True, RespUpdAtomicUI UpdRestart{}) -> do
       msgAdd $
@@ -139,10 +137,16 @@ loopUI copsClient sconfig sdebugCli = do
       handleResponseUI cmd1
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
   fact <- getsState $ (EM.! side) . sfactionD
-  when (isAIFact fact) $ do
+  if isAIFact fact then do
     -- Prod the frontend to flush frames and start showing then continuously.
     slides <- reportToSlideshow []
     void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
+  else do
+    mode <- getGameMode
+    promptAdd $ mdesc mode <+> "Are you up for the challenge?"
+    slides <- reportToSlideshow [K.spaceKM, K.escKM]
+    km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
+    if km == K.escKM then addPressedEsc else promptAdd "Prove yourself!"
   -- State and client state now valid.
   debugPrint $ "UI client" <+> tshow side <+> "started."
   loop

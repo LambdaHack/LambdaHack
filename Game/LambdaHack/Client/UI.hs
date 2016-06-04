@@ -12,7 +12,8 @@ module Game.LambdaHack.Client.UI
   , KeyKind, SessionUI(..)
   , ChanFrontend, chanFrontend, frontendShutdown
     -- * Operations exposed for LoopClient
-  , ColorMode(..), reportToSlideshow, getConfirms, msgAdd, promptAdd
+  , ColorMode(..)
+  , reportToSlideshow, getConfirms, msgAdd, promptAdd, addPressedEsc
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , humanCommand
@@ -47,7 +48,6 @@ import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Client.UI.SlideshowM
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
@@ -63,7 +63,7 @@ queryUI = do
     keyPressed <- anyKeyPressed
     if keyPressed then do
       discardPressedKey
-      addPressedKey KMP {kmpKeyMod = K.escKM, kmpPointer = originPoint}
+      addPressedEsc
       if fleaderMode (gplayer fact) /= LeaderNull then
         return ReqUIAutomate  -- stop AI
       else return ReqUINop  -- TODO: somehow stop? restart?

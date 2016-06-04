@@ -128,7 +128,6 @@ instance Binary SessionUI where
     put shistory
     put smarkVision
     put smarkSmell
-    put smenuIxMain
     put smenuIxSettings
     put smenuIxHelp
     put smenuIxHistory
@@ -143,7 +142,6 @@ instance Binary SessionUI where
     shistory <- get
     smarkVision <- get
     smarkSmell <- get
-    smenuIxMain <- get
     smenuIxSettings <- get
     smenuIxHelp <- get
     smenuIxHistory <- get
@@ -155,6 +153,7 @@ instance Binary SessionUI where
         slastPlay = []
         slastLost = ES.empty
         swaitTimes = 0
+        smenuIxMain = 0
         skeysHintMode = KeysHintAbsent
     return $! SessionUI{..}
 
