@@ -38,9 +38,6 @@ cmdHumanSem cmd =
 cmdAction :: MonadClientUI m
           => HumanCmd -> m (Either MError RequestUI)
 cmdAction cmd = case cmd of
-  ReplaceFail failureMsg cmd1 ->
-    cmdAction cmd1 >>= either (const $ weaveJust <$> failWith failureMsg)
-                              (return . Right)
   Macro kms -> addNoError $ macroHuman kms
   ByArea l -> byAreaHuman cmdAction l
   ByAimMode{..} ->

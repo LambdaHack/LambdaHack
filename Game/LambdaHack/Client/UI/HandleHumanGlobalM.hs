@@ -165,7 +165,11 @@ composeIfLocalHuman :: MonadClientUI m
 composeIfLocalHuman c1 c2 = do
   slideOrCmd1 <- c1
   case slideOrCmd1 of
-    Left _merr -> c2
+    Left merr1 -> do
+      slideOrCmd2 <- c2
+      case slideOrCmd2 of
+        Left merr2 -> return $ Left $ mergeMError merr1 merr2
+        _ -> return slideOrCmd2
     _ -> return slideOrCmd1
 
 -- * ComposeUnlessError

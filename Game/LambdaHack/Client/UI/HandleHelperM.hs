@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.HandleHelperM
   ( MError, FailOrCmd
   , failError  -- TODO: remove
-  , showFailError, failWith, failSer, failMsg, weaveJust
+  , showFailError, mergeMError, failWith, failSer, failMsg, weaveJust
   , memberCycle, memberBack, partyAfterLeader, pickLeader
   , itemIsFound, itemOverlay, statsOverlay, pickNumber
   ) where
@@ -51,6 +51,13 @@ showFailError :: FailError -> Text
 showFailError (FailError err) = "*" <> err <> "*"
 
 type MError = Maybe FailError
+
+mergeMError :: MError -> MError -> MError
+mergeMError Nothing Nothing = Nothing
+mergeMError merr1@Just{} Nothing = merr1
+mergeMError Nothing merr2@Just{} = merr2
+mergeMError (Just err1) (Just err2) =
+  Just $ FailError $ failError err1 <+> "and" <+> failError err2
 
 type FailOrCmd a = Either FailError a
 

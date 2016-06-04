@@ -162,7 +162,7 @@ grabAscendCmd = ByAimMode
   , aiming = AimAscend 1 }
 
 exploreGrabAscendCmd :: HumanCmd
-exploreGrabAscendCmd = ReplaceFail "cannot grab items nor ascend" $
+exploreGrabAscendCmd =
   ComposeIfLocal
     (MoveItem [CGround] CEqp (Just "grab") "items" True)
     (TriggerTile
@@ -182,7 +182,7 @@ descendDropCmd = ByAimMode
   , aiming = AimAscend (-1) }
 
 exploreDescendDropCmd :: HumanCmd
-exploreDescendDropCmd = ReplaceFail "cannot descend nor drop items" $
+exploreDescendDropCmd =
   ComposeIfLocal
     (TriggerTile
        [ TriggerFeature { verb = "descend"

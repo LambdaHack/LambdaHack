@@ -83,8 +83,7 @@ type CmdTriple = ([CmdCategory], Text, HumanCmd)
 -- | Abstract syntax of player commands.
 data HumanCmd =
     -- Meta.
-    ReplaceFail !Text !HumanCmd
-  | Macro ![String]
+    Macro ![String]
   | ByArea ![(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
   | ByAimMode {exploration :: !HumanCmd, aiming :: !HumanCmd}
   | ByItemMode {notChosen :: !HumanCmd, chosen :: !HumanCmd}
