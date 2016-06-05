@@ -288,44 +288,11 @@ handleActors lid = do
         cmdS <- sendQueryUI side aid
         -- TODO: check that the command is legal first, report and reject,
         -- but do not crash (currently server asserts things and crashes)
-        (aidNew, action) <- handleRequestUI side cmdS
-        maybe (return ()) (setBWait cmdS) aidNew
-        -- We exchange times of the old and new leader.
-        -- This permits an abuse, because a slow tank can be moved fast
-        -- by alternating between it and many fast actors (until all of them
-        -- get slowed down by this and none remain). But at least the sum
-        -- of all times of a faction is conserved. And we avoid double moves
-        -- against the UI player caused by his leader changes. There may still
-        -- happen double moves caused by AI leader changes, but that's rare.
-        -- The flip side is the possibility of multi-moves of the UI player
-        -- as in the case of the tank.
-        -- Warning: when the action is performed on the server,
-        -- the time of the actor is different than when client prepared that
-        -- action, so any client checks involving time should discount this.
-        when (aidIsLeader && Just aid /= aidNew) $
-          maybe (return ()) (swapTime aid) aidNew
-        maybe (return ()) advanceTime aidNew
-        action
-        maybe (return ()) managePerTurn aidNew
+        handleRequestUI side cmdS
       else do
         cmdS <- sendQueryAI side aid
-        (aidNew, action) <- handleRequestAI side aid cmdS
-        setBWait cmdS aidNew
-        -- AI always takes time and so doesn't loop.
-        advanceTime aidNew
-        action
-        managePerTurn aidNew
+        handleRequestAI side aid cmdS
       handleActors lid
-
-setBWait :: (MonadAtomic m, Foldable f)
-         => f RequestAnyAbility -> ActorId -> m ()
-setBWait cmd aidNew = do
-  let hasWait = any hasReqWait cmd
-      hasReqWait (RequestAnyAbility ReqWait{}) = True
-      hasReqWait _ = False
-  bPre <- getsState $ getActorBody aidNew
-  when (hasWait /= bwait bPre) $
-    execUpdAtomic $ UpdWaitActor aidNew hasWait
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do

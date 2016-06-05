@@ -42,43 +42,57 @@ import Game.LambdaHack.Server.CommonM
 import Game.LambdaHack.Server.HandleEffectM
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
+import Game.LambdaHack.Server.PeriodicM
 import Game.LambdaHack.Server.State
 
--- | The semantics of server commands. The resulting actor id
--- is of the actor that carried out the request.
+-- | The semantics of server commands.
+-- AI always takes time and so doesn't loop.
 handleRequestAI :: (MonadAtomic m, MonadServer m)
-                => FactionId -> ActorId -> RequestAI -> m (ActorId, m ())
+                => FactionId -> ActorId -> RequestAI -> m ()
 handleRequestAI fid aid cmd = case cmd of
-  ReqAITimed (RequestAnyAbility cmdT) ->
-    return (aid, handleRequestTimed aid cmdT)
+  ReqAITimed (RequestAnyAbility cmdT) -> handleRequestTimed aid cmdT
   ReqAILeader aidNew mtgtNew cmd2 -> do
     switchLeader fid aidNew mtgtNew
     handleRequestAI fid aidNew cmd2
 
--- | The semantics of server commands. The resulting actor id
--- is of the actor that carried out the request. @Nothing@ means
--- the command took no time.
+-- | The semantics of server commands. Only the first two cases take time.
 handleRequestUI :: (MonadAtomic m, MonadServer m)
-                => FactionId -> RequestUI -> m (Maybe ActorId, m ())
+                => FactionId -> RequestUI -> m ()
 handleRequestUI fid cmd = case cmd of
   ReqUITimed (RequestAnyAbility cmdT) -> do
     fact <- getsState $ (EM.! fid) . sfactionD
     let (aid, _) = fromMaybe (assert `failure` fact) $ gleader fact
-    return (Just aid, handleRequestTimed aid cmdT)
+    handleRequestTimed aid cmdT
   ReqUILeader aidNew mtgtNew cmd2 -> do
     switchLeader fid aidNew mtgtNew
     handleRequestUI fid cmd2
-  ReqUIGameRestart aid t d names ->
-    return (Nothing, reqGameRestart aid t d names)
-  ReqUIGameExit aid -> return (Nothing, reqGameExit aid)
-  ReqUIGameSave -> return (Nothing, reqGameSave)
-  ReqUITactic toT -> return (Nothing, reqTactic fid toT)
-  ReqUIAutomate -> return (Nothing, reqAutomate fid)
-  ReqUINop -> return (Nothing, return ())
+  ReqUIGameRestart aid t d names -> reqGameRestart aid t d names
+  ReqUIGameExit aid -> reqGameExit aid
+  ReqUIGameSave -> reqGameSave
+  ReqUITactic toT -> reqTactic fid toT
+  ReqUIAutomate -> reqAutomate fid
+  ReqUINop -> return ()
+
+setBWait :: (MonadAtomic m) => RequestTimed a -> ActorId -> m ()
+setBWait cmd aidNew = do
+  let hasReqWait ReqWait{} = True
+      hasReqWait _ = False
+      hasWait = hasReqWait cmd
+  bPre <- getsState $ getActorBody aidNew
+  when (hasWait /= bwait bPre) $
+    execUpdAtomic $ UpdWaitActor aidNew hasWait
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
                    => ActorId -> RequestTimed a -> m ()
-handleRequestTimed aid cmd = case cmd of
+handleRequestTimed aid cmd = do
+  setBWait cmd aid
+  advanceTime aid
+  handleRequestTimedCases aid cmd
+  managePerTurn aid
+
+handleRequestTimedCases :: (MonadAtomic m, MonadServer m)
+                        => ActorId -> RequestTimed a -> m ()
+handleRequestTimedCases aid cmd = case cmd of
   ReqMove target -> reqMove aid target
   ReqMelee target iid cstore -> reqMelee aid target iid cstore
   ReqDisplace target -> reqDisplace aid target
@@ -112,8 +126,23 @@ switchLeader fid aidNew mtgtNew = do
        execFailure aidNew ReqWait{-hack-} NoChangeDunLeader
      | actorChanged && autoLvl ->
        execFailure aidNew ReqWait{-hack-} NoChangeLvlLeader
-     | otherwise ->
+     | otherwise -> do
        execUpdAtomic $ UpdLeadFaction fid mleader (Just (aidNew, mtgtNew))
+       -- We exchange times of the old and new leader.
+       -- This permits an abuse, because a slow tank can be moved fast
+       -- by alternating between it and many fast actors (until all of them
+       -- get slowed down by this and none remain). But at least the sum
+       -- of all times of a faction is conserved. And we avoid double moves
+       -- against the UI player caused by his leader changes. There may still
+       -- happen double moves caused by AI leader changes, but that's rare.
+       -- The flip side is the possibility of multi-moves of the UI player
+       -- as in the case of the tank.
+       -- Warning: when the action is performed on the server,
+       -- the time of the actor is different than when client prepared that
+       -- action, so any client checks involving time should discount this.
+       case mleader of
+         Just (aidOld, _) | aidOld /= aidNew -> swapTime aidOld aidNew
+         _ -> return ()
 
 -- * ReqMove
 

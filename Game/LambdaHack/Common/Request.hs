@@ -1,5 +1,4 @@
-{-# LANGUAGE DataKinds, DeriveFoldable, GADTs, KindSignatures,
-             StandaloneDeriving #-}
+{-# LANGUAGE DataKinds, GADTs, KindSignatures, StandaloneDeriving #-}
 -- | Abstract syntax of server commands.
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
@@ -35,7 +34,6 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 data RequestAIF r =
     ReqAITimed !r
   | ReqAILeader !ActorId !(Maybe Target) !RequestAI
-  deriving Foldable
 
 type RequestAI = RequestAIF RequestAnyAbility
 
@@ -51,7 +49,6 @@ data RequestUIF r =
   | ReqUITactic !Tactic
   | ReqUIAutomate
   | ReqUINop
-  deriving Foldable
 
 type RequestUI = RequestUIF RequestAnyAbility
 
