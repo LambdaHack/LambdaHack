@@ -38,8 +38,7 @@ queryAI oldAid = do
   let mleader = gleader fact
       wasLeader = fmap fst mleader == Just oldAid
   (aidToMove, bToMove) <- pickActorToMove refreshTarget oldAid
-  RequestAnyAbility reqAny <- pickAction (aidToMove, bToMove)
-  let req = ReqAITimed $ RequestAnyAbility reqAny
+  req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
   mtgt2 <- getsClient $ fmap fst . EM.lookup aidToMove . stargetD
   if wasLeader && mleader /= Just (aidToMove, mtgt2)
     then return $! ReqAILeader aidToMove mtgt2 req

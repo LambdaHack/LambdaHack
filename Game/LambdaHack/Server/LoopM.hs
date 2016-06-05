@@ -270,7 +270,13 @@ handleActors lid = do
               ReqUINop -> return ()
               _ -> assert `failure` cmdS  -- TODO: handle more
             fact2 <- getsState $ (EM.! side) . sfactionD
-            return $! not $ isAIFact fact2
+            if isAIFact fact2 then do
+              -- Clear messages in the UI client if it's AI-controlled.
+              -- We could record history more often, to avoid long reports,
+              -- but we'd have to add -more- prompts.
+              execUpdAtomic $ UpdRecordHistory side
+              return False
+            else return True
           else return True
         else return False
       if isJust $ btrajectory body then do
@@ -284,17 +290,7 @@ handleActors lid = do
         -- but do not crash (currently server asserts things and crashes)
         (aidNew, action) <- handleRequestUI side cmdS
         maybe (return ()) (setBWait cmdS) aidNew
-        -- Advance time once, after the leader switched perhaps many times.
-        -- The following was true before, but now we badly want to avoid double
-        -- moves against the UI player (especially deadly when using stairs),
-        -- so this is no longer true:
-          -- Sometimes this may result in a double move of the new leader,
-          -- followed by a double pause. Or a fractional variant of that.
-          -- In this setup, reading a scroll of Previous Leader is a free action
-          -- for the old leader, but otherwise his time is undisturbed.
-          -- He is able to move normally in the same turn, immediately
-          -- after the new leader completes his move.
-        -- So now we exchange times of the old and new leader.
+        -- We exchange times of the old and new leader.
         -- This permits an abuse, because a slow tank can be moved fast
         -- by alternating between it and many fast actors (until all of them
         -- get slowed down by this and none remain). But at least the sum
@@ -302,7 +298,7 @@ handleActors lid = do
         -- against the UI player caused by his leader changes. There may still
         -- happen double moves caused by AI leader changes, but that's rare.
         -- The flip side is the possibility of multi-moves of the UI player
-        -- as in the case of the tank, but at least the sum of times is OK.
+        -- as in the case of the tank.
         -- Warning: when the action is performed on the server,
         -- the time of the actor is different than when client prepared that
         -- action, so any client checks involving time should discount this.
@@ -312,12 +308,6 @@ handleActors lid = do
         action
         maybe (return ()) managePerTurn aidNew
       else do
-        -- Clear messages in the UI client (if any), if the actor
-        -- is a leader (which happens when a UI client is fully
-        -- computer-controlled) or if faction is leaderless.
-        -- We could record history more often, to avoid long reports,
-        -- but we'd have to add -more- prompts.
-        when mainUIactor $ execUpdAtomic $ UpdRecordHistory side
         cmdS <- sendQueryAI side aid
         (aidNew, action) <- handleRequestAI side aid cmdS
         setBWait cmdS aidNew
