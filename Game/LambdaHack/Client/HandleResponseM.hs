@@ -36,6 +36,9 @@ handleResponseAI cmd = case cmd of
   RespQueryAI aid -> do
     cmdC <- queryAI aid
     sendRequest cmdC
+  RespNonLeaderQueryAI aid -> do
+    cmdC <- queryAI aid  -- TODO
+    sendRequest cmdC
 
 handleResponseUI :: ( MonadClientSetup m
                     , MonadClientUI m

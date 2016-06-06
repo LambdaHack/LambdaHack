@@ -261,36 +261,31 @@ handleActors lid = do
           mainUIactor = fhasUI (gplayer fact)
                         && (aidIsLeader
                             || fleaderMode (gplayer fact) == LeaderNull)
-      queryUI <-
-        if mainUIactor then do
-          if isAIFact fact then do
-            cmdS <- sendQueryUI side aid
-            case fst cmdS of
-              ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
-              ReqUINop -> return ()
-              _ -> assert `failure` cmdS  -- TODO: handle more
-            fact2 <- getsState $ (EM.! side) . sfactionD
-            if isAIFact fact2 then do
-              -- Clear messages in the UI client if it's AI-controlled,
-              -- regardless if leaderless or not.
-              execUpdAtomic $ UpdRecordHistory side
-              return False
-            else return True
-          else return True
-        else return False
-      if isJust $ btrajectory body then do
-        setTrajectory aid
-        b2 <- getsState $ getActorBody aid
-        unless (bproj b2 && actorDying b2) $
-          advanceTime aid
-      else if queryUI then do
+      when (mainUIactor && isAIFact fact) $ do
         cmdS <- sendQueryUI side aid
-        -- TODO: check that the command is legal first, report and reject,
-        -- but do not crash (currently server asserts things and crashes)
-        handleRequestUI side aid cmdS
-      else do
-        cmdS <- sendQueryAI side aid
-        handleRequestAI side aid cmdS
+        case fst cmdS of
+          ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
+          ReqUINop -> return ()
+          _ -> assert `failure` cmdS  -- TODO: handle more
+        -- Clear messages in the UI client, regardless if leaderless or not.
+        execUpdAtomic $ UpdRecordHistory side
+      let queryUI = mainUIactor && not (isAIFact fact)
+      if | isJust $ btrajectory body -> do
+           setTrajectory aid
+           b2 <- getsState $ getActorBody aid
+           unless (bproj b2 && actorDying b2) $
+             advanceTime aid
+         | queryUI -> do
+           cmdS <- sendQueryUI side aid
+           -- TODO: check that the command is legal first, report and reject,
+           -- but do not crash (currently server asserts things and crashes)
+           handleRequestUI side aid cmdS
+         | aidIsLeader -> do
+           cmdS <- sendQueryAI side aid
+           handleRequestAI side aid cmdS
+         | otherwise -> do
+           cmdN <- sendNonLeaderQueryAI side aid
+           handleReqAI side aid cmdN
       handleActors lid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()

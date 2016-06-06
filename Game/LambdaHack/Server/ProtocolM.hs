@@ -13,7 +13,7 @@ module Game.LambdaHack.Server.ProtocolM
       , liftIO  -- exposed only to be implemented, not used
       )
     -- * Protocol
-  , sendUpdateAI, sendQueryAI
+  , sendUpdateAI, sendQueryAI, sendNonLeaderQueryAI
   , sendUpdateUI, sendQueryUI
     -- * Assorted
   , killAllClients, childrenServer, updateConn
@@ -113,6 +113,19 @@ sendQueryAI fid aid = do
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ debugRequestAI aid req
   return $! req
+
+sendNonLeaderQueryAI :: MonadServerReadRequest m
+                     => FactionId -> ActorId -> m ReqAI
+sendNonLeaderQueryAI fid aid = do
+  conn <- getsDict $ snd . (EM.! fid)
+  writeTQueueAI (RespNonLeaderQueryAI aid) $ responseS conn
+  req <- readTQueueAI $ requestS conn
+  case req of
+    (_, Just{}) -> assert `failure` req
+    (cmd, Nothing) -> do
+      debug <- getsServer $ sniffIn . sdebugSer
+      when debug $ debugRequestAI aid req
+      return cmd
 
 sendUpdateUI :: MonadServerReadRequest m
              => FactionId -> ResponseUI -> m ()

@@ -9,7 +9,8 @@
 -- influence the outcome of the evaluation.
 -- TODO: document
 module Game.LambdaHack.Server.HandleRequestM
-  ( handleRequestAI, handleRequestUI, reqMove, reqDisplace
+  ( handleRequestAI, handleReqAI, handleRequestUI
+  , reqMove, reqDisplace
   ) where
 
 import Prelude ()

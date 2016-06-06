@@ -39,6 +39,9 @@ debugResponseAI cmd = case cmd of
   RespQueryAI aid -> do
     d <- debugAid aid "RespQueryAI" cmd
     serverPrint d
+  RespNonLeaderQueryAI aid -> do
+    d <- debugAid aid "RespNonLeaderQueryAI" cmd
+    serverPrint d
 
 debugResponseUI :: MonadServer m => ResponseUI -> m ()
 debugResponseUI cmd = case cmd of
