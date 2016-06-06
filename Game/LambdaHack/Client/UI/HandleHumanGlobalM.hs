@@ -85,9 +85,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- | Pick command depending on area the mouse pointer is in.
 -- The first matching area is chosen. If none match, only interrupt.
 byAreaHuman :: MonadClientUI m
-            => (HumanCmd.HumanCmd -> m (Either MError RequestUI))
+            => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
             -> [(HumanCmd.CmdArea, HumanCmd.HumanCmd)]
-            -> m (Either MError RequestUI)
+            -> m (Either MError ReqUI)
 byAreaHuman cmdAction l = do
   pointer <- getsSession spointer
   let pointerInArea a = do
@@ -141,8 +141,8 @@ areaToRectangles ca = case ca of
 -- * ByAimMode
 
 byAimModeHuman :: MonadClientUI m
-               => m (Either MError RequestUI) -> m (Either MError RequestUI)
-               -> m (Either MError RequestUI)
+               => m (Either MError ReqUI) -> m (Either MError ReqUI)
+               -> m (Either MError ReqUI)
 byAimModeHuman cmdNotAimingM cmdAimingM = do
   aimMode <- getsSession saimMode
   if isNothing aimMode then cmdNotAimingM else cmdAimingM
@@ -150,8 +150,8 @@ byAimModeHuman cmdNotAimingM cmdAimingM = do
 -- * ByItemMode
 
 byItemModeHuman :: MonadClientUI m
-                => m (Either MError RequestUI) -> m (Either MError RequestUI)
-                -> m (Either MError RequestUI)
+                => m (Either MError ReqUI) -> m (Either MError ReqUI)
+                -> m (Either MError ReqUI)
 
 byItemModeHuman cmdNotChosenM cmdChosenM = do
   itemSel <- getsSession sitemSel
@@ -160,8 +160,8 @@ byItemModeHuman cmdNotChosenM cmdChosenM = do
 -- * ComposeIfLeft
 
 composeIfLocalHuman :: MonadClientUI m
-                    => m (Either MError RequestUI) -> m (Either MError RequestUI)
-                    -> m (Either MError RequestUI)
+                    => m (Either MError ReqUI) -> m (Either MError ReqUI)
+                    -> m (Either MError ReqUI)
 composeIfLocalHuman c1 c2 = do
   slideOrCmd1 <- c1
   case slideOrCmd1 of
@@ -175,8 +175,8 @@ composeIfLocalHuman c1 c2 = do
 -- * ComposeUnlessError
 
 composeUnlessErrorHuman :: MonadClientUI m
-                        => m (Either MError RequestUI) -> m (Either MError RequestUI)
-                        -> m (Either MError RequestUI)
+                        => m (Either MError ReqUI) -> m (Either MError ReqUI)
+                        -> m (Either MError ReqUI)
 composeUnlessErrorHuman c1 c2 = do
   slideOrCmd1 <- c1
   case slideOrCmd1 of
@@ -186,8 +186,8 @@ composeUnlessErrorHuman c1 c2 = do
 -- * LoopOnNothing
 
 loopOnNothingHuman :: MonadClientUI m
-                   => m (Either MError RequestUI)
-                   -> m (Either MError RequestUI)
+                   => m (Either MError ReqUI)
+                   -> m (Either MError ReqUI)
 loopOnNothingHuman cmd = do
   res <- cmd
   case res of
@@ -404,7 +404,7 @@ moveSearchAlterAid source dir = do
 
 -- * RunOnceAhead
 
-runOnceAheadHuman :: MonadClientUI m => m (Either MError RequestUI)
+runOnceAheadHuman :: MonadClientUI m => m (Either MError ReqUI)
 runOnceAheadHuman = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -893,8 +893,8 @@ guessTrigger _ _ _ = "never mind"
 
 -- | Display command help.
 helpHuman :: MonadClientUI m
-          => (HumanCmd.HumanCmd -> m (Either MError RequestUI))
-          -> m (Either MError RequestUI)
+          => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+          -> m (Either MError ReqUI)
 helpHuman cmdAction = do
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV  -- TODO: screen length or viewLevel
@@ -918,8 +918,8 @@ helpHuman cmdAction = do
 -- * ItemMenu
 
 itemMenuHuman :: MonadClientUI m
-              => (HumanCmd.HumanCmd -> m (Either MError RequestUI))
-              -> m (Either MError RequestUI)
+              => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+              -> m (Either MError ReqUI)
 itemMenuHuman cmdAction = do
   itemSel <- getsSession sitemSel
   case itemSel of
@@ -964,9 +964,9 @@ itemMenuHuman cmdAction = do
 -- * ChooseItemMenu
 
 chooseItemMenuHuman :: MonadClientUI m
-                    => (HumanCmd.HumanCmd -> m (Either MError RequestUI))
+                    => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
                     -> ItemDialogMode
-                    -> m (Either MError RequestUI)
+                    -> m (Either MError ReqUI)
 chooseItemMenuHuman cmdAction c = do
   (res, c2) <- chooseItemDialogMode c
   case res of
@@ -982,8 +982,8 @@ chooseItemMenuHuman cmdAction c = do
 -- TODO: avoid String
 -- | Display the main menu.
 mainMenuHuman :: MonadClientUI m
-              => (HumanCmd.HumanCmd -> m (Either MError RequestUI))
-              -> m (Either MError RequestUI)
+              => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+              -> m (Either MError ReqUI)
 mainMenuHuman cmdAction = do
   Kind.COps{corule} <- getsState scops
   Binding{bcmdList} <- getsSession sbinding
@@ -1069,7 +1069,7 @@ gameDifficultyIncr = do
 -- * GameRestart
 
 gameRestartHuman :: MonadClientUI m
-                 => GroupName ModeKind -> m (FailOrCmd RequestUI)
+                 => GroupName ModeKind -> m (FailOrCmd ReqUI)
 gameRestartHuman t = do
   isNoConfirms <- isNoConfirmsGame
   gameMode <- getGameMode
@@ -1092,12 +1092,12 @@ gameRestartHuman t = do
 
 -- * GameExit
 
-gameExitHuman :: MonadClientUI m => m (FailOrCmd RequestUI)
+gameExitHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 gameExitHuman = return $ Right ReqUIGameExit
 
 -- * GameSave
 
-gameSaveHuman :: MonadClientUI m => m RequestUI
+gameSaveHuman :: MonadClientUI m => m ReqUI
 gameSaveHuman = do
   -- Announce before the saving started, since it can take some time
   -- and may slow down the machine, even if not block the client.
@@ -1112,7 +1112,7 @@ gameSaveHuman = do
 -- TODO: set tactic for allied passive factions, too or all allied factions
 -- and perhaps even factions with a leader should follow our leader
 -- and his target, not their leader.
-tacticHuman :: MonadClientUI m => m (FailOrCmd RequestUI)
+tacticHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 tacticHuman = do
   fid <- getsClient sside
   fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
@@ -1127,7 +1127,7 @@ tacticHuman = do
 
 -- * Automate
 
-automateHuman :: MonadClientUI m => m (FailOrCmd RequestUI)
+automateHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 automateHuman = do
   -- BFS is not updated while automated, which would lead to corruption.
   modifySession $ \sess -> sess {saimMode = Nothing}

@@ -590,8 +590,8 @@ markSuspectHuman = do
 -- TODO: display tactics at the top; somehow return to this menu after Tactics
 -- | Display the settings menu.
 settingsMenuHuman :: MonadClientUI m
-                  => (HumanCmd.HumanCmd -> m (Either MError RequestUI))
-                  -> m (Either MError RequestUI)
+                  => (HumanCmd.HumanCmd -> m (Either MError ReqUI))
+                  -> m (Either MError ReqUI)
 settingsMenuHuman cmdAction = do
   Kind.COps{corule} <- getsState scops
   Binding{bcmdList} <- getsSession sbinding

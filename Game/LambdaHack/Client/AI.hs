@@ -41,8 +41,8 @@ queryAI oldAid = do
   req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
   mtgt2 <- getsClient $ fmap fst . EM.lookup aidToMove . stargetD
   if wasLeader && mleader /= Just (aidToMove, mtgt2)
-    then return $! ReqAILeader aidToMove mtgt2 req
-    else return $! req
+    then return (req, Just (aidToMove, mtgt2))
+    else return (req, Nothing)
 
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.

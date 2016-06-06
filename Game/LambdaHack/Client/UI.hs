@@ -65,20 +65,20 @@ queryUI = do
       discardPressedKey
       addPressedEsc
       if fleaderMode (gplayer fact) /= LeaderNull then
-        return ReqUIAutomate  -- stop AI
-      else return ReqUINop  -- TODO: somehow stop? restart?
-    else return ReqUINop
+        return (ReqUIAutomate, Nothing)  -- stop AI
+      else return (ReqUINop, Nothing)  -- TODO: somehow stop? restart?
+    else return (ReqUINop, Nothing)
   else do
     let (leader, mtgt) = fromMaybe (assert `failure` fact) $ gleader fact
     req <- humanCommand
     leader2 <- getLeaderUI
     mtgt2 <- getsClient $ fmap fst . EM.lookup leader2 . stargetD
     if (leader2, mtgt2) /= (leader, mtgt)
-      then return $! ReqUILeader leader2 mtgt2 req
-      else return $! req
+      then return (req, Just (leader2, mtgt2))
+      else return (req, Nothing)
 
 -- | Let the human player issue commands until any command takes time.
-humanCommand :: forall m. MonadClientUI m => m RequestUI
+humanCommand :: forall m. MonadClientUI m => m ReqUI
 humanCommand = do
   -- For human UI we invalidate whole @sbfsD@ at the start of each
   -- UI player input that start a player move, which is an overkill,
@@ -87,7 +87,7 @@ humanCommand = do
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
   modifySession $ \sess -> sess {slastLost = ES.empty}
   modifySession $ \sess -> sess {skeysHintMode = KeysHintAbsent}
-  let loop :: m RequestUI
+  let loop :: m ReqUI
       loop = do
         report <- getsSession _sreport
         if nullReport report then do

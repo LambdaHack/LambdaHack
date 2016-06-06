@@ -265,7 +265,7 @@ handleActors lid = do
         if mainUIactor then do
           if isAIFact fact then do
             cmdS <- sendQueryUI side aid
-            case cmdS of
+            case fst cmdS of
               ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
               ReqUINop -> return ()
               _ -> assert `failure` cmdS  -- TODO: handle more

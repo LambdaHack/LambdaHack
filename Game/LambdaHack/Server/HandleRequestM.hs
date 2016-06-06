@@ -49,20 +49,30 @@ import Game.LambdaHack.Server.State
 -- AI always takes time and so doesn't loop.
 handleRequestAI :: (MonadAtomic m, MonadServer m)
                 => FactionId -> ActorId -> RequestAI -> m ()
-handleRequestAI fid aid cmd = case cmd of
-  ReqAITimed (RequestAnyAbility cmdT) -> handleRequestTimed aid cmdT
-  ReqAILeader aidNew mtgtNew cmd2 -> do
+handleRequestAI fid aid (cmd, maidTgt) = case maidTgt of
+  Just (aidNew, mtgtNew) -> do
     switchLeader fid aidNew mtgtNew
-    handleRequestAI fid aidNew cmd2
+    handleReqAI fid aidNew cmd
+  Nothing -> handleReqAI fid aid cmd
+
+handleReqAI :: (MonadAtomic m, MonadServer m)
+            => FactionId -> ActorId -> ReqAI -> m ()
+handleReqAI _fid aid cmd = case cmd of
+  ReqAITimed (RequestAnyAbility cmdT) -> handleRequestTimed aid cmdT
 
 -- | The semantics of server commands. Only the first two cases take time.
 handleRequestUI :: (MonadAtomic m, MonadServer m)
                 => FactionId -> ActorId -> RequestUI -> m ()
-handleRequestUI fid aid cmd = case cmd of
-  ReqUITimed (RequestAnyAbility cmdT) -> handleRequestTimed aid cmdT
-  ReqUILeader aidNew mtgtNew cmd2 -> do
+handleRequestUI fid aid (cmd, maidTgt) = case maidTgt of
+  Just (aidNew, mtgtNew) -> do
     switchLeader fid aidNew mtgtNew
-    handleRequestUI fid aidNew cmd2
+    handleReqUI fid aidNew cmd
+  Nothing -> handleReqUI fid aid cmd
+
+handleReqUI :: (MonadAtomic m, MonadServer m)
+            => FactionId -> ActorId -> ReqUI -> m ()
+handleReqUI fid aid cmd = case cmd of
+  ReqUITimed (RequestAnyAbility cmdT) -> handleRequestTimed aid cmdT
   ReqUIGameRestart t d names -> reqGameRestart aid t d names
   ReqUIGameExit -> reqGameExit aid
   ReqUIGameSave -> reqGameSave

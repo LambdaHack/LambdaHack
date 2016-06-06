@@ -21,7 +21,7 @@ import Game.LambdaHack.Common.Request
 -- Some time cosuming commands are enabled in aiming mode, but cannot be
 -- invoked in aiming mode on a remote level (level different than
 -- the level of the leader).
-cmdHumanSem :: MonadClientUI m => HumanCmd -> m (Either MError RequestUI)
+cmdHumanSem :: MonadClientUI m => HumanCmd -> m (Either MError ReqUI)
 cmdHumanSem cmd =
   if noRemoteHumanCmd cmd then do
     -- If in aiming mode, check if the current level is the same
@@ -35,8 +35,7 @@ cmdHumanSem cmd =
   else cmdAction cmd
 
 -- | Compute the basic action for a command and mark whether it takes time.
-cmdAction :: MonadClientUI m
-          => HumanCmd -> m (Either MError RequestUI)
+cmdAction :: MonadClientUI m => HumanCmd -> m (Either MError ReqUI)
 cmdAction cmd = case cmd of
   Macro kms -> addNoError $ macroHuman kms
   ByArea l -> byAreaHuman cmdAction l
@@ -112,5 +111,5 @@ cmdAction cmd = case cmd of
   AimPointerFloor -> addNoError aimPointerFloorHuman
   AimPointerEnemy -> addNoError aimPointerEnemyHuman
 
-addNoError :: Monad m => m () -> m (Either MError RequestUI)
+addNoError :: Monad m => m () -> m (Either MError ReqUI)
 addNoError cmdCli = cmdCli >> return (Left Nothing)

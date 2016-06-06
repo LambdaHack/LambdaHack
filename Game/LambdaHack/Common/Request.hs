@@ -3,7 +3,7 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.Request
-  ( RequestAI, RequestAIF(..), RequestUI, RequestUIF(..)
+  ( RequestAI, ReqAI(..), RequestUI, ReqUI(..)
   , RequestTimed(..), RequestAnyAbility(..), ReqFailure(..)
   , impossibleReqFailure, showReqFailure, timedToUI
   , permittedPrecious, permittedProject, permittedApply
@@ -31,34 +31,29 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- channel for Ping, probably, and then client sends as many commands
 -- as it wants at once
 -- | Client-server requests sent by AI clients.
-data RequestAIF r =
-    ReqAITimed !r
-  | ReqAILeader !ActorId !(Maybe Target) !RequestAI
+newtype ReqAI = ReqAITimed RequestAnyAbility
+  deriving Show
 
-type RequestAI = RequestAIF RequestAnyAbility
-
-deriving instance Show r => Show (RequestAIF r)
+type RequestAI = (ReqAI, Maybe (ActorId, Maybe Target))
 
 -- | Client-server requests sent by UI clients.
-data RequestUIF r =
-    ReqUITimed !r
-  | ReqUILeader !ActorId !(Maybe Target) !RequestUI
+data ReqUI =
+    ReqUITimed RequestAnyAbility
   | ReqUIGameRestart !(GroupName ModeKind) !Int ![(Int, (Text, Text))]
   | ReqUIGameExit
   | ReqUIGameSave
   | ReqUITactic !Tactic
   | ReqUIAutomate
   | ReqUINop
+  deriving Show
 
-type RequestUI = RequestUIF RequestAnyAbility
-
-deriving instance Show r => Show (RequestUIF r)
+type RequestUI = (ReqUI, Maybe (ActorId, Maybe Target))
 
 data RequestAnyAbility = forall a. RequestAnyAbility !(RequestTimed a)
 
 deriving instance Show RequestAnyAbility
 
-timedToUI :: RequestTimed a -> RequestUI
+timedToUI :: RequestTimed a -> ReqUI
 timedToUI = ReqUITimed . RequestAnyAbility
 
 -- | Client-server requests that take game time. Sent by both AI and UI clients.
