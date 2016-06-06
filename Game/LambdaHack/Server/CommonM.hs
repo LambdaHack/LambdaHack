@@ -63,9 +63,8 @@ execFailure aid req failureSer = do
                       else debugPossiblyPrint
   possiblyAlarm $
     "execFailure:" <+> msg <> "\n"
-    <> debugShow body <> "\n" <> debugShow req
+    <> debugShow body <> "\n" <> debugShow req <> "\n" <> debugShow failureSer
   execSfxAtomic $ SfxMsgFid fid $ "Unexpected problem:" <+> msg <> "."
-    -- TODO: --more--, but keep in history
 
 -- | Update the cached perception for the selected level, for a faction.
 -- The assumption is the level, and only the level, has changed since

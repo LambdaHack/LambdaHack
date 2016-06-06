@@ -105,6 +105,7 @@ data ReqFailure =
   | TriggerNothing
   | NoChangeDunLeader
   | NoChangeLvlLeader
+  deriving Show
 
 impossibleReqFailure :: ReqFailure -> Bool
 impossibleReqFailure reqFailure = case reqFailure of
