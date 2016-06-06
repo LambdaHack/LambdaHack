@@ -1081,11 +1081,9 @@ gameRestartHuman t = do
               <+> "game will be lost! Are you sure?"
   if b
   then do
-    leader <- getLeaderUI
     snxtDiff <- getsClient snxtDiff
     Config{configHeroNames} <- getsSession sconfig
-    return $ Right
-           $ ReqUIGameRestart leader t snxtDiff configHeroNames
+    return $ Right $ ReqUIGameRestart t snxtDiff configHeroNames
   else do
     msg2 <- rndToAction $ oneOf
               [ "yea, would be a pity to leave them all to die"
@@ -1095,9 +1093,7 @@ gameRestartHuman t = do
 -- * GameExit
 
 gameExitHuman :: MonadClientUI m => m (FailOrCmd RequestUI)
-gameExitHuman = do
-  leader <- getLeaderUI
-  return $ Right $ ReqUIGameExit leader
+gameExitHuman = return $ Right ReqUIGameExit
 
 -- * GameSave
 

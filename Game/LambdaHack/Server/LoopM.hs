@@ -271,9 +271,8 @@ handleActors lid = do
               _ -> assert `failure` cmdS  -- TODO: handle more
             fact2 <- getsState $ (EM.! side) . sfactionD
             if isAIFact fact2 then do
-              -- Clear messages in the UI client if it's AI-controlled.
-              -- We could record history more often, to avoid long reports,
-              -- but we'd have to add -more- prompts.
+              -- Clear messages in the UI client if it's AI-controlled,
+              -- regardless if leaderless or not.
               execUpdAtomic $ UpdRecordHistory side
               return False
             else return True
@@ -288,7 +287,7 @@ handleActors lid = do
         cmdS <- sendQueryUI side aid
         -- TODO: check that the command is legal first, report and reject,
         -- but do not crash (currently server asserts things and crashes)
-        handleRequestUI side cmdS
+        handleRequestUI side aid cmdS
       else do
         cmdS <- sendQueryAI side aid
         handleRequestAI side aid cmdS

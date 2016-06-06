@@ -57,17 +57,14 @@ handleRequestAI fid aid cmd = case cmd of
 
 -- | The semantics of server commands. Only the first two cases take time.
 handleRequestUI :: (MonadAtomic m, MonadServer m)
-                => FactionId -> RequestUI -> m ()
-handleRequestUI fid cmd = case cmd of
-  ReqUITimed (RequestAnyAbility cmdT) -> do
-    fact <- getsState $ (EM.! fid) . sfactionD
-    let (aid, _) = fromMaybe (assert `failure` fact) $ gleader fact
-    handleRequestTimed aid cmdT
+                => FactionId -> ActorId -> RequestUI -> m ()
+handleRequestUI fid aid cmd = case cmd of
+  ReqUITimed (RequestAnyAbility cmdT) -> handleRequestTimed aid cmdT
   ReqUILeader aidNew mtgtNew cmd2 -> do
     switchLeader fid aidNew mtgtNew
-    handleRequestUI fid cmd2
-  ReqUIGameRestart aid t d names -> reqGameRestart aid t d names
-  ReqUIGameExit aid -> reqGameExit aid
+    handleRequestUI fid aidNew cmd2
+  ReqUIGameRestart t d names -> reqGameRestart aid t d names
+  ReqUIGameExit -> reqGameExit aid
   ReqUIGameSave -> reqGameSave
   ReqUITactic toT -> reqTactic fid toT
   ReqUIAutomate -> reqAutomate fid

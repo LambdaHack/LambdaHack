@@ -43,8 +43,8 @@ deriving instance Show r => Show (RequestAIF r)
 data RequestUIF r =
     ReqUITimed !r
   | ReqUILeader !ActorId !(Maybe Target) !RequestUI
-  | ReqUIGameRestart !ActorId !(GroupName ModeKind) !Int ![(Int, (Text, Text))]
-  | ReqUIGameExit !ActorId
+  | ReqUIGameRestart !(GroupName ModeKind) !Int ![(Int, (Text, Text))]
+  | ReqUIGameExit
   | ReqUIGameSave
   | ReqUITactic !Tactic
   | ReqUIAutomate
