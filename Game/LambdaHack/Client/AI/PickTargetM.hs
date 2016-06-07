@@ -131,6 +131,7 @@ targetStrategy aid = do
         tMelee <- targetableMelee aidE body
         return $! targetableRangedOrSpecial body || tMelee
   nearbyFoes <- filterM targetableEnemy allFoes
+  mleader <- getsClient _sleader
   let unknownId = ouniqGroup "unknown space"
       itemUsefulness itemFull =
         fst <$> totalUsefulness cops b activeItems fact itemFull
@@ -143,9 +144,7 @@ targetStrategy aid = do
       -- TODO: make more common when weak ranged foes preferred, etc.
       focused = bspeed b activeItems < speedNormal || condHpTooLow
       couldMoveLastTurn =
-        let axtorSk = if (fst <$> gleader fact) == Just aid
-                      then actorMaxSk
-                      else actorMinSk
+        let axtorSk = if mleader == Just aid then actorMaxSk else actorMinSk
         in EM.findWithDefault 0 AbMove axtorSk > 0
       isStuck = waitedLastTurn b && couldMoveLastTurn
       slackTactic =

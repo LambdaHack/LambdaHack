@@ -33,8 +33,8 @@ handleResponseAI cmd = case cmd of
     mapM_ (\c -> cmdAtomicSemCli c
                  >> execUpdAtomic c) cmds
     mapM_ (storeUndo . UpdAtomic) cmds
-  RespQueryAI aid -> do
-    cmdC <- queryAI aid
+  RespQueryAI -> do
+    cmdC <- queryAI
     sendRequest cmdC
   RespNonLeaderQueryAI aid -> do
     cmdC <- nonLeaderQueryAI aid

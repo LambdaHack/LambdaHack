@@ -15,7 +15,7 @@ import Game.LambdaHack.Common.Actor
 -- | Abstract syntax of client commands that don't use the UI.
 data ResponseAI =
     RespUpdAtomicAI !UpdAtomic
-  | RespQueryAI !ActorId
+  | RespQueryAI
   | RespNonLeaderQueryAI !ActorId
   deriving Show
 

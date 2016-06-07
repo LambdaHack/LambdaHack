@@ -108,7 +108,7 @@ sendQueryAI :: MonadServerReadRequest m
             => FactionId -> ActorId -> m RequestAI
 sendQueryAI fid aid = do
   conn <- getsDict $ snd . (EM.! fid)
-  writeTQueueAI (RespQueryAI aid) $ responseS conn
+  writeTQueueAI RespQueryAI $ responseS conn
   req <- readTQueueAI $ requestS conn
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ debugRequestAI aid req

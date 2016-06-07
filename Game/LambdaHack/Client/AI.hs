@@ -32,12 +32,12 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 
 -- | Handle the move of an AI player.
-queryAI :: MonadClient m => ActorId -> m RequestAI
-queryAI oldAid = do
+queryAI :: MonadClient m => m RequestAI
+queryAI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let mleader = gleader fact
-      !_A = assert (fmap fst mleader == Just oldAid) ()
+      !_A = assert (isJust mleader) ()
   (aidToMove, bToMove) <- pickActorToMove refreshTarget
   req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
   mtgt2 <- getsClient $ fmap fst . EM.lookup aidToMove . stargetD
@@ -47,10 +47,8 @@ queryAI oldAid = do
 
 nonLeaderQueryAI :: MonadClient m => ActorId -> m RequestAI
 nonLeaderQueryAI oldAid = do
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  let mleader = gleader fact
-      !_A = assert (not $ fmap fst mleader == Just oldAid) ()
+  mleader <- getsClient _sleader
+  let !_A = assert (mleader /= Just oldAid) ()
       aidToMove = oldAid
   useTactics refreshTarget oldAid
   bToMove <- getsState $ getActorBody aidToMove

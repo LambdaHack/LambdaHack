@@ -36,9 +36,7 @@ debugResponseAI cmd = case cmd of
   RespUpdAtomicAI cmdA@UpdResume{} -> debugPlain cmd cmdA
   RespUpdAtomicAI cmdA@UpdSpotTile{} -> debugPlain cmd cmdA
   RespUpdAtomicAI cmdA -> debugPretty cmd cmdA
-  RespQueryAI aid -> do
-    d <- debugAid aid "RespQueryAI" cmd
-    serverPrint d
+  RespQueryAI -> serverPrint "RespQueryAI"
   RespNonLeaderQueryAI aid -> do
     d <- debugAid aid "RespNonLeaderQueryAI" cmd
     serverPrint d
@@ -52,7 +50,7 @@ debugResponseUI cmd = case cmd of
   RespSfxAtomicUI sfx -> do
     ps <- posSfxAtomic sfx
     serverPrint $ debugShow (cmd, ps)
-  RespQueryUI -> serverPrint $ "RespQueryUI:" <+> debugShow cmd
+  RespQueryUI -> serverPrint "RespQueryUI"
 
 debugPretty :: (MonadServer m, Show a) => a -> UpdAtomic -> m ()
 debugPretty cmd cmdA = do

@@ -453,7 +453,8 @@ anyActorsAlive :: MonadClient m => FactionId -> Maybe ActorId -> m Bool
 anyActorsAlive fid maid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   if fleaderMode (gplayer fact) /= LeaderNull
-    then return $! isJust $ gleader fact
+    then -- Leader could be changed wrt the one in fact, but not removed.
+         return $! isJust $ gleader fact
     else do
       as <- getsState $ fidActorNotProjAssocs fid
       return $! not $ null $ maybe as (\aid -> filter ((/= aid) . fst) as) maid
@@ -580,9 +581,10 @@ quitFactionUI fid mbody toSt = do
                 io <- itemOverlay store (blid b) bag
                 sli <- overlayToSlideshow (lysize + 1) [K.spaceKM, K.escKM] io
                 return (bag, sli, tot)
+        factOur <- getsState $ (EM.! side) . sfactionD
         (bag, itemSlides, total) <- case mbody of
           Just b | fid == side -> bodyToItemSlides b
-          _ -> case gleader fact of
+          _ -> case gleader factOur of
             Nothing -> return (EM.empty, emptySlideshow, 0)
             Just (aid, _) -> do
               b <- getsState $ getActorBody aid

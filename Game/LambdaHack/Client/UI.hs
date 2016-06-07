@@ -69,11 +69,12 @@ queryUI = do
       else return (ReqUINop, Nothing)  -- TODO: somehow stop? restart?
     else return (ReqUINop, Nothing)
   else do
-    let (leader, mtgt) = fromMaybe (assert `failure` fact) $ gleader fact
+    let mleader = gleader fact
+        !_A = assert (isJust mleader) ()
     req <- humanCommand
     leader2 <- getLeaderUI
     mtgt2 <- getsClient $ fmap fst . EM.lookup leader2 . stargetD
-    if (leader2, mtgt2) /= (leader, mtgt)
+    if mleader /= Just (leader2, mtgt2)
       then return (req, Just (leader2, mtgt2))
       else return (req, Nothing)
 
