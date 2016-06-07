@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Semantics of most 'ResponseAI' client commands.
 module Game.LambdaHack.Client.AI.PickActorM
-  ( pickActorToMove
+  ( pickActorToMove, useTactics
   ) where
 
 import Prelude ()
@@ -37,10 +37,13 @@ import Game.LambdaHack.Content.ModeKind
 
 pickActorToMove :: MonadClient m
                 => ((ActorId, Actor) -> m (Maybe (Target, PathEtc)))
-                -> ActorId
                 -> m (ActorId, Actor)
-pickActorToMove refreshTarget oldAid = do
+pickActorToMove refreshTarget = do
   Kind.COps{cotile} <- getsState scops
+  mleader <- getsClient _sleader
+  let oldAid = case mleader of
+        Just aid -> aid
+        Nothing -> assert `failure` mleader
   oldBody <- getsState $ getActorBody oldAid
   let side = bfid oldBody
       arena = blid oldBody
@@ -48,59 +51,12 @@ pickActorToMove refreshTarget oldAid = do
   lvl <- getLevel arena
   let leaderStuck = waitedLastTurn oldBody
       t = lvl `at` bpos oldBody
-  mleader <- getsClient _sleader
   ours <- getsState $ actorRegularAssocs (== side) arena
-  let explore = void $ refreshTarget (oldAid, oldBody)
-      setPath mtgt = case mtgt of
-        Nothing -> return False
-        Just (tgtLeader, _) -> do
-          mpath <- createPath oldAid tgtLeader
-          case mpath of
-            Nothing -> return False
-            Just path -> do
-              let tgtMPath = second Just path
-              modifyClient $ \cli ->
-                cli {stargetD = EM.alter (const $ Just tgtMPath)
-                                         oldAid (stargetD cli)}
-              return True
-      follow = case mleader of
-        -- If no leader at all (forced @TFollow@ tactic on an actor
-        -- from a leaderless faction), fall back to @TExplore@.
-        Nothing -> explore
-        Just leader -> do
-          onLevel <- getsState $ memActor leader arena
-          -- If leader not on this level, fall back to @TExplore@.
-          if not onLevel then explore
-          else do
-            modifyClient $ \cli ->
-              cli { sbfsD = invalidateBfs oldAid (sbfsD cli)
-                  , seps = seps cli + 773 }  -- randomize paths
-            -- Copy over the leader's target, if any, or follow his bpos.
-            mtgt <- getsClient $ EM.lookup leader . stargetD
-            tgtPathSet <- setPath mtgt
-            let enemyPath = Just (TEnemy leader True, Nothing)
-            unless tgtPathSet $ do
-               enemyPathSet <- setPath enemyPath
-               unless enemyPathSet $
-                 -- If no path even to the leader himself, explore.
-                 explore
-      pickOld = do
-        if mleader == Just oldAid then explore
-        else case ftactic $ gplayer fact of
-          TExplore -> explore
-          TFollow -> follow
-          TFollowNoItems -> follow
-          TMeleeAndRanged -> explore  -- needs to find ranged targets
-          TMeleeAdjacent -> explore  -- probably not needed, but may change
-          TBlock -> return ()  -- no point refreshing target
-          TRoam -> explore  -- @TRoam@ is checked again inside @explore@
-          TPatrol -> explore  -- TODO
+  let pickOld = do
+        void $ refreshTarget (oldAid, oldBody)
         return (oldAid, oldBody)
   case ours of
-    _ | -- Keep the leader: only a leader is allowed to pick another leader.
-        mleader /= Just oldAid
-        -- Keep the leader: the faction forbids client leader change on level.
-        || snd (autoDungeonLevel fact)
+    _ | snd (autoDungeonLevel fact)
         -- Keep the leader: he is on stairs and not stuck
         -- and we don't want to clog stairs or get pushed to another level.
         || not leaderStuck && Tile.isStair cotile t
@@ -265,3 +221,58 @@ pickActorToMove refreshTarget oldAid = do
           modifyClient $ updateLeader aid s
           return (aid, b)
         _ -> return (oldAid, oldBody)
+
+useTactics :: MonadClient m
+           => ((ActorId, Actor) -> m (Maybe (Target, PathEtc)))
+           -> ActorId
+           -> m ()
+useTactics refreshTarget oldAid = do
+  mleader <- getsClient _sleader
+  let !_A = assert (mleader /= Just oldAid) ()
+  oldBody <- getsState $ getActorBody oldAid
+  let side = bfid oldBody
+      arena = blid oldBody
+  fact <- getsState $ (EM.! side) . sfactionD
+  let explore = void $ refreshTarget (oldAid, oldBody)
+      setPath mtgt = case mtgt of
+        Nothing -> return False
+        Just (tgtLeader, _) -> do
+          mpath <- createPath oldAid tgtLeader
+          case mpath of
+            Nothing -> return False
+            Just path -> do
+              let tgtMPath = second Just path
+              modifyClient $ \cli ->
+                cli {stargetD = EM.alter (const $ Just tgtMPath)
+                                         oldAid (stargetD cli)}
+              return True
+      follow = case mleader of
+        -- If no leader at all (forced @TFollow@ tactic on an actor
+        -- from a leaderless faction), fall back to @TExplore@.
+        Nothing -> explore
+        Just leader -> do
+          onLevel <- getsState $ memActor leader arena
+          -- If leader not on this level, fall back to @TExplore@.
+          if not onLevel then explore
+          else do
+            modifyClient $ \cli ->
+              cli { sbfsD = invalidateBfs oldAid (sbfsD cli)
+                  , seps = seps cli + 773 }  -- randomize paths
+            -- Copy over the leader's target, if any, or follow his bpos.
+            mtgt <- getsClient $ EM.lookup leader . stargetD
+            tgtPathSet <- setPath mtgt
+            let enemyPath = Just (TEnemy leader True, Nothing)
+            unless tgtPathSet $ do
+               enemyPathSet <- setPath enemyPath
+               unless enemyPathSet $
+                 -- If no path even to the leader himself, explore.
+                 explore
+  case ftactic $ gplayer fact of
+          TExplore -> explore
+          TFollow -> follow
+          TFollowNoItems -> follow
+          TMeleeAndRanged -> explore  -- needs to find ranged targets
+          TMeleeAdjacent -> explore  -- probably not needed, but may change
+          TBlock -> return ()  -- no point refreshing target
+          TRoam -> explore  -- @TRoam@ is checked again inside @explore@
+          TPatrol -> explore  -- TODO

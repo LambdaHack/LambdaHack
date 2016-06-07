@@ -2,7 +2,7 @@
 -- | Ways for the client to use AI to produce server requests, based on
 -- the client's view of the game state.
 module Game.LambdaHack.Client.AI
-  ( queryAI
+  ( queryAI, nonLeaderQueryAI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , refreshTarget, pickAction
@@ -23,6 +23,7 @@ import Game.LambdaHack.Client.AI.Strategy
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.MonadStateRead
@@ -36,13 +37,25 @@ queryAI oldAid = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let mleader = gleader fact
-      wasLeader = fmap fst mleader == Just oldAid
-  (aidToMove, bToMove) <- pickActorToMove refreshTarget oldAid
+      !_A = assert (fmap fst mleader == Just oldAid) ()
+  (aidToMove, bToMove) <- pickActorToMove refreshTarget
   req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
   mtgt2 <- getsClient $ fmap fst . EM.lookup aidToMove . stargetD
-  if wasLeader && mleader /= Just (aidToMove, mtgt2)
+  if mleader /= Just (aidToMove, mtgt2)
     then return (req, Just (aidToMove, mtgt2))
     else return (req, Nothing)
+
+nonLeaderQueryAI :: MonadClient m => ActorId -> m RequestAI
+nonLeaderQueryAI oldAid = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  let mleader = gleader fact
+      !_A = assert (not $ fmap fst mleader == Just oldAid) ()
+      aidToMove = oldAid
+  useTactics refreshTarget oldAid
+  bToMove <- getsState $ getActorBody aidToMove
+  req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
+  return (req, Nothing)
 
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.
