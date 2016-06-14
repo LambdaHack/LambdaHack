@@ -251,7 +251,7 @@ playerMonsterTourist =
                     , fentryLevel = -4
                     , finitialActors = 15
                     , fleaderMode =
-                      LeaderUI $ AutoLeader False False }
+                        LeaderUI $ AutoLeader False False }
 
 playerHunamConvict =
   playerCivilian { fname = "Hunam Convict Pack"

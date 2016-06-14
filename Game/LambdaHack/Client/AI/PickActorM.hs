@@ -35,6 +35,8 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 
+-- Pick a new leader from among the actors on the current level.
+-- Refresh the target of the new leader, even if unchanged.
 pickActorToMove :: MonadClient m
                 => ((ActorId, Actor) -> m (Maybe (Target, PathEtc)))
                 -> m (ActorId, Actor)
@@ -51,12 +53,14 @@ pickActorToMove refreshTarget = do
   lvl <- getLevel arena
   let leaderStuck = waitedLastTurn oldBody
       t = lvl `at` bpos oldBody
+  -- Find our actors on the current level only.
   ours <- getsState $ actorRegularAssocs (== side) arena
   let pickOld = do
         void $ refreshTarget (oldAid, oldBody)
         return (oldAid, oldBody)
   case ours of
-    _ | snd (autoDungeonLevel fact)
+    _ | -- Keep the leader: the faction forbids client leader change on level.
+        snd (autoDungeonLevel fact)
         -- Keep the leader: he is on stairs and not stuck
         -- and we don't want to clog stairs or get pushed to another level.
         || not leaderStuck && Tile.isStair cotile t
@@ -268,11 +272,11 @@ useTactics refreshTarget oldAid = do
                  -- If no path even to the leader himself, explore.
                  explore
   case ftactic $ gplayer fact of
-          TExplore -> explore
-          TFollow -> follow
-          TFollowNoItems -> follow
-          TMeleeAndRanged -> explore  -- needs to find ranged targets
-          TMeleeAdjacent -> explore  -- probably not needed, but may change
-          TBlock -> return ()  -- no point refreshing target
-          TRoam -> explore  -- @TRoam@ is checked again inside @explore@
-          TPatrol -> explore  -- TODO
+    TExplore -> explore
+    TFollow -> follow
+    TFollowNoItems -> follow
+    TMeleeAndRanged -> explore  -- needs to find ranged targets
+    TMeleeAdjacent -> explore  -- probably not needed, but may change
+    TBlock -> return ()  -- no point refreshing target
+    TRoam -> explore  -- @TRoam@ is checked again inside @explore@
+    TPatrol -> explore  -- TODO
