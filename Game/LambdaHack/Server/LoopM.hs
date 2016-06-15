@@ -261,7 +261,9 @@ handleActors lid = do
           mainUIactor = fhasUI (gplayer fact)
                         && (aidIsLeader
                             || fleaderMode (gplayer fact) == LeaderNull)
-      when (mainUIactor && isAIFact fact) $ do
+          mainUIunderAI = mainUIactor && isAIFact fact
+          queryUI = mainUIactor && not (isAIFact fact)
+      when mainUIunderAI $ do
         cmdS <- sendQueryUI side aid
         case fst cmdS of
           ReqUIAutomate -> execUpdAtomic $ UpdAutoFaction side False
@@ -269,12 +271,12 @@ handleActors lid = do
           _ -> assert `failure` cmdS  -- TODO: handle more
         -- Clear messages in the UI client, regardless if leaderless or not.
         execUpdAtomic $ UpdRecordHistory side
-      let queryUI = mainUIactor && not (isAIFact fact)
       if | isJust $ btrajectory body -> do
            setTrajectory aid
            b2 <- getsState $ getActorBody aid
-           unless (bproj b2 && actorDying b2) $
+           unless (bproj b2 && actorDying b2) $ do
              advanceTime aid
+             managePerTurn aid
          | queryUI -> do
            cmdS <- sendQueryUI side aid
            -- TODO: check that the command is legal first, report and reject,
