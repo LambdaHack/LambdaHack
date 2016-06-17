@@ -206,10 +206,7 @@ library
                       Game.LambdaHack.Server.EndM
                       Game.LambdaHack.Server.FileM
                       Game.LambdaHack.Server.Fov
-                      Game.LambdaHack.Server.Fov.Common
-                      Game.LambdaHack.Server.Fov.Digital
-                      Game.LambdaHack.Server.Fov.Permissive
-                      Game.LambdaHack.Server.Fov.Shadow
+                      Game.LambdaHack.Server.FovDigital
                       Game.LambdaHack.Server.HandleEffectM
                       Game.LambdaHack.Server.HandleRequestM
                       Game.LambdaHack.Server.ItemRev

@@ -31,10 +31,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Server.Fov.Common
-import qualified Game.LambdaHack.Server.Fov.Digital as Digital
-import qualified Game.LambdaHack.Server.Fov.Permissive as Permissive
-import qualified Game.LambdaHack.Server.Fov.Shadow as Shadow
+import Game.LambdaHack.Server.FovDigital
 import Game.LambdaHack.Server.State
 
 -- | Visually reachable positions (light passes through them to the actor).
@@ -204,13 +201,8 @@ fullscan clearPs fovMode radius spectatorPos
   | radius <= 0 = []
   | radius == 1 = [spectatorPos]
   | otherwise =
-    spectatorPos : case fovMode of
-      Shadow ->
-        concatMap (\tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
-      Permissive ->
-        concatMap (\tr -> map tr (Permissive.scan (isCl . tr))) tr4
-      Digital ->
-        concatMap (\tr -> map tr (Digital.scan (radius - 1) (isCl . tr))) tr4
+    spectatorPos
+    : concatMap (\tr -> map tr (scan (radius - 1) (isCl . tr))) tr4
  where
   isCl :: Point -> Bool
   {-# INLINE isCl #-}
@@ -221,20 +213,6 @@ fullscan clearPs fovMode radius spectatorPos
   trV :: X -> Y -> Point
   {-# INLINE trV #-}
   trV x y = shift spectatorPos $ Vector x y
-
-  -- | The translation, rotation and symmetry functions for octants.
-  tr8 :: [(Distance, Progress) -> Point]
-  {-# INLINE tr8 #-}
-  tr8 =
-    [ \(p, d) -> trV   p    d
-    , \(p, d) -> trV (-p)   d
-    , \(p, d) -> trV   p  (-d)
-    , \(p, d) -> trV (-p) (-d)
-    , \(p, d) -> trV   d    p
-    , \(p, d) -> trV (-d)   p
-    , \(p, d) -> trV   d  (-p)
-    , \(p, d) -> trV (-d) (-p)
-    ]
 
   -- | The translation and rotation functions for quadrants.
   tr4 :: [Bump -> Point]
