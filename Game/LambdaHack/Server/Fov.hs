@@ -30,7 +30,6 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.FovDigital
 import Game.LambdaHack.Server.State
 
@@ -54,12 +53,11 @@ type PersLit = EML.EnumMap LevelId ( EM.EnumMap FactionId [(Actor, FovCache3)]
 
 -- | Calculate faction's perception of a level.
 levelPerception :: [(Actor, FovCache3)]
-                -> PointArray.Array Bool -> PointArray.Array Bool
-                -> FovMode -> Level
+                -> PointArray.Array Bool -> PointArray.Array Bool -> Level
                 -> Perception
-levelPerception actorEqpBody clearPs litPs fovMode Level{lxsize, lysize} =
+levelPerception actorEqpBody clearPs litPs Level{lxsize, lysize} =
   let -- Dying actors included, to let them see their own demise.
-      ourR = preachable . reachableFromActor clearPs fovMode
+      ourR = preachable . reachableFromActor clearPs
       totalReachable = PerceptionReachable $ concatMap ourR actorEqpBody
       -- All non-projectile actors feel adjacent positions,
       -- even dark (for easy exploration). Projectiles rely on cameras.
@@ -79,24 +77,23 @@ levelPerception actorEqpBody clearPs litPs fovMode Level{lxsize, lysize} =
   in Perception ptotal psmell
 
 -- | Calculate faction's perception of a level based on the lit tiles cache.
-fidLidPerception :: FovMode -> PersLit
-                 -> FactionId -> LevelId -> Level
+fidLidPerception :: PersLit -> FactionId -> LevelId -> Level
                  -> Perception
-fidLidPerception fovMode persLit fid lid lvl =
+fidLidPerception persLit fid lid lvl =
   let (bodyMap, clearPs, litPs) = persLit EML.! lid
       actorEqpBody = EM.findWithDefault [] fid bodyMap
-  in levelPerception actorEqpBody clearPs litPs fovMode lvl
+  in levelPerception actorEqpBody clearPs litPs lvl
 
 -- | Calculate perception of a faction.
-factionPerception :: FovMode -> PersLit -> FactionId -> State -> FactionPers
-factionPerception fovMode persLit fid s =
-  EM.mapWithKey (fidLidPerception fovMode persLit fid) $ sdungeon s
+factionPerception :: PersLit -> FactionId -> State -> FactionPers
+factionPerception persLit fid s =
+  EM.mapWithKey (fidLidPerception persLit fid) $ sdungeon s
 
 -- | Calculate the perception of the whole dungeon.
-dungeonPerception :: FovMode -> State -> StateServer -> Pers
-dungeonPerception fovMode s ser =
-  let persLit = litInDungeon fovMode s ser
-      f fid _ = factionPerception fovMode persLit fid s
+dungeonPerception :: State -> StateServer -> Pers
+dungeonPerception s ser =
+  let persLit = litInDungeon s ser
+      f fid _ = factionPerception persLit fid s
   in EM.mapWithKey f $ sfactionD s
 
 -- | Compute positions visible (reachable and seen) by the party.
@@ -104,8 +101,7 @@ dungeonPerception fovMode s ser =
 -- light source, e.g,, carried by an actor. A reachable and lit position
 -- is visible. Additionally, positions directly adjacent to an actor are
 -- assumed to be visible to him (through sound, touch, noctovision, whatever).
-visibleOnLevel :: PerceptionReachable
-               -> PointArray.Array Bool -> [Point]
+visibleOnLevel :: PerceptionReachable -> PointArray.Array Bool -> [Point]
                -> PerceptionVisible
 visibleOnLevel PerceptionReachable{preachable} litPs nocto =
   let isVisible = (litPs PointArray.!)
@@ -113,25 +109,25 @@ visibleOnLevel PerceptionReachable{preachable} litPs nocto =
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
-reachableFromActor :: PointArray.Array Bool -> FovMode -> (Actor, FovCache3)
+reachableFromActor :: PointArray.Array Bool -> (Actor, FovCache3)
                    -> PerceptionReachable
-reachableFromActor clearPs fovMode (body, FovCache3{fovSight}) =
+reachableFromActor clearPs (body, FovCache3{fovSight}) =
   let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) fovSight
-  in PerceptionReachable $ fullscan clearPs fovMode radius (bpos body)
+  in PerceptionReachable $ fullscan clearPs radius (bpos body)
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or floor items. Note that an actor can be blind, in which case he doesn't see
 -- his own light (but others, from his or other factions, possibly do).
-litByItems :: PointArray.Array Bool -> FovMode -> [(Point, Int)]
+litByItems :: PointArray.Array Bool -> [(Point, Int)]
            -> PerceptionDynamicLit
-litByItems clearPs fovMode allItems =
+litByItems clearPs allItems =
   let litPos :: (Point, Int) -> [Point]
-      litPos (p, light) = fullscan clearPs fovMode light p
+      litPos (p, light) = fullscan clearPs light p
   in PerceptionDynamicLit $ concatMap litPos allItems
 
 -- | Compute all lit positions in the dungeon.
-litInDungeon :: FovMode -> State -> StateServer -> PersLit
-litInDungeon fovMode s ser =
+litInDungeon :: State -> StateServer -> PersLit
+litInDungeon s ser =
   let Kind.COps{cotile} = scops s
       processIid3 (FovCache3 sightAcc smellAcc lightAcc) (iid, (k, _)) =
         let FovCache3{..} =
@@ -182,7 +178,7 @@ litInDungeon fovMode s ser =
             -- only the stronger light is taken into account.
             -- This is rare, so no point optimizing away the double computation.
             allLights = floorLights ++ actorLights
-            litDynamic = pdynamicLit $ litByItems clearPs fovMode allLights
+            litDynamic = pdynamicLit $ litByItems clearPs allLights
             litPs = litTiles PointArray.// map (\p -> (p, True)) litDynamic
         in (bodyMap, clearPs, litPs)
       litLvl (lid, lvl) = (lid, litOnLevel lvl)
@@ -193,11 +189,10 @@ litInDungeon fovMode s ser =
 -- algorithm to use is passed in the second argument.
 -- The actor's own position is considred reachable by him.
 fullscan :: PointArray.Array Bool  -- ^ the array with non-clear points
-         -> FovMode    -- ^ scanning mode
          -> Int        -- ^ scanning radius
          -> Point      -- ^ position of the spectator
          -> [Point]
-fullscan clearPs fovMode radius spectatorPos
+fullscan clearPs radius spectatorPos
   | radius <= 0 = []
   | radius == 1 = [spectatorPos]
   | otherwise =

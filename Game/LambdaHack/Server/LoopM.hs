@@ -65,15 +65,14 @@ loopSer sdebug executorUI executorAI = do
       let setPreviousCops = const cops
       execUpdAtomic $ UpdResumeServer $ updateCOps setPreviousCops sRaw
       putServer ser
-      let sdebugNxt = initDebug cops sdebug
-      modifyServer $ \ser2 -> ser2 {sdebugNxt}
+      modifyServer $ \ser2 -> ser2 {sdebugNxt = sdebug}
       applyDebug
       updConn
       initPer
       pers <- getsServer sper
       broadcastUpdAtomic $ \fid -> UpdResume fid (pers EM.! fid)
       -- Second, set the current cops and reinit perception.
-      let setCurrentCops = const (speedupCOps sdebugNxt cops)
+      let setCurrentCops = const (speedupCOps sdebug cops)
       -- @sRaw@ is correct here, because none of the above changes State.
       execUpdAtomic $ UpdResumeServer $ updateCOps setCurrentCops sRaw
       -- We dump RNG seeds here, in case the game wasn't run
@@ -85,11 +84,10 @@ loopSer sdebug executorUI executorAI = do
             Just (_, ser) -> Just $ srandom ser
             Nothing -> Nothing
       s <- gameReset cops sdebug Nothing mrandom
-      let sdebugNxt = initDebug cops sdebug
-          debugBarRngs = sdebugNxt {sdungeonRng = Nothing, smainRng = Nothing}
+      let debugBarRngs = sdebug {sdungeonRng = Nothing, smainRng = Nothing}
       modifyServer $ \ser -> ser { sdebugNxt = debugBarRngs
                                  , sdebugSer = debugBarRngs }
-      let speedup = speedupCOps sdebugNxt
+      let speedup = speedupCOps sdebug
       execUpdAtomic $ UpdRestartServer $ updateCOps speedup s
       updConn
       initPer
@@ -299,9 +297,8 @@ gameExit = do
   killAllClients
   -- Verify that the saved perception is equal to future reconstructed.
   persAccumulated <- getsServer sper
-  fovMode <- getsServer $ sfovMode . sdebugSer
   ser <- getServer
-  pers <- getsState $ \s -> dungeonPerception (fromMaybe Digital fovMode) s ser
+  pers <- getsState $ \s -> dungeonPerception s ser
   let !_A = assert (persAccumulated == pers
                     `blame` "wrong accumulated perception"
                     `twith` (persAccumulated, pers)) ()

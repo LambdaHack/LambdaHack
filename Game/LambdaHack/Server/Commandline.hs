@@ -46,10 +46,6 @@ debugArgs args = do
         , "  --frontendStd  use the simple stdout/stdin frontend"
         , "  --frontendNull  use no frontend at all (for AIvsAI benchmarks)"
         , "  --dbgMsgCli  let clients emit their internal debug messages"
-        , "  --fovMode m  set a Field of View mode, where m can be"
-        , "    Digital"
-        , "    Permissive"
-        , "    Shadow"
         ]
       parseArgs [] = defDebugModeSer
       parseArgs ("--knowMap" : rest) =
@@ -85,8 +81,6 @@ debugArgs args = do
         (parseArgs rest) {smainRng = Just $ read s}
       parseArgs ("--dumpInitRngs" : rest) =
         (parseArgs rest) {sdumpInitRngs = True}
-      parseArgs ("--fovMode" : mode : rest) =
-        (parseArgs rest) {sfovMode = Just $ read mode}
       parseArgs ("--dbgMsgSer" : rest) =
         (parseArgs rest) {sdbgMsgSer = True}
       parseArgs ("--fontFamily" : s : rest) =

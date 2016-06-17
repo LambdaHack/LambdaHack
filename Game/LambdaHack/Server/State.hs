@@ -26,7 +26,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.ItemRev
 
 -- | Global, server state.
@@ -83,7 +82,6 @@ data DebugModeSer = DebugModeSer
   , sstopAfter     :: !(Maybe Int)
   , sdungeonRng    :: !(Maybe R.StdGen)
   , smainRng       :: !(Maybe R.StdGen)
-  , sfovMode       :: !(Maybe FovMode)
   , snewGameSer    :: !Bool
   , scurDiffSer    :: !Int
   , sdumpInitRngs  :: !Bool
@@ -150,7 +148,6 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sstopAfter = Nothing
                                , sdungeonRng = Nothing
                                , smainRng = Nothing
-                               , sfovMode = Nothing
                                , snewGameSer = False
                                , scurDiffSer = difficultyDefault
                                , sdumpInitRngs = False
@@ -226,7 +223,6 @@ instance Binary DebugModeSer where
     put sautomateAll
     put skeepAutomated
     put scurDiffSer
-    put sfovMode
     put ssavePrefixSer
     put sdbgMsgSer
     put sdebugCli
@@ -240,7 +236,6 @@ instance Binary DebugModeSer where
     sautomateAll <- get
     skeepAutomated <- get
     scurDiffSer <- get
-    sfovMode <- get
     ssavePrefixSer <- get
     sdbgMsgSer <- get
     sdebugCli <- get

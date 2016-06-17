@@ -4,14 +4,14 @@
 -- never been described nor implemented before.
 module Game.LambdaHack.Server.FovDigital
   ( scan
-    -- * Current scan parameters
-  , Distance, Progress
     -- * Scanning coordinate system
   , Bump(..)
-    -- * Geometry in system @Bump@
-  , Line(..), ConvexHull, Edge, EdgeInterval
     -- * Assorted minor operations
 #ifdef EXPOSE_INTERNAL
+    -- * Current scan parameters
+  , Distance, Progress
+    -- * Geometry in system @Bump@
+  , Line(..), ConvexHull, Edge, EdgeInterval
     -- * Internal operations
   , maximal, steeper, addHull
   , dline, dsteeper, intersect, _debugSteeper, _debugLine

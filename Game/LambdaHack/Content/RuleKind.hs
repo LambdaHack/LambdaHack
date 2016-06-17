@@ -1,13 +1,12 @@
 -- | The type of game rule sets and assorted game data.
 module Game.LambdaHack.Content.RuleKind
-  ( RuleKind(..), FovMode(..), validateSingleRuleKind, validateAllRuleKind
+  ( RuleKind(..), validateSingleRuleKind, validateAllRuleKind
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
 import Data.Version
 
 import Game.LambdaHack.Common.Misc
@@ -51,19 +50,11 @@ data RuleKind = RuleKind
   , rmainMenuArt    :: !Text      -- ^ the ASCII art for the Main Menu
   , rfirstDeathEnds :: !Bool      -- ^ whether first non-spawner actor death
                                   --   ends the game
-  , rfovMode        :: !FovMode   -- ^ FOV calculation mode
   , rwriteSaveClips :: !Int       -- ^ game is saved that often
   , rleadLevelClips :: !Int       -- ^ server switches leader level that often
   , rscoresFile     :: !FilePath  -- ^ name of the scores file
   , rnearby         :: !Int       -- ^ what distance between actors is 'nearby'
   }
-
--- | Field Of View scanning mode.
-data FovMode =
-    Shadow      -- ^ restrictive shadow casting (not symmetric!)
-  | Permissive  -- ^ permissive FOV
-  | Digital     -- ^ digital FOV
-  deriving (Show, Read)
 
 -- | A dummy instance of the 'Show' class, to satisfy general requirments
 -- about content. We won't have many rule sets and they contain functions,
@@ -79,15 +70,3 @@ validateSingleRuleKind _ = []
 -- | Since we have only one rule kind, the set of rule kinds is always valid.
 validateAllRuleKind :: [RuleKind] -> [Text]
 validateAllRuleKind _ = []
-
-instance Binary FovMode where
-  put Shadow      = putWord8 0
-  put Permissive  = putWord8 1
-  put Digital     = putWord8 2
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> return Shadow
-      1 -> return Permissive
-      2 -> return Digital
-      _ -> fail "no parse (FovMode)"

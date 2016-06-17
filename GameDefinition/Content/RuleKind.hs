@@ -74,7 +74,6 @@ standard = RuleKind
       x <- qRunIO (readFile path)
       lift x)
   , rfirstDeathEnds = False
-  , rfovMode = Digital
   , rwriteSaveClips = 1000
   , rleadLevelClips = 200
   , rscoresFile = "scores"

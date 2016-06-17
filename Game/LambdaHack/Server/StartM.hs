@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 -- | Operations for starting and restarting the game.
 module Game.LambdaHack.Server.StartM
-  ( gameReset, reinitGame, initPer, recruitActors, applyDebug, initDebug
+  ( gameReset, reinitGame, initPer, recruitActors, applyDebug
   ) where
 
 import Prelude ()
@@ -39,21 +39,19 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonM
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ItemM
+import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
 initPer :: MonadServer m => m ()
 initPer = do
-  fovMode <- getsServer $ sfovMode . sdebugSer
   ser <- getServer
-  pers <- getsState $ \s -> dungeonPerception (fromMaybe Digital fovMode) s ser
+  pers <- getsState $ \s -> dungeonPerception s ser
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
 reinitGame :: (MonadAtomic m, MonadServer m) => m ()
@@ -355,13 +353,6 @@ findEntryPoss Kind.COps{cotile}
     _ -> tryFind onStairs nk
   return $! onStairs ++ found
 
-initDebug :: Kind.COps -> DebugModeSer -> DebugModeSer
-initDebug Kind.COps{corule} sdebugSer =
-  let stdRuleset = Kind.stdRuleset corule
-  in (\dbg -> dbg {sfovMode =
-        sfovMode dbg `mplus` Just (rfovMode stdRuleset)})
-     $ sdebugSer
-
 -- | Apply debug options that don't need a new game.
 applyDebug :: MonadServer m => m ()
 applyDebug = do
@@ -370,7 +361,6 @@ applyDebug = do
     ser {sdebugSer = (sdebugSer ser) { sniffIn
                                      , sniffOut
                                      , sallClear
-                                     , sfovMode
                                      , sstopAfter
                                      , sdbgMsgSer
                                      , snewGameSer
