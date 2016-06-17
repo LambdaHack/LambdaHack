@@ -36,7 +36,7 @@ import Game.LambdaHack.Server.State
 -- | Visually reachable positions (light passes through them to the actor).
 -- The list may contain (many) repetitions.
 newtype PerceptionReachable = PerceptionReachable
-    {preachable :: [Point]}
+    {preachable :: ES.EnumSet Point}
   deriving Show
 
 -- | All positions lit by dynamic lights on a level. Shared by all factions.
@@ -57,8 +57,9 @@ levelPerception :: [(Actor, FovCache3)]
                 -> Perception
 levelPerception actorEqpBody clearPs litPs Level{lxsize, lysize} =
   let -- Dying actors included, to let them see their own demise.
-      ourR = preachable . reachableFromActor clearPs
-      totalReachable = PerceptionReachable $ concatMap ourR actorEqpBody
+      ourR = reachableFromActor clearPs
+      totalReachable = PerceptionReachable $
+        foldl' (\es f -> f es) ES.empty $ map ourR actorEqpBody
       -- All non-projectile actors feel adjacent positions,
       -- even dark (for easy exploration). Projectiles rely on cameras.
       pAndVicinity p = p : vicinity lxsize lysize p
@@ -105,15 +106,18 @@ visibleOnLevel :: PerceptionReachable -> PointArray.Array Bool -> [Point]
                -> PerceptionVisible
 visibleOnLevel PerceptionReachable{preachable} litPs nocto =
   let isVisible = (litPs PointArray.!)
-  in PerceptionVisible $ ES.fromList $ nocto ++ filter isVisible preachable
+  in PerceptionVisible $
+       ES.fromList nocto `ES.union` ES.filter isVisible preachable
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
-reachableFromActor :: PointArray.Array Bool -> (Actor, FovCache3)
-                   -> PerceptionReachable
-reachableFromActor clearPs (body, FovCache3{fovSight}) =
+reachableFromActor :: PointArray.Array Bool
+                   -> (Actor, FovCache3)
+                   -> ES.EnumSet Point
+                   -> ES.EnumSet Point
+reachableFromActor clearPs (body, FovCache3{fovSight}) es =
   let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) fovSight
-  in PerceptionReachable $ fullscan clearPs radius (bpos body)
+  in fullscan clearPs radius (bpos body) es
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or floor items. Note that an actor can be blind, in which case he doesn't see
@@ -122,7 +126,7 @@ litByItems :: PointArray.Array Bool -> [(Point, Int)]
            -> PerceptionDynamicLit
 litByItems clearPs allItems =
   let litPos :: (Point, Int) -> [Point]
-      litPos (p, light) = fullscan clearPs light p
+      litPos (p, light) = ES.toList $ fullscan clearPs light p ES.empty
   in PerceptionDynamicLit $ concatMap litPos allItems
 
 -- | Compute all lit positions in the dungeon.
@@ -191,19 +195,21 @@ litInDungeon s ser =
 fullscan :: PointArray.Array Bool  -- ^ the array with clear points
          -> Int        -- ^ scanning radius
          -> Point      -- ^ position of the spectator
-         -> [Point]
-fullscan clearPs radius spectatorPos =
-  if | radius <= 0 -> []
-     | radius == 1 -> [spectatorPos]
-     | otherwise -> spectatorPos :
-          mapTr (\B{..} -> trV   bx  (-by))  -- quadrant I
-       ++ mapTr (\B{..} -> trV   by    bx)   -- II (we rotate counter-clockwise)
-       ++ mapTr (\B{..} -> trV (-bx)   by)   -- III
-       ++ mapTr (\B{..} -> trV (-by) (-bx))  -- IV
+         -> ES.EnumSet Point
+         -> ES.EnumSet Point
+fullscan clearPs radius spectatorPos es =
+  if | radius <= 0 -> es
+     | radius == 1 -> ES.insert spectatorPos es
+     | otherwise -> ES.insert spectatorPos
+       $ mapTr (\B{..} -> trV   bx  (-by))  -- quadrant I
+       $ mapTr (\B{..} -> trV   by    bx)   -- II (we rotate counter-clockwise)
+       $ mapTr (\B{..} -> trV (-bx)   by)   -- III
+       $ mapTr (\B{..} -> trV (-by) (-bx))  -- IV
+       $ es
  where
-  mapTr :: (Bump -> Point) -> [Point]
+  mapTr :: (Bump -> Point) -> ES.EnumSet Point -> ES.EnumSet Point
   {-# INLINE mapTr #-}
-  mapTr tr = map tr $ scan (radius - 1) (isCl . tr)
+  mapTr tr es1 = foldl' (flip $ ES.insert . tr) es1 $ scan (radius - 1) (isCl . tr)
 
   isCl :: Point -> Bool
   {-# INLINE isCl #-}
