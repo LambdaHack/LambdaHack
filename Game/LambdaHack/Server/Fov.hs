@@ -188,17 +188,23 @@ litInDungeon s ser =
 -- that are currently in the field of view. The Field of View
 -- algorithm to use is passed in the second argument.
 -- The actor's own position is considred reachable by him.
-fullscan :: PointArray.Array Bool  -- ^ the array with non-clear points
+fullscan :: PointArray.Array Bool  -- ^ the array with clear points
          -> Int        -- ^ scanning radius
          -> Point      -- ^ position of the spectator
          -> [Point]
-fullscan clearPs radius spectatorPos
-  | radius <= 0 = []
-  | radius == 1 = [spectatorPos]
-  | otherwise =
-    spectatorPos
-    : concatMap (\tr -> map tr (scan (radius - 1) (isCl . tr))) tr4
+fullscan clearPs radius spectatorPos =
+  if | radius <= 0 -> []
+     | radius == 1 -> [spectatorPos]
+     | otherwise -> spectatorPos :
+          mapTr (\B{..} -> trV   bx  (-by))  -- quadrant I
+       ++ mapTr (\B{..} -> trV   by    bx)   -- II (we rotate counter-clockwise)
+       ++ mapTr (\B{..} -> trV (-bx)   by)   -- III
+       ++ mapTr (\B{..} -> trV (-by) (-bx))  -- IV
  where
+  mapTr :: (Bump -> Point) -> [Point]
+  {-# INLINE mapTr #-}
+  mapTr tr = map tr $ scan (radius - 1) (isCl . tr)
+
   isCl :: Point -> Bool
   {-# INLINE isCl #-}
   isCl = (clearPs PointArray.!)
@@ -208,13 +214,3 @@ fullscan clearPs radius spectatorPos
   trV :: X -> Y -> Point
   {-# INLINE trV #-}
   trV x y = shift spectatorPos $ Vector x y
-
-  -- | The translation and rotation functions for quadrants.
-  tr4 :: [Bump -> Point]
-  {-# INLINE tr4 #-}
-  tr4 =
-    [ \B{..} -> trV   bx  (-by)  -- quadrant I
-    , \B{..} -> trV   by    bx   -- II (we rotate counter-clockwise)
-    , \B{..} -> trV (-bx)   by   -- III
-    , \B{..} -> trV (-by) (-bx)  -- IV
-    ]
