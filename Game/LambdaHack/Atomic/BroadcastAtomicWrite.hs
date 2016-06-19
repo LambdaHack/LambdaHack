@@ -60,7 +60,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
     case atomic of
       UpdAtomic cmd -> do
         ps <- posUpdAtomic cmd
-        let resets = resetsFovCmdAtomic cmd
+        let resets = resetsFovCmdAtomic cmd || resetsLitCmdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
         return (ps, resets, map UpdAtomic atomicBroken, psBroken)

@@ -3,7 +3,8 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
-  , resetsFovCmdAtomic, breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
+  , resetsFovCmdAtomic, resetsLitCmdAtomic
+  , breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
   ) where
 
@@ -211,14 +212,37 @@ singleContainer (CActor aid _) = do
   return $! PosSight lid [p]
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 
--- | Determines if a command resets FOV.
+-- | Determines if a command resets the reachable perception data.
 --
--- Invariant: if @resetsFovCmdAtomic@ determines we do not need
--- to reset Fov, perception (@psight@ to be precise, @psmell@ is irrelevant)
--- of any faction does not change upon recomputation. Otherwise,
--- save/restore would change game state.
+-- Invariant: if @resetsFovCmdAtomic@ and @resetsLitCmdAtomic@
+-- determine we do not need to reset anything, then perception
+-- (@psight@ to be precise, @psmell@ is irrelevant)
+-- of any faction does not change upon recomputation.
+-- Otherwise, save/restore would change game state.
 resetsFovCmdAtomic :: UpdAtomic -> Bool
 resetsFovCmdAtomic cmd = case cmd of
+  -- Create/destroy actors and items.
+  UpdCreateActor{} -> True
+  UpdDestroyActor{} -> True
+  UpdCreateItem{} -> True  -- may affect sight radius
+  UpdDestroyItem{} -> True
+  UpdSpotActor{} -> True
+  UpdLoseActor{} -> True
+  UpdSpotItem{} -> True
+  UpdLoseItem{} -> True
+  -- Move actors and items.
+  UpdMoveActor{} -> True
+  UpdDisplaceActor{} -> True
+  UpdMoveItem{} -> True  -- sight radius bonuses
+  UpdRefillCalm{} -> True  -- Calm caps sight radius
+  -- Alter map.
+  UpdAlterTile{} -> True  -- even if pos not visible initially
+  _ -> False
+
+-- | Determines if a command resets the data about lit tiles
+-- (both dynamically and statically).
+resetsLitCmdAtomic :: UpdAtomic -> Bool
+resetsLitCmdAtomic cmd = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor{} -> True  -- may have a light source
   UpdDestroyActor{} -> True
@@ -231,12 +255,9 @@ resetsFovCmdAtomic cmd = case cmd of
   -- Move actors and items.
   UpdMoveActor{} -> True
   UpdDisplaceActor{} -> True
-  UpdMoveItem{} -> True  -- light sources, sight radius bonuses
-  UpdRefillCalm{} -> True  -- Calm caps sight radius
+  UpdMoveItem{} -> True  -- light sources don't shine in backpack, etc.
   -- Alter map.
   UpdAlterTile{} -> True  -- even if pos not visible initially
-  UpdSpotTile{} -> True
-  UpdLoseTile{} -> True
   _ -> False
 
 -- | Decompose an atomic action. The original action is visible
