@@ -1,7 +1,8 @@
 {-# LANGUAGE TupleSections #-}
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonM
-  ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
+  ( execFailure, resetFidPerception, resetFidUsingReachable
+  , resetLitInDungeon, getPerFid
   , revealItems, moveStores, deduceQuits, deduceKilled, electLeader
   , addActor, addActorIid, projectFail
   , pickWeaponServer, sumOrganEqpServer, actorSkillsServer
@@ -79,6 +80,18 @@ resetFidPerception persLit fid lid = do
       srvUpd = EM.adjust (EM.adjust (const srvPer) lid) fid
   modifyServer $ \ser2 -> ser2 {sper = Pers (upd (ppublic $ sper ser2))
                                             (srvUpd (pserver $ sper ser2))}
+  return $! per
+
+resetFidUsingReachable :: MonadServer m
+                       => PersLit -> FactionId -> LevelId
+                       -> m Perception
+resetFidUsingReachable persLit fid lid = do
+  lvl <- getLevel lid
+  pserver1 <- getsServer $ pserver . sper
+  let (per, srvPer) = fidLidUsingReachable pserver1 persLit fid lid lvl
+      upd = EM.adjust (EM.adjust (const per) lid) fid
+  modifyServer $ \ser2 -> ser2 {sper = Pers (upd (ppublic $ sper ser2))
+                                            (pserver $ sper ser2)}
   return $! per
 
 resetLitInDungeon :: MonadServer m => m PersLit

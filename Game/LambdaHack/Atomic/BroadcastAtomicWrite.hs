@@ -46,30 +46,35 @@ handleCmdAtomicServer posAtomic atomic =
 handleAndBroadcast :: forall m a. MonadStateWrite m
                    => Bool -> Pers
                    -> (a -> FactionId -> LevelId -> m Perception)
+                   -> (a -> FactionId -> LevelId -> m Perception)
                    -> m a
                    -> (FactionId -> ResponseAI -> m ())
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
-handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
+handleAndBroadcast knowEvents persOld
+                   doResetFidPerception doResetFidUsingReachable
+                   doResetLitInDungeon
                    doSendUpdateAI doSendUpdateUI atomic = do
   -- Gather data from the old state.
   sOld <- getState
   factionD <- getsState sfactionD
-  (ps, resets, atomicBroken, psBroken) <-
+  (ps, resetsFov, resetsLit, atomicBroken, psBroken) <-
     case atomic of
       UpdAtomic cmd -> do
         ps <- posUpdAtomic cmd
-        let resets = resetsFovCmdAtomic cmd || resetsLitCmdAtomic cmd
+        let resetsFov = resetsFovCmdAtomic cmd
+            resetsLit = resetsLitCmdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
-        return (ps, resets, map UpdAtomic atomicBroken, psBroken)
+        return (ps, resetsFov, resetsLit, map UpdAtomic atomicBroken, psBroken)
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
         atomicBroken <- breakSfxAtomic sfx
         psBroken <- mapM posSfxAtomic atomicBroken
-        return (ps, False, map SfxAtomic atomicBroken, psBroken)
-  let atomicPsBroken = zip atomicBroken psBroken
+        return (ps, False, False, map SfxAtomic atomicBroken, psBroken)
+  let resets = resetsFov || resetsLit
+      atomicPsBroken = zip atomicBroken psBroken
   -- TODO: assert also that the sum of psBroken is equal to ps;
   -- with deep equality these assertions can be expensive; optimize.
   let !_A = assert (case ps of
@@ -118,7 +123,9 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
         let perOld = ppublic persOld EM.! fid EM.! lid
         if resets then do
           -- Needed every move to show thrown torches in dark corridors.
-          perNew <- doResetFidPerception persLit fid lid
+          perNew <- if resetsFov
+                    then doResetFidPerception persLit fid lid
+                    else doResetFidUsingReachable persLit fid lid
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
           if nullPer outPer && nullPer inPer
