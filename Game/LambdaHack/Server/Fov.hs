@@ -58,8 +58,7 @@ levelPerception :: [(Actor, FovCache3)]
 levelPerception actorEqpBody clearPs litPs Level{lxsize, lysize} =
   let -- Dying actors included, to let them see their own demise.
       ourR = reachableFromActor clearPs
-      totalReachable = PerceptionReachable $
-        foldl' (\es f -> f es) ES.empty $ map ourR actorEqpBody
+      totalReachable = PerceptionReachable $ ES.unions $ map ourR actorEqpBody
       -- All non-projectile actors feel adjacent positions,
       -- even dark (for easy exploration). Projectiles rely on cameras.
       pAndVicinity p = p : vicinity lxsize lysize p
@@ -114,10 +113,9 @@ visibleOnLevel PerceptionReachable{preachable} litPs nocto =
 reachableFromActor :: PointArray.Array Bool
                    -> (Actor, FovCache3)
                    -> ES.EnumSet Point
-                   -> ES.EnumSet Point
-reachableFromActor clearPs (body, FovCache3{fovSight}) es =
+reachableFromActor clearPs (body, FovCache3{fovSight}) =
   let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) fovSight
-  in fullscan clearPs radius (bpos body) es
+  in fullscan clearPs radius (bpos body)
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or floor items. Note that an actor can be blind, in which case he doesn't see
@@ -126,7 +124,7 @@ litByItems :: PointArray.Array Bool -> [(Point, Int)]
            -> PerceptionDynamicLit
 litByItems clearPs allItems =
   let litPos :: (Point, Int) -> [Point]
-      litPos (p, light) = ES.toList $ fullscan clearPs light p ES.empty
+      litPos (p, light) = ES.toList $ fullscan clearPs light p
   in PerceptionDynamicLit $ concatMap litPos allItems
 
 -- | Compute all lit positions in the dungeon.
@@ -196,16 +194,15 @@ fullscan :: PointArray.Array Bool  -- ^ the array with clear points
          -> Int        -- ^ scanning radius
          -> Point      -- ^ position of the spectator
          -> ES.EnumSet Point
-         -> ES.EnumSet Point
-fullscan clearPs radius spectatorPos es =
-  if | radius <= 0 -> es
-     | radius == 1 -> ES.insert spectatorPos es
+fullscan clearPs radius spectatorPos =
+  if | radius <= 0 -> ES.empty
+     | radius == 1 -> ES.singleton spectatorPos
      | otherwise -> ES.insert spectatorPos
        $ mapTr (\B{..} -> trV   bx  (-by))  -- quadrant I
        $ mapTr (\B{..} -> trV   by    bx)   -- II (we rotate counter-clockwise)
        $ mapTr (\B{..} -> trV (-bx)   by)   -- III
        $ mapTr (\B{..} -> trV (-by) (-bx))  -- IV
-       $ es
+       $ ES.empty
  where
   mapTr :: (Bump -> Point) -> ES.EnumSet Point -> ES.EnumSet Point
   {-# INLINE mapTr #-}
