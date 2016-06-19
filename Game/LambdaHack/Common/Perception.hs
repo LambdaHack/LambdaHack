@@ -17,10 +17,14 @@
 -- the tile, so the player can flee or block. Invisible actors in open
 -- space can be hit.
 module Game.LambdaHack.Common.Perception
-  ( Perception(Perception), PerceptionVisible(PerceptionVisible)
+  ( Perception(Perception)
+  , PerceptionVisible(PerceptionVisible)
+  , PerceptionReachable(..)
   , totalVisible, smellVisible
   , nullPer, addPer, diffPer
-  , FactionPers, Pers
+  , FactionPers
+  , ServerPers
+  , Pers(..)
   ) where
 
 import Prelude ()
@@ -40,12 +44,17 @@ newtype PerceptionVisible = PerceptionVisible
     {pvisible :: ES.EnumSet Point}
   deriving (Show, Eq, Binary)
 
+-- | Visually reachable positions (light passes through them to the actor).
+newtype PerceptionReachable = PerceptionReachable
+    {preachable :: ES.EnumSet Point}
+  deriving (Show, Eq, Binary)
+
 -- TOOD: if really needed, optimize by representing as a set of intervals
 -- or a set of bitmaps, like the internal representation of IntSet.
 -- | The type representing the perception of a faction on a level.
 data Perception = Perception
-  { ptotal :: !PerceptionVisible  -- ^ sum over all actors
-  , psmell :: !PerceptionVisible  -- ^ sum over actors that can smell
+  { psight :: !PerceptionVisible
+  , psmell :: !PerceptionVisible
   }
   deriving (Show, Eq, Generic)
 
@@ -54,13 +63,21 @@ instance Binary Perception
 -- | Perception of a single faction, indexed by level identifier.
 type FactionPers = EM.EnumMap LevelId Perception
 
+-- | Server cache of reachable perception of a single faction,
+-- indexed by level identifier.
+type ServerPers = EM.EnumMap LevelId PerceptionReachable
+
 -- | Perception indexed by faction identifier.
 -- This can't be added to @FactionDict@, because clients can't see it.
-type Pers = EM.EnumMap FactionId FactionPers
+data Pers = Pers
+  { ppublic :: !(EM.EnumMap FactionId FactionPers)
+  , pserver :: !(EM.EnumMap FactionId ServerPers)
+  }
+  deriving (Show, Eq)
 
 -- | The set of tiles visible by at least one hero.
 totalVisible :: Perception -> ES.EnumSet Point
-totalVisible = pvisible . ptotal
+totalVisible = pvisible . psight
 
 -- | The set of tiles smelled by at least one hero.
 smellVisible :: Perception -> ES.EnumSet Point
@@ -72,7 +89,7 @@ nullPer per = ES.null (totalVisible per) && ES.null (smellVisible per)
 addPer :: Perception -> Perception -> Perception
 addPer per1 per2 =
   Perception
-    { ptotal = PerceptionVisible
+    { psight = PerceptionVisible
                $ totalVisible per1 `ES.union` totalVisible per2
     , psmell = PerceptionVisible
                $ smellVisible per1 `ES.union` smellVisible per2
@@ -81,7 +98,7 @@ addPer per1 per2 =
 diffPer :: Perception -> Perception -> Perception
 diffPer per1 per2 =
   Perception
-    { ptotal = PerceptionVisible
+    { psight = PerceptionVisible
                $ totalVisible per1 ES.\\ totalVisible per2
     , psmell = PerceptionVisible
                $ smellVisible per1 ES.\\ smellVisible per2

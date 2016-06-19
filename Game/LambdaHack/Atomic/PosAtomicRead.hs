@@ -214,7 +214,7 @@ singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 -- | Determines if a command resets FOV.
 --
 -- Invariant: if @resetsFovCmdAtomic@ determines we do not need
--- to reset Fov, perception (@ptotal@ to be precise, @psmell@ is irrelevant)
+-- to reset Fov, perception (@psight@ to be precise, @psmell@ is irrelevant)
 -- of any faction does not change upon recomputation. Otherwise,
 -- save/restore would change game state.
 resetsFovCmdAtomic :: UpdAtomic -> Bool

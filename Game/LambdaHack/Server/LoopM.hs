@@ -26,6 +26,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
@@ -70,7 +71,7 @@ loopSer sdebug executorUI executorAI = do
       updConn
       initPer
       pers <- getsServer sper
-      broadcastUpdAtomic $ \fid -> UpdResume fid (pers EM.! fid)
+      broadcastUpdAtomic $ \fid -> UpdResume fid (ppublic pers EM.! fid)
       -- Second, set the current cops and reinit perception.
       let setCurrentCops = const (speedupCOps sdebug cops)
       -- @sRaw@ is correct here, because none of the above changes State.

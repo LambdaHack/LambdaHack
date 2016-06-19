@@ -7,7 +7,7 @@ module Game.LambdaHack.Server.Fov
   , PersLit, litInDungeon
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , PerceptionReachable(..), PerceptionDynamicLit(..)
+  , PerceptionDynamicLit(..)
 #endif
   ) where
 
@@ -33,12 +33,6 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Server.FovDigital
 import Game.LambdaHack.Server.State
 
--- | Visually reachable positions (light passes through them to the actor).
--- The list may contain (many) repetitions.
-newtype PerceptionReachable = PerceptionReachable
-    {preachable :: ES.EnumSet Point}
-  deriving Show
-
 -- | All positions lit by dynamic lights on a level. Shared by all factions.
 -- The list may contain (many) repetitions.
 newtype PerceptionDynamicLit = PerceptionDynamicLit
@@ -54,7 +48,7 @@ type PersLit = EML.EnumMap LevelId ( EM.EnumMap FactionId [(Actor, FovCache3)]
 -- | Calculate faction's perception of a level.
 levelPerception :: [(Actor, FovCache3)]
                 -> PointArray.Array Bool -> PointArray.Array Bool -> Level
-                -> Perception
+                -> (Perception, PerceptionReachable)
 levelPerception actorEqpBody clearPs litPs Level{lxsize, lysize} =
   let -- Dying actors included, to let them see their own demise.
       ourR = reachableFromActor clearPs
@@ -65,7 +59,7 @@ levelPerception actorEqpBody clearPs litPs Level{lxsize, lysize} =
       gatherVicinities = concatMap (pAndVicinity . bpos . fst)
       nocteurs = filter (not . bproj . fst) actorEqpBody
       nocto = gatherVicinities nocteurs
-      ptotal = visibleOnLevel totalReachable litPs nocto
+      psight = visibleOnLevel totalReachable litPs nocto
       -- TODO: handle smell radius < 2, that is only under the actor
       -- Projectiles can potentially smell, too.
       canSmellAround FovCache3{fovSmell} = fovSmell >= 2
@@ -74,27 +68,29 @@ levelPerception actorEqpBody clearPs litPs Level{lxsize, lysize} =
       -- No smell stored in walls and under other actors.
       canHoldSmell p = clearPs PointArray.! p
       psmell = PerceptionVisible $ ES.fromList $ filter canHoldSmell smells
-  in Perception ptotal psmell
+  in (Perception psight psmell, totalReachable)
 
 -- | Calculate faction's perception of a level based on the lit tiles cache.
 fidLidPerception :: PersLit -> FactionId -> LevelId -> Level
-                 -> Perception
+                 -> (Perception, PerceptionReachable)
 fidLidPerception persLit fid lid lvl =
   let (bodyMap, clearPs, litPs) = persLit EML.! lid
       actorEqpBody = EM.findWithDefault [] fid bodyMap
   in levelPerception actorEqpBody clearPs litPs lvl
 
 -- | Calculate perception of a faction.
-factionPerception :: PersLit -> FactionId -> State -> FactionPers
+factionPerception :: PersLit -> FactionId -> State -> (FactionPers, ServerPers)
 factionPerception persLit fid s =
-  EM.mapWithKey (fidLidPerception persLit fid) $ sdungeon s
+  let em = EM.mapWithKey (fidLidPerception persLit fid) $ sdungeon s
+  in (EM.map fst em, EM.map snd em)
 
 -- | Calculate the perception of the whole dungeon.
 dungeonPerception :: State -> StateServer -> Pers
 dungeonPerception s ser =
   let persLit = litInDungeon s ser
       f fid _ = factionPerception persLit fid s
-  in EM.mapWithKey f $ sfactionD s
+      em = EM.mapWithKey f $ sfactionD s
+  in Pers (EM.map fst em) (EM.map snd em)
 
 -- | Compute positions visible (reachable and seen) by the party.
 -- A position can be directly lit by an ambient shine or by a weak, portable

@@ -122,7 +122,7 @@ emptyStateServer =
     , sicounter = toEnum 0
     , snumSpawned = EM.empty
     , sundo = []
-    , sper = EM.empty
+    , sper = Pers EM.empty EM.empty
     , srandom = R.mkStdGen 42
     , srngs = RNGs { dungeonRandomGenerator = Nothing
                    , startingRandomGenerator = Nothing }
@@ -192,7 +192,7 @@ instance Binary StateServer where
     sheroNames <- get
     sdebugSer <- get
     let srandom = read g
-        sper = EM.empty
+        sper = Pers EM.empty EM.empty
         squit = False
         swriteSave = False
         sstart = 0

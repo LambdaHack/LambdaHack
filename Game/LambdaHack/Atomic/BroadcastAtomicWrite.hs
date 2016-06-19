@@ -115,7 +115,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
           then sendUpdate fid atomic
           else breakSend lid fid perNew
       posLevel fid lid = do
-        let perOld = persOld EM.! fid EM.! lid
+        let perOld = ppublic persOld EM.! fid EM.! lid
         if resets then do
           -- Needed every move to show thrown torches in dark corridors.
           perNew <- doResetFidPerception persLit fid lid
@@ -143,7 +143,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception doResetLitInDungeon
         -- In the following cases, from the assertion above,
         -- @resets@ is false here and broken atomic has the same ps.
         PosSmell lid _ -> do
-          let perOld = persOld EM.! fid EM.! lid
+          let perOld = ppublic persOld EM.! fid EM.! lid
           anySend lid fid perOld perOld
         PosFid fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosFidAndSer Nothing fid2 -> when (fid == fid2) $ sendUpdate fid atomic

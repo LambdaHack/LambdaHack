@@ -74,9 +74,11 @@ resetFidPerception :: MonadServer m
                    -> m Perception
 resetFidPerception persLit fid lid = do
   lvl <- getLevel lid
-  let per = fidLidPerception persLit fid lid lvl
+  let (per, srvPer) = fidLidPerception persLit fid lid lvl
       upd = EM.adjust (EM.adjust (const per) lid) fid
-  modifyServer $ \ser2 -> ser2 {sper = upd (sper ser2)}
+      srvUpd = EM.adjust (EM.adjust (const srvPer) lid) fid
+  modifyServer $ \ser2 -> ser2 {sper = Pers (upd (ppublic $ sper ser2))
+                                            (srvUpd (pserver $ sper ser2))}
   return $! per
 
 resetLitInDungeon :: MonadServer m => m PersLit
@@ -86,7 +88,7 @@ resetLitInDungeon = do
 
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
 getPerFid fid lid = do
-  pers <- getsServer sper
+  pers <- getsServer $ ppublic . sper
   let failFact = assert `failure` "no perception for faction" `twith` (lid, fid)
       fper = EM.findWithDefault failFact fid pers
       failLvl = assert `failure` "no perception for level" `twith` (lid, fid)
