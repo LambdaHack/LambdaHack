@@ -166,12 +166,8 @@ litInDungeon s ser =
         let bodyMap = itemsInActors lvl
             allBodies = concat $ EM.elems bodyMap
             clearTiles = PointArray.mapA (Tile.isClear cotile) ltile
-            blockFromBody (b, _) =
-              if bproj b then Nothing else Just (bpos b, False)
-            -- TODO: keep it in server state and update when tiles change
-            -- and actors are born/move/die. Actually, do this for PersLit.
-            blockingActors = mapMaybe blockFromBody allBodies
-            clearPs = clearTiles PointArray.// blockingActors
+            -- TODO: keep it in server state and update when tiles change.
+            -- Actually, do this for PersLit.
             litTiles = PointArray.mapA (Tile.isLit cotile) ltile
             actorLights = map (\(b, FovCache3{fovLight}) -> (bpos b, fovLight))
                               allBodies
@@ -180,9 +176,9 @@ litInDungeon s ser =
             -- only the stronger light is taken into account.
             -- This is rare, so no point optimizing away the double computation.
             allLights = floorLights ++ actorLights
-            litDynamic = pdynamicLit $ litByItems clearPs allLights
+            litDynamic = pdynamicLit $ litByItems clearTiles allLights
             litPs = litTiles PointArray.// map (\p -> (p, True)) litDynamic
-        in (bodyMap, clearPs, litPs)
+        in (bodyMap, clearTiles, litPs)
       litLvl (lid, lvl) = (lid, litOnLevel lvl)
   in EML.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
 
