@@ -2,7 +2,7 @@
 module Game.LambdaHack.Server.State
   ( StateServer(..), emptyStateServer
   , DebugModeSer(..), defDebugModeSer
-  , RNGs(..), FovCache3(..), emptyFovCache3
+  , RNGs(..), emptyFovCache3
   ) where
 
 import Prelude ()
@@ -58,13 +58,6 @@ data StateServer = StateServer
   , sdebugNxt     :: !DebugModeSer  -- ^ debugging mode for the next game
   }
   deriving (Show)
-
-data FovCache3 = FovCache3
-  { fovSight :: !Int
-  , fovSmell :: !Int
-  , fovLight :: !Int
-  }
-  deriving (Show, Eq)
 
 emptyFovCache3 :: FovCache3
 emptyFovCache3 = FovCache3 0 0 0
@@ -200,17 +193,6 @@ instance Binary StateServer where
         sallTime = timeZero
         sdebugNxt = defDebugModeSer  -- TODO: here difficulty level, etc. from the last session is wiped out
     return $! StateServer{..}
-
-instance Binary FovCache3 where
-  put FovCache3{..} = do
-    put fovSight
-    put fovSmell
-    put fovLight
-  get = do
-    fovSight <- get
-    fovSmell <- get
-    fovLight <- get
-    return $! FovCache3{..}
 
 instance Binary DebugModeSer where
   put DebugModeSer{..} = do

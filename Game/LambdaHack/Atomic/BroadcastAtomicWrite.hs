@@ -43,11 +43,11 @@ handleCmdAtomicServer posAtomic atomic =
     handleCmdAtomic atomic
 
 -- | Send an atomic action to all clients that can see it.
-handleAndBroadcast :: forall m a. MonadStateWrite m
+handleAndBroadcast :: forall m. MonadStateWrite m
                    => Bool -> Pers
-                   -> (a -> FactionId -> LevelId -> m Perception)
-                   -> (a -> FactionId -> LevelId -> m Perception)
-                   -> m a
+                   -> (PersLit -> FactionId -> LevelId -> m Perception)
+                   -> (PersLit -> FactionId -> LevelId -> m Perception)
+                   -> m PersLit
                    -> (FactionId -> ResponseAI -> m ())
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic

@@ -25,6 +25,7 @@ module Game.LambdaHack.Common.Perception
   , FactionPers
   , ServerPers
   , Pers(..)
+  , FovCache3(..), PersLit, PersFovCache, PersLight, PersClear
   ) where
 
 import Prelude ()
@@ -32,13 +33,16 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
+import qualified Data.EnumMap.Lazy as EML
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import GHC.Generics (Generic)
 
+import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 newtype PerceptionVisible = PerceptionVisible
     {pvisible :: ES.EnumSet Point}
@@ -103,3 +107,31 @@ diffPer per1 per2 =
     , psmell = PerceptionVisible
                $ smellVisible per1 ES.\\ smellVisible per2
     }
+
+data FovCache3 = FovCache3
+  { fovSight :: !Int
+  , fovSmell :: !Int
+  , fovLight :: !Int
+  }
+  deriving (Show, Eq)
+
+instance Binary FovCache3 where
+  put FovCache3{..} = do
+    put fovSight
+    put fovSmell
+    put fovLight
+  get = do
+    fovSight <- get
+    fovSmell <- get
+    fovLight <- get
+    return $! FovCache3{..}
+
+type PersLit = (PersFovCache, PersLight, PersClear)
+
+-- | The cache of FOV information for a level, such as sight, smell
+-- and light radiuses for each actor.
+type PersFovCache = EM.EnumMap ActorId (Actor, FovCache3)
+
+type PersLight = EML.EnumMap LevelId (PointArray.Array Bool)
+
+type PersClear = EML.EnumMap LevelId (PointArray.Array Bool)

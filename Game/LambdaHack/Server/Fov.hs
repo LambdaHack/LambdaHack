@@ -4,7 +4,7 @@
 -- for discussion.
 module Game.LambdaHack.Server.Fov
   ( dungeonPerception, fidLidPerception, fidLidUsingReachable
-  , PersLit, PersFovCache, PersLight, PersClear, litInDungeon
+  , clearInDungeon, lightInDungeon, fovCacheInDungeon
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , PerceptionDynamicLit(..)
@@ -37,16 +37,6 @@ import Game.LambdaHack.Server.State
 newtype PerceptionDynamicLit = PerceptionDynamicLit
     {pdynamicLit :: [Point]}
   deriving Show
-
-type PersLit = (PersFovCache, PersLight, PersClear)
-
--- | The cache of FOV information for a level, such as sight, smell
--- and light radiuses for each actor.
-type PersFovCache = EM.EnumMap ActorId (Actor, FovCache3)
-
-type PersLight = EML.EnumMap LevelId (PointArray.Array Bool)
-
-type PersClear = EML.EnumMap LevelId (PointArray.Array Bool)
 
 -- | Calculate faction's perception of a level.
 levelPerception :: PerceptionReachable -> [(Actor, FovCache3)]
@@ -103,7 +93,10 @@ factionPerception persLit fid s =
 -- | Calculate the perception of the whole dungeon.
 dungeonPerception :: State -> StateServer -> Pers
 dungeonPerception s ser =
-  let persLit = litInDungeon s ser
+  let persClear = clearInDungeon s
+      persFovCache = fovCacheInDungeon s ser
+      persLight = lightInDungeon persFovCache persClear s ser
+      persLit = (persFovCache, persLight, persClear)
       f fid _ = factionPerception persLit fid s
       em = EM.mapWithKey f $ sfactionD s
   in Pers (EM.map fst em) (EM.map snd em)
@@ -195,14 +188,6 @@ fovCacheInDungeon s ser =
             ssl = processBag3 (beqp b) sslOrgan
         in (b, ssl)
   in EM.map processActor $ sactorD s
-
--- | Compute all lit positions, etc. in the dungeon.
-litInDungeon :: State -> StateServer -> PersLit
-litInDungeon s ser =
-  let persClear = clearInDungeon s
-      persFovCache = fovCacheInDungeon s ser
-      persLight = lightInDungeon persFovCache persClear s ser
-  in (persFovCache, persLight, persClear)
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View

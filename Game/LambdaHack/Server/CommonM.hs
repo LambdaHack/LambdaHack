@@ -97,7 +97,12 @@ resetFidUsingReachable persLit fid lid = do
 resetLitInDungeon :: MonadServer m => m PersLit
 resetLitInDungeon = do
   ser <- getServer
-  getsState $ \s -> litInDungeon s ser
+  s <- getState
+  let persClear = clearInDungeon s
+      persFovCache = fovCacheInDungeon s ser
+      persLight = lightInDungeon persFovCache persClear s ser
+      persLit = (persFovCache, persLight, persClear)
+  return $! persLit
 
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
 getPerFid fid lid = do
