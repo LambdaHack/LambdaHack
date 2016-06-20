@@ -20,6 +20,8 @@ import Game.LambdaHack.Atomic.PosAtomicRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Fov
+import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -44,17 +46,15 @@ handleCmdAtomicServer posAtomic atomic =
 
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
-                   => Bool -> Pers
+                   => Bool -> Pers -> EM.EnumMap ItemId FovCache3
                    -> (PersLit -> FactionId -> LevelId -> m Perception)
                    -> (PersLit -> FactionId -> LevelId -> m Perception)
-                   -> m PersLit
                    -> (FactionId -> ResponseAI -> m ())
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
-handleAndBroadcast knowEvents persOld
+handleAndBroadcast knowEvents persOld sItemFovCache
                    doResetFidPerception doResetFidUsingReachable
-                   doResetLitInDungeon
                    doSendUpdateAI doSendUpdateUI atomic = do
   -- Gather data from the old state.
   sOld <- getState
@@ -88,7 +88,11 @@ handleAndBroadcast knowEvents persOld
   -- Update lights in the dungeon. This is lazy, may not be needed
   -- or only partially; in particular not needed if not @resets@.
   -- This is needed every (even enemy) move to show thrown torches.
-  persLit <- doResetLitInDungeon
+  s <- getState
+  let persClear = clearInDungeon s
+      persFovCache = fovCacheInDungeon s sItemFovCache
+      persLight = lightInDungeon persFovCache persClear s sItemFovCache
+      persLit = (persFovCache, persLight, persClear)
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI =
         when (fhasUI $ gplayer $ factionD EM.! fid) $ doSendUpdateUI fid cmdUI

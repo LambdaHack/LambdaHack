@@ -94,9 +94,9 @@ handleAndBroadcastServer :: (MonadStateWrite m, MonadServerReadRequest m)
 handleAndBroadcastServer atomic = do
   persOld <- getsServer sper
   knowEvents <- getsServer $ sknowEvents . sdebugSer
-  handleAndBroadcast knowEvents persOld
+  sItemFovCache <- getsServer sItemFovCache
+  handleAndBroadcast knowEvents persOld sItemFovCache
                      resetFidPerception resetFidUsingReachable
-                     resetLitInDungeon
                      sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.
