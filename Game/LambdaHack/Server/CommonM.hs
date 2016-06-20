@@ -96,11 +96,11 @@ resetFidUsingReachable persLit fid lid = do
 
 resetLitInDungeon :: MonadServer m => m PersLit
 resetLitInDungeon = do
-  ser <- getServer
+  sItemFovCache <- getsServer sItemFovCache
   s <- getState
   let persClear = clearInDungeon s
-      persFovCache = fovCacheInDungeon s ser
-      persLight = lightInDungeon persFovCache persClear s ser
+      persFovCache = fovCacheInDungeon s sItemFovCache
+      persLight = lightInDungeon persFovCache persClear s sItemFovCache
       persLit = (persFovCache, persLight, persClear)
   return $! persLit
 

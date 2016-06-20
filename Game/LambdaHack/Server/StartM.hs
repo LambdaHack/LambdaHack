@@ -51,9 +51,9 @@ import Game.LambdaHack.Server.State
 
 initPer :: MonadServer m => m ()
 initPer = do
-  ser <- getServer
-  pers <- getsState $ \s -> dungeonPerception s ser
-  modifyServer $ \ser1 -> ser1 {sper = pers}
+  sItemFovCache <- getsServer sItemFovCache
+  pers <- getsState $ \s -> dungeonPerception s sItemFovCache
+  modifyServer $ \ser -> ser {sper = pers}
 
 reinitGame :: (MonadAtomic m, MonadServer m) => m ()
 reinitGame = do

@@ -21,6 +21,7 @@ import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
@@ -30,7 +31,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Server.FovDigital
-import Game.LambdaHack.Server.State
 
 -- | All positions lit by dynamic lights on a level. Shared by all factions.
 -- The list may contain (many) repetitions.
@@ -91,11 +91,11 @@ factionPerception persLit fid s =
   in (EM.map fst em, EM.map snd em)
 
 -- | Calculate the perception of the whole dungeon.
-dungeonPerception :: State -> StateServer -> Pers
-dungeonPerception s ser =
+dungeonPerception :: State -> EM.EnumMap ItemId FovCache3 -> Pers
+dungeonPerception s sItemFovCache =
   let persClear = clearInDungeon s
-      persFovCache = fovCacheInDungeon s ser
-      persLight = lightInDungeon persFovCache persClear s ser
+      persFovCache = fovCacheInDungeon s sItemFovCache
+      persLight = lightInDungeon persFovCache persClear s sItemFovCache
       persLit = (persFovCache, persLight, persClear)
       f fid _ = factionPerception persLit fid s
       em = EM.mapWithKey f $ sfactionD s
@@ -140,12 +140,14 @@ clearInDungeon s =
         in (lid, clearTiles)
   in EML.fromDistinctAscList $ map clearLvl $ EM.assocs $ sdungeon s
 
-lightInDungeon :: PersFovCache -> PersClear -> State -> StateServer -> PersLight
-lightInDungeon persFovCache persClear s ser =
+lightInDungeon :: PersFovCache -> PersClear -> State
+               -> EM.EnumMap ItemId FovCache3
+               -> PersLight
+lightInDungeon persFovCache persClear s sItemFovCache =
   let Kind.COps{cotile} = scops s
       processIid lightAcc (iid, (k, _)) =
         let FovCache3{fovLight} =
-              EM.findWithDefault emptyFovCache3 iid $ sItemFovCache ser
+              EM.findWithDefault emptyFovCache3 iid  sItemFovCache
         in k * fovLight + lightAcc
       processBag bag acc = foldl' processIid acc $ EM.assocs bag
       lightOnFloor :: Level -> [(Point, Int)]
@@ -174,11 +176,11 @@ lightInDungeon persFovCache persClear s ser =
       litLvl (lid, lvl) = (lid, litOnLevel lid lvl)
   in EML.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
 
-fovCacheInDungeon :: State -> StateServer -> PersFovCache
-fovCacheInDungeon s ser =
+fovCacheInDungeon :: State -> EM.EnumMap ItemId FovCache3 -> PersFovCache
+fovCacheInDungeon s sItemFovCache =
   let processIid3 (FovCache3 sightAcc smellAcc lightAcc) (iid, (k, _)) =
         let FovCache3{..} =
-              EM.findWithDefault emptyFovCache3 iid $ sItemFovCache ser
+              EM.findWithDefault emptyFovCache3 iid sItemFovCache
         in FovCache3 (k * fovSight + sightAcc)
                      (k * fovSmell + smellAcc)
                      (k * fovLight + lightAcc)

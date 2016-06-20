@@ -298,8 +298,8 @@ gameExit = do
   killAllClients
   -- Verify that the saved perception is equal to future reconstructed.
   persAccumulated <- getsServer sper
-  ser <- getServer
-  pers <- getsState $ \s -> dungeonPerception s ser
+  sItemFovCache <- getsServer sItemFovCache
+  pers <- getsState $ \s -> dungeonPerception s sItemFovCache
   let !_A = assert (persAccumulated == pers
                     `blame` "wrong accumulated perception"
                     `twith` (persAccumulated, pers)) ()

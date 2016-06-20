@@ -2,7 +2,7 @@
 module Game.LambdaHack.Server.State
   ( StateServer(..), emptyStateServer
   , DebugModeSer(..), defDebugModeSer
-  , RNGs(..), emptyFovCache3
+  , RNGs(..)
   ) where
 
 import Prelude ()
@@ -58,9 +58,6 @@ data StateServer = StateServer
   , sdebugNxt     :: !DebugModeSer  -- ^ debugging mode for the next game
   }
   deriving (Show)
-
-emptyFovCache3 :: FovCache3
-emptyFovCache3 = FovCache3 0 0 0
 
 -- | Debug commands. See 'Server.debugArgs' for the descriptions.
 data DebugModeSer = DebugModeSer

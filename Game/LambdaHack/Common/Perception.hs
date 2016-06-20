@@ -25,7 +25,8 @@ module Game.LambdaHack.Common.Perception
   , FactionPers
   , ServerPers
   , Pers(..)
-  , FovCache3(..), PersLit, PersFovCache, PersLight, PersClear
+  , FovCache3(..), emptyFovCache3
+  , PersLit, PersFovCache, PersLight, PersClear
   ) where
 
 import Prelude ()
@@ -125,6 +126,9 @@ instance Binary FovCache3 where
     fovSmell <- get
     fovLight <- get
     return $! FovCache3{..}
+
+emptyFovCache3 :: FovCache3
+emptyFovCache3 = FovCache3 0 0 0
 
 type PersLit = (PersFovCache, PersLight, PersClear)
 
