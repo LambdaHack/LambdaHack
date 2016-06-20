@@ -93,9 +93,10 @@ handleAndBroadcastServer :: (MonadStateWrite m, MonadServerReadRequest m)
                          => CmdAtomic -> m ()
 handleAndBroadcastServer atomic = do
   persOld <- getsServer sper
+  persLitOld <- getsServer slit
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   sItemFovCache <- getsServer sItemFovCache
-  handleAndBroadcast knowEvents persOld sItemFovCache
+  handleAndBroadcast knowEvents persOld sItemFovCache persLitOld
                      resetFidPerception resetFidUsingReachable
                      sendUpdateAI sendUpdateUI atomic
 

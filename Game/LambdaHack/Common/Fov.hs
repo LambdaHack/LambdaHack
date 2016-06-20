@@ -91,7 +91,7 @@ factionPerception persLit fid s =
   in (EM.map fst em, EM.map snd em)
 
 -- | Calculate the perception of the whole dungeon.
-dungeonPerception :: State -> EM.EnumMap ItemId FovCache3 -> Pers
+dungeonPerception :: State -> EM.EnumMap ItemId FovCache3 -> (PersLit, Pers)
 dungeonPerception s sItemFovCache =
   let persClear = clearInDungeon s
       persFovCache = fovCacheInDungeon s sItemFovCache
@@ -99,7 +99,7 @@ dungeonPerception s sItemFovCache =
       persLit = (persFovCache, persLight, persClear)
       f fid _ = factionPerception persLit fid s
       em = EM.mapWithKey f $ sfactionD s
-  in Pers (EM.map fst em) (EM.map snd em)
+  in (persLit, Pers (EM.map fst em) (EM.map snd em))
 
 -- | Compute positions visible (reachable and seen) by the party.
 -- A position can be directly lit by an ambient shine or by a weak, portable

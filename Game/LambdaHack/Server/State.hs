@@ -10,6 +10,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
+import qualified Data.EnumMap.Lazy as EML
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
@@ -45,6 +46,7 @@ data StateServer = StateServer
   , snumSpawned   :: !(EM.EnumMap LevelId Int)
   , sundo         :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sper          :: !Pers          -- ^ perception of all factions
+  , slit          :: !PersLit       -- ^ cache of lit tiles, etc.
   , srandom       :: !R.StdGen      -- ^ current random generator
   , srngs         :: !RNGs          -- ^ initial random generators
   , squit         :: !Bool          -- ^ exit the game loop
@@ -113,6 +115,7 @@ emptyStateServer =
     , snumSpawned = EM.empty
     , sundo = []
     , sper = Pers EM.empty EM.empty
+    , slit = (EM.empty, EML.empty, EML.empty)
     , srandom = R.mkStdGen 42
     , srngs = RNGs { dungeonRandomGenerator = Nothing
                    , startingRandomGenerator = Nothing }
@@ -183,6 +186,7 @@ instance Binary StateServer where
     sdebugSer <- get
     let srandom = read g
         sper = Pers EM.empty EM.empty
+        slit = (EM.empty, EML.empty, EML.empty)
         squit = False
         swriteSave = False
         sstart = 0

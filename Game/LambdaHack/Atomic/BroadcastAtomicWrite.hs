@@ -46,14 +46,14 @@ handleCmdAtomicServer posAtomic atomic =
 
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
-                   => Bool -> Pers -> EM.EnumMap ItemId FovCache3
+                   => Bool -> Pers -> EM.EnumMap ItemId FovCache3 -> PersLit
                    -> (PersLit -> FactionId -> LevelId -> m Perception)
                    -> (PersLit -> FactionId -> LevelId -> m Perception)
                    -> (FactionId -> ResponseAI -> m ())
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
-handleAndBroadcast knowEvents persOld sItemFovCache
+handleAndBroadcast knowEvents persOld sItemFovCache persLitOld
                    doResetFidPerception doResetFidUsingReachable
                    doSendUpdateAI doSendUpdateUI atomic = do
   -- Gather data from the old state.
