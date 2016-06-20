@@ -2,7 +2,7 @@
 -- | Field Of View scanning with a variety of algorithms.
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
-module Game.LambdaHack.Server.Fov
+module Game.LambdaHack.Common.Fov
   ( dungeonPerception, fidLidPerception, fidLidUsingReachable
   , clearInDungeon, lightInDungeon, fovCacheInDungeon
 #ifdef EXPOSE_INTERNAL
@@ -21,6 +21,7 @@ import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.FovDigital
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -30,7 +31,6 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Server.FovDigital
 
 -- | All positions lit by dynamic lights on a level. Shared by all factions.
 -- The list may contain (many) repetitions.

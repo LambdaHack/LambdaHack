@@ -2,7 +2,7 @@
 -- | DFOV (Digital Field of View) implemented according to specification at <http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation>.
 -- This fast version of the algorithm, based on "PFOV", has AFAIK
 -- never been described nor implemented before.
-module Game.LambdaHack.Server.FovDigital
+module Game.LambdaHack.Common.FovDigital
   ( scan
     -- * Scanning coordinate system
   , Bump(..)
