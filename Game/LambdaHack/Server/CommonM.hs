@@ -88,7 +88,7 @@ resetFidUsingReachable :: MonadServer m
 resetFidUsingReachable persLit fid lid = do
   lvl <- getLevel lid
   pserver1 <- getsServer $ pserver . sper
-  let (per, srvPer) = fidLidUsingReachable pserver1 persLit fid lid lvl
+  let (per, _) = fidLidUsingReachable pserver1 persLit fid lid lvl
       upd = EM.adjust (EM.adjust (const per) lid) fid
   modifyServer $ \ser2 -> ser2 {sper = Pers (upd (ppublic $ sper ser2))
                                             (pserver $ sper ser2)}

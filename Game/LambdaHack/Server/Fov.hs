@@ -4,7 +4,7 @@
 -- for discussion.
 module Game.LambdaHack.Server.Fov
   ( dungeonPerception, fidLidPerception, fidLidUsingReachable
-  , PersLit, litInDungeon
+  , PersLit, PersFovCache, PersLight, PersClear, litInDungeon
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , PerceptionDynamicLit(..)
@@ -20,7 +20,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -39,11 +38,15 @@ newtype PerceptionDynamicLit = PerceptionDynamicLit
     {pdynamicLit :: [Point]}
   deriving Show
 
+type PersLit = (PersFovCache, PersLight, PersClear)
+
 -- | The cache of FOV information for a level, such as sight, smell
--- and light radiuses for each actor and bitmaps of clear and lit positions.
-type PersLit = EML.EnumMap LevelId ( EM.EnumMap FactionId [(Actor, FovCache3)]
-                                   , PointArray.Array Bool
-                                   , PointArray.Array Bool )
+-- and light radiuses for each actor.
+type PersFovCache = EM.EnumMap ActorId (Actor, FovCache3)
+
+type PersLight = EML.EnumMap LevelId (PointArray.Array Bool)
+
+type PersClear = EML.EnumMap LevelId (PointArray.Array Bool)
 
 -- | Calculate faction's perception of a level.
 levelPerception :: PerceptionReachable -> [(Actor, FovCache3)]
@@ -70,22 +73,26 @@ levelPerception reachable actorEqpBody clearPs litPs Level{lxsize, lysize} =
 -- | Calculate faction's perception of a level based on the lit tiles cache.
 fidLidPerception :: PersLit -> FactionId -> LevelId -> Level
                  -> (Perception, PerceptionReachable)
-fidLidPerception persLit fid lid lvl =
-  let (bodyMap, clearPs, litPs) = persLit EML.! lid
-      actorEqpBody = EM.findWithDefault [] fid bodyMap
+fidLidPerception (persFovCache, persLight, persClear) fid lid lvl =
+  let bodyMap = filter (\(b, _) -> bfid b == fid && blid b == lid)
+                $ EM.elems persFovCache
+      litPs = persLight EML.! lid
+      clearPs = persClear EML.! lid
       -- Dying actors included, to let them see their own demise.
       ourR = reachableFromActor clearPs
-      reachable = PerceptionReachable $ ES.unions $ map ourR actorEqpBody
-  in (levelPerception reachable actorEqpBody clearPs litPs lvl, reachable)
+      reachable = PerceptionReachable $ ES.unions $ map ourR bodyMap
+  in (levelPerception reachable bodyMap clearPs litPs lvl, reachable)
 
 fidLidUsingReachable :: EM.EnumMap FactionId ServerPers
                      -> PersLit -> FactionId -> LevelId -> Level
                      -> (Perception, PerceptionReachable)
-fidLidUsingReachable pserver persLit fid lid lvl =
-  let (bodyMap, clearPs, litPs) = persLit EML.! lid
-      actorEqpBody = EM.findWithDefault [] fid bodyMap
+fidLidUsingReachable pserver (persFovCache, persLight, persClear) fid lid lvl =
+  let bodyMap = filter (\(b, _) -> bfid b == fid && blid b == lid)
+                $ EM.elems persFovCache
+      litPs = persLight EML.! lid
+      clearPs = persClear EML.! lid
       reachable = pserver EM.! fid EM.! lid
-  in (levelPerception reachable actorEqpBody clearPs litPs lvl, reachable)
+  in (levelPerception reachable bodyMap clearPs litPs lvl, reachable)
 
 -- | Calculate perception of a faction.
 factionPerception :: PersLit -> FactionId -> State -> (FactionPers, ServerPers)
@@ -132,26 +139,17 @@ litByItems clearPs allItems =
       litPos (p, light) = ES.toList $ fullscan clearPs light p
   in PerceptionDynamicLit $ concatMap litPos allItems
 
--- | Compute all lit positions in the dungeon.
-litInDungeon :: State -> StateServer -> PersLit
-litInDungeon s ser =
+clearInDungeon :: State -> PersClear
+clearInDungeon s =
   let Kind.COps{cotile} = scops s
-      processIid3 (FovCache3 sightAcc smellAcc lightAcc) (iid, (k, _)) =
-        let FovCache3{..} =
-              EM.findWithDefault emptyFovCache3 iid $ sItemFovCache ser
-        in FovCache3 (k * fovSight + sightAcc)
-                     (k * fovSmell + smellAcc)
-                     (k * fovLight + lightAcc)
-      processBag3 bag acc = foldl' processIid3 acc $ EM.assocs bag
-      itemsInActors :: Level -> EM.EnumMap FactionId [(Actor, FovCache3)]
-      itemsInActors lvl =
-        let processActor aid =
-              let b = getActorBody aid s
-                  sslOrgan = processBag3 (borgan b) emptyFovCache3
-                  ssl = processBag3 (beqp b) sslOrgan
-              in (bfid b, [(b, ssl)])
-            asLid = map processActor $ concat $ EM.elems $ lprio lvl
-        in EM.fromListWith (++) asLid
+      clearLvl (lid, Level{ltile}) =
+        let clearTiles = PointArray.mapA (Tile.isClear cotile) ltile
+        in (lid, clearTiles)
+  in EML.fromDistinctAscList $ map clearLvl $ EM.assocs $ sdungeon s
+
+lightInDungeon :: PersFovCache -> PersClear -> State -> StateServer -> PersLight
+lightInDungeon persFovCache persClear s ser =
+  let Kind.COps{cotile} = scops s
       processIid lightAcc (iid, (k, _)) =
         let FovCache3{fovLight} =
               EM.findWithDefault emptyFovCache3 iid $ sItemFovCache ser
@@ -164,28 +162,47 @@ litInDungeon s ser =
       -- Note that an actor can be blind,
       -- in which case he doesn't see his own light
       -- (but others, from his or other factions, possibly do).
-      litOnLevel :: Level -> ( EM.EnumMap FactionId [(Actor, FovCache3)]
-                             , PointArray.Array Bool
-                             , PointArray.Array Bool )
-      litOnLevel lvl@Level{ltile} =
-        let bodyMap = itemsInActors lvl
-            allBodies = concat $ EM.elems bodyMap
-            clearTiles = PointArray.mapA (Tile.isClear cotile) ltile
+      litOnLevel :: LevelId -> Level -> PointArray.Array Bool
+      litOnLevel lid lvl@Level{ltile} =
+        let lvlBodies = filter ((== lid) . blid . fst) $ EM.elems persFovCache
             -- TODO: keep it in server state and update when tiles change.
             -- Actually, do this for PersLit.
             litTiles = PointArray.mapA (Tile.isLit cotile) ltile
             actorLights = map (\(b, FovCache3{fovLight}) -> (bpos b, fovLight))
-                              allBodies
+                              lvlBodies
             floorLights = lightOnFloor lvl
             -- If there is light both on the floor and carried by actor,
             -- only the stronger light is taken into account.
             -- This is rare, so no point optimizing away the double computation.
             allLights = floorLights ++ actorLights
-            litDynamic = pdynamicLit $ litByItems clearTiles allLights
-            litPs = litTiles PointArray.// map (\p -> (p, True)) litDynamic
-        in (bodyMap, clearTiles, litPs)
-      litLvl (lid, lvl) = (lid, litOnLevel lvl)
+            litDynamic = pdynamicLit
+                         $ litByItems (persClear EML.! lid) allLights
+        in litTiles PointArray.// map (\p -> (p, True)) litDynamic
+      litLvl (lid, lvl) = (lid, litOnLevel lid lvl)
   in EML.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
+
+fovCacheInDungeon :: State -> StateServer -> PersFovCache
+fovCacheInDungeon s ser =
+  let processIid3 (FovCache3 sightAcc smellAcc lightAcc) (iid, (k, _)) =
+        let FovCache3{..} =
+              EM.findWithDefault emptyFovCache3 iid $ sItemFovCache ser
+        in FovCache3 (k * fovSight + sightAcc)
+                     (k * fovSmell + smellAcc)
+                     (k * fovLight + lightAcc)
+      processBag3 bag acc = foldl' processIid3 acc $ EM.assocs bag
+      processActor b =
+        let sslOrgan = processBag3 (borgan b) emptyFovCache3
+            ssl = processBag3 (beqp b) sslOrgan
+        in (b, ssl)
+  in EM.map processActor $ sactorD s
+
+-- | Compute all lit positions, etc. in the dungeon.
+litInDungeon :: State -> StateServer -> PersLit
+litInDungeon s ser =
+  let persClear = clearInDungeon s
+      persFovCache = fovCacheInDungeon s ser
+      persLight = lightInDungeon persFovCache persClear s ser
+  in (persFovCache, persLight, persClear)
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
