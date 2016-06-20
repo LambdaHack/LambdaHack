@@ -96,8 +96,9 @@ handleAndBroadcastServer atomic = do
   persLitOld <- getsServer slit
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   sItemFovCache <- getsServer sItemFovCache
+  let updateLit slit = modifyServer $ \ser -> ser {slit}
   handleAndBroadcast knowEvents persOld sItemFovCache persLitOld
-                     resetFidPerception resetFidUsingReachable
+                     resetFidPerception resetFidUsingReachable updateLit
                      sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.

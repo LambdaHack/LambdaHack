@@ -4,6 +4,7 @@
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
   , resetsFovCmdAtomic, resetsLitCmdAtomic
+  , resetsClearCmdAtomic, resetsFovCacheCmdAtomic
   , breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
   ) where
@@ -238,6 +239,12 @@ resetsFovCmdAtomic cmd = case cmd of
   -- Alter map.
   UpdAlterTile{} -> True  -- even if pos not visible initially
   _ -> False
+
+resetsClearCmdAtomic :: UpdAtomic -> Bool
+resetsClearCmdAtomic = resetsFovCmdAtomic  -- TODO
+
+resetsFovCacheCmdAtomic :: UpdAtomic -> Bool
+resetsFovCacheCmdAtomic = resetsFovCmdAtomic  -- TODO
 
 -- | Determines if a command resets the data about lit tiles
 -- (both dynamically and statically).
