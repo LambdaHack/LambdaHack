@@ -10,7 +10,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
-import qualified Data.EnumMap.Lazy as EML
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
@@ -115,7 +114,7 @@ emptyStateServer =
     , snumSpawned = EM.empty
     , sundo = []
     , sper = Pers EM.empty EM.empty
-    , slit = (EM.empty, EML.empty, EML.empty)
+    , slit = (EM.empty, EM.empty, EM.empty)
     , srandom = R.mkStdGen 42
     , srngs = RNGs { dungeonRandomGenerator = Nothing
                    , startingRandomGenerator = Nothing }
@@ -186,7 +185,7 @@ instance Binary StateServer where
     sdebugSer <- get
     let srandom = read g
         sper = Pers EM.empty EM.empty
-        slit = (EM.empty, EML.empty, EML.empty)
+        slit = (EM.empty, EM.empty, EM.empty)
         squit = False
         swriteSave = False
         sstart = 0

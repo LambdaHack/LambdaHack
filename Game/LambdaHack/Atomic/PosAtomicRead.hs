@@ -213,12 +213,13 @@ singleContainer (CActor aid _) = do
   return $! PosSight lid [p]
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 
--- | Determines if a command resets the reachable perception data.
+-- | Determines if a command resets the reachable perception data
+-- (including the smell data, which is affected by smell radius
+-- changes as well as clear tile changes, and so analogous to vision).
 --
 -- Invariant: if @resetsFovCmdAtomic@ and @resetsLitCmdAtomic@
 -- determine we do not need to reset anything, then perception
 -- (@psight@ to be precise, @psmell@ is irrelevant)
--- of any faction does not change upon recomputation.
 -- Otherwise, save/restore would change game state.
 resetsFovCmdAtomic :: UpdAtomic -> Bool
 resetsFovCmdAtomic cmd = case cmd of

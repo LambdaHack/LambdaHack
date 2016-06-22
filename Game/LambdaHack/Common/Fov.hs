@@ -15,7 +15,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Lazy as EML
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
@@ -66,8 +65,8 @@ fidLidPerception :: PersLit -> FactionId -> LevelId -> Level
 fidLidPerception (persFovCache, persLight, persClear) fid lid lvl =
   let bodyMap = filter (\(b, _) -> bfid b == fid && blid b == lid)
                 $ EM.elems persFovCache
-      litPs = persLight EML.! lid
-      clearPs = persClear EML.! lid
+      litPs = persLight EM.! lid
+      clearPs = persClear EM.! lid
       -- Dying actors included, to let them see their own demise.
       ourR = reachableFromActor clearPs
       reachable = PerceptionReachable $ ES.unions $ map ourR bodyMap
@@ -79,8 +78,8 @@ fidLidUsingReachable :: EM.EnumMap FactionId ServerPers
 fidLidUsingReachable pserver (persFovCache, persLight, persClear) fid lid lvl =
   let bodyMap = filter (\(b, _) -> bfid b == fid && blid b == lid)
                 $ EM.elems persFovCache
-      litPs = persLight EML.! lid
-      clearPs = persClear EML.! lid
+      litPs = persLight EM.! lid
+      clearPs = persClear EM.! lid
       reachable = pserver EM.! fid EM.! lid
   in (levelPerception reachable bodyMap clearPs litPs lvl, reachable)
 
@@ -138,7 +137,7 @@ clearInDungeon s =
       clearLvl (lid, Level{ltile}) =
         let clearTiles = PointArray.mapA (Tile.isClear cotile) ltile
         in (lid, clearTiles)
-  in EML.fromDistinctAscList $ map clearLvl $ EM.assocs $ sdungeon s
+  in EM.fromDistinctAscList $ map clearLvl $ EM.assocs $ sdungeon s
 
 lightInDungeon :: PersFovCache -> PersClear -> State
                -> EM.EnumMap ItemId FovCache3
@@ -171,10 +170,10 @@ lightInDungeon persFovCache persClear s sItemFovCache =
             -- This is rare, so no point optimizing away the double computation.
             allLights = floorLights ++ actorLights
             litDynamic = pdynamicLit
-                         $ litByItems (persClear EML.! lid) allLights
+                         $ litByItems (persClear EM.! lid) allLights
         in litTiles PointArray.// map (\p -> (p, True)) litDynamic
       litLvl (lid, lvl) = (lid, litOnLevel lid lvl)
-  in EML.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
+  in EM.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
 
 fovCacheInDungeon :: State -> EM.EnumMap ItemId FovCache3 -> PersFovCache
 fovCacheInDungeon s sItemFovCache =

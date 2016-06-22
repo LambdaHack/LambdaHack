@@ -34,7 +34,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
-import qualified Data.EnumMap.Lazy as EML
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import GHC.Generics (Generic)
@@ -136,6 +135,6 @@ type PersLit = (PersFovCache, PersLight, PersClear)
 -- and light radiuses for each actor.
 type PersFovCache = EM.EnumMap ActorId (Actor, FovCache3)
 
-type PersLight = EML.EnumMap LevelId (PointArray.Array Bool)
+type PersLight = EM.EnumMap LevelId (PointArray.Array Bool)
 
-type PersClear = EML.EnumMap LevelId (PointArray.Array Bool)
+type PersClear = EM.EnumMap LevelId (PointArray.Array Bool)
