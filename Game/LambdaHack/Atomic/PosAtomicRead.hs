@@ -3,7 +3,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
-  , resetsFovCmdAtomic, resetsLitCmdAtomic
+  , resetsFovCmdAtomic, resetsFovActor, resetsLitCmdAtomic
   , resetsClearCmdAtomic, resetsFovCacheCmdAtomic
   , breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
@@ -239,6 +239,25 @@ resetsFovCmdAtomic cmd = case cmd of
   UpdRefillCalm{} -> True  -- Calm caps sight radius
   -- Alter map.
   UpdAlterTile{} -> True  -- even if pos not visible initially
+  _ -> False
+
+resetsFovActor :: UpdAtomic -> ActorId -> Actor -> Bool
+resetsFovActor cmd aid _b = case cmd of
+  -- Create/destroy actors and items.
+  UpdCreateActor aid2 _ _ -> aid2 == aid
+  UpdCreateItem _iid _ _ _c -> True  -- may affect sight radius
+  UpdDestroyItem _iid _ _ _c -> True
+  UpdSpotActor aid2 _ _ -> aid2 == aid
+  UpdSpotItem _iid _ _ _c -> True
+  UpdLoseItem _iid _ _ _c -> True
+  -- Move actors and items.
+  UpdMoveActor aid2 _ _ -> aid2 == aid
+  UpdDisplaceActor aid2 aid3 -> aid2 == aid || aid3 == aid
+  UpdMoveItem _iid _ aid2 store1 store2 -> aid2 == aid
+                                           && CEqp `elem` [store1, store2]
+  UpdRefillCalm aid2 _ -> aid2 == aid
+  -- Alter map.
+  UpdAlterTile{} -> True
   _ -> False
 
 resetsClearCmdAtomic :: UpdAtomic -> Bool
