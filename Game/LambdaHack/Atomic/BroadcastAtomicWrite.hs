@@ -47,16 +47,17 @@ handleCmdAtomicServer posAtomic atomic =
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
                    => Bool -> Pers -> EM.EnumMap ItemId FovCache3 -> PersLit
-                   -> (PersLit -> FactionId -> LevelId -> m Perception)
-                   -> (PersLit -> FactionId -> LevelId -> m Perception)
+                   -> (FactionId -> LevelId
+                       -> Perception -> Maybe PerceptionServer
+                       -> m ())
                    -> (PersLit -> m ())
                    -> (FactionId -> ResponseAI -> m ())
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
 handleAndBroadcast knowEvents persOld sItemFovCache (oldFC, oldLights, oldClear)
-                   doResetFidPerception doResetFidUsingReachable doUpdateLit
-                   doSendUpdateAI doSendUpdateUI atomic = do
+                   doUpdatePer doUpdateLit doSendUpdateAI doSendUpdateUI
+                   atomic = do
   -- Gather data from the old state.
   sOld <- getState
   factionD <- getsState sfactionD
@@ -139,12 +140,19 @@ handleAndBroadcast knowEvents persOld sItemFovCache (oldFC, oldLights, oldClear)
           else breakSend lid fid perNew
       posLevel fid lid = do
         let perOld = ppublic persOld EM.! fid EM.! lid
+            srvPerOld = pserver persOld EM.! fid EM.! lid
         if resets then do
           -- Needed every move to show thrown torches in dark corridors.
           -- TODO: only resets if clear reset, sight radius reset or lit reset
-          perNew <- if resetsFov
-                    then doResetFidPerception persLit fid lid
-                    else doResetFidUsingReachable persLit fid lid
+          lvl <- getLevel lid
+          let (perNew, msrvPerNew) =
+                if resetsFov then
+                  let (per, srvPer) = fidLidPerception persLit fid lid lvl
+                  in (per, Just srvPer)
+                else
+                  let per = fidLidUsingReachable srvPerOld persLit fid lid lvl
+                  in (per, Nothing)
+          doUpdatePer fid lid perNew msrvPerNew
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
           if nullPer outPer && nullPer inPer
@@ -166,6 +174,7 @@ handleAndBroadcast knowEvents persOld sItemFovCache (oldFC, oldLights, oldClear)
       send fid = case ps of
         PosSight lid _ -> posLevel fid lid
         PosFidAndSight _ lid _ -> posLevel fid lid
+        PosFidAndSer (Just lid) _ -> posLevel fid lid
         -- In the following cases, from the assertion above,
         -- @resets@ is false here and broken atomic has the same ps.
         PosSmell lid _ -> do
@@ -173,7 +182,6 @@ handleAndBroadcast knowEvents persOld sItemFovCache (oldFC, oldLights, oldClear)
           anySend lid fid perOld perOld
         PosFid fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosFidAndSer Nothing fid2 -> when (fid == fid2) $ sendUpdate fid atomic
-        PosFidAndSer (Just lid) _ -> posLevel fid lid
         PosSer -> return ()
         PosAll -> sendUpdate fid atomic
         PosNone -> return ()

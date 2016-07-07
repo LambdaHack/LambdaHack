@@ -28,10 +28,10 @@ import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Perception
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Thread
-import Game.LambdaHack.Server.CommonM
 import Game.LambdaHack.Server.FileM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
@@ -96,10 +96,17 @@ handleAndBroadcastServer atomic = do
   persLitOld <- getsServer slit
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   sItemFovCache <- getsServer sItemFovCache
-  let updateLit slit = modifyServer $ \ser -> ser {slit}
+  let updatePer fid lid per msrvPer =
+        let upd = EM.adjust (EM.adjust (const per) lid) fid
+            srvUpd = case msrvPer of
+              Nothing -> id
+              Just srvPer -> EM.adjust (EM.adjust (const srvPer) lid) fid
+        in modifyServer $ \ser2 ->
+             ser2 {sper = Pers (upd (ppublic $ sper ser2))
+                               (srvUpd (pserver $ sper ser2))}
+      updateLit slit = modifyServer $ \ser -> ser {slit}
   handleAndBroadcast knowEvents persOld sItemFovCache persLitOld
-                     resetFidPerception resetFidUsingReachable updateLit
-                     sendUpdateAI sendUpdateUI atomic
+                     updatePer updateLit sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> SerImplementation () -> IO ()

@@ -20,6 +20,7 @@ module Game.LambdaHack.Common.Perception
   ( Perception(Perception)
   , PerceptionVisible(PerceptionVisible)
   , PerceptionReachable(..)
+  , PerceptionServer(..)
   , totalVisible, smellVisible
   , nullPer, addPer, diffPer
   , FactionPers
@@ -53,6 +54,14 @@ newtype PerceptionReachable = PerceptionReachable
     {preachable :: ES.EnumSet Point}
   deriving (Show, Eq, Binary)
 
+type PerActor = EM.EnumMap ActorId PerceptionReachable
+
+data PerceptionServer = PerceptionServer
+  { ptotal   :: !PerceptionReachable
+  , perActor :: !PerActor
+  }
+  deriving (Show, Eq)
+
 -- TOOD: if really needed, optimize by representing as a set of intervals
 -- or a set of bitmaps, like the internal representation of IntSet.
 -- | The type representing the perception of a faction on a level.
@@ -69,7 +78,7 @@ type FactionPers = EM.EnumMap LevelId Perception
 
 -- | Server cache of reachable perception of a single faction,
 -- indexed by level identifier.
-type ServerPers = EM.EnumMap LevelId PerceptionReachable
+type ServerPers = EM.EnumMap LevelId PerceptionServer
 
 -- | Perception indexed by faction identifier.
 -- This can't be added to @FactionDict@, because clients can't see it.

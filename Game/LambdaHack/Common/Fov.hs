@@ -61,27 +61,30 @@ levelPerception reachable actorEqpBody clearPs litPs Level{lxsize, lysize} =
 
 -- | Calculate faction's perception of a level based on the lit tiles cache.
 fidLidPerception :: PersLit -> FactionId -> LevelId -> Level
-                 -> (Perception, PerceptionReachable)
+                 -> (Perception, PerceptionServer)
 fidLidPerception (persFovCache, persLight, persClear) fid lid lvl =
-  let bodyMap = filter (\(b, _) -> bfid b == fid && blid b == lid)
-                $ EM.elems persFovCache
+  let bodyMap = EM.filter (\(b, _) -> bfid b == fid && blid b == lid)
+                          persFovCache
       litPs = persLight EM.! lid
       clearPs = persClear EM.! lid
       -- Dying actors included, to let them see their own demise.
       ourR = reachableFromActor clearPs
-      reachable = PerceptionReachable $ ES.unions $ map ourR bodyMap
-  in (levelPerception reachable bodyMap clearPs litPs lvl, reachable)
+      perBody = EM.map ourR bodyMap
+      perActor = EM.map PerceptionReachable perBody
+      ptotal = PerceptionReachable $ ES.unions $ EM.elems perBody
+      elBodyMap = EM.elems bodyMap
+  in ( levelPerception ptotal elBodyMap clearPs litPs lvl
+     , PerceptionServer{..} )
 
-fidLidUsingReachable :: EM.EnumMap FactionId ServerPers
+fidLidUsingReachable :: PerceptionServer
                      -> PersLit -> FactionId -> LevelId -> Level
-                     -> (Perception, PerceptionReachable)
-fidLidUsingReachable pserver (persFovCache, persLight, persClear) fid lid lvl =
-  let bodyMap = filter (\(b, _) -> bfid b == fid && blid b == lid)
-                $ EM.elems persFovCache
+                     -> Perception
+fidLidUsingReachable perServer (persFovCache, persLight, persClear) fid lid lvl =
+  let elBodyMap = filter (\(b, _) -> bfid b == fid && blid b == lid)
+                  $ EM.elems persFovCache
       litPs = persLight EM.! lid
       clearPs = persClear EM.! lid
-      reachable = pserver EM.! fid EM.! lid
-  in (levelPerception reachable bodyMap clearPs litPs lvl, reachable)
+  in levelPerception (ptotal perServer) elBodyMap clearPs litPs lvl
 
 -- | Calculate perception of a faction.
 factionPerception :: PersLit -> FactionId -> State -> (FactionPers, ServerPers)

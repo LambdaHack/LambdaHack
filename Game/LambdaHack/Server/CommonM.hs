@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonM
-  ( execFailure, resetFidPerception, resetFidUsingReachable, getPerFid
+  ( execFailure, getPerFid
   , revealItems, moveStores, deduceQuits, deduceKilled, electLeader
   , addActor, addActorIid, projectFail
   , pickWeaponServer, sumOrganEqpServer, actorSkillsServer
@@ -23,7 +23,6 @@ import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
-import Game.LambdaHack.Common.Fov
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
@@ -65,33 +64,6 @@ execFailure aid req failureSer = do
     "execFailure:" <+> msg <> "\n"
     <> debugShow body <> "\n" <> debugShow req <> "\n" <> debugShow failureSer
   execSfxAtomic $ SfxMsgFid fid $ "Unexpected problem:" <+> msg <> "."
-
--- | Update the cached perception for the selected level, for a faction.
--- The assumption is the level, and only the level, has changed since
--- the previous perception calculation.
-resetFidPerception :: MonadServer m
-                   => PersLit -> FactionId -> LevelId
-                   -> m Perception
-resetFidPerception persLit fid lid = do
-  lvl <- getLevel lid
-  let (per, srvPer) = fidLidPerception persLit fid lid lvl
-      upd = EM.adjust (EM.adjust (const per) lid) fid
-      srvUpd = EM.adjust (EM.adjust (const srvPer) lid) fid
-  modifyServer $ \ser2 -> ser2 {sper = Pers (upd (ppublic $ sper ser2))
-                                            (srvUpd (pserver $ sper ser2))}
-  return $! per
-
-resetFidUsingReachable :: MonadServer m
-                       => PersLit -> FactionId -> LevelId
-                       -> m Perception
-resetFidUsingReachable persLit fid lid = do
-  lvl <- getLevel lid
-  pserver1 <- getsServer $ pserver . sper
-  let (per, _) = fidLidUsingReachable pserver1 persLit fid lid lvl
-      upd = EM.adjust (EM.adjust (const per) lid) fid
-  modifyServer $ \ser2 -> ser2 {sper = Pers (upd (ppublic $ sper ser2))
-                                            (pserver $ sper ser2)}
-  return $! per
 
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
 getPerFid fid lid = do
