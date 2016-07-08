@@ -61,32 +61,35 @@ handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClea
   -- Gather data from the old state.
   sOld <- getState
   factionD <- getsState sfactionD
-  ( ps, resetsFovI, resetsActor, resetsLit, resetsClear, resetsFovCache
+  ( ps, resetsFovI, resetsLit, resetsClear, resetsFovCache
    ,atomicBroken, psBroken ) <-
     case atomic of
       UpdAtomic cmd -> do
         ps <- posUpdAtomic cmd
-        let resetsFov = resetsFovCmdAtomic cmd
+        let resetsFovI = resetsFovCmdAtomic cmd
             resetsLit = resetsLitCmdAtomic cmd
             resetsClear = resetsClearCmdAtomic cmd
             resetsFovCache = resetsFovCacheCmdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
-        return ( ps, resetsFov, resetsFovActor cmd
-               , resetsLit, resetsClear, resetsFovCache
+        return ( ps, resetsFovI, resetsLit, resetsClear, resetsFovCache
                , map UpdAtomic atomicBroken, psBroken )
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
         atomicBroken <- breakSfxAtomic sfx
         psBroken <- mapM posSfxAtomic atomicBroken
-        return ( ps, \_ -> False, \_ _ _ -> False, False, False, False
+        return ( ps, \_ -> Right [], False, False, False
                , map SfxAtomic atomicBroken, psBroken )
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
   itemFovCache <- getItemFovCache
   let resetsFov = resetsFovI itemFovCache
-      resets = resetsFov || resetsLit || resetsClear || resetsFovCache
+      resetOthers = resetsLit || resetsClear || resetsFovCache
+      resets = resetsFov /= Right [] || resetOthers
       atomicPsBroken = zip atomicBroken psBroken
+  resetsBodies <- case resetsFov of
+    Left b -> return $ Left b
+    Right as -> Right <$> mapM (getsState . getActorBody) as
   -- TODO: assert also that the sum of psBroken is equal to ps;
   -- with deep equality these assertions can be expensive; optimize.
   let !_A = assert (case ps of
@@ -106,7 +109,7 @@ handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClea
       persFovCache = if resetsFovCache
                      then fovCacheInDungeon s itemFovCache
                      else oldFC
-      persLight = if resetsLit || resetsFovCache || resetsClear
+      persLight = if resetOthers
                   then lightInDungeon persFovCache persClear s itemFovCache
                   else oldLights
       persLit = (persFovCache, persLight, persClear)
@@ -144,15 +147,16 @@ handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClea
       posLevel fid lid = do
         let perOld = ppublic persOld EM.! fid EM.! lid
             srvPerOld = pserver persOld EM.! fid EM.! lid
-        if resets then do
+            resetsFovFid =
+              either (const True) (any $ (fid ==) . bfid) resetsBodies
+        if resetsFovFid || resetOthers then do
           -- Needed every move to show thrown torches in dark corridors.
           -- TODO: only resets if clear reset, sight radius reset or lit reset
           lvl <- getLevel lid
           let (perNew, msrvPerNew) =
-                if resetsFov then
+                if resetsFovFid then
                   let (per, srvPerNew) =
-                        fidLidPerception (perActor srvPerOld)
-                                         (resetsActor itemFovCache)
+                        fidLidPerception (perActor srvPerOld) resetsFov
                                          persLit fid lid lvl
                   in (per, Just srvPerNew)
                 else

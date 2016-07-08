@@ -61,7 +61,7 @@ levelPerception reachable actorEqpBody clearPs litPs Level{lxsize, lysize} =
 
 -- | Calculate faction's perception of a level based on the lit tiles cache.
 fidLidPerception :: PerActor
-                 -> (ActorId -> Actor -> Bool)
+                 -> Either Bool [ActorId]
                  -> PersLit -> FactionId -> LevelId -> Level
                  -> (Perception, PerceptionServer)
 fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear)
@@ -71,13 +71,14 @@ fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear)
       litPs = persLight EM.! lid
       clearPs = persClear EM.! lid
       -- Dying actors included, to let them see their own demise.
-      ourR aid (b, cache) =
-        if resetsActor aid b
-        then reachableFromActor clearPs (b, cache)
+      ourR aid bcache =
+        if either id (aid `elem`) resetsActor
+        then reachableFromActor clearPs bcache
         else case EM.lookup aid perActor0 of
           Just (PerceptionReachable per) -> per
-          Nothing -> assert `failure` (aid, b)
+          Nothing -> assert `failure` (aid, bcache)
       -- We don't check if any actor changed, because almost surely one is.
+      -- Exception: when an actor is destroyed, but then union differs.
       perBody = EM.mapWithKey ourR bodyMap
       perActor = EM.map PerceptionReachable perBody
       ptotal = PerceptionReachable $ ES.unions $ EM.elems perBody
@@ -98,7 +99,7 @@ fidLidUsingReachable ptotal (persFovCache, persLight, persClear) fid lid lvl =
 -- | Calculate perception of a faction.
 factionPerception :: PersLit -> FactionId -> State -> (FactionPers, ServerPers)
 factionPerception persLit fid s =
-  let resetsAlways _ _ = True
+  let resetsAlways = Left True
       em = EM.mapWithKey (fidLidPerception undefined resetsAlways persLit fid)
            $ sdungeon s
   in (EM.map fst em, EM.map snd em)

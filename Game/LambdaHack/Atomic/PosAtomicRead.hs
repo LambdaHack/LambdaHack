@@ -3,7 +3,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
-  , resetsFovCmdAtomic, resetsFovActor, resetsLitCmdAtomic
+  , resetsFovCmdAtomic, resetsLitCmdAtomic
   , resetsClearCmdAtomic, resetsFovCacheCmdAtomic
   , breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
@@ -213,59 +213,34 @@ singleContainer (CActor aid _) = do
   return $! PosSight lid [p]
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 
--- | Determines if a command resets the reachable perception data
--- (including the smell data, which is affected by smell radius
--- changes as well as clear tile changes, and so analogous to vision).
---
--- Invariant: if @resetsFovCmdAtomic@ and @resetsLitCmdAtomic@
--- determine we do not need to reset anything, then perception
--- (@psight@ to be precise, @psmell@ is irrelevant)
--- Otherwise, save/restore would change game state.
-resetsFovCmdAtomic :: UpdAtomic -> EM.EnumMap ItemId FovCache3 -> Bool
-resetsFovCmdAtomic cmd _itemFovCache = case cmd of
+resetsFovCmdAtomic :: UpdAtomic -> EM.EnumMap ItemId FovCache3
+                   -> Either Bool [ActorId]
+resetsFovCmdAtomic cmd itemFovCache = case cmd of
   -- Create/destroy actors and items.
-  UpdCreateActor{} -> True
-  UpdDestroyActor{} -> True
-  UpdCreateItem{} -> True
-  UpdDestroyItem{} -> True
-  UpdSpotActor{} -> True
-  UpdLoseActor{} -> True
-  UpdSpotItem{} -> True
-  UpdLoseItem{} -> True
+  UpdCreateActor aid2 _ _ -> Right [aid2]
+  UpdDestroyActor _ _ _ -> Left False
+  UpdCreateItem iid _ _ (CActor aid2 s) -> itemAffectsSightRadius iid [s] aid2
+  UpdDestroyItem iid _ _ (CActor aid2 s) -> itemAffectsSightRadius iid [s] aid2
+  UpdSpotActor aid2 _ _ -> Right [aid2]
+  UpdLoseActor _ _ _ -> Left False
+  UpdSpotItem iid _ _ (CActor aid2 s) -> itemAffectsSightRadius iid [s] aid2
+  UpdLoseItem iid _ _ (CActor aid2 s) -> itemAffectsSightRadius iid [s] aid2
   -- Move actors and items.
-  UpdMoveActor{} -> True
-  UpdDisplaceActor{} -> True
-  UpdMoveItem{} -> True
-  UpdRefillCalm{} -> True  -- Calm caps sight radius
+  UpdMoveActor aid2 _ _ -> Right [aid2]
+  UpdDisplaceActor aid2 aid3 -> Right [aid2, aid3]
+  UpdMoveItem iid _ aid2 s1 s2 -> itemAffectsSightRadius iid [s1, s2] aid2
+  UpdRefillCalm aid2 _ -> Right [aid2]
   -- Alter map.
-  UpdAlterTile{} -> True  -- even if pos not visible initially
-  _ -> False
-
-resetsFovActor :: UpdAtomic -> EM.EnumMap ItemId FovCache3 -> ActorId -> Actor
-               -> Bool
-resetsFovActor cmd itemFovCache aid _b = case cmd of
-  -- Create/destroy actors and items.
-  UpdCreateActor aid2 _ _ -> aid2 == aid
-  UpdCreateItem iid _ _ (CActor aid2 s) -> itemAffectsSightRadius iid aid2 [s]
-  UpdDestroyItem iid _ _ (CActor aid2 s) -> itemAffectsSightRadius iid aid2 [s]
-  UpdSpotActor aid2 _ _ -> aid2 == aid
-  UpdSpotItem iid _ _ (CActor aid2 s) -> itemAffectsSightRadius iid aid2 [s]
-  UpdLoseItem iid _ _ (CActor aid2 s) -> itemAffectsSightRadius iid aid2 [s]
-  -- Move actors and items.
-  UpdMoveActor aid2 _ _ -> aid2 == aid
-  UpdDisplaceActor aid2 aid3 -> aid2 == aid || aid3 == aid
-  UpdMoveItem iid _ aid2 s1 s2 -> itemAffectsSightRadius iid aid2 [s1, s2]
-  UpdRefillCalm aid2 _ -> aid2 == aid
-  -- Alter map.
-  UpdAlterTile{} -> True
-  _ -> False
+  UpdAlterTile{} -> Left True
+  _ -> Right []
  where
-  itemAffectsSightRadius iid aid2 stores =
-    aid2 == aid
-    && not (null $ intersect stores [CEqp, COrgan])
-    && case EM.lookup iid itemFovCache of
-      Just FovCache3{fovSight} -> fovSight /= 0
-      Nothing -> False
+  itemAffectsSightRadius iid stores aid2 =
+    if not (null $ intersect stores [CEqp, COrgan])
+       && case EM.lookup iid itemFovCache of
+         Just FovCache3{fovSight} -> fovSight /= 0
+         Nothing -> False
+    then Right [aid2]
+    else Right []
 
 resetsClearCmdAtomic :: UpdAtomic -> Bool
 resetsClearCmdAtomic cmd = case cmd of  -- TODO
