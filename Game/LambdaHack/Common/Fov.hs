@@ -60,36 +60,47 @@ levelPerception reachable actorEqpBody clearPs litPs Level{lxsize, lysize} =
   in Perception psight psmell
 
 -- | Calculate faction's perception of a level based on the lit tiles cache.
-fidLidPerception :: PersLit -> FactionId -> LevelId -> Level
+fidLidPerception :: PerActor
+                 -> (ActorId -> Actor -> Bool)
+                 -> PersLit -> FactionId -> LevelId -> Level
                  -> (Perception, PerceptionServer)
-fidLidPerception (persFovCache, persLight, persClear) fid lid lvl =
+fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear)
+                 fid lid lvl =
   let bodyMap = EM.filter (\(b, _) -> bfid b == fid && blid b == lid)
                           persFovCache
       litPs = persLight EM.! lid
       clearPs = persClear EM.! lid
       -- Dying actors included, to let them see their own demise.
-      ourR = reachableFromActor clearPs
-      perBody = EM.map ourR bodyMap
+      ourR aid (b, cache) =
+        if resetsActor aid b
+        then reachableFromActor clearPs (b, cache)
+        else case EM.lookup aid perActor0 of
+          Just (PerceptionReachable per) -> per
+          Nothing -> assert `failure` (aid, b)
+      -- We don't check if any actor changed, because almost surely one is.
+      perBody = EM.mapWithKey ourR bodyMap
       perActor = EM.map PerceptionReachable perBody
       ptotal = PerceptionReachable $ ES.unions $ EM.elems perBody
       elBodyMap = EM.elems bodyMap
   in ( levelPerception ptotal elBodyMap clearPs litPs lvl
      , PerceptionServer{..} )
 
-fidLidUsingReachable :: PerceptionServer
+fidLidUsingReachable :: PerceptionReachable
                      -> PersLit -> FactionId -> LevelId -> Level
                      -> Perception
-fidLidUsingReachable perServer (persFovCache, persLight, persClear) fid lid lvl =
+fidLidUsingReachable ptotal (persFovCache, persLight, persClear) fid lid lvl =
   let elBodyMap = filter (\(b, _) -> bfid b == fid && blid b == lid)
                   $ EM.elems persFovCache
       litPs = persLight EM.! lid
       clearPs = persClear EM.! lid
-  in levelPerception (ptotal perServer) elBodyMap clearPs litPs lvl
+  in levelPerception ptotal elBodyMap clearPs litPs lvl
 
 -- | Calculate perception of a faction.
 factionPerception :: PersLit -> FactionId -> State -> (FactionPers, ServerPers)
 factionPerception persLit fid s =
-  let em = EM.mapWithKey (fidLidPerception persLit fid) $ sdungeon s
+  let resetsAlways _ _ = True
+      em = EM.mapWithKey (fidLidPerception undefined resetsAlways persLit fid)
+           $ sdungeon s
   in (EM.map fst em, EM.map snd em)
 
 -- | Calculate the perception of the whole dungeon.

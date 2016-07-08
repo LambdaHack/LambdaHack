@@ -61,7 +61,7 @@ handleAndBroadcast knowEvents persOld sItemFovCache (oldFC, oldLights, oldClear)
   -- Gather data from the old state.
   sOld <- getState
   factionD <- getsState sfactionD
-  ( ps, resetsFov, resetsLit, resetsClear, resetsFovCache
+  ( ps, resetsFov, resetsActor, resetsLit, resetsClear, resetsFovCache
    ,atomicBroken, psBroken ) <-
     case atomic of
       UpdAtomic cmd -> do
@@ -72,13 +72,14 @@ handleAndBroadcast knowEvents persOld sItemFovCache (oldFC, oldLights, oldClear)
             resetsFovCache = resetsFovCacheCmdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
-        return ( ps, resetsFov, resetsLit, resetsClear, resetsFovCache
+        return ( ps, resetsFov, resetsFovActor cmd
+               , resetsLit, resetsClear, resetsFovCache
                , map UpdAtomic atomicBroken, psBroken )
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
         atomicBroken <- breakSfxAtomic sfx
         psBroken <- mapM posSfxAtomic atomicBroken
-        return ( ps, False, False, False, False
+        return ( ps, False, \_ _ -> False, False, False, False
                , map SfxAtomic atomicBroken, psBroken )
   let resets = resetsFov || resetsLit || resetsClear || resetsFovCache
       atomicPsBroken = zip atomicBroken psBroken
@@ -147,10 +148,13 @@ handleAndBroadcast knowEvents persOld sItemFovCache (oldFC, oldLights, oldClear)
           lvl <- getLevel lid
           let (perNew, msrvPerNew) =
                 if resetsFov then
-                  let (per, srvPer) = fidLidPerception persLit fid lid lvl
-                  in (per, Just srvPer)
+                  let (per, srvPerNew) =
+                        fidLidPerception (perActor srvPerOld)
+                                         resetsActor persLit fid lid lvl
+                  in (per, Just srvPerNew)
                 else
-                  let per = fidLidUsingReachable srvPerOld persLit fid lid lvl
+                  let per = fidLidUsingReachable (ptotal srvPerOld)
+                                                 persLit fid lid lvl
                   in (per, Nothing)
           doUpdatePer fid lid perNew msrvPerNew
           let inPer = diffPer perNew perOld

@@ -20,6 +20,7 @@ module Game.LambdaHack.Common.Perception
   ( Perception(Perception)
   , PerceptionVisible(PerceptionVisible)
   , PerceptionReachable(..)
+  , PerActor
   , PerceptionServer(..)
   , totalVisible, smellVisible
   , nullPer, addPer, diffPer
@@ -84,6 +85,7 @@ type ServerPers = EM.EnumMap LevelId PerceptionServer
 -- This can't be added to @FactionDict@, because clients can't see it.
 data Pers = Pers
   { ppublic :: !(EM.EnumMap FactionId FactionPers)
+
   , pserver :: !(EM.EnumMap FactionId ServerPers)
   }
   deriving (Show, Eq)
