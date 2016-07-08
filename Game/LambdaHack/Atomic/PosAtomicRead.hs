@@ -221,8 +221,54 @@ singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 -- determine we do not need to reset anything, then perception
 -- (@psight@ to be precise, @psmell@ is irrelevant)
 -- Otherwise, save/restore would change game state.
-resetsFovCmdAtomic :: UpdAtomic -> Bool
-resetsFovCmdAtomic cmd = case cmd of
+resetsFovCmdAtomic :: UpdAtomic -> EM.EnumMap ItemId FovCache3 -> Bool
+resetsFovCmdAtomic cmd _itemFovCache = case cmd of
+  -- Create/destroy actors and items.
+  UpdCreateActor{} -> True
+  UpdDestroyActor{} -> True
+  UpdCreateItem{} -> True
+  UpdDestroyItem{} -> True
+  UpdSpotActor{} -> True
+  UpdLoseActor{} -> True
+  UpdSpotItem{} -> True
+  UpdLoseItem{} -> True
+  -- Move actors and items.
+  UpdMoveActor{} -> True
+  UpdDisplaceActor{} -> True
+  UpdMoveItem{} -> True
+  UpdRefillCalm{} -> True  -- Calm caps sight radius
+  -- Alter map.
+  UpdAlterTile{} -> True  -- even if pos not visible initially
+  _ -> False
+
+resetsFovActor :: UpdAtomic -> EM.EnumMap ItemId FovCache3 -> ActorId -> Actor
+               -> Bool
+resetsFovActor cmd itemFovCache aid _b = case cmd of
+  -- Create/destroy actors and items.
+  UpdCreateActor aid2 _ _ -> aid2 == aid
+  UpdCreateItem iid _ _ (CActor aid2 s) -> itemAffectsSightRadius iid aid2 [s]
+  UpdDestroyItem iid _ _ (CActor aid2 s) -> itemAffectsSightRadius iid aid2 [s]
+  UpdSpotActor aid2 _ _ -> aid2 == aid
+  UpdSpotItem iid _ _ (CActor aid2 s) -> itemAffectsSightRadius iid aid2 [s]
+  UpdLoseItem iid _ _ (CActor aid2 s) -> itemAffectsSightRadius iid aid2 [s]
+  -- Move actors and items.
+  UpdMoveActor aid2 _ _ -> aid2 == aid
+  UpdDisplaceActor aid2 aid3 -> aid2 == aid || aid3 == aid
+  UpdMoveItem iid _ aid2 s1 s2 -> itemAffectsSightRadius iid aid2 [s1, s2]
+  UpdRefillCalm aid2 _ -> aid2 == aid
+  -- Alter map.
+  UpdAlterTile{} -> True
+  _ -> False
+ where
+  itemAffectsSightRadius iid aid2 stores =
+    aid2 == aid
+    && not (null $ intersect stores [CEqp, COrgan])
+    && case EM.lookup iid itemFovCache of
+      Just FovCache3{fovSight} -> fovSight /= 0
+      Nothing -> False
+
+resetsClearCmdAtomic :: UpdAtomic -> Bool
+resetsClearCmdAtomic cmd = case cmd of  -- TODO
   -- Create/destroy actors and items.
   UpdCreateActor{} -> True
   UpdDestroyActor{} -> True
@@ -241,30 +287,8 @@ resetsFovCmdAtomic cmd = case cmd of
   UpdAlterTile{} -> True  -- even if pos not visible initially
   _ -> False
 
-resetsFovActor :: UpdAtomic -> ActorId -> Actor -> Bool
-resetsFovActor cmd aid _b = case cmd of
-  -- Create/destroy actors and items.
-  UpdCreateActor aid2 _ _ -> aid2 == aid
-  UpdCreateItem _iid _ _ _c -> True  -- may affect sight radius
-  UpdDestroyItem _iid _ _ _c -> True
-  UpdSpotActor aid2 _ _ -> aid2 == aid
-  UpdSpotItem _iid _ _ _c -> True
-  UpdLoseItem _iid _ _ _c -> True
-  -- Move actors and items.
-  UpdMoveActor aid2 _ _ -> aid2 == aid
-  UpdDisplaceActor aid2 aid3 -> aid2 == aid || aid3 == aid
-  UpdMoveItem _iid _ aid2 store1 store2 -> aid2 == aid
-                                           && CEqp `elem` [store1, store2]
-  UpdRefillCalm aid2 _ -> aid2 == aid
-  -- Alter map.
-  UpdAlterTile{} -> True
-  _ -> False
-
-resetsClearCmdAtomic :: UpdAtomic -> Bool
-resetsClearCmdAtomic = resetsFovCmdAtomic  -- TODO
-
 resetsFovCacheCmdAtomic :: UpdAtomic -> Bool
-resetsFovCacheCmdAtomic = resetsFovCmdAtomic  -- TODO
+resetsFovCacheCmdAtomic = resetsClearCmdAtomic  -- TODO
 
 -- | Determines if a command resets the data about lit tiles
 -- (both dynamically and statically).

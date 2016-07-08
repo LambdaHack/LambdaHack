@@ -46,7 +46,7 @@ handleCmdAtomicServer posAtomic atomic =
 
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
-                   => Bool -> Pers -> EM.EnumMap ItemId FovCache3 -> PersLit
+                   => Bool -> Pers -> m (EM.EnumMap ItemId FovCache3) -> PersLit
                    -> (FactionId -> LevelId
                        -> Perception -> Maybe PerceptionServer
                        -> m ())
@@ -55,13 +55,13 @@ handleAndBroadcast :: forall m. MonadStateWrite m
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
-handleAndBroadcast knowEvents persOld sItemFovCache (oldFC, oldLights, oldClear)
+handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClear)
                    doUpdatePer doUpdateLit doSendUpdateAI doSendUpdateUI
                    atomic = do
   -- Gather data from the old state.
   sOld <- getState
   factionD <- getsState sfactionD
-  ( ps, resetsFov, resetsActor, resetsLit, resetsClear, resetsFovCache
+  ( ps, resetsFovI, resetsActor, resetsLit, resetsClear, resetsFovCache
    ,atomicBroken, psBroken ) <-
     case atomic of
       UpdAtomic cmd -> do
@@ -79,9 +79,13 @@ handleAndBroadcast knowEvents persOld sItemFovCache (oldFC, oldLights, oldClear)
         ps <- posSfxAtomic sfx
         atomicBroken <- breakSfxAtomic sfx
         psBroken <- mapM posSfxAtomic atomicBroken
-        return ( ps, False, \_ _ -> False, False, False, False
+        return ( ps, \_ -> False, \_ _ _ -> False, False, False, False
                , map SfxAtomic atomicBroken, psBroken )
-  let resets = resetsFov || resetsLit || resetsClear || resetsFovCache
+  -- Perform the action on the server.
+  handleCmdAtomicServer ps atomic
+  itemFovCache <- getItemFovCache
+  let resetsFov = resetsFovI itemFovCache
+      resets = resetsFov || resetsLit || resetsClear || resetsFovCache
       atomicPsBroken = zip atomicBroken psBroken
   -- TODO: assert also that the sum of psBroken is equal to ps;
   -- with deep equality these assertions can be expensive; optimize.
@@ -91,8 +95,6 @@ handleAndBroadcast knowEvents persOld sItemFovCache (oldFC, oldLights, oldClear)
                       PosFidAndSer (Just _) _ -> True
                       _ -> not resets
                    `blame` (ps, resets)) ()
-  -- Perform the action on the server.
-  handleCmdAtomicServer ps atomic
   -- Update lights in the dungeon. This is lazy, may not be needed
   -- or only partially; in particular not needed if not @resets@.
   -- This is needed every (even enemy) move to show thrown torches.
@@ -102,10 +104,10 @@ handleAndBroadcast knowEvents persOld sItemFovCache (oldFC, oldLights, oldClear)
   -- reset light for an actor only if his light radius affected, etc.
   let persClear = if resetsClear then clearInDungeon s else oldClear
       persFovCache = if resetsFovCache
-                     then fovCacheInDungeon s sItemFovCache
+                     then fovCacheInDungeon s itemFovCache
                      else oldFC
       persLight = if resetsLit || resetsFovCache || resetsClear
-                  then lightInDungeon persFovCache persClear s sItemFovCache
+                  then lightInDungeon persFovCache persClear s itemFovCache
                   else oldLights
       persLit = (persFovCache, persLight, persClear)
   doUpdateLit persLit
@@ -150,7 +152,8 @@ handleAndBroadcast knowEvents persOld sItemFovCache (oldFC, oldLights, oldClear)
                 if resetsFov then
                   let (per, srvPerNew) =
                         fidLidPerception (perActor srvPerOld)
-                                         resetsActor persLit fid lid lvl
+                                         (resetsActor itemFovCache)
+                                         persLit fid lid lvl
                   in (per, Just srvPerNew)
                 else
                   let per = fidLidUsingReachable (ptotal srvPerOld)

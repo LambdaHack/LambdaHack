@@ -95,7 +95,6 @@ handleAndBroadcastServer atomic = do
   persOld <- getsServer sper
   persLitOld <- getsServer slit
   knowEvents <- getsServer $ sknowEvents . sdebugSer
-  sItemFovCache <- getsServer sItemFovCache
   let updatePer fid lid per msrvPer =
         let upd = EM.adjust (EM.adjust (const per) lid) fid
             srvUpd = case msrvPer of
@@ -105,7 +104,8 @@ handleAndBroadcastServer atomic = do
              ser2 {sper = Pers (upd (ppublic $ sper ser2))
                                (srvUpd (pserver $ sper ser2))}
       updateLit slit = modifyServer $ \ser -> ser {slit}
-  handleAndBroadcast knowEvents persOld sItemFovCache persLitOld
+      getItemFovCache = getsServer sItemFovCache
+  handleAndBroadcast knowEvents persOld getItemFovCache persLitOld
                      updatePer updateLit sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.
