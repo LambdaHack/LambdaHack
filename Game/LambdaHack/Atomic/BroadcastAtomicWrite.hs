@@ -61,29 +61,31 @@ handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClea
   -- Gather data from the old state.
   sOld <- getState
   factionD <- getsState sfactionD
-  ( ps, resetsFovI, resetsLit, resetsClear, resetsFovCache
+  ( ps, resetsFovI, resetsLitI, resetsClear, resetsFovCacheI
    ,atomicBroken, psBroken ) <-
     case atomic of
       UpdAtomic cmd -> do
         ps <- posUpdAtomic cmd
         let resetsFovI = resetsFovCmdAtomic cmd
-            resetsLit = resetsLitCmdAtomic cmd
+            resetsLitI = resetsLitCmdAtomic cmd
             resetsClear = resetsClearCmdAtomic cmd
-            resetsFovCache = resetsFovCacheCmdAtomic cmd
+            resetsFovCacheI = resetsFovCacheCmdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
-        return ( ps, resetsFovI, resetsLit, resetsClear, resetsFovCache
+        return ( ps, resetsFovI, resetsLitI, resetsClear, resetsFovCacheI
                , map UpdAtomic atomicBroken, psBroken )
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
         atomicBroken <- breakSfxAtomic sfx
         psBroken <- mapM posSfxAtomic atomicBroken
-        return ( ps, \_ -> Right [], False, False, False
+        return ( ps, \_ -> Right [], \_ -> False, False, \_ -> False
                , map SfxAtomic atomicBroken, psBroken )
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
   itemFovCache <- getItemFovCache
   let resetsFov = resetsFovI itemFovCache
+      resetsLit = resetsLitI itemFovCache
+      resetsFovCache = resetsFovCacheI itemFovCache
       resetOthers = resetsLit || resetsClear || resetsFovCache
       resets = resetsFov /= Right [] || resetOthers
       atomicPsBroken = zip atomicBroken psBroken
@@ -109,7 +111,7 @@ handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClea
       persFovCache = if resetsFovCache
                      then fovCacheInDungeon s itemFovCache
                      else oldFC
-      persLight = if resetOthers
+      persLight = if resetsLit
                   then lightInDungeon persFovCache persClear s itemFovCache
                   else oldLights
       persLit = (persFovCache, persLight, persClear)

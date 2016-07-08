@@ -243,48 +243,61 @@ resetsFovCmdAtomic cmd itemFovCache = case cmd of
     else Right []
 
 resetsClearCmdAtomic :: UpdAtomic -> Bool
-resetsClearCmdAtomic cmd = case cmd of  -- TODO
+resetsClearCmdAtomic cmd = case cmd of
+  UpdAlterTile{} -> True
+  _ -> False
+
+resetsFovCacheCmdAtomic :: UpdAtomic -> EM.EnumMap ItemId FovCache3 -> Bool
+resetsFovCacheCmdAtomic cmd itemFovCache = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor{} -> True
   UpdDestroyActor{} -> True
-  UpdCreateItem{} -> True  -- may affect sight radius
-  UpdDestroyItem{} -> True
+  UpdCreateItem iid _ _ (CActor _ s) -> itemAffectsFovCache3 iid [s]
+  UpdDestroyItem iid _ _ (CActor _ s) -> itemAffectsFovCache3 iid [s]
   UpdSpotActor{} -> True
   UpdLoseActor{} -> True
-  UpdSpotItem{} -> True
-  UpdLoseItem{} -> True
+  UpdSpotItem iid _ _ (CActor _ s) -> itemAffectsFovCache3 iid [s]
+  UpdLoseItem iid _ _ (CActor _ s) -> itemAffectsFovCache3 iid [s]
   -- Move actors and items.
-  UpdMoveActor{} -> True
-  UpdDisplaceActor{} -> True
-  UpdMoveItem{} -> True  -- sight radius bonuses
-  UpdRefillCalm{} -> True  -- Calm caps sight radius
-  -- Alter map.
-  UpdAlterTile{} -> True  -- even if pos not visible initially
+  UpdMoveItem iid _ _ s1 s2 -> itemAffectsFovCache3 iid [s1, s2]
   _ -> False
-
-resetsFovCacheCmdAtomic :: UpdAtomic -> Bool
-resetsFovCacheCmdAtomic = resetsClearCmdAtomic  -- TODO
+ where
+  itemAffectsFovCache3 iid stores =
+    not (null $ intersect stores [CEqp, COrgan])
+    && case EM.lookup iid itemFovCache of
+      Just FovCache3{..} -> fovSight /= 0 || fovSmell /= 0 || fovLight /= 0
+      Nothing -> False
 
 -- | Determines if a command resets the data about lit tiles
 -- (both dynamically and statically).
-resetsLitCmdAtomic :: UpdAtomic -> Bool
-resetsLitCmdAtomic cmd = case cmd of
+resetsLitCmdAtomic :: UpdAtomic -> EM.EnumMap ItemId FovCache3 -> Bool
+resetsLitCmdAtomic cmd itemFovCache = case cmd of
   -- Create/destroy actors and items.
-  UpdCreateActor{} -> True  -- may have a light source
+  UpdCreateActor{} -> True  -- may have a light source (as organ or trunk even)
   UpdDestroyActor{} -> True
-  UpdCreateItem{} -> True  -- may be a light source
-  UpdDestroyItem{} -> True
+  UpdCreateItem iid _ _ (CFloor _ _) -> itemAffectsLitRadius iid []
+  UpdCreateItem iid _ _ (CActor _ s) -> itemAffectsLitRadius iid [s]
+  UpdDestroyItem iid _ _ (CFloor _ _) -> itemAffectsLitRadius iid []
+  UpdDestroyItem iid _ _ (CActor _ s) -> itemAffectsLitRadius iid [s]
   UpdSpotActor{} -> True
   UpdLoseActor{} -> True
-  UpdSpotItem{} -> True
-  UpdLoseItem{} -> True
+  UpdSpotItem iid _ _ (CFloor _ _) -> itemAffectsLitRadius iid []
+  UpdSpotItem iid _ _ (CActor _ s) -> itemAffectsLitRadius iid [s]
+  UpdLoseItem iid _ _ (CFloor _ _) -> itemAffectsLitRadius iid []
+  UpdLoseItem iid _ _ (CActor _ s) -> itemAffectsLitRadius iid [s]
   -- Move actors and items.
-  UpdMoveActor{} -> True
+  UpdMoveActor{} -> True  -- TODO: check if has light
   UpdDisplaceActor{} -> True
-  UpdMoveItem{} -> True  -- light sources don't shine in backpack, etc.
+  UpdMoveItem iid _ _ s1 s2 -> itemAffectsLitRadius iid [s1, s2]
   -- Alter map.
-  UpdAlterTile{} -> True  -- even if pos not visible initially
+  UpdAlterTile{} -> True
   _ -> False
+ where
+  itemAffectsLitRadius iid stores =
+    (null stores || (not $ null $ intersect stores [CEqp, COrgan, CGround]))
+    && case EM.lookup iid itemFovCache of
+      Just FovCache3{fovLight} -> fovLight /= 0
+      Nothing -> False
 
 -- | Decompose an atomic action. The original action is visible
 -- if it's positions are visible both before and after the action
