@@ -19,6 +19,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.FovDigital
 import Game.LambdaHack.Common.Item
@@ -62,7 +63,7 @@ levelPerception reachable actorEqpBody clearPs litPs Level{lxsize, lysize} =
 -- | Calculate faction's perception of a level based on the lit tiles cache.
 fidLidPerception :: PerActor
                  -> Either Bool [ActorId]
-                 -> PersLit -> FactionId -> LevelId -> Level
+                 -> PersLitA -> FactionId -> LevelId -> Level
                  -> (Perception, PerceptionServer)
 fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear)
                  fid lid lvl =
@@ -87,7 +88,7 @@ fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear)
      , PerceptionServer{..} )
 
 fidLidUsingReachable :: PerceptionReachable
-                     -> PersLit -> FactionId -> LevelId -> Level
+                     -> PersLitA -> FactionId -> LevelId -> Level
                      -> Perception
 fidLidUsingReachable ptotal (persFovCache, persLight, persClear) fid lid lvl =
   let elBodyMap = filter (\(b, _) -> bfid b == fid && blid b == lid)
@@ -97,7 +98,7 @@ fidLidUsingReachable ptotal (persFovCache, persLight, persClear) fid lid lvl =
   in levelPerception ptotal elBodyMap clearPs litPs lvl
 
 -- | Calculate perception of a faction.
-factionPerception :: PersLit -> FactionId -> State -> (FactionPers, ServerPers)
+factionPerception :: PersLitA -> FactionId -> State -> (FactionPers, ServerPers)
 factionPerception persLit fid s =
   let resetsAlways = Left True
       em = EM.mapWithKey (fidLidPerception undefined resetsAlways persLit fid)
@@ -109,9 +110,12 @@ dungeonPerception :: State -> EM.EnumMap ItemId FovCache3 -> (PersLit, Pers)
 dungeonPerception s sItemFovCache =
   let persClear = clearInDungeon s
       persFovCache = fovCacheInDungeon s sItemFovCache
-      persLight = lightInDungeon persFovCache persClear s sItemFovCache
+      addBodyToCache aid cache = (getActorBody aid s, cache)
+      persFovCacheA = EM.mapWithKey addBodyToCache persFovCache
+      persLight = lightInDungeon persFovCacheA persClear s sItemFovCache
       persLit = (persFovCache, persLight, persClear)
-      f fid _ = factionPerception persLit fid s
+      persLitA = (persFovCacheA, persLight, persClear)
+      f fid _ = factionPerception persLitA fid s
       em = EM.mapWithKey f $ sfactionD s
   in (persLit, Pers (EM.map fst em) (EM.map snd em))
 
@@ -154,7 +158,7 @@ clearInDungeon s =
         in (lid, clearTiles)
   in EM.fromDistinctAscList $ map clearLvl $ EM.assocs $ sdungeon s
 
-lightInDungeon :: PersFovCache -> PersClear -> State
+lightInDungeon :: PersFovCacheA -> PersClear -> State
                -> EM.EnumMap ItemId FovCache3
                -> PersLight
 lightInDungeon persFovCache persClear s sItemFovCache =
@@ -201,8 +205,7 @@ fovCacheInDungeon s sItemFovCache =
       processBag3 bag acc = foldl' processIid3 acc $ EM.assocs bag
       processActor b =
         let sslOrgan = processBag3 (borgan b) emptyFovCache3
-            ssl = processBag3 (beqp b) sslOrgan
-        in (b, ssl)
+        in processBag3 (beqp b) sslOrgan
   in EM.map processActor $ sactorD s
 
 -- | Perform a full scan for a given position. Returns the positions

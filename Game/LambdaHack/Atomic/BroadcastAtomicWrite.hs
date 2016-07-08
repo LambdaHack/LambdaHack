@@ -11,7 +11,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Key (mapWithKeyM_)
+import Data.Key (mapWithKeyM, mapWithKeyM_)
 
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.HandleAtomicWrite
@@ -111,10 +111,15 @@ handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClea
       persFovCache = if resetsFovCache
                      then fovCacheInDungeon s itemFovCache
                      else oldFC
-      persLight = if resetsLit
-                  then lightInDungeon persFovCache persClear s itemFovCache
+      addBodyToCache aid cache = do
+        body <- getsState $ getActorBody aid
+        return (body, cache)
+  persFovCacheA <- mapWithKeyM addBodyToCache persFovCache
+  let persLight = if resetsLit
+                  then lightInDungeon persFovCacheA persClear s itemFovCache
                   else oldLights
       persLit = (persFovCache, persLight, persClear)
+      persLitA = (persFovCacheA, persLight, persClear)
   doUpdateLit persLit
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI =
@@ -159,11 +164,11 @@ handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClea
                 if resetsFovFid then
                   let (per, srvPerNew) =
                         fidLidPerception (perActor srvPerOld) resetsFov
-                                         persLit fid lid lvl
+                                         persLitA fid lid lvl
                   in (per, Just srvPerNew)
                 else
                   let per = fidLidUsingReachable (ptotal srvPerOld)
-                                                 persLit fid lid lvl
+                                                 persLitA fid lid lvl
                   in (per, Nothing)
           doUpdatePer fid lid perNew msrvPerNew
           let inPer = diffPer perNew perOld
