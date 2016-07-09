@@ -49,7 +49,10 @@ levelPerception reachable actorEqpBody clearPs litPs Level{lxsize, lysize} =
       gatherVicinities = concatMap (pAndVicinity . bpos . fst)
       nocteurs = filter (not . bproj . fst) actorEqpBody
       nocto = gatherVicinities nocteurs
-      psight = visibleOnLevel reachable litPs nocto
+      litSet set p b = if b then p : set else set
+      litPsSet = ES.fromDistinctAscList
+                 $ PointArray.ifoldlA litSet [] litPs
+      psight = visibleOnLevel reachable litPsSet nocto
       -- TODO: handle smell radius < 2, that is only under the actor
       -- Projectiles can potentially smell, too.
       canSmellAround FovCache3{fovSmell} = fovSmell >= 2
@@ -124,12 +127,11 @@ dungeonPerception s sItemFovCache =
 -- light source, e.g,, carried by an actor. A reachable and lit position
 -- is visible. Additionally, positions directly adjacent to an actor are
 -- assumed to be visible to him (through sound, touch, noctovision, whatever).
-visibleOnLevel :: PerceptionReachable -> PointArray.Array Bool -> [Point]
+visibleOnLevel :: PerceptionReachable -> ES.EnumSet Point -> [Point]
                -> PerceptionVisible
 visibleOnLevel PerceptionReachable{preachable} litPs nocto =
-  let isVisible = (litPs PointArray.!)
-  in PerceptionVisible $
-       ES.fromList nocto `ES.union` ES.filter isVisible preachable
+  PerceptionVisible $
+    ES.fromList nocto `ES.union` (preachable `ES.intersection` litPs)
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
