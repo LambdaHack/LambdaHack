@@ -150,6 +150,6 @@ type PersFovCacheA = EM.EnumMap ActorId (Actor, FovCache3)
 
 type PersFovCache = EM.EnumMap ActorId FovCache3
 
-type PersLight = EM.EnumMap LevelId (PointArray.Array Bool)
+type PersLight = EM.EnumMap LevelId (ES.EnumSet Point)
 
 type PersClear = EM.EnumMap LevelId (PointArray.Array Bool)

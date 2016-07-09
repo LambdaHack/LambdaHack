@@ -35,12 +35,12 @@ import Game.LambdaHack.Common.Vector
 -- | All positions lit by dynamic lights on a level. Shared by all factions.
 -- The list may contain (many) repetitions.
 newtype PerceptionDynamicLit = PerceptionDynamicLit
-    {pdynamicLit :: [Point]}
+    {pdynamicLit :: [ES.EnumSet Point]}
   deriving Show
 
 -- | Calculate faction's perception of a level.
 levelPerception :: PerceptionReachable -> [(Actor, FovCache3)]
-                -> PointArray.Array Bool -> PointArray.Array Bool -> Level
+                -> PointArray.Array Bool -> ES.EnumSet Point -> Level
                 -> Perception
 levelPerception reachable actorEqpBody clearPs litPs Level{lxsize, lysize} =
   let -- All non-projectile actors feel adjacent positions,
@@ -49,10 +49,7 @@ levelPerception reachable actorEqpBody clearPs litPs Level{lxsize, lysize} =
       gatherVicinities = concatMap (pAndVicinity . bpos . fst)
       nocteurs = filter (not . bproj . fst) actorEqpBody
       nocto = gatherVicinities nocteurs
-      litSet set p b = if b then p : set else set
-      litPsSet = ES.fromDistinctAscList
-                 $ PointArray.ifoldlA litSet [] litPs
-      psight = visibleOnLevel reachable litPsSet nocto
+      psight = visibleOnLevel reachable litPs nocto
       -- TODO: handle smell radius < 2, that is only under the actor
       -- Projectiles can potentially smell, too.
       canSmellAround FovCache3{fovSmell} = fovSmell >= 2
@@ -148,9 +145,9 @@ reachableFromActor clearPs (body, FovCache3{fovSight}) =
 litByItems :: PointArray.Array Bool -> [(Point, Int)]
            -> PerceptionDynamicLit
 litByItems clearPs allItems =
-  let litPos :: (Point, Int) -> [Point]
-      litPos (p, light) = ES.toList $ fullscan clearPs light p
-  in PerceptionDynamicLit $ concatMap litPos allItems
+  let litPos :: (Point, Int) -> ES.EnumSet Point
+      litPos (p, light) = fullscan clearPs light p
+  in PerceptionDynamicLit $ map litPos allItems
 
 clearInDungeon :: State -> PersClear
 clearInDungeon s =
@@ -177,12 +174,12 @@ lightInDungeon persFovCache persClear s sItemFovCache =
       -- Note that an actor can be blind,
       -- in which case he doesn't see his own light
       -- (but others, from his or other factions, possibly do).
-      litOnLevel :: LevelId -> Level -> PointArray.Array Bool
+      litOnLevel :: LevelId -> Level -> ES.EnumSet Point
       litOnLevel lid lvl@Level{ltile} =
         let lvlBodies = filter ((== lid) . blid . fst) $ EM.elems persFovCache
-            -- TODO: keep it in server state and update when tiles change.
-            -- Actually, do this for PersLit.
-            litTiles = PointArray.mapA (Tile.isLit cotile) ltile
+            litSet set p t = if Tile.isLit cotile t then p : set else set
+            litTiles = ES.fromDistinctAscList
+                       $ PointArray.ifoldlA litSet [] ltile
             actorLights = map (\(b, FovCache3{fovLight}) -> (bpos b, fovLight))
                               lvlBodies
             floorLights = lightOnFloor lvl
@@ -192,7 +189,7 @@ lightInDungeon persFovCache persClear s sItemFovCache =
             allLights = floorLights ++ actorLights
             litDynamic = pdynamicLit
                          $ litByItems (persClear EM.! lid) allLights
-        in litTiles PointArray.// map (\p -> (p, True)) litDynamic
+        in ES.unions $ litTiles : litDynamic
       litLvl (lid, lvl) = (lid, litOnLevel lid lvl)
   in EM.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
 
