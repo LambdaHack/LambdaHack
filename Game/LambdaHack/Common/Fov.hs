@@ -65,7 +65,7 @@ fidLidPerception :: PerActor
                  -> Either Bool [ActorId]
                  -> PersLitA -> FactionId -> LevelId -> Level
                  -> (Perception, PerceptionServer)
-fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear)
+fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear, _)
                  fid lid lvl =
   let bodyMap = EM.filter (\(b, _) -> bfid b == fid && blid b == lid)
                           persFovCache
@@ -90,7 +90,7 @@ fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear)
 fidLidUsingReachable :: PerceptionReachable
                      -> PersLitA -> FactionId -> LevelId -> Level
                      -> Perception
-fidLidUsingReachable ptotal (persFovCache, persLight, persClear) fid lid lvl =
+fidLidUsingReachable ptotal (persFovCache, persLight, persClear, _) fid lid lvl =
   let elBodyMap = filter (\(b, _) -> bfid b == fid && blid b == lid)
                   $ EM.elems persFovCache
       litPs = persLight EM.! lid
@@ -112,9 +112,10 @@ dungeonPerception s sItemFovCache =
       persFovCache = fovCacheInDungeon s sItemFovCache
       addBodyToCache aid cache = (getActorBody aid s, cache)
       persFovCacheA = EM.mapWithKey addBodyToCache persFovCache
-      persLight = lightInDungeon persFovCacheA persClear s sItemFovCache
-      persLit = (persFovCache, persLight, persClear)
-      persLitA = (persFovCacheA, persLight, persClear)
+      (persLight, persTileLight) =
+        lightInDungeon Nothing persFovCacheA persClear s sItemFovCache
+      persLit = (persFovCache, persLight, persClear, persTileLight)
+      persLitA = (persFovCacheA, persLight, persClear, persTileLight)
       f fid _ = factionPerception persLitA fid s
       em = EM.mapWithKey f $ sfactionD s
   in (persLit, Pers (EM.map fst em) (EM.map snd em))
@@ -157,10 +158,10 @@ clearInDungeon s =
         in (lid, clearTiles)
   in EM.fromDistinctAscList $ map clearLvl $ EM.assocs $ sdungeon s
 
-lightInDungeon :: PersFovCacheA -> PersClear -> State
+lightInDungeon :: Maybe PersLight -> PersFovCacheA -> PersClear -> State
                -> EM.EnumMap ItemId FovCache3
-               -> PersLight
-lightInDungeon persFovCache persClear s sItemFovCache =
+               -> (PersLight, PersLight)
+lightInDungeon moldTileLight persFovCache persClear s sItemFovCache =
   let Kind.COps{cotile} = scops s
       processIid lightAcc (iid, (k, _)) =
         let FovCache3{fovLight} =
@@ -174,12 +175,14 @@ lightInDungeon persFovCache persClear s sItemFovCache =
       -- Note that an actor can be blind,
       -- in which case he doesn't see his own light
       -- (but others, from his or other factions, possibly do).
-      litOnLevel :: LevelId -> Level -> ES.EnumSet Point
+      litOnLevel :: LevelId -> Level -> (ES.EnumSet Point, ES.EnumSet Point)
       litOnLevel lid lvl@Level{ltile} =
         let lvlBodies = filter ((== lid) . blid . fst) $ EM.elems persFovCache
             litSet set p t = if Tile.isLit cotile t then p : set else set
-            litTiles = ES.fromDistinctAscList
-                       $ PointArray.ifoldlA litSet [] ltile
+            litTiles = case moldTileLight of
+              Nothing ->
+                ES.fromDistinctAscList $ PointArray.ifoldlA litSet [] ltile
+              Just oldTileLight -> oldTileLight EM.! lid
             actorLights = map (\(b, FovCache3{fovLight}) -> (bpos b, fovLight))
                               lvlBodies
             floorLights = lightOnFloor lvl
@@ -189,9 +192,10 @@ lightInDungeon persFovCache persClear s sItemFovCache =
             allLights = floorLights ++ actorLights
             litDynamic = pdynamicLit
                          $ litByItems (persClear EM.! lid) allLights
-        in ES.unions $ litTiles : litDynamic
+        in (ES.unions $ litTiles : litDynamic, litTiles)
       litLvl (lid, lvl) = (lid, litOnLevel lid lvl)
-  in EM.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
+      em = EM.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
+  in (EM.map fst em, EM.map snd em)
 
 fovCacheInDungeon :: State -> EM.EnumMap ItemId FovCache3 -> PersFovCache
 fovCacheInDungeon s sItemFovCache =

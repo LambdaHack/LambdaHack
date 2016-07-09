@@ -140,9 +140,9 @@ instance Binary FovCache3 where
 emptyFovCache3 :: FovCache3
 emptyFovCache3 = FovCache3 0 0 0
 
-type PersLit = (PersFovCache, PersLight, PersClear)
+type PersLit = (PersFovCache, PersLight, PersClear, PersLight)
 
-type PersLitA = (PersFovCacheA, PersLight, PersClear)
+type PersLitA = (PersFovCacheA, PersLight, PersClear, PersLight)
 
 -- | The cache of FOV information for a level, such as sight, smell
 -- and light radiuses for each actor.

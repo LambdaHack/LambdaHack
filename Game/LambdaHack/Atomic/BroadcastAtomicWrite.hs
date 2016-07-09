@@ -55,7 +55,7 @@ handleAndBroadcast :: forall m. MonadStateWrite m
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
-handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClear)
+handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClear, oldTileLight)
                    doUpdatePer doUpdateLit doSendUpdateAI doSendUpdateUI
                    atomic = do
   -- Gather data from the old state.
@@ -115,11 +115,13 @@ handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClea
         body <- getsState $ getActorBody aid
         return (body, cache)
   persFovCacheA <- mapWithKeyM addBodyToCache persFovCache
-  let persLight = if resetsLit
-                  then lightInDungeon persFovCacheA persClear s itemFovCache
-                  else oldLights
-      persLit = (persFovCache, persLight, persClear)
-      persLitA = (persFovCacheA, persLight, persClear)
+  let (persLight, persTileLight) =
+        if resetsLit
+        then lightInDungeon (if resetsClear then Nothing else Just oldTileLight)
+                            persFovCacheA persClear s itemFovCache
+        else (oldLights, oldTileLight)
+      persLit = (persFovCache, persLight, persClear, persTileLight)
+      persLitA = (persFovCacheA, persLight, persClear, persTileLight)
   doUpdateLit persLit
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI =
