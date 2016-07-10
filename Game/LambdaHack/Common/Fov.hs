@@ -7,7 +7,6 @@ module Game.LambdaHack.Common.Fov
   , clearInDungeon, lightInDungeon, fovCacheInDungeon
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , PerceptionDynamicLit(..)
 #endif
   ) where
 
@@ -32,32 +31,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 
--- | All positions lit by dynamic lights on a level. Shared by all factions.
--- The list may contain (many) repetitions.
-newtype PerceptionDynamicLit = PerceptionDynamicLit
-    {pdynamicLit :: [ES.EnumSet Point]}
-  deriving Show
-
--- | Calculate faction's perception of a level.
-levelPerception :: PerceptionReachable
-                -> [(Actor, FovCache3)]
-                -> ES.EnumSet Point
-                -> Perception
-levelPerception reachable actorEqpBody litPs =
-  let -- All non-projectile actors feel adjacent positions,
-      -- even dark (for easy exploration). Projectiles rely on cameras.
-      nocteurs = filter (not . bproj . fst) actorEqpBody
-      -- We assume every level is surrounded in permanent, unenterable boundary.
-      nocto = ES.unions $ map (squareUnsafeSet . bpos . fst) nocteurs
-      psight = visibleOnLevel reachable litPs nocto
-      -- TODO: until AI can handle/ignore it, only radius 2 used
-      -- Projectiles can potentially smell, too.
-      canSmellAround FovCache3{fovSmell} = fovSmell >= 2
-      smellers = filter (canSmellAround . snd) actorEqpBody
-      psmell = PerceptionVisible
-               $ ES.unions $ map (squareUnsafeSet . bpos . fst) smellers
-  in Perception{..}
-
 -- | Calculate faction's perception of a level based on the lit tiles cache.
 fidLidPerception :: PerActor
                  -> Either Bool [ActorId]
@@ -72,27 +45,50 @@ fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear, _)
       -- Dying actors included, to let them see their own demise.
       ourR aid bcache =
         if either id (aid `elem`) resetsActor
-        then reachableFromActor clearPs bcache
+        then perCacheServerFromActor clearPs bcache
         else case EM.lookup aid perActor0 of
-          Just (PerceptionReachable per) -> per
+          Just per -> per
           Nothing -> assert `failure` (aid, bcache)
       -- We don't check if any actor changed, because almost surely one is.
       -- Exception: when an actor is destroyed, but then union differs.
-      perBody = EM.mapWithKey ourR bodyMap
-      perActor = EM.map PerceptionReachable perBody
-      ptotal = PerceptionReachable $ ES.unions $ EM.elems perBody
-      elBodyMap = EM.elems bodyMap
-  in ( levelPerception ptotal elBodyMap litPs
-     , PerceptionServer{..} )
+      perActor = EM.mapWithKey ourR bodyMap
+      lActor = EM.elems perActor
+      ptotal = PerCacheServer
+        { creachable = PerceptionReachable
+                       $ ES.unions $ map (preachable . creachable) lActor
+        , cnocto = PerceptionVisible
+                   $ ES.unions $ map (pvisible . cnocto) lActor
+        , csmell = PerceptionVisible
+                   $ ES.unions $ map (pvisible . csmell) lActor }
+      psight = visibleOnLevel (creachable ptotal) litPs (cnocto ptotal)
+      psmell = csmell ptotal
+  in (Perception{..}, PerceptionServer{..})
 
-fidLidUsingReachable :: PerceptionReachable
-                     -> PersLitA -> FactionId -> LevelId
+-- | Compute positions reachable by the actor. Reachable are all fields
+-- on a visually unblocked path from the actor position.
+perCacheServerFromActor :: PointArray.Array Bool
+                        -> (Actor, FovCache3)
+                        -> PerCacheServer
+perCacheServerFromActor clearPs (body, FovCache3{fovSight, fovSmell}) =
+  let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) fovSight
+      creachable = PerceptionReachable $ fullscan clearPs radius (bpos body)
+      -- All non-projectile actors feel adjacent positions,
+      -- even dark (for easy exploration). Projectiles rely on cameras.
+      noctoRadius = if bproj body then 0 else 2
+      cnocto = PerceptionVisible $ fullscan clearPs noctoRadius (bpos body)
+      -- Projectiles can potentially smell, too.
+      -- TODO: until AI can handle/ignore it, only radius 2 used
+      smellRadius = if fovSmell >= 2 then 2 else 0
+      csmell = PerceptionVisible $ fullscan clearPs smellRadius (bpos body)
+  in PerCacheServer{..}
+
+fidLidUsingReachable :: PerCacheServer -> PersLit -> LevelId
                      -> Perception
-fidLidUsingReachable ptotal (persFovCache, persLight, _, _) fid lid =
-  let elBodyMap = filter (\(b, _) -> bfid b == fid && blid b == lid)
-                  $ EM.elems persFovCache
-      litPs = persLight EM.! lid
-  in levelPerception ptotal elBodyMap litPs
+fidLidUsingReachable ptotal (_, persLight, _, _) lid =
+  let litPs = persLight EM.! lid
+      psight = visibleOnLevel (creachable ptotal) litPs (cnocto ptotal)
+      psmell = csmell ptotal
+  in Perception{..}
 
 -- | Calculate perception of a faction.
 factionPerception :: PersLitA -> FactionId -> State -> (FactionPers, ServerPers)
@@ -123,29 +119,20 @@ dungeonPerception s sItemFovCache =
 -- light source, e.g,, carried by an actor. A reachable and lit position
 -- is visible. Additionally, positions directly adjacent to an actor are
 -- assumed to be visible to him (through sound, touch, noctovision, whatever).
-visibleOnLevel :: PerceptionReachable -> ES.EnumSet Point -> ES.EnumSet Point
+visibleOnLevel :: PerceptionReachable -> ES.EnumSet Point -> PerceptionVisible
                -> PerceptionVisible
-visibleOnLevel PerceptionReachable{preachable} litPs nocto =
+visibleOnLevel PerceptionReachable{preachable} litPs (PerceptionVisible nocto) =
   PerceptionVisible $ nocto `ES.union` (preachable `ES.intersection` litPs)
-
--- | Compute positions reachable by the actor. Reachable are all fields
--- on a visually unblocked path from the actor position.
-reachableFromActor :: PointArray.Array Bool
-                   -> (Actor, FovCache3)
-                   -> ES.EnumSet Point
-reachableFromActor clearPs (body, FovCache3{fovSight}) =
-  let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) fovSight
-  in fullscan clearPs radius (bpos body)
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or floor items. Note that an actor can be blind, in which case he doesn't see
 -- his own light (but others, from his or other factions, possibly do).
 litByItems :: PointArray.Array Bool -> [(Point, Int)]
-           -> PerceptionDynamicLit
+           -> [ES.EnumSet Point]
 litByItems clearPs allItems =
   let litPos :: (Point, Int) -> ES.EnumSet Point
       litPos (p, light) = fullscan clearPs light p
-  in PerceptionDynamicLit $ map litPos allItems
+  in map litPos allItems
 
 clearInDungeon :: State -> PersClear
 clearInDungeon s =
@@ -187,8 +174,7 @@ lightInDungeon moldTileLight persFovCache persClear s sItemFovCache =
             -- only the stronger light is taken into account.
             -- This is rare, so no point optimizing away the double computation.
             allLights = floorLights ++ actorLights
-            litDynamic = pdynamicLit
-                         $ litByItems (persClear EM.! lid) allLights
+            litDynamic = litByItems (persClear EM.! lid) allLights
         in (ES.unions $ litTiles : litDynamic, litTiles)
       litLvl (lid, lvl) = (lid, litOnLevel lid lvl)
       em = EM.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s

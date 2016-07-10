@@ -18,9 +18,10 @@
 -- space can be hit.
 module Game.LambdaHack.Common.Perception
   ( Perception(..)
-  , PerceptionVisible(PerceptionVisible)
+  , PerceptionVisible(..)
   , PerceptionReachable(..)
   , PerActor
+  , PerCacheServer(..)
   , PerceptionServer(..)
   , totalVisible, smellVisible
   , nullPer, addPer, diffPer
@@ -46,19 +47,28 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
+-- | Visible positions.
 newtype PerceptionVisible = PerceptionVisible
     {pvisible :: ES.EnumSet Point}
   deriving (Show, Eq, Binary)
 
 -- | Visually reachable positions (light passes through them to the actor).
+-- They need to be intersected with lit positions to obtain visible positions.
 newtype PerceptionReachable = PerceptionReachable
     {preachable :: ES.EnumSet Point}
   deriving (Show, Eq, Binary)
 
-type PerActor = EM.EnumMap ActorId PerceptionReachable
+type PerActor = EM.EnumMap ActorId PerCacheServer
+
+data PerCacheServer = PerCacheServer
+  { creachable :: !PerceptionReachable
+  , cnocto     :: !PerceptionVisible
+  , csmell     :: !PerceptionVisible
+  }
+  deriving (Show, Eq)
 
 data PerceptionServer = PerceptionServer
-  { ptotal   :: !PerceptionReachable
+  { ptotal   :: !PerCacheServer
   , perActor :: !PerActor
   }
   deriving (Show, Eq)

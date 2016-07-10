@@ -169,7 +169,7 @@ handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClea
                   in (per, Just srvPerNew)
                 else
                   let per = fidLidUsingReachable (ptotal srvPerOld)
-                                                 persLitA fid lid
+                                                 persLit lid
                   in (per, Nothing)
           doUpdatePer fid lid perNew msrvPerNew
           let inPer = diffPer perNew perOld

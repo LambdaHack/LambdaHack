@@ -237,7 +237,7 @@ resetsFovCmdAtomic cmd itemFovCache = case cmd of
   itemAffectsSightRadius iid stores aid2 =
     if not (null $ intersect stores [CEqp, COrgan])
        && case EM.lookup iid itemFovCache of
-         Just FovCache3{fovSight} -> fovSight /= 0
+         Just FovCache3{fovSight, fovSmell} -> fovSight /= 0 || fovSmell /= 0
          Nothing -> False
     then Right [aid2]
     else Right []
