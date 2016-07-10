@@ -3,7 +3,8 @@
 -- but not unique, way.
 module Game.LambdaHack.Common.Vector
   ( Vector(..), isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
-  , moves, movesCardinal, movesDiagonal, compassText, vicinity, vicinityCardinal
+  , moves, movesCardinal, movesDiagonal, compassText
+  , vicinity, vicinityUnsafe, vicinityCardinal
   , shift, shiftBounded, trajectoryToPath, trajectoryToPathBounded
   , vectorToFrom, pathToTrajectory
   , RadianAngle, rotate, towards

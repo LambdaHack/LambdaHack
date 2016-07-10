@@ -40,22 +40,24 @@ newtype PerceptionDynamicLit = PerceptionDynamicLit
 
 -- | Calculate faction's perception of a level.
 levelPerception :: PerceptionReachable -> [(Actor, FovCache3)]
-                -> PointArray.Array Bool -> ES.EnumSet Point -> Level
+                -> PointArray.Array Bool -> ES.EnumSet Point
                 -> Perception
-levelPerception reachable actorEqpBody clearPs litPs Level{lxsize, lysize} =
+levelPerception reachable actorEqpBody clearPs litPs =
   let -- All non-projectile actors feel adjacent positions,
       -- even dark (for easy exploration). Projectiles rely on cameras.
-      pAndVicinity p = p : vicinity lxsize lysize p
-      gatherVicinities = concatMap (pAndVicinity . bpos . fst)
       nocteurs = filter (not . bproj . fst) actorEqpBody
-      nocto = gatherVicinities nocteurs
+      -- We assume every level is surrounded in permanent, unenterable boundary.
+      pAndVicinity p = p : vicinityUnsafe p
+      gatherVicinities = concatMap (pAndVicinity . bpos . fst)
+      nocto = ES.fromList $ gatherVicinities nocteurs
       psight = visibleOnLevel reachable litPs nocto
-      -- TODO: handle smell radius < 2, that is only under the actor
+      -- TODO: handle smell radius < 2, that is only under the actor?
+      -- or handly smell larger than 2 (costly)?
       -- Projectiles can potentially smell, too.
       canSmellAround FovCache3{fovSmell} = fovSmell >= 2
       smellers = filter (canSmellAround . snd) actorEqpBody
       smells = gatherVicinities smellers
-      -- No smell stored in walls and under other actors.
+      -- No smell stored in walls.
       canHoldSmell p = clearPs PointArray.! p
       psmell = PerceptionVisible $ ES.fromList $ filter canHoldSmell smells
   in Perception psight psmell
@@ -63,10 +65,10 @@ levelPerception reachable actorEqpBody clearPs litPs Level{lxsize, lysize} =
 -- | Calculate faction's perception of a level based on the lit tiles cache.
 fidLidPerception :: PerActor
                  -> Either Bool [ActorId]
-                 -> PersLitA -> FactionId -> LevelId -> Level
+                 -> PersLitA -> FactionId -> LevelId
                  -> (Perception, PerceptionServer)
 fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear, _)
-                 fid lid lvl =
+                 fid lid =
   let bodyMap = EM.filter (\(b, _) -> bfid b == fid && blid b == lid)
                           persFovCache
       litPs = persLight EM.! lid
@@ -84,25 +86,26 @@ fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear, _)
       perActor = EM.map PerceptionReachable perBody
       ptotal = PerceptionReachable $ ES.unions $ EM.elems perBody
       elBodyMap = EM.elems bodyMap
-  in ( levelPerception ptotal elBodyMap clearPs litPs lvl
+  in ( levelPerception ptotal elBodyMap clearPs litPs
      , PerceptionServer{..} )
 
 fidLidUsingReachable :: PerceptionReachable
-                     -> PersLitA -> FactionId -> LevelId -> Level
+                     -> PersLitA -> FactionId -> LevelId
                      -> Perception
-fidLidUsingReachable ptotal (persFovCache, persLight, persClear, _) fid lid lvl =
+fidLidUsingReachable ptotal (persFovCache, persLight, persClear, _) fid lid =
   let elBodyMap = filter (\(b, _) -> bfid b == fid && blid b == lid)
                   $ EM.elems persFovCache
       litPs = persLight EM.! lid
       clearPs = persClear EM.! lid
-  in levelPerception ptotal elBodyMap clearPs litPs lvl
+  in levelPerception ptotal elBodyMap clearPs litPs
 
 -- | Calculate perception of a faction.
 factionPerception :: PersLitA -> FactionId -> State -> (FactionPers, ServerPers)
 factionPerception persLit fid s =
   let resetsAlways = Left True
-      em = EM.mapWithKey (fidLidPerception undefined resetsAlways persLit fid)
-           $ sdungeon s
+      em = EM.mapWithKey
+             (\lid _ -> fidLidPerception undefined resetsAlways persLit fid lid)
+             (sdungeon s)
   in (EM.map fst em, EM.map snd em)
 
 -- | Calculate the perception of the whole dungeon.
@@ -125,11 +128,10 @@ dungeonPerception s sItemFovCache =
 -- light source, e.g,, carried by an actor. A reachable and lit position
 -- is visible. Additionally, positions directly adjacent to an actor are
 -- assumed to be visible to him (through sound, touch, noctovision, whatever).
-visibleOnLevel :: PerceptionReachable -> ES.EnumSet Point -> [Point]
+visibleOnLevel :: PerceptionReachable -> ES.EnumSet Point -> ES.EnumSet Point
                -> PerceptionVisible
-visibleOnLevel PerceptionReachable{preachable} litPs nocto =
-  PerceptionVisible $
-    ES.fromList nocto `ES.union` (preachable `ES.intersection` litPs)
+visibleOnLevel PerceptionReachable{preachable} litPs noctoSet =
+  PerceptionVisible $ noctoSet `ES.union` (preachable `ES.intersection` litPs)
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
@@ -165,7 +167,7 @@ lightInDungeon moldTileLight persFovCache persClear s sItemFovCache =
   let Kind.COps{cotile} = scops s
       processIid lightAcc (iid, (k, _)) =
         let FovCache3{fovLight} =
-              EM.findWithDefault emptyFovCache3 iid  sItemFovCache
+              EM.findWithDefault emptyFovCache3 iid sItemFovCache
         in k * fovLight + lightAcc
       processBag bag acc = foldl' processIid acc $ EM.assocs bag
       lightOnFloor :: Level -> [(Point, Int)]
@@ -222,12 +224,12 @@ fullscan :: PointArray.Array Bool  -- ^ the array with clear points
 fullscan clearPs radius spectatorPos =
   if | radius <= 0 -> ES.empty
      | radius == 1 -> ES.singleton spectatorPos
-     | otherwise -> ES.insert spectatorPos
-       $ mapTr (\B{..} -> trV   bx  (-by))  -- quadrant I
+     | otherwise ->
+         mapTr (\B{..} -> trV   bx  (-by))  -- quadrant I
        $ mapTr (\B{..} -> trV   by    bx)   -- II (we rotate counter-clockwise)
        $ mapTr (\B{..} -> trV (-bx)   by)   -- III
        $ mapTr (\B{..} -> trV (-by) (-bx))  -- IV
-       $ ES.empty
+       $ ES.singleton spectatorPos
  where
   mapTr :: (Bump -> Point) -> ES.EnumSet Point -> ES.EnumSet Point
   {-# INLINE mapTr #-}
