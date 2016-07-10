@@ -39,10 +39,11 @@ newtype PerceptionDynamicLit = PerceptionDynamicLit
   deriving Show
 
 -- | Calculate faction's perception of a level.
-levelPerception :: PerceptionReachable -> [(Actor, FovCache3)]
-                -> PointArray.Array Bool -> ES.EnumSet Point
+levelPerception :: PerceptionReachable
+                -> [(Actor, FovCache3)]
+                -> ES.EnumSet Point
                 -> Perception
-levelPerception reachable actorEqpBody clearPs litPs =
+levelPerception reachable actorEqpBody litPs =
   let -- All non-projectile actors feel adjacent positions,
       -- even dark (for easy exploration). Projectiles rely on cameras.
       nocteurs = filter (not . bproj . fst) actorEqpBody
@@ -51,16 +52,12 @@ levelPerception reachable actorEqpBody clearPs litPs =
       gatherVicinities = concatMap (pAndVicinity . bpos . fst)
       nocto = ES.fromList $ gatherVicinities nocteurs
       psight = visibleOnLevel reachable litPs nocto
-      -- TODO: handle smell radius < 2, that is only under the actor?
-      -- or handly smell larger than 2 (costly)?
+      -- TODO: until AI can handle/ignore it, only radius 2 used
       -- Projectiles can potentially smell, too.
       canSmellAround FovCache3{fovSmell} = fovSmell >= 2
       smellers = filter (canSmellAround . snd) actorEqpBody
-      smells = gatherVicinities smellers
-      -- No smell stored in walls.
-      canHoldSmell p = clearPs PointArray.! p
-      psmell = PerceptionVisible $ ES.fromList $ filter canHoldSmell smells
-  in Perception psight psmell
+      psmell = PerceptionVisible $ ES.fromList $ gatherVicinities smellers
+  in Perception{..}
 
 -- | Calculate faction's perception of a level based on the lit tiles cache.
 fidLidPerception :: PerActor
@@ -86,18 +83,17 @@ fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear, _)
       perActor = EM.map PerceptionReachable perBody
       ptotal = PerceptionReachable $ ES.unions $ EM.elems perBody
       elBodyMap = EM.elems bodyMap
-  in ( levelPerception ptotal elBodyMap clearPs litPs
+  in ( levelPerception ptotal elBodyMap litPs
      , PerceptionServer{..} )
 
 fidLidUsingReachable :: PerceptionReachable
                      -> PersLitA -> FactionId -> LevelId
                      -> Perception
-fidLidUsingReachable ptotal (persFovCache, persLight, persClear, _) fid lid =
+fidLidUsingReachable ptotal (persFovCache, persLight, _, _) fid lid =
   let elBodyMap = filter (\(b, _) -> bfid b == fid && blid b == lid)
                   $ EM.elems persFovCache
       litPs = persLight EM.! lid
-      clearPs = persClear EM.! lid
-  in levelPerception ptotal elBodyMap clearPs litPs
+  in levelPerception ptotal elBodyMap litPs
 
 -- | Calculate perception of a faction.
 factionPerception :: PersLitA -> FactionId -> State -> (FactionPers, ServerPers)

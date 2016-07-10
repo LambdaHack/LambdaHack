@@ -17,7 +17,7 @@
 -- the tile, so the player can flee or block. Invisible actors in open
 -- space can be hit.
 module Game.LambdaHack.Common.Perception
-  ( Perception(Perception)
+  ( Perception(..)
   , PerceptionVisible(PerceptionVisible)
   , PerceptionReachable(..)
   , PerActor
