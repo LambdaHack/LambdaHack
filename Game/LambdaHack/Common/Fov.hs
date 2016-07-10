@@ -48,15 +48,14 @@ levelPerception reachable actorEqpBody litPs =
       -- even dark (for easy exploration). Projectiles rely on cameras.
       nocteurs = filter (not . bproj . fst) actorEqpBody
       -- We assume every level is surrounded in permanent, unenterable boundary.
-      pAndVicinity p = p : vicinityUnsafe p
-      gatherVicinities = concatMap (pAndVicinity . bpos . fst)
-      nocto = ES.fromList $ gatherVicinities nocteurs
+      nocto = ES.unions $ map (squareUnsafeSet . bpos . fst) nocteurs
       psight = visibleOnLevel reachable litPs nocto
       -- TODO: until AI can handle/ignore it, only radius 2 used
       -- Projectiles can potentially smell, too.
       canSmellAround FovCache3{fovSmell} = fovSmell >= 2
       smellers = filter (canSmellAround . snd) actorEqpBody
-      psmell = PerceptionVisible $ ES.fromList $ gatherVicinities smellers
+      psmell = PerceptionVisible
+               $ ES.unions $ map (squareUnsafeSet . bpos . fst) smellers
   in Perception{..}
 
 -- | Calculate faction's perception of a level based on the lit tiles cache.
@@ -126,8 +125,8 @@ dungeonPerception s sItemFovCache =
 -- assumed to be visible to him (through sound, touch, noctovision, whatever).
 visibleOnLevel :: PerceptionReachable -> ES.EnumSet Point -> ES.EnumSet Point
                -> PerceptionVisible
-visibleOnLevel PerceptionReachable{preachable} litPs noctoSet =
-  PerceptionVisible $ noctoSet `ES.union` (preachable `ES.intersection` litPs)
+visibleOnLevel PerceptionReachable{preachable} litPs nocto =
+  PerceptionVisible $ nocto `ES.union` (preachable `ES.intersection` litPs)
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
@@ -220,6 +219,7 @@ fullscan :: PointArray.Array Bool  -- ^ the array with clear points
 fullscan clearPs radius spectatorPos =
   if | radius <= 0 -> ES.empty
      | radius == 1 -> ES.singleton spectatorPos
+     | radius == 2 -> squareUnsafeSet spectatorPos
      | otherwise ->
          mapTr (\B{..} -> trV   bx  (-by))  -- quadrant I
        $ mapTr (\B{..} -> trV   by    bx)   -- II (we rotate counter-clockwise)

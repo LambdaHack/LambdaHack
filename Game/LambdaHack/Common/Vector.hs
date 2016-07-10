@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Vector
   ( Vector(..), isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
   , moves, movesCardinal, movesDiagonal, compassText
-  , vicinity, vicinityUnsafe, vicinityCardinal
+  , vicinity, vicinityUnsafe, vicinityCardinal, squareUnsafeSet
   , shift, shiftBounded, trajectoryToPath, trajectoryToPathBounded
   , vectorToFrom, pathToTrajectory
   , RadianAngle, rotate, towards
@@ -17,6 +17,7 @@ import Game.LambdaHack.Common.Prelude
 import Control.DeepSeq
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.Int (Int32)
 import GHC.Generics (Generic)
 
@@ -137,6 +138,19 @@ vicinityCardinal lxsize lysize p =
   [ res | dxy <- movesCardinal
         , let res = shift p dxy
         , inside res (0, 0, lxsize - 1, lysize - 1) ]
+
+squareUnsafeSet :: Point -> ES.EnumSet Point
+squareUnsafeSet (Point x y) =
+  ES.fromDistinctAscList $ map (uncurry Point)
+    [ (x - 1, y - 1)
+    , (x,     y - 1)
+    , (x + 1, y - 1)
+    , (x - 1, y)
+    , (x,     y)  -- full square, including the origin
+    , (x + 1, y)
+    , (x - 1, y + 1)
+    , (x,     y + 1)
+    , (x + 1, y + 1) ]
 
 -- | Translate a point by a vector.
 shift :: Point -> Vector -> Point
