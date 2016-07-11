@@ -101,8 +101,9 @@ factionPerception persLit fid s =
   in (EM.map fst em, EM.map snd em)
 
 -- | Calculate the perception of the whole dungeon.
-dungeonPerception :: State -> EM.EnumMap ItemId FovCache3 -> (PersLit, PerFid, PerCacheFid)
-dungeonPerception s sItemFovCache =
+dungeonPerception :: EM.EnumMap ItemId FovCache3 -> State
+                  -> (PersLit, PerFid, PerCacheFid)
+dungeonPerception sItemFovCache s =
   let persClear = clearInDungeon s
       persFovCache = fovCacheInDungeon s sItemFovCache
       addBodyToCache aid cache = (getActorBody aid s, cache)

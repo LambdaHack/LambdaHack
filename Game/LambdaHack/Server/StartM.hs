@@ -52,7 +52,7 @@ initPer :: MonadServer m => m ()
 initPer = do
   sItemFovCache <- getsServer sItemFovCache
   (slit, sperFid, sperCacheFid)
-    <- getsState $ \s -> dungeonPerception s sItemFovCache
+    <- getsState $ dungeonPerception sItemFovCache
   modifyServer $ \ser -> ser {slit, sperFid, sperCacheFid}
 
 reinitGame :: (MonadAtomic m, MonadServer m) => m ()

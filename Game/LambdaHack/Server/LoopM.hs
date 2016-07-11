@@ -295,18 +295,22 @@ gameExit = do
   -- Clients exit not now, but after they print all ending screens.
   -- debugPrint "Server kills clients"
   killAllClients
-  -- Verify that the saved perception is equal to future reconstructed.
+  -- Verify that the not saved perception is equal to future reconstructed.
   persAccumulated <- getsServer sperFid
-  _slitAccumlated <- getsServer slit
+  sperCacheFidAccumulated <- getsServer sperCacheFid
+  slitAccumlated <- getsServer slit
   sItemFovCache <- getsServer sItemFovCache
-  (_slit, pers, _) <- getsState $ \s -> dungeonPerception s sItemFovCache
+  (slit, pers, sperCacheFid)
+    <- getsState $ dungeonPerception sItemFovCache
   let !_A1 = assert (persAccumulated == pers
                      `blame` "wrong accumulated perception"
                      `twith` (persAccumulated, pers)) ()
-      -- TODO: too costly with actor bodies compared; also, fails
-      -- !_A2 = assert (slitAccumlated == slit
-      --                `blame` "wrong accumulated lights"
-      --                `twith` (slitAccumlated, slit)) ()
+      !_A2 = assert (sperCacheFidAccumulated == sperCacheFid
+                     `blame` "wrong accumulated per cache"
+                     `twith` (sperCacheFidAccumulated, sperCacheFid)) ()
+      !_A3 = assert (slitAccumlated == slit
+                     `blame` "wrong accumulated lights"
+                     `twith` (slitAccumlated, slit)) ()
   return ()
 
 restartGame :: (MonadAtomic m, MonadServerReadRequest m)
