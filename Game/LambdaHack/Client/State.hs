@@ -56,7 +56,7 @@ data StateClient = StateClient
   , sundo        :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sdiscoKind   :: !DiscoveryKind    -- ^ remembered item discoveries
   , sdiscoEffect :: !DiscoveryEffect  -- ^ remembered effects&Co of items
-  , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
+  , sfper        :: !PublicPers    -- ^ faction perception indexed by levels
   , srandom      :: !R.StdGen      -- ^ current random generator
   , _sleader     :: !(Maybe ActorId)
                                    -- ^ current picked party leader

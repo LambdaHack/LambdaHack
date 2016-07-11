@@ -237,7 +237,7 @@ atomicRemember lid inPer s =
       inTileMap = map (\p -> (p, hideTile (scops s) lvl p)) inFov
       atomicTile = if null inTileMap then [] else [UpdSpotTile lid inTileMap]
       -- Smells.
-      inSmellFov = ES.elems $ smellVisible inPer
+      inSmellFov = ES.elems $ totalSmelled inPer
       inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl)) inSmellFov
       atomicSmell = if null inSm then [] else [UpdSpotSmell lid inSm]
   in inFloor ++ inEmbed ++ inActor ++ atomicTile ++ atomicSmell

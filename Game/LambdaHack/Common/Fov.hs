@@ -52,14 +52,16 @@ fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear, _)
       -- We don't check if any actor changed, because almost surely one is.
       -- Exception: when an actor is destroyed, but then union differs.
       perActor = EM.mapWithKey ourR bodyMap
-      lActor = EM.elems perActor
-      ptotal = PerCacheServer
-        { creachable = PerceptionReachable
-                       $ ES.unions $ map (preachable . creachable) lActor
-        , cnocto = PerceptionVisible
-                   $ ES.unions $ map (pvisible . cnocto) lActor
-        , csmell = PerceptionVisible
-                   $ ES.unions $ map (pvisible . csmell) lActor }
+      ptotal = PerCache
+        { creachable = PerReachable
+                       $ ES.unions $ map (preachable . creachable)
+                       $ EM.elems perActor
+        , cnocto = PerVisible
+                   $ ES.unions $ map (pvisible . cnocto)
+                   $ EM.elems perActor
+        , csmell = PerSmelled
+                   $ ES.unions $ map (psmelled . csmell)
+                   $ EM.elems perActor }
       psight = visibleOnLevel (creachable ptotal) litPs (cnocto ptotal)
       psmell = csmell ptotal
   in (Perception{..}, PerceptionServer{..})
@@ -68,22 +70,21 @@ fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear, _)
 -- on a visually unblocked path from the actor position.
 perCacheServerFromActor :: PointArray.Array Bool
                         -> (Actor, FovCache3)
-                        -> PerCacheServer
+                        -> PerCache
 perCacheServerFromActor clearPs (body, FovCache3{fovSight, fovSmell}) =
   let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) fovSight
-      creachable = PerceptionReachable $ fullscan clearPs radius (bpos body)
+      creachable = PerReachable $ fullscan clearPs radius (bpos body)
       -- All non-projectile actors feel adjacent positions,
       -- even dark (for easy exploration). Projectiles rely on cameras.
       noctoRadius = if bproj body then 0 else 2
-      cnocto = PerceptionVisible $ fullscan clearPs noctoRadius (bpos body)
+      cnocto = PerVisible $ fullscan clearPs noctoRadius (bpos body)
       -- Projectiles can potentially smell, too.
       -- TODO: until AI can handle/ignore it, only radius 2 used
       smellRadius = if fovSmell >= 2 then 2 else 0
-      csmell = PerceptionVisible $ fullscan clearPs smellRadius (bpos body)
-  in PerCacheServer{..}
+      csmell = PerSmelled $ fullscan clearPs smellRadius (bpos body)
+  in PerCache{..}
 
-fidLidUsingReachable :: PerCacheServer -> PersLit -> LevelId
-                     -> Perception
+fidLidUsingReachable :: PerCache -> PersLit -> LevelId -> Perception
 fidLidUsingReachable ptotal (_, persLight, _, _) lid =
   let litPs = persLight EM.! lid
       psight = visibleOnLevel (creachable ptotal) litPs (cnocto ptotal)
@@ -91,7 +92,7 @@ fidLidUsingReachable ptotal (_, persLight, _, _) lid =
   in Perception{..}
 
 -- | Calculate perception of a faction.
-factionPerception :: PersLitA -> FactionId -> State -> (FactionPers, ServerPers)
+factionPerception :: PersLitA -> FactionId -> State -> (PublicPers, ServerPers)
 factionPerception persLit fid s =
   let resetsAlways = Left True
       em = EM.mapWithKey
@@ -119,10 +120,10 @@ dungeonPerception s sItemFovCache =
 -- light source, e.g,, carried by an actor. A reachable and lit position
 -- is visible. Additionally, positions directly adjacent to an actor are
 -- assumed to be visible to him (through sound, touch, noctovision, whatever).
-visibleOnLevel :: PerceptionReachable -> ES.EnumSet Point -> PerceptionVisible
-               -> PerceptionVisible
-visibleOnLevel PerceptionReachable{preachable} litPs (PerceptionVisible nocto) =
-  PerceptionVisible $ nocto `ES.union` (preachable `ES.intersection` litPs)
+visibleOnLevel :: PerReachable -> ES.EnumSet Point -> PerVisible
+               -> PerVisible
+visibleOnLevel PerReachable{preachable} litPs (PerVisible nocto) =
+  PerVisible $ nocto `ES.union` (preachable `ES.intersection` litPs)
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or floor items. Note that an actor can be blind, in which case he doesn't see

@@ -210,7 +210,7 @@ cmdAtomicFilterCli cmd = case cmd of
         inEmbed = inContainer CEmbed (lembed lvl)
     -- Remembered map tiles not wiped out, due to optimization in @updSpotTile@.
     -- Wipe out remembered smell on tiles that now came into smell Fov.
-    let inSmellFov = smellVisible perNew ES.\\ smellVisible perOld
+    let inSmellFov = totalSmelled perNew ES.\\ totalSmelled perOld
         inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl))
                         (ES.elems inSmellFov)
         inSmell = if null inSm then [] else [UpdLoseSmell lid inSm]

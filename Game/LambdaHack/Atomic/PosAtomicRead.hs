@@ -381,7 +381,7 @@ seenAtomicCli knowEvents fid per posAtomic =
     PosSight _ ps -> all (`ES.member` totalVisible per) ps || knowEvents
     PosFidAndSight fids _ ps ->
       fid `elem` fids || all (`ES.member` totalVisible per) ps || knowEvents
-    PosSmell _ ps -> all (`ES.member` smellVisible per) ps || knowEvents
+    PosSmell _ ps -> all (`ES.member` totalSmelled per) ps || knowEvents
     PosFid fid2 -> fid == fid2
     PosFidAndSer _ fid2 -> fid == fid2
     PosSer -> False
