@@ -34,6 +34,7 @@ module Game.LambdaHack.Common.Perception
   , PerCacheFid
     -- * Assorted
   , FovCache3(..), emptyFovCache3
+  , ItemFovCache
   , PersLit, PersLitA, PersFovCache, PersFovCacheA, PersLight, PersClear
   ) where
 
@@ -48,6 +49,7 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -162,6 +164,8 @@ instance Binary FovCache3 where
 
 emptyFovCache3 :: FovCache3
 emptyFovCache3 = FovCache3 0 0 0
+
+type ItemFovCache = EM.EnumMap ItemId FovCache3
 
 type PersLit = (PersFovCache, PersLight, PersClear, PersLight)
 

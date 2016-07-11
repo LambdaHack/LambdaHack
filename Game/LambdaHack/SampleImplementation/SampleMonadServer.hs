@@ -104,7 +104,7 @@ handleAndBroadcastServer atomic = do
              ser2 { sperFid = upd (sperFid ser2)
                   , sperCacheFid = srvUpd (sperCacheFid ser2) }
       updateLit slit = modifyServer $ \ser -> ser {slit}
-      getItemFovCache = getsServer sItemFovCache
+      getItemFovCache = getsServer sitemFovCache
   handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                      getItemFovCache persLitOld
                      updatePer updateLit sendUpdateAI sendUpdateUI atomic

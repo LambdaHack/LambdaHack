@@ -213,8 +213,7 @@ singleContainer (CActor aid _) = do
   return $! PosSight lid [p]
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 
-resetsFovCmdAtomic :: UpdAtomic -> EM.EnumMap ItemId FovCache3
-                   -> Either Bool [ActorId]
+resetsFovCmdAtomic :: UpdAtomic -> ItemFovCache -> Either Bool [ActorId]
 resetsFovCmdAtomic cmd itemFovCache = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid2 _ _ -> Right [aid2]
@@ -247,7 +246,7 @@ resetsClearCmdAtomic cmd = case cmd of
   UpdAlterTile{} -> True
   _ -> False
 
-resetsFovCacheCmdAtomic :: UpdAtomic -> EM.EnumMap ItemId FovCache3 -> Bool
+resetsFovCacheCmdAtomic :: UpdAtomic -> ItemFovCache -> Bool
 resetsFovCacheCmdAtomic cmd itemFovCache = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor{} -> True
@@ -270,7 +269,7 @@ resetsFovCacheCmdAtomic cmd itemFovCache = case cmd of
 
 -- | Determines if a command resets the data about lit tiles
 -- (both dynamically and statically).
-resetsLitCmdAtomic :: UpdAtomic -> EM.EnumMap ItemId FovCache3 -> Bool
+resetsLitCmdAtomic :: UpdAtomic -> ItemFovCache -> Bool
 resetsLitCmdAtomic cmd itemFovCache = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor{} -> True  -- may have a light source (as organ or trunk even)

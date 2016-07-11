@@ -299,9 +299,8 @@ gameExit = do
   persAccumulated <- getsServer sperFid
   sperCacheFidAccumulated <- getsServer sperCacheFid
   slitAccumlated <- getsServer slit
-  sItemFovCache <- getsServer sItemFovCache
-  (slit, pers, sperCacheFid)
-    <- getsState $ dungeonPerception sItemFovCache
+  sitemFovCache <- getsServer sitemFovCache
+  (slit, pers, sperCacheFid) <- getsState $ dungeonPerception sitemFovCache
   let !_A1 = assert (persAccumulated == pers
                      `blame` "wrong accumulated perception"
                      `twith` (persAccumulated, pers)) ()

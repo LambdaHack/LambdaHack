@@ -63,8 +63,8 @@ registerItem itemFull itemKnown@(_, iae) seed k container verbose = do
         ser { sdiscoEffect = EM.insert icounter iae (sdiscoEffect ser)
             , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
-            , sItemFovCache = if ssl == emptyFovCache3 then sItemFovCache ser
-                              else EM.insert icounter ssl (sItemFovCache ser)
+            , sitemFovCache = if ssl == emptyFovCache3 then sitemFovCache ser
+                              else EM.insert icounter ssl (sitemFovCache ser)
             , sicounter = succ icounter }
       execUpdAtomic $ cmd icounter (itemBase itemFull) (k, []) container
       return $! icounter

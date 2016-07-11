@@ -21,7 +21,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Fov
-import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -46,8 +45,7 @@ handleCmdAtomicServer posAtomic atomic =
 
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
-                   => Bool -> PerFid -> PerCacheFid
-                   -> m (EM.EnumMap ItemId FovCache3) -> PersLit
+                   => Bool -> PerFid -> PerCacheFid -> m ItemFovCache -> PersLit
                    -> (FactionId -> LevelId
                        -> Perception -> Maybe PerceptionCache
                        -> m ())

@@ -21,7 +21,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.FovDigital
-import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
@@ -68,8 +67,7 @@ fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear, _)
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
-perCacheServerFromActor :: PointArray.Array Bool
-                        -> (Actor, FovCache3)
+perCacheServerFromActor :: PointArray.Array Bool -> (Actor, FovCache3)
                         -> CacheBeforeLit
 perCacheServerFromActor clearPs (body, FovCache3{fovSight, fovSmell}) =
   let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) fovSight
@@ -101,7 +99,7 @@ factionPerception persLit fid s =
   in (EM.map fst em, EM.map snd em)
 
 -- | Calculate the perception of the whole dungeon.
-dungeonPerception :: EM.EnumMap ItemId FovCache3 -> State
+dungeonPerception :: ItemFovCache -> State
                   -> (PersLit, PerFid, PerCacheFid)
 dungeonPerception sItemFovCache s =
   let persClear = clearInDungeon s
@@ -145,13 +143,13 @@ clearInDungeon s =
   in EM.fromDistinctAscList $ map clearLvl $ EM.assocs $ sdungeon s
 
 lightInDungeon :: Maybe PersLight -> PersFovCacheA -> PersClear -> State
-               -> EM.EnumMap ItemId FovCache3
+               -> ItemFovCache
                -> (PersLight, PersLight)
-lightInDungeon moldTileLight persFovCache persClear s sItemFovCache =
+lightInDungeon moldTileLight persFovCache persClear s sitemFovCache =
   let Kind.COps{cotile} = scops s
       processIid lightAcc (iid, (k, _)) =
         let FovCache3{fovLight} =
-              EM.findWithDefault emptyFovCache3 iid sItemFovCache
+              EM.findWithDefault emptyFovCache3 iid sitemFovCache
         in k * fovLight + lightAcc
       processBag bag acc = foldl' processIid acc $ EM.assocs bag
       lightOnFloor :: Level -> [(Point, Int)]
@@ -182,11 +180,11 @@ lightInDungeon moldTileLight persFovCache persClear s sItemFovCache =
       em = EM.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
   in (EM.map fst em, EM.map snd em)
 
-fovCacheInDungeon :: State -> EM.EnumMap ItemId FovCache3 -> PersFovCache
-fovCacheInDungeon s sItemFovCache =
+fovCacheInDungeon :: State -> ItemFovCache -> PersFovCache
+fovCacheInDungeon s sitemFovCache =
   let processIid3 (FovCache3 sightAcc smellAcc lightAcc) (iid, (k, _)) =
         let FovCache3{..} =
-              EM.findWithDefault emptyFovCache3 iid sItemFovCache
+              EM.findWithDefault emptyFovCache3 iid sitemFovCache
         in FovCache3 (k * fovSight + sightAcc)
                      (k * fovSmell + smellAcc)
                      (k * fovLight + lightAcc)
