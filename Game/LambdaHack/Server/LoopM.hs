@@ -27,7 +27,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
@@ -70,8 +69,8 @@ loopSer sdebug executorUI executorAI = do
       applyDebug
       updConn
       initPer
-      pers <- getsServer sper
-      broadcastUpdAtomic $ \fid -> UpdResume fid (ppublic pers EM.! fid)
+      pers <- getsServer sperFid
+      broadcastUpdAtomic $ \fid -> UpdResume fid (pers EM.! fid)
       -- Second, set the current cops and reinit perception.
       let setCurrentCops = const (speedupCOps sdebug cops)
       -- @sRaw@ is correct here, because none of the above changes State.
@@ -297,10 +296,10 @@ gameExit = do
   -- debugPrint "Server kills clients"
   killAllClients
   -- Verify that the saved perception is equal to future reconstructed.
-  persAccumulated <- getsServer sper
+  persAccumulated <- getsServer sperFid
   _slitAccumlated <- getsServer slit
   sItemFovCache <- getsServer sItemFovCache
-  (_slit, pers) <- getsState $ \s -> dungeonPerception s sItemFovCache
+  (_slit, pers, _) <- getsState $ \s -> dungeonPerception s sItemFovCache
   let !_A1 = assert (persAccumulated == pers
                      `blame` "wrong accumulated perception"
                      `twith` (persAccumulated, pers)) ()

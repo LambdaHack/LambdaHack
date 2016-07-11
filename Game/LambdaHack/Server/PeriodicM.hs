@@ -89,9 +89,9 @@ addAnyActor actorFreq lid time mpos = do
           g (_, fact) = fgroup (gplayer fact) == fidName
           mfid = find g $ EM.assocs factionD
           fid = fst $ fromMaybe (assert `failure` (factionD, fidName)) mfid
-      pers <- getsServer sper
+      pers <- getsServer sperFid
       let allPers = ES.unions $ map (totalVisible . (EM.! lid))
-                    $ EM.elems $ EM.delete fid $ ppublic pers  -- expensive :(
+                    $ EM.elems $ EM.delete fid pers  -- expensive :(
           mobile = any (`elem` freqNames) ["mobile", "horror"]
       pos <- case mpos of
         Just pos -> return pos

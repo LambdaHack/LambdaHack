@@ -46,16 +46,18 @@ handleCmdAtomicServer posAtomic atomic =
 
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
-                   => Bool -> Pers -> m (EM.EnumMap ItemId FovCache3) -> PersLit
+                   => Bool -> PerFid -> PerCacheFid
+                   -> m (EM.EnumMap ItemId FovCache3) -> PersLit
                    -> (FactionId -> LevelId
-                       -> Perception -> Maybe PerceptionServer
+                       -> Perception -> Maybe PerceptionCache
                        -> m ())
                    -> (PersLit -> m ())
                    -> (FactionId -> ResponseAI -> m ())
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
-handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClear, oldTileLight)
+handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
+                   getItemFovCache (oldFC, oldLights, oldClear, oldTileLight)
                    doUpdatePer doUpdateLit doSendUpdateAI doSendUpdateUI
                    atomic = do
   -- Gather data from the old state.
@@ -154,8 +156,8 @@ handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClea
           then sendUpdate fid atomic
           else breakSend lid fid perNew
       posLevel fid lid = do
-        let perOld = ppublic persOld EM.! fid EM.! lid
-            srvPerOld = pserver persOld EM.! fid EM.! lid
+        let perOld = sperFidOld EM.! fid EM.! lid
+            srvPerOld = sperCacheFidOld EM.! fid EM.! lid
             resetsFovFid =
               either (const True) (any $ (fid ==) . bfid) resetsBodies
         if resetsFovFid || resetOthers then do
@@ -197,7 +199,7 @@ handleAndBroadcast knowEvents persOld getItemFovCache (oldFC, oldLights, oldClea
         -- In the following cases, from the assertion above,
         -- @resets@ is false here and broken atomic has the same ps.
         PosSmell lid _ -> do
-          let perOld = ppublic persOld EM.! fid EM.! lid
+          let perOld = sperFidOld EM.! fid EM.! lid
           anySend lid fid perOld perOld
         PosFid fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosFidAndSer Nothing fid2 -> when (fid == fid2) $ sendUpdate fid atomic

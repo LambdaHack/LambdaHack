@@ -21,17 +21,18 @@ module Game.LambdaHack.Common.Perception
     PerVisible(..)
   , PerSmelled(..)
   , Perception(..)
+  , PerLid
+  , PerFid
   , totalVisible, totalSmelled
   , nullPer, addPer, diffPer
-    -- * Server perception
+    -- * Cache perception
   , PerReachable(..)
-  , PerCache(..)
+  , CacheBeforeLit(..)
   , PerActor
-  , PerceptionServer(..)
+  , PerceptionCache(..)
+  , PerCacheLid
+  , PerCacheFid
     -- * Assorted
-  , PublicPers
-  , ServerPers
-  , Pers(..)
   , FovCache3(..), emptyFovCache3
   , PersLit, PersLitA, PersFovCache, PersFovCacheA, PersLight, PersClear
   ) where
@@ -72,6 +73,14 @@ data Perception = Perception
 
 instance Binary Perception
 
+-- | Perception of a single faction, indexed by level identifier.
+type PerLid = EM.EnumMap LevelId Perception
+
+-- | Perception indexed by faction identifier.
+-- This can't be added to @FactionDict@, because clients can't see it
+-- for other factions.
+type PerFid = EM.EnumMap FactionId PerLid
+
 -- | The set of tiles visible by at least one hero.
 totalVisible :: Perception -> ES.EnumSet Point
 totalVisible = pvisible . psight
@@ -101,7 +110,7 @@ diffPer per1 per2 =
                $ totalSmelled per1 ES.\\ totalSmelled per2
     }
 
--- * Server perception
+-- * Cache perception
 
 -- | Visually reachable positions (light passes through them to the actor).
 -- They need to be intersected with lit positions to obtain visible positions.
@@ -109,38 +118,29 @@ newtype PerReachable = PerReachable
     {preachable :: ES.EnumSet Point}
   deriving (Show, Eq)
 
-data PerCache = PerCache
+data CacheBeforeLit = CacheBeforeLit
   { creachable :: !PerReachable
   , cnocto     :: !PerVisible
   , csmell     :: !PerSmelled
   }
   deriving (Show, Eq)
 
-type PerActor = EM.EnumMap ActorId PerCache
+type PerActor = EM.EnumMap ActorId CacheBeforeLit
 
-data PerceptionServer = PerceptionServer
-  { ptotal   :: !PerCache
+data PerceptionCache = PerceptionCache
+  { ptotal   :: !CacheBeforeLit
   , perActor :: !PerActor
   }
   deriving (Show, Eq)
 
--- * Assorted
-
--- | Perception of a single faction, indexed by level identifier.
-type PublicPers = EM.EnumMap LevelId Perception
-
 -- | Server cache of perceptions of a single faction,
 -- indexed by level identifier.
-type ServerPers = EM.EnumMap LevelId PerceptionServer
+type PerCacheLid = EM.EnumMap LevelId PerceptionCache
 
--- | Perception indexed by faction identifier.
--- This can't be added to @FactionDict@, because clients can't see it.
-data Pers = Pers
-  { ppublic :: !(EM.EnumMap FactionId PublicPers)
+-- | Server cache of perceptions, indexed by faction identifier.
+type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 
-  , pserver :: !(EM.EnumMap FactionId ServerPers)
-  }
-  deriving (Show, Eq)
+-- * Assorted
 
 data FovCache3 = FovCache3
   { fovSight :: !Int

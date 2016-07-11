@@ -44,7 +44,8 @@ data StateServer = StateServer
   , sicounter     :: !ItemId        -- ^ stores next item index
   , snumSpawned   :: !(EM.EnumMap LevelId Int)
   , sundo         :: ![CmdAtomic]   -- ^ atomic commands performed to date
-  , sper          :: !Pers          -- ^ perception of all factions
+  , sperFid       :: !PerFid        -- ^ perception of all factions
+  , sperCacheFid  :: !PerCacheFid   -- ^ perception cache of all factions
   , slit          :: !PersLit       -- ^ cache of lit tiles, etc.
   , srandom       :: !R.StdGen      -- ^ current random generator
   , srngs         :: !RNGs          -- ^ initial random generators
@@ -113,7 +114,8 @@ emptyStateServer =
     , sicounter = toEnum 0
     , snumSpawned = EM.empty
     , sundo = []
-    , sper = Pers EM.empty EM.empty
+    , sperFid = EM.empty
+    , sperCacheFid = EM.empty
     , slit = (EM.empty, EM.empty, EM.empty, EM.empty)
     , srandom = R.mkStdGen 42
     , srngs = RNGs { dungeonRandomGenerator = Nothing
@@ -184,7 +186,8 @@ instance Binary StateServer where
     sheroNames <- get
     sdebugSer <- get
     let srandom = read g
-        sper = Pers EM.empty EM.empty
+        sperFid = EM.empty
+        sperCacheFid = EM.empty
         slit = (EM.empty, EM.empty, EM.empty, EM.empty)
         squit = False
         swriteSave = False

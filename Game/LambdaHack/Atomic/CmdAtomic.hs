@@ -106,9 +106,9 @@ data UpdAtomic =
   | UpdDiscoverSeed !Container !ItemId !ItemSeed !AbsDepth
   | UpdCoverSeed !Container !ItemId !ItemSeed !AbsDepth
   | UpdPerception !LevelId !Perception !Perception
-  | UpdRestart !FactionId !DiscoveryKind !PublicPers !State !Int !DebugModeCli
+  | UpdRestart !FactionId !DiscoveryKind !PerLid !State !Int !DebugModeCli
   | UpdRestartServer !State
-  | UpdResume !FactionId !PublicPers
+  | UpdResume !FactionId !PerLid
   | UpdResumeServer !State
   | UpdKillExit !FactionId
   | UpdWriteSave

@@ -67,7 +67,7 @@ execFailure aid req failureSer = do
 
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
 getPerFid fid lid = do
-  pers <- getsServer $ ppublic . sper
+  pers <- getsServer sperFid
   let failFact = assert `failure` "no perception for faction" `twith` (lid, fid)
       fper = EM.findWithDefault failFact fid pers
       failLvl = assert `failure` "no perception for level" `twith` (lid, fid)

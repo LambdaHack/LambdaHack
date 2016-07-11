@@ -28,7 +28,6 @@ import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Perception
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Thread
@@ -92,7 +91,8 @@ instance MonadAtomic SerImplementation where
 handleAndBroadcastServer :: (MonadStateWrite m, MonadServerReadRequest m)
                          => CmdAtomic -> m ()
 handleAndBroadcastServer atomic = do
-  persOld <- getsServer sper
+  sperFidOld <- getsServer sperFid
+  sperCacheFidOld <- getsServer sperCacheFid
   persLitOld <- getsServer slit
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   let updatePer fid lid per msrvPer =
@@ -101,11 +101,12 @@ handleAndBroadcastServer atomic = do
               Nothing -> id
               Just srvPer -> EM.adjust (EM.adjust (const srvPer) lid) fid
         in modifyServer $ \ser2 ->
-             ser2 {sper = Pers (upd (ppublic $ sper ser2))
-                               (srvUpd (pserver $ sper ser2))}
+             ser2 { sperFid = upd (sperFid ser2)
+                  , sperCacheFid = srvUpd (sperCacheFid ser2) }
       updateLit slit = modifyServer $ \ser -> ser {slit}
       getItemFovCache = getsServer sItemFovCache
-  handleAndBroadcast knowEvents persOld getItemFovCache persLitOld
+  handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
+                     getItemFovCache persLitOld
                      updatePer updateLit sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.

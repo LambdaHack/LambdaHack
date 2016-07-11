@@ -35,7 +35,7 @@ import Game.LambdaHack.Common.Vector
 fidLidPerception :: PerActor
                  -> Either Bool [ActorId]
                  -> PersLitA -> FactionId -> LevelId
-                 -> (Perception, PerceptionServer)
+                 -> (Perception, PerceptionCache)
 fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear, _)
                  fid lid =
   let bodyMap = EM.filter (\(b, _) -> bfid b == fid && blid b == lid)
@@ -52,7 +52,7 @@ fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear, _)
       -- We don't check if any actor changed, because almost surely one is.
       -- Exception: when an actor is destroyed, but then union differs.
       perActor = EM.mapWithKey ourR bodyMap
-      ptotal = PerCache
+      ptotal = CacheBeforeLit
         { creachable = PerReachable
                        $ ES.unions $ map (preachable . creachable)
                        $ EM.elems perActor
@@ -64,13 +64,13 @@ fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear, _)
                    $ EM.elems perActor }
       psight = visibleOnLevel (creachable ptotal) litPs (cnocto ptotal)
       psmell = csmell ptotal
-  in (Perception{..}, PerceptionServer{..})
+  in (Perception{..}, PerceptionCache{..})
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
 perCacheServerFromActor :: PointArray.Array Bool
                         -> (Actor, FovCache3)
-                        -> PerCache
+                        -> CacheBeforeLit
 perCacheServerFromActor clearPs (body, FovCache3{fovSight, fovSmell}) =
   let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) fovSight
       creachable = PerReachable $ fullscan clearPs radius (bpos body)
@@ -82,9 +82,9 @@ perCacheServerFromActor clearPs (body, FovCache3{fovSight, fovSmell}) =
       -- TODO: until AI can handle/ignore it, only radius 2 used
       smellRadius = if fovSmell >= 2 then 2 else 0
       csmell = PerSmelled $ fullscan clearPs smellRadius (bpos body)
-  in PerCache{..}
+  in CacheBeforeLit{..}
 
-fidLidUsingReachable :: PerCache -> PersLit -> LevelId -> Perception
+fidLidUsingReachable :: CacheBeforeLit -> PersLit -> LevelId -> Perception
 fidLidUsingReachable ptotal (_, persLight, _, _) lid =
   let litPs = persLight EM.! lid
       psight = visibleOnLevel (creachable ptotal) litPs (cnocto ptotal)
@@ -92,7 +92,7 @@ fidLidUsingReachable ptotal (_, persLight, _, _) lid =
   in Perception{..}
 
 -- | Calculate perception of a faction.
-factionPerception :: PersLitA -> FactionId -> State -> (PublicPers, ServerPers)
+factionPerception :: PersLitA -> FactionId -> State -> (PerLid, PerCacheLid)
 factionPerception persLit fid s =
   let resetsAlways = Left True
       em = EM.mapWithKey
@@ -101,7 +101,7 @@ factionPerception persLit fid s =
   in (EM.map fst em, EM.map snd em)
 
 -- | Calculate the perception of the whole dungeon.
-dungeonPerception :: State -> EM.EnumMap ItemId FovCache3 -> (PersLit, Pers)
+dungeonPerception :: State -> EM.EnumMap ItemId FovCache3 -> (PersLit, PerFid, PerCacheFid)
 dungeonPerception s sItemFovCache =
   let persClear = clearInDungeon s
       persFovCache = fovCacheInDungeon s sItemFovCache
@@ -113,7 +113,7 @@ dungeonPerception s sItemFovCache =
       persLitA = (persFovCacheA, persLight, persClear, persTileLight)
       f fid _ = factionPerception persLitA fid s
       em = EM.mapWithKey f $ sfactionD s
-  in (persLit, Pers (EM.map fst em) (EM.map snd em))
+  in (persLit, EM.map fst em, EM.map snd em)
 
 -- | Compute positions visible (reachable and seen) by the party.
 -- A position can be directly lit by an ambient shine or by a weak, portable
