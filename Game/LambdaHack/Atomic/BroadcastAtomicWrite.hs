@@ -61,34 +61,31 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
   -- Gather data from the old state.
   sOld <- getState
   factionD <- getsState sfactionD
-  ( ps, resetsFovI, resetsLitI, resetsClear, resetsFovCacheI
-   ,atomicBroken, psBroken ) <-
+  (ps, atomicBroken, psBroken) <-
     case atomic of
       UpdAtomic cmd -> do
         ps <- posUpdAtomic cmd
-        let resetsFovI = resetsFovCmdAtomic cmd
-            resetsLitI = resetsLitCmdAtomic cmd
-            resetsClear = resetsClearCmdAtomic cmd
-            resetsFovCacheI = resetsFovCacheCmdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
-        return ( ps, resetsFovI, resetsLitI, resetsClear, resetsFovCacheI
-               , map UpdAtomic atomicBroken, psBroken )
+        return ( ps, map UpdAtomic atomicBroken, psBroken )
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
         atomicBroken <- breakSfxAtomic sfx
         psBroken <- mapM posSfxAtomic atomicBroken
-        return ( ps, \_ -> Right [], \_ -> False, False, \_ -> False
-               , map SfxAtomic atomicBroken, psBroken )
+        return ( ps, map SfxAtomic atomicBroken, psBroken )
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
   itemFovCache <- getItemFovCache
-  let resetsFov = resetsFovI itemFovCache
-      resetsLit = resetsLitI itemFovCache
-      resetsFovCache = resetsFovCacheI itemFovCache
-      resetOthers = resetsLit || resetsClear || resetsFovCache
+  let (resetsFov, resetsLit, resetsClear, resetsFovCache) =
+        case atomic of
+          UpdAtomic cmd ->
+            ( resetsFovCmdAtomic cmd itemFovCache
+            , resetsLitCmdAtomic cmd itemFovCache
+            , resetsClearCmdAtomic cmd
+            , resetsFovCacheCmdAtomic cmd itemFovCache )
+          SfxAtomic{} -> (Right [], False, False, False)
+  let resetOthers = resetsLit || resetsClear || resetsFovCache
       resets = resetsFov /= Right [] || resetOthers
-      atomicPsBroken = zip atomicBroken psBroken
   resetsBodies <- case resetsFov of
     Left b -> return $ Left b
     Right as -> Right <$> mapM (getsState . getActorBody) as
@@ -146,7 +143,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                         Nothing -> return ()
                         Just msg -> sendUpdate fid $ SfxAtomic $ SfxMsgAll msg
                     _ -> return ()
-        mapM_ send2 atomicPsBroken
+        mapM_ send2 $ zip atomicBroken psBroken
       anySend lid fid perOld perNew = do
         let startSeen = seenAtomicCli knowEvents fid perOld ps
             endSeen = seenAtomicCli knowEvents fid perNew ps

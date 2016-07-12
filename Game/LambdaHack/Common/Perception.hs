@@ -25,7 +25,7 @@ module Game.LambdaHack.Common.Perception
   , PerFid
   , totalVisible, totalSmelled
   , nullPer, addPer, diffPer
-    -- * Cache perception
+    -- * Perception cache
   , PerReachable(..)
   , CacheBeforeLit(..)
   , PerActor
@@ -112,7 +112,7 @@ diffPer per1 per2 =
                $ totalSmelled per1 ES.\\ totalSmelled per2
     }
 
--- * Cache perception
+-- * Perception cache
 
 -- | Visually reachable positions (light passes through them to the actor).
 -- They need to be intersected with lit positions to obtain visible positions.

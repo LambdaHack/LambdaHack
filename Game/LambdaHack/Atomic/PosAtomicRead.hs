@@ -66,7 +66,7 @@ data PosAtomic =
 -- distinguishable by looking at the state (or the screen) from @UpdMoveActor@
 -- of the illuminated actor, hence such @UpdDisplaceActor@ should not be
 -- observable, but @UpdMoveActor@ should be (or the former should be perceived
--- as the latter). However, to simplify, we assing as strict visibility
+-- as the latter). However, to simplify, we assign as strict visibility
 -- requirements to @UpdMoveActor@ as to @UpdDisplaceActor@ and fall back
 -- to @UpdSpotActor@ (which provides minimal information that does not
 -- contradict state) if the visibility is lower.
