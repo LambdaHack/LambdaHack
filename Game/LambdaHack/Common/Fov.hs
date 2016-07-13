@@ -166,9 +166,8 @@ lightOnFloor sitemFovCache lvl =
 
 litTerrainFromLevel :: Kind.COps -> Level -> LitTerrain
 litTerrainFromLevel Kind.COps{cotile} Level{ltile} =
-  let litSet set p t = if Tile.isLit cotile t then p : set else set
-  in LitTerrain $ ES.fromDistinctAscList
-     $ PointArray.ifoldlA litSet [] ltile
+  let litSet p t set = if Tile.isLit cotile t then p : set else set
+  in LitTerrain $ ES.fromDistinctAscList $ PointArray.ifoldrA' litSet [] ltile
 
 litTerrainInDungeon :: State -> PersLitTerrain
 litTerrainInDungeon s = EM.map (litTerrainFromLevel (scops s)) $ sdungeon s

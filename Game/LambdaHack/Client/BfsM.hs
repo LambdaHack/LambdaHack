@@ -237,7 +237,7 @@ closestSuspect aid = do
   lvl <- getLevel $ blid body
   let f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
       f acc p t = if Tile.isSuspect cotile t then p : acc else acc
-      suspect = PointArray.ifoldlA f [] $ ltile lvl
+      suspect = PointArray.ifoldlA' f [] $ ltile lvl
   case suspect of
     [] -> do
       -- If the level has inaccessible open areas (at least from some stairs)
@@ -297,7 +297,7 @@ closestTriggers onlyDir aid = do
                        in maybe aiCond (\d -> d == (k > 0)) onlyDir
                  in map (,p) (filter g l) ++ acc
         else acc
-      triggersAll = PointArray.ifoldlA f [] $ ltile lvl
+      triggersAll = PointArray.ifoldlA' f [] $ ltile lvl
       -- Don't target stairs under the actor. Most of the time they
       -- are blocked and stay so, so we seek other stairs, if any.
       -- If no other stairs in this direction, let's wait here,
@@ -344,7 +344,7 @@ closestItems aid = do
   let items = EM.assocs lfloor
       f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
       f acc p t = if Tile.isChangeable cotile t then p : acc else acc
-      changeable = PointArray.ifoldlA f [] $ ltile lvl
+      changeable = PointArray.ifoldlA' f [] $ ltile lvl
   if null items && null changeable then return []
   else do
     bfs <- getCacheBfs aid

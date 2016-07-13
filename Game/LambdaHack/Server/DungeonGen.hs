@@ -237,7 +237,7 @@ levelFromCaveKind Kind.COps{cotile}
         }
       f n t | Tile.isExplorable cotile t = n + 1
             | otherwise = n
-      lclear = PointArray.foldlA f 0 ltile
+      lclear = PointArray.foldlA' f 0 ltile
   in lvl {lclear}
 
 findGenerator :: Kind.COps -> LevelId -> LevelId -> LevelId -> AbsDepth -> Int

@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateA, generateMA, sizeA
-  , foldlA, ifoldlA, mapA, imapA, mapWithKeyMA
+  , foldlA', ifoldlA', ifoldrA', mapA, imapA, mapWithKeyMA
   , safeSetA, unsafeSetA, unsafeUpdateA
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
   ) where
@@ -112,17 +112,24 @@ sizeA :: Array c -> (X, Y)
 sizeA Array{..} = (axsize, aysize)
 
 -- | Fold left strictly over an array.
-foldlA :: Enum c => (a -> c -> a) -> a -> Array c -> a
-{-# INLINE foldlA #-}
-foldlA f z0 Array{..} =
+foldlA' :: Enum c => (a -> c -> a) -> a -> Array c -> a
+{-# INLINE foldlA' #-}
+foldlA' f z0 Array{..} =
   U.foldl' (\a c -> f a (cnv c)) z0 avector
 
 -- | Fold left strictly over an array
 -- (function applied to each element and its index).
-ifoldlA :: Enum c => (a -> Point -> c -> a) -> a -> Array c -> a
-{-# INLINE ifoldlA #-}
-ifoldlA f z0 Array{..} =
+ifoldlA' :: Enum c => (a -> Point -> c -> a) -> a -> Array c -> a
+{-# INLINE ifoldlA' #-}
+ifoldlA' f z0 Array{..} =
   U.ifoldl' (\a n c -> f a (punindex axsize n) (cnv c)) z0 avector
+
+-- | Fold right strictly over an array
+-- (function applied to each element and its index).
+ifoldrA' :: Enum c => (Point -> c -> a -> a) -> a -> Array c -> a
+{-# INLINE ifoldrA' #-}
+ifoldrA' f z0 Array{..} =
+  U.ifoldr' (\n c a -> f (punindex axsize n) (cnv c) a) z0 avector
 
 -- | Map over an array.
 mapA :: (Enum c, Enum d) => (c -> d) -> Array c -> Array d
