@@ -119,19 +119,21 @@ dungeonPerception sItemFovCache s =
 -- light source, e.g,, carried by an actor. A reachable and lit position
 -- is visible. Additionally, positions directly adjacent to an actor are
 -- assumed to be visible to him (through sound, touch, noctovision, whatever).
-visibleOnLevel :: PerReachable -> ES.EnumSet Point -> PerVisible
+visibleOnLevel :: PerReachable -> LightSources -> PerVisible
                -> PerVisible
-visibleOnLevel PerReachable{preachable} litPs (PerVisible nocto) =
-  PerVisible $ nocto `ES.union` (preachable `ES.intersection` litPs)
+visibleOnLevel PerReachable{preachable}
+               LightSources{lightSources}
+               (PerVisible nocto) =
+  PerVisible $ nocto `ES.union` (preachable `ES.intersection` lightSources)
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or floor items. Note that an actor can be blind, in which case he doesn't see
 -- his own light (but others, from his or other factions, possibly do).
 litByItems :: PointArray.Array Bool -> [(Point, Int)]
-           -> [ES.EnumSet Point]
+           -> [LightSources]
 litByItems clearPs allItems =
-  let litPos :: (Point, Int) -> ES.EnumSet Point
-      litPos (p, light) = fullscan clearPs light p
+  let litPos :: (Point, Int) -> LightSources
+      litPos (p, light) = LightSources $ fullscan clearPs light p
   in map litPos allItems
 
 clearInDungeon :: State -> PersClear
@@ -159,13 +161,13 @@ lightInDungeon moldTileLight persFovCache persClear s sitemFovCache =
       -- Note that an actor can be blind,
       -- in which case he doesn't see his own light
       -- (but others, from his or other factions, possibly do).
-      litOnLevel :: LevelId -> Level -> (ES.EnumSet Point, ES.EnumSet Point)
+      litOnLevel :: LevelId -> Level -> (LightSources, LightSources)
       litOnLevel lid lvl@Level{ltile} =
         let lvlBodies = filter ((== lid) . blid . fst) $ EM.elems persFovCache
             litSet set p t = if Tile.isLit cotile t then p : set else set
             litTiles = case moldTileLight of
-              Nothing ->
-                ES.fromDistinctAscList $ PointArray.ifoldlA litSet [] ltile
+              Nothing -> LightSources $ ES.fromDistinctAscList
+                         $ PointArray.ifoldlA litSet [] ltile
               Just oldTileLight -> oldTileLight EM.! lid
             actorLights = map (\(b, FovCache3{fovLight}) -> (bpos b, fovLight))
                               lvlBodies
@@ -174,8 +176,10 @@ lightInDungeon moldTileLight persFovCache persClear s sitemFovCache =
             -- only the stronger light is taken into account.
             -- This is rare, so no point optimizing away the double computation.
             allLights = floorLights ++ actorLights
-            litDynamic = litByItems (persClear EM.! lid) allLights
-        in (ES.unions $ litTiles : litDynamic, litTiles)
+            litDynamic = map lightSources
+                         $ litByItems (persClear EM.! lid) allLights
+        in ( LightSources $ ES.unions $ lightSources litTiles : litDynamic
+           , litTiles )
       litLvl (lid, lvl) = (lid, litOnLevel lid lvl)
       em = EM.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
   in (EM.map fst em, EM.map snd em)
