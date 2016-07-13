@@ -3,7 +3,7 @@
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
 module Game.LambdaHack.Common.Fov
-  ( dungeonPerception, fidLidPerception, fidLidUsingReachable
+  ( dungeonPerception, perceptionFromResets, perceptionFromPTotal
   , clearInDungeon, lightInDungeon, fovCacheInDungeon
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -30,28 +30,31 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 
--- | Calculate faction's perception of a level based on the lit tiles cache.
-fidLidPerception :: PerActor
-                 -> Either Bool [ActorId]
-                 -> PersLitA -> FactionId -> LevelId
-                 -> (Perception, PerceptionCache)
-fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear, _)
-                 fid lid =
+perceptionFromResets :: PerActor -> Either Bool [ActorId]
+                     -> PersLitA -> FactionId -> LevelId
+                     -> (Perception, PerceptionCache)
+perceptionFromResets perActor0 resetsActor
+                     (persFovCache, persLight, persClear, _)
+                     fid lid =
+  -- Dying actors included, to let them see their own demise.
   let bodyMap = EM.filter (\(b, _) -> bfid b == fid && blid b == lid)
                           persFovCache
-      litPs = persLight EM.! lid
       clearPs = persClear EM.! lid
-      -- Dying actors included, to let them see their own demise.
-      ourR aid bcache =
+      combine aid bcache per = Just $
         if either id (aid `elem`) resetsActor
         then perCacheServerFromActor clearPs bcache
-        else case EM.lookup aid perActor0 of
-          Just per -> per
-          Nothing -> assert `failure` (aid, bcache)
-      -- We don't check if any actor changed, because almost surely one is.
-      -- Exception: when an actor is destroyed, but then union differs.
-      perActor = EM.mapWithKey ourR bodyMap
-      ptotal = CacheBeforeLit
+        else per
+      only1 tbcache = EM.map (perCacheServerFromActor clearPs) tbcache
+      only2 = const EM.empty  -- dead or stair-using actors removed
+      perActor = EM.mergeWithKey combine only1 only2 bodyMap perActor0
+  in perceptionFromPerActor perActor persLight lid
+
+perceptionFromPerActor :: PerActor -> PersLight -> LevelId
+                       -> (Perception, PerceptionCache)
+perceptionFromPerActor perActor persLight lid =
+  -- We don't check if any actor changed, because almost surely one is.
+  -- Exception: when an actor is destroyed, but then union differs.
+  let ptotal = CacheBeforeLit
         { creachable = PerReachable
                        $ ES.unions $ map (preachable . creachable)
                        $ EM.elems perActor
@@ -61,12 +64,11 @@ fidLidPerception perActor0 resetsActor (persFovCache, persLight, persClear, _)
         , csmell = PerSmelled
                    $ ES.unions $ map (psmelled . csmell)
                    $ EM.elems perActor }
-      psight = visibleOnLevel (creachable ptotal) litPs (cnocto ptotal)
-      psmell = csmell ptotal
-  in (Perception{..}, PerceptionCache{..})
+  in (perceptionFromPTotal ptotal persLight lid, PerceptionCache{..})
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
+-- Also compute positions seen by noctovision and perceived by smell.
 perCacheServerFromActor :: PointArray.Array Bool -> (Actor, FovCache3)
                         -> CacheBeforeLit
 perCacheServerFromActor clearPs (body, FovCache3{fovSight, fovSmell}) =
@@ -82,20 +84,29 @@ perCacheServerFromActor clearPs (body, FovCache3{fovSight, fovSmell}) =
       csmell = PerSmelled $ fullscan clearPs smellRadius (bpos body)
   in CacheBeforeLit{..}
 
-fidLidUsingReachable :: CacheBeforeLit -> PersLit -> LevelId -> Perception
-fidLidUsingReachable ptotal (_, persLight, _, _) lid =
+perceptionFromPTotal :: CacheBeforeLit -> PersLight -> LevelId -> Perception
+perceptionFromPTotal ptotal persLight lid =
   let litPs = persLight EM.! lid
       psight = visibleOnLevel (creachable ptotal) litPs (cnocto ptotal)
       psmell = csmell ptotal
   in Perception{..}
 
+perceptionFromVoid :: PersLitA -> FactionId -> LevelId
+                   -> (Perception, PerceptionCache)
+perceptionFromVoid (persFovCache, persLight, persClear, _)
+                   fid lid =
+  -- Dying actors included, to let them see their own demise.
+  let bodyMap = EM.filter (\(b, _) -> bfid b == fid && blid b == lid)
+                          persFovCache
+      clearPs = persClear EM.! lid
+      perActor = EM.map (perCacheServerFromActor clearPs) bodyMap
+  in perceptionFromPerActor perActor persLight lid
+
 -- | Calculate perception of a faction.
 factionPerception :: PersLitA -> FactionId -> State -> (PerLid, PerCacheLid)
 factionPerception persLit fid s =
-  let resetsAlways = Left True
-      em = EM.mapWithKey
-             (\lid _ -> fidLidPerception undefined resetsAlways persLit fid lid)
-             (sdungeon s)
+  let em = EM.mapWithKey (\lid _ -> perceptionFromVoid persLit fid lid)
+                         (sdungeon s)
   in (EM.map fst em, EM.map snd em)
 
 -- | Calculate the perception of the whole dungeon.

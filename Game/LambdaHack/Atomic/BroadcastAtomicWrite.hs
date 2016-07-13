@@ -161,12 +161,12 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
           let (perNew, msrvPerNew) =
                 if resetsFovFid then
                   let (per, srvPerNew) =
-                        fidLidPerception (perActor srvPerOld) resetsFov
-                                         persLitA fid lid
+                        perceptionFromResets (perActor srvPerOld) resetsFov
+                                             persLitA fid lid
                   in (per, Just srvPerNew)
                 else
-                  let per = fidLidUsingReachable (ptotal srvPerOld)
-                                                 persLit lid
+                  let per = perceptionFromPTotal (ptotal srvPerOld)
+                                                 persLight lid
                   in (per, Nothing)
           doUpdatePer fid lid perNew msrvPerNew
           let inPer = diffPer perNew perOld
