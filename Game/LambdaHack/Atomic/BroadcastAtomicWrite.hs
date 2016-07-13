@@ -97,12 +97,16 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                       PosFidAndSer (Just _) _ -> True
                       _ -> not resets
                    `blame` (ps, resets)) ()
-  -- Update lights in the dungeon. This is lazy, may not be needed
-  -- or only partially; in particular not needed if not @resets@.
+  -- Update lights in the dungeon. This is not needed and not performed
+  -- in particular if not @resets@.
   -- This is needed every (even enemy) move to show thrown torches.
-  -- TODO: refine, only reset on the level affected by the cmd
-  -- also, reset FovCache only for the actor affected,
-  -- reset light for an actor only if his light radius affected, etc.
+  -- We need to update lights even if cmd doesn't change any perception,
+  -- so that for next cmd that does, but doesn't change lights,
+  -- and operates on the same level, the lights are up to date.
+  -- We could make lights lazy to ensure no computation is wasted,
+  -- but it's rare that cmd changed them, but not the perception
+  -- (e.g., earthquake in an uninhabited corner of the active arena,
+  -- but the we'd probably want some feedback, at least sound).
   persClear <- getsState $ if resetsClear
                            then clearInDungeon
                            else const oldClear
@@ -160,7 +164,6 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
               either (const True) (any $ (fid ==) . bfid) resetsBodies
         if resetsFovFid || resetOthers then do
           -- Needed every move to show thrown torches in dark corridors.
-          -- TODO: only resets if clear reset, sight radius reset or lit reset
           let (perNew, msrvPerNew) =
                 if resetsFovFid then
                   let (per, srvPerNew) =
