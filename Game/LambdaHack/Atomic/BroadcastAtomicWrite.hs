@@ -108,15 +108,15 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
       persFovCache = if resetsFovCache
                      then fovCacheInDungeon itemFovCache (sactorD s)
                      else oldFC
+      persTileLight = if resetsClear then litTerrainInDungeon s else oldTileLight
       addBodyToCache aid cache = do
         body <- getsState $ getActorBody aid
         return (body, cache)
   persFovCacheA <- mapWithKeyM addBodyToCache persFovCache
-  let (persLight, persTileLight) =
+  let persLight =
         if resetsLit
-        then lightInDungeon (if resetsClear then Nothing else Just oldTileLight)
-                            persFovCacheA persClear s itemFovCache
-        else (oldLights, oldTileLight)
+        then lightInDungeon persTileLight persFovCacheA persClear s itemFovCache
+        else oldLights
       persLit = (persFovCache, persLight, persClear, persTileLight)
       persLitA = (persFovCacheA, persLight, persClear, persTileLight)
   doUpdateLit persLit

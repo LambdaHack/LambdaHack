@@ -34,7 +34,7 @@ module Game.LambdaHack.Common.Perception
   , PerCacheFid
     -- * Assorted
   , FovCache3(..), emptyFovCache3, actorFovCache3
-  , ItemFovCache, LightSources(..), LitTerrain (..)
+  , ItemFovCache, LightSources(..), ClearPoints, LitTerrain (..)
   , PersLit, PersLitA, PersFovCache, PersFovCacheA
   , PersLight, PersClear, PersLitTerrain
   ) where
@@ -184,6 +184,8 @@ newtype LightSources = LightSources
     {lightSources :: ES.EnumSet Point}
   deriving (Show, Eq)
 
+type ClearPoints = PointArray.Array Bool
+
 newtype LitTerrain = LitTerrain
     {litTerrain :: ES.EnumSet Point}
   deriving (Show, Eq)
@@ -200,6 +202,6 @@ type PersFovCache = EM.EnumMap ActorId FovCache3
 
 type PersLight = EM.EnumMap LevelId LightSources
 
-type PersClear = EM.EnumMap LevelId (PointArray.Array Bool)
+type PersClear = EM.EnumMap LevelId ClearPoints
 
 type PersLitTerrain = EM.EnumMap LevelId LitTerrain

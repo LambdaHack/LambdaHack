@@ -3,8 +3,8 @@
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
 module Game.LambdaHack.Common.Fov
-  ( dungeonPerception, perceptionFromResets, perceptionFromPTotal
-  , clearInDungeon, lightInDungeon, fovCacheInDungeon
+  ( perFidInDungeon, perceptionFromResets, perceptionFromPTotal
+  , clearInDungeon, litTerrainInDungeon, lightInDungeon, fovCacheInDungeon
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
 #endif
@@ -42,9 +42,9 @@ perceptionFromResets perActor0 resetsActor
       clearPs = persClear EM.! lid
       combine aid bcache per = Just $
         if either id (aid `elem`) resetsActor
-        then perCacheServerFromActor clearPs bcache
+        then cacheBeforeLitFromActor clearPs bcache
         else per
-      only1 tbcache = EM.map (perCacheServerFromActor clearPs) tbcache
+      only1 tbcache = EM.map (cacheBeforeLitFromActor clearPs) tbcache
       only2 = const EM.empty  -- dead or stair-using actors removed
       perActor = EM.mergeWithKey combine only1 only2 bodyMap perActor0
   in perceptionFromPerActor perActor persLight lid
@@ -69,9 +69,8 @@ perceptionFromPerActor perActor persLight lid =
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
 -- Also compute positions seen by noctovision and perceived by smell.
-perCacheServerFromActor :: PointArray.Array Bool -> (Actor, FovCache3)
-                        -> CacheBeforeLit
-perCacheServerFromActor clearPs (body, FovCache3{fovSight, fovSmell}) =
+cacheBeforeLitFromActor :: ClearPoints -> (Actor, FovCache3) -> CacheBeforeLit
+cacheBeforeLitFromActor clearPs (body, FovCache3{fovSight, fovSmell}) =
   let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) fovSight
       creachable = PerReachable $ fullscan clearPs radius (bpos body)
       -- All non-projectile actors feel adjacent positions,
@@ -96,8 +95,7 @@ perceptionFromPTotal ptotal persLight lid =
 -- light source, e.g,, carried by an actor. A reachable and lit position
 -- is visible. Additionally, positions directly adjacent to an actor are
 -- assumed to be visible to him (through sound, touch, noctovision, whatever).
-visibleOnLevel :: PerReachable -> LightSources -> PerVisible
-               -> PerVisible
+visibleOnLevel :: PerReachable -> LightSources -> PerVisible -> PerVisible
 visibleOnLevel PerReachable{preachable}
                LightSources{lightSources}
                (PerVisible nocto) =
@@ -105,45 +103,43 @@ visibleOnLevel PerReachable{preachable}
 
 perceptionFromVoid :: PersLitA -> FactionId -> LevelId
                    -> (Perception, PerceptionCache)
-perceptionFromVoid (persFovCache, persLight, persClear, _)
-                   fid lid =
+perceptionFromVoid (persFovCache, persLight, persClear, _) fid lid =
   -- Dying actors included, to let them see their own demise.
   let bodyMap = EM.filter (\(b, _) -> bfid b == fid && blid b == lid)
                           persFovCache
       clearPs = persClear EM.! lid
-      perActor = EM.map (perCacheServerFromActor clearPs) bodyMap
+      perActor = EM.map (cacheBeforeLitFromActor clearPs) bodyMap
   in perceptionFromPerActor perActor persLight lid
 
 -- | Calculate perception of a faction.
-factionPerception :: PersLitA -> FactionId -> State -> (PerLid, PerCacheLid)
-factionPerception persLit fid s =
+perLidFromFaction :: PersLitA -> FactionId -> State -> (PerLid, PerCacheLid)
+perLidFromFaction persLit fid s =
   let em = EM.mapWithKey (\lid _ -> perceptionFromVoid persLit fid lid)
                          (sdungeon s)
   in (EM.map fst em, EM.map snd em)
 
 -- | Calculate the perception of the whole dungeon.
-dungeonPerception :: ItemFovCache -> State
-                  -> (PersLit, PerFid, PerCacheFid)
-dungeonPerception sItemFovCache s =
+perFidInDungeon :: ItemFovCache -> State -> (PersLit, PerFid, PerCacheFid)
+perFidInDungeon sItemFovCache s =
   let persClear = clearInDungeon s
       persFovCache = fovCacheInDungeon sItemFovCache (sactorD s)
       addBodyToCache aid cache = (getActorBody aid s, cache)
       persFovCacheA = EM.mapWithKey addBodyToCache persFovCache
-      (persLight, perLitTerrain) =
-        lightInDungeon Nothing persFovCacheA persClear s sItemFovCache
+      perLitTerrain = litTerrainInDungeon s
+      persLight =
+        lightInDungeon perLitTerrain persFovCacheA persClear s sItemFovCache
       persLit = (persFovCache, persLight, persClear, perLitTerrain)
       persLitA = (persFovCacheA, persLight, persClear, perLitTerrain)
-      f fid _ = factionPerception persLitA fid s
+      f fid _ = perLidFromFaction persLitA fid s
       em = EM.mapWithKey f $ sfactionD s
   in (persLit, EM.map fst em, EM.map snd em)
 
+clearFromLevel :: Kind.COps -> Level -> ClearPoints
+clearFromLevel Kind.COps{cotile} Level{ltile} =
+  PointArray.mapA (Tile.isClear cotile) ltile
+
 clearInDungeon :: State -> PersClear
-clearInDungeon s =
-  let Kind.COps{cotile} = scops s
-      clearLvl (lid, Level{ltile}) =
-        let clearTiles = PointArray.mapA (Tile.isClear cotile) ltile
-        in (lid, clearTiles)
-  in EM.fromDistinctAscList $ map clearLvl $ EM.assocs $ sdungeon s
+clearInDungeon s = EM.map (clearFromLevel (scops s)) $ sdungeon s
 
 fovCacheInDungeon :: ItemFovCache -> ActorDict -> PersFovCache
 fovCacheInDungeon sitemFovCache actorD =
@@ -152,60 +148,66 @@ fovCacheInDungeon sitemFovCache actorD =
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or floor items. Note that an actor can be blind, in which case he doesn't see
 -- his own light (but others, from his or other factions, possibly do).
-litByItems :: PointArray.Array Bool -> [(Point, Int)]
-           -> [LightSources]
-litByItems clearPs allItems =
+lightSourcesFromItems :: ClearPoints -> [(Point, Int)] -> [LightSources]
+lightSourcesFromItems clearPs allItems =
   let litPos :: (Point, Int) -> LightSources
       litPos (p, light) = LightSources $ fullscan clearPs light p
   in map litPos allItems
 
-lightInDungeon :: Maybe PersLitTerrain -> PersFovCacheA -> PersClear -> State
-               -> ItemFovCache
-               -> (PersLight, PersLitTerrain)
-lightInDungeon moldTileLight persFovCache persClear s sitemFovCache =
-  let Kind.COps{cotile} = scops s
-      processIid lightAcc (iid, (k, _)) =
+lightOnFloor :: ItemFovCache -> Level -> [(Point, Int)]
+lightOnFloor sitemFovCache lvl =
+  let processIid lightAcc (iid, (k, _)) =
         let FovCache3{fovLight} =
               EM.findWithDefault emptyFovCache3 iid sitemFovCache
         in k * fovLight + lightAcc
       processBag bag acc = foldl' processIid acc $ EM.assocs bag
-      lightOnFloor :: Level -> [(Point, Int)]
-      lightOnFloor lvl =
-        let processPos (p, bag) = (p, processBag bag 0)
-        in map processPos $ EM.assocs $ lfloor lvl  -- lembed are hidden
-      -- Note that an actor can be blind,
-      -- in which case he doesn't see his own light
-      -- (but others, from his or other factions, possibly do).
-      litOnLevel :: LevelId -> Level -> (LightSources, LitTerrain)
-      litOnLevel lid lvl@Level{ltile} =
-        let lvlBodies = filter ((== lid) . blid . fst) $ EM.elems persFovCache
-            litSet set p t = if Tile.isLit cotile t then p : set else set
-            litTiles = case moldTileLight of
-              Nothing -> LitTerrain $ ES.fromDistinctAscList
-                         $ PointArray.ifoldlA litSet [] ltile
-              Just oldTileLight -> oldTileLight EM.! lid
-            actorLights = map (\(b, FovCache3{fovLight}) -> (bpos b, fovLight))
-                              lvlBodies
-            floorLights = lightOnFloor lvl
-            -- If there is light both on the floor and carried by actor,
-            -- only the stronger light is taken into account.
-            -- This is rare, so no point optimizing away the double computation.
-            allLights = floorLights ++ actorLights
-            litDynamic = map lightSources
-                         $ litByItems (persClear EM.! lid) allLights
-        in ( LightSources $ ES.unions $ litTerrain litTiles : litDynamic
-           , litTiles )
-      litLvl (lid, lvl) = (lid, litOnLevel lid lvl)
-      em = EM.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
-  in (EM.map fst em, EM.map snd em)
+      processPos (p, bag) = (p, processBag bag 0)
+  in map processPos $ EM.assocs $ lfloor lvl  -- lembed are hidden
+
+litTerrainFromLevel :: Kind.COps -> Level -> LitTerrain
+litTerrainFromLevel Kind.COps{cotile} Level{ltile} =
+  let litSet set p t = if Tile.isLit cotile t then p : set else set
+  in LitTerrain $ ES.fromDistinctAscList
+     $ PointArray.ifoldlA litSet [] ltile
+
+litTerrainInDungeon :: State -> PersLitTerrain
+litTerrainInDungeon s = EM.map (litTerrainFromLevel (scops s)) $ sdungeon s
+
+-- Note that an actor can be blind,
+-- in which case he doesn't see his own light
+-- (but others, from his or other factions, possibly do).
+litOnLevel :: ItemFovCache -> PersLitTerrain -> PersFovCacheA
+           -> PersClear -> LevelId -> Level
+           -> LightSources
+litOnLevel sitemFovCache oldTileLight persFovCache persClear lid lvl =
+  let lvlBodies = filter ((== lid) . blid . fst) $ EM.elems persFovCache
+      actorLights = map (\(b, FovCache3{fovLight}) -> (bpos b, fovLight))
+                        lvlBodies
+      floorLights = lightOnFloor sitemFovCache lvl
+      -- If there is light both on the floor and carried by actor,
+      -- only the stronger light is taken into account.
+      -- This is rare, so no point optimizing away the double computation.
+      allLights = floorLights ++ actorLights
+      litDynamic = map lightSources
+                   $ lightSourcesFromItems (persClear EM.! lid) allLights
+      litTiles = oldTileLight EM.! lid
+  in LightSources $ ES.unions $ litTerrain litTiles : litDynamic
+
+lightInDungeon :: PersLitTerrain -> PersFovCacheA -> PersClear -> State
+               -> ItemFovCache
+               -> PersLight
+lightInDungeon oldTileLight persFovCache persClear s sitemFovCache =
+  EM.mapWithKey
+    (litOnLevel sitemFovCache oldTileLight persFovCache persClear)
+    $ sdungeon s
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
 -- algorithm to use is passed in the second argument.
 -- The actor's own position is considred reachable by him.
-fullscan :: PointArray.Array Bool  -- ^ the array with clear points
-         -> Int        -- ^ scanning radius
-         -> Point      -- ^ position of the spectator
+fullscan :: ClearPoints  -- ^ the array with clear points
+         -> Int          -- ^ scanning radius
+         -> Point        -- ^ position of the spectator
          -> ES.EnumSet Point
 fullscan clearPs radius spectatorPos =
   if | radius <= 0 -> ES.empty
