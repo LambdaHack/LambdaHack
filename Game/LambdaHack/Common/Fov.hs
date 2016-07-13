@@ -129,10 +129,10 @@ dungeonPerception sItemFovCache s =
       persFovCache = fovCacheInDungeon sItemFovCache (sactorD s)
       addBodyToCache aid cache = (getActorBody aid s, cache)
       persFovCacheA = EM.mapWithKey addBodyToCache persFovCache
-      (persLight, persTileLight) =
+      (persLight, perLitTerrain) =
         lightInDungeon Nothing persFovCacheA persClear s sItemFovCache
-      persLit = (persFovCache, persLight, persClear, persTileLight)
-      persLitA = (persFovCacheA, persLight, persClear, persTileLight)
+      persLit = (persFovCache, persLight, persClear, perLitTerrain)
+      persLitA = (persFovCacheA, persLight, persClear, perLitTerrain)
       f fid _ = factionPerception persLitA fid s
       em = EM.mapWithKey f $ sfactionD s
   in (persLit, EM.map fst em, EM.map snd em)
@@ -159,9 +159,9 @@ litByItems clearPs allItems =
       litPos (p, light) = LightSources $ fullscan clearPs light p
   in map litPos allItems
 
-lightInDungeon :: Maybe PersLight -> PersFovCacheA -> PersClear -> State
+lightInDungeon :: Maybe PersLitTerrain -> PersFovCacheA -> PersClear -> State
                -> ItemFovCache
-               -> (PersLight, PersLight)
+               -> (PersLight, PersLitTerrain)
 lightInDungeon moldTileLight persFovCache persClear s sitemFovCache =
   let Kind.COps{cotile} = scops s
       processIid lightAcc (iid, (k, _)) =
@@ -176,12 +176,12 @@ lightInDungeon moldTileLight persFovCache persClear s sitemFovCache =
       -- Note that an actor can be blind,
       -- in which case he doesn't see his own light
       -- (but others, from his or other factions, possibly do).
-      litOnLevel :: LevelId -> Level -> (LightSources, LightSources)
+      litOnLevel :: LevelId -> Level -> (LightSources, LitTerrain)
       litOnLevel lid lvl@Level{ltile} =
         let lvlBodies = filter ((== lid) . blid . fst) $ EM.elems persFovCache
             litSet set p t = if Tile.isLit cotile t then p : set else set
             litTiles = case moldTileLight of
-              Nothing -> LightSources $ ES.fromDistinctAscList
+              Nothing -> LitTerrain $ ES.fromDistinctAscList
                          $ PointArray.ifoldlA litSet [] ltile
               Just oldTileLight -> oldTileLight EM.! lid
             actorLights = map (\(b, FovCache3{fovLight}) -> (bpos b, fovLight))
@@ -193,7 +193,7 @@ lightInDungeon moldTileLight persFovCache persClear s sitemFovCache =
             allLights = floorLights ++ actorLights
             litDynamic = map lightSources
                          $ litByItems (persClear EM.! lid) allLights
-        in ( LightSources $ ES.unions $ lightSources litTiles : litDynamic
+        in ( LightSources $ ES.unions $ litTerrain litTiles : litDynamic
            , litTiles )
       litLvl (lid, lvl) = (lid, litOnLevel lid lvl)
       em = EM.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
