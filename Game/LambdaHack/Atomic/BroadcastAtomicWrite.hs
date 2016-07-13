@@ -100,24 +100,27 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
   -- Update lights in the dungeon. This is lazy, may not be needed
   -- or only partially; in particular not needed if not @resets@.
   -- This is needed every (even enemy) move to show thrown torches.
-  s <- getState
   -- TODO: refine, only reset on the level affected by the cmd
   -- also, reset FovCache only for the actor affected,
   -- reset light for an actor only if his light radius affected, etc.
-  let persClear = if resetsClear then clearInDungeon s else oldClear
-      persFovCache = if resetsFovCache
-                     then fovCacheInDungeon itemFovCache (sactorD s)
-                     else oldFC
-      persTileLight = if resetsClear then litTerrainInDungeon s else oldTileLight
-      addBodyToCache aid cache = do
+  persClear <- getsState $ if resetsClear
+                           then clearInDungeon
+                           else const oldClear
+  persFovCache <- getsState $ if resetsFovCache
+                              then fovCacheInDungeon itemFovCache . sactorD
+                              else const oldFC
+  persTileLight <- getsState $ if resetsClear
+                               then litTerrainInDungeon
+                               else const oldTileLight
+  let addBodyToCache aid cache = do
         body <- getsState $ getActorBody aid
         return (body, cache)
   persFovCacheA <- mapWithKeyM addBodyToCache persFovCache
-  let persLight =
-        if resetsLit
-        then lightInDungeon persTileLight persFovCacheA persClear s itemFovCache
-        else oldLights
-      persLit = (persFovCache, persLight, persClear, persTileLight)
+  persLight <- getsState $
+    if resetsLit
+    then lightInDungeon persTileLight persFovCacheA persClear itemFovCache
+    else const oldLights
+  let persLit = (persFovCache, persLight, persClear, persTileLight)
       persLitA = (persFovCacheA, persLight, persClear, persTileLight)
   doUpdateLit persLit
   -- Send some actions to the clients, one faction at a time.

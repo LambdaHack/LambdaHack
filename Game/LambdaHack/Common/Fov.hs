@@ -127,7 +127,7 @@ perFidInDungeon sItemFovCache s =
       persFovCacheA = EM.mapWithKey addBodyToCache persFovCache
       perLitTerrain = litTerrainInDungeon s
       persLight =
-        lightInDungeon perLitTerrain persFovCacheA persClear s sItemFovCache
+        lightInDungeon perLitTerrain persFovCacheA persClear sItemFovCache s
       persLit = (persFovCache, persLight, persClear, perLitTerrain)
       persLitA = (persFovCacheA, persLight, persClear, perLitTerrain)
       f fid _ = perLidFromFaction persLitA fid s
@@ -193,10 +193,10 @@ litOnLevel sitemFovCache oldTileLight persFovCache persClear lid lvl =
       litTiles = oldTileLight EM.! lid
   in LightSources $ ES.unions $ litTerrain litTiles : litDynamic
 
-lightInDungeon :: PersLitTerrain -> PersFovCacheA -> PersClear -> State
-               -> ItemFovCache
+lightInDungeon :: PersLitTerrain -> PersFovCacheA -> PersClear -> ItemFovCache
+               -> State
                -> PersLight
-lightInDungeon oldTileLight persFovCache persClear s sitemFovCache =
+lightInDungeon oldTileLight persFovCache persClear sitemFovCache s =
   EM.mapWithKey
     (litOnLevel sitemFovCache oldTileLight persFovCache persClear)
     $ sdungeon s
