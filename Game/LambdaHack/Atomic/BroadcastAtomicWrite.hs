@@ -106,7 +106,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
   -- reset light for an actor only if his light radius affected, etc.
   let persClear = if resetsClear then clearInDungeon s else oldClear
       persFovCache = if resetsFovCache
-                     then fovCacheInDungeon s itemFovCache
+                     then fovCacheInDungeon itemFovCache (sactorD s)
                      else oldFC
       addBodyToCache aid cache = do
         body <- getsState $ getActorBody aid

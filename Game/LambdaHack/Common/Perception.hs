@@ -33,7 +33,7 @@ module Game.LambdaHack.Common.Perception
   , PerCacheLid
   , PerCacheFid
     -- * Assorted
-  , FovCache3(..), emptyFovCache3
+  , FovCache3(..), emptyFovCache3, actorFovCache3
   , ItemFovCache, LightSources(..)
   , PersLit, PersLitA, PersFovCache, PersFovCacheA, PersLight, PersClear
   ) where
@@ -164,6 +164,18 @@ instance Binary FovCache3 where
 
 emptyFovCache3 :: FovCache3
 emptyFovCache3 = FovCache3 0 0 0
+
+actorFovCache3 :: ItemFovCache -> Actor -> FovCache3
+actorFovCache3 sitemFovCache b =
+  let processIid3 (FovCache3 sightAcc smellAcc lightAcc) (iid, (k, _)) =
+        let FovCache3{..} =
+              EM.findWithDefault emptyFovCache3 iid sitemFovCache
+        in FovCache3 (k * fovSight + sightAcc)
+                     (k * fovSmell + smellAcc)
+                     (k * fovLight + lightAcc)
+      processBag3 bag acc = foldl' processIid3 acc $ EM.assocs bag
+      sslOrgan = processBag3 (borgan b) emptyFovCache3
+  in processBag3 (beqp b) sslOrgan
 
 type ItemFovCache = EM.EnumMap ItemId FovCache3
 

@@ -91,6 +91,18 @@ perceptionFromPTotal ptotal persLight lid =
       psmell = csmell ptotal
   in Perception{..}
 
+-- | Compute positions visible (reachable and seen) by the party.
+-- A position can be directly lit by an ambient shine or by a weak, portable
+-- light source, e.g,, carried by an actor. A reachable and lit position
+-- is visible. Additionally, positions directly adjacent to an actor are
+-- assumed to be visible to him (through sound, touch, noctovision, whatever).
+visibleOnLevel :: PerReachable -> LightSources -> PerVisible
+               -> PerVisible
+visibleOnLevel PerReachable{preachable}
+               LightSources{lightSources}
+               (PerVisible nocto) =
+  PerVisible $ nocto `ES.union` (preachable `ES.intersection` lightSources)
+
 perceptionFromVoid :: PersLitA -> FactionId -> LevelId
                    -> (Perception, PerceptionCache)
 perceptionFromVoid (persFovCache, persLight, persClear, _)
@@ -114,7 +126,7 @@ dungeonPerception :: ItemFovCache -> State
                   -> (PersLit, PerFid, PerCacheFid)
 dungeonPerception sItemFovCache s =
   let persClear = clearInDungeon s
-      persFovCache = fovCacheInDungeon s sItemFovCache
+      persFovCache = fovCacheInDungeon sItemFovCache (sactorD s)
       addBodyToCache aid cache = (getActorBody aid s, cache)
       persFovCacheA = EM.mapWithKey addBodyToCache persFovCache
       (persLight, persTileLight) =
@@ -125,17 +137,17 @@ dungeonPerception sItemFovCache s =
       em = EM.mapWithKey f $ sfactionD s
   in (persLit, EM.map fst em, EM.map snd em)
 
--- | Compute positions visible (reachable and seen) by the party.
--- A position can be directly lit by an ambient shine or by a weak, portable
--- light source, e.g,, carried by an actor. A reachable and lit position
--- is visible. Additionally, positions directly adjacent to an actor are
--- assumed to be visible to him (through sound, touch, noctovision, whatever).
-visibleOnLevel :: PerReachable -> LightSources -> PerVisible
-               -> PerVisible
-visibleOnLevel PerReachable{preachable}
-               LightSources{lightSources}
-               (PerVisible nocto) =
-  PerVisible $ nocto `ES.union` (preachable `ES.intersection` lightSources)
+clearInDungeon :: State -> PersClear
+clearInDungeon s =
+  let Kind.COps{cotile} = scops s
+      clearLvl (lid, Level{ltile}) =
+        let clearTiles = PointArray.mapA (Tile.isClear cotile) ltile
+        in (lid, clearTiles)
+  in EM.fromDistinctAscList $ map clearLvl $ EM.assocs $ sdungeon s
+
+fovCacheInDungeon :: ItemFovCache -> ActorDict -> PersFovCache
+fovCacheInDungeon sitemFovCache actorD =
+  EM.map (actorFovCache3 sitemFovCache) actorD
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or floor items. Note that an actor can be blind, in which case he doesn't see
@@ -146,14 +158,6 @@ litByItems clearPs allItems =
   let litPos :: (Point, Int) -> LightSources
       litPos (p, light) = LightSources $ fullscan clearPs light p
   in map litPos allItems
-
-clearInDungeon :: State -> PersClear
-clearInDungeon s =
-  let Kind.COps{cotile} = scops s
-      clearLvl (lid, Level{ltile}) =
-        let clearTiles = PointArray.mapA (Tile.isClear cotile) ltile
-        in (lid, clearTiles)
-  in EM.fromDistinctAscList $ map clearLvl $ EM.assocs $ sdungeon s
 
 lightInDungeon :: Maybe PersLight -> PersFovCacheA -> PersClear -> State
                -> ItemFovCache
@@ -194,20 +198,6 @@ lightInDungeon moldTileLight persFovCache persClear s sitemFovCache =
       litLvl (lid, lvl) = (lid, litOnLevel lid lvl)
       em = EM.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
   in (EM.map fst em, EM.map snd em)
-
-fovCacheInDungeon :: State -> ItemFovCache -> PersFovCache
-fovCacheInDungeon s sitemFovCache =
-  let processIid3 (FovCache3 sightAcc smellAcc lightAcc) (iid, (k, _)) =
-        let FovCache3{..} =
-              EM.findWithDefault emptyFovCache3 iid sitemFovCache
-        in FovCache3 (k * fovSight + sightAcc)
-                     (k * fovSmell + smellAcc)
-                     (k * fovLight + lightAcc)
-      processBag3 bag acc = foldl' processIid3 acc $ EM.assocs bag
-      processActor b =
-        let sslOrgan = processBag3 (borgan b) emptyFovCache3
-        in processBag3 (beqp b) sslOrgan
-  in EM.map processActor $ sactorD s
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
