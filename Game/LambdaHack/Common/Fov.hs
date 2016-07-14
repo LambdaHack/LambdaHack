@@ -5,7 +5,7 @@
 module Game.LambdaHack.Common.Fov
   ( perFidInDungeon, perceptionFromResets, perceptionFromPTotal
   , clearInDungeon, updateTilesClear, litTerrainInDungeon, updateTilesLit
-  , lightInDungeon, fovCacheInDungeon
+  , lightInDungeon, updateLight, fovCacheInDungeon
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
 #endif
@@ -210,6 +210,14 @@ lightInDungeon oldTileLight persFovCache persClear sitemFovCache s =
   EM.mapWithKey
     (litOnLevel sitemFovCache oldTileLight persFovCache persClear)
     $ sdungeon s
+
+updateLight :: PersLight -> LevelId -> PersLitTerrain
+            -> PersFovCacheA -> PersClear -> ItemFovCache -> State
+            -> PersLight
+updateLight oldLights lid oldTileLight persFovCache persClear sitemFovCache s =
+  let newLights = litOnLevel sitemFovCache oldTileLight persFovCache persClear
+                             lid (sdungeon s EM.! lid)
+  in EM.adjust (const newLights) lid oldLights
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View

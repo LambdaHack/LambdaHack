@@ -83,8 +83,9 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
             , resetsLitCmdAtomic cmd itemFovCache
             , resetsTilesCmdAtomic cmd
             , resetsFovCacheCmdAtomic cmd itemFovCache )
-          SfxAtomic{} -> (Right [], False, Nothing, False)
-  let resetOthers = resetsLit || isJust resetsTiles || resetsFovCache
+          SfxAtomic{} -> (Right [], Right [], Nothing, False)
+  let resetOthers =
+        resetsLit /= Right [] || isJust resetsTiles || resetsFovCache
       resets = resetsFov /= Right [] || resetOthers
   resetsBodies <- case resetsFov of
     Left b -> return $ Left b
@@ -120,10 +121,17 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
         body <- getsState $ getActorBody aid
         return (body, cache)
   persFovCacheA <- mapWithKeyM addBodyToCache persFovCache
-  persLight <- getsState $
-    if resetsLit
-    then lightInDungeon persTileLight persFovCacheA persClear itemFovCache
-    else const oldLights
+  let updLit lid = getsState $ updateLight oldLights lid
+                                           persTileLight persFovCacheA
+                                           persClear itemFovCache
+  persLight <- case resetsLit of
+    Right [] -> return oldLights
+    Right (aid : aids) -> do
+      lid <- getsState $ blid . getActorBody aid
+      lids <- mapM (\a -> getsState $ blid . getActorBody a) aids
+      let !_A = assert (all (== lid) lids) ()
+      updLit lid
+    Left lid -> updLit lid
   let persLit = (persFovCache, persLight, persClear, persTileLight)
       persLitA = (persFovCacheA, persLight, persClear, persTileLight)
   doUpdateLit persLit

@@ -269,34 +269,44 @@ resetsFovCacheCmdAtomic cmd itemFovCache = case cmd of
 
 -- | Determines if a command resets the data about lit tiles
 -- (both dynamically and statically).
-resetsLitCmdAtomic :: UpdAtomic -> ItemFovCache -> Bool
+resetsLitCmdAtomic :: UpdAtomic -> ItemFovCache -> Either LevelId [ActorId]
 resetsLitCmdAtomic cmd itemFovCache = case cmd of
   -- Create/destroy actors and items.
-  UpdCreateActor{} -> True  -- may have a light source (as organ or trunk even)
-  UpdDestroyActor{} -> True
-  UpdCreateItem iid _ _ (CFloor _ _) -> itemAffectsLitRadius iid []
-  UpdCreateItem iid _ _ (CActor _ s) -> itemAffectsLitRadius iid [s]
-  UpdDestroyItem iid _ _ (CFloor _ _) -> itemAffectsLitRadius iid []
-  UpdDestroyItem iid _ _ (CActor _ s) -> itemAffectsLitRadius iid [s]
-  UpdSpotActor{} -> True
-  UpdLoseActor{} -> True
-  UpdSpotItem iid _ _ (CFloor _ _) -> itemAffectsLitRadius iid []
-  UpdSpotItem iid _ _ (CActor _ s) -> itemAffectsLitRadius iid [s]
-  UpdLoseItem iid _ _ (CFloor _ _) -> itemAffectsLitRadius iid []
-  UpdLoseItem iid _ _ (CActor _ s) -> itemAffectsLitRadius iid [s]
+  UpdCreateActor _ b _ -> Left $ blid b  -- trunk or organ or eqp may shine
+  UpdDestroyActor _ b _ -> Left $ blid b
+  UpdCreateItem iid _ _ (CFloor lid _) ->
+    itemAffectsLitRadius iid [] $ Left lid
+  UpdCreateItem iid _ _ (CActor aid s) ->
+    itemAffectsLitRadius iid [s] $ Right [aid]
+  UpdDestroyItem iid _ _ (CFloor lid _) ->
+    itemAffectsLitRadius iid [] $ Left lid
+  UpdDestroyItem iid _ _ (CActor aid s) ->
+    itemAffectsLitRadius iid [s] $ Right [aid]
+  UpdSpotActor _ b _ -> Left $ blid b
+  UpdLoseActor _ b _ -> Left $ blid b
+  UpdSpotItem iid _ _ (CFloor lid _) ->
+    itemAffectsLitRadius iid [] $ Left lid
+  UpdSpotItem iid _ _ (CActor aid s) ->
+    itemAffectsLitRadius iid [s] $ Right [aid]
+  UpdLoseItem iid _ _ (CFloor lid _) ->
+    itemAffectsLitRadius iid [] $ Left lid
+  UpdLoseItem iid _ _ (CActor aid s) ->
+    itemAffectsLitRadius iid [s] $ Right [aid]
   -- Move actors and items.
-  UpdMoveActor{} -> True  -- TODO: check if has light
-  UpdDisplaceActor{} -> True
-  UpdMoveItem iid _ _ s1 s2 -> itemAffectsLitRadius iid [s1, s2]
+  UpdMoveActor aid _ _ -> Right [aid]  -- TODO: check if has light
+  UpdDisplaceActor aid1 aid2 -> Right [aid1, aid2]
+  UpdMoveItem iid _ aid s1 s2 -> itemAffectsLitRadius iid [s1, s2] $ Right [aid]
   -- Alter map.
-  UpdAlterTile{} -> True
-  _ -> False
+  UpdAlterTile lid _ _ _ -> Left lid
+  _ -> Right []
  where
-  itemAffectsLitRadius iid stores =
-    (null stores || (not $ null $ intersect stores [CEqp, COrgan, CGround]))
-    && case EM.lookup iid itemFovCache of
-      Just FovCache3{fovLight} -> fovLight /= 0
-      Nothing -> False
+  itemAffectsLitRadius iid stores res =
+    if (null stores || (not $ null $ intersect stores [CEqp, COrgan, CGround]))
+       && case EM.lookup iid itemFovCache of
+         Just FovCache3{fovLight} -> fovLight /= 0
+         Nothing -> False
+    then res
+    else Right []
 
 -- | Decompose an atomic action. The original action is visible
 -- if it's positions are visible both before and after the action
