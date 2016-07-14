@@ -5,7 +5,7 @@
 module Game.LambdaHack.Common.Fov
   ( perFidInDungeon, perceptionFromResets, perceptionFromPTotal
   , clearInDungeon, updateTilesClear, litTerrainInDungeon, updateTilesLit
-  , lightInDungeon, updateLight, fovCacheInDungeon
+  , lightInDungeon, updateLight, fovCacheInDungeon, updateFovCache
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
 #endif
@@ -150,6 +150,14 @@ updateTilesClear oldClear lid s =
 fovCacheInDungeon :: ItemFovCache -> ActorDict -> PersFovCache
 fovCacheInDungeon sitemFovCache actorD =
   EM.map (actorFovCache3 sitemFovCache) actorD
+
+updateFovCache :: PersFovCache -> ActorId -> ItemFovCache -> ActorDict
+               -> PersFovCache
+updateFovCache oldFC aid sitemFovCache actorD =
+  case EM.lookup aid actorD of
+    Just b -> let newFC = actorFovCache3 sitemFovCache b
+              in EM.alter (const $ Just newFC) aid oldFC
+    Nothing -> EM.delete aid oldFC
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or floor items. Note that an actor can be blind, in which case he doesn't see

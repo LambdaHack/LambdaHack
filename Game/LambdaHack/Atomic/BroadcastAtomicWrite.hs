@@ -83,9 +83,9 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
             , resetsLitCmdAtomic cmd itemFovCache
             , resetsTilesCmdAtomic cmd
             , resetsFovCacheCmdAtomic cmd itemFovCache )
-          SfxAtomic{} -> (Right [], Right [], Nothing, False)
+          SfxAtomic{} -> (Right [], Right [], Nothing, Nothing)
   let resetOthers =
-        resetsLit /= Right [] || isJust resetsTiles || resetsFovCache
+        resetsLit /= Right [] || isJust resetsTiles || isJust resetsFovCache
       resets = resetsFov /= Right [] || resetOthers
   resetsBodies <- case resetsFov of
     Left b -> return $ Left b
@@ -111,9 +111,9 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
   persClear <- case resetsTiles of
     Nothing -> return oldClear
     Just lid -> getsState $ updateTilesClear oldClear lid
-  persFovCache <- getsState $ if resetsFovCache
-                              then fovCacheInDungeon itemFovCache . sactorD
-                              else const oldFC
+  persFovCache <- case resetsFovCache of
+    Nothing -> return oldFC
+    Just aid -> getsState $ updateFovCache oldFC aid itemFovCache . sactorD
   persTileLight <- case resetsTiles of
     Nothing -> return oldTileLight
     Just lid -> getsState $ updateTilesLit oldTileLight lid
