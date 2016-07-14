@@ -4,7 +4,7 @@
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
   , resetsFovCmdAtomic, resetsLitCmdAtomic
-  , resetsClearCmdAtomic, resetsFovCacheCmdAtomic
+  , resetsTilesCmdAtomic, resetsFovCacheCmdAtomic
   , breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
   ) where
@@ -241,10 +241,10 @@ resetsFovCmdAtomic cmd itemFovCache = case cmd of
     then Right [aid2]
     else Right []
 
-resetsClearCmdAtomic :: UpdAtomic -> Bool
-resetsClearCmdAtomic cmd = case cmd of
-  UpdAlterTile{} -> True
-  _ -> False
+resetsTilesCmdAtomic :: UpdAtomic -> Maybe LevelId
+resetsTilesCmdAtomic cmd = case cmd of
+  UpdAlterTile lid _ _ _ -> Just lid
+  _ -> Nothing
 
 resetsFovCacheCmdAtomic :: UpdAtomic -> ItemFovCache -> Bool
 resetsFovCacheCmdAtomic cmd itemFovCache = case cmd of

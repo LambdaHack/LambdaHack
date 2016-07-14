@@ -4,7 +4,8 @@
 -- for discussion.
 module Game.LambdaHack.Common.Fov
   ( perFidInDungeon, perceptionFromResets, perceptionFromPTotal
-  , clearInDungeon, litTerrainInDungeon, lightInDungeon, fovCacheInDungeon
+  , clearInDungeon, updateTilesClear, litTerrainInDungeon, updateTilesLit
+  , lightInDungeon, fovCacheInDungeon
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
 #endif
@@ -141,6 +142,11 @@ clearFromLevel Kind.COps{cotile} Level{ltile} =
 clearInDungeon :: State -> PersClear
 clearInDungeon s = EM.map (clearFromLevel (scops s)) $ sdungeon s
 
+updateTilesClear :: PersClear -> LevelId -> State -> PersClear
+updateTilesClear oldClear lid s =
+  let newTiles = clearFromLevel (scops s) (sdungeon s EM.! lid)
+  in EM.adjust (const newTiles) lid oldClear
+
 fovCacheInDungeon :: ItemFovCache -> ActorDict -> PersFovCache
 fovCacheInDungeon sitemFovCache actorD =
   EM.map (actorFovCache3 sitemFovCache) actorD
@@ -171,6 +177,11 @@ litTerrainFromLevel Kind.COps{cotile} Level{ltile} =
 
 litTerrainInDungeon :: State -> PersLitTerrain
 litTerrainInDungeon s = EM.map (litTerrainFromLevel (scops s)) $ sdungeon s
+
+updateTilesLit :: PersLitTerrain -> LevelId -> State -> PersLitTerrain
+updateTilesLit oldTileLight lid s =
+  let newTiles = litTerrainFromLevel (scops s) (sdungeon s EM.! lid)
+  in EM.adjust (const newTiles) lid oldTileLight
 
 -- Note that an actor can be blind,
 -- in which case he doesn't see his own light

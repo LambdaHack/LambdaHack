@@ -76,15 +76,15 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
   itemFovCache <- getItemFovCache
-  let (resetsFov, resetsLit, resetsClear, resetsFovCache) =
+  let (resetsFov, resetsLit, resetsTiles, resetsFovCache) =
         case atomic of
           UpdAtomic cmd ->
             ( resetsFovCmdAtomic cmd itemFovCache
             , resetsLitCmdAtomic cmd itemFovCache
-            , resetsClearCmdAtomic cmd
+            , resetsTilesCmdAtomic cmd
             , resetsFovCacheCmdAtomic cmd itemFovCache )
-          SfxAtomic{} -> (Right [], False, False, False)
-  let resetOthers = resetsLit || resetsClear || resetsFovCache
+          SfxAtomic{} -> (Right [], False, Nothing, False)
+  let resetOthers = resetsLit || isJust resetsTiles || resetsFovCache
       resets = resetsFov /= Right [] || resetOthers
   resetsBodies <- case resetsFov of
     Left b -> return $ Left b
@@ -107,15 +107,15 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
   -- but it's rare that cmd changed them, but not the perception
   -- (e.g., earthquake in an uninhabited corner of the active arena,
   -- but the we'd probably want some feedback, at least sound).
-  persClear <- getsState $ if resetsClear
-                           then clearInDungeon
-                           else const oldClear
+  persClear <- case resetsTiles of
+    Nothing -> return oldClear
+    Just lid -> getsState $ updateTilesClear oldClear lid
   persFovCache <- getsState $ if resetsFovCache
                               then fovCacheInDungeon itemFovCache . sactorD
                               else const oldFC
-  persTileLight <- getsState $ if resetsClear
-                               then litTerrainInDungeon
-                               else const oldTileLight
+  persTileLight <- case resetsTiles of
+    Nothing -> return oldTileLight
+    Just lid -> getsState $ updateTilesLit oldTileLight lid
   let addBodyToCache aid cache = do
         body <- getsState $ getActorBody aid
         return (body, cache)
