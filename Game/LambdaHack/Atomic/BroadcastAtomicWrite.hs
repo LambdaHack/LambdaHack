@@ -86,21 +86,15 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
           SfxAtomic{} -> (Just [], Right [], Nothing, Nothing)
   let resetOthers =
         resetsLit /= Right [] || isJust resetsTiles || isJust resetsFovCache
-      resets = resetsFov /= Just [] || resetOthers
-  resetsBodies <- case resetsFov of
-    Nothing -> return Nothing
-    Just as -> do
-      let oldBody aid = getActorBody aid sOld
-          f aid s = EM.findWithDefault (oldBody aid) aid $ sactorD s
-      Just <$> mapM (getsState . f) as
   -- TODO: assert also that the sum of psBroken is equal to ps;
   -- with deep equality these assertions can be expensive; optimize.
   let !_A = assert (case ps of
                       PosSight{} -> True
                       PosFidAndSight{} -> True
                       PosFidAndSer (Just _) _ -> True
-                      _ -> not resets
-                   `blame` (ps, resets)) ()
+                      _ -> not $ resetsFov /= Just [] || resetOthers
+                   `blame`
+                    (ps, resetsFov, resetsLit, resetsTiles, resetsFovCache)) ()
   -- Update lights in the dungeon. This is not needed and not performed
   -- in particular if not @resets@.
   -- This is needed every (even enemy) move to show thrown torches.
@@ -165,16 +159,23 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
           then sendUpdate fid atomic
           else breakSend lid fid perNew
       posLevel fid lid = do
+        resetsBodies <- case resetsFov of
+          Nothing -> getsState $ actorAssocs (== fid) lid
+          Just as -> do
+            let findOrOld aid = EM.findWithDefault (getActorBody aid sOld) aid
+                f aid s = (aid, findOrOld aid $ sactorD s)
+            -- Filter due to cases like @UpdDisplaceActor@.
+            filter ((== fid) . bfid . snd) <$> mapM (getsState . f) as
         let perOld = sperFidOld EM.! fid EM.! lid
             srvPerOld = sperCacheFidOld EM.! fid EM.! lid
-            resetsFovFid = maybe True (any $ (fid ==) . bfid) resetsBodies
+            resetsFovFid = not $ null resetsBodies
         if resetsFovFid || resetOthers then do
           -- Needed often, e.g., to show thrown torches in dark corridors.
           (perNew, msrvPerNew) <-
             if resetsFovFid then do
-              (per, srvPerNew) <-
-                getsState $ perceptionFromResets (perActor srvPerOld) resetsFov
-                                                 persLit fid lid
+              (per, srvPerNew) <- getsState $
+                perceptionFromResets (perActor srvPerOld) resetsBodies
+                                     persLit lid
               return (per, Just srvPerNew)
             else do
               let per = perceptionFromPTotal (ptotal srvPerOld) persLight lid

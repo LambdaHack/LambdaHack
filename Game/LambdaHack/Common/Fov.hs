@@ -31,25 +31,20 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 
-perceptionFromResets :: PerActor -> Maybe [ActorId]
-                     -> PersLit -> FactionId -> LevelId -> State
+perceptionFromResets :: PerActor -> [(ActorId, Actor)]
+                     -> PersLit -> LevelId -> State
                      -> (Perception, PerceptionCache)
-perceptionFromResets perActor0 resetsActor
-                     (persFovCache, persLight, persClear, _)
-                     fid lid s =
+perceptionFromResets perActor0 resetsBodies
+                     (persFovCache, persLight, persClear, _) lid s =
   -- Dying actors included, to let them see their own demise.
-  let aids = case resetsActor of
-        Nothing -> map fst $ actorAssocs (== fid) lid s
-        Just as -> as
-      clearPs = persClear EM.! lid
-      f acc aid = case EM.lookup aid $ sactorD s of
-        Just b -> if bfid b == fid  -- for the case @UpdDisplaceActor@
-                  then let fcache = persFovCache EM.! aid
-                           newPer = cacheBeforeLitFromActor clearPs (b, fcache)
-                       in EM.alter (const $ Just newPer) aid acc
-                  else acc
-        Nothing -> EM.delete aid acc  -- dead or stair-using actors removed
-      perActor = foldl' f perActor0 aids
+  let clearPs = persClear EM.! lid
+      f acc (aid, b) =
+        if EM.member aid $ sactorD s
+        then let fcache = persFovCache EM.! aid
+                 newPer = cacheBeforeLitFromActor clearPs (b, fcache)
+             in EM.alter (const $ Just newPer) aid acc
+        else EM.delete aid acc  -- dead or stair-using actors removed
+      perActor = foldl' f perActor0 resetsBodies
   in perceptionFromPerActor perActor persLight lid
 
 perceptionFromPerActor :: PerActor -> PersLight -> LevelId
@@ -219,6 +214,10 @@ lightInDungeon oldTileLight persFovCache persClear sitemFovCache s =
     (litOnLevel sitemFovCache oldTileLight persFovCache persClear s)
     $ sdungeon s
 
+-- TODO: we may cache independently the sum of floor lights
+-- and per-actor lights, because actor movement is the most common reset.
+-- This is worthwhile for games with, e.g., lots of shining robots
+-- or tracer gun bullets (the latter a bad idea, anyway, lots of resets).
 updateLight :: PersLight -> LevelId -> PersLitTerrain
             -> PersFovCache -> PersClear -> ItemFovCache -> State
             -> PersLight
