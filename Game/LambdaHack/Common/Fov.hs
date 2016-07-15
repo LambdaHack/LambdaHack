@@ -173,8 +173,9 @@ lightOnFloor sitemFovCache lvl =
               EM.findWithDefault emptyFovCache3 iid sitemFovCache
         in k * fovLight + lightAcc
       processBag bag acc = foldl' processIid acc $ EM.assocs bag
-      processPos (p, bag) = (p, processBag bag 0)
-  in map processPos $ EM.assocs $ lfloor lvl  -- lembed are hidden
+  in [(p, radius) | (p, bag) <- EM.assocs $ lfloor lvl  -- lembed are hidden
+                  , let radius = processBag bag 0
+                  , radius > 0]
 
 litTerrainFromLevel :: Kind.COps -> Level -> LitTerrain
 litTerrainFromLevel Kind.COps{cotile} Level{ltile} =
@@ -196,11 +197,10 @@ litOnLevel :: ItemFovCache -> PersLitTerrain -> PersFovCache
            -> PersClear -> State -> LevelId -> Level
            -> LightSources
 litOnLevel sitemFovCache oldTileLight persFovCache persClear s lid lvl =
-  let lvlBodies = actorAssocs (const True) lid s
-      actorLights = map (\(aid, b) ->
-                          let FovCache3{fovLight} = persFovCache EM.! aid
-                          in (bpos b, fovLight))
-                        lvlBodies
+  let actorLights =
+        [(bpos b, radius) | (aid, b) <- actorAssocs (const True) lid s
+                          , let radius = fovLight $ persFovCache EM.! aid
+                          , radius > 0]
       floorLights = lightOnFloor sitemFovCache lvl
       -- If there is light both on the floor and carried by actor,
       -- only the stronger light is taken into account.
