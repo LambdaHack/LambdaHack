@@ -31,23 +31,25 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 
-perceptionFromResets :: PerActor -> Either Bool [ActorId]
-                     -> PersLitA -> FactionId -> LevelId
+perceptionFromResets :: PerActor -> Maybe [ActorId]
+                     -> PersLit -> FactionId -> LevelId -> State
                      -> (Perception, PerceptionCache)
 perceptionFromResets perActor0 resetsActor
                      (persFovCache, persLight, persClear, _)
-                     fid lid =
+                     fid lid s =
   -- Dying actors included, to let them see their own demise.
-  let bodyMap = EM.filter (\(b, _) -> bfid b == fid && blid b == lid)
-                          persFovCache
+  let aids = case resetsActor of
+        Nothing -> map fst $ actorAssocs (== fid) lid s
+        Just as -> as
       clearPs = persClear EM.! lid
-      combine aid bcache per = Just $
-        if either id (aid `elem`) resetsActor
-        then cacheBeforeLitFromActor clearPs bcache
-        else per
-      only1 tbcache = EM.map (cacheBeforeLitFromActor clearPs) tbcache
-      only2 = const EM.empty  -- dead or stair-using actors removed
-      perActor = EM.mergeWithKey combine only1 only2 bodyMap perActor0
+      f acc aid = case EM.lookup aid $ sactorD s of
+        Just b -> if bfid b == fid  -- for the case @UpdDisplaceActor@
+                  then let fcache = persFovCache EM.! aid
+                           newPer = cacheBeforeLitFromActor clearPs (b, fcache)
+                       in EM.alter (const $ Just newPer) aid acc
+                  else acc
+        Nothing -> EM.delete aid acc  -- dead or stair-using actors removed
+      perActor = foldl' f perActor0 aids
   in perceptionFromPerActor perActor persLight lid
 
 perceptionFromPerActor :: PerActor -> PersLight -> LevelId
@@ -102,20 +104,19 @@ visibleOnLevel PerReachable{preachable}
                (PerVisible nocto) =
   PerVisible $ nocto `ES.union` (preachable `ES.intersection` lightSources)
 
-perceptionFromVoid :: PersLitA -> FactionId -> LevelId
+perceptionFromVoid :: PersLit -> FactionId -> LevelId -> State
                    -> (Perception, PerceptionCache)
-perceptionFromVoid (persFovCache, persLight, persClear, _) fid lid =
-  -- Dying actors included, to let them see their own demise.
-  let bodyMap = EM.filter (\(b, _) -> bfid b == fid && blid b == lid)
-                          persFovCache
+perceptionFromVoid (persFovCache, persLight, persClear, _) fid lid s =
+  let lvlBodies = EM.fromList $ actorAssocs (== fid) lid s
+      bodyMap = EM.mapWithKey (\aid b -> (b, persFovCache EM.! aid)) lvlBodies
       clearPs = persClear EM.! lid
       perActor = EM.map (cacheBeforeLitFromActor clearPs) bodyMap
   in perceptionFromPerActor perActor persLight lid
 
 -- | Calculate perception of a faction.
-perLidFromFaction :: PersLitA -> FactionId -> State -> (PerLid, PerCacheLid)
+perLidFromFaction :: PersLit -> FactionId -> State -> (PerLid, PerCacheLid)
 perLidFromFaction persLit fid s =
-  let em = EM.mapWithKey (\lid _ -> perceptionFromVoid persLit fid lid)
+  let em = EM.mapWithKey (\lid _ -> perceptionFromVoid persLit fid lid s)
                          (sdungeon s)
   in (EM.map fst em, EM.map snd em)
 
@@ -123,15 +124,12 @@ perLidFromFaction persLit fid s =
 perFidInDungeon :: ItemFovCache -> State -> (PersLit, PerFid, PerCacheFid)
 perFidInDungeon sItemFovCache s =
   let persClear = clearInDungeon s
-      persFovCache = fovCacheInDungeon sItemFovCache (sactorD s)
-      addBodyToCache aid cache = (getActorBody aid s, cache)
-      persFovCacheA = EM.mapWithKey addBodyToCache persFovCache
+      persFovCache = fovCacheInDungeon sItemFovCache s
       perLitTerrain = litTerrainInDungeon s
       persLight =
-        lightInDungeon perLitTerrain persFovCacheA persClear sItemFovCache s
+        lightInDungeon perLitTerrain persFovCache persClear sItemFovCache s
       persLit = (persFovCache, persLight, persClear, perLitTerrain)
-      persLitA = (persFovCacheA, persLight, persClear, perLitTerrain)
-      f fid _ = perLidFromFaction persLitA fid s
+      f fid _ = perLidFromFaction persLit fid s
       em = EM.mapWithKey f $ sfactionD s
   in (persLit, EM.map fst em, EM.map snd em)
 
@@ -147,14 +145,14 @@ updateTilesClear oldClear lid s =
   let newTiles = clearFromLevel (scops s) (sdungeon s EM.! lid)
   in EM.adjust (const newTiles) lid oldClear
 
-fovCacheInDungeon :: ItemFovCache -> ActorDict -> PersFovCache
-fovCacheInDungeon sitemFovCache actorD =
-  EM.map (actorFovCache3 sitemFovCache) actorD
+fovCacheInDungeon :: ItemFovCache -> State -> PersFovCache
+fovCacheInDungeon sitemFovCache s =
+  EM.map (actorFovCache3 sitemFovCache) $ sactorD s
 
-updateFovCache :: PersFovCache -> ActorId -> ItemFovCache -> ActorDict
+updateFovCache :: PersFovCache -> ActorId -> ItemFovCache -> State
                -> PersFovCache
-updateFovCache oldFC aid sitemFovCache actorD =
-  case EM.lookup aid actorD of
+updateFovCache oldFC aid sitemFovCache s =
+  case EM.lookup aid $ sactorD s of
     Just b -> let newFC = actorFovCache3 sitemFovCache b
               in EM.alter (const $ Just newFC) aid oldFC
     Nothing -> EM.delete aid oldFC
@@ -194,12 +192,14 @@ updateTilesLit oldTileLight lid s =
 -- Note that an actor can be blind,
 -- in which case he doesn't see his own light
 -- (but others, from his or other factions, possibly do).
-litOnLevel :: ItemFovCache -> PersLitTerrain -> PersFovCacheA
-           -> PersClear -> LevelId -> Level
+litOnLevel :: ItemFovCache -> PersLitTerrain -> PersFovCache
+           -> PersClear -> State -> LevelId -> Level
            -> LightSources
-litOnLevel sitemFovCache oldTileLight persFovCache persClear lid lvl =
-  let lvlBodies = filter ((== lid) . blid . fst) $ EM.elems persFovCache
-      actorLights = map (\(b, FovCache3{fovLight}) -> (bpos b, fovLight))
+litOnLevel sitemFovCache oldTileLight persFovCache persClear s lid lvl =
+  let lvlBodies = actorAssocs (const True) lid s
+      actorLights = map (\(aid, b) ->
+                          let FovCache3{fovLight} = persFovCache EM.! aid
+                          in (bpos b, fovLight))
                         lvlBodies
       floorLights = lightOnFloor sitemFovCache lvl
       -- If there is light both on the floor and carried by actor,
@@ -211,19 +211,19 @@ litOnLevel sitemFovCache oldTileLight persFovCache persClear lid lvl =
       litTiles = oldTileLight EM.! lid
   in LightSources $ ES.unions $ litTerrain litTiles : litDynamic
 
-lightInDungeon :: PersLitTerrain -> PersFovCacheA -> PersClear -> ItemFovCache
+lightInDungeon :: PersLitTerrain -> PersFovCache -> PersClear -> ItemFovCache
                -> State
                -> PersLight
 lightInDungeon oldTileLight persFovCache persClear sitemFovCache s =
   EM.mapWithKey
-    (litOnLevel sitemFovCache oldTileLight persFovCache persClear)
+    (litOnLevel sitemFovCache oldTileLight persFovCache persClear s)
     $ sdungeon s
 
 updateLight :: PersLight -> LevelId -> PersLitTerrain
-            -> PersFovCacheA -> PersClear -> ItemFovCache -> State
+            -> PersFovCache -> PersClear -> ItemFovCache -> State
             -> PersLight
 updateLight oldLights lid oldTileLight persFovCache persClear sitemFovCache s =
-  let newLights = litOnLevel sitemFovCache oldTileLight persFovCache persClear
+  let newLights = litOnLevel sitemFovCache oldTileLight persFovCache persClear s
                              lid (sdungeon s EM.! lid)
   in EM.adjust (const newLights) lid oldLights
 

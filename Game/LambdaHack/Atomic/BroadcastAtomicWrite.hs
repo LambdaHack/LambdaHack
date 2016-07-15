@@ -11,7 +11,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Key (mapWithKeyM, mapWithKeyM_)
+import Data.Key (mapWithKeyM_)
 
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.HandleAtomicWrite
@@ -60,7 +60,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                    atomic = do
   -- Gather data from the old state.
   sOld <- getState
-  factionD <- getsState sfactionD
+  factionDold <- getsState sfactionD
   (ps, atomicBroken, psBroken) <-
     case atomic of
       UpdAtomic cmd -> do
@@ -83,13 +83,16 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
             , resetsLitCmdAtomic cmd itemFovCache
             , resetsTilesCmdAtomic cmd
             , resetsFovCacheCmdAtomic cmd itemFovCache )
-          SfxAtomic{} -> (Right [], Right [], Nothing, Nothing)
+          SfxAtomic{} -> (Just [], Right [], Nothing, Nothing)
   let resetOthers =
         resetsLit /= Right [] || isJust resetsTiles || isJust resetsFovCache
-      resets = resetsFov /= Right [] || resetOthers
+      resets = resetsFov /= Just [] || resetOthers
   resetsBodies <- case resetsFov of
-    Left b -> return $ Left b
-    Right as -> Right <$> mapM (getsState . getActorBody) as
+    Nothing -> return Nothing
+    Just as -> do
+      let oldBody aid = getActorBody aid sOld
+          f aid s = EM.findWithDefault (oldBody aid) aid $ sactorD s
+      Just <$> mapM (getsState . f) as
   -- TODO: assert also that the sum of psBroken is equal to ps;
   -- with deep equality these assertions can be expensive; optimize.
   let !_A = assert (case ps of
@@ -113,16 +116,12 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
     Just lid -> getsState $ updateTilesClear oldClear lid
   persFovCache <- case resetsFovCache of
     Nothing -> return oldFC
-    Just aid -> getsState $ updateFovCache oldFC aid itemFovCache . sactorD
+    Just aid -> getsState $ updateFovCache oldFC aid itemFovCache
   persTileLight <- case resetsTiles of
     Nothing -> return oldTileLight
     Just lid -> getsState $ updateTilesLit oldTileLight lid
-  let addBodyToCache aid cache = do
-        body <- getsState $ getActorBody aid
-        return (body, cache)
-  persFovCacheA <- mapWithKeyM addBodyToCache persFovCache
   let updLit lid = getsState $ updateLight oldLights lid
-                                           persTileLight persFovCacheA
+                                           persTileLight persFovCache
                                            persClear itemFovCache
   persLight <- case resetsLit of
     Right [] -> return oldLights
@@ -133,11 +132,10 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
       updLit lid
     Left lid -> updLit lid
   let persLit = (persFovCache, persLight, persClear, persTileLight)
-      persLitA = (persFovCacheA, persLight, persClear, persTileLight)
   doUpdateLit persLit
   -- Send some actions to the clients, one faction at a time.
-  let sendUI fid cmdUI =
-        when (fhasUI $ gplayer $ factionD EM.! fid) $ doSendUpdateUI fid cmdUI
+  let sendUI fid cmdUI = when (fhasUI $ gplayer $ factionDold EM.! fid) $
+        doSendUpdateUI fid cmdUI
       sendAI = doSendUpdateAI
       sendA fid cmd = do
         sendUI fid $ RespUpdAtomicUI cmd
@@ -149,6 +147,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
               if seenAtomicCli knowEvents fid perNew ps2
                 then sendUpdate fid atomic2
                 else do
+                  -- We take the new leader, from after cmd execution.
                   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
                   case (atomic2, mleader) of
                     (UpdAtomic cmd, Just (leader, _)) -> do
@@ -168,20 +167,18 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
       posLevel fid lid = do
         let perOld = sperFidOld EM.! fid EM.! lid
             srvPerOld = sperCacheFidOld EM.! fid EM.! lid
-            resetsFovFid =
-              either (const True) (any $ (fid ==) . bfid) resetsBodies
+            resetsFovFid = maybe True (any $ (fid ==) . bfid) resetsBodies
         if resetsFovFid || resetOthers then do
-          -- Needed every move to show thrown torches in dark corridors.
-          let (perNew, msrvPerNew) =
-                if resetsFovFid then
-                  let (per, srvPerNew) =
-                        perceptionFromResets (perActor srvPerOld) resetsFov
-                                             persLitA fid lid
-                  in (per, Just srvPerNew)
-                else
-                  let per = perceptionFromPTotal (ptotal srvPerOld)
-                                                 persLight lid
-                  in (per, Nothing)
+          -- Needed often, e.g., to show thrown torches in dark corridors.
+          (perNew, msrvPerNew) <-
+            if resetsFovFid then do
+              (per, srvPerNew) <-
+                getsState $ perceptionFromResets (perActor srvPerOld) resetsFov
+                                                 persLit fid lid
+              return (per, Just srvPerNew)
+            else do
+              let per = perceptionFromPTotal (ptotal srvPerOld) persLight lid
+              return (per, Nothing)
           doUpdatePer fid lid perNew msrvPerNew
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
@@ -215,7 +212,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
         PosSer -> return ()
         PosAll -> sendUpdate fid atomic
         PosNone -> return ()
-  mapWithKeyM_ (\fid _ -> send fid) factionD
+  mapWithKeyM_ (\fid _ -> send fid) factionDold
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 atomicRemember lid inPer s =

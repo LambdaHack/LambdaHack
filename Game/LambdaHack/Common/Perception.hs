@@ -35,8 +35,7 @@ module Game.LambdaHack.Common.Perception
     -- * Assorted
   , FovCache3(..), emptyFovCache3, actorFovCache3
   , ItemFovCache, LightSources(..), ClearPoints, LitTerrain (..)
-  , PersLit, PersLitA, PersFovCache, PersFovCacheA
-  , PersLight, PersClear, PersLitTerrain
+  , PersLit, PersFovCache, PersLight, PersClear, PersLitTerrain
   ) where
 
 import Prelude ()
@@ -192,12 +191,8 @@ newtype LitTerrain = LitTerrain
 
 type PersLit = (PersFovCache, PersLight, PersClear, PersLitTerrain)
 
-type PersLitA = (PersFovCacheA, PersLight, PersClear, PersLitTerrain)
-
 -- | The cache of FOV information for a level, such as sight, smell
 -- and light radiuses for each actor.
-type PersFovCacheA = EM.EnumMap ActorId (Actor, FovCache3)
-
 type PersFovCache = EM.EnumMap ActorId FovCache3
 
 type PersLight = EM.EnumMap LevelId LightSources

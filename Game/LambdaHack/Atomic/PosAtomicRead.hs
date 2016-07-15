@@ -213,33 +213,33 @@ singleContainer (CActor aid _) = do
   return $! PosSight lid [p]
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 
-resetsFovCmdAtomic :: UpdAtomic -> ItemFovCache -> Either Bool [ActorId]
+resetsFovCmdAtomic :: UpdAtomic -> ItemFovCache -> Maybe [ActorId]
 resetsFovCmdAtomic cmd itemFovCache = case cmd of
   -- Create/destroy actors and items.
-  UpdCreateActor aid _ _ -> Right [aid]
-  UpdDestroyActor _ _ _ -> Left False
+  UpdCreateActor aid _ _ -> Just [aid]
+  UpdDestroyActor aid _ _ -> Just [aid]
   UpdCreateItem iid _ _ (CActor aid s) -> itemAffectsSightRadius iid [s] aid
   UpdDestroyItem iid _ _ (CActor aid s) -> itemAffectsSightRadius iid [s] aid
-  UpdSpotActor aid _ _ -> Right [aid]
-  UpdLoseActor _ _ _ -> Left False
+  UpdSpotActor aid _ _ -> Just [aid]
+  UpdLoseActor aid _ _ -> Just [aid]
   UpdSpotItem iid _ _ (CActor aid s) -> itemAffectsSightRadius iid [s] aid
   UpdLoseItem iid _ _ (CActor aid s) -> itemAffectsSightRadius iid [s] aid
   -- Move actors and items.
-  UpdMoveActor aid _ _ -> Right [aid]
-  UpdDisplaceActor aid1 aid2 -> Right [aid1, aid2]
+  UpdMoveActor aid _ _ -> Just [aid]
+  UpdDisplaceActor aid1 aid2 -> Just [aid1, aid2]
   UpdMoveItem iid _ aid s1 s2 -> itemAffectsSightRadius iid [s1, s2] aid
-  UpdRefillCalm aid _ -> Right [aid]
+  UpdRefillCalm aid _ -> Just [aid]
   -- Alter map.
-  UpdAlterTile{} -> Left True
-  _ -> Right []
+  UpdAlterTile{} -> Nothing
+  _ -> Just []
  where
   itemAffectsSightRadius iid stores aid =
     if not (null $ intersect stores [CEqp, COrgan])
        && case EM.lookup iid itemFovCache of
          Just FovCache3{fovSight, fovSmell} -> fovSight /= 0 || fovSmell /= 0
          Nothing -> False
-    then Right [aid]
-    else Right []
+    then Just [aid]
+    else Just []
 
 resetsTilesCmdAtomic :: UpdAtomic -> Maybe LevelId
 resetsTilesCmdAtomic cmd = case cmd of
