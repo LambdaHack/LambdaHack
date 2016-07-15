@@ -5,7 +5,7 @@
 module Game.LambdaHack.Common.Fov
   ( perFidInDungeon, perceptionFromResets, perceptionFromPTotal
   , clearInDungeon, updateTilesClear, litTerrainInDungeon, updateTilesLit
-  , lightInDungeon, updateLight, fovCacheInDungeon, updateFovCache
+  , lightInDungeon, updateLight, aspectActorInDungeon, updateAspectActor
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
 #endif
@@ -35,12 +35,12 @@ perceptionFromResets :: PerActor -> [(ActorId, Actor)]
                      -> PersLit -> LevelId -> State
                      -> (Perception, PerceptionCache)
 perceptionFromResets perActor0 resetsBodies
-                     (persFovCache, persLight, persClear, _) lid s =
+                     (fovAspectActor, persLight, persClear, _) lid s =
   -- Dying actors included, to let them see their own demise.
   let clearPs = persClear EM.! lid
       f acc (aid, b) =
         if EM.member aid $ sactorD s
-        then let fcache = persFovCache EM.! aid
+        then let fcache = fovAspectActor EM.! aid
                  newPer = cacheBeforeLitFromActor clearPs (b, fcache)
              in EM.alter (const $ Just newPer) aid acc
         else EM.delete aid acc  -- dead or stair-using actors removed
@@ -67,8 +67,8 @@ perceptionFromPerActor perActor persLight lid =
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
 -- Also compute positions seen by noctovision and perceived by smell.
-cacheBeforeLitFromActor :: ClearPoints -> (Actor, FovCache3) -> CacheBeforeLit
-cacheBeforeLitFromActor clearPs (body, FovCache3{fovSight, fovSmell}) =
+cacheBeforeLitFromActor :: ClearPoints -> (Actor, FovAspect) -> CacheBeforeLit
+cacheBeforeLitFromActor clearPs (body, FovAspect{fovSight, fovSmell}) =
   let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) fovSight
       creachable = PerReachable $ fullscan clearPs radius (bpos body)
       -- All non-projectile actors feel adjacent positions,
@@ -101,9 +101,9 @@ visibleOnLevel PerReachable{preachable}
 
 perceptionFromVoid :: PersLit -> FactionId -> LevelId -> State
                    -> (Perception, PerceptionCache)
-perceptionFromVoid (persFovCache, persLight, persClear, _) fid lid s =
+perceptionFromVoid (fovAspectActor, persLight, persClear, _) fid lid s =
   let lvlBodies = EM.fromList $ actorAssocs (== fid) lid s
-      bodyMap = EM.mapWithKey (\aid b -> (b, persFovCache EM.! aid)) lvlBodies
+      bodyMap = EM.mapWithKey (\aid b -> (b, fovAspectActor EM.! aid)) lvlBodies
       clearPs = persClear EM.! lid
       perActor = EM.map (cacheBeforeLitFromActor clearPs) bodyMap
   in perceptionFromPerActor perActor persLight lid
@@ -116,14 +116,14 @@ perLidFromFaction persLit fid s =
   in (EM.map fst em, EM.map snd em)
 
 -- | Calculate the perception of the whole dungeon.
-perFidInDungeon :: ItemFovCache -> State -> (PersLit, PerFid, PerCacheFid)
-perFidInDungeon sItemFovCache s =
+perFidInDungeon :: FovAspectItem -> State -> (PersLit, PerFid, PerCacheFid)
+perFidInDungeon sFovAspectItem s =
   let persClear = clearInDungeon s
-      persFovCache = fovCacheInDungeon sItemFovCache s
+      fovAspectActor = aspectActorInDungeon sFovAspectItem s
       perLitTerrain = litTerrainInDungeon s
       persLight =
-        lightInDungeon perLitTerrain persFovCache persClear sItemFovCache s
-      persLit = (persFovCache, persLight, persClear, perLitTerrain)
+        lightInDungeon perLitTerrain fovAspectActor persClear sFovAspectItem s
+      persLit = (fovAspectActor, persLight, persClear, perLitTerrain)
       f fid _ = perLidFromFaction persLit fid s
       em = EM.mapWithKey f $ sfactionD s
   in (persLit, EM.map fst em, EM.map snd em)
@@ -140,15 +140,15 @@ updateTilesClear oldClear lid s =
   let newTiles = clearFromLevel (scops s) (sdungeon s EM.! lid)
   in EM.adjust (const newTiles) lid oldClear
 
-fovCacheInDungeon :: ItemFovCache -> State -> PersFovCache
-fovCacheInDungeon sitemFovCache s =
-  EM.map (actorFovCache3 sitemFovCache) $ sactorD s
+aspectActorInDungeon :: FovAspectItem -> State -> FovAspectActor
+aspectActorInDungeon sfovAspectItem s =
+  EM.map (actorFovAspect sfovAspectItem) $ sactorD s
 
-updateFovCache :: PersFovCache -> ActorId -> ItemFovCache -> State
-               -> PersFovCache
-updateFovCache oldFC aid sitemFovCache s =
+updateAspectActor :: FovAspectActor -> ActorId -> FovAspectItem -> State
+               -> FovAspectActor
+updateAspectActor oldFC aid sfovAspectItem s =
   case EM.lookup aid $ sactorD s of
-    Just b -> let newFC = actorFovCache3 sitemFovCache b
+    Just b -> let newFC = actorFovAspect sfovAspectItem b
               in EM.alter (const $ Just newFC) aid oldFC
     Nothing -> EM.delete aid oldFC
 
@@ -161,11 +161,11 @@ lightSourcesFromItems clearPs allItems =
       litPos (p, light) = LightSources $ fullscan clearPs light p
   in map litPos allItems
 
-lightOnFloor :: ItemFovCache -> Level -> [(Point, Int)]
-lightOnFloor sitemFovCache lvl =
+lightOnFloor :: FovAspectItem -> Level -> [(Point, Int)]
+lightOnFloor sfovAspectItem lvl =
   let processIid lightAcc (iid, (k, _)) =
-        let FovCache3{fovLight} =
-              EM.findWithDefault emptyFovCache3 iid sitemFovCache
+        let FovAspect{fovLight} =
+              EM.findWithDefault emptyFovAspect iid sfovAspectItem
         in k * fovLight + lightAcc
       processBag bag acc = foldl' processIid acc $ EM.assocs bag
   in [(p, radius) | (p, bag) <- EM.assocs $ lfloor lvl  -- lembed are hidden
@@ -188,15 +188,15 @@ updateTilesLit oldTileLight lid s =
 -- Note that an actor can be blind,
 -- in which case he doesn't see his own light
 -- (but others, from his or other factions, possibly do).
-litOnLevel :: ItemFovCache -> PersLitTerrain -> PersFovCache
+litOnLevel :: FovAspectItem -> PersLitTerrain -> FovAspectActor
            -> PersClear -> State -> LevelId -> Level
            -> LightSources
-litOnLevel sitemFovCache oldTileLight persFovCache persClear s lid lvl =
+litOnLevel sfovAspectItem oldTileLight fovAspectActor persClear s lid lvl =
   let actorLights =
         [(bpos b, radius) | (aid, b) <- actorAssocs (const True) lid s
-                          , let radius = fovLight $ persFovCache EM.! aid
+                          , let radius = fovLight $ fovAspectActor EM.! aid
                           , radius > 0]
-      floorLights = lightOnFloor sitemFovCache lvl
+      floorLights = lightOnFloor sfovAspectItem lvl
       -- If there is light both on the floor and carried by actor,
       -- only the stronger light is taken into account.
       -- This is rare, so no point optimizing away the double computation.
@@ -206,12 +206,12 @@ litOnLevel sitemFovCache oldTileLight persFovCache persClear s lid lvl =
       litTiles = oldTileLight EM.! lid
   in LightSources $ ES.unions $ litTerrain litTiles : litDynamic
 
-lightInDungeon :: PersLitTerrain -> PersFovCache -> PersClear -> ItemFovCache
+lightInDungeon :: PersLitTerrain -> FovAspectActor -> PersClear -> FovAspectItem
                -> State
                -> PersLight
-lightInDungeon oldTileLight persFovCache persClear sitemFovCache s =
+lightInDungeon oldTileLight fovAspectActor persClear sfovAspectItem s =
   EM.mapWithKey
-    (litOnLevel sitemFovCache oldTileLight persFovCache persClear s)
+    (litOnLevel sfovAspectItem oldTileLight fovAspectActor persClear s)
     $ sdungeon s
 
 -- TODO: we may cache independently the sum of floor lights
@@ -219,10 +219,10 @@ lightInDungeon oldTileLight persFovCache persClear sitemFovCache s =
 -- This is worthwhile for games with, e.g., lots of shining robots
 -- or tracer gun bullets (the latter a bad idea, anyway, lots of resets).
 updateLight :: PersLight -> LevelId -> PersLitTerrain
-            -> PersFovCache -> PersClear -> ItemFovCache -> State
+            -> FovAspectActor -> PersClear -> FovAspectItem -> State
             -> PersLight
-updateLight oldLights lid oldTileLight persFovCache persClear sitemFovCache s =
-  let newLights = litOnLevel sitemFovCache oldTileLight persFovCache persClear s
+updateLight oldLights lid oldTileLight fovAspectActor persClear sfovAspectItem s =
+  let newLights = litOnLevel sfovAspectItem oldTileLight fovAspectActor persClear s
                              lid (sdungeon s EM.! lid)
   in EM.adjust (const newLights) lid oldLights
 

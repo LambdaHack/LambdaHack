@@ -33,9 +33,9 @@ module Game.LambdaHack.Common.Perception
   , PerCacheLid
   , PerCacheFid
     -- * Assorted
-  , FovCache3(..), emptyFovCache3, actorFovCache3
-  , ItemFovCache, LightSources(..), ClearPoints, LitTerrain (..)
-  , PersLit, PersFovCache, PersLight, PersClear, PersLitTerrain
+  , FovAspect(..), emptyFovAspect, actorFovAspect
+  , FovAspectItem, LightSources(..), ClearPoints, LitTerrain (..)
+  , PersLit, FovAspectActor, PersLight, PersClear, PersLitTerrain
   ) where
 
 import Prelude ()
@@ -144,15 +144,15 @@ type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 
 -- * Assorted
 
-data FovCache3 = FovCache3
+data FovAspect = FovAspect
   { fovSight :: !Int
   , fovSmell :: !Int
   , fovLight :: !Int
   }
   deriving (Show, Eq)
 
-instance Binary FovCache3 where
-  put FovCache3{..} = do
+instance Binary FovAspect where
+  put FovAspect{..} = do
     put fovSight
     put fovSmell
     put fovLight
@@ -160,43 +160,41 @@ instance Binary FovCache3 where
     fovSight <- get
     fovSmell <- get
     fovLight <- get
-    return $! FovCache3{..}
+    return $! FovAspect{..}
 
-emptyFovCache3 :: FovCache3
-emptyFovCache3 = FovCache3 0 0 0
+emptyFovAspect :: FovAspect
+emptyFovAspect = FovAspect 0 0 0
 
-actorFovCache3 :: ItemFovCache -> Actor -> FovCache3
-actorFovCache3 sitemFovCache b =
-  let processIid3 (FovCache3 sightAcc smellAcc lightAcc) (iid, (k, _)) =
-        let FovCache3{..} =
-              EM.findWithDefault emptyFovCache3 iid sitemFovCache
-        in FovCache3 (k * fovSight + sightAcc)
+actorFovAspect :: FovAspectItem -> Actor -> FovAspect
+actorFovAspect sfovAspectItem b =
+  let processIid3 (FovAspect sightAcc smellAcc lightAcc) (iid, (k, _)) =
+        let FovAspect{..} =
+              EM.findWithDefault emptyFovAspect iid sfovAspectItem
+        in FovAspect (k * fovSight + sightAcc)
                      (k * fovSmell + smellAcc)
                      (k * fovLight + lightAcc)
       processBag3 bag acc = foldl' processIid3 acc $ EM.assocs bag
-      sslOrgan = processBag3 (borgan b) emptyFovCache3
+      sslOrgan = processBag3 (borgan b) emptyFovAspect
   in processBag3 (beqp b) sslOrgan
 
-type ItemFovCache = EM.EnumMap ItemId FovCache3
+type FovAspectItem = EM.EnumMap ItemId FovAspect
 
-newtype LightSources = LightSources
-    {lightSources :: ES.EnumSet Point}
-  deriving (Show, Eq)
+type FovAspectActor = EM.EnumMap ActorId FovAspect
 
 type ClearPoints = PointArray.Array Bool
+
+type PersClear = EM.EnumMap LevelId ClearPoints
 
 newtype LitTerrain = LitTerrain
     {litTerrain :: ES.EnumSet Point}
   deriving (Show, Eq)
 
-type PersLit = (PersFovCache, PersLight, PersClear, PersLitTerrain)
+type PersLitTerrain = EM.EnumMap LevelId LitTerrain
 
--- | The cache of FOV information for a level, such as sight, smell
--- and light radiuses for each actor.
-type PersFovCache = EM.EnumMap ActorId FovCache3
+newtype LightSources = LightSources
+    {lightSources :: ES.EnumSet Point}
+  deriving (Show, Eq)
 
 type PersLight = EM.EnumMap LevelId LightSources
 
-type PersClear = EM.EnumMap LevelId ClearPoints
-
-type PersLitTerrain = EM.EnumMap LevelId LitTerrain
+type PersLit = (FovAspectActor, PersLight, PersClear, PersLitTerrain)

@@ -45,7 +45,7 @@ handleCmdAtomicServer posAtomic atomic =
 
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
-                   => Bool -> PerFid -> PerCacheFid -> m ItemFovCache -> PersLit
+                   => Bool -> PerFid -> PerCacheFid -> m FovAspectItem -> PersLit
                    -> (FactionId -> LevelId
                        -> Perception -> Maybe PerceptionCache
                        -> m ())
@@ -55,7 +55,7 @@ handleAndBroadcast :: forall m. MonadStateWrite m
                    -> CmdAtomic
                    -> m ()
 handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                   getItemFovCache (oldFC, oldLights, oldClear, oldTileLight)
+                   getFovAspectItem (oldFC, oldLights, oldClear, oldTileLight)
                    doUpdatePer doUpdateLit doSendUpdateAI doSendUpdateUI
                    atomic = do
   -- Gather data from the old state.
@@ -75,15 +75,15 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
         return ( ps, map SfxAtomic atomicBroken, psBroken )
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
-  itemFovCache <- getItemFovCache
-  let (resetsFov, resetsLitC, resetsTiles, resetsFovCache) =
+  fovAspectItem <- getFovAspectItem
+  let (resetsFov, resetsLitC, resetsTiles, resetsAspectActor) =
         case atomic of
           UpdAtomic cmd ->
-            ( resetsFovCmdAtomic cmd itemFovCache
-            , resetsLitCmdAtomic cmd itemFovCache
+            ( resetsFovCmdAtomic cmd fovAspectItem
+            , resetsLitCmdAtomic cmd fovAspectItem
             , resetsTilesCmdAtomic cmd
-            , resetsFovCacheCmdAtomic cmd itemFovCache )
-          SfxAtomic{} -> (Just [], \_ _ -> Right [], Nothing, Nothing)
+            , resetsAspectActorCmdAtomic cmd fovAspectItem )
+          SfxAtomic{} -> (Just [], \_ _ ->  Right [], Nothing, Nothing)
   -- Update lights in the dungeon. This is not needed and not performed
   -- in particular if not @resets@.
   -- This is needed every (even enemy) move to show thrown torches.
@@ -94,12 +94,12 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
   -- but it's rare that cmd changed them, but not the perception
   -- (e.g., earthquake in an uninhabited corner of the active arena,
   -- but the we'd probably want some feedback, at least sound).
-  persFovCache <- case resetsFovCache of
+  fovAspectActor <- case resetsAspectActor of
     Nothing -> return oldFC
-    Just aid -> getsState $ updateFovCache oldFC aid itemFovCache
-  let resetsLit = resetsLitC oldFC persFovCache
-  let resetOthers =
-        resetsLit /= Right [] || isJust resetsTiles || isJust resetsFovCache
+    Just aid -> getsState $ updateAspectActor oldFC aid fovAspectItem
+  let resetsLit = resetsLitC oldFC fovAspectActor
+      resetOthers =
+        resetsLit /= Right [] || isJust resetsTiles || isJust resetsAspectActor
   -- TODO: assert also that the sum of psBroken is equal to ps;
   -- with deep equality these assertions can be expensive; optimize.
   let !_A = assert (case ps of
@@ -108,7 +108,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                       PosFidAndSer (Just _) _ -> True
                       _ -> not $ resetsFov /= Just [] || resetOthers
                    `blame`
-                    (ps, resetsFov, resetsLit, resetsTiles, resetsFovCache)) ()
+                    (ps, resetsFov, resetsLit, resetsTiles, resetsAspectActor)) ()
   persClear <- case resetsTiles of
     Nothing -> return oldClear
     Just lid -> getsState $ updateTilesClear oldClear lid
@@ -116,8 +116,8 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
     Nothing -> return oldTileLight
     Just lid -> getsState $ updateTilesLit oldTileLight lid
   let updLit lid = getsState $ updateLight oldLights lid
-                                           persTileLight persFovCache
-                                           persClear itemFovCache
+                                           persTileLight fovAspectActor
+                                           persClear fovAspectItem
   persLight <- case resetsLit of
     Right [] -> return oldLights
     Right (aid : aids) -> do
@@ -126,7 +126,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
       let !_A = assert (all (== lid) lids) ()
       updLit lid
     Left lid -> updLit lid
-  let persLit = (persFovCache, persLight, persClear, persTileLight)
+  let persLit = (fovAspectActor, persLight, persClear, persTileLight)
   doUpdateLit persLit
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI = when (fhasUI $ gplayer $ factionDold EM.! fid) $

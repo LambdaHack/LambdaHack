@@ -57,14 +57,14 @@ registerItem itemFull itemKnown@(_, iae) seed k container verbose = do
                      $ strengthFromEqpSlot IK.EqpSlotAddSmell itemFull
           fovLight = fromMaybe 0
                      $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
-          ssl = FovCache3{..}
+          ssl = FovAspect{..}
       icounter <- getsServer sicounter
       modifyServer $ \ser ->
         ser { sdiscoEffect = EM.insert icounter iae (sdiscoEffect ser)
             , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
-            , sitemFovCache = if ssl == emptyFovCache3 then sitemFovCache ser
-                              else EM.insert icounter ssl (sitemFovCache ser)
+            , sfovAspectItem = if ssl == emptyFovAspect then sfovAspectItem ser
+                              else EM.insert icounter ssl (sfovAspectItem ser)
             , sicounter = succ icounter }
       execUpdAtomic $ cmd icounter (itemBase itemFull) (k, []) container
       return $! icounter

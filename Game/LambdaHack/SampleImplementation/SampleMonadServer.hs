@@ -104,9 +104,9 @@ handleAndBroadcastServer atomic = do
              ser2 { sperFid = upd (sperFid ser2)
                   , sperCacheFid = srvUpd (sperCacheFid ser2) }
       updateLit slit = modifyServer $ \ser -> ser {slit}
-      getItemFovCache = getsServer sitemFovCache
+      getFovAspectItem = getsServer sfovAspectItem
   handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                     getItemFovCache persLitOld
+                     getFovAspectItem persLitOld
                      updatePer updateLit sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.

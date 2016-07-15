@@ -4,7 +4,7 @@
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
   , resetsFovCmdAtomic, resetsLitCmdAtomic
-  , resetsTilesCmdAtomic, resetsFovCacheCmdAtomic
+  , resetsTilesCmdAtomic, resetsAspectActorCmdAtomic
   , breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
   ) where
@@ -213,8 +213,8 @@ singleContainer (CActor aid _) = do
   return $! PosSight lid [p]
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 
-resetsFovCmdAtomic :: UpdAtomic -> ItemFovCache -> Maybe [ActorId]
-resetsFovCmdAtomic cmd itemFovCache = case cmd of
+resetsFovCmdAtomic :: UpdAtomic -> FovAspectItem -> Maybe [ActorId]
+resetsFovCmdAtomic cmd fovAspectItem = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid _ _ -> Just [aid]
   UpdDestroyActor aid _ _ -> Just [aid]
@@ -228,15 +228,15 @@ resetsFovCmdAtomic cmd itemFovCache = case cmd of
   UpdMoveActor aid _ _ -> Just [aid]
   UpdDisplaceActor aid1 aid2 -> Just [aid1, aid2]
   UpdMoveItem iid _ aid s1 s2 -> itemAffectsSightRadius iid [s1, s2] aid
-  UpdRefillCalm aid _ -> Just [aid]  -- TODO: reset rarely (calm in FovCache3?)
+  UpdRefillCalm aid _ -> Just [aid]  -- TODO: reset rarely (calm in FovAspect?)
   -- Alter map.
   UpdAlterTile{} -> Nothing
   _ -> Just []
  where
   itemAffectsSightRadius iid stores aid =
     if not (null $ intersect stores [CEqp, COrgan])
-       && case EM.lookup iid itemFovCache of
-         Just FovCache3{fovSight, fovSmell} -> fovSight /= 0 || fovSmell /= 0
+       && case EM.lookup iid fovAspectItem of
+         Just FovAspect{fovSight, fovSmell} -> fovSight /= 0 || fovSmell /= 0
          Nothing -> False
     then Just [aid]
     else Just []
@@ -246,34 +246,36 @@ resetsTilesCmdAtomic cmd = case cmd of
   UpdAlterTile lid _ _ _ -> Just lid
   _ -> Nothing
 
-resetsFovCacheCmdAtomic :: UpdAtomic -> ItemFovCache -> Maybe ActorId
-resetsFovCacheCmdAtomic cmd itemFovCache = case cmd of
+resetsAspectActorCmdAtomic :: UpdAtomic -> FovAspectItem -> Maybe ActorId
+resetsAspectActorCmdAtomic cmd fovAspectItem = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid _ _ -> Just aid
   UpdDestroyActor aid _ _ -> Just aid
-  UpdCreateItem iid _ _ (CActor aid s) -> itemAffectsFovCache3 iid [s] aid
-  UpdDestroyItem iid _ _ (CActor aid s) -> itemAffectsFovCache3 iid [s] aid
+  UpdCreateItem iid _ _ (CActor aid s) -> itemAffectsFovAspect iid [s] aid
+  UpdDestroyItem iid _ _ (CActor aid s) -> itemAffectsFovAspect iid [s] aid
   UpdSpotActor aid _ _ -> Just aid
   UpdLoseActor aid _ _ -> Just aid
-  UpdSpotItem iid _ _ (CActor aid s) -> itemAffectsFovCache3 iid [s] aid
-  UpdLoseItem iid _ _ (CActor aid s) -> itemAffectsFovCache3 iid [s] aid
+  UpdSpotItem iid _ _ (CActor aid s) -> itemAffectsFovAspect iid [s] aid
+  UpdLoseItem iid _ _ (CActor aid s) -> itemAffectsFovAspect iid [s] aid
   -- Move actors and items.
-  UpdMoveItem iid _ aid s1 s2 -> itemAffectsFovCache3 iid [s1, s2] aid
+  UpdMoveItem iid _ aid s1 s2 -> itemAffectsFovAspect iid [s1, s2] aid
   _ -> Nothing
  where
-  itemAffectsFovCache3 iid stores aid =
+  itemAffectsFovAspect iid stores aid =
     if not (null $ intersect stores [CEqp, COrgan])
-       && case EM.lookup iid itemFovCache of
-         Just FovCache3{..} -> fovSight /= 0 || fovSmell /= 0 || fovLight /= 0
+       && case EM.lookup iid fovAspectItem of
+         Just FovAspect{..} -> fovSight /= 0 || fovSmell /= 0 || fovLight /= 0
          Nothing -> False
     then Just aid
     else Nothing
 
 -- | Determines if a command resets the data about lit tiles
 -- (both dynamically and statically).
-resetsLitCmdAtomic :: UpdAtomic -> ItemFovCache -> PersFovCache -> PersFovCache
+resetsLitCmdAtomic :: UpdAtomic -> FovAspectItem
+                   -> FovAspectActor -> FovAspectActor
                    -> Either LevelId [ActorId]
-resetsLitCmdAtomic cmd itemFovCache persFovCacheOld persFovCache = case cmd of
+resetsLitCmdAtomic cmd fovAspectItem
+                   fovAspectActorOld fovAspectActor = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid b _ -> actorAffectsLight aid $ Left $ blid b
                             -- trunk or organ or eqp may shine
@@ -306,15 +308,15 @@ resetsLitCmdAtomic cmd itemFovCache persFovCacheOld persFovCache = case cmd of
  where
   itemAffectsLitRadius iid stores res =
     if (null stores || (not $ null $ intersect stores [CEqp, COrgan, CGround]))
-       && case EM.lookup iid itemFovCache of
-         Just FovCache3{fovLight} -> fovLight /= 0
+       && case EM.lookup iid fovAspectItem of
+         Just FovAspect{fovLight} -> fovLight /= 0
          Nothing -> False
     then res
     else Right []
-  actorHasLight aid = case EM.lookup aid persFovCache of
-    Just FovCache3{fovLight} -> fovLight > 0
-    Nothing -> case EM.lookup aid persFovCacheOld of  -- for UpdDestroyActor
-      Just FovCache3{fovLight} -> fovLight > 0
+  actorHasLight aid = case EM.lookup aid fovAspectActor of
+    Just FovAspect{fovLight} -> fovLight /= 0
+    Nothing -> case EM.lookup aid fovAspectActorOld of  -- for UpdDestroyActor
+      Just FovAspect{fovLight} -> fovLight > 0
       Nothing -> assert `failure` (aid, cmd)
   actorAffectsLight aid res = if actorHasLight aid then res else Right []
 

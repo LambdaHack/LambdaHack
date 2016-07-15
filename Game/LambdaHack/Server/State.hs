@@ -36,7 +36,7 @@ data StateServer = StateServer
   , sdiscoEffect  :: !DiscoveryEffect   -- ^ full item effect&Co data
   , sitemSeedD    :: !ItemSeedDict  -- ^ map from item ids to item seeds
   , sitemRev      :: !ItemRev       -- ^ reverse id map, used for item creation
-  , sitemFovCache :: !ItemFovCache  -- ^ (sight, smell, light) aspect bonus
+  , sfovAspectItem :: !FovAspectItem  -- ^ (sight, smell, light) aspect bonus
                                     --   of the item; zeroes if not in the map
   , sflavour      :: !FlavourMap    -- ^ association of flavour to items
   , sacounter     :: !ActorId       -- ^ stores next actor index
@@ -107,7 +107,7 @@ emptyStateServer =
     , sdiscoEffect = EM.empty
     , sitemSeedD = EM.empty
     , sitemRev = HM.empty
-    , sitemFovCache = EM.empty
+    , sfovAspectItem = EM.empty
     , sflavour = emptyFlavourMap
     , sacounter = toEnum 0
     , sicounter = toEnum 0
@@ -157,7 +157,7 @@ instance Binary StateServer where
     put sdiscoEffect
     put sitemSeedD
     put sitemRev
-    put sitemFovCache
+    put sfovAspectItem
     put sflavour
     put sacounter
     put sicounter
@@ -174,7 +174,7 @@ instance Binary StateServer where
     sdiscoEffect <- get
     sitemSeedD <- get
     sitemRev <- get
-    sitemFovCache <- get
+    sfovAspectItem <- get
     sflavour <- get
     sacounter <- get
     sicounter <- get
