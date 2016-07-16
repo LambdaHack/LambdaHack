@@ -106,14 +106,15 @@ handleAndBroadcastServer atomic = do
         in modifyServer $ \ser2 ->
              ser2 { sperFid = upd (sperFid ser2)
                   , sperCacheFid = srvUpd (sperCacheFid ser2) }
-      updateLit sfovAspectActor sfovLucidLid sfovClearLid sfovLitLid =
+      updateLight sfovAspectActor sfovLucidLid sfovClearLid sfovLitLid =
         modifyServer $ \ser ->
           ser {sfovAspectActor, sfovLucidLid, sfovClearLid, sfovLitLid}
       getFovAspectItem = getsServer sfovAspectItem
   handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                      getFovAspectItem
-                     sfovAspectActorOld sfovLucidLidOld sfovClearLidOld sfovLitLidOld
-                     updatePer updateLit sendUpdateAI sendUpdateUI atomic
+                     sfovAspectActorOld sfovLucidLidOld
+                     sfovClearLidOld sfovLitLidOld
+                     updatePer updateLight sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> SerImplementation () -> IO ()

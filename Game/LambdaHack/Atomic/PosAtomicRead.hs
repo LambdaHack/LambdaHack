@@ -3,7 +3,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
-  , resetsFovCmdAtomic, resetsLitCmdAtomic
+  , resetsFovCmdAtomic, resetsLucidCmdAtomic
   , resetsTilesCmdAtomic, resetsAspectActorCmdAtomic
   , breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
@@ -271,11 +271,11 @@ resetsAspectActorCmdAtomic cmd fovAspectItem = case cmd of
 
 -- | Determines if a command resets the data about lit tiles
 -- (both dynamically and statically).
-resetsLitCmdAtomic :: UpdAtomic -> FovAspectItem
-                   -> FovAspectActor -> FovAspectActor
-                   -> Either LevelId [ActorId]
-resetsLitCmdAtomic cmd fovAspectItem
-                   fovAspectActorOld fovAspectActor = case cmd of
+resetsLucidCmdAtomic :: UpdAtomic -> FovAspectItem
+                     -> FovAspectActor -> FovAspectActor
+                     -> Either LevelId [ActorId]
+resetsLucidCmdAtomic cmd fovAspectItem
+                     fovAspectActorOld fovAspectActor = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid b _ -> actorAffectsLight aid $ Left $ blid b
                             -- trunk or organ or eqp may shine

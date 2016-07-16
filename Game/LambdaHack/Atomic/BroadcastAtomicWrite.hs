@@ -50,14 +50,17 @@ handleAndBroadcast :: forall m. MonadStateWrite m
                    -> (FactionId -> LevelId
                        -> Perception -> Maybe PerceptionCache
                        -> m ())
-                   -> (FovAspectActor -> FovLucidLid -> FovClearLid -> FovLitLid -> m ())
+                   -> (FovAspectActor -> FovLucidLid
+                       -> FovClearLid -> FovLitLid
+                       -> m ())
                    -> (FactionId -> ResponseAI -> m ())
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
 handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                   getFovAspectItem fovAspectActorOld fovLucidLidOld fovClearLidOld fovLitLidOld
-                   doUpdatePer doUpdateLit doSendUpdateAI doSendUpdateUI
+                   getFovAspectItem
+                   fovAspectActorOld fovLucidLidOld fovClearLidOld fovLitLidOld
+                   doUpdatePer doUpdateLight doSendUpdateAI doSendUpdateUI
                    atomic = do
   -- Gather data from the old state.
   sOld <- getState
@@ -77,11 +80,11 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
   fovAspectItem <- getFovAspectItem
-  let (resetsFov, resetsLitC, resetsTiles, resetsAspectActor) =
+  let (resetsFov, resetsLucidC, resetsTiles, resetsAspectActor) =
         case atomic of
           UpdAtomic cmd ->
             ( resetsFovCmdAtomic cmd fovAspectItem
-            , resetsLitCmdAtomic cmd fovAspectItem
+            , resetsLucidCmdAtomic cmd fovAspectItem
             , resetsTilesCmdAtomic cmd
             , resetsAspectActorCmdAtomic cmd fovAspectItem )
           SfxAtomic{} -> (Just [], \_ _ ->  Right [], Nothing, Nothing)
@@ -97,37 +100,40 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
   -- but the we'd probably want some feedback, at least sound).
   fovAspectActor <- case resetsAspectActor of
     Nothing -> return fovAspectActorOld
-    Just aid -> getsState $ updateAspectActor fovAspectActorOld aid fovAspectItem
-  let resetsLit = resetsLitC fovAspectActorOld fovAspectActor
-      resetOthers =
-        resetsLit /= Right [] || isJust resetsTiles || isJust resetsAspectActor
+    Just aid ->
+      getsState $ updateFovAspectActor fovAspectActorOld aid fovAspectItem
+  let resetsLucid = resetsLucidC fovAspectActorOld fovAspectActor
+      resetsOthers = resetsLucid /= Right []
+                     || isJust resetsTiles
+                     || isJust resetsAspectActor
   -- TODO: assert also that the sum of psBroken is equal to ps;
   -- with deep equality these assertions can be expensive; optimize.
   let !_A = assert (case ps of
                       PosSight{} -> True
                       PosFidAndSight{} -> True
                       PosFidAndSer (Just _) _ -> True
-                      _ -> not $ resetsFov /= Just [] || resetOthers
+                      _ -> not $ resetsFov /= Just [] || resetsOthers
                    `blame`
-                    (ps, resetsFov, resetsLit, resetsTiles, resetsAspectActor)) ()
+                    ( ps, resetsFov
+                    , resetsLucid, resetsTiles, resetsAspectActor )) ()
   fovClearLid <- case resetsTiles of
     Nothing -> return fovClearLidOld
-    Just lid -> getsState $ updateTilesClear fovClearLidOld lid
+    Just lid -> getsState $ updateFovClear fovClearLidOld lid
   fovLitLid <- case resetsTiles of
     Nothing -> return fovLitLidOld
-    Just lid -> getsState $ updateTilesLit fovLitLidOld lid
-  let updLit lid = getsState $ updateLight fovLucidLidOld lid
-                                           fovAspectItem fovAspectActor
-                                           fovClearLid fovLitLid
-  fovLucidLid <- case resetsLit of
+    Just lid -> getsState $ updateFovLit fovLitLidOld lid
+  let updLucid lid = getsState $ updateFovLucid fovLucidLidOld lid
+                                                fovAspectItem fovAspectActor
+                                                fovClearLid fovLitLid
+  fovLucidLid <- case resetsLucid of
     Right [] -> return fovLucidLidOld
     Right (aid : aids) -> do
       lid <- getsState $ blid . getActorBody aid
       lids <- mapM (\a -> getsState $ blid . getActorBody a) aids
       let !_A = assert (all (== lid) lids) ()
-      updLit lid
-    Left lid -> updLit lid
-  doUpdateLit fovAspectActor fovLucidLid fovClearLid fovLitLid
+      updLucid lid
+    Left lid -> updLucid lid
+  doUpdateLight fovAspectActor fovLucidLid fovClearLid fovLitLid
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI = when (fhasUI $ gplayer $ factionDold EM.! fid) $
         doSendUpdateUI fid cmdUI
@@ -168,20 +174,21 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
             -- Filter due to cases like @UpdDisplaceActor@.
             filter ((== fid) . bfid . snd) <$> mapM (getsState . f) as
         let perOld = sperFidOld EM.! fid EM.! lid
-            srvPerOld = sperCacheFidOld EM.! fid EM.! lid
+            perCacheOld = sperCacheFidOld EM.! fid EM.! lid
             resetsFovFid = not $ null resetsBodies
-        if resetsFovFid || resetOthers then do
+        if resetsFovFid || resetsOthers then do
           -- Needed often, e.g., to show thrown torches in dark corridors.
-          (perNew, msrvPerNew) <-
+          (perNew, mperCacheNew) <-
             if resetsFovFid then do
-              (per, srvPerNew) <- getsState $
-                perceptionFromResets (perActor srvPerOld) resetsBodies
+              (per, perCacheNew) <- getsState $
+                perceptionFromResets (perActor perCacheOld) resetsBodies
                                      fovAspectActor fovLucidLid fovClearLid lid
-              return (per, Just srvPerNew)
+              return (per, Just perCacheNew)
             else do
-              let per = perceptionFromPTotal (ptotal srvPerOld) fovLucidLid lid
+              let per = perceptionFromPTotal (ptotal perCacheOld)
+                                             fovLucidLid lid
               return (per, Nothing)
-          doUpdatePer fid lid perNew msrvPerNew
+          doUpdatePer fid lid perNew mperCacheNew
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
           if nullPer outPer && nullPer inPer
