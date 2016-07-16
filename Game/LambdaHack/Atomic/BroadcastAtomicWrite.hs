@@ -76,14 +76,28 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
   itemFovCache <- getItemFovCache
-  let (resetsFov, resetsLit, resetsTiles, resetsFovCache) =
+  let (resetsFov, resetsLitC, resetsTiles, resetsFovCache) =
         case atomic of
           UpdAtomic cmd ->
             ( resetsFovCmdAtomic cmd itemFovCache
             , resetsLitCmdAtomic cmd itemFovCache
             , resetsTilesCmdAtomic cmd
             , resetsFovCacheCmdAtomic cmd itemFovCache )
-          SfxAtomic{} -> (Just [], Right [], Nothing, Nothing)
+          SfxAtomic{} -> (Just [], \_ _ -> Right [], Nothing, Nothing)
+  -- Update lights in the dungeon. This is not needed and not performed
+  -- in particular if not @resets@.
+  -- This is needed every (even enemy) move to show thrown torches.
+  -- We need to update lights even if cmd doesn't change any perception,
+  -- so that for next cmd that does, but doesn't change lights,
+  -- and operates on the same level, the lights are up to date.
+  -- We could make lights lazy to ensure no computation is wasted,
+  -- but it's rare that cmd changed them, but not the perception
+  -- (e.g., earthquake in an uninhabited corner of the active arena,
+  -- but the we'd probably want some feedback, at least sound).
+  persFovCache <- case resetsFovCache of
+    Nothing -> return oldFC
+    Just aid -> getsState $ updateFovCache oldFC aid itemFovCache
+  let resetsLit = resetsLitC oldFC persFovCache
   let resetOthers =
         resetsLit /= Right [] || isJust resetsTiles || isJust resetsFovCache
   -- TODO: assert also that the sum of psBroken is equal to ps;
@@ -95,22 +109,9 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                       _ -> not $ resetsFov /= Just [] || resetOthers
                    `blame`
                     (ps, resetsFov, resetsLit, resetsTiles, resetsFovCache)) ()
-  -- Update lights in the dungeon. This is not needed and not performed
-  -- in particular if not @resets@.
-  -- This is needed every (even enemy) move to show thrown torches.
-  -- We need to update lights even if cmd doesn't change any perception,
-  -- so that for next cmd that does, but doesn't change lights,
-  -- and operates on the same level, the lights are up to date.
-  -- We could make lights lazy to ensure no computation is wasted,
-  -- but it's rare that cmd changed them, but not the perception
-  -- (e.g., earthquake in an uninhabited corner of the active arena,
-  -- but the we'd probably want some feedback, at least sound).
   persClear <- case resetsTiles of
     Nothing -> return oldClear
     Just lid -> getsState $ updateTilesClear oldClear lid
-  persFovCache <- case resetsFovCache of
-    Nothing -> return oldFC
-    Just aid -> getsState $ updateFovCache oldFC aid itemFovCache
   persTileLight <- case resetsTiles of
     Nothing -> return oldTileLight
     Just lid -> getsState $ updateTilesLit oldTileLight lid
@@ -199,6 +200,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                 mapM_ (sendA fid) remember
               anySend lid fid perOld perNew
         else anySend lid fid perOld perOld
+      -- TODO: simplify; best after state-diffs approach tried
       send fid = case ps of
         PosSight lid _ -> posLevel fid lid
         PosFidAndSight _ lid _ -> posLevel fid lid

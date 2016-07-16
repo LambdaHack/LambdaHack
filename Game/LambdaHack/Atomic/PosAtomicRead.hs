@@ -228,7 +228,7 @@ resetsFovCmdAtomic cmd itemFovCache = case cmd of
   UpdMoveActor aid _ _ -> Just [aid]
   UpdDisplaceActor aid1 aid2 -> Just [aid1, aid2]
   UpdMoveItem iid _ aid s1 s2 -> itemAffectsSightRadius iid [s1, s2] aid
-  UpdRefillCalm aid _ -> Just [aid]
+  UpdRefillCalm aid _ -> Just [aid]  -- TODO: reset rarely (calm in FovCache3?)
   -- Alter map.
   UpdAlterTile{} -> Nothing
   _ -> Just []
@@ -271,11 +271,13 @@ resetsFovCacheCmdAtomic cmd itemFovCache = case cmd of
 
 -- | Determines if a command resets the data about lit tiles
 -- (both dynamically and statically).
-resetsLitCmdAtomic :: UpdAtomic -> ItemFovCache -> Either LevelId [ActorId]
-resetsLitCmdAtomic cmd itemFovCache = case cmd of
+resetsLitCmdAtomic :: UpdAtomic -> ItemFovCache -> PersFovCache -> PersFovCache
+                   -> Either LevelId [ActorId]
+resetsLitCmdAtomic cmd itemFovCache persFovCacheOld persFovCache = case cmd of
   -- Create/destroy actors and items.
-  UpdCreateActor _ b _ -> Left $ blid b  -- trunk or organ or eqp may shine
-  UpdDestroyActor _ b _ -> Left $ blid b
+  UpdCreateActor aid b _ -> actorAffectsLight aid $ Left $ blid b
+                            -- trunk or organ or eqp may shine
+  UpdDestroyActor aid b _ -> actorAffectsLight aid $ Left $ blid b
   UpdCreateItem iid _ _ (CFloor lid _) ->
     itemAffectsLitRadius iid [] $ Left lid
   UpdCreateItem iid _ _ (CActor aid s) ->
@@ -284,8 +286,8 @@ resetsLitCmdAtomic cmd itemFovCache = case cmd of
     itemAffectsLitRadius iid [] $ Left lid
   UpdDestroyItem iid _ _ (CActor aid s) ->
     itemAffectsLitRadius iid [s] $ Right [aid]
-  UpdSpotActor _ b _ -> Left $ blid b
-  UpdLoseActor _ b _ -> Left $ blid b
+  UpdSpotActor aid b _ -> actorAffectsLight aid $ Left $ blid b
+  UpdLoseActor aid b _ -> actorAffectsLight aid $ Left $ blid b
   UpdSpotItem iid _ _ (CFloor lid _) ->
     itemAffectsLitRadius iid [] $ Left lid
   UpdSpotItem iid _ _ (CActor aid s) ->
@@ -295,8 +297,8 @@ resetsLitCmdAtomic cmd itemFovCache = case cmd of
   UpdLoseItem iid _ _ (CActor aid s) ->
     itemAffectsLitRadius iid [s] $ Right [aid]
   -- Move actors and items.
-  UpdMoveActor aid _ _ -> Right [aid]  -- TODO: check if has light
-  UpdDisplaceActor aid1 aid2 -> Right [aid1, aid2]
+  UpdMoveActor aid _ _ -> actorAffectsLight aid $ Right [aid]
+  UpdDisplaceActor aid1 aid2 -> Right $ filter actorHasLight [aid1, aid2]
   UpdMoveItem iid _ aid s1 s2 -> itemAffectsLitRadius iid [s1, s2] $ Right [aid]
   -- Alter map.
   UpdAlterTile lid _ _ _ -> Left lid
@@ -309,6 +311,12 @@ resetsLitCmdAtomic cmd itemFovCache = case cmd of
          Nothing -> False
     then res
     else Right []
+  actorHasLight aid = case EM.lookup aid persFovCache of
+    Just FovCache3{fovLight} -> fovLight > 0
+    Nothing -> case EM.lookup aid persFovCacheOld of  -- for UpdDestroyActor
+      Just FovCache3{fovLight} -> fovLight > 0
+      Nothing -> assert `failure` (aid, cmd)
+  actorAffectsLight aid res = if actorHasLight aid then res else Right []
 
 -- | Decompose an atomic action. The original action is visible
 -- if it's positions are visible both before and after the action
