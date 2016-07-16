@@ -60,33 +60,31 @@ instance MonadStateRead (CliImplementation sess resp req) where
 
 instance MonadStateWrite (CliImplementation sess resp req) where
   modifyState f = CliImplementation $ state $ \cliS ->
-    let newCliS = cliS {cliState = f $ cliState cliS}
-    in newCliS `seq` ((), newCliS)
-  putState    s = CliImplementation $ state $ \cliS ->
-    let newCliS = cliS {cliState = s}
-    in newCliS `seq` ((), newCliS)
+    let !newCliState = f $ cliState cliS
+    in ((), cliS {cliState = newCliState})
+  putState s = CliImplementation $ state $ \cliS ->
+    s `seq` ((), cliS {cliState = s})
 
 instance MonadClient (CliImplementation sess resp req) where
   getClient      = CliImplementation $ gets cliClient
   getsClient   f = CliImplementation $ gets $ f . cliClient
   modifyClient f = CliImplementation $ state $ \cliS ->
-    let newCliS = cliS {cliClient = f $ cliClient cliS}
-    in newCliS `seq` ((), newCliS)
-  putClient    s = CliImplementation $ state $ \cliS ->
-    let newCliS = cliS {cliClient = s}
-    in newCliS `seq` ((), newCliS)
-  liftIO         = CliImplementation . IO.liftIO
+    let !newCliState = f $ cliClient cliS
+    in ((), cliS {cliClient = newCliState})
+  putClient s = CliImplementation $ state $ \cliS ->
+    s `seq` ((), cliS {cliClient = s})
+  liftIO = CliImplementation . IO.liftIO
 
 instance MonadClientSetup (CliImplementation () resp req) where
-  saveClient     = CliImplementation $ do
+  saveClient = CliImplementation $ do
     toSave <- gets cliToSave
     s <- gets cliState
     cli <- gets cliClient
     IO.liftIO $ Save.saveToChan toSave (s, cli, ())
-  restartClient  = return ()
+  restartClient = return ()
 
 instance MonadClientSetup (CliImplementation SessionUI resp req) where
-  saveClient     = CliImplementation $ do
+  saveClient = CliImplementation $ do
     toSave <- gets cliToSave
     s <- gets cliState
     cli <- gets cliClient
@@ -94,27 +92,25 @@ instance MonadClientSetup (CliImplementation SessionUI resp req) where
     IO.liftIO $ Save.saveToChan toSave (s, cli, sess)
   restartClient  = CliImplementation $ state $ \cliS ->
     let sess = cliSession cliS
-        newSess = (emptySessionUI (sconfig sess))
-                    { schanF = schanF sess
-                    , sbinding = sbinding sess
-                    , shistory = shistory sess
-                    , _sreport = _sreport sess }
-        newCliS = cliS {cliSession = newSess}
-    in newCliS `seq` ((), newCliS)
+        !newSess = (emptySessionUI (sconfig sess))
+                     { schanF = schanF sess
+                     , sbinding = sbinding sess
+                     , shistory = shistory sess
+                     , _sreport = _sreport sess }
+    in ((), cliS {cliSession = newSess})
 
 instance MonadClientUI (CliImplementation SessionUI resp req) where
-  getSession    = CliImplementation $ gets cliSession
-  getsSession f  = CliImplementation $ gets $ f . cliSession
+  getSession      = CliImplementation $ gets cliSession
+  getsSession   f = CliImplementation $ gets $ f . cliSession
   modifySession f = CliImplementation $ state $ \cliS ->
-    let newCliS = cliS {cliSession = f $ cliSession cliS}
-    in newCliS `seq` ((), newCliS)
-  putSession   s = CliImplementation $ state $ \cliS ->
-    let newCliS = cliS {cliSession = s}
-    in newCliS `seq` ((), newCliS)
-  liftIO         = CliImplementation . IO.liftIO
+    let !newCliSession = f $ cliSession cliS
+    in ((), cliS {cliSession = newCliSession})
+  putSession s = CliImplementation $ state $ \cliS ->
+    s `seq` ((), cliS {cliSession = s})
+  liftIO = CliImplementation . IO.liftIO
 
 instance MonadClientReadResponse resp (CliImplementation sess resp req) where
-  receiveResponse     = CliImplementation $ do
+  receiveResponse = CliImplementation $ do
     ChanServer{responseS} <- gets cliDict
     IO.liftIO $ atomically . readTQueue $ responseS
 

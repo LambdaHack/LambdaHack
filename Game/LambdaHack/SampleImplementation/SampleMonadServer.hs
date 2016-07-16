@@ -55,32 +55,31 @@ instance MonadStateRead SerImplementation where
 
 instance MonadStateWrite SerImplementation where
   modifyState f = SerImplementation $ state $ \serS ->
-    let newSerS = serS {serState = f $ serState serS}
-    in newSerS `seq` ((), newSerS)
-  putState    s = SerImplementation $ state $ \serS ->
-    let newSerS = serS {serState = s}
-    in newSerS `seq` ((), newSerS)
+    let !newSerState = f $ serState serS
+    in ((), serS {serState = newSerState})
+  putState s = SerImplementation $ state $ \serS ->
+    s `seq` ((), serS {serState = s})
 
 instance MonadServer SerImplementation where
   getServer      = SerImplementation $ gets serServer
   getsServer   f = SerImplementation $ gets $ f . serServer
   modifyServer f = SerImplementation $ state $ \serS ->
-    let newSerS = serS {serServer = f $ serServer serS}
-    in newSerS `seq` ((), newSerS)
+    let !newSerServer = f $ serServer serS
+    in ((), serS {serServer = newSerServer})
   putServer    s = SerImplementation $ state $ \serS ->
-    let newSerS = serS {serServer = s}
-    in newSerS `seq` ((), newSerS)
+    s `seq` ((), serS {serServer = s})
   liftIO         = SerImplementation . IO.liftIO
   saveChanServer = SerImplementation $ gets serToSave
 
 instance MonadServerReadRequest SerImplementation where
   getDict      = SerImplementation $ gets serDict
   getsDict   f = SerImplementation $ gets $ f . serDict
-  modifyDict f =
-    SerImplementation $ modify $ \serS -> serS {serDict = f $ serDict serS}
-  putDict    s =
-    SerImplementation $ modify $ \serS -> serS {serDict = s}
-  liftIO       = SerImplementation . IO.liftIO
+  modifyDict f = SerImplementation $ state $ \serS ->
+    let !newSerDict = f $ serDict serS
+    in ((), serS {serDict = newSerDict})
+  putDict s = SerImplementation $ state $ \serS ->
+    s `seq` ((), serS {serDict = s})
+  liftIO = SerImplementation . IO.liftIO
 
 -- | The game-state semantics of atomic commands
 -- as computed on the server.
