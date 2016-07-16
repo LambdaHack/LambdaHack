@@ -125,11 +125,11 @@ drawBaseFrame dm drawnLevelId = do
         -- if xhair invalid, e.g., on a wrong level; @draw@ ignores it later on
       pathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
-  (tgtDesc, mtargetHP) <- maybe (return ("------", Nothing)) targetDescLeader mleader
+  (tgtDesc, mtargetHP) <-
+    maybe (return ("------", Nothing)) targetDescLeader mleader
   (xhairDesc, mxhairHP) <- targetDescXhair
   s <- getState
-  cli@StateClient{ seps, sexplored, smarkSuspect}
-    <- getClient
+  StateClient{seps, sexplored, smarkSuspect} <- getClient
   per <- getPerFid drawnLevelId
   let Kind.COps{cotile=cotile@Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
@@ -159,9 +159,13 @@ drawBaseFrame dm drawnLevelId = do
         let tile = lvl `at` pos0
             tk = tokind tile
             floorBag = EM.findWithDefault EM.empty pos0 $ lfloor lvl
-            (itemSlots, _) = sslots cli
-            bagItemSlots = EM.filter (`EM.member` floorBag) itemSlots
-            floorIids = EM.elems bagItemSlots  -- first slot will be shown
+-- TODO: too costly right now
+-- unless I add reverse itemSlots, to avoid latency in menus;
+-- wait and see if there's latency in the browser due to that
+--            (itemSlots, _) = sslots cli
+--            bagItemSlots = EM.filter (`EM.member` floorBag) itemSlots
+--            floorIids = EM.elems bagItemSlots  -- first slot will be shown
+            floorIids = reverse $ EM.keys floorBag  -- sorted by key order
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeDeltaToFrom` ltime
             viewActor Actor{bsymbol, bcolor, bhp, bproj} =
