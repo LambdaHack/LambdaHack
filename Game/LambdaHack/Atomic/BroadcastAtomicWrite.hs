@@ -47,9 +47,8 @@ handleCmdAtomicServer posAtomic atomic =
 handleAndBroadcast :: forall m. MonadStateWrite m
                    => Bool -> PerFid -> PerCacheFid -> m FovAspectItem
                    -> FovAspectActor -> FovLucidLid -> FovClearLid -> FovLitLid
-                   -> (FactionId -> LevelId
-                       -> Perception -> Maybe PerceptionCache
-                       -> m ())
+                   -> ((PerFid -> PerFid) -> m ())
+                   -> ((PerCacheFid -> PerCacheFid) -> m ())
                    -> (FovAspectActor -> FovLucidLid
                        -> FovClearLid -> FovLitLid
                        -> m ())
@@ -57,11 +56,10 @@ handleAndBroadcast :: forall m. MonadStateWrite m
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
-handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                   getFovAspectItem
+handleAndBroadcast knowEvents sperFidOld sperCacheFidOld getFovAspectItem
                    fovAspectActorOld fovLucidLidOld fovClearLidOld fovLitLidOld
-                   doUpdatePer doUpdateLight doSendUpdateAI doSendUpdateUI
-                   atomic = do
+                   doUpdatePerFid doUpdatePerCacheFid doUpdateLight
+                   doSendUpdateAI doSendUpdateUI atomic = do
   -- Gather data from the old state.
   sOld <- getState
   factionDold <- getsState sfactionD
@@ -178,17 +176,22 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
             resetsFovFid = not $ null resetsBodies
         if resetsFovFid || resetsOthers then do
           -- Needed often, e.g., to show thrown torches in dark corridors.
-          (perNew, mperCacheNew) <-
+          perNew <-
             if resetsFovFid then do
-              (per, perCacheNew) <- getsState $
+              (per, perCache) <- getsState $
                 perceptionFromResets (perActor perCacheOld) resetsBodies
                                      fovAspectActor fovLucidLid fovClearLid lid
-              return (per, Just perCacheNew)
+              let fperFid = EM.adjust (EM.adjust (const per) lid) fid
+                  fperCacheFid = EM.adjust (EM.adjust (const perCache) lid) fid
+              doUpdatePerFid fperFid
+              doUpdatePerCacheFid fperCacheFid
+              return per
             else do
               let per = perceptionFromPTotal (ptotal perCacheOld)
                                              fovLucidLid lid
-              return (per, Nothing)
-          doUpdatePer fid lid perNew mperCacheNew
+                  fperFid = EM.adjust (EM.adjust (const per) lid) fid
+              doUpdatePerFid fperFid
+              return per
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
           if nullPer outPer && nullPer inPer

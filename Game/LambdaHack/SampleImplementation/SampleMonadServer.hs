@@ -98,14 +98,9 @@ handleAndBroadcastServer atomic = do
   sfovClearLidOld <- getsServer sfovClearLid
   sfovLitLidOld <- getsServer sfovLitLid
   knowEvents <- getsServer $ sknowEvents . sdebugSer
-  let updatePer fid lid per msrvPer =
-        let upd = EM.adjust (EM.adjust (const per) lid) fid
-            srvUpd = case msrvPer of
-              Nothing -> id
-              Just srvPer -> EM.adjust (EM.adjust (const srvPer) lid) fid
-        in modifyServer $ \ser2 ->
-             ser2 { sperFid = upd (sperFid ser2)
-                  , sperCacheFid = srvUpd (sperCacheFid ser2) }
+  let updatePerFid f = modifyServer $ \ser -> ser {sperFid = f $ sperFid ser}
+      updatePerCacheFid f =
+        modifyServer $ \ser -> ser {sperCacheFid = f $ sperCacheFid ser}
       updateLight sfovAspectActor sfovLucidLid sfovClearLid sfovLitLid =
         modifyServer $ \ser ->
           ser {sfovAspectActor, sfovLucidLid, sfovClearLid, sfovLitLid}
@@ -114,7 +109,8 @@ handleAndBroadcastServer atomic = do
                      getFovAspectItem
                      sfovAspectActorOld sfovLucidLidOld
                      sfovClearLidOld sfovLitLidOld
-                     updatePer updateLight sendUpdateAI sendUpdateUI atomic
+                     updatePerFid updatePerCacheFid updateLight
+                     sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> SerImplementation () -> IO ()
