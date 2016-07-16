@@ -32,10 +32,11 @@ module Game.LambdaHack.Common.Perception
   , PerceptionCache(..)
   , PerCacheLid
   , PerCacheFid
-    -- * Assorted
-  , FovAspect(..), emptyFovAspect, actorFovAspect
-  , FovAspectItem, FovLucid(..), FovClear, FovLit (..)
-  , FovAspectActor, FovLucidLid, FovClearLid, FovLitLid
+    -- * Fov aspects of items and actors
+  , FovAspect(..), emptyFovAspect
+  , FovAspectItem, FovAspectActor
+    -- * Data used in FOV computation and cached to speed it up
+  , FovClear, FovClearLid, FovLucid(..), FovLucidLid, FovLit (..), FovLitLid
   ) where
 
 import Prelude ()
@@ -142,7 +143,7 @@ type PerCacheLid = EM.EnumMap LevelId PerceptionCache
 -- | Server cache of perceptions, indexed by faction identifier.
 type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 
--- * Assorted
+-- * Fov aspects of items and actors
 
 data FovAspect = FovAspect
   { fovSight :: !Int
@@ -165,34 +166,24 @@ instance Binary FovAspect where
 emptyFovAspect :: FovAspect
 emptyFovAspect = FovAspect 0 0 0
 
-actorFovAspect :: FovAspectItem -> Actor -> FovAspect
-actorFovAspect sfovAspectItem b =
-  let processIid3 (FovAspect sightAcc smellAcc lightAcc) (iid, (k, _)) =
-        let FovAspect{..} =
-              EM.findWithDefault emptyFovAspect iid sfovAspectItem
-        in FovAspect (k * fovSight + sightAcc)
-                     (k * fovSmell + smellAcc)
-                     (k * fovLight + lightAcc)
-      processBag3 bag acc = foldl' processIid3 acc $ EM.assocs bag
-      sslOrgan = processBag3 (borgan b) emptyFovAspect
-  in processBag3 (beqp b) sslOrgan
-
 type FovAspectItem = EM.EnumMap ItemId FovAspect
 
 type FovAspectActor = EM.EnumMap ActorId FovAspect
 
+-- * Data used in FOV computation and cached to speed it up
+
 type FovClear = PointArray.Array Bool
 
 type FovClearLid = EM.EnumMap LevelId FovClear
-
-newtype FovLit = FovLit
-    {fovLit :: ES.EnumSet Point}
-  deriving (Show, Eq)
-
-type FovLitLid = EM.EnumMap LevelId FovLit
 
 newtype FovLucid = FovLucid
     {fovLucid :: ES.EnumSet Point}
   deriving (Show, Eq)
 
 type FovLucidLid = EM.EnumMap LevelId FovLucid
+
+newtype FovLit = FovLit
+    {fovLit :: ES.EnumSet Point}
+  deriving (Show, Eq)
+
+type FovLitLid = EM.EnumMap LevelId FovLit

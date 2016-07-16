@@ -114,6 +114,10 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld getFovAspectItem
                    `blame`
                     ( ps, resetsFov
                     , resetsLucid, resetsTiles, resetsAspectActor )) ()
+  -- Invariant: if the various resets determine we do not need to update FOV,
+  -- perception (@psight@ to be precise, @psmell@ is irrelevant)
+  -- of any faction does not change upon full recomputation. Otherwise,
+  -- save/restore would change game state (see also the assertions in gameExit).
   fovClearLid <- case resetsTiles of
     Nothing -> return fovClearLidOld
     Just lid -> getsState $ updateFovClear fovClearLidOld lid

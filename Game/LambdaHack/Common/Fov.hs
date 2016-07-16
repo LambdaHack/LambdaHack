@@ -3,11 +3,11 @@
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
 module Game.LambdaHack.Common.Fov
-  ( perFidInDungeon, perceptionFromResets, perceptionFromPTotal
-  , clearInDungeon, updateFovClear, litInDungeon, updateFovLit
-  , lucidInDungeon, updateFovLucid, aspectActorInDungeon, updateFovAspectActor
+  ( perceptionFromResets, perceptionFromPTotal, perFidInDungeon
+  , updateFovAspectActor, updateFovClear, updateFovLucid, updateFovLit
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , aspectActorInDungeon, clearInDungeon, lucidInDungeon, litInDungeon
 #endif
   ) where
 
@@ -134,16 +134,28 @@ perFidInDungeon sFovAspectItem s =
   in ( fovAspectActor, fovLucidLid, fovClearLid, fovLitLid
      , EM.map fst em, EM.map snd em )
 
+fovAspectFromActor :: FovAspectItem -> Actor -> FovAspect
+fovAspectFromActor sfovAspectItem b =
+  let processIid3 (FovAspect sightAcc smellAcc lightAcc) (iid, (k, _)) =
+        let FovAspect{..} =
+              EM.findWithDefault emptyFovAspect iid sfovAspectItem
+        in FovAspect (k * fovSight + sightAcc)
+                     (k * fovSmell + smellAcc)
+                     (k * fovLight + lightAcc)
+      processBag3 bag acc = foldl' processIid3 acc $ EM.assocs bag
+      sslOrgan = processBag3 (borgan b) emptyFovAspect
+  in processBag3 (beqp b) sslOrgan
+
 aspectActorInDungeon :: FovAspectItem -> State -> FovAspectActor
 aspectActorInDungeon sfovAspectItem s =
-  EM.map (actorFovAspect sfovAspectItem) $ sactorD s
+  EM.map (fovAspectFromActor sfovAspectItem) $ sactorD s
 
 updateFovAspectActor :: FovAspectActor -> ActorId -> FovAspectItem -> State
                      -> FovAspectActor
 updateFovAspectActor fovAspectActorOld aid sfovAspectItem s =
   case EM.lookup aid $ sactorD s of
-    Just b -> let newFC = actorFovAspect sfovAspectItem b
-              in EM.alter (const $ Just newFC) aid fovAspectActorOld
+    Just b -> let aspectActorNew = fovAspectFromActor sfovAspectItem b
+              in EM.alter (const $ Just aspectActorNew) aid fovAspectActorOld
     Nothing -> EM.delete aid fovAspectActorOld
 
 clearFromLevel :: Kind.COps -> Level -> FovClear
