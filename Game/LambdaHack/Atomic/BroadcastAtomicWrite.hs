@@ -109,7 +109,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                       _ -> not $ resetsFov /= Just [] || resetOthers
                    `blame`
                     (ps, resetsFov, resetsLit, resetsTiles, resetsAspectActor)) ()
-  persClear <- case resetsTiles of
+  fovClearLid <- case resetsTiles of
     Nothing -> return oldClear
     Just lid -> getsState $ updateTilesClear oldClear lid
   persTileLight <- case resetsTiles of
@@ -117,8 +117,8 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
     Just lid -> getsState $ updateTilesLit oldTileLight lid
   let updLit lid = getsState $ updateLight oldLights lid
                                            persTileLight fovAspectActor
-                                           persClear fovAspectItem
-  persLight <- case resetsLit of
+                                           fovClearLid fovAspectItem
+  fovLucidLid <- case resetsLit of
     Right [] -> return oldLights
     Right (aid : aids) -> do
       lid <- getsState $ blid . getActorBody aid
@@ -126,7 +126,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
       let !_A = assert (all (== lid) lids) ()
       updLit lid
     Left lid -> updLit lid
-  let persLit = (fovAspectActor, persLight, persClear, persTileLight)
+  let persLit = (fovAspectActor, fovLucidLid, fovClearLid, persTileLight)
   doUpdateLit persLit
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI = when (fhasUI $ gplayer $ factionDold EM.! fid) $
@@ -179,7 +179,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                                      persLit lid
               return (per, Just srvPerNew)
             else do
-              let per = perceptionFromPTotal (ptotal srvPerOld) persLight lid
+              let per = perceptionFromPTotal (ptotal srvPerOld) fovLucidLid lid
               return (per, Nothing)
           doUpdatePer fid lid perNew msrvPerNew
           let inPer = diffPer perNew perOld

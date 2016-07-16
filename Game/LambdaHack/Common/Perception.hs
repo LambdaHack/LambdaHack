@@ -27,15 +27,15 @@ module Game.LambdaHack.Common.Perception
   , nullPer, addPer, diffPer
     -- * Perception cache
   , PerReachable(..)
-  , CacheBeforeLit(..)
+  , CacheBeforeLucid(..)
   , PerActor
   , PerceptionCache(..)
   , PerCacheLid
   , PerCacheFid
     -- * Assorted
   , FovAspect(..), emptyFovAspect, actorFovAspect
-  , FovAspectItem, LightSources(..), ClearPoints, LitTerrain (..)
-  , PersLit, FovAspectActor, PersLight, PersClear, PersLitTerrain
+  , FovAspectItem, FovLucid(..), FovClear, FovLit (..)
+  , PersLit, FovAspectActor, FovLucidLid, FovClearLid, FovLitLid
   ) where
 
 import Prelude ()
@@ -120,17 +120,17 @@ newtype PerReachable = PerReachable
     {preachable :: ES.EnumSet Point}
   deriving (Show, Eq)
 
-data CacheBeforeLit = CacheBeforeLit
+data CacheBeforeLucid = CacheBeforeLucid
   { creachable :: !PerReachable
   , cnocto     :: !PerVisible
   , csmell     :: !PerSmelled
   }
   deriving (Show, Eq)
 
-type PerActor = EM.EnumMap ActorId CacheBeforeLit
+type PerActor = EM.EnumMap ActorId CacheBeforeLucid
 
 data PerceptionCache = PerceptionCache
-  { ptotal   :: !CacheBeforeLit
+  { ptotal   :: !CacheBeforeLucid
   , perActor :: !PerActor
   }
   deriving (Show, Eq)
@@ -181,20 +181,20 @@ type FovAspectItem = EM.EnumMap ItemId FovAspect
 
 type FovAspectActor = EM.EnumMap ActorId FovAspect
 
-type ClearPoints = PointArray.Array Bool
+type FovClear = PointArray.Array Bool
 
-type PersClear = EM.EnumMap LevelId ClearPoints
+type FovClearLid = EM.EnumMap LevelId FovClear
 
-newtype LitTerrain = LitTerrain
-    {litTerrain :: ES.EnumSet Point}
+newtype FovLit = FovLit
+    {fovLit :: ES.EnumSet Point}
   deriving (Show, Eq)
 
-type PersLitTerrain = EM.EnumMap LevelId LitTerrain
+type FovLitLid = EM.EnumMap LevelId FovLit
 
-newtype LightSources = LightSources
-    {lightSources :: ES.EnumSet Point}
+newtype FovLucid = FovLucid
+    {fovLucid :: ES.EnumSet Point}
   deriving (Show, Eq)
 
-type PersLight = EM.EnumMap LevelId LightSources
+type FovLucidLid = EM.EnumMap LevelId FovLucid
 
-type PersLit = (FovAspectActor, PersLight, PersClear, PersLitTerrain)
+type PersLit = (FovAspectActor, FovLucidLid, FovClearLid, FovLitLid)
