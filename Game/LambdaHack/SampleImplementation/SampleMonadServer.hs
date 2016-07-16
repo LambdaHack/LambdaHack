@@ -93,7 +93,10 @@ handleAndBroadcastServer :: (MonadStateWrite m, MonadServerReadRequest m)
 handleAndBroadcastServer atomic = do
   sperFidOld <- getsServer sperFid
   sperCacheFidOld <- getsServer sperCacheFid
-  persLitOld <- getsServer slit
+  sfovAspectActorOld <- getsServer sfovAspectActor
+  sfovLucidLidOld <- getsServer sfovLucidLid
+  sfovClearLidOld <- getsServer sfovClearLid
+  sfovLitLidOld <- getsServer sfovLitLid
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   let updatePer fid lid per msrvPer =
         let upd = EM.adjust (EM.adjust (const per) lid) fid
@@ -103,10 +106,13 @@ handleAndBroadcastServer atomic = do
         in modifyServer $ \ser2 ->
              ser2 { sperFid = upd (sperFid ser2)
                   , sperCacheFid = srvUpd (sperCacheFid ser2) }
-      updateLit slit = modifyServer $ \ser -> ser {slit}
+      updateLit sfovAspectActor sfovLucidLid sfovClearLid sfovLitLid =
+        modifyServer $ \ser ->
+          ser {sfovAspectActor, sfovLucidLid, sfovClearLid, sfovLitLid}
       getFovAspectItem = getsServer sfovAspectItem
   handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                     getFovAspectItem persLitOld
+                     getFovAspectItem
+                     sfovAspectActorOld sfovLucidLidOld sfovClearLidOld sfovLitLidOld
                      updatePer updateLit sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.

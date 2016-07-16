@@ -35,7 +35,7 @@ module Game.LambdaHack.Common.Perception
     -- * Assorted
   , FovAspect(..), emptyFovAspect, actorFovAspect
   , FovAspectItem, FovLucid(..), FovClear, FovLit (..)
-  , PersLit, FovAspectActor, FovLucidLid, FovClearLid, FovLitLid
+  , FovAspectActor, FovLucidLid, FovClearLid, FovLitLid
   ) where
 
 import Prelude ()
@@ -196,5 +196,3 @@ newtype FovLucid = FovLucid
   deriving (Show, Eq)
 
 type FovLucidLid = EM.EnumMap LevelId FovLucid
-
-type PersLit = (FovAspectActor, FovLucidLid, FovClearLid, FovLitLid)

@@ -30,33 +30,36 @@ import Game.LambdaHack.Server.ItemRev
 
 -- | Global, server state.
 data StateServer = StateServer
-  { sdiscoKind    :: !DiscoveryKind     -- ^ full item kind discoveries data
-  , sdiscoKindRev :: !DiscoveryKindRev  -- ^ reverse map, used for item creation
-  , suniqueSet    :: !UniqueSet         -- ^ already generated unique items
-  , sdiscoEffect  :: !DiscoveryEffect   -- ^ full item effect&Co data
-  , sitemSeedD    :: !ItemSeedDict  -- ^ map from item ids to item seeds
-  , sitemRev      :: !ItemRev       -- ^ reverse id map, used for item creation
-  , sfovAspectItem :: !FovAspectItem  -- ^ (sight, smell, light) aspect bonus
+  { sdiscoKind      :: !DiscoveryKind     -- ^ full item kind discoveries data
+  , sdiscoKindRev   :: !DiscoveryKindRev  -- ^ reverse map, used for item creation
+  , suniqueSet      :: !UniqueSet         -- ^ already generated unique items
+  , sdiscoEffect    :: !DiscoveryEffect   -- ^ full item effect&Co data
+  , sitemSeedD      :: !ItemSeedDict  -- ^ map from item ids to item seeds
+  , sitemRev        :: !ItemRev       -- ^ reverse id map, used for item creation
+  , sfovAspectItem  :: !FovAspectItem  -- ^ (sight, smell, light) aspect bonus
                                     --   of the item; zeroes if not in the map
-  , sflavour      :: !FlavourMap    -- ^ association of flavour to items
-  , sacounter     :: !ActorId       -- ^ stores next actor index
-  , sicounter     :: !ItemId        -- ^ stores next item index
-  , snumSpawned   :: !(EM.EnumMap LevelId Int)
-  , sundo         :: ![CmdAtomic]   -- ^ atomic commands performed to date
-  , sperFid       :: !PerFid        -- ^ perception of all factions
-  , sperCacheFid  :: !PerCacheFid   -- ^ perception cache of all factions
-  , slit          :: !PersLit       -- ^ cache of lit tiles, etc.
-  , srandom       :: !R.StdGen      -- ^ current random generator
-  , srngs         :: !RNGs          -- ^ initial random generators
-  , squit         :: !Bool          -- ^ exit the game loop
-  , swriteSave    :: !Bool          -- ^ write savegame to a file now
-  , sstart        :: !POSIXTime     -- ^ this session start time
-  , sgstart       :: !POSIXTime     -- ^ this game start time
-  , sallTime      :: !Time          -- ^ clips since the start of the session
-  , sheroNames    :: !(EM.EnumMap FactionId [(Int, (Text, Text))])
+  , sflavour        :: !FlavourMap    -- ^ association of flavour to items
+  , sacounter       :: !ActorId       -- ^ stores next actor index
+  , sicounter       :: !ItemId        -- ^ stores next item index
+  , snumSpawned     :: !(EM.EnumMap LevelId Int)
+  , sundo           :: ![CmdAtomic]   -- ^ atomic commands performed to date
+  , sperFid         :: !PerFid        -- ^ perception of all factions
+  , sperCacheFid    :: !PerCacheFid   -- ^ perception cache of all factions
+  , sfovAspectActor :: !FovAspectActor
+  , sfovLucidLid    :: !FovLucidLid
+  , sfovClearLid    :: !FovClearLid
+  , sfovLitLid      :: !FovLitLid
+  , srandom         :: !R.StdGen      -- ^ current random generator
+  , srngs           :: !RNGs          -- ^ initial random generators
+  , squit           :: !Bool          -- ^ exit the game loop
+  , swriteSave      :: !Bool          -- ^ write savegame to a file now
+  , sstart          :: !POSIXTime     -- ^ this session start time
+  , sgstart         :: !POSIXTime     -- ^ this game start time
+  , sallTime        :: !Time          -- ^ clips since the start of the session
+  , sheroNames      :: !(EM.EnumMap FactionId [(Int, (Text, Text))])
                                     -- ^ hero names sent by clients
-  , sdebugSer     :: !DebugModeSer  -- ^ current debugging mode
-  , sdebugNxt     :: !DebugModeSer  -- ^ debugging mode for the next game
+  , sdebugSer       :: !DebugModeSer  -- ^ current debugging mode
+  , sdebugNxt       :: !DebugModeSer  -- ^ debugging mode for the next game
   }
   deriving (Show)
 
@@ -115,7 +118,10 @@ emptyStateServer =
     , sundo = []
     , sperFid = EM.empty
     , sperCacheFid = EM.empty
-    , slit = (EM.empty, EM.empty, EM.empty, EM.empty)
+    , sfovAspectActor = EM.empty
+    , sfovLucidLid = EM.empty
+    , sfovClearLid = EM.empty
+    , sfovLitLid = EM.empty
     , srandom = R.mkStdGen 42
     , srngs = RNGs { dungeonRandomGenerator = Nothing
                    , startingRandomGenerator = Nothing }
@@ -187,7 +193,10 @@ instance Binary StateServer where
     let srandom = read g
         sperFid = EM.empty
         sperCacheFid = EM.empty
-        slit = (EM.empty, EM.empty, EM.empty, EM.empty)
+        sfovAspectActor = EM.empty
+        sfovLucidLid = EM.empty
+        sfovClearLid = EM.empty
+        sfovLitLid = EM.empty
         squit = False
         swriteSave = False
         sstart = 0

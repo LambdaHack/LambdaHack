@@ -298,18 +298,23 @@ gameExit = do
   -- Verify that the not saved perception is equal to future reconstructed.
   persAccumulated <- getsServer sperFid
   sperCacheFidAccumulated <- getsServer sperCacheFid
-  slitAccumlated <- getsServer slit
+  sfovAspectActor <- getsServer sfovAspectActor
+  sfovLucidLid <- getsServer sfovLucidLid
+  sfovClearLid <- getsServer sfovClearLid
+  sfovLitLid <- getsServer sfovLitLid
+  let sfovAcc = (sfovAspectActor, sfovLucidLid, sfovClearLid, sfovLitLid)
   sfovAspectItem <- getsServer sfovAspectItem
-  (slit, pers, sperCacheFid) <- getsState $ perFidInDungeon sfovAspectItem
+  (fovAspectActor, fovLucidLid, fovClearLid, fovLitLid, pers, sperCacheFid) <- getsState $ perFidInDungeon sfovAspectItem
+  let sfov = (fovAspectActor, fovLucidLid, fovClearLid, fovLitLid)
   let !_A1 = assert (persAccumulated == pers
                      `blame` "wrong accumulated perception"
                      `twith` (persAccumulated, pers)) ()
       !_A2 = assert (sperCacheFidAccumulated == sperCacheFid
                      `blame` "wrong accumulated per cache"
                      `twith` (sperCacheFidAccumulated, sperCacheFid)) ()
-      !_A3 = assert (slitAccumlated == slit
+      !_A3 = assert (sfovAcc == sfov
                      `blame` "wrong accumulated lights"
-                     `twith` (slitAccumlated, slit)) ()
+                     `twith` (sfovAcc, sfov)) ()
   return ()
 
 restartGame :: (MonadAtomic m, MonadServerReadRequest m)

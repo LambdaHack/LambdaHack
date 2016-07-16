@@ -45,17 +45,18 @@ handleCmdAtomicServer posAtomic atomic =
 
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
-                   => Bool -> PerFid -> PerCacheFid -> m FovAspectItem -> PersLit
+                   => Bool -> PerFid -> PerCacheFid -> m FovAspectItem
+                   -> FovAspectActor -> FovLucidLid -> FovClearLid -> FovLitLid
                    -> (FactionId -> LevelId
                        -> Perception -> Maybe PerceptionCache
                        -> m ())
-                   -> (PersLit -> m ())
+                   -> (FovAspectActor -> FovLucidLid -> FovClearLid -> FovLitLid -> m ())
                    -> (FactionId -> ResponseAI -> m ())
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
 handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                   getFovAspectItem (oldFC, oldLights, oldClear, oldTileLight)
+                   getFovAspectItem fovAspectActorOld fovLucidLidOld fovClearLidOld fovLitLidOld
                    doUpdatePer doUpdateLit doSendUpdateAI doSendUpdateUI
                    atomic = do
   -- Gather data from the old state.
@@ -95,9 +96,9 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
   -- (e.g., earthquake in an uninhabited corner of the active arena,
   -- but the we'd probably want some feedback, at least sound).
   fovAspectActor <- case resetsAspectActor of
-    Nothing -> return oldFC
-    Just aid -> getsState $ updateAspectActor oldFC aid fovAspectItem
-  let resetsLit = resetsLitC oldFC fovAspectActor
+    Nothing -> return fovAspectActorOld
+    Just aid -> getsState $ updateAspectActor fovAspectActorOld aid fovAspectItem
+  let resetsLit = resetsLitC fovAspectActorOld fovAspectActor
       resetOthers =
         resetsLit /= Right [] || isJust resetsTiles || isJust resetsAspectActor
   -- TODO: assert also that the sum of psBroken is equal to ps;
@@ -110,24 +111,23 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                    `blame`
                     (ps, resetsFov, resetsLit, resetsTiles, resetsAspectActor)) ()
   fovClearLid <- case resetsTiles of
-    Nothing -> return oldClear
-    Just lid -> getsState $ updateTilesClear oldClear lid
-  persTileLight <- case resetsTiles of
-    Nothing -> return oldTileLight
-    Just lid -> getsState $ updateTilesLit oldTileLight lid
-  let updLit lid = getsState $ updateLight oldLights lid
-                                           persTileLight fovAspectActor
-                                           fovClearLid fovAspectItem
+    Nothing -> return fovClearLidOld
+    Just lid -> getsState $ updateTilesClear fovClearLidOld lid
+  fovLitLid <- case resetsTiles of
+    Nothing -> return fovLitLidOld
+    Just lid -> getsState $ updateTilesLit fovLitLidOld lid
+  let updLit lid = getsState $ updateLight fovLucidLidOld lid
+                                           fovAspectItem fovAspectActor
+                                           fovClearLid fovLitLid
   fovLucidLid <- case resetsLit of
-    Right [] -> return oldLights
+    Right [] -> return fovLucidLidOld
     Right (aid : aids) -> do
       lid <- getsState $ blid . getActorBody aid
       lids <- mapM (\a -> getsState $ blid . getActorBody a) aids
       let !_A = assert (all (== lid) lids) ()
       updLit lid
     Left lid -> updLit lid
-  let persLit = (fovAspectActor, fovLucidLid, fovClearLid, persTileLight)
-  doUpdateLit persLit
+  doUpdateLit fovAspectActor fovLucidLid fovClearLid fovLitLid
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI = when (fhasUI $ gplayer $ factionDold EM.! fid) $
         doSendUpdateUI fid cmdUI
@@ -176,7 +176,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
             if resetsFovFid then do
               (per, srvPerNew) <- getsState $
                 perceptionFromResets (perActor srvPerOld) resetsBodies
-                                     persLit lid
+                                     fovAspectActor fovLucidLid fovClearLid lid
               return (per, Just srvPerNew)
             else do
               let per = perceptionFromPTotal (ptotal srvPerOld) fovLucidLid lid
