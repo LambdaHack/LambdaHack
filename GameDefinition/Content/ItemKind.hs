@@ -110,7 +110,7 @@ paralizingProj = ItemKind
   , iverbHit = "entangle"
   , iweight  = 500
   , iaspects = [AddHurtRanged (1 + dl 2 |*| 20)]
-  , ieffects = [Hurt (2 * d 1), Paralyze (5 + d 5), DropBestWeapon]
+  , ieffects = [Hurt (2 * d 1), Paralyze (10 + 2 * d 5), DropBestWeapon]
   , ifeature = [Identified]
   , idesc    = "Wood balls tied with hemp rope. The target enemy is tripped and bound to drop the main weapon, while fighting for balance."
   , ikit     = []
@@ -225,7 +225,7 @@ light2 = ItemKind
   , iverbHit = "burn"
   , iweight  = 1000
   , iaspects = [AddLight 3, AddSight (-1)]
-  , ieffects = [Burn 3, Paralyze 3, OnSmash (Explode "burning oil 3")]
+  , ieffects = [Burn 3, Paralyze 6, OnSmash (Explode "burning oil 3")]
   , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
                , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
@@ -241,7 +241,7 @@ light3 = ItemKind
   , iverbHit = "burn"
   , iweight  = 2400
   , iaspects = [AddLight 4, AddSight (-1)]
-  , ieffects = [Burn 4, Paralyze 4, OnSmash (Explode "burning oil 4")]
+  , ieffects = [Burn 4, Paralyze 8, OnSmash (Explode "burning oil 4")]
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
                , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
   , idesc    = "Very bright and very heavy brass lantern."
@@ -305,7 +305,7 @@ necklace2 = necklace
   }
 necklace3 = necklace
   { iaspects = (Timeout $ d 3 + 3 - dl 3 |*| 10) : iaspects necklace
-  , ieffects = [Recharging (Paralyze $ 5 + d 5 + dl 5)]
+  , ieffects = [Recharging (Paralyze $ 10 + 2 * d 5 + 2 * dl 5)]
   }
 necklace4 = necklace
   { iaspects = (Timeout $ d 4 + 4 - dl 4 |*| 2) : iaspects necklace
@@ -649,7 +649,7 @@ scroll3 = scroll
   }
 scroll4 = scroll
   { ieffects = [OneOf [ Teleport 5, RefillCalm 5, RefillCalm (-5)
-                      , InsertMove 5, Paralyze 10 ]]
+                      , InsertMove 5, Paralyze 20 ]]
   }
 scroll5 = scroll
   { irarity  = [(10, 15)]
@@ -854,7 +854,7 @@ hammerParalyze = hammer
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 2), (10, 4)]
   , iaspects = [Unique, Timeout $ d 2 + 3 - dl 2 |*| 2]
-  , ieffects = ieffects hammer ++ [Recharging $ Paralyze 5]
+  , ieffects = ieffects hammer ++ [Recharging $ Paralyze 10]
   }
 hammerSpark = hammer
   { iname    = "Grand Smithhammer"

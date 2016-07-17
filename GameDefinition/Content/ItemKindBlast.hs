@@ -32,7 +32,7 @@ burningOil n = ItemKind
   , iverbHit = "burn"
   , iweight  = 1
   , iaspects = [AddLight 2]
-  , ieffects = [Burn 1, Paralyze 1]  -- tripping on oil
+  , ieffects = [Burn 1, Paralyze 2]  -- tripping on oil
   , ifeature = [ toVelocity (min 100 $ n * 7)
                , Fragile, Identified ]
   , idesc    = "Sticky oil, burning brightly."
@@ -293,7 +293,7 @@ glue = ItemKind
   , iverbHit = "glue"
   , iweight  = 20
   , iaspects = []
-  , ieffects = [Paralyze (3 + d 3)]
+  , ieffects = [Paralyze (6 + 2 * d 3)]
   , ifeature = [toVelocity 40, Fragile, Identified]
   , idesc    = ""
   , ikit     = []

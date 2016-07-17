@@ -72,7 +72,7 @@ effectToBenefit cops b activeItems fact eff =
     IK.Ascend{} -> 1      -- low, to only change levels sensibly, in teams
                           -- TODO: use if low HP and enemies at hand
     IK.Escape{} -> 10000  -- AI wants to win; spawners to guard
-    IK.Paralyze d -> -20 * Dice.meanDice d
+    IK.Paralyze d -> -10 * Dice.meanDice d
     IK.InsertMove d -> 50 * Dice.meanDice d
     IK.Teleport d ->
       let p = Dice.meanDice d
