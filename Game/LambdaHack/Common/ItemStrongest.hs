@@ -165,6 +165,12 @@ strengthAddLight =
       p _ = []
   in strengthAspectMaybe p
 
+strengthAddNocto :: ItemFull -> Maybe Int
+strengthAddNocto =
+  let p (AddNocto k) = [k]
+      p _ = []
+  in strengthAspectMaybe p
+
 strengthEqpSlot :: Item -> Maybe (EqpSlot, Text)
 strengthEqpSlot item =
   let p (EqpSlot eqpSlot t) = [(eqpSlot, t)]
@@ -216,6 +222,7 @@ strengthFromEqpSlot eqpSlot =
     EqpSlotAddSight -> strengthAddSight
     EqpSlotAddSmell -> strengthAddSmell
     EqpSlotAddLight -> strengthAddLight
+    EqpSlotAddNocto -> strengthAddNocto
     EqpSlotWeapon -> strengthMelee
 
 strengthMelee :: ItemFull -> Maybe Int

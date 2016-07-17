@@ -145,6 +145,7 @@ rawAspectToSuff aspect =
     AddSight t -> wrapInParens $ t <+> "sight"
     AddSmell t -> wrapInParens $ t <+> "smell"
     AddLight t -> wrapInParens $ t <+> "light"
+    AddNocto t -> wrapInParens $ t <+> "night vision"
 
 featureToSuff :: Feature -> Text
 featureToSuff feat =

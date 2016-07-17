@@ -149,6 +149,7 @@ data FovAspect = FovAspect
   { fovSight :: !Int
   , fovSmell :: !Int
   , fovLight :: !Int
+  , fovNocto :: !Int
   }
   deriving (Show, Eq)
 
@@ -157,14 +158,16 @@ instance Binary FovAspect where
     put fovSight
     put fovSmell
     put fovLight
+    put fovNocto
   get = do
     fovSight <- get
     fovSmell <- get
     fovLight <- get
+    fovNocto <- get
     return $! FovAspect{..}
 
 emptyFovAspect :: FovAspect
-emptyFovAspect = FovAspect 0 0 0
+emptyFovAspect = FovAspect 0 0 0 0
 
 type FovAspectItem = EM.EnumMap ItemId FovAspect
 

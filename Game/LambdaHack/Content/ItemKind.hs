@@ -127,6 +127,7 @@ data Aspect a =
   | AddSight !a        -- ^ FOV radius, where 1 means a single tile
   | AddSmell !a        -- ^ smell radius, where 1 means a single tile
   | AddLight !a        -- ^ light radius, where 1 means a single tile
+  | AddNocto !a        -- ^ noctovision radius, where 1 means a single tile
   deriving (Show, Read, Eq, Ord, Generic, Functor, Foldable, Traversable)
 
 -- | Parameters modifying a throw. Not additive and don't start at 0.
@@ -166,6 +167,7 @@ data EqpSlot =
   | EqpSlotAddSight
   | EqpSlotAddSmell
   | EqpSlotAddLight
+  | EqpSlotAddNocto
   | EqpSlotWeapon  -- ^ a hack exclusively for AI that shares weapons
   deriving (Show, Eq, Ord, Generic)
 
@@ -207,6 +209,7 @@ slotName EqpSlotAddSkills{} = "skills"
 slotName EqpSlotAddSight = "sight radius"
 slotName EqpSlotAddSmell = "smell radius"
 slotName EqpSlotAddLight = "light radius"
+slotName EqpSlotAddNocto = "night vision radius"
 slotName EqpSlotWeapon = "weapon damage"
 
 toVelocity :: Int -> Feature

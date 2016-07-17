@@ -142,12 +142,13 @@ perFidInDungeon sFovAspectItem s =
 
 fovAspectFromActor :: FovAspectItem -> Actor -> FovAspect
 fovAspectFromActor sfovAspectItem b =
-  let processIid3 (FovAspect sightAcc smellAcc lightAcc) (iid, (k, _)) =
+  let processIid3 (FovAspect sightAcc smellAcc lightAcc noctoAcc) (iid, (k, _)) =
         let FovAspect{..} =
               EM.findWithDefault emptyFovAspect iid sfovAspectItem
         in FovAspect (k * fovSight + sightAcc)
                      (k * fovSmell + smellAcc)
                      (k * fovLight + lightAcc)
+                     (k * fovNocto + noctoAcc)
       processBag3 bag acc = foldl' processIid3 acc $ EM.assocs bag
       sslOrgan = processBag3 (borgan b) emptyFovAspect
   in processBag3 (beqp b) sslOrgan
