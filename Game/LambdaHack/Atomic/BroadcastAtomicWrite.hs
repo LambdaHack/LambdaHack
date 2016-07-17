@@ -1,8 +1,13 @@
+{-# LANGUAGE CPP #-}
 -- | Sending atomic commands to clients and executing them on the server.
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.BroadcastAtomicWrite
   ( handleAndBroadcast
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , handleCmdAtomicServer, computeLight, atomicRemember
+#endif
   ) where
 
 import Prelude ()
@@ -78,32 +83,10 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld getFovAspectItem
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
   fovAspectItem <- getFovAspectItem
-  let (resetsFov, resetsLucidC, resetsTiles, resetsAspectActor) =
-        case atomic of
-          UpdAtomic cmd ->
-            ( resetsFovCmdAtomic cmd fovAspectItem
-            , resetsLucidCmdAtomic cmd fovAspectItem
-            , resetsTilesCmdAtomic cmd
-            , resetsAspectActorCmdAtomic cmd fovAspectItem )
-          SfxAtomic{} -> (Just [], \_ _ ->  Right [], Nothing, Nothing)
-  -- Update lights in the dungeon. This is not needed and not performed
-  -- in particular if not @resets@.
-  -- This is needed every (even enemy) move to show thrown torches.
-  -- We need to update lights even if cmd doesn't change any perception,
-  -- so that for next cmd that does, but doesn't change lights,
-  -- and operates on the same level, the lights are up to date.
-  -- We could make lights lazy to ensure no computation is wasted,
-  -- but it's rare that cmd changed them, but not the perception
-  -- (e.g., earthquake in an uninhabited corner of the active arena,
-  -- but the we'd probably want some feedback, at least sound).
-  fovAspectActor <- case resetsAspectActor of
-    Nothing -> return fovAspectActorOld
-    Just aid ->
-      getsState $ updateFovAspectActor fovAspectActorOld aid fovAspectItem
-  let resetsLucid = resetsLucidC fovAspectActorOld fovAspectActor
-      resetsOthers = resetsLucid /= Right []
-                     || isJust resetsTiles
-                     || isJust resetsAspectActor
+  (resetsFov, resetsOthers, fovAspectActor, fovLucidLid, fovClearLid, fovLitLid)
+    <- computeLight atomic fovAspectItem
+                    fovAspectActorOld fovLucidLidOld fovClearLidOld fovLitLidOld
+  doUpdateLight fovAspectActor fovLucidLid fovClearLid fovLitLid
   -- TODO: assert also that the sum of psBroken is equal to ps;
   -- with deep equality these assertions can be expensive; optimize.
   let !_A = assert (case ps of
@@ -111,31 +94,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld getFovAspectItem
                       PosFidAndSight{} -> True
                       PosFidAndSer (Just _) _ -> True
                       _ -> not $ resetsFov /= Just [] || resetsOthers
-                   `blame`
-                    ( ps, resetsFov
-                    , resetsLucid, resetsTiles, resetsAspectActor )) ()
-  -- Invariant: if the various resets determine we do not need to update FOV,
-  -- perception (@psight@ to be precise, @psmell@ is irrelevant)
-  -- of any faction does not change upon full recomputation. Otherwise,
-  -- save/restore would change game state (see also the assertions in gameExit).
-  fovClearLid <- case resetsTiles of
-    Nothing -> return fovClearLidOld
-    Just lid -> getsState $ updateFovClear fovClearLidOld lid
-  fovLitLid <- case resetsTiles of
-    Nothing -> return fovLitLidOld
-    Just lid -> getsState $ updateFovLit fovLitLidOld lid
-  let updLucid lid = getsState $ updateFovLucid fovLucidLidOld lid
-                                                fovAspectItem fovAspectActor
-                                                fovClearLid fovLitLid
-  fovLucidLid <- case resetsLucid of
-    Right [] -> return fovLucidLidOld
-    Right (aid : aids) -> do
-      lid <- getsState $ blid . getActorBody aid
-      lids <- mapM (\a -> getsState $ blid . getActorBody a) aids
-      let !_A = assert (all (== lid) lids) ()
-      updLucid lid
-    Left lid -> updLucid lid
-  doUpdateLight fovAspectActor fovLucidLid fovClearLid fovLitLid
+                   `blame` (ps, resetsFov, resetsOthers)) ()
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI = when (fhasUI $ gplayer $ factionDold EM.! fid) $
         doSendUpdateUI fid cmdUI
@@ -230,6 +189,63 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld getFovAspectItem
         PosAll -> sendUpdate fid atomic
         PosNone -> return ()
   mapWithKeyM_ (\fid _ -> send fid) factionDold
+
+computeLight :: MonadStateWrite m
+             => CmdAtomic -> FovAspectItem
+             -> FovAspectActor -> FovLucidLid -> FovClearLid -> FovLitLid
+             -> m ( Maybe [ActorId], Bool
+                  , FovAspectActor, FovLucidLid, FovClearLid, FovLitLid )
+computeLight atomic fovAspectItem
+             fovAspectActorOld fovLucidLidOld fovClearLidOld fovLitLidOld = do
+  let (resetsFov, resetsLucidC, resetsTiles, resetsAspectActor) =
+        case atomic of
+          UpdAtomic cmd ->
+            ( resetsFovCmdAtomic cmd fovAspectItem
+            , resetsLucidCmdAtomic cmd fovAspectItem
+            , resetsTilesCmdAtomic cmd
+            , resetsAspectActorCmdAtomic cmd fovAspectItem )
+          SfxAtomic{} -> (Just [], \_ _ ->  Right [], Nothing, Nothing)
+  -- Update lights in the dungeon. This is not needed and not performed
+  -- in particular if not @resets@.
+  -- This is needed every (even enemy) move to show thrown torches.
+  -- We need to update lights even if cmd doesn't change any perception,
+  -- so that for next cmd that does, but doesn't change lights,
+  -- and operates on the same level, the lights are up to date.
+  -- We could make lights lazy to ensure no computation is wasted,
+  -- but it's rare that cmd changed them, but not the perception
+  -- (e.g., earthquake in an uninhabited corner of the active arena,
+  -- but the we'd probably want some feedback, at least sound).
+  fovAspectActor <- case resetsAspectActor of
+    Nothing -> return fovAspectActorOld
+    Just aid ->
+      getsState $ updateFovAspectActor fovAspectActorOld aid fovAspectItem
+  let resetsLucid = resetsLucidC fovAspectActorOld fovAspectActor
+      resetsOthers = resetsLucid /= Right []
+                     || isJust resetsTiles
+                     || isJust resetsAspectActor
+  -- Invariant: if the various resets determine we do not need to update FOV,
+  -- perception (@psight@ to be precise, @psmell@ is irrelevant)
+  -- of any faction does not change upon full recomputation. Otherwise,
+  -- save/restore would change game state (see also the assertions in gameExit).
+  fovClearLid <- case resetsTiles of
+    Nothing -> return fovClearLidOld
+    Just lid -> getsState $ updateFovClear fovClearLidOld lid
+  fovLitLid <- case resetsTiles of
+    Nothing -> return fovLitLidOld
+    Just lid -> getsState $ updateFovLit fovLitLidOld lid
+  let updLucid lid = getsState $ updateFovLucid fovLucidLidOld lid
+                                                fovAspectItem fovAspectActor
+                                                fovClearLid fovLitLid
+  fovLucidLid <- case resetsLucid of
+    Right [] -> return fovLucidLidOld
+    Right (aid : aids) -> do
+      lid <- getsState $ blid . getActorBody aid
+      lids <- mapM (\a -> getsState $ blid . getActorBody a) aids
+      let !_A = assert (all (== lid) lids) ()
+      updLucid lid
+    Left lid -> updLucid lid
+  return ( resetsFov, resetsOthers
+         , fovAspectActor, fovLucidLid, fovClearLid, fovLitLid )
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 atomicRemember lid inPer s =

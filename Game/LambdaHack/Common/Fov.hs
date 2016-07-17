@@ -7,7 +7,13 @@ module Game.LambdaHack.Common.Fov
   , updateFovAspectActor, updateFovClear, updateFovLucid, updateFovLit
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , aspectActorInDungeon, clearInDungeon, lucidInDungeon, litInDungeon
+  , perceptionFromPerActor, cacheBeforeLucidFromActor, visibleOnLevel
+  , perceptionFromVoid, perLidFromFaction
+  , fovAspectFromActor, aspectActorInDungeon
+  , clearFromLevel, clearInDungeon
+  , litFromLevel, litInDungeon
+  , floorLightSources, lucidFromItems, lucidFromLevel, lucidInDungeon
+  , fullscan
 #endif
   ) where
 
