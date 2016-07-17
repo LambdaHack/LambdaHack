@@ -596,6 +596,7 @@ settingsMenuHuman cmdAction = do
   Kind.COps{corule} <- getsState scops
   Binding{bcmdList} <- getsSession sbinding
   let stripFrame t = tail . init $ T.lines t
+      pasteVersion :: [String] -> [String]
       pasteVersion art =  -- TODO: factor out
         let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
             version = " Version " ++ showVersion pathsVersion
@@ -617,6 +618,7 @@ settingsMenuHuman cmdAction = do
               , T.justifyLeft bindingLen ' '
                   $ T.justifyLeft 3 ' ' (K.showKM k) <> " " <> d )
         in map fmt kds
+      overwrite :: [(Int, String)] -> [(Text, Maybe KYX)]
       overwrite =  -- overwrite the art with key bindings and other lines
         let over [] (_, line) = ([], (T.pack line, Nothing))
             over bs@((mkey, binding) : bsRest) (y, line) =
@@ -628,7 +630,7 @@ settingsMenuHuman cmdAction = do
                        pre = T.pack prefix
                        post = T.drop (lenB - length braces) (T.pack suffix)
                        len = T.length pre
-                       yxx key = (Left key, (y, len, len + lenB))
+                       yxx key = (Left [key], (y, len, len + lenB))
                        myxx = yxx <$> mkey
                    in (bsRest, (pre <> binding <> post, myxx))
                  else (bs, (T.pack line, Nothing))

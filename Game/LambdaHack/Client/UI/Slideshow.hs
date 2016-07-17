@@ -18,7 +18,7 @@ import Game.LambdaHack.Client.UI.Msg
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Point
 
-type KYX = (Either K.KM SlotChar, (Y, X, X))
+type KYX = (Either [K.KM] SlotChar, (Y, X, X))
 
 type OKX = (Overlay, [KYX])
 
@@ -42,11 +42,11 @@ toSlideshow okxs = Slideshow $ addFooters okxs
   addFooters [] = assert `failure` okxs
   addFooters [(als, [])] =
     [( als ++ [toAttrLine tendMsg]
-     , [(Left K.safeSpaceKM, (length als, 0, 8))] )]
+     , [(Left [K.safeSpaceKM], (length als, 0, 8))] )]
   addFooters [(als, kxs)] = [(als, kxs)]
   addFooters ((als, kxs) : rest) =
     ( als ++ [toAttrLine tmoreMsg]
-    , kxs ++ [(Left K.safeSpaceKM, (length als, 0, 8))] )
+    , kxs ++ [(Left [K.safeSpaceKM], (length als, 0, 8))] )
     : addFooters rest
 
 tmoreMsg :: Text
@@ -67,7 +67,7 @@ keysOKX ystart xstart xBound keys =
         in if x + T.length ks > xBound
            then f ((y + 1, 0), ([], kL : kV, kX)) key
            else ( (y, x + T.length ks + 1)
-                , (ks : kL, kV, (Left key, (y, x, x + T.length ks)) : kX) )
+                , (ks : kL, kV, (Left [key], (y, x, x + T.length ks)) : kX) )
       (kL1, kV1, kX1) = snd $ foldl' f ((ystart, xstart), ([], [], [])) keys
       catL = toAttrLine . T.intercalate " " . reverse
   in (reverse $ map catL $ kL1 : kV1, reverse kX1)

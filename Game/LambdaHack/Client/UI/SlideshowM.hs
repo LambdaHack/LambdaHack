@@ -77,7 +77,7 @@ displayChoiceScreen :: forall m . MonadClientUI m
                     -> m (Either K.KM SlotChar, Int)
 displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
   let frs = slideshow frsX
-      keys = concatMap (mapMaybe (either Just (const Nothing) . fst) . snd) frs
+      keys = concatMap (concatMap (either id (const []) . fst) . snd) frs
              ++ extraKeys
       !_A = assert (K.escKM `elem` extraKeys) ()
       navigationKeys = [ K.leftButtonReleaseKM, K.returnKM, K.spaceKM
@@ -119,9 +119,10 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
               interpretKey :: K.KM -> m (Either K.KM SlotChar, Int)
               interpretKey ikm =
                 case K.key ikm of
-                  K.Return | ekm /= Left K.returnKM -> case ekm of
-                    Left km -> interpretKey km
-                    _ -> return (ekm, pointer)
+                  K.Return | ekm /= Left [K.returnKM] -> case ekm of
+                    Left (km : _) -> interpretKey km
+                    Left [] -> assert `failure` ikm
+                    Right c -> return (Right c, pointer)
                   K.LeftButtonRelease -> do
                     Point{..} <- getsSession spointer
                     let onChoice (_, (cy, cx1, cx2)) =
@@ -130,8 +131,9 @@ displayChoiceScreen dm sfBlank pointer0 frsX extraKeys = do
                       Nothing | ikm `elem` keys -> return (Left ikm, pointer)
                       Nothing -> ignoreKey
                       Just (ckm, _) -> case ckm of
-                        Left km -> interpretKey km
-                        _ -> return (ckm, pointer)
+                        Left (km : _) -> interpretKey km
+                        Left [] -> assert `failure` ikm
+                        Right c  -> return (Right c, pointer)
                   K.Space | pointer + pageLen - ixOnPage <= maxIx ->
                     page (pointer + pageLen - ixOnPage)
                   K.Unknown "SAFE_SPACE"

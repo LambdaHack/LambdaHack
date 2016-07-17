@@ -593,10 +593,10 @@ quitFactionUI fid mbody toSt = do
         localTime <- getsState $ getLocalTime arena
         itemToF <- itemToFullClient
         (lSlots, _) <- getsClient sslots
-        let keyOfEKM (Left km) = Just km
-            keyOfEKM (Right SlotChar{slotChar}) = Just $ K.mkChar slotChar
+        let keyOfEKM (Left km) = km
+            keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
             allOKX = concatMap snd $ slideshow itemSlides
-            keys = [K.spaceKM, K.escKM] ++ mapMaybe (keyOfEKM . fst) allOKX
+            keys = [K.spaceKM, K.escKM] ++ concatMap (keyOfEKM . fst) allOKX
             examItem slot =
               case EM.lookup slot lSlots of
                 Nothing -> assert `failure` slot

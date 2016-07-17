@@ -146,10 +146,11 @@ keyHelp Binding{..} offset = assert (offset > 0) $
     lastHelpText = map fmts lastHelpBlurb
     coImage :: HumanCmd -> [K.KM]
     coImage cmd = M.findWithDefault (assert `failure` cmd) cmd brevMap
-    disp cmd = T.concat $ intersperse " or " $ map K.showKM $ coImage cmd
-    keysN :: Int -> CmdCategory -> [(Either K.KM SlotChar, Text)]
-    keysN n cat = [ (Left k, fmt n (disp cmd) desc)
-                  | (k, (cats, desc, cmd)) <- bcmdList
+    disp = T.concat . intersperse " or " . map K.showKM
+    keysN :: Int -> CmdCategory -> [(Either [K.KM] SlotChar, Text)]
+    keysN n cat = [ (Left kms, fmt n (disp kms) desc)
+                  | (_, (cats, desc, cmd)) <- bcmdList
+                  , let kms = coImage cmd
                   , cat `elem` cats
                   , desc /= "" ]
     keyCaptionN n = fmt n "keys" "command"
@@ -198,9 +199,10 @@ keyHelp Binding{..} offset = assert (offset > 0) $
     okm sel key1 key2 header footer =
       let kst1 = keySel sel key1
           kst2 = keySel sel key2
-          f (ca1, km1, _) (ca2, km2, _) y = assert (ca1 == ca2) $
-            [ (km1, (y, keyM + 3, keyB + keyM + 3))
-            , (km2, (y, keyB + keyM + 5, 2 * keyB + keyM + 5)) ]
+          f (ca1, Left km1, _) (ca2, Left km2, _) y = assert (ca1 == ca2) $
+            [ (Left [km1], (y, keyM + 3, keyB + keyM + 3))
+            , (Left [km2], (y, keyB + keyM + 5, 2 * keyB + keyM + 5)) ]
+          f c d e = assert `failure` (c, d, e)
           kxs = concat $ zipWith3 f kst1 kst2 [offset + length header..]
           render (ca1, _, desc1) (_, _, desc2) =
             fmm (areaDescription ca1) desc1 desc2

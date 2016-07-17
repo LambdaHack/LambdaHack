@@ -991,6 +991,7 @@ mainMenuHuman cmdAction = do
   scurDiff <- getsClient scurDiff
   snxtDiff <- getsClient snxtDiff
   let stripFrame t = tail . init $ T.lines t
+      pasteVersion :: [String] -> [String]
       pasteVersion art =
         let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
             version = " Version " ++ showVersion pathsVersion
@@ -1019,6 +1020,7 @@ mainMenuHuman cmdAction = do
               , T.justifyLeft bindingLen ' '
                   $ T.justifyLeft 3 ' ' (K.showKM k) <> " " <> d )
         in map fmt kds
+      overwrite :: [(Int, String)] -> [(Text, Maybe KYX)]
       overwrite =  -- overwrite the art with key bindings and other lines
         let over [] (_, line) = ([], (T.pack line, Nothing))
             over bs@((mkey, binding) : bsRest) (y, line) =
@@ -1030,7 +1032,7 @@ mainMenuHuman cmdAction = do
                        pre = T.pack prefix
                        post = T.drop (lenB - length braces) (T.pack suffix)
                        len = T.length pre
-                       yxx key = (Left key, (y, len, len + lenB))
+                       yxx key = (Left [key], (y, len, len + lenB))
                        myxx = yxx <$> mkey
                    in (bsRest, (pre <> binding <> post, myxx))
                  else (bs, (T.pack line, Nothing))

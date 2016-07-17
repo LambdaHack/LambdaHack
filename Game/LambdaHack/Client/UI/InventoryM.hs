@@ -444,8 +444,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                      $ EM.keys bagItemSlots
       runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur
 
-keyOfEKM :: Int -> Either K.KM SlotChar -> Maybe K.KM
-keyOfEKM _ (Left km) = Just km
+keyOfEKM :: Int -> Either [K.KM] SlotChar -> Maybe K.KM
+keyOfEKM _ (Left kms) = assert `failure` kms
 keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
   Just $ K.mkChar slotChar
 keyOfEKM _ _ = Nothing
