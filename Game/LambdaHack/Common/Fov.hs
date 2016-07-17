@@ -75,14 +75,10 @@ perceptionFromPerActor perActor fovLucidLid lid =
 -- on a visually unblocked path from the actor position.
 -- Also compute positions seen by noctovision and perceived by smell.
 cacheBeforeLucidFromActor :: FovClear -> (Actor, FovAspect) -> CacheBeforeLucid
-cacheBeforeLucidFromActor clearPs (body, FovAspect{fovSight, fovSmell}) =
+cacheBeforeLucidFromActor clearPs (body, FovAspect{..}) =
   let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) fovSight
       creachable = PerReachable $ fullscan clearPs radius (bpos body)
-      -- All non-projectile actors feel adjacent positions,
-      -- even dark (for easy exploration). Projectiles rely on cameras.
-      noctoRadius = if bproj body then 0 else 2
-      cnocto = PerVisible $ fullscan clearPs noctoRadius (bpos body)
-      -- Projectiles can potentially smell, too.
+      cnocto = PerVisible $ fullscan clearPs fovNocto (bpos body)
       -- TODO: until AI can handle/ignore it, only radius 2 used
       smellRadius = if fovSmell >= 2 then 2 else 0
       csmell = PerSmelled $ fullscan clearPs smellRadius (bpos body)

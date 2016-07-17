@@ -470,6 +470,8 @@ harmful cops body activeItems fact itemFull =
   maybe False (\(u, _) -> u <= 0)
     (totalUsefulness cops body activeItems fact itemFull)
 
+-- TODO: if noctovision radius higher than min sight light, turn all lights off,
+-- (unless the level is lit by default)
 unneeded :: Kind.COps -> Bool -> Bool -> Bool -> Bool
          -> Actor -> [ItemFull] -> Faction -> ItemFull
          -> Bool
