@@ -229,7 +229,7 @@ statsOverlay aid = do
         let fullText t =
               makePhrase [ MU.Text $ slotLabel c
                          , MU.Text $ T.justifyLeft 22 ' '
-                           $ "ability" <+> tshow ability
+                           $ tshow ability <+> "ability"
                          , MU.Text t ]
             valueText = tshow $ EM.findWithDefault 0 ability skills
             ft = fullText valueText
