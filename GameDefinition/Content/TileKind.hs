@@ -24,11 +24,11 @@ cdefs = ContentDef
   , validateSingle = validateSingleTileKind
   , validateAll = validateAllTileKind
   , content =
-      [wall, hardRock, pillar, pillarCache, lampPost, burningBush, bush, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit]
+      [wall, hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke]
       ++ map makeDark [wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsLit, escapeUpLit, escapeDownLit, floorCorridorLit]
       ++ map makeDarkColor [stairsUpLit, stairsDownLit, floorArenaLit, floorActorLit, floorItemLit, floorActorItemLit]
   }
-wall,        hardRock, pillar, pillarCache, lampPost, burningBush, bush, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit :: TileKind
+wall,        hardRock, pillar, pillarIce, pillarCache, lampPost, burningBush, bush, tree, wallV, wallGlassV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallGlassH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorArenaShade, floorActorLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit, floorFog, floorSmoke :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -63,11 +63,18 @@ pillar = TileKind
   , tname    = "rock"
   , tfreq    = [ ("cachable", 70)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 100), ("skirmishSet", 5)
+               , ("noiseSet", 95), ("skirmishSet", 5)
                , ("battleSet", 250) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
   , tcolor2  = Cyan
   , tfeature = []
+  }
+pillarIce = pillar
+  { tname    = "ice"
+  , tfreq    = [("noiseSet", 5)]
+  , tcolor   = BrBlue
+  , tcolor2  = Blue
+  , tfeature = [Clear]
   }
 pillarCache = TileKind
   { tsymbol  = '&'
@@ -114,10 +121,18 @@ tree = TileKind
 wallV = TileKind
   { tsymbol  = '|'
   , tname    = "granite wall"
-  , tfreq    = [("legendLit", 100)]
+  , tfreq    = [("legendLit", 100), ("verticalWallOrGlassOver_!", 90)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [HideAs "suspect vertical wall Lit"]
+  }
+wallGlassV = TileKind
+  { tsymbol  = '|'
+  , tname    = "polished crystal wall"
+  , tfreq    = [("verticalWallOrGlassOver_!", 10)]
+  , tcolor   = BrBlue
+  , tcolor2  = Blue
+  , tfeature = [Clear]
   }
 wallSuspectV = TileKind
   { tsymbol  = '|'
@@ -150,10 +165,18 @@ doorOpenV = TileKind
 wallH = TileKind
   { tsymbol  = '-'
   , tname    = "granite wall"
-  , tfreq    = [("legendLit", 100)]
+  , tfreq    = [("legendLit", 100), ("horizontalWallOrGlassOver_=", 90)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [HideAs "suspect horizontal wall Lit"]
+  }
+wallGlassH = TileKind
+  { tsymbol  = '-'
+  , tname    = "polished crystal wall"
+  , tfreq    = [("horizontalWallOrGlassOver_=", 10)]
+  , tcolor   = BrBlue
+  , tcolor2  = Blue
+  , tfeature = [Clear]
   }
 wallSuspectH = TileKind
   { tsymbol  = '-'
@@ -245,7 +268,7 @@ floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
   , tname    = "stone floor"
   , tfreq    = [ ("floorArenaLit", 1)
-               , ("arenaSet", 1), ("emptySet", 1), ("noiseSet", 50)
+               , ("arenaSet", 1), ("emptySet", 99), ("noiseSet", 50)
                , ("battleSet", 1000), ("skirmishSet", 100)
                , ("ambushSet", 1000) ]
   }
@@ -263,7 +286,7 @@ floorActorItemLit = floorItemLit
   }
 floorArenaShade = floorActorLit
   { tname    = "stone floor"  -- TODO: "shaded ground"
-  , tfreq    = [("treeShadeOver_s", 1)]
+  , tfreq    = [("treeShadeOrFogOver_s", 95)]
   , tcolor2  = BrBlack
   , tfeature = Dark : tfeature floorActorLit  -- no OftenItem
   }
@@ -291,6 +314,21 @@ floorBrownLit = floorRedLit
   , tfreq    = [("trailLit", 10)]
   , tcolor   = BrMagenta
   , tcolor2  = Magenta
+  }
+floorFog = TileKind
+  { tsymbol  = '#'
+  , tname    = "dense fog"
+  , tfreq    = [("emptySet", 1), ("treeShadeOrFogOver_s", 5)]
+  , tcolor   = BrCyan
+  , tcolor2  = Cyan
+  , tfeature = [Walkable, Dark, NoItem]
+  }
+floorSmoke = floorFog
+  { tname    = "billowing smoke"
+  , tfreq    = [("battleSet", 5)]
+  , tcolor   = Brown
+  , tcolor2  = BrBlack
+  , tfeature = [Walkable, NoItem]  -- not dark, embers
   }
 
 makeDark :: TileKind -> TileKind

@@ -16,14 +16,14 @@ cdefs = ContentDef
   , validateSingle = validateSinglePlaceKind
   , validateAll = validateAllPlaceKind
   , content =
-      [rect, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, boardgame]
+      [rect, rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, boardgame]
   }
-rect,        ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, boardgame :: PlaceKind
+rect,        rectWindows, ruin, collapsed, collapsed2, collapsed3, collapsed4, pillar, pillar2, pillar3, pillar4, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, treeShade2, treeShade3, boardgame :: PlaceKind
 
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "room"
-  , pfreq    = [("rogue", 100), ("ambush", 8), ("noise", 80)]
+  , pfreq    = [("rogue", 100)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -31,6 +31,19 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
                , "|."
                ]
   , poverride = []
+  }
+rectWindows = PlaceKind
+  { psymbol  = 'w'
+  , pname    = "room"
+  , pfreq    = [("ambush", 8), ("noise", 80)]
+  , prarity  = [(1, 10), (10, 8)]
+  , pcover   = CStretch
+  , pfence   = FNone
+  , ptopLeft = [ "-="
+               , "!."
+               ]
+  , poverride = [ ('=', "horizontalWallOrGlassOver_=")
+                , ('!', "verticalWallOrGlassOver_!") ]
   }
 ruin = PlaceKind
   { psymbol  = 'R'
@@ -205,7 +218,7 @@ treeShade = PlaceKind
                , "XOs"
                , "XXs"
                ]
-  , poverride = [('O', "treeShadeOver_O"), ('s', "treeShadeOver_s")]
+  , poverride = [('O', "treeShadeOver_O"), ('s', "treeShadeOrFogOver_s")]
   }
 treeShade2 = treeShade
   { ptopLeft = [ "sss"
