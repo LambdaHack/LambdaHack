@@ -81,11 +81,6 @@ queryUI = do
 -- | Let the human player issue commands until any command takes time.
 humanCommand :: forall m. MonadClientUI m => m ReqUI
 humanCommand = do
-  -- For human UI we invalidate whole @sbfsD@ at the start of each
-  -- UI player input that start a player move, which is an overkill,
-  -- but doesn't slow screensavers, because they are UI,
-  -- but not human.
-  modifyClient $ \cli -> cli {sbfsD = EM.empty}
   modifySession $ \sess -> sess {slastLost = ES.empty}
   modifySession $ \sess -> sess {skeysHintMode = KeysHintAbsent}
   let loop :: m ReqUI

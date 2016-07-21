@@ -14,7 +14,6 @@ import Data.Ord
 
 import Game.LambdaHack.Client.AI.ConditionM
 import Game.LambdaHack.Client.AI.PickTargetM
-import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -260,8 +259,7 @@ useTactics refreshTarget oldAid = do
           if not onLevel then explore
           else do
             modifyClient $ \cli ->
-              cli { sbfsD = invalidateBfs oldAid (sbfsD cli)
-                  , seps = seps cli + 773 }  -- randomize paths
+              cli {seps = seps cli + 773}  -- randomize paths
             -- Copy over the leader's target, if any, or follow his bpos.
             mtgt <- getsClient $ EM.lookup leader . stargetD
             tgtPathSet <- setPath mtgt
