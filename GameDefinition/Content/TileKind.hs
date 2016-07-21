@@ -121,7 +121,7 @@ tree = TileKind
 wallV = TileKind
   { tsymbol  = '|'
   , tname    = "granite wall"
-  , tfreq    = [("legendLit", 100), ("verticalWallOrGlassOver_!", 90)]
+  , tfreq    = [("legendLit", 100), ("verticalWallOrGlassOver_!_Lit", 90)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [HideAs "suspect vertical wall Lit"]
@@ -129,7 +129,7 @@ wallV = TileKind
 wallGlassV = TileKind
   { tsymbol  = '|'
   , tname    = "polished crystal wall"
-  , tfreq    = [("verticalWallOrGlassOver_!", 10)]
+  , tfreq    = [("verticalWallOrGlassOver_!_Lit", 10)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , tfeature = [Clear]
@@ -165,7 +165,7 @@ doorOpenV = TileKind
 wallH = TileKind
   { tsymbol  = '-'
   , tname    = "granite wall"
-  , tfreq    = [("legendLit", 100), ("horizontalWallOrGlassOver_=", 90)]
+  , tfreq    = [("legendLit", 100), ("horizontalWallOrGlassOver_=_Lit", 90)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [HideAs "suspect horizontal wall Lit"]
@@ -173,7 +173,7 @@ wallH = TileKind
 wallGlassH = TileKind
   { tsymbol  = '-'
   , tname    = "polished crystal wall"
-  , tfreq    = [("horizontalWallOrGlassOver_=", 10)]
+  , tfreq    = [("horizontalWallOrGlassOver_=_Lit", 10)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , tfeature = [Clear]

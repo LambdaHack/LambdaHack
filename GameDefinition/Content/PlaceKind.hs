@@ -42,8 +42,8 @@ rectWindows = PlaceKind
   , ptopLeft = [ "-="
                , "!."
                ]
-  , poverride = [ ('=', "horizontalWallOrGlassOver_=")
-                , ('!', "verticalWallOrGlassOver_!") ]
+  , poverride = [ ('=', "horizontalWallOrGlassOver_=_Lit")
+                , ('!', "verticalWallOrGlassOver_!_Lit") ]
   }
 ruin = PlaceKind
   { psymbol  = 'R'
