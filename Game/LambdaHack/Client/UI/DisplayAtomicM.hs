@@ -617,16 +617,18 @@ quitFactionUI fid mbody toSt = do
                                                  (ov, [])
                     km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
                     return $! km == K.spaceKM
-            viewItems pointer = do
-              (ekm, pointer2) <- displayChoiceScreen ColorFull False pointer
-                                                     itemSlides keys
-              case ekm of
-                Left km | km == K.spaceKM -> return True
-                Left km | km == K.escKM -> return False
-                Left _ -> assert `failure` ekm
-                Right slot -> do
-                  go2 <- examItem slot
-                  if go2 then viewItems pointer2 else return True
+            viewItems pointer =
+              if itemSlides == emptySlideshow then return True
+              else do
+                (ekm, pointer2) <- displayChoiceScreen ColorFull False pointer
+                                                       itemSlides keys
+                case ekm of
+                  Left km | km == K.spaceKM -> return True
+                  Left km | km == K.escKM -> return False
+                  Left _ -> assert `failure` ekm
+                  Right slot -> do
+                    go2 <- examItem slot
+                    if go2 then viewItems pointer2 else return True
         go3 <- viewItems 2
         when go3 $ do
           -- Show score for any UI client after any kind of game exit,
