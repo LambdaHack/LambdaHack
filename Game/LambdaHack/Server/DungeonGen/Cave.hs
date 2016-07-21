@@ -137,37 +137,37 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                 connectPlaces rr0 rr1) allConnects
   let lcorridors = EM.unions (map (digCorridors pickedCorTile) cs)
       lm = EM.union lplaces lcorridors
-  -- Convert wall openings into doors, possibly.
-  let f pos (t, cor) = do
+      -- Convert wall openings into doors, possibly.
+      f pos (hidden, cor) = do
         -- Openings have a certain chance to be doors
         -- and doors have a certain chance to be open.
         rd <- chance cdoorChance
-        if not rd then  -- opening kept
+        if rd then do  -- door created
+          ro <- chance copenChance
+          doorClosedId <- Tile.revealAs cotile hidden
+          if ro then Tile.openTo cotile doorClosedId
+                else return $! doorClosedId
+        else do  -- opening kept
           if Tile.isLit cotile cor then return cor
           else do
-            -- If any adjacent room tile is lit, make the opening lit.
+            -- If any cardinally adjacent room tile lit, make the opening lit.
             let roomTileLit p =
                   case EM.lookup p lplaces of
                     Nothing -> False
                     Just tile -> Tile.isLit cotile tile
-                vic = vicinity cxsize cysize pos
+                vic = vicinityCardinal cxsize cysize pos
             if any roomTileLit vic
-              then return litCorTile
-              else return cor
-        else do
-          ro <- chance copenChance
-          doorClosedId <- Tile.revealAs cotile t
-          if not ro then return $! doorClosedId
-          else do
-            doorOpenId <- Tile.openTo cotile doorClosedId
-            return $! doorOpenId
+            then return litCorTile
+            else return cor
+      -- The hacks below are instead of unionWithKeyM, which is costly.
       mergeCor _ pl cor =
         let hidden = Tile.hideAs cotile pl
-        in if hidden == pl then Nothing else Just (hidden, cor)
-      intersectionCombine combine =
+        in if hidden == pl then Nothing  -- boring tile, can't hide doors
+                           else Just (hidden, cor)
+      intersectionWithKeyMaybe combine =
         EM.mergeWithKey combine (const EM.empty) (const EM.empty)
-      interCor = intersectionCombine mergeCor lplaces lcorridors
-  doorMap <- mapWithKeyM f interCor
+      interCor = intersectionWithKeyMaybe mergeCor lplaces lcorridors  -- fast
+  doorMap <- mapWithKeyM f interCor  -- very small
   let dmap = EM.union doorMap lm
       cave = Cave
         { dkind
