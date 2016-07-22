@@ -296,25 +296,33 @@ gameExit = do
   -- debugPrint "Server kills clients"
   killAllClients
   -- Verify that the not saved perception is equal to future reconstructed.
-  persAccumulated <- getsServer sperFid
-  sperCacheFidAccumulated <- getsServer sperCacheFid
+  sperFid <- getsServer sperFid
+  sperCacheFid <- getsServer sperCacheFid
   sfovAspectActor <- getsServer sfovAspectActor
   sfovLucidLid <- getsServer sfovLucidLid
   sfovClearLid <- getsServer sfovClearLid
   sfovLitLid <- getsServer sfovLitLid
-  let sfovAcc = (sfovAspectActor, sfovLucidLid, sfovClearLid, sfovLitLid)
   sfovAspectItem <- getsServer sfovAspectItem
-  (fovAspectActor, fovLucidLid, fovClearLid, fovLitLid, pers, sperCacheFid) <- getsState $ perFidInDungeon sfovAspectItem
-  let sfov = (fovAspectActor, fovLucidLid, fovClearLid, fovLitLid)
-  let !_A1 = assert (persAccumulated == pers
+  (fovAspectActor, fovLucidLid, fovClearLid, fovLitLid, perFid, perCacheFid)
+    <- getsState $ perFidInDungeon sfovAspectItem
+  let !_A1 = assert (sperFid == perFid
                      `blame` "wrong accumulated perception"
-                     `twith` (persAccumulated, pers)) ()
-      !_A2 = assert (sperCacheFidAccumulated == sperCacheFid
-                     `blame` "wrong accumulated per cache"
-                     `twith` (sperCacheFidAccumulated, sperCacheFid)) ()
-      !_A3 = assert (sfovAcc == sfov
-                     `blame` "wrong accumulated lights"
-                     `twith` (sfovAcc, sfov)) ()
+                     `twith` (sperFid, perFid)) ()
+      !_A2 = assert (sperCacheFid == perCacheFid
+                     `blame` "wrong accumulated sperCacheFid"
+                     `twith` (sperCacheFid, perCacheFid)) ()
+      !_A3 = assert (sfovAspectActor == fovAspectActor
+                     `blame` "wrong accumulated sfovAspectActor"
+                     `twith` (sfovAspectActor, fovAspectActor)) ()
+      !_A4 = assert (sfovLucidLid == fovLucidLid
+                     `blame` "wrong accumulated sfovLucidLid"
+                     `twith` (sfovLucidLid, fovLucidLid)) ()
+      !_A5 = assert (sfovClearLid == fovClearLid
+                     `blame` "wrong accumulated sfovClearLid"
+                     `twith` (sfovClearLid, fovClearLid)) ()
+      !_A6 = assert (sfovLitLid == fovLitLid
+                     `blame` "wrong accumulated sfovLitLid"
+                     `twith` (sfovLitLid, fovLitLid)) ()
   return ()
 
 restartGame :: (MonadAtomic m, MonadServerReadRequest m)

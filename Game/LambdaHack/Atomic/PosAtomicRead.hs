@@ -236,7 +236,8 @@ resetsFovCmdAtomic cmd fovAspectItem = case cmd of
   itemAffectsSightRadius iid stores aid =
     if not (null $ intersect stores [CEqp, COrgan])
        && case EM.lookup iid fovAspectItem of
-         Just FovAspect{fovSight, fovSmell} -> fovSight /= 0 || fovSmell /= 0
+         Just FovAspect{fovSight, fovSmell, fovNocto} ->
+           fovSight /= 0 || fovSmell /= 0 || fovNocto /= 0
          Nothing -> False
     then Just [aid]
     else Just []
@@ -264,7 +265,8 @@ resetsAspectActorCmdAtomic cmd fovAspectItem = case cmd of
   itemAffectsFovAspect iid stores aid =
     if not (null $ intersect stores [CEqp, COrgan])
        && case EM.lookup iid fovAspectItem of
-         Just FovAspect{..} -> fovSight /= 0 || fovSmell /= 0 || fovLight /= 0
+         Just FovAspect{..} ->
+           fovSight /= 0 || fovSmell /= 0 || fovLight /= 0 || fovNocto /= 0
          Nothing -> False
     then Just aid
     else Nothing
