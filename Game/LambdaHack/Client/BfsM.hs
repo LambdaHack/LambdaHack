@@ -1,9 +1,13 @@
 {-# LANGUAGE CPP, TupleSections #-}
 -- | Breadth first search and realted algorithms using the client monad.
 module Game.LambdaHack.Client.BfsM
-  ( invalidateBfs, getCacheBfsAndPath, getCacheBfs, accessCacheBfs
-  , unexploredDepth, closestUnknown, closestSuspect, closestSmell, furthestKnown
+  ( invalidateBfsAid, invalidateBfsLid, invalidateBfsAll
+  , getCacheBfsAndPath, unexploredDepth
+  , closestUnknown, closestSuspect, closestSmell, furthestKnown
   , closestTriggers, closestItems, closestFoes
+#ifdef EXPOSE_INTERNAL
+  , getCacheBfs
+#endif
   ) where
 
 import Prelude ()
@@ -38,16 +42,36 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind (TileKind)
 
+invBfs :: ( Bool, PointArray.Array BfsDistance
+          , Point, Int, Maybe [Point] )
+       -> ( Bool, PointArray.Array BfsDistance
+          , Point, Int, Maybe [Point] )
+invBfs (_, bfs, target, seps, mpath) =
+  (False, bfs, target, seps, mpath)
+
 invalidateBfs :: ActorId
               -> EM.EnumMap ActorId
                    ( Bool, PointArray.Array BfsDistance
-                   , Point, Int, Maybe [Point])
+                   , Point, Int, Maybe [Point] )
               -> EM.EnumMap ActorId
                    ( Bool, PointArray.Array BfsDistance
-                   , Point, Int, Maybe [Point])
-invalidateBfs =
-  EM.adjust
-    (\(_, bfs, target, seps, mpath) -> (False, bfs, target, seps, mpath))
+                   , Point, Int, Maybe [Point] )
+invalidateBfs = EM.adjust invBfs
+
+invalidateBfsAid :: MonadClient m => ActorId -> m ()
+invalidateBfsAid aid =
+  modifyClient $ \cli -> cli {sbfsD = invalidateBfs aid (sbfsD cli)}
+
+invalidateBfsLid :: MonadClient m => LevelId -> m ()
+invalidateBfsLid lid = do
+  side <- getsClient sside
+  ass <- getsState $ actorAssocs (== side) lid
+  let as = map fst . filter (not . bproj . snd) $ ass
+  mapM_ invalidateBfsAid as
+
+invalidateBfsAll :: MonadClient m => m ()
+invalidateBfsAll =
+  modifyClient $ \cli -> cli {sbfsD = EM.map invBfs (sbfsD cli)}
 
 -- | Get cached BFS data and path or, if not stored, generate,
 -- store and return. Due to laziness, they are not calculated until needed.
@@ -165,12 +189,6 @@ condBFS aid = do
   if canMove
     then return (isEnterable, passUnknown)
     else return (\_ _ -> MoveBlocked, \_ _ -> False)
-
-accessCacheBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
-{-# INLINE accessCacheBfs #-}
-accessCacheBfs aid target = do
-  bfs <- getCacheBfs aid
-  return $! accessBfs bfs target
 
 -- | Furthest (wrt paths) known position.
 furthestKnown :: MonadClient m => ActorId -> m Point

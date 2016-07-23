@@ -578,7 +578,7 @@ markSmellHuman = do
 markSuspectHuman :: MonadClientUI m => m ()
 markSuspectHuman = do
   -- @condBFS@ depends on the setting we change here.
-  modifyClient $ \cli -> cli {sbfsD = EM.empty}
+  invalidateBfsAll
   modifyClient toggleMarkSuspect
   cur <- getsClient smarkSuspect
   promptAdd $

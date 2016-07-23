@@ -13,6 +13,7 @@ import qualified Data.EnumSet as ES
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
+import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -28,6 +29,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.ItemKind (ItemKind)
+import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * RespUpdAtomicAI
@@ -229,8 +231,17 @@ cmdAtomicSemCli :: MonadClientSetup m => UpdAtomic -> m ()
 cmdAtomicSemCli cmd = case cmd of
   UpdCreateActor aid body _ -> createActor aid body
   UpdDestroyActor aid b _ -> destroyActor aid b True
+  UpdCreateItem _iid _ _ (CActor aid s) -> wipeBfsIfItemAffectsSkills [s] aid
+  UpdDestroyItem _iid _ _ (CActor aid s) -> wipeBfsIfItemAffectsSkills [s] aid
   UpdSpotActor aid body _ -> createActor aid body
   UpdLoseActor aid b _ -> destroyActor aid b False
+  UpdSpotItem _iid _ _ (CActor aid s) -> wipeBfsIfItemAffectsSkills [s] aid
+  UpdLoseItem _iid _ _ (CActor aid s) -> wipeBfsIfItemAffectsSkills [s] aid
+  UpdMoveActor aid _ _ -> invalidateBfsAid aid
+  UpdDisplaceActor source target -> do
+    invalidateBfsAid source
+    invalidateBfsAid target
+  UpdMoveItem _iid _ aid s1 s2 -> wipeBfsIfItemAffectsSkills [s1, s2] aid
   UpdLeadFaction fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do
@@ -247,6 +258,8 @@ cmdAtomicSemCli cmd = case cmd of
             cli {stargetD = EM.alter (const $ (,Nothing) <$> mtgt)
                                      aid (stargetD cli)}
   UpdAutoFaction{} -> do
+    -- @condBFS@ depends on the setting we change here.
+    invalidateBfsAll
     -- Clear all targets except the leader's.
     mleader <- getsClient _sleader
     mtgt <- case mleader of
@@ -256,6 +269,18 @@ cmdAtomicSemCli cmd = case cmd of
       cli { stargetD = case (mtgt, mleader) of
               (Just tgt, Just leader) -> EM.singleton leader tgt
               _ -> EM.empty }
+  UpdAlterTile lid _ fromTile toTile -> do
+    cops <- getsState scops
+    when (tileChangeAffectsBfs cops fromTile toTile) $ invalidateBfsLid lid
+  UpdSpotTile lid ts -> do
+    cops <- getsState scops
+    lvl <- getLevel lid
+    let affects (pos, toTile) =
+          let fromTile = lvl `at` pos
+          in tileChangeAffectsBfs cops fromTile toTile
+        bs = map affects ts
+    when (or bs) $ invalidateBfsLid lid
+  UpdLoseTile lid _ -> invalidateBfsLid lid  -- from known to unknown tiles
   UpdDiscover c iid ik seed ldepth -> do
     discoverKind c iid ik
     discoverSeed c iid seed ldepth
@@ -282,6 +307,23 @@ cmdAtomicSemCli cmd = case cmd of
   UpdKillExit _fid -> killExit
   UpdWriteSave -> saveClient
   _ -> return ()
+
+-- For now, only checking the stores.
+wipeBfsIfItemAffectsSkills :: MonadClient m => [CStore] -> ActorId -> m ()
+wipeBfsIfItemAffectsSkills stores aid =
+  unless (null $ intersect stores [CEqp, COrgan]) $ invalidateBfsAid aid
+
+tileChangeAffectsBfs :: Kind.COps
+                     -> Kind.Id TileKind -> Kind.Id TileKind
+                     -> Bool
+tileChangeAffectsBfs Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}}
+                     fromTile toTile =
+  let unknownId = ouniqGroup "unknown space"
+  in unknownId `elem` [fromTile, toTile]
+     || not (Tile.isPassableNoSuspect cotile fromTile
+             && Tile.isPassableNoSuspect cotile toTile
+             || not (Tile.isPassable cotile fromTile)
+                && not (Tile.isPassable cotile toTile))
 
 createActor :: MonadClient m => ActorId -> Actor -> m ()
 createActor aid _b = do
@@ -337,6 +379,9 @@ perception lid outPer inPer = do
 discoverKind :: MonadClient m
              => Container -> ItemId -> Kind.Id ItemKind -> m ()
 discoverKind c iid ik = do
+  -- Wipe out BFS, because the player could potentially learn that his items
+  -- affect his actors' skills relevant to BFS.
+  invalidateBfsAll
   item <- getsState $ getItemBody iid
   let f Nothing = Just ik
       f Just{} = assert `failure` "already discovered"
@@ -355,6 +400,9 @@ coverKind c iid ik = do
 discoverSeed :: MonadClient m
              => Container -> ItemId -> ItemSeed -> AbsDepth -> m ()
 discoverSeed c iid seed ldepth = do
+  -- Wipe out BFS, because the player could potentially learn that his items
+  -- affect his actors' skills relevant to BFS.
+  invalidateBfsAll
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   discoKind <- getsClient sdiscoKind
   item <- getsState $ getItemBody iid
