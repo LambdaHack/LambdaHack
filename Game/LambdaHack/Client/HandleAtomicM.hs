@@ -269,9 +269,12 @@ cmdAtomicSemCli cmd = case cmd of
       cli { stargetD = case (mtgt, mleader) of
               (Just tgt, Just leader) -> EM.singleton leader tgt
               _ -> EM.empty }
-  UpdAlterTile lid _ fromTile toTile -> do
+  UpdAlterTile lid pos _fromTile toTile -> do
     cops <- getsState scops
-    when (tileChangeAffectsBfs cops fromTile toTile) $ invalidateBfsLid lid
+    lvl <- getLevel lid
+    let assumedTile = lvl `at` pos
+    when (tileChangeAffectsBfs cops assumedTile toTile) $
+      invalidateBfsLid lid
   UpdSpotTile lid ts -> do
     cops <- getsState scops
     lvl <- getLevel lid
