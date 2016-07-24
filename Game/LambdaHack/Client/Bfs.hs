@@ -116,41 +116,40 @@ findPathBfs :: (Point -> Point -> MoveLegal)
 {-# INLINE findPathBfs #-}
 findPathBfs isEnterable passUnknown source target sepsRaw bfs =
   assert (bfs PointArray.! source == minKnownBfs) $
-  let targetDist = bfs PointArray.! target
+  let eps = sepsRaw `mod` 4
+      (mc1, mc2) = splitAt eps movesCardinal
+      (md1, md2) = splitAt eps movesDiagonal
+      preferredMoves = mc1 ++ reverse mc2 ++ md2 ++ reverse md1  -- fuzz
+      track :: Point -> BfsDistance -> [Point] -> [Point]
+      track pos oldDist suffix | oldDist == minKnownBfs =
+        assert (pos == source
+                `blame` (source, target, pos, suffix)) suffix
+      track pos oldDist suffix | oldDist > minKnownBfs =
+        let dist = pred oldDist
+            children = map (shift pos) preferredMoves
+            matchesDist p = bfs PointArray.! p == dist
+                            && isEnterable p pos == MoveToOpen
+            minP = fromMaybe (assert `failure` (pos, oldDist, children))
+                             (find matchesDist children)
+        in track minP dist (pos : suffix)
+      track pos oldDist suffix =
+        let distUnknown = pred oldDist
+            distKnown = distUnknown .|. minKnownBfs
+            children = map (shift pos) preferredMoves
+            matchesDistUnknown p = bfs PointArray.! p == distUnknown
+                                   && passUnknown p pos
+            matchesDistKnown p = bfs PointArray.! p == distKnown
+                                 && isEnterable p pos == MoveToUnknown
+            (minP, dist) = case find matchesDistKnown children of
+              Just p -> (p, distKnown)
+              Nothing -> case find matchesDistUnknown children of
+                Just p -> (p, distUnknown)
+                Nothing -> assert `failure` (pos, oldDist, children)
+        in track minP dist (pos : suffix)
+      targetDist = bfs PointArray.! target
   in if targetDist == apartBfs
      then Nothing
-     else
-       let eps = sepsRaw `mod` 4
-           (mc1, mc2) = splitAt eps movesCardinal
-           (md1, md2) = splitAt eps movesDiagonal
-           preferredMoves = mc1 ++ reverse mc2 ++ md2 ++ reverse md1  -- fuzz
-           track :: Point -> BfsDistance -> [Point] -> [Point]
-           track pos oldDist suffix | oldDist == minKnownBfs =
-             assert (pos == source
-                     `blame` (source, target, pos, suffix)) suffix
-           track pos oldDist suffix | oldDist > minKnownBfs =
-             let dist = pred oldDist
-                 children = map (shift pos) preferredMoves
-                 matchesDist p = bfs PointArray.! p == dist
-                                 && isEnterable p pos == MoveToOpen
-                 minP = fromMaybe (assert `failure` (pos, oldDist, children))
-                                  (find matchesDist children)
-             in track minP dist (pos : suffix)
-           track pos oldDist suffix =
-             let distUnknown = pred oldDist
-                 distKnown = distUnknown .|. minKnownBfs
-                 children = map (shift pos) preferredMoves
-                 matchesDistUnknown p = bfs PointArray.! p == distUnknown
-                                        && passUnknown p pos
-                 matchesDistKnown p = bfs PointArray.! p == distKnown
-                                      && isEnterable p pos == MoveToUnknown
-                 (minP, dist) = case find matchesDistKnown children of
-                   Just p -> (p, distKnown)
-                   Nothing -> case find matchesDistUnknown children of
-                     Just p -> (p, distUnknown)
-                     Nothing -> assert `failure` (pos, oldDist, children)
-             in track minP dist (pos : suffix)
-       in Just $ track target targetDist []
+     else Just $ track target targetDist []
 
 -- | Access a BFS array and interpret the looked up distance value.
 accessBfs :: PointArray.Array BfsDistance -> Point -> Maybe Int
