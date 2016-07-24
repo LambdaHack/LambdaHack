@@ -52,7 +52,6 @@ fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
 {-# INLINE fillBfs #-}
 fillBfs isEnterable passUnknown origin aInitial =
   let maxKnownBfs = pred maxBound
-      predMaxKnownBfs = pred maxKnownBfs
       bfs :: BfsDistance
           -> [Point]
           -> [Point]
@@ -94,7 +93,7 @@ fillBfs isEnterable passUnknown origin aInitial =
             (succU4, !a4) = foldl' processUnknown ([], a) predU
             (succK6, succU6, !a6) = foldl' processKnown ([], succU4, a4) predK
         in if null succK6 && null succU6  -- no more dungeon positions to check
-              || distance == predMaxKnownBfs  -- wasting one Known slot
+              || distance == maxKnownBfs  -- wasting one Known slot
            then a6  -- too far
            else bfs (succ distance) succK6 succU6 a6
   in bfs (succ minKnownBfs) [origin] []
