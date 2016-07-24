@@ -97,7 +97,7 @@ getCacheBfsAndPath aid target = do
   case mbfs of
     Just (True, bfs, targetOld, sepsOld, mpath)
       -- TODO: hack: in screensavers this is not always ensured, so check here:
-      | bfs PointArray.! bpos b == succ apartBfs ->
+      | bfs PointArray.! bpos b == minKnownBfs ->
       if targetOld == target && sepsOld == seps
       then return (bfs, mpath)
       else pathAndStore bfs

@@ -1,11 +1,10 @@
 {-# LANGUAGE CPP, GeneralizedNewtypeDeriving #-}
 -- | Breadth first search algorithms.
 module Game.LambdaHack.Client.Bfs
-  ( BfsDistance, MoveLegal(..), apartBfs
+  ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs
   , fillBfs, findPathBfs, accessBfs
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , minKnownBfs
 #endif
   ) where
 
@@ -33,11 +32,25 @@ data MoveLegal = MoveBlocked | MoveToOpen | MoveToUnknown
 minKnownBfs :: BfsDistance
 minKnownBfs = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
 
--- | The distance value that denote no legal path between points.
--- The next value is the minimal distance value assigned to paths
--- that don't enter any unknown tiles.
+-- | The distance value that denotes no legal path between points,
+-- either due to blocked tiles or pathfinding aborted at earlier tiles.
 apartBfs :: BfsDistance
 apartBfs = pred minKnownBfs
+
+-- | The distance value that denotes that path search was aborted
+-- at this tile due to too large actual distance
+-- and that the tile was known and not blocked.
+-- It is also a true distance value for this tile
+-- (shifted by minKnownBfs, as all distances of known tiles).
+abortedKnownBfs :: BfsDistance
+abortedKnownBfs = pred maxBound
+
+-- | The distance value that denotes that path search was aborted
+-- at this tile due to too large actual distance
+-- and that the tile was unknown.
+-- It is also a true distance value for this tile.
+abortedUnknownBfs :: BfsDistance
+abortedUnknownBfs = pred apartBfs
 
 -- TODO: costly; use a ring buffer instead of the lists, don't call so often
 -- | Fill out the given BFS array.
@@ -51,8 +64,7 @@ fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
 {-# INLINE fillBfs #-}
 fillBfs isEnterable passUnknown origin aInitial =
-  let maxKnownBfs = pred maxBound
-      bfs :: BfsDistance
+  let bfs :: BfsDistance
           -> [Point]
           -> [Point]
           -> PointArray.Array BfsDistance
@@ -92,10 +104,13 @@ fillBfs isEnterable passUnknown origin aInitial =
               in (mvsU ++ succU2, a3)
             (succU4, !a4) = foldl' processUnknown ([], a) predU
             (succK6, succU6, !a6) = foldl' processKnown ([], succU4, a4) predK
-        in if null succK6 && null succU6  -- no more dungeon positions to check
-              || distance == maxKnownBfs  -- wasting one Known slot
-           then a6  -- too far
-           else bfs (succ distance) succK6 succU6 a6
+        in if | null succK6 && null succU6 ->
+                a6  -- no more dungeon positions to check
+              | distance == pred abortedKnownBfs ->  -- too far
+                let upd = zip succK6 (repeat abortedKnownBfs)
+                          ++ zip succU6 (repeat abortedUnknownBfs)
+                in PointArray.unsafeUpdateA a6 upd
+              | otherwise -> bfs (succ distance) succK6 succU6 a6
   in bfs (succ minKnownBfs) [origin] []
          (PointArray.unsafeUpdateA aInitial [(origin, minKnownBfs)])
 
