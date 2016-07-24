@@ -71,12 +71,12 @@ targetStrategy aid = do
              | bpos b == q ->
                Just (tgt, (q : rest, (goal, len - 1)))  -- step along path
              | otherwise -> Nothing  -- veered off the path
-        ([p], (goal, _)) -> do
-          let !_A = assert (p == goal `blame` (aid, b, mtgtMPath)) ()
-          if bpos b == p then
+        ([p], (goal, _)) ->
+          if p == goal && bpos b == p then
             Just (tgt, path)  -- goal reached; stay there picking up items
           else
-            Nothing  -- somebody pushed us off the goal; let's target again
+            Nothing  -- somebody pushed us off the goal or the path to the goal
+                     -- was partial; let's target again
         ([], _) -> assert `failure` (aid, b, mtgtMPath)
     Nothing -> return Nothing  -- no target assigned yet
   let !_A = assert (not $ bproj b) ()  -- would work, but is probably a bug
@@ -154,13 +154,13 @@ targetStrategy aid = do
         mpath <- createPath aid tgt
         let take5 (TEnemy{}, pgl) =
               (tgt, Just pgl)  -- for projecting, even by roaming actors
-            take5 (_, pgl@(path, (goal, _))) =
+            take5 (_, pgl@(path, (goal, len))) =
               if slackTactic then
                 -- Best path only followed 5 moves; then straight on.
                 let path5 = take 5 path
                     vtgt | bpos b == goal = tgt
                          | otherwise = TVector $ towards (bpos b) goal
-                in (vtgt, Just (path5, (last path5, length path5 - 1)))
+                in (vtgt, Just (path5, (goal, len)))
               else (tgt, Just pgl)
         return $! returN "setPath" $ maybe (tgt, Nothing) take5 mpath
       pickNewTarget :: m (Strategy (Target, Maybe PathEtc))
@@ -280,11 +280,12 @@ targetStrategy aid = do
                (bfs, mpath) <- getCacheBfsAndPath aid p
                case mpath of
                  Nothing -> pickNewTarget  -- enemy became unreachable
-                 Just path ->
-                    return $! returN "TEnemy"
-                      (oldTgt, Just ( bpos b : path
-                                    , (p, fromMaybe (assert `failure` mpath)
-                                          $ accessBfs bfs p) ))
+                 Just [] -> pickNewTarget  -- not even single step possible
+                 Just path -> return $! returN "TEnemy"
+                   ( oldTgt
+                   , let lenPartial = length path + chessDist p (last path)
+                     in Just ( bpos b : path
+                             , (p, fromMaybe lenPartial $ accessBfs bfs p) ))
         TEnemyPos _ lid p permit  -- chase last position even if foe hides
           | lid /= blid b  -- wrong level
             || chessDist (bpos b) p >= nearby  -- too far and not visible
@@ -360,6 +361,9 @@ createPath aid tgt = do
       (bfs, mpath) <- getCacheBfsAndPath aid p
       return $! case mpath of
         Nothing -> Nothing
-        Just path -> Just (tgt, ( bpos b : path
-                                , (p, fromMaybe (assert `failure` mpath)
-                                      $ accessBfs bfs p) ))
+        Just path ->
+          let lenPartial = case length path of
+                0 -> 0
+                n -> n + chessDist p (last path)
+          in Just (tgt, ( bpos b : path
+                        , (p, fromMaybe lenPartial $ accessBfs bfs p) ))
