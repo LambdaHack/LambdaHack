@@ -123,9 +123,16 @@ findPathBfs isEnterable source target sepsRaw bfs =
             children = map (shift pos) preferredMoves
             matchesDist p = bfs PointArray.! p == dist
                             && isEnterable p pos /= MoveBlocked
-            minP = fromMaybe (assert `failure` (pos, oldDist, children))
-                             (find matchesDist children)
-        in track minP dist (pos : suffix)
+            f :: (Point, Int) -> Point -> (Point, Int)
+            f acc@(_, chessAcc) p =
+              let chessNew = chessDist target p
+              in if matchesDist p && chessNew < chessAcc
+                 then (p, chessNew)
+                 else acc
+            (pRes, chessRes) = foldl' f (originPoint, maxBound) children
+        in if chessRes == maxBound
+           then assert `failure` (pos, oldDist, children)
+           else track pRes dist (pos : suffix)
       targetDist = bfs PointArray.! target
   in if targetDist /= apartBfs
      then Just $ track target targetDist []
@@ -134,7 +141,7 @@ findPathBfs isEnterable source target sepsRaw bfs =
               f acc@(pAcc, dAcc, chessAcc) p d =
                 if d > abortedUnknownBfs && d /= abortedKnownBfs
                 then acc
-                else let chessNew = chessDist p target
+                else let chessNew = chessDist target p
                      in case compare chessNew chessAcc of
                        LT -> (p, d, chessNew)
                        EQ -> case compare d dAcc of
