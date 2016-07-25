@@ -63,15 +63,14 @@ fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
 {-# INLINE fillBfs #-}
-fillBfs isEnterable passUnknown origin aInitial =
+fillBfs isEnterable _passUnknown origin aInitial =
   let bfs :: BfsDistance
           -> [Point]
-          -> [Point]
           -> PointArray.Array BfsDistance
           -> PointArray.Array BfsDistance
-      bfs distance predK predU a =
+      bfs distance predK a =
         let distCompl = distance .&. complement minKnownBfs
-            processKnown (succK2, succU2, a2) pos =
+            processKnown (succK2, a2) pos =
               let fKnown (lK, lU) move =
                     let p = shift pos move
                         freshMv = a2 PointArray.! p == apartBfs
@@ -89,25 +88,12 @@ fillBfs isEnterable passUnknown origin aInitial =
                   upd = zip mvsK (repeat distance)
                         ++ zip mvsU (repeat distCompl)
                   !a3 = PointArray.unsafeUpdateA a2 upd
-              in (mvsK ++ succK2, mvsU ++ succU2, a3)
-            processUnknown (succU2, a2) pos =
-              let fUnknown lU move =
-                    let p = shift pos move
-                        freshMv = a2 PointArray.! p == apartBfs
-                        notBlocked = passUnknown pos p
-                    in if freshMv && notBlocked
-                       then p : lU
-                       else lU
-                  mvsU = foldl' fUnknown [] moves
-                  upd = zip mvsU (repeat distCompl)
-                  !a3 = PointArray.unsafeUpdateA a2 upd
-              in (mvsU ++ succU2, a3)
-            (succU4, !a4) = foldl' processUnknown ([], a) predU
-            (succK6, succU6, !a6) = foldl' processKnown ([], succU4, a4) predK
-        in if null succK6 && null succU6 || distance == abortedKnownBfs
-           then a6  -- no more dungeon positions to check or too far
-           else bfs (succ distance) succK6 succU6 a6
-  in bfs (succ minKnownBfs) [origin] []
+              in (mvsK ++ succK2, a3)
+            (succK6, !a4) = foldl' processKnown ([], a) predK
+        in if null succK6 || distance == abortedKnownBfs
+           then a4  -- no more dungeon positions to check or too far
+           else bfs (succ distance) succK6 a4
+  in bfs (succ minKnownBfs) [origin]
          (PointArray.unsafeUpdateA aInitial [(origin, minKnownBfs)])
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
