@@ -258,6 +258,8 @@ closestSuspect aid = do
       suspect = PointArray.ifoldlA' f [] $ ltile lvl
   case suspect of
     [] -> do
+      -- We assume @closestSuspect@ is called only when there are no more
+      -- pathable unknown tiles on the map.
       -- If the level has inaccessible open areas (at least from some stairs)
       -- here finally mark it explored, to enable transition to other levels.
       -- We should generally avoid such levels, because digging and/or trying

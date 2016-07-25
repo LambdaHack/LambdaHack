@@ -161,9 +161,23 @@ findPathBfs isEnterable passUnknown source target sepsRaw bfs =
                 Nothing -> assert `failure` (pos, oldDist, children)
         in track minP dist (pos : suffix)
       targetDist = bfs PointArray.! target
-  in if targetDist == apartBfs
-     then Nothing
-     else Just $ track target targetDist []
+  in if targetDist /= apartBfs
+     then Just $ track target targetDist []
+     else let f :: (Point, BfsDistance, Int) -> Point -> BfsDistance
+                -> (Point, BfsDistance, Int)
+              f acc@(_, dAcc, chessAcc) p d =
+                if d > abortedUnknownBfs && d /= abortedKnownBfs
+                then acc
+                else let chessNew = chessDist p target
+                     in case compare chessNew chessAcc of
+                       LT -> (p, d, chessNew)
+                       EQ | d < dAcc -> (p, d, chessNew)
+                       _ -> acc
+              (pRes, dRes, chessRes) =
+                PointArray.ifoldlA' f (originPoint, apartBfs, maxBound) bfs
+          in if chessRes == maxBound
+             then Nothing
+             else Just $ track pRes dRes []
 
 -- | Access a BFS array and interpret the looked up distance value.
 accessBfs :: PointArray.Array BfsDistance -> Point -> Maybe Int
