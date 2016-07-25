@@ -82,11 +82,11 @@ getCacheBfsAndPath aid target = do
   seps <- getsClient seps
   b <- getsState $ getActorBody aid
   let origin = bpos b
-  (isEnterable, passUnknown) <- condBFS aid
+  isEnterable <- condBFS aid
   let pathAndStore :: PointArray.Array BfsDistance
                    -> m (PointArray.Array BfsDistance, Maybe [Point])
       pathAndStore bfs = do
-        let mpath = findPathBfs isEnterable passUnknown origin target seps bfs
+        let mpath = findPathBfs isEnterable origin target seps bfs
         modifyClient $ \cli ->
           cli {sbfsD = EM.insert aid (True, bfs, target, seps, mpath)
                                  (sbfsD cli)}
@@ -113,7 +113,7 @@ getCacheBfsAndPath aid target = do
               PointArray.safeSetA apartBfs bfsInvalid
             _ ->
               PointArray.replicateA lxsize lysize apartBfs
-          bfs = fillBfs isEnterable passUnknown origin vInitial
+          bfs = fillBfs isEnterable origin vInitial
       pathAndStore bfs
 
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
@@ -128,8 +128,7 @@ getCacheBfs aid = do
 
 condBFS :: MonadClient m
         => ActorId
-        -> m (Point -> Point -> MoveLegal,
-              Point -> Point -> Bool)
+        -> m (Point -> Point -> MoveLegal)
 {-# INLINE condBFS #-}
 condBFS aid = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
@@ -177,18 +176,9 @@ condBFS aid = do
                 && not (Tile.isChangeable cotile st)  -- takes time to change
                 && allOK -> MoveToOpen
               | otherwise -> MoveBlocked
-      -- Legality of move from an unknown tile, assuming unknown are open.
-      passUnknown :: Point -> Point -> Bool
-      {-# INLINE passUnknown #-}
-      passUnknown = case chAccess of  -- spos is unknown, so not a door
-        Nothing -> \_ tpos -> let tt = lvl `at` tpos
-                              in tt == unknownId
-        Just ch -> \spos tpos -> let tt = lvl `at` tpos
-                                 in tt == unknownId
-                                    && ch spos tpos
   if canMove
-    then return (isEnterable, passUnknown)
-    else return (\_ _ -> MoveBlocked, \_ _ -> False)
+    then return isEnterable
+    else return $ \_ _ -> MoveBlocked
 
 -- | Furthest (wrt paths) known position.
 furthestKnown :: MonadClient m => ActorId -> m Point

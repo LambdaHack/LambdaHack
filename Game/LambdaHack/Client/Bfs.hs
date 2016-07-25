@@ -58,12 +58,11 @@ abortedUnknownBfs = pred apartBfs
 -- values of the vector don't leak anywhere outside nor are kept unevaluated
 -- and so they can't be overwritten by the unsafe side-effect.
 fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
-        -> (Point -> Point -> Bool)       -- ^ is a move from unknown legal
         -> Point                          -- ^ starting position
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
 {-# INLINE fillBfs #-}
-fillBfs isEnterable _passUnknown origin aInitial =
+fillBfs isEnterable origin aInitial =
   let bfs :: BfsDistance
           -> [Point]
           -> PointArray.Array BfsDistance
@@ -106,11 +105,10 @@ fillBfs isEnterable _passUnknown origin aInitial =
 -- directions available) that path should prefer, where 0 means north-west
 -- and 1 means north.
 findPathBfs :: (Point -> Point -> MoveLegal)
-            -> (Point -> Point -> Bool)
             -> Point -> Point -> Int -> PointArray.Array BfsDistance
             -> Maybe [Point]
 {-# INLINE findPathBfs #-}
-findPathBfs isEnterable _passUnknown source target sepsRaw bfs =
+findPathBfs isEnterable source target sepsRaw bfs =
   assert (bfs PointArray.! source == minKnownBfs) $
   let eps = sepsRaw `mod` 4
       (mc1, mc2) = splitAt eps movesCardinal
