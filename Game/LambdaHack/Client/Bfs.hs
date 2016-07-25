@@ -104,13 +104,9 @@ fillBfs isEnterable passUnknown origin aInitial =
               in (mvsU ++ succU2, a3)
             (succU4, !a4) = foldl' processUnknown ([], a) predU
             (succK6, succU6, !a6) = foldl' processKnown ([], succU4, a4) predK
-        in if | null succK6 && null succU6 ->
-                a6  -- no more dungeon positions to check
-              | distance == pred abortedKnownBfs ->  -- too far
-                let upd = zip succK6 (repeat abortedKnownBfs)
-                          ++ zip succU6 (repeat abortedUnknownBfs)
-                in PointArray.unsafeUpdateA a6 upd
-              | otherwise -> bfs (succ distance) succK6 succU6 a6
+        in if null succK6 && null succU6 || distance == abortedKnownBfs
+           then a6  -- no more dungeon positions to check or too far
+           else bfs (succ distance) succK6 succU6 a6
   in bfs (succ minKnownBfs) [origin] []
          (PointArray.unsafeUpdateA aInitial [(origin, minKnownBfs)])
 
