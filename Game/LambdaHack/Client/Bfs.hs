@@ -110,7 +110,7 @@ findPathBfs :: (Point -> Point -> MoveLegal)
             -> Point -> Point -> Int -> PointArray.Array BfsDistance
             -> Maybe [Point]
 {-# INLINE findPathBfs #-}
-findPathBfs isEnterable passUnknown source target sepsRaw bfs =
+findPathBfs isEnterable _passUnknown source target sepsRaw bfs =
   assert (bfs PointArray.! source == minKnownBfs) $
   let eps = sepsRaw `mod` 4
       (mc1, mc2) = splitAt eps movesCardinal
@@ -120,27 +120,13 @@ findPathBfs isEnterable passUnknown source target sepsRaw bfs =
       track pos oldDist suffix | oldDist == minKnownBfs =
         assert (pos == source
                 `blame` (source, target, pos, suffix)) suffix
-      track pos oldDist suffix | oldDist > minKnownBfs =
-        let dist = pred oldDist
+      track pos oldDist suffix =
+        let dist = pred oldDist .|. minKnownBfs
             children = map (shift pos) preferredMoves
             matchesDist p = bfs PointArray.! p == dist
-                            && isEnterable p pos == MoveToOpen
+                            && isEnterable p pos /= MoveBlocked
             minP = fromMaybe (assert `failure` (pos, oldDist, children))
                              (find matchesDist children)
-        in track minP dist (pos : suffix)
-      track pos oldDist suffix =
-        let distUnknown = pred oldDist
-            distKnown = distUnknown .|. minKnownBfs
-            children = map (shift pos) preferredMoves
-            matchesDistUnknown p = bfs PointArray.! p == distUnknown
-                                   && passUnknown p pos
-            matchesDistKnown p = bfs PointArray.! p == distKnown
-                                 && isEnterable p pos == MoveToUnknown
-            (minP, dist) = case find matchesDistKnown children of
-              Just p -> (p, distKnown)
-              Nothing -> case find matchesDistUnknown children of
-                Just p -> (p, distUnknown)
-                Nothing -> assert `failure` (pos, oldDist, children)
         in track minP dist (pos : suffix)
       targetDist = bfs PointArray.! target
   in if targetDist /= apartBfs
