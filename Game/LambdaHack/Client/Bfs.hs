@@ -147,13 +147,17 @@ findPathBfs isEnterable passUnknown source target sepsRaw bfs =
      then Just $ track target targetDist []
      else let f :: (Point, BfsDistance, Int) -> Point -> BfsDistance
                 -> (Point, BfsDistance, Int)
-              f acc@(_, dAcc, chessAcc) p d =
+              f acc@(pAcc, dAcc, chessAcc) p d =
                 if d > abortedUnknownBfs && d /= abortedKnownBfs
                 then acc
                 else let chessNew = chessDist p target
                      in case compare chessNew chessAcc of
                        LT -> (p, d, chessNew)
-                       EQ | d < dAcc -> (p, d, chessNew)
+                       EQ -> case compare d dAcc of
+                         LT -> (p, d, chessNew)
+                         EQ | euclidDistSq p target
+                              < euclidDistSq pAcc target -> (p, d, chessNew)
+                         _ -> acc
                        _ -> acc
               (pRes, dRes, chessRes) =
                 PointArray.ifoldlA' f (originPoint, apartBfs, maxBound) bfs
