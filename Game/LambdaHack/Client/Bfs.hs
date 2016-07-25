@@ -62,7 +62,7 @@ fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
 {-# INLINE fillBfs #-}
-fillBfs isEnterable origin aInitial =
+fillBfs isEnterable source aInitial =
   let bfs :: BfsDistance
           -> [Point]
           -> PointArray.Array BfsDistance
@@ -88,12 +88,12 @@ fillBfs isEnterable origin aInitial =
                         ++ zip mvsU (repeat distCompl)
                   !a3 = PointArray.unsafeUpdateA a2 upd
               in (mvsK ++ succK2, a3)
-            (succK6, !a4) = foldl' processKnown ([], a) predK
-        in if null succK6 || distance == abortedKnownBfs
+            (succK4, !a4) = foldl' processKnown ([], a) predK
+        in if null succK4 || distance == abortedKnownBfs
            then a4  -- no more dungeon positions to check or too far
-           else bfs (succ distance) succK6 a4
-  in bfs (succ minKnownBfs) [origin]
-         (PointArray.unsafeUpdateA aInitial [(origin, minKnownBfs)])
+           else bfs (succ distance) succK4 a4
+  in bfs (succ minKnownBfs) [source]
+         (PointArray.unsafeUpdateA aInitial [(source, minKnownBfs)])
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
 -- to determine a few really different paths and compare them,
@@ -105,7 +105,8 @@ fillBfs isEnterable origin aInitial =
 -- directions available) that path should prefer, where 0 means north-west
 -- and 1 means north.
 findPathBfs :: (Point -> Point -> MoveLegal)
-            -> Point -> Point -> Int -> PointArray.Array BfsDistance
+            -> Point -> Point -> Int
+            -> PointArray.Array BfsDistance
             -> Maybe [Point]
 {-# INLINE findPathBfs #-}
 findPathBfs isEnterable source target sepsRaw bfs =
@@ -119,7 +120,7 @@ findPathBfs isEnterable source target sepsRaw bfs =
         assert (pos == source
                 `blame` (source, target, pos, suffix)) suffix
       track pos oldDist suffix =
-        let dist = pred oldDist .|. minKnownBfs
+        let dist = pred oldDist
             children = map (shift pos) preferredMoves
             matchesDist p = bfs PointArray.! p == dist
                             && isEnterable p pos /= MoveBlocked
@@ -128,7 +129,7 @@ findPathBfs isEnterable source target sepsRaw bfs =
         in track minP dist (pos : suffix)
       targetDist = bfs PointArray.! target
   in if targetDist /= apartBfs
-     then Just $ track target targetDist []
+     then Just $ track target (targetDist .|. minKnownBfs) []
      else let f :: (Point, BfsDistance, Int) -> Point -> BfsDistance
                 -> (Point, BfsDistance, Int)
               f acc@(pAcc, dAcc, chessAcc) p d =
@@ -147,7 +148,7 @@ findPathBfs isEnterable source target sepsRaw bfs =
                 PointArray.ifoldlA' f (originPoint, apartBfs, maxBound) bfs
           in if chessRes == maxBound
              then Nothing
-             else Just $ track pRes dRes []
+             else Just $ track pRes (dRes .|. minKnownBfs) []
 
 -- | Access a BFS array and interpret the looked up distance value.
 accessBfs :: PointArray.Array BfsDistance -> Point -> Maybe Int
