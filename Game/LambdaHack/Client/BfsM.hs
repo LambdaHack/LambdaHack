@@ -160,8 +160,8 @@ condBFS aid = do
   -- so it's amortized. We treat unknown tiles specially.
   let unknownId = ouniqGroup "unknown space"
       chAccess = checkAccess cops lvl
-      chDoorAccess = [checkDoorAccess cops lvl | canSearchAndOpen]
-      conditions = catMaybes $ chAccess : chDoorAccess
+      chDoorAccess = checkDoorAccess cops lvl
+      conditions = catMaybes $ [chAccess, chDoorAccess]
       -- Legality of move from a known tile, assuming doors freely openable.
       isEnterable :: Point -> Point -> MoveLegal
       {-# INLINE isEnterable #-}
