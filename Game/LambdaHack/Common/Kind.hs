@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, RankNTypes, TypeFamilies #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
   ( Id, Speedup, Ops(..), COps(..), createOps, stdRuleset
@@ -8,14 +7,13 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.Ix as Ix
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Frequency
+import Game.LambdaHack.Common.KindOps
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.CaveKind
@@ -25,38 +23,13 @@ import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
--- | Content identifiers for the content type @c@.
-newtype Id c = Id Word8
-  deriving (Show, Eq, Ord, Ix.Ix, Enum, Bounded, Binary)
-
--- | Type family for auxiliary data structures for speeding up
--- content operations.
-type family Speedup a
-
--- | Content operations for the content of type @a@.
-data Ops a = Ops
-  { okind         :: Id a -> a          -- ^ the content element at given id
-  , ouniqGroup    :: GroupName a -> Id a  -- ^ the id of the unique member of
-                                          --   a singleton content group
-  , opick         :: GroupName a -> (a -> Bool) -> Rnd (Maybe (Id a))
-                                    -- ^ pick a random id belonging to a group
-                                    --   and satisfying a predicate
-  , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
-                                    -- ^ fold over all content elements of @a@
-  , ofoldrGroup   :: forall b.
-                     GroupName a -> (Int -> Id a -> a -> b -> b) -> b -> b
-                                    -- ^ fold over the given group only
-  , obounds       :: !(Id a, Id a)  -- ^ bounds of identifiers of content @a@
-  , ospeedup      :: !(Maybe (Speedup a))  -- ^ auxiliary speedup components
-  }
-
 -- | Create content operations for type @a@ from definition of content
 -- of type @a@.
 createOps :: forall a. Show a => ContentDef a -> Ops a
 createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
   assert (length content <= fromEnum (maxBound :: Id a)) $
   let kindMap :: EM.EnumMap (Id a) a
-      !kindMap = EM.fromDistinctAscList $ zip [Id 0..] content
+      !kindMap = EM.fromDistinctAscList $ zip [toEnum 0..] content
       kindFreq :: M.Map (GroupName a) [(Int, (Id a, a))]
       kindFreq =
         let tuples = [ (cgroup, (n, (i, k)))
@@ -125,12 +98,12 @@ data COps = COps
   , coSlow  :: !Bool
   }
 
--- | The standard ruleset used for level operations.
-stdRuleset :: Ops RuleKind -> RuleKind
-stdRuleset Ops{ouniqGroup, okind} = okind $ ouniqGroup "standard"
-
 instance Show COps where
   show _ = "game content"
 
 instance Eq COps where
   (==) _ _ = True
+
+-- | The standard ruleset used for level operations.
+stdRuleset :: Ops RuleKind -> RuleKind
+stdRuleset Ops{ouniqGroup, okind} = okind $ ouniqGroup "standard"
