@@ -170,12 +170,10 @@ condBFS aid = do
             tt = lvl `at` tpos
             allOK = all (\f -> f spos tpos) conditions
         in if | tt == unknownId ->
-                if not (Tile.isSuspect cotile st) && allOK
+                if not (enterSuspect && Tile.isSuspect cotile st) && allOK
                 then MoveToUnknown
                 else MoveBlocked
-              | isPassable cotile tt
-                && not (Tile.isChangeable cotile st)  -- takes time to change
-                && allOK -> MoveToOpen
+              | isPassable cotile tt && allOK -> MoveToOpen
               | otherwise -> MoveBlocked
   if canMove
     then return isEnterable
