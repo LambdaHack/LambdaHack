@@ -123,10 +123,18 @@ findPathBfs isEnterable source target sepsRaw bfs =
       track pos oldDist suffix =
         let dist = pred oldDist
             children = map (shift pos) preferredMoves
-            matchesDist p = bfs PointArray.! p == dist
-                            && isEnterable p pos /= MoveBlocked
-            minP = fromMaybe (assert `failure` (pos, oldDist, children))
-                             (find matchesDist children)
+            f acc@(lo, lc) p = if bfs PointArray.! p /= dist
+                               then acc
+                               else case isEnterable p pos of
+                                 MoveToOpen -> (p : lo, lc)
+                                 MoveToUnknown -> (p : lo, lc)
+                                 MoveToClosed -> (lo, p : lc)
+                                 MoveBlocked -> acc
+            (childrenOpen, childrenClosed) = foldl' f ([], []) children
+            -- Prefer paths through open or unknown tiles.
+            minP = case childrenOpen ++ childrenClosed of
+              p : _ -> p
+              [] -> assert `failure` (pos, oldDist, children)
         in track minP dist (pos : suffix)
       targetDist = bfs PointArray.! target
   in if targetDist /= apartBfs
