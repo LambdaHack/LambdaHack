@@ -40,6 +40,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.RuleKind (raccessible)
 import Game.LambdaHack.Content.TileKind (TileKind)
 
 invBfs :: ( Bool, PointArray.Array BfsDistance
@@ -81,12 +82,12 @@ getCacheBfsAndPath :: forall m. MonadClient m
 getCacheBfsAndPath aid target = do
   seps <- getsClient seps
   b <- getsState $ getActorBody aid
-  let origin = bpos b
+  let source = bpos b
   isEnterable <- condBFS aid
   let pathAndStore :: PointArray.Array BfsDistance
                    -> m (PointArray.Array BfsDistance, Maybe [Point])
       pathAndStore bfs = do
-        let mpath = findPathBfs isEnterable origin target seps bfs
+        let mpath = findPathBfs isEnterable source target seps bfs
         modifyClient $ \cli ->
           cli {sbfsD = EM.insert aid (True, bfs, target, seps, mpath)
                                  (sbfsD cli)}
@@ -113,7 +114,7 @@ getCacheBfsAndPath aid target = do
               PointArray.safeSetA apartBfs bfsInvalid
             _ ->
               PointArray.replicateA lxsize lysize apartBfs
-          bfs = fillBfs isEnterable origin vInitial
+          bfs = fillBfs isEnterable source vInitial
       pathAndStore bfs
 
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
@@ -129,9 +130,8 @@ getCacheBfs aid = do
 condBFS :: MonadClient m
         => ActorId
         -> m (Point -> Point -> MoveLegal)
-{-# INLINE condBFS #-}
 condBFS aid = do
-  cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
+  Kind.COps{corule, cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   b <- getsState $ getActorBody aid
   -- We assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway). Otherwise we'd have
@@ -155,20 +155,16 @@ condBFS aid = do
       isPassable | enterSuspect = Tile.isPassable
                  | canSearchAndOpen = Tile.isPassableNoSuspect
                  | otherwise = Tile.isPassableNoClosed
+      unknownId = ouniqGroup "unknown space"
+  -- Legality of move from a known tile, assuming doors freely openable.
   -- We treat doors as an open tile and don't add an extra step for opening
   -- the doors, because other actors open and use them, too,
   -- so it's amortized. We treat unknown tiles specially.
-  let unknownId = ouniqGroup "unknown space"
-      chAccess = checkAccess cops lvl
-      chDoorAccess = checkDoorAccess cops lvl
-      conditions = catMaybes $ [chAccess, chDoorAccess]
-      -- Legality of move from a known tile, assuming doors freely openable.
       isEnterable :: Point -> Point -> MoveLegal
-      {-# INLINE isEnterable #-}
       isEnterable spos tpos =
         let st = lvl `at` spos
             tt = lvl `at` tpos
-            allOK = all (\f -> f spos tpos) conditions
+            allOK = raccessible (Kind.stdRuleset corule) cotile spos st tpos tt
         in if | tt == unknownId ->
                 if not (enterSuspect && Tile.isSuspect cotile st) && allOK
                 then MoveToUnknown

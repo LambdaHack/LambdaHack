@@ -9,8 +9,10 @@ import Game.LambdaHack.Common.Prelude
 
 import Data.Version
 
+import qualified Game.LambdaHack.Common.KindOps as KindOps
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- TODO: very few rules are configurable yet, extend as needed.
 -- TODO: in the future, in @raccessible@ check flying for chasms,
@@ -29,17 +31,17 @@ import Game.LambdaHack.Common.Point
 --
 -- The @raccessible@ field holds extra conditions that have to be met
 -- for a tile to be accessible, on top of being an open tile
--- (or openable, in some contexts). The @raccessibleDoor@ field
--- contains yet additional conditions concerning tiles that are doors,
--- whether open or closed.
+-- (or openable, in some contexts).
 -- Precondition: the two positions are next to each other.
 -- We assume the predicate is symmetric.
 data RuleKind = RuleKind
   { rsymbol         :: !Char      -- ^ a symbol
   , rname           :: !Text      -- ^ short description
   , rfreq           :: !(Freqs RuleKind)  -- ^ frequency within groups
-  , raccessible     :: !(Maybe (Point -> Point -> Bool))  -- ^ see above
-  , raccessibleDoor :: !(Maybe (Point -> Point -> Bool))  -- ^ see above
+  , raccessible     :: !(KindOps.Ops TileKind
+                         -> Point -> KindOps.Id TileKind
+                         -> Point -> KindOps.Id TileKind
+                         -> Bool)  -- ^ see above
   , rtitle          :: !Text      -- ^ the title of the game
   , raddress        :: !Text      -- ^ the homepage of the game
   , rpathsDataFile  :: FilePath -> IO FilePath

@@ -15,6 +15,7 @@ import System.FilePath
 import qualified Paths_LambdaHack as Self (getDataFileName, version)
 
 import Game.LambdaHack.Common.ContentDef
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 
@@ -38,9 +39,9 @@ standard = RuleKind
   -- Precondition: the two positions are next to each other
   -- and the target tile is walkable. For LambdaHack we forbid
   -- diagonal movement to and from doors.
-  , raccessible    = Nothing
-  , raccessibleDoor =
-      Just $ \spos tpos -> not $ isDiagonal $ spos `vectorToFrom` tpos
+  , raccessible    = \cotile spos st tpos tt ->
+      not ((Tile.isDoor cotile st || Tile.isDoor cotile tt)
+           && isDiagonal (spos `vectorToFrom` tpos))
   , rtitle         = "LambdaHack"
   , raddress       = "http://github.com/LambdaHack/LambdaHack/releases"
   , rpathsDataFile = Self.getDataFileName

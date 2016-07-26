@@ -6,8 +6,7 @@ module Game.LambdaHack.Common.Level
     -- * The @Level@ type and its components
   , Level(..), ActorPrio, ItemFloor, TileMap, SmellMap
     -- * Level query
-  , at, checkAccess, checkDoorAccess
-  , accessible, accessibleUnknown, accessibleDir
+  , at, accessible, accessibleUnknown, accessibleDir
   , knownLsecret, isSecretPos, hideTile
   , findPos, findPosTry, mapLevelActors_, mapDungeonActors_
   ) where
@@ -103,49 +102,28 @@ at :: Level -> Point -> Kind.Id TileKind
 {-# INLINE at #-}
 at Level{ltile} p = ltile PointArray.! p
 
-checkAccess :: Kind.COps -> Level -> Maybe (Point -> Point -> Bool)
-checkAccess Kind.COps{corule} _ =
-  case raccessible $ Kind.stdRuleset corule of
-    Nothing -> Nothing
-    Just ch -> Just $ \spos tpos -> ch spos tpos
-
-checkDoorAccess :: Kind.COps -> Level -> Maybe (Point -> Point -> Bool)
-checkDoorAccess Kind.COps{corule, cotile} lvl =
-  case raccessibleDoor $ Kind.stdRuleset corule of
-    Nothing -> Nothing
-    Just chDoor ->
-      Just $ \spos tpos ->
-        let st = lvl `at` spos
-            tt = lvl `at` tpos
-        in not (Tile.isDoor cotile st || Tile.isDoor cotile tt)
-           || chDoor spos tpos
-
 -- | Check whether one position is accessible from another,
 -- using the formula from the standard ruleset.
 -- Precondition: the two positions are next to each other.
 accessible :: Kind.COps -> Level -> Point -> Point -> Bool
-accessible cops@Kind.COps{cotile} lvl =
-  let checkWalkability =
-        Just $ \_ tpos -> Tile.isWalkable cotile $ lvl `at` tpos
-      conditions = catMaybes [ checkWalkability
-                             , checkAccess cops lvl
-                             , checkDoorAccess cops lvl ]
-  in \spos tpos -> all (\f -> f spos tpos) conditions
+accessible Kind.COps{corule, cotile} lvl spos tpos =
+  let st = lvl `at` spos
+      tt = lvl `at` tpos
+      allOK = raccessible (Kind.stdRuleset corule) cotile spos st tpos tt
+  in Tile.isWalkable cotile tt && allOK
 
 -- | Check whether one position is accessible from another,
 -- using the formula from the standard ruleset,
 -- but additionally treating unknown tiles as walkable.
 -- Precondition: the two positions are next to each other.
 accessibleUnknown :: Kind.COps -> Level -> Point -> Point -> Bool
-accessibleUnknown cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} lvl =
+accessibleUnknown Kind.COps{corule, cotile=cotile@Kind.Ops{ouniqGroup}} lvl =
   let unknownId = ouniqGroup "unknown space"
-      checkWalkability =
-        Just $ \_ tpos -> let t = lvl `at` tpos
-                          in Tile.isWalkable cotile t || t == unknownId
-      conditions = catMaybes [ checkWalkability
-                             , checkAccess cops lvl
-                             , checkDoorAccess cops lvl ]
-  in \spos tpos -> all (\f -> f spos tpos) conditions
+  in \spos tpos ->
+    let st = lvl `at` spos
+        tt = lvl `at` tpos
+        allOK = raccessible (Kind.stdRuleset corule) cotile spos st tpos tt
+    in (Tile.isWalkable cotile tt || tt == unknownId) && allOK
 
 -- | Check whether actors can move from a position along a unit vector,
 -- using the formula from the standard ruleset.
