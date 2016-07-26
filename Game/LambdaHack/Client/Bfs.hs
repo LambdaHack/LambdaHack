@@ -24,7 +24,7 @@ newtype BfsDistance = BfsDistance Word8
   deriving (Show, Eq, Ord, Enum, Bounded, Bits)
 
 -- | State of legality of moves between adjacent points.
-data MoveLegal = MoveBlocked | MoveToOpen | MoveToUnknown
+data MoveLegal = MoveBlocked | MoveToOpen | MoveToClosed | MoveToUnknown
   deriving Eq
 
 -- | The minimal distance value assigned to paths that don't enter
@@ -77,6 +77,7 @@ fillBfs isEnterable source aInitial =
                         (notBlocked, enteredUnknown) = case legality of
                           MoveBlocked -> (False, assert `failure` ())
                           MoveToOpen -> (True, False)
+                          MoveToClosed -> (True, False)
                           MoveToUnknown -> (True, True)
                     in if freshMv && notBlocked
                        then if enteredUnknown

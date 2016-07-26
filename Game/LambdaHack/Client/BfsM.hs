@@ -173,7 +173,10 @@ condBFS aid = do
                 if not (enterSuspect && Tile.isSuspect cotile st) && allOK
                 then MoveToUnknown
                 else MoveBlocked
-              | isPassable cotile tt && allOK -> MoveToOpen
+              | Tile.isWalkable cotile tt ->
+                if allOK then MoveToOpen else MoveBlocked
+              | isPassable cotile tt ->
+                if allOK then MoveToClosed else MoveBlocked
               | otherwise -> MoveBlocked
   if canMove
     then return isEnterable
