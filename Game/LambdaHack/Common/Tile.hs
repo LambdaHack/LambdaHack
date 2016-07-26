@@ -17,7 +17,7 @@ module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, hasFeature
   , isClear, isLit, isWalkable
-  , isPassable, isPassableNoSuspect, isDoor, isSuspect
+  , isPassable, isPassableNoSuspect, isPassableNoClosed, isDoor, isSuspect
   , isExplorable, lookSimilar, speedup
   , openTo, closeTo, embedItems, causeEffects, revealAs, hideAs
   , isOpenable, isClosable, isChangeable, isEscape, isStair, ascendTo
@@ -54,6 +54,7 @@ data TileSpeedup = TileSpeedup
   , isWalkableTab          :: !Tab
   , isPassableTab          :: !Tab
   , isPassableNoSuspectTab :: !Tab
+  , isPassableNoClosedTab  :: !Tab
   , isDoorTab              :: !Tab
   , isSuspectTab           :: !Tab
   , isChangeableTab        :: !Tab
@@ -112,8 +113,8 @@ isPassable Kind.Ops{ospeedup = Just TileSpeedup{isPassableTab}} =
   accessTab isPassableTab
 isPassable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
--- | Whether actors can walk into a tile, perhaps opening a door first,
--- perhaps a hidden door.
+-- | Whether actors can walk into a tile, perhaps trying to open
+-- a hidden door first.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isPassableNoSuspect :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isPassableNoSuspect #-}
@@ -121,6 +122,17 @@ isPassableNoSuspect Kind.Ops{ospeedup =
                                Just TileSpeedup{isPassableNoSuspectTab}} =
   accessTab isPassableNoSuspectTab
 isPassableNoSuspect cotile =
+  assert `failure` "no speedup" `twith` Kind.obounds cotile
+
+-- | Whether actors can walk into a tile, perhaps opening a door first,
+-- perhaps trying a hidden door.
+-- Essential for efficiency of pathfinding, hence tabulated.
+isPassableNoClosed :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+{-# INLINE isPassableNoClosed #-}
+isPassableNoClosed Kind.Ops{ospeedup =
+                              Just TileSpeedup{isPassableNoClosedTab}} =
+  accessTab isPassableNoClosedTab
+isPassableNoClosed cotile =
   assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile is a door, open or closed.
@@ -176,8 +188,9 @@ speedup allClear cotile =
                                $ kindHasFeature TK.Clear
       isLitTab = createTab cotile $ not . kindHasFeature TK.Dark
       isWalkableTab = createTab cotile $ kindHasFeature TK.Walkable
-      isPassableTab = createTab cotile $ isPassableKind True
-      isPassableNoSuspectTab = createTab cotile $ isPassableKind False
+      isPassableTab = createTab cotile $ isPassableKind True True
+      isPassableNoSuspectTab = createTab cotile $ isPassableKind False True
+      isPassableNoClosedTab = createTab cotile $ isPassableKind False False
       isDoorTab = createTab cotile $ \tk ->
         let getTo TK.OpenTo{} = True
             getTo TK.CloseTo{} = True
@@ -190,11 +203,11 @@ speedup allClear cotile =
         in any getTo $ TK.tfeature tk
   in TileSpeedup {..}
 
-isPassableKind :: Bool -> TileKind -> Bool
-isPassableKind passSuspect tk =
+isPassableKind :: Bool -> Bool -> TileKind -> Bool
+isPassableKind passSuspect passOpenable tk =
   let getTo TK.Walkable = True
-      getTo TK.OpenTo{} = True
-      getTo TK.ChangeTo{} = True  -- can change to passable and may have loot
+      getTo TK.OpenTo{} | passOpenable = True
+      getTo TK.ChangeTo{} | passOpenable = True  -- can change to passable and may have loot
       getTo TK.Suspect | passSuspect = True
       getTo _ = False
   in any getTo $ TK.tfeature tk

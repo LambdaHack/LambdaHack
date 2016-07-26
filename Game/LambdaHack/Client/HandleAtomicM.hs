@@ -323,8 +323,8 @@ tileChangeAffectsBfs Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}}
                      fromTile toTile =
   let unknownId = ouniqGroup "unknown space"
   in unknownId `elem` [fromTile, toTile]
-     || not (Tile.isPassableNoSuspect cotile fromTile
-             && Tile.isPassableNoSuspect cotile toTile
+     || not (Tile.isPassableNoClosed cotile fromTile
+             && Tile.isPassableNoClosed cotile toTile
              || not (Tile.isPassable cotile fromTile)
                 && not (Tile.isPassable cotile toTile))
 

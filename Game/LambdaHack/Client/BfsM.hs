@@ -153,7 +153,8 @@ condBFS aid = do
   let underAI = isAIFact fact
       enterSuspect = canSearchAndOpen && (smarkSuspect || underAI)
       isPassable | enterSuspect = Tile.isPassable
-                 | otherwise = Tile.isPassableNoSuspect
+                 | canSearchAndOpen = Tile.isPassableNoSuspect
+                 | otherwise = Tile.isPassableNoClosed
   -- We treat doors as an open tile and don't add an extra step for opening
   -- the doors, because other actors open and use them, too,
   -- so it's amortized. We treat unknown tiles specially.
