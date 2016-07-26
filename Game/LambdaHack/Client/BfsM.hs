@@ -83,11 +83,13 @@ getCacheBfsAndPath aid target = do
   seps <- getsClient seps
   b <- getsState $ getActorBody aid
   let source = bpos b
-  isEnterable <- condBFS aid
+  misEnterable <- condBFS aid
   let pathAndStore :: PointArray.Array BfsDistance
                    -> m (PointArray.Array BfsDistance, Maybe [Point])
       pathAndStore bfs = do
-        let mpath = findPathBfs isEnterable source target seps bfs
+        let mpath = case misEnterable of
+              Nothing -> Nothing
+              Just isEnterable -> findPathBfs isEnterable source target seps bfs
         modifyClient $ \cli ->
           cli {sbfsD = EM.insert aid (True, bfs, target, seps, mpath)
                                  (sbfsD cli)}
@@ -114,7 +116,9 @@ getCacheBfsAndPath aid target = do
               PointArray.safeSetA apartBfs bfsInvalid
             _ ->
               PointArray.replicateA lxsize lysize apartBfs
-          bfs = fillBfs isEnterable source vInitial
+          bfs = case misEnterable of
+            Nothing -> PointArray.unsafeUpdateA vInitial [(source, minKnownBfs)]
+            Just isEnterable -> fillBfs isEnterable source vInitial
       pathAndStore bfs
 
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
@@ -129,7 +133,7 @@ getCacheBfs aid = do
 
 condBFS :: MonadClient m
         => ActorId
-        -> m (Point -> Point -> MoveLegal)
+        -> m (Maybe (Point -> Point -> MoveLegal))
 condBFS aid = do
   Kind.COps{corule, cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -174,9 +178,7 @@ condBFS aid = do
               | isPassable cotile tt ->
                 if allOK then MoveToClosed else MoveBlocked
               | otherwise -> MoveBlocked
-  if canMove
-    then return isEnterable
-    else return $ \_ _ -> MoveBlocked
+  return $! if canMove then Just isEnterable else Nothing
 
 -- | Furthest (wrt paths) known position.
 furthestKnown :: MonadClient m => ActorId -> m Point
