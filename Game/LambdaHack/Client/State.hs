@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.State
   ( StateClient(..), emptyStateClient
   , updateTarget, getTarget, updateLeader, sside
-  , PathEtc, toggleMarkSuspect
+  , PathEtc, BfsAndPath(..), toggleMarkSuspect
   ) where
 
 import Prelude ()
@@ -48,9 +48,7 @@ data StateClient = StateClient
                                    -- ^ targets of our actors in the dungeon
   , sexplored    :: !(ES.EnumSet LevelId)
                                    -- ^ the set of fully explored levels
-  , sbfsD        :: !(EM.EnumMap ActorId
-                        ( Bool, PointArray.Array BfsDistance
-                        , Point, Int, Maybe [Point]) )
+  , sbfsD        :: !(EM.EnumMap ActorId BfsAndPath)
                                    -- ^ pathfinding distances for our actors
                                    --   and paths to their targets, if any
   , sundo        :: ![CmdAtomic]   -- ^ atomic commands performed to date
@@ -74,6 +72,14 @@ data StateClient = StateClient
   deriving Show
 
 type PathEtc = ([Point], (Point, Int))
+
+data BfsAndPath =
+    BfsOnly {bfsArr :: !(PointArray.Array BfsDistance)}
+  | BfsInvalid {bfsArr :: !(PointArray.Array BfsDistance)}
+  | BfsAndPath { bfsArr  :: !(PointArray.Array BfsDistance)
+               , bfsPath :: !(EM.EnumMap Point (Maybe [Point]))
+               }
+  deriving Show
 
 -- | Initial empty game client state.
 emptyStateClient :: FactionId -> StateClient
