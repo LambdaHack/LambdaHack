@@ -258,8 +258,6 @@ useTactics refreshTarget oldAid = do
           -- If leader not on this level, fall back to @TExplore@.
           if not onLevel then explore
           else do
-            modifyClient $ \cli ->
-              cli {seps = seps cli + 773}  -- randomize paths
             -- Copy over the leader's target, if any, or follow his bpos.
             mtgt <- getsClient $ EM.lookup leader . stargetD
             tgtPathSet <- setPath mtgt
