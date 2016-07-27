@@ -87,7 +87,7 @@ getCacheBfsAndPath aid target = do
   let pathAndStore :: PointArray.Array BfsDistance
                    -> m (PointArray.Array BfsDistance, Maybe [Point])
       pathAndStore bfs = do
-        let mpath = case misEnterable of
+        let !mpath = case misEnterable of
               Nothing -> Nothing
               Just isEnterable -> findPathBfs isEnterable source target seps bfs
         modifyClient $ \cli ->

@@ -136,7 +136,7 @@ findPathBfs isEnterable source target sepsRaw bfs =
         in track minP dist (pos : suffix)
       targetDist = bfs PointArray.! target
   in if targetDist /= apartBfs
-     then Just $ track target (targetDist .|. minKnownBfs) []
+     then Just $! track target (targetDist .|. minKnownBfs) []
      else let f :: (Point, BfsDistance, Int) -> Point -> BfsDistance
                 -> (Point, BfsDistance, Int)
               f acc@(pAcc, dAcc, chessAcc) p d =
@@ -155,7 +155,7 @@ findPathBfs isEnterable source target sepsRaw bfs =
                 PointArray.ifoldlA' f (originPoint, apartBfs, maxBound) bfs
           in if chessRes == maxBound
              then Nothing
-             else Just $ track pRes (dRes .|. minKnownBfs) []
+             else Just $! track pRes (dRes .|. minKnownBfs) []
 
 -- | Access a BFS array and interpret the looked up distance value.
 accessBfs :: PointArray.Array BfsDistance -> Point -> Maybe Int
