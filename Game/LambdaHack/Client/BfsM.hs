@@ -100,28 +100,26 @@ getCacheBfsAndPath aid target = do
   case mbfs of
     Just BfsAndPath{..}
       -- TODO: hack: in screensavers this is not always ensured, so check here:
-      | bfsArr PointArray.! bpos b == minKnownBfs ->
+      | bfsArr PointArray.! source == minKnownBfs ->
       case EM.lookup target bfsPath of
         Nothing -> pathAndStore bfsArr
         Just mpath -> return (bfsArr, mpath)
     Just BfsOnly{..}
-      | bfsArr PointArray.! bpos b == minKnownBfs ->
+      | bfsArr PointArray.! source == minKnownBfs ->
         pathAndStore bfsArr
     _ -> do
-      -- Reduce the number of pointers to @bfsInvalid@, to help @safeSetA@.
-      modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}
-      Level{lxsize, lysize} <- getLevel $ blid b
-      let vInitial = case mbfs of
-            Just bfsAnd ->  -- TODO: we should verify size
-              -- We need to use the safe set, because previous values
-              -- of the BFS array for the actor can be stuck unevaluated
-              -- in thunks and we are not allowed to overwrite them.
-              -- OTOH, there is now no change in behaviour nor speed
-              -- with unsafeSetA, so it must already be perfectly in place.
-              PointArray.safeSetA apartBfs $ bfsArr bfsAnd
-            _ ->
-              PointArray.replicateA lxsize lysize apartBfs
-          bfs = case misEnterable of
+      vInitial <- case mbfs of
+        Just bfsAnd ->  -- TODO: we should verify size
+          -- We need to use the safe set, because previous values
+          -- of the BFS array for the actor can be stuck unevaluated
+          -- in thunks and we are not allowed to overwrite them.
+          -- OTOH, there is now no change in behaviour nor speed
+          -- with unsafeSetA, so it must already be perfectly in place.
+          return $! PointArray.safeSetA apartBfs $ bfsArr bfsAnd
+        Nothing -> do
+          Level{lxsize, lysize} <- getLevel $ blid b
+          return $! PointArray.replicateA lxsize lysize apartBfs
+      let bfs = case misEnterable of
             Nothing -> PointArray.unsafeUpdateA vInitial [(source, minKnownBfs)]
             Just isEnterable -> fillBfs isEnterable source vInitial
       pathAndStore bfs
