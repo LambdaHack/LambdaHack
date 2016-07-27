@@ -98,10 +98,10 @@ getCacheBfsAndPath aid target = do
   -- TODO: record past skills too, in case mobility lost; but no great harm,
   -- perhaps the loss is temporary
   case mbfs of
-    Just (True, bfs, targetOld, sepsOld, mpath)
+    Just (True, bfs, targetOld, _sepsOld, mpath)
       -- TODO: hack: in screensavers this is not always ensured, so check here:
       | bfs PointArray.! bpos b == minKnownBfs ->
-      if targetOld == target && sepsOld == seps
+      if targetOld == target
       then return (bfs, mpath)
       else pathAndStore bfs
     _ -> do

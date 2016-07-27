@@ -940,6 +940,7 @@ epsIncrHuman b = do
   lidV <- viewedLevelUI
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
   modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
+  invalidateBfsAll -- actually only paths, but that's cheap enough
   flashAiming
   modifySession $ \sess -> sess {saimMode}
 
