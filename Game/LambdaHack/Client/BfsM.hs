@@ -2,11 +2,11 @@
 -- | Breadth first search and realted algorithms using the client monad.
 module Game.LambdaHack.Client.BfsM
   ( invalidateBfsAid, invalidateBfsLid, invalidateBfsAll
-  , getCacheBfsAndPath, unexploredDepth
+  , getCacheBfsAndPath, getCachePath, unexploredDepth
   , closestUnknown, closestSuspect, closestSmell, furthestKnown
   , closestTriggers, closestItems, closestFoes
 #ifdef EXPOSE_INTERNAL
-  , getCacheBfs
+  , createBfs, updatePathFromBfs, getCacheBfs
 #endif
   ) where
 
@@ -66,69 +66,103 @@ invalidateBfsAll :: MonadClient m => m ()
 invalidateBfsAll =
   modifyClient $ \cli -> cli {sbfsD = EM.map invBfs (sbfsD cli)}
 
--- | Get cached BFS data and path or, if not stored, generate,
--- store and return. Due to laziness, they are not calculated until needed.
+createBfs :: MonadClient m
+             => Maybe (Point -> Point -> MoveLegal) -> Maybe BfsAndPath
+             -> ActorId
+             -> m (PointArray.Array BfsDistance)
+createBfs misEnterable mbfs aid = do
+  b <- getsState $ getActorBody aid
+  let source = bpos b
+  vInitial <- case mbfs of
+    Just bfsAnd ->  -- TODO: we should verify size
+      -- We need to use the safe set, because previous values
+      -- of the BFS array for the actor can be stuck unevaluated
+      -- in thunks and we are not allowed to overwrite them.
+      -- OTOH, there is now no change in behaviour nor speed
+      -- with unsafeSetA, so it must already be perfectly in-place.
+      return $! PointArray.safeSetA apartBfs $ bfsArr bfsAnd
+    Nothing -> do
+      Level{lxsize, lysize} <- getLevel $ blid b
+      return $! PointArray.replicateA lxsize lysize apartBfs
+  return $! fillBfs misEnterable source vInitial
+
+updatePathFromBfs :: MonadClient m
+                  => Maybe (Point -> Point -> MoveLegal) -> BfsAndPath
+                  -> ActorId -> Point
+                  -> m (PointArray.Array BfsDistance, Maybe [Point])
+updatePathFromBfs misEnterable bfsAndPathOld aid target = do
+  seps <- getsClient seps
+  b <- getsState $ getActorBody aid
+  let source = bpos b
+      getPath bfsArr = case misEnterable of
+        Nothing -> Nothing
+        Just isEnterable ->
+          findPathBfs isEnterable source target seps bfsArr
+  (bfsAndPath, mpath) <- case bfsAndPathOld of
+    BfsAndPath{bfsArr, bfsPath=oldBfsPath} -> do
+      let !mpath = getPath bfsArr
+          bfsPath = EM.insert target mpath oldBfsPath
+      return (BfsAndPath{..}, mpath)
+    BfsOnly{bfsArr} -> do
+      let !mpath = getPath bfsArr
+          bfsPath = EM.singleton target mpath
+      return (BfsAndPath{..}, mpath)
+    BfsInvalid{} -> assert `failure` (bfsAndPathOld, aid, target)
+  modifyClient $ \cli ->
+    cli {sbfsD = EM.insert aid bfsAndPath (sbfsD cli)}
+  return (bfsArr bfsAndPath, mpath)
+
+-- | Get cached BFS array and path or, if not stored, generate and store first.
 getCacheBfsAndPath :: forall m. MonadClient m
                    => ActorId -> Point
                    -> m (PointArray.Array BfsDistance, Maybe [Point])
 getCacheBfsAndPath aid target = do
-  seps <- getsClient seps
   b <- getsState $ getActorBody aid
   let source = bpos b
-  misEnterable <- condBFS aid
-  let pathAndStore :: PointArray.Array BfsDistance
-                   -> m (PointArray.Array BfsDistance, Maybe [Point])
-      pathAndStore bfsArr = do
-        let !mpath = case misEnterable of
-              Nothing -> Nothing
-              Just isEnterable ->
-                findPathBfs isEnterable source target seps bfsArr
-        mbfs <- getsClient $ EM.lookup aid . sbfsD
-        let bfsAndPath = case mbfs of
-              Just BfsAndPath{bfsPath=oldBfsPath} ->
-                let bfsPath = EM.insert target mpath oldBfsPath
-                in BfsAndPath{..}
-              _ ->
-                let bfsPath = EM.singleton target mpath
-                in BfsAndPath{..}
-        modifyClient $ \cli ->
-          cli {sbfsD = EM.insert aid bfsAndPath (sbfsD cli)}
-        return (bfsArr, mpath)
   mbfs <- getsClient $ EM.lookup aid . sbfsD
-  -- TODO: record past skills too, in case mobility lost; but no great harm,
-  -- perhaps the loss is temporary
   case mbfs of
-    Just BfsAndPath{..}
+    Just bap@BfsAndPath{..}
       -- TODO: hack: in screensavers this is not always ensured, so check here:
       | bfsArr PointArray.! source == minKnownBfs ->
-      case EM.lookup target bfsPath of
-        Nothing -> pathAndStore bfsArr
-        Just mpath -> return (bfsArr, mpath)
-    Just BfsOnly{..}
-      | bfsArr PointArray.! source == minKnownBfs ->
-        pathAndStore bfsArr
+        case EM.lookup target bfsPath of
+          Nothing -> do
+            misEnterable <- condBFS aid
+            updatePathFromBfs misEnterable bap aid target
+          Just mpath -> return (bfsArr, mpath)
+    Just bap@BfsOnly{bfsArr}
+      | bfsArr PointArray.! source == minKnownBfs -> do
+        misEnterable <- condBFS aid
+        updatePathFromBfs misEnterable bap aid target
     _ -> do
-      vInitial <- case mbfs of
-        Just bfsAnd ->  -- TODO: we should verify size
-          -- We need to use the safe set, because previous values
-          -- of the BFS array for the actor can be stuck unevaluated
-          -- in thunks and we are not allowed to overwrite them.
-          -- OTOH, there is now no change in behaviour nor speed
-          -- with unsafeSetA, so it must already be perfectly in place.
-          return $! PointArray.safeSetA apartBfs $ bfsArr bfsAnd
-        Nothing -> do
-          Level{lxsize, lysize} <- getLevel $ blid b
-          return $! PointArray.replicateA lxsize lysize apartBfs
-      pathAndStore $ fillBfs misEnterable source vInitial
+      misEnterable <- condBFS aid
+      bfsArr <- createBfs misEnterable mbfs aid
+      updatePathFromBfs misEnterable BfsOnly{bfsArr} aid target
 
+-- | Get cached BFS array or, if not stored, generate and store first.
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
-{-# INLINE getCacheBfs #-}
 getCacheBfs aid = do
+  b <- getsState $ getActorBody aid
+  let source = bpos b
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
-    Nothing -> fst <$> getCacheBfsAndPath aid originPoint
-    Just BfsInvalid{} -> fst <$> getCacheBfsAndPath aid originPoint
-    Just bfsAnd -> return $! bfsArr bfsAnd
+    Just BfsAndPath{bfsArr}
+      -- TODO: hack: in screensavers this is not always ensured, so check here:
+      | bfsArr PointArray.! source == minKnownBfs ->
+        return bfsArr
+    Just BfsOnly{bfsArr}
+      | bfsArr PointArray.! source == minKnownBfs ->
+        return bfsArr
+    _ -> do
+      misEnterable <- condBFS aid
+      bfsArr <- createBfs misEnterable mbfs aid
+      modifyClient $ \cli ->
+        cli {sbfsD = EM.insert aid BfsOnly{bfsArr} (sbfsD cli)}
+      return bfsArr
+
+-- | Get cached BFS path or, if not stored, generate and store first.
+getCachePath :: MonadClient m => ActorId -> Point -> m (Maybe [Point])
+{-# INLINE getCachePath #-}
+getCachePath aid target = snd <$> getCacheBfsAndPath aid target
 
 condBFS :: MonadClient m
         => ActorId

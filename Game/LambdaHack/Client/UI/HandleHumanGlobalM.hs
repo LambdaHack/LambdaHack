@@ -475,7 +475,7 @@ goToXhair initialStep run = do
                 moveRunHuman initialStep finalGoal run False dir
           _ -> do
             let !_A = assert (initialStep || not run) ()
-            (_, mpath) <- getCacheBfsAndPath leader c
+            mpath <- getCachePath leader c
             case mpath of
               Nothing -> failWith "no route to crosshair"
               Just [] -> assert `failure` (leader, b, c)
@@ -503,7 +503,7 @@ multiActorGoTo arena c paramOld =
             paramNew = paramOld { runMembers = runMembersNew
                                 , runWaiting = 0}
         b <- getsState $ getActorBody r
-        (_, mpath) <- getCacheBfsAndPath r c
+        mpath <- getCachePath r c
         case mpath of
           Nothing -> return $ Left "no route to crosshair"
           Just [] ->
