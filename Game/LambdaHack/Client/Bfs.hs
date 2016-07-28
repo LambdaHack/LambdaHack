@@ -14,6 +14,7 @@ import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
 import Data.Bits (Bits, complement, (.&.), (.|.))
+import Data.Either
 
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -52,48 +53,48 @@ abortedKnownBfs = pred maxBound
 abortedUnknownBfs :: BfsDistance
 abortedUnknownBfs = pred apartBfs
 
--- TODO: costly; use a ring buffer instead of the lists, don't call so often
 -- | Fill out the given BFS array.
 -- Unsafe @PointArray@ operations are OK here, because the intermediate
 -- values of the vector don't leak anywhere outside nor are kept unevaluated
 -- and so they can't be overwritten by the unsafe side-effect.
-fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is a move from known tile legal
+fillBfs :: Maybe (Point -> Point -> MoveLegal)
+                                          -- ^ is move from known tile legal?
         -> Point                          -- ^ starting position
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
-fillBfs isEnterable source aInitial =
-  let bfs :: BfsDistance
-          -> [Point]
-          -> PointArray.Array BfsDistance
-          -> PointArray.Array BfsDistance
-      bfs distance predK a =
+fillBfs Nothing source aInitial =
+  PointArray.unsafeWriteA aInitial source minKnownBfs
+  `seq` aInitial
+fillBfs (Just isEnterable) source aInitial =
+  let bfs :: BfsDistance -> [Point] -> ()  -- modifies @aInitial@
+      bfs distance predK =
         let distCompl = distance .&. complement minKnownBfs
-            processKnown (succK2, a2) pos =
-              let fKnown (lK, lU) move =
+            processKnown pos succK2 =
+              -- Unsafe ops inside @fKnown@ are OK, because the result for each
+              -- p only depends on array value at p. Order of ps irrelevant.
+              let fKnown l move =
                     let p = shift pos move
-                        freshMv = a2 PointArray.! p == apartBfs
-                        legality = isEnterable pos p
-                        (notBlocked, enteredUnknown) = case legality of
-                          MoveBlocked -> (False, assert `failure` ())
-                          MoveToOpen -> (True, False)
-                          MoveToClosed -> (True, False)
-                          MoveToUnknown -> (True, True)
-                    in if freshMv && notBlocked
-                       then if enteredUnknown
-                            then (lK, p : lU)
-                            else (p : lK, lU)
-                       else (lK, lU)
-                  (mvsK, mvsU) = foldl' fKnown ([], []) moves
-                  upd = zip mvsK (repeat distance)
-                        ++ zip mvsU (repeat distCompl)
-                  !a3 = PointArray.unsafeUpdateA a2 upd
-              in (mvsK ++ succK2, a3)
-            (succK4, !a4) = foldl' processKnown ([], a) predK
+                        visitedMove = aInitial PointArray.! p /= apartBfs
+                        (blocked, enteredUnknown) = case isEnterable pos p of
+                          MoveBlocked -> (True, assert `failure` ())
+                          MoveToOpen -> (False, False)
+                          MoveToClosed -> (False, False)
+                          MoveToUnknown -> (False, True)
+                    in if | visitedMove || blocked -> l
+                          | enteredUnknown ->
+                            PointArray.unsafeWriteA aInitial p distCompl
+                            `seq` l
+                          | otherwise ->
+                            PointArray.unsafeWriteA aInitial p distance
+                            `seq` p : l
+              in foldl' fKnown succK2 moves
+            succK4 = foldr processKnown [] predK
         in if null succK4 || distance == abortedKnownBfs
-           then a4  -- no more dungeon positions to check or too far
-           else bfs (succ distance) succK4 a4
-  in bfs (succ minKnownBfs) [source]
-         (PointArray.unsafeUpdateA aInitial [(source, minKnownBfs)])
+           then () -- no more dungeon positions to check, or we reached too far
+           else bfs (succ distance) succK4
+  in PointArray.unsafeWriteA aInitial source minKnownBfs
+     `seq` bfs (succ minKnownBfs) [source]
+     `seq` aInitial  -- faking pure operation, but it's correct
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
 -- to determine a few really different paths and compare them,
@@ -113,24 +114,24 @@ findPathBfs isEnterable source target sepsRaw bfs =
   let eps = sepsRaw `mod` 4
       (mc1, mc2) = splitAt eps movesCardinal
       (md1, md2) = splitAt eps movesDiagonal
-      preferredMoves = mc1 ++ reverse mc2 ++ md2 ++ reverse md1  -- fuzz
+      prefMoves = md1 ++ reverse md2 ++ mc2 ++ reverse mc1  -- fuzz, reversed
       track :: Point -> BfsDistance -> [Point] -> [Point]
       track pos oldDist suffix | oldDist == minKnownBfs =
         assert (pos == source
                 `blame` (source, target, pos, suffix)) suffix
       track pos oldDist suffix =
         let dist = pred oldDist
-            children = map (shift pos) preferredMoves
-            f acc@(lo, lc) p = if bfs PointArray.! p /= dist
-                               then acc
-                               else case isEnterable p pos of
-                                 MoveToOpen -> (p : lo, lc)
-                                 MoveToUnknown -> (p : lo, lc)
-                                 MoveToClosed -> (lo, p : lc)
-                                 MoveBlocked -> acc
-            (childrenOpen, childrenClosed) = foldl' f ([], []) children
+            children = map (shift pos) prefMoves
+            f p acc = if bfs PointArray.! p /= dist
+                      then acc
+                      else case isEnterable p pos of
+                        MoveToOpen -> Right p : acc
+                        MoveToUnknown -> Right p : acc
+                        MoveToClosed -> Left p : acc
+                        MoveBlocked -> acc
+            childrenEither = foldr f [] children
             -- Prefer paths through open or unknown tiles.
-            minP = case childrenOpen ++ childrenClosed of
+            minP = case rights childrenEither ++ lefts childrenEither of
               p : _ -> p
               [] -> assert `failure` (pos, oldDist, children)
         in track minP dist (pos : suffix)

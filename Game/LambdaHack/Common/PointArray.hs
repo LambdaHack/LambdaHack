@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateA, generateMA, sizeA
   , foldlA', ifoldlA', ifoldrA', mapA, imapA, mapWithKeyMA
-  , safeSetA, unsafeSetA, unsafeUpdateA
+  , safeSetA, unsafeSetA, unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
   ) where
 
@@ -70,13 +70,24 @@ punindex xsize n = let (y, x) = n `quotRem` xsize
 (//) Array{..} l = let v = avector U.// map (pindex axsize *** cnv) l
                    in Array{avector = v, ..}
 
-unsafeUpdateA :: Enum c => Array c -> [(Point, c)] -> Array c
+unsafeUpdateA :: Enum c => Array c -> [(Point, c)] -> ()
 {-# INLINE unsafeUpdateA #-}
 unsafeUpdateA Array{..} l = runST $ do
   vThawed <- U.unsafeThaw avector
   mapM_ (\(p, c) -> VM.write vThawed (pindex axsize p) (cnv c)) l
-  vFrozen <- U.unsafeFreeze vThawed
-  return $! Array{avector = vFrozen, ..}
+
+unsafeWriteA :: Enum c => Array c -> Point -> c -> ()
+{-# INLINE unsafeWriteA #-}
+unsafeWriteA Array{..} p c = runST $ do
+  vThawed <- U.unsafeThaw avector
+  VM.write vThawed (pindex axsize p) (cnv c)
+
+unsafeWriteManyA :: Enum c => Array c -> [Point] -> c -> ()
+{-# INLINE unsafeWriteManyA #-}
+unsafeWriteManyA Array{..} l c = runST $ do
+  vThawed <- U.unsafeThaw avector
+  let d = cnv c
+  mapM_ (\p -> VM.write vThawed (pindex axsize p) d) l
 
 -- | Create an array from a replicated element.
 replicateA :: Enum c => X -> Y -> c -> Array c

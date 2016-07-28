@@ -119,10 +119,7 @@ getCacheBfsAndPath aid target = do
         Nothing -> do
           Level{lxsize, lysize} <- getLevel $ blid b
           return $! PointArray.replicateA lxsize lysize apartBfs
-      let bfs = case misEnterable of
-            Nothing -> PointArray.unsafeUpdateA vInitial [(source, minKnownBfs)]
-            Just isEnterable -> fillBfs isEnterable source vInitial
-      pathAndStore bfs
+      pathAndStore $ fillBfs misEnterable source vInitial
 
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
 {-# INLINE getCacheBfs #-}
