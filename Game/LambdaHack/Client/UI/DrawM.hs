@@ -144,9 +144,14 @@ drawBaseFrame dm drawnLevelId = do
                   , Just bpos )
         _ -> ([], Nothing, Nothing)
       deleteXhair = maybe id (\xhair -> delete xhair) xhairPos
-      mpath = maybe Nothing (\(_, mp) -> if null bline
-                                         then Nothing
-                                         else deleteXhair <$> mp) bfsmpath
+      mpath = maybe Nothing
+                    (\(_, mp) -> if null bline
+                                 then Nothing
+                                 else case mp of
+                                   NoPath -> Nothing
+                                   AndPath {pathList} ->
+                                     Just $ deleteXhair pathList)
+                    bfsmpath
       actorsHere = actorAssocs (const True) drawnLevelId s
       xhairHere = find (\(_, m) -> xhairPos == Just (Actor.bpos m))
                         actorsHere

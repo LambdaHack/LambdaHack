@@ -276,15 +276,12 @@ targetStrategy aid = do
                  -- as soon as it bumps into them.
              | otherwise -> do
                let p = bpos body
-               (bfs, mpath) <- getCacheBfsAndPath aid p
+               mpath <- getCachePath aid p
                case mpath of
-                 Nothing -> pickNewTarget  -- enemy became unreachable
-                 Just [] -> pickNewTarget  -- not even single step possible
-                 Just path -> return $! returN "TEnemy"
-                   ( oldTgt
-                   , let lenPartial = length path + chessDist p (last path)
-                     in Just ( bpos b : path
-                             , (p, fromMaybe lenPartial $ accessBfs bfs p) ))
+                 NoPath -> pickNewTarget  -- enemy became unreachable
+                 AndPath{pathLen=0} -> pickNewTarget  -- he is his own enemy
+                 AndPath{..} -> return $! returN "TEnemy"
+                   (oldTgt, Just (pathSource : pathList, (p, pathLen)))
         TEnemyPos _ lid p permit  -- chase last position even if foe hides
           | lid /= blid b  -- wrong level
             || chessDist (bpos b) p >= nearby  -- too far and not visible
@@ -357,12 +354,7 @@ createPath aid tgt = do
 -- TODO: for now, an extra turn at target is needed, e.g., to pick up items
 --  Just p | p == bpos b -> return Nothing
     Just p -> do
-      (bfs, mpath) <- getCacheBfsAndPath aid p
+      mpath <- getCachePath aid p
       return $! case mpath of
-        Nothing -> Nothing
-        Just path ->
-          let lenPartial = case length path of
-                0 -> 0
-                n -> n + chessDist p (last path)
-          in Just (tgt, ( bpos b : path
-                        , (p, fromMaybe lenPartial $ accessBfs bfs p) ))
+        NoPath -> Nothing
+        AndPath{..} -> Just (tgt, (pathSource : pathList, (p, pathLen)))

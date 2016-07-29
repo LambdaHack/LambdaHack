@@ -77,7 +77,7 @@ data BfsAndPath =
     BfsOnly {bfsArr :: !(PointArray.Array BfsDistance)}
   | BfsInvalid {bfsArr :: !(PointArray.Array BfsDistance)}
   | BfsAndPath { bfsArr  :: !(PointArray.Array BfsDistance)
-               , bfsPath :: !(EM.EnumMap Point (Maybe [Point]))
+               , bfsPath :: !(EM.EnumMap Point AndPath)
                }
   deriving Show
 

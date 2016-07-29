@@ -36,6 +36,7 @@ import qualified Data.Text as T
 import Data.Version
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
 import qualified Game.LambdaHack.Client.Key as K
@@ -477,11 +478,11 @@ goToXhair initialStep run = do
             let !_A = assert (initialStep || not run) ()
             mpath <- getCachePath leader c
             case mpath of
-              Nothing -> failWith "no route to crosshair"
-              Just [] -> assert `failure` (leader, b, c)
-              Just (p1 : _) -> do
+              NoPath -> failWith "no route to crosshair"
+              AndPath{pathList=[]} -> assert `failure` (leader, b, c)
+              AndPath{pathList = p1 : _, pathSource} -> do
                 let finalGoal = p1 == c
-                    dir = towards (bpos b) p1
+                    dir = towards pathSource p1
                 moveRunHuman initialStep finalGoal run False dir
 
 multiActorGoTo :: MonadClientUI m
@@ -502,29 +503,26 @@ multiActorGoTo arena c paramOld =
         let runMembersNew = rs ++ [r]
             paramNew = paramOld { runMembers = runMembersNew
                                 , runWaiting = 0}
-        b <- getsState $ getActorBody r
         mpath <- getCachePath r c
         case mpath of
-          Nothing -> return $ Left "no route to crosshair"
-          Just [] ->
+          NoPath -> return $ Left "no route to crosshair"
+          AndPath{pathList=[]} ->
             -- This actor already at goal; will be caught in goToXhair.
             return $ Left ""
-          Just (p1 : _) -> do
+          AndPath{pathList = p1 : _, pathSource} -> do
             let finalGoal = p1 == c
-                dir = towards (bpos b) p1
-                tpos = bpos b `shift` dir
-            tgts <- getsState $ posToActors tpos arena
+                dir = towards pathSource p1
+            tgts <- getsState $ posToActors p1 arena
             case tgts of
               [] -> do
                 modifySession $ \sess -> sess {srunning = Just paramNew}
                 return $ Right (finalGoal, dir)
-              [(target, _)]
-                | target `elem` rs || runWaiting <= length rs ->
+              [(target, _)] | target `elem` rs || runWaiting <= length rs ->
                 -- Let r wait until all others move. Mark it in runWaiting
                 -- to avoid cycles. When all wait for each other, fail.
                 multiActorGoTo arena c paramNew{runWaiting=runWaiting + 1}
               _ ->
-                 return $ Left "actor in the way"
+                return $ Left "actor in the way"
 
 -- * RunOnceToXhair
 

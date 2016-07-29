@@ -89,22 +89,21 @@ createBfs misEnterable mbfs aid = do
 updatePathFromBfs :: MonadClient m
                   => Maybe (Point -> Point -> MoveLegal) -> BfsAndPath
                   -> ActorId -> Point
-                  -> m (PointArray.Array BfsDistance, Maybe [Point])
+                  -> m (PointArray.Array BfsDistance, AndPath)
 updatePathFromBfs misEnterable bfsAndPathOld aid target = do
   seps <- getsClient seps
   b <- getsState $ getActorBody aid
   let source = bpos b
       getPath bfsArr = case misEnterable of
-        Nothing -> Nothing
-        Just isEnterable ->
-          findPathBfs isEnterable source target seps bfsArr
-  (bfsAndPath, mpath) <- case bfsAndPathOld of
+        Nothing -> NoPath
+        Just isEnterable -> findPathBfs isEnterable source target seps bfsArr
+  (!bfsAndPath, !mpath) <- case bfsAndPathOld of
     BfsAndPath{bfsArr, bfsPath=oldBfsPath} -> do
-      let !mpath = getPath bfsArr
+      let mpath = getPath bfsArr
           bfsPath = EM.insert target mpath oldBfsPath
       return (BfsAndPath{..}, mpath)
     BfsOnly{bfsArr} -> do
-      let !mpath = getPath bfsArr
+      let mpath = getPath bfsArr
           bfsPath = EM.singleton target mpath
       return (BfsAndPath{..}, mpath)
     BfsInvalid{} -> assert `failure` (bfsAndPathOld, aid, target)
@@ -115,7 +114,7 @@ updatePathFromBfs misEnterable bfsAndPathOld aid target = do
 -- | Get cached BFS array and path or, if not stored, generate and store first.
 getCacheBfsAndPath :: forall m. MonadClient m
                    => ActorId -> Point
-                   -> m (PointArray.Array BfsDistance, Maybe [Point])
+                   -> m (PointArray.Array BfsDistance, AndPath)
 getCacheBfsAndPath aid target = do
   b <- getsState $ getActorBody aid
   let source = bpos b
@@ -160,7 +159,7 @@ getCacheBfs aid = do
       return bfsArr
 
 -- | Get cached BFS path or, if not stored, generate and store first.
-getCachePath :: MonadClient m => ActorId -> Point -> m (Maybe [Point])
+getCachePath :: MonadClient m => ActorId -> Point -> m AndPath
 {-# INLINE getCachePath #-}
 getCachePath aid target = snd <$> getCacheBfsAndPath aid target
 
