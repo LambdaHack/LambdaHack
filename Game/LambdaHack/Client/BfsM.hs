@@ -158,8 +158,11 @@ getCacheBfs aid = do
 
 -- | Get cached BFS path or, if not stored, generate and store first.
 getCachePath :: MonadClient m => ActorId -> Point -> m AndPath
-{-# INLINE getCachePath #-}
-getCachePath aid target = snd <$> getCacheBfsAndPath aid target
+getCachePath aid target = do
+  b <- getsState $ getActorBody aid
+  let source = bpos b
+  if | source == target -> return $! AndPath source [] target 0  -- speedup
+     | otherwise -> snd <$> getCacheBfsAndPath aid target
 
 condBFS :: MonadClient m
         => ActorId
