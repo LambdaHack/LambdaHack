@@ -50,9 +50,11 @@ targetStrategy aid = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
-  let stepAccesible mtgt@(Just (_, (p : q : _ : _, _))) = -- goal not adjacent
-        if accessible cops lvl p q then mtgt else Nothing
-      stepAccesible mtgt = mtgt  -- goal can be inaccessible, e.g., suspect
+  let stepAccesible :: Maybe PathEtc -> Bool
+      stepAccesible (Just (p : q : _ : _, _)) =  -- goal not adjacent
+        accessible cops lvl p q  -- non-goal has to be accessible
+      stepAccesible Just{} = True  -- ok if goal inaccessible, e.g., suspect
+      stepAccesible Nothing = False
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
     Just (tgt, Nothing) ->
@@ -60,19 +62,24 @@ targetStrategy aid = do
       -- This is also triggered by @UpdLeadFaction@. The recreated path can be
       -- different than on the other client (AI or UI), but we don't care
       -- as long as the target stays the same at least for a moment.
-      createPath aid tgt
+      Just <$> createPath aid tgt
     Just (tgt, Just path) -> do
       mvalidPos <- aidTgtToPos aid (blid b) (Just tgt)
       if isNothing mvalidPos then return Nothing  -- wrong level
       else return $! case path of
-        (p : q : rest, (goal, len)) -> stepAccesible $
-          if | bpos b == p -> Just (tgt, path)  -- no move last turn
+        (p : q : rest, (goal, len)) ->
+          if | bpos b == p -> if stepAccesible (Just path)
+                              then Just (tgt, Just path)  -- no move last turn
+                              else Nothing
              | bpos b == q ->
-               Just (tgt, (q : rest, (goal, len - 1)))  -- step along path
+               let newPath = Just (q : rest, (goal, len - 1))
+               in if stepAccesible newPath
+                  then Just (tgt, newPath)  -- step along path
+                  else Nothing
              | otherwise -> Nothing  -- veered off the path
         ([p], (goal, _)) ->
           if p == goal && bpos b == p then
-            Just (tgt, path)  -- goal reached; stay there picking up items
+            Just (tgt, Just path)  -- goal reached; stay there picking up items
           else
             Nothing  -- somebody pushed us off the goal or the path to the goal
                      -- was partial; let's target again
@@ -150,18 +157,19 @@ targetStrategy aid = do
           `elem` [TMeleeAndRanged, TMeleeAdjacent, TBlock, TRoam, TPatrol]
       setPath :: Target -> m (Strategy (Target, Maybe PathEtc))
       setPath tgt = do
-        mpath <- createPath aid tgt
-        let take5 (TEnemy{}, pgl) =
-              (tgt, Just pgl)  -- for projecting, even by roaming actors
-            take5 (_, pgl@(path, (goal, len))) =
+        let take5 tap@(TEnemy{}, _) =
+              tap  -- @TEnemy@ needed for projecting, even by roaming actors
+            take5 tap@(andTgt, Just (path, (goal, len))) =
               if slackTactic then
-                -- Best path only followed 5 moves; then straight on.
+                -- Best path only followed 5 moves; then straight on. Cheaper.
                 let path5 = take 5 path
-                    vtgt | bpos b == goal = tgt
+                    vtgt | bpos b == goal = andTgt  -- goal reached
                          | otherwise = TVector $ towards (bpos b) goal
                 in (vtgt, Just (path5, (goal, len)))
-              else (tgt, Just pgl)
-        return $! returN "setPath" $ maybe (tgt, Nothing) take5 mpath
+              else tap
+            take5 tap = tap
+        tgtpath <- createPath aid tgt
+        return $! returN "setPath" $ take5 tgtpath
       pickNewTarget :: m (Strategy (Target, Maybe PathEtc))
       pickNewTarget = do
         -- This is mostly lazy and used between 0 and 3 times below.
@@ -257,9 +265,10 @@ targetStrategy aid = do
               _ -> True
         modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
-      updateTgt :: Target -> PathEtc
+      updateTgt :: (Target, Maybe PathEtc)
                 -> m (Strategy (Target, Maybe PathEtc))
-      updateTgt oldTgt updatedPath@(_, (_, len)) = case oldTgt of
+      updateTgt (_, Nothing) = pickNewTarget
+      updateTgt (oldTgt, Just updatedPath@(_, (_, len))) = case oldTgt of
         TEnemy a permit -> do
           body <- getsState $ getActorBody a
           if | not focused  -- prefers closer foes
@@ -341,20 +350,20 @@ targetStrategy aid = do
           return $! returN "TVector" (oldTgt, Just updatedPath)
         TVector{} -> pickNewTarget
   case oldTgtUpdatedPath of
-    Just (oldTgt, updatedPath) -> updateTgt oldTgt updatedPath
     Nothing -> pickNewTarget
+    Just tap -> updateTgt tap
 
 createPath :: MonadClient m
-           => ActorId -> Target -> m (Maybe (Target, PathEtc))
+           => ActorId -> Target -> m (Target, Maybe PathEtc)
 createPath aid tgt = do
   b <- getsState $ getActorBody aid
   mpos <- aidTgtToPos aid (blid b) (Just tgt)
   case mpos of
-    Nothing -> return Nothing
+    Nothing -> return (tgt, Nothing)
 -- TODO: for now, an extra turn at target is needed, e.g., to pick up items
 --  Just p | p == bpos b -> return Nothing
     Just p -> do
       mpath <- getCachePath aid p
       return $! case mpath of
-        NoPath -> Nothing
-        AndPath{..} -> Just (tgt, (pathSource : pathList, (p, pathLen)))
+        NoPath -> (tgt, Nothing)
+        AndPath{..} -> (tgt, Just (pathSource : pathList, (p, pathLen)))

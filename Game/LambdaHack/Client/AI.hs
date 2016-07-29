@@ -59,7 +59,7 @@ nonLeaderQueryAI oldAid = do
 -- updates the target in the client state and returns the new target explicitly.
 refreshTarget :: MonadClient m
               => (ActorId, Actor)  -- ^ the actor to refresh
-              -> m (Maybe (Target, PathEtc))
+              -> m (Target, Maybe PathEtc)
 refreshTarget (aid, body) = do
   side <- getsClient sside
   let !_A = assert (bfid body == side
@@ -71,12 +71,11 @@ refreshTarget (aid, body) = do
   stratTarget <- targetStrategy aid
   tgtMPath <-
     if nullStrategy stratTarget then  -- equiv to nullFreq
-      -- No sensible target; wipe out the old one.
-      return Nothing
-    else do
+      -- No sensible target; wrong; they should go in circles at worst.
+      assert `failure` stratTarget
+    else
       -- Choose a target from those proposed by AI for the actor.
-      tmp <- rndToAction $ frequency $ bestVariant stratTarget
-      return $ Just tmp
+      rndToAction $ frequency $ bestVariant stratTarget
   oldTgt <- getsClient $ EM.lookup aid . stargetD
   let _debug = T.unpack
           $ "\nHandleAI symbol:"    <+> tshow (bsymbol body)
@@ -87,10 +86,8 @@ refreshTarget (aid, body) = do
           <> "\nHandleAI target:"   <+> tshow tgtMPath
 --  trace _debug skip
   modifyClient $ \cli ->
-    cli {stargetD = EM.alter (const tgtMPath) aid (stargetD cli)}
-  return $! case tgtMPath of
-    Just (tgt, Just pathEtc) -> Just (tgt, pathEtc)
-    _ -> Nothing
+    cli {stargetD = EM.alter (const $ Just tgtMPath) aid (stargetD cli)}
+  return tgtMPath
 
 -- | Pick an action the actor will perfrom this turn.
 pickAction :: MonadClient m => (ActorId, Actor) -> m RequestAnyAbility

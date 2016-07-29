@@ -8,7 +8,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Arrow
 import qualified Data.EnumMap.Strict as EM
 import Data.Ord
 
@@ -37,7 +36,7 @@ import Game.LambdaHack.Content.ModeKind
 -- Pick a new leader from among the actors on the current level.
 -- Refresh the target of the new leader, even if unchanged.
 pickActorToMove :: MonadClient m
-                => ((ActorId, Actor) -> m (Maybe (Target, PathEtc)))
+                => ((ActorId, Actor) -> m (Target, Maybe PathEtc))
                 -> m (ActorId, Actor)
 pickActorToMove refreshTarget = do
   Kind.COps{cotile} <- getsState scops
@@ -74,9 +73,9 @@ pickActorToMove refreshTarget = do
       -- (to make the AI appear more human-like and easier to observe).
       -- TODO: this also takes melee into account, but not shooting.
       let refresh aidBody = do
-            mtgt <- refreshTarget aidBody
-            return $! (aidBody,) <$> mtgt
-      oursTgt <- catMaybes <$> mapM refresh ours
+            tgt <- refreshTarget aidBody
+            return (aidBody, tgt)
+      oursTgt <- mapM refresh ours
       let actorVulnerable ((aid, body), _) = do
             activeItems <- activeItemsClient aid
             condMeleeBad <- condMeleeBadM aid
@@ -104,7 +103,9 @@ pickActorToMove refreshTarget = do
                               && not condFastThreatAdj
                          else heavilyDistressed  -- shot at
                            -- TODO: modify when reaction fire is possible
-          actorHearning (_, (TEnemyPos{}, (_, (_, d)))) | d <= 2 =
+          actorHearning (_, (TEnemyPos{}, Nothing)) =
+            return False
+          actorHearning (_, (TEnemyPos{}, Just (_, (_, d)))) | d <= 2 =
             return False  -- noise probably due to fleeing target
           actorHearning ((_aid, b), _) = do
             allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
@@ -136,11 +137,12 @@ pickActorToMove refreshTarget = do
           (oursTEnemy, oursOther) = partition targetTEnemy oursNotMeleeBad
           -- These are not necessarily stuck (perhaps can go around),
           -- but their current path is blocked by friends.
-          targetBlocked our@((_aid, _b), (_tgt, (path, _etc))) =
-            let next = case path of
-                  [] -> assert `failure` our
-                  [_goal] -> Nothing
-                  _ : q : _ -> Just q
+          targetBlocked our@((_aid, _b), (_tgt, mpath)) =
+            let next = case mpath of
+                  Nothing ->  assert `failure` our
+                  Just ([], _) -> assert `failure` our
+                  Just ([_goal], _) -> Nothing
+                  Just (_ : q : _, _) -> Just q
             in any ((== next) . Just . bpos . snd) ours
 -- TODO: stuck actors are picked while others close could approach an enemy;
 -- we should detect stuck actors (or one-sided stuck)
@@ -150,9 +152,11 @@ pickActorToMove refreshTarget = do
           (oursBlocked, oursPos) =
             partition targetBlocked $ oursOther ++ oursMeleeBad
           -- Lower overhead is better.
-          overheadOurs :: ((ActorId, Actor), (Target, PathEtc))
+          overheadOurs :: ((ActorId, Actor), (Target, Maybe PathEtc))
                        -> (Int, Int, Bool)
-          overheadOurs our@((aid, b), (_, (_, (goal, d)))) =
+          overheadOurs (_, (_, Nothing)) =
+            (-1000, 0, False)
+          overheadOurs our@((aid, b), (_, Just (_, (goal, d)))) =
             if targetTEnemy our then
               -- TODO: take weapon, walk and fight speed, etc. into account
               ( d + if targetBlocked our then 2 else 0  -- possible delay, hacky
@@ -198,7 +202,7 @@ pickActorToMove refreshTarget = do
           sortOurs = sortBy $ comparing overheadOurs
           goodGeneric ((aid, b), (_tgt, _pathEtc)) =
             not (aid == oldAid && waitedLastTurn b)  -- not stuck
-          goodTEnemy our@((_aid, b), (TEnemy{}, (_path, (goal, _d)))) =
+          goodTEnemy our@((_aid, b), (TEnemy{}, Just (_path, (goal, _d)))) =
             not (adjacent (bpos b) goal) -- not in melee range already
             && goodGeneric our
           goodTEnemy our = goodGeneric our
@@ -226,7 +230,7 @@ pickActorToMove refreshTarget = do
         _ -> return (oldAid, oldBody)
 
 useTactics :: MonadClient m
-           => ((ActorId, Actor) -> m (Maybe (Target, PathEtc)))
+           => ((ActorId, Actor) -> m (Target, Maybe PathEtc))
            -> ActorId
            -> m ()
 useTactics refreshTarget oldAid = do
@@ -240,15 +244,14 @@ useTactics refreshTarget oldAid = do
       setPath mtgt = case mtgt of
         Nothing -> return False
         Just (tgtLeader, _) -> do
-          mpath <- createPath oldAid tgtLeader
-          case mpath of
-            Nothing -> return False
-            Just path -> do
-              let tgtMPath = second Just path
+          tgtpath <- createPath oldAid tgtLeader
+          case tgtpath of
+            tgtMPath@(_, Just _) -> do
               modifyClient $ \cli ->
                 cli {stargetD = EM.alter (const $ Just tgtMPath)
                                          oldAid (stargetD cli)}
               return True
+            _ -> return False
       follow = case mleader of
         -- If no leader at all (forced @TFollow@ tactic on an actor
         -- from a leaderless faction), fall back to @TExplore@.
