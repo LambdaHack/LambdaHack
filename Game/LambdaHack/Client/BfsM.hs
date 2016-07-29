@@ -94,9 +94,7 @@ updatePathFromBfs misEnterable bfsAndPathOld aid target = do
   seps <- getsClient seps
   b <- getsState $ getActorBody aid
   let source = bpos b
-      getPath bfsArr = case misEnterable of
-        Nothing -> NoPath
-        Just isEnterable -> findPathBfs isEnterable source target seps bfsArr
+      getPath bfsArr = findPathBfs misEnterable source target seps bfsArr
   (!bfsAndPath, !mpath) <- case bfsAndPathOld of
     BfsAndPath{bfsArr, bfsPath=oldBfsPath} -> do
       let mpath = getPath bfsArr

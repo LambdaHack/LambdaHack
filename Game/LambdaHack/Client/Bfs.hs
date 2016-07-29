@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP, DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Breadth first search algorithms.
 module Game.LambdaHack.Client.Bfs
   ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, fillBfs
@@ -16,6 +16,7 @@ import Game.LambdaHack.Common.Prelude
 import Data.Binary
 import Data.Bits (Bits, complement, (.&.), (.|.))
 import Data.Either
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -100,11 +101,13 @@ fillBfs (Just isEnterable) source aInitial =
 data AndPath =
     AndPath { pathSource :: !Point
             , pathList   :: ![Point]
-            , pathTarget :: !Point    -- needn't be @last pathList@
+            , pathGoal   :: !Point    -- needn't be @last pathList@
             , pathLen    :: !Int      -- needn't be @length pathList@
             }
   | NoPath
-  deriving Show
+  deriving (Show, Generic)
+
+instance Binary AndPath
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
 -- to determine a few really different paths and compare them,
@@ -115,11 +118,12 @@ data AndPath =
 -- The @eps@ coefficient determines which direction (or the closest
 -- directions available) that path should prefer, where 0 means north-west
 -- and 1 means north.
-findPathBfs :: (Point -> Point -> MoveLegal)
+findPathBfs :: Maybe (Point -> Point -> MoveLegal)
             -> Point -> Point -> Int
             -> PointArray.Array BfsDistance
             -> AndPath
-findPathBfs isEnterable pathSource pathTarget sepsRaw bfs =
+findPathBfs Nothing _ _ _ _ = NoPath
+findPathBfs (Just isEnterable) pathSource pathGoal sepsRaw bfs =
   assert (bfs PointArray.! pathSource == minKnownBfs) $
   let eps = sepsRaw `mod` 4
       (mc1, mc2) = splitAt eps movesCardinal
@@ -128,7 +132,7 @@ findPathBfs isEnterable pathSource pathTarget sepsRaw bfs =
       track :: Point -> BfsDistance -> [Point] -> [Point]
       track pos oldDist suffix | oldDist == minKnownBfs =
         assert (pos == pathSource
-                `blame` (pathSource, pathTarget, pos, suffix)) suffix
+                `blame` (pathSource, pathGoal, pos, suffix)) suffix
       track pos oldDist suffix =
         let dist = pred oldDist
             children = map (shift pos) prefMoves
@@ -145,23 +149,23 @@ findPathBfs isEnterable pathSource pathTarget sepsRaw bfs =
               p : _ -> p
               [] -> assert `failure` (pos, oldDist, children)
         in track minP dist (pos : suffix)
-      targetDist = bfs PointArray.! pathTarget
-  in if targetDist /= apartBfs
-     then let pathList = track pathTarget (targetDist .|. minKnownBfs) []
-              pathLen = fromEnum $ targetDist .&. complement minKnownBfs
+      goalDist = bfs PointArray.! pathGoal
+  in if goalDist /= apartBfs
+     then let pathList = track pathGoal (goalDist .|. minKnownBfs) []
+              pathLen = fromEnum $ goalDist .&. complement minKnownBfs
           in AndPath{..}
      else let f :: (Point, BfsDistance, Int) -> Point -> BfsDistance
                 -> (Point, BfsDistance, Int)
               f acc@(pAcc, dAcc, chessAcc) p d =
                 if d > abortedUnknownBfs && d /= abortedKnownBfs
                 then acc
-                else let chessNew = chessDist p pathTarget
+                else let chessNew = chessDist p pathGoal
                      in case compare chessNew chessAcc of
                        LT -> (p, d, chessNew)
                        EQ -> case compare d dAcc of
                          LT -> (p, d, chessNew)
-                         EQ | euclidDistSq p pathTarget
-                              < euclidDistSq pAcc pathTarget -> (p, d, chessNew)
+                         EQ | euclidDistSq p pathGoal
+                              < euclidDistSq pAcc pathGoal -> (p, d, chessNew)
                          _ -> acc
                        _ -> acc
               (pRes, dRes, chessRes) =
@@ -175,8 +179,8 @@ findPathBfs isEnterable pathSource pathTarget sepsRaw bfs =
 -- | Access a BFS array and interpret the looked up distance value.
 accessBfs :: PointArray.Array BfsDistance -> Point -> Maybe Int
 {-# INLINE accessBfs #-}
-accessBfs bfs target =
-  let dist = bfs PointArray.! target
+accessBfs bfs p =
+  let dist = bfs PointArray.! p
   in if dist == apartBfs
      then Nothing
      else Just $ fromEnum $ dist .&. complement minKnownBfs
