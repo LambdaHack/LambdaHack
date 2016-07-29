@@ -73,7 +73,7 @@ queryUI = do
         !_A = assert (isJust mleader) ()
     req <- humanCommand
     leader2 <- getLeaderUI
-    mtgt2 <- getsClient $ fmap fst . EM.lookup leader2 . stargetD
+    mtgt2 <- getsClient $ fmap tapTgt . EM.lookup leader2 . stargetD
     if mleader /= Just (leader2, mtgt2)
       then return (req, Just (leader2, mtgt2))
       else return (req, Nothing)

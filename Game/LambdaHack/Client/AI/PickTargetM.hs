@@ -41,7 +41,7 @@ import Game.LambdaHack.Content.RuleKind
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m
-               => ActorId -> m (Strategy (Target, Maybe PathEtc))
+               => ActorId -> m (Strategy TgtAndPath)
 targetStrategy aid = do
   cops@Kind.COps{corule, cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   let stdRuleset = Kind.stdRuleset corule
@@ -50,40 +50,43 @@ targetStrategy aid = do
   b <- getsState $ getActorBody aid
   activeItems <- activeItemsClient aid
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
-  let stepAccesible :: Maybe PathEtc -> Bool
-      stepAccesible (Just (p : q : _ : _, _)) =  -- goal not adjacent
-        accessible cops lvl p q  -- non-goal has to be accessible
-      stepAccesible Just{} = True  -- ok if goal inaccessible, e.g., suspect
-      stepAccesible Nothing = False
+  let stepAccesible :: AndPath -> Bool
+      stepAccesible AndPath{pathSource,pathList=q : _ : _} =  -- goal not adjacent
+        accessible cops lvl pathSource q  -- non-goal has to be accessible
+      stepAccesible AndPath{} = True  -- ok if goal inaccessible, e.g., suspect
+      stepAccesible NoPath = False
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
-    Just (tgt, Nothing) ->
+    Just TgtAndPath{tapTgt,tapPath=NoPath} ->
       -- This case is especially for TEnemyPos that would be lost otherwise.
       -- This is also triggered by @UpdLeadFaction@. The recreated path can be
       -- different than on the other client (AI or UI), but we don't care
       -- as long as the target stays the same at least for a moment.
-      Just <$> createPath aid tgt
-    Just (tgt, Just path) -> do
-      mvalidPos <- aidTgtToPos aid (blid b) (Just tgt)
+      Just <$> createPath aid tapTgt
+    Just tap@TgtAndPath{..} -> do
+      mvalidPos <- aidTgtToPos aid (blid b) (Just tapTgt)
       if isNothing mvalidPos then return Nothing  -- wrong level
-      else return $! case path of
-        (p : q : rest, (goal, len)) ->
-          if | bpos b == p -> if stepAccesible (Just path)
-                              then Just (tgt, Just path)  -- no move last turn
+      else return $! case tapPath of
+        AndPath{pathSource=p,pathList=q : rest,..} ->
+          if | bpos b == p -> if stepAccesible tapPath
+                              then mtgtMPath  -- no move last turn
                               else Nothing
              | bpos b == q ->
-               let newPath = Just (q : rest, (goal, len - 1))
+               let newPath = AndPath{ pathSource = q
+                                    , pathList = rest
+                                    , pathGoal
+                                    , pathLen = pathLen - 1 }
                in if stepAccesible newPath
-                  then Just (tgt, newPath)  -- step along path
+                  then Just tap{tapPath=newPath}  -- step along path
                   else Nothing
              | otherwise -> Nothing  -- veered off the path
-        ([p], (goal, _)) ->
-          if p == goal && bpos b == p then
-            Just (tgt, Just path)  -- goal reached; stay there picking up items
+        AndPath{pathList=[],..}->
+          if pathSource == pathGoal && bpos b == pathSource then
+            mtgtMPath  -- goal reached; stay there picking up items
           else
             Nothing  -- somebody pushed us off the goal or the path to the goal
                      -- was partial; let's target again
-        ([], _) -> assert `failure` (aid, b, mtgtMPath)
+        NoPath -> assert `failure` ()
     Nothing -> return Nothing  -- no target assigned yet
   let !_A = assert (not $ bproj b) ()  -- would work, but is probably a bug
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -155,22 +158,22 @@ targetStrategy aid = do
       slackTactic =
         ftactic (gplayer fact)
           `elem` [TMeleeAndRanged, TMeleeAdjacent, TBlock, TRoam, TPatrol]
-      setPath :: Target -> m (Strategy (Target, Maybe PathEtc))
+      setPath :: Target -> m (Strategy TgtAndPath)
       setPath tgt = do
-        let take5 tap@(TEnemy{}, _) =
+        let take4 tap@TgtAndPath{tapTgt=TEnemy{}} =
               tap  -- @TEnemy@ needed for projecting, even by roaming actors
-            take5 tap@(andTgt, Just (path, (goal, len))) =
+            take4 tap@TgtAndPath{tapTgt,tapPath=AndPath{..}} =
               if slackTactic then
-                -- Best path only followed 5 moves; then straight on. Cheaper.
-                let path5 = take 5 path
-                    vtgt | bpos b == goal = andTgt  -- goal reached
-                         | otherwise = TVector $ towards (bpos b) goal
-                in (vtgt, Just (path5, (goal, len)))
+                -- Best path only followed 4 moves; then straight on. Cheaper.
+                let path4 = take 4 pathList
+                    vtgt | bpos b == pathGoal = tapTgt  -- goal reached
+                         | otherwise = TVector $ towards (bpos b) pathGoal
+                in TgtAndPath{tapTgt=vtgt, tapPath=AndPath{pathList=path4, ..}}
               else tap
-            take5 tap = tap
+            take4 tap = tap
         tgtpath <- createPath aid tgt
-        return $! returN "setPath" $ take5 tgtpath
-      pickNewTarget :: m (Strategy (Target, Maybe PathEtc))
+        return $! returN "setPath" $ take4 tgtpath
+      pickNewTarget :: m (Strategy TgtAndPath)
       pickNewTarget = do
         -- This is mostly lazy and used between 0 and 3 times below.
         ctriggers <- closestTriggers Nothing aid
@@ -204,14 +207,18 @@ targetStrategy aid = do
                                         $ (20, v0) : map (1,) moves
                             v <- rndToAction $ frequency vFreq
                             -- Items and smells, etc. considered every 7 moves.
-                            let tra = trajectoryToPathBounded
-                                        lxsize lysize (bpos b) (replicate 7 v)
-                                path = nub $ bpos b : tra
+                            let pathSource = bpos b
+                                tra = trajectoryToPathBounded
+                                        lxsize lysize pathSource (replicate 7 v)
+                                pathList = nub tra
+                                pathGoal = last pathList
+                                pathLen = length pathList
                             return $! returN "tgt with no exploration"
-                              ( TVector v
-                              , if length path == 1
-                                then Nothing
-                                else Just (path, (last path, length path - 1)) )
+                              TgtAndPath
+                                { tapTgt = TVector v
+                                , tapPath = if pathLen == 0
+                                            then NoPath
+                                            else AndPath{..} }
                           oldpos = fromMaybe originPoint (boldpos b)
                           vOld = bpos b `vectorToFrom` oldpos
                           pNew = shiftBounded lxsize lysize (bpos b) vOld
@@ -260,15 +267,14 @@ targetStrategy aid = do
                   setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
       tellOthersNothingHere pos = do
-        let f (tgt, _) = case tgt of
+        let f TgtAndPath{tapTgt} = case tapTgt of
               TEnemyPos _ lid p _ -> p /= pos || lid /= blid b
               _ -> True
         modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
-      updateTgt :: (Target, Maybe PathEtc)
-                -> m (Strategy (Target, Maybe PathEtc))
-      updateTgt (_, Nothing) = pickNewTarget
-      updateTgt (oldTgt, Just updatedPath@(_, (_, len))) = case oldTgt of
+      updateTgt :: TgtAndPath -> m (Strategy TgtAndPath)
+      updateTgt TgtAndPath{tapPath=NoPath} = pickNewTarget
+      updateTgt tap@TgtAndPath{tapPath=AndPath{..},tapTgt} = case tapTgt of
         TEnemy a permit -> do
           body <- getsState $ getActorBody a
           if | not focused  -- prefers closer foes
@@ -277,8 +283,8 @@ targetStrategy aid = do
                || actorDying body  -- foe already dying
                || permit ->  -- never follow a friend more than 1 step
                pickNewTarget
-             | bpos body == fst (snd updatedPath) ->
-               return $! returN "TEnemy" (oldTgt, Just updatedPath)
+             | bpos body == pathGoal ->
+               return $! returN "TEnemy" tap
                  -- The enemy didn't move since the target acquired.
                  -- If any walls were added that make the enemy
                  -- unreachable, AI learns that the hard way,
@@ -289,8 +295,7 @@ targetStrategy aid = do
                case mpath of
                  NoPath -> pickNewTarget  -- enemy became unreachable
                  AndPath{pathLen=0} -> pickNewTarget  -- he is his own enemy
-                 AndPath{..} -> return $! returN "TEnemy"
-                   (oldTgt, Just (pathSource : pathList, (p, pathLen)))
+                 AndPath{} -> return $! returN "TEnemy" tap{tapPath=mpath}
         TEnemyPos _ lid p permit  -- chase last position even if foe hides
           | lid /= blid b  -- wrong level
             || chessDist (bpos b) p >= nearby  -- too far and not visible
@@ -298,7 +303,7 @@ targetStrategy aid = do
             -> pickNewTarget
           | p == bpos b -> tellOthersNothingHere p
           | otherwise ->
-              return $! returN "TEnemyPos" (oldTgt, Just updatedPath)
+              return $! returN "TEnemyPos" tap
         _ | not $ null nearbyFoes ->
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
@@ -345,25 +350,22 @@ targetStrategy aid = do
                            && (isStuck
                                || not allExplored))
           then pickNewTarget
-          else return $! returN "TPoint" (oldTgt, Just updatedPath)
-        TVector{} | len > 1 ->
-          return $! returN "TVector" (oldTgt, Just updatedPath)
-        TVector{} -> pickNewTarget
+          else return $! returN "TPoint" tap
+        TVector{} -> if pathLen > 1
+                     then return $! returN "TVector" tap
+                     else pickNewTarget
   case oldTgtUpdatedPath of
     Nothing -> pickNewTarget
     Just tap -> updateTgt tap
 
-createPath :: MonadClient m
-           => ActorId -> Target -> m (Target, Maybe PathEtc)
-createPath aid tgt = do
+createPath :: MonadClient m => ActorId -> Target -> m TgtAndPath
+createPath aid tapTgt = do
   b <- getsState $ getActorBody aid
-  mpos <- aidTgtToPos aid (blid b) (Just tgt)
+  mpos <- aidTgtToPos aid (blid b) (Just tapTgt)
   case mpos of
-    Nothing -> return (tgt, Nothing)
+    Nothing -> return TgtAndPath{tapTgt, tapPath=NoPath}
 -- TODO: for now, an extra turn at target is needed, e.g., to pick up items
 --  Just p | p == bpos b -> return Nothing
     Just p -> do
-      mpath <- getCachePath aid p
-      return $! case mpath of
-        NoPath -> (tgt, Nothing)
-        AndPath{..} -> (tgt, Just (pathSource : pathList, (p, pathLen)))
+      tapPath <- getCachePath aid p
+      return $! TgtAndPath{..}

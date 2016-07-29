@@ -1,9 +1,9 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Client.State
   ( StateClient(..), emptyStateClient
   , updateTarget, getTarget, updateLeader, sside
-  , PathEtc, BfsAndPath(..), toggleMarkSuspect
+  , BfsAndPath(..), TgtAndPath(..), toggleMarkSuspect
   ) where
 
 import Prelude ()
@@ -13,6 +13,7 @@ import Game.LambdaHack.Common.Prelude
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import GHC.Generics (Generic)
 import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
@@ -44,7 +45,7 @@ import Game.LambdaHack.Common.Vector
 data StateClient = StateClient
   { sxhair       :: !Target        -- ^ the common xhair
   , seps         :: !Int           -- ^ a parameter of the aiming digital line
-  , stargetD     :: !(EM.EnumMap ActorId (Target, Maybe PathEtc))
+  , stargetD     :: !(EM.EnumMap ActorId TgtAndPath)
                                    -- ^ targets of our actors in the dungeon
   , sexplored    :: !(ES.EnumSet LevelId)
                                    -- ^ the set of fully explored levels
@@ -71,8 +72,6 @@ data StateClient = StateClient
   }
   deriving Show
 
-type PathEtc = ([Point], (Point, Int))
-
 data BfsAndPath =
     BfsOnly {bfsArr :: !(PointArray.Array BfsDistance)}
   | BfsInvalid {bfsArr :: !(PointArray.Array BfsDistance)}
@@ -80,6 +79,11 @@ data BfsAndPath =
                , bfsPath :: !(EM.EnumMap Point AndPath)
                }
   deriving Show
+
+data TgtAndPath = TgtAndPath {tapTgt :: !Target, tapPath :: !AndPath}
+  deriving (Show, Generic)
+
+instance Binary TgtAndPath
 
 -- | Initial empty game client state.
 emptyStateClient :: FactionId -> StateClient
@@ -116,14 +120,14 @@ toggleMarkSuspect s@StateClient{smarkSuspect} =
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient
              -> StateClient
 updateTarget aid f cli =
-  let f2 tp = case f $ fmap fst tp of
+  let f2 tp = case f $ fmap tapTgt tp of
         Nothing -> Nothing
-        Just tgt -> Just (tgt, Nothing)  -- reset path
+        Just tgt -> Just $ TgtAndPath tgt NoPath  -- reset path
   in cli {stargetD = EM.alter f2 aid (stargetD cli)}
 
 -- | Get target parameters from client state.
 getTarget :: ActorId -> StateClient -> Maybe Target
-getTarget aid cli = fmap fst $ EM.lookup aid $ stargetD cli
+getTarget aid cli = fmap tapTgt $ EM.lookup aid $ stargetD cli
 
 -- | Update picked leader within state. Verify actor's faction.
 updateLeader :: ActorId -> State -> StateClient -> StateClient

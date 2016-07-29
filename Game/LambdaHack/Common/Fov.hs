@@ -49,7 +49,7 @@ perceptionFromResets perActor0 resetsBodies
         if EM.member aid $ sactorD s
         then let fcache = fovAspectActor EM.! aid
                  newPer = cacheBeforeLucidFromActor clearPs (b, fcache)
-             in EM.alter (const $ Just newPer) aid acc
+             in EM.insert aid newPer acc
         else EM.delete aid acc  -- dead or stair-using actors removed
       perActor = foldl' f perActor0 resetsBodies
   in perceptionFromPerActor perActor fovLucidLid lid
@@ -158,7 +158,7 @@ updateFovAspectActor :: FovAspectActor -> ActorId -> FovAspectItem -> State
 updateFovAspectActor fovAspectActorOld aid sfovAspectItem s =
   case EM.lookup aid $ sactorD s of
     Just b -> let aspectActorNew = fovAspectFromActor sfovAspectItem b
-              in EM.alter (const $ Just aspectActorNew) aid fovAspectActorOld
+              in EM.insert aid aspectActorNew fovAspectActorOld
     Nothing -> EM.delete aid fovAspectActorOld
 
 clearFromLevel :: Kind.COps -> Level -> FovClear

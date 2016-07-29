@@ -13,6 +13,7 @@ import Data.Ord
 
 import Game.LambdaHack.Client.AI.ConditionM
 import Game.LambdaHack.Client.AI.PickTargetM
+import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -36,7 +37,7 @@ import Game.LambdaHack.Content.ModeKind
 -- Pick a new leader from among the actors on the current level.
 -- Refresh the target of the new leader, even if unchanged.
 pickActorToMove :: MonadClient m
-                => ((ActorId, Actor) -> m (Target, Maybe PathEtc))
+                => ((ActorId, Actor) -> m TgtAndPath)
                 -> m (ActorId, Actor)
 pickActorToMove refreshTarget = do
   Kind.COps{cotile} <- getsState scops
@@ -103,9 +104,11 @@ pickActorToMove refreshTarget = do
                               && not condFastThreatAdj
                          else heavilyDistressed  -- shot at
                            -- TODO: modify when reaction fire is possible
-          actorHearning (_, (TEnemyPos{}, Nothing)) =
+          actorHearning (_, TgtAndPath{tapTgt=TEnemyPos{},tapPath=NoPath}) =
             return False
-          actorHearning (_, (TEnemyPos{}, Just (_, (_, d)))) | d <= 2 =
+          actorHearning (_, TgtAndPath{ tapTgt=TEnemyPos{}
+                                      , tapPath=AndPath{pathLen} })
+            | pathLen <= 2 =
             return False  -- noise probably due to fleeing target
           actorHearning ((_aid, b), _) = do
             allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
@@ -131,18 +134,17 @@ pickActorToMove refreshTarget = do
       oursNotHearing <- filterM (fmap not . actorHearning) oursNotMeleeing
       oursMeleeBad <- filterM actorMeleeBad oursNotHearing
       oursNotMeleeBad <- filterM (fmap not . actorMeleeBad) oursNotHearing
-      let targetTEnemy (_, (TEnemy{}, _)) = True
-          targetTEnemy (_, (TEnemyPos{}, _)) = True
+      let targetTEnemy (_, TgtAndPath{tapTgt=TEnemy{}}) = True
+          targetTEnemy (_, TgtAndPath{tapTgt=TEnemyPos{}}) = True
           targetTEnemy _ = False
           (oursTEnemy, oursOther) = partition targetTEnemy oursNotMeleeBad
           -- These are not necessarily stuck (perhaps can go around),
           -- but their current path is blocked by friends.
-          targetBlocked our@((_aid, _b), (_tgt, mpath)) =
-            let next = case mpath of
-                  Nothing ->  assert `failure` our
-                  Just ([], _) -> assert `failure` our
-                  Just ([_goal], _) -> Nothing
-                  Just (_ : q : _, _) -> Just q
+          targetBlocked (_, TgtAndPath{tapPath}) =
+            let next = case tapPath of
+                  NoPath -> Nothing
+                  AndPath{pathList=[]} -> Nothing
+                  AndPath{pathList=q : _} -> Just q
             in any ((== next) . Just . bpos . snd) ours
 -- TODO: stuck actors are picked while others close could approach an enemy;
 -- we should detect stuck actors (or one-sided stuck)
@@ -152,11 +154,12 @@ pickActorToMove refreshTarget = do
           (oursBlocked, oursPos) =
             partition targetBlocked $ oursOther ++ oursMeleeBad
           -- Lower overhead is better.
-          overheadOurs :: ((ActorId, Actor), (Target, Maybe PathEtc))
+          overheadOurs :: ((ActorId, Actor), TgtAndPath)
                        -> (Int, Int, Bool)
-          overheadOurs (_, (_, Nothing)) =
+          overheadOurs (_, TgtAndPath{tapPath=NoPath}) =
             (-1000, 0, False)
-          overheadOurs our@((aid, b), (_, Just (_, (goal, d)))) =
+          overheadOurs our@( (aid, b)
+                           , TgtAndPath{tapPath=AndPath{pathLen=d,pathGoal}} ) =
             if targetTEnemy our then
               -- TODO: take weapon, walk and fight speed, etc. into account
               ( d + if targetBlocked our then 2 else 0  -- possible delay, hacky
@@ -180,7 +183,7 @@ pickActorToMove refreshTarget = do
                 pDist p = dcaptain p + dsergeant p
                 sumDist = pDist (bpos b)
                 -- Positive, if the goal gets us closer to the party.
-                diffDist = sumDist - pDist goal
+                diffDist = sumDist - pDist pathGoal
                 minCoeff | minDist < minSpread =
                   (minDist - minSpread) `div` 3
                   - if aid == oldAid then 3 else 0
@@ -200,10 +203,11 @@ pickActorToMove refreshTarget = do
                  , sumCoeff
                  , aid /= oldAid )
           sortOurs = sortBy $ comparing overheadOurs
-          goodGeneric ((aid, b), (_tgt, _pathEtc)) =
+          goodGeneric ((aid, b), _) =
             not (aid == oldAid && waitedLastTurn b)  -- not stuck
-          goodTEnemy our@((_aid, b), (TEnemy{}, Just (_path, (goal, _d)))) =
-            not (adjacent (bpos b) goal) -- not in melee range already
+          goodTEnemy our@((_aid, b), TgtAndPath{ tapTgt=TEnemy{}
+                                               , tapPath=AndPath{pathGoal} }) =
+            not (adjacent (bpos b) pathGoal) -- not in melee range already
             && goodGeneric our
           goodTEnemy our = goodGeneric our
           oursVulnerableGood = filter goodTEnemy oursVulnerable
@@ -230,7 +234,7 @@ pickActorToMove refreshTarget = do
         _ -> return (oldAid, oldBody)
 
 useTactics :: MonadClient m
-           => ((ActorId, Actor) -> m (Target, Maybe PathEtc))
+           => ((ActorId, Actor) -> m TgtAndPath)
            -> ActorId
            -> m ()
 useTactics refreshTarget oldAid = do
@@ -243,15 +247,14 @@ useTactics refreshTarget oldAid = do
   let explore = void $ refreshTarget (oldAid, oldBody)
       setPath mtgt = case mtgt of
         Nothing -> return False
-        Just (tgtLeader, _) -> do
-          tgtpath <- createPath oldAid tgtLeader
-          case tgtpath of
-            tgtMPath@(_, Just _) -> do
+        Just TgtAndPath{tapTgt} -> do
+          tap <- createPath oldAid tapTgt
+          case tap of
+            TgtAndPath{tapPath=NoPath} -> return False
+            _ -> do
               modifyClient $ \cli ->
-                cli {stargetD = EM.alter (const $ Just tgtMPath)
-                                         oldAid (stargetD cli)}
+                cli {stargetD = EM.insert oldAid tap (stargetD cli)}
               return True
-            _ -> return False
       follow = case mleader of
         -- If no leader at all (forced @TFollow@ tactic on an actor
         -- from a leaderless faction), fall back to @TExplore@.
@@ -264,7 +267,8 @@ useTactics refreshTarget oldAid = do
             -- Copy over the leader's target, if any, or follow his bpos.
             mtgt <- getsClient $ EM.lookup leader . stargetD
             tgtPathSet <- setPath mtgt
-            let enemyPath = Just (TEnemy leader True, Nothing)
+            let enemyPath = Just TgtAndPath{ tapTgt = TEnemy leader True
+                                           , tapPath = NoPath }
             unless tgtPathSet $ do
                enemyPathSet <- setPath enemyPath
                unless enemyPathSet $

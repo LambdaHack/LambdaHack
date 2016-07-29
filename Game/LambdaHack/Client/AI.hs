@@ -40,7 +40,7 @@ queryAI = do
       !_A = assert (isJust mleader) ()
   (aidToMove, bToMove) <- pickActorToMove refreshTarget
   req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
-  mtgt2 <- getsClient $ fmap fst . EM.lookup aidToMove . stargetD
+  mtgt2 <- getsClient $ fmap tapTgt . EM.lookup aidToMove . stargetD
   if mleader /= Just (aidToMove, mtgt2)
     then return (req, Just (aidToMove, mtgt2))
     else return (req, Nothing)
@@ -59,7 +59,7 @@ nonLeaderQueryAI oldAid = do
 -- updates the target in the client state and returns the new target explicitly.
 refreshTarget :: MonadClient m
               => (ActorId, Actor)  -- ^ the actor to refresh
-              -> m (Target, Maybe PathEtc)
+              -> m TgtAndPath
 refreshTarget (aid, body) = do
   side <- getsClient sside
   let !_A = assert (bfid body == side
@@ -85,8 +85,7 @@ refreshTarget (aid, body) = do
           <> "\nHandleAI strTgt:"   <+> tshow stratTarget
           <> "\nHandleAI target:"   <+> tshow tgtMPath
 --  trace _debug skip
-  modifyClient $ \cli ->
-    cli {stargetD = EM.alter (const $ Just tgtMPath) aid (stargetD cli)}
+  modifyClient $ \cli -> cli {stargetD = EM.insert aid tgtMPath (stargetD cli)}
   return tgtMPath
 
 -- | Pick an action the actor will perfrom this turn.

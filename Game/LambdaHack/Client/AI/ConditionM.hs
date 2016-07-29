@@ -34,6 +34,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Ord
 
 import Game.LambdaHack.Client.AI.Preferences
+import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
@@ -147,7 +148,7 @@ condBlocksFriendsM aid = do
   targetD <- getsClient stargetD
   let blocked (aid2, _) = aid2 /= aid &&
         case EM.lookup aid2 targetD of
-          Just (_, Just (_ : q : _, _)) | q == bpos b -> True
+          Just TgtAndPath{tapPath=AndPath{pathList=q : _}} | q == bpos b -> True
           _ -> False
   return $ any blocked ours  -- keep it lazy
 
@@ -356,9 +357,9 @@ fleeList aid = do
   cops <- getsState scops
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   let tgtPath = case mtgtMPath of  -- prefer fleeing along the path to target
-        Just (TEnemy{}, _) -> []  -- don't flee towards an enemy
-        Just (TEnemyPos{}, _) -> []
-        Just (_, Just (_ : path, _)) -> path
+        Just TgtAndPath{tapTgt=TEnemy{}} -> []  -- don't flee towards an enemy
+        Just TgtAndPath{tapTgt=TEnemyPos{}} -> []
+        Just TgtAndPath{tapPath=AndPath{pathList}} -> pathList
         _ -> []
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b

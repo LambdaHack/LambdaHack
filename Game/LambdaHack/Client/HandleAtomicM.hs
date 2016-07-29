@@ -13,6 +13,7 @@ import qualified Data.EnumSet as ES
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
+import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
@@ -246,16 +247,19 @@ cmdAtomicSemCli cmd = case cmd of
     side <- getsClient sside
     when (side == fid) $ do
       mleader <- getsClient _sleader
-      let !_A = assert (mleader == fmap fst source  -- somebody changed the leader for us
-                        || mleader == fmap fst target  -- we changed the leader ourselves
+      let !_A = assert (mleader == fmap fst source
+                          -- somebody changed the leader for us
+                        || mleader == fmap fst target
+                          -- we changed the leader ourselves
                         `blame` "unexpected leader"
                         `twith` (cmd, mleader)) ()
       modifyClient $ \cli -> cli {_sleader = fmap fst target}
       case target of
         Nothing -> return ()
-        Just (aid, mtgt) ->
+        Just (aid, mtgt) -> do
+          let addNoPath tapTgt = TgtAndPath{tapTgt, tapPath=NoPath}
           modifyClient $ \cli ->
-            cli {stargetD = EM.alter (const $ (,Nothing) <$> mtgt)
+            cli {stargetD = EM.alter (const $ addNoPath <$> mtgt)
                                      aid (stargetD cli)}
   UpdAutoFaction{} -> do
     -- @condBFS@ depends on the setting we change here.
@@ -333,9 +337,9 @@ createActor aid _b = do
   let affect tgt = case tgt of
         TEnemyPos a _ _ permit | a == aid -> TEnemy a permit
         _ -> tgt
-      affect3 (tgt, mpath) = case tgt of
-        TEnemyPos a _ _ permit | a == aid -> (TEnemy a permit, Nothing)
-        _ -> (tgt, mpath)
+      affect3 tap@TgtAndPath{..} = case tapTgt of
+        TEnemyPos a _ _ permit | a == aid -> TgtAndPath (TEnemy a permit) NoPath
+        _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {sxhair = affect $ sxhair cli}
 
@@ -348,11 +352,11 @@ destroyActor aid b destroy = do
           -- If *really* nothing more interesting, the actor will
           -- go to last known location to perhaps find other foes.
         _ -> tgt
-      affect3 (tgt, mpath) =
-        let newMPath = case mpath of
-              Just (_, (goal, _)) | goal /= bpos b -> Nothing
-              _ -> mpath  -- foe slow enough, so old path good
-        in (affect tgt, newMPath)
+      affect3 TgtAndPath{..} =
+        let newMPath = case tapPath of
+              AndPath{pathGoal} | pathGoal /= bpos b -> NoPath
+              _ -> tapPath  -- foe slow enough, so old path good
+        in TgtAndPath (affect tapTgt) newMPath
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {sxhair = affect $ sxhair cli}
 
@@ -389,7 +393,8 @@ discoverKind c iid ik = do
   let f Nothing = Just ik
       f Just{} = assert `failure` "already discovered"
                         `twith` (c, iid, ik)
-  modifyClient $ \cli -> cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
+  modifyClient $ \cli ->
+    cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
 
 coverKind :: MonadClient m
           => Container -> ItemId -> Kind.Id ItemKind -> m ()
@@ -398,7 +403,8 @@ coverKind c iid ik = do
   let f Nothing = assert `failure` "already covered" `twith` (c, iid, ik)
       f (Just ik2) = assert (ik == ik2 `blame` "unexpected covered item kind"
                                        `twith` (ik, ik2)) Nothing
-  modifyClient $ \cli -> cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
+  modifyClient $ \cli ->
+    cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
 
 discoverSeed :: MonadClient m
              => Container -> ItemId -> ItemSeed -> AbsDepth -> m ()
@@ -418,7 +424,8 @@ discoverSeed c iid seed ldepth = do
           f Nothing = Just $ seedToAspectsEffects seed kind ldepth totalDepth
           f Just{} = assert `failure` "already discovered"
                             `twith` (c, iid, seed)
-      modifyClient $ \cli -> cli {sdiscoEffect = EM.alter f iid (sdiscoEffect cli)}
+      modifyClient $ \cli ->
+        cli {sdiscoEffect = EM.alter f iid (sdiscoEffect cli)}
 
 coverSeed :: MonadClient m
           => Container -> ItemId -> ItemSeed -> m ()

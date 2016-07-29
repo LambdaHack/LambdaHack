@@ -20,6 +20,7 @@ import Data.Ratio
 import Game.LambdaHack.Client.AI.ConditionM
 import Game.LambdaHack.Client.AI.Preferences
 import Game.LambdaHack.Client.AI.Strategy
+import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsM
 import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
@@ -494,10 +495,10 @@ meleeBlocker aid = do
   actorSk <- actorSkillsClient aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
-    Just (_, Just (_ : q : _, (goal, _))) -> do
+    Just TgtAndPath{tapPath=AndPath{pathList=q : _,pathGoal}} -> do
       -- We prefer the goal (e.g., when no accessible, but adjacent),
       -- but accept @q@ even if it's only a blocking enemy position.
-      let maim | adjacent (bpos b) goal = Just goal
+      let maim | adjacent (bpos b) pathGoal = Just pathGoal
                | adjacent (bpos b) q = Just q
                | otherwise = Nothing  -- MeleeDistant
       lBlocker <- case maim of
@@ -610,7 +611,8 @@ trigger aid fleeViaStairs = do
     | (benefit, feat) <- benFeat
     , benefit > 0 ]
 
-projectItem :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbProject))
+projectItem :: MonadClient m
+            => ActorId -> m (Strategy (RequestTimed 'AbProject))
 projectItem aid = do
   btarget <- getsClient $ getTarget aid
   b <- getsState $ getActorBody aid
@@ -791,7 +793,8 @@ displaceBlocker :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
 displaceBlocker aid = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
-    Just (_, Just (p : q : _, _)) -> displaceTowards aid p q
+    Just TgtAndPath{tapPath=AndPath{pathSource,pathList=q : _}} ->
+      displaceTowards aid pathSource q
     _ -> return reject  -- goal reached
   mapStrategyM (moveOrRunAid True aid) str
 
@@ -813,12 +816,17 @@ displaceTowards aid source target = do
       [(aid2, b2)] | Just aid2 /= mleader -> do
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
         case mtgtMPath of
-          Just (tgt, Just (p : q : rest, (goal, len)))
-            | q == source && p == target
+          Just tap@TgtAndPath{tapPath=
+                 AndPath{pathSource,pathList=q : rest,pathGoal,pathLen}}
+            | q == source && pathSource == target
               || waitedLastTurn b2 -> do
-              let newTgt = if q == source && p == target
-                           then Just (tgt, Just (q : rest, (goal, len - 1)))
-                           else Nothing
+              let newTgt =
+                    if q == source && pathSource == target
+                    then Just tap{tapPath=AndPath{ pathSource = q
+                                                 , pathList = rest
+                                                 , pathGoal
+                                                 , pathLen = pathLen - 1}}
+                    else Nothing
               modifyClient $ \cli ->
                 cli {stargetD = EM.alter (const newTgt) aid (stargetD cli)}
               return $! returN "displace friend" $ target `vectorToFrom` source
@@ -843,9 +851,11 @@ chase aid doDisplace avoidAmbient = do
   lvl <- getLevel $ blid body
   let isAmbient pos = Tile.isLit cotile (lvl `at` pos)
   str <- case mtgtMPath of
-    Just (_, Just (p : q : _, (goal, _))) | not $ avoidAmbient && isAmbient q ->
+    Just TgtAndPath{tapPath=AndPath{pathList=q : _, ..}}
+      | not $ avoidAmbient && isAmbient q ->
       -- With no leader, the goal is vague, so permit arbitrary detours.
-      moveTowards aid p q goal (fleaderMode (gplayer fact) == LeaderNull)
+      moveTowards aid pathSource q pathGoal
+                  (fleaderMode (gplayer fact) == LeaderNull)
     _ -> return reject  -- goal reached
   -- If @doDisplace@: don't pick fights, assuming the target is more important.
   -- We'd normally melee the target earlier on via @AbMelee@, but for
