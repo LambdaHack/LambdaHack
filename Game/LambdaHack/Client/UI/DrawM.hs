@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.DrawM
@@ -123,8 +124,11 @@ drawBaseFrame dm drawnLevelId = do
   xhairPos <- xhairToPos
   let anyPos = fromMaybe originPoint xhairPos
         -- if xhair invalid, e.g., on a wrong level; @draw@ ignores it later on
-      pathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
-  bfsmpath <- maybe (return Nothing) pathFromLeader mleader
+      bfsAndpathFromLeader leader = Just <$> getCacheBfsAndPath leader anyPos
+      pathFromLeader leader = (Just . (,NoPath)) <$> getCacheBfs leader
+  bfsmpath <- if isJust saimMode
+              then maybe (return Nothing) bfsAndpathFromLeader mleader
+              else maybe (return Nothing) pathFromLeader mleader
   (tgtDesc, mtargetHP) <-
     maybe (return ("------", Nothing)) targetDescLeader mleader
   (xhairDesc, mxhairHP) <- targetDescXhair
