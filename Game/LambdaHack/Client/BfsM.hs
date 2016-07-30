@@ -79,7 +79,12 @@ createBfs misEnterable mbfs aid = do
       -- of the BFS array for the actor can be stuck unevaluated
       -- in thunks and we are not allowed to overwrite them.
       -- OTOH, there is now no change in behaviour nor speed
-      -- with unsafeSetA, so it must already be perfectly in-place.
+      -- and only moderate deacrease in ARR_WORDS memory with unsafeSetA,
+      -- so it must already be very much in-place.
+      -- OTOH, this speedup doesn't seem to affect memory nor time at all,
+      -- but it's 1.6KB per actor per move, so it's puzzling.
+      -- So perhaps it's not in-place at all, but allocating and freeing
+      -- such vectors is so cheap, it's not detectable (and it doesn't leak).
       return $! PointArray.safeSetA apartBfs $ bfsArr bfsAnd
     Nothing -> do
       Level{lxsize, lysize} <- getLevel $ blid b

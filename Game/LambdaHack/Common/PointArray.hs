@@ -75,12 +75,14 @@ unsafeUpdateA :: Enum c => Array c -> [(Point, c)] -> ()
 unsafeUpdateA Array{..} l = runST $ do
   vThawed <- U.unsafeThaw avector
   mapM_ (\(p, c) -> VM.write vThawed (pindex axsize p) (cnv c)) l
+  void $ U.unsafeFreeze vThawed
 
 unsafeWriteA :: Enum c => Array c -> Point -> c -> ()
 {-# INLINE unsafeWriteA #-}
 unsafeWriteA Array{..} p c = runST $ do
   vThawed <- U.unsafeThaw avector
   VM.write vThawed (pindex axsize p) (cnv c)
+  void $ U.unsafeFreeze vThawed
 
 unsafeWriteManyA :: Enum c => Array c -> [Point] -> c -> ()
 {-# INLINE unsafeWriteManyA #-}
@@ -88,6 +90,7 @@ unsafeWriteManyA Array{..} l c = runST $ do
   vThawed <- U.unsafeThaw avector
   let d = cnv c
   mapM_ (\p -> VM.write vThawed (pindex axsize p) d) l
+  void $ U.unsafeFreeze vThawed
 
 -- | Create an array from a replicated element.
 replicateA :: Enum c => X -> Y -> c -> Array c

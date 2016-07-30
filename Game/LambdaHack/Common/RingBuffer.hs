@@ -27,7 +27,7 @@ empty :: Int -> a -> RingBuffer a
 empty size dummy = RingBuffer (V.replicate size dummy) 0 0
 
 -- | Add element to the front of the buffer. It's O(n), but n is constant.
--- Beware of uses where the n is large..
+-- Beware of uses where the n is large.
 cons :: a -> RingBuffer a -> RingBuffer a
 cons a RingBuffer{..} =
   let size = V.length rbCarrier
