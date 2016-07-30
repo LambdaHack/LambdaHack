@@ -165,19 +165,19 @@ targetStrategy aid = do
           `elem` [TMeleeAndRanged, TMeleeAdjacent, TBlock, TRoam, TPatrol]
       setPath :: Target -> m (Strategy TgtAndPath)
       setPath tgt = do
-        let take4 tap@TgtAndPath{tapTgt=TEnemy{}} =
+        let take7 tap@TgtAndPath{tapTgt=TEnemy{}} =
               tap  -- @TEnemy@ needed for projecting, even by roaming actors
-            take4 tap@TgtAndPath{tapTgt,tapPath=AndPath{..}} =
+            take7 tap@TgtAndPath{tapTgt,tapPath=AndPath{..}} =
               if slackTactic then
-                -- Best path only followed 4 moves; then straight on. Cheaper.
-                let path4 = take 4 pathList
+                -- Best path only followed 7 moves; then straight on. Cheaper.
+                let path7 = take 7 pathList
                     vtgt | bpos b == pathGoal = tapTgt  -- goal reached
                          | otherwise = TVector $ towards (bpos b) pathGoal
-                in TgtAndPath{tapTgt=vtgt, tapPath=AndPath{pathList=path4, ..}}
+                in TgtAndPath{tapTgt=vtgt, tapPath=AndPath{pathList=path7, ..}}
               else tap
-            take4 tap = tap
+            take7 tap = tap
         tgtpath <- createPath aid tgt
-        return $! returN "setPath" $ take4 tgtpath
+        return $! returN "setPath" $ take7 tgtpath
       pickNewTarget :: m (Strategy TgtAndPath)
       pickNewTarget = do
         -- This is mostly lazy and used between 0 and 3 times below.
