@@ -157,7 +157,7 @@ script:
    else
       echo "expected '$SRC_TGZ' not found";
       exit 1;
-   fi;
+   fi &&
    cd ..
 
  - touch /tmp/stdtest.log;
