@@ -15,7 +15,6 @@ import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
 import Data.Bits (Bits, complement, (.&.), (.|.))
-import Data.Either
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Point
@@ -128,6 +127,8 @@ findPathBfs (Just isEnterable) pathSource pathGoal sepsRaw bfs =
   let eps = sepsRaw `mod` 4
       (mc1, mc2) = splitAt eps movesCardinal
       (md1, md2) = splitAt eps movesDiagonal
+      -- Prefer cardinal directions when closer to the target, so that
+      -- the enemy can't easily disengage (open/unknown below overrides that).
       prefMoves = md1 ++ reverse md2 ++ mc2 ++ reverse mc1  -- fuzz, reversed
       track :: Point -> BfsDistance -> [Point] -> [Point]
       track pos oldDist suffix | oldDist == minKnownBfs =
@@ -139,13 +140,12 @@ findPathBfs (Just isEnterable) pathSource pathGoal sepsRaw bfs =
             f p acc = if bfs PointArray.! p /= dist
                       then acc
                       else case isEnterable p pos of
-                        MoveToOpen -> Right p : acc
-                        MoveToUnknown -> Right p : acc
-                        MoveToClosed -> Left p : acc
+                        MoveToOpen -> p : acc
+                        MoveToUnknown -> p : acc
+                        -- Prefer paths through open or unknown tiles.
+                        MoveToClosed -> acc ++ [p]
                         MoveBlocked -> acc
-            childrenEither = foldr f [] children
-            -- Prefer paths through open or unknown tiles.
-            minP = case rights childrenEither ++ lefts childrenEither of
+            minP = case foldr f [] children of
               p : _ -> p
               [] -> assert `failure` (pos, oldDist, children)
         in track minP dist (pos : suffix)
