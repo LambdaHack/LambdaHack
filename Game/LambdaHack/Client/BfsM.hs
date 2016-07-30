@@ -2,11 +2,11 @@
 -- | Breadth first search and realted algorithms using the client monad.
 module Game.LambdaHack.Client.BfsM
   ( invalidateBfsAid, invalidateBfsLid, invalidateBfsAll
-  , getCacheBfsAndPath, getCachePath, unexploredDepth
+  , getCacheBfsAndPath, getCacheBfs, getCachePath, unexploredDepth
   , closestUnknown, closestSuspect, closestSmell, furthestKnown
   , closestTriggers, closestItems, closestFoes
 #ifdef EXPOSE_INTERNAL
-  , createBfs, updatePathFromBfs, getCacheBfs
+  , createBfs, updatePathFromBfs
 #endif
   ) where
 
