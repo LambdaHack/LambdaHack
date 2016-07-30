@@ -1011,8 +1011,12 @@ xhairPointerFloor verbose = do
   if px >= 0 && py - mapStartY >= 0
      && px < lxsize && py - mapStartY < lysize
   then do
+    oldXhair <- getsClient sxhair
     let sxhair = TPoint lidV $ Point px (py - mapStartY)
-    modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
+        sxhairMoused = sxhair /= oldXhair
+    modifySession $ \sess ->
+      sess { saimMode = Just $ AimMode lidV
+           , sxhairMoused }
     modifyClient $ \cli -> cli {sxhair}
     if verbose then doLook else flashAiming
   else stopPlayBack
@@ -1034,12 +1038,16 @@ xhairPointerEnemy verbose = do
      && px < lxsize && py - mapStartY < lysize
   then do
     bsAll <- getsState $ actorAssocs (const True) lidV
+    oldXhair <- getsClient sxhair
     let newPos = Point px (py - mapStartY)
         sxhair =
           case find (\(_, m) -> bpos m == newPos) bsAll of
             Just (im, _) -> TEnemy im True
             Nothing -> TPoint lidV newPos
-    modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
+        sxhairMoused = sxhair /= oldXhair
+    modifySession $ \sess ->
+      sess { saimMode = Just $ AimMode lidV
+           , sxhairMoused }
     modifyClient $ \cli -> cli {sxhair}
     if verbose then doLook else flashAiming
   else stopPlayBack

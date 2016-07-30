@@ -448,7 +448,7 @@ moveOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
 moveOnceToXhairHuman = goToXhair True False
 
 goToXhair :: MonadClientUI m
-           => Bool -> Bool -> m (FailOrCmd RequestAnyAbility)
+          => Bool -> Bool -> m (FailOrCmd RequestAnyAbility)
 goToXhair initialStep run = do
   aimMode <- getsSession saimMode
   -- Movement is legal only outside aiming mode.
@@ -476,8 +476,11 @@ goToXhair initialStep run = do
                 moveRunHuman initialStep finalGoal run False dir
           _ -> do
             let !_A = assert (initialStep || not run) ()
-            mpath <- getCachePath leader c
+            (bfs, mpath) <- getCacheBfsAndPath leader c
+            xhairMoused <- getsSession sxhairMoused
             case mpath of
+              _ | xhairMoused && isNothing (accessBfs bfs c) ->
+                failWith "no route to crosshair"
               NoPath -> failWith "no route to crosshair"
               AndPath{pathList=[]} -> assert `failure` (leader, b, c)
               AndPath{pathList = p1 : _, pathSource} -> do
@@ -503,8 +506,11 @@ multiActorGoTo arena c paramOld =
         let runMembersNew = rs ++ [r]
             paramNew = paramOld { runMembers = runMembersNew
                                 , runWaiting = 0}
-        mpath <- getCachePath r c
+        (bfs, mpath) <- getCacheBfsAndPath r c
+        xhairMoused <- getsSession sxhairMoused
         case mpath of
+          _ | xhairMoused && isNothing (accessBfs bfs c) ->
+            return $ Left "no route to crosshair"
           NoPath -> return $ Left "no route to crosshair"
           AndPath{pathList=[]} ->
             -- This actor already at goal; will be caught in goToXhair.

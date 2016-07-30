@@ -34,6 +34,7 @@ data SessionUI = SessionUI
   , sbinding        :: !Binding            -- ^ binding of keys to commands
   , sconfig         :: !Config
   , saimMode        :: !(Maybe AimMode)    -- ^ aiming mode
+  , sxhairMoused    :: !Bool               -- ^ last mouse aiming not vacuus
   , sitemSel        :: !(Maybe (CStore, ItemId))  -- ^ selected item, if any
   , sselected       :: !(ES.EnumSet ActorId)
                                       -- ^ the set of currently selected actors
@@ -91,6 +92,7 @@ emptySessionUI sconfig =
     , sbinding = Binding M.empty [] M.empty
     , sconfig
     , saimMode = Nothing
+    , sxhairMoused = True
     , sitemSel = Nothing
     , sselected = ES.empty
     , srunning = Nothing
@@ -148,6 +150,7 @@ instance Binary SessionUI where
     sdisplayNeeded <- get
     let schanF = ChanFrontend $ const $ error "Binary: ChanFrontend"
         sbinding = Binding M.empty [] M.empty
+        sxhairMoused = True
         spointer = originPoint
         slastRecord = ([], [], 0)
         slastPlay = []
