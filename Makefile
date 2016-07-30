@@ -70,16 +70,16 @@ frontendDefense:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 8 --maxFps 60 --dumpInitRngs --automateAll --gameMode defense
 
 benchCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 43 --setMainRng 43 +RTS -N1 -RTS
 
 benchBattle:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode battle --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode battle --setDungeonRng 43 --setMainRng 43 +RTS -N1 -RTS
 
 benchFrontendCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --noAnim --maxFps 100000 --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --noAnim --maxFps 100000 --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 43 --setMainRng 43 +RTS -N1 -RTS
 
 benchFrontendBattle:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 3 --noAnim --maxFps 100000 --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode battle --setDungeonRng 42 --setMainRng 42 +RTS -N1 -RTS
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 3 --noAnim --maxFps 100000 --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode battle --setDungeonRng 43 --setMainRng 43 +RTS -N1 -RTS
 
 benchNull: benchCampaign benchBattle
 
