@@ -76,7 +76,10 @@ pickActorToMove refreshTarget = do
       let refresh aidBody = do
             tgt <- refreshTarget aidBody
             return (aidBody, tgt)
-      oursTgt <- mapM refresh ours
+          goodGeneric (_, TgtAndPath{tapPath=NoPath}) = False
+          goodGeneric ((aid, b), _) =
+            not (aid == oldAid && waitedLastTurn b)  -- not stuck
+      oursTgt <- filter goodGeneric <$> mapM refresh ours
       let actorVulnerable ((aid, body), _) = do
             activeItems <- activeItemsClient aid
             condMeleeBad <- condMeleeBadM aid
@@ -156,8 +159,7 @@ pickActorToMove refreshTarget = do
           -- Lower overhead is better.
           overheadOurs :: ((ActorId, Actor), TgtAndPath)
                        -> (Int, Int, Bool)
-          overheadOurs (_, TgtAndPath{tapPath=NoPath}) =
-            (-1000, 0, False)
+          overheadOurs (_, TgtAndPath{tapPath=NoPath}) = (1000, 0, False)
           overheadOurs our@( (aid, b)
                            , TgtAndPath{tapPath=AndPath{pathLen=d,pathGoal}} ) =
             if targetTEnemy our then
@@ -203,19 +205,16 @@ pickActorToMove refreshTarget = do
                  , sumCoeff
                  , aid /= oldAid )
           sortOurs = sortBy $ comparing overheadOurs
-          goodGeneric ((aid, b), _) =
-            not (aid == oldAid && waitedLastTurn b)  -- not stuck
-          goodTEnemy our@((_aid, b), TgtAndPath{ tapTgt=TEnemy{}
-                                               , tapPath=AndPath{pathGoal} }) =
+          goodTEnemy ((_aid, b), TgtAndPath{ tapTgt=TEnemy{}
+                                           , tapPath=AndPath{pathGoal} }) =
             not (adjacent (bpos b) pathGoal) -- not in melee range already
-            && goodGeneric our
-          goodTEnemy our = goodGeneric our
+          goodTEnemy _ = True
           oursVulnerableGood = filter goodTEnemy oursVulnerable
           oursTEnemyGood = filter goodTEnemy oursTEnemy
-          oursPosGood = filter goodGeneric oursPos
-          oursMeleeingGood = filter goodGeneric oursMeleeing
+          oursPosGood = oursPos
+          oursMeleeingGood = oursMeleeing
           oursHearingGood = filter goodTEnemy oursHearing
-          oursBlockedGood = filter goodGeneric oursBlocked
+          oursBlockedGood = oursBlocked
           candidates = [ sortOurs oursVulnerableGood
                        , sortOurs oursTEnemyGood
                        , sortOurs oursPosGood

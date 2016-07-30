@@ -181,7 +181,7 @@ condBFS aid = do
       canSearchAndOpen = alterSkill >= 1
       canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
                 || EM.findWithDefault 0 Ability.AbDisplace actorMaxSk > 0
-                -- TODO: needed for now, because AI targets enemies
+                -- TODO: needed for now, because AI targets and shoots enemies
                 -- based on the path to them, not LOS to them.
                 || EM.findWithDefault 0 Ability.AbProject actorMaxSk > 0
   lvl <- getLevel $ blid b

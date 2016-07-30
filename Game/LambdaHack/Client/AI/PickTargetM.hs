@@ -95,6 +95,11 @@ targetStrategy aid = do
   -- We assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
   let actorMaxSk = sumSkills activeItems
+      canMove = EM.findWithDefault 0 AbMove actorMaxSk > 0
+                || EM.findWithDefault 0 AbDisplace actorMaxSk > 0
+                -- TODO: needed for now, because AI targets and shoots enemies
+                -- based on the path to them, not LOS to them.
+                || EM.findWithDefault 0 AbProject actorMaxSk > 0
   actorMinSk <- getsState $ actorSkills Nothing aid activeItems
   condCanProject <- condCanProjectM True aid
   condHpTooLow <- condHpTooLowM aid
@@ -354,9 +359,11 @@ targetStrategy aid = do
         TVector{} -> if pathLen > 1
                      then return $! returN "TVector" tap
                      else pickNewTarget
-  case oldTgtUpdatedPath of
+  if canMove
+  then case oldTgtUpdatedPath of
     Nothing -> pickNewTarget
     Just tap -> updateTgt tap
+  else return $! returN "NoMove" $ TgtAndPath (TEnemy aid True) $ NoPath
 
 createPath :: MonadClient m => ActorId -> Target -> m TgtAndPath
 createPath aid tapTgt = do
