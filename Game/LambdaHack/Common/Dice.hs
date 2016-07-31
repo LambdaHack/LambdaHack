@@ -95,10 +95,15 @@ zdieLevelSimple n = uniformFreq ("zl" <> tshow n) [0..n-1]
 -- scaled in proportion to current depth divided by maximal dungeon depth.
 -- The result if then multiplied by the scale --- to be used to ensure
 -- that dice results are multiples of, e.g., 10. The scale is set with @|*|@.
+--
+-- TODO: dice like 100d100 lead to enormous lists, so we help a bit
+-- by keeping simple dice nonstrict below. Perhaps we should check
+-- and limit the dice in content. Or revert to symbolic representation
+-- with multiple random number generator calls per dice (not 1, as is now).
 data Dice = Dice
   { diceConst :: SimpleDice
   , diceLevel :: SimpleDice
-  , diceMult  :: Int
+  , diceMult  :: !Int
   }
   deriving (Read, Eq, Ord, Generic)
 

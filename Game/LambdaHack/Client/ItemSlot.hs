@@ -24,7 +24,7 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.State
 
-data SlotChar = SlotChar {slotPrefix :: Int, slotChar :: Char}
+data SlotChar = SlotChar {slotPrefix :: !Int, slotChar :: !Char}
   deriving (Show, Eq)
 
 instance Ord SlotChar where

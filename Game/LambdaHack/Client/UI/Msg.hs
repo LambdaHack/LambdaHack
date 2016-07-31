@@ -29,8 +29,8 @@ import Game.LambdaHack.Common.Time
 
 -- | The type of a single game message.
 data Msg = Msg
-  { msgLine :: AttrLine  -- ^ the colours and characters of the message
-  , msgHist :: Bool      -- ^ whether the message should be recorded in history
+  { msgLine :: !AttrLine  -- ^ the colours and characters of the message
+  , msgHist :: !Bool      -- ^ whether the message should be recorded in history
   }
   deriving (Show, Eq, Generic)
 
