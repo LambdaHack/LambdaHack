@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.Msg
   ( -- * Msg
     Msg, toMsg, toPrompt
     -- * Report
-  , Report, emptyReport, nullReport, singletonReport
+  , RepMsgN, Report, emptyReport, nullReport, singletonReport
   , snocReport, consReportNoScrub
   , renderReport, findInReport, lastMsgOfReport
     -- * History
@@ -46,8 +46,13 @@ toPrompt l = Msg { msgLine = l
 
 -- * Report
 
+data RepMsgN = RepMsgN {repMsg :: !Msg, _repN :: !Int}
+  deriving (Show, Generic)
+
+instance Binary RepMsgN
+
 -- | The set of messages, with repetitions, to show at the screen at once.
-newtype Report = Report [(Msg, Int)]
+newtype Report = Report [RepMsgN]
   deriving (Show, Binary)
 
 -- | Empty set of messages.
@@ -65,17 +70,17 @@ singletonReport = snocReport emptyReport
 -- | Add a message to the end of report. Deletes old prompt messages.
 snocReport :: Report -> Msg -> Report
 snocReport (Report !r) y =
-  let scrubPrompts = filter (msgHist . fst)
+  let scrubPrompts = filter (msgHist . repMsg)
   in case scrubPrompts r of
     _ | null $ msgLine y -> Report r
-    (x, n) : xns | x == y -> Report $ (x, n + 1) : xns
-    xns -> Report $ (y, 1) : xns
+    RepMsgN x n : xns | x == y -> Report $ RepMsgN x (n + 1) : xns
+    xns -> Report $ RepMsgN y 1 : xns
 
 -- | Add a message to the end of report. Does not delete old prompt messages
 -- nor handle repetitions.
 consReportNoScrub :: Msg -> Report -> Report
 consReportNoScrub Msg{msgLine=[]} rep = rep
-consReportNoScrub y (Report r) = Report $ r ++ [(y, 1)]
+consReportNoScrub y (Report r) = Report $ r ++ [RepMsgN y 1]
 
 -- | Render a report as a (possibly very long) 'AttrLine'.
 renderReport :: Report  -> AttrLine
@@ -83,18 +88,20 @@ renderReport (Report []) = []
 renderReport (Report (x : xs)) =
   renderReport (Report xs) <+:> renderRepetition x
 
-renderRepetition :: (Msg, Int) -> AttrLine
-renderRepetition (s, 1) = msgLine s
-renderRepetition (s, n) = msgLine s ++ toAttrLine ("<x" <> tshow n <> ">")
+renderRepetition :: RepMsgN -> AttrLine
+renderRepetition (RepMsgN s 1) = msgLine s
+renderRepetition (RepMsgN s n) = msgLine s ++ toAttrLine ("<x" <> tshow n <> ">")
 
 findInReport :: (AttrLine -> Bool) -> Report -> Maybe Msg
-findInReport f (Report xns) = find (f . msgLine) $ map fst xns
+findInReport f (Report xns) = find (f . msgLine) $ map repMsg xns
 
 lastMsgOfReport :: Report -> (AttrLine, Report)
 lastMsgOfReport (Report rep) = case rep of
   [] -> ([], Report [])
-  (lmsg, 1) : repRest -> (msgLine lmsg, Report repRest)
-  (lmsg, n) : repRest -> (msgLine lmsg, Report $ (lmsg, n - 1) : repRest)
+  RepMsgN lmsg 1 : repRest -> (msgLine lmsg, Report repRest)
+  RepMsgN lmsg n : repRest ->
+    let !repMsg = RepMsgN lmsg (n - 1)
+    in (msgLine lmsg, Report $ repMsg : repRest)
 
 -- * History
 
@@ -109,14 +116,14 @@ emptyHistory size = History $ RB.empty size (timeZero, Report [])
 -- | Add a report to history, handling repetitions.
 addReport :: History -> Time -> Report -> History
 addReport !(History rb) !time (Report m') =
-  let !rep@(Report m) = Report $ filter (msgHist . fst) m'
+  let !rep@(Report m) = Report $ filter (msgHist . repMsg) m'
   in case RB.uncons rb of
     _ | null m -> History rb
     Nothing -> History $ RB.cons (time, rep) rb
     Just ((oldTime, Report h), hRest) ->
       case (reverse m, h) of
-        ((s1, n1) : rs, (s2, n2) : hhs) | s1 == s2 ->
-          let !rephh = Report $ (s2, n1 + n2) : hhs
+        (RepMsgN s1 n1 : rs, RepMsgN s2 n2 : hhs) | s1 == s2 ->
+          let !rephh = Report $ RepMsgN s2 (n1 + n2) : hhs
               hist = RB.cons (oldTime, rephh) hRest
           in History $ if null rs
                        then hist
