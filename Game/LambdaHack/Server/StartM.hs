@@ -80,9 +80,6 @@ mapFromFuns =
         in m2 `M.union` m1
   in foldr fromFun M.empty
 
-lowercase :: Text -> Text
-lowercase = T.pack . map Char.toLower . T.unpack
-
 createFactions :: AbsDepth -> Roster -> Rnd FactionDict
 createFactions totalDepth players = do
   let rawCreate Player{..} = do
@@ -94,7 +91,7 @@ createFactions totalDepth players = do
                             , ..}
             cmap = mapFromFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
-            nameoc = lowercase $ head $ T.words fname
+            nameoc = T.toLower $ head $ T.words fname
             prefix = case fleaderMode of
               LeaderNull -> "Loose"
               LeaderAI _ -> "Autonomous"

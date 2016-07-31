@@ -64,7 +64,7 @@ singletonReport = snocReport emptyReport
 
 -- | Add a message to the end of report. Deletes old prompt messages.
 snocReport :: Report -> Msg -> Report
-snocReport (Report r) y =
+snocReport (Report !r) y =
   let scrubPrompts = filter (msgHist . fst)
   in case scrubPrompts r of
     _ | null $ msgLine y -> Report r
