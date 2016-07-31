@@ -114,7 +114,8 @@ seedToAspectsEffects (ItemSeed itemSeed) kind ldepth totalDepth =
       rollA = mapM (traverse castD) (iaspects kind)
       jaspects = St.evalState rollA (mkStdGen itemSeed)
       jeffects = ieffects kind
-  in ItemAspectEffect{..}
+  in foldr seq () jaspects `seq` foldr seq () jeffects `seq`
+     ItemAspectEffect{..}
 
 type ItemTimer = [Time]
 

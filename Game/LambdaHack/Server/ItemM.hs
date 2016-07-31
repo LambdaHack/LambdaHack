@@ -66,7 +66,7 @@ registerItem itemFull itemKnown@(_, iae) seed k container verbose = do
             , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
             , sfovAspectItem = if ssl == emptyFovAspect then sfovAspectItem ser
-                              else EM.insert icounter ssl (sfovAspectItem ser)
+                               else EM.insert icounter ssl (sfovAspectItem ser)
             , sicounter = succ icounter }
       execUpdAtomic $ cmd icounter (itemBase itemFull) (k, []) container
       return $! icounter

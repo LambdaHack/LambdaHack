@@ -61,8 +61,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
 displayRespUpdAtomicUI :: MonadClientUI m
-                       => Bool -> StateClient -> UpdAtomic -> m ()
-displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
+                       => Bool -> DiscoveryKind -> DiscoveryEffect -> UpdAtomic
+                       -> m ()
+displayRespUpdAtomicUI verbose oldDiscoKind oldDiscoEffect cmd = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> do
@@ -263,11 +264,11 @@ displayRespUpdAtomicUI verbose oldStateClient cmd = case cmd of
       let truncRep = [renderReport report]
       frame <- drawOverlay ColorFull False truncRep lidV
       displayFrames (lidV, [Just frame])
-  UpdDiscover c iid _ _ _ -> discover c oldStateClient iid
+  UpdDiscover c iid _ _ _ -> discover c oldDiscoKind oldDiscoEffect iid
   UpdCover{} -> return ()  -- don't spam when doing undo
-  UpdDiscoverKind c iid _ -> discover c oldStateClient iid
+  UpdDiscoverKind c iid _ -> discover c oldDiscoKind oldDiscoEffect iid
   UpdCoverKind{} -> return ()  -- don't spam when doing undo
-  UpdDiscoverSeed c iid _ _ -> discover c oldStateClient iid
+  UpdDiscoverSeed c iid _ _ -> discover c oldDiscoKind oldDiscoEffect iid
   UpdCoverSeed{} -> return ()  -- don't spam when doing undo
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ _ -> do
@@ -648,8 +649,8 @@ quitFactionUI fid mbody toSt = do
     _ -> return ()
 
 discover :: MonadClientUI m
-         => Container -> StateClient -> ItemId -> m ()
-discover c oldcli iid = do
+         => Container -> DiscoveryKind -> DiscoveryEffect -> ItemId -> m ()
+discover c oldDiscoKind oldDiscoEffect iid = do
   let cstore = storeFromC c
   lid <- getsState $ lidFromC c
   cops <- getsState scops
@@ -669,7 +670,7 @@ discover c oldcli iid = do
                                   "turn out to be"
         , knownName ]
       oldItemFull =
-        itemToFull cops (sdiscoKind oldcli) (sdiscoEffect oldcli)
+        itemToFull cops oldDiscoKind oldDiscoEffect
                    iid (itemBase itemFull) (1, [])
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.

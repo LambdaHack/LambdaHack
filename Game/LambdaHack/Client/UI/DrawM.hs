@@ -116,9 +116,8 @@ targetDescXhair = do
 drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m SingleFrame
 drawBaseFrame dm drawnLevelId = do
   cops <- getsState scops
-  SessionUI{sselected, saimMode, smarkVision, smarkSmell, swaitTimes}
+  SessionUI{sselected, saimMode, smarkVision, smarkSmell, swaitTimes, sitemSel}
     <- getSession
-  sitemSel <- getsSession sitemSel
   mleader <- getsClient _sleader
   tgtPos <- leaderTgtToPos
   xhairPos <- xhairToPos

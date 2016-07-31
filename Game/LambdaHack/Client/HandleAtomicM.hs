@@ -421,7 +421,8 @@ discoverSeed c iid seed ldepth = do
                       `twith` (c, iid, seed)
     Just ik -> do
       let kind = okind ik
-          f Nothing = Just $ seedToAspectsEffects seed kind ldepth totalDepth
+          -- TODO: the $! just in case.
+          f Nothing = Just $! seedToAspectsEffects seed kind ldepth totalDepth
           f Just{} = assert `failure` "already discovered"
                             `twith` (c, iid, seed)
       modifyClient $ \cli ->
