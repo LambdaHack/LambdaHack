@@ -108,18 +108,20 @@ emptyHistory size = History $ RB.empty size (timeZero, Report [])
 
 -- | Add a report to history, handling repetitions.
 addReport :: History -> Time -> Report -> History
-addReport !(History rb) !time !(Report m') =
-  let rep@(Report m) = Report $ filter (msgHist . fst) m'
+addReport !(History rb) !time (Report m') =
+  let !rep@(Report m) = Report $ filter (msgHist . fst) m'
   in case RB.uncons rb of
     _ | null m -> History rb
     Nothing -> History $ RB.cons (time, rep) rb
     Just ((oldTime, Report h), hRest) ->
       case (reverse m, h) of
         ((s1, n1) : rs, (s2, n2) : hhs) | s1 == s2 ->
-          let hist = RB.cons (oldTime, Report ((s2, n1 + n2) : hhs)) hRest
+          let !rephh = Report $ (s2, n1 + n2) : hhs
+              hist = RB.cons (oldTime, rephh) hRest
           in History $ if null rs
                        then hist
-                       else RB.cons (time, Report (reverse rs)) hist
+                       else let !repr = Report $ reverse rs
+                            in RB.cons (time, repr) hist
         _ -> History $ RB.cons (time, rep) rb
 
 lengthHistory :: History -> Int

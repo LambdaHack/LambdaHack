@@ -53,10 +53,10 @@ mapStartY = 1
 
 -- | The monad that gives the client access to UI operations.
 class MonadClient m => MonadClientUI m where
-  getSession  :: m SessionUI
-  getsSession  :: (SessionUI -> a) -> m a
+  getSession    :: m SessionUI
+  getsSession   :: (SessionUI -> a) -> m a
   modifySession :: (SessionUI -> SessionUI) -> m ()
-  putSession  :: SessionUI -> m ()
+  putSession    :: SessionUI -> m ()
   liftIO        :: IO a -> m a
 
 -- | Write a UI request to the frontend and read a corresponding reply.
