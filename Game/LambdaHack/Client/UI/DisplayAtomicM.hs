@@ -88,7 +88,7 @@ displayRespUpdAtomicUI verbose oldDiscoKind oldDiscoEffect cmd = case cmd of
             itemVerbMU iid kit (MU.Text $ "appear" <+> ppContainer c) c
             mleader <- getsClient _sleader
             when (Just aid == mleader) $ do
-              lastStore <- getsClient slastStore
+              !lastStore <- getsClient slastStore
               let newStore = store : delete store lastStore
               modifyClient $ \cli -> cli { slastSlot = l
                                          , slastStore = newStore }
@@ -507,7 +507,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
   case lookup iid $ map swap $ EM.assocs itemSlots of
     Just l -> do
       when (Just aid == mleader) $ do
-        lastStore <- getsClient slastStore
+        !lastStore <- getsClient slastStore
         let newStore = cstore2 : cstore1
                        : delete cstore2 (delete cstore1 lastStore)
         modifyClient $ \cli -> cli { slastSlot = l
@@ -876,7 +876,7 @@ setLastSlot aid iid cstore = do
   mleader <- getsClient _sleader
   when (Just aid == mleader) $ do
     ItemSlots itemSlots _ <- getsClient sslots
-    lastStore <- getsClient slastStore
+    !lastStore <- getsClient slastStore
     let newStore = cstore : delete cstore lastStore
     case lookup iid $ map swap $ EM.assocs itemSlots of
       Just l -> modifyClient $ \cli -> cli { slastSlot = l

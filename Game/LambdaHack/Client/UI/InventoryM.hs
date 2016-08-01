@@ -204,7 +204,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
                 post = dropWhile (== cInit) rest
             in (MStore cInit, map MStore $ post ++ pre)
       -- The last used store may go before even the first nonempty store.
-      lastStoreList <- getsClient slastStore
+      !lastStoreList <- getsClient slastStore
       let legalLast = intersect lastStoreList cLegalAfterCalm
       firstStore <- case legalLast of
         [] -> return $! cThisActor headThisActor
@@ -488,7 +488,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   Level{lysize} <- getLevel lidV
   ekm <- do
     okxs <- overlayToSlideshow (lysize + 1) keys okx
-    lastSlot <- getsClient slastSlot
+    !lastSlot <- getsClient slastSlot
     let allOKX = concatMap snd $ slideshow okxs
         pointer =
           case findIndex ((== Right lastSlot) . fst) allOKX of
@@ -501,7 +501,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
     -- in case the initial position was a default.
     case drop pointer2 allOKX of
       (Right newSlot, _) : _ | cCur /= MStats -> do
-        lastStore <- getsClient slastStore
+        !lastStore <- getsClient slastStore
         let store = storeFromMode cCur
             newStore = store : delete store lastStore
         modifyClient $ \cli -> cli { slastSlot = newSlot
