@@ -110,7 +110,7 @@ displayRespUpdAtomicUI verbose oldDiscoKind oldDiscoEffect cmd = case cmd of
   UpdSpotItem iid _ kit c -> do
     -- This is due to a move, or similar, which will be displayed,
     -- so no extra @markDisplayNeeded@ needed here and in similar places.
-    (itemSlots, _) <- getsClient sslots
+    ItemSlots itemSlots _ <- getsClient sslots
     case lookup iid $ map swap $ EM.assocs itemSlots of
       Nothing ->  -- never seen or would have a slot
         case c of
@@ -502,7 +502,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
   bag <- getsState $ getActorBag aid cstore2
   let kit = bag EM.! iid
   itemToF <- itemToFullClient
-  (itemSlots, _) <- getsClient sslots
+  ItemSlots itemSlots _ <- getsClient sslots
   let itemFull = itemToF iid kit
   case lookup iid $ map swap $ EM.assocs itemSlots of
     Just l -> do
@@ -593,7 +593,7 @@ quitFactionUI fid mbody toSt = do
         arena <- getArenaUI
         localTime <- getsState $ getLocalTime arena
         itemToF <- itemToFullClient
-        (lSlots, _) <- getsClient sslots
+        ItemSlots lSlots _ <- getsClient sslots
         let keyOfEKM (Left km) = km
             keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
             allOKX = concatMap snd $ slideshow itemSlides
@@ -875,7 +875,7 @@ setLastSlot :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
 setLastSlot aid iid cstore = do
   mleader <- getsClient _sleader
   when (Just aid == mleader) $ do
-    (itemSlots, _) <- getsClient sslots
+    ItemSlots itemSlots _ <- getsClient sslots
     lastStore <- getsClient slastStore
     let newStore = cstore : delete cstore lastStore
     case lookup iid $ map swap $ EM.assocs itemSlots of

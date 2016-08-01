@@ -1,7 +1,7 @@
 -- | Item slots for UI and AI item collections.
 -- TODO: document
 module Game.LambdaHack.Client.ItemSlot
-  ( ItemSlots, SlotChar(..)
+  ( ItemSlots(..), SlotChar(..)
   , allSlots, allZeroSlots, intSlots, slotLabel, assignSlot
   ) where
 
@@ -43,8 +43,13 @@ instance Enum SlotChar where
         c100 = c0 - if c0 > 150 then 100 else 0
     in SlotChar n (chr c100)
 
-type ItemSlots = ( EM.EnumMap SlotChar ItemId
-                 , EM.EnumMap SlotChar ItemId )
+data ItemSlots = ItemSlots !(EM.EnumMap SlotChar ItemId)
+                           !(EM.EnumMap SlotChar ItemId)
+  deriving Show
+
+instance Binary ItemSlots where
+  put (ItemSlots is os) = put is >> put os
+  get = ItemSlots <$> get <*> get
 
 allSlots :: Int -> [SlotChar]
 allSlots n = map (SlotChar n) $ ['a'..'z'] ++ ['A'..'Z']
@@ -60,7 +65,7 @@ intSlots = map (flip SlotChar 'a') [0..]
 assignSlot :: CStore -> Item -> FactionId -> Maybe Actor -> ItemSlots
            -> SlotChar -> State
            -> SlotChar
-assignSlot store item fid mbody (itemSlots, organSlots) lastSlot s =
+assignSlot store item fid mbody (ItemSlots itemSlots organSlots) lastSlot s =
   assert (maybe True (\b -> bfid b == fid) mbody)
   $ if jsymbol item == '$'
     then SlotChar 0 '$'

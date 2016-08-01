@@ -169,7 +169,7 @@ itemOverlay :: MonadClient m => CStore -> LevelId -> ItemBag -> m OKX
 itemOverlay store lid bag = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
-  (itemSlots, organSlots) <- getsClient sslots
+  ItemSlots itemSlots organSlots <- getsClient sslots
   let isOrgan = store == COrgan
       lSlots = if isOrgan then organSlots else itemSlots
       !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)

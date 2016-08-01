@@ -271,7 +271,7 @@ transition :: forall m. MonadClientUI m
 transition psuit prompt promptGeneric permitMulitple cLegal
            numPrefix cCur cRest itemDialogState = do
   let recCall = transition psuit prompt promptGeneric permitMulitple cLegal
-  (itemSlots, organSlots) <- getsClient sslots
+  ItemSlots itemSlots organSlots <- getsClient sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   activeItems <- activeItemsClient leader
