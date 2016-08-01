@@ -12,7 +12,7 @@ xcplay:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --dumpInitRngs
 
 xcfrontendCampaign:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame 1 --maxFps 60 --dumpInitRngs --automateAll --gameMode campaign
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame 2 --maxFps 60 --dumpInitRngs --automateAll --gameMode campaign
 
 xcfrontendRaid:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix test --newGame 5 --maxFps 60 --dumpInitRngs --automateAll --gameMode raid
@@ -43,7 +43,7 @@ play:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --dumpInitRngs
 
 frontendCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --maxFps 60 --dumpInitRngs --automateAll --gameMode campaign
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --maxFps 60 --dumpInitRngs --automateAll --gameMode campaign
 
 frontendRaid:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --maxFps 60 --dumpInitRngs --automateAll --gameMode raid
@@ -70,16 +70,16 @@ frontendDefense:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 8 --maxFps 60 --dumpInitRngs --automateAll --gameMode defense
 
 benchCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 43 --setMainRng 43 +RTS -N1 -RTS
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 47 --setMainRng 47 +RTS -N1 -RTS
 
 benchBattle:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode battle --setDungeonRng 43 --setMainRng 43 +RTS -N1 -RTS
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode battle --setDungeonRng 47 --setMainRng 47 +RTS -N1 -RTS
 
 benchFrontendCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --noAnim --maxFps 100000 --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 43 --setMainRng 43 +RTS -N1 -RTS
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --noAnim --maxFps 100000 --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode campaign --setDungeonRng 47 --setMainRng 47 +RTS -N1 -RTS
 
 benchFrontendBattle:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 3 --noAnim --maxFps 100000 --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode battle --setDungeonRng 43 --setMainRng 43 +RTS -N1 -RTS
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 3 --noAnim --maxFps 100000 --benchmark --stopAfter 120 --automateAll --keepAutomated --gameMode battle --setDungeonRng 47 --setMainRng 47 +RTS -N1 -RTS
 
 benchNull: benchCampaign benchBattle
 
@@ -109,10 +109,10 @@ test-long: testCampaign-long testRaid-medium testSkirmish-medium testAmbush-medi
 test-long-no-safari: testCampaign-long testRaid-medium testSkirmish-medium testAmbush-medium testBattle-long testBattleSurvival-long testDefense-long
 
 testCampaign-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 500 --dumpInitRngs --automateAll --keepAutomated --gameMode campaign > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 500 --dumpInitRngs --automateAll --keepAutomated --gameMode campaign > /tmp/stdtest.log
 
 testCampaign-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 1 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 400 --dumpInitRngs --automateAll --keepAutomated --gameMode campaign > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 2 --noAnim --maxFps 100000 --frontendStd --benchmark --stopAfter 400 --dumpInitRngs --automateAll --keepAutomated --gameMode campaign > /tmp/stdtest.log
 
 testRaid-long:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix test --newGame 5 --maxFps 100000 --frontendStd --benchmark --stopAfter 60 --dumpInitRngs --automateAll --keepAutomated --gameMode raid > /tmp/stdtest.log
