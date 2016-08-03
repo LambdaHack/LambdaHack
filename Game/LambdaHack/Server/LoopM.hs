@@ -71,10 +71,8 @@ loopSer sdebug executorUI executorAI = do
       initPer
       pers <- getsServer sperFid
       broadcastUpdAtomic $ \fid -> UpdResume fid (pers EM.! fid)
-      -- Second, set the current cops and reinit perception.
-      let setCurrentCops = const (speedupCOps sdebug cops)
       -- @sRaw@ is correct here, because none of the above changes State.
-      execUpdAtomic $ UpdResumeServer $ updateCOps setCurrentCops sRaw
+      execUpdAtomic $ UpdResumeServer $ updateCOps (const cops) sRaw
       -- We dump RNG seeds here, in case the game wasn't run
       -- with --dumpInitRngs previously and we need to seeds.
       when (sdumpInitRngs sdebug) dumpRngs
@@ -87,8 +85,7 @@ loopSer sdebug executorUI executorAI = do
       let debugBarRngs = sdebug {sdungeonRng = Nothing, smainRng = Nothing}
       modifyServer $ \ser -> ser { sdebugNxt = debugBarRngs
                                  , sdebugSer = debugBarRngs }
-      let speedup = speedupCOps sdebug
-      execUpdAtomic $ UpdRestartServer $ updateCOps speedup s
+      execUpdAtomic $ UpdRestartServer s
       updConn
       initPer
       reinitGame

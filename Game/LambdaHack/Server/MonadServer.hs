@@ -14,7 +14,7 @@ module Game.LambdaHack.Server.MonadServer
   , restoreScore, registerScore
   , resetSessionStart, resetGameStart, elapsedSessionTimeGT
   , tellAllClipPS, tellGameClipPS
-  , tryRestore, speedupCOps, rndToAction, getSetGen
+  , tryRestore, rndToAction, getSetGen
   ) where
 
 import Prelude ()
@@ -46,7 +46,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Save
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
@@ -241,16 +240,6 @@ tryRestore Kind.COps{corule} sdebugSer = do
                   , scoresFile )]
         name = prefix <.> saveName
     liftIO $ Save.restoreGame tryCreateDir tryCopyDataFiles strictDecodeEOF name copies pathsDataFile
-
--- | Compute and insert auxiliary optimized components into game content,
--- to be used in time-critical sections of the code.
-speedupCOps :: DebugModeSer -> Kind.COps -> Kind.COps
-speedupCOps DebugModeSer{sallClear} cops@Kind.COps{cotile, coClear} =
-  if sallClear == coClear
-  then cops
-  else cops { Kind.coClear = sallClear
-            , Kind.coTileSpeedup = Tile.speedup sallClear cotile
-            }
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadServer m => Rnd a -> m a

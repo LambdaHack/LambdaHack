@@ -5,8 +5,6 @@
 module Game.LambdaHack.Server
   ( -- * Re-exported from "Game.LambdaHack.Server.LoopServer"
     loopSer
-    -- * Re-exported from "Game.LambdaHack.Server.MonadServer"
-  , speedupCOps
     -- * Re-exported from "Game.LambdaHack.Server.Commandline"
   , debugArgs
     -- * Re-exported from "Game.LambdaHack.Server.State"
@@ -17,5 +15,4 @@ import Prelude ()
 
 import Game.LambdaHack.Server.Commandline
 import Game.LambdaHack.Server.LoopM
-import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
