@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, TypeFamilies #-}
+{-# LANGUAGE CPP #-}
 -- | Operations concerning dungeon level tiles.
 --
 -- Unlike for many other content types, there is no type @Tile@,
@@ -23,7 +23,7 @@ module Game.LambdaHack.Common.Tile
   , isOpenable, isClosable, isChangeable, isEscape, isStair, ascendTo
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , TileSpeedup(..), Tab, createTab, accessTab
+  , createTab, accessTab
 #endif
   ) where
 
@@ -39,28 +39,12 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.TileKind (TileKind)
+import Game.LambdaHack.Content.TileKind (Tab (..), TileKind, TileSpeedup (..))
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | The last time a hero left a smell in a given tile. To be used
 -- by monsters that hunt by smell.
 type SmellTime = Time
-
-type instance Kind.Speedup TileKind = TileSpeedup
-
-data TileSpeedup = TileSpeedup
-  { isClearTab             :: !Tab
-  , isLitTab               :: !Tab
-  , isWalkableTab          :: !Tab
-  , isPassableTab          :: !Tab
-  , isPassableNoSuspectTab :: !Tab
-  , isPassableNoClosedTab  :: !Tab
-  , isDoorTab              :: !Tab
-  , isSuspectTab           :: !Tab
-  , isChangeableTab        :: !Tab
-  }
-
-newtype Tab = Tab (A.UArray (Kind.Id TileKind) Bool)
 
 createTab :: Kind.Ops TileKind -> (TileKind -> Bool) -> Tab
 createTab Kind.Ops{ofoldrWithKey, obounds} p =
@@ -84,89 +68,76 @@ hasFeature Kind.Ops{okind} f t = kindHasFeature f (okind t)
 
 -- | Whether a tile does not block vision.
 -- Essential for efficiency of "FOV", hence tabulated.
-isClear :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isClear :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isClear #-}
-isClear Kind.Ops{ospeedup = Just TileSpeedup{isClearTab}} = accessTab isClearTab
-isClear cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
+isClear TileSpeedup{isClearTab} = accessTab isClearTab
 
 -- | Whether a tile is lit on its own.
 -- Essential for efficiency of "Perception", hence tabulated.
-isLit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isLit :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isLit #-}
-isLit Kind.Ops{ospeedup = Just TileSpeedup{isLitTab}} = accessTab isLitTab
-isLit cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
+isLit TileSpeedup{isLitTab} = accessTab isLitTab
 
 -- | Whether actors can walk into a tile.
 -- Essential for efficiency of pathfinding, hence tabulated.
-isWalkable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isWalkable :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isWalkable #-}
-isWalkable Kind.Ops{ospeedup = Just TileSpeedup{isWalkableTab}} =
+isWalkable TileSpeedup{isWalkableTab} =
   accessTab isWalkableTab
-isWalkable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether actors can walk into a tile, perhaps opening a door first,
 -- perhaps a hidden door.
 -- Essential for efficiency of pathfinding, hence tabulated.
-isPassable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isPassable :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isPassable #-}
-isPassable Kind.Ops{ospeedup = Just TileSpeedup{isPassableTab}} =
+isPassable TileSpeedup{isPassableTab} =
   accessTab isPassableTab
-isPassable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether actors can walk into a tile, perhaps trying to open
 -- a hidden door first.
 -- Essential for efficiency of pathfinding, hence tabulated.
-isPassableNoSuspect :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isPassableNoSuspect :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isPassableNoSuspect #-}
-isPassableNoSuspect Kind.Ops{ospeedup =
-                               Just TileSpeedup{isPassableNoSuspectTab}} =
+isPassableNoSuspect TileSpeedup{isPassableNoSuspectTab} =
   accessTab isPassableNoSuspectTab
-isPassableNoSuspect cotile =
-  assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether actors can walk into a tile, perhaps opening a door first,
 -- perhaps trying a hidden door.
 -- Essential for efficiency of pathfinding, hence tabulated.
-isPassableNoClosed :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isPassableNoClosed :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isPassableNoClosed #-}
-isPassableNoClosed Kind.Ops{ospeedup =
-                              Just TileSpeedup{isPassableNoClosedTab}} =
+isPassableNoClosed TileSpeedup{isPassableNoClosedTab} =
   accessTab isPassableNoClosedTab
-isPassableNoClosed cotile =
-  assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile is a door, open or closed.
 -- Essential for efficiency of pathfinding, hence tabulated.
-isDoor :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isDoor :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isDoor #-}
-isDoor Kind.Ops{ospeedup = Just TileSpeedup{isDoorTab}} = accessTab isDoorTab
-isDoor cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
+isDoor TileSpeedup{isDoorTab} = accessTab isDoorTab
 
 -- | Whether a tile is suspect.
 -- Essential for efficiency of pathfinding, hence tabulated.
-isSuspect :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isSuspect :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isSuspect #-}
-isSuspect Kind.Ops{ospeedup = Just TileSpeedup{isSuspectTab}} =
+isSuspect TileSpeedup{isSuspectTab} =
   accessTab isSuspectTab
-isSuspect cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile kind (specified by its id) has a ChangeTo feature.
 -- Essential for efficiency of pathfinding, hence tabulated.
-isChangeable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isChangeable :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isChangeable #-}
-isChangeable Kind.Ops{ospeedup = Just TileSpeedup{isChangeableTab}} =
+isChangeable TileSpeedup{isChangeableTab} =
   accessTab isChangeableTab
-isChangeable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether one can easily explore a tile, possibly finding a treasure
 -- or a clue. Doors can't be explorable since revealing a secret tile
 -- should not change it's (walkable and) explorable status.
 -- Door status should not depend on whether they are open or not
 -- so that a foe opening a door doesn't force us to backtrack to explore it.
-isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isExplorable :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isExplorable #-}
-isExplorable cotile t =
-  (isWalkable cotile t || isClear cotile t) && not (isDoor cotile t)
+isExplorable coTileSpeedup t =
+  (isWalkable coTileSpeedup t || isClear coTileSpeedup t) && not (isDoor coTileSpeedup t)
 
 -- | The player can't tell one tile from the other.
 lookSimilar :: TileKind -> TileKind -> Bool

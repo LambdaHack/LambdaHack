@@ -43,7 +43,7 @@ import Game.LambdaHack.Content.RuleKind
 targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy TgtAndPath)
 targetStrategy aid = do
-  cops@Kind.COps{corule, cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
+  cops@Kind.COps{corule, cotile=cotile@Kind.Ops{ouniqGroup}, coTileSpeedup} <- getsState scops
   let stdRuleset = Kind.stdRuleset corule
       nearby = rnearby stdRuleset
   itemToF <- itemToFullClient
@@ -331,7 +331,7 @@ targetStrategy aid = do
                        in sml <= ltime lvl)
                    && if not lidExplored
                       then t /= unknownId  -- closestUnknown
-                           && not (Tile.isSuspect cotile t)  -- closestSuspect
+                           && not (Tile.isSuspect coTileSpeedup t)  -- closestSuspect
                            && not (condEnoughGear && Tile.isStair cotile t)
                       else  -- closestTriggers
                         -- Try to kill that very last enemy for his loot before

@@ -12,7 +12,7 @@ import Data.Version
 import qualified Game.LambdaHack.Common.KindOps as KindOps
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Content.TileKind (TileKind)
+import Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup)
 
 -- TODO: very few rules are configurable yet, extend as needed.
 -- TODO: in the future, in @raccessible@ check flying for chasms,
@@ -38,7 +38,7 @@ data RuleKind = RuleKind
   { rsymbol         :: !Char      -- ^ a symbol
   , rname           :: !Text      -- ^ short description
   , rfreq           :: !(Freqs RuleKind)  -- ^ frequency within groups
-  , raccessible     :: !(KindOps.Ops TileKind
+  , raccessible     :: !(TileSpeedup
                          -> Point -> KindOps.Id TileKind
                          -> Point -> KindOps.Id TileKind
                          -> Bool)  -- ^ see above

@@ -106,24 +106,24 @@ at Level{ltile} p = ltile PointArray.! p
 -- using the formula from the standard ruleset.
 -- Precondition: the two positions are next to each other.
 accessible :: Kind.COps -> Level -> Point -> Point -> Bool
-accessible Kind.COps{corule, cotile} lvl spos tpos =
+accessible Kind.COps{corule, coTileSpeedup} lvl spos tpos =
   let st = lvl `at` spos
       tt = lvl `at` tpos
-      allOK = raccessible (Kind.stdRuleset corule) cotile spos st tpos tt
-  in Tile.isWalkable cotile tt && allOK
+      allOK = raccessible (Kind.stdRuleset corule) coTileSpeedup spos st tpos tt
+  in Tile.isWalkable coTileSpeedup tt && allOK
 
 -- | Check whether one position is accessible from another,
 -- using the formula from the standard ruleset,
 -- but additionally treating unknown tiles as walkable.
 -- Precondition: the two positions are next to each other.
 accessibleUnknown :: Kind.COps -> Level -> Point -> Point -> Bool
-accessibleUnknown Kind.COps{corule, cotile=cotile@Kind.Ops{ouniqGroup}} lvl =
+accessibleUnknown Kind.COps{corule, cotile=Kind.Ops{ouniqGroup}, coTileSpeedup} lvl =
   let unknownId = ouniqGroup "unknown space"
   in \spos tpos ->
     let st = lvl `at` spos
         tt = lvl `at` tpos
-        allOK = raccessible (Kind.stdRuleset corule) cotile spos st tpos tt
-    in (Tile.isWalkable cotile tt || tt == unknownId) && allOK
+        allOK = raccessible (Kind.stdRuleset corule) coTileSpeedup spos st tpos tt
+    in (Tile.isWalkable coTileSpeedup tt || tt == unknownId) && allOK
 
 -- | Check whether actors can move from a position along a unit vector,
 -- using the formula from the standard ruleset.

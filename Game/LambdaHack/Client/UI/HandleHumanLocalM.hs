@@ -238,7 +238,7 @@ permittedProjectClient triggerSyms = do
 
 projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
 projectCheck tpos = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
   eps <- getsClient seps
   sb <- getsState $ getActorBody leader
@@ -252,7 +252,7 @@ projectCheck tpos = do
     Just (pos : _) -> do
       lvl <- getLevel lid
       let t = lvl `at` pos
-      if not $ Tile.isWalkable cotile t
+      if not $ Tile.isWalkable coTileSpeedup t
         then return $ Just ProjectBlockTerrain
         else do
           lab <- getsState $ posToActors pos lid

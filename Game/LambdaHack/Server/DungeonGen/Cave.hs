@@ -65,7 +65,8 @@ buildCave :: Kind.COps         -- ^ content definitions
           -> Rnd Cave
 buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         , cocave=Kind.Ops{okind}
-                        , coplace=Kind.Ops{okind=pokind} }
+                        , coplace=Kind.Ops{okind=pokind}
+                        , coTileSpeedup }
           ldepth totalDepth dkind = do
   let kc@CaveKind{..} = okind dkind
   lgrid@(gx, gy) <- castDiceXY ldepth totalDepth cgrid
@@ -148,13 +149,13 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
           if ro then Tile.openTo cotile doorClosedId
                 else return $! doorClosedId
         else do  -- opening kept
-          if Tile.isLit cotile cor then return cor
+          if Tile.isLit coTileSpeedup cor then return cor
           else do
             -- If any cardinally adjacent room tile lit, make the opening lit.
             let roomTileLit p =
                   case EM.lookup p lplaces of
                     Nothing -> False
-                    Just tile -> Tile.isLit cotile tile
+                    Just tile -> Tile.isLit coTileSpeedup tile
                 vic = vicinityCardinal cxsize cysize pos
             if any roomTileLit vic
             then return litCorTile

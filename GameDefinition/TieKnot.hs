@@ -22,7 +22,9 @@ import Game.LambdaHack.Client
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.SessionUI
 import qualified Game.LambdaHack.Common.Kind as Kind
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Server
+import Game.LambdaHack.Server.State
 
 -- | Tie the LambdaHack engine client, server and frontend code
 -- with the game-specific content definitions, and run the game.
@@ -35,20 +37,20 @@ import Game.LambdaHack.Server
 tieKnot :: [String] -> IO ()
 tieKnot args = do
   -- Options for the next game taken from the commandline.
-  sdebugNxt <- debugArgs args
+  sdebugNxt@DebugModeSer{sallClear} <- debugArgs args
   let -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and free memory.
-      !copsSlow = Kind.COps
+      cotile = Kind.createOps Content.TileKind.cdefs
+      !cops = Kind.COps
         { cocave  = Kind.createOps Content.CaveKind.cdefs
         , coitem  = Kind.createOps Content.ItemKind.cdefs
         , comode  = Kind.createOps Content.ModeKind.cdefs
         , coplace = Kind.createOps Content.PlaceKind.cdefs
         , corule  = Kind.createOps Content.RuleKind.cdefs
-        , cotile  = Kind.createOps Content.TileKind.cdefs
-        , coClear = False
-        , coSlow  = True
+        , cotile
+        , coClear = sallClear
+        , coTileSpeedup = Tile.speedup sallClear cotile
         }
-      !cops = speedupCOps sdebugNxt copsSlow
       -- Client content operations containing default keypresses
       -- and command descriptions.
       !copsClient = Content.KeyKind.standardKeys

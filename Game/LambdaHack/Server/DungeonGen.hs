@@ -37,7 +37,7 @@ convertTileMaps :: Kind.COps
                 -> Rnd (Kind.Id TileKind) -> Maybe (Rnd (Kind.Id TileKind))
                 -> Int -> Int -> TileMapEM
                 -> Rnd TileMap
-convertTileMaps Kind.COps{cotile}
+convertTileMaps Kind.COps{coTileSpeedup}
                 cdefTile mcdefTileWalkable cxsize cysize ltile = do
   let f :: Point -> Rnd (Kind.Id TileKind)
       f p = case EM.lookup p ltile of
@@ -55,7 +55,7 @@ convertTileMaps Kind.COps{cotile}
       let passes p@Point{..} array =
             px >= 0 && px <= cxsize - 1
             && py >= 0 && py <= cysize - 1
-            && Tile.isWalkable cotile (array PointArray.! p)
+            && Tile.isWalkable coTileSpeedup (array PointArray.! p)
           -- If no point blocks on both ends, then I can eventually go
           -- from bottom to top of the map and from left to right
           -- unless there are disconnected areas inside rooms).
@@ -69,7 +69,7 @@ convertTileMaps Kind.COps{cotile}
           yeven Point{..} = py `mod` 2 == 0
           connect included blocks walkableTile array =
             let g n c = if included n
-                           && not (Tile.isWalkable cotile c)
+                           && not (Tile.isWalkable coTileSpeedup c)
                            && n `EM.notMember` ltile
                            && blocks n array
                         then walkableTile
@@ -89,10 +89,10 @@ convertTileMaps Kind.COps{cotile}
 
 placeStairs :: Kind.COps -> TileMap -> CaveKind -> [Point]
             -> Rnd Point
-placeStairs Kind.COps{cotile} cmap CaveKind{..} ps = do
+placeStairs Kind.COps{cotile, coTileSpeedup} cmap CaveKind{..} ps = do
   let dist cmin l _ = all (\pos -> chessDist l pos > cmin) ps
   findPosTry 1000 cmap
-    (\p t -> Tile.isWalkable cotile t
+    (\p t -> Tile.isWalkable coTileSpeedup t
              && not (Tile.hasFeature cotile TK.NoActor t)
              && dist 0 p t)  -- can't overwrite stairs with other stairs
     [ dist cminStairDist
@@ -209,7 +209,7 @@ levelFromCaveKind :: Kind.COps
                   -> CaveKind -> AbsDepth -> TileMap -> ([Point], [Point])
                   -> Int -> Freqs ItemKind -> Int -> Freqs ItemKind -> Int -> [Point]
                   -> Level
-levelFromCaveKind Kind.COps{cotile}
+levelFromCaveKind Kind.COps{coTileSpeedup}
                   CaveKind{..}
                   ldepth ltile lstair lactorCoeff lactorFreq litemNum litemFreq
                   lsecret lescape =
@@ -235,7 +235,7 @@ levelFromCaveKind Kind.COps{cotile}
         , lhidden = chidden
         , lescape
         }
-      f n t | Tile.isExplorable cotile t = n + 1
+      f n t | Tile.isExplorable coTileSpeedup t = n + 1
             | otherwise = n
       lclear = PointArray.foldlA' f 0 ltile
   in lvl {lclear}

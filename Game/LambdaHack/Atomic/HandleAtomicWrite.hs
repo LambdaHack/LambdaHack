@@ -374,7 +374,7 @@ updAlterTile :: MonadStateWrite m
              => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
              -> m ()
 updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{cotile, coTileSpeedup} <- getsState scops
   lvl <- getLevel lid
   -- The second alternative below can happen if, e.g., a client remembers,
   -- but does not see the tile (so does not notice the SearchTile action),
@@ -386,7 +386,7 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
                        `twith` (lid, p, fromTile, toTile, ts PointArray.! p))
                $ ts PointArray.// [(p, toTile)]
   updateLevel lid $ updateTile adj
-  case (Tile.isExplorable cotile fromTile, Tile.isExplorable cotile toTile) of
+  case (Tile.isExplorable coTileSpeedup fromTile, Tile.isExplorable coTileSpeedup toTile) of
     (False, True) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl + 1}
     (True, False) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl - 1}
     _ -> return ()
@@ -412,13 +412,13 @@ updLearnSecrets aid fromS toS = assert (fromS /= toS) $ do
 updSpotTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 updSpotTile lid ts = assert (not $ null ts) $ do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   Level{ltile} <- getLevel lid
   let adj tileMap = tileMap PointArray.// ts
   updateLevel lid $ updateTile adj
   let f (p, t2) = do
         let t1 = ltile PointArray.! p
-        case (Tile.isExplorable cotile t1, Tile.isExplorable cotile t2) of
+        case (Tile.isExplorable coTileSpeedup t1, Tile.isExplorable coTileSpeedup t2) of
           (False, True) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl+1}
           (True, False) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl-1}
           _ -> return ()
@@ -429,7 +429,7 @@ updSpotTile lid ts = assert (not $ null ts) $ do
 updLoseTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 updLoseTile lid ts = assert (not $ null ts) $ do
-  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
+  Kind.COps{cotile=Kind.Ops{ouniqGroup}, coTileSpeedup} <- getsState scops
   let unknownId = ouniqGroup "unknown space"
       matches _ [] = True
       matches tileMap ((p, ov) : rest) =
@@ -438,7 +438,7 @@ updLoseTile lid ts = assert (not $ null ts) $ do
       adj tileMap = assert (matches tileMap ts) $ tileMap PointArray.// tu
   updateLevel lid $ updateTile adj
   let f (_, t1) =
-        when (Tile.isExplorable cotile t1) $
+        when (Tile.isExplorable coTileSpeedup t1) $
           updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
   mapM_ f ts
 

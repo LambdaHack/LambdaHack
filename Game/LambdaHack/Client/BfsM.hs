@@ -173,7 +173,7 @@ condBFS :: MonadClient m
         => ActorId
         -> m (Maybe (Point -> Point -> MoveLegal))
 condBFS aid = do
-  Kind.COps{corule, cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
+  Kind.COps{corule, cotile=Kind.Ops{ouniqGroup}, coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   -- We assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway). Otherwise we'd have
@@ -206,14 +206,14 @@ condBFS aid = do
       isEnterable spos tpos =
         let st = lvl `at` spos
             tt = lvl `at` tpos
-            allOK = raccessible (Kind.stdRuleset corule) cotile spos st tpos tt
+            allOK = raccessible (Kind.stdRuleset corule) coTileSpeedup spos st tpos tt
         in if | tt == unknownId ->
-                if not (enterSuspect && Tile.isSuspect cotile st) && allOK
+                if not (enterSuspect && Tile.isSuspect coTileSpeedup st) && allOK
                 then MoveToUnknown
                 else MoveBlocked
-              | Tile.isWalkable cotile tt ->
+              | Tile.isWalkable coTileSpeedup tt ->
                 if allOK then MoveToOpen else MoveBlocked
-              | isPassable cotile tt ->
+              | isPassable coTileSpeedup tt ->
                 if allOK then MoveToClosed else MoveBlocked
               | otherwise -> MoveBlocked
   return $! if canMove then Just isEnterable else Nothing
@@ -278,11 +278,11 @@ closestSmell aid = do
 -- | Closest (wrt paths) suspect tile.
 closestSuspect :: MonadClient m => ActorId -> m [Point]
 closestSuspect aid = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody aid
   lvl <- getLevel $ blid body
   let f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
-      f acc p t = if Tile.isSuspect cotile t then p : acc else acc
+      f acc p t = if Tile.isSuspect coTileSpeedup t then p : acc else acc
       suspect = PointArray.ifoldlA' f [] $ ltile lvl
   case suspect of
     [] -> do
@@ -309,7 +309,7 @@ closestSuspect aid = do
 -- enemies on other levels.
 closestTriggers :: MonadClient m => Maybe Bool -> ActorId -> m (Frequency Point)
 closestTriggers onlyDir aid = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{cotile, coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody aid
   explored <- getsClient sexplored
   let lid = blid body
@@ -322,7 +322,7 @@ closestTriggers onlyDir aid = do
       lidExplored = ES.member (blid body) explored
       f :: [(Int, Point)] -> Point -> Kind.Id TileKind -> [(Int, Point)]
       f acc p t =
-        if Tile.isWalkable cotile t && not (null $ Tile.causeEffects cotile t)
+        if Tile.isWalkable coTileSpeedup t && not (null $ Tile.causeEffects cotile t)
         then case Tile.ascendTo cotile t of
           [] ->
             -- Escape (or guard) only after exploring, for high score, etc.
@@ -386,12 +386,12 @@ unexploredDepth = do
 -- | Closest (wrt paths) items and changeable tiles (e.g., item caches).
 closestItems :: MonadClient m => ActorId -> m [(Int, (Point, Maybe ItemBag))]
 closestItems aid = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody aid
   lvl@Level{lfloor} <- getLevel $ blid body
   let items = EM.assocs lfloor
       f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
-      f acc p t = if Tile.isChangeable cotile t then p : acc else acc
+      f acc p t = if Tile.isChangeable coTileSpeedup t then p : acc else acc
       changeable = PointArray.ifoldlA' f [] $ ltile lvl
   if null items && null changeable then return []
   else do

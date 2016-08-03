@@ -703,7 +703,7 @@ effectInsertMove execSfx nDm target = do
 effectTeleport :: (MonadAtomic m, MonadServer m)
                => m () -> Dice.Dice -> ActorId -> ActorId -> m Bool
 effectTeleport execSfx nDm source target = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{cotile, coTileSpeedup} <- getsState scops
   range <- rndToAction $ castDice (AbsDepth 0) (AbsDepth 0) nDm
   sb <- getsState $ getActorBody source
   b <- getsState $ getActorBody target
@@ -715,7 +715,7 @@ effectTeleport execSfx nDm source target = do
         in d >= range - delta && d <= range + delta
       dist delta pos _ = dMinMax delta pos
   tpos <- rndToAction $ findPosTry 200 ltile
-    (\p t -> Tile.isWalkable cotile t
+    (\p t -> Tile.isWalkable coTileSpeedup t
              && (not (dMinMax 9 p)  -- don't loop, very rare
                  || not (Tile.hasFeature cotile TK.NoActor t)
                     && unoccupied as p))
@@ -965,7 +965,7 @@ effectSendFlying :: (MonadAtomic m, MonadServer m)
                  -> m Bool
 effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   v <- sendFlyingVector source target modePush
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   lvl@Level{lxsize, lysize} <- getLevel (blid tb)
@@ -981,7 +981,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
                       `twith` (fpos, tb)
     Just (pos : rest) -> do
       let t = lvl `at` pos
-      if not $ Tile.isWalkable cotile t
+      if not $ Tile.isWalkable coTileSpeedup t
         then return False  -- supported by a wall
         else do
           weightAssocs <- fullAssocsServer target [CInv, CEqp, COrgan]

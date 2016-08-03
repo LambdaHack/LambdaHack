@@ -311,7 +311,7 @@ reqDisplace source target = do
 reqAlter :: (MonadAtomic m, MonadServer m)
          => ActorId -> Point -> Maybe TK.Feature -> m ()
 reqAlter source tpos mfeat = do
-  cops@Kind.COps{cotile=cotile@Kind.Ops{okind, opick}} <- getsState scops
+  cops@Kind.COps{cotile=cotile@Kind.Ops{okind, opick}, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsServer source
   let skill = EM.findWithDefault 0 Ability.AbAlter actorSk
@@ -331,8 +331,8 @@ reqAlter source tpos mfeat = do
                                   <$> opick tgroup (const True)
           unless (toTile == serverTile) $ do
             execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
-            case (Tile.isExplorable cotile serverTile,
-                  Tile.isExplorable cotile toTile) of
+            case (Tile.isExplorable coTileSpeedup serverTile,
+                  Tile.isExplorable coTileSpeedup toTile) of
               (False, True) -> execUpdAtomic $ UpdAlterClear lid 1
               (True, False) -> execUpdAtomic $ UpdAlterClear lid (-1)
               _ -> return ()

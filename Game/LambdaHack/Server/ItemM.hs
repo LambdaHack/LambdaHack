@@ -136,7 +136,7 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
 
 placeItemsInDungeon :: forall m. (MonadAtomic m, MonadServer m) => m ()
 placeItemsInDungeon = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{cotile, coTileSpeedup} <- getsState scops
   let initialItems (lid, Level{lfloor, ltile, litemNum, lxsize, lysize}) = do
         let factionDist = max lxsize lysize - 5
             placeItems :: [Point] -> Int -> m ()
@@ -144,7 +144,7 @@ placeItemsInDungeon = do
             placeItems lfloorKeys n = do
               let dist p = minimum $ maxBound : map (chessDist p) lfloorKeys
               pos <- rndToAction $ findPosTry 500 ltile
-                   (\_ t -> Tile.isWalkable cotile t
+                   (\_ t -> Tile.isWalkable coTileSpeedup t
                             && not (Tile.hasFeature cotile TK.NoItem t))
                    [ \p t -> Tile.hasFeature cotile TK.OftenItem t
                              && dist p > factionDist `div` 5

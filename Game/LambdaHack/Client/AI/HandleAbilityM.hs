@@ -844,12 +844,12 @@ displaceTowards aid source target = do
 chase :: MonadClient m
       => ActorId -> Bool -> Bool -> m (Strategy RequestAnyAbility)
 chase aid doDisplace avoidAmbient = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   lvl <- getLevel $ blid body
-  let isAmbient pos = Tile.isLit cotile (lvl `at` pos)
+  let isAmbient pos = Tile.isLit coTileSpeedup (lvl `at` pos)
   str <- case mtgtMPath of
     Just TgtAndPath{tapPath=AndPath{pathList=q : _, ..}}
       | not $ avoidAmbient && isAmbient q ->
@@ -867,7 +867,7 @@ chase aid doDisplace avoidAmbient = do
 moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> Point -> Bool -> m (Strategy Vector)
 moveTowards aid source target goal relaxed = do
-  cops@Kind.COps{cotile} <- getsState scops
+  cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   actorSk <- actorSkillsClient aid
   let alterSkill = EM.findWithDefault 0 AbAlter actorSk
@@ -885,8 +885,8 @@ moveTowards aid source target goal relaxed = do
         let t = lvl `at` p
         in alterSkill >= 1
            && (Tile.isOpenable cotile t
-               || Tile.isSuspect cotile t
-               || Tile.isChangeable cotile t)
+               || Tile.isSuspect coTileSpeedup t
+               || Tile.isChangeable coTileSpeedup t)
       enterableHere p = accessibleHere p || bumpableHere p
   if noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ target `vectorToFrom` source
@@ -910,7 +910,7 @@ moveTowards aid source target goal relaxed = do
 moveOrRunAid :: MonadClient m
              => Bool -> ActorId -> Vector -> m (Maybe RequestAnyAbility)
 moveOrRunAid run source dir = do
-  cops@Kind.COps{cotile} <- getsState scops
+  cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsClient source
   let lid = blid sb
@@ -960,11 +960,11 @@ moveOrRunAid run source dir = do
          -- This could be, e.g., inaccessible open door with an item in it,
          -- but for this case to happen, it would also need to be unwalkable.
          assert `failure` "AI causes AlterBlockItem" `twith` (run, source, dir)
-       | not (Tile.isWalkable cotile t)  -- not implied
-              && (Tile.isSuspect cotile t
+       | not (Tile.isWalkable coTileSpeedup t)  -- not implied
+              && (Tile.isSuspect coTileSpeedup t
                   || Tile.isOpenable cotile t
                   || Tile.isClosable cotile t
-                  || Tile.isChangeable cotile t) ->
+                  || Tile.isChangeable coTileSpeedup t) ->
          -- No access, so search and/or alter the tile.
          return $! Just $ RequestAnyAbility $ ReqAlter tpos Nothing
        | otherwise ->

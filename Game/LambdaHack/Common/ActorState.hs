@@ -117,11 +117,10 @@ nearbyFreePoints :: Int
                  -> (Kind.Id TileKind -> Bool) -> Point -> LevelId -> State
                  -> [Point]
 nearbyFreePoints ntries f start lid s =
-  let Kind.COps{cotile} = scops s
-      lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
+  let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
       as = actorList (const True) lid s
       good p = f (lvl `at` p)
-               && Tile.isWalkable cotile (lvl `at` p)
+               && Tile.isWalkable (Kind.coTileSpeedup $ scops s) (lvl `at` p)
                && unoccupied as p
       ps = nub $ start : concatMap (vicinity lxsize lysize) ps
   in filter good $ take ntries ps
@@ -316,9 +315,8 @@ regenCalmDelta b activeItems s =
 
 actorInAmbient :: Actor -> State -> Bool
 actorInAmbient b s =
-  let Kind.COps{cotile} = scops s
-      lvl = (EM.! blid b) . sdungeon $ s
-  in Tile.isLit cotile (lvl `at` bpos b)
+  let lvl = (EM.! blid b) . sdungeon $ s
+  in Tile.isLit (Kind.coTileSpeedup $ scops s) (lvl `at` bpos b)
 
 actorSkills :: Maybe ActorId -> ActorId -> [ItemFull] -> State -> Ability.Skills
 actorSkills mleader aid activeItems s =

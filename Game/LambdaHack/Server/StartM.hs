@@ -312,14 +312,14 @@ addHero bfid ppos lid heroNames mNumber time = do
 -- from each other. Place as many of the initial factions, as possible,
 -- over stairs and escapes.
 findEntryPoss :: Kind.COps -> LevelId -> Level -> Int -> Rnd [Point]
-findEntryPoss Kind.COps{cotile}
+findEntryPoss Kind.COps{cotile, coTileSpeedup}
               lid Level{ltile, lxsize, lysize, lstair, lescape} k = do
   let factionDist = max lxsize lysize - 5
       dist poss cmin l _ = all (\pos -> chessDist l pos > cmin) poss
       tryFind _ 0 = return []
       tryFind ps n = do
         np <- findPosTry 1000 ltile  -- try really hard, for skirmish fairness
-                (\_ t -> Tile.isWalkable cotile t
+                (\_ t -> Tile.isWalkable coTileSpeedup t
                          && not (Tile.hasFeature cotile TK.NoActor t))
                 [ dist ps $ factionDist `div` 2
                 , dist ps $ factionDist `div` 3

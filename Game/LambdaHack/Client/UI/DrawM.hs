@@ -134,7 +134,7 @@ drawBaseFrame dm drawnLevelId = do
   s <- getState
   StateClient{seps, sexplored, smarkSuspect} <- getClient
   per <- getPerFid drawnLevelId
-  let Kind.COps{cotile=cotile@Kind.Ops{okind=tokind, ouniqGroup}} = cops
+  let Kind.COps{cotile=Kind.Ops{okind=tokind, ouniqGroup}, coTileSpeedup} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
       (bline, mblid, mbpos) = case (xhairPos, mleader) of
         (Just xhair, Just leader) ->
@@ -186,12 +186,12 @@ drawBaseFrame dm drawnLevelId = do
             -- smarkSuspect is an optional overlay, so let's overlay it
             -- over both visible and invisible tiles.
             vcolor
-              | smarkSuspect && Tile.isSuspect cotile tile = Color.BrCyan
+              | smarkSuspect && Tile.isSuspect coTileSpeedup tile = Color.BrCyan
               | vis = TK.tcolor tk
               | otherwise = TK.tcolor2 tk
-            fgOnPathOrLine = case (vis, Tile.isWalkable cotile tile) of
+            fgOnPathOrLine = case (vis, Tile.isWalkable coTileSpeedup tile) of
               _ | tile == unknownId -> Color.BrBlack
-              _ | Tile.isSuspect cotile tile -> Color.BrCyan
+              _ | Tile.isSuspect coTileSpeedup tile -> Color.BrCyan
               (True, True)   -> Color.BrGreen
               (True, False)  -> Color.BrRed
               (False, True)  -> Color.Green

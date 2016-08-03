@@ -162,8 +162,8 @@ updateFovAspectActor fovAspectActorOld aid sfovAspectItem s =
     Nothing -> EM.delete aid fovAspectActorOld
 
 clearFromLevel :: Kind.COps -> Level -> FovClear
-clearFromLevel Kind.COps{cotile} Level{ltile} =
-  PointArray.mapA (Tile.isClear cotile) ltile
+clearFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
+  PointArray.mapA (Tile.isClear coTileSpeedup) ltile
 
 clearInDungeon :: State -> FovClearLid
 clearInDungeon s = EM.map (clearFromLevel (scops s)) $ sdungeon s
@@ -174,8 +174,8 @@ updateFovClear fovClearLidOld lid s =
   in EM.adjust (const newTiles) lid fovClearLidOld
 
 litFromLevel :: Kind.COps -> Level -> FovLit
-litFromLevel Kind.COps{cotile} Level{ltile} =
-  let litSet p t set = if Tile.isLit cotile t then p : set else set
+litFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
+  let litSet p t set = if Tile.isLit coTileSpeedup t then p : set else set
   in FovLit $ ES.fromDistinctAscList $ PointArray.ifoldrA' litSet [] ltile
 
 litInDungeon :: State -> FovLitLid

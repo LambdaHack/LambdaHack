@@ -3,6 +3,7 @@
 module Game.LambdaHack.Content.TileKind
   ( TileKind(..), Feature(..)
   , validateSingleTileKind, validateAllTileKind, actionFeatures
+  , TileSpeedup(..), Tab(..)
   ) where
 
 import Prelude ()
@@ -10,6 +11,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Control.DeepSeq
+import qualified Data.Array.Unboxed as A
 import Data.Binary
 import Data.Hashable
 import qualified Data.IntSet as IS
@@ -17,6 +19,7 @@ import qualified Data.Map.Strict as M
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
+import qualified Game.LambdaHack.Common.KindOps as KindOps
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -67,6 +70,20 @@ instance Binary Feature
 instance Hashable Feature
 
 instance NFData Feature
+
+data TileSpeedup = TileSpeedup
+  { isClearTab             :: !Tab
+  , isLitTab               :: !Tab
+  , isWalkableTab          :: !Tab
+  , isPassableTab          :: !Tab
+  , isPassableNoSuspectTab :: !Tab
+  , isPassableNoClosedTab  :: !Tab
+  , isDoorTab              :: !Tab
+  , isSuspectTab           :: !Tab
+  , isChangeableTab        :: !Tab
+  }
+
+newtype Tab = Tab (A.UArray (KindOps.Id TileKind) Bool)
 
 -- TODO: (spans multiple contents) check that all posible solid place
 -- fences have hidden counterparts.

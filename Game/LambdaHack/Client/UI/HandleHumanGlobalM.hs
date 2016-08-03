@@ -358,7 +358,7 @@ displaceAid target = do
 moveSearchAlterAid :: MonadClient m
                    => ActorId -> Vector -> m (Either Text RequestAnyAbility)
 moveSearchAlterAid source dir = do
-  cops@Kind.COps{cotile} <- getsState scops
+  cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsClient source
   lvl <- getLevel $ blid sb
@@ -373,14 +373,14 @@ moveSearchAlterAid source dir = do
             Right $ RequestAnyAbility $ ReqMove dir
         -- No access, so search and/or alter the tile. Non-walkability is
         -- not implied by the lack of access.
-        | not (Tile.isWalkable cotile t)
+        | not (Tile.isWalkable coTileSpeedup t)
           && (not (knownLsecret lvl)
               || (isSecretPos lvl tpos  -- possible secrets here
-                  && (Tile.isSuspect cotile t  -- not yet searched
+                  && (Tile.isSuspect coTileSpeedup t  -- not yet searched
                       || Tile.hideAs cotile t /= t))  -- search again
               || Tile.isOpenable cotile t
               || Tile.isClosable cotile t
-              || Tile.isChangeable cotile t)
+              || Tile.isChangeable coTileSpeedup t)
           = if | skill < 1 ->
                  Left $ showReqFailure AlterUnskilled
                | EM.member tpos $ lfloor lvl ->

@@ -235,7 +235,7 @@ projectFail :: (MonadAtomic m, MonadServer m)
             -> Bool       -- ^ whether the item is a blast
             -> m (Maybe ReqFailure)
 projectFail source tpxy eps iid cstore isBlast = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
       spos = bpos sb
@@ -264,7 +264,7 @@ projectFail source tpxy eps iid cstore isBlast = do
                          then take (chessDist spos tpxy - 1) restUnlimited
                          else restUnlimited
                   t = lvl `at` pos
-              if not $ Tile.isWalkable cotile t
+              if not $ Tile.isWalkable coTileSpeedup t
                 then return $ Just ProjectBlockTerrain
                 else do
                   lab <- getsState $ posToActors pos lid

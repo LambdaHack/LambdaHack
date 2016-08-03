@@ -1,6 +1,6 @@
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
-  ( Id, Speedup, Ops(..), COps(..), createOps, stdRuleset
+  ( Id, Ops(..), COps(..), createOps, stdRuleset
   ) where
 
 import Prelude ()
@@ -83,19 +83,18 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
                                    <+> tshow (M.keys kindFreq)
        , obounds = ( fst $ EM.findMin kindMap
                    , fst $ EM.findMax kindMap )
-       , ospeedup = Nothing  -- define elsewhere
        }
 
 -- | Operations for all content types, gathered together.
 data COps = COps
-  { cocave  :: !(Ops CaveKind)     -- server only
-  , coitem  :: !(Ops ItemKind)
-  , comode  :: !(Ops ModeKind)     -- server only
-  , coplace :: !(Ops PlaceKind)    -- server only, so far
-  , corule  :: !(Ops RuleKind)
-  , cotile  :: !(Ops TileKind)
-  , coClear :: !Bool
-  , coSlow  :: !Bool
+  { cocave        :: !(Ops CaveKind)     -- server only
+  , coitem        :: !(Ops ItemKind)
+  , comode        :: !(Ops ModeKind)     -- server only
+  , coplace       :: !(Ops PlaceKind)    -- server only, so far
+  , corule        :: !(Ops RuleKind)
+  , cotile        :: !(Ops TileKind)
+  , coClear       :: !Bool
+  , coTileSpeedup :: !TileSpeedup
   }
 
 instance Show COps where

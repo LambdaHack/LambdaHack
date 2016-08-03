@@ -323,14 +323,14 @@ wipeBfsIfItemAffectsSkills stores aid =
 tileChangeAffectsBfs :: Kind.COps
                      -> Kind.Id TileKind -> Kind.Id TileKind
                      -> Bool
-tileChangeAffectsBfs Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}}
+tileChangeAffectsBfs Kind.COps{cotile=Kind.Ops{ouniqGroup}, coTileSpeedup}
                      fromTile toTile =
   let unknownId = ouniqGroup "unknown space"
   in unknownId `elem` [fromTile, toTile]
-     || not (Tile.isPassableNoClosed cotile fromTile
-             && Tile.isPassableNoClosed cotile toTile
-             || not (Tile.isPassable cotile fromTile)
-                && not (Tile.isPassable cotile toTile))
+     || not (Tile.isPassableNoClosed coTileSpeedup fromTile
+             && Tile.isPassableNoClosed coTileSpeedup toTile
+             || not (Tile.isPassable coTileSpeedup fromTile)
+                && not (Tile.isPassable coTileSpeedup toTile))
 
 createActor :: MonadClient m => ActorId -> Actor -> m ()
 createActor aid _b = do

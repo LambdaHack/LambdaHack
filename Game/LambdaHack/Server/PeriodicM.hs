@@ -107,7 +107,7 @@ addAnyActor actorFreq lid time mpos = do
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> Faction -> State
              -> Rnd Point
-rollSpawnPos Kind.COps{cotile} visible
+rollSpawnPos Kind.COps{cotile, coTileSpeedup} visible
              mobile lid Level{ltile, lxsize, lysize} fact s = do
   let inhabitants = actorRegularList (isAtWar fact) lid s
       as = actorList (const True) lid s
@@ -130,7 +130,7 @@ rollSpawnPos Kind.COps{cotile} visible
   -- Not considering TK.OftenActor, because monsters emerge from hidden ducts,
   -- which are easier to hide in crampy corridors that lit halls.
   findPosTry (if mobile then 500 else 100) ltile
-    ( \p t -> Tile.isWalkable cotile t
+    ( \p t -> Tile.isWalkable coTileSpeedup t
               && not (Tile.hasFeature cotile TK.NoActor t)
               && unoccupied as p)
     (condList
