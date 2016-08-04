@@ -58,15 +58,12 @@ abortedUnknownBfs = pred apartBfs
 -- Unsafe @PointArray@ operations are OK here, because the intermediate
 -- values of the vector don't leak anywhere outside nor are kept unevaluated
 -- and so they can't be overwritten by the unsafe side-effect.
-fillBfs :: Maybe (Point -> Point -> MoveLegal)
-                                          -- ^ is move from known tile legal?
+fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is move from known tile legal?
         -> Point                          -- ^ starting position
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
-fillBfs Nothing source aInitial =
-  PointArray.unsafeWriteA aInitial source minKnownBfs
-  `seq` aInitial
-fillBfs (Just isEnterable) source aInitial =
+{-# NOINLINE fillBfs #-}
+fillBfs isEnterable source aInitial =
   let bfs :: BfsDistance -> [Point] -> ()  -- modifies @aInitial@
       bfs distance predK =
         let distCompl = distance .&. complement minKnownBfs
@@ -76,18 +73,15 @@ fillBfs (Just isEnterable) source aInitial =
               let fKnown l move =
                     let p = shift pos move
                         visitedMove = aInitial PointArray.! p /= apartBfs
-                        (blocked, enteredUnknown) = case isEnterable pos p of
-                          MoveBlocked -> (True, assert `failure` ())
-                          MoveToOpen -> (False, False)
-                          MoveToClosed -> (False, False)
-                          MoveToUnknown -> (False, True)
-                    in if | visitedMove || blocked -> l
-                          | enteredUnknown ->
-                            PointArray.unsafeWriteA aInitial p distCompl
-                            `seq` l
-                          | otherwise ->
-                            PointArray.unsafeWriteA aInitial p distance
-                            `seq` p : l
+                    in if visitedMove then l
+                       else case isEnterable pos p of
+                         MoveBlocked -> l
+                         MoveToUnknown ->
+                           PointArray.unsafeWriteA aInitial p distCompl
+                           `seq` l
+                         _ ->
+                           PointArray.unsafeWriteA aInitial p distance
+                           `seq` p : l
               in foldl' fKnown succK2 moves
             succK4 = foldr processKnown [] predK
         in if null succK4 || distance == abortedKnownBfs
@@ -117,12 +111,11 @@ instance Binary AndPath
 -- The @eps@ coefficient determines which direction (or the closest
 -- directions available) that path should prefer, where 0 means north-west
 -- and 1 means north.
-findPathBfs :: Maybe (Point -> Point -> MoveLegal)
+findPathBfs :: (Point -> Point -> MoveLegal)
             -> Point -> Point -> Int
             -> PointArray.Array BfsDistance
             -> AndPath
-findPathBfs Nothing _ _ _ _ = NoPath
-findPathBfs (Just isEnterable) pathSource pathGoal sepsRaw bfs =
+findPathBfs isEnterable pathSource pathGoal sepsRaw bfs =
   assert (bfs PointArray.! pathSource == minKnownBfs) $
   let eps = sepsRaw `mod` 4
       (mc1, mc2) = splitAt eps movesCardinal
@@ -141,10 +134,10 @@ findPathBfs (Just isEnterable) pathSource pathGoal sepsRaw bfs =
                       then acc
                       else case isEnterable p pos of
                         MoveToOpen -> p : acc
-                        MoveToUnknown -> p : acc
                         -- Prefer paths through open or unknown tiles.
                         MoveToClosed -> acc ++ [p]
                         MoveBlocked -> acc
+                        MoveToUnknown -> p : acc
             minP = case foldr f [] children of
               p : _ -> p
               [] -> assert `failure` (pos, oldDist, children)

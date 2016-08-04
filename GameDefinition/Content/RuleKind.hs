@@ -39,7 +39,7 @@ standard = RuleKind
   -- Precondition: the two positions are next to each other
   -- and the target tile is walkable. For LambdaHack we forbid
   -- diagonal movement to and from doors.
-  , raccessible    = \coTileSpeedup spos st tpos tt ->
+  , raccessible    = \ !coTileSpeedup !spos !st !tpos !tt ->
       not ((Tile.isDoor coTileSpeedup st || Tile.isDoor coTileSpeedup tt)
            && isDiagonal (spos `vectorToFrom` tpos))
   , rtitle         = "LambdaHack"

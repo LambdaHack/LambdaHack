@@ -47,10 +47,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 type SmellTime = Time
 
 createTab :: Kind.Ops TileKind -> (TileKind -> Bool) -> Tab
-createTab Kind.Ops{ofoldrWithKey, obounds} p =
-  let f _ k acc = p k : acc
-      clearAssocs = ofoldrWithKey f []
-  in Tab $ A.listArray obounds clearAssocs
+createTab Kind.Ops{ofoldrWithKey, obounds} prop =
+  let f _ k acc = prop k : acc
+  in Tab $ A.listArray obounds $ ofoldrWithKey f []
 
 accessTab :: Tab -> Kind.Id TileKind -> Bool
 {-# INLINE accessTab #-}

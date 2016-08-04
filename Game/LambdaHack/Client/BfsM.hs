@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.BfsM
   , closestUnknown, closestSuspect, closestSmell, furthestKnown
   , closestTriggers, closestItems, closestFoes
 #ifdef EXPOSE_INTERNAL
-  , createBfs, updatePathFromBfs
+  , createBfs, updatePathFromBfs, condBFS, isEnterable
 #endif
   ) where
 
@@ -41,7 +41,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind (raccessible)
-import Game.LambdaHack.Content.TileKind (TileKind)
+import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
 invBfs :: BfsAndPath -> BfsAndPath
 invBfs bfsAnd = BfsInvalid $ bfsArr bfsAnd
@@ -67,13 +67,13 @@ invalidateBfsAll =
   modifyClient $ \cli -> cli {sbfsD = EM.map invBfs (sbfsD cli)}
 
 createBfs :: MonadClient m
-             => Maybe (Point -> Point -> MoveLegal) -> Maybe BfsAndPath
-             -> ActorId
-             -> m (PointArray.Array BfsDistance)
-createBfs misEnterable mbfs aid = do
+          => (Bool, Bool, Bool) -> Maybe BfsAndPath
+          -> ActorId
+          -> m (PointArray.Array BfsDistance)
+createBfs (canMove, enterSuspect, canSearchAndOpen) mbfs aid = do
   b <- getsState $ getActorBody aid
   let source = bpos b
-  vInitial <- case mbfs of
+  aInitial <- case mbfs of
     Just bfsAnd ->  -- TODO: we should verify size
       -- We need to use the safe set, because previous values
       -- of the BFS array for the actor can be stuck unevaluated
@@ -89,30 +89,40 @@ createBfs misEnterable mbfs aid = do
     Nothing -> do
       Level{lxsize, lysize} <- getLevel $ blid b
       return $! PointArray.replicateA lxsize lysize apartBfs
-  return $! fillBfs misEnterable source vInitial
+  if canMove then do
+    cops <- getsState scops
+    lvl <- getLevel $ blid b
+    let isE = isEnterable cops lvl enterSuspect canSearchAndOpen
+    return $! fillBfs isE source aInitial
+  else return $! PointArray.unsafeWriteA aInitial source minKnownBfs
+                 `seq` aInitial
 
 updatePathFromBfs :: MonadClient m
-                  => Maybe (Point -> Point -> MoveLegal) -> BfsAndPath
+                  => (Bool, Bool, Bool) -> BfsAndPath
                   -> ActorId -> Point
                   -> m (PointArray.Array BfsDistance, AndPath)
-updatePathFromBfs misEnterable bfsAndPathOld aid target = do
-  seps <- getsClient seps
-  b <- getsState $ getActorBody aid
-  let source = bpos b
-      getPath bfsArr = findPathBfs misEnterable source target seps bfsArr
-  (!bfsAndPath, !mpath) <- case bfsAndPathOld of
-    BfsAndPath{bfsArr, bfsPath=oldBfsPath} -> do
-      let mpath = getPath bfsArr
+updatePathFromBfs (canMove, enterSuspect, canSearchAndOpen)
+                  bfsAndPathOld aid target = do
+  let (oldBfsArr, oldBfsPath) = case bfsAndPathOld of
+        BfsAndPath{bfsArr, bfsPath} -> (bfsArr, bfsPath)
+        BfsOnly{bfsArr} -> (bfsArr, EM.empty)
+        BfsInvalid{} -> assert `failure` (bfsAndPathOld, aid, target)
+  let bfsArr = oldBfsArr
+  (!bfsPath, !mpath) <-
+    if not canMove
+    then return (oldBfsPath, NoPath)
+    else do
+      cops <- getsState scops
+      b <- getsState $ getActorBody aid
+      lvl <- getLevel $ blid b
+      seps <- getsClient seps
+      let isE = isEnterable cops lvl enterSuspect canSearchAndOpen
+          source = bpos b
+          mpath = findPathBfs isE source target seps bfsArr
           bfsPath = EM.insert target mpath oldBfsPath
-      return (BfsAndPath{..}, mpath)
-    BfsOnly{bfsArr} -> do
-      let mpath = getPath bfsArr
-          bfsPath = EM.singleton target mpath
-      return (BfsAndPath{..}, mpath)
-    BfsInvalid{} -> assert `failure` (bfsAndPathOld, aid, target)
-  modifyClient $ \cli ->
-    cli {sbfsD = EM.insert aid bfsAndPath (sbfsD cli)}
-  return (bfsArr bfsAndPath, mpath)
+      return (bfsPath, mpath)
+  modifyClient $ \cli -> cli {sbfsD = EM.insert aid BfsAndPath{..} (sbfsD cli)}
+  return (bfsArr, mpath)
 
 -- | Get cached BFS array and path or, if not stored, generate and store first.
 getCacheBfsAndPath :: forall m. MonadClient m
@@ -128,17 +138,17 @@ getCacheBfsAndPath aid target = do
       | bfsArr PointArray.! source == minKnownBfs ->
         case EM.lookup target bfsPath of
           Nothing -> do
-            misEnterable <- condBFS aid
-            updatePathFromBfs misEnterable bap aid target
+            argsEnterable <- condBFS aid
+            updatePathFromBfs argsEnterable bap aid target
           Just mpath -> return (bfsArr, mpath)
     Just bap@BfsOnly{bfsArr}
       | bfsArr PointArray.! source == minKnownBfs -> do
-        misEnterable <- condBFS aid
-        updatePathFromBfs misEnterable bap aid target
+        argsEnterable <- condBFS aid
+        updatePathFromBfs argsEnterable bap aid target
     _ -> do
-      misEnterable <- condBFS aid
-      bfsArr <- createBfs misEnterable mbfs aid
-      updatePathFromBfs misEnterable BfsOnly{bfsArr} aid target
+      argsEnterable <- condBFS aid
+      bfsArr <- createBfs argsEnterable mbfs aid
+      updatePathFromBfs argsEnterable BfsOnly{bfsArr} aid target
 
 -- | Get cached BFS array or, if not stored, generate and store first.
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
@@ -155,8 +165,8 @@ getCacheBfs aid = do
       | bfsArr PointArray.! source == minKnownBfs ->
         return bfsArr
     _ -> do
-      misEnterable <- condBFS aid
-      bfsArr <- createBfs misEnterable mbfs aid
+      argsEnterable <- condBFS aid
+      bfsArr <- createBfs argsEnterable mbfs aid
       modifyClient $ \cli ->
         cli {sbfsD = EM.insert aid BfsOnly{bfsArr} (sbfsD cli)}
       return bfsArr
@@ -169,12 +179,9 @@ getCachePath aid target = do
   if | source == target -> return $! AndPath source [] target 0  -- speedup
      | otherwise -> snd <$> getCacheBfsAndPath aid target
 
-condBFS :: MonadClient m
-        => ActorId
-        -> m (Maybe (Point -> Point -> MoveLegal))
+condBFS :: MonadClient m => ActorId -> m (Bool, Bool, Bool)
 condBFS aid = do
-  Kind.COps{corule, cotile=Kind.Ops{ouniqGroup}, coTileSpeedup} <- getsState scops
-  b <- getsState $ getActorBody aid
+  side <- getsClient sside
   -- We assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway). Otherwise we'd have
   -- to reset BFS after leader changes, but it would still lead to
@@ -189,34 +196,40 @@ condBFS aid = do
                 -- TODO: needed for now, because AI targets and shoots enemies
                 -- based on the path to them, not LOS to them.
                 || EM.findWithDefault 0 Ability.AbProject actorMaxSk > 0
-  lvl <- getLevel $ blid b
   smarkSuspect <- getsClient smarkSuspect
-  fact <- getsState $ (EM.! bfid b) . sfactionD
+  fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
       enterSuspect = canSearchAndOpen && (smarkSuspect || underAI)
-      isPassable | enterSuspect = Tile.isPassable
-                 | canSearchAndOpen = Tile.isPassableNoSuspect
-                 | otherwise = Tile.isPassableNoClosed
-      unknownId = ouniqGroup "unknown space"
-  -- Legality of move from a known tile, assuming doors freely openable.
-  -- We treat doors as an open tile and don't add an extra step for opening
-  -- the doors, because other actors open and use them, too,
-  -- so it's amortized. We treat unknown tiles specially.
-      isEnterable :: Point -> Point -> MoveLegal
-      isEnterable spos tpos =
-        let st = lvl `at` spos
-            tt = lvl `at` tpos
-            allOK = raccessible (Kind.stdRuleset corule) coTileSpeedup spos st tpos tt
-        in if | tt == unknownId ->
-                if not (enterSuspect && Tile.isSuspect coTileSpeedup st) && allOK
-                then MoveToUnknown
-                else MoveBlocked
-              | Tile.isWalkable coTileSpeedup tt ->
-                if allOK then MoveToOpen else MoveBlocked
-              | isPassable coTileSpeedup tt ->
-                if allOK then MoveToClosed else MoveBlocked
-              | otherwise -> MoveBlocked
-  return $! if canMove then Just isEnterable else Nothing
+  return (canMove, enterSuspect, canSearchAndOpen)
+
+-- | Legality of move from a known tile, assuming doors freely openable.
+-- We treat doors as an open tile and don't add an extra step for opening
+-- the doors, because other actors open and use them, too,
+-- so it's amortized. We treat unknown tiles specially.
+isEnterable :: Kind.COps -> Level -> Bool -> Bool -> Point -> Point -> MoveLegal
+{-# NOINLINE isEnterable #-}
+isEnterable !Kind.COps{corule, coTileSpeedup} !lvl
+            !enterSuspect !canSearchAndOpen =
+  let {-# INLINE isWalkable #-}
+      isWalkable = Tile.isWalkable coTileSpeedup
+      {-# INLINE isPassable #-}
+      isPassable | enterSuspect = Tile.isPassable coTileSpeedup
+                 | canSearchAndOpen = Tile.isPassableNoSuspect coTileSpeedup
+                 | otherwise = Tile.isPassableNoClosed coTileSpeedup
+      {-# INLINE mvAccessible #-}
+      mvAccessible spos st tpos tt mv =
+        if raccessible (Kind.stdRuleset corule) coTileSpeedup spos st tpos tt
+        then mv
+        else MoveBlocked
+  in \ !spos !tpos ->
+    let !st = lvl `at` spos
+        !tt = lvl `at` tpos
+    in if | isUknownSpace tt -> if Tile.isSuspect coTileSpeedup st
+                                then MoveBlocked
+                                else mvAccessible spos st tpos tt MoveToUnknown
+          | isWalkable tt -> mvAccessible spos st tpos tt MoveToOpen
+          | isPassable tt -> mvAccessible spos st tpos tt MoveToClosed
+          | otherwise -> MoveBlocked
 
 -- | Furthest (wrt paths) known position.
 furthestKnown :: MonadClient m => ActorId -> m Point
