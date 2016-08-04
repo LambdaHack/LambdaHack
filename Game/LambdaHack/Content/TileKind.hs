@@ -3,7 +3,7 @@
 module Game.LambdaHack.Content.TileKind
   ( TileKind(..), Feature(..)
   , validateSingleTileKind, validateAllTileKind, actionFeatures
-  , TileSpeedup(..), Tab(..)
+  , TileSpeedup(..), Tab(..), isUknownSpace
   ) where
 
 import Prelude ()
@@ -30,6 +30,8 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 -- Note that tile names (and any other content names) should not be plural
 -- (that would lead to "a stairs"), so "road with cobblestones" is fine,
 -- but "granite cobblestones" is wrong.
+--
+-- Tile kind for unknown space has the minimal @KindOps.Id@ index.
 data TileKind = TileKind
   { tsymbol  :: !Char         -- ^ map symbol
   , tname    :: !Text         -- ^ short description
@@ -85,6 +87,10 @@ data TileSpeedup = TileSpeedup
 
 newtype Tab = Tab (A.UArray (KindOps.Id TileKind) Bool)
 
+isUknownSpace :: KindOps.Id TileKind -> Bool
+{-# INLINE isUknownSpace #-}
+isUknownSpace tt = minBound == tt
+
 -- TODO: (spans multiple contents) check that all posible solid place
 -- fences have hidden counterparts.
 -- | Validate a single tile kind.
@@ -94,6 +100,7 @@ validateSingleTileKind TileKind{..} =
                                  && Suspect `elem` tfeature ]
 
 -- TODO: verify that OpenTo, CloseTo and ChangeTo are assigned as specified.
+-- TODO: verify that tile kind for "unknown space" has index 0.
 -- | Validate all tile kinds.
 --
 -- If tiles look the same on the map, the description and the substantial
