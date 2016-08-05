@@ -16,6 +16,19 @@ import Game.LambdaHack.Common.Misc
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.TileKind
 
+-- Alter skill schema:
+-- 0  can be altered by everybody (currently no such thing)
+-- 1  openable
+-- 2  closable
+-- 3  changeable (e.g., caches)
+-- 4  suspect
+-- 10  weak obstructions
+-- 50  considerable obstructions
+-- 100  walls
+-- maxBound  impenetrable walls, etc.
+
+-- TODO: add OpenTo for walls, etc.
+
 cdefs :: ContentDef TileKind
 cdefs = ContentDef
   { getSymbol = tsymbol
@@ -36,6 +49,7 @@ unknown = TileKind  -- needs to have index 0
   , tfreq    = [("unknown space", 1)]
   , tcolor   = defFG
   , tcolor2  = defFG
+  , talter   = maxBound
   , tfeature = [Dark]
   }
 wall = TileKind
@@ -44,6 +58,7 @@ wall = TileKind
   , tfreq    = [("fillerWall", 1), ("legendLit", 100), ("legendDark", 100)]
   , tcolor   = defBG
   , tcolor2  = defBG
+  , talter   = 100
   , tfeature = [Dark]
       -- Bedrock being dark is bad for AI (forces it to backtrack to explore
       -- bedrock at corridor turns) and induces human micromanagement
@@ -64,6 +79,7 @@ hardRock = TileKind
   , tfreq    = [("basic outer fence", 1)]
   , tcolor   = BrWhite
   , tcolor2  = BrWhite
+  , talter   = maxBound
   , tfeature = [Dark, Impenetrable]
   }
 pillar = TileKind
@@ -75,6 +91,7 @@ pillar = TileKind
                , ("battleSet", 250) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
   , tcolor2  = Cyan
+  , talter   = 100
   , tfeature = []
   }
 pillarIce = pillar
@@ -82,6 +99,7 @@ pillarIce = pillar
   , tfreq    = [("noiseSet", 5)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
+  , talter   = 10
   , tfeature = [Clear]
   }
 pillarCache = TileKind
@@ -91,6 +109,7 @@ pillarCache = TileKind
                , ("legendLit", 100), ("legendDark", 100) ]
   , tcolor   = BrCyan
   , tcolor2  = Cyan
+  , talter   = 3
   , tfeature = [ Cause $ IK.CreateItem CGround "useful" IK.TimerNone
                , ChangeTo "cachable" ]
   }
@@ -100,6 +119,7 @@ lampPost = TileKind
   , tfreq    = [("lampPostOver_O", 90)]
   , tcolor   = BrYellow
   , tcolor2  = Brown
+  , talter   = 100
   , tfeature = []
   }
 burningBush = TileKind
@@ -108,6 +128,7 @@ burningBush = TileKind
   , tfreq    = [("lampPostOver_O", 10), ("ambushSet", 3)]
   , tcolor   = BrRed
   , tcolor2  = Red
+  , talter   = 10
   , tfeature = []
   }
 bush = TileKind
@@ -116,6 +137,7 @@ bush = TileKind
   , tfreq    = [("ambushSet", 100), ("battleSet", 30)]
   , tcolor   = Green
   , tcolor2  = BrBlack
+  , talter   = 10
   , tfeature = [Dark]
   }
 tree = TileKind
@@ -124,6 +146,7 @@ tree = TileKind
   , tfreq    = [("skirmishSet", 14), ("treeShadeOver_O", 1)]
   , tcolor   = BrGreen
   , tcolor2  = Green
+  , talter   = 50
   , tfeature = []
   }
 wallV = TileKind
@@ -132,6 +155,7 @@ wallV = TileKind
   , tfreq    = [("legendLit", 100), ("verticalWallOrGlassOver_!_Lit", 90)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
+  , talter   = 100
   , tfeature = [HideAs "suspect vertical wall Lit"]
   }
 wallGlassV = TileKind
@@ -140,6 +164,7 @@ wallGlassV = TileKind
   , tfreq    = [("verticalWallOrGlassOver_!_Lit", 10)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
+  , talter   = 10
   , tfeature = [Clear]
   }
 wallSuspectV = TileKind
@@ -148,6 +173,7 @@ wallSuspectV = TileKind
   , tfreq    = [("suspect vertical wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
+  , talter   = 4
   , tfeature = [Suspect, RevealAs "vertical closed door Lit"]
   }
 doorClosedV = TileKind
@@ -156,6 +182,7 @@ doorClosedV = TileKind
   , tfreq    = [("vertical closed door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
+  , talter   = 1
   , tfeature = [ OpenTo "vertical open door Lit"
                , HideAs "suspect vertical wall Lit"
                ]
@@ -166,6 +193,7 @@ doorOpenV = TileKind
   , tfreq    = [("vertical open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
+  , talter   = 2
   , tfeature = [ Walkable, Clear, NoItem, NoActor
                , CloseTo "vertical closed door Lit"
                ]
@@ -176,6 +204,7 @@ wallH = TileKind
   , tfreq    = [("legendLit", 100), ("horizontalWallOrGlassOver_=_Lit", 90)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
+  , talter   = 100
   , tfeature = [HideAs "suspect horizontal wall Lit"]
   }
 wallGlassH = TileKind
@@ -184,6 +213,7 @@ wallGlassH = TileKind
   , tfreq    = [("horizontalWallOrGlassOver_=_Lit", 10)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
+  , talter   = 10
   , tfeature = [Clear]
   }
 wallSuspectH = TileKind
@@ -192,6 +222,7 @@ wallSuspectH = TileKind
   , tfreq    = [("suspect horizontal wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
+  , talter   = 4
   , tfeature = [Suspect, RevealAs "horizontal closed door Lit"]
   }
 doorClosedH = TileKind
@@ -200,6 +231,7 @@ doorClosedH = TileKind
   , tfreq    = [("horizontal closed door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
+  , talter   = 1
   , tfeature = [ OpenTo "horizontal open door Lit"
                , HideAs "suspect horizontal wall Lit"
                ]
@@ -210,6 +242,7 @@ doorOpenH = TileKind
   , tfreq    = [("horizontal open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
+  , talter   = 2
   , tfeature = [ Walkable, Clear, NoItem, NoActor
                , CloseTo "horizontal closed door Lit"
                ]
@@ -220,6 +253,7 @@ stairsUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
+  , talter   = maxBound
   , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ IK.Ascend 1]
   }
 stairsLit = TileKind
@@ -228,6 +262,7 @@ stairsLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan  -- TODO
+  , talter   = maxBound
   , tfeature = [ Walkable, Clear, NoItem, NoActor
                , Cause $ IK.Ascend 1
                , Cause $ IK.Ascend (-1) ]
@@ -238,6 +273,7 @@ stairsDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
+  , talter   = maxBound
   , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ IK.Ascend (-1)]
   }
 escapeUpLit = TileKind
@@ -246,6 +282,7 @@ escapeUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
+  , talter   = maxBound
   , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ IK.Escape 1]
   }
 escapeDownLit = TileKind
@@ -254,6 +291,7 @@ escapeDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
+  , talter   = maxBound
   , tfeature = [Walkable, Clear, NoItem, NoActor, Cause $ IK.Escape (-1)]
   }
 floorCorridorLit = TileKind
@@ -262,6 +300,7 @@ floorCorridorLit = TileKind
   , tfreq    = [("floorCorridorLit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
+  , talter   = maxBound
   , tfeature = [Walkable, Clear]
   }
 floorArenaLit = floorCorridorLit
@@ -321,6 +360,7 @@ floorFog = TileKind
   , tfreq    = [("emptySet", 1), ("treeShadeOrFogOver_s", 5)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan
+  , talter   = maxBound
   , tfeature = [Walkable, Dark, NoItem]
   }
 floorSmoke = floorFog
@@ -328,6 +368,7 @@ floorSmoke = floorFog
   , tfreq    = [("battleSet", 5)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
+  , talter   = maxBound
   , tfeature = [Walkable, NoItem]  -- not dark, embers
   }
 

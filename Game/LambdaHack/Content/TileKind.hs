@@ -38,7 +38,8 @@ data TileKind = TileKind
   , tfreq    :: !(Freqs TileKind)  -- ^ frequency within groups
   , tcolor   :: !Color        -- ^ map color
   , tcolor2  :: !Color        -- ^ map color when not in FOV
-  , tfeature :: ![Feature]  -- ^ properties
+  , talter   :: !Word8        -- ^ minimal skill needed to alter the tile
+  , tfeature :: ![Feature]    -- ^ properties
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound
 
