@@ -326,7 +326,6 @@ displaceAid target = do
   disp <- getsState $ dispEnemy leader target activeItems
   let actorMaxSk = sumSkills activeItems
       immobile = EM.findWithDefault 0 AbMove actorMaxSk <= 0
-      spos = bpos sb
       tpos = bpos tb
       adj = checkAdjacent sb tb
       atWar = isAtWar tfact (bfid sb)
@@ -346,7 +345,7 @@ displaceAid target = do
        let lid = blid sb
        lvl <- getLevel lid
        -- Displacing requires full access.
-       if accessible cops lvl spos tpos then do
+       if accessible cops lvl tpos then do
          tgts <- getsState $ posToActors tpos lid
          case tgts of
            [] -> assert `failure` (leader, sb, target, tb)
@@ -368,7 +367,7 @@ moveSearchAlterAid source dir = do
       t = lvl `at` tpos
       runStopOrCmd
         -- Movement requires full access.
-        | accessible cops lvl spos tpos =
+        | accessible cops lvl tpos =
             -- A potential invisible actor is hit. War started without asking.
             Right $ RequestAnyAbility $ ReqMove dir
         -- No access, so search and/or alter the tile. Non-walkability is

@@ -772,9 +772,8 @@ displaceFoe aid = do
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
-  let accessibleHere = accessible cops lvl $ bpos b
-      displaceable body =  -- DisplaceAccess
-        adjacent (bpos body) (bpos b) && accessibleHere (bpos body)
+  let displaceable body =  -- DisplaceAccess
+        adjacent (bpos body) (bpos b) && accessible cops lvl (bpos body)
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrHere = nFriends b + 1
       qualifyActor (aid2, body2) = do
@@ -808,7 +807,7 @@ displaceTowards aid source target = do
   let !_A = assert (source == bpos b && adjacent source target) ()
   lvl <- getLevel $ blid b
   if boldpos b /= Just target -- avoid trivial loops
-     && accessible cops lvl source target then do  -- DisplaceAccess
+     && accessible cops lvl target then do  -- DisplaceAccess
     mleader <- getsClient _sleader
     mBlocker <- getsState $ posToActors target (blid b)
     case mBlocker of
@@ -879,7 +878,6 @@ moveTowards aid source target goal relaxed = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   friends <- getsState $ actorList (not . isAtWar fact) $ blid b
   let noFriends = unoccupied friends
-      accessibleHere = accessible cops lvl source
       -- Only actors with AbAlter can search for hidden doors, etc.
       bumpableHere p =
         let t = lvl `at` p
@@ -887,7 +885,7 @@ moveTowards aid source target goal relaxed = do
            && (Tile.isOpenable cotile t
                || Tile.isSuspect coTileSpeedup t
                || Tile.isChangeable coTileSpeedup t)
-      enterableHere p = accessibleHere p || bumpableHere p
+      enterableHere p = accessible cops lvl p || bumpableHere p
   if noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ target `vectorToFrom` source
   else do
@@ -932,7 +930,7 @@ moveOrRunAid run source dir = do
       dEnemy <- getsState $ dispEnemy source target activeItems
       if | boldpos sb == Just tpos && not (waitedLastTurn sb)
              -- avoid Displace loops
-           || not (accessible cops lvl spos tpos) ->  -- DisplaceAccess
+           || not (accessible cops lvl tpos) ->  -- DisplaceAccess
            return Nothing
          | isAtWar tfact (bfid sb) && not dEnemy -> do  -- DisplaceDying, etc.
            wps <- pickWeaponClient source target
@@ -950,7 +948,7 @@ moveOrRunAid run source dir = do
         Nothing -> return Nothing
         Just wp -> return $! Just $ RequestAnyAbility wp
     [] -- move or search or alter
-       | accessible cops lvl spos tpos ->
+       | accessible cops lvl tpos ->
          -- Movement requires full access.
          return $! Just $ RequestAnyAbility $ ReqMove dir
          -- The potential invisible actor is hit.

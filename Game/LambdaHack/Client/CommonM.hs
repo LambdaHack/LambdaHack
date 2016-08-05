@@ -155,14 +155,13 @@ makeLine onlyFirst body fpos epsOld = do
       calcScore eps = case bla lxsize lysize eps (bpos body) fpos of
         Just bl ->
           let blDist = take dist bl
-              blZip = zip (bpos body : blDist) blDist
               noActor p = all ((/= p) . bpos) bs || p == fpos
               accessU = all noActor blDist
-                        && all (uncurry $ accessibleUnknown cops lvl) blZip
+                        && all (accessibleUnknown cops lvl) blDist
               accessFirst | not onlyFirst = False
                           | otherwise =
                 all noActor (take 1 blDist)
-                && all (uncurry $ accessibleUnknown cops lvl) (take 1 blZip)
+                && all (accessibleUnknown cops lvl) (take 1 blDist)
               nUnknown = length $ filter ((== unknownId) . (lvl `at`)) blDist
           in if | accessU -> - nUnknown
                 | accessFirst -> -10000

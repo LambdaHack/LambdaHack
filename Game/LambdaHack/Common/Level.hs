@@ -31,7 +31,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | The complete dungeon is a map from level names to levels.
@@ -105,30 +104,26 @@ at Level{ltile} p = ltile PointArray.! p
 -- | Check whether one position is accessible from another,
 -- using the formula from the standard ruleset.
 -- Precondition: the two positions are next to each other.
-accessible :: Kind.COps -> Level -> Point -> Point -> Bool
-accessible Kind.COps{corule, coTileSpeedup} lvl spos tpos =
-  let st = lvl `at` spos
-      tt = lvl `at` tpos
-      allOK = raccessible (Kind.stdRuleset corule) coTileSpeedup spos st tpos tt
-  in Tile.isWalkable coTileSpeedup tt && allOK
+accessible :: Kind.COps -> Level -> Point -> Bool
+accessible Kind.COps{coTileSpeedup} lvl tpos =
+  let tt = lvl `at` tpos
+  in Tile.isWalkable coTileSpeedup tt
 
 -- | Check whether one position is accessible from another,
 -- using the formula from the standard ruleset,
 -- but additionally treating unknown tiles as walkable.
 -- Precondition: the two positions are next to each other.
-accessibleUnknown :: Kind.COps -> Level -> Point -> Point -> Bool
-accessibleUnknown Kind.COps{corule, cotile=Kind.Ops{ouniqGroup}, coTileSpeedup} lvl =
+accessibleUnknown :: Kind.COps -> Level -> Point -> Bool
+accessibleUnknown Kind.COps{cotile=Kind.Ops{ouniqGroup}, coTileSpeedup} lvl =
   let unknownId = ouniqGroup "unknown space"
-  in \spos tpos ->
-    let st = lvl `at` spos
-        tt = lvl `at` tpos
-        allOK = raccessible (Kind.stdRuleset corule) coTileSpeedup spos st tpos tt
-    in (Tile.isWalkable coTileSpeedup tt || tt == unknownId) && allOK
+  in \ tpos ->
+    let tt = lvl `at` tpos
+    in (Tile.isWalkable coTileSpeedup tt || tt == unknownId)
 
 -- | Check whether actors can move from a position along a unit vector,
 -- using the formula from the standard ruleset.
 accessibleDir :: Kind.COps -> Level -> Point -> Vector -> Bool
-accessibleDir cops lvl spos dir = accessible cops lvl spos $ spos `shift` dir
+accessibleDir cops lvl spos dir = accessible cops lvl $ spos `shift` dir
 
 knownLsecret :: Level -> Bool
 knownLsecret lvl = lsecret lvl /= 0

@@ -51,8 +51,8 @@ targetStrategy aid = do
   activeItems <- activeItemsClient aid
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   let stepAccesible :: AndPath -> Bool
-      stepAccesible AndPath{pathSource,pathList=q : _ : _} =  -- goal not adjacent
-        accessible cops lvl pathSource q  -- non-goal has to be accessible
+      stepAccesible AndPath{pathList=q : _ : _} =  -- goal not adjacent
+        accessible cops lvl q  -- non-goal has to be accessible
       stepAccesible AndPath{} = True  -- ok if goal inaccessible, e.g., suspect
       stepAccesible NoPath = False
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -229,7 +229,7 @@ targetStrategy aid = do
                           pNew = shiftBounded lxsize lysize (bpos b) vOld
                       if slackTactic && not isStuck
                          && isUnit vOld && bpos b /= pNew
-                         && accessible cops lvl (bpos b) pNew
+                         && accessible cops lvl pNew
                       then vToTgt vOld
                       else do
                         upos <- if lidExplored

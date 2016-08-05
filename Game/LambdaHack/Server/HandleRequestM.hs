@@ -205,7 +205,7 @@ reqMove source dir = do
         Nothing -> reqWait source
         Just (wp, cstore) -> reqMelee source target wp cstore
     _
-      | accessible cops lvl spos tpos -> do
+      | accessible cops lvl tpos -> do
           -- Movement requires full access.
           execUpdAtomic $ UpdMoveActor source spos tpos
           addSmell source
@@ -274,8 +274,7 @@ reqDisplace source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
-  let spos = bpos sb
-      tpos = bpos tb
+  let tpos = bpos tb
       adj = checkAdjacent sb tb
       atWar = isAtWar tfact (bfid sb)
       req = ReqDisplace target
@@ -292,7 +291,7 @@ reqDisplace source target = do
        let lid = blid sb
        lvl <- getLevel lid
        -- Displacing requires full access.
-       if accessible cops lvl spos tpos then do
+       if accessible cops lvl tpos then do
          tgts <- getsState $ posToActors tpos lid
          case tgts of
            [] -> assert `failure` (source, sb, target, tb)

@@ -58,7 +58,7 @@ abortedUnknownBfs = pred apartBfs
 -- Unsafe @PointArray@ operations are OK here, because the intermediate
 -- values of the vector don't leak anywhere outside nor are kept unevaluated
 -- and so they can't be overwritten by the unsafe side-effect.
-fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is move from known tile legal?
+fillBfs :: (Point -> MoveLegal)  -- ^ is move from known tile legal?
         -> Point                          -- ^ starting position
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
@@ -74,7 +74,7 @@ fillBfs isEnterable source aInitial =
                     let p = shift pos move
                         visitedMove = aInitial PointArray.! p /= apartBfs
                     in if visitedMove then l
-                       else case isEnterable pos p of
+                       else case isEnterable p of
                          MoveBlocked -> l
                          MoveToUnknown ->
                            PointArray.unsafeWriteA aInitial p distCompl
@@ -111,7 +111,7 @@ instance Binary AndPath
 -- The @eps@ coefficient determines which direction (or the closest
 -- directions available) that path should prefer, where 0 means north-west
 -- and 1 means north.
-findPathBfs :: (Point -> Point -> MoveLegal)
+findPathBfs :: (Point -> MoveLegal)
             -> Point -> Point -> Int
             -> PointArray.Array BfsDistance
             -> AndPath
@@ -132,7 +132,7 @@ findPathBfs isEnterable pathSource pathGoal sepsRaw bfs =
             children = map (shift pos) prefMoves
             f p acc = if bfs PointArray.! p /= dist
                       then acc
-                      else case isEnterable p pos of
+                      else case isEnterable pos of
                         MoveToOpen -> p : acc
                         -- Prefer paths through open or unknown tiles.
                         MoveToClosed -> acc ++ [p]

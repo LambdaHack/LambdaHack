@@ -366,13 +366,12 @@ fleeList aid = do
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   let posFoes = map bpos allFoes
-      accessibleHere = accessible cops lvl $ bpos b
       myVic = vicinity lxsize lysize $ bpos b
       dist p | null posFoes = assert `failure` b
              | otherwise = minimum $ map (chessDist p) posFoes
       dVic = map (dist &&& id) myVic
       -- Flee, if possible. Access required.
-      accVic = filter (accessibleHere . snd) dVic
+      accVic = filter (accessible cops lvl . snd) dVic
       gtVic = filter ((> dist (bpos b)) . fst) accVic
       eqVic = filter ((== dist (bpos b)) . fst) accVic
       ltVic = filter ((< dist (bpos b)) . fst) accVic

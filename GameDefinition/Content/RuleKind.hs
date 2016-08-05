@@ -15,8 +15,6 @@ import System.FilePath
 import qualified Paths_LambdaHack as Self (getDataFileName, version)
 
 import Game.LambdaHack.Common.ContentDef
-import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 
 cdefs :: ContentDef RuleKind
@@ -35,13 +33,6 @@ standard = RuleKind
   { rsymbol        = 's'
   , rname          = "standard LambdaHack ruleset"
   , rfreq          = [("standard", 100)]
-  -- Check whether one position is accessible from another.
-  -- Precondition: the two positions are next to each other
-  -- and the target tile is walkable. For LambdaHack we forbid
-  -- diagonal movement to and from doors.
-  , raccessible    = \ !coTileSpeedup !spos !st !tpos !tt ->
-      not ((Tile.isDoor coTileSpeedup st || Tile.isDoor coTileSpeedup tt)
-           && isDiagonal (spos `vectorToFrom` tpos))
   , rtitle         = "LambdaHack"
   , raddress       = "http://github.com/LambdaHack/LambdaHack/releases"
   , rpathsDataFile = Self.getDataFileName

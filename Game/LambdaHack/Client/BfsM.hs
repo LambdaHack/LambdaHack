@@ -40,7 +40,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.RuleKind (raccessible)
 import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
 invBfs :: BfsAndPath -> BfsAndPath
@@ -206,27 +205,20 @@ condBFS aid = do
 -- We treat doors as an open tile and don't add an extra step for opening
 -- the doors, because other actors open and use them, too,
 -- so it's amortized. We treat unknown tiles specially.
-isEnterable :: Kind.COps -> Level -> Bool -> Bool -> Point -> Point -> MoveLegal
+isEnterable :: Kind.COps -> Level -> Bool -> Bool -> Point -> MoveLegal
 {-# INLINE isEnterable #-}
-isEnterable !Kind.COps{corule, coTileSpeedup} !lvl
-            !enterSuspect !canSearchAndOpen =
+isEnterable !Kind.COps{coTileSpeedup} !lvl !enterSuspect !canSearchAndOpen =
   let {-# INLINE isWalkable #-}
       isWalkable = Tile.isWalkable coTileSpeedup
       {-# INLINE isPassable #-}
       isPassable | enterSuspect = Tile.isPassable coTileSpeedup
                  | canSearchAndOpen = Tile.isPassableNoSuspect coTileSpeedup
                  | otherwise = Tile.isPassableNoClosed coTileSpeedup
-      {-# INLINE mvAccessible #-}
-      mvAccessible spos st tpos tt mv =
-        if raccessible (Kind.stdRuleset corule) coTileSpeedup spos st tpos tt
-        then mv
-        else MoveBlocked
-  in \ !spos !tpos ->
-    let !st = lvl `at` spos
-        !tt = lvl `at` tpos
-    in if | isUknownSpace tt -> mvAccessible spos st tpos tt MoveToUnknown
-          | isWalkable tt -> mvAccessible spos st tpos tt MoveToOpen
-          | isPassable tt -> mvAccessible spos st tpos tt MoveToClosed
+  in \ !tpos ->
+    let !tt = lvl `at` tpos
+    in if | isUknownSpace tt -> MoveToUnknown
+          | isWalkable tt -> MoveToOpen
+          | isPassable tt -> MoveToClosed
           | otherwise -> MoveBlocked
 
 -- | Furthest (wrt paths) known position.
