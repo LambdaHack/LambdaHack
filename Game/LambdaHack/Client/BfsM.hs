@@ -224,9 +224,7 @@ isEnterable !Kind.COps{corule, coTileSpeedup} !lvl
   in \ !spos !tpos ->
     let !st = lvl `at` spos
         !tt = lvl `at` tpos
-    in if | isUknownSpace tt -> if Tile.isSuspect coTileSpeedup st
-                                then MoveBlocked
-                                else mvAccessible spos st tpos tt MoveToUnknown
+    in if | isUknownSpace tt -> mvAccessible spos st tpos tt MoveToUnknown
           | isWalkable tt -> mvAccessible spos st tpos tt MoveToOpen
           | isPassable tt -> mvAccessible spos st tpos tt MoveToClosed
           | otherwise -> MoveBlocked
