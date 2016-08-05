@@ -33,7 +33,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.TileKind (TileKind)
+import Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 
 -- | The game-state semantics of atomic game commands.
 -- Special effects (@SfxAtomic@) don't modify state.
@@ -429,9 +429,8 @@ updSpotTile lid ts = assert (not $ null ts) $ do
 updLoseTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 updLoseTile lid ts = assert (not $ null ts) $ do
-  Kind.COps{cotile=Kind.Ops{ouniqGroup}, coTileSpeedup} <- getsState scops
-  let unknownId = ouniqGroup "unknown space"
-      matches _ [] = True
+  Kind.COps{coTileSpeedup} <- getsState scops
+  let matches _ [] = True
       matches tileMap ((p, ov) : rest) =
         tileMap PointArray.! p == ov && matches tileMap rest
       tu = map (second (const unknownId)) ts

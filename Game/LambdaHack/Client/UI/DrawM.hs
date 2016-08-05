@@ -45,6 +45,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.TileKind (isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified NLP.Miniutter.English as MU
 
@@ -134,7 +135,7 @@ drawBaseFrame dm drawnLevelId = do
   s <- getState
   StateClient{seps, sexplored, smarkSuspect} <- getClient
   per <- getPerFid drawnLevelId
-  let Kind.COps{cotile=Kind.Ops{okind=tokind, ouniqGroup}, coTileSpeedup} = cops
+  let Kind.COps{cotile=Kind.Ops{okind=tokind}, coTileSpeedup} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
       (bline, mblid, mbpos) = case (xhairPos, mleader) of
         (Just xhair, Just leader) ->
@@ -162,7 +163,6 @@ drawBaseFrame dm drawnLevelId = do
         Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
           deleteXhair $ trajectoryToPath prPos (fst p)
         _ -> []
-      unknownId = ouniqGroup "unknown space"
       dis pos0 =
         let tile = lvl `at` pos0
             tk = tokind tile
@@ -190,7 +190,7 @@ drawBaseFrame dm drawnLevelId = do
               | vis = TK.tcolor tk
               | otherwise = TK.tcolor2 tk
             fgOnPathOrLine = case (vis, Tile.isWalkable coTileSpeedup tile) of
-              _ | tile == unknownId -> Color.BrBlack
+              _ | isUknownSpace tile -> Color.BrBlack
               _ | Tile.isSuspect coTileSpeedup tile -> Color.BrCyan
               (True, True)   -> Color.BrGreen
               (True, False)  -> Color.BrRed

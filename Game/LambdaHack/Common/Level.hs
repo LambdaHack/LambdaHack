@@ -31,7 +31,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.TileKind (TileKind)
+import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
 -- | The complete dungeon is a map from level names to levels.
 type Dungeon = EM.EnumMap LevelId Level
@@ -114,11 +114,9 @@ accessible Kind.COps{coTileSpeedup} lvl tpos =
 -- but additionally treating unknown tiles as walkable.
 -- Precondition: the two positions are next to each other.
 accessibleUnknown :: Kind.COps -> Level -> Point -> Bool
-accessibleUnknown Kind.COps{cotile=Kind.Ops{ouniqGroup}, coTileSpeedup} lvl =
-  let unknownId = ouniqGroup "unknown space"
-  in \ tpos ->
+accessibleUnknown Kind.COps{coTileSpeedup} lvl tpos =
     let tt = lvl `at` tpos
-    in (Tile.isWalkable coTileSpeedup tt || tt == unknownId)
+    in (Tile.isWalkable coTileSpeedup tt || isUknownSpace tt)
 
 -- | Check whether actors can move from a position along a unit vector,
 -- using the formula from the standard ruleset.

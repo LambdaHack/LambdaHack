@@ -30,7 +30,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.TileKind (TileKind)
+import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * RespUpdAtomicAI
@@ -323,14 +323,13 @@ wipeBfsIfItemAffectsSkills stores aid =
 tileChangeAffectsBfs :: Kind.COps
                      -> Kind.Id TileKind -> Kind.Id TileKind
                      -> Bool
-tileChangeAffectsBfs Kind.COps{cotile=Kind.Ops{ouniqGroup}, coTileSpeedup}
-                     fromTile toTile =
-  let unknownId = ouniqGroup "unknown space"
-  in unknownId `elem` [fromTile, toTile]
-     || not (Tile.isPassableNoClosed coTileSpeedup fromTile
-             && Tile.isPassableNoClosed coTileSpeedup toTile
-             || not (Tile.isPassable coTileSpeedup fromTile)
-                && not (Tile.isPassable coTileSpeedup toTile))
+tileChangeAffectsBfs Kind.COps{coTileSpeedup} fromTile toTile =
+  isUknownSpace fromTile
+  || isUknownSpace toTile
+  || not (Tile.isPassableNoClosed coTileSpeedup fromTile
+          && Tile.isPassableNoClosed coTileSpeedup toTile
+          || not (Tile.isPassable coTileSpeedup fromTile)
+             && not (Tile.isPassable coTileSpeedup toTile))
 
 createActor :: MonadClient m => ActorId -> Actor -> m ()
 createActor aid _b = do

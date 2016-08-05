@@ -38,12 +38,13 @@ import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Content.TileKind (isUknownSpace)
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy TgtAndPath)
 targetStrategy aid = do
-  cops@Kind.COps{corule, cotile=cotile@Kind.Ops{ouniqGroup}, coTileSpeedup} <- getsState scops
+  cops@Kind.COps{corule, cotile, coTileSpeedup} <- getsState scops
   let stdRuleset = Kind.stdRuleset corule
       nearby = rnearby stdRuleset
   itemToF <- itemToFullClient
@@ -145,8 +146,7 @@ targetStrategy aid = do
         return $! targetableRangedOrSpecial body || tMelee
   nearbyFoes <- filterM targetableEnemy allFoes
   mleader <- getsClient _sleader
-  let unknownId = ouniqGroup "unknown space"
-      itemUsefulness itemFull =
+  let itemUsefulness itemFull =
         fst <$> totalUsefulness cops b activeItems fact itemFull
       desirableBag bag = any (\(iid, k) ->
         let itemFull = itemToF iid k
@@ -330,7 +330,7 @@ targetStrategy aid = do
                     || let sml = EM.findWithDefault timeZero pos (lsmell lvl)
                        in sml <= ltime lvl)
                    && if not lidExplored
-                      then t /= unknownId  -- closestUnknown
+                      then not (isUknownSpace t)  -- closestUnknown
                            && not (Tile.isSuspect coTileSpeedup t)  -- closestSuspect
                            && not (condEnoughGear && Tile.isStair cotile t)
                       else  -- closestTriggers

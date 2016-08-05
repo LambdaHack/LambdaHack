@@ -28,7 +28,7 @@ import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.TileKind (TileKind)
+import Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 
 -- | View on game state. "Remembered" fields carry a subset of the info
 -- in the client copies of the state. Clients never directly change
@@ -55,13 +55,12 @@ unknownLevel :: Kind.COps -> AbsDepth -> X -> Y
 unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
              ldepth lxsize lysize ldesc lstair lclear
              lsecret lhidden lescape =
-  let unknownId = ouniqGroup "unknown space"
-      outerId = ouniqGroup "basic outer fence"
+  let outerId = ouniqGroup "basic outer fence"
   in Level { ldepth
            , lprio = EM.empty
            , lfloor = EM.empty
            , lembed = EM.empty
-           , ltile = unknownTileMap unknownId outerId lxsize lysize
+           , ltile = unknownTileMap outerId lxsize lysize
            , lxsize
            , lysize
            , lsmell = EM.empty
@@ -79,8 +78,8 @@ unknownLevel Kind.COps{cotile=Kind.Ops{ouniqGroup}}
            , lescape
            }
 
-unknownTileMap :: Kind.Id TileKind -> Kind.Id TileKind -> Int -> Int -> TileMap
-unknownTileMap unknownId outerId lxsize lysize =
+unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
+unknownTileMap outerId lxsize lysize =
   let unknownMap = PointArray.replicateA lxsize lysize unknownId
       borders = [ Point x y
                 | x <- [0, lxsize - 1], y <- [1..lysize - 2] ]

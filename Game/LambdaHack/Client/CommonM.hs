@@ -24,7 +24,6 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -35,6 +34,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import Game.LambdaHack.Content.TileKind (isUknownSpace)
 
 -- | Get the current perception of a client.
 getPerFid :: MonadClient m => LevelId -> m Perception
@@ -146,12 +146,11 @@ aidTgtAims aid lidV tgt = do
 -- actor and target position, or Nothing if none can be found.
 makeLine :: MonadClient m => Bool -> Actor -> Point -> Int -> m (Maybe Int)
 makeLine onlyFirst body fpos epsOld = do
-  cops@Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
+  cops <- getsState scops
   lvl@Level{lxsize, lysize} <- getLevel (blid body)
   bs <- getsState $ filter (not . bproj)
                     . actorList (const True) (blid body)
-  let unknownId = ouniqGroup "unknown space"
-      dist = chessDist (bpos body) fpos
+  let dist = chessDist (bpos body) fpos
       calcScore eps = case bla lxsize lysize eps (bpos body) fpos of
         Just bl ->
           let blDist = take dist bl
@@ -162,7 +161,7 @@ makeLine onlyFirst body fpos epsOld = do
                           | otherwise =
                 all noActor (take 1 blDist)
                 && all (accessibleUnknown cops lvl) (take 1 blDist)
-              nUnknown = length $ filter ((== unknownId) . (lvl `at`)) blDist
+              nUnknown = length $ filter (isUknownSpace . (lvl `at`)) blDist
           in if | accessU -> - nUnknown
                 | accessFirst -> -10000
                 | otherwise -> minBound

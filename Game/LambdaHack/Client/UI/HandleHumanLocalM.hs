@@ -81,6 +81,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Content.TileKind (isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * Macro
@@ -713,8 +714,6 @@ tgtClearHuman = do
 -- Does nothing outside aiming mode.
 doLook :: MonadClientUI m => m ()
 doLook = do
-  Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
-  let unknownId = ouniqGroup "unknown space"
   saimMode <- getsSession saimMode
   case saimMode of
     Nothing -> return ()
@@ -749,7 +748,7 @@ doLook = do
                          Just ItemDisco{itemKind} -> IK.idesc itemKind
                      pdesc = if desc == "" then "" else "(" <> desc <> ")"
                  in makeSentence [MU.SubjectVerbSg subject verb] <+> pdesc
-          vis | lvl `at` p == unknownId = "that is"
+          vis | isUknownSpace $ lvl `at` p = "that is"
               | not canSee = "you remember"
               | not aims = "you are aware of"
               | otherwise = "you see"
