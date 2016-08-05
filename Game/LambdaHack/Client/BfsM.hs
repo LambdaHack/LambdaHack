@@ -91,7 +91,7 @@ createBfs (canMove, enterSuspect, canSearchAndOpen) mbfs aid = do
       return $! PointArray.replicateA lxsize lysize apartBfs
   if canMove then do
     !cops <- getsState scops
-    lvl <- getLevel $ blid b
+    !lvl <- getLevel $ blid b
     let isE = isEnterable cops lvl enterSuspect canSearchAndOpen
     return $! fillBfs isE source aInitial
   else return $! PointArray.unsafeWriteA aInitial source minKnownBfs
@@ -114,7 +114,7 @@ updatePathFromBfs (canMove, enterSuspect, canSearchAndOpen)
     else do
       !cops <- getsState scops
       b <- getsState $ getActorBody aid
-      lvl <- getLevel $ blid b
+      !lvl <- getLevel $ blid b
       seps <- getsClient seps
       let isE = isEnterable cops lvl enterSuspect canSearchAndOpen
           source = bpos b
@@ -190,8 +190,8 @@ condBFS aid = do
   activeItems <- activeItemsClient aid
   let actorMaxSk = sumSkills activeItems
       alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
-      canSearchAndOpen = alterSkill >= 1
-      canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
+      !canSearchAndOpen = alterSkill >= 1
+      !canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
                 || EM.findWithDefault 0 Ability.AbDisplace actorMaxSk > 0
                 -- TODO: needed for now, because AI targets and shoots enemies
                 -- based on the path to them, not LOS to them.
@@ -199,7 +199,7 @@ condBFS aid = do
   smarkSuspect <- getsClient smarkSuspect
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
-      enterSuspect = canSearchAndOpen && (smarkSuspect || underAI)
+      !enterSuspect = canSearchAndOpen && (smarkSuspect || underAI)
   return (canMove, enterSuspect, canSearchAndOpen)
 
 -- | Legality of move from a known tile, assuming doors freely openable.
