@@ -90,7 +90,7 @@ createBfs (canMove, enterSuspect, canSearchAndOpen) mbfs aid = do
       Level{lxsize, lysize} <- getLevel $ blid b
       return $! PointArray.replicateA lxsize lysize apartBfs
   if canMove then do
-    cops <- getsState scops
+    !cops <- getsState scops
     lvl <- getLevel $ blid b
     let isE = isEnterable cops lvl enterSuspect canSearchAndOpen
     return $! fillBfs isE source aInitial
@@ -112,7 +112,7 @@ updatePathFromBfs (canMove, enterSuspect, canSearchAndOpen)
     if not canMove
     then return (oldBfsPath, NoPath)
     else do
-      cops <- getsState scops
+      !cops <- getsState scops
       b <- getsState $ getActorBody aid
       lvl <- getLevel $ blid b
       seps <- getsClient seps
@@ -207,7 +207,7 @@ condBFS aid = do
 -- the doors, because other actors open and use them, too,
 -- so it's amortized. We treat unknown tiles specially.
 isEnterable :: Kind.COps -> Level -> Bool -> Bool -> Point -> Point -> MoveLegal
-{-# NOINLINE isEnterable #-}
+{-# INLINE isEnterable #-}
 isEnterable !Kind.COps{corule, coTileSpeedup} !lvl
             !enterSuspect !canSearchAndOpen =
   let {-# INLINE isWalkable #-}
