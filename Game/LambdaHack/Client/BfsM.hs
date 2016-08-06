@@ -71,7 +71,9 @@ createBfs :: MonadClient m
           -> m (PointArray.Array BfsDistance)
 createBfs canMove alterSkill mbfs aid = do
   b <- getsState $ getActorBody aid
-  lvl@Level{lxsize, lysize} <- getLevel $ blid b
+  let lid = blid b
+      source = bpos b
+  lvl@Level{lxsize, lysize} <- getLevel lid
   let !aInitial = case mbfs of
         Just bfsAnd ->  -- TODO: we should verify size
       -- We need to use the safe set, because previous values
@@ -87,11 +89,10 @@ createBfs canMove alterSkill mbfs aid = do
           PointArray.safeSetA apartBfs $ bfsArr bfsAnd
         Nothing ->
           PointArray.replicateA lxsize lysize apartBfs
-  let source = bpos b
-      !_ = PointArray.unsafeWriteA aInitial source minKnownBfs
+  let !_ = PointArray.unsafeWriteA aInitial source minKnownBfs
   when canMove $ do
-    Kind.COps{coTileSpeedup} <- getsState scops
-    let !_ = fillBfs coTileSpeedup lvl alterSkill source aInitial
+    salter <- getsClient salter
+    let !_ = fillBfs (salter EM.! lid) lvl alterSkill source aInitial
     return ()
   return aInitial
 

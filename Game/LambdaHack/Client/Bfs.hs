@@ -20,9 +20,8 @@ import GHC.Generics (Generic)
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.TileKind (TileSpeedup, isUknownSpace)
+import Game.LambdaHack.Content.TileKind (isUknownSpace)
 
 -- | Weighted distance between points along shortest paths.
 newtype BfsDistance = BfsDistance Word8
@@ -61,12 +60,12 @@ abortedUnknownBfs = pred apartBfs
 -- Unsafe @PointArray@ operations are OK here, because the intermediate
 -- values of the vector don't leak anywhere outside nor are kept unevaluated
 -- and so they can't be overwritten by the unsafe side-effect.
-fillBfs :: TileSpeedup -> Level -> Int
+fillBfs :: PointArray.Array Word8 -> Level -> Int
         -> Point                          -- ^ starting position
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> ()
 {-# INLINE fillBfs #-}
-fillBfs coTileSpeedup lvl alterSkill source aInitial =
+fillBfs lalter lvl alterSkill source aInitial =
   let bfs :: BfsDistance -> [Point] -> ()  -- modifies @aInitial@
       bfs distance predK =
         let distCompl = distance .&. complement minKnownBfs
@@ -78,9 +77,10 @@ fillBfs coTileSpeedup lvl alterSkill source aInitial =
                         visitedMove = aInitial PointArray.! p /= apartBfs
                     in if visitedMove then l
                        else let !tt = lvl `at` p
+                                !alter = fromEnum $ lalter PointArray.! p
                             in if | isUknownSpace tt ->
                                     if alterSkill > 0 then PointArray.unsafeWriteA aInitial p distCompl `seq` l else l
-                                  | Tile.alterMinWalk coTileSpeedup tt <= alterSkill ->
+                                  | alter <= alterSkill ->
                                     PointArray.unsafeWriteA aInitial p distance `seq` p : l
                                   | otherwise -> l
               in foldl' fKnown succK2 moves
