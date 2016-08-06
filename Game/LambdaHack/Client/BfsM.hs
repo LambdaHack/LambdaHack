@@ -214,7 +214,8 @@ isEnterable !coTileSpeedup !lvl !alterSkill =
       {-# INLINE isPassable #-}
       isPassable tt = Tile.alterMinWalk coTileSpeedup tt <= alterSkill
   in \ !tpos -> let !tt = lvl `at` tpos
-                in if | isUknownSpace tt -> MoveToUnknown
+                in if | isUknownSpace tt ->
+                        if alterSkill > 0 then MoveToUnknown else MoveBlocked
                       | isWalkable tt -> MoveToOpen
                       | isPassable tt -> MoveToClosed
                       | otherwise -> MoveBlocked
