@@ -319,13 +319,15 @@ reqAlter source tpos mfeat = do
       req = ReqAlter tpos mfeat
   lvl <- getLevel lid
   let serverTile = lvl `at` tpos
-  -- Only actors with AbAlter can search for hidden doors, etc.
-  if alterSkill < Tile.alterMinSkill coTileSpeedup serverTile then
-    execFailure source req AlterUnskilled
+      freshClientTile = hideTile cops lvl tpos
+  -- Only actors with AbAlter > 0 can search for hidden doors, etc.
+  if alterSkill < 1
+     || serverTile == freshClientTile  -- no searching needed
+        && alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
+  then execFailure source req AlterUnskilled
   else if not $ adjacent spos tpos then execFailure source req AlterDistant
   else do
-    let freshClientTile = hideTile cops lvl tpos
-        changeTo tgroup = do
+    let changeTo tgroup = do
           -- No @SfxAlter@, because the effect is obvious (e.g., opened door).
           toTile <- rndToAction $ fromMaybe (assert `failure` tgroup)
                                   <$> opick tgroup (const True)
@@ -358,10 +360,11 @@ reqAlter source tpos mfeat = do
             -- Search, in case some actors (of other factions?)
             -- don't know this tile.
             execUpdAtomic $ UpdSearchTile source tpos freshClientTile serverTile
-          maybe (return ()) changeTo $ listToMaybe groupsToAlterTo
-            -- TODO: pick another, if the first one void
-          -- Perform an effect, if any permitted.
-          void $ triggerEffect source tpos feats
+          when (alterSkill >= Tile.alterMinSkill coTileSpeedup serverTile) $ do
+            maybe (return ()) changeTo $ listToMaybe groupsToAlterTo
+              -- TODO: pick another, if the first one void
+            -- Perform an effect, if any permitted.
+            void $ triggerEffect source tpos feats
         else execFailure source req AlterBlockActor
       else execFailure source req AlterBlockItem
 
