@@ -18,10 +18,9 @@ import Game.LambdaHack.Content.TileKind
 
 -- Alter skill schema:
 -- 0  can be altered by everybody (currently no such thing)
--- 1  openable
+-- 1  openable and suspect
 -- 2  closable
 -- 3  changeable (e.g., caches)
--- 4  suspect
 -- 10  weak obstructions
 -- 50  considerable obstructions
 -- 100  walls
@@ -173,7 +172,7 @@ wallSuspectV = TileKind
   , tfreq    = [("suspect vertical wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = 4
+  , talter   = 1
   , tfeature = [Suspect, RevealAs "vertical closed door Lit"]
   }
 doorClosedV = TileKind
@@ -222,7 +221,7 @@ wallSuspectH = TileKind
   , tfreq    = [("suspect horizontal wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = 4
+  , talter   = 1
   , tfeature = [Suspect, RevealAs "horizontal closed door Lit"]
   }
 doorClosedH = TileKind
