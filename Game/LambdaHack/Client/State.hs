@@ -2,6 +2,7 @@
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Client.State
   ( StateClient(..), emptyStateClient
+  , AlterLid
   , updateTarget, getTarget, updateLeader, sside
   , BfsAndPath(..), TgtAndPath(..), toggleMarkSuspect
   ) where
@@ -56,6 +57,7 @@ data StateClient = StateClient
   , sdiscoKind   :: !DiscoveryKind    -- ^ remembered item discoveries
   , sdiscoEffect :: !DiscoveryEffect  -- ^ remembered effects&Co of items
   , sfper        :: !PerLid        -- ^ faction perception indexed by levels
+  , salter       :: !AlterLid      -- ^ cached alter ability data for positions
   , srandom      :: !R.StdGen      -- ^ current random generator
   , _sleader     :: !(Maybe ActorId)
                                    -- ^ current picked party leader
@@ -85,6 +87,8 @@ data TgtAndPath = TgtAndPath {tapTgt :: !Target, tapPath :: !AndPath}
 
 instance Binary TgtAndPath
 
+type AlterLid = EM.EnumMap LevelId (PointArray.Array Word8)
+
 -- | Initial empty game client state.
 emptyStateClient :: FactionId -> StateClient
 emptyStateClient _sside =
@@ -98,6 +102,7 @@ emptyStateClient _sside =
     , sdiscoKind = EM.empty
     , sdiscoEffect = EM.empty
     , sfper = EM.empty
+    , salter = EM.empty
     , srandom = R.mkStdGen 42  -- will be set later
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
@@ -182,6 +187,7 @@ instance Binary StateClient where
     sdebugCli <- get
     let sbfsD = EM.empty
         sfper = EM.empty
+        salter = EM.empty
         srandom = read g
         squit = False
     return $! StateClient{..}

@@ -5,14 +5,17 @@ module Game.LambdaHack.Client.CommonM
   , partAidLeader, partActorLeader, partPronounLeader
   , actorSkillsClient, updateItemSlot, fullAssocsClient, activeItemsClient
   , itemToFullClient, pickWeaponClient, sumOrganEqpClient
+  , updateSalter, createSalter
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Control.Arrow (second)
 import qualified Data.EnumMap.Strict as EM
 import Data.Tuple
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.ItemSlot
@@ -24,6 +27,7 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -32,9 +36,10 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.TileKind (isUknownSpace)
+import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
 -- | Get the current perception of a client.
 getPerFid :: MonadClient m => LevelId -> m Perception
@@ -275,3 +280,17 @@ sumOrganEqpClient :: MonadClient m
 sumOrganEqpClient eqpSlot aid = do
   activeItems <- activeItemsClient aid
   return $! sumSlotNoFilter eqpSlot activeItems
+
+updateSalter :: MonadClient m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
+updateSalter lid pts = do
+  Kind.COps{coTileSpeedup} <- getsState scops
+  let pas = map (second $ toEnum . Tile.alterMinWalk coTileSpeedup) pts
+      f = (PointArray.// pas)
+  modifyClient $ \cli -> cli {salter = EM.adjust f lid $ salter cli}
+
+createSalter :: MonadClient m => State -> m ()
+createSalter s = do
+  Kind.COps{coTileSpeedup} <- getsState scops
+  let f Level{ltile} =
+        PointArray.mapA (toEnum . Tile.alterMinWalk coTileSpeedup) ltile
+  modifyClient $ \cli -> cli {salter = EM.map f $ sdungeon s}

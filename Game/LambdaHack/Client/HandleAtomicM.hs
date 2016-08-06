@@ -274,12 +274,14 @@ cmdAtomicSemCli cmd = case cmd of
               (Just tgt, Just leader) -> EM.singleton leader tgt
               _ -> EM.empty }
   UpdAlterTile lid pos _fromTile toTile -> do
+    updateSalter lid [(pos, toTile)]
     cops <- getsState scops
     lvl <- getLevel lid
     let assumedTile = lvl `at` pos
     when (tileChangeAffectsBfs cops assumedTile toTile) $
       invalidateBfsLid lid
   UpdSpotTile lid ts -> do
+    updateSalter lid ts
     cops <- getsState scops
     lvl <- getLevel lid
     let affects (pos, toTile) =
@@ -287,7 +289,9 @@ cmdAtomicSemCli cmd = case cmd of
           in tileChangeAffectsBfs cops fromTile toTile
         bs = map affects ts
     when (or bs) $ invalidateBfsLid lid
-  UpdLoseTile lid _ -> invalidateBfsLid lid  -- from known to unknown tiles
+  UpdLoseTile lid ts -> do
+    updateSalter lid ts
+    invalidateBfsLid lid  -- from known to unknown tiles
   UpdDiscover c iid ik seed ldepth -> do
     discoverKind c iid ik
     discoverSeed c iid seed ldepth
@@ -299,7 +303,7 @@ cmdAtomicSemCli cmd = case cmd of
   UpdDiscoverSeed c iid seed  ldepth -> discoverSeed c iid seed ldepth
   UpdCoverSeed c iid seed _ldepth -> coverSeed c iid seed
   UpdPerception lid outPer inPer -> perception lid outPer inPer
-  UpdRestart side sdiscoKind sfper _ d sdebugCli -> do
+  UpdRestart side sdiscoKind sfper s d sdebugCli -> do
     sisAI <- getsClient sisAI
     snxtDiff <- getsClient snxtDiff
     let cli = (emptyStateClient side) {sisAI}
@@ -309,8 +313,12 @@ cmdAtomicSemCli cmd = case cmd of
                   , scurDiff = d
                   , snxtDiff
                   , sdebugCli }
+    createSalter s
     restartClient
-  UpdResume _fid sfper -> modifyClient $ \cli -> cli {sfper}
+  UpdResume _fid sfper -> do
+    modifyClient $ \cli -> cli {sfper}
+    s <- getState
+    createSalter s
   UpdKillExit _fid -> killExit
   UpdWriteSave -> saveClient
   _ -> return ()
