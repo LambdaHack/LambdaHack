@@ -866,7 +866,7 @@ chase aid doDisplace avoidAmbient = do
 moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> Point -> Bool -> m (Strategy Vector)
 moveTowards aid source target goal relaxed = do
-  cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
+  Kind.COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   actorSk <- actorSkillsClient aid
   let alterSkill = EM.findWithDefault 0 AbAlter actorSk
@@ -879,13 +879,8 @@ moveTowards aid source target goal relaxed = do
   friends <- getsState $ actorList (not . isAtWar fact) $ blid b
   let noFriends = unoccupied friends
       -- Only actors with AbAlter can search for hidden doors, etc.
-      bumpableHere p =
-        let t = lvl `at` p
-        in alterSkill >= 1
-           && (Tile.isOpenable cotile t
-               || Tile.isSuspect coTileSpeedup t
-               || Tile.isChangeable coTileSpeedup t)
-      enterableHere p = accessible cops lvl p || bumpableHere p
+      enterableHere p =
+        alterSkill >= Tile.alterMinWalk coTileSpeedup (lvl `at` p)
   if noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ target `vectorToFrom` source
   else do
@@ -913,7 +908,7 @@ moveOrRunAid run source dir = do
   actorSk <- actorSkillsClient source
   let lid = blid sb
   lvl <- getLevel lid
-  let skill = EM.findWithDefault 0 AbAlter actorSk
+  let alterSkill = EM.findWithDefault 0 AbAlter actorSk
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
@@ -952,8 +947,8 @@ moveOrRunAid run source dir = do
          -- Movement requires full access.
          return $! Just $ RequestAnyAbility $ ReqMove dir
          -- The potential invisible actor is hit.
-       | skill < 1 ->
-         assert `failure` "AI causes  AlterUnskilled" `twith` (run, source, dir)
+       | alterSkill < Tile.alterMinWalk coTileSpeedup t ->
+         assert `failure` "AI causes AlterUnwalked" `twith` (run, source, dir)
        | EM.member tpos $ lfloor lvl ->
          -- This could be, e.g., inaccessible open door with an item in it,
          -- but for this case to happen, it would also need to be unwalkable.

@@ -148,6 +148,8 @@ dominateFidSfx fid target = do
   -- and the game wouldn't end.
   activeItems <- activeItemsServer target
   let actorMaxSk = sumSkills activeItems
+      -- Check that the actor can move, also between levels and through doors.
+      -- Otherwise, it's too awkward for human player to control.
       canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
                 && EM.findWithDefault 0 Ability.AbTrigger actorMaxSk > 0
                 && EM.findWithDefault 0 Ability.AbAlter actorMaxSk > 0

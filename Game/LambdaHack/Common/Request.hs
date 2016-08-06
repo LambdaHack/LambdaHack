@@ -82,6 +82,7 @@ data ReqFailure =
   | DisplaceImmobile
   | DisplaceSupported
   | AlterUnskilled
+  | AlterUnwalked
   | AlterDistant
   | AlterBlockActor
   | AlterBlockItem
@@ -120,6 +121,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   DisplaceImmobile -> False  -- unidentified skill items
   DisplaceSupported -> True
   AlterUnskilled -> False  -- unidentified skill items
+  AlterUnwalked -> False
   AlterDistant -> True
   AlterBlockActor -> True  -- adjacent actor always visible
   AlterBlockItem -> True  -- adjacent item always visible
@@ -157,6 +159,7 @@ showReqFailure reqFailure = case reqFailure of
   DisplaceImmobile -> "trying to displace an immobile foe"
   DisplaceSupported -> "trying to displace a supported foe"
   AlterUnskilled -> "unskilled actors cannot alter tiles"
+  AlterUnwalked -> "unskilled actors cannot enter tiles"
   AlterDistant -> "trying to alter a distant tile"
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"

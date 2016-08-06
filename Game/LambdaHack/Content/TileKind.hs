@@ -3,7 +3,7 @@
 module Game.LambdaHack.Content.TileKind
   ( TileKind(..), Feature(..)
   , validateSingleTileKind, validateAllTileKind, actionFeatures
-  , TileSpeedup(..), Tab(..), isUknownSpace, unknownId
+  , TileSpeedup(..), Tab(..), TabWord8(..), isUknownSpace, unknownId
   ) where
 
 import Prelude ()
@@ -84,9 +84,13 @@ data TileSpeedup = TileSpeedup
   , isDoorTab              :: !Tab
   , isSuspectTab           :: !Tab
   , isChangeableTab        :: !Tab
+  , alterMinSkillTab       :: !TabWord8
+  , alterMinWalkTab        :: !TabWord8
   }
 
 newtype Tab = Tab (A.UArray (KindOps.Id TileKind) Bool)
+
+newtype TabWord8 = TabWord8 (A.UArray (KindOps.Id TileKind) Word8)
 
 isUknownSpace :: KindOps.Id TileKind -> Bool
 {-# INLINE isUknownSpace #-}

@@ -361,7 +361,7 @@ moveSearchAlterAid source dir = do
   sb <- getsState $ getActorBody source
   actorSk <- actorSkillsClient source
   lvl <- getLevel $ blid sb
-  let skill = EM.findWithDefault 0 AbAlter actorSk
+  let alterSkill = EM.findWithDefault 0 AbAlter actorSk
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
@@ -380,8 +380,8 @@ moveSearchAlterAid source dir = do
               || Tile.isOpenable cotile t
               || Tile.isClosable cotile t
               || Tile.isChangeable coTileSpeedup t)
-          = if | skill < 1 ->
-                 Left $ showReqFailure AlterUnskilled
+          = if | alterSkill < Tile.alterMinWalk coTileSpeedup t ->
+                 Left $ showReqFailure AlterUnwalked
                | EM.member tpos $ lfloor lvl ->
                  Left $ showReqFailure AlterBlockItem
                | otherwise ->
@@ -785,13 +785,13 @@ alterDirHuman ts = do
 alterTile :: MonadClientUI m
           => [Trigger] -> Vector -> m (FailOrCmd (RequestTimed 'AbAlter))
 alterTile ts dir = do
-  cops@Kind.COps{cotile} <- getsState scops
+  cops@Kind.COps{cotile, coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorSk <- actorSkillsClient leader
   lvl <- getLevel $ blid b
   as <- getsState $ actorList (const True) (blid b)
-  let skill = EM.findWithDefault 0 AbAlter actorSk
+  let alterSkill = EM.findWithDefault 0 AbAlter actorSk
       tpos = bpos b `shift` dir
       t = lvl `at` tpos
       alterFeats = alterFeatures ts
@@ -800,7 +800,8 @@ alterTile ts dir = do
         tr : _ -> verb tr
       msg = makeSentence ["you", verb1, "towards", MU.Text $ compassText dir]
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
-    _ | skill < 1 -> failSer AlterUnskilled
+    _ | alterSkill < Tile.alterMinSkill coTileSpeedup t ->
+      failSer AlterUnskilled
     [] -> failWith $ guessAlter cops alterFeats t
     feat : _ ->
       if EM.notMember tpos $ lfloor lvl then

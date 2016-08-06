@@ -18,7 +18,7 @@ module Game.LambdaHack.Common.Tile
   , kindHasFeature, hasFeature
   , isClear, isLit, isWalkable
   , isPassable, isPassableNoSuspect, isPassableNoClosed, isDoor, isSuspect
-  , isExplorable, lookSimilar, speedup
+  , isExplorable, lookSimilar, speedup, alterMinSkill, alterMinWalk
   , openTo, closeTo, embedItems, causeEffects, revealAs, hideAs
   , isOpenable, isClosable, isChangeable, isEscape, isStair, ascendTo
 #ifdef EXPOSE_INTERNAL
@@ -32,6 +32,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Array.Unboxed as A
+import Data.Word
 
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
@@ -39,21 +40,30 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.TileKind (Tab (..), TileKind, TileSpeedup (..))
+import Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup (..))
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | The last time a hero left a smell in a given tile. To be used
 -- by monsters that hunt by smell.
 type SmellTime = Time
 
-createTab :: Kind.Ops TileKind -> (TileKind -> Bool) -> Tab
+createTab :: Kind.Ops TileKind -> (TileKind -> Bool) -> TK.Tab
 createTab Kind.Ops{ofoldrWithKey, obounds} prop =
   let f _ k acc = prop k : acc
-  in Tab $ A.listArray obounds $ ofoldrWithKey f []
+  in TK.Tab $ A.listArray obounds $ ofoldrWithKey f []
 
-accessTab :: Tab -> Kind.Id TileKind -> Bool
+createTabWord8 :: Kind.Ops TileKind -> (TileKind -> Word8) -> TK.TabWord8
+createTabWord8 Kind.Ops{ofoldrWithKey, obounds} prop =
+  let f _ k acc = prop k : acc
+  in TK.TabWord8 $ A.listArray obounds $ ofoldrWithKey f []
+
+accessTab :: TK.Tab -> Kind.Id TileKind -> Bool
 {-# INLINE accessTab #-}
-accessTab (Tab tab) ki = tab A.! ki
+accessTab (TK.Tab tab) ki = tab A.! ki
+
+accessTabWord8 :: TK.TabWord8 -> Kind.Id TileKind -> Word8
+{-# INLINE accessTabWord8 #-}
+accessTabWord8 (TK.TabWord8 tab) ki = tab A.! ki
 
 -- | Whether a tile kind has the given feature.
 kindHasFeature :: TK.Feature -> TileKind -> Bool
@@ -81,16 +91,14 @@ isLit TileSpeedup{isLitTab} = accessTab isLitTab
 -- Essential for efficiency of pathfinding, hence tabulated.
 isWalkable :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isWalkable #-}
-isWalkable TileSpeedup{isWalkableTab} =
-  accessTab isWalkableTab
+isWalkable TileSpeedup{isWalkableTab} = accessTab isWalkableTab
 
 -- | Whether actors can walk into a tile, perhaps opening a door first,
 -- perhaps a hidden door.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isPassable :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isPassable #-}
-isPassable TileSpeedup{isPassableTab} =
-  accessTab isPassableTab
+isPassable TileSpeedup{isPassableTab} = accessTab isPassableTab
 
 -- | Whether actors can walk into a tile, perhaps trying to open
 -- a hidden door first.
@@ -118,15 +126,23 @@ isDoor TileSpeedup{isDoorTab} = accessTab isDoorTab
 -- Essential for efficiency of pathfinding, hence tabulated.
 isSuspect :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isSuspect #-}
-isSuspect TileSpeedup{isSuspectTab} =
-  accessTab isSuspectTab
+isSuspect TileSpeedup{isSuspectTab} = accessTab isSuspectTab
 
 -- | Whether a tile kind (specified by its id) has a ChangeTo feature.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isChangeable :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isChangeable #-}
-isChangeable TileSpeedup{isChangeableTab} =
-  accessTab isChangeableTab
+isChangeable TileSpeedup{isChangeableTab} = accessTab isChangeableTab
+
+alterMinSkill :: TileSpeedup -> Kind.Id TileKind -> Int
+{-# INLINE alterMinSkill #-}
+alterMinSkill TileSpeedup{alterMinSkillTab} =
+  fromEnum . accessTabWord8 alterMinSkillTab
+
+alterMinWalk :: TileSpeedup -> Kind.Id TileKind -> Int
+{-# INLINE alterMinWalk #-}
+alterMinWalk TileSpeedup{alterMinWalkTab} =
+  fromEnum . accessTabWord8 alterMinWalkTab
 
 -- | Whether one can easily explore a tile, possibly finding a treasure
 -- or a clue. Doors can't be explorable since revealing a secret tile
@@ -171,13 +187,37 @@ speedup allClear cotile =
         let getTo TK.ChangeTo{} = True
             getTo _ = False
         in any getTo $ TK.tfeature tk
+      alterMinSkillTab = createTabWord8 cotile alterMinSkillKind
+      alterMinWalkTab = createTabWord8 cotile alterMinWalkKind
   in TileSpeedup {..}
+
+-- Check that alter can be used, if not, @maxBound@.
+alterMinSkillKind :: TileKind -> Word8
+alterMinSkillKind tk =
+  let getTo TK.OpenTo{} = True
+      getTo TK.CloseTo{} = True
+      getTo TK.ChangeTo{} = True
+      getTo TK.Suspect = True
+      getTo _ = False
+  in if any getTo $ TK.tfeature tk then TK.talter tk else maxBound
+
+-- How high alter skill is needed to make it walkable. If already
+-- walkable, put @0@, if can't, put @maxBound@.
+alterMinWalkKind :: TileKind -> Word8
+alterMinWalkKind tk =
+  let getTo TK.OpenTo{} = True
+      getTo TK.Suspect = True
+      getTo TK.ChangeTo{} = True  -- TODO: needed until AI fixed
+      getTo _ = False
+  in if kindHasFeature TK.Walkable tk
+     then 0
+     else if any getTo $ TK.tfeature tk then TK.talter tk else maxBound
 
 isPassableKind :: Bool -> Bool -> TileKind -> Bool
 isPassableKind passSuspect passOpenable tk =
   let getTo TK.Walkable = True
       getTo TK.OpenTo{} | passOpenable = True
-      getTo TK.ChangeTo{} | passOpenable = True  -- can change to passable and may have loot
+      getTo TK.ChangeTo{} | passOpenable = True  -- TODO: needed until AI fixed
       getTo TK.Suspect | passSuspect = True
       getTo _ = False
   in any getTo $ TK.tfeature tk
