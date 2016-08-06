@@ -40,7 +40,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
+import Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup, isUknownSpace)
 
 invBfs :: BfsAndPath -> BfsAndPath
 invBfs bfsAnd = BfsInvalid $ bfsArr bfsAnd
@@ -66,10 +66,10 @@ invalidateBfsAll =
   modifyClient $ \cli -> cli {sbfsD = EM.map invBfs (sbfsD cli)}
 
 createBfs :: MonadClient m
-          => (Bool, Bool, Bool) -> Maybe BfsAndPath
+          => (Bool, Int) -> Maybe BfsAndPath
           -> ActorId
           -> m (PointArray.Array BfsDistance)
-createBfs (canMove, enterSuspect, canSearchAndOpen) mbfs aid = do
+createBfs (canMove, alterSkill) mbfs aid = do
   b <- getsState $ getActorBody aid
   let source = bpos b
   aInitial <- case mbfs of
@@ -89,18 +89,18 @@ createBfs (canMove, enterSuspect, canSearchAndOpen) mbfs aid = do
       Level{lxsize, lysize} <- getLevel $ blid b
       return $! PointArray.replicateA lxsize lysize apartBfs
   if canMove then do
-    !cops <- getsState scops
+    Kind.COps{coTileSpeedup} <- getsState scops
     !lvl <- getLevel $ blid b
-    let isE = isEnterable cops lvl enterSuspect canSearchAndOpen
+    let isE = isEnterable coTileSpeedup lvl alterSkill
     return $! fillBfs isE source aInitial
   else return $! PointArray.unsafeWriteA aInitial source minKnownBfs
                  `seq` aInitial
 
 updatePathFromBfs :: MonadClient m
-                  => (Bool, Bool, Bool) -> BfsAndPath
+                  => (Bool, Int) -> BfsAndPath
                   -> ActorId -> Point
                   -> m (PointArray.Array BfsDistance, AndPath)
-updatePathFromBfs (canMove, enterSuspect, canSearchAndOpen)
+updatePathFromBfs (canMove, alterSkill)
                   bfsAndPathOld aid target = do
   let (oldBfsArr, oldBfsPath) = case bfsAndPathOld of
         BfsAndPath{bfsArr, bfsPath} -> (bfsArr, bfsPath)
@@ -111,11 +111,11 @@ updatePathFromBfs (canMove, enterSuspect, canSearchAndOpen)
     if not canMove
     then return (oldBfsPath, NoPath)
     else do
-      !cops <- getsState scops
+      Kind.COps{coTileSpeedup} <- getsState scops
       b <- getsState $ getActorBody aid
       !lvl <- getLevel $ blid b
       seps <- getsClient seps
-      let isE = isEnterable cops lvl enterSuspect canSearchAndOpen
+      let isE = isEnterable coTileSpeedup lvl alterSkill
           source = bpos b
           mpath = findPathBfs isE source target seps bfsArr
           bfsPath = EM.insert target mpath oldBfsPath
@@ -178,7 +178,7 @@ getCachePath aid target = do
   if | source == target -> return $! AndPath source [] target 0  -- speedup
      | otherwise -> snd <$> getCacheBfsAndPath aid target
 
-condBFS :: MonadClient m => ActorId -> m (Bool, Bool, Bool)
+condBFS :: MonadClient m => ActorId -> m (Bool, Int)
 condBFS aid = do
   side <- getsClient sside
   -- We assume the actor eventually becomes a leader (or has the same
@@ -189,7 +189,6 @@ condBFS aid = do
   activeItems <- activeItemsClient aid
   let actorMaxSk = sumSkills activeItems
       alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
-      !canSearchAndOpen = alterSkill >= 1
       !canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
                 || EM.findWithDefault 0 Ability.AbDisplace actorMaxSk > 0
                 -- TODO: needed for now, because AI targets and shoots enemies
@@ -198,28 +197,27 @@ condBFS aid = do
   smarkSuspect <- getsClient smarkSuspect
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
-      !enterSuspect = canSearchAndOpen && (smarkSuspect || underAI)
-  return (canMove, enterSuspect, canSearchAndOpen)
+      enterSuspect = smarkSuspect || underAI
+      !skill | enterSuspect = alterSkill  -- dig and search at will
+             | otherwise = 0  -- only walkable tiles
+  return (canMove, skill)
 
 -- | Legality of move from a known tile, assuming doors freely openable.
 -- We treat doors as an open tile and don't add an extra step for opening
 -- the doors, because other actors open and use them, too,
 -- so it's amortized. We treat unknown tiles specially.
-isEnterable :: Kind.COps -> Level -> Bool -> Bool -> Point -> MoveLegal
+isEnterable :: TileSpeedup -> Level -> Int -> Point -> MoveLegal
 {-# INLINE isEnterable #-}
-isEnterable !Kind.COps{coTileSpeedup} !lvl !enterSuspect !canSearchAndOpen =
+isEnterable !coTileSpeedup !lvl !alterSkill =
   let {-# INLINE isWalkable #-}
       isWalkable = Tile.isWalkable coTileSpeedup
       {-# INLINE isPassable #-}
-      isPassable | enterSuspect = Tile.isPassable coTileSpeedup
-                 | canSearchAndOpen = Tile.isPassableNoSuspect coTileSpeedup
-                 | otherwise = Tile.isPassableNoClosed coTileSpeedup
-  in \ !tpos ->
-    let !tt = lvl `at` tpos
-    in if | isUknownSpace tt -> MoveToUnknown
-          | isWalkable tt -> MoveToOpen
-          | isPassable tt -> MoveToClosed
-          | otherwise -> MoveBlocked
+      isPassable tt = Tile.alterMinWalk coTileSpeedup tt <= alterSkill
+  in \ !tpos -> let !tt = lvl `at` tpos
+                in if | isUknownSpace tt -> MoveToUnknown
+                      | isWalkable tt -> MoveToOpen
+                      | isPassable tt -> MoveToClosed
+                      | otherwise -> MoveBlocked
 
 -- | Furthest (wrt paths) known position.
 furthestKnown :: MonadClient m => ActorId -> m Point
