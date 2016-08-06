@@ -17,9 +17,12 @@ import Data.Binary
 import Data.Bits (Bits, complement, (.&.), (.|.))
 import GHC.Generics (Generic)
 
+import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.TileKind (TileSpeedup, isUknownSpace)
 
 -- | Weighted distance between points along shortest paths.
 newtype BfsDistance = BfsDistance Word8
@@ -58,12 +61,12 @@ abortedUnknownBfs = pred apartBfs
 -- Unsafe @PointArray@ operations are OK here, because the intermediate
 -- values of the vector don't leak anywhere outside nor are kept unevaluated
 -- and so they can't be overwritten by the unsafe side-effect.
-fillBfs :: (Point -> MoveLegal)  -- ^ is move from known tile legal?
+fillBfs :: TileSpeedup -> Level -> Int
         -> Point                          -- ^ starting position
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
-        -> PointArray.Array BfsDistance   -- ^ array with calculated distances
-{-# NOINLINE fillBfs #-}
-fillBfs isEnterable source aInitial =
+        -> ()
+{-# INLINE fillBfs #-}
+fillBfs coTileSpeedup lvl alterSkill source aInitial =
   let bfs :: BfsDistance -> [Point] -> ()  -- modifies @aInitial@
       bfs distance predK =
         let distCompl = distance .&. complement minKnownBfs
@@ -74,22 +77,18 @@ fillBfs isEnterable source aInitial =
                     let p = shift pos move
                         visitedMove = aInitial PointArray.! p /= apartBfs
                     in if visitedMove then l
-                       else case isEnterable p of
-                         MoveBlocked -> l
-                         MoveToUnknown ->
-                           PointArray.unsafeWriteA aInitial p distCompl
-                           `seq` l
-                         _ ->
-                           PointArray.unsafeWriteA aInitial p distance
-                           `seq` p : l
+                       else let !tt = lvl `at` p
+                            in if | isUknownSpace tt ->
+                                    if alterSkill > 0 then PointArray.unsafeWriteA aInitial p distCompl `seq` l else l
+                                  | Tile.alterMinWalk coTileSpeedup tt <= alterSkill ->
+                                    PointArray.unsafeWriteA aInitial p distance `seq` p : l
+                                  | otherwise -> l
               in foldl' fKnown succK2 moves
             succK4 = foldr processKnown [] predK
         in if null succK4 || distance == abortedKnownBfs
            then () -- no more dungeon positions to check, or we reached too far
            else bfs (succ distance) succK4
-  in PointArray.unsafeWriteA aInitial source minKnownBfs
-     `seq` bfs (succ minKnownBfs) [source]
-     `seq` aInitial  -- faking pure operation, but it's correct
+  in bfs (succ minKnownBfs) [source]
 
 data AndPath =
     AndPath { pathSource :: !Point

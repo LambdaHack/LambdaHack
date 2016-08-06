@@ -66,14 +66,14 @@ invalidateBfsAll =
   modifyClient $ \cli -> cli {sbfsD = EM.map invBfs (sbfsD cli)}
 
 createBfs :: MonadClient m
-          => (Bool, Int) -> Maybe BfsAndPath
+          => Bool -> Int -> Maybe BfsAndPath
           -> ActorId
           -> m (PointArray.Array BfsDistance)
-createBfs (canMove, alterSkill) mbfs aid = do
+createBfs canMove alterSkill mbfs aid = do
   b <- getsState $ getActorBody aid
-  let source = bpos b
-  aInitial <- case mbfs of
-    Just bfsAnd ->  -- TODO: we should verify size
+  lvl@Level{lxsize, lysize} <- getLevel $ blid b
+  let !aInitial = case mbfs of
+        Just bfsAnd ->  -- TODO: we should verify size
       -- We need to use the safe set, because previous values
       -- of the BFS array for the actor can be stuck unevaluated
       -- in thunks and we are not allowed to overwrite them.
@@ -84,23 +84,22 @@ createBfs (canMove, alterSkill) mbfs aid = do
       -- but it's 1.6KB per actor per move, so it's puzzling.
       -- So perhaps it's not in-place at all, but allocating and freeing
       -- such vectors is so cheap, it's not detectable (and it doesn't leak).
-      return $! PointArray.safeSetA apartBfs $ bfsArr bfsAnd
-    Nothing -> do
-      Level{lxsize, lysize} <- getLevel $ blid b
-      return $! PointArray.replicateA lxsize lysize apartBfs
-  if canMove then do
+          PointArray.safeSetA apartBfs $ bfsArr bfsAnd
+        Nothing ->
+          PointArray.replicateA lxsize lysize apartBfs
+  let source = bpos b
+      !_ = PointArray.unsafeWriteA aInitial source minKnownBfs
+  when canMove $ do
     Kind.COps{coTileSpeedup} <- getsState scops
-    !lvl <- getLevel $ blid b
-    let isE = isEnterable coTileSpeedup lvl alterSkill
-    return $! fillBfs isE source aInitial
-  else return $! PointArray.unsafeWriteA aInitial source minKnownBfs
-                 `seq` aInitial
+    let !_ = fillBfs coTileSpeedup lvl alterSkill source aInitial
+    return ()
+  return aInitial
 
 updatePathFromBfs :: MonadClient m
                   => (Bool, Int) -> BfsAndPath
                   -> ActorId -> Point
                   -> m (PointArray.Array BfsDistance, AndPath)
-updatePathFromBfs (canMove, alterSkill)
+updatePathFromBfs (!canMove, !alterSkill)
                   bfsAndPathOld aid target = do
   let (oldBfsArr, oldBfsPath) = case bfsAndPathOld of
         BfsAndPath{bfsArr, bfsPath} -> (bfsArr, bfsPath)
@@ -145,9 +144,9 @@ getCacheBfsAndPath aid target = do
         argsEnterable <- condBFS aid
         updatePathFromBfs argsEnterable bap aid target
     _ -> do
-      argsEnterable <- condBFS aid
-      bfsArr <- createBfs argsEnterable mbfs aid
-      updatePathFromBfs argsEnterable BfsOnly{bfsArr} aid target
+      (!canMove, !alterSkill) <- condBFS aid
+      bfsArr <- createBfs canMove alterSkill mbfs aid
+      updatePathFromBfs (canMove, alterSkill) BfsOnly{bfsArr} aid target
 
 -- | Get cached BFS array or, if not stored, generate and store first.
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
@@ -164,8 +163,8 @@ getCacheBfs aid = do
       | bfsArr PointArray.! source == minKnownBfs ->
         return bfsArr
     _ -> do
-      argsEnterable <- condBFS aid
-      bfsArr <- createBfs argsEnterable mbfs aid
+      (!canMove, !alterSkill) <- condBFS aid
+      bfsArr <- createBfs canMove alterSkill mbfs aid
       modifyClient $ \cli ->
         cli {sbfsD = EM.insert aid BfsOnly{bfsArr} (sbfsD cli)}
       return bfsArr
@@ -189,7 +188,7 @@ condBFS aid = do
   activeItems <- activeItemsClient aid
   let actorMaxSk = sumSkills activeItems
       alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
-      !canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
+      canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
                 || EM.findWithDefault 0 Ability.AbDisplace actorMaxSk > 0
                 -- TODO: needed for now, because AI targets and shoots enemies
                 -- based on the path to them, not LOS to them.
@@ -198,8 +197,8 @@ condBFS aid = do
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
       enterSuspect = smarkSuspect || underAI
-      !skill | enterSuspect = alterSkill  -- dig and search at will
-             | otherwise = 0  -- only walkable tiles
+      skill | enterSuspect = alterSkill  -- dig and search at will
+            | otherwise = 0  -- only walkable tiles
   return (canMove, skill)
 
 -- | Legality of move from a known tile, assuming doors freely openable.
@@ -208,17 +207,13 @@ condBFS aid = do
 -- so it's amortized. We treat unknown tiles specially.
 isEnterable :: TileSpeedup -> Level -> Int -> Point -> MoveLegal
 {-# INLINE isEnterable #-}
-isEnterable !coTileSpeedup !lvl !alterSkill =
-  let {-# INLINE isWalkable #-}
-      isWalkable = Tile.isWalkable coTileSpeedup
-      {-# INLINE isPassable #-}
-      isPassable tt = Tile.alterMinWalk coTileSpeedup tt <= alterSkill
-  in \ !tpos -> let !tt = lvl `at` tpos
-                in if | isUknownSpace tt ->
-                        if alterSkill > 0 then MoveToUnknown else MoveBlocked
-                      | isWalkable tt -> MoveToOpen
-                      | isPassable tt -> MoveToClosed
-                      | otherwise -> MoveBlocked
+isEnterable coTileSpeedup lvl alterSkill = \ !tpos ->
+  let !tt = lvl `at` tpos
+  in if | isUknownSpace tt ->
+          if alterSkill > 0 then MoveToUnknown else MoveBlocked
+        | Tile.isWalkable coTileSpeedup tt -> MoveToOpen
+        | Tile.alterMinWalk coTileSpeedup tt <= alterSkill -> MoveToClosed
+        | otherwise -> MoveBlocked
 
 -- | Furthest (wrt paths) known position.
 furthestKnown :: MonadClient m => ActorId -> m Point
