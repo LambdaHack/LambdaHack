@@ -140,7 +140,7 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs =
               in if backtrackingMove
                  then acc
                  else
-                   let alter = fromEnum $ lalter PointArray.! pos
+                   let alter = fromEnum $ lalter PointArray.! p
                    -- Prefer paths through open or unknown tiles.
                    in if alter <= 1 then p : acc else acc ++ [p]
             minP = case foldr f [] prefMoves of
