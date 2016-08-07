@@ -320,8 +320,8 @@ reqAlter source tpos mfeat = do
   lvl <- getLevel lid
   let serverTile = lvl `at` tpos
       freshClientTile = hideTile cops lvl tpos
-  -- Only actors with AbAlter > 0 can search for hidden doors, etc.
-  if alterSkill < 1
+  -- Only actors with AbAlter > 1 can search for hidden doors, etc.
+  if alterSkill <= 1
      || serverTile == freshClientTile  -- no searching needed
         && alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
   then execFailure source req AlterUnskilled

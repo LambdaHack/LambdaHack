@@ -367,9 +367,9 @@ animalBrain = armoredSkin
   , ifreq    = [("animal brain", 100)]
   , icount   = 1
   , iverbHit = "blank"
-  , iaspects = [let absNo = [AbDisplace, AbMoveItem, AbProject, AbApply]
-                    sk = EM.fromList $ zip absNo [-1, -1..]
-                in AddSkills $ addSkills unitSkills sk]
+  , iaspects = let absNo = [AbAlter, AbDisplace, AbMoveItem, AbProject, AbApply]
+                   sk = EM.fromList $ zip absNo [1, -1, -1, -1, -1]
+               in [AddSkills $ addSkills unitSkills sk]
   , idesc    = ""
   }
 speedGland :: Int -> ItemKind

@@ -18,9 +18,10 @@ import Game.LambdaHack.Content.TileKind
 
 -- Alter skill schema:
 -- 0  can be altered by everybody (currently no such thing)
--- 1  openable and suspect
--- 2  closable
--- 3  changeable (e.g., caches)
+-- 1  unknown only
+-- 2  openable and suspect
+-- 3  closable
+-- 4  changeable (e.g., caches)
 -- 10  weak obstructions
 -- 50  considerable obstructions
 -- 100  walls
@@ -48,7 +49,7 @@ unknown = TileKind  -- needs to have index 0
   , tfreq    = [("unknown space", 1)]
   , tcolor   = defFG
   , tcolor2  = defFG
-  , talter   = maxBound
+  , talter   = 1
   , tfeature = [Dark]
   }
 wall = TileKind
@@ -108,7 +109,7 @@ pillarCache = TileKind
                , ("legendLit", 100), ("legendDark", 100) ]
   , tcolor   = BrCyan
   , tcolor2  = Cyan
-  , talter   = 3
+  , talter   = 4
   , tfeature = [ Cause $ IK.CreateItem CGround "useful" IK.TimerNone
                , ChangeTo "cachable" ]
   }
@@ -172,7 +173,7 @@ wallSuspectV = TileKind
   , tfreq    = [("suspect vertical wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = 1
+  , talter   = 2
   , tfeature = [Suspect, RevealAs "vertical closed door Lit"]
   }
 doorClosedV = TileKind
@@ -181,7 +182,7 @@ doorClosedV = TileKind
   , tfreq    = [("vertical closed door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , talter   = 1
+  , talter   = 2
   , tfeature = [ OpenTo "vertical open door Lit"
                , HideAs "suspect vertical wall Lit"
                ]
@@ -192,7 +193,7 @@ doorOpenV = TileKind
   , tfreq    = [("vertical open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , talter   = 2
+  , talter   = 3
   , tfeature = [ Walkable, Clear, NoItem, NoActor
                , CloseTo "vertical closed door Lit"
                ]
@@ -221,7 +222,7 @@ wallSuspectH = TileKind
   , tfreq    = [("suspect horizontal wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , talter   = 1
+  , talter   = 2
   , tfeature = [Suspect, RevealAs "horizontal closed door Lit"]
   }
 doorClosedH = TileKind
@@ -230,7 +231,7 @@ doorClosedH = TileKind
   , tfreq    = [("horizontal closed door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , talter   = 1
+  , talter   = 2
   , tfeature = [ OpenTo "horizontal open door Lit"
                , HideAs "suspect horizontal wall Lit"
                ]
@@ -241,7 +242,7 @@ doorOpenH = TileKind
   , tfreq    = [("horizontal open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , talter   = 2
+  , talter   = 3
   , tfeature = [ Walkable, Clear, NoItem, NoActor
                , CloseTo "horizontal closed door Lit"
                ]

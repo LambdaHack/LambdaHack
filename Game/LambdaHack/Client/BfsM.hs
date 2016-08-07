@@ -73,26 +73,29 @@ createBfs canMove alterSkill mbfs aid = do
   b <- getsState $ getActorBody aid
   let lid = blid b
       source = bpos b
-  lvl@Level{lxsize, lysize} <- getLevel lid
+  lvl <- getLevel lid
   let !aInitial = case mbfs of
         Just bfsAnd ->  -- TODO: we should verify size
       -- We need to use the safe set, because previous values
       -- of the BFS array for the actor can be stuck unevaluated
       -- in thunks and we are not allowed to overwrite them.
-      -- OTOH, there is now no change in behaviour nor speed
-      -- and only moderate deacrease in ARR_WORDS memory with unsafeSetA,
-      -- so it must already be very much in-place.
-      -- OTOH, this speedup doesn't seem to affect memory nor time at all,
+      -- OTOH, there is now only moderate deacrease in ARR_WORDS memory
+      -- and increase in speed with unsafeSetA (33.7clips/s vs 33.3 with
+      -- createBfs repeated 20 times, for easier benchmarking),
+      -- so it may already be in-place to some extent.
+      -- but OTOH, this speedup doesn't seem to affect memory nor time at all,
       -- but it's 1.6KB per actor per move, so it's puzzling.
       -- So perhaps it's not in-place at all, but allocating and freeing
-      -- such vectors is so cheap, it's not detectable (and it doesn't leak).
+      -- such vectors is so cheap, that it all doesn't change much.
+      -- Perhaps setting is much more expensive than allocating and GC.
           PointArray.safeSetA apartBfs $ bfsArr bfsAnd
         Nothing ->
-          PointArray.replicateA lxsize lysize apartBfs
+          PointArray.replicateA (lxsize lvl) (lysize lvl) apartBfs
   let !_ = PointArray.unsafeWriteA aInitial source minKnownBfs
   when canMove $ do
     salter <- getsClient salter
-    let !_ = fillBfs (salter EM.! lid) lvl alterSkill source aInitial
+    let !lalter = salter EM.! lid
+        !_a = fillBfs lalter alterSkill source aInitial
     return ()
   return aInitial
 

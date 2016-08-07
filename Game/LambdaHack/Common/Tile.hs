@@ -40,7 +40,8 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
-import Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup (..))
+import Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup (..),
+                                         isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | The last time a hero left a smell in a given tile. To be used
@@ -49,12 +50,13 @@ type SmellTime = Time
 
 createTab :: Kind.Ops TileKind -> (TileKind -> Bool) -> TK.Tab
 createTab Kind.Ops{ofoldrWithKey, obounds} prop =
-  let f _ k acc = prop k : acc
+  let f _ t acc = prop t : acc
   in TK.Tab $ A.listArray obounds $ ofoldrWithKey f []
 
-createTabWord8 :: Kind.Ops TileKind -> (TileKind -> Word8) -> TK.TabWord8
+createTabWord8 :: Kind.Ops TileKind -> (Kind.Id TileKind -> TileKind -> Word8)
+               -> TK.TabWord8
 createTabWord8 Kind.Ops{ofoldrWithKey, obounds} prop =
-  let f _ k acc = prop k : acc
+  let f k t acc = prop k t : acc
   in TK.TabWord8 $ A.listArray obounds $ ofoldrWithKey f []
 
 accessTab :: TK.Tab -> Kind.Id TileKind -> Bool
@@ -192,8 +194,8 @@ speedup allClear cotile =
   in TileSpeedup {..}
 
 -- Check that alter can be used, if not, @maxBound@.
-alterMinSkillKind :: TileKind -> Word8
-alterMinSkillKind tk =
+alterMinSkillKind :: Kind.Id TileKind -> TileKind -> Word8
+alterMinSkillKind _k tk =
   let getTo TK.OpenTo{} = True
       getTo TK.CloseTo{} = True
       getTo TK.ChangeTo{} = True
@@ -203,15 +205,16 @@ alterMinSkillKind tk =
 
 -- How high alter skill is needed to make it walkable. If already
 -- walkable, put @0@, if can't, put @maxBound@.
-alterMinWalkKind :: TileKind -> Word8
-alterMinWalkKind tk =
+alterMinWalkKind :: Kind.Id TileKind -> TileKind -> Word8
+alterMinWalkKind k tk =
   let getTo TK.OpenTo{} = True
       getTo TK.Suspect = True
       getTo TK.ChangeTo{} = True  -- TODO: needed until AI fixed
       getTo _ = False
-  in if kindHasFeature TK.Walkable tk
-     then 0
-     else if any getTo $ TK.tfeature tk then TK.talter tk else maxBound
+  in if | kindHasFeature TK.Walkable tk -> 0
+        | isUknownSpace k -> TK.talter tk
+        | any getTo $ TK.tfeature tk -> TK.talter tk
+        | otherwise -> maxBound
 
 isPassableKind :: Bool -> Bool -> TileKind -> Bool
 isPassableKind passSuspect passOpenable tk =

@@ -32,6 +32,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 -- but "granite cobblestones" is wrong.
 --
 -- Tile kind for unknown space has the minimal @KindOps.Id@ index.
+-- The @talter@ for unknown space is @1@ and no other tile kind has that value.
 data TileKind = TileKind
   { tsymbol  :: !Char         -- ^ map symbol
   , tname    :: !Text         -- ^ short description
@@ -108,7 +109,7 @@ validateSingleTileKind TileKind{..} =
                                  && Suspect `elem` tfeature ]
 
 -- TODO: verify that OpenTo, CloseTo and ChangeTo are assigned as specified.
--- TODO: verify that tile kind for "unknown space" has index 0.
+-- TODO: verify that tile kind for "unknown space" has index 0 and talter is 1
 -- | Validate all tile kinds.
 --
 -- If tiles look the same on the map, the description and the substantial
