@@ -74,13 +74,17 @@ fillBfs lalter alterSkill source aInitial =
               let fKnown l move =
                     let p = shift pos move
                         visitedMove = aInitial PointArray.! p /= apartBfs
-                    in if visitedMove then l
-                       else let alter = fromEnum $ lalter PointArray.! p
-                            in if alterSkill >= alter
-                               then if alter == 1
-                                    then PointArray.unsafeWriteA aInitial p distCompl `seq` l
-                                    else PointArray.unsafeWriteA aInitial p distance `seq` p : l
-                               else l
+                    in if visitedMove
+                       then l
+                       else
+                         let alter = fromEnum $ lalter PointArray.! p
+                         in if | alterSkill < alter -> l
+                               | alter == 1 ->
+                                 PointArray.unsafeWriteA aInitial p distCompl
+                                 `seq` l
+                               | otherwise ->
+                                 PointArray.unsafeWriteA aInitial p distance
+                                 `seq` p : l
               in foldl' fKnown succK2 moves
             succK4 = foldr processKnown [] predK
         in if null succK4 || distance == abortedKnownBfs

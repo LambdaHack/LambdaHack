@@ -30,7 +30,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.ItemKind (ItemKind)
-import Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
+import Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- * RespUpdAtomicAI
@@ -332,12 +332,8 @@ tileChangeAffectsBfs :: Kind.COps
                      -> Kind.Id TileKind -> Kind.Id TileKind
                      -> Bool
 tileChangeAffectsBfs Kind.COps{coTileSpeedup} fromTile toTile =
-  isUknownSpace fromTile
-  || isUknownSpace toTile
-  || not (Tile.isPassableNoClosed coTileSpeedup fromTile
-          && Tile.isPassableNoClosed coTileSpeedup toTile
-          || not (Tile.isPassable coTileSpeedup fromTile)
-             && not (Tile.isPassable coTileSpeedup toTile))
+  Tile.alterMinWalk coTileSpeedup fromTile
+  /= Tile.alterMinWalk coTileSpeedup toTile
 
 createActor :: MonadClient m => ActorId -> Actor -> m ()
 createActor aid _b = do
