@@ -212,7 +212,7 @@ griffonVulture = ItemKind
   , iverbHit = "thud"
   , iweight  = 13000
   , iaspects = [ AddMaxHP 12, AddMaxCalm 60, AddSpeed 20, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-2) ]
+               , AddSkills $ EM.singleton AbAlter (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -230,7 +230,7 @@ skunk = ItemKind
   , iverbHit = "thud"
   , iweight  = 4000
   , iaspects = [ AddMaxHP 10, AddMaxCalm 30, AddSpeed 20, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-2) ]
+               , AddSkills $ EM.singleton AbAlter (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -249,7 +249,7 @@ armadillo = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 20, AddMaxCalm 30, AddSpeed 17, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-2) ]
+               , AddSkills $ EM.singleton AbAlter (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -267,7 +267,7 @@ gilaMonster = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 12, AddMaxCalm 60, AddSpeed 15, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-2) ]
+               , AddSkills $ EM.singleton AbAlter (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -285,7 +285,7 @@ rattlesnake = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 25, AddMaxCalm 60, AddSpeed 15, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-2) ]
+               , AddSkills $ EM.singleton AbAlter (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -377,7 +377,7 @@ beeSwarm = ItemKind
   , iverbHit = "thud"
   , iweight  = 1000
   , iaspects = [ AddMaxHP 8, AddMaxCalm 60, AddSpeed 30, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-2) ]  -- armor in sting
+               , AddSkills $ EM.singleton AbAlter (-1) ]  -- armor in sting
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -394,7 +394,7 @@ hornetSwarm = ItemKind
   , iverbHit = "thud"
   , iweight  = 1000
   , iaspects = [ AddMaxHP 8, AddMaxCalm 60, AddSpeed 30, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-2)
+               , AddSkills $ EM.singleton AbAlter (-1)
                , AddArmorMelee 80, AddArmorRanged 80 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
