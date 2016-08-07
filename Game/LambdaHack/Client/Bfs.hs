@@ -58,6 +58,10 @@ abortedUnknownBfs = pred apartBfs
 -- Unsafe @PointArray@ operations are OK here, because the intermediate
 -- values of the vector don't leak anywhere outside nor are kept unevaluated
 -- and so they can't be overwritten by the unsafe side-effect.
+--
+-- When computing move cost, we assume doors openable at no cost,
+-- because other actors use them, too, so the cost is shared and the extra
+-- visiblity is valuable, too. We treat unknown tiles specially.
 fillBfs :: PointArray.Array Word8
         -> Int
         -> Point                          -- ^ starting position
@@ -112,11 +116,11 @@ instance Binary AndPath
 -- The @eps@ coefficient determines which direction (or the closest
 -- directions available) that path should prefer, where 0 means north-west
 -- and 1 means north.
-findPathBfs :: (Point -> MoveLegal)
+findPathBfs :: PointArray.Array Word8
             -> Point -> Point -> Int
             -> PointArray.Array BfsDistance
             -> AndPath
-findPathBfs isEnterable pathSource pathGoal sepsRaw bfs =
+findPathBfs lalter pathSource pathGoal sepsRaw bfs =
   assert (bfs PointArray.! pathSource == minKnownBfs) $
   let eps = sepsRaw `mod` 4
       (mc1, mc2) = splitAt eps movesCardinal
@@ -130,18 +134,18 @@ findPathBfs isEnterable pathSource pathGoal sepsRaw bfs =
                 `blame` (pathSource, pathGoal, pos, suffix)) suffix
       track pos oldDist suffix =
         let dist = pred oldDist
-            children = map (shift pos) prefMoves
-            f p acc = if bfs PointArray.! p /= dist
-                      then acc
-                      else case isEnterable pos of
-                        MoveToOpen -> p : acc
-                        -- Prefer paths through open or unknown tiles.
-                        MoveToClosed -> acc ++ [p]
-                        MoveBlocked -> acc
-                        MoveToUnknown -> p : acc
-            minP = case foldr f [] children of
+            f move acc =
+              let p = shift pos move
+                  backtrackingMove = bfs PointArray.! p /= dist
+              in if backtrackingMove
+                 then acc
+                 else
+                   let alter = fromEnum $ lalter PointArray.! pos
+                   -- Prefer paths through open or unknown tiles.
+                   in if alter <= 1 then p : acc else acc ++ [p]
+            minP = case foldr f [] prefMoves of
               p : _ -> p
-              [] -> assert `failure` (pos, oldDist, children)
+              [] -> assert `failure` (pos, oldDist)
         in track minP dist (pos : suffix)
       goalDist = bfs PointArray.! pathGoal
   in if goalDist /= apartBfs

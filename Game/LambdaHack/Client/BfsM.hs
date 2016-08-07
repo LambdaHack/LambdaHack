@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.BfsM
   , closestUnknown, closestSuspect, closestSmell, furthestKnown
   , closestTriggers, closestItems, closestFoes
 #ifdef EXPOSE_INTERNAL
-  , createBfs, updatePathFromBfs, condBFS, isEnterable
+  , createBfs, updatePathFromBfs, condBFS
 #endif
   ) where
 
@@ -40,7 +40,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup, isUknownSpace)
+import Game.LambdaHack.Content.TileKind (TileKind)
 
 invBfs :: BfsAndPath -> BfsAndPath
 invBfs bfsAnd = BfsInvalid $ bfsArr bfsAnd
@@ -100,11 +100,10 @@ createBfs canMove alterSkill mbfs aid = do
   return aInitial
 
 updatePathFromBfs :: MonadClient m
-                  => (Bool, Int) -> BfsAndPath
+                  => Bool -> BfsAndPath
                   -> ActorId -> Point
                   -> m (PointArray.Array BfsDistance, AndPath)
-updatePathFromBfs (!canMove, !alterSkill)
-                  bfsAndPathOld aid target = do
+updatePathFromBfs !canMove bfsAndPathOld aid target = do
   let (oldBfsArr, oldBfsPath) = case bfsAndPathOld of
         BfsAndPath{bfsArr, bfsPath} -> (bfsArr, bfsPath)
         BfsOnly{bfsArr} -> (bfsArr, EM.empty)
@@ -114,13 +113,13 @@ updatePathFromBfs (!canMove, !alterSkill)
     if not canMove
     then return (oldBfsPath, NoPath)
     else do
-      Kind.COps{coTileSpeedup} <- getsState scops
       b <- getsState $ getActorBody aid
-      !lvl <- getLevel $ blid b
-      seps <- getsClient seps
-      let isE = isEnterable coTileSpeedup lvl alterSkill
+      let lid = blid b
           source = bpos b
-          mpath = findPathBfs isE source target seps bfsArr
+      seps <- getsClient seps
+      salter <- getsClient salter
+      let !lalter = salter EM.! lid
+          mpath = findPathBfs lalter source target seps bfsArr
           bfsPath = EM.insert target mpath oldBfsPath
       return (bfsPath, mpath)
   modifyClient $ \cli -> cli {sbfsD = EM.insert aid BfsAndPath{..} (sbfsD cli)}
@@ -140,17 +139,17 @@ getCacheBfsAndPath aid target = do
       | bfsArr PointArray.! source == minKnownBfs ->
         case EM.lookup target bfsPath of
           Nothing -> do
-            argsEnterable <- condBFS aid
-            updatePathFromBfs argsEnterable bap aid target
+            (!canMove, _) <- condBFS aid
+            updatePathFromBfs canMove bap aid target
           Just mpath -> return (bfsArr, mpath)
     Just bap@BfsOnly{bfsArr}
       | bfsArr PointArray.! source == minKnownBfs -> do
-        argsEnterable <- condBFS aid
-        updatePathFromBfs argsEnterable bap aid target
+        (!canMove, _) <- condBFS aid
+        updatePathFromBfs canMove bap aid target
     _ -> do
       (!canMove, !alterSkill) <- condBFS aid
       bfsArr <- createBfs canMove alterSkill mbfs aid
-      updatePathFromBfs (canMove, alterSkill) BfsOnly{bfsArr} aid target
+      updatePathFromBfs canMove BfsOnly{bfsArr} aid target
 
 -- | Get cached BFS array or, if not stored, generate and store first.
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
@@ -204,20 +203,6 @@ condBFS aid = do
       skill | enterSuspect = alterSkill  -- dig and search at will
             | otherwise = 0  -- only walkable tiles
   return (canMove, skill)
-
--- | Legality of move from a known tile, assuming doors freely openable.
--- We treat doors as an open tile and don't add an extra step for opening
--- the doors, because other actors open and use them, too,
--- so it's amortized. We treat unknown tiles specially.
-isEnterable :: TileSpeedup -> Level -> Int -> Point -> MoveLegal
-{-# INLINE isEnterable #-}
-isEnterable coTileSpeedup lvl alterSkill = \ !tpos ->
-  let !tt = lvl `at` tpos
-  in if | isUknownSpace tt ->
-          if alterSkill > 0 then MoveToUnknown else MoveBlocked
-        | Tile.isWalkable coTileSpeedup tt -> MoveToOpen
-        | Tile.alterMinWalk coTileSpeedup tt <= alterSkill -> MoveToClosed
-        | otherwise -> MoveBlocked
 
 -- | Furthest (wrt paths) known position.
 furthestKnown :: MonadClient m => ActorId -> m Point
