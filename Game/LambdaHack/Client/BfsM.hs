@@ -73,7 +73,6 @@ createBfs :: MonadClient m
 createBfs canMove alterSkill mbfs aid = do
   b <- getsState $ getActorBody aid
   let lid = blid b
-      source = bpos b
   lvl <- getLevel lid
   let !aInitial = case mbfs of
         Just bfsAnd ->  -- TODO: we should verify size
@@ -92,7 +91,8 @@ createBfs canMove alterSkill mbfs aid = do
           PointArray.safeSetA apartBfs $ bfsArr bfsAnd
         Nothing ->
           PointArray.replicateA (lxsize lvl) (lysize lvl) apartBfs
-  let !_ = PointArray.unsafeWriteA aInitial source minKnownBfs
+  let !source = bpos b
+      !_ = PointArray.unsafeWriteA aInitial source minKnownBfs
   when canMove $ do
     salter <- getsClient salter
     let !lalter = salter EM.! lid
@@ -103,7 +103,7 @@ createBfs canMove alterSkill mbfs aid = do
 updatePathFromBfs :: MonadClient m
                   => Bool -> BfsAndPath -> ActorId -> Point
                   -> m (PointArray.Array BfsDistance, AndPath)
-updatePathFromBfs !canMove bfsAndPathOld aid target = do
+updatePathFromBfs canMove bfsAndPathOld aid !target = do
   let (oldBfsArr, oldBfsPath) = case bfsAndPathOld of
         BfsAndPath{bfsArr, bfsPath} -> (bfsArr, bfsPath)
         BfsOnly{bfsArr} -> (bfsArr, EM.empty)
@@ -114,10 +114,10 @@ updatePathFromBfs !canMove bfsAndPathOld aid target = do
   else do
     b <- getsState $ getActorBody aid
     let lid = blid b
-        source = bpos b
     seps <- getsClient seps
     salter <- getsClient salter
     let !lalter = salter EM.! lid
+        !source = bpos b
         !mpath = findPathBfs lalter source target seps bfsArr
         !bfsPath = EM.insert target mpath oldBfsPath
         bap = BfsAndPath{..}

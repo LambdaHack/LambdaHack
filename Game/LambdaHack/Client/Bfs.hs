@@ -76,7 +76,7 @@ fillBfs lalter alterSkill source aInitial =
               -- Unsafe ops inside @fKnown@ are OK, because the result for each
               -- p only depends on array value at p. Order of ps irrelevant.
               let fKnown l move =
-                    let p = shift pos move
+                    let !p = shift pos move
                         visitedMove = aInitial PointArray.! p /= apartBfs
                     in if visitedMove
                        then l
@@ -120,7 +120,8 @@ findPathBfs :: PointArray.Array Word8
             -> Point -> Point -> Int
             -> PointArray.Array BfsDistance
             -> AndPath
-findPathBfs lalter pathSource pathGoal sepsRaw bfs =
+{-# NOINLINE findPathBfs #-}
+findPathBfs !lalter !pathSource !pathGoal sepsRaw bfs =
   assert (bfs PointArray.! pathSource == minKnownBfs) $
   let eps = sepsRaw `mod` 4
       (mc1, mc2) = splitAt eps movesCardinal
@@ -129,16 +130,16 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs =
       -- the enemy can't easily disengage (open/unknown below overrides that).
       prefMoves = mc1 ++ reverse mc2 ++ md2 ++ reverse md1  -- fuzz
       track :: Point -> BfsDistance -> [Point] -> [Point]
-      track pos oldDist suffix | oldDist == minKnownBfs =
+      track !pos !oldDist !suffix | oldDist == minKnownBfs =
         assert (pos == pathSource
                 `blame` (pathSource, pathGoal, pos, suffix)) suffix
       track pos oldDist suffix | oldDist == succ minKnownBfs =
         pos : suffix  -- avoid calculating minP and dist for the last call
       track pos oldDist suffix =
-        let dist = pred oldDist
-            minChild minP _ [] = minP
+        let !dist = pred oldDist
+            minChild !minP _ [] = minP
             minChild minP minAlter (mv : mvs) =
-              let p = shift pos mv
+              let !p = shift pos mv
                   backtrackingMove = bfs PointArray.! p /= dist
               in if backtrackingMove
                  then minChild minP minAlter mvs
@@ -149,10 +150,10 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs =
                          | alter < minAlter -> minChild p alter mvs
                          | otherwise -> minChild minP minAlter mvs
             -- @maxBound@ means not alterable, so some child will be lower
-            newPos = minChild pos{-dummy-} maxBound prefMoves
+            !newPos = minChild pos{-dummy-} maxBound prefMoves
             -- expensive: !_A = assert (minP /= pos) ()
         in track newPos dist (pos : suffix)
-      goalDist = bfs PointArray.! pathGoal
+      !goalDist = bfs PointArray.! pathGoal
   in if goalDist /= apartBfs
      then let pathList = track pathGoal (goalDist .|. minKnownBfs) []
               pathLen = fromEnum $ goalDist .&. complement minKnownBfs
@@ -162,7 +163,7 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs =
               f acc@(pAcc, dAcc, chessAcc) p d =
                 if d > abortedUnknownBfs && d /= abortedKnownBfs
                 then acc
-                else let chessNew = chessDist p pathGoal
+                else let !chessNew = chessDist p pathGoal
                      in case compare chessNew chessAcc of
                        LT -> (p, d, chessNew)
                        EQ -> case compare d dAcc of
