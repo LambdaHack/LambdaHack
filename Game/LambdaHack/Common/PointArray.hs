@@ -1,8 +1,9 @@
 {-# LANGUAGE CPP #-}
 -- | Arrays, based on Data.Vector.Unboxed, indexed by @Point@.
 module Game.LambdaHack.Common.PointArray
-  ( Array
-  , (!), (//), replicateA, replicateMA, generateA, generateMA, sizeA
+  ( Array(..), pindex, punindex
+  , (!), accessI, (//)
+  , replicateA, replicateMA, generateA, generateMA, sizeA
   , foldlA', ifoldlA', ifoldrA', mapA, imapA, mapWithKeyMA
   , safeSetA, unsafeSetA, unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
   , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
@@ -63,6 +64,10 @@ punindex xsize n = let (y, x) = n `quotRem` xsize
 (!) :: Enum c => Array c -> Point -> c
 {-# INLINE (!) #-}
 (!) Array{..} p = cnv $ avector U.! pindex axsize p
+
+accessI :: Enum c => Array c -> Int -> c
+{-# INLINE accessI #-}
+accessI Array{..} p = cnv $ avector U.! p
 
 -- | Construct an array updated with the association list.
 (//) :: Enum c => Array c -> [(Point, c)] -> Array c

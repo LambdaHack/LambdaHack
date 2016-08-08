@@ -13,8 +13,11 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Control.Monad.ST.Strict
 import Data.Binary
 import Data.Bits (Bits, complement, (.&.), (.|.))
+import qualified Data.Vector.Unboxed as U
+import qualified Data.Vector.Unboxed.Mutable as VM
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Point
@@ -22,7 +25,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Vector
 
 -- | Weighted distance between points along shortest paths.
-newtype BfsDistance = BfsDistance Word8
+newtype BfsDistance = BfsDistance {bfsDistance :: Word8}
   deriving (Show, Eq, Ord, Enum, Bounded, Bits)
 
 -- | State of legality of moves between adjacent points.
@@ -54,6 +57,10 @@ abortedKnownBfs = pred maxBound
 abortedUnknownBfs :: BfsDistance
 abortedUnknownBfs = pred apartBfs
 
+type PointI = Int
+
+type VectorI = Int
+
 -- | Fill out the given BFS array.
 -- Unsafe @PointArray@ operations are OK here, because the intermediate
 -- values of the vector don't leak anywhere outside nor are kept unevaluated
@@ -68,33 +75,57 @@ fillBfs :: PointArray.Array Word8
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> ()
 {-# INLINE fillBfs #-}
-fillBfs lalter alterSkill source aInitial =
-  let bfs :: BfsDistance -> [Point] -> ()  -- modifies @aInitial@
+fillBfs lalter alterSkill source PointArray.Array{..} =
+  let vToI (x, y) = PointArray.pindex axsize (Point x y)
+      movesI :: [VectorI]
+      movesI = map vToI
+        [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
+      accessI :: Int -> BfsDistance
+      {-# INLINE accessI #-}
+      accessI p = BfsDistance $ avector U.! p
+      unsafeWriteI :: Int -> BfsDistance -> ()
+      {-# INLINE unsafeWriteI #-}
+      unsafeWriteI p c = runST $ do
+        vThawed <- U.unsafeThaw avector
+        VM.write vThawed p (bfsDistance c)
+        void $ U.unsafeFreeze vThawed
+      bfs :: BfsDistance -> [PointI] -> ()  -- modifies the vector
       bfs distance predK =
         let distCompl = distance .&. complement minKnownBfs
+            processKnown :: PointI -> [PointI] -> [PointI]
             processKnown pos succK2 =
-              -- Unsafe ops inside @fKnown@ are OK, because the result for each
-              -- p only depends on array value at p. Order of ps irrelevant.
-              let fKnown l move =
-                    let !p = shift pos move
-                        visitedMove = aInitial PointArray.! p /= apartBfs
+              -- Terrible hack trigger warning!
+              -- Unsafe ops inside @fKnown@ seem to be OK, for no particularly
+              -- clear reason. The array value given to each p depends on
+              -- array value only at p (it's not overwritten if already there).
+              -- So the only problem with the unsafe ops writing at p is
+              -- if one with higher depth (dist) is evaluated earlier
+              -- than another with lower depth. The particular pattern of
+              -- laziness and order of list elements below somehow
+              -- esures the lowest possible depth is always written first.
+              -- The code also doesn't keep a wholly evaluated list of all p
+              -- at a given depth, but generates them on demand, unlike a fully
+              -- strict version inside the ST monad. So it uses little memory
+              -- and is fast.
+              let fKnown :: [PointI] -> VectorI -> [PointI]
+                  fKnown l move =
+                    let p = pos + move
+                        visitedMove = accessI p /= apartBfs
                     in if visitedMove
                        then l
-                       else
-                         let alter = lalter PointArray.! p
-                         in if | alterSkill < alter -> l
-                               | alter == 1 ->
-                                 PointArray.unsafeWriteA aInitial p distCompl
-                                 `seq` l
-                               | otherwise ->
-                                 PointArray.unsafeWriteA aInitial p distance
-                                 `seq` p : l
-              in foldl' fKnown succK2 moves
+                       else let alter :: Word8
+                                alter = lalter `PointArray.accessI` p
+                            in if | alterSkill < alter -> l
+                                  | alter == 1 -> unsafeWriteI p distCompl
+                                                  `seq` l
+                                  | otherwise -> unsafeWriteI p distance
+                                                 `seq` p : l
+              in foldl' fKnown succK2 movesI
             succK4 = foldr processKnown [] predK
         in if null succK4 || distance == abortedKnownBfs
-           then () -- no more dungeon positions to check, or we reached too far
+           then () -- no more dungeon positions to check, or we delved too deep
            else bfs (succ distance) succK4
-  in bfs (succ minKnownBfs) [source]
+  in bfs (succ minKnownBfs) [PointArray.pindex axsize source]
 
 data AndPath =
     AndPath { pathSource :: !Point
