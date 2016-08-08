@@ -134,16 +134,15 @@ getCacheBfsAndPath aid target = do
   let source = bpos b
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
-    Just bap@BfsAndPath{..}
-      -- TODO: hack: in screensavers this is not always ensured, so check here:
-      | bfsArr PointArray.! source == minKnownBfs ->
+    Just bap@BfsAndPath{..} ->
+      assert (bfsArr PointArray.! source == minKnownBfs) $
         case EM.lookup target bfsPath of
           Nothing -> do
             (!canMove, _) <- condBFS aid
             updatePathFromBfs canMove bap aid target
           Just mpath -> return (bfsArr, mpath)
-    Just bap@BfsOnly{bfsArr}
-      | bfsArr PointArray.! source == minKnownBfs -> do
+    Just bap@BfsOnly{bfsArr} ->
+      assert (bfsArr PointArray.! source == minKnownBfs) $ do
         (!canMove, _) <- condBFS aid
         updatePathFromBfs canMove bap aid target
     _ -> do
@@ -158,12 +157,11 @@ getCacheBfs aid = do
   let source = bpos b
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
-    Just BfsAndPath{bfsArr}
-      -- TODO: hack: in screensavers this is not always ensured, so check here:
-      | bfsArr PointArray.! source == minKnownBfs ->
+    Just BfsAndPath{bfsArr} ->
+      assert (bfsArr PointArray.! source == minKnownBfs) $
         return bfsArr
-    Just BfsOnly{bfsArr}
-      | bfsArr PointArray.! source == minKnownBfs ->
+    Just BfsOnly{bfsArr} ->
+      assert (bfsArr PointArray.! source == minKnownBfs) $
         return bfsArr
     _ -> do
       (!canMove, !alterSkill) <- condBFS aid
