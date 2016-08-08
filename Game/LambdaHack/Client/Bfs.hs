@@ -63,7 +63,7 @@ abortedUnknownBfs = pred apartBfs
 -- because other actors use them, too, so the cost is shared and the extra
 -- visiblity is valuable, too. We treat unknown tiles specially.
 fillBfs :: PointArray.Array Word8
-        -> Int
+        -> Word8
         -> Point                          -- ^ starting position
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> ()
@@ -81,7 +81,7 @@ fillBfs lalter alterSkill source aInitial =
                     in if visitedMove
                        then l
                        else
-                         let alter = fromEnum $ lalter PointArray.! p
+                         let alter = lalter PointArray.! p
                          in if | alterSkill < alter -> l
                                | alter == 1 ->
                                  PointArray.unsafeWriteA aInitial p distCompl
@@ -142,7 +142,7 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs =
               in if backtrackingMove
                  then acc
                  else
-                   let alter = fromEnum $ lalter PointArray.! p
+                   let alter = lalter PointArray.! p
                    -- Prefer paths through open or unknown tiles.
                    in if alter <= 1 then p : acc else acc ++ [p]
             minP = case foldr f [] prefMoves of

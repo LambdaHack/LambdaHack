@@ -18,6 +18,7 @@ import Control.Arrow ((&&&))
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Ord
+import Data.Word
 
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.CommonM
@@ -66,7 +67,7 @@ invalidateBfsAll =
   modifyClient $ \cli -> cli {sbfsD = EM.map invBfs (sbfsD cli)}
 
 createBfs :: MonadClient m
-          => Bool -> Int -> Maybe BfsAndPath
+          => Bool -> Word8 -> Maybe BfsAndPath
           -> ActorId
           -> m (PointArray.Array BfsDistance)
 createBfs canMove alterSkill mbfs aid = do
@@ -176,7 +177,7 @@ getCachePath aid target = do
   if | source == target -> return $! AndPath source [] target 0  -- speedup
      | otherwise -> snd <$> getCacheBfsAndPath aid target
 
-condBFS :: MonadClient m => ActorId -> m (Bool, Int)
+condBFS :: MonadClient m => ActorId -> m (Bool, Word8)
 condBFS aid = do
   side <- getsClient sside
   -- We assume the actor eventually becomes a leader (or has the same
@@ -186,7 +187,9 @@ condBFS aid = do
   -- and leader change is very rare.
   activeItems <- activeItemsClient aid
   let actorMaxSk = sumSkills activeItems
-      alterSkill = EM.findWithDefault 0 Ability.AbAlter actorMaxSk
+      alterSkill =
+        min (maxBound - 1)  -- @maxBound :: Word8@ means unalterable
+            (toEnum $ EM.findWithDefault 0 Ability.AbAlter actorMaxSk)
       canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
                 || EM.findWithDefault 0 Ability.AbDisplace actorMaxSk > 0
                 -- TODO: needed for now, because AI targets and shoots enemies

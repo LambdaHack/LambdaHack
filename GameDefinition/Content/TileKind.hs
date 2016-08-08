@@ -25,7 +25,7 @@ import Game.LambdaHack.Content.TileKind
 -- 10  weak obstructions
 -- 50  considerable obstructions
 -- 100  walls
--- maxBound  impenetrable walls, etc.
+-- maxBound  impenetrable walls, etc., can never be altered
 
 -- TODO: add OpenTo for walls, etc.
 
