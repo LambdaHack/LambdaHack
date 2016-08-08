@@ -129,21 +129,17 @@ getCacheBfsAndPath :: forall m. MonadClient m
                    => ActorId -> Point
                    -> m (PointArray.Array BfsDistance, AndPath)
 getCacheBfsAndPath aid target = do
-  b <- getsState $ getActorBody aid
-  let source = bpos b
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
     Just bap@BfsAndPath{..} ->
-      assert (bfsArr PointArray.! source == minKnownBfs) $
-        case EM.lookup target bfsPath of
-          Nothing -> do
-            (!canMove, _) <- condBFS aid
-            updatePathFromBfs canMove bap aid target
-          Just mpath -> return (bfsArr, mpath)
-    Just bap@BfsOnly{bfsArr} ->
-      assert (bfsArr PointArray.! source == minKnownBfs) $ do
-        (!canMove, _) <- condBFS aid
-        updatePathFromBfs canMove bap aid target
+      case EM.lookup target bfsPath of
+        Nothing -> do
+          (!canMove, _) <- condBFS aid
+          updatePathFromBfs canMove bap aid target
+        Just mpath -> return (bfsArr, mpath)
+    Just bap@BfsOnly{} -> do
+      (!canMove, _) <- condBFS aid
+      updatePathFromBfs canMove bap aid target
     _ -> do
       (!canMove, !alterSkill) <- condBFS aid
       !bfsArr <- createBfs canMove alterSkill mbfs aid
@@ -152,16 +148,10 @@ getCacheBfsAndPath aid target = do
 -- | Get cached BFS array or, if not stored, generate and store first.
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
 getCacheBfs aid = do
-  b <- getsState $ getActorBody aid
-  let source = bpos b
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
-    Just BfsAndPath{bfsArr} ->
-      assert (bfsArr PointArray.! source == minKnownBfs) $
-        return bfsArr
-    Just BfsOnly{bfsArr} ->
-      assert (bfsArr PointArray.! source == minKnownBfs) $
-        return bfsArr
+    Just BfsAndPath{bfsArr} -> return bfsArr
+    Just BfsOnly{bfsArr} -> return bfsArr
     _ -> do
       (!canMove, !alterSkill) <- condBFS aid
       !bfsArr <- createBfs canMove alterSkill mbfs aid
