@@ -132,6 +132,8 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs =
       track pos oldDist suffix | oldDist == minKnownBfs =
         assert (pos == pathSource
                 `blame` (pathSource, pathGoal, pos, suffix)) suffix
+      track pos oldDist suffix | oldDist == succ minKnownBfs =
+        pos : suffix  -- avoid calculating minP and dist for the last call
       track pos oldDist suffix =
         let dist = pred oldDist
             f move acc =
