@@ -127,7 +127,7 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs =
       (md1, md2) = splitAt eps movesDiagonal
       -- Prefer cardinal directions when closer to the target, so that
       -- the enemy can't easily disengage (open/unknown below overrides that).
-      prefMoves = md1 ++ reverse md2 ++ mc2 ++ reverse mc1  -- fuzz, reversed
+      prefMoves = mc1 ++ reverse mc2 ++ md2 ++ reverse md1  -- fuzz
       track :: Point -> BfsDistance -> [Point] -> [Point]
       track pos oldDist suffix | oldDist == minKnownBfs =
         assert (pos == pathSource
@@ -136,19 +136,22 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs =
         pos : suffix  -- avoid calculating minP and dist for the last call
       track pos oldDist suffix =
         let dist = pred oldDist
-            f move acc =
-              let p = shift pos move
+            minChild minP _ [] = minP
+            minChild minP minAlter (mv : mvs) =
+              let p = shift pos mv
                   backtrackingMove = bfs PointArray.! p /= dist
               in if backtrackingMove
-                 then acc
+                 then minChild minP minAlter mvs
                  else
                    let alter = lalter PointArray.! p
-                   -- Prefer paths through open or unknown tiles.
-                   in if alter <= 1 then p : acc else acc ++ [p]
-            minP = case foldr f [] prefMoves of
-              p : _ -> p
-              [] -> assert `failure` (pos, oldDist)
-        in track minP dist (pos : suffix)
+                   -- Prefer paths through open tiles, etc.
+                   in if | alter == 0 -> p  -- shortcut
+                         | alter < minAlter -> minChild p alter mvs
+                         | otherwise -> minChild minP minAlter mvs
+            -- @maxBound@ means not alterable, so some child will be lower
+            newPos = minChild pos{-dummy-} maxBound prefMoves
+            -- expensive: !_A = assert (minP /= pos) ()
+        in track newPos dist (pos : suffix)
       goalDist = bfs PointArray.! pathGoal
   in if goalDist /= apartBfs
      then let pathList = track pathGoal (goalDist .|. minKnownBfs) []
