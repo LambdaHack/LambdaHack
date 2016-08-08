@@ -100,8 +100,7 @@ createBfs canMove alterSkill mbfs aid = do
   return aInitial
 
 updatePathFromBfs :: MonadClient m
-                  => Bool -> BfsAndPath
-                  -> ActorId -> Point
+                  => Bool -> BfsAndPath -> ActorId -> Point
                   -> m (PointArray.Array BfsDistance, AndPath)
 updatePathFromBfs !canMove bfsAndPathOld aid target = do
   let (oldBfsArr, oldBfsPath) = case bfsAndPathOld of
@@ -109,21 +108,20 @@ updatePathFromBfs !canMove bfsAndPathOld aid target = do
         BfsOnly{bfsArr} -> (bfsArr, EM.empty)
         BfsInvalid{} -> assert `failure` (bfsAndPathOld, aid, target)
   let bfsArr = oldBfsArr
-  (!bfsPath, !mpath) <-
-    if not canMove
-    then return (oldBfsPath, NoPath)
-    else do
-      b <- getsState $ getActorBody aid
-      let lid = blid b
-          source = bpos b
-      seps <- getsClient seps
-      salter <- getsClient salter
-      let !lalter = salter EM.! lid
-          mpath = findPathBfs lalter source target seps bfsArr
-          bfsPath = EM.insert target mpath oldBfsPath
-      return (bfsPath, mpath)
-  modifyClient $ \cli -> cli {sbfsD = EM.insert aid BfsAndPath{..} (sbfsD cli)}
-  return (bfsArr, mpath)
+  if not canMove
+  then return (bfsArr, NoPath)
+  else do
+    b <- getsState $ getActorBody aid
+    let lid = blid b
+        source = bpos b
+    seps <- getsClient seps
+    salter <- getsClient salter
+    let !lalter = salter EM.! lid
+        !mpath = findPathBfs lalter source target seps bfsArr
+        !bfsPath = EM.insert target mpath oldBfsPath
+        bap = BfsAndPath{..}
+    modifyClient $ \cli -> cli {sbfsD = EM.insert aid bap $ sbfsD cli}
+    return (bfsArr, mpath)
 
 -- | Get cached BFS array and path or, if not stored, generate and store first.
 getCacheBfsAndPath :: forall m. MonadClient m
@@ -147,7 +145,7 @@ getCacheBfsAndPath aid target = do
         updatePathFromBfs canMove bap aid target
     _ -> do
       (!canMove, !alterSkill) <- condBFS aid
-      bfsArr <- createBfs canMove alterSkill mbfs aid
+      !bfsArr <- createBfs canMove alterSkill mbfs aid
       updatePathFromBfs canMove BfsOnly{bfsArr} aid target
 
 -- | Get cached BFS array or, if not stored, generate and store first.
@@ -165,7 +163,7 @@ getCacheBfs aid = do
         return bfsArr
     _ -> do
       (!canMove, !alterSkill) <- condBFS aid
-      bfsArr <- createBfs canMove alterSkill mbfs aid
+      !bfsArr <- createBfs canMove alterSkill mbfs aid
       modifyClient $ \cli ->
         cli {sbfsD = EM.insert aid BfsOnly{bfsArr} (sbfsD cli)}
       return bfsArr
