@@ -22,7 +22,6 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.Vector
 
 -- | Weighted distance between points along shortest paths.
 newtype BfsDistance = BfsDistance {bfsDistance :: Word8}
@@ -151,42 +150,51 @@ findPathBfs :: PointArray.Array Word8
             -> Point -> Point -> Int
             -> PointArray.Array BfsDistance
             -> AndPath
-{-# NOINLINE findPathBfs #-}
-findPathBfs !lalter !pathSource !pathGoal sepsRaw bfs =
-  assert (bfs PointArray.! pathSource == minKnownBfs) $
-  let eps = sepsRaw `mod` 4
-      (mc1, mc2) = splitAt eps movesCardinal
-      (md1, md2) = splitAt eps movesDiagonal
+{-# INLINE findPathBfs #-}
+findPathBfs lalter pathSource pathGoal sepsRaw bfs@PointArray.Array{..} =
+  let !pathGoalI = PointArray.pindex axsize pathGoal
+      !pathSourceI = PointArray.pindex axsize pathSource
+      eps = sepsRaw `mod` 4
+      (mc1, mc2) = splitAt eps [(0, -1), (1, 0), (0, 1), (-1, 0)]
+      (md1, md2) = splitAt eps [(-1, -1), (1, -1), (1, 1), (-1, 1)]
       -- Prefer cardinal directions when closer to the target, so that
       -- the enemy can't easily disengage (open/unknown below overrides that).
       prefMoves = mc1 ++ reverse mc2 ++ md2 ++ reverse md1  -- fuzz
-      track :: Point -> BfsDistance -> [Point] -> [Point]
+      -- TODO: if ever a bottleneck, these can be put in client state
+      vToI (x, y) = PointArray.pindex axsize (Point x y)
+      movesI :: [VectorI]
+      movesI = map vToI prefMoves
+      accessI :: Int -> BfsDistance
+      {-# INLINE accessI #-}
+      accessI p = BfsDistance $ avector U.! p
+      track :: PointI -> BfsDistance -> [Point] -> [Point]
       track !pos !oldDist !suffix | oldDist == minKnownBfs =
-        assert (pos == pathSource
-                `blame` (pathSource, pathGoal, pos, suffix)) suffix
+        assert (pos == pathSourceI) suffix
       track pos oldDist suffix | oldDist == succ minKnownBfs =
-        pos : suffix  -- avoid calculating minP and dist for the last call
+        let !posP = PointArray.punindex axsize pos
+        in posP : suffix  -- avoid calculating minP and dist for the last call
       track pos oldDist suffix =
         let !dist = pred oldDist
             minChild !minP _ [] = minP
             minChild minP minAlter (mv : mvs) =
-              let !p = shift pos mv
-                  backtrackingMove = bfs PointArray.! p /= dist
+              let !p = pos + mv
+                  backtrackingMove = accessI p /= dist
               in if backtrackingMove
                  then minChild minP minAlter mvs
-                 else
-                   let alter = lalter PointArray.! p
-                   -- Prefer paths through open tiles, etc.
-                   in if | alter == 0 -> p  -- shortcut
-                         | alter < minAlter -> minChild p alter mvs
-                         | otherwise -> minChild minP minAlter mvs
+                 else let alter = lalter `PointArray.accessI` p
+                      -- Prefer paths through open tiles, etc.
+                      in if | alter == 0 -> p  -- shortcut
+                            | alter < minAlter -> minChild p alter mvs
+                            | otherwise -> minChild minP minAlter mvs
             -- @maxBound@ means not alterable, so some child will be lower
-            !newPos = minChild pos{-dummy-} maxBound prefMoves
+            !newPos = minChild pos{-dummy-} maxBound movesI
             -- expensive: !_A = assert (minP /= pos) ()
-        in track newPos dist (pos : suffix)
-      !goalDist = bfs PointArray.! pathGoal
-  in if goalDist /= apartBfs
-     then let pathList = track pathGoal (goalDist .|. minKnownBfs) []
+            !posP = PointArray.punindex axsize pos
+        in track newPos dist (posP : suffix)
+      !goalDist = accessI pathGoalI
+  in assert (accessI pathSourceI == minKnownBfs) $
+     if goalDist /= apartBfs
+     then let pathList = track pathGoalI (goalDist .|. minKnownBfs) []
               pathLen = fromEnum $ goalDist .&. complement minKnownBfs
           in AndPath{..}
      else let f :: (Point, BfsDistance, Int) -> Point -> BfsDistance
@@ -207,7 +215,8 @@ findPathBfs !lalter !pathSource !pathGoal sepsRaw bfs =
                 PointArray.ifoldlA' f (originPoint, apartBfs, maxBound) bfs
           in if chessRes == maxBound
              then NoPath
-             else let pathList = track pRes (dRes .|. minKnownBfs) []
+             else let pathList = track (PointArray.pindex axsize pRes)
+                                       (dRes .|. minKnownBfs) []
                       pathLen = fromEnum dRes + chessRes
                   in AndPath{..}
 
