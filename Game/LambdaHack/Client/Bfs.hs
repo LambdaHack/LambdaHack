@@ -81,12 +81,12 @@ fillBfs lalter alterSkill source PointArray.Array{..} =
         [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
       accessI :: Int -> BfsDistance
       {-# INLINE accessI #-}
-      accessI p = BfsDistance $ avector U.! p
+      accessI p = BfsDistance $ avector `U.unsafeIndex` p
       unsafeWriteI :: Int -> BfsDistance -> ()
       {-# INLINE unsafeWriteI #-}
       unsafeWriteI p c = runST $ do
         vThawed <- U.unsafeThaw avector
-        VM.write vThawed p (bfsDistance c)
+        VM.unsafeWrite vThawed p (bfsDistance c)
         void $ U.unsafeFreeze vThawed
       bfs :: BfsDistance -> [PointI] -> ()  -- modifies the vector
       bfs distance predK =
@@ -166,7 +166,7 @@ findPathBfs lalter pathSource pathGoal sepsRaw bfs@PointArray.Array{..} =
       movesI = map vToI prefMoves
       accessI :: Int -> BfsDistance
       {-# INLINE accessI #-}
-      accessI p = BfsDistance $ avector U.! p
+      accessI p = BfsDistance $ avector `U.unsafeIndex` p
       track :: PointI -> BfsDistance -> [Point] -> [Point]
       track !pos !oldDist !suffix | oldDist == minKnownBfs =
         assert (pos == pathSourceI) suffix

@@ -67,7 +67,7 @@ punindex xsize n = let (y, x) = n `quotRem` xsize
 
 accessI :: Enum c => Array c -> Int -> c
 {-# INLINE accessI #-}
-accessI Array{..} p = cnv $ avector U.! p
+accessI Array{..} p = cnv $ avector `U.unsafeIndex` p
 
 -- | Construct an array updated with the association list.
 (//) :: Enum c => Array c -> [(Point, c)] -> Array c
