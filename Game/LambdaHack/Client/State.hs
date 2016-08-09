@@ -75,8 +75,8 @@ data StateClient = StateClient
   deriving Show
 
 data BfsAndPath =
-    BfsOnly {bfsArr :: !(PointArray.Array BfsDistance)}
-  | BfsInvalid {bfsArr :: !(PointArray.Array BfsDistance)}
+    BfsInvalid
+  | BfsOnly {bfsArr :: !(PointArray.Array BfsDistance)}
   | BfsAndPath { bfsArr  :: !(PointArray.Array BfsDistance)
                , bfsPath :: !(EM.EnumMap Point AndPath)
                }

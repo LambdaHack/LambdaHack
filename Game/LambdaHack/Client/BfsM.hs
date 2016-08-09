@@ -43,13 +43,10 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind (TileKind)
 
-invBfs :: BfsAndPath -> BfsAndPath
-invBfs bfsAnd = BfsInvalid $ bfsArr bfsAnd
-
 invalidateBfs :: ActorId
               -> EM.EnumMap ActorId BfsAndPath
               -> EM.EnumMap ActorId BfsAndPath
-invalidateBfs = EM.adjust invBfs
+invalidateBfs = EM.adjust (const BfsInvalid)
 
 invalidateBfsAid :: MonadClient m => ActorId -> m ()
 invalidateBfsAid aid =
@@ -64,33 +61,15 @@ invalidateBfsLid lid = do
 
 invalidateBfsAll :: MonadClient m => m ()
 invalidateBfsAll =
-  modifyClient $ \cli -> cli {sbfsD = EM.map invBfs (sbfsD cli)}
+  modifyClient $ \cli -> cli {sbfsD = EM.map (const BfsInvalid) (sbfsD cli)}
 
 createBfs :: MonadClient m
-          => Bool -> Word8 -> Maybe BfsAndPath
-          -> ActorId
-          -> m (PointArray.Array BfsDistance)
-createBfs canMove alterSkill mbfs aid = do
+          => Bool -> Word8 -> ActorId -> m (PointArray.Array BfsDistance)
+createBfs canMove alterSkill aid = do
   b <- getsState $ getActorBody aid
   let lid = blid b
-  lvl <- getLevel lid
-  let !aInitial = case mbfs of
-        Just bfsAnd ->  -- TODO: we should verify size
-      -- We need to use the safe set, because previous values
-      -- of the BFS array for the actor can be stuck unevaluated
-      -- in thunks and we are not allowed to overwrite them.
-      -- OTOH, there is now only moderate deacrease in ARR_WORDS memory
-      -- and increase in speed with unsafeSetA (33.7clips/s vs 33.3 with
-      -- createBfs repeated 20 times, for easier benchmarking),
-      -- so it may already be in-place to some extent.
-      -- but OTOH, this speedup doesn't seem to affect memory nor time at all,
-      -- but it's 1.6KB per actor per move, so it's puzzling.
-      -- So perhaps it's not in-place at all, but allocating and freeing
-      -- such vectors is so cheap, that it all doesn't change much.
-      -- Perhaps setting is much more expensive than allocating and GC.
-          PointArray.safeSetA apartBfs $ bfsArr bfsAnd
-        Nothing ->
-          PointArray.replicateA (lxsize lvl) (lysize lvl) apartBfs
+  Level{lxsize, lysize} <- getLevel lid
+  let !aInitial = PointArray.replicateA lxsize lysize apartBfs
   let !source = bpos b
       !_ = PointArray.unsafeWriteA aInitial source minKnownBfs
   when canMove $ do
@@ -107,7 +86,7 @@ updatePathFromBfs canMove bfsAndPathOld aid !target = do
   let (oldBfsArr, oldBfsPath) = case bfsAndPathOld of
         BfsAndPath{bfsArr, bfsPath} -> (bfsArr, bfsPath)
         BfsOnly{bfsArr} -> (bfsArr, EM.empty)
-        BfsInvalid{} -> assert `failure` (bfsAndPathOld, aid, target)
+        BfsInvalid -> assert `failure` (bfsAndPathOld, aid, target)
   let bfsArr = oldBfsArr
   if not canMove
   then return (bfsArr, NoPath)
@@ -142,7 +121,7 @@ getCacheBfsAndPath aid target = do
       updatePathFromBfs canMove bap aid target
     _ -> do
       (!canMove, !alterSkill) <- condBFS aid
-      !bfsArr <- createBfs canMove alterSkill mbfs aid
+      !bfsArr <- createBfs canMove alterSkill aid
       updatePathFromBfs canMove BfsOnly{bfsArr} aid target
 
 -- | Get cached BFS array or, if not stored, generate and store first.
@@ -154,7 +133,7 @@ getCacheBfs aid = do
     Just BfsOnly{bfsArr} -> return bfsArr
     _ -> do
       (!canMove, !alterSkill) <- condBFS aid
-      !bfsArr <- createBfs canMove alterSkill mbfs aid
+      !bfsArr <- createBfs canMove alterSkill aid
       modifyClient $ \cli ->
         cli {sbfsD = EM.insert aid BfsOnly{bfsArr} (sbfsD cli)}
       return bfsArr
