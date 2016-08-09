@@ -16,8 +16,7 @@
 module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, hasFeature
-  , isClear, isLit, isWalkable
-  , isPassable, isPassableNoSuspect, isPassableNoClosed, isDoor, isSuspect
+  , isClear, isLit, isWalkable, isDoor, isSuspect
   , isExplorable, lookSimilar, speedup, alterMinSkill, alterMinWalk
   , openTo, closeTo, embedItems, causeEffects, revealAs, hideAs
   , isOpenable, isClosable, isChangeable, isEscape, isStair, ascendTo
@@ -95,29 +94,6 @@ isWalkable :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isWalkable #-}
 isWalkable TileSpeedup{isWalkableTab} = accessTab isWalkableTab
 
--- | Whether actors can walk into a tile, perhaps opening a door first,
--- perhaps a hidden door.
--- Essential for efficiency of pathfinding, hence tabulated.
-isPassable :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isPassable #-}
-isPassable TileSpeedup{isPassableTab} = accessTab isPassableTab
-
--- | Whether actors can walk into a tile, perhaps trying to open
--- a hidden door first.
--- Essential for efficiency of pathfinding, hence tabulated.
-isPassableNoSuspect :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isPassableNoSuspect #-}
-isPassableNoSuspect TileSpeedup{isPassableNoSuspectTab} =
-  accessTab isPassableNoSuspectTab
-
--- | Whether actors can walk into a tile, perhaps opening a door first,
--- perhaps trying a hidden door.
--- Essential for efficiency of pathfinding, hence tabulated.
-isPassableNoClosed :: TileSpeedup -> Kind.Id TileKind -> Bool
-{-# INLINE isPassableNoClosed #-}
-isPassableNoClosed TileSpeedup{isPassableNoClosedTab} =
-  accessTab isPassableNoClosedTab
-
 -- | Whether a tile is a door, open or closed.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isDoor :: TileSpeedup -> Kind.Id TileKind -> Bool
@@ -176,9 +152,6 @@ speedup allClear cotile =
                                $ kindHasFeature TK.Clear
       isLitTab = createTab cotile $ not . kindHasFeature TK.Dark
       isWalkableTab = createTab cotile $ kindHasFeature TK.Walkable
-      isPassableTab = createTab cotile $ isPassableKind True True
-      isPassableNoSuspectTab = createTab cotile $ isPassableKind False True
-      isPassableNoClosedTab = createTab cotile $ isPassableKind False False
       isDoorTab = createTab cotile $ \tk ->
         let getTo TK.OpenTo{} = True
             getTo TK.CloseTo{} = True
@@ -215,15 +188,6 @@ alterMinWalkKind k tk =
         | isUknownSpace k -> TK.talter tk
         | any getTo $ TK.tfeature tk -> TK.talter tk
         | otherwise -> maxBound
-
-isPassableKind :: Bool -> Bool -> TileKind -> Bool
-isPassableKind passSuspect passOpenable tk =
-  let getTo TK.Walkable = True
-      getTo TK.OpenTo{} | passOpenable = True
-      getTo TK.ChangeTo{} | passOpenable = True  -- TODO: needed until AI fixed
-      getTo TK.Suspect | passSuspect = True
-      getTo _ = False
-  in any getTo $ TK.tfeature tk
 
 openTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 openTo Kind.Ops{okind, opick} t = do

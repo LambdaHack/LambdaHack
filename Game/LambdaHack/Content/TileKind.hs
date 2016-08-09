@@ -76,17 +76,14 @@ instance Hashable Feature
 instance NFData Feature
 
 data TileSpeedup = TileSpeedup
-  { isClearTab             :: !Tab
-  , isLitTab               :: !Tab
-  , isWalkableTab          :: !Tab
-  , isPassableTab          :: !Tab
-  , isPassableNoSuspectTab :: !Tab
-  , isPassableNoClosedTab  :: !Tab
-  , isDoorTab              :: !Tab
-  , isSuspectTab           :: !Tab
-  , isChangeableTab        :: !Tab
-  , alterMinSkillTab       :: !TabWord8
-  , alterMinWalkTab        :: !TabWord8
+  { isClearTab       :: !Tab
+  , isLitTab         :: !Tab
+  , isWalkableTab    :: !Tab
+  , isDoorTab        :: !Tab
+  , isSuspectTab     :: !Tab
+  , isChangeableTab  :: !Tab
+  , alterMinSkillTab :: !TabWord8
+  , alterMinWalkTab  :: !TabWord8
   }
 
 newtype Tab = Tab (A.UArray (KindOps.Id TileKind) Bool)
