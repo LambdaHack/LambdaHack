@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, FlexibleContexts #-}
 -- | Operations concerning dungeon level tiles.
 --
 -- Unlike for many other content types, there is no type @Tile@,
@@ -22,7 +22,7 @@ module Game.LambdaHack.Common.Tile
   , isOpenable, isClosable, isChangeable, isEscape, isStair, ascendTo
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , createTab, accessTab
+  , createTab, createTabWithKey, accessTab
 #endif
   ) where
 
@@ -47,24 +47,24 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- by monsters that hunt by smell.
 type SmellTime = Time
 
-createTab :: Kind.Ops TileKind -> (TileKind -> Bool) -> TK.Tab
+createTab :: A.IArray A.UArray a
+          => Kind.Ops TileKind -> (TileKind -> a)
+          -> TK.Tab a
 createTab Kind.Ops{ofoldrWithKey, obounds} prop =
   let f _ t acc = prop t : acc
   in TK.Tab $ A.listArray obounds $ ofoldrWithKey f []
 
-createTabWord8 :: Kind.Ops TileKind -> (Kind.Id TileKind -> TileKind -> Word8)
-               -> TK.TabWord8
-createTabWord8 Kind.Ops{ofoldrWithKey, obounds} prop =
+createTabWithKey :: A.IArray A.UArray a
+                 => Kind.Ops TileKind -> (Kind.Id TileKind -> TileKind -> a)
+                 -> TK.Tab a
+createTabWithKey Kind.Ops{ofoldrWithKey, obounds} prop =
   let f k t acc = prop k t : acc
-  in TK.TabWord8 $ A.listArray obounds $ ofoldrWithKey f []
+  in TK.Tab $ A.listArray obounds $ ofoldrWithKey f []
 
-accessTab :: TK.Tab -> Kind.Id TileKind -> Bool
+accessTab :: A.IArray A.UArray a
+          => TK.Tab a -> Kind.Id TileKind -> a
 {-# INLINE accessTab #-}
 accessTab (TK.Tab tab) ki = tab A.! ki
-
-accessTabWord8 :: TK.TabWord8 -> Kind.Id TileKind -> Word8
-{-# INLINE accessTabWord8 #-}
-accessTabWord8 (TK.TabWord8 tab) ki = tab A.! ki
 
 -- | Whether a tile kind has the given feature.
 kindHasFeature :: TK.Feature -> TileKind -> Bool
@@ -115,12 +115,12 @@ isChangeable TileSpeedup{isChangeableTab} = accessTab isChangeableTab
 alterMinSkill :: TileSpeedup -> Kind.Id TileKind -> Int
 {-# INLINE alterMinSkill #-}
 alterMinSkill TileSpeedup{alterMinSkillTab} =
-  fromEnum . accessTabWord8 alterMinSkillTab
+  fromEnum . accessTab alterMinSkillTab
 
 alterMinWalk :: TileSpeedup -> Kind.Id TileKind -> Int
 {-# INLINE alterMinWalk #-}
 alterMinWalk TileSpeedup{alterMinWalkTab} =
-  fromEnum . accessTabWord8 alterMinWalkTab
+  fromEnum . accessTab alterMinWalkTab
 
 -- | Whether one can easily explore a tile, possibly finding a treasure
 -- or a clue. Doors can't be explorable since revealing a secret tile
@@ -162,8 +162,8 @@ speedup allClear cotile =
         let getTo TK.ChangeTo{} = True
             getTo _ = False
         in any getTo $ TK.tfeature tk
-      alterMinSkillTab = createTabWord8 cotile alterMinSkillKind
-      alterMinWalkTab = createTabWord8 cotile alterMinWalkKind
+      alterMinSkillTab = createTabWithKey cotile alterMinSkillKind
+      alterMinWalkTab = createTabWithKey cotile alterMinWalkKind
   in TileSpeedup {..}
 
 -- Check that alter can be used, if not, @maxBound@.

@@ -3,7 +3,7 @@
 module Game.LambdaHack.Content.TileKind
   ( TileKind(..), Feature(..)
   , validateSingleTileKind, validateAllTileKind, actionFeatures
-  , TileSpeedup(..), Tab(..), TabWord8(..), isUknownSpace, unknownId
+  , TileSpeedup(..), Tab(..), isUknownSpace, unknownId
   ) where
 
 import Prelude ()
@@ -76,25 +76,24 @@ instance Hashable Feature
 instance NFData Feature
 
 data TileSpeedup = TileSpeedup
-  { isClearTab       :: !Tab
-  , isLitTab         :: !Tab
-  , isWalkableTab    :: !Tab
-  , isDoorTab        :: !Tab
-  , isSuspectTab     :: !Tab
-  , isChangeableTab  :: !Tab
-  , alterMinSkillTab :: !TabWord8
-  , alterMinWalkTab  :: !TabWord8
+  { isClearTab       :: !(Tab Bool)
+  , isLitTab         :: !(Tab Bool)
+  , isWalkableTab    :: !(Tab Bool)
+  , isDoorTab        :: !(Tab Bool)
+  , isSuspectTab     :: !(Tab Bool)
+  , isChangeableTab  :: !(Tab Bool)
+  , alterMinSkillTab :: !(Tab Word8)
+  , alterMinWalkTab  :: !(Tab Word8)
   }
 
-newtype Tab = Tab (A.UArray (KindOps.Id TileKind) Bool)
-
-newtype TabWord8 = TabWord8 (A.UArray (KindOps.Id TileKind) Word8)
+newtype Tab a = Tab (A.UArray (KindOps.Id TileKind) a)
 
 isUknownSpace :: KindOps.Id TileKind -> Bool
 {-# INLINE isUknownSpace #-}
 isUknownSpace tt = minBound == tt
 
 unknownId :: KindOps.Id TileKind
+{-# INLINE unknownId #-}
 unknownId = minBound
 
 -- TODO: (spans multiple contents) check that all posible solid place
