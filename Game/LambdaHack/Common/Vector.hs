@@ -37,7 +37,9 @@ instance Binary Vector where
   get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
 
 instance Enum Vector where
+  {-# INLINE fromEnum #-}
   fromEnum = fromEnumVector
+  {-# INLINE toEnum #-}
   toEnum = toEnumVector
 
 instance NFData Vector
@@ -118,6 +120,7 @@ movesDiagonal = map (uncurry Vector) [(-1, -1), (1, -1), (1, 1), (-1, 1)]
 vicinity :: X -> Y   -- ^ limit the search to this area
          -> Point    -- ^ position to find neighbours of
          -> [Point]
+{-# INLINE vicinity #-}
 vicinity lxsize lysize p =
   if inside p (1, 1, lxsize - 2, lysize - 2)
   then vicinityUnsafe p
@@ -126,6 +129,7 @@ vicinity lxsize lysize p =
              , inside res (0, 0, lxsize - 1, lysize - 1) ]
 
 vicinityUnsafe :: Point -> [Point]
+{-# INLINE vicinityUnsafe #-}
 vicinityUnsafe p =
   [ res | dxy <- moves
         , let res = shift p dxy ]
@@ -134,12 +138,14 @@ vicinityUnsafe p =
 vicinityCardinal :: X -> Y   -- ^ limit the search to this area
                  -> Point    -- ^ position to find neighbours of
                  -> [Point]
+{-# INLINE vicinityCardinal #-}
 vicinityCardinal lxsize lysize p =
   [ res | dxy <- movesCardinal
         , let res = shift p dxy
         , inside res (0, 0, lxsize - 1, lysize - 1) ]
 
 squareUnsafeSet :: Point -> ES.EnumSet Point
+{-# INLINE squareUnsafeSet #-}
 squareUnsafeSet (Point x y) =
   ES.fromDistinctAscList $ map (uncurry Point)
     [ (x - 1, y - 1)
@@ -159,6 +165,7 @@ shift (Point x0 y0) (Vector x1 y1) = Point (x0 + x1) (y0 + y1)
 
 -- | Translate a point by a vector, but only if the result fits in an area.
 shiftBounded :: X -> Y -> Point -> Vector -> Point
+{-# INLINE shiftBounded #-}
 shiftBounded lxsize lysize pos v@(Vector xv yv) =
   if inside pos (-xv, -yv, lxsize - xv - 1, lysize - yv - 1)
   then shift pos v
@@ -188,8 +195,10 @@ vectorToFrom (Point x0 y0) (Point x1 y1) = Vector (x0 - x1) (y0 - y1)
 
 -- | A list of vectors between a list of points.
 pathToTrajectory :: [Point] -> [Vector]
+{-# INLINE pathToTrajectory #-}
 pathToTrajectory [] = []
 pathToTrajectory lp1@(_ : lp2) = zipWith vectorToFrom lp2 lp1
+
 type RadianAngle = Double
 
 -- | Rotate a vector by the given angle (expressed in radians)

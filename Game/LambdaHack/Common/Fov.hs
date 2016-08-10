@@ -254,8 +254,8 @@ updateFovLucid fovLucidLidOld lid
 -- algorithm to use is passed in the second argument.
 -- The actor's own position is considred reachable by him.
 fullscan :: FovClear  -- ^ the array with clear points
-         -> Int          -- ^ scanning radius
-         -> Point        -- ^ position of the spectator
+         -> Int       -- ^ scanning radius
+         -> Point     -- ^ position of the spectator
          -> ES.EnumSet Point
 fullscan clearPs radius spectatorPos =
   if | radius <= 0 -> ES.empty
@@ -270,7 +270,8 @@ fullscan clearPs radius spectatorPos =
  where
   mapTr :: (Bump -> Point) -> ES.EnumSet Point -> ES.EnumSet Point
   {-# INLINE mapTr #-}
-  mapTr tr es1 = foldl' (flip $ ES.insert . tr) es1 $ scan (radius - 1) (isCl . tr)
+  mapTr tr es1 =
+    foldl' (flip $ ES.insert . tr) es1 $ scan (radius - 1) (isCl . tr)
 
   isCl :: Point -> Bool
   {-# INLINE isCl #-}

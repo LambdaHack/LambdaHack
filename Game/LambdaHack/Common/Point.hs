@@ -45,7 +45,9 @@ instance NFData Point
 -- width of the levels nor of the screen.
 -- The conversion is implemented mainly for @EnumMap@ and @EnumSet@.
 instance Enum Point where
+  {-# INLINE fromEnum #-}
   fromEnum = fromEnumPoint
+  {-# INLINE toEnum #-}
   toEnum = toEnumPoint
 
 -- | The maximum number of bits for level X and Y dimension (16).
