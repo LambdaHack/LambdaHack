@@ -38,8 +38,6 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
                      , n > 0 ]
             f m (cgroup, nik) = M.insertWith (++) cgroup [nik] m
         in foldl' f M.empty tuples
-      okind i = let assFail = assert `failure` "no kind" `twith` (i, kindMap)
-                in EM.findWithDefault assFail i kindMap
       correct a = not (T.null (getName a)) && all ((> 0) . snd) (getFreq a)
       singleOffenders = [ (offences, a)
                         | a <- content
@@ -53,7 +51,9 @@ createOps ContentDef{getName, getFreq, content, validateSingle, validateAll} =
                               `twith` (allOffences, content))
      -- By this point 'content' can be GCd.
      Ops
-       { okind
+       { okind = \i ->
+          let assFail = assert `failure` "no kind" `twith` (i, kindMap)
+          in EM.findWithDefault assFail i kindMap
        , ouniqGroup = \cgroup ->
            let freq = let assFail = assert `failure` "no unique group"
                                            `twith` (cgroup, kindFreq)
