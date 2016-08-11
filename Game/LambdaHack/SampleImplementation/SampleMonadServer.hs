@@ -32,6 +32,7 @@ import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Thread
 import Game.LambdaHack.Server.FileM
+import Game.LambdaHack.Server.HandleAtomicM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.State
@@ -90,6 +91,9 @@ instance MonadAtomic SerImplementation where
 handleAndBroadcastServer :: (MonadStateWrite m, MonadServerReadRequest m)
                          => CmdAtomic -> m ()
 handleAndBroadcastServer atomic = do
+  case atomic of
+    UpdAtomic cmd -> cmdAtomicSemSer cmd
+    SfxAtomic _sfx -> return ()
   sperFidOld <- getsServer sperFid
   sperCacheFidOld <- getsServer sperCacheFid
   sfovAspectActorOld <- getsServer sfovAspectActor

@@ -4,7 +4,7 @@
 -- for discussion.
 module Game.LambdaHack.Common.Fov
   ( perceptionFromResets, perceptionFromPTotal, perFidInDungeon
-  , updateFovAspectActor, updateFovClear, updateFovLucid, updateFovLit
+  , updateFovAspectActor, updateFovLucid
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , perceptionFromPerActor, cacheBeforeLucidFromActor, visibleOnLevel
@@ -168,11 +168,6 @@ clearFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
 clearInDungeon :: State -> FovClearLid
 clearInDungeon s = EM.map (clearFromLevel (scops s)) $ sdungeon s
 
-updateFovClear :: FovClearLid -> LevelId -> State -> FovClearLid
-updateFovClear fovClearLidOld lid s =
-  let newTiles = clearFromLevel (scops s) (sdungeon s EM.! lid)
-  in EM.adjust (const newTiles) lid fovClearLidOld
-
 litFromLevel :: Kind.COps -> Level -> FovLit
 litFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
   let litSet p t set = if Tile.isLit coTileSpeedup t then p : set else set
@@ -180,11 +175,6 @@ litFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
 
 litInDungeon :: State -> FovLitLid
 litInDungeon s = EM.map (litFromLevel (scops s)) $ sdungeon s
-
-updateFovLit :: FovLitLid -> LevelId -> State -> FovLitLid
-updateFovLit fovLitLidOld lid s =
-  let newTiles = litFromLevel (scops s) (sdungeon s EM.! lid)
-  in EM.adjust (const newTiles) lid fovLitLidOld
 
 floorLightSources :: FovAspectItem -> Level -> [(Point, Int)]
 floorLightSources sfovAspectItem lvl =

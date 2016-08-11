@@ -208,6 +208,7 @@ library
                       Game.LambdaHack.Server.DungeonGen.Place
                       Game.LambdaHack.Server.EndM
                       Game.LambdaHack.Server.FileM
+                      Game.LambdaHack.Server.HandleAtomicM
                       Game.LambdaHack.Server.HandleEffectM
                       Game.LambdaHack.Server.HandleRequestM
                       Game.LambdaHack.Server.ItemRev

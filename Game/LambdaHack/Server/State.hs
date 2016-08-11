@@ -47,7 +47,7 @@ data StateServer = StateServer
   , sperCacheFid    :: !PerCacheFid   -- ^ perception cache of all factions
   , sfovAspectActor :: !FovAspectActor
   , sfovLucidLid    :: !FovLucidLid   -- ^ ambient or shining light positions
-  , sfovClearLid    :: !FovClearLid
+  , sfovClearLid    :: !FovClearLid   -- ^ clear tiles positions
   , sfovLitLid      :: !FovLitLid     -- ^ ambient light positions
   , srandom         :: !R.StdGen      -- ^ current random generator
   , srngs           :: !RNGs          -- ^ initial random generators
