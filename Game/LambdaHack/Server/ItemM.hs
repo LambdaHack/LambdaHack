@@ -55,8 +55,8 @@ registerItem itemFull itemKnown@(_, iae) seed k container verbose = do
                      $ strengthFromEqpSlot IK.EqpSlotAddSight itemFull
           fovSmell = fromMaybe 0
                      $ strengthFromEqpSlot IK.EqpSlotAddSmell itemFull
-          fovLight = fromMaybe 0
-                     $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
+          fovShine = fromMaybe 0
+                     $ strengthFromEqpSlot IK.EqpSlotAddShine itemFull
           fovNocto = fromMaybe 0
                      $ strengthFromEqpSlot IK.EqpSlotAddNocto itemFull
           ssl = FovAspect{..}

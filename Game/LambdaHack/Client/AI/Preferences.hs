@@ -136,7 +136,7 @@ aspectToBenefit _cops _b asp =
     IK.AddSkills m -> 5 * sum (EM.elems m)
     IK.AddSight p -> p * 10
     IK.AddSmell p -> p * 10
-    IK.AddLight p -> p * 10
+    IK.AddShine p -> p * 10
     IK.AddNocto p -> p * 50
 
 -- | Determine the total benefit from having an item in eqp or inv,

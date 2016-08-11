@@ -144,7 +144,7 @@ rawAspectToSuff aspect =
       in wrapInParens $ T.intercalate " " $ map skillToSuff $ EM.assocs p
     AddSight t -> wrapInParens $ t <+> "sight"
     AddSmell t -> wrapInParens $ t <+> "smell"
-    AddLight t -> wrapInParens $ t <+> "light"
+    AddShine t -> wrapInParens $ t <+> "shine"
     AddNocto t -> wrapInParens $ t <+> "night vision"
 
 featureToSuff :: Feature -> Text

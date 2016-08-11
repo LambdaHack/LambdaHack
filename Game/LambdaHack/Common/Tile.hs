@@ -82,7 +82,7 @@ isClear :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isClear #-}
 isClear TileSpeedup{isClearTab} = accessTab isClearTab
 
--- | Whether a tile is lit on its own.
+-- | Whether a tile has ambient light --- is lit on its own.
 -- Essential for efficiency of "Perception", hence tabulated.
 isLit :: TileSpeedup -> Kind.Id TileKind -> Bool
 {-# INLINE isLit #-}

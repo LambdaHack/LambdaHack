@@ -31,7 +31,7 @@ burningOil n = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "burn"
   , iweight  = 1
-  , iaspects = [AddLight 2]
+  , iaspects = [AddShine 2]
   , ieffects = [Burn 1, Paralyze 2]  -- tripping on oil
   , ifeature = [ toVelocity (min 100 $ n * 7)
                , Fragile, Identified ]
@@ -51,7 +51,7 @@ explosionBlast n = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "tear apart"
   , iweight  = 1
-  , iaspects = [AddLight $ intToDice n]
+  , iaspects = [AddShine $ intToDice n]
   , ieffects = [RefillHP (- n `div` 2)]
                ++ [PushActor (ThrowMod (100 * (n `div` 5)) 50)]
                ++ [DropItem COrgan "temporary conditions" True | n >= 10]
@@ -72,7 +72,7 @@ firecracker n = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "crack"
   , iweight  = 1
-  , iaspects = [AddLight $ intToDice $ n `div` 2]
+  , iaspects = [AddShine $ intToDice $ n `div` 2]
   , ieffects = [ RefillCalm (-1) | n >= 5 ]
                ++ [ DropBestWeapon | n >= 5]
                ++ [ OnSmash (Explode $ toGroupName
@@ -167,7 +167,7 @@ mistHealing = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "revitalize"
   , iweight  = 1
-  , iaspects = [AddLight 1]
+  , iaspects = [AddShine 1]
   , ieffects = [RefillHP 2]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
@@ -183,7 +183,7 @@ mistHealing2 = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "revitalize"
   , iweight  = 1
-  , iaspects = [AddLight 2]
+  , iaspects = [AddShine 2]
   , ieffects = [RefillHP 4]
   , ifeature = [ toVelocity 7  -- the slowest that gets anywhere (1 step only)
                , Fragile, Identified ]
@@ -307,7 +307,7 @@ spark = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "burn"
   , iweight  = 1
-  , iaspects = [AddLight 4]
+  , iaspects = [AddShine 4]
   , ieffects = [Burn 1]
   , ifeature = [Fragile, toLinger 10, Identified]
   , idesc    = ""

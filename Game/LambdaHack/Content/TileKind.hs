@@ -58,7 +58,7 @@ data Feature =
 
   | Walkable             -- ^ actors can walk through
   | Clear                -- ^ actors can see through
-  | Dark                 -- ^ is not lit with an ambient shine
+  | Dark                 -- ^ is not lit with an ambient light
   | Suspect              -- ^ may not be what it seems (clients only)
   | Impenetrable         -- ^ can never be excavated nor seen through
 

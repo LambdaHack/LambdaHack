@@ -266,61 +266,62 @@ resetsAspectActorCmdAtomic cmd fovAspectItem = case cmd of
     if not (null $ intersect stores [CEqp, COrgan])
        && case EM.lookup iid fovAspectItem of
          Just FovAspect{..} ->
-           fovSight /= 0 || fovSmell /= 0 || fovLight /= 0 || fovNocto /= 0
+           fovSight /= 0 || fovSmell /= 0 || fovShine /= 0 || fovNocto /= 0
          Nothing -> False
     then Just aid
     else Nothing
 
 -- | Determines if a command resets the data about lit tiles
--- (both dynamically and statically).
+-- (both with dynamic shine and static ambient light).
 resetsLucidCmdAtomic :: UpdAtomic -> FovAspectItem
                      -> FovAspectActor -> FovAspectActor
                      -> Either LevelId [ActorId]
 resetsLucidCmdAtomic cmd fovAspectItem
                      fovAspectActorOld fovAspectActor = case cmd of
   -- Create/destroy actors and items.
-  UpdCreateActor aid b _ -> actorAffectsLight aid $ Left $ blid b
+  UpdCreateActor aid b _ -> actorAffectsShine aid $ Left $ blid b
                             -- trunk or organ or eqp may shine
-  UpdDestroyActor aid b _ -> actorAffectsLight aid $ Left $ blid b
+  UpdDestroyActor aid b _ -> actorAffectsShine aid $ Left $ blid b
   UpdCreateItem iid _ _ (CFloor lid _) ->
-    itemAffectsLitRadius iid [] $ Left lid
+    itemAffectsShineRadius iid [] $ Left lid
   UpdCreateItem iid _ _ (CActor aid s) ->
-    itemAffectsLitRadius iid [s] $ Right [aid]
+    itemAffectsShineRadius iid [s] $ Right [aid]
   UpdDestroyItem iid _ _ (CFloor lid _) ->
-    itemAffectsLitRadius iid [] $ Left lid
+    itemAffectsShineRadius iid [] $ Left lid
   UpdDestroyItem iid _ _ (CActor aid s) ->
-    itemAffectsLitRadius iid [s] $ Right [aid]
-  UpdSpotActor aid b _ -> actorAffectsLight aid $ Left $ blid b
-  UpdLoseActor aid b _ -> actorAffectsLight aid $ Left $ blid b
+    itemAffectsShineRadius iid [s] $ Right [aid]
+  UpdSpotActor aid b _ -> actorAffectsShine aid $ Left $ blid b
+  UpdLoseActor aid b _ -> actorAffectsShine aid $ Left $ blid b
   UpdSpotItem iid _ _ (CFloor lid _) ->
-    itemAffectsLitRadius iid [] $ Left lid
+    itemAffectsShineRadius iid [] $ Left lid
   UpdSpotItem iid _ _ (CActor aid s) ->
-    itemAffectsLitRadius iid [s] $ Right [aid]
+    itemAffectsShineRadius iid [s] $ Right [aid]
   UpdLoseItem iid _ _ (CFloor lid _) ->
-    itemAffectsLitRadius iid [] $ Left lid
+    itemAffectsShineRadius iid [] $ Left lid
   UpdLoseItem iid _ _ (CActor aid s) ->
-    itemAffectsLitRadius iid [s] $ Right [aid]
+    itemAffectsShineRadius iid [s] $ Right [aid]
   -- Move actors and items.
-  UpdMoveActor aid _ _ -> actorAffectsLight aid $ Right [aid]
-  UpdDisplaceActor aid1 aid2 -> Right $ filter actorHasLight [aid1, aid2]
-  UpdMoveItem iid _ aid s1 s2 -> itemAffectsLitRadius iid [s1, s2] $ Right [aid]
+  UpdMoveActor aid _ _ -> actorAffectsShine aid $ Right [aid]
+  UpdDisplaceActor aid1 aid2 -> Right $ filter actorHasShine [aid1, aid2]
+  UpdMoveItem iid _ aid s1 s2 ->
+    itemAffectsShineRadius iid [s1, s2] $ Right [aid]
   -- Alter map.
   UpdAlterTile lid _ _ _ -> Left lid
   _ -> Right []
  where
-  itemAffectsLitRadius iid stores res =
+  itemAffectsShineRadius iid stores res =
     if (null stores || (not $ null $ intersect stores [CEqp, COrgan, CGround]))
        && case EM.lookup iid fovAspectItem of
-         Just FovAspect{fovLight} -> fovLight /= 0
+         Just FovAspect{fovShine} -> fovShine /= 0
          Nothing -> False
     then res
     else Right []
-  actorHasLight aid = case EM.lookup aid fovAspectActor of
-    Just FovAspect{fovLight} -> fovLight /= 0
+  actorHasShine aid = case EM.lookup aid fovAspectActor of
+    Just FovAspect{fovShine} -> fovShine /= 0
     Nothing -> case EM.lookup aid fovAspectActorOld of  -- for UpdDestroyActor
-      Just FovAspect{fovLight} -> fovLight > 0
+      Just FovAspect{fovShine} -> fovShine > 0
       Nothing -> assert `failure` (aid, cmd)
-  actorAffectsLight aid res = if actorHasLight aid then res else Right []
+  actorAffectsShine aid res = if actorHasShine aid then res else Right []
 
 -- | Decompose an atomic action. The original action is visible
 -- if it's positions are visible both before and after the action

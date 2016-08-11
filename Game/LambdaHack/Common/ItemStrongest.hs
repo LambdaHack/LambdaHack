@@ -159,9 +159,9 @@ strengthAddSmell =
       p _ = []
   in strengthAspectMaybe p
 
-strengthAddLight :: ItemFull -> Maybe Int
-strengthAddLight =
-  let p (AddLight k) = [k]
+strengthAddShine :: ItemFull -> Maybe Int
+strengthAddShine =
+  let p (AddShine k) = [k]
       p _ = []
   in strengthAspectMaybe p
 
@@ -221,7 +221,7 @@ strengthFromEqpSlot eqpSlot =
     EqpSlotAddArmorRanged -> strengthAddArmorRanged
     EqpSlotAddSight -> strengthAddSight
     EqpSlotAddSmell -> strengthAddSmell
-    EqpSlotAddLight -> strengthAddLight
+    EqpSlotAddShine -> strengthAddShine
     EqpSlotAddNocto -> strengthAddNocto
     EqpSlotWeapon -> strengthMelee
 

@@ -207,7 +207,7 @@ statsOverlay aid = do
             ft = fullText valueText
         in (ft, (Right c, (y, 0, T.length ft)))
       -- Some values can be negative, for others 0 is equivalent but shorter.
-      slotList =  -- TODO:  [IK.EqpSlotAddHurtMelee..IK.EqpSlotAddLight]
+      slotList =  -- TODO:  [IK.EqpSlotAddHurtMelee..IK.EqpSlotAddShine]
         [ (IK.EqpSlotAddHurtMelee, \t -> tshow t <> "%")
         -- TODO: not applicable right now, IK.EqpSlotAddHurtRanged
         , (IK.EqpSlotAddArmorMelee, \t -> "[" <> tshow (block t) <> "%]")
@@ -219,7 +219,7 @@ statsOverlay aid = do
             tshow (max 0 $ min (fromIntegral $ bcalm b `div` (5 * oneM)) t)
             <> "m")
         , (IK.EqpSlotAddSmell, \t -> tshow (max 0 t) <> "m")
-        , (IK.EqpSlotAddLight, \t -> tshow (max 0 t) <> "m")
+        , (IK.EqpSlotAddShine, \t -> tshow (max 0 t) <> "m")
         ]
       skills = sumSkills activeItems
       -- TODO: are negative total skills meaningful?

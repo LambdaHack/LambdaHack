@@ -445,7 +445,7 @@ geyserArsenic = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20
-               , AddNocto 2, AddLight 3
+               , AddNocto 2, AddShine 3
                , AddSkills $ EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -462,7 +462,7 @@ geyserSulfur = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20
-               , AddNocto 2, AddLight 3
+               , AddNocto 2, AddShine 3
                , AddSkills $ EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
   , ieffects = []
   , ifeature = [Durable, Identified]  -- TODO: only heal humans

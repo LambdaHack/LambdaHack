@@ -82,7 +82,7 @@ actionStrategy aid = do
   (fleeL, badVic) <- fleeList aid
   let lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
-      actorShines = sumSlotNoFilter IK.EqpSlotAddLight activeItems > 0
+      actorShines = sumSlotNoFilter IK.EqpSlotAddShine activeItems > 0
       condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= 9) . fst) threatDistL
@@ -290,7 +290,7 @@ equipItems aid = do
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
   condAnyFoeAdj <- condAnyFoeAdjM aid
-  condLightBetrays <- condLightBetraysM aid
+  condShineBetrays <- condShineBetraysM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   let improve :: CStore
               -> (Int, [(ItemId, Int, CStore, CStore)])
@@ -312,7 +312,7 @@ equipItems aid = do
       -- when comparing to items we may want to equip. Anyway, the unneeded
       -- items should be removed in yieldUnneeded earlier or soon after.
       filterNeeded (_, itemFull) =
-        not $ unneeded cops condAnyFoeAdj condLightBetrays
+        not $ unneeded cops condAnyFoeAdj condShineBetrays
                        condAimEnemyPresent (not calmE)
                        body activeItems fact itemFull
       bestThree = bestByEqpSlot (filter filterNeeded eqpAssocs)
@@ -345,7 +345,7 @@ yieldUnneeded aid = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   eqpAssocs <- fullAssocsClient aid [CEqp]
   condAnyFoeAdj <- condAnyFoeAdjM aid
-  condLightBetrays <- condLightBetraysM aid
+  condShineBetrays <- condShineBetraysM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
       -- Here AI hides from the human player the Ring of Speed And Bleeding,
       -- which is a bit harsh, but fair. However any subsequent such
@@ -357,7 +357,7 @@ yieldUnneeded aid = do
         let csha = if calmE then CSha else CInv
         in if | harmful cops body activeItems fact itemEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, CInv)]
-              | hinders condAnyFoeAdj condLightBetrays
+              | hinders condAnyFoeAdj condShineBetrays
                         condAimEnemyPresent (not calmE)
                         body activeItems itemEqp ->
                 [(iidEqp, itemK itemEqp, CEqp, csha)]
@@ -379,7 +379,7 @@ unEquipItems aid = do
   invAssocs <- fullAssocsClient aid [CInv]
   shaAssocs <- fullAssocsClient aid [CSha]
   condAnyFoeAdj <- condAnyFoeAdjM aid
-  condLightBetrays <- condLightBetraysM aid
+  condShineBetrays <- condShineBetraysM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
       -- Here AI hides from the human player the Ring of Speed And Bleeding,
       -- which is a bit harsh, but fair. However any subsequent such
@@ -420,7 +420,7 @@ unEquipItems aid = do
       worseThanSha _ [] = False
       worseThanSha vEOrI ((vSha, _) : _) = vEOrI < vSha
       filterNeeded (_, itemFull) =
-        not $ unneeded cops condAnyFoeAdj condLightBetrays
+        not $ unneeded cops condAnyFoeAdj condShineBetrays
                        condAimEnemyPresent (not calmE)
                        body activeItems fact itemFull
       bestThree =
@@ -476,16 +476,16 @@ harmful cops body activeItems fact itemFull =
 unneeded :: Kind.COps -> Bool -> Bool -> Bool -> Bool
          -> Actor -> [ItemFull] -> Faction -> ItemFull
          -> Bool
-unneeded cops condAnyFoeAdj condLightBetrays
+unneeded cops condAnyFoeAdj condShineBetrays
          condAimEnemyPresent condNotCalmEnough
          body activeItems fact itemFull =
   harmful cops body activeItems fact itemFull
-  || hinders condAnyFoeAdj condLightBetrays
+  || hinders condAnyFoeAdj condShineBetrays
              condAimEnemyPresent condNotCalmEnough
              body activeItems itemFull
   || let calmE = calmEnough body activeItems  -- unneeded risk
-         itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
-     in itemLit && not calmE
+         itemShine = isJust $ strengthFromEqpSlot IK.EqpSlotAddShine itemFull
+     in itemShine && not calmE
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))

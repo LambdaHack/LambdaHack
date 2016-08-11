@@ -116,7 +116,7 @@ diffPer per1 per2 =
 -- * Perception cache
 
 -- | Visually reachable positions (light passes through them to the actor).
--- They need to be intersected with lit positions to obtain visible positions.
+-- They need to be intersected with lucid positions to obtain visible positions.
 newtype PerReachable = PerReachable
     {preachable :: ES.EnumSet Point}
   deriving (Show, Eq)
@@ -148,7 +148,7 @@ type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 data FovAspect = FovAspect
   { fovSight :: !Int
   , fovSmell :: !Int
-  , fovLight :: !Int
+  , fovShine :: !Int
   , fovNocto :: !Int
   }
   deriving (Show, Eq)
@@ -157,12 +157,12 @@ instance Binary FovAspect where
   put FovAspect{..} = do
     put fovSight
     put fovSmell
-    put fovLight
+    put fovShine
     put fovNocto
   get = do
     fovSight <- get
     fovSmell <- get
-    fovLight <- get
+    fovShine <- get
     fovNocto <- get
     return $! FovAspect{..}
 
@@ -179,12 +179,14 @@ type FovClear = PointArray.Array Bool
 
 type FovClearLid = EM.EnumMap LevelId FovClear
 
+-- | Level positions with either ambient light or shining items or actors.
 newtype FovLucid = FovLucid
     {fovLucid :: ES.EnumSet Point}
   deriving (Show, Eq)
 
 type FovLucidLid = EM.EnumMap LevelId FovLucid
 
+-- | Level positions with tiles that have ambient light.
 newtype FovLit = FovLit
     {fovLit :: ES.EnumSet Point}
   deriving (Show, Eq)

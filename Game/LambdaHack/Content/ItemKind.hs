@@ -126,7 +126,7 @@ data Aspect a =
   | AddSkills !Ability.Skills  -- ^ skills in particular abilities
   | AddSight !a        -- ^ FOV radius, where 1 means a single tile
   | AddSmell !a        -- ^ smell radius, where 1 means a single tile
-  | AddLight !a        -- ^ light radius, where 1 means a single tile
+  | AddShine !a        -- ^ shine radius, where 1 means a single tile
   | AddNocto !a        -- ^ noctovision radius, where 1 means a single tile
   deriving (Show, Read, Eq, Ord, Generic, Functor, Foldable, Traversable)
 
@@ -166,7 +166,7 @@ data EqpSlot =
   | EqpSlotAddSkills Ability.Ability
   | EqpSlotAddSight
   | EqpSlotAddSmell
-  | EqpSlotAddLight
+  | EqpSlotAddShine
   | EqpSlotAddNocto
   | EqpSlotWeapon  -- ^ a hack exclusively for AI that shares weapons
   deriving (Show, Eq, Ord, Generic)
@@ -208,7 +208,7 @@ slotName EqpSlotAddSpeed = "speed"
 slotName EqpSlotAddSkills{} = "skills"
 slotName EqpSlotAddSight = "sight radius"
 slotName EqpSlotAddSmell = "smell radius"
-slotName EqpSlotAddLight = "light radius"
+slotName EqpSlotAddShine = "shine radius"
 slotName EqpSlotAddNocto = "night vision radius"
 slotName EqpSlotWeapon = "weapon damage"
 

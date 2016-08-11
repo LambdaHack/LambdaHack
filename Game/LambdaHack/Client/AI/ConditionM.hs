@@ -16,7 +16,7 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condNotCalmEnoughM
   , condDesirableFloorItemM
   , condMeleeBadM
-  , condLightBetraysM
+  , condShineBetraysM
   , benAvailableItems
   , hinders
   , benGroundItems
@@ -207,7 +207,7 @@ benAvailableItems aid permitted cstores = do
   activeItems <- activeItemsClient aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   condAnyFoeAdj <- condAnyFoeAdjM aid
-  condLightBetrays <- condLightBetraysM aid
+  condShineBetrays <- condShineBetraysM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condNotCalmEnough <- condNotCalmEnoughM aid
   let ben cstore bag =
@@ -215,7 +215,7 @@ benAvailableItems aid permitted cstores = do
         | (iid, kit@(k, _)) <- EM.assocs bag
         , let itemFull = itemToF iid kit
               benefit = totalUsefulness cops b activeItems fact itemFull
-              hind = hinders condAnyFoeAdj condLightBetrays
+              hind = hinders condAnyFoeAdj condShineBetrays
                              condAimEnemyPresent condNotCalmEnough
                              b activeItems itemFull
         , permitted (fst <$> benefit) itemFull b activeItems
@@ -230,22 +230,22 @@ benAvailableItems aid permitted cstores = do
 -- TODO: also take into account dynamic lights *not* wielded by the actor
 hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> [ItemFull] -> ItemFull
         -> Bool
-hinders condAnyFoeAdj condLightBetrays condAimEnemyPresent
+hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
         condNotCalmEnough  -- perhaps enemies don't have projectiles
         body activeItems itemFull =
-  let itemLit = isJust $ strengthFromEqpSlot IK.EqpSlotAddLight itemFull
-      itemLitBad = itemLit && condNotCalmEnough && not condAnyFoeAdj
+  let itemShine = isJust $ strengthFromEqpSlot IK.EqpSlotAddShine itemFull
+      itemShineBad = itemShine && condNotCalmEnough && not condAnyFoeAdj
   in -- Fast actors want to hide in darkness to ambush opponents and want
      -- to hit hard for the short span they get to survive melee.
      bspeed body activeItems > speedNormal
-     && (itemLitBad
+     && (itemShineBad
          || 0 > fromMaybe 0 (strengthFromEqpSlot IK.EqpSlotAddHurtMelee
                                                  itemFull))
      -- In the presence of enemies (seen, or unseen but distressing)
      -- actors want to hide in the dark.
      || let heavilyDistressed =  -- actor hit by a proj or similarly distressed
               deltaSerious (bcalmDelta body)
-        in itemLitBad && condLightBetrays
+        in itemShineBad && condShineBetrays
            && (heavilyDistressed || condAimEnemyPresent)
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
@@ -342,11 +342,11 @@ condMeleeBadM aid = do
 
 -- | Require that the actor stands in the dark, but is betrayed
 -- by his own equipped light,
-condLightBetraysM :: MonadClient m => ActorId -> m Bool
-condLightBetraysM aid = do
+condShineBetraysM :: MonadClient m => ActorId -> m Bool
+condShineBetraysM aid = do
   b <- getsState $ getActorBody aid
   eqpItems <- map snd <$> fullAssocsClient aid [CEqp]
-  let actorEqpShines = sumSlotNoFilter IK.EqpSlotAddLight eqpItems > 0
+  let actorEqpShines = sumSlotNoFilter IK.EqpSlotAddShine eqpItems > 0
   aInAmbient <- getsState $ actorInAmbient b
   return $! not aInAmbient     -- tile is dark, so actor could hide
             && actorEqpShines  -- but actor betrayed by his equipped light

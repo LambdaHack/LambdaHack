@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.Fov
   , fovAspectFromActor, aspectActorInDungeon
   , clearFromLevel, clearInDungeon
   , litFromLevel, litInDungeon
-  , floorLightSources, lucidFromItems, lucidFromLevel, lucidInDungeon
+  , floorLightSources, shineFromItems, lucidFromLevel, lucidInDungeon
   , fullscan
 #endif
   ) where
@@ -86,14 +86,14 @@ cacheBeforeLucidFromActor clearPs (body, FovAspect{..}) =
 
 perceptionFromPTotal :: CacheBeforeLucid -> FovLucidLid -> LevelId -> Perception
 perceptionFromPTotal ptotal fovLucidLid lid =
-  let litPs = fovLucidLid EM.! lid
-      psight = visibleOnLevel (creachable ptotal) litPs (cnocto ptotal)
+  let lucidPs = fovLucidLid EM.! lid
+      psight = visibleOnLevel (creachable ptotal) lucidPs (cnocto ptotal)
       psmell = csmell ptotal
   in Perception{..}
 
 -- | Compute positions visible (reachable and seen) by the party.
--- A position can be directly lit by an ambient shine or by a weak, portable
--- light source, e.g,, carried by an actor. A reachable and lit position
+-- A position is lucid, if it's lit by an ambient light or by a weak, portable
+-- light source, e.g,, carried by an actor. A reachable and lucid position
 -- is visible. Additionally, positions directly adjacent to an actor are
 -- assumed to be visible to him (through sound, touch, noctovision, whatever).
 visibleOnLevel :: PerReachable -> FovLucid -> PerVisible -> PerVisible
@@ -138,12 +138,12 @@ perFidInDungeon sFovAspectItem s =
 
 fovAspectFromActor :: FovAspectItem -> Actor -> FovAspect
 fovAspectFromActor sfovAspectItem b =
-  let processIid3 (FovAspect sightAcc smellAcc lightAcc noctoAcc) (iid, (k, _)) =
+  let processIid3 (FovAspect sightAcc smellAcc shineAcc noctoAcc) (iid, (k, _)) =
         let FovAspect{..} =
               EM.findWithDefault emptyFovAspect iid sfovAspectItem
         in FovAspect (k * fovSight + sightAcc)
                      (k * fovSmell + smellAcc)
-                     (k * fovLight + lightAcc)
+                     (k * fovShine + shineAcc)
                      (k * fovNocto + noctoAcc)
       processBag3 bag acc = foldl' processIid3 acc $ EM.assocs bag
       sslOrgan = processBag3 (borgan b) emptyFovAspect
@@ -188,43 +188,41 @@ updateFovLit fovLitLidOld lid s =
 
 floorLightSources :: FovAspectItem -> Level -> [(Point, Int)]
 floorLightSources sfovAspectItem lvl =
-  let processIid lightAcc (iid, (k, _)) =
-        let FovAspect{fovLight} =
+  let processIid shineAcc (iid, (k, _)) =
+        let FovAspect{fovShine} =
               EM.findWithDefault emptyFovAspect iid sfovAspectItem
-        in k * fovLight + lightAcc
+        in k * fovShine + shineAcc
       processBag bag acc = foldl' processIid acc $ EM.assocs bag
   in [(p, radius) | (p, bag) <- EM.assocs $ lfloor lvl  -- lembed are hidden
                   , let radius = processBag bag 0
                   , radius > 0]
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
--- or floor items. Note that an actor can be blind, in which case he doesn't see
--- his own light (but others, from his or other factions, possibly do).
-lucidFromItems :: FovClear -> [(Point, Int)] -> [FovLucid]
-lucidFromItems clearPs allItems =
-  let litPos :: (Point, Int) -> FovLucid
-      litPos (p, light) = FovLucid $ fullscan clearPs light p
-  in map litPos allItems
+-- or shining floor items. Note that an actor can be blind,
+-- in which case he doesn't see his own light (but others,
+-- from his or other factions, possibly do).
+shineFromItems :: FovClear -> [(Point, Int)] -> [FovLucid]
+shineFromItems clearPs allItems =
+  let shinePos :: (Point, Int) -> FovLucid
+      shinePos (p, shine) = FovLucid $ fullscan clearPs shine p
+  in map shinePos allItems
 
--- Note that an actor can be blind,
--- in which case he doesn't see his own light
--- (but others, from his or other factions, possibly do).
 lucidFromLevel :: FovAspectItem -> FovAspectActor -> FovClearLid -> FovLitLid
                -> State -> LevelId -> Level
                -> FovLucid
 lucidFromLevel sfovAspectItem fovAspectActor fovClearLid fovLitLid s lid lvl =
   let actorLights =
         [(bpos b, radius) | (aid, b) <- actorAssocs (const True) lid s
-                          , let radius = fovLight $ fovAspectActor EM.! aid
+                          , let radius = fovShine $ fovAspectActor EM.! aid
                           , radius > 0]
       floorLights = floorLightSources sfovAspectItem lvl
       -- If there is light both on the floor and carried by actor,
-      -- only the stronger light is taken into account.
+      -- only the stronger shine is taken into account.
       -- This is rare, so no point optimizing away the double computation.
       allLights = floorLights ++ actorLights
-      litDynamic = lucidFromItems (fovClearLid EM.! lid) allLights
+      allShine = shineFromItems (fovClearLid EM.! lid) allLights
       litTiles = fovLitLid EM.! lid
-  in FovLucid $ ES.unions $ fovLit litTiles : map fovLucid litDynamic
+  in FovLucid $ ES.unions $ fovLit litTiles : map fovLucid allShine
 
 lucidInDungeon :: FovAspectItem -> FovAspectActor -> FovClearLid -> FovLitLid
                -> State

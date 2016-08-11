@@ -36,8 +36,8 @@ data StateServer = StateServer
   , sdiscoEffect    :: !DiscoveryEffect   -- ^ full item effect&Co data
   , sitemSeedD      :: !ItemSeedDict  -- ^ map from item ids to item seeds
   , sitemRev        :: !ItemRev       -- ^ reverse id map, used for item creation
-  , sfovAspectItem  :: !FovAspectItem  -- ^ (sight, smell, light) aspect bonus
-                                    --   of the item; zeroes if not in the map
+  , sfovAspectItem  :: !FovAspectItem  -- ^ sight, smell, etc. aspect bonuses of
+                                       --   the item; zeroes if not in the map
   , sflavour        :: !FlavourMap    -- ^ association of flavour to items
   , sacounter       :: !ActorId       -- ^ stores next actor index
   , sicounter       :: !ItemId        -- ^ stores next item index
@@ -46,9 +46,9 @@ data StateServer = StateServer
   , sperFid         :: !PerFid        -- ^ perception of all factions
   , sperCacheFid    :: !PerCacheFid   -- ^ perception cache of all factions
   , sfovAspectActor :: !FovAspectActor
-  , sfovLucidLid    :: !FovLucidLid
+  , sfovLucidLid    :: !FovLucidLid   -- ^ ambient or shining light positions
   , sfovClearLid    :: !FovClearLid
-  , sfovLitLid      :: !FovLitLid
+  , sfovLitLid      :: !FovLitLid     -- ^ ambient light positions
   , srandom         :: !R.StdGen      -- ^ current random generator
   , srngs           :: !RNGs          -- ^ initial random generators
   , squit           :: !Bool          -- ^ exit the game loop

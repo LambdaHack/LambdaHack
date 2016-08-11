@@ -188,7 +188,7 @@ seeingItem = ItemKind
   , irarity  = [(1, 1)]
   , iverbHit = "gaze at"
   , iweight  = 100
-  , iaspects = [ AddSight 10, AddMaxCalm 60, AddLight 2
+  , iaspects = [ AddSight 10, AddMaxCalm 60, AddShine 2
                , Periodic, Timeout $ 1 + d 2 ]
   , ieffects = [ Recharging (toOrganNone "poisoned")
                , Recharging (Summon [("mobile monster", 1)] 1) ]
@@ -224,10 +224,10 @@ light1 = ItemKind
   , irarity  = [(1, 10)]
   , iverbHit = "scorch"
   , iweight  = 1200
-  , iaspects = [ AddLight 3       -- not only flashes, but also sparks
+  , iaspects = [ AddShine 3       -- not only flashes, but also sparks
                , AddSight (-2) ]  -- unused by AI due to the mixed blessing
   , ieffects = [Burn 2]
-  , ifeature = [EqpSlot EqpSlotAddLight "", Identified]
+  , ifeature = [EqpSlot EqpSlotAddShine "", Identified]
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady glow."
   , ikit     = []
   }
@@ -240,10 +240,10 @@ light2 = ItemKind
   , irarity  = [(6, 7)]
   , iverbHit = "burn"
   , iweight  = 1000
-  , iaspects = [AddLight 3, AddSight (-1)]
+  , iaspects = [AddShine 3, AddSight (-1)]
   , ieffects = [Burn 3, Paralyze 6, OnSmash (Explode "burning oil 3")]
   , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
-               , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
+               , Fragile, EqpSlot EqpSlotAddShine "", Identified ]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
   , ikit     = []
   }
@@ -256,10 +256,10 @@ light3 = ItemKind
   , irarity  = [(10, 5)]
   , iverbHit = "burn"
   , iweight  = 2400
-  , iaspects = [AddLight 4, AddSight (-1)]
+  , iaspects = [AddShine 4, AddSight (-1)]
   , ieffects = [Burn 4, Paralyze 8, OnSmash (Explode "burning oil 4")]
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
-               , Fragile, EqpSlot EqpSlotAddLight "", Identified ]
+               , Fragile, EqpSlot EqpSlotAddShine "", Identified ]
   , idesc    = "Very bright and very heavy brass lantern."
   , ikit     = []
   }
@@ -432,9 +432,9 @@ ring4 = ring
   }
 ring5 = ring  -- by the time it's found, probably no space in eqp
   { irarity  = [(5, 0), (10, 2)]
-  , iaspects = [AddLight $ d 2]
+  , iaspects = [AddShine $ d 2]
   , ieffects = [Explode "distortion"]  -- strong magic
-  , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddLight ""]
+  , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddShine ""]
   , idesc    = "A sturdy ring with a large, shining stone."
   }
 ring6 = ring
@@ -966,7 +966,7 @@ wand = ItemKind
   , irarity  = []  -- TODO: add charges, etc.
   , iverbHit = "club"
   , iweight  = 300
-  , iaspects = [AddLight 1, AddSpeed (-1)]  -- pulsing with power, distracts
+  , iaspects = [AddShine 1, AddSpeed (-1)]  -- pulsing with power, distracts
   , ieffects = []
   , ifeature = [ toVelocity 125  -- magic
                , Applicable, Durable ]
@@ -991,7 +991,7 @@ gem = ItemKind
   , irarity  = []
   , iverbHit = "tap"
   , iweight  = 50
-  , iaspects = [AddLight 1, AddSpeed (-1)]
+  , iaspects = [AddShine 1, AddSpeed (-1)]
                  -- reflects strongly, distracts; so it glows in the dark,
                  -- is visible on dark floor, but not too tempting to wear
   , ieffects = []
