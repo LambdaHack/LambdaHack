@@ -36,7 +36,8 @@ module Game.LambdaHack.Common.Perception
   , FovAspect(..), emptyFovAspect
   , FovAspectItem, FovAspectActor
     -- * Data used in FOV computation and cached to speed it up
-  , FovClear, FovClearLid, FovLucid(..), FovLucidLid, FovLit (..), FovLitLid
+  , FovClear, FovClearLid, FovLucid(..), FovLucidLid
+  , FovLit (..), FovLitLid, FovShine(..), FovShineLid
   ) where
 
 import Prelude ()
@@ -146,34 +147,47 @@ type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 -- * Fov aspects of items and actors
 
 data FovAspect = FovAspect
-  { fovSight :: !Int
-  , fovSmell :: !Int
-  , fovShine :: !Int
-  , fovNocto :: !Int
+  { fovSightR :: !Int
+  , fovSmellR :: !Int
+  , fovShineR :: !Int
+  , fovNoctoR :: !Int
   }
   deriving (Show, Eq)
 
 instance Binary FovAspect where
   put FovAspect{..} = do
-    put fovSight
-    put fovSmell
-    put fovShine
-    put fovNocto
+    put fovSightR
+    put fovSmellR
+    put fovShineR
+    put fovNoctoR
   get = do
-    fovSight <- get
-    fovSmell <- get
-    fovShine <- get
-    fovNocto <- get
+    fovSightR <- get
+    fovSmellR <- get
+    fovShineR <- get
+    fovNoctoR <- get
     return $! FovAspect{..}
 
 emptyFovAspect :: FovAspect
 emptyFovAspect = FovAspect 0 0 0 0
 
+-- Note: FovAspectItem, FovAspectActor and FovShine shoudn't be in State,
+-- because on client they need to be updated every time an item discovery
+-- is made, unlike on the server, where it's much simpler and cheaper.
 type FovAspectItem = EM.EnumMap ItemId FovAspect
 
 type FovAspectActor = EM.EnumMap ActorId FovAspect
 
+-- | Map of level positions that currently hold item or actor with shine
+-- to the max of radiuses of the shining lights. Radius restricted here
+-- for the purpose of Fov to 255, but elsewhere not restricted
+-- (though elsewhere probably unused).
+newtype FovShine = FovShine
+    {fovShine :: EM.EnumMap Point Word8}
+  deriving (Show, Eq)
+
 -- * Data used in FOV computation and cached to speed it up
+
+type FovShineLid = EM.EnumMap LevelId FovShine
 
 type FovClear = PointArray.Array Bool
 

@@ -211,14 +211,14 @@ strengthFromEqpSlot eqpSlot =
   case eqpSlot of
     EqpSlotPeriodic -> strengthPeriodic
     EqpSlotTimeout -> strengthTimeout
-    EqpSlotAddMaxHP -> strengthAddMaxHP
-    EqpSlotAddMaxCalm -> strengthAddMaxCalm
-    EqpSlotAddSpeed -> strengthAddSpeed
-    EqpSlotAddSkills ab -> strengthAddSkills ab
     EqpSlotAddHurtMelee -> strengthAddHurtMelee
     EqpSlotAddHurtRanged -> strengthAddHurtRanged
     EqpSlotAddArmorMelee -> strengthAddArmorMelee
     EqpSlotAddArmorRanged -> strengthAddArmorRanged
+    EqpSlotAddMaxHP -> strengthAddMaxHP
+    EqpSlotAddMaxCalm -> strengthAddMaxCalm
+    EqpSlotAddSpeed -> strengthAddSpeed
+    EqpSlotAddSkills ab -> strengthAddSkills ab
     EqpSlotAddSight -> strengthAddSight
     EqpSlotAddSmell -> strengthAddSmell
     EqpSlotAddShine -> strengthAddShine

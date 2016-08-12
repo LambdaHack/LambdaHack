@@ -236,8 +236,8 @@ resetsFovCmdAtomic cmd fovAspectItem = case cmd of
   itemAffectsSightRadius iid stores aid =
     if not (null $ intersect stores [CEqp, COrgan])
        && case EM.lookup iid fovAspectItem of
-         Just FovAspect{fovSight, fovSmell, fovNocto} ->
-           fovSight /= 0 || fovSmell /= 0 || fovNocto /= 0
+         Just FovAspect{fovSightR, fovSmellR, fovNoctoR} ->
+           fovSightR /= 0 || fovSmellR /= 0 || fovNoctoR /= 0
          Nothing -> False
     then Just [aid]
     else Just []
@@ -261,7 +261,7 @@ resetsAspectActorCmdAtomic cmd fovAspectItem = case cmd of
     if not (null $ intersect stores [CEqp, COrgan])
        && case EM.lookup iid fovAspectItem of
          Just FovAspect{..} ->
-           fovSight /= 0 || fovSmell /= 0 || fovShine /= 0 || fovNocto /= 0
+           fovSightR /= 0 || fovSmellR /= 0 || fovShineR /= 0 || fovNoctoR /= 0
          Nothing -> False
     then Just aid
     else Nothing
@@ -307,14 +307,14 @@ resetsLucidCmdAtomic cmd fovAspectItem
   itemAffectsShineRadius iid stores res =
     if (null stores || (not $ null $ intersect stores [CEqp, COrgan, CGround]))
        && case EM.lookup iid fovAspectItem of
-         Just FovAspect{fovShine} -> fovShine /= 0
+         Just FovAspect{fovShineR} -> fovShineR /= 0
          Nothing -> False
     then res
     else Right []
   actorHasShine aid = case EM.lookup aid fovAspectActor of
-    Just FovAspect{fovShine} -> fovShine /= 0
+    Just FovAspect{fovShineR} -> fovShineR /= 0
     Nothing -> case EM.lookup aid fovAspectActorOld of  -- for UpdDestroyActor
-      Just FovAspect{fovShine} -> fovShine > 0
+      Just FovAspect{fovShineR} -> fovShineR > 0
       Nothing -> assert `failure` (aid, cmd)
   actorAffectsShine aid res = if actorHasShine aid then res else Right []
 
