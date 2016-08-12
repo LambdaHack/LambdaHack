@@ -218,12 +218,12 @@ strengthFromEqpSlot eqpSlot =
     EqpSlotAddMaxHP -> strengthAddMaxHP
     EqpSlotAddMaxCalm -> strengthAddMaxCalm
     EqpSlotAddSpeed -> strengthAddSpeed
-    EqpSlotAddSkills ab -> strengthAddSkills ab
     EqpSlotAddSight -> strengthAddSight
     EqpSlotAddSmell -> strengthAddSmell
     EqpSlotAddShine -> strengthAddShine
     EqpSlotAddNocto -> strengthAddNocto
     EqpSlotWeapon -> strengthMelee
+    EqpSlotAddSkills ab -> strengthAddSkills ab
 
 strengthMelee :: ItemFull -> Maybe Int
 strengthMelee itemFull =

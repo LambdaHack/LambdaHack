@@ -29,7 +29,6 @@ import Game.LambdaHack.Client.UI.OverlayM
 import Game.LambdaHack.Client.UI.SessionUI
 import Game.LambdaHack.Client.UI.Slideshow
 import Game.LambdaHack.Client.UI.SlideshowM
-import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
@@ -216,28 +215,18 @@ statsOverlay aid = do
         , (IK.EqpSlotAddMaxCalm, \t -> tshow $ max 0 t)
         , (IK.EqpSlotAddSpeed, \t -> tshow (max 0 t) <> "m/10s")
         , (IK.EqpSlotAddSight, \t ->
-            tshow (max 0 $ min (fromIntegral $ bcalm b `div` (5 * oneM)) t)
-            <> "m")
+            let tmax = max 0 t
+                tcapped = min (fromIntegral $ bcalm b `div` (5 * oneM)) tmax
+            in if tmax == tcapped
+               then tshow tmax <> "m"
+               else tshow tcapped <> "m (max" <+> tshow tmax <> "m)")
         , (IK.EqpSlotAddSmell, \t -> tshow (max 0 t) <> "m")
         , (IK.EqpSlotAddShine, \t -> tshow (max 0 t) <> "m")
-        ]
-      skills = sumSkills activeItems
-      -- TODO: are negative total skills meaningful?
-      -- TODO: unduplicate with prSlot
-      prAbility :: (Y, SlotChar) -> Ability.Ability -> (Text, KYX)
-      prAbility (y, c) ability =
-        let fullText t =
-              makePhrase [ MU.Text $ slotLabel c
-                         , MU.Text $ T.justifyLeft 22 ' '
-                           $ tshow ability <+> "ability"
-                         , MU.Text t ]
-            valueText = tshow $ EM.findWithDefault 0 ability skills
-            ft = fullText valueText
-        in (ft, (Right c, (y, 0, T.length ft)))
-      abilityList = [minBound..maxBound]
-      reslot c = either (prSlot c) (prAbility c)
-      zipReslot = zipWith reslot $ zip [0..] allZeroSlots
-      (ts, kxs) = unzip $ zipReslot $ map Left slotList ++ map Right abilityList
+        , (IK.EqpSlotAddNocto, \t -> tshow (max 0 t) <> "m") ]
+        ++ [ (IK.EqpSlotAddSkills ab, tshow)
+           | ab <- [minBound..maxBound] ]
+      zipReslot = zipWith prSlot $ zip [0..] allZeroSlots
+      (ts, kxs) = unzip $ zipReslot slotList
   return (map toAttrLine ts, kxs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)

@@ -123,11 +123,11 @@ data Aspect a =
   | AddMaxHP !a        -- ^ maximal hp
   | AddMaxCalm !a      -- ^ maximal calm
   | AddSpeed !a        -- ^ speed in m/10s
-  | AddSkills !Ability.Skills  -- ^ skills in particular abilities
   | AddSight !a        -- ^ FOV radius, where 1 means a single tile
   | AddSmell !a        -- ^ smell radius, where 1 means a single tile
   | AddShine !a        -- ^ shine radius, where 1 means a single tile
   | AddNocto !a        -- ^ noctovision radius, where 1 means a single tile
+  | AddSkills !Ability.Skills  -- ^ skills in particular abilities
   deriving (Show, Read, Eq, Ord, Generic, Functor, Foldable, Traversable)
 
 -- | Parameters modifying a throw. Not additive and don't start at 0.
@@ -163,12 +163,12 @@ data EqpSlot =
   | EqpSlotAddMaxHP
   | EqpSlotAddMaxCalm
   | EqpSlotAddSpeed
-  | EqpSlotAddSkills Ability.Ability
   | EqpSlotAddSight
   | EqpSlotAddSmell
   | EqpSlotAddShine
   | EqpSlotAddNocto
   | EqpSlotWeapon  -- ^ a hack exclusively for AI that shares weapons
+  | EqpSlotAddSkills Ability.Ability
   deriving (Show, Eq, Ord, Generic)
 
 instance Hashable Effect
@@ -205,12 +205,12 @@ slotName EqpSlotAddArmorRanged = "ranged armor"
 slotName EqpSlotAddMaxHP = "max HP"
 slotName EqpSlotAddMaxCalm = "max Calm"
 slotName EqpSlotAddSpeed = "speed"
-slotName EqpSlotAddSkills{} = "skills"
 slotName EqpSlotAddSight = "sight radius"
 slotName EqpSlotAddSmell = "smell radius"
 slotName EqpSlotAddShine = "shine radius"
 slotName EqpSlotAddNocto = "night vision radius"
 slotName EqpSlotWeapon = "weapon damage"
+slotName (EqpSlotAddSkills ab) = tshow ab <+> "ability"
 
 toVelocity :: Int -> Feature
 toVelocity n = ToThrow $ ThrowMod n 100
