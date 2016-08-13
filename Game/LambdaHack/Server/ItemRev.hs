@@ -38,7 +38,7 @@ type ItemSeedDict = EM.EnumMap ItemId ItemSeed
 type UniqueSet = ES.EnumSet (Kind.Id ItemKind)
 
 serverDiscos :: Kind.COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
-serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldrWithKey}} = do
+serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldrWithKey, okind}} = do
   let ixs = map toEnum $ take (Ix.rangeSize obounds) [0..]
       shuffle :: Eq a => [a] -> Rnd [a]
       shuffle [] = return []
@@ -46,8 +46,9 @@ serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldrWithKey}} = do
         x <- oneOf l
         (x :) <$> shuffle (delete x l)
   shuffled <- shuffle ixs
-  let f ik _ (ikMap, ikRev, ix : rest) =
-        (EM.insert ix ik ikMap, EM.insert ik ix ikRev, rest)
+  let f kmKind _ (ikMap, ikRev, ix : rest) =
+        let kmMean = meanAspectEffects $ okind kmKind
+        in (EM.insert ix KindMean{..} ikMap, EM.insert kmKind ix ikRev, rest)
       f ik  _ (ikMap, _, []) =
         assert `failure` "too short ixs" `twith` (ik, ikMap)
       (discoS, discoRev, _) =
@@ -71,12 +72,12 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jlid =
   in Item{..}
 
 -- | Generate an item based on level.
-newItem :: Kind.COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
+newItem :: Kind.COps -> FlavourMap -> DiscoveryKind -> DiscoveryKindRev -> UniqueSet
         -> Freqs ItemKind -> Int -> LevelId -> AbsDepth -> AbsDepth
         -> Rnd (Maybe ( ItemKnown, ItemFull, ItemDisco
                       , ItemSeed, GroupName ItemKind ))
 newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
-        flavour discoRev uniqueSet itemFreq lvlSpawned jlid
+        flavour disco discoRev uniqueSet itemFreq lvlSpawned jlid
         ldepth@(AbsDepth ldAbs) totalDepth@(AbsDepth depth) = do
   -- Effective generation depth of actors (not items) increases with spawns.
   let scaledDepth = ldAbs * 10 `div` depth
@@ -113,14 +114,17 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
     itemN <- castDice ldepth totalDepth (IK.icount itemKind)
     seed <- fmap toEnum random
     let itemBase = buildItem flavour discoRev itemKindId itemKind jlid
+        kindIx = jkindIx itemBase
         itemK = max 1 itemN
         itemTimer = []
-        itemDiscoData = ItemDisco {itemKindId, itemKind, itemAE = Just iae}
+        itemAEmean = kmMean $ EM.findWithDefault (assert `failure` kindIx) kindIx disco
+        itemDiscoData = ItemDisco { itemKindId, itemKind, itemAEmean
+                                  , itemAE = Just iae }
         itemDisco = Just itemDiscoData
         -- Bonuses on items/actors unaffected by number of spawned actors.
         iae = seedToAspectsEffects seed itemKind ldepth totalDepth
         itemFull = ItemFull {..}
-    return $ Just ( (jkindIx itemBase, iae)
+    return $ Just ( (kindIx, iae)
                   , itemFull
                   , itemDiscoData
                   , seed

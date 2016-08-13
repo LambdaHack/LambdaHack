@@ -199,7 +199,7 @@ applyPeriodicLevel lid = do
             case itemDisco itemFull of
               Just ItemDisco { itemAE=Just ItemAspectEffect{jaspects}
                              , itemKind=IK.ItemKind{IK.ieffects} } ->
-                when (IK.Periodic `elem` jaspects) $ do
+                when (aPeriodic jaspects) $ do
                   -- In periodic activation, consider *only* recharging effects.
                   effectAndDestroy aid aid iid c True
                                    (allRecharging ieffects) jaspects kit

@@ -69,8 +69,8 @@ dieSer aid b hit =
   else do
     discoKind <- getsServer sdiscoKind
     trunk <- getsState $ getItemBody $ btrunk b
-    let ikind = discoKind EM.! jkindIx trunk
-    execUpdAtomic $ UpdRecordKill aid ikind 1
+    let KindMean{kmKind} = discoKind EM.! jkindIx trunk
+    execUpdAtomic $ UpdRecordKill aid kmKind 1
     electLeader (bfid b) (blid b) aid
     tb <- getsState $ getActorBody aid
     deduceKilled aid tb  -- tb has items not dropped, stash in inv

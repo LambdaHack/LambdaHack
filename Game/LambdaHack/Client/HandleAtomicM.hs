@@ -388,14 +388,16 @@ perception lid outPer inPer = do
 
 discoverKind :: MonadClient m
              => Container -> ItemId -> Kind.Id ItemKind -> m ()
-discoverKind c iid ik = do
+discoverKind c iid kmKind = do
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
   invalidateBfsAll
   item <- getsState $ getItemBody iid
-  let f Nothing = Just ik
+  let kmMean = meanAspectEffects $ okind kmKind
+      f Nothing = Just KindMean{..}
       f Just{} = assert `failure` "already discovered"
-                        `twith` (c, iid, ik)
+                        `twith` (c, iid, kmKind)
   modifyClient $ \cli ->
     cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
 
@@ -404,8 +406,9 @@ coverKind :: MonadClient m
 coverKind c iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = assert `failure` "already covered" `twith` (c, iid, ik)
-      f (Just ik2) = assert (ik == ik2 `blame` "unexpected covered item kind"
-                                       `twith` (ik, ik2)) Nothing
+      f (Just KindMean{kmKind}) =
+        assert (ik == kmKind `blame` "unexpected covered item kind"
+                             `twith` (ik, kmKind)) Nothing
   modifyClient $ \cli ->
     cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
 
@@ -422,8 +425,8 @@ discoverSeed c iid seed ldepth = do
   case EM.lookup (jkindIx item) discoKind of
     Nothing -> assert `failure` "kind not known"
                       `twith` (c, iid, seed)
-    Just ik -> do
-      let kind = okind ik
+    Just KindMean{kmKind} -> do
+      let kind = okind kmKind
           -- TODO: the $! just in case.
           f Nothing = Just $! seedToAspectsEffects seed kind ldepth totalDepth
           f Just{} = assert `failure` "already discovered"

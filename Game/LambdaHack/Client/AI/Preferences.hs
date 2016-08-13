@@ -120,8 +120,8 @@ organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b activeItems fact =
 aspectToBenefit :: Kind.COps -> Actor -> IK.Aspect Int -> Int
 aspectToBenefit _cops _b asp =
   case asp of
-    IK.Unique{} -> 0
-    IK.Periodic{} -> 0
+    IK.Unique -> 0
+    IK.Periodic -> 0
     IK.Timeout{} -> 0
     IK.AddHurtMelee p -> p
     IK.AddHurtRanged p | p < 0 -> 0  -- TODO: don't ignore for missiles
@@ -131,11 +131,11 @@ aspectToBenefit _cops _b asp =
     IK.AddMaxHP p -> p
     IK.AddMaxCalm p -> p `div` 5
     IK.AddSpeed p -> p * 10000
-    IK.AddAbility _ p -> 5 * p
     IK.AddSight p -> p * 10
     IK.AddSmell p -> p * 10
     IK.AddShine p -> p * 10
     IK.AddNocto p -> p * 50
+    IK.AddAbility _ p -> 5 * p
 
 -- | Determine the total benefit from having an item in eqp or inv,
 -- according to item type, and also the benefit confered by equipping the item
@@ -145,7 +145,7 @@ totalUsefulness :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull
 totalUsefulness cops b activeItems fact itemFull =
   let ben effects aspects =
         let effBens = map (effectToBenefit cops b activeItems fact) effects
-            aspBens = map (aspectToBenefit cops b) aspects
+            aspBens = map (aspectToBenefit cops b) $ aspectRecordToList aspects  -- TODO
             periodicEffBens = map (effectToBenefit cops b activeItems fact)
                                   (allRecharging effects)
             periodicBens =
@@ -173,7 +173,7 @@ totalUsefulness cops b activeItems fact itemFull =
     Just ItemDisco{ itemAE=Just ItemAspectEffect{jaspects}
                   , itemKind=IK.ItemKind{ieffects} } ->
       Just $ ben ieffects jaspects
-    Just ItemDisco{itemKind=IK.ItemKind{iaspects, ieffects}} ->
-      let jaspects = map (fmap Dice.meanDice) iaspects
-      in Just $ ben ieffects jaspects
+    Just ItemDisco{ itemAEmean=ItemAspectEffect{jaspects}
+                  , itemKind=IK.ItemKind{ieffects} } ->
+      Just $ ben ieffects jaspects
     _ -> Nothing

@@ -126,8 +126,8 @@ rawAspectToSuff :: Aspect Text -> Text
 rawAspectToSuff aspect =
   case aspect of
     Unique -> ""  -- marked by capital letters in name
-    Periodic{} -> ""  -- printed specially
-    Timeout{}  -> ""  -- printed specially
+    Periodic -> ""  -- printed specially
+    Timeout{} -> ""  -- printed specially
     AddHurtMelee t -> wrapInParens $ t <> "% melee"
     AddHurtRanged t -> wrapInParens $ t <> "% ranged"
     AddArmorMelee t -> "[" <> t <> "%]"
@@ -135,11 +135,11 @@ rawAspectToSuff aspect =
     AddMaxHP t -> wrapInParens $ t <+> "HP"
     AddMaxCalm t -> wrapInParens $ t <+> "Calm"
     AddSpeed t -> wrapInParens $ t <+> "speed"
-    AddAbility ab t -> wrapInParens $ t <+> tshow ab
     AddSight t -> wrapInParens $ t <+> "sight"
     AddSmell t -> wrapInParens $ t <+> "smell"
     AddShine t -> wrapInParens $ t <+> "shine"
     AddNocto t -> wrapInParens $ t <+> "night vision"
+    AddAbility ab t -> wrapInParens $ t <+> tshow ab
 
 featureToSuff :: Feature -> Text
 featureToSuff feat =

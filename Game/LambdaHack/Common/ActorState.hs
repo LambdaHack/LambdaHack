@@ -372,9 +372,10 @@ itemToFull Kind.COps{coitem=Kind.Ops{okind}}
            disco discoEffect iid itemBase (itemK, itemTimer) =
   let itemDisco = case EM.lookup (jkindIx itemBase) disco of
         Nothing -> Nothing
-        Just itemKindId -> Just ItemDisco{ itemKindId
-                                         , itemKind = okind itemKindId
-                                         , itemAE = EM.lookup iid discoEffect }
+        Just KindMean{..} -> Just ItemDisco{ itemKindId = kmKind
+                                           , itemKind = okind kmKind
+                                           , itemAEmean = kmMean
+                                           , itemAE = EM.lookup iid discoEffect }
   in ItemFull {..}
 
 -- Non-durable item that hurts doesn't go into equipment by default,

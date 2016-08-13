@@ -66,8 +66,8 @@ reinitGame = do
   let defLocal | sknowMap = s
                | otherwise = localFromGlobal s
   discoS <- getsServer sdiscoKind
-  let sdiscoKind = let f ik = IK.Identified `elem` IK.ifeature (okind ik)
-               in EM.filter f discoS
+  let sdiscoKind = let f KindMean{kmKind} = IK.Identified `elem` IK.ifeature (okind kmKind)
+                   in EM.filter f discoS
   broadcastUpdAtomic
     $ \fid -> UpdRestart fid sdiscoKind (pers EM.! fid) defLocal scurDiffSer sdebugCli
   populateDungeon

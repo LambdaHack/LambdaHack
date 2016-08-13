@@ -50,12 +50,11 @@ partItemN fullInfo n c localTime itemFull =
           ts = take n effTs
                ++ ["(...)" | length effTs > n]
                ++ [timer]
-          isUnique aspects = IK.Unique `elem` aspects
           unique = case iDisco of
             ItemDisco{itemAE=Just ItemAspectEffect{jaspects}} ->
-              isUnique jaspects
-            ItemDisco{itemKind} ->
-              isUnique $ IK.iaspects itemKind
+              aUnique jaspects
+            ItemDisco{itemAEmean=ItemAspectEffect{jaspects}} ->
+              aUnique jaspects
           capName = if unique
                     then MU.Capitalize $ MU.Text genericName
                     else MU.Text genericName
@@ -71,11 +70,8 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                | otherwise = []
   in case itemDisco of
     Nothing -> features
-    Just ItemDisco{itemKind, itemAE} ->
-      let periodicAspect :: IK.Aspect a -> Bool
-          periodicAspect IK.Periodic = True
-          periodicAspect _ = False
-          timeoutAspect :: IK.Aspect a -> Bool
+    Just ItemDisco{itemKind, itemAE, itemAEmean} ->
+      let timeoutAspect :: IK.Aspect a -> Bool
           timeoutAspect IK.Timeout{} = True
           timeoutAspect _ = False
           noEffect :: IK.Effect -> Bool
@@ -91,12 +87,12 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
           active = cstore `elem` [CEqp, COrgan]
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
           splitAE :: (Num a, Show a, Ord a)
-                  => (a -> Text)
+                  => (a -> Text) -> AspectRecord
                   -> [IK.Aspect a] -> (IK.Aspect a -> Text)
                   -> [IK.Effect] -> (IK.Effect -> Text)
                   -> [Text]
-          splitAE reduce_a aspects ppA effects ppE =
-            let mperiodic = find periodicAspect aspects
+          splitAE reduce_a aspectRecord aspects ppA effects ppE =
+            let periodic = aPeriodic aspectRecord
                 mtimeout = find timeoutAspect aspects
                 mnoEffect = find noEffect effects
                 restAs = sort aspects
@@ -112,11 +108,11 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                             $ filter (not . T.null)
                             $ map ppE $ stripOnSmash restEs
                 durable = IK.Durable `elem` jfeature itemBase
-                periodicOrTimeout = case mperiodic of
+                periodicOrTimeout = case periodic of
                   _ | skipRecharging || T.null rechargingTs -> ""
-                  Just IK.Periodic ->
+                  True ->
                     case mtimeout of
-                      Just (IK.Timeout 0) | not durable ->
+                      Nothing | not durable ->
                         "(each turn until gone:"
                         <+> rechargingTs <> ")"
                       Just (IK.Timeout t) ->
@@ -138,12 +134,12 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                              ++ [onSmash | fullInfo >= 7]
                         else map ppE hurtEs
           aets = case itemAE of
-            Just ItemAspectEffect{jaspects} ->
-              splitAE tshow
-                      jaspects aspectToSuffix
+            Just iAE ->
+              splitAE tshow (jaspects itemAEmean)
+                      (aspectRecordToList $ jaspects iAE) aspectToSuffix
                       (IK.ieffects itemKind) effectToSuffix
             Nothing ->
-              splitAE (maybe "?" tshow . Dice.reduceDice)
+              splitAE (maybe "?" tshow . Dice.reduceDice) (jaspects itemAEmean)
                       (IK.iaspects itemKind) kindAspectToSuffix
                       (IK.ieffects itemKind) effectToSuffix
       in aets ++ features

@@ -227,6 +227,7 @@ toOrganActorTurn grp nDm = CreateItem COrgan grp (TimerActorTurn nDm)
 toOrganNone :: GroupName ItemKind -> Effect
 toOrganNone grp = CreateItem COrgan grp TimerNone
 
+-- TODO: reject aspects with dice 0
 -- | Catch invalid item kind definitions.
 validateSingleItemKind :: ItemKind -> [Text]
 validateSingleItemKind ItemKind{..} =

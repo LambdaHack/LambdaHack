@@ -26,24 +26,12 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
 
-strengthAspect :: (Aspect Int -> [b]) -> ItemFull -> [b]
-strengthAspect f itemFull =
+strengthAspect :: ItemFull -> Maybe AspectRecord
+strengthAspect itemFull =
   case itemDisco itemFull of
-    Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects}} ->
-      concatMap f jaspects
-    Just ItemDisco{itemKind=ItemKind{iaspects}} ->
-      -- Approximation. For some effects lower values are better,
-      -- so we just offer the mean of the dice. This is also correct
-      -- for summation, on average.
-      concatMap (f . fmap Dice.meanDice) iaspects
-    Nothing -> []
-
-strengthAspectMaybe :: Show b => (Aspect Int -> [b]) -> ItemFull -> Maybe b
-strengthAspectMaybe f itemFull =
-  case strengthAspect f itemFull of
-    [] -> Nothing
-    [x] -> Just x
-    xs -> assert `failure` (xs, itemFull)
+    Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects}} -> Just jaspects
+    Just ItemDisco{itemAEmean=ItemAspectEffect{jaspects}} -> Just jaspects
+    Nothing -> Nothing
 
 strengthEffect :: (Effect -> [b]) -> ItemFull -> [b]
 {-# INLINE strengthEffect #-}
@@ -75,93 +63,6 @@ strengthDropOrgan =
       p (Recharging (DropItem COrgan grp _)) = [grp]
       p _ = []
   in strengthEffect p
-
-strengthPeriodic :: ItemFull -> Maybe Int
-strengthPeriodic itemFull =
-  let p Periodic = [()]
-      p _ = []
-      isPeriodic = isJust $ strengthAspectMaybe p itemFull
-      q (Timeout k) = [k]
-      q _ = []
-  in if isPeriodic then strengthAspectMaybe q itemFull else Nothing
-
-strengthTimeout :: ItemFull -> Maybe Int
-strengthTimeout =
-  let p (Timeout k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthAddMaxHP :: ItemFull -> Maybe Int
-strengthAddMaxHP =
-  let p (AddMaxHP k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthAddMaxCalm :: ItemFull -> Maybe Int
-strengthAddMaxCalm =
-  let p (AddMaxCalm k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthAddSpeed :: ItemFull -> Maybe Int
-strengthAddSpeed =
-  let p (AddSpeed k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthAddAbility :: Ability.Ability -> ItemFull -> Maybe Int
-strengthAddAbility ab =
-  let p (AddAbility a k) | a == ab = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthAddHurtMelee :: ItemFull -> Maybe Int
-strengthAddHurtMelee =
-  let p (AddHurtMelee k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthAddHurtRanged :: ItemFull -> Maybe Int
-strengthAddHurtRanged =
-  let p (AddHurtRanged k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthAddArmorMelee :: ItemFull -> Maybe Int
-strengthAddArmorMelee =
-  let p (AddArmorMelee k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthAddArmorRanged :: ItemFull -> Maybe Int
-strengthAddArmorRanged =
-  let p (AddArmorRanged k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthAddSight :: ItemFull -> Maybe Int
-strengthAddSight =
-  let p (AddSight k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthAddSmell :: ItemFull -> Maybe Int
-strengthAddSmell =
-  let p (AddSmell k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthAddShine :: ItemFull -> Maybe Int
-strengthAddShine =
-  let p (AddShine k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthAddNocto :: ItemFull -> Maybe Int
-strengthAddNocto =
-  let p (AddNocto k) = [k]
-      p _ = []
-  in strengthAspectMaybe p
 
 strengthEqpSlot :: Item -> Maybe (EqpSlot, Text)
 strengthEqpSlot item =
@@ -199,31 +100,33 @@ totalRange item = snd $ snd $ itemTrajectory item []
 -- TODO: when all below are aspects, define with
 -- (EqpSlotAddMaxHP, AddMaxHP k) -> [k]
 strengthFromEqpSlot :: EqpSlot -> ItemFull -> Maybe Int
-strengthFromEqpSlot eqpSlot =
-  case eqpSlot of
-    EqpSlotPeriodic -> strengthPeriodic
-    EqpSlotTimeout -> strengthTimeout
-    EqpSlotAddHurtMelee -> strengthAddHurtMelee
-    EqpSlotAddHurtRanged -> strengthAddHurtRanged
-    EqpSlotAddArmorMelee -> strengthAddArmorMelee
-    EqpSlotAddArmorRanged -> strengthAddArmorRanged
-    EqpSlotAddMaxHP -> strengthAddMaxHP
-    EqpSlotAddMaxCalm -> strengthAddMaxCalm
-    EqpSlotAddSpeed -> strengthAddSpeed
-    EqpSlotAddSight -> strengthAddSight
-    EqpSlotAddSmell -> strengthAddSmell
-    EqpSlotAddShine -> strengthAddShine
-    EqpSlotAddNocto -> strengthAddNocto
-    EqpSlotWeapon -> strengthMelee
-    EqpSlotAddAbility ab -> strengthAddAbility ab
-
-strengthMelee :: ItemFull -> Maybe Int
-strengthMelee itemFull =
-  let p (Hurt d) = [Dice.meanDice d]
-      p (Burn d) = [Dice.meanDice d]
-      p _ = []
-      psum = sum (strengthEffect p itemFull)
-  in if psum == 0 then Nothing else Just psum
+strengthFromEqpSlot eqpSlot itemFull =
+  case strengthAspect itemFull of
+    Nothing -> Nothing
+    Just AspectRecord{..} -> case eqpSlot of
+      EqpSlotPeriodic -> if aPeriodic then mJust aTimeout else Nothing
+      EqpSlotTimeout -> mJust aTimeout
+      EqpSlotAddHurtMelee -> mJust aHurtMelee
+      EqpSlotAddHurtRanged -> mJust aHurtRanged
+      EqpSlotAddArmorMelee -> mJust aArmorMelee
+      EqpSlotAddArmorRanged -> mJust aArmorRanged
+      EqpSlotAddMaxHP -> mJust aMaxHP
+      EqpSlotAddMaxCalm -> mJust aMaxCalm
+      EqpSlotAddSpeed -> mJust aSpeed
+      EqpSlotAddSight -> mJust aSight
+      EqpSlotAddSmell -> mJust aSmell
+      EqpSlotAddShine -> mJust aShine
+      EqpSlotAddNocto -> mJust aNocto
+      EqpSlotWeapon ->
+        let p (Hurt d) = [Dice.meanDice d]
+            p (Burn d) = [Dice.meanDice d]
+            p _ = []
+            psum = sum (strengthEffect p itemFull)
+        in mJust psum
+      EqpSlotAddAbility ab -> mJust $ EM.findWithDefault 0 ab aAbility
+ where
+  mJust n | n == 0 = Nothing
+          | otherwise = Just n
 
 strongestSlotNoFilter :: EqpSlot -> [(ItemId, ItemFull)]
                       -> [(Int, (ItemId, ItemFull))]
@@ -247,16 +150,16 @@ sumSlotNoFilter eqpSlot is =
       g itemFull = (* itemK itemFull) <$> f itemFull
   in sum $ mapMaybe g is
 
-strengthAllAddAbility :: ItemFull -> [(Ability.Ability, Int)]
-strengthAllAddAbility =
-  let p (AddAbility ab k) = [(ab, k)]
-      p _ = []
-  in strengthAspect p
+strengthAllAddAbility :: ItemFull -> Ability.Skills
+strengthAllAddAbility itemFull = case itemDisco itemFull of
+    Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects}} -> aAbility jaspects
+    Just ItemDisco{itemAEmean=ItemAspectEffect{jaspects}} -> aAbility jaspects
+    Nothing -> Ability.zeroSkills
 
 sumSkills :: [ItemFull] -> Ability.Skills
 sumSkills is =
   let g itemFull = Ability.scaleSkills (itemK itemFull)
-                   $ EM.fromListWith (+) $ strengthAllAddAbility itemFull
+                   $ strengthAllAddAbility itemFull
   in foldr Ability.addSkills Ability.zeroSkills $ map g is
 
 unknownAspect :: (Aspect Dice.Dice -> [Dice.Dice]) -> ItemFull -> Bool
