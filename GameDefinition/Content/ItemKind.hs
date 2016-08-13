@@ -7,8 +7,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Strict as EM
-
 import Content.ItemKindActor
 import Content.ItemKindBlast
 import Content.ItemKindOrgan
@@ -448,18 +446,18 @@ ring6 = ring
 ring7 = ring
   { ifreq    = [("useful", 100), ("ring of opportunity sniper", 1) ]
   , irarity  = [(1, 1)]
-  , iaspects = [AddSkills $ EM.fromList [(AbProject, 8)]]
+  , iaspects = [AddAbility AbProject 8]
   , ieffects = [ ELabel "of opportunity sniper"
                , Explode "distortion" ]  -- strong magic
-  , ifeature = ifeature ring ++ [EqpSlot (EqpSlotAddSkills AbProject) ""]
+  , ifeature = ifeature ring ++ [EqpSlot (EqpSlotAddAbility AbProject) ""]
   }
 ring8 = ring
   { ifreq    = [("useful", 1), ("ring of opportunity grenadier", 1) ]
   , irarity  = [(1, 1)]
-  , iaspects = [AddSkills $ EM.fromList [(AbProject, 11)]]
+  , iaspects = [AddAbility AbProject 11]
   , ieffects = [ ELabel "of opportunity grenadier"
                , Explode "distortion" ]  -- strong magic
-  , ifeature = ifeature ring ++ [EqpSlot (EqpSlotAddSkills AbProject) ""]
+  , ifeature = ifeature ring ++ [EqpSlot (EqpSlotAddAbility AbProject) ""]
   }
 
 -- * Ordinary exploding consumables, often intended to be thrown

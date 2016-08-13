@@ -111,15 +111,9 @@ strengthAddSpeed =
       p _ = []
   in strengthAspectMaybe p
 
-strengthAllAddSkills :: ItemFull -> Maybe Ability.Skills
-strengthAllAddSkills =
-  let p (AddSkills a) = [a]
-      p _ = []
-  in strengthAspectMaybe p
-
-strengthAddSkills :: Ability.Ability -> ItemFull -> Maybe Int
-strengthAddSkills ab =
-  let p (AddSkills a) = [EM.findWithDefault 0 ab a]
+strengthAddAbility :: Ability.Ability -> ItemFull -> Maybe Int
+strengthAddAbility ab =
+  let p (AddAbility a k) | a == ab = [k]
       p _ = []
   in strengthAspectMaybe p
 
@@ -223,7 +217,7 @@ strengthFromEqpSlot eqpSlot =
     EqpSlotAddShine -> strengthAddShine
     EqpSlotAddNocto -> strengthAddNocto
     EqpSlotWeapon -> strengthMelee
-    EqpSlotAddSkills ab -> strengthAddSkills ab
+    EqpSlotAddAbility ab -> strengthAddAbility ab
 
 strengthMelee :: ItemFull -> Maybe Int
 strengthMelee itemFull =
@@ -255,11 +249,17 @@ sumSlotNoFilter eqpSlot is =
       g itemFull = (* itemK itemFull) <$> f itemFull
   in sum $ mapMaybe g is
 
+strengthAllAddAbility :: ItemFull -> [(Ability.Ability, Int)]
+strengthAllAddAbility =
+  let p (AddAbility ab k) = [(ab, k)]
+      p _ = []
+  in strengthAspect p
+
 sumSkills :: [ItemFull] -> Ability.Skills
 sumSkills is =
   let g itemFull = Ability.scaleSkills (itemK itemFull)
-                   <$> strengthAllAddSkills itemFull
-  in foldr Ability.addSkills Ability.zeroSkills $ mapMaybe g is
+                   $ EM.fromListWith (+) $ strengthAllAddAbility itemFull
+  in foldr Ability.addSkills Ability.zeroSkills $ map g is
 
 unknownAspect :: (Aspect Dice.Dice -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =

@@ -223,7 +223,7 @@ statsOverlay aid = do
         , (IK.EqpSlotAddSmell, \t -> tshow (max 0 t) <> "m")
         , (IK.EqpSlotAddShine, \t -> tshow (max 0 t) <> "m")
         , (IK.EqpSlotAddNocto, \t -> tshow (max 0 t) <> "m") ]
-        ++ [ (IK.EqpSlotAddSkills ab, tshow)
+        ++ [ (IK.EqpSlotAddAbility ab, tshow)
            | ab <- [minBound..maxBound] ]
       zipReslot = zipWith prSlot $ zip [0..] allZeroSlots
       (ts, kxs) = unzip $ zipReslot slotList

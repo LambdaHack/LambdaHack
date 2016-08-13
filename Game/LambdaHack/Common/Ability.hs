@@ -28,7 +28,7 @@ data Ability =
   | AbTrigger
   deriving (Read, Eq, Ord, Generic, Enum, Bounded)
 
--- skill level in particular abilities.
+-- | Skill level in particular abilities.
 type Skills = EM.EnumMap Ability Int
 
 zeroSkills :: Skills

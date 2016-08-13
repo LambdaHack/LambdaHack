@@ -9,7 +9,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
@@ -137,11 +136,7 @@ rawAspectToSuff aspect =
     AddMaxHP t -> wrapInParens $ t <+> "HP"
     AddMaxCalm t -> wrapInParens $ t <+> "Calm"
     AddSpeed t -> wrapInParens $ t <+> "speed"
-    AddSkills p ->
-      let skillToSuff (skill, bonus) =
-            (if bonus > 0 then "+" else "")
-            <> tshow bonus <+> tshow skill
-      in wrapInParens $ T.intercalate " " $ map skillToSuff $ EM.assocs p
+    AddAbility ab t -> wrapInParens $ t <+> tshow ab
     AddSight t -> wrapInParens $ t <+> "sight"
     AddSmell t -> wrapInParens $ t <+> "smell"
     AddShine t -> wrapInParens $ t <+> "shine"

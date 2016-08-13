@@ -7,8 +7,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Strict as EM
-
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Flavour
@@ -34,8 +32,8 @@ warrior = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 60  -- partially from clothes and assumed first aid
                , AddMaxCalm 60, AddSpeed 20, AddNocto 2
-               , AddSkills $ EM.fromList
-                   [(AbProject, 2), (AbApply, 1), (AbAlter, 3)] ]
+               , AddAbility AbProject 2, AddAbility AbApply 1
+               , AddAbility AbAlter 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -91,8 +89,8 @@ eye = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 16, AddMaxCalm 60, AddSpeed 20, AddNocto 2
-               , AddSkills $ EM.fromList
-                   [(AbProject, 2), (AbApply, 1), (AbAlter, 3)] ]
+               , AddAbility AbProject 2, AddAbility AbApply 1
+               , AddAbility AbAlter 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "Under your stare, it reduces to the bits that define its essence. Under introspection, the bits slow down and solidify into an arbitrary form again. It must be huge inside, for holographic principle to manifest so overtly."  -- holographic principle is an anachronism for XIX or most of XX century, but "the cosmological scale effects" is too weak
@@ -109,7 +107,7 @@ fastEye = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 5, AddMaxCalm 60, AddSpeed 30, AddNocto 2
-               , AddSkills $ EM.fromList [(AbAlter, 3)] ]
+               , AddAbility AbAlter 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "Hungers but never eats. Bites but never swallows. Burrows its own image through, but never carries anything back."  -- rather weak: not about injective objects, but puny, concrete, injective functions  --- where's the madness in that?
@@ -127,7 +125,7 @@ nose = ItemKind  -- depends solely on smell
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 30, AddSpeed 18, AddNocto 2
-               , AddSkills $ EM.fromList [(AbProject, -1), (AbAlter, 3)] ]
+               , AddAbility AbProject (-1), AddAbility AbAlter 3 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "No mouth, yet it devours everything around, constantly sniffing itself inward; pure movement structure, no constant point to focus one's maddened gaze on."
@@ -144,8 +142,8 @@ elbow = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 8, AddMaxCalm 90, AddSpeed 21, AddNocto 2
-               , AddSkills $ EM.fromList
-                   [(AbProject, 2), (AbApply, 1), (AbAlter, 3), (AbMelee, -1)] ]
+               , AddAbility AbProject 2, AddAbility AbApply 1
+               , AddAbility AbAlter 3, AddAbility AbMelee (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
@@ -165,9 +163,8 @@ torsor = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ Unique, AddMaxHP 300, AddMaxCalm 100, AddSpeed 10, AddNocto 2
-               , AddSkills $ EM.fromList
-                   [ (AbProject, 2), (AbApply, 1), (AbAlter, 3)
-                   , (AbTrigger, -1) ] ]
+               , AddAbility AbProject 2, AddAbility AbApply 1
+               , AddAbility AbAlter 3, AddAbility AbTrigger (-1) ]
                    -- can't switch levels, a miniboss
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -212,7 +209,7 @@ griffonVulture = ItemKind
   , iverbHit = "thud"
   , iweight  = 13000
   , iaspects = [ AddMaxHP 12, AddMaxCalm 60, AddSpeed 20, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-1) ]
+               , AddAbility AbAlter (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -230,7 +227,7 @@ skunk = ItemKind
   , iverbHit = "thud"
   , iweight  = 4000
   , iaspects = [ AddMaxHP 10, AddMaxCalm 30, AddSpeed 20, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-1) ]
+               , AddAbility AbAlter (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -249,7 +246,7 @@ armadillo = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 20, AddMaxCalm 30, AddSpeed 17, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-1) ]
+               , AddAbility AbAlter (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -267,7 +264,7 @@ gilaMonster = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 12, AddMaxCalm 60, AddSpeed 15, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-1) ]
+               , AddAbility AbAlter (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -285,7 +282,7 @@ rattlesnake = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 25, AddMaxCalm 60, AddSpeed 15, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-1) ]
+               , AddAbility AbAlter (-1) ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -355,7 +352,7 @@ rhinoceros = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ Unique, AddMaxHP 90, AddMaxCalm 60, AddSpeed 25, AddNocto 2
-               , AddSkills $ EM.singleton AbTrigger (-1) ]
+               , AddAbility AbTrigger (-1) ]
                    -- can't switch levels, a miniboss
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -377,7 +374,7 @@ beeSwarm = ItemKind
   , iverbHit = "thud"
   , iweight  = 1000
   , iaspects = [ AddMaxHP 8, AddMaxCalm 60, AddSpeed 30, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-1) ]  -- armor in sting
+               , AddAbility AbAlter (-1) ]  -- armor in sting
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -394,7 +391,7 @@ hornetSwarm = ItemKind
   , iverbHit = "thud"
   , iweight  = 1000
   , iaspects = [ AddMaxHP 8, AddMaxCalm 60, AddSpeed 30, AddNocto 2
-               , AddSkills $ EM.singleton AbAlter (-1)
+               , AddAbility AbAlter (-1)
                , AddArmorMelee 80, AddArmorRanged 80 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -412,7 +409,7 @@ thornbush = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 20, AddMaxCalm 999, AddSpeed 20, AddNocto 2
-               , AddSkills $ EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
+               , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -428,7 +425,7 @@ geyserBoiling = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , iaspects = [ AddMaxHP 10, AddMaxCalm 999, AddSpeed 10, AddNocto 2
-               , AddSkills $ EM.fromList (zip [AbWait, AbMelee] [1, 1..])
+               , AddAbility AbWait 1, AddAbility AbMelee 1
                , AddArmorMelee 80, AddArmorRanged 80 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
@@ -446,7 +443,7 @@ geyserArsenic = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20
                , AddNocto 2, AddShine 3
-               , AddSkills $ EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
+               , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
   , ifeature = [Durable, Identified]
   , idesc    = ""
@@ -463,7 +460,7 @@ geyserSulfur = ItemKind
   , iweight  = 80000
   , iaspects = [ AddMaxHP 30, AddMaxCalm 999, AddSpeed 20
                , AddNocto 2, AddShine 3
-               , AddSkills $ EM.fromList (zip [AbWait, AbMelee] [1, 1..]) ]
+               , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
   , ifeature = [Durable, Identified]  -- TODO: only heal humans
   , idesc    = ""

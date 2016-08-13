@@ -7,8 +7,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Strict as EM
-
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -133,7 +131,7 @@ aspectToBenefit _cops _b asp =
     IK.AddMaxHP p -> p
     IK.AddMaxCalm p -> p `div` 5
     IK.AddSpeed p -> p * 10000
-    IK.AddSkills m -> 5 * sum (EM.elems m)
+    IK.AddAbility _ p -> 5 * p
     IK.AddSight p -> p * 10
     IK.AddSmell p -> p * 10
     IK.AddShine p -> p * 10

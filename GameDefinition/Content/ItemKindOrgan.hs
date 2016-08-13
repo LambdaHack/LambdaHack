@@ -7,8 +7,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Strict as EM
-
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Dice
@@ -359,7 +357,7 @@ sapientBrain = armoredSkin
   , ifreq    = [("sapient brain", 100)]
   , icount   = 1
   , iverbHit = "outbrain"
-  , iaspects = [AddSkills unitSkills]
+  , iaspects = [AddAbility ab 1 | ab <- [minBound..maxBound]]
   , idesc    = ""
   }
 animalBrain = armoredSkin
@@ -367,9 +365,10 @@ animalBrain = armoredSkin
   , ifreq    = [("animal brain", 100)]
   , icount   = 1
   , iverbHit = "blank"
-  , iaspects = let absNo = [AbAlter, AbDisplace, AbMoveItem, AbProject, AbApply]
-                   sk = EM.fromList $ zip absNo [1, -1, -1, -1, -1]
-               in [AddSkills $ addSkills unitSkills sk]
+  , iaspects = [AddAbility ab 1 | ab <- [minBound..maxBound]]
+               ++ [AddAbility AbAlter 1]
+               ++ [ AddAbility ab (-1)
+                  | ab <- [AbDisplace, AbMoveItem, AbProject, AbApply] ]
   , idesc    = ""
   }
 speedGland :: Int -> ItemKind
