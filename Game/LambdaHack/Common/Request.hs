@@ -200,12 +200,12 @@ permittedProject :: Bool -> Int -> Actor -> [ItemFull] -> [Char] -> ItemFull
 permittedProject forced skill b activeItems
                  triggerSyms itemFull@ItemFull{itemBase} =
   let calmE = calmEnough b activeItems
-      mhurtRanged = strengthFromEqpSlot IK.EqpSlotAddHurtRanged itemFull
+      hurtRanged = strengthFromEqpSlot IK.EqpSlotAddHurtRanged itemFull
   in if
     | not forced
       && skill < 1 -> Left ProjectUnskilled
     | not forced
-      && isNothing mhurtRanged
+      && hurtRanged == 0
       && skill < 2 -> Left ProjectNotRanged
     | not forced
       && IK.Fragile `elem` jfeature itemBase

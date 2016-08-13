@@ -426,14 +426,11 @@ aidFromC c@CTrunk{} = assert `failure` c
 
 hasCharge :: Time -> ItemFull -> Bool
 hasCharge localTime itemFull@ItemFull{..} =
-  let it1 = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
-        Nothing -> []  -- if item not IDed, assume no timeout, to ID by use
-        Just timeout ->
-          let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-              charging startT = timeShift startT timeoutTurns > localTime
-          in filter charging itemTimer
-      len = length it1
-  in len < itemK
+  let timeout = strengthFromEqpSlot IK.EqpSlotTimeout itemFull
+      timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
+      charging startT = timeShift startT timeoutTurns > localTime
+      it1 = filter charging itemTimer
+  in length it1 < itemK
 
 strMelee :: Bool -> Time -> ItemFull -> Maybe Int
 strMelee effectBonus localTime itemFull =

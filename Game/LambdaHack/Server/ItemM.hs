@@ -51,14 +51,10 @@ registerItem itemFull itemKnown@(_, iae) seed k container verbose = do
       execUpdAtomic $ cmd iid (itemBase itemFull) (k, []) container
       return iid
     Nothing -> do
-      let fovSightR = fromMaybe 0
-                      $ strengthFromEqpSlot IK.EqpSlotAddSight itemFull
-          fovSmellR = fromMaybe 0
-                      $ strengthFromEqpSlot IK.EqpSlotAddSmell itemFull
-          fovShineR = fromMaybe 0
-                      $ strengthFromEqpSlot IK.EqpSlotAddShine itemFull
-          fovNoctoR = fromMaybe 0
-                      $ strengthFromEqpSlot IK.EqpSlotAddNocto itemFull
+      let fovSightR = strengthFromEqpSlot IK.EqpSlotAddSight itemFull
+          fovSmellR = strengthFromEqpSlot IK.EqpSlotAddSmell itemFull
+          fovShineR = strengthFromEqpSlot IK.EqpSlotAddShine itemFull
+          fovNoctoR = strengthFromEqpSlot IK.EqpSlotAddNocto itemFull
           ssl = FovAspect{..}
       icounter <- getsServer sicounter
       modifyServer $ \ser ->

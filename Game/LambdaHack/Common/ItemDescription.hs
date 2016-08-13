@@ -32,14 +32,12 @@ partItemN fullInfo n c localTime itemFull =
       let flav = flavourToName $ jflavour $ itemBase itemFull
       in (False, MU.Text $ flav <+> genericName, "")
     Just iDisco ->
-      let (toutN, it1) = case strengthFromEqpSlot IK.EqpSlotTimeout itemFull of
-            Nothing -> (0, [])
-            Just timeout ->
-              let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-                  charging startT = timeShift startT timeoutTurns > localTime
-              in (timeout, filter charging (itemTimer itemFull))
+      let timeout = strengthFromEqpSlot IK.EqpSlotTimeout itemFull
+          timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
+          charging startT = timeShift startT timeoutTurns > localTime
+          it1 = filter charging (itemTimer itemFull)
           len = length it1
-          chargingAdj | toutN == 0 = "temporary"
+          chargingAdj | timeout == 0 = "temporary"
                       | otherwise = "charging"
           timer | len == 0 = ""
                 | itemK itemFull == 1 && len == 1 = "(" <> chargingAdj <> ")"

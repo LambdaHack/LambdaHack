@@ -3,8 +3,8 @@
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
-  , strengthToThrow, strengthEqpSlot, strengthFromEqpSlot, strengthEffect
-  , strongestSlotNoFilter, strongestSlot, sumSlotNoFilter, sumSkills
+  , strengthEqpSlot, strengthFromEqpSlot, strengthEffect
+  , strongestSlot, sumSlotNoFilter, sumSkills
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   , unknownMelee, allRecharging, stripRecharging, stripOnSmash
@@ -97,43 +97,37 @@ itemTrajectory item path =
 totalRange :: Item -> Int
 totalRange item = snd $ snd $ itemTrajectory item []
 
--- TODO: when all below are aspects, define with
--- (EqpSlotAddMaxHP, AddMaxHP k) -> [k]
-strengthFromEqpSlot :: EqpSlot -> ItemFull -> Maybe Int
+strengthFromEqpSlot :: EqpSlot -> ItemFull -> Int
 strengthFromEqpSlot eqpSlot itemFull =
   case strengthAspect itemFull of
-    Nothing -> Nothing
+    Nothing -> 0
     Just AspectRecord{..} -> case eqpSlot of
-      EqpSlotPeriodic -> if aPeriodic then mJust aTimeout else Nothing
-      EqpSlotTimeout -> mJust aTimeout
-      EqpSlotAddHurtMelee -> mJust aHurtMelee
-      EqpSlotAddHurtRanged -> mJust aHurtRanged
-      EqpSlotAddArmorMelee -> mJust aArmorMelee
-      EqpSlotAddArmorRanged -> mJust aArmorRanged
-      EqpSlotAddMaxHP -> mJust aMaxHP
-      EqpSlotAddMaxCalm -> mJust aMaxCalm
-      EqpSlotAddSpeed -> mJust aSpeed
-      EqpSlotAddSight -> mJust aSight
-      EqpSlotAddSmell -> mJust aSmell
-      EqpSlotAddShine -> mJust aShine
-      EqpSlotAddNocto -> mJust aNocto
+      EqpSlotPeriodic -> if aPeriodic then aTimeout else 0
+      EqpSlotTimeout -> aTimeout
+      EqpSlotAddHurtMelee -> aHurtMelee
+      EqpSlotAddHurtRanged -> aHurtRanged
+      EqpSlotAddArmorMelee -> aArmorMelee
+      EqpSlotAddArmorRanged -> aArmorRanged
+      EqpSlotAddMaxHP -> aMaxHP
+      EqpSlotAddMaxCalm -> aMaxCalm
+      EqpSlotAddSpeed -> aSpeed
+      EqpSlotAddSight -> aSight
+      EqpSlotAddSmell -> aSmell
+      EqpSlotAddShine -> aShine
+      EqpSlotAddNocto -> aNocto
       EqpSlotWeapon ->
         let p (Hurt d) = [Dice.meanDice d]
             p (Burn d) = [Dice.meanDice d]
             p _ = []
-            psum = sum (strengthEffect p itemFull)
-        in mJust psum
-      EqpSlotAddAbility ab -> mJust $ EM.findWithDefault 0 ab aAbility
- where
-  mJust n | n == 0 = Nothing
-          | otherwise = Just n
+        in sum (strengthEffect p itemFull)
+      EqpSlotAddAbility ab -> EM.findWithDefault 0 ab aAbility
 
 strongestSlotNoFilter :: EqpSlot -> [(ItemId, ItemFull)]
                       -> [(Int, (ItemId, ItemFull))]
 strongestSlotNoFilter eqpSlot is =
-  let f = strengthFromEqpSlot eqpSlot
-      g (iid, itemFull) = (\v -> (v, (iid, itemFull))) <$> f itemFull
-  in sortBy (flip $ Ord.comparing fst) $ mapMaybe g is
+  let f (iid, itemFull) = ( strengthFromEqpSlot eqpSlot itemFull
+                          , (iid, itemFull) )
+  in sortBy (flip $ Ord.comparing fst) $ map f is
 
 strongestSlot :: EqpSlot -> [(ItemId, ItemFull)]
               -> [(Int, (ItemId, ItemFull))]
@@ -146,9 +140,8 @@ strongestSlot eqpSlot is =
 
 sumSlotNoFilter :: EqpSlot -> [ItemFull] -> Int
 sumSlotNoFilter eqpSlot is =
-  let f = strengthFromEqpSlot eqpSlot
-      g itemFull = (* itemK itemFull) <$> f itemFull
-  in sum $ mapMaybe g is
+  let f itemFull = strengthFromEqpSlot eqpSlot itemFull * itemK itemFull
+  in sum $ map f is
 
 strengthAllAddAbility :: ItemFull -> Ability.Skills
 strengthAllAddAbility itemFull = case itemDisco itemFull of

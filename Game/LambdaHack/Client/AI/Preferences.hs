@@ -148,11 +148,10 @@ totalUsefulness cops b activeItems fact itemFull =
             aspBens = map (aspectToBenefit cops b) $ aspectRecordToList aspects  -- TODO
             periodicEffBens = map (effectToBenefit cops b activeItems fact)
                                   (allRecharging effects)
-            periodicBens =
-              case strengthFromEqpSlot IK.EqpSlotPeriodic itemFull of
-                Nothing -> []
-                Just timeout ->
-                  map (\eff -> eff * 10 `divUp` timeout) periodicEffBens
+            timeout = strengthFromEqpSlot IK.EqpSlotPeriodic itemFull
+            periodicBens | timeout == 0 = []
+                         | otherwise =
+              map (\eff -> eff * 10 `divUp` timeout) periodicEffBens
             selfBens = aspBens ++ periodicBens
             selfSum = sum selfBens
             mixedBlessing =
