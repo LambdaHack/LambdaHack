@@ -162,7 +162,7 @@ sumSkills is =
                    $ strengthAllAddAbility itemFull
   in foldr Ability.addSkills Ability.zeroSkills $ map g is
 
-unknownAspect :: (Aspect Dice.Dice -> [Dice.Dice]) -> ItemFull -> Bool
+unknownAspect :: (Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =
   case itemDisco itemFull of
     Just ItemDisco{itemAE=Nothing, itemKind=ItemKind{iaspects}} ->

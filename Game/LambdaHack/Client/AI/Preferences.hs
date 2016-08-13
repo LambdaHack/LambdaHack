@@ -109,7 +109,7 @@ organBenefit :: GroupName ItemKind -> Kind.COps
              -> (Int, Int)
 organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b activeItems fact =
   let f p _ kind (sacc, pacc) =
-        let paspect asp = p * aspectToBenefit cops b (Dice.meanDice <$> asp)
+        let paspect asp = p * aspectToBenefit cops b asp
             peffect eff = p * effectToBenefit cops b activeItems fact eff
         in ( sacc + sum (map paspect $ IK.iaspects kind)
                   + sum (map peffect $ IK.ieffects kind)
@@ -117,25 +117,25 @@ organBenefit t cops@Kind.COps{coitem=Kind.Ops{ofoldrGroup}} b activeItems fact =
   in ofoldrGroup t f (0, 0)
 
 -- | Return the value to add to effect value.
-aspectToBenefit :: Kind.COps -> Actor -> IK.Aspect Int -> Int
+aspectToBenefit :: Kind.COps -> Actor -> IK.Aspect -> Int
 aspectToBenefit _cops _b asp =
   case asp of
     IK.Unique -> 0
     IK.Periodic -> 0
     IK.Timeout{} -> 0
-    IK.AddHurtMelee p -> p
+    IK.AddHurtMelee p -> Dice.meanDice p
     IK.AddHurtRanged p | p < 0 -> 0  -- TODO: don't ignore for missiles
-    IK.AddHurtRanged p -> p `divUp` 5  -- TODO: should be summed with damage
-    IK.AddArmorMelee p -> p `divUp` 5
-    IK.AddArmorRanged p -> p `divUp` 10
-    IK.AddMaxHP p -> p
-    IK.AddMaxCalm p -> p `div` 5
-    IK.AddSpeed p -> p * 10000
-    IK.AddSight p -> p * 10
-    IK.AddSmell p -> p * 10
-    IK.AddShine p -> p * 10
-    IK.AddNocto p -> p * 50
-    IK.AddAbility _ p -> 5 * p
+    IK.AddHurtRanged p -> Dice.meanDice p `divUp` 5  -- TODO: should be summed with damage
+    IK.AddArmorMelee p -> Dice.meanDice p `divUp` 5
+    IK.AddArmorRanged p -> Dice.meanDice p `divUp` 10
+    IK.AddMaxHP p -> Dice.meanDice p
+    IK.AddMaxCalm p -> Dice.meanDice p `div` 5
+    IK.AddSpeed p -> Dice.meanDice p * 10000
+    IK.AddSight p -> Dice.meanDice p * 10
+    IK.AddSmell p -> Dice.meanDice p * 10
+    IK.AddShine p -> Dice.meanDice p * 10
+    IK.AddNocto p -> Dice.meanDice p * 50
+    IK.AddAbility _ p -> Dice.meanDice p * 5
 
 -- | Determine the total benefit from having an item in eqp or inv,
 -- according to item type, and also the benefit confered by equipping the item

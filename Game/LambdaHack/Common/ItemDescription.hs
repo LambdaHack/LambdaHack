@@ -71,7 +71,7 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
   in case itemDisco of
     Nothing -> features
     Just ItemDisco{itemKind, itemAE, itemAEmean} ->
-      let timeoutAspect :: IK.Aspect a -> Bool
+      let timeoutAspect :: IK.Aspect -> Bool
           timeoutAspect IK.Timeout{} = True
           timeoutAspect _ = False
           noEffect :: IK.Effect -> Bool
@@ -86,13 +86,12 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
           notDetail _ = True
           active = cstore `elem` [CEqp, COrgan]
                    || cstore == CGround && isJust (strengthEqpSlot itemBase)
-          splitAE :: (Num a, Show a, Ord a)
-                  => (a -> Text) -> AspectRecord
-                  -> [IK.Aspect a] -> (IK.Aspect a -> Text)
-                  -> [IK.Effect] -> (IK.Effect -> Text)
-                  -> [Text]
-          splitAE reduce_a aspectRecord aspects ppA effects ppE =
-            let periodic = aPeriodic aspectRecord
+          splitAE :: [IK.Aspect] -> [IK.Effect] -> [Text]
+          splitAE aspects effects =
+            let ppA = kindAspectToSuffix
+                ppE = effectToSuffix
+                reduce_a = maybe "?" tshow . Dice.reduceDice
+                periodic = aPeriodic $ jaspects itemAEmean
                 mtimeout = find timeoutAspect aspects
                 mnoEffect = find noEffect effects
                 restAs = sort aspects
@@ -135,13 +134,11 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                         else map ppE hurtEs
           aets = case itemAE of
             Just iAE ->
-              splitAE tshow (jaspects itemAEmean)
-                      (aspectRecordToList $ jaspects iAE) aspectToSuffix
-                      (IK.ieffects itemKind) effectToSuffix
+              splitAE (aspectRecordToList $ jaspects iAE)
+                      (IK.ieffects itemKind)
             Nothing ->
-              splitAE (maybe "?" tshow . Dice.reduceDice) (jaspects itemAEmean)
-                      (IK.iaspects itemKind) kindAspectToSuffix
-                      (IK.ieffects itemKind) effectToSuffix
+              splitAE (IK.iaspects itemKind)
+                      (IK.ieffects itemKind)
       in aets ++ features
 
 -- TODO: use kit

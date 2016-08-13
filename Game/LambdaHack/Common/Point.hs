@@ -29,7 +29,7 @@ data Point = Point
   { px :: !X
   , py :: !Y
   }
-  deriving (Read, Eq, Ord, Generic)
+  deriving (Eq, Ord, Generic)
 
 instance Show Point where
   show (Point x y) = show (x, y)

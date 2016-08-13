@@ -1,7 +1,7 @@
 -- | Description of effects. No operation in this module
 -- involves state or monad types.
 module Game.LambdaHack.Common.EffectDescription
-  ( effectToSuffix, aspectToSuffix, featureToSuff, kindAspectToSuffix
+  ( effectToSuffix, featureToSuff, kindAspectToSuffix
   ) where
 
 import Prelude ()
@@ -122,24 +122,24 @@ tmodToSuff verb ThrowMod{..} =
   in if vSuff == "" && tSuff == "" then ""
      else verb <+> "with" <+> vSuff <+> tSuff
 
-rawAspectToSuff :: Aspect Text -> Text
-rawAspectToSuff aspect =
+kindAspectToSuffix :: Aspect -> Text
+kindAspectToSuffix aspect =
   case aspect of
     Unique -> ""  -- marked by capital letters in name
     Periodic -> ""  -- printed specially
     Timeout{} -> ""  -- printed specially
-    AddHurtMelee t -> wrapInParens $ t <> "% melee"
-    AddHurtRanged t -> wrapInParens $ t <> "% ranged"
-    AddArmorMelee t -> "[" <> t <> "%]"
-    AddArmorRanged t -> "{" <> t <> "%}"
-    AddMaxHP t -> wrapInParens $ t <+> "HP"
-    AddMaxCalm t -> wrapInParens $ t <+> "Calm"
-    AddSpeed t -> wrapInParens $ t <+> "speed"
-    AddSight t -> wrapInParens $ t <+> "sight"
-    AddSmell t -> wrapInParens $ t <+> "smell"
-    AddShine t -> wrapInParens $ t <+> "shine"
-    AddNocto t -> wrapInParens $ t <+> "night vision"
-    AddAbility ab t -> wrapInParens $ t <+> tshow ab
+    AddHurtMelee t -> wrapInParens $ affixDice t <> "% melee"
+    AddHurtRanged t -> wrapInParens $ affixDice t <> "% ranged"
+    AddArmorMelee t -> "[" <> affixDice t <> "%]"
+    AddArmorRanged t -> "{" <> affixDice t <> "%}"
+    AddMaxHP t -> wrapInParens $ affixDice t <+> "HP"
+    AddMaxCalm t -> wrapInParens $ affixDice t <+> "Calm"
+    AddSpeed t -> wrapInParens $ affixDice t <+> "speed"
+    AddSight t -> wrapInParens $ affixDice t <+> "sight"
+    AddSmell t -> wrapInParens $ affixDice t <+> "smell"
+    AddShine t -> wrapInParens $ affixDice t <+> "shine"
+    AddNocto t -> wrapInParens $ affixDice t <+> "night vision"
+    AddAbility ab t -> wrapInParens $ affixDice t <+> tshow ab
 
 featureToSuff :: Feature -> Text
 featureToSuff feat =
@@ -155,9 +155,6 @@ featureToSuff feat =
 
 effectToSuffix :: Effect -> Text
 effectToSuffix = effectToSuff
-
-aspectToSuffix :: Aspect Int -> Text
-aspectToSuffix = rawAspectToSuff . fmap affixBonus
 
 affixBonus :: Int -> Text
 affixBonus p = case compare p 0 of
@@ -175,6 +172,3 @@ wrapInChevrons t = "<" <> t <> ">"
 
 affixDice :: Dice.Dice -> Text
 affixDice d = maybe "+?" affixBonus $ Dice.reduceDice d
-
-kindAspectToSuffix :: Aspect Dice.Dice -> Text
-kindAspectToSuffix = rawAspectToSuff . fmap affixDice

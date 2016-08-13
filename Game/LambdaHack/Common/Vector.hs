@@ -30,7 +30,7 @@ data Vector = Vector
   { vx :: !X
   , vy :: !Y
   }
-  deriving (Eq, Ord, Show, Read, Generic)
+  deriving (Show, Read, Eq, Ord, Generic)
 
 instance Binary Vector where
   put = put . (fromIntegral :: Int -> Int32) . fromEnum

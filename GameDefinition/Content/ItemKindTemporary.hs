@@ -21,7 +21,7 @@ tmpStrengthened,    tmpWeakened, tmpProtected, tmpVulnerable, tmpFast20, tmpSlow
 
 -- The @name@ is be used in item description, so it should be an adjective
 -- describing the temporary set of aspects.
-tmpAs :: Text -> [Aspect Dice] -> ItemKind
+tmpAs :: Text -> [Aspect] -> ItemKind
 tmpAs name aspects = ItemKind
   { isymbol  = '+'
   , iname    = name

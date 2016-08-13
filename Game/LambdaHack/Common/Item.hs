@@ -26,6 +26,7 @@ import GHC.Generics (Generic)
 import System.Random (mkStdGen)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
+import Game.LambdaHack.Common.Dice (intToDice)
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -61,11 +62,7 @@ newtype ItemSeed = ItemSeed Int
   deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
 newtype ItemAspectEffect = ItemAspectEffect {jaspects :: AspectRecord}
-  deriving (Show, Eq, Generic)
-
-instance Binary ItemAspectEffect
-
-instance Hashable ItemAspectEffect
+  deriving (Show, Eq, Hashable, Binary)
 
 data AspectRecord = AspectRecord
   { aUnique      :: !Bool
@@ -158,25 +155,25 @@ instance Hashable Item
 
 instance Binary Item
 
-aspectRecordToList :: AspectRecord -> [IK.Aspect Int]
+aspectRecordToList :: AspectRecord -> [IK.Aspect]
 aspectRecordToList AspectRecord{..} =
   [IK.Unique | aUnique]
   ++ [IK.Periodic | aPeriodic]
-  ++ [IK.Timeout aTimeout | aTimeout /= 0]
-  ++ [IK.AddHurtMelee aHurtMelee | aHurtMelee /= 0]
-  ++ [IK.AddHurtRanged aHurtRanged | aHurtRanged /= 0]
-  ++ [IK.AddArmorMelee aArmorMelee | aArmorMelee /= 0]
-  ++ [IK.AddArmorRanged aArmorRanged | aArmorRanged /= 0]
-  ++ [IK.AddMaxHP aMaxHP | aMaxHP /= 0]
-  ++ [IK.AddMaxCalm aMaxCalm | aMaxCalm /= 0]
-  ++ [IK.AddSpeed aSpeed | aSpeed /= 0]
-  ++ [IK.AddSight aSight | aSight /= 0]
-  ++ [IK.AddSmell aSmell | aSmell /= 0]
-  ++ [IK.AddShine aShine | aShine /= 0]
-  ++ [IK.AddNocto aNocto | aNocto /= 0]
-  ++ [IK.AddAbility ab n | (ab, n) <- EM.assocs aAbility, n /= 0]
+  ++ [IK.Timeout $ intToDice aTimeout | aTimeout /= 0]
+  ++ [IK.AddHurtMelee $ intToDice aHurtMelee | aHurtMelee /= 0]
+  ++ [IK.AddHurtRanged $ intToDice aHurtRanged | aHurtRanged /= 0]
+  ++ [IK.AddArmorMelee $ intToDice aArmorMelee | aArmorMelee /= 0]
+  ++ [IK.AddArmorRanged $ intToDice aArmorRanged | aArmorRanged /= 0]
+  ++ [IK.AddMaxHP $ intToDice aMaxHP | aMaxHP /= 0]
+  ++ [IK.AddMaxCalm $ intToDice aMaxCalm | aMaxCalm /= 0]
+  ++ [IK.AddSpeed $ intToDice aSpeed | aSpeed /= 0]
+  ++ [IK.AddSight $ intToDice aSight | aSight /= 0]
+  ++ [IK.AddSmell $ intToDice aSmell | aSmell /= 0]
+  ++ [IK.AddShine $ intToDice aShine | aShine /= 0]
+  ++ [IK.AddNocto $ intToDice aNocto | aNocto /= 0]
+  ++ [IK.AddAbility ab $ intToDice n | (ab, n) <- EM.assocs aAbility, n /= 0]
 
-castAspect :: AbsDepth -> AbsDepth -> AspectRecord -> IK.Aspect Dice.Dice
+castAspect :: AbsDepth -> AbsDepth -> AspectRecord -> IK.Aspect
            -> Rnd AspectRecord
 castAspect ldepth totalDepth ar asp =
   case asp of
@@ -223,8 +220,7 @@ castAspect ldepth totalDepth ar asp =
       return $! ar {aAbility = Ability.addSkills (EM.singleton ab n)
                                                  (aAbility ar)}
 
-meanAspect :: AspectRecord -> IK.Aspect Dice.Dice
-           -> AspectRecord
+meanAspect :: AspectRecord -> IK.Aspect -> AspectRecord
 meanAspect ar asp =
   case asp of
     IK.Unique -> assert (not $ aUnique ar) $ ar {aUnique = True}

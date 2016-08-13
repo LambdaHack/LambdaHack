@@ -37,10 +37,8 @@ data ItemKind = ItemKind
   , irarity  :: !Rarity            -- ^ rarity on given depths
   , iverbHit :: !MU.Part           -- ^ the verb for applying and melee
   , iweight  :: !Int               -- ^ weight in grams
-  , iaspects :: ![Aspect Dice.Dice]
-                                   -- ^ keep the aspect continuously
-  , ieffects :: ![Effect]
-                                   -- ^ cause the effect when triggered
+  , iaspects :: ![Aspect]          -- ^ keep the aspect continuously
+  , ieffects :: ![Effect]          -- ^ cause the effect when triggered
   , ifeature :: ![Feature]         -- ^ public properties
   , idesc    :: !Text              -- ^ description
   , ikit     :: ![(GroupName ItemKind, CStore)]
@@ -112,23 +110,23 @@ instance NFData TimerDice
 
 -- | Aspects of items. Those that are named @Add*@ are additive
 -- (starting at 0) for all items wielded by an actor and they affect the actor.
-data Aspect a =
-    Unique             -- ^ at most one copy can ever be generated
-  | Periodic           -- ^ in equipment, apply as often as @Timeout@ permits
-  | Timeout !a         -- ^ some effects will be disabled until item recharges
-  | AddHurtMelee !a    -- ^ percentage damage bonus in melee
-  | AddHurtRanged !a   -- ^ percentage damage bonus in ranged
-  | AddArmorMelee !a   -- ^ percentage armor bonus against melee
-  | AddArmorRanged !a  -- ^ percentage armor bonus against ranged
-  | AddMaxHP !a        -- ^ maximal hp
-  | AddMaxCalm !a      -- ^ maximal calm
-  | AddSpeed !a        -- ^ speed in m/10s
-  | AddSight !a        -- ^ FOV radius, where 1 means a single tile
-  | AddSmell !a        -- ^ smell radius, where 1 means a single tile
-  | AddShine !a        -- ^ shine radius, where 1 means a single tile
-  | AddNocto !a        -- ^ noctovision radius, where 1 means a single tile
-  | AddAbility !Ability.Ability !a  -- ^ bonus to an ability
-  deriving (Show, Read, Eq, Ord, Generic, Functor, Foldable, Traversable)
+data Aspect =
+    Unique              -- ^ at most one copy can ever be generated
+  | Periodic            -- ^ in equipment, apply as often as @Timeout@ permits
+  | Timeout !Dice.Dice         -- ^ some effects disabled until item recharges
+  | AddHurtMelee !Dice.Dice    -- ^ percentage damage bonus in melee
+  | AddHurtRanged !Dice.Dice   -- ^ percentage damage bonus in ranged
+  | AddArmorMelee !Dice.Dice   -- ^ percentage armor bonus against melee
+  | AddArmorRanged !Dice.Dice  -- ^ percentage armor bonus against ranged
+  | AddMaxHP !Dice.Dice        -- ^ maximal hp
+  | AddMaxCalm !Dice.Dice      -- ^ maximal calm
+  | AddSpeed !Dice.Dice        -- ^ speed in m/10s
+  | AddSight !Dice.Dice        -- ^ FOV radius, where 1 means a single tile
+  | AddSmell !Dice.Dice        -- ^ smell radius, where 1 means a single tile
+  | AddShine !Dice.Dice        -- ^ shine radius, where 1 means a single tile
+  | AddNocto !Dice.Dice        -- ^ noctovision radius, where 1 is single tile
+  | AddAbility !Ability.Ability !Dice.Dice  -- ^ bonus to an ability
+  deriving (Show, Eq, Ord, Generic)
 
 -- | Parameters modifying a throw. Not additive and don't start at 0.
 data ThrowMod = ThrowMod
@@ -175,7 +173,7 @@ instance Hashable Effect
 
 instance Hashable TimerDice
 
-instance Hashable a => Hashable (Aspect a)
+instance Hashable Aspect
 
 instance Hashable ThrowMod
 
@@ -187,7 +185,7 @@ instance Binary Effect
 
 instance Binary TimerDice
 
-instance Binary a => Binary (Aspect a)
+instance Binary Aspect
 
 instance Binary ThrowMod
 
@@ -233,14 +231,15 @@ validateSingleItemKind :: ItemKind -> [Text]
 validateSingleItemKind ItemKind{..} =
   [ "iname longer than 23" | T.length iname > 23 ]
   ++ validateRarity irarity
-  -- Reject duplicate Timeout and Periodic. Otherwise the behaviour
-  -- may not agree with the item's in-game description.
-  ++ let periodicAspect :: Aspect a -> Bool
+  -- Reject duplicate Timeout and Periodic, because they are not additive.
+  -- Otherwise their behaviour may not agree with the item's in-game
+  -- description.
+  ++ let periodicAspect :: Aspect -> Bool
          periodicAspect Periodic = True
          periodicAspect _ = False
          ps = filter periodicAspect iaspects
      in ["more than one Periodic specification" | length ps > 1]
-  ++ let timeoutAspect :: Aspect a -> Bool
+  ++ let timeoutAspect :: Aspect -> Bool
          timeoutAspect Timeout{} = True
          timeoutAspect _ = False
          ts = filter timeoutAspect iaspects
