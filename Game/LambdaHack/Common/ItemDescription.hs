@@ -138,14 +138,14 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                              ++ [onSmash | fullInfo >= 7]
                         else map ppE hurtEs
           aets = case itemAE of
-            Just ItemAspectEffect{jaspects, jeffects} ->
+            Just ItemAspectEffect{jaspects} ->
               splitAE tshow
                       jaspects aspectToSuffix
-                      jeffects effectToSuffix
+                      (IK.ieffects itemKind) effectToSuffix
             Nothing ->
               splitAE (maybe "?" tshow . Dice.reduceDice)
                       (IK.iaspects itemKind) kindAspectToSuffix
-                      (IK.ieffects itemKind) kindEffectToSuffix
+                      (IK.ieffects itemKind) effectToSuffix
       in aets ++ features
 
 -- TODO: use kit

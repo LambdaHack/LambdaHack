@@ -49,8 +49,6 @@ strengthEffect :: (Effect -> [b]) -> ItemFull -> [b]
 {-# INLINE strengthEffect #-}
 strengthEffect f itemFull =
   case itemDisco itemFull of
-    Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
-      concatMap f jeffects
     Just ItemDisco{itemKind=ItemKind{ieffects}} ->
       concatMap f ieffects
     Nothing -> []

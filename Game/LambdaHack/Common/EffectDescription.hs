@@ -1,8 +1,7 @@
 -- | Description of effects. No operation in this module
 -- involves state or monad types.
 module Game.LambdaHack.Common.EffectDescription
-  ( effectToSuffix, aspectToSuffix, featureToSuff
-  , kindEffectToSuffix, kindAspectToSuffix
+  ( effectToSuffix, aspectToSuffix, featureToSuff, kindAspectToSuffix
   ) where
 
 import Prelude ()
@@ -176,9 +175,6 @@ wrapInChevrons t = "<" <> t <> ">"
 
 affixDice :: Dice.Dice -> Text
 affixDice d = maybe "+?" affixBonus $ Dice.reduceDice d
-
-kindEffectToSuffix :: Effect -> Text
-kindEffectToSuffix = effectToSuffix
 
 kindAspectToSuffix :: Aspect Dice.Dice -> Text
 kindAspectToSuffix = rawAspectToSuff . fmap affixDice

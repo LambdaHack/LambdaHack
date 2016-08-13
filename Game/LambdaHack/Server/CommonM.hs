@@ -409,8 +409,7 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
     case mIidEtc of
       Nothing -> assert `failure` (lid, itemFreq, container, mk)
       Just (_, (ItemFull{itemDisco=
-                  Just ItemDisco{itemAE=
-                  Just ItemAspectEffect{jeffects=_:_}}}, _)) ->
+                  Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects=_:_}}}, _)) ->
         return ()  -- discover by use
       Just (iid, (ItemFull{itemBase=itemBase2}, _)) -> do
         seed <- getsServer $ (EM.! iid) . sitemSeedD

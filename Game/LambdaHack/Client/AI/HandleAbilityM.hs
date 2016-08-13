@@ -704,8 +704,8 @@ applyItem aid applyGroup = do
               getP (IK.OverfillHP p) _ | p > 0 = True
               getP _ acc = acc
           in case itemDisco itemFull of
-            Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
-              foldr getP False jeffects
+            Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}} ->
+              foldr getP False ieffects
             _ -> False
         ApplyAll -> True
       coeff CGround = 2

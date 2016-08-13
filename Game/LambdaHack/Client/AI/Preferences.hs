@@ -170,8 +170,9 @@ totalUsefulness cops b activeItems fact itemFull =
                                      -- won't be used but can be equipped
         in (totalSum, effSum)
   in case itemDisco itemFull of
-    Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects, jeffects}} ->
-      Just $ ben jeffects jaspects
+    Just ItemDisco{ itemAE=Just ItemAspectEffect{jaspects}
+                  , itemKind=IK.ItemKind{ieffects} } ->
+      Just $ ben ieffects jaspects
     Just ItemDisco{itemKind=IK.ItemKind{iaspects, ieffects}} ->
       let jaspects = map (fmap Dice.meanDice) iaspects
       in Just $ ben ieffects jaspects

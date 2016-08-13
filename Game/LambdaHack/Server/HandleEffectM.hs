@@ -58,15 +58,17 @@ itemEffectAndDestroy :: (MonadAtomic m, MonadServer m)
                      => ActorId -> ActorId -> ItemId -> Container
                      -> m ()
 itemEffectAndDestroy source target iid c = do
-  discoEffect <- getsServer sdiscoEffect
-  case EM.lookup iid discoEffect of
-    Just ItemAspectEffect{jeffects, jaspects} -> do
-      bag <- getsState $ getCBag c
-      case iid `EM.lookup` bag of
-        Nothing -> assert `failure` (source, target, iid, c)
-        Just kit ->
-          effectAndDestroy source target iid c False jeffects jaspects kit
-    _ -> assert `failure` (source, target, iid, c)
+  bag <- getsState $ getCBag c
+  case iid `EM.lookup` bag of
+    Nothing -> assert `failure` (source, target, iid, c)
+    Just kit -> do
+      itemToF <- itemToFullServer
+      let itemFull = itemToF iid kit
+      case itemDisco itemFull of
+        Just ItemDisco { itemAE=Just ItemAspectEffect{jaspects}
+                       , itemKind=IK.ItemKind{IK.ieffects} } ->
+          effectAndDestroy source target iid c False ieffects jaspects kit
+        _ -> assert `failure` (source, target, iid, c)
 
 effectAndDestroy :: (MonadAtomic m, MonadServer m)
                  => ActorId -> ActorId -> ItemId -> Container -> Bool

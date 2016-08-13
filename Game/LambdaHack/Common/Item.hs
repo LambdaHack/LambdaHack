@@ -49,10 +49,7 @@ type DiscoveryKind = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
 newtype ItemSeed = ItemSeed Int
   deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
-data ItemAspectEffect = ItemAspectEffect
-  { jaspects :: ![Aspect Int]  -- ^ the aspects of the item
-  , jeffects :: ![Effect]      -- ^ the effects when applied
-  }
+newtype ItemAspectEffect = ItemAspectEffect {jaspects :: [Aspect Int]}
   deriving (Show, Eq, Generic)
 
 instance Binary ItemAspectEffect
@@ -113,9 +110,7 @@ seedToAspectsEffects (ItemSeed itemSeed) kind ldepth totalDepth =
   let castD = castDice ldepth totalDepth
       rollA = mapM (traverse castD) (iaspects kind)
       jaspects = St.evalState rollA (mkStdGen itemSeed)
-      jeffects = ieffects kind
-  in foldr seq () jaspects `seq` foldr seq () jeffects `seq`
-     ItemAspectEffect{..}
+  in foldr seq () jaspects `seq` ItemAspectEffect{..}
 
 type ItemTimer = [Time]
 

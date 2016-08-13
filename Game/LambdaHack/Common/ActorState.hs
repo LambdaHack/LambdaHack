@@ -473,8 +473,6 @@ isMelee itemFull =
       p IK.Burn{} = True
       p _ = False
   in case itemDisco itemFull of
-    Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
-      any p jeffects
     Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}} ->
       any p ieffects
     Nothing -> False

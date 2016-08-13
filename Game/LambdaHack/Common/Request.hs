@@ -217,10 +217,7 @@ permittedProject forced skill b activeItems
         Right False -> legal
         Right True -> Right $
           let hasEffects = case itemDisco itemFull of
-                Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects=[]}} ->
-                  False
-                Just ItemDisco{ itemAE=Nothing
-                              , itemKind=IK.ItemKind{IK.ieffects=[]} } ->
+                Just ItemDisco{itemKind=IK.ItemKind{ieffects=[]}} ->
                   False
                 _ -> True
               permittedSlot =

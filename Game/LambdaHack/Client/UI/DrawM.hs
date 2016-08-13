@@ -403,10 +403,8 @@ drawLeaderDamage width = do
                   getD (IK.Burn dice) acc = Just $ dice + fromMaybe 0 acc
                   getD _ acc = acc
                   mdice = case itemDisco itemFull of
-                    Just ItemDisco{itemAE=Just ItemAspectEffect{jeffects}} ->
-                      foldr getD Nothing jeffects
-                    Just ItemDisco{itemKind} ->
-                      foldr getD Nothing (IK.ieffects itemKind)
+                    Just ItemDisco{itemKind=IK.ItemKind{IK.ieffects}} ->
+                      foldr getD Nothing ieffects
                     Nothing -> Nothing
                   tdice = case mdice of
                     Nothing -> "0"

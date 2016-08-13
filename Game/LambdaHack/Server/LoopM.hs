@@ -39,6 +39,7 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.EndM
 import Game.LambdaHack.Server.HandleEffectM
 import Game.LambdaHack.Server.HandleRequestM
+import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicM
 import Game.LambdaHack.Server.ProtocolM
@@ -187,20 +188,22 @@ endClip arenas = do
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 applyPeriodicLevel lid = do
-  discoEffect <- getsServer sdiscoEffect
-  let applyPeriodicItem c aid iid =
-        case EM.lookup iid discoEffect of
-          Just ItemAspectEffect{jeffects, jaspects} ->
-            when (IK.Periodic `elem` jaspects) $ do
-              -- Check if the item is still in the bag (previous items act!).
-              bag <- getsState $ getCBag c
-              case iid `EM.lookup` bag of
-                Nothing -> return ()  -- item dropped
-                Just kit ->
+  let applyPeriodicItem c aid iid = do
+        -- Check if the item is still in the bag (previous items act!).
+        bag <- getsState $ getCBag c
+        case iid `EM.lookup` bag of
+          Nothing -> return ()  -- item dropped
+          Just kit -> do
+            itemToF <- itemToFullServer
+            let itemFull = itemToF iid kit
+            case itemDisco itemFull of
+              Just ItemDisco { itemAE=Just ItemAspectEffect{jaspects}
+                             , itemKind=IK.ItemKind{IK.ieffects} } ->
+                when (IK.Periodic `elem` jaspects) $ do
                   -- In periodic activation, consider *only* recharging effects.
                   effectAndDestroy aid aid iid c True
-                                   (allRecharging jeffects) jaspects kit
-          _ -> assert `failure` (lid, aid, c, iid)
+                                   (allRecharging ieffects) jaspects kit
+              _ -> assert `failure` (lid, aid, c, iid)
       applyPeriodicCStore aid cstore = do
         let c = CActor aid cstore
         bag <- getsState $ getCBag c
