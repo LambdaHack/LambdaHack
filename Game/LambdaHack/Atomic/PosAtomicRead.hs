@@ -213,7 +213,7 @@ singleContainer (CActor aid _) = do
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 
 resetsFovCmdAtomic :: UpdAtomic -> DiscoveryAspect -> Maybe [ActorId]
-resetsFovCmdAtomic cmd fovAspectItem = case cmd of
+resetsFovCmdAtomic cmd discoAspect = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid _ _ -> Just [aid]
   UpdDestroyActor aid _ _ -> Just [aid]
@@ -234,7 +234,7 @@ resetsFovCmdAtomic cmd fovAspectItem = case cmd of
  where
   itemAffectsSightRadius iid stores aid =
     if not (null $ intersect stores [CEqp, COrgan])
-       && case EM.lookup iid fovAspectItem of
+       && case EM.lookup iid discoAspect of
          Just AspectRecord{aSight, aSmell, aNocto} ->
            aSight /= 0 || aSmell /= 0 || aNocto /= 0
          Nothing -> False
@@ -246,7 +246,7 @@ resetsFovCmdAtomic cmd fovAspectItem = case cmd of
 resetsLucidCmdAtomic :: UpdAtomic -> DiscoveryAspect
                      -> ActorAspect -> ActorAspect
                      -> Either LevelId [ActorId]
-resetsLucidCmdAtomic cmd fovAspectItem actorAspect actorAspectOld = case cmd of
+resetsLucidCmdAtomic cmd discoAspect actorAspect actorAspectOld = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid b _ -> actorAffectsShine aid $ Left $ blid b
                             -- trunk or organ or eqp may shine
@@ -280,7 +280,7 @@ resetsLucidCmdAtomic cmd fovAspectItem actorAspect actorAspectOld = case cmd of
  where
   itemAffectsShineRadius iid stores res =
     if (null stores || (not $ null $ intersect stores [CEqp, COrgan, CGround]))
-       && case EM.lookup iid fovAspectItem of
+       && case EM.lookup iid discoAspect of
          Just AspectRecord{aShine} -> aShine /= 0
          Nothing -> False
     then res

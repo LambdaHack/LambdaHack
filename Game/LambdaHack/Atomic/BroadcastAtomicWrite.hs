@@ -61,7 +61,7 @@ handleAndBroadcast :: forall m. MonadStateWrite m
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
-handleAndBroadcast knowEvents sperFidOld sperCacheFidOld getFovAspectItem
+handleAndBroadcast knowEvents sperFidOld sperCacheFidOld getDiscoAspect
                    actorAspect actorAspectOld
                    fovLucidLidOld fovClearLid fovLitLid
                    doUpdatePerFid doUpdatePerCacheFid doUpdateLight
@@ -83,9 +83,9 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld getFovAspectItem
         return ( ps, map SfxAtomic atomicBroken, psBroken )
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
-  fovAspectItem <- getFovAspectItem
+  discoAspect <- getDiscoAspect
   (resetsFov, resetsOthers, fovLucidLid)
-    <- computeLight atomic fovAspectItem actorAspect actorAspectOld
+    <- computeLight atomic discoAspect actorAspect actorAspectOld
                     fovLucidLidOld fovClearLid fovLitLid
   doUpdateLight fovLucidLid
   -- TODO: assert also that the sum of psBroken is equal to ps;
@@ -196,13 +196,13 @@ computeLight :: MonadStateWrite m
              -> ActorAspect -> ActorAspect
              -> FovLucidLid -> FovClearLid -> FovLitLid
              -> m (Maybe [ActorId], Bool, FovLucidLid)
-computeLight atomic fovAspectItem
+computeLight atomic discoAspect
              actorAspect actorAspectOld fovLucidLidOld fovClearLid fovLitLid = do
   let (resetsFov, resetsLucidC) =
         case atomic of
           UpdAtomic cmd ->
-            ( resetsFovCmdAtomic cmd fovAspectItem
-            , resetsLucidCmdAtomic cmd fovAspectItem )
+            ( resetsFovCmdAtomic cmd discoAspect
+            , resetsLucidCmdAtomic cmd discoAspect )
           SfxAtomic{} -> (Just [], \_ _ ->  Right [])
   -- Update lights in the dungeon. This is not needed and not performed
   -- in particular if not @resets@.
@@ -221,7 +221,7 @@ computeLight atomic fovAspectItem
   -- of any faction does not change upon full recomputation. Otherwise,
   -- save/restore would change game state (see also the assertions in gameExit).
   let updLucid lid = getsState $ updateFovLucid fovLucidLidOld lid
-                                                fovAspectItem actorAspect
+                                                discoAspect actorAspect
                                                 fovClearLid fovLitLid
   fovLucidLid <- case resetsLucid of
     Right [] -> return fovLucidLidOld

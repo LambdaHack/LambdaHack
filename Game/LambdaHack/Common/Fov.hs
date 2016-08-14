@@ -128,28 +128,28 @@ perFidInDungeon :: DiscoveryAspect -> State
                 -> ( ActorAspect, FovLucidLid, FovClearLid
                    , FovLitLid, FovShineLid
                    , PerFid, PerCacheFid )
-perFidInDungeon sfovAspectItem s =
-  let actorAspect = actorAspectInDungeon sfovAspectItem s
+perFidInDungeon discoAspect s =
+  let actorAspect = actorAspectInDungeon discoAspect s
       fovClearLid = clearInDungeon s
       fovLitLid = litInDungeon s
-      fovShineLid = shineInDungeon sfovAspectItem actorAspect s
+      fovShineLid = shineInDungeon discoAspect actorAspect s
       fovLucidLid =
-        lucidInDungeon sfovAspectItem actorAspect fovClearLid fovLitLid s
+        lucidInDungeon discoAspect actorAspect fovClearLid fovLitLid s
       f fid _ = perLidFromFaction actorAspect fovLucidLid fovClearLid fid s
       em = EM.mapWithKey f $ sfactionD s
   in ( actorAspect, fovLucidLid, fovClearLid, fovLitLid, fovShineLid
      , EM.map fst em, EM.map snd em )
 
 fovAspectFromActor :: DiscoveryAspect -> Actor -> AspectRecord
-fovAspectFromActor sfovAspectItem b =
+fovAspectFromActor discoAspect b =
   let processIid (iid, (k, _)) =
-        (EM.findWithDefault (assert `failure` ()) iid sfovAspectItem, k)
+        (EM.findWithDefault (assert `failure` ()) iid discoAspect, k)
       processBag ass = sumAspectRecord $ map processIid ass
   in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
 
 actorAspectInDungeon :: DiscoveryAspect -> State -> ActorAspect
-actorAspectInDungeon sfovAspectItem s =
-  EM.map (fovAspectFromActor sfovAspectItem) $ sactorD s
+actorAspectInDungeon discoAspect s =
+  EM.map (fovAspectFromActor discoAspect) $ sactorD s
 
 clearFromLevel :: Kind.COps -> Level -> FovClear
 clearFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
@@ -167,10 +167,10 @@ litInDungeon :: State -> FovLitLid
 litInDungeon s = EM.map (litFromLevel (scops s)) $ sdungeon s
 
 floorLightSources :: DiscoveryAspect -> Level -> [(Point, Word8)]
-floorLightSources sfovAspectItem lvl =
+floorLightSources discoAspect lvl =
   let processIid shineAcc (iid, (k, _)) =
         let AspectRecord{aShine} =
-              EM.findWithDefault emptyAspectRecord iid sfovAspectItem
+              EM.findWithDefault emptyAspectRecord iid discoAspect
         in k * aShine + shineAcc
       processBag bag acc = foldl' processIid acc $ EM.assocs bag
   in [ (p, toEnum radius)
@@ -180,21 +180,21 @@ floorLightSources sfovAspectItem lvl =
 
 shineFromLevel :: DiscoveryAspect -> ActorAspect -> State -> LevelId -> Level
                -> FovShine
-shineFromLevel sfovAspectItem actorAspect s lid lvl =
+shineFromLevel discoAspect actorAspect s lid lvl =
   let actorLights =
         [ (bpos b, toEnum radius)
         | (aid, b) <- actorAssocs (const True) lid s
         , let radius = aShine $ actorAspect EM.! aid
         , radius > 0 ]
-      floorLights = floorLightSources sfovAspectItem lvl
+      floorLights = floorLightSources discoAspect lvl
       -- If there is light both on the floor and carried by actor,
       -- only the stronger shine is taken into account.
       allLights = floorLights ++ actorLights
   in FovShine $ EM.fromListWith max allLights
 
 shineInDungeon :: DiscoveryAspect -> ActorAspect -> State -> FovShineLid
-shineInDungeon sfovAspectItem actorAspect s =
-  EM.mapWithKey (shineFromLevel sfovAspectItem actorAspect s) $ sdungeon s
+shineInDungeon discoAspect actorAspect s =
+  EM.mapWithKey (shineFromLevel discoAspect actorAspect s) $ sdungeon s
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or shining floor items. Note that an actor can be blind,
@@ -209,8 +209,8 @@ lucidFromItems clearPs allItems =
 lucidFromLevel :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
                -> State -> LevelId -> Level
                -> FovLucid
-lucidFromLevel sfovAspectItem actorAspect fovClearLid fovLitLid s lid lvl =
-  let shine = shineFromLevel sfovAspectItem actorAspect s lid lvl
+lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid s lid lvl =
+  let shine = shineFromLevel discoAspect actorAspect s lid lvl
       shineLucids = lucidFromItems (fovClearLid EM.! lid)
                     $ EM.assocs $ fovShine shine
       litTiles = fovLitLid EM.! lid
@@ -219,9 +219,9 @@ lucidFromLevel sfovAspectItem actorAspect fovClearLid fovLitLid s lid lvl =
 lucidInDungeon :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
                -> State
                -> FovLucidLid
-lucidInDungeon sfovAspectItem actorAspect fovClearLid fovLitLid s =
+lucidInDungeon discoAspect actorAspect fovClearLid fovLitLid s =
   EM.mapWithKey
-    (lucidFromLevel sfovAspectItem actorAspect fovClearLid fovLitLid s)
+    (lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid s)
     $ sdungeon s
 
 -- TODO: we may cache independently the sum of floor lights
@@ -233,8 +233,8 @@ updateFovLucid :: FovLucidLid -> LevelId
                -> State
                -> FovLucidLid
 updateFovLucid fovLucidLidOld lid
-               sfovAspectItem actorAspect fovClearLid fovLitLid s =
-  let newLights = lucidFromLevel sfovAspectItem
+               discoAspect actorAspect fovClearLid fovLitLid s =
+  let newLights = lucidFromLevel discoAspect
                                  actorAspect fovClearLid fovLitLid
                                  s lid (sdungeon s EM.! lid)
   in EM.adjust (const newLights) lid fovLucidLidOld
