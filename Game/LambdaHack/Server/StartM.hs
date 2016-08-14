@@ -50,8 +50,8 @@ import Game.LambdaHack.Server.State
 
 initPer :: MonadServer m => m ()
 initPer = do
-  sfovAspectItem <- getsServer sfovAspectItem
-  (sfovAspectActor, sfovLucidLid, sfovClearLid, sfovLitLid, sfovShineLid, sperFid, sperCacheFid) <- getsState $ perFidInDungeon sfovAspectItem
+  discoAspect <- getsServer sdiscoAspect
+  (sfovAspectActor, sfovLucidLid, sfovClearLid, sfovLitLid, sfovShineLid, sperFid, sperCacheFid) <- getsState $ perFidInDungeon discoAspect
   modifyServer $ \ser -> ser {sfovAspectActor, sfovLucidLid, sfovClearLid, sfovLitLid, sfovShineLid, sperFid, sperCacheFid}
 
 reinitGame :: (MonadAtomic m, MonadServer m) => m ()

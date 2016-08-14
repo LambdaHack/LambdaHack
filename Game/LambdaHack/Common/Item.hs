@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Item
   , seedToAspect, meanAspect, aspectRecordToList, aspectRecordFull
     -- * Item discovery types
   , ItemKindIx, KindMean(..), DiscoveryKind, ItemSeed
-  , AspectRecord(..), emptyAspectRecord, DiscoveryAspect
+  , AspectRecord(..), emptyAspectRecord, sumAspectRecord, DiscoveryAspect
   , ItemFull(..), ItemDisco(..), itemNoDisco, itemNoAspect
     -- * Inventory management types
   , ItemTimer, ItemQuant, ItemBag, ItemDict
@@ -102,6 +102,28 @@ emptyAspectRecord = AspectRecord
   , aNocto       = 0
   , aAbility     = EM.empty
   }
+
+sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
+sumAspectRecord l = AspectRecord
+  { aUnique      = False
+  , aPeriodic    = False
+  , aTimeout     = 0
+  , aHurtMelee   = sum $ mapScale aHurtMelee l
+  , aHurtRanged  = sum $ mapScale aHurtRanged l
+  , aArmorMelee  = sum $ mapScale aArmorMelee l
+  , aArmorRanged = sum $ mapScale aArmorRanged l
+  , aMaxHP       = sum $ mapScale aMaxHP l
+  , aMaxCalm     = sum $ mapScale aMaxCalm l
+  , aSpeed       = sum $ mapScale aSpeed l
+  , aSight       = sum $ mapScale aSight l
+  , aSmell       = sum $ mapScale aSmell l
+  , aShine       = sum $ mapScale aShine l
+  , aNocto       = sum $ mapScale aNocto l
+  , aAbility     = EM.unionsWith (+) $ mapScaleAbility l
+  }
+ where
+  mapScale f = map (\(ar, k) -> f ar * k)
+  mapScaleAbility = map (\(ar, k) -> EM.map (* k) $ aAbility ar)
 
 -- | The map of item ids to item aspects.
 -- The full map is known by the server.

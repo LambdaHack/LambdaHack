@@ -32,9 +32,8 @@ module Game.LambdaHack.Common.Perception
   , PerceptionCache(..)
   , PerCacheLid
   , PerCacheFid
-    -- * Fov aspects of items and actors
-  , FovAspect(..), emptyFovAspect
-  , FovAspectItem, FovAspectActor
+    -- * Fov aspects of actors
+  , FovAspectActor
     -- * Data used in FOV computation and cached to speed it up
   , FovClear, FovClearLid, FovLucid(..), FovLucidLid
   , FovLit (..), FovLitLid, FovShine(..), FovShineLid
@@ -146,36 +145,10 @@ type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 
 -- * Fov aspects of items and actors
 
-data FovAspect = FovAspect
-  { fovSightR :: !Int
-  , fovSmellR :: !Int
-  , fovShineR :: !Int
-  , fovNoctoR :: !Int
-  }
-  deriving (Show, Eq)
-
-instance Binary FovAspect where
-  put FovAspect{..} = do
-    put fovSightR
-    put fovSmellR
-    put fovShineR
-    put fovNoctoR
-  get = do
-    fovSightR <- get
-    fovSmellR <- get
-    fovShineR <- get
-    fovNoctoR <- get
-    return $! FovAspect{..}
-
-emptyFovAspect :: FovAspect
-emptyFovAspect = FovAspect 0 0 0 0
-
--- Note: FovAspectItem, FovAspectActor and FovShine shoudn't be in State,
+-- Note: FovAspectActor and FovShine shoudn't be in State,
 -- because on client they need to be updated every time an item discovery
 -- is made, unlike on the server, where it's much simpler and cheaper.
-type FovAspectItem = EM.EnumMap ItemId FovAspect
-
-type FovAspectActor = EM.EnumMap ActorId FovAspect
+type FovAspectActor = EM.EnumMap ActorId AspectRecord
 
 -- | Map of level positions that currently hold item or actor with shine
 -- to the max of radiuses of the shining lights. Radius restricted here

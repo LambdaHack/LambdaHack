@@ -24,7 +24,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
@@ -50,18 +49,11 @@ registerItem itemFull itemKnown@(_, aspectRecord) seed k container verbose = do
       execUpdAtomic $ cmd iid (itemBase itemFull) (k, []) container
       return iid
     Nothing -> do
-      let fovSightR = aSight aspectRecord
-          fovSmellR = aSmell aspectRecord
-          fovShineR = aShine aspectRecord
-          fovNoctoR = aNocto aspectRecord
-          ssl = FovAspect{..}
       icounter <- getsServer sicounter
       modifyServer $ \ser ->
         ser { sdiscoAspect = EM.insert icounter aspectRecord (sdiscoAspect ser)
             , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
-            , sfovAspectItem = if ssl == emptyFovAspect then sfovAspectItem ser
-                               else EM.insert icounter ssl (sfovAspectItem ser)
             , sicounter = succ icounter }
       execUpdAtomic $ cmd icounter (itemBase itemFull) (k, []) container
       return $! icounter

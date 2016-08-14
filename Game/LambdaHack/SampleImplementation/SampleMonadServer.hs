@@ -107,9 +107,9 @@ handleAndBroadcastServer atomic = do
       updateLight sfovAspectActor sfovLucidLid sfovClearLid sfovLitLid =
         modifyServer $ \ser ->
           ser {sfovAspectActor, sfovLucidLid, sfovClearLid, sfovLitLid}
-      getFovAspectItem = getsServer sfovAspectItem
+      getDiscoAspect = getsServer sdiscoAspect
   handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                     getFovAspectItem
+                     getDiscoAspect
                      sfovAspectActorOld sfovLucidLidOld
                      sfovClearLidOld sfovLitLidOld
                      updatePerFid updatePerCacheFid updateLight

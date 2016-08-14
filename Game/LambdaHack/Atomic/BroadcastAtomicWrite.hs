@@ -26,6 +26,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Fov
+import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -50,7 +51,7 @@ handleCmdAtomicServer posAtomic atomic =
 
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
-                   => Bool -> PerFid -> PerCacheFid -> m FovAspectItem
+                   => Bool -> PerFid -> PerCacheFid -> m DiscoveryAspect
                    -> FovAspectActor -> FovLucidLid -> FovClearLid -> FovLitLid
                    -> ((PerFid -> PerFid) -> m ())
                    -> ((PerCacheFid -> PerCacheFid) -> m ())
@@ -191,7 +192,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld getFovAspectItem
   mapWithKeyM_ (\fid _ -> send fid) factionDold
 
 computeLight :: MonadStateWrite m
-             => CmdAtomic -> FovAspectItem
+             => CmdAtomic -> DiscoveryAspect
              -> FovAspectActor -> FovLucidLid -> FovClearLid -> FovLitLid
              -> m (Maybe [ActorId], Bool, FovAspectActor, FovLucidLid)
 computeLight atomic fovAspectItem

@@ -303,9 +303,9 @@ gameExit = do
   sfovClearLid <- getsServer sfovClearLid
   sfovLitLid <- getsServer sfovLitLid
   sfovShineLid <- getsServer sfovShineLid
-  sfovAspectItem <- getsServer sfovAspectItem
+  discoAspect <- getsServer sdiscoAspect
   (fovAspectActor, fovLucidLid, fovClearLid, fovLitLid, fovShineLid, perFid, perCacheFid)
-    <- getsState $ perFidInDungeon sfovAspectItem
+    <- getsState $ perFidInDungeon discoAspect
   let !_A1 = assert (sperFid == perFid
                      `blame` "wrong accumulated perception"
                      `twith` (sperFid, perFid)) ()
