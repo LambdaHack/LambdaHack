@@ -32,8 +32,6 @@ module Game.LambdaHack.Common.Perception
   , PerceptionCache(..)
   , PerCacheLid
   , PerCacheFid
-    -- * Fov aspects of actors
-  , FovAspectActor
     -- * Data used in FOV computation and cached to speed it up
   , FovClear, FovClearLid, FovLucid(..), FovLucidLid
   , FovLit (..), FovLitLid, FovShine(..), FovShineLid
@@ -50,7 +48,6 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -143,22 +140,19 @@ type PerCacheLid = EM.EnumMap LevelId PerceptionCache
 -- | Server cache of perceptions, indexed by faction identifier.
 type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 
--- * Fov aspects of items and actors
-
--- Note: FovAspectActor and FovShine shoudn't be in State,
--- because on client they need to be updated every time an item discovery
--- is made, unlike on the server, where it's much simpler and cheaper.
-type FovAspectActor = EM.EnumMap ActorId AspectRecord
+-- * Data used in FOV computation and cached to speed it up
 
 -- | Map of level positions that currently hold item or actor with shine
 -- to the max of radiuses of the shining lights. Radius restricted here
 -- for the purpose of Fov to 255, but elsewhere not restricted
 -- (though elsewhere probably unused).
+--
+-- Note: ActorAspect and FovShine shoudn't be in State,
+-- because on client they need to be updated every time an item discovery
+-- is made, unlike on the server, where it's much simpler and cheaper.
 newtype FovShine = FovShine
     {fovShine :: EM.EnumMap Point Word8}
   deriving (Show, Eq)
-
--- * Data used in FOV computation and cached to speed it up
 
 type FovShineLid = EM.EnumMap LevelId FovShine
 

@@ -4,7 +4,6 @@
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
   , resetsFovCmdAtomic, resetsLucidCmdAtomic
-  , resetsAspectActorCmdAtomic
   , breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
   ) where
@@ -242,37 +241,12 @@ resetsFovCmdAtomic cmd fovAspectItem = case cmd of
     then Just [aid]
     else Just []
 
-resetsAspectActorCmdAtomic :: UpdAtomic -> DiscoveryAspect -> Maybe ActorId
-resetsAspectActorCmdAtomic cmd fovAspectItem = case cmd of
-  -- Create/destroy actors and items.
-  UpdCreateActor aid _ _ -> Just aid
-  UpdDestroyActor aid _ _ -> Just aid
-  UpdCreateItem iid _ _ (CActor aid s) -> itemAffectsFovAspect iid [s] aid
-  UpdDestroyItem iid _ _ (CActor aid s) -> itemAffectsFovAspect iid [s] aid
-  UpdSpotActor aid _ _ -> Just aid
-  UpdLoseActor aid _ _ -> Just aid
-  UpdSpotItem iid _ _ (CActor aid s) -> itemAffectsFovAspect iid [s] aid
-  UpdLoseItem iid _ _ (CActor aid s) -> itemAffectsFovAspect iid [s] aid
-  -- Move actors and items.
-  UpdMoveItem iid _ aid s1 s2 -> itemAffectsFovAspect iid [s1, s2] aid
-  _ -> Nothing
- where
-  itemAffectsFovAspect iid stores aid =
-    if not (null $ intersect stores [CEqp, COrgan])
-       && case EM.lookup iid fovAspectItem of
-         Just AspectRecord{..} ->
-           aSight /= 0 || aSmell /= 0 || aShine /= 0 || aNocto /= 0
-         Nothing -> False
-    then Just aid
-    else Nothing
-
 -- | Determines if a command resets the data about lit tiles
 -- (both with dynamic shine and static ambient light).
 resetsLucidCmdAtomic :: UpdAtomic -> DiscoveryAspect
-                     -> FovAspectActor -> FovAspectActor
+                     -> ActorAspect -> ActorAspect
                      -> Either LevelId [ActorId]
-resetsLucidCmdAtomic cmd fovAspectItem
-                     fovAspectActorOld fovAspectActor = case cmd of
+resetsLucidCmdAtomic cmd fovAspectItem actorAspect actorAspectOld = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid b _ -> actorAffectsShine aid $ Left $ blid b
                             -- trunk or organ or eqp may shine
@@ -311,9 +285,9 @@ resetsLucidCmdAtomic cmd fovAspectItem
          Nothing -> False
     then res
     else Right []
-  actorHasShine aid = case EM.lookup aid fovAspectActor of
-    Just AspectRecord{aShine} -> aShine /= 0
-    Nothing -> case EM.lookup aid fovAspectActorOld of  -- for UpdDestroyActor
+  actorHasShine aid = case EM.lookup aid actorAspect of
+    Just AspectRecord{aShine} -> aShine > 0
+    Nothing -> case EM.lookup aid actorAspectOld of  -- for UpdDestroyActor
       Just AspectRecord{aShine} -> aShine > 0
       Nothing -> assert `failure` (aid, cmd)
   actorAffectsShine aid res = if actorHasShine aid then res else Right []

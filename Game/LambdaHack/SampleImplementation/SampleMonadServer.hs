@@ -91,12 +91,13 @@ instance MonadAtomic SerImplementation where
 handleAndBroadcastServer :: (MonadStateWrite m, MonadServerReadRequest m)
                          => CmdAtomic -> m ()
 handleAndBroadcastServer atomic = do
+  sactorAspectOld <- getsServer sactorAspect
   case atomic of
     UpdAtomic cmd -> cmdAtomicSemSer cmd
     SfxAtomic _sfx -> return ()
   sperFidOld <- getsServer sperFid
   sperCacheFidOld <- getsServer sperCacheFid
-  sfovAspectActorOld <- getsServer sfovAspectActor
+  sactorAspect <- getsServer sactorAspect
   sfovLucidLidOld <- getsServer sfovLucidLid
   sfovClearLidOld <- getsServer sfovClearLid
   sfovLitLidOld <- getsServer sfovLitLid
@@ -104,13 +105,11 @@ handleAndBroadcastServer atomic = do
   let updatePerFid f = modifyServer $ \ser -> ser {sperFid = f $ sperFid ser}
       updatePerCacheFid f =
         modifyServer $ \ser -> ser {sperCacheFid = f $ sperCacheFid ser}
-      updateLight sfovAspectActor sfovLucidLid sfovClearLid sfovLitLid =
-        modifyServer $ \ser ->
-          ser {sfovAspectActor, sfovLucidLid, sfovClearLid, sfovLitLid}
+      updateLight sfovLucidLid = modifyServer $ \ser -> ser {sfovLucidLid}
       getDiscoAspect = getsServer sdiscoAspect
   handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                      getDiscoAspect
-                     sfovAspectActorOld sfovLucidLidOld
+                     sactorAspect sactorAspectOld sfovLucidLidOld
                      sfovClearLidOld sfovLitLidOld
                      updatePerFid updatePerCacheFid updateLight
                      sendUpdateAI sendUpdateUI atomic

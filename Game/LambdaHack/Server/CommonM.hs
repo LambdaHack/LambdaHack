@@ -5,7 +5,6 @@ module Game.LambdaHack.Server.CommonM
   , revealItems, moveStores, deduceQuits, deduceKilled, electLeader
   , addActor, addActorIid, projectFail
   , pickWeaponServer, sumOrganEqpServer, actorSkillsServer
-  , updateSclear, updateSlit
   ) where
 
 import Prelude ()
@@ -13,7 +12,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 import qualified Text.Show.Pretty as Show.Pretty
@@ -34,7 +32,6 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
@@ -44,7 +41,6 @@ import Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Content.TileKind (TileKind)
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
@@ -464,17 +460,3 @@ actorSkillsServer aid  = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let mleader = fst <$> gleader fact
   getsState $ actorSkills mleader aid activeItems
-
-updateSclear :: MonadServer m => LevelId -> Point -> Kind.Id TileKind -> m ()
-updateSclear lid pos toTile = do
-  Kind.COps{coTileSpeedup} <- getsState scops
-  let f = (PointArray.// [(pos, Tile.isClear coTileSpeedup toTile)])
-  modifyServer $ \ser -> ser {sfovClearLid = EM.adjust f lid $ sfovClearLid ser}
-
-updateSlit :: MonadServer m => LevelId -> Point -> Kind.Id TileKind -> m ()
-updateSlit lid pos toTile = do
-  Kind.COps{coTileSpeedup} <- getsState scops
-  let f (FovLit set) = FovLit $ if Tile.isLit coTileSpeedup toTile
-                                then ES.insert pos set
-                                else ES.delete pos set
-  modifyServer $ \ser -> ser {sfovLitLid = EM.adjust f lid $ sfovLitLid ser}

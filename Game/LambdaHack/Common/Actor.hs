@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Actor
   ( -- * Actor identifiers and related operations
     ActorId, monsterGenChance, partActor, partPronoun
     -- * The@ Acto@r type
-  , Actor(..), ResDelta(..)
+  , Actor(..), ResDelta(..), ActorAspect
   , deltaSerious, deltaMild, xM, minusM, minusTwoM, oneM
   , bspeed, actorTemplate, braced, waitedLastTurn, actorDying, unoccupied
   , hpTooLow, hpHuge, calmEnough, hpEnough
@@ -83,6 +83,8 @@ data ResDelta = ResDelta
   , resPreviousTurn :: !Int64  -- ^ resource change last player turn
   }
   deriving (Show, Eq)
+
+type ActorAspect = EM.EnumMap ActorId AspectRecord
 
 deltaSerious :: ResDelta -> Bool
 deltaSerious ResDelta{..} = resCurrentTurn < minusM || resPreviousTurn < minusM

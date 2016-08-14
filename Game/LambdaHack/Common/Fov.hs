@@ -4,12 +4,12 @@
 -- for discussion.
 module Game.LambdaHack.Common.Fov
   ( perceptionFromResets, perceptionFromPTotal, perFidInDungeon
-  , updateFovAspectActor, updateFovLucid
+  , updateFovLucid, fovAspectFromActor
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , perceptionFromPerActor, cacheBeforeLucidFromActor, visibleOnLevel
   , perceptionFromVoid, perLidFromFaction
-  , fovAspectFromActor, aspectActorInDungeon
+  , actorAspectInDungeon
   , clearFromLevel, clearInDungeon
   , litFromLevel, litInDungeon, shineFromLevel, shineInDungeon
   , floorLightSources, lucidFromItems, lucidFromLevel, lucidInDungeon
@@ -40,16 +40,16 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 
 perceptionFromResets :: PerActor -> [(ActorId, Actor)]
-                     -> FovAspectActor -> FovLucidLid -> FovClearLid
+                     -> ActorAspect -> FovLucidLid -> FovClearLid
                      -> LevelId -> State
                      -> (Perception, PerceptionCache)
 perceptionFromResets perActor0 resetsBodies
-                     fovAspectActor fovLucidLid fovClearLid lid s =
+                     actorAspect fovLucidLid fovClearLid lid s =
   -- Dying actors included, to let them see their own demise.
   let clearPs = fovClearLid EM.! lid
       f acc (aid, b) =
         if EM.member aid $ sactorD s
-        then let fcache = fovAspectActor EM.! aid
+        then let fcache = actorAspect EM.! aid
                  newPer = cacheBeforeLucidFromActor clearPs (b, fcache)
              in EM.insert aid newPer acc
         else EM.delete aid acc  -- dead or stair-using actors removed
@@ -104,40 +104,40 @@ visibleOnLevel PerReachable{preachable}
                (PerVisible nocto) =
   PerVisible $ nocto `ES.union` (preachable `ES.intersection` fovLucid)
 
-perceptionFromVoid :: FovAspectActor -> FovLucidLid -> FovClearLid
+perceptionFromVoid :: ActorAspect -> FovLucidLid -> FovClearLid
                    -> FactionId -> LevelId -> State
                    -> (Perception, PerceptionCache)
-perceptionFromVoid fovAspectActor fovLucidLid fovClearLid fid lid s =
+perceptionFromVoid actorAspect fovLucidLid fovClearLid fid lid s =
   let lvlBodies = EM.fromList $ actorAssocs (== fid) lid s
-      bodyMap = EM.mapWithKey (\aid b -> (b, fovAspectActor EM.! aid)) lvlBodies
+      bodyMap = EM.mapWithKey (\aid b -> (b, actorAspect EM.! aid)) lvlBodies
       clearPs = fovClearLid EM.! lid
       perActor = EM.map (cacheBeforeLucidFromActor clearPs) bodyMap
   in perceptionFromPerActor perActor fovLucidLid lid
 
 -- | Calculate perception of a faction.
-perLidFromFaction :: FovAspectActor -> FovLucidLid -> FovClearLid
+perLidFromFaction :: ActorAspect -> FovLucidLid -> FovClearLid
                   -> FactionId -> State
                   -> (PerLid, PerCacheLid)
-perLidFromFaction fovAspectActor fovLucidLid fovClearLid fid s =
-  let em = EM.mapWithKey (\lid _ -> perceptionFromVoid fovAspectActor fovLucidLid fovClearLid fid lid s)
+perLidFromFaction actorAspect fovLucidLid fovClearLid fid s =
+  let em = EM.mapWithKey (\lid _ -> perceptionFromVoid actorAspect fovLucidLid fovClearLid fid lid s)
                          (sdungeon s)
   in (EM.map fst em, EM.map snd em)
 
 -- | Calculate the perception of the whole dungeon.
 perFidInDungeon :: DiscoveryAspect -> State
-                -> ( FovAspectActor, FovLucidLid, FovClearLid
+                -> ( ActorAspect, FovLucidLid, FovClearLid
                    , FovLitLid, FovShineLid
                    , PerFid, PerCacheFid )
 perFidInDungeon sfovAspectItem s =
-  let fovAspectActor = aspectActorInDungeon sfovAspectItem s
+  let actorAspect = actorAspectInDungeon sfovAspectItem s
       fovClearLid = clearInDungeon s
       fovLitLid = litInDungeon s
-      fovShineLid = shineInDungeon sfovAspectItem fovAspectActor s
+      fovShineLid = shineInDungeon sfovAspectItem actorAspect s
       fovLucidLid =
-        lucidInDungeon sfovAspectItem fovAspectActor fovClearLid fovLitLid s
-      f fid _ = perLidFromFaction fovAspectActor fovLucidLid fovClearLid fid s
+        lucidInDungeon sfovAspectItem actorAspect fovClearLid fovLitLid s
+      f fid _ = perLidFromFaction actorAspect fovLucidLid fovClearLid fid s
       em = EM.mapWithKey f $ sfactionD s
-  in ( fovAspectActor, fovLucidLid, fovClearLid, fovLitLid, fovShineLid
+  in ( actorAspect, fovLucidLid, fovClearLid, fovLitLid, fovShineLid
      , EM.map fst em, EM.map snd em )
 
 fovAspectFromActor :: DiscoveryAspect -> Actor -> AspectRecord
@@ -147,17 +147,9 @@ fovAspectFromActor sfovAspectItem b =
       processBag ass = sumAspectRecord $ map processIid ass
   in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
 
-aspectActorInDungeon :: DiscoveryAspect -> State -> FovAspectActor
-aspectActorInDungeon sfovAspectItem s =
+actorAspectInDungeon :: DiscoveryAspect -> State -> ActorAspect
+actorAspectInDungeon sfovAspectItem s =
   EM.map (fovAspectFromActor sfovAspectItem) $ sactorD s
-
-updateFovAspectActor :: FovAspectActor -> ActorId -> DiscoveryAspect -> State
-                     -> FovAspectActor
-updateFovAspectActor fovAspectActorOld aid sfovAspectItem s =
-  case EM.lookup aid $ sactorD s of
-    Just b -> let aspectActorNew = fovAspectFromActor sfovAspectItem b
-              in EM.insert aid aspectActorNew fovAspectActorOld
-    Nothing -> EM.delete aid fovAspectActorOld
 
 clearFromLevel :: Kind.COps -> Level -> FovClear
 clearFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
@@ -186,13 +178,13 @@ floorLightSources sfovAspectItem lvl =
      , let radius = processBag bag 0
      , radius > 0 ]
 
-shineFromLevel :: DiscoveryAspect -> FovAspectActor -> State -> LevelId -> Level
+shineFromLevel :: DiscoveryAspect -> ActorAspect -> State -> LevelId -> Level
                -> FovShine
-shineFromLevel sfovAspectItem fovAspectActor s lid lvl =
+shineFromLevel sfovAspectItem actorAspect s lid lvl =
   let actorLights =
         [ (bpos b, toEnum radius)
         | (aid, b) <- actorAssocs (const True) lid s
-        , let radius = aShine $ fovAspectActor EM.! aid
+        , let radius = aShine $ actorAspect EM.! aid
         , radius > 0 ]
       floorLights = floorLightSources sfovAspectItem lvl
       -- If there is light both on the floor and carried by actor,
@@ -200,9 +192,9 @@ shineFromLevel sfovAspectItem fovAspectActor s lid lvl =
       allLights = floorLights ++ actorLights
   in FovShine $ EM.fromListWith max allLights
 
-shineInDungeon :: DiscoveryAspect -> FovAspectActor -> State -> FovShineLid
-shineInDungeon sfovAspectItem fovAspectActor s =
-  EM.mapWithKey (shineFromLevel sfovAspectItem fovAspectActor s) $ sdungeon s
+shineInDungeon :: DiscoveryAspect -> ActorAspect -> State -> FovShineLid
+shineInDungeon sfovAspectItem actorAspect s =
+  EM.mapWithKey (shineFromLevel sfovAspectItem actorAspect s) $ sdungeon s
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or shining floor items. Note that an actor can be blind,
@@ -214,22 +206,22 @@ lucidFromItems clearPs allItems =
       lucidPos (p, shine) = FovLucid $ fullscan clearPs (fromEnum shine) p
   in map lucidPos allItems
 
-lucidFromLevel :: DiscoveryAspect -> FovAspectActor -> FovClearLid -> FovLitLid
+lucidFromLevel :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
                -> State -> LevelId -> Level
                -> FovLucid
-lucidFromLevel sfovAspectItem fovAspectActor fovClearLid fovLitLid s lid lvl =
-  let shine = shineFromLevel sfovAspectItem fovAspectActor s lid lvl
+lucidFromLevel sfovAspectItem actorAspect fovClearLid fovLitLid s lid lvl =
+  let shine = shineFromLevel sfovAspectItem actorAspect s lid lvl
       shineLucids = lucidFromItems (fovClearLid EM.! lid)
                     $ EM.assocs $ fovShine shine
       litTiles = fovLitLid EM.! lid
   in FovLucid $ ES.unions $ fovLit litTiles : map fovLucid shineLucids
 
-lucidInDungeon :: DiscoveryAspect -> FovAspectActor -> FovClearLid -> FovLitLid
+lucidInDungeon :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
                -> State
                -> FovLucidLid
-lucidInDungeon sfovAspectItem fovAspectActor fovClearLid fovLitLid s =
+lucidInDungeon sfovAspectItem actorAspect fovClearLid fovLitLid s =
   EM.mapWithKey
-    (lucidFromLevel sfovAspectItem fovAspectActor fovClearLid fovLitLid s)
+    (lucidFromLevel sfovAspectItem actorAspect fovClearLid fovLitLid s)
     $ sdungeon s
 
 -- TODO: we may cache independently the sum of floor lights
@@ -237,13 +229,13 @@ lucidInDungeon sfovAspectItem fovAspectActor fovClearLid fovLitLid s =
 -- This is worthwhile for games with, e.g., lots of shining robots
 -- or tracer gun bullets (the latter a bad idea, anyway, lots of resets).
 updateFovLucid :: FovLucidLid -> LevelId
-               -> DiscoveryAspect -> FovAspectActor -> FovClearLid -> FovLitLid
+               -> DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
                -> State
                -> FovLucidLid
 updateFovLucid fovLucidLidOld lid
-               sfovAspectItem fovAspectActor fovClearLid fovLitLid s =
+               sfovAspectItem actorAspect fovClearLid fovLitLid s =
   let newLights = lucidFromLevel sfovAspectItem
-                                 fovAspectActor fovClearLid fovLitLid
+                                 actorAspect fovClearLid fovLitLid
                                  s lid (sdungeon s EM.! lid)
   in EM.adjust (const newLights) lid fovLucidLidOld
 
