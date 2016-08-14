@@ -441,9 +441,9 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
 computeRndTimeout :: Time -> DiscoveryEffect -> ItemId -> Rnd (Maybe Time)
 computeRndTimeout localTime discoEffect iid = do
   case EM.lookup iid discoEffect of
-    Just ItemAspectEffect{jaspects} ->
-      case aTimeout jaspects of
-        t | t /= 0 && aPeriodic jaspects -> do
+    Just aspectRecord ->
+      case aTimeout aspectRecord of
+        t | t /= 0 && aPeriodic aspectRecord -> do
           rndT <- randomR (0, t)
           let rndTurns = timeDeltaScale (Delta timeTurn) rndT
           return $ Just $ timeShift localTime rndTurns

@@ -197,12 +197,12 @@ applyPeriodicLevel lid = do
             itemToF <- itemToFullServer
             let itemFull = itemToF iid kit
             case itemDisco itemFull of
-              Just ItemDisco { itemAE=Just ItemAspectEffect{jaspects}
+              Just ItemDisco { itemAE=Just aspectRecord
                              , itemKind=IK.ItemKind{IK.ieffects} } ->
-                when (aPeriodic jaspects) $ do
+                when (aPeriodic aspectRecord) $ do
                   -- In periodic activation, consider *only* recharging effects.
                   effectAndDestroy aid aid iid c True
-                                   (allRecharging ieffects) jaspects kit
+                                   (allRecharging ieffects) aspectRecord kit
               _ -> assert `failure` (lid, aid, c, iid)
       applyPeriodicCStore aid cstore = do
         let c = CActor aid cstore

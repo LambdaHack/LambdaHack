@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Item
   , seedToAspectsEffects, meanAspectEffects, aspectRecordToList
     -- * Item discovery types
   , ItemKindIx, KindMean(..), DiscoveryKind, ItemSeed
-  , ItemAspectEffect(..), AspectRecord(..), DiscoveryEffect
+  , AspectRecord(..), DiscoveryEffect
   , ItemFull(..), ItemDisco(..), itemNoDisco, itemNoAE
     -- * Inventory management types
   , ItemTimer, ItemQuant, ItemBag, ItemDict, ItemKnown
@@ -46,7 +46,7 @@ newtype ItemKindIx = ItemKindIx Int
 
 data KindMean = KindMean
   { kmKind :: !(Kind.Id IK.ItemKind)
-  , kmMean :: !ItemAspectEffect }
+  , kmMean :: !AspectRecord }
   deriving (Show, Eq, Generic)
 
 instance Binary KindMean
@@ -60,9 +60,6 @@ type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
 -- They gain knowledge by identifying items.
 newtype ItemSeed = ItemSeed Int
   deriving (Show, Eq, Ord, Enum, Hashable, Binary)
-
-newtype ItemAspectEffect = ItemAspectEffect {jaspects :: AspectRecord}
-  deriving (Show, Eq, Hashable, Binary)
 
 data AspectRecord = AspectRecord
   { aUnique      :: !Bool
@@ -108,13 +105,13 @@ emptyAspectRecord = AspectRecord
 
 -- | The map of item ids to item aspects and effects.
 -- The full map is known by the server.
-type DiscoveryEffect = EM.EnumMap ItemId ItemAspectEffect
+type DiscoveryEffect = EM.EnumMap ItemId AspectRecord
 
 data ItemDisco = ItemDisco
   { itemKindId :: !(Kind.Id IK.ItemKind)
   , itemKind   :: !IK.ItemKind
-  , itemAEmean :: !ItemAspectEffect
-  , itemAE     :: !(Maybe ItemAspectEffect)
+  , itemAEmean :: !AspectRecord
+  , itemAE     :: !(Maybe AspectRecord)
   }
   deriving Show
 
@@ -267,16 +264,14 @@ meanAspect ar asp =
                                           (aAbility ar)}
 
 seedToAspectsEffects :: ItemSeed -> IK.ItemKind -> AbsDepth -> AbsDepth
-                     -> ItemAspectEffect
+                     -> AspectRecord
 seedToAspectsEffects (ItemSeed itemSeed) kind ldepth totalDepth =
   let rollM = foldM (castAspect ldepth totalDepth) emptyAspectRecord
                     (IK.iaspects kind)
-      jaspects = St.evalState rollM (mkStdGen itemSeed)
-  in ItemAspectEffect{..}
+  in St.evalState rollM (mkStdGen itemSeed)
 
-meanAspectEffects :: IK.ItemKind -> ItemAspectEffect
-meanAspectEffects kind =
-  ItemAspectEffect $ foldl' meanAspect emptyAspectRecord (IK.iaspects kind)
+meanAspectEffects :: IK.ItemKind -> AspectRecord
+meanAspectEffects kind = foldl' meanAspect emptyAspectRecord (IK.iaspects kind)
 
 type ItemTimer = [Time]
 
@@ -293,4 +288,4 @@ type ItemDict = EM.EnumMap ItemId Item
 -- All the other meaningul properties can be derived from the two.
 -- Note that @jlid@ is not meaningful; it gets forgotten if items from
 -- different levels roll the same random properties and so are merged.
-type ItemKnown = (ItemKindIx, ItemAspectEffect)
+type ItemKnown = (ItemKindIx, AspectRecord)

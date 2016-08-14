@@ -65,9 +65,9 @@ itemEffectAndDestroy source target iid c = do
       itemToF <- itemToFullServer
       let itemFull = itemToF iid kit
       case itemDisco itemFull of
-        Just ItemDisco { itemAE=Just ItemAspectEffect{jaspects}
+        Just ItemDisco { itemAE=Just aspectRecord
                        , itemKind=IK.ItemKind{IK.ieffects} } ->
-          effectAndDestroy source target iid c False ieffects jaspects kit
+          effectAndDestroy source target iid c False ieffects aspectRecord kit
         _ -> assert `failure` (source, target, iid, c)
 
 effectAndDestroy :: (MonadAtomic m, MonadServer m)
@@ -141,7 +141,7 @@ itemEffectCause aid tpos ef = do
       -- No block against tile, hence unconditional.
       discoEffect <- getsServer sdiscoEffect
       let aspects = case EM.lookup iid discoEffect of
-            Just ItemAspectEffect{jaspects} -> jaspects
+            Just aspectRecord -> aspectRecord
             _ -> assert `failure` (aid, tpos, ef, iid)
       execSfxAtomic $ SfxTrigger aid tpos $ TK.Cause ef
       effectAndDestroy aid aid iid c False [ef] aspects kit
@@ -836,7 +836,7 @@ dropCStoreItem store aid b hit iid kit@(k, _) = do
   if isDestroyed then do
     discoEffect <- getsServer sdiscoEffect
     let aspects = case EM.lookup iid discoEffect of
-          Just ItemAspectEffect{jaspects} -> jaspects
+          Just aspectRecord -> aspectRecord
           _ -> assert `failure` (aid, iid)
     itemToF <- itemToFullServer
     let itemFull = itemToF iid kit
@@ -879,7 +879,7 @@ effectPolyItem execSfx source target = do
       Just ItemDisco{..} -> do
         discoEffect <- getsServer sdiscoEffect
         let maxCount = Dice.maxDice $ IK.icount itemKind
-            aspects = jaspects $ discoEffect EM.! iid
+            aspects = discoEffect EM.! iid
         if | itemK < maxCount -> do
              execSfxAtomic $ SfxMsgFid (bfid sb) $
                "The purpose of repurpose is served by" <+> tshow maxCount

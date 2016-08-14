@@ -49,10 +49,8 @@ partItemN fullInfo n c localTime itemFull =
                ++ ["(...)" | length effTs > n]
                ++ [timer]
           unique = case iDisco of
-            ItemDisco{itemAE=Just ItemAspectEffect{jaspects}} ->
-              aUnique jaspects
-            ItemDisco{itemAEmean=ItemAspectEffect{jaspects}} ->
-              aUnique jaspects
+            ItemDisco{itemAE=Just aspectRecord} -> aUnique aspectRecord
+            ItemDisco{itemAEmean} -> aUnique itemAEmean
           capName = if unique
                     then MU.Capitalize $ MU.Text genericName
                     else MU.Text genericName
@@ -89,7 +87,7 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
             let ppA = kindAspectToSuffix
                 ppE = effectToSuffix
                 reduce_a = maybe "?" tshow . Dice.reduceDice
-                periodic = aPeriodic $ jaspects itemAEmean
+                periodic = aPeriodic itemAEmean
                 mtimeout = find timeoutAspect aspects
                 mnoEffect = find noEffect effects
                 restAs = sort aspects
@@ -131,12 +129,10 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                              ++ [onSmash | fullInfo >= 7]
                         else map ppE hurtEs
           aets = case itemAE of
-            Just iAE ->
-              splitAE (aspectRecordToList $ jaspects iAE)
-                      (IK.ieffects itemKind)
+            Just aspectRecord ->
+              splitAE (aspectRecordToList aspectRecord) (IK.ieffects itemKind)
             Nothing ->
-              splitAE (IK.iaspects itemKind)
-                      (IK.ieffects itemKind)
+              splitAE (IK.iaspects itemKind) (IK.ieffects itemKind)
       in aets ++ features
 
 -- TODO: use kit

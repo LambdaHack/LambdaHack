@@ -103,8 +103,8 @@ rollItem lvlSpawned lid itemFreq = do
                               itemFreq lvlSpawned lid ldepth totalDepth
   case m5 of
     Just (_, _, ItemDisco{ itemKindId
-                         , itemAE=Just ItemAspectEffect{jaspects}}, _, _) ->
-      when (aUnique jaspects) $
+                         , itemAE=Just aspectRecord}, _, _) ->
+      when (aUnique aspectRecord) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
     _ -> return ()

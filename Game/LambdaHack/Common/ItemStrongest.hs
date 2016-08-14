@@ -29,8 +29,8 @@ import Game.LambdaHack.Content.ItemKind
 strengthAspect :: ItemFull -> Maybe AspectRecord
 strengthAspect itemFull =
   case itemDisco itemFull of
-    Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects}} -> Just jaspects
-    Just ItemDisco{itemAEmean=ItemAspectEffect{jaspects}} -> Just jaspects
+    Just ItemDisco{itemAE=Just aspectRecord} -> Just aspectRecord
+    Just ItemDisco{itemAEmean} -> Just itemAEmean
     Nothing -> Nothing
 
 strengthEffect :: (Effect -> [b]) -> ItemFull -> [b]
@@ -145,8 +145,8 @@ sumSlotNoFilter eqpSlot is =
 
 strengthAllAddAbility :: ItemFull -> Ability.Skills
 strengthAllAddAbility itemFull = case itemDisco itemFull of
-    Just ItemDisco{itemAE=Just ItemAspectEffect{jaspects}} -> aAbility jaspects
-    Just ItemDisco{itemAEmean=ItemAspectEffect{jaspects}} -> aAbility jaspects
+    Just ItemDisco{itemAE=Just aspectRecord} -> aAbility aspectRecord
+    Just ItemDisco{itemAEmean} -> aAbility itemAEmean
     Nothing -> Ability.zeroSkills
 
 sumSkills :: [ItemFull] -> Ability.Skills
