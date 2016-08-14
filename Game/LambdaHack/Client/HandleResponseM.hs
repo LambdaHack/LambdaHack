@@ -50,10 +50,10 @@ handleResponseUI cmd = case cmd of
     cmds <- cmdAtomicFilterCli cmdA
     let handle c = do
           !oldDiscoKind <- getsClient sdiscoKind
-          !oldDiscoEffect <- getsClient sdiscoEffect
+          !oldDiscoAspect <- getsClient sdiscoAspect
           cmdAtomicSemCli c
           execUpdAtomic c
-          displayRespUpdAtomicUI False oldDiscoKind oldDiscoEffect c
+          displayRespUpdAtomicUI False oldDiscoKind oldDiscoAspect c
     mapM_ handle cmds
     mapM_ (storeUndo . UpdAtomic) cmds  -- TODO: only store cmdA?
   RespSfxAtomicUI sfx -> do

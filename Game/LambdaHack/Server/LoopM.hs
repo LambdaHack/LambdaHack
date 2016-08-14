@@ -197,7 +197,7 @@ applyPeriodicLevel lid = do
             itemToF <- itemToFullServer
             let itemFull = itemToF iid kit
             case itemDisco itemFull of
-              Just ItemDisco { itemAE=Just aspectRecord
+              Just ItemDisco { itemAspect=Just aspectRecord
                              , itemKind=IK.ItemKind{IK.ieffects} } ->
                 when (aPeriodic aspectRecord) $ do
                   -- In periodic activation, consider *only* recharging effects.

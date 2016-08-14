@@ -41,7 +41,7 @@ import Game.LambdaHack.Server.State
 registerItem :: (MonadAtomic m, MonadServer m)
              => ItemFull -> ItemKnown -> ItemSeed -> Int -> Container -> Bool
              -> m ItemId
-registerItem itemFull itemKnown@(_, iae) seed k container verbose = do
+registerItem itemFull itemKnown@(_, aspectRecord) seed k container verbose = do
   itemRev <- getsServer sitemRev
   let cmd = if verbose then UpdCreateItem else UpdSpotItem
   case HM.lookup itemKnown itemRev of
@@ -58,7 +58,7 @@ registerItem itemFull itemKnown@(_, iae) seed k container verbose = do
           ssl = FovAspect{..}
       icounter <- getsServer sicounter
       modifyServer $ \ser ->
-        ser { sdiscoEffect = EM.insert icounter iae (sdiscoEffect ser)
+        ser { sdiscoAspect = EM.insert icounter aspectRecord (sdiscoAspect ser)
             , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
             , sfovAspectItem = if ssl == emptyFovAspect then sfovAspectItem ser
@@ -103,7 +103,7 @@ rollItem lvlSpawned lid itemFreq = do
                               itemFreq lvlSpawned lid ldepth totalDepth
   case m5 of
     Just (_, _, ItemDisco{ itemKindId
-                         , itemAE=Just aspectRecord}, _, _) ->
+                         , itemAspect=Just aspectRecord}, _, _) ->
       when (aUnique aspectRecord) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
@@ -187,8 +187,8 @@ fullAssocsServer :: MonadServer m
 fullAssocsServer aid cstores = do
   cops <- getsState scops
   discoKind <- getsServer sdiscoKind
-  discoEffect <- getsServer sdiscoEffect
-  getsState $ fullAssocs cops discoKind discoEffect aid cstores
+  discoAspect <- getsServer sdiscoAspect
+  getsState $ fullAssocs cops discoKind discoAspect aid cstores
 
 activeItemsServer :: MonadServer m => ActorId -> m [ItemFull]
 activeItemsServer aid = do
@@ -199,10 +199,10 @@ itemToFullServer :: MonadServer m => m (ItemId -> ItemQuant -> ItemFull)
 itemToFullServer = do
   cops <- getsState scops
   discoKind <- getsServer sdiscoKind
-  discoEffect <- getsServer sdiscoEffect
+  discoAspect <- getsServer sdiscoAspect
   s <- getState
   let itemToF iid =
-        itemToFull cops discoKind discoEffect iid (getItemBody iid s)
+        itemToFull cops discoKind discoAspect iid (getItemBody iid s)
   return itemToF
 
 -- | Mapping over actor's items from a give store.

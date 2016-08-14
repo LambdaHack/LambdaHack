@@ -229,8 +229,8 @@ fullAssocsClient :: MonadClient m
 fullAssocsClient aid cstores = do
   cops <- getsState scops
   discoKind <- getsClient sdiscoKind
-  discoEffect <- getsClient sdiscoEffect
-  getsState $ fullAssocs cops discoKind discoEffect aid cstores
+  discoAspect <- getsClient sdiscoAspect
+  getsState $ fullAssocs cops discoKind discoAspect aid cstores
 
 activeItemsClient :: MonadClient m => ActorId -> m [ItemFull]
 activeItemsClient aid = do
@@ -241,9 +241,9 @@ itemToFullClient :: MonadClient m => m (ItemId -> ItemQuant -> ItemFull)
 itemToFullClient = do
   cops <- getsState scops
   discoKind <- getsClient sdiscoKind
-  discoEffect <- getsClient sdiscoEffect
+  discoAspect <- getsClient sdiscoAspect
   s <- getState
-  let itemToF iid = itemToFull cops discoKind discoEffect iid
+  let itemToF iid = itemToFull cops discoKind discoAspect iid
                                (getItemBody iid s)
   return itemToF
 

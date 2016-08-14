@@ -356,26 +356,26 @@ dispEnemy source target activeItems s =
              || EM.findWithDefault 0 Ability.AbMove actorMaxSk <= 0
              || hasSupport sb && hasSupport tb)  -- solo actors are flexible
 
-fullAssocs :: Kind.COps -> DiscoveryKind -> DiscoveryEffect
+fullAssocs :: Kind.COps -> DiscoveryKind -> DiscoveryAspect
            -> ActorId -> [CStore] -> State
            -> [(ItemId, ItemFull)]
-fullAssocs cops disco discoEffect aid cstores s =
+fullAssocs cops disco discoAspect aid cstores s =
   let allAssocs = concatMap (\cstore -> getActorAssocsK aid cstore s) cstores
       iToFull (iid, (item, kit)) =
-        (iid, itemToFull cops disco discoEffect iid item kit)
+        (iid, itemToFull cops disco discoAspect iid item kit)
   in map iToFull allAssocs
 
-itemToFull :: Kind.COps -> DiscoveryKind -> DiscoveryEffect -> ItemId -> Item
+itemToFull :: Kind.COps -> DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
            -> ItemQuant
            -> ItemFull
 itemToFull Kind.COps{coitem=Kind.Ops{okind}}
-           disco discoEffect iid itemBase (itemK, itemTimer) =
+           disco discoAspect iid itemBase (itemK, itemTimer) =
   let itemDisco = case EM.lookup (jkindIx itemBase) disco of
         Nothing -> Nothing
         Just KindMean{..} -> Just ItemDisco{ itemKindId = kmKind
                                            , itemKind = okind kmKind
-                                           , itemAEmean = kmMean
-                                           , itemAE = EM.lookup iid discoEffect }
+                                           , itemAspectMean = kmMean
+                                           , itemAspect = EM.lookup iid discoAspect }
   in ItemFull {..}
 
 -- Non-durable item that hurts doesn't go into equipment by default,

@@ -65,7 +65,7 @@ itemEffectAndDestroy source target iid c = do
       itemToF <- itemToFullServer
       let itemFull = itemToF iid kit
       case itemDisco itemFull of
-        Just ItemDisco { itemAE=Just aspectRecord
+        Just ItemDisco { itemAspect=Just aspectRecord
                        , itemKind=IK.ItemKind{IK.ieffects} } ->
           effectAndDestroy source target iid c False ieffects aspectRecord kit
         _ -> assert `failure` (source, target, iid, c)
@@ -139,8 +139,8 @@ itemEffectCause aid tpos ef = do
   case EM.assocs bag of
     [(iid, kit)] -> do
       -- No block against tile, hence unconditional.
-      discoEffect <- getsServer sdiscoEffect
-      let aspects = case EM.lookup iid discoEffect of
+      discoAspect <- getsServer sdiscoAspect
+      let aspects = case EM.lookup iid discoAspect of
             Just aspectRecord -> aspectRecord
             _ -> assert `failure` (aid, tpos, ef, iid)
       execSfxAtomic $ SfxTrigger aid tpos $ TK.Cause ef
@@ -834,8 +834,8 @@ dropCStoreItem store aid b hit iid kit@(k, _) = do
       durable = IK.Durable `elem` jfeature item
       isDestroyed = hit && not durable || bproj b && fragile
   if isDestroyed then do
-    discoEffect <- getsServer sdiscoEffect
-    let aspects = case EM.lookup iid discoEffect of
+    discoAspect <- getsServer sdiscoAspect
+    let aspects = case EM.lookup iid discoAspect of
           Just aspectRecord -> aspectRecord
           _ -> assert `failure` (aid, iid)
     itemToF <- itemToFullServer
@@ -877,9 +877,9 @@ effectPolyItem execSfx source target = do
       return False
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
       Just ItemDisco{..} -> do
-        discoEffect <- getsServer sdiscoEffect
+        discoAspect <- getsServer sdiscoAspect
         let maxCount = Dice.maxDice $ IK.icount itemKind
-            aspects = discoEffect EM.! iid
+            aspects = discoAspect EM.! iid
         if | itemK < maxCount -> do
              execSfxAtomic $ SfxMsgFid (bfid sb) $
                "The purpose of repurpose is served by" <+> tshow maxCount
@@ -920,7 +920,7 @@ effectIdentify execSfx iidId source target = do
           -- TODO: use this (but faster, via traversing effects with 999?)
           -- also to prevent sending any other UpdDiscover.
           let ided = IK.Identified `elem` IK.ifeature itemKind
-              itemSecret = itemNoAE itemFull
+              itemSecret = itemNoAspect itemFull
               statsObvious = textAllAE 7 False store itemFull
                              == textAllAE 7 False store itemSecret
           if ided && statsObvious

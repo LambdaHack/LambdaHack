@@ -4,13 +4,13 @@
 module Game.LambdaHack.Common.Item
   ( -- * The @Item@ type
     ItemId, Item(..)
-  , seedToAspectsEffects, meanAspectEffects, aspectRecordToList
+  , seedToAspect, meanAspect, aspectRecordToList
     -- * Item discovery types
   , ItemKindIx, KindMean(..), DiscoveryKind, ItemSeed
-  , AspectRecord(..), DiscoveryEffect
-  , ItemFull(..), ItemDisco(..), itemNoDisco, itemNoAE
+  , AspectRecord(..), DiscoveryAspect
+  , ItemFull(..), ItemDisco(..), itemNoDisco, itemNoAspect
     -- * Inventory management types
-  , ItemTimer, ItemQuant, ItemBag, ItemDict, ItemKnown
+  , ItemTimer, ItemQuant, ItemBag, ItemDict
   ) where
 
 import Prelude ()
@@ -55,7 +55,7 @@ instance Binary KindMean
 -- The full map, as known by the server, is a bijection.
 type DiscoveryKind = EM.EnumMap ItemKindIx KindMean
 
--- | A seed for rolling aspects and effects of an item
+-- | A seed for rolling aspects of an item
 -- Clients have partial knowledge of how item ids map to the seeds.
 -- They gain knowledge by identifying items.
 newtype ItemSeed = ItemSeed Int
@@ -103,15 +103,15 @@ emptyAspectRecord = AspectRecord
   , aAbility     = EM.empty
   }
 
--- | The map of item ids to item aspects and effects.
+-- | The map of item ids to item aspects.
 -- The full map is known by the server.
-type DiscoveryEffect = EM.EnumMap ItemId AspectRecord
+type DiscoveryAspect = EM.EnumMap ItemId AspectRecord
 
 data ItemDisco = ItemDisco
-  { itemKindId :: !(Kind.Id IK.ItemKind)
-  , itemKind   :: !IK.ItemKind
-  , itemAEmean :: !AspectRecord
-  , itemAE     :: !(Maybe AspectRecord)
+  { itemKindId     :: !(Kind.Id IK.ItemKind)
+  , itemKind       :: !IK.ItemKind
+  , itemAspectMean :: !AspectRecord
+  , itemAspect     :: !(Maybe AspectRecord)
   }
   deriving Show
 
@@ -127,9 +127,9 @@ itemNoDisco :: (Item, Int) -> ItemFull
 itemNoDisco (itemBase, itemK) =
   ItemFull {itemBase, itemK, itemTimer = [], itemDisco=Nothing}
 
-itemNoAE :: ItemFull -> ItemFull
-itemNoAE itemFull@ItemFull{..} =
-  let f idisco = idisco {itemAE = Nothing}
+itemNoAspect :: ItemFull -> ItemFull
+itemNoAspect itemFull@ItemFull{..} =
+  let f idisco = idisco {itemAspect = Nothing}
       newDisco = fmap f itemDisco
   in itemFull {itemDisco = newDisco}
 
@@ -217,8 +217,8 @@ castAspect ldepth totalDepth ar asp =
       return $! ar {aAbility = Ability.addSkills (EM.singleton ab n)
                                                  (aAbility ar)}
 
-meanAspect :: AspectRecord -> IK.Aspect -> AspectRecord
-meanAspect ar asp =
+addMeanAspect :: AspectRecord -> IK.Aspect -> AspectRecord
+addMeanAspect ar asp =
   case asp of
     IK.Unique -> assert (not $ aUnique ar) $ ar {aUnique = True}
     IK.Periodic -> assert (not $ aPeriodic ar) $ ar {aPeriodic = True}
@@ -263,15 +263,15 @@ meanAspect ar asp =
       in ar {aAbility = Ability.addSkills (EM.singleton ab n)
                                           (aAbility ar)}
 
-seedToAspectsEffects :: ItemSeed -> IK.ItemKind -> AbsDepth -> AbsDepth
+seedToAspect :: ItemSeed -> IK.ItemKind -> AbsDepth -> AbsDepth
                      -> AspectRecord
-seedToAspectsEffects (ItemSeed itemSeed) kind ldepth totalDepth =
+seedToAspect (ItemSeed itemSeed) kind ldepth totalDepth =
   let rollM = foldM (castAspect ldepth totalDepth) emptyAspectRecord
                     (IK.iaspects kind)
   in St.evalState rollM (mkStdGen itemSeed)
 
-meanAspectEffects :: IK.ItemKind -> AspectRecord
-meanAspectEffects kind = foldl' meanAspect emptyAspectRecord (IK.iaspects kind)
+meanAspect :: IK.ItemKind -> AspectRecord
+meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)
 
 type ItemTimer = [Time]
 
@@ -282,10 +282,3 @@ type ItemBag = EM.EnumMap ItemId ItemQuant
 -- | All items in the dungeon (including in actor inventories),
 -- indexed by item identifier.
 type ItemDict = EM.EnumMap ItemId Item
-
--- | The essential item properties, used for the @ItemRev@ hash table
--- from items to their ids, needed to assign ids to newly generated items.
--- All the other meaningul properties can be derived from the two.
--- Note that @jlid@ is not meaningful; it gets forgotten if items from
--- different levels roll the same random properties and so are merged.
-type ItemKnown = (ItemKindIx, AspectRecord)

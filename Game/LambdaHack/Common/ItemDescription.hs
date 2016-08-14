@@ -49,8 +49,8 @@ partItemN fullInfo n c localTime itemFull =
                ++ ["(...)" | length effTs > n]
                ++ [timer]
           unique = case iDisco of
-            ItemDisco{itemAE=Just aspectRecord} -> aUnique aspectRecord
-            ItemDisco{itemAEmean} -> aUnique itemAEmean
+            ItemDisco{itemAspect=Just aspectRecord} -> aUnique aspectRecord
+            ItemDisco{itemAspectMean} -> aUnique itemAspectMean
           capName = if unique
                     then MU.Capitalize $ MU.Text genericName
                     else MU.Text genericName
@@ -66,7 +66,7 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                | otherwise = []
   in case itemDisco of
     Nothing -> features
-    Just ItemDisco{itemKind, itemAE, itemAEmean} ->
+    Just ItemDisco{itemKind, itemAspect, itemAspectMean} ->
       let timeoutAspect :: IK.Aspect -> Bool
           timeoutAspect IK.Timeout{} = True
           timeoutAspect _ = False
@@ -87,7 +87,7 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
             let ppA = kindAspectToSuffix
                 ppE = effectToSuffix
                 reduce_a = maybe "?" tshow . Dice.reduceDice
-                periodic = aPeriodic itemAEmean
+                periodic = aPeriodic itemAspectMean
                 mtimeout = find timeoutAspect aspects
                 mnoEffect = find noEffect effects
                 restAs = sort aspects
@@ -128,7 +128,7 @@ textAllAE fullInfo skipRecharging cstore ItemFull{itemBase, itemDisco} =
                         then [periodicOrTimeout] ++ map ppE hurtEs ++ aes
                              ++ [onSmash | fullInfo >= 7]
                         else map ppE hurtEs
-          aets = case itemAE of
+          aets = case itemAspect of
             Just aspectRecord ->
               splitAE (aspectRecordToList aspectRecord) (IK.ieffects itemKind)
             Nothing ->

@@ -416,10 +416,10 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
     when (toCStore `elem` [CEqp, COrgan]
           && fromCStore `notElem` [CEqp, COrgan]) $ do
       localTime <- getsState $ getLocalTime (blid b)
-      discoEffect <- getsServer sdiscoEffect
+      discoAspect <- getsServer sdiscoAspect
       -- The first recharging period after pick up is random,
       -- between 1 and 2 standard timeouts of the item.
-      mrndTimeout <- rndToAction $ computeRndTimeout localTime discoEffect iid
+      mrndTimeout <- rndToAction $ computeRndTimeout localTime discoAspect iid
       let beforeIt = case iid `EM.lookup` bagBefore of
             Nothing -> []  -- no such items before move
             Just (_, it2) -> it2
@@ -438,9 +438,9 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
             execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
         Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
 
-computeRndTimeout :: Time -> DiscoveryEffect -> ItemId -> Rnd (Maybe Time)
-computeRndTimeout localTime discoEffect iid = do
-  case EM.lookup iid discoEffect of
+computeRndTimeout :: Time -> DiscoveryAspect -> ItemId -> Rnd (Maybe Time)
+computeRndTimeout localTime discoAspect iid = do
+  case EM.lookup iid discoAspect of
     Just aspectRecord ->
       case aTimeout aspectRecord of
         t | t /= 0 && aPeriodic aspectRecord -> do
@@ -448,7 +448,7 @@ computeRndTimeout localTime discoEffect iid = do
           let rndTurns = timeDeltaScale (Delta timeTurn) rndT
           return $ Just $ timeShift localTime rndTurns
         _ -> return Nothing
-    _ -> assert `failure` (iid, discoEffect)
+    _ -> assert `failure` (iid, discoAspect)
 
 -- * ReqProject
 

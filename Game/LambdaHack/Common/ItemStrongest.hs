@@ -29,8 +29,8 @@ import Game.LambdaHack.Content.ItemKind
 strengthAspect :: ItemFull -> Maybe AspectRecord
 strengthAspect itemFull =
   case itemDisco itemFull of
-    Just ItemDisco{itemAE=Just aspectRecord} -> Just aspectRecord
-    Just ItemDisco{itemAEmean} -> Just itemAEmean
+    Just ItemDisco{itemAspect=Just aspectRecord} -> Just aspectRecord
+    Just ItemDisco{itemAspectMean} -> Just itemAspectMean
     Nothing -> Nothing
 
 strengthEffect :: (Effect -> [b]) -> ItemFull -> [b]
@@ -145,8 +145,8 @@ sumSlotNoFilter eqpSlot is =
 
 strengthAllAddAbility :: ItemFull -> Ability.Skills
 strengthAllAddAbility itemFull = case itemDisco itemFull of
-    Just ItemDisco{itemAE=Just aspectRecord} -> aAbility aspectRecord
-    Just ItemDisco{itemAEmean} -> aAbility itemAEmean
+    Just ItemDisco{itemAspect=Just aspectRecord} -> aAbility aspectRecord
+    Just ItemDisco{itemAspectMean} -> aAbility itemAspectMean
     Nothing -> Ability.zeroSkills
 
 sumSkills :: [ItemFull] -> Ability.Skills
@@ -158,7 +158,7 @@ sumSkills is =
 unknownAspect :: (Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =
   case itemDisco itemFull of
-    Just ItemDisco{itemAE=Nothing, itemKind=ItemKind{iaspects}} ->
+    Just ItemDisco{itemAspect=Nothing, itemKind=ItemKind{iaspects}} ->
       let unknown x = Dice.minDice x /= Dice.maxDice x
       in or $ concatMap (map unknown . f) iaspects
     _ -> False

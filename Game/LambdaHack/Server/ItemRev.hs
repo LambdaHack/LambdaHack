@@ -2,7 +2,7 @@
 -- | Server types and operations for items that don't involve server state
 -- nor our custom monads.
 module Game.LambdaHack.Server.ItemRev
-  ( ItemRev, buildItem, newItem, UniqueSet
+  ( ItemKnown, ItemRev, buildItem, newItem, UniqueSet
     -- * Item discovery types
   , DiscoveryKindRev, serverDiscos, ItemSeedDict
     -- * The @FlavourMap@ type
@@ -47,7 +47,7 @@ serverDiscos Kind.COps{coitem=Kind.Ops{obounds, ofoldrWithKey, okind}} = do
         (x :) <$> shuffle (delete x l)
   shuffled <- shuffle ixs
   let f kmKind _ (ikMap, ikRev, ix : rest) =
-        let kmMean = meanAspectEffects $ okind kmKind
+        let kmMean = meanAspect $ okind kmKind
         in (EM.insert ix KindMean{..} ikMap, EM.insert kmKind ix ikRev, rest)
       f ik  _ (ikMap, _, []) =
         assert `failure` "too short ixs" `twith` (ik, ikMap)
@@ -117,14 +117,14 @@ newItem Kind.COps{coitem=Kind.Ops{ofoldrGroup}}
         kindIx = jkindIx itemBase
         itemK = max 1 itemN
         itemTimer = []
-        itemAEmean = kmMean $ EM.findWithDefault (assert `failure` kindIx) kindIx disco
-        itemDiscoData = ItemDisco { itemKindId, itemKind, itemAEmean
-                                  , itemAE = Just iae }
+        itemAspectMean = kmMean $ EM.findWithDefault (assert `failure` kindIx) kindIx disco
+        itemDiscoData = ItemDisco { itemKindId, itemKind, itemAspectMean
+                                  , itemAspect = Just aspectRecord }
         itemDisco = Just itemDiscoData
         -- Bonuses on items/actors unaffected by number of spawned actors.
-        iae = seedToAspectsEffects seed itemKind ldepth totalDepth
+        aspectRecord = seedToAspect seed itemKind ldepth totalDepth
         itemFull = ItemFull {..}
-    return $ Just ( (kindIx, iae)
+    return $ Just ( (kindIx, aspectRecord)
                   , itemFull
                   , itemDiscoData
                   , seed
@@ -171,3 +171,10 @@ dungeonFlavourMap Kind.COps{coitem=Kind.Ops{ofoldrWithKey}} =
 -- | Reverse item map, for item creation, to keep items and item identifiers
 -- in bijection.
 type ItemRev = HM.HashMap ItemKnown ItemId
+
+-- | The essential item properties, used for the @ItemRev@ hash table
+-- from items to their ids, needed to assign ids to newly generated items.
+-- All the other meaningul properties can be derived from the two.
+-- Note that @jlid@ is not meaningful; it gets forgotten if items from
+-- different levels roll the same random properties and so are merged.
+type ItemKnown = (ItemKindIx, AspectRecord)

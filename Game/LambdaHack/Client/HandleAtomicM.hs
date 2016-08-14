@@ -100,8 +100,8 @@ cmdAtomicFilterCli cmd = case cmd of
         discoKind <- getsClient sdiscoKind
         if jkindIx item `EM.member` discoKind
           then do
-            discoEffect <- getsClient sdiscoEffect
-            if iid `EM.member` discoEffect
+            discoAspect <- getsClient sdiscoAspect
+            if iid `EM.member` discoAspect
               then return []
               else return [UpdDiscoverSeed c iid seed ldepth]
           else return [cmd]
@@ -114,8 +114,8 @@ cmdAtomicFilterCli cmd = case cmd of
         if jkindIx item `EM.notMember` discoKind
           then return []
           else do
-            discoEffect <- getsClient sdiscoEffect
-            if iid `EM.notMember` discoEffect
+            discoAspect <- getsClient sdiscoAspect
+            if iid `EM.notMember` discoAspect
               then return [cmd]
               else return [UpdCoverKind c iid ik]
   UpdDiscoverKind _ iid _ -> do
@@ -145,8 +145,8 @@ cmdAtomicFilterCli cmd = case cmd of
         if jkindIx item `EM.notMember` discoKind
         then return []
         else do
-          discoEffect <- getsClient sdiscoEffect
-          if iid `EM.member` discoEffect
+          discoAspect <- getsClient sdiscoAspect
+          if iid `EM.member` discoAspect
             then return []
             else return [cmd]
   UpdCoverSeed _ iid _ _ -> do
@@ -158,8 +158,8 @@ cmdAtomicFilterCli cmd = case cmd of
         if jkindIx item `EM.notMember` discoKind
         then return []
         else do
-          discoEffect <- getsClient sdiscoEffect
-          if iid `EM.notMember` discoEffect
+          discoAspect <- getsClient sdiscoAspect
+          if iid `EM.notMember` discoAspect
             then return []
             else return [cmd]
   UpdPerception lid outPer inPer -> do
@@ -394,7 +394,7 @@ discoverKind c iid kmKind = do
   -- affect his actors' skills relevant to BFS.
   invalidateBfsAll
   item <- getsState $ getItemBody iid
-  let kmMean = meanAspectEffects $ okind kmKind
+  let kmMean = meanAspect $ okind kmKind
       f Nothing = Just KindMean{..}
       f Just{} = assert `failure` "already discovered"
                         `twith` (c, iid, kmKind)
@@ -428,18 +428,18 @@ discoverSeed c iid seed ldepth = do
     Just KindMean{kmKind} -> do
       let kind = okind kmKind
           -- TODO: the $! just in case.
-          f Nothing = Just $! seedToAspectsEffects seed kind ldepth totalDepth
+          f Nothing = Just $! seedToAspect seed kind ldepth totalDepth
           f Just{} = assert `failure` "already discovered"
                             `twith` (c, iid, seed)
       modifyClient $ \cli ->
-        cli {sdiscoEffect = EM.alter f iid (sdiscoEffect cli)}
+        cli {sdiscoAspect = EM.alter f iid (sdiscoAspect cli)}
 
 coverSeed :: MonadClient m
           => Container -> ItemId -> ItemSeed -> m ()
 coverSeed c iid seed = do
   let f Nothing = assert `failure` "already covered" `twith` (c, iid, seed)
       f Just{} = Nothing  -- checking that old and new agree is too much work
-  modifyClient $ \cli -> cli {sdiscoEffect = EM.alter f iid (sdiscoEffect cli)}
+  modifyClient $ \cli -> cli {sdiscoAspect = EM.alter f iid (sdiscoAspect cli)}
 
 killExit :: MonadClient m => m ()
 killExit = modifyClient $ \cli -> cli {squit = True}

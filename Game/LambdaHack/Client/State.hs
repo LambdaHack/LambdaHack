@@ -55,7 +55,7 @@ data StateClient = StateClient
                                    --   and paths to their targets, if any
   , sundo        :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sdiscoKind   :: !DiscoveryKind    -- ^ remembered item discoveries
-  , sdiscoEffect :: !DiscoveryEffect  -- ^ remembered effects&Co of items
+  , sdiscoAspect :: !DiscoveryAspect  -- ^ remembered aspects of items
   , sfper        :: !PerLid        -- ^ faction perception indexed by levels
   , salter       :: !AlterLid      -- ^ cached alter ability data for positions
   , srandom      :: !R.StdGen      -- ^ current random generator
@@ -100,7 +100,7 @@ emptyStateClient _sside =
     , sbfsD = EM.empty
     , sundo = []
     , sdiscoKind = EM.empty
-    , sdiscoEffect = EM.empty
+    , sdiscoAspect = EM.empty
     , sfper = EM.empty
     , salter = EM.empty
     , srandom = R.mkStdGen 42  -- will be set later
@@ -154,7 +154,7 @@ instance Binary StateClient where
     put sexplored
     put sundo
     put sdiscoKind
-    put sdiscoEffect
+    put sdiscoAspect
     put (show srandom)
     put _sleader
     put _sside
@@ -173,7 +173,7 @@ instance Binary StateClient where
     sexplored <- get
     sundo <- get
     sdiscoKind <- get
-    sdiscoEffect <- get
+    sdiscoAspect <- get
     g <- get
     _sleader <- get
     _sside <- get

@@ -33,7 +33,7 @@ data StateServer = StateServer
   { sdiscoKind      :: !DiscoveryKind     -- ^ full item kind discoveries data
   , sdiscoKindRev   :: !DiscoveryKindRev  -- ^ reverse map, used for item creation
   , suniqueSet      :: !UniqueSet         -- ^ already generated unique items
-  , sdiscoEffect    :: !DiscoveryEffect   -- ^ full item effect&Co data
+  , sdiscoAspect    :: !DiscoveryAspect   -- ^ full item aspect data
   , sitemSeedD      :: !ItemSeedDict  -- ^ map from item ids to item seeds
   , sitemRev        :: !ItemRev       -- ^ reverse id map, used for item creation
   , sfovAspectItem  :: !FovAspectItem  -- ^ sight, smell, etc. aspect bonuses of
@@ -108,7 +108,7 @@ emptyStateServer =
     { sdiscoKind = EM.empty
     , sdiscoKindRev = EM.empty
     , suniqueSet = ES.empty
-    , sdiscoEffect = EM.empty
+    , sdiscoAspect = EM.empty
     , sitemSeedD = EM.empty
     , sitemRev = HM.empty
     , sfovAspectItem = EM.empty
@@ -162,7 +162,7 @@ instance Binary StateServer where
     put sdiscoKind
     put sdiscoKindRev
     put suniqueSet
-    put sdiscoEffect
+    put sdiscoAspect
     put sitemSeedD
     put sitemRev
     put sfovAspectItem
@@ -179,7 +179,7 @@ instance Binary StateServer where
     sdiscoKind <- get
     sdiscoKindRev <- get
     suniqueSet <- get
-    sdiscoEffect <- get
+    sdiscoAspect <- get
     sitemSeedD <- get
     sitemRev <- get
     sfovAspectItem <- get

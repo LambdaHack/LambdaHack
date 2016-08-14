@@ -192,7 +192,7 @@ permittedPrecious calmE forced itemFull =
   in if not calmE && not forced && isPrecious then Left NotCalmPrecious
      else Right $ IK.Durable `elem` jfeature (itemBase itemFull)
                   || case itemDisco itemFull of
-                    Just ItemDisco{itemAE=Just _} -> True
+                    Just ItemDisco{itemAspect=Just _} -> True
                     _ -> not isPrecious
 
 permittedProject :: Bool -> Int -> Actor -> [ItemFull] -> [Char] -> ItemFull

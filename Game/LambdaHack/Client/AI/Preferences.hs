@@ -169,8 +169,8 @@ totalUsefulness cops b activeItems fact itemFull =
                                      -- won't be used but can be equipped
         in (totalSum, effSum)
   in case itemDisco itemFull of
-    Just ItemDisco{itemAE=Just aspectRecord, itemKind=IK.ItemKind{ieffects}} ->
+    Just ItemDisco{itemAspect=Just aspectRecord, itemKind=IK.ItemKind{ieffects}} ->
       Just $ ben ieffects aspectRecord
-    Just ItemDisco{itemAEmean, itemKind=IK.ItemKind{ieffects}} ->
-      Just $ ben ieffects itemAEmean
+    Just ItemDisco{itemAspectMean, itemKind=IK.ItemKind{ieffects}} ->
+      Just $ ben ieffects itemAspectMean
     _ -> Nothing
