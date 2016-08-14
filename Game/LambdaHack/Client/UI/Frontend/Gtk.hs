@@ -9,7 +9,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude hiding (Alt)
 
 import Control.Concurrent
-import Control.Monad.Reader (liftIO)
+import qualified Control.Monad.IO.Class as IO
 import qualified Data.ByteString.Char8 as BS
 import Data.IORef
 import qualified Data.Map.Strict as M
@@ -79,23 +79,23 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
           let md = modTranslate mods
           in if md == K.Shift then K.NoModifier else md
         !pointer = originPoint
-    liftIO $ saveKMP rf modifier key pointer
+    IO.liftIO $ saveKMP rf modifier key pointer
     return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString
        $ fromMaybe "Monospace" sfontFamily <+> fromMaybe "18px" sfontSize
   widgetModifyFont sview (Just f)
-  liftIO $ do
+  IO.liftIO $ do
     textViewSetLeftMargin sview 3
     textViewSetRightMargin sview 3
   -- Take care of the mouse events.
   sview `on` scrollEvent $ do
-    liftIO $ resetChanKey (fchanKey rf)
+    IO.liftIO $ resetChanKey (fchanKey rf)
     scrollDir <- eventScrollDirection
     (wx, wy) <- eventCoordinates
     mods <- eventModifier
     let !modifier = modTranslate mods  -- Shift included
-    liftIO $ do
+    IO.liftIO $ do
       (bx, by) <-
         textViewWindowToBufferCoords sview TextWindowText
                                      (round wx, round wy)
@@ -116,12 +116,12 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
   cursor <- cursorNewForDisplay defDisplay Tcross  -- Target Crosshair Arrow
   sview `on` buttonPressEvent $ return True  -- disable selection
   sview `on` buttonReleaseEvent $ do
-    liftIO $ resetChanKey (fchanKey rf)
+    IO.liftIO $ resetChanKey (fchanKey rf)
     but <- eventButton
     (wx, wy) <- eventCoordinates
     mods <- eventModifier
     let !modifier = modTranslate mods  -- Shift included
-    liftIO $ do
+    IO.liftIO $ do
       when (but == RightButton && modifier == K.Control) $ do
         fsd <- fontSelectionDialogNew ("Choose font" :: String)
         cf  <- readIORef currentfont
@@ -156,7 +156,7 @@ startup sdebugCli@DebugModeCli{..} = startupBound $ \rfMVar -> do
           pointer = Point cx cy
       -- Store the mouse event coords in the keypress channel.
       maybe (return ())
-            (\key -> liftIO $ saveKMP rf modifier key pointer) mkey
+            (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
     return True
   -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black

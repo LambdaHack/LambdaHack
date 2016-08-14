@@ -17,7 +17,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Control.Monad.State as St
+import qualified Control.Monad.Trans.State.Strict as St
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Hashable (Hashable)

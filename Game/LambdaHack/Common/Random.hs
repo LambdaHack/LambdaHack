@@ -14,7 +14,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Control.Monad.State as St
+import qualified Control.Monad.Trans.State.Strict as St
 import Data.Ratio
 import qualified System.Random as R
 

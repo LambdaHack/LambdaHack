@@ -9,7 +9,8 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Control.Concurrent
-import Control.Monad.Reader (ask, liftIO)
+import qualified Control.Monad.IO.Class as IO
+import Control.Monad.Trans.Reader (ask)
 import Data.Char (chr)
 import Data.Functor.Infix ((<$$>))
 import qualified Data.Text as T
@@ -161,14 +162,14 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
     when (not $ null quirksN) $ do
       let !key = K.keyTranslateWeb quirksN False
           _ks = T.unpack (K.showKey key)
-      -- liftIO $ do
+      -- IO.liftIO $ do
       --   putStrLn $ "keyId: " ++ keyId
       --   putStrLn $ "quirksN: " ++ quirksN
       --   putStrLn $ "key: " ++ _ks
       --   putStrLn $ "which: " ++ show which
       --   putStrLn $ "keyCode: " ++ show keyCode
       --   putStrLn $ "modifier: " ++ show modifier
-      liftIO $ saveKMP rf modifier key originPoint
+      IO.liftIO $ saveKMP rf modifier key originPoint
       -- Pass through Ctrl-+ and others, disable Tab.
       when (modifier `elem` [K.NoModifier, K.Shift]) preventDefault
   void $ doc `on` keyPress $ do
@@ -188,14 +189,14 @@ runWeb sdebugCli@DebugModeCli{..} rfMVar swebView = do
           !modifierNoShift =  -- to prevent Shift-!, etc.
             if modifier == K.Shift then K.NoModifier else modifier
           _ks = T.unpack (K.showKey key)
-      -- liftIO $ do
+      -- IO.liftIO $ do
       --   putStrLn $ "charCode: " ++ show charCode
       --   putStrLn $ "quirksN: " ++ quirksN
       --   putStrLn $ "key: " ++ _ks
       --   putStrLn $ "which: " ++ show which
       --   putStrLn $ "keyCode: " ++ show keyCode
       --   putStrLn $ "modifier: " ++ show modifier
-      liftIO $ saveKMP rf modifierNoShift key originPoint
+      IO.liftIO $ saveKMP rf modifierNoShift key originPoint
       -- Pass through Ctrl-+ and others, disable Tab.
       when (modifier `elem` [K.NoModifier, K.Shift]) preventDefault
   -- Handle mouseclicks, per-cell.
@@ -237,18 +238,18 @@ handleMouse rf (cell, (cx, cy)) = do
       saveWheel = do
         wheelY <- ask >>= getDeltaY
         modifier <- readMod
-        liftIO $ do
+        IO.liftIO $ do
           let mkey = if | wheelY < -0.01 -> Just K.WheelNorth
                         | wheelY > 0.01 -> Just K.WheelSouth
                         | otherwise -> Nothing  -- probably a glitch
               pointer = Point cx cy
           maybe (return ())
-                (\key -> liftIO $ saveKMP rf modifier key pointer) mkey
+                (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
       saveMouse = do
         -- https://hackage.haskell.org/package/ghcjs-dom-0.2.1.0/docs/GHCJS-DOM-EventM.html
         but <- mouseButton
         modifier <- readMod
-        liftIO $ do
+        IO.liftIO $ do
       -- TODO: mdrawWin <- displayGetWindowAtPointer display
       -- let setCursor (drawWin, _, _) =
       --       drawWindowSetCursor drawWin (Just cursor)
@@ -260,9 +261,9 @@ handleMouse rf (cell, (cx, cy)) = do
                 _ -> Nothing  -- probably a glitch
               pointer = Point cx cy
           -- _ks = T.unpack (K.showKey key)
-          -- liftIO $ putStrLn $ "m: " ++ _ks ++ show modifier ++ show pointer
+          -- IO.liftIO $ putStrLn $ "m: " ++ _ks ++ show modifier ++ show pointer
           maybe (return ())
-                (\key -> liftIO $ saveKMP rf modifier key pointer) mkey
+                (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
   void $ cell `on` wheel $ do
     saveWheel
     preventDefault
