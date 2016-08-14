@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.Fov
   , perceptionFromVoid, perLidFromFaction
   , actorAspectInDungeon
   , clearFromLevel, clearInDungeon
-  , litFromLevel, litInDungeon, shineFromLevel, shineInDungeon
+  , litFromLevel, litInDungeon, shineFromLevel
   , floorLightSources, lucidFromItems, lucidFromLevel, lucidInDungeon
   , fullscan
 #endif
@@ -126,24 +126,21 @@ perLidFromFaction actorAspect fovLucidLid fovClearLid fid s =
 -- | Calculate the perception of the whole dungeon.
 perFidInDungeon :: DiscoveryAspect -> State
                 -> ( ActorAspect, FovLucidLid, FovClearLid
-                   , FovLitLid, FovShineLid
-                   , PerFid, PerCacheFid )
+                   , FovLitLid, PerFid, PerCacheFid )
 perFidInDungeon discoAspect s =
   let actorAspect = actorAspectInDungeon discoAspect s
       fovClearLid = clearInDungeon s
       fovLitLid = litInDungeon s
-      fovShineLid = shineInDungeon discoAspect actorAspect s
       fovLucidLid =
         lucidInDungeon discoAspect actorAspect fovClearLid fovLitLid s
       f fid _ = perLidFromFaction actorAspect fovLucidLid fovClearLid fid s
       em = EM.mapWithKey f $ sfactionD s
-  in ( actorAspect, fovLucidLid, fovClearLid, fovLitLid, fovShineLid
+  in ( actorAspect, fovLucidLid, fovClearLid, fovLitLid
      , EM.map fst em, EM.map snd em )
 
 fovAspectFromActor :: DiscoveryAspect -> Actor -> AspectRecord
 fovAspectFromActor discoAspect b =
-  let processIid (iid, (k, _)) =
-        (EM.findWithDefault (assert `failure` ()) iid discoAspect, k)
+  let processIid (iid, (k, _)) = (discoAspect EM.! iid, k)
       processBag ass = sumAspectRecord $ map processIid ass
   in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
 
@@ -169,8 +166,7 @@ litInDungeon s = EM.map (litFromLevel (scops s)) $ sdungeon s
 floorLightSources :: DiscoveryAspect -> Level -> [(Point, Word8)]
 floorLightSources discoAspect lvl =
   let processIid shineAcc (iid, (k, _)) =
-        let AspectRecord{aShine} =
-              EM.findWithDefault emptyAspectRecord iid discoAspect
+        let AspectRecord{aShine} = discoAspect EM.! iid
         in k * aShine + shineAcc
       processBag bag acc = foldl' processIid acc $ EM.assocs bag
   in [ (p, toEnum radius)
@@ -191,10 +187,6 @@ shineFromLevel discoAspect actorAspect s lid lvl =
       -- only the stronger shine is taken into account.
       allLights = floorLights ++ actorLights
   in FovShine $ EM.fromListWith max allLights
-
-shineInDungeon :: DiscoveryAspect -> ActorAspect -> State -> FovShineLid
-shineInDungeon discoAspect actorAspect s =
-  EM.mapWithKey (shineFromLevel discoAspect actorAspect s) $ sdungeon s
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or shining floor items. Note that an actor can be blind,
@@ -224,10 +216,6 @@ lucidInDungeon discoAspect actorAspect fovClearLid fovLitLid s =
     (lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid s)
     $ sdungeon s
 
--- TODO: we may cache independently the sum of floor lights
--- and per-actor lights, because actor movement is the most common reset.
--- This is worthwhile for games with, e.g., lots of shining robots
--- or tracer gun bullets (the latter a bad idea, anyway, lots of resets).
 updateFovLucid :: FovLucidLid -> LevelId
                -> DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
                -> State

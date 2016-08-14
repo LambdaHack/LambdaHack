@@ -34,7 +34,7 @@ module Game.LambdaHack.Common.Perception
   , PerCacheFid
     -- * Data used in FOV computation and cached to speed it up
   , FovClear, FovClearLid, FovLucid(..), FovLucidLid
-  , FovLit (..), FovLitLid, FovShine(..), FovShineLid
+  , FovLit (..), FovLitLid, FovShine(..)
   ) where
 
 import Prelude ()
@@ -127,6 +127,10 @@ data CacheBeforeLucid = CacheBeforeLucid
 
 type PerActor = EM.EnumMap ActorId CacheBeforeLucid
 
+-- We might cache even more effectively in terms of Enum{Set,Map} unions
+-- if we recorded for each field how many actors see it (and how many
+-- lights lit it). But this is complex and unions of EnumSets are cheaper
+-- than the EnumMaps that would be required.
 data PerceptionCache = PerceptionCache
   { ptotal   :: !CacheBeforeLucid
   , perActor :: !PerActor
@@ -147,14 +151,18 @@ type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 -- for the purpose of Fov to 255, but elsewhere not restricted
 -- (though elsewhere probably unused).
 --
--- Note: ActorAspect and FovShine shoudn't be in State,
+-- Note: @ActorAspect@ and @FovShine@ shoudn't be in @State@,
 -- because on client they need to be updated every time an item discovery
 -- is made, unlike on the server, where it's much simpler and cheaper.
+-- BTW, floor and (many projectile) actors light on a single tile
+-- should be additive for @FovShine@ to be incrementally updated.
+--
+-- @FovShine@ should not even be kept in @StateServer@, because it's cheap
+-- to compute, compared to @FovLucid@ and invalidate almost as often
+-- (not invalidated only by @UpdAlterTile@).
 newtype FovShine = FovShine
     {fovShine :: EM.EnumMap Point Word8}
   deriving (Show, Eq)
-
-type FovShineLid = EM.EnumMap LevelId FovShine
 
 type FovClear = PointArray.Array Bool
 

@@ -302,9 +302,8 @@ gameExit = do
   sfovLucidLid <- getsServer sfovLucidLid
   sfovClearLid <- getsServer sfovClearLid
   sfovLitLid <- getsServer sfovLitLid
-  sfovShineLid <- getsServer sfovShineLid
   discoAspect <- getsServer sdiscoAspect
-  (actorAspect, fovLucidLid, fovClearLid, fovLitLid, fovShineLid, perFid, perCacheFid)
+  (actorAspect, fovLucidLid, fovClearLid, fovLitLid, perFid, perCacheFid)
     <- getsState $ perFidInDungeon discoAspect
   let !_A1 = assert (sperFid == perFid
                      `blame` "wrong accumulated perception"
@@ -324,9 +323,6 @@ gameExit = do
       !_A6 = assert (sfovLitLid == fovLitLid
                      `blame` "wrong accumulated sfovLitLid"
                      `twith` (sfovLitLid, fovLitLid)) ()
-      !_A7 = assert (True || sfovShineLid == fovShineLid
-                     `blame` "wrong accumulated sfovShineLid"
-                     `twith` (sfovShineLid, fovShineLid)) ()
   return ()
 
 restartGame :: (MonadAtomic m, MonadServerReadRequest m)

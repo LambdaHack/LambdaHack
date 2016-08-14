@@ -47,7 +47,6 @@ data StateServer = StateServer
   , sfovLucidLid  :: !FovLucidLid   -- ^ ambient or shining light positions
   , sfovClearLid  :: !FovClearLid   -- ^ clear tiles positions
   , sfovLitLid    :: !FovLitLid     -- ^ ambient light positions
-  , sfovShineLid  :: !FovShineLid   -- ^ radiuses of shine at positions
   , srandom       :: !R.StdGen      -- ^ current random generator
   , srngs         :: !RNGs          -- ^ initial random generators
   , squit         :: !Bool          -- ^ exit the game loop
@@ -120,7 +119,6 @@ emptyStateServer =
     , sfovLucidLid = EM.empty
     , sfovClearLid = EM.empty
     , sfovLitLid = EM.empty
-    , sfovShineLid = EM.empty
     , srandom = R.mkStdGen 42
     , srngs = RNGs { dungeonRandomGenerator = Nothing
                    , startingRandomGenerator = Nothing }
@@ -194,7 +192,6 @@ instance Binary StateServer where
         sfovLucidLid = EM.empty
         sfovClearLid = EM.empty
         sfovLitLid = EM.empty
-        sfovShineLid = EM.empty
         squit = False
         swriteSave = False
         sstart = 0
