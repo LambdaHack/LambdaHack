@@ -183,10 +183,10 @@ shineFromLevel discoAspect actorAspect s lid lvl =
         , let radius = aShine $ actorAspect EM.! aid
         , radius > 0 ]
       floorLights = floorLightSources discoAspect lvl
-      -- If there is light both on the floor and carried by actor,
-      -- only the stronger shine is taken into account.
+      -- If there is light both on the floor and carried by actor
+      -- (or several projectile actors), its radius is the sum total.
       allLights = floorLights ++ actorLights
-  in FovShine $ EM.fromListWith max allLights
+  in FovShine $ EM.fromListWith (+) allLights
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or shining floor items. Note that an actor can be blind,
@@ -202,9 +202,8 @@ lucidFromLevel :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
                -> State -> LevelId -> Level
                -> FovLucid
 lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid s lid lvl =
-  let shine = shineFromLevel discoAspect actorAspect s lid lvl
-      shineLucids = lucidFromItems (fovClearLid EM.! lid)
-                    $ EM.assocs $ fovShine shine
+  let FovShine shine = shineFromLevel discoAspect actorAspect s lid lvl
+      shineLucids = lucidFromItems (fovClearLid EM.! lid) $ EM.assocs shine
       litTiles = fovLitLid EM.! lid
   in FovLucid $ ES.unions $ fovLit litTiles : map fovLucid shineLucids
 

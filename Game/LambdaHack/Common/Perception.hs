@@ -154,9 +154,6 @@ type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 -- Note: @ActorAspect@ and @FovShine@ shoudn't be in @State@,
 -- because on client they need to be updated every time an item discovery
 -- is made, unlike on the server, where it's much simpler and cheaper.
--- BTW, floor and (many projectile) actors light on a single tile
--- should be additive for @FovShine@ to be incrementally updated.
---
 -- @FovShine@ should not even be kept in @StateServer@, because it's cheap
 -- to compute, compared to @FovLucid@ and invalidate almost as often
 -- (not invalidated only by @UpdAlterTile@).
