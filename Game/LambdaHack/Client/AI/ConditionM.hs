@@ -233,13 +233,13 @@ hinders :: Bool -> Bool -> Bool -> Bool -> Actor -> [ItemFull] -> ItemFull
 hinders condAnyFoeAdj condShineBetrays condAimEnemyPresent
         condNotCalmEnough  -- perhaps enemies don't have projectiles
         body activeItems itemFull =
-  let itemShine = 0 < strengthFromEqpSlot IK.EqpSlotAddShine itemFull
+  let itemShine = 0 < aShine (aspectRecordFull itemFull)
       itemShineBad = itemShine && condNotCalmEnough && not condAnyFoeAdj
   in -- Fast actors want to hide in darkness to ambush opponents and want
      -- to hit hard for the short span they get to survive melee.
      bspeed body activeItems > speedNormal
      && (itemShineBad
-         || 0 > strengthFromEqpSlot IK.EqpSlotAddHurtMelee itemFull)
+         || 0 > aHurtMelee (aspectRecordFull itemFull))
      -- In the presence of enemies (seen, or unseen but distressing)
      -- actors want to hide in the dark.
      || let heavilyDistressed =  -- actor hit by a proj or similarly distressed

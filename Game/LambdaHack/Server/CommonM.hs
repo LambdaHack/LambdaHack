@@ -363,10 +363,9 @@ addActorIid trunkId trunkFull@ItemFull{..} bproj
         Just ItemDisco{itemKind} -> itemKind
         Nothing -> assert `failure` trunkFull
   -- Initial HP and Calm is based only on trunk and ignores organs.
-  let hp = xM (max 2 $ sumSlotNoFilter IK.EqpSlotAddMaxHP [trunkFull])
+  let hp = xM (max 2 $ aMaxHP (aspectRecordFull trunkFull))
            `div` 2
-      calm = xM $ max 1
-             $ sumSlotNoFilter IK.EqpSlotAddMaxCalm [trunkFull]
+      calm = xM $ max 1 $ aMaxCalm (aspectRecordFull trunkFull)
   -- Create actor.
   factionD <- getsState sfactionD
   let factMine = factionD EM.! bfid
@@ -453,7 +452,7 @@ pickWeaponServer source = do
       return $ Just (iid, cstore)
 
 sumOrganEqpServer :: MonadServer m
-                 => IK.EqpSlot -> ActorId -> m Int
+                  => IK.EqpSlot -> ActorId -> m Int
 sumOrganEqpServer eqpSlot aid = do
   activeAssocs <- activeItemsServer aid
   return $! sumSlotNoFilter eqpSlot activeAssocs

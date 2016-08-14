@@ -148,7 +148,7 @@ totalUsefulness cops b activeItems fact itemFull =
             aspBens = map (aspectToBenefit cops b) $ aspectRecordToList aspects  -- TODO
             periodicEffBens = map (effectToBenefit cops b activeItems fact)
                                   (allRecharging effects)
-            timeout = strengthFromEqpSlot IK.EqpSlotPeriodic itemFull
+            timeout = aTimeout $ aspectRecordFull itemFull
             periodicBens | timeout == 0 = []
                          | otherwise =
               map (\eff -> eff * 10 `divUp` timeout) periodicEffBens

@@ -4,10 +4,10 @@
 module Game.LambdaHack.Common.Item
   ( -- * The @Item@ type
     ItemId, Item(..)
-  , seedToAspect, meanAspect, aspectRecordToList
+  , seedToAspect, meanAspect, aspectRecordToList, aspectRecordFull
     -- * Item discovery types
   , ItemKindIx, KindMean(..), DiscoveryKind, ItemSeed
-  , AspectRecord(..), DiscoveryAspect
+  , AspectRecord(..), emptyAspectRecord, DiscoveryAspect
   , ItemFull(..), ItemDisco(..), itemNoDisco, itemNoAspect
     -- * Inventory management types
   , ItemTimer, ItemQuant, ItemBag, ItemDict
@@ -272,6 +272,13 @@ seedToAspect (ItemSeed itemSeed) kind ldepth totalDepth =
 
 meanAspect :: IK.ItemKind -> AspectRecord
 meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)
+
+aspectRecordFull :: ItemFull -> AspectRecord
+aspectRecordFull itemFull =
+  case itemDisco itemFull of
+    Just ItemDisco{itemAspect=Just aspectRecord} -> aspectRecord
+    Just ItemDisco{itemAspectMean} -> itemAspectMean
+    Nothing -> emptyAspectRecord
 
 type ItemTimer = [Time]
 

@@ -484,7 +484,7 @@ unneeded cops condAnyFoeAdj condShineBetrays
              condAimEnemyPresent condNotCalmEnough
              body activeItems itemFull
   || let calmE = calmEnough body activeItems  -- unneeded risk
-         itemShine = 0 < strengthFromEqpSlot IK.EqpSlotAddShine itemFull
+         itemShine = 0 < aShine (aspectRecordFull itemFull)
      in itemShine && not calmE
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.

@@ -426,7 +426,7 @@ aidFromC c@CTrunk{} = assert `failure` c
 
 hasCharge :: Time -> ItemFull -> Bool
 hasCharge localTime itemFull@ItemFull{..} =
-  let timeout = strengthFromEqpSlot IK.EqpSlotTimeout itemFull
+  let timeout = aTimeout $ aspectRecordFull itemFull
       timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
       charging startT = timeShift startT timeoutTurns > localTime
       it1 = filter charging itemTimer

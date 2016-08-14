@@ -20,7 +20,6 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -51,10 +50,10 @@ registerItem itemFull itemKnown@(_, aspectRecord) seed k container verbose = do
       execUpdAtomic $ cmd iid (itemBase itemFull) (k, []) container
       return iid
     Nothing -> do
-      let fovSightR = strengthFromEqpSlot IK.EqpSlotAddSight itemFull
-          fovSmellR = strengthFromEqpSlot IK.EqpSlotAddSmell itemFull
-          fovShineR = strengthFromEqpSlot IK.EqpSlotAddShine itemFull
-          fovNoctoR = strengthFromEqpSlot IK.EqpSlotAddNocto itemFull
+      let fovSightR = aSight aspectRecord
+          fovSmellR = aSmell aspectRecord
+          fovShineR = aShine aspectRecord
+          fovNoctoR = aNocto aspectRecord
           ssl = FovAspect{..}
       icounter <- getsServer sicounter
       modifyServer $ \ser ->
