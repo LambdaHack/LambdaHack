@@ -23,7 +23,6 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Word
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -163,13 +162,13 @@ litFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
 litInDungeon :: State -> FovLitLid
 litInDungeon s = EM.map (litFromLevel (scops s)) $ sdungeon s
 
-floorLightSources :: DiscoveryAspect -> Level -> [(Point, Word8)]
+floorLightSources :: DiscoveryAspect -> Level -> [(Point, Int)]
 floorLightSources discoAspect lvl =
   let processIid shineAcc (iid, (k, _)) =
         let AspectRecord{aShine} = discoAspect EM.! iid
         in k * aShine + shineAcc
       processBag bag acc = foldl' processIid acc $ EM.assocs bag
-  in [ (p, toEnum radius)
+  in [ (p, radius)
      | (p, bag) <- EM.assocs $ lfloor lvl  -- lembed are hidden
      , let radius = processBag bag 0
      , radius > 0 ]
@@ -178,24 +177,23 @@ shineFromLevel :: DiscoveryAspect -> ActorAspect -> State -> LevelId -> Level
                -> FovShine
 shineFromLevel discoAspect actorAspect s lid lvl =
   let actorLights =
-        [ (bpos b, toEnum radius)
+        [ (bpos b, radius)
         | (aid, b) <- actorAssocs (const True) lid s
         , let radius = aShine $ actorAspect EM.! aid
         , radius > 0 ]
       floorLights = floorLightSources discoAspect lvl
+      allLights = floorLights ++ actorLights
       -- If there is light both on the floor and carried by actor
       -- (or several projectile actors), its radius is the sum total.
-      allLights = floorLights ++ actorLights
   in FovShine $ EM.fromListWith (+) allLights
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or shining floor items. Note that an actor can be blind,
 -- in which case he doesn't see his own light (but others,
 -- from his or other factions, possibly do).
-lucidFromItems :: FovClear -> [(Point, Word8)] -> [FovLucid]
+lucidFromItems :: FovClear -> [(Point, Int)] -> [FovLucid]
 lucidFromItems clearPs allItems =
-  let lucidPos :: (Point, Word8) -> FovLucid
-      lucidPos (p, shine) = FovLucid $ fullscan clearPs (fromEnum shine) p
+  let lucidPos (p, shine) = FovLucid $ fullscan clearPs shine p
   in map lucidPos allItems
 
 lucidFromLevel :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid

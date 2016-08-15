@@ -146,19 +146,17 @@ type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 
 -- * Data used in FOV computation and cached to speed it up
 
--- | Map of level positions that currently hold item or actor with shine
--- to the max of radiuses of the shining lights. Radius restricted here
--- for the purpose of Fov to 255, but elsewhere not restricted
--- (though elsewhere probably unused).
+-- | Map of level positions that currently hold item or actor(s) with shine
+-- to the sum of radiuses of the shining lights.
 --
 -- Note: @ActorAspect@ and @FovShine@ shoudn't be in @State@,
 -- because on client they need to be updated every time an item discovery
 -- is made, unlike on the server, where it's much simpler and cheaper.
 -- @FovShine@ should not even be kept in @StateServer@, because it's cheap
--- to compute, compared to @FovLucid@ and invalidate almost as often
+-- to compute, compared to @FovLucid@ and invalidated almost as often
 -- (not invalidated only by @UpdAlterTile@).
 newtype FovShine = FovShine
-    {fovShine :: EM.EnumMap Point Word8}
+    {fovShine :: EM.EnumMap Point Int}
   deriving (Show, Eq)
 
 type FovClear = PointArray.Array Bool
