@@ -99,20 +99,18 @@ The latest official version of the library can be downloaded,
 compiled and installed automatically by Cabal from [Hackage] [3] as follows
 
     cabal update
-    cabal install gtk2hs-buildtools
-    cabal install LambdaHack --force-reinstalls
+    cabal install gtk2hs-buildtools LambdaHack
 
 For a newer snapshot, download source from a development branch
 at [github] [5] and run Cabal from the main directory
 
-    cabal install gtk2hs-buildtools
-    cabal install --force-reinstalls
+    cabal install gtk2hs-buildtools .
 
 For the example game, the best frontend (wrt keyboard support and colours)
 is the default gtk. To compile with one of the terminal frontends,
 use Cabal flags, e.g,
 
-    cabal install -fvty --force-reinstalls
+    cabal install -fvty
 
 
 Compatibility notes

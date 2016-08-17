@@ -78,18 +78,18 @@ install:
  - sed -i 's/^jobsColon/jobs:/' ${HOME}/.cabal/config
  - |
    if [ $GTKVTY = "gtk" ]; then
-     cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v --constraint="transformers>=0.5" gtk2hs-buildtools > installplan.txt
-     cabal install -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
+     cabal install -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v gtk2hs-buildtools . > installplan.txt
    elif [ $GTKVTY = "vty" ]; then
      cabal install -fvty -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt
    else
-     cabal install -fcurses -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt
+     cabal install -fcurses -fno-release --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt # test no-release together with the curses frontend
    fi
 
 
  - sed -i -e '1,/^Resolving /d' installplan.txt; cat installplan.txt
 
 # check whether current requested install-plan matches cached package-db snapshot
+# no --only-dependencies in the gtk case until gtk2hs-buildtools no longer needed (it was causing problem by picking installed libraries over new ones)
  - if diff -u installplan.txt $HOME/.cabsnap/installplan.txt;
    then
      echo "cabal build-cache HIT";
@@ -101,12 +101,11 @@ install:
      rm -rf $HOME/.cabsnap;
      mkdir -p $HOME/.ghc $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin;
      if [ $GTKVTY = "gtk" ]; then
-       cabal install --constraint="transformers>=0.5" gtk2hs-buildtools;
-       cabal install -frelease --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install -frelease --enable-tests --enable-benchmarks gtk2hs-buildtools . ;
      elif [ $GTKVTY = "vty" ]; then
        cabal install -fvty -frelease --only-dependencies --enable-tests --enable-benchmarks;
      else
-       cabal install -fcurses -frelease --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install -fcurses -fno-release --only-dependencies --enable-tests --enable-benchmarks;
      fi
    fi
 
@@ -130,10 +129,10 @@ script:
    elif [ $GTKVTY = "vty" ]; then
      cabal configure -fvty -frelease --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    else
-     cabal configure -fcurses -frelease --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
+     cabal configure -fcurses -fno-release --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
    fi
 
- - cabal build   # this builds all libraries and executables (including tests/benchmarks)
+ - cabal build   # this builds our library and executables (including tests/benchmarks)
 
  - cabal test
 
