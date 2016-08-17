@@ -97,16 +97,23 @@ cmdAtomicSemSer cmd = case cmd of
       invalidateLucidAid aid1  -- the same lid as aid2
   UpdMoveItem iid k aid s1 s2 -> do
     discoAspect <- getsServer sdiscoAspect
-    when (itemAffectsShineRadius discoAspect iid [s1, s2]) $
-      invalidateLucidAid aid
+    let itemAffects = itemAffectsShineRadius discoAspect iid [s1, s2]
+        invalidate = when itemAffects $ invalidateLucidAid aid
     case s1 of
       CEqp -> case s2 of
         COrgan -> return ()
-        _ -> addItemToActor iid (-k) aid
+        _ -> do
+          addItemToActor iid (-k) aid
+          invalidate
       COrgan -> case s2 of
         CEqp -> return ()
-        _ -> addItemToActor iid (-k) aid
-      _ -> addItemToActorIfStore iid k aid s2
+        _ -> do
+          addItemToActor iid (-k) aid
+          invalidate
+      CGround -> invalidate
+      _ -> do
+        addItemToActorIfStore iid k aid s2
+        invalidate  -- from itemAffects we know s2 provides light
   UpdAlterTile lid pos fromTile toTile -> do
     clearChanged <- updateSclear lid pos fromTile toTile
     litChanged <- updateSlit lid pos fromTile toTile
@@ -172,4 +179,4 @@ itemAffectsShineRadius discoAspect iid stores =
   (null stores || (not $ null $ intersect stores [CEqp, COrgan, CGround]))
   && case EM.lookup iid discoAspect of
     Just AspectRecord{aShine} -> aShine /= 0
-    Nothing -> False
+    Nothing -> assert `failure` iid

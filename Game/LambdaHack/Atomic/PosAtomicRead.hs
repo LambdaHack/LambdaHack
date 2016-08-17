@@ -236,7 +236,7 @@ resetsFovCmdAtomic cmd discoAspect = case cmd of
        && case EM.lookup iid discoAspect of
          Just AspectRecord{aSight, aSmell, aNocto} ->
            aSight /= 0 || aSmell /= 0 || aNocto /= 0
-         Nothing -> False
+         Nothing -> assert `failure` aid
     then Just [aid]
     else Just []
 
