@@ -78,7 +78,7 @@ install:
  - sed -i 's/^jobsColon/jobs:/' ${HOME}/.cabal/config
  - |
    if [ $GTKVTY = "gtk" ]; then
-     cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v gtk2hs-buildtools > installplan.txt
+     cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v --constraint="transformers>=0.5" gtk2hs-buildtools > installplan.txt
      cabal install -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "vty" ]; then
      cabal install -fvty -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt
@@ -101,7 +101,7 @@ install:
      rm -rf $HOME/.cabsnap;
      mkdir -p $HOME/.ghc $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin;
      if [ $GTKVTY = "gtk" ]; then
-       cabal install gtk2hs-buildtools;
+       cabal install --constraint="transformers>=0.5" gtk2hs-buildtools;
        cabal install -frelease --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "vty" ]; then
        cabal install -fvty -frelease --only-dependencies --enable-tests --enable-benchmarks;
