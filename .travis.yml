@@ -21,40 +21,39 @@ before_cache:
 
 matrix:
   include:
-    - env: CABALVER=head GHCVER=7.8.1 GTKVTY=gtk
+    - env: CABALVER=1.24 GHCVER=7.8.1 GTKVTY=gtk
       compiler: ": #GHC 7.8.1"
-      addons: {apt: {packages: [cabal-install-head,ghc-7.8.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=head GHCVER=7.8.2 GTKVTY=vty
+      addons: {apt: {packages: [cabal-install-1.24,ghc-7.8.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.24 GHCVER=7.8.2 GTKVTY=vty
       compiler: ": #GHC 7.8.2"
-      addons: {apt: {packages: [cabal-install-head,ghc-7.8.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=head GHCVER=7.8.3 GTKVTY=curses
+      addons: {apt: {packages: [cabal-install-1.24,ghc-7.8.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.24 GHCVER=7.8.3 GTKVTY=curses
       compiler: ": #GHC 7.8.3"
-      addons: {apt: {packages: [cabal-install-head,ghc-7.8.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=head GHCVER=7.8.4 GTKVTY=gtk
+      addons: {apt: {packages: [cabal-install-1.24,ghc-7.8.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.24 GHCVER=7.8.4 GTKVTY=gtk
       compiler: ": #GHC 7.8.4"
-      addons: {apt: {packages: [cabal-install-head,ghc-7.8.4,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=head GHCVER=7.10.1 GTKVTY=vty
+      addons: {apt: {packages: [cabal-install-1.24,ghc-7.8.4,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.24 GHCVER=7.10.1 GTKVTY=vty
       compiler: ": #GHC 7.10.1"
-      addons: {apt: {packages: [cabal-install-head,ghc-7.10.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=head GHCVER=7.10.2 GTKVTY=curses
+      addons: {apt: {packages: [cabal-install-1.24,ghc-7.10.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.24 GHCVER=7.10.2 GTKVTY=curses
       compiler: ": #GHC 7.10.2"
-      addons: {apt: {packages: [cabal-install-head,ghc-7.10.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=head GHCVER=7.10.3 GTKVTY=vty
+      addons: {apt: {packages: [cabal-install-1.24,ghc-7.10.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.24 GHCVER=7.10.3 GTKVTY=vty
       compiler: ": #GHC 7.10.3"
-      addons: {apt: {packages: [cabal-install-head,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=head GHCVER=7.10.3 GTKVTY=curses
+      addons: {apt: {packages: [cabal-install-1.24,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.24 GHCVER=7.10.3 GTKVTY=curses
       compiler: ": #GHC 7.10.3"
-      addons: {apt: {packages: [cabal-install-head,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=head GHCVER=7.10.3 GTKVTY=gtk
+      addons: {apt: {packages: [cabal-install-1.24,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.24 GHCVER=7.10.3 GTKVTY=gtk
       compiler: ": #GHC 7.10.3"
-      addons: {apt: {packages: [cabal-install-head,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=head GHCVER=head GTKVTY=gtk
+      addons: {apt: {packages: [cabal-install-1.24,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+    - env: CABALVER=1.24 GHCVER=1.24 GTKVTY=gtk
       compiler: ": #GHC head"
-      addons: {apt: {packages: [cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [cabal-install-1.24,ghc-head,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
 
   allow_failures:
-    - env: CABALVER=head GHCVER=head GTKVTY=gtk
-    - env: CABALVER=head GHCVER=7.8.1 GTKVTY=gtk
+    - env: CABALVER=1.24 GHCVER=head GTKVTY=gtk
 
 before_install:
  - unset CC
