@@ -130,7 +130,7 @@ script:
 
  - cabal build   # this builds our library and executables (including tests/benchmarks)
 
- - cabal test
+ - (cabal test || exit 7);
 
  # tests that a source-distribution is correct; ignore -O2 warning
  - cabal check || true
