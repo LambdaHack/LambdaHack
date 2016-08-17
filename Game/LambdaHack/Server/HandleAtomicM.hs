@@ -110,10 +110,9 @@ cmdAtomicSemSer cmd = case cmd of
         _ -> do
           addItemToActor iid (-k) aid
           invalidate
-      CGround -> invalidate
       _ -> do
         addItemToActorIfStore iid k aid s2
-        invalidate  -- from itemAffects we know s2 provides light
+        invalidate  -- from itemAffects, s2 provides light or s1 is CGround
   UpdAlterTile lid pos fromTile toTile -> do
     clearChanged <- updateSclear lid pos fromTile toTile
     litChanged <- updateSlit lid pos fromTile toTile
