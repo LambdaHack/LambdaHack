@@ -245,7 +245,7 @@ updAgeActor aid delta = assert (delta /= Delta timeZero) $ do
       updPrio = EM.alter addPrio (btime newBody) . EM.alter rmPrio (btime body)
   updateLevel (blid body) $ updatePrio updPrio
   -- Modify actor body in @sactorD@.
-  modifyState $ updateActorD $ EM.adjust (const newBody) aid
+  modifyState $ updateActorD $ EM.insert aid newBody
 
 updRefillHP :: MonadStateWrite m => ActorId -> Int64 -> m ()
 updRefillHP aid n =

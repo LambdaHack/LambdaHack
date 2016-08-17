@@ -33,8 +33,8 @@ module Game.LambdaHack.Common.Perception
   , PerCacheLid
   , PerCacheFid
     -- * Data used in FOV computation and cached to speed it up
-  , FovClear, FovClearLid, FovLucid(..), FovLucidLid
-  , FovLit (..), FovLitLid, FovShine(..)
+  , FovValid(..), FovShine(..), FovLucid(..), FovLucidLid
+  , FovClear(..), FovClearLid, FovLit (..), FovLitLid
   ) where
 
 import Prelude ()
@@ -55,13 +55,11 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 -- * Public perception
 
 -- | Visible positions.
-newtype PerVisible = PerVisible
-    {pvisible :: ES.EnumSet Point}
+newtype PerVisible = PerVisible {pvisible :: ES.EnumSet Point}
   deriving (Show, Eq, Binary)
 
 -- | Smelled positions.
-newtype PerSmelled = PerSmelled
-    {psmelled :: ES.EnumSet Point}
+newtype PerSmelled = PerSmelled {psmelled :: ES.EnumSet Point}
   deriving (Show, Eq, Binary)
 
 -- | The type representing the perception of a faction on a level.
@@ -114,8 +112,7 @@ diffPer per1 per2 =
 
 -- | Visually reachable positions (light passes through them to the actor).
 -- They need to be intersected with lucid positions to obtain visible positions.
-newtype PerReachable = PerReachable
-    {preachable :: ES.EnumSet Point}
+newtype PerReachable = PerReachable {preachable :: ES.EnumSet Point}
   deriving (Show, Eq)
 
 data CacheBeforeLucid = CacheBeforeLucid
@@ -146,8 +143,13 @@ type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 
 -- * Data used in FOV computation and cached to speed it up
 
--- | Map of level positions that currently hold item or actor(s) with shine
--- to the sum of radiuses of the shining lights.
+data FovValid a =
+    FovValid a
+  | FovInvalid
+  deriving (Show, Eq)
+
+-- | Map from level positions that currently hold item or actor(s) with shine
+-- to the maximum of radiuses of the shining lights.
 --
 -- Note: @ActorAspect@ and @FovShine@ shoudn't be in @State@,
 -- because on client they need to be updated every time an item discovery
@@ -158,24 +160,23 @@ type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 -- @FovShine@ should not even be kept in @StateServer@, because it's cheap
 -- to compute, compared to @FovLucid@ and invalidated almost as often
 -- (not invalidated only by @UpdAlterTile@).
-newtype FovShine = FovShine
-    {fovShine :: EM.EnumMap Point Int}
+newtype FovShine = FovShine {fovShine :: EM.EnumMap Point Int}
   deriving (Show, Eq)
 
-type FovClear = PointArray.Array Bool
+-- | Level positions with either ambient light or shining items or actors.
+newtype FovLucid = FovLucid {fovLucid :: ES.EnumSet Point}
+  deriving (Show, Eq)
+
+type FovLucidLid = EM.EnumMap LevelId (FovValid FovLucid)
+
+-- | Level positions that pass through light and vision.
+newtype FovClear = FovClear {fovClear :: PointArray.Array Bool}
+  deriving (Show, Eq)
 
 type FovClearLid = EM.EnumMap LevelId FovClear
 
--- | Level positions with either ambient light or shining items or actors.
-newtype FovLucid = FovLucid
-    {fovLucid :: ES.EnumSet Point}
-  deriving (Show, Eq)
-
-type FovLucidLid = EM.EnumMap LevelId FovLucid
-
 -- | Level positions with tiles that have ambient light.
-newtype FovLit = FovLit
-    {fovLit :: ES.EnumSet Point}
+newtype FovLit = FovLit {fovLit :: ES.EnumSet Point}
   deriving (Show, Eq)
 
 type FovLitLid = EM.EnumMap LevelId FovLit

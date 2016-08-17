@@ -3,6 +3,7 @@
 -- and sent to clients.
 module Game.LambdaHack.Server.HandleAtomicM
   ( cmdAtomicSemSer
+  , invalidateLucid, getCacheLucid
   ) where
 
 import Prelude ()
@@ -14,6 +15,7 @@ import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Fov
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -82,7 +84,8 @@ addItemToActor iid k aid = do
 updateSclear :: MonadServer m => LevelId -> Point -> Kind.Id TileKind -> m ()
 updateSclear lid pos toTile = do
   Kind.COps{coTileSpeedup} <- getsState scops
-  let f = (PointArray.// [(pos, Tile.isClear coTileSpeedup toTile)])
+  let f FovClear{fovClear} =
+        FovClear $ fovClear PointArray.// [(pos, Tile.isClear coTileSpeedup toTile)]
   modifyServer $ \ser -> ser {sfovClearLid = EM.adjust f lid $ sfovClearLid ser}
 
 updateSlit :: MonadServer m => LevelId -> Point -> Kind.Id TileKind -> m ()
@@ -92,3 +95,41 @@ updateSlit lid pos toTile = do
                                 then ES.insert pos set
                                 else ES.delete pos set
   modifyServer $ \ser -> ser {sfovLitLid = EM.adjust f lid $ sfovLitLid ser}
+
+invalidateLucidLid :: MonadServer m => LevelId -> m ()
+invalidateLucidLid lid =
+  modifyServer $ \ser ->
+    ser {sfovLucidLid = EM.insert lid FovInvalid $ sfovLucidLid ser}
+
+invalidateLucidAid :: MonadServer m => ActorId -> [ActorId] -> m ()
+invalidateLucidAid aid aids = do
+  lid <- getsState $ blid . getActorBody aid
+  lids <- mapM (\a -> getsState $ blid . getActorBody a) aids
+  let !_A = assert (all (== lid) lids) ()
+  invalidateLucidLid lid
+
+invalidateLucid :: MonadServer m => Either LevelId [ActorId] -> m ()
+invalidateLucid resetsLucid =
+  case resetsLucid of
+    Right [] -> return ()
+    Right (aid : aids) -> invalidateLucidAid aid aids
+    Left lid -> invalidateLucidLid lid
+
+getCacheLucid :: MonadServer m => LevelId -> m (Bool, FovLucid)
+getCacheLucid lid = do
+  discoAspect <- getsServer sdiscoAspect
+  actorAspect <- getsServer sactorAspect
+  fovClearLid <- getsServer sfovClearLid
+  fovLitLid <- getsServer sfovLitLid
+  fovLucidLid <- getsServer sfovLucidLid
+  let getNewLucid = getsState $ \s ->
+        lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid
+                       s lid (sdungeon s EM.! lid)
+  case EM.lookup lid fovLucidLid of
+    Just (FovValid fovLucid) -> return (False, fovLucid)
+    _ -> do
+      newLucid <- getNewLucid
+      modifyServer $ \ser ->
+        ser {sfovLucidLid = EM.insert lid (FovValid newLucid)
+                            $ sfovLucidLid ser}
+      return (True, newLucid)

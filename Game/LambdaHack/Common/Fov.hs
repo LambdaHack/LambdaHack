@@ -4,7 +4,7 @@
 -- for discussion.
 module Game.LambdaHack.Common.Fov
   ( perceptionFromResets, perceptionFromPTotal, perFidInDungeon
-  , updateFovLucid, fovAspectFromActor
+  , fovAspectFromActor, lucidFromLevel
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , perceptionFromPerActor, cacheBeforeLucidFromActor, visibleOnLevel
@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.Fov
   , actorAspectInDungeon
   , clearFromLevel, clearInDungeon
   , litFromLevel, litInDungeon, shineFromLevel
-  , floorLightSources, lucidFromItems, lucidFromLevel, lucidInDungeon
+  , floorLightSources, lucidFromItems, lucidInDungeon
   , fullscan
 #endif
   ) where
@@ -39,11 +39,11 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 
 perceptionFromResets :: PerActor -> [(ActorId, Actor)]
-                     -> ActorAspect -> FovLucidLid -> FovClearLid
+                     -> ActorAspect -> FovLucid -> FovClearLid
                      -> LevelId -> State
                      -> (Perception, PerceptionCache)
 perceptionFromResets perActor0 resetsBodies
-                     actorAspect fovLucidLid fovClearLid lid s =
+                     actorAspect fovLucid fovClearLid lid s =
   -- Dying actors included, to let them see their own demise.
   let clearPs = fovClearLid EM.! lid
       f acc (aid, b) =
@@ -53,11 +53,11 @@ perceptionFromResets perActor0 resetsBodies
              in EM.insert aid newPer acc
         else EM.delete aid acc  -- dead or stair-using actors removed
       perActor = foldl' f perActor0 resetsBodies
-  in perceptionFromPerActor perActor fovLucidLid lid
+  in perceptionFromPerActor perActor fovLucid
 
-perceptionFromPerActor :: PerActor -> FovLucidLid -> LevelId
+perceptionFromPerActor :: PerActor -> FovLucid
                        -> (Perception, PerceptionCache)
-perceptionFromPerActor perActor fovLucidLid lid =
+perceptionFromPerActor perActor fovLucid =
   -- We don't check if any actor changed, because almost surely one is.
   -- Exception: when an actor is destroyed, but then union differs.
   let ptotal = CacheBeforeLucid
@@ -70,7 +70,7 @@ perceptionFromPerActor perActor fovLucidLid lid =
         , csmell = PerSmelled
                    $ ES.unions $ map (psmelled . csmell)
                    $ EM.elems perActor }
-  in (perceptionFromPTotal ptotal fovLucidLid lid, PerceptionCache{..})
+  in (perceptionFromPTotal ptotal fovLucid, PerceptionCache{..})
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
@@ -85,10 +85,9 @@ cacheBeforeLucidFromActor clearPs (body, AspectRecord{..}) =
       csmell = PerSmelled $ fullscan clearPs smellRadius (bpos body)
   in CacheBeforeLucid{..}
 
-perceptionFromPTotal :: CacheBeforeLucid -> FovLucidLid -> LevelId -> Perception
-perceptionFromPTotal ptotal fovLucidLid lid =
-  let lucidPs = fovLucidLid EM.! lid
-      psight = visibleOnLevel (creachable ptotal) lucidPs (cnocto ptotal)
+perceptionFromPTotal :: CacheBeforeLucid -> FovLucid -> Perception
+perceptionFromPTotal ptotal fovLucid =
+  let psight = visibleOnLevel (creachable ptotal) fovLucid (cnocto ptotal)
       psmell = csmell ptotal
   in Perception{..}
 
@@ -98,9 +97,7 @@ perceptionFromPTotal ptotal fovLucidLid lid =
 -- is visible. Additionally, positions directly adjacent to an actor are
 -- assumed to be visible to him (through sound, touch, noctovision, whatever).
 visibleOnLevel :: PerReachable -> FovLucid -> PerVisible -> PerVisible
-visibleOnLevel PerReachable{preachable}
-               FovLucid{fovLucid}
-               (PerVisible nocto) =
+visibleOnLevel PerReachable{preachable} FovLucid{fovLucid} (PerVisible nocto) =
   PerVisible $ nocto `ES.union` (preachable `ES.intersection` fovLucid)
 
 perceptionFromVoid :: ActorAspect -> FovLucidLid -> FovClearLid
@@ -109,9 +106,12 @@ perceptionFromVoid :: ActorAspect -> FovLucidLid -> FovClearLid
 perceptionFromVoid actorAspect fovLucidLid fovClearLid fid lid s =
   let lvlBodies = EM.fromList $ actorAssocs (== fid) lid s
       bodyMap = EM.mapWithKey (\aid b -> (b, actorAspect EM.! aid)) lvlBodies
-      clearPs = fovClearLid EM.! lid
-      perActor = EM.map (cacheBeforeLucidFromActor clearPs) bodyMap
-  in perceptionFromPerActor perActor fovLucidLid lid
+      fovLucid = case EM.lookup lid fovLucidLid of
+        Just (FovValid fl) -> fl
+        _ -> assert `failure` (lid, fovLucidLid)
+      fovClear = fovClearLid EM.! lid
+      perActor = EM.map (cacheBeforeLucidFromActor fovClear) bodyMap
+  in perceptionFromPerActor perActor fovLucid
 
 -- | Calculate perception of a faction.
 perLidFromFaction :: ActorAspect -> FovLucidLid -> FovClearLid
@@ -149,7 +149,7 @@ actorAspectInDungeon discoAspect s =
 
 clearFromLevel :: Kind.COps -> Level -> FovClear
 clearFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
-  PointArray.mapA (Tile.isClear coTileSpeedup) ltile
+  FovClear $ PointArray.mapA (Tile.isClear coTileSpeedup) ltile
 
 clearInDungeon :: State -> FovClearLid
 clearInDungeon s = EM.map (clearFromLevel (scops s)) $ sdungeon s
@@ -196,6 +196,15 @@ lucidFromItems clearPs allItems =
   let lucidPos (p, shine) = FovLucid $ fullscan clearPs shine p
   in map lucidPos allItems
 
+-- Update lights in the dungeon. This is needed every (even enemy)
+-- actor move to show thrown torches.
+-- We need to update lights even if cmd doesn't change any perception,
+-- so that for next cmd that does, but doesn't change lights,
+-- and operates on the same level, the lights are up to date.
+-- We could make lights lazy to ensure no computation is wasted,
+-- but it's rare that cmd changed them, but not the perception
+-- (e.g., earthquake in an uninhabited corner of the active arena,
+-- but the we'd probably want some feedback, at least sound).
 -- TODO: if more speed needed, cache independently all actors
 -- (not in CacheBeforeLucid, so that dark actors moving don't reset lucid)
 -- and all floor positions, invalidate those that are changed,
@@ -205,29 +214,18 @@ lucidFromLevel :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
                -> FovLucid
 lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid s lid lvl =
   let shine = shineFromLevel discoAspect actorAspect s lid lvl
-      shineLucids = lucidFromItems (fovClearLid EM.! lid)
-                    $ EM.assocs $ fovShine shine
+      lucids = lucidFromItems (fovClearLid EM.! lid) $ EM.assocs $ fovShine shine
       litTiles = fovLitLid EM.! lid
-  in FovLucid $ ES.unions $ fovLit litTiles : map fovLucid shineLucids
+  in FovLucid $ ES.unions $ fovLit litTiles : map fovLucid lucids
 
 lucidInDungeon :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
                -> State
                -> FovLucidLid
 lucidInDungeon discoAspect actorAspect fovClearLid fovLitLid s =
   EM.mapWithKey
-    (lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid s)
+    (\lid lvl -> FovValid $
+       lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid s lid lvl)
     $ sdungeon s
-
-updateFovLucid :: FovLucidLid -> LevelId
-               -> DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
-               -> State
-               -> FovLucidLid
-updateFovLucid fovLucidLidOld lid
-               discoAspect actorAspect fovClearLid fovLitLid s =
-  let newLights = lucidFromLevel discoAspect
-                                 actorAspect fovClearLid fovLitLid
-                                 s lid (sdungeon s EM.! lid)
-  in EM.adjust (const newLights) lid fovLucidLidOld
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
@@ -237,7 +235,7 @@ fullscan :: FovClear  -- ^ the array with clear points
          -> Int       -- ^ scanning radius
          -> Point     -- ^ position of the spectator
          -> ES.EnumSet Point
-fullscan clearPs radius spectatorPos =
+fullscan FovClear{fovClear} radius spectatorPos =
   if | radius <= 0 -> ES.empty
      | radius == 1 -> ES.singleton spectatorPos
      | radius == 2 -> squareUnsafeSet spectatorPos
@@ -255,7 +253,7 @@ fullscan clearPs radius spectatorPos =
 
   isCl :: Point -> Bool
   {-# INLINE isCl #-}
-  isCl = (clearPs PointArray.!)
+  isCl = (fovClear PointArray.!)
 
   -- This function is cheap, so no problem it's called twice
   -- for each point: once with @isCl@, once via @concatMap@.

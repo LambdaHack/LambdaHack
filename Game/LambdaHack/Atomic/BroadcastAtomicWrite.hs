@@ -6,7 +6,7 @@ module Game.LambdaHack.Atomic.BroadcastAtomicWrite
   ( handleAndBroadcast
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , handleCmdAtomicServer, computeLight, atomicRemember
+  , handleCmdAtomicServer, atomicRemember
 #endif
   ) where
 
@@ -52,19 +52,19 @@ handleCmdAtomicServer posAtomic atomic =
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
                    => Bool -> PerFid -> PerCacheFid -> DiscoveryAspect
-                   -> ActorAspect -> ActorAspect
-                   -> FovLucidLid -> FovClearLid -> FovLitLid
+                   -> ActorAspect -> ActorAspect -> FovClearLid
                    -> ((PerFid -> PerFid) -> m ())
                    -> ((PerCacheFid -> PerCacheFid) -> m ())
-                   -> (FovLucidLid -> m ())
+                   -> (Either LevelId [ActorId] -> m ())
+                   -> (LevelId -> m (Bool, FovLucid))
                    -> (FactionId -> ResponseAI -> m ())
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
 handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                   discoAspect actorAspect actorAspectOld
-                   fovLucidLidOld fovClearLid fovLitLid
-                   doUpdatePerFid doUpdatePerCacheFid doUpdateLight
+                   discoAspect actorAspect actorAspectOld fovClearLid
+                   doUpdatePerFid doUpdatePerCacheFid
+                   doInvalidateLucid doGetCacheLucid
                    doSendUpdateAI doSendUpdateUI atomic = do
   -- Gather data from the old state.
   sOld <- getState
@@ -85,24 +85,21 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
         atomicBroken <- breakSfxAtomic sfx
         psBroken <- mapM posSfxAtomic atomicBroken
         return (ps, map SfxAtomic atomicBroken, psBroken, Just [], Right [])
+  doInvalidateLucid resetsLucid
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
-  fovLucidLid <- computeLight resetsLucid discoAspect actorAspect
-                              fovLucidLidOld fovClearLid fovLitLid
-  doUpdateLight fovLucidLid
   -- Invariant: if the various resets determine we do not need to update FOV,
   -- perception (@psight@ to be precise, @psmell@ is irrelevant)
   -- of any faction does not change upon full recomputation. Otherwise,
   -- save/restore would change game state (see also the assertions in gameExit).
   -- TODO: assert also that the sum of psBroken is equal to ps;
   -- with deep equality these assertions can be expensive; optimize.
-  let resetsOthers = resetsLucid /= Right []
-      !_A = assert (case ps of
+  let !_A = assert (case ps of
                       PosSight{} -> True
                       PosFidAndSight{} -> True
                       PosFidAndSer (Just _) _ -> True
-                      _ -> not $ resetsFov /= Just [] || resetsOthers
-                   `blame` (ps, resetsFov, resetsOthers)) ()
+                      _ -> not $ resetsFov /= Just [] || resetsLucid /= Right []
+                   `blame` (ps, resetsFov, resetsLucid)) ()
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI = when (fhasUI $ gplayer $ factionDold EM.! fid) $
         doSendUpdateUI fid cmdUI
@@ -145,22 +142,22 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
         let perOld = sperFidOld EM.! fid EM.! lid
             perCacheOld = sperCacheFidOld EM.! fid EM.! lid
             resetsFovFid = not $ null resetsBodies
-        if resetsFovFid || resetsOthers then do
+        (lucidChanged, fovLucid) <- doGetCacheLucid lid
+        if resetsFovFid || lucidChanged then do
           -- Needed often, e.g., to show thrown torches in dark corridors.
           perNew <-
             if resetsFovFid then do
               (per, perCache) <- getsState $
                 perceptionFromResets (perActor perCacheOld) resetsBodies
-                                     actorAspect fovLucidLid fovClearLid lid
-              let fperFid = EM.adjust (EM.adjust (const per) lid) fid
-                  fperCacheFid = EM.adjust (EM.adjust (const perCache) lid) fid
+                                     actorAspect fovLucid fovClearLid lid
+              let fperFid = EM.adjust (EM.insert lid per) fid
+                  fperCacheFid = EM.adjust (EM.insert lid perCache) fid
               doUpdatePerFid fperFid
               doUpdatePerCacheFid fperCacheFid
               return per
             else do
-              let per = perceptionFromPTotal (ptotal perCacheOld)
-                                             fovLucidLid lid
-                  fperFid = EM.adjust (EM.adjust (const per) lid) fid
+              let per = perceptionFromPTotal (ptotal perCacheOld) fovLucid
+                  fperFid = EM.adjust (EM.insert lid per) fid
               doUpdatePerFid fperFid
               return per
           let inPer = diffPer perNew perOld
@@ -197,34 +194,6 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
         PosAll -> sendUpdate fid atomic
         PosNone -> return ()
   mapWithKeyM_ (\fid _ -> send fid) factionDold
-
-computeLight :: MonadStateWrite m
-             => Either LevelId [ActorId] -> DiscoveryAspect -> ActorAspect
-             -> FovLucidLid -> FovClearLid -> FovLitLid
-             -> m FovLucidLid
-computeLight resetsLucid discoAspect actorAspect
-             fovLucidLidOld fovClearLid fovLitLid = do
-  -- Update lights in the dungeon. This is not needed and not performed
-  -- in particular if not @resets@.
-  -- This is needed every (even enemy) move to show thrown torches.
-  -- We need to update lights even if cmd doesn't change any perception,
-  -- so that for next cmd that does, but doesn't change lights,
-  -- and operates on the same level, the lights are up to date.
-  -- We could make lights lazy to ensure no computation is wasted,
-  -- but it's rare that cmd changed them, but not the perception
-  -- (e.g., earthquake in an uninhabited corner of the active arena,
-  -- but the we'd probably want some feedback, at least sound).
-  let updLucid lid = getsState $ updateFovLucid fovLucidLidOld lid
-                                                discoAspect actorAspect
-                                                fovClearLid fovLitLid
-  case resetsLucid of
-    Right [] -> return fovLucidLidOld
-    Right (aid : aids) -> do
-      lid <- getsState $ blid . getActorBody aid
-      lids <- mapM (\a -> getsState $ blid . getActorBody a) aids
-      let !_A = assert (all (== lid) lids) ()
-      updLucid lid
-    Left lid -> updLucid lid
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 atomicRemember lid inPer s =

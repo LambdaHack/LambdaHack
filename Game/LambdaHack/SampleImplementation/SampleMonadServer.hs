@@ -99,18 +99,15 @@ handleAndBroadcastServer atomic = do
   sperCacheFidOld <- getsServer sperCacheFid
   discoAspect <- getsServer sdiscoAspect
   sactorAspect <- getsServer sactorAspect
-  sfovLucidLidOld <- getsServer sfovLucidLid
-  sfovClearLidOld <- getsServer sfovClearLid
-  sfovLitLidOld <- getsServer sfovLitLid
+  sfovClearLid <- getsServer sfovClearLid
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   let updatePerFid f = modifyServer $ \ser -> ser {sperFid = f $ sperFid ser}
       updatePerCacheFid f =
         modifyServer $ \ser -> ser {sperCacheFid = f $ sperCacheFid ser}
-      updateLight sfovLucidLid = modifyServer $ \ser -> ser {sfovLucidLid}
   handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                     discoAspect sactorAspect sactorAspectOld sfovLucidLidOld
-                     sfovClearLidOld sfovLitLidOld
-                     updatePerFid updatePerCacheFid updateLight
+                     discoAspect sactorAspect sactorAspectOld sfovClearLid
+                     updatePerFid updatePerCacheFid
+                     invalidateLucid getCacheLucid
                      sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.
