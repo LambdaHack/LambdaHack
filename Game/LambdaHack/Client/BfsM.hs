@@ -46,7 +46,7 @@ import Game.LambdaHack.Content.TileKind (TileKind)
 invalidateBfs :: ActorId
               -> EM.EnumMap ActorId BfsAndPath
               -> EM.EnumMap ActorId BfsAndPath
-invalidateBfs = EM.adjust (const BfsInvalid)
+invalidateBfs aid = EM.insert aid BfsInvalid
 
 invalidateBfsAid :: MonadClient m => ActorId -> m ()
 invalidateBfsAid aid =
