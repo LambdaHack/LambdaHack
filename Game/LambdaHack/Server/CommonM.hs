@@ -5,6 +5,7 @@ module Game.LambdaHack.Server.CommonM
   , revealItems, moveStores, deduceQuits, deduceKilled, electLeader
   , addActor, addActorIid, projectFail
   , pickWeaponServer, sumOrganEqpServer, actorSkillsServer
+  , getCacheLucid
   ) where
 
 import Prelude ()
@@ -23,6 +24,7 @@ import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
+import Game.LambdaHack.Common.Fov
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
@@ -460,3 +462,22 @@ actorSkillsServer aid  = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let mleader = fst <$> gleader fact
   getsState $ actorSkills mleader aid activeItems
+
+getCacheLucid :: MonadServer m => LevelId -> m (Bool, FovLucid)
+getCacheLucid lid = do
+  discoAspect <- getsServer sdiscoAspect
+  actorAspect <- getsServer sactorAspect
+  fovClearLid <- getsServer sfovClearLid
+  fovLitLid <- getsServer sfovLitLid
+  fovLucidLid <- getsServer sfovLucidLid
+  let getNewLucid = getsState $ \s ->
+        lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid
+                       s lid (sdungeon s EM.! lid)
+  case EM.lookup lid fovLucidLid of
+    Just (FovValid fovLucid) -> return (False, fovLucid)
+    _ -> do
+      newLucid <- getNewLucid
+      modifyServer $ \ser ->
+        ser {sfovLucidLid = EM.insert lid (FovValid newLucid)
+                            $ sfovLucidLid ser}
+      return (True, newLucid)

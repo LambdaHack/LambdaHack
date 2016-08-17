@@ -52,40 +52,33 @@ handleCmdAtomicServer posAtomic atomic =
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
                    => Bool -> PerFid -> PerCacheFid -> DiscoveryAspect
-                   -> ActorAspect -> ActorAspect -> FovClearLid
-                   -> ((PerFid -> PerFid) -> m ())
+                   -> ActorAspect -> FovClearLid -> ((PerFid -> PerFid) -> m ())
                    -> ((PerCacheFid -> PerCacheFid) -> m ())
-                   -> (Either LevelId [ActorId] -> m ())
                    -> (LevelId -> m (Bool, FovLucid))
                    -> (FactionId -> ResponseAI -> m ())
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
 handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                   discoAspect actorAspect actorAspectOld fovClearLid
-                   doUpdatePerFid doUpdatePerCacheFid
-                   doInvalidateLucid doGetCacheLucid
+                   discoAspect actorAspect fovClearLid
+                   doUpdatePerFid doUpdatePerCacheFid doGetCacheLucid
                    doSendUpdateAI doSendUpdateUI atomic = do
   -- Gather data from the old state.
   sOld <- getState
   factionDold <- getsState sfactionD
-  (ps, atomicBroken, psBroken, resetsFov, resetsLucid) <-
+  (ps, atomicBroken, psBroken, resetsFov) <-
     case atomic of
       UpdAtomic cmd -> do
         ps <- posUpdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
         let resetsFov = resetsFovCmdAtomic cmd discoAspect
-            resetsLucid =
-              resetsLucidCmdAtomic cmd discoAspect actorAspect actorAspectOld
-        return ( ps, map UpdAtomic atomicBroken, psBroken
-               , resetsFov, resetsLucid )
+        return (ps, map UpdAtomic atomicBroken, psBroken, resetsFov)
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
         atomicBroken <- breakSfxAtomic sfx
         psBroken <- mapM posSfxAtomic atomicBroken
-        return (ps, map SfxAtomic atomicBroken, psBroken, Just [], Right [])
-  doInvalidateLucid resetsLucid
+        return (ps, map SfxAtomic atomicBroken, psBroken, Just [])
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
   -- Invariant: if the various resets determine we do not need to update FOV,
@@ -94,12 +87,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
   -- save/restore would change game state (see also the assertions in gameExit).
   -- TODO: assert also that the sum of psBroken is equal to ps;
   -- with deep equality these assertions can be expensive; optimize.
-  let !_A = assert (case ps of
-                      PosSight{} -> True
-                      PosFidAndSight{} -> True
-                      PosFidAndSer (Just _) _ -> True
-                      _ -> not $ resetsFov /= Just [] || resetsLucid /= Right []
-                   `blame` (ps, resetsFov, resetsLucid)) ()
+  --
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI = when (fhasUI $ gplayer $ factionDold EM.! fid) $
         doSendUpdateUI fid cmdUI

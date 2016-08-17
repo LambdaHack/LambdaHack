@@ -144,7 +144,7 @@ type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 -- * Data used in FOV computation and cached to speed it up
 
 data FovValid a =
-    FovValid a
+    FovValid !a
   | FovInvalid
   deriving (Show, Eq)
 

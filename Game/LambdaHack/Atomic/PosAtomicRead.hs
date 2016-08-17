@@ -3,8 +3,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
-  , resetsFovCmdAtomic, resetsLucidCmdAtomic
-  , breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
+  , resetsFovCmdAtomic, breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
   ) where
 
@@ -240,57 +239,6 @@ resetsFovCmdAtomic cmd discoAspect = case cmd of
          Nothing -> False
     then Just [aid]
     else Just []
-
--- | Determines if a command resets the data about lit tiles
--- (both with dynamic shine and static ambient light).
-resetsLucidCmdAtomic :: UpdAtomic -> DiscoveryAspect
-                     -> ActorAspect -> ActorAspect
-                     -> Either LevelId [ActorId]
-resetsLucidCmdAtomic cmd discoAspect actorAspect actorAspectOld = case cmd of
-  -- Create/destroy actors and items.
-  UpdCreateActor aid b _ -> actorAffectsShine aid $ Left $ blid b
-                            -- trunk or organ or eqp may shine
-  UpdDestroyActor aid b _ -> actorAffectsShine aid $ Left $ blid b
-  UpdCreateItem iid _ _ (CFloor lid _) ->
-    itemAffectsShineRadius iid [] $ Left lid
-  UpdCreateItem iid _ _ (CActor aid s) ->
-    itemAffectsShineRadius iid [s] $ Right [aid]
-  UpdDestroyItem iid _ _ (CFloor lid _) ->
-    itemAffectsShineRadius iid [] $ Left lid
-  UpdDestroyItem iid _ _ (CActor aid s) ->
-    itemAffectsShineRadius iid [s] $ Right [aid]
-  UpdSpotActor aid b _ -> actorAffectsShine aid $ Left $ blid b
-  UpdLoseActor aid b _ -> actorAffectsShine aid $ Left $ blid b
-  UpdSpotItem iid _ _ (CFloor lid _) ->
-    itemAffectsShineRadius iid [] $ Left lid
-  UpdSpotItem iid _ _ (CActor aid s) ->
-    itemAffectsShineRadius iid [s] $ Right [aid]
-  UpdLoseItem iid _ _ (CFloor lid _) ->
-    itemAffectsShineRadius iid [] $ Left lid
-  UpdLoseItem iid _ _ (CActor aid s) ->
-    itemAffectsShineRadius iid [s] $ Right [aid]
-  -- Move actors and items.
-  UpdMoveActor aid _ _ -> actorAffectsShine aid $ Right [aid]
-  UpdDisplaceActor aid1 aid2 -> Right $ filter actorHasShine [aid1, aid2]
-  UpdMoveItem iid _ aid s1 s2 ->
-    itemAffectsShineRadius iid [s1, s2] $ Right [aid]
-  -- Alter map.
-  UpdAlterTile lid _ _ _ -> Left lid
-  _ -> Right []
- where
-  itemAffectsShineRadius iid stores res =
-    if (null stores || (not $ null $ intersect stores [CEqp, COrgan, CGround]))
-       && case EM.lookup iid discoAspect of
-         Just AspectRecord{aShine} -> aShine /= 0
-         Nothing -> False
-    then res
-    else Right []
-  actorHasShine aid = case EM.lookup aid actorAspect of
-    Just AspectRecord{aShine} -> aShine > 0
-    Nothing -> case EM.lookup aid actorAspectOld of  -- for UpdDestroyActor
-      Just AspectRecord{aShine} -> aShine > 0
-      Nothing -> assert `failure` (aid, cmd)
-  actorAffectsShine aid res = if actorHasShine aid then res else Right []
 
 -- | Decompose an atomic action. The original action is visible
 -- if it's positions are visible both before and after the action
