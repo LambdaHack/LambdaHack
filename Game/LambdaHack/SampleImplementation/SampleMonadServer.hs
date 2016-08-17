@@ -97,6 +97,7 @@ handleAndBroadcastServer atomic = do
     SfxAtomic _sfx -> return ()
   sperFidOld <- getsServer sperFid
   sperCacheFidOld <- getsServer sperCacheFid
+  discoAspect <- getsServer sdiscoAspect
   sactorAspect <- getsServer sactorAspect
   sfovLucidLidOld <- getsServer sfovLucidLid
   sfovClearLidOld <- getsServer sfovClearLid
@@ -106,10 +107,8 @@ handleAndBroadcastServer atomic = do
       updatePerCacheFid f =
         modifyServer $ \ser -> ser {sperCacheFid = f $ sperCacheFid ser}
       updateLight sfovLucidLid = modifyServer $ \ser -> ser {sfovLucidLid}
-      getDiscoAspect = getsServer sdiscoAspect
   handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                     getDiscoAspect
-                     sactorAspect sactorAspectOld sfovLucidLidOld
+                     discoAspect sactorAspect sactorAspectOld sfovLucidLidOld
                      sfovClearLidOld sfovLitLidOld
                      updatePerFid updatePerCacheFid updateLight
                      sendUpdateAI sendUpdateUI atomic

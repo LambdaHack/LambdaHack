@@ -51,7 +51,7 @@ handleCmdAtomicServer posAtomic atomic =
 
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
-                   => Bool -> PerFid -> PerCacheFid -> m DiscoveryAspect
+                   => Bool -> PerFid -> PerCacheFid -> DiscoveryAspect
                    -> ActorAspect -> ActorAspect
                    -> FovLucidLid -> FovClearLid -> FovLitLid
                    -> ((PerFid -> PerFid) -> m ())
@@ -61,36 +61,43 @@ handleAndBroadcast :: forall m. MonadStateWrite m
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
-handleAndBroadcast knowEvents sperFidOld sperCacheFidOld getDiscoAspect
-                   actorAspect actorAspectOld
+handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
+                   discoAspect actorAspect actorAspectOld
                    fovLucidLidOld fovClearLid fovLitLid
                    doUpdatePerFid doUpdatePerCacheFid doUpdateLight
                    doSendUpdateAI doSendUpdateUI atomic = do
   -- Gather data from the old state.
   sOld <- getState
   factionDold <- getsState sfactionD
-  (ps, atomicBroken, psBroken) <-
+  (ps, atomicBroken, psBroken, resetsFov, resetsLucid) <-
     case atomic of
       UpdAtomic cmd -> do
         ps <- posUpdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
-        return ( ps, map UpdAtomic atomicBroken, psBroken )
+        let resetsFov = resetsFovCmdAtomic cmd discoAspect
+            resetsLucid =
+              resetsLucidCmdAtomic cmd discoAspect actorAspect actorAspectOld
+        return ( ps, map UpdAtomic atomicBroken, psBroken
+               , resetsFov, resetsLucid )
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
         atomicBroken <- breakSfxAtomic sfx
         psBroken <- mapM posSfxAtomic atomicBroken
-        return ( ps, map SfxAtomic atomicBroken, psBroken )
+        return (ps, map SfxAtomic atomicBroken, psBroken, Just [], Right [])
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
-  discoAspect <- getDiscoAspect
-  (resetsFov, resetsOthers, fovLucidLid)
-    <- computeLight atomic discoAspect actorAspect actorAspectOld
-                    fovLucidLidOld fovClearLid fovLitLid
+  fovLucidLid <- computeLight resetsLucid discoAspect actorAspect
+                              fovLucidLidOld fovClearLid fovLitLid
   doUpdateLight fovLucidLid
+  -- Invariant: if the various resets determine we do not need to update FOV,
+  -- perception (@psight@ to be precise, @psmell@ is irrelevant)
+  -- of any faction does not change upon full recomputation. Otherwise,
+  -- save/restore would change game state (see also the assertions in gameExit).
   -- TODO: assert also that the sum of psBroken is equal to ps;
   -- with deep equality these assertions can be expensive; optimize.
-  let !_A = assert (case ps of
+  let resetsOthers = resetsLucid /= Right []
+      !_A = assert (case ps of
                       PosSight{} -> True
                       PosFidAndSight{} -> True
                       PosFidAndSer (Just _) _ -> True
@@ -192,18 +199,11 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld getDiscoAspect
   mapWithKeyM_ (\fid _ -> send fid) factionDold
 
 computeLight :: MonadStateWrite m
-             => CmdAtomic -> DiscoveryAspect
-             -> ActorAspect -> ActorAspect
+             => Either LevelId [ActorId] -> DiscoveryAspect -> ActorAspect
              -> FovLucidLid -> FovClearLid -> FovLitLid
-             -> m (Maybe [ActorId], Bool, FovLucidLid)
-computeLight atomic discoAspect
-             actorAspect actorAspectOld fovLucidLidOld fovClearLid fovLitLid = do
-  let (resetsFov, resetsLucidC) =
-        case atomic of
-          UpdAtomic cmd ->
-            ( resetsFovCmdAtomic cmd discoAspect
-            , resetsLucidCmdAtomic cmd discoAspect )
-          SfxAtomic{} -> (Just [], \_ _ ->  Right [])
+             -> m FovLucidLid
+computeLight resetsLucid discoAspect actorAspect
+             fovLucidLidOld fovClearLid fovLitLid = do
   -- Update lights in the dungeon. This is not needed and not performed
   -- in particular if not @resets@.
   -- This is needed every (even enemy) move to show thrown torches.
@@ -214,16 +214,10 @@ computeLight atomic discoAspect
   -- but it's rare that cmd changed them, but not the perception
   -- (e.g., earthquake in an uninhabited corner of the active arena,
   -- but the we'd probably want some feedback, at least sound).
-  let resetsLucid = resetsLucidC actorAspect actorAspectOld
-      resetsOthers = resetsLucid /= Right []
-  -- Invariant: if the various resets determine we do not need to update FOV,
-  -- perception (@psight@ to be precise, @psmell@ is irrelevant)
-  -- of any faction does not change upon full recomputation. Otherwise,
-  -- save/restore would change game state (see also the assertions in gameExit).
   let updLucid lid = getsState $ updateFovLucid fovLucidLidOld lid
                                                 discoAspect actorAspect
                                                 fovClearLid fovLitLid
-  fovLucidLid <- case resetsLucid of
+  case resetsLucid of
     Right [] -> return fovLucidLidOld
     Right (aid : aids) -> do
       lid <- getsState $ blid . getActorBody aid
@@ -231,7 +225,6 @@ computeLight atomic discoAspect
       let !_A = assert (all (== lid) lids) ()
       updLucid lid
     Left lid -> updLucid lid
-  return (resetsFov, resetsOthers, fovLucidLid)
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 atomicRemember lid inPer s =
