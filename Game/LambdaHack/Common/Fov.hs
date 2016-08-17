@@ -184,8 +184,8 @@ shineFromLevel discoAspect actorAspect s lid lvl =
       floorLights = floorLightSources discoAspect lvl
       allLights = floorLights ++ actorLights
       -- If there is light both on the floor and carried by actor
-      -- (or several projectile actors), its radius is the sum total.
-  in FovShine $ EM.fromListWith (+) allLights
+      -- (or several projectile actors), its radius is the maximum.
+  in FovShine $ EM.fromListWith max allLights
 
 -- | Compute all dynamically lit positions on a level, whether lit by actors
 -- or shining floor items. Note that an actor can be blind,
@@ -196,12 +196,17 @@ lucidFromItems clearPs allItems =
   let lucidPos (p, shine) = FovLucid $ fullscan clearPs shine p
   in map lucidPos allItems
 
+-- TODO: if more speed needed, cache independently all actors
+-- (not in CacheBeforeLucid, so that dark actors moving don't reset lucid)
+-- and all floor positions, invalidate those that are changed,
+-- recompute and union all afterwards.
 lucidFromLevel :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
                -> State -> LevelId -> Level
                -> FovLucid
 lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid s lid lvl =
-  let FovShine shine = shineFromLevel discoAspect actorAspect s lid lvl
-      shineLucids = lucidFromItems (fovClearLid EM.! lid) $ EM.assocs shine
+  let shine = shineFromLevel discoAspect actorAspect s lid lvl
+      shineLucids = lucidFromItems (fovClearLid EM.! lid)
+                    $ EM.assocs $ fovShine shine
       litTiles = fovLitLid EM.! lid
   in FovLucid $ ES.unions $ fovLit litTiles : map fovLucid shineLucids
 
