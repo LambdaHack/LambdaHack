@@ -23,34 +23,31 @@ matrix:
   include:
     - env: CABALVER=1.18 GHCVER=7.8.1 GTKVTY=gtk
       compiler: ": #GHC 7.8.1"
-      addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [cabal-install-head,ghc-7.8.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
     - env: CABALVER=1.18 GHCVER=7.8.2 GTKVTY=vty
       compiler: ": #GHC 7.8.2"
-      addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [cabal-install-head,ghc-7.8.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
     - env: CABALVER=1.18 GHCVER=7.8.3 GTKVTY=curses
       compiler: ": #GHC 7.8.3"
-      addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [cabal-install-head,ghc-7.8.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
     - env: CABALVER=1.18 GHCVER=7.8.4 GTKVTY=gtk
       compiler: ": #GHC 7.8.4"
-      addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.4,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [cabal-install-head,ghc-7.8.4,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
     - env: CABALVER=1.22 GHCVER=7.10.1 GTKVTY=vty
       compiler: ": #GHC 7.10.1"
-      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: cabal-install-head,ghc-7.10.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
     - env: CABALVER=1.22 GHCVER=7.10.2 GTKVTY=curses
       compiler: ": #GHC 7.10.2"
-      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: cabal-install-head,ghc-7.10.2,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
     - env: CABALVER=1.22 GHCVER=7.10.3 GTKVTY=vty
       compiler: ": #GHC 7.10.3"
-      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: cabal-install-head,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
     - env: CABALVER=1.22 GHCVER=7.10.3 GTKVTY=curses
       compiler: ": #GHC 7.10.3"
-      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: cabal-install-head,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
     - env: CABALVER=1.22 GHCVER=7.10.3 GTKVTY=gtk
       compiler: ": #GHC 7.10.3"
-      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=head GHCVER=7.8.1 GTKVTY=gtk
-      compiler: ": #GHC 7.8.1"
-      addons: {apt: {packages: [cabal-install-head,ghc-7.8.1,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: cabal-install-head,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
     - env: CABALVER=head GHCVER=head GTKVTY=gtk
       compiler: ": #GHC head"
       addons: {apt: {packages: [cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
@@ -78,7 +75,7 @@ install:
  - sed -i 's/^jobsColon/jobs:/' ${HOME}/.cabal/config
  - |
    if [ $GTKVTY = "gtk" ]; then
-     cabal install -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v gtk2hs-buildtools . > installplan.txt
+     cabal install -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt
    elif [ $GTKVTY = "vty" ]; then
      cabal install -fvty -frelease --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt
    else
@@ -89,7 +86,6 @@ install:
  - sed -i -e '1,/^Resolving /d' installplan.txt; cat installplan.txt
 
 # check whether current requested install-plan matches cached package-db snapshot
-# no --only-dependencies in the gtk case until gtk2hs-buildtools no longer needed (it was causing problem by picking installed libraries over new ones)
  - if diff -u installplan.txt $HOME/.cabsnap/installplan.txt;
    then
      echo "cabal build-cache HIT";
@@ -101,7 +97,7 @@ install:
      rm -rf $HOME/.cabsnap;
      mkdir -p $HOME/.ghc $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin;
      if [ $GTKVTY = "gtk" ]; then
-       cabal install -frelease --enable-tests --enable-benchmarks gtk2hs-buildtools . ;
+       cabal install -frelease --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "vty" ]; then
        cabal install -fvty -frelease --only-dependencies --enable-tests --enable-benchmarks;
      else
