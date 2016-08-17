@@ -137,7 +137,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
             if resetsFovFid then do
               (per, perCache) <- getsState $
                 perceptionFromResets (perActor perCacheOld) resetsBodies
-                                     actorAspect fovLucid fovClearLid lid
+                                     actorAspect fovLucid (fovClearLid EM.! lid)
               let fperFid = EM.adjust (EM.insert lid per) fid
                   fperCacheFid = EM.adjust (EM.insert lid perCache) fid
               doUpdatePerFid fperFid

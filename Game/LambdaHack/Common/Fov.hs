@@ -39,24 +39,20 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 
 perceptionFromResets :: PerActor -> [(ActorId, Actor)]
-                     -> ActorAspect -> FovLucid -> FovClearLid
-                     -> LevelId -> State
+                     -> ActorAspect -> FovLucid -> FovClear -> State
                      -> (Perception, PerceptionCache)
-perceptionFromResets perActor0 resetsBodies
-                     actorAspect fovLucid fovClearLid lid s =
+perceptionFromResets perActor0 resetsBodies actorAspect fovLucid fovClear s =
   -- Dying actors included, to let them see their own demise.
-  let clearPs = fovClearLid EM.! lid
-      f acc (aid, b) =
+  let f acc (aid, b) =
         if EM.member aid $ sactorD s
         then let fcache = actorAspect EM.! aid
-                 newPer = cacheBeforeLucidFromActor clearPs (b, fcache)
+                 newPer = cacheBeforeLucidFromActor fovClear (b, fcache)
              in EM.insert aid newPer acc
         else EM.delete aid acc  -- dead or stair-using actors removed
       perActor = foldl' f perActor0 resetsBodies
   in perceptionFromPerActor perActor fovLucid
 
-perceptionFromPerActor :: PerActor -> FovLucid
-                       -> (Perception, PerceptionCache)
+perceptionFromPerActor :: PerActor -> FovLucid -> (Perception, PerceptionCache)
 perceptionFromPerActor perActor fovLucid =
   -- We don't check if any actor changed, because almost surely one is.
   -- Exception: when an actor is destroyed, but then union differs.
@@ -75,7 +71,8 @@ perceptionFromPerActor perActor fovLucid =
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
 -- Also compute positions seen by noctovision and perceived by smell.
-cacheBeforeLucidFromActor :: FovClear -> (Actor, AspectRecord) -> CacheBeforeLucid
+cacheBeforeLucidFromActor :: FovClear -> (Actor, AspectRecord)
+                          -> CacheBeforeLucid
 cacheBeforeLucidFromActor clearPs (body, AspectRecord{..}) =
   let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) aSight
       creachable = PerReachable $ fullscan clearPs radius (bpos body)
@@ -118,8 +115,9 @@ perLidFromFaction :: ActorAspect -> FovLucidLid -> FovClearLid
                   -> FactionId -> State
                   -> (PerLid, PerCacheLid)
 perLidFromFaction actorAspect fovLucidLid fovClearLid fid s =
-  let em = EM.mapWithKey (\lid _ -> perceptionFromVoid actorAspect fovLucidLid fovClearLid fid lid s)
-                         (sdungeon s)
+  let em = EM.mapWithKey (\lid _ ->
+        perceptionFromVoid actorAspect fovLucidLid fovClearLid fid lid s)
+        (sdungeon s)
   in (EM.map fst em, EM.map snd em)
 
 -- | Calculate the perception of the whole dungeon.
@@ -214,7 +212,8 @@ lucidFromLevel :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
                -> FovLucid
 lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid s lid lvl =
   let shine = shineFromLevel discoAspect actorAspect s lid lvl
-      lucids = lucidFromItems (fovClearLid EM.! lid) $ EM.assocs $ fovShine shine
+      lucids = lucidFromItems (fovClearLid EM.! lid)
+               $ EM.assocs $ fovShine shine
       litTiles = fovLitLid EM.! lid
   in FovLucid $ ES.unions $ fovLit litTiles : map fovLucid lucids
 
