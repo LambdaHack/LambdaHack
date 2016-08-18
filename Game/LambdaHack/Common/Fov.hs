@@ -41,32 +41,35 @@ import Game.LambdaHack.Common.Vector
 perceptionFromResets :: PerActor -> [(ActorId, Actor)]
                      -> ActorAspect -> FovLucid -> FovClear -> State
                      -> (Perception, PerceptionCache)
-perceptionFromResets perActor0 resetsBodies actorAspect fovLucid fovClear s =
+perceptionFromResets perActorOld resetsBodies actorAspect fovLucid fovClear s =
   -- Dying actors included, to let them see their own demise.
   let f acc (aid, b) =
         if EM.member aid $ sactorD s
         then let fcache = actorAspect EM.! aid
-                 newPer = cacheBeforeLucidFromActor fovClear (b, fcache)
+                 newPer = FovValid
+                          $ cacheBeforeLucidFromActor fovClear (b, fcache)
              in EM.insert aid newPer acc
         else EM.delete aid acc  -- dead or stair-using actors removed
-      perActor = foldl' f perActor0 resetsBodies
+      perActor = foldl' f perActorOld resetsBodies
   in perceptionFromPerActor perActor fovLucid
 
 perceptionFromPerActor :: PerActor -> FovLucid -> (Perception, PerceptionCache)
 perceptionFromPerActor perActor fovLucid =
   -- We don't check if any actor changed, because almost surely one is.
   -- Exception: when an actor is destroyed, but then union differs.
-  let ptotal = CacheBeforeLucid
+  let as = map (\a -> case a of
+                   FovValid x -> x
+                   FovInvalid -> undefined)
+           $ EM.elems perActor
+      total = CacheBeforeLucid
         { creachable = PerReachable
-                       $ ES.unions $ map (preachable . creachable)
-                       $ EM.elems perActor
+                       $ ES.unions $ map (preachable . creachable) as
         , cnocto = PerVisible
-                   $ ES.unions $ map (pvisible . cnocto)
-                   $ EM.elems perActor
+                   $ ES.unions $ map (pvisible . cnocto) as
         , csmell = PerSmelled
-                   $ ES.unions $ map (psmelled . csmell)
-                   $ EM.elems perActor }
-  in (perceptionFromPTotal ptotal fovLucid, PerceptionCache{..})
+                   $ ES.unions $ map (psmelled . csmell) as }
+  in ( perceptionFromPTotal total fovLucid
+     , PerceptionCache{ptotal = FovValid total, perActor} )
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
@@ -107,7 +110,7 @@ perceptionFromVoid actorAspect fovLucidLid fovClearLid fid lid s =
         Just (FovValid fl) -> fl
         _ -> assert `failure` (lid, fovLucidLid)
       fovClear = fovClearLid EM.! lid
-      perActor = EM.map (cacheBeforeLucidFromActor fovClear) bodyMap
+      perActor = EM.map (FovValid . cacheBeforeLucidFromActor fovClear) bodyMap
   in perceptionFromPerActor perActor fovLucid
 
 -- | Calculate perception of a faction.

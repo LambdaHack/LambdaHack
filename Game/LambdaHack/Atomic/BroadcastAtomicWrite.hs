@@ -146,7 +146,8 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
               doUpdatePerCacheFid fperCacheFid
               return per
             else do
-              let per = perceptionFromPTotal (ptotal perCacheOld) fovLucid
+              let FovValid total = ptotal perCacheOld
+                  per = perceptionFromPTotal total fovLucid
                   fperFid = EM.adjust (EM.insert lid per) fid
               doUpdatePerFid fperFid
               return per

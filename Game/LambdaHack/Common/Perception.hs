@@ -26,6 +26,8 @@ module Game.LambdaHack.Common.Perception
   , totalVisible, totalSmelled
   , nullPer, addPer, diffPer
     -- * Perception cache
+  , FovValid(..)
+  , PerValidFid
   , PerReachable(..)
   , CacheBeforeLucid(..)
   , PerActor
@@ -33,7 +35,7 @@ module Game.LambdaHack.Common.Perception
   , PerCacheLid
   , PerCacheFid
     -- * Data used in FOV computation and cached to speed it up
-  , PerValidFid, FovValid(..), FovShine(..), FovLucid(..), FovLucidLid
+  , FovShine(..), FovLucid(..), FovLucidLid
   , FovClear(..), FovClearLid, FovLit (..), FovLitLid
   ) where
 
@@ -110,6 +112,14 @@ diffPer per1 per2 =
 
 -- * Perception cache
 
+data FovValid a =
+    FovValid !a
+  | FovInvalid
+  deriving (Show, Eq)
+
+-- | Main perception validity map, for all factions.
+type PerValidFid = EM.EnumMap FactionId (EM.EnumMap LevelId Bool)
+
 -- | Visually reachable positions (light passes through them to the actor).
 -- They need to be intersected with lucid positions to obtain visible positions.
 newtype PerReachable = PerReachable {preachable :: ES.EnumSet Point}
@@ -122,14 +132,14 @@ data CacheBeforeLucid = CacheBeforeLucid
   }
   deriving (Show, Eq)
 
-type PerActor = EM.EnumMap ActorId CacheBeforeLucid
+type PerActor = EM.EnumMap ActorId (FovValid CacheBeforeLucid)
 
 -- We might cache even more effectively in terms of Enum{Set,Map} unions
 -- if we recorded for each field how many actors see it (and how many
 -- lights lit it). But this is complex and unions of EnumSets are cheaper
 -- than the EnumMaps that would be required.
 data PerceptionCache = PerceptionCache
-  { ptotal   :: !CacheBeforeLucid
+  { ptotal   :: !(FovValid CacheBeforeLucid)
   , perActor :: !PerActor
   }
   deriving (Show, Eq)
@@ -142,14 +152,6 @@ type PerCacheLid = EM.EnumMap LevelId PerceptionCache
 type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 
 -- * Data used in FOV computation and cached to speed it up
-
--- | Main perception validity map, for all factions.
-type PerValidFid = EM.EnumMap FactionId (EM.EnumMap LevelId Bool)
-
-data FovValid a =
-    FovValid !a
-  | FovInvalid
-  deriving (Show, Eq)
 
 -- | Map from level positions that currently hold item or actor(s) with shine
 -- to the maximum of radiuses of the shining lights.
