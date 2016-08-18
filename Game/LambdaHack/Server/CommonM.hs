@@ -5,7 +5,7 @@ module Game.LambdaHack.Server.CommonM
   , revealItems, moveStores, deduceQuits, deduceKilled, electLeader
   , addActor, addActorIid, projectFail
   , pickWeaponServer, sumOrganEqpServer, actorSkillsServer
-  , getCacheLucid
+  , recomputeCachePer
   ) where
 
 import Prelude ()
@@ -481,3 +481,32 @@ getCacheLucid lid = do
         ser {sfovLucidLid = EM.insert lid (FovValid newLucid)
                             $ sfovLucidLid ser}
       return newLucid
+
+getCacheTotal :: MonadServer m => FactionId -> LevelId -> m CacheBeforeLucid
+getCacheTotal fid lid = do
+  sperCacheFidOld <- getsServer sperCacheFid
+  let perCacheOld = sperCacheFidOld EM.! fid EM.! lid
+  case ptotal perCacheOld of
+    FovValid total -> return total
+    FovInvalid -> do
+      actorAspect <- getsServer sactorAspect
+      fovClearLid <- getsServer sfovClearLid
+      getActorB <- getsState $ flip getActorBody
+      let perActorNew =
+            perActorFromLevel (perActor perCacheOld) getActorB
+                              actorAspect (fovClearLid EM.! lid)
+          total = totalFromPerActor perActorNew
+          perCache = PerceptionCache { ptotal = FovValid total
+                                     , perActor = perActorNew }
+          fperCache = EM.adjust (EM.insert lid perCache) fid
+      modifyServer $ \ser -> ser {sperCacheFid = fperCache $ sperCacheFid ser}
+      return total
+
+recomputeCachePer :: MonadServer m => FactionId -> LevelId -> m Perception
+recomputeCachePer fid lid = do
+  total <- getCacheTotal fid lid
+  fovLucid <- getCacheLucid lid
+  let perNew = perceptionFromPTotal fovLucid total
+      fper = EM.adjust (EM.insert lid perNew) fid
+  modifyServer $ \ser -> ser {sperFid = fper $ sperFid ser}
+  return perNew

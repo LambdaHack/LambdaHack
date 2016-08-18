@@ -25,7 +25,6 @@ import Game.LambdaHack.Atomic.PosAtomicRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Fov
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -50,19 +49,16 @@ handleCmdAtomicServer posAtomic atomic =
 
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
-                   => Bool -> PerFid -> PerCacheFid
-                   -> ActorAspect -> FovClearLid -> ((PerFid -> PerFid) -> m ())
-                   -> ((PerCacheFid -> PerCacheFid) -> m ())
-                   -> (LevelId -> m FovLucid)
+                   => Bool
+                   -> PerFid
                    -> (FactionId -> LevelId -> m Bool)
+                   -> (FactionId -> LevelId -> m Perception)
                    -> (FactionId -> ResponseAI -> m ())
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
-handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                   actorAspect fovClearLid
-                   doUpdatePerFid doUpdatePerCacheFid doGetCacheLucid
-                   checkSetPerValid doSendUpdateAI doSendUpdateUI atomic = do
+handleAndBroadcast knowEvents sperFidOld checkSetPerValid doRecomputeCachePer
+                   doSendUpdateAI doSendUpdateUI atomic = do
   -- Gather data from the old state.
   sOld <- getState
   factionDold <- getsState sfactionD
@@ -123,26 +119,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
         perValid <- checkSetPerValid fid lid
         if perValid then anySend lid fid perOld perOld
         else do
-          perNew <- do
-            fovLucid <- doGetCacheLucid lid
-            let perCacheOld = sperCacheFidOld EM.! fid EM.! lid
-            total <- case ptotal perCacheOld of
-              FovValid total -> return total
-              FovInvalid -> do
-                getActorB <- getsState $ flip getActorBody
-                let perActorNew =
-                      perActorFromLevel (perActor perCacheOld) getActorB
-                                        actorAspect (fovClearLid EM.! lid)
-                    total = totalFromPerActor perActorNew
-                    perCache = PerceptionCache { ptotal = FovValid total
-                                              , perActor = perActorNew }
-                    fperCacheFid = EM.adjust (EM.insert lid perCache) fid
-                doUpdatePerCacheFid fperCacheFid
-                return total
-            let perNew = perceptionFromPTotal fovLucid total
-                fperFid = EM.adjust (EM.insert lid perNew) fid
-            doUpdatePerFid fperFid
-            return perNew
+          perNew <- doRecomputeCachePer fid lid
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
           if nullPer outPer && nullPer inPer

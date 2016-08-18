@@ -96,24 +96,16 @@ handleAndBroadcastServer atomic = do
     UpdAtomic cmd -> cmdAtomicSemSer cmd
     SfxAtomic _sfx -> return ()
   sperFidOld <- getsServer sperFid
-  sperCacheFidOld <- getsServer sperCacheFid
-  sactorAspect <- getsServer sactorAspect
-  sfovClearLid <- getsServer sfovClearLid
   knowEvents <- getsServer $ sknowEvents . sdebugSer
-  let updatePerFid f = modifyServer $ \ser -> ser {sperFid = f $ sperFid ser}
-      updatePerCacheFid f =
-        modifyServer $ \ser -> ser {sperCacheFid = f $ sperCacheFid ser}
-      checkSetPerValid fid lid = do
+  let checkSetPerValid fid lid = do
         res <- getsServer $ (EM.! lid) . (EM.! fid) . sperValidFid
         unless res $
           modifyServer $ \ser ->
             ser {sperValidFid = EM.adjust (EM.insert lid True) fid
                                 $ sperValidFid ser}
         return res
-  handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                     sactorAspect sfovClearLid
-                     updatePerFid updatePerCacheFid getCacheLucid
-                     checkSetPerValid sendUpdateAI sendUpdateUI atomic
+  handleAndBroadcast knowEvents sperFidOld checkSetPerValid recomputeCachePer
+                     sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> SerImplementation () -> IO ()
