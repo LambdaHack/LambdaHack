@@ -38,19 +38,17 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 
-perceptionFromResets :: PerActor -> [(ActorId, Actor)]
-                     -> ActorAspect -> FovLucid -> FovClear -> State
+perceptionFromResets :: PerActor -> (ActorId -> Actor)
+                     -> ActorAspect -> FovLucid -> FovClear
                      -> (Perception, PerceptionCache)
-perceptionFromResets perActorOld resetsBodies actorAspect fovLucid fovClear s =
+perceptionFromResets perActorOld getActorB actorAspect fovLucid fovClear =
   -- Dying actors included, to let them see their own demise.
-  let f acc (aid, b) =
-        if EM.member aid $ sactorD s
-        then let fcache = actorAspect EM.! aid
-                 newPer = FovValid
-                          $ cacheBeforeLucidFromActor fovClear (b, fcache)
-             in EM.insert aid newPer acc
-        else EM.delete aid acc  -- dead or stair-using actors removed
-      perActor = foldl' f perActorOld resetsBodies
+  let f _ fv@FovValid{} = fv
+      f aid FovInvalid =
+        let ar = actorAspect EM.! aid
+            b = getActorB aid
+        in FovValid $ cacheBeforeLucidFromActor fovClear b ar
+      perActor = EM.mapWithKey f perActorOld
   in perceptionFromPerActor perActor fovLucid
 
 perceptionFromPerActor :: PerActor -> FovLucid -> (Perception, PerceptionCache)
@@ -74,9 +72,9 @@ perceptionFromPerActor perActor fovLucid =
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
 -- Also compute positions seen by noctovision and perceived by smell.
-cacheBeforeLucidFromActor :: FovClear -> (Actor, AspectRecord)
+cacheBeforeLucidFromActor :: FovClear -> Actor -> AspectRecord
                           -> CacheBeforeLucid
-cacheBeforeLucidFromActor clearPs (body, AspectRecord{..}) =
+cacheBeforeLucidFromActor clearPs body AspectRecord{..} =
   let radius = min (fromIntegral $ bcalm body `div` (5 * oneM)) aSight
       creachable = PerReachable $ fullscan clearPs radius (bpos body)
       cnocto = PerVisible $ fullscan clearPs aNocto (bpos body)
@@ -110,7 +108,8 @@ perceptionFromVoid actorAspect fovLucidLid fovClearLid fid lid s =
         Just (FovValid fl) -> fl
         _ -> assert `failure` (lid, fovLucidLid)
       fovClear = fovClearLid EM.! lid
-      perActor = EM.map (FovValid . cacheBeforeLucidFromActor fovClear) bodyMap
+      perActor =
+        EM.map (FovValid . uncurry (cacheBeforeLucidFromActor fovClear)) bodyMap
   in perceptionFromPerActor perActor fovLucid
 
 -- | Calculate perception of a faction.

@@ -26,7 +26,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Fov
-import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -51,7 +50,7 @@ handleCmdAtomicServer posAtomic atomic =
 
 -- | Send an atomic action to all clients that can see it.
 handleAndBroadcast :: forall m. MonadStateWrite m
-                   => Bool -> PerFid -> PerCacheFid -> DiscoveryAspect
+                   => Bool -> PerFid -> PerCacheFid
                    -> ActorAspect -> FovClearLid -> ((PerFid -> PerFid) -> m ())
                    -> ((PerCacheFid -> PerCacheFid) -> m ())
                    -> (LevelId -> m FovLucid)
@@ -61,25 +60,24 @@ handleAndBroadcast :: forall m. MonadStateWrite m
                    -> CmdAtomic
                    -> m ()
 handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                   discoAspect actorAspect fovClearLid
+                   actorAspect fovClearLid
                    doUpdatePerFid doUpdatePerCacheFid doGetCacheLucid
                    checkSetPerValid doSendUpdateAI doSendUpdateUI atomic = do
   -- Gather data from the old state.
   sOld <- getState
   factionDold <- getsState sfactionD
-  (ps, atomicBroken, psBroken, resetsFov) <-
+  (ps, atomicBroken, psBroken) <-
     case atomic of
       UpdAtomic cmd -> do
         ps <- posUpdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
-        let resetsFov = resetsFovCmdAtomic cmd discoAspect
-        return (ps, map UpdAtomic atomicBroken, psBroken, resetsFov)
+        return (ps, map UpdAtomic atomicBroken, psBroken)
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
         atomicBroken <- breakSfxAtomic sfx
         psBroken <- mapM posSfxAtomic atomicBroken
-        return (ps, map SfxAtomic atomicBroken, psBroken, Just [])
+        return (ps, map SfxAtomic atomicBroken, psBroken)
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
   -- Invariant: if the various resets determine we do not need to update FOV,
@@ -121,25 +119,21 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
           then sendUpdate fid atomic
           else breakSend lid fid perNew
       posLevel lid fid = do
-        resetsBodies <- case resetsFov of
-          Nothing -> getsState $ actorAssocs (== fid) lid
-          Just as -> do
-            let findOrOld aid = EM.findWithDefault (getActorBody aid sOld) aid
-                f aid s = (aid, findOrOld aid $ sactorD s)
-            -- Filter due to cases like @UpdDisplaceActor@.
-            filter ((== fid) . bfid . snd) <$> mapM (getsState . f) as
         let perOld = sperFidOld EM.! fid EM.! lid
             perCacheOld = sperCacheFidOld EM.! fid EM.! lid
-            resetsFovFid = not $ null resetsBodies
+            resetsFovFid = case ptotal perCacheOld of
+              FovValid{} -> False
+              FovInvalid -> True
         perValid <- checkSetPerValid fid lid
         fovLucid <- doGetCacheLucid lid
         if resetsFovFid || not perValid then do
           -- Needed often, e.g., to show thrown torches in dark corridors.
           perNew <-
             if resetsFovFid then do
-              (per, perCache) <- getsState $
-                perceptionFromResets (perActor perCacheOld) resetsBodies
-                                     actorAspect fovLucid (fovClearLid EM.! lid)
+              getActorB <- getsState $ flip getActorBody
+              let (per, perCache) =
+                    perceptionFromResets (perActor perCacheOld) getActorB
+                                         actorAspect fovLucid (fovClearLid EM.! lid)
               let fperFid = EM.adjust (EM.insert lid per) fid
                   fperCacheFid = EM.adjust (EM.insert lid perCache) fid
               doUpdatePerFid fperFid

@@ -97,7 +97,6 @@ handleAndBroadcastServer atomic = do
     SfxAtomic _sfx -> return ()
   sperFidOld <- getsServer sperFid
   sperCacheFidOld <- getsServer sperCacheFid
-  discoAspect <- getsServer sdiscoAspect
   sactorAspect <- getsServer sactorAspect
   sfovClearLid <- getsServer sfovClearLid
   knowEvents <- getsServer $ sknowEvents . sdebugSer
@@ -112,7 +111,7 @@ handleAndBroadcastServer atomic = do
                                 $ sperValidFid ser}
         return res
   handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
-                     discoAspect sactorAspect sfovClearLid
+                     sactorAspect sfovClearLid
                      updatePerFid updatePerCacheFid getCacheLucid
                      checkSetPerValid sendUpdateAI sendUpdateUI atomic
 

@@ -3,7 +3,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
-  , resetsFovCmdAtomic, breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
+  , breakUpdAtomic, breakSfxAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, generalMoveItem, posProjBody
   ) where
 
@@ -210,35 +210,6 @@ singleContainer (CActor aid _) = do
   (lid, p) <- posOfAid aid
   return $! PosSight lid [p]
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
-
-resetsFovCmdAtomic :: UpdAtomic -> DiscoveryAspect -> Maybe [ActorId]
-resetsFovCmdAtomic cmd discoAspect = case cmd of
-  -- Create/destroy actors and items.
-  UpdCreateActor aid _ _ -> Just [aid]
-  UpdDestroyActor aid _ _ -> Just [aid]
-  UpdCreateItem iid _ _ (CActor aid s) -> itemAffectsSightRadius iid [s] aid
-  UpdDestroyItem iid _ _ (CActor aid s) -> itemAffectsSightRadius iid [s] aid
-  UpdSpotActor aid _ _ -> Just [aid]
-  UpdLoseActor aid _ _ -> Just [aid]
-  UpdSpotItem iid _ _ (CActor aid s) -> itemAffectsSightRadius iid [s] aid
-  UpdLoseItem iid _ _ (CActor aid s) -> itemAffectsSightRadius iid [s] aid
-  -- Move actors and items.
-  UpdMoveActor aid _ _ -> Just [aid]
-  UpdDisplaceActor aid1 aid2 -> Just [aid1, aid2]
-  UpdMoveItem iid _ aid s1 s2 -> itemAffectsSightRadius iid [s1, s2] aid
-  UpdRefillCalm aid _ -> Just [aid]  -- TODO: reset rarely (calm in FovAspect?)
-  -- Alter map.
-  UpdAlterTile{} -> Nothing
-  _ -> Just []
- where
-  itemAffectsSightRadius iid stores aid =
-    if not (null $ intersect stores [CEqp, COrgan])
-       && case EM.lookup iid discoAspect of
-         Just AspectRecord{aSight, aSmell, aNocto} ->
-           aSight /= 0 || aSmell /= 0 || aNocto /= 0
-         Nothing -> assert `failure` aid
-    then Just [aid]
-    else Just []
 
 -- | Decompose an atomic action. The original action is visible
 -- if it's positions are visible both before and after the action
