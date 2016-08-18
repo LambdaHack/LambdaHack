@@ -298,25 +298,30 @@ gameExit = do
   -- Verify that the not saved perception is equal to future reconstructed.
   sperFid <- getsServer sperFid
   sperCacheFid <- getsServer sperCacheFid
+  sperValidFid <- getsServer sperValidFid
   sactorAspect <- getsServer sactorAspect
   sfovLucidLid <- getsServer sfovLucidLid
   sfovClearLid <- getsServer sfovClearLid
   sfovLitLid <- getsServer sfovLitLid
   discoAspect <- getsServer sdiscoAspect
-  (actorAspect, fovLucidLid, fovClearLid, fovLitLid, perFid, perCacheFid)
+  ( actorAspect, fovLucidLid, fovClearLid, fovLitLid
+   ,perValidFid, perFid, perCacheFid )
     <- getsState $ perFidInDungeon discoAspect
-  let !_A6 = assert (sfovLitLid == fovLitLid
+  let !_A7 = assert (sfovLitLid == fovLitLid
                      `blame` "wrong accumulated sfovLitLid"
                      `twith` (sfovLitLid, fovLitLid)) ()
-      !_A5 = assert (sfovClearLid == fovClearLid
+      !_A6 = assert (sfovClearLid == fovClearLid
                      `blame` "wrong accumulated sfovClearLid"
                      `twith` (sfovClearLid, fovClearLid)) ()
-      !_A4 = assert (sactorAspect == actorAspect
+      !_A5 = assert (sactorAspect == actorAspect
                      `blame` "wrong accumulated sactorAspect"
                      `twith` (sactorAspect, actorAspect)) ()
-      !_A3 = assert (sfovLucidLid == fovLucidLid
+      !_A4 = assert (sfovLucidLid == fovLucidLid
                      `blame` "wrong accumulated sfovLucidLid"
                      `twith` (sfovLucidLid, fovLucidLid)) ()
+      !_A3 = assert (sperValidFid == perValidFid
+                     `blame` "wrong accumulated sperValidFid"
+                     `twith` (sperValidFid, perValidFid)) ()
       !_A2 = assert (sperCacheFid == perCacheFid
                      `blame` "wrong accumulated sperCacheFid"
                      `twith` (sperCacheFid, perCacheFid)) ()

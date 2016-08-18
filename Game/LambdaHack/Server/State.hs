@@ -42,6 +42,7 @@ data StateServer = StateServer
   , snumSpawned   :: !(EM.EnumMap LevelId Int)
   , sundo         :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sperFid       :: !PerFid        -- ^ perception of all factions
+  , sperValidFid  :: !PerValidFid   -- ^ perception validity for all factions
   , sperCacheFid  :: !PerCacheFid   -- ^ perception cache of all factions
   , sactorAspect  :: !ActorAspect   -- ^ full actor aspect data
   , sfovLucidLid  :: !FovLucidLid   -- ^ ambient or shining light positions
@@ -114,6 +115,7 @@ emptyStateServer =
     , snumSpawned = EM.empty
     , sundo = []
     , sperFid = EM.empty
+    , sperValidFid = EM.empty
     , sperCacheFid = EM.empty
     , sactorAspect = EM.empty
     , sfovLucidLid = EM.empty
@@ -187,6 +189,7 @@ instance Binary StateServer where
     sdebugSer <- get
     let srandom = read g
         sperFid = EM.empty
+        sperValidFid = EM.empty
         sperCacheFid = EM.empty
         sactorAspect = EM.empty
         sfovLucidLid = EM.empty

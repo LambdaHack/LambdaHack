@@ -122,18 +122,20 @@ perLidFromFaction actorAspect fovLucidLid fovClearLid fid s =
 
 -- | Calculate the perception of the whole dungeon.
 perFidInDungeon :: DiscoveryAspect -> State
-                -> ( ActorAspect, FovLucidLid, FovClearLid
-                   , FovLitLid, PerFid, PerCacheFid )
+                -> ( ActorAspect, FovLucidLid, FovClearLid, FovLitLid
+                   , PerValidFid, PerFid, PerCacheFid )
 perFidInDungeon discoAspect s =
   let actorAspect = actorAspectInDungeon discoAspect s
       fovClearLid = clearInDungeon s
       fovLitLid = litInDungeon s
       fovLucidLid =
         lucidInDungeon discoAspect actorAspect fovClearLid fovLitLid s
+      perValidLid = EM.map (const True) (sdungeon s)
+      perValidFid = EM.map (const perValidLid) (sfactionD s)
       f fid _ = perLidFromFaction actorAspect fovLucidLid fovClearLid fid s
       em = EM.mapWithKey f $ sfactionD s
   in ( actorAspect, fovLucidLid, fovClearLid, fovLitLid
-     , EM.map fst em, EM.map snd em )
+     , perValidFid, EM.map fst em, EM.map snd em )
 
 fovAspectFromActor :: DiscoveryAspect -> Actor -> AspectRecord
 fovAspectFromActor discoAspect b =

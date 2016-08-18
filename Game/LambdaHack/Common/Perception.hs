@@ -33,7 +33,7 @@ module Game.LambdaHack.Common.Perception
   , PerCacheLid
   , PerCacheFid
     -- * Data used in FOV computation and cached to speed it up
-  , FovValid(..), FovShine(..), FovLucid(..), FovLucidLid
+  , PerValidFid, FovValid(..), FovShine(..), FovLucid(..), FovLucidLid
   , FovClear(..), FovClearLid, FovLit (..), FovLitLid
   ) where
 
@@ -142,6 +142,9 @@ type PerCacheLid = EM.EnumMap LevelId PerceptionCache
 type PerCacheFid = EM.EnumMap FactionId PerCacheLid
 
 -- * Data used in FOV computation and cached to speed it up
+
+-- | Main perception validity map, for all factions.
+type PerValidFid = EM.EnumMap FactionId (EM.EnumMap LevelId Bool)
 
 data FovValid a =
     FovValid !a

@@ -463,7 +463,7 @@ actorSkillsServer aid  = do
   let mleader = fst <$> gleader fact
   getsState $ actorSkills mleader aid activeItems
 
-getCacheLucid :: MonadServer m => LevelId -> m (Bool, FovLucid)
+getCacheLucid :: MonadServer m => LevelId -> m FovLucid
 getCacheLucid lid = do
   discoAspect <- getsServer sdiscoAspect
   actorAspect <- getsServer sactorAspect
@@ -474,10 +474,10 @@ getCacheLucid lid = do
         lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid
                        s lid (sdungeon s EM.! lid)
   case EM.lookup lid fovLucidLid of
-    Just (FovValid fovLucid) -> return (False, fovLucid)
+    Just (FovValid fovLucid) -> return fovLucid
     _ -> do
       newLucid <- getNewLucid
       modifyServer $ \ser ->
         ser {sfovLucidLid = EM.insert lid (FovValid newLucid)
                             $ sfovLucidLid ser}
-      return (True, newLucid)
+      return newLucid

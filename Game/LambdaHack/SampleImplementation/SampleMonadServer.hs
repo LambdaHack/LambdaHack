@@ -104,10 +104,17 @@ handleAndBroadcastServer atomic = do
   let updatePerFid f = modifyServer $ \ser -> ser {sperFid = f $ sperFid ser}
       updatePerCacheFid f =
         modifyServer $ \ser -> ser {sperCacheFid = f $ sperCacheFid ser}
+      checkSetPerValid fid lid = do
+        res <- getsServer $ (EM.! lid) . (EM.! fid) . sperValidFid
+        unless res $
+          modifyServer $ \ser ->
+            ser {sperValidFid = EM.adjust (EM.insert lid True) fid
+                                $ sperValidFid ser}
+        return res
   handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                      discoAspect sactorAspect sfovClearLid
                      updatePerFid updatePerCacheFid getCacheLucid
-                     sendUpdateAI sendUpdateUI atomic
+                     checkSetPerValid sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: Kind.COps -> SerImplementation () -> IO ()

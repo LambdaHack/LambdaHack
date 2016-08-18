@@ -161,7 +161,8 @@ updateSlit lid pos fromTile toTile = do
 invalidateLucidLid :: MonadServer m => LevelId -> m ()
 invalidateLucidLid lid =
   modifyServer $ \ser ->
-    ser {sfovLucidLid = EM.insert lid FovInvalid $ sfovLucidLid ser}
+    ser { sfovLucidLid = EM.insert lid FovInvalid $ sfovLucidLid ser
+        , sperValidFid = EM.map (EM.insert lid False) $ sperValidFid ser }
 
 invalidateLucidAid :: MonadServer m => ActorId  -> m ()
 invalidateLucidAid aid = do

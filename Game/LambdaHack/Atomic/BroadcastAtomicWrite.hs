@@ -54,7 +54,8 @@ handleAndBroadcast :: forall m. MonadStateWrite m
                    => Bool -> PerFid -> PerCacheFid -> DiscoveryAspect
                    -> ActorAspect -> FovClearLid -> ((PerFid -> PerFid) -> m ())
                    -> ((PerCacheFid -> PerCacheFid) -> m ())
-                   -> (LevelId -> m (Bool, FovLucid))
+                   -> (LevelId -> m FovLucid)
+                   -> (FactionId -> LevelId -> m Bool)
                    -> (FactionId -> ResponseAI -> m ())
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
@@ -62,7 +63,7 @@ handleAndBroadcast :: forall m. MonadStateWrite m
 handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                    discoAspect actorAspect fovClearLid
                    doUpdatePerFid doUpdatePerCacheFid doGetCacheLucid
-                   doSendUpdateAI doSendUpdateUI atomic = do
+                   checkSetPerValid doSendUpdateAI doSendUpdateUI atomic = do
   -- Gather data from the old state.
   sOld <- getState
   factionDold <- getsState sfactionD
@@ -119,7 +120,7 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
         if startSeen && endSeen
           then sendUpdate fid atomic
           else breakSend lid fid perNew
-      posLevel fid lid = do
+      posLevel lid fid = do
         resetsBodies <- case resetsFov of
           Nothing -> getsState $ actorAssocs (== fid) lid
           Just as -> do
@@ -130,8 +131,9 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
         let perOld = sperFidOld EM.! fid EM.! lid
             perCacheOld = sperCacheFidOld EM.! fid EM.! lid
             resetsFovFid = not $ null resetsBodies
-        (lucidChanged, fovLucid) <- doGetCacheLucid lid
-        if resetsFovFid || lucidChanged then do
+        perValid <- checkSetPerValid fid lid
+        fovLucid <- doGetCacheLucid lid
+        if resetsFovFid || not perValid then do
           -- Needed often, e.g., to show thrown torches in dark corridors.
           perNew <-
             if resetsFovFid then do
@@ -167,20 +169,22 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
               anySend lid fid perOld perNew
         else anySend lid fid perOld perOld
       -- TODO: simplify; best after state-diffs approach tried
-      send fid = case ps of
-        PosSight lid _ -> posLevel fid lid
-        PosFidAndSight _ lid _ -> posLevel fid lid
-        PosFidAndSer (Just lid) _ -> posLevel fid lid
+      send = case ps of
+        PosSight lid _ -> posLevel lid
+        PosFidAndSight _ lid _ -> posLevel lid
+        PosFidAndSer (Just lid) _ -> posLevel lid
         -- In the following cases, from the assertion above,
         -- @resets@ is false here and broken atomic has the same ps.
-        PosSmell lid _ -> do
+        PosSmell lid _ -> \fid ->
           let perOld = sperFidOld EM.! fid EM.! lid
-          anySend lid fid perOld perOld
-        PosFid fid2 -> when (fid == fid2) $ sendUpdate fid atomic
-        PosFidAndSer Nothing fid2 -> when (fid == fid2) $ sendUpdate fid atomic
-        PosSer -> return ()
-        PosAll -> sendUpdate fid atomic
-        PosNone -> return ()
+          in anySend lid fid perOld perOld
+        PosFid fid2 -> \fid ->
+          when (fid == fid2) $ sendUpdate fid atomic
+        PosFidAndSer Nothing fid2 -> \fid ->
+          when (fid == fid2) $ sendUpdate fid atomic
+        PosSer -> \_ -> return ()
+        PosAll -> \fid -> sendUpdate fid atomic
+        PosNone -> \_ -> return ()
   mapWithKeyM_ (\fid _ -> send fid) factionDold
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
