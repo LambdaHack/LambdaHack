@@ -48,12 +48,12 @@ matrix:
     - env: CABALVER=1.24 GHCVER=7.10.3 GTKVTY=gtk
       compiler: ": #GHC 7.10.3"
       addons: {apt: {packages: [cabal-install-1.24,ghc-7.10.3,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
-    - env: CABALVER=1.24 GHCVER=1.24 GTKVTY=gtk
+    - env: CABALVER=head GHCVER=head GTKVTY=gtk
       compiler: ": #GHC head"
-      addons: {apt: {packages: [cabal-install-1.24,ghc-head,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.4], sources: [hvr-ghc]}}
 
   allow_failures:
-    - env: CABALVER=1.24 GHCVER=head GTKVTY=gtk
+    - env: CABALVER=head GHCVER=head GTKVTY=gtk
 
 before_install:
  - unset CC
