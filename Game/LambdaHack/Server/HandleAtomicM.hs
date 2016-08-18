@@ -15,7 +15,6 @@ import qualified Data.EnumSet as ES
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Fov
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -36,7 +35,7 @@ cmdAtomicSemSer :: MonadServer m => UpdAtomic -> m ()
 cmdAtomicSemSer cmd = case cmd of
   UpdCreateActor aid b _ -> do
     discoAspect <- getsServer sdiscoAspect
-    let aspectRecord = fovAspectFromActor discoAspect b
+    let aspectRecord = aspectRecordFromActor discoAspect b
         f = EM.insert aid aspectRecord
     modifyServer $ \ser -> ser {sactorAspect = f $ sactorAspect ser}
     actorAspect <- getsServer sactorAspect

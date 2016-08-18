@@ -304,8 +304,8 @@ gameExit = do
   sfovClearLid <- getsServer sfovClearLid
   sfovLitLid <- getsServer sfovLitLid
   discoAspect <- getsServer sdiscoAspect
-  ( actorAspect, fovLucidLid, fovClearLid, fovLitLid
-   ,perValidFid, perFid, perCacheFid )
+  ( actorAspect, fovLitLid, fovClearLid, fovLucidLid
+   ,perValidFid, perCacheFid, perFid )
     <- getsState $ perFidInDungeon discoAspect
   let !_A7 = assert (sfovLitLid == fovLitLid
                      `blame` "wrong accumulated sfovLitLid"

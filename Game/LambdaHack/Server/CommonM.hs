@@ -495,6 +495,8 @@ getCacheTotal fid lid = do
       let perActorNew =
             perActorFromLevel (perActor perCacheOld) getActorB
                               actorAspect (fovClearLid EM.! lid)
+          -- We don't check if any actor changed, because almost surely one is.
+          -- Exception: when an actor is destroyed, but then union differs, too.
           total = totalFromPerActor perActorNew
           perCache = PerceptionCache { ptotal = FovValid total
                                      , perActor = perActorNew }

@@ -3,16 +3,18 @@
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
 module Game.LambdaHack.Common.Fov
-  ( perActorFromLevel, perceptionFromPTotal, perFidInDungeon
-  , fovAspectFromActor, lucidFromLevel, totalFromPerActor
+  ( -- * Update of invalidated Fov data
+    perceptionFromPTotal, perActorFromLevel, totalFromPerActor, lucidFromLevel
+    -- * Computation of initial perception and caches
+  , perFidInDungeon
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , cacheBeforeLucidFromActor, visibleOnLevel
+  , cacheBeforeLucidFromActor
   , perceptionCacheFromLevel, perLidFromFaction
-  , actorAspectInDungeon
   , clearFromLevel, clearInDungeon
   , litFromLevel, litInDungeon, shineFromLevel
   , floorLightSources, lucidFromItems, lucidInDungeon
+    -- * The actual Fov algorithm
   , fullscan
 #endif
   ) where
@@ -38,9 +40,23 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 
-perActorFromLevel :: PerActor -> (ActorId -> Actor)
-                     -> ActorAspect -> FovClear
-                     -> PerActor
+-- * Update of invalidated Fov data
+
+-- | Compute positions visible (reachable and seen) by the party.
+-- A position is lucid, if it's lit by an ambient light or by a weak, portable
+-- light source, e.g,, carried by an actor. A reachable and lucid position
+-- is visible. Additionally, positions directly adjacent to an actor are
+-- assumed to be visible to him (through sound, touch, noctovision, whatever).
+perceptionFromPTotal :: FovLucid -> CacheBeforeLucid -> Perception
+perceptionFromPTotal FovLucid{fovLucid} ptotal =
+  let nocto = pvisible $ cnocto ptotal
+      reach = preachable $ creachable ptotal
+      psight = PerVisible $ nocto `ES.union` (reach `ES.intersection` fovLucid)
+      psmell = csmell ptotal
+  in Perception{..}
+
+perActorFromLevel :: PerActor -> (ActorId -> Actor) -> ActorAspect -> FovClear
+                  -> PerActor
 perActorFromLevel perActorOld getActorB actorAspect fovClear =
   -- Dying actors included, to let them see their own demise.
   let f _ fv@FovValid{} = fv
@@ -49,22 +65,6 @@ perActorFromLevel perActorOld getActorB actorAspect fovClear =
             b = getActorB aid
         in FovValid $ cacheBeforeLucidFromActor fovClear b ar
   in EM.mapWithKey f perActorOld
-
-totalFromPerActor :: PerActor -> CacheBeforeLucid
-totalFromPerActor perActor =
-  -- We don't check if any actor changed, because almost surely one is.
-  -- Exception: when an actor is destroyed, but then union differs.
-  let as = map (\a -> case a of
-                   FovValid x -> x
-                   FovInvalid -> assert `failure` perActor)
-           $ EM.elems perActor
-  in CacheBeforeLucid
-       { creachable = PerReachable
-                      $ ES.unions $ map (preachable . creachable) as
-       , cnocto = PerVisible
-                  $ ES.unions $ map (pvisible . cnocto) as
-       , csmell = PerSmelled
-                  $ ES.unions $ map (psmelled . csmell) as }
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
@@ -80,127 +80,21 @@ cacheBeforeLucidFromActor clearPs body AspectRecord{..} =
       csmell = PerSmelled $ fullscan clearPs smellRadius (bpos body)
   in CacheBeforeLucid{..}
 
-perceptionFromPTotal :: FovLucid -> CacheBeforeLucid -> Perception
-perceptionFromPTotal fovLucid ptotal =
-  let psight = visibleOnLevel (creachable ptotal) fovLucid (cnocto ptotal)
-      psmell = csmell ptotal
-  in Perception{..}
+totalFromPerActor :: PerActor -> CacheBeforeLucid
+totalFromPerActor perActor =
+  let as = map (\a -> case a of
+                   FovValid x -> x
+                   FovInvalid -> assert `failure` perActor)
+           $ EM.elems perActor
+  in CacheBeforeLucid
+       { creachable = PerReachable
+                      $ ES.unions $ map (preachable . creachable) as
+       , cnocto = PerVisible
+                  $ ES.unions $ map (pvisible . cnocto) as
+       , csmell = PerSmelled
+                  $ ES.unions $ map (psmelled . csmell) as }
 
--- | Compute positions visible (reachable and seen) by the party.
--- A position is lucid, if it's lit by an ambient light or by a weak, portable
--- light source, e.g,, carried by an actor. A reachable and lucid position
--- is visible. Additionally, positions directly adjacent to an actor are
--- assumed to be visible to him (through sound, touch, noctovision, whatever).
-visibleOnLevel :: PerReachable -> FovLucid -> PerVisible -> PerVisible
-visibleOnLevel PerReachable{preachable} FovLucid{fovLucid} (PerVisible nocto) =
-  PerVisible $ nocto `ES.union` (preachable `ES.intersection` fovLucid)
-
-perceptionCacheFromLevel :: ActorAspect -> FovClearLid
-                         -> FactionId -> LevelId -> State
-                         -> PerceptionCache
-perceptionCacheFromLevel actorAspect fovClearLid fid lid s =
-  let lvlBodies = EM.fromList $ actorAssocs (== fid) lid s
-      bodyMap = EM.mapWithKey (\aid b -> (b, actorAspect EM.! aid)) lvlBodies
-      fovClear = fovClearLid EM.! lid
-      perActor =
-        EM.map (FovValid . uncurry (cacheBeforeLucidFromActor fovClear)) bodyMap
-      total = totalFromPerActor perActor
-  in PerceptionCache{ptotal = FovValid total, perActor}
-
--- | Calculate perception of a faction.
-perLidFromFaction :: ActorAspect -> FovLucidLid -> FovClearLid
-                  -> FactionId -> State
-                  -> (PerLid, PerCacheLid)
-perLidFromFaction actorAspect fovLucidLid fovClearLid fid s =
-  let em = EM.mapWithKey (\lid _ ->
-             perceptionCacheFromLevel actorAspect fovClearLid fid lid s)
-             (sdungeon s)
-      fovLucid lid = case EM.lookup lid fovLucidLid of
-        Just (FovValid fl) -> fl
-        _ -> assert `failure` (lid, fovLucidLid)
-      getValid (FovValid pc) = pc
-      getValid FovInvalid = assert `failure` fid
-  in ( EM.mapWithKey (\lid pc ->
-         perceptionFromPTotal (fovLucid lid) (getValid (ptotal pc))) em
-     , em )
-
--- | Calculate the perception of the whole dungeon.
-perFidInDungeon :: DiscoveryAspect -> State
-                -> ( ActorAspect, FovLucidLid, FovClearLid, FovLitLid
-                   , PerValidFid, PerFid, PerCacheFid )
-perFidInDungeon discoAspect s =
-  let actorAspect = actorAspectInDungeon discoAspect s
-      fovClearLid = clearInDungeon s
-      fovLitLid = litInDungeon s
-      fovLucidLid =
-        lucidInDungeon discoAspect actorAspect fovClearLid fovLitLid s
-      perValidLid = EM.map (const True) (sdungeon s)
-      perValidFid = EM.map (const perValidLid) (sfactionD s)
-      f fid _ = perLidFromFaction actorAspect fovLucidLid fovClearLid fid s
-      em = EM.mapWithKey f $ sfactionD s
-  in ( actorAspect, fovLucidLid, fovClearLid, fovLitLid
-     , perValidFid, EM.map fst em, EM.map snd em )
-
-fovAspectFromActor :: DiscoveryAspect -> Actor -> AspectRecord
-fovAspectFromActor discoAspect b =
-  let processIid (iid, (k, _)) = (discoAspect EM.! iid, k)
-      processBag ass = sumAspectRecord $ map processIid ass
-  in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
-
-actorAspectInDungeon :: DiscoveryAspect -> State -> ActorAspect
-actorAspectInDungeon discoAspect s =
-  EM.map (fovAspectFromActor discoAspect) $ sactorD s
-
-clearFromLevel :: Kind.COps -> Level -> FovClear
-clearFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
-  FovClear $ PointArray.mapA (Tile.isClear coTileSpeedup) ltile
-
-clearInDungeon :: State -> FovClearLid
-clearInDungeon s = EM.map (clearFromLevel (scops s)) $ sdungeon s
-
-litFromLevel :: Kind.COps -> Level -> FovLit
-litFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
-  let litSet p t set = if Tile.isLit coTileSpeedup t then p : set else set
-  in FovLit $ ES.fromDistinctAscList $ PointArray.ifoldrA' litSet [] ltile
-
-litInDungeon :: State -> FovLitLid
-litInDungeon s = EM.map (litFromLevel (scops s)) $ sdungeon s
-
-floorLightSources :: DiscoveryAspect -> Level -> [(Point, Int)]
-floorLightSources discoAspect lvl =
-  let processIid shineAcc (iid, (k, _)) =
-        let AspectRecord{aShine} = discoAspect EM.! iid
-        in k * aShine + shineAcc
-      processBag bag acc = foldl' processIid acc $ EM.assocs bag
-  in [ (p, radius)
-     | (p, bag) <- EM.assocs $ lfloor lvl  -- lembed are hidden
-     , let radius = processBag bag 0
-     , radius > 0 ]
-
-shineFromLevel :: DiscoveryAspect -> ActorAspect -> State -> LevelId -> Level
-               -> FovShine
-shineFromLevel discoAspect actorAspect s lid lvl =
-  let actorLights =
-        [ (bpos b, radius)
-        | (aid, b) <- actorAssocs (const True) lid s
-        , let radius = aShine $ actorAspect EM.! aid
-        , radius > 0 ]
-      floorLights = floorLightSources discoAspect lvl
-      allLights = floorLights ++ actorLights
-      -- If there is light both on the floor and carried by actor
-      -- (or several projectile actors), its radius is the maximum.
-  in FovShine $ EM.fromListWith max allLights
-
--- | Compute all dynamically lit positions on a level, whether lit by actors
--- or shining floor items. Note that an actor can be blind,
--- in which case he doesn't see his own light (but others,
--- from his or other factions, possibly do).
-lucidFromItems :: FovClear -> [(Point, Int)] -> [FovLucid]
-lucidFromItems clearPs allItems =
-  let lucidPos (p, shine) = FovLucid $ fullscan clearPs shine p
-  in map lucidPos allItems
-
--- Update lights in the dungeon. This is needed every (even enemy)
+-- Update lights on the level. This is needed every (even enemy)
 -- actor move to show thrown torches.
 -- We need to update lights even if cmd doesn't change any perception,
 -- so that for next cmd that does, but doesn't change lights,
@@ -223,6 +117,74 @@ lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid s lid lvl =
       litTiles = fovLitLid EM.! lid
   in FovLucid $ ES.unions $ fovLit litTiles : map fovLucid lucids
 
+shineFromLevel :: DiscoveryAspect -> ActorAspect -> State -> LevelId -> Level
+               -> FovShine
+shineFromLevel discoAspect actorAspect s lid lvl =
+  let actorLights =
+        [ (bpos b, radius)
+        | (aid, b) <- actorAssocs (const True) lid s
+        , let radius = aShine $ actorAspect EM.! aid
+        , radius > 0 ]
+      floorLights = floorLightSources discoAspect lvl
+      allLights = floorLights ++ actorLights
+      -- If there is light both on the floor and carried by actor
+      -- (or several projectile actors), its radius is the maximum.
+  in FovShine $ EM.fromListWith max allLights
+
+floorLightSources :: DiscoveryAspect -> Level -> [(Point, Int)]
+floorLightSources discoAspect lvl =
+  let processIid shineAcc (iid, (k, _)) =
+        let AspectRecord{aShine} = discoAspect EM.! iid
+        in k * aShine + shineAcc
+      processBag bag acc = foldl' processIid acc $ EM.assocs bag
+  in [ (p, radius)
+     | (p, bag) <- EM.assocs $ lfloor lvl  -- lembed are hidden
+     , let radius = processBag bag 0
+     , radius > 0 ]
+
+-- | Compute all dynamically lit positions on a level, whether lit by actors
+-- or shining floor items. Note that an actor can be blind,
+-- in which case he doesn't see his own light (but others,
+-- from his or other factions, possibly do).
+lucidFromItems :: FovClear -> [(Point, Int)] -> [FovLucid]
+lucidFromItems clearPs allItems =
+  let lucidPos (p, shine) = FovLucid $ fullscan clearPs shine p
+  in map lucidPos allItems
+
+-- * Computation of initial perception and caches
+
+-- | Calculate the perception and its caches for the whole dungeon.
+perFidInDungeon :: DiscoveryAspect -> State
+                -> ( ActorAspect, FovLitLid, FovClearLid, FovLucidLid
+                   , PerValidFid, PerCacheFid, PerFid)
+perFidInDungeon discoAspect s =
+  let actorAspect = actorAspectInDungeon discoAspect s
+      fovLitLid = litInDungeon s
+      fovClearLid = clearInDungeon s
+      fovLucidLid =
+        lucidInDungeon discoAspect actorAspect fovClearLid fovLitLid s
+      perValidLid = EM.map (const True) (sdungeon s)
+      perValidFid = EM.map (const perValidLid) (sfactionD s)
+      f fid _ = perLidFromFaction actorAspect fovLucidLid fovClearLid fid s
+      em = EM.mapWithKey f $ sfactionD s
+  in ( actorAspect, fovLitLid, fovClearLid, fovLucidLid
+     , perValidFid, EM.map snd em, EM.map fst em)
+
+litFromLevel :: Kind.COps -> Level -> FovLit
+litFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
+  let litSet p t set = if Tile.isLit coTileSpeedup t then p : set else set
+  in FovLit $ ES.fromDistinctAscList $ PointArray.ifoldrA' litSet [] ltile
+
+litInDungeon :: State -> FovLitLid
+litInDungeon s = EM.map (litFromLevel (scops s)) $ sdungeon s
+
+clearFromLevel :: Kind.COps -> Level -> FovClear
+clearFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
+  FovClear $ PointArray.mapA (Tile.isClear coTileSpeedup) ltile
+
+clearInDungeon :: State -> FovClearLid
+clearInDungeon s = EM.map (clearFromLevel (scops s)) $ sdungeon s
+
 lucidInDungeon :: DiscoveryAspect -> ActorAspect -> FovClearLid -> FovLitLid
                -> State
                -> FovLucidLid
@@ -231,6 +193,37 @@ lucidInDungeon discoAspect actorAspect fovClearLid fovLitLid s =
     (\lid lvl -> FovValid $
        lucidFromLevel discoAspect actorAspect fovClearLid fovLitLid s lid lvl)
     $ sdungeon s
+
+-- | Calculate perception of a faction.
+perLidFromFaction :: ActorAspect -> FovLucidLid -> FovClearLid
+                  -> FactionId -> State
+                  -> (PerLid, PerCacheLid)
+perLidFromFaction actorAspect fovLucidLid fovClearLid fid s =
+  let em = EM.mapWithKey (\lid _ ->
+             perceptionCacheFromLevel actorAspect fovClearLid fid lid s)
+             (sdungeon s)
+      fovLucid lid = case EM.lookup lid fovLucidLid of
+        Just (FovValid fl) -> fl
+        _ -> assert `failure` (lid, fovLucidLid)
+      getValid (FovValid pc) = pc
+      getValid FovInvalid = assert `failure` fid
+  in ( EM.mapWithKey (\lid pc ->
+         perceptionFromPTotal (fovLucid lid) (getValid (ptotal pc))) em
+     , em )
+
+perceptionCacheFromLevel :: ActorAspect -> FovClearLid
+                         -> FactionId -> LevelId -> State
+                         -> PerceptionCache
+perceptionCacheFromLevel actorAspect fovClearLid fid lid s =
+  let lvlBodies = EM.fromList $ actorAssocs (== fid) lid s
+      bodyMap = EM.mapWithKey (\aid b -> (b, actorAspect EM.! aid)) lvlBodies
+      fovClear = fovClearLid EM.! lid
+      perActor =
+        EM.map (FovValid . uncurry (cacheBeforeLucidFromActor fovClear)) bodyMap
+      total = totalFromPerActor perActor
+  in PerceptionCache{ptotal = FovValid total, perActor}
+
+-- * The actual Fov algorithm
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
