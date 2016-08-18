@@ -123,23 +123,26 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
         perValid <- checkSetPerValid fid lid
         if perValid then anySend lid fid perOld perOld
         else do
-          fovLucid <- doGetCacheLucid lid
-          let perCacheOld = sperCacheFidOld EM.! fid EM.! lid
-              resetsFovFid = case ptotal perCacheOld of
-                FovValid{} -> False
-                FovInvalid -> True
-          perCache <-
-            if resetsFovFid then do
-              getActorB <- getsState $ flip getActorBody
-              return $! perceptionFromResets (perActor perCacheOld) getActorB
-                                             actorAspect (fovClearLid EM.! lid)
-            else return perCacheOld
-          let fperCacheFid = EM.adjust (EM.insert lid perCache) fid
-          doUpdatePerCacheFid fperCacheFid
-          let perNew = let FovValid total = ptotal perCache
-                       in perceptionFromPTotal fovLucid total
-              fperFid = EM.adjust (EM.insert lid perNew) fid
-          doUpdatePerFid fperFid
+          perNew <- do
+            fovLucid <- doGetCacheLucid lid
+            let perCacheOld = sperCacheFidOld EM.! fid EM.! lid
+            total <- case ptotal perCacheOld of
+              FovValid total -> return total
+              FovInvalid -> do
+                getActorB <- getsState $ flip getActorBody
+                let perActorNew =
+                      perActorFromLevel (perActor perCacheOld) getActorB
+                                        actorAspect (fovClearLid EM.! lid)
+                    total = totalFromPerActor perActorNew
+                    perCache = PerceptionCache { ptotal = FovValid total
+                                              , perActor = perActorNew }
+                    fperCacheFid = EM.adjust (EM.insert lid perCache) fid
+                doUpdatePerCacheFid fperCacheFid
+                return total
+            let perNew = perceptionFromPTotal fovLucid total
+                fperFid = EM.adjust (EM.insert lid perNew) fid
+            doUpdatePerFid fperFid
+            return perNew
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
           if nullPer outPer && nullPer inPer
