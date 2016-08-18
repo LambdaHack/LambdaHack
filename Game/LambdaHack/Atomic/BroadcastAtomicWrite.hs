@@ -120,31 +120,26 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
           else breakSend lid fid perNew
       posLevel lid fid = do
         let perOld = sperFidOld EM.! fid EM.! lid
-            perCacheOld = sperCacheFidOld EM.! fid EM.! lid
-            resetsFovFid = case ptotal perCacheOld of
-              FovValid{} -> False
-              FovInvalid -> True
         perValid <- checkSetPerValid fid lid
-        fovLucid <- doGetCacheLucid lid
-        if resetsFovFid || not perValid then do
-          -- Needed often, e.g., to show thrown torches in dark corridors.
-          perNew <-
+        if perValid then anySend lid fid perOld perOld
+        else do
+          fovLucid <- doGetCacheLucid lid
+          let perCacheOld = sperCacheFidOld EM.! fid EM.! lid
+              resetsFovFid = case ptotal perCacheOld of
+                FovValid{} -> False
+                FovInvalid -> True
+          perCache <-
             if resetsFovFid then do
               getActorB <- getsState $ flip getActorBody
-              let (per, perCache) =
-                    perceptionFromResets (perActor perCacheOld) getActorB
-                                         actorAspect fovLucid (fovClearLid EM.! lid)
-              let fperFid = EM.adjust (EM.insert lid per) fid
-                  fperCacheFid = EM.adjust (EM.insert lid perCache) fid
-              doUpdatePerFid fperFid
-              doUpdatePerCacheFid fperCacheFid
-              return per
-            else do
-              let FovValid total = ptotal perCacheOld
-                  per = perceptionFromPTotal total fovLucid
-                  fperFid = EM.adjust (EM.insert lid per) fid
-              doUpdatePerFid fperFid
-              return per
+              return $! perceptionFromResets (perActor perCacheOld) getActorB
+                                             actorAspect (fovClearLid EM.! lid)
+            else return perCacheOld
+          let fperCacheFid = EM.adjust (EM.insert lid perCache) fid
+          doUpdatePerCacheFid fperCacheFid
+          let perNew = let FovValid total = ptotal perCache
+                       in perceptionFromPTotal fovLucid total
+              fperFid = EM.adjust (EM.insert lid perNew) fid
+          doUpdatePerFid fperFid
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
           if nullPer outPer && nullPer inPer
@@ -162,7 +157,6 @@ handleAndBroadcast knowEvents sperFidOld sperCacheFidOld
                 let !_A = assert (allB (not . seenOld) psRem) ()
                 mapM_ (sendA fid) remember
               anySend lid fid perOld perNew
-        else anySend lid fid perOld perOld
       -- TODO: simplify; best after state-diffs approach tried
       send = case ps of
         PosSight lid _ -> posLevel lid
