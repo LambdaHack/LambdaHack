@@ -141,8 +141,7 @@ cmdAtomicSemSer cmd = case cmd of
     when clearChanged $ invalidatePerLid lid
   _ -> return ()
 
-addItemToActor :: MonadServer m
-               => ItemId -> Int -> ActorId -> m ()
+addItemToActor :: MonadServer m => ItemId -> Int -> ActorId -> m ()
 addItemToActor iid k aid = do
   discoAspect <- getsServer sdiscoAspect
   let arItem = discoAspect EM.! iid

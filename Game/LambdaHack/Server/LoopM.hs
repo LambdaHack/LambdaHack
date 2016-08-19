@@ -295,7 +295,7 @@ gameExit = do
   -- Clients exit not now, but after they print all ending screens.
   -- debugPrint "Server kills clients"
   killAllClients
-  -- Verify that the not saved perception is equal to future reconstructed.
+  -- Verify that the not saved caches are equal to future reconstructed.
   sperFid <- getsServer sperFid
   sperCacheFid <- getsServer sperCacheFid
   sperValidFid <- getsServer sperValidFid

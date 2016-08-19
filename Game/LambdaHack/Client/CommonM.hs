@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.CommonM
   , actorSkillsClient, updateItemSlot, fullAssocsClient, activeItemsClient
   , itemToFullClient, pickWeaponClient, sumOrganEqpClient
   , updateSalter, createSalter
-  , aspectRecordFromItem, aspectRecordFromActorClient, createSactorAspect
+  , aspectRecordFromItemClient, aspectRecordFromActorClient, createSactorAspect
   ) where
 
 import Prelude ()
@@ -304,6 +304,12 @@ aspectRecordFromItem disco discoAspect iid itemBase =
     Nothing -> case EM.lookup (jkindIx itemBase) disco of
         Just KindMean{kmMean} -> kmMean
         Nothing -> emptyAspectRecord
+
+aspectRecordFromItemClient :: MonadClient m => ItemId -> Item -> m AspectRecord
+aspectRecordFromItemClient iid itemBase = do
+  disco <- getsClient sdiscoKind
+  discoAspect <- getsClient sdiscoAspect
+  return $! aspectRecordFromItem disco discoAspect iid itemBase
 
 aspectRecordFromActorState :: DiscoveryKind -> DiscoveryAspect -> Actor -> State
                            -> AspectRecord

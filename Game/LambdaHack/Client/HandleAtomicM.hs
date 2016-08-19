@@ -230,19 +230,43 @@ cmdAtomicFilterCli cmd = case cmd of
 -- with the global state from before the command is executed.
 cmdAtomicSemCli :: MonadClientSetup m => UpdAtomic -> m ()
 cmdAtomicSemCli cmd = case cmd of
-  UpdCreateActor aid body _ -> createActor aid body
+  UpdCreateActor aid b _ -> createActor aid b
   UpdDestroyActor aid b _ -> destroyActor aid b True
-  UpdCreateItem _iid _ _ (CActor aid s) -> wipeBfsIfItemAffectsSkills [s] aid
-  UpdDestroyItem _iid _ _ (CActor aid s) -> wipeBfsIfItemAffectsSkills [s] aid
-  UpdSpotActor aid body _ -> createActor aid body
+  UpdCreateItem iid itemBase (k, _) (CActor aid store) -> do
+    wipeBfsIfItemAffectsSkills [store] aid
+    when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase k aid
+  UpdDestroyItem iid itemBase (k, _) (CActor aid store) -> do
+    wipeBfsIfItemAffectsSkills [store] aid
+    when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase (-k) aid
+  UpdSpotActor aid b _ -> createActor aid b
   UpdLoseActor aid b _ -> destroyActor aid b False
-  UpdSpotItem _iid _ _ (CActor aid s) -> wipeBfsIfItemAffectsSkills [s] aid
-  UpdLoseItem _iid _ _ (CActor aid s) -> wipeBfsIfItemAffectsSkills [s] aid
+  UpdSpotItem iid itemBase (k, _) (CActor aid store) -> do
+    wipeBfsIfItemAffectsSkills [store] aid
+    when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase k aid
+  UpdLoseItem iid itemBase (k, _) (CActor aid store) -> do
+    wipeBfsIfItemAffectsSkills [store] aid
+    when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase (-k) aid
   UpdMoveActor aid _ _ -> invalidateBfsAid aid
   UpdDisplaceActor source target -> do
     invalidateBfsAid source
     invalidateBfsAid target
-  UpdMoveItem _iid _ aid s1 s2 -> wipeBfsIfItemAffectsSkills [s1, s2] aid
+  UpdMoveItem iid k aid s1 s2 -> do
+    wipeBfsIfItemAffectsSkills [s1, s2] aid
+    case s1 of
+      CEqp -> case s2 of
+        COrgan -> return ()
+        _ -> do
+          itemBase <- getsState $ getItemBody iid
+          addItemToActor iid itemBase (-k) aid
+      COrgan -> case s2 of
+        CEqp -> return ()
+        _ -> do
+          itemBase <- getsState $ getItemBody iid
+          addItemToActor iid itemBase (-k) aid
+      _ -> do
+        when (s2 `elem` [CEqp, COrgan]) $ do
+          itemBase <- getsState $ getItemBody iid
+          addItemToActor iid itemBase k aid
   UpdLeadFaction fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do
@@ -338,7 +362,7 @@ tileChangeAffectsBfs Kind.COps{coTileSpeedup} fromTile toTile =
   /= Tile.alterMinWalk coTileSpeedup toTile
 
 createActor :: MonadClient m => ActorId -> Actor -> m ()
-createActor aid _b = do
+createActor aid b = do
   let affect tgt = case tgt of
         TEnemyPos a _ _ permit | a == aid -> TEnemy a permit
         _ -> tgt
@@ -347,6 +371,11 @@ createActor aid _b = do
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {sxhair = affect $ sxhair cli}
+  side <- getsClient sside
+  when (bfid b == side && not (bproj b)) $ do
+    aspectRecord <- aspectRecordFromActorClient b
+    let f = EM.insert aid aspectRecord
+    modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
 
 destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActor aid b destroy = do
@@ -364,6 +393,20 @@ destroyActor aid b destroy = do
         in TgtAndPath (affect tapTgt) newMPath
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {sxhair = affect $ sxhair cli}
+  side <- getsClient sside
+  when (bfid b == side && not (bproj b)) $ do
+    let f = EM.delete aid
+    modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
+
+addItemToActor :: MonadClient m => ItemId -> Item -> Int -> ActorId -> m ()
+addItemToActor iid itemBase k aid = do
+  side <- getsClient sside
+  b <- getsState $ getActorBody aid
+  when (bfid b == side && not (bproj b)) $ do
+    arItem <- aspectRecordFromItemClient iid itemBase
+    let g arActor = sumAspectRecord [(arActor, 1), (arItem, k)]
+        f = EM.adjust g aid
+    modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
 
 perception :: MonadClient m => LevelId -> Perception -> Perception -> m ()
 perception lid outPer inPer = do
@@ -402,6 +445,11 @@ discoverKind c iid kmKind = do
                         `twith` (c, iid, kmKind)
   modifyClient $ \cli ->
     cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
+  -- Each actor's equipment and organs would need to be inspected,
+  -- the iid looked up, e.g., if it wasn't in old discoKind, but is in new,
+  -- and then aspect record updated, so it's simpler and not much more
+  -- expensive to generate new sactorAspect. Optimize only after profiling.
+  getState >>= createSactorAspect
 
 coverKind :: MonadClient m
           => Container -> ItemId -> Kind.Id ItemKind -> m ()
@@ -413,6 +461,7 @@ coverKind c iid ik = do
                              `twith` (ik, kmKind)) Nothing
   modifyClient $ \cli ->
     cli {sdiscoKind = EM.alter f (jkindIx item) (sdiscoKind cli)}
+  getState >>= createSactorAspect
 
 discoverSeed :: MonadClient m
              => Container -> ItemId -> ItemSeed -> AbsDepth -> m ()
@@ -435,6 +484,7 @@ discoverSeed c iid seed ldepth = do
                             `twith` (c, iid, seed)
       modifyClient $ \cli ->
         cli {sdiscoAspect = EM.alter f iid (sdiscoAspect cli)}
+  getState >>= createSactorAspect
 
 coverSeed :: MonadClient m
           => Container -> ItemId -> ItemSeed -> m ()
@@ -442,6 +492,7 @@ coverSeed c iid seed = do
   let f Nothing = assert `failure` "already covered" `twith` (c, iid, seed)
       f Just{} = Nothing  -- checking that old and new agree is too much work
   modifyClient $ \cli -> cli {sdiscoAspect = EM.alter f iid (sdiscoAspect cli)}
+  getState >>= createSactorAspect
 
 killExit :: MonadClient m => m ()
 killExit = modifyClient $ \cli -> cli {squit = True}
