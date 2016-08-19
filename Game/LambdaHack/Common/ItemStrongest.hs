@@ -26,13 +26,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
 
-strengthAspect :: ItemFull -> Maybe AspectRecord
-strengthAspect itemFull =
-  case itemDisco itemFull of
-    Just ItemDisco{itemAspect=Just aspectRecord} -> Just aspectRecord
-    Just ItemDisco{itemAspectMean} -> Just itemAspectMean
-    Nothing -> Nothing
-
 strengthEffect :: (Effect -> [b]) -> ItemFull -> [b]
 {-# INLINE strengthEffect #-}
 strengthEffect f itemFull =
@@ -99,28 +92,27 @@ totalRange item = snd $ snd $ itemTrajectory item []
 
 strengthFromEqpSlot :: EqpSlot -> ItemFull -> Int
 strengthFromEqpSlot eqpSlot itemFull =
-  case strengthAspect itemFull of
-    Nothing -> 0
-    Just AspectRecord{..} -> case eqpSlot of
-      EqpSlotPeriodic -> if aPeriodic then aTimeout else 0
-      EqpSlotTimeout -> aTimeout
-      EqpSlotAddHurtMelee -> aHurtMelee
-      EqpSlotAddHurtRanged -> aHurtRanged
-      EqpSlotAddArmorMelee -> aArmorMelee
-      EqpSlotAddArmorRanged -> aArmorRanged
-      EqpSlotAddMaxHP -> aMaxHP
-      EqpSlotAddMaxCalm -> aMaxCalm
-      EqpSlotAddSpeed -> aSpeed
-      EqpSlotAddSight -> aSight
-      EqpSlotAddSmell -> aSmell
-      EqpSlotAddShine -> aShine
-      EqpSlotAddNocto -> aNocto
-      EqpSlotWeapon ->
-        let p (Hurt d) = [Dice.meanDice d]
-            p (Burn d) = [Dice.meanDice d]
-            p _ = []
-        in sum (strengthEffect p itemFull)
-      EqpSlotAddAbility ab -> EM.findWithDefault 0 ab aAbility
+  let AspectRecord{..} = aspectRecordFull itemFull
+  in case eqpSlot of
+    EqpSlotPeriodic -> if aPeriodic then aTimeout else 0
+    EqpSlotTimeout -> aTimeout
+    EqpSlotAddHurtMelee -> aHurtMelee
+    EqpSlotAddHurtRanged -> aHurtRanged
+    EqpSlotAddArmorMelee -> aArmorMelee
+    EqpSlotAddArmorRanged -> aArmorRanged
+    EqpSlotAddMaxHP -> aMaxHP
+    EqpSlotAddMaxCalm -> aMaxCalm
+    EqpSlotAddSpeed -> aSpeed
+    EqpSlotAddSight -> aSight
+    EqpSlotAddSmell -> aSmell
+    EqpSlotAddShine -> aShine
+    EqpSlotAddNocto -> aNocto
+    EqpSlotWeapon ->
+      let p (Hurt d) = [Dice.meanDice d]
+          p (Burn d) = [Dice.meanDice d]
+          p _ = []
+      in sum (strengthEffect p itemFull)
+    EqpSlotAddAbility ab -> EM.findWithDefault 0 ab aAbility
 
 strongestSlotNoFilter :: EqpSlot -> [(ItemId, ItemFull)]
                       -> [(Int, (ItemId, ItemFull))]
