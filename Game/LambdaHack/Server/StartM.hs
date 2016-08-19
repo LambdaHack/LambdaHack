@@ -25,7 +25,6 @@ import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
-import Game.LambdaHack.Common.Fov
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -43,6 +42,7 @@ import Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import Game.LambdaHack.Server.CommonM
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
+import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.MonadServer

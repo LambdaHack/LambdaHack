@@ -163,8 +163,6 @@ library
                       Game.LambdaHack.Common.EffectDescription
                       Game.LambdaHack.Common.Faction
                       Game.LambdaHack.Common.Flavour
-                      Game.LambdaHack.Common.Fov
-                      Game.LambdaHack.Common.FovDigital
                       Game.LambdaHack.Common.Frequency
                       Game.LambdaHack.Common.HighScore
                       Game.LambdaHack.Common.Item
@@ -208,6 +206,8 @@ library
                       Game.LambdaHack.Server.DungeonGen.Place
                       Game.LambdaHack.Server.EndM
                       Game.LambdaHack.Server.FileM
+                      Game.LambdaHack.Server.Fov
+                      Game.LambdaHack.Server.FovDigital
                       Game.LambdaHack.Server.HandleAtomicM
                       Game.LambdaHack.Server.HandleEffectM
                       Game.LambdaHack.Server.HandleRequestM

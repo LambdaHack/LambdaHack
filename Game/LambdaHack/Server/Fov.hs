@@ -2,7 +2,7 @@
 -- | Field Of View scanning with a variety of algorithms.
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
-module Game.LambdaHack.Common.Fov
+module Game.LambdaHack.Server.Fov
   ( -- * Perception cache
     FovValid(..)
   , PerValidFid
@@ -41,7 +41,6 @@ import qualified Data.EnumSet as ES
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.FovDigital
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -51,6 +50,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Server.FovDigital
 
 -- * Perception cache types
 

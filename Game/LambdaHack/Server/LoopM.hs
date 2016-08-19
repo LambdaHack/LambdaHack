@@ -20,7 +20,6 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Fov
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -37,6 +36,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.EndM
+import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.HandleEffectM
 import Game.LambdaHack.Server.HandleRequestM
 import Game.LambdaHack.Server.ItemM
