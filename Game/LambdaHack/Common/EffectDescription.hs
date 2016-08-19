@@ -26,8 +26,8 @@ import Game.LambdaHack.Content.ItemKind
 -- We show distances in @steps@, because one step, from a tile to another
 -- tile, is always 1 meter. We don't call steps @tiles@, reserving
 -- that term for the context of terrain kinds or units of area.
-effectToSuff :: Effect -> Text
-effectToSuff effect =
+effectToSuffix :: Effect -> Text
+effectToSuffix effect =
   case effect of
     ELabel _ -> ""  -- printed specially
     Hurt dice -> wrapInParens (tshow dice)
@@ -152,9 +152,6 @@ featureToSuff feat =
     EqpSlot{} -> ""
     Precious -> wrapInChevrons "precious"
     Tactic tactics -> "overrides tactics to" <+> tshow tactics
-
-effectToSuffix :: Effect -> Text
-effectToSuffix = effectToSuff
 
 affixBonus :: Int -> Text
 affixBonus p = case compare p 0 of

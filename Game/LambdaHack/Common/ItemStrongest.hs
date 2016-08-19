@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.ItemStrongest
   , strongestSlot, sumSlotNoFilter, sumSkills
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
-  , unknownMelee, allRecharging, stripRecharging, stripOnSmash
+  , unknownMelee, filterRecharging, stripRecharging, stripOnSmash
   ) where
 
 import Prelude ()
@@ -170,8 +170,8 @@ unknownMelee =
       f itemFull b = b || unknownAspect p itemFull
   in foldr f False
 
-allRecharging :: [Effect] -> [Effect]
-allRecharging effs =
+filterRecharging :: [Effect] -> [Effect]
+filterRecharging effs =
   let getRechargingEffect :: Effect -> Maybe Effect
       getRechargingEffect e@Recharging{} = Just e
       getRechargingEffect _ = Nothing

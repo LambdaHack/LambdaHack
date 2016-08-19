@@ -202,7 +202,7 @@ applyPeriodicLevel lid = do
                 when (aPeriodic aspectRecord) $ do
                   -- In periodic activation, consider *only* recharging effects.
                   effectAndDestroy aid aid iid c True
-                                   (allRecharging ieffects) aspectRecord kit
+                                   (filterRecharging ieffects) aspectRecord kit
               _ -> assert `failure` (lid, aid, c, iid)
       applyPeriodicCStore aid cstore = do
         let c = CActor aid cstore

@@ -98,9 +98,7 @@ effectToBenefit cops b activeItems fact eff =
     IK.ApplyPerfume -> 0  -- depends on the smell sense of friends and foes
     IK.OneOf _ -> 1  -- usually a mixed blessing, but slightly beneficial
     IK.OnSmash _ -> 0  -- TOOD: can be beneficial or not; analyze explosions
-    IK.Recharging e ->
-      -- Used, e.g., in @periodicBens@, which takes timeout into account, too.
-      effectToBenefit cops b activeItems fact e
+    IK.Recharging e -> effectToBenefit cops b activeItems fact e  -- for weapons
     IK.Temporary _ -> 0
 
 -- TODO: calculating this for "temporary conditions" takes forever
@@ -144,10 +142,10 @@ totalUsefulness :: Kind.COps -> Actor -> [ItemFull] -> Faction -> ItemFull
                 -> Maybe (Int, Int)
 totalUsefulness cops b activeItems fact itemFull =
   let ben effects aspects =
-        let effBens = map (effectToBenefit cops b activeItems fact) effects
+        let effSum = sum $ map (effectToBenefit cops b activeItems fact) effects
             aspBens = map (aspectToBenefit cops b) $ aspectRecordToList aspects  -- TODO
             periodicEffBens = map (effectToBenefit cops b activeItems fact)
-                                  (allRecharging effects)
+                                  (stripRecharging effects)
             timeout = aTimeout $ aspectRecordFull itemFull
             periodicBens | timeout == 0 = []
                          | otherwise =
@@ -158,7 +156,6 @@ totalUsefulness cops b activeItems fact itemFull =
               not (null selfBens)
               && (selfSum > 0 && minimum selfBens < -10
                   || selfSum < 0 && maximum selfBens > 10)
-            effSum = sum effBens
             isWeapon = isMeleeEqp itemFull
             totalSum
               | isWeapon && effSum < 0 = - effSum + selfSum
