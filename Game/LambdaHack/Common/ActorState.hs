@@ -16,7 +16,6 @@ module Game.LambdaHack.Common.ActorState
   , goesIntoEqp, goesIntoInv, goesIntoSha, eqpOverfull, eqpFreeN
   , storeFromC, lidFromC, aidFromC, hasCharge
   , strongestMelee, isMelee, isMeleeEqp
-  , aspectRecordFromActor, actorAspectInDungeon
   ) where
 
 import Prelude ()
@@ -378,16 +377,6 @@ itemToFull Kind.COps{coitem=Kind.Ops{okind}}
                                            , itemAspectMean = kmMean
                                            , itemAspect = EM.lookup iid discoAspect }
   in ItemFull {..}
-
-aspectRecordFromActor :: DiscoveryAspect -> Actor -> AspectRecord
-aspectRecordFromActor discoAspect b =
-  let processIid (iid, (k, _)) = (discoAspect EM.! iid, k)
-      processBag ass = sumAspectRecord $ map processIid ass
-  in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
-
-actorAspectInDungeon :: DiscoveryAspect -> State -> ActorAspect
-actorAspectInDungeon discoAspect s =
-  EM.map (aspectRecordFromActor discoAspect) $ sactorD s
 
 -- Non-durable item that hurts doesn't go into equipment by default,
 -- but if it is in equipment or among organs, it's used for melee

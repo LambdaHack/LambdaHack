@@ -35,7 +35,7 @@ cmdAtomicSemSer :: MonadServer m => UpdAtomic -> m ()
 cmdAtomicSemSer cmd = case cmd of
   UpdCreateActor aid b _ -> do
     discoAspect <- getsServer sdiscoAspect
-    let aspectRecord = aspectRecordFromActor discoAspect b
+    let aspectRecord = aspectRecordFromActorServer discoAspect b
         f = EM.insert aid aspectRecord
     modifyServer $ \ser -> ser {sactorAspect = f $ sactorAspect ser}
     actorAspect <- getsServer sactorAspect

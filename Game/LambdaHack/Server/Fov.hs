@@ -18,7 +18,7 @@ module Game.LambdaHack.Server.Fov
     -- * Update of invalidated Fov data
   , perceptionFromPTotal, perActorFromLevel, totalFromPerActor, lucidFromLevel
     -- * Computation of initial perception and caches
-  , perFidInDungeon
+  , perFidInDungeon, aspectRecordFromActorServer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , cacheBeforeLucidFromActor
@@ -257,6 +257,16 @@ perFidInDungeon discoAspect s =
       em = EM.mapWithKey f $ sfactionD s
   in ( actorAspect, fovLitLid, fovClearLid, fovLucidLid
      , perValidFid, EM.map snd em, EM.map fst em)
+
+aspectRecordFromActorServer :: DiscoveryAspect -> Actor -> AspectRecord
+aspectRecordFromActorServer discoAspect b =
+  let processIid (iid, (k, _)) = (discoAspect EM.! iid, k)
+      processBag ass = sumAspectRecord $ map processIid ass
+  in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
+
+actorAspectInDungeon :: DiscoveryAspect -> State -> ActorAspect
+actorAspectInDungeon discoAspect s =
+  EM.map (aspectRecordFromActorServer discoAspect) $ sactorD s
 
 litFromLevel :: Kind.COps -> Level -> FovLit
 litFromLevel Kind.COps{coTileSpeedup} Level{ltile} =
