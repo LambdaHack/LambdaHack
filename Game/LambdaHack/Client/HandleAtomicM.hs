@@ -314,11 +314,13 @@ cmdAtomicSemCli cmd = case cmd of
                   , snxtDiff
                   , sdebugCli }
     createSalter s
+    createSactorAspect s  -- currently always void, because no actors yet
     restartClient
   UpdResume _fid sfper -> do
     modifyClient $ \cli -> cli {sfper}
     s <- getState
     createSalter s
+    createSactorAspect s
   UpdKillExit _fid -> killExit
   UpdWriteSave -> saveClient
   _ -> return ()

@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.CommonM
   , actorSkillsClient, updateItemSlot, fullAssocsClient, activeItemsClient
   , itemToFullClient, pickWeaponClient, sumOrganEqpClient
   , updateSalter, createSalter
+  , aspectRecordFromItem, aspectRecordFromActorClient, createSactorAspect
   ) where
 
 import Prelude ()
@@ -294,3 +295,37 @@ createSalter s = do
   let f Level{ltile} =
         PointArray.mapA (toEnum . Tile.alterMinWalk coTileSpeedup) ltile
   modifyClient $ \cli -> cli {salter = EM.map f $ sdungeon s}
+
+aspectRecordFromItem :: DiscoveryKind -> DiscoveryAspect -> ItemId -> Item
+                     -> AspectRecord
+aspectRecordFromItem disco discoAspect iid itemBase =
+  case EM.lookup iid discoAspect of
+    Just ar -> ar
+    Nothing -> case EM.lookup (jkindIx itemBase) disco of
+        Just KindMean{kmMean} -> kmMean
+        Nothing -> emptyAspectRecord
+
+aspectRecordFromActorState :: DiscoveryKind -> DiscoveryAspect -> Actor -> State
+                           -> AspectRecord
+aspectRecordFromActorState disco discoAspect b s =
+  let processIid (iid, (k, _)) =
+        let itemBase = getItemBody iid s
+            ar = aspectRecordFromItem disco discoAspect iid itemBase
+        in (ar, k)
+      processBag ass = sumAspectRecord $ map processIid ass
+  in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
+
+aspectRecordFromActorClient :: MonadClient m => Actor -> m AspectRecord
+aspectRecordFromActorClient b = do
+  disco <- getsClient sdiscoKind
+  discoAspect <- getsClient sdiscoAspect
+  getsState $ aspectRecordFromActorState disco discoAspect b
+
+createSactorAspect :: MonadClient m => State -> m ()
+createSactorAspect s = do
+  disco <- getsClient sdiscoKind
+  discoAspect <- getsClient sdiscoAspect
+  side <- getsClient sside
+  let as = fidActorNotProjAssocs side s
+      f (aid, b) = (aid, aspectRecordFromActorState disco discoAspect b s)
+  modifyClient $ \cli -> cli {sactorAspect = EM.fromDistinctAscList $ map f as}

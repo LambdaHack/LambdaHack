@@ -56,6 +56,7 @@ data StateClient = StateClient
   , sundo        :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sdiscoKind   :: !DiscoveryKind    -- ^ remembered item discoveries
   , sdiscoAspect :: !DiscoveryAspect  -- ^ remembered aspects of items
+  , sactorAspect :: !ActorAspect   -- ^ best known our actor aspect data
   , sfper        :: !PerLid        -- ^ faction perception indexed by levels
   , salter       :: !AlterLid      -- ^ cached alter ability data for positions
   , srandom      :: !R.StdGen      -- ^ current random generator
@@ -101,6 +102,7 @@ emptyStateClient _sside =
     , sundo = []
     , sdiscoKind = EM.empty
     , sdiscoAspect = EM.empty
+    , sactorAspect = EM.empty
     , sfper = EM.empty
     , salter = EM.empty
     , srandom = R.mkStdGen 42  -- will be set later
@@ -187,6 +189,7 @@ instance Binary StateClient where
     sdebugCli <- get
     let sbfsD = EM.empty
         sfper = EM.empty
+        sactorAspect = EM.empty
         salter = EM.empty
         srandom = read g
         squit = False
