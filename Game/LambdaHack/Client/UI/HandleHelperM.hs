@@ -207,9 +207,8 @@ statsOverlay aid = do
             ft = fullText valueText
         in (ft, (Right c, (y, 0, T.length ft)))
       -- Some values can be negative, for others 0 is equivalent but shorter.
-      slotList =  -- TODO:  [IK.EqpSlotAddHurtMelee..IK.EqpSlotAddShine]
+      slotList =
         [ (aHurtMelee, "to melee damage", \t -> tshow t <> "%")
-        -- TODO: not applicable right now, IK.EqpSlotAddHurtRanged
         , (aArmorMelee, "melee armor", \t -> "[" <> tshow (block t) <> "%]")
         , (aArmorRanged, "ranged armor",  \t -> "{" <> tshow (block t) <> "%}")
         , (aMaxHP, "max HP", \t -> tshow $ max 0 t)

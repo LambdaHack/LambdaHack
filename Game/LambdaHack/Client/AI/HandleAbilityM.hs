@@ -344,7 +344,7 @@ equipItems aid = do
             else returN "equipItems" $ ReqMoveItems prepared
 
 toShare :: IK.EqpSlot -> Bool
-toShare IK.EqpSlotPeriodic = False
+toShare IK.EqpSlotMiscBonus = False
 toShare _ = True
 
 yieldUnneeded :: MonadClient m
@@ -413,7 +413,7 @@ unEquipItems aid = do
         case (bestSha, bestEOrI) of
           _ | not (toShare slot)
               && fromCStore == CEqp
-              && not (eqpOverfull body 1) ->  -- keep periodic items up to M-1
+              && not (eqpOverfull body 1) ->  -- keep minor boosts up to M-1
             []
           (_, (vEOrI, (iidEOrI, _)) : _) | (toShare slot || fromCStore == CInv)
                                            && getK bestEOrI > 1

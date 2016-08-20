@@ -223,7 +223,7 @@ permittedProject forced skill b ar
               permittedSlot =
                 if ' ' `elem` triggerSyms
                 then case strengthEqpSlot itemBase of
-                  Just (IK.EqpSlotAddShine, _) -> True
+                  Just (IK.EqpSlotLightSource, _) -> True
                   Just _ -> False
                   Nothing -> True
                 else jsymbol itemBase `elem` triggerSyms

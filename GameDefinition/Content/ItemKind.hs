@@ -206,7 +206,7 @@ motionScanner = ItemKind
   , iaspects = [ AddNocto 1
                , AddHurtMelee (dl 5 - 10), AddArmorRanged (dl 10 - 20) ]
   , ieffects = []
-  , ifeature = [EqpSlot EqpSlotAddNocto "", Identified]
+  , ifeature = [EqpSlot EqpSlotMiscBonus "", Identified]
   , idesc    = "A silk flag with a bell for detecting sudden draft changes. May indicate a nearby corridor crossing or a fast enemy approaching in the dark. Is also very noisy."
   , ikit     = []
   }
@@ -225,7 +225,7 @@ light1 = ItemKind
   , iaspects = [ AddShine 3       -- not only flashes, but also sparks
                , AddSight (-2) ]  -- unused by AI due to the mixed blessing
   , ieffects = [Burn 2]
-  , ifeature = [EqpSlot EqpSlotAddShine "", Identified]
+  , ifeature = [EqpSlot EqpSlotLightSource "", Identified]
   , idesc    = "A smoking, heavy wooden torch, burning in an unsteady glow."
   , ikit     = []
   }
@@ -241,7 +241,7 @@ light2 = ItemKind
   , iaspects = [AddShine 3, AddSight (-1)]
   , ieffects = [Burn 3, Paralyze 6, OnSmash (Explode "burning oil 3")]
   , ifeature = [ toVelocity 70  -- hard not to spill the oil while throwing
-               , Fragile, EqpSlot EqpSlotAddShine "", Identified ]
+               , Fragile, EqpSlot EqpSlotLightSource "", Identified ]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
   , ikit     = []
   }
@@ -257,7 +257,7 @@ light3 = ItemKind
   , iaspects = [AddShine 4, AddSight (-1)]
   , ieffects = [Burn 4, Paralyze 8, OnSmash (Explode "burning oil 4")]
   , ifeature = [ toVelocity 70  -- hard to throw so that it opens and burns
-               , Fragile, EqpSlot EqpSlotAddShine "", Identified ]
+               , Fragile, EqpSlot EqpSlotLightSource "", Identified ]
   , idesc    = "Very bright and very heavy brass lantern."
   , ikit     = []
   }
@@ -279,7 +279,7 @@ gorget = ItemKind
                , AddArmorMelee $ 2 + d 3
                , AddArmorRanged $ 2 + d 3 ]
   , ieffects = [Recharging (RefillCalm 1)]
-  , ifeature = [ Durable, Precious, EqpSlot EqpSlotPeriodic ""
+  , ifeature = [ Durable, Precious, EqpSlot EqpSlotMiscBonus ""
                , Identified, toVelocity 50 ]  -- not dense enough
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
   , ikit     = []
@@ -295,7 +295,7 @@ necklace = ItemKind
   , iweight  = 30
   , iaspects = [Periodic]
   , ieffects = []
-  , ifeature = [ Precious, EqpSlot EqpSlotPeriodic ""
+  , ifeature = [ Precious, EqpSlot EqpSlotMiscBonus ""
                , toVelocity 50 ]  -- not dense enough
   , idesc    = "Menacing Greek symbols shimmer with increasing speeds along a chain of fine encrusted links. After a tense build-up, a prismatic arc shoots towards the ground and the iridescence subdues, becomes ordered and resembles a harmless ornament again, for a time."
   , ikit     = []
@@ -368,7 +368,7 @@ imageItensifier = ItemKind
   , iaspects = [AddNocto 1, AddSight (-1), AddArmorMelee $ 1 + dl 3 |*| 3]
   , ieffects = []
   , ifeature = [ Precious, Identified, Durable
-               , EqpSlot EqpSlotAddNocto "" ]
+               , EqpSlot EqpSlotMiscBonus "" ]
   , idesc    = "Contraption of lenses and mirrors on a polished brass headband for capturing and strengthening light in dark environment. Hampers vision in daylight. Stackable."
   , ikit     = []
   }
@@ -420,7 +420,7 @@ ring2 = ring
 ring3 = ring
   { irarity  = [(10, 5)]
   , iaspects = [AddMaxCalm $ 29 + dl 10]
-  , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddMaxCalm ""]
+  , ifeature = ifeature ring ++ [EqpSlot EqpSlotMiscBonus ""]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
   }
 ring4 = ring
@@ -432,7 +432,7 @@ ring5 = ring  -- by the time it's found, probably no space in eqp
   { irarity  = [(5, 0), (10, 2)]
   , iaspects = [AddShine $ d 2]
   , ieffects = [Explode "distortion"]  -- strong magic
-  , ifeature = ifeature ring ++ [EqpSlot EqpSlotAddShine ""]
+  , ifeature = ifeature ring ++ [EqpSlot EqpSlotLightSource ""]
   , idesc    = "A sturdy ring with a large, shining stone."
   }
 ring6 = ring
@@ -734,11 +734,11 @@ armorLeather = ItemKind
   , iweight  = 7000
   , iaspects = [ AddHurtMelee (-3)
                , AddArmorMelee $ 1 + d 2 + dl 2 |*| 5
-               , AddArmorRanged $ 1 + d 2 + dl 2 |*| 5 ]
+               , AddArmorRanged $ d 2 + dl 2 |*| 5 ]
   , ieffects = []
   , ifeature = [ toVelocity 30  -- unwieldy to throw and blunt
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
-  , idesc    = "A stiff jacket formed from leather boiled in bee wax. Smells much better than the rest of your garment."
+  , idesc    = "A stiff jacket formed from leather boiled in bee wax. Protects from anything that is not too sharp. Smells much better than the rest of your garment."
   , ikit     = []
   }
 armorMail = armorLeather
@@ -747,9 +747,11 @@ armorMail = armorLeather
   , irarity  = [(6, 9), (10, 3)]
   , iweight  = 12000
   , iaspects = [ AddHurtMelee (-3)
-               , AddArmorMelee $ 2 + d 2 + dl 3 |*| 5
+               , AddArmorMelee $ 1 + d 2 + dl 3 |*| 5
                , AddArmorRanged $ 2 + d 2 + dl 3 |*| 5 ]
-  , idesc    = "A long shirt woven from iron rings. Discourages foes from attacking your torso, making it harder for them to land a blow."
+  , ifeature = [ toVelocity 40  -- unwieldy to throw and blunt
+               , Durable, EqpSlot EqpSlotAddArmorRanged "", Identified ]
+  , idesc    = "A long shirt woven from iron rings that are hard to pierce through. Discourages foes from attacking your torso, making it harder for them to hit you."
   }
 gloveFencing = ItemKind
   { isymbol  = symbolMiscArmor

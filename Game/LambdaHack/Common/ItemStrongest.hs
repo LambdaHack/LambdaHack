@@ -92,19 +92,17 @@ strengthFromEqpSlot :: EqpSlot -> ItemFull -> Int
 strengthFromEqpSlot eqpSlot itemFull =
   let AspectRecord{..} = aspectRecordFull itemFull
   in case eqpSlot of
-    EqpSlotPeriodic -> if aPeriodic then aTimeout else 0
-    EqpSlotTimeout -> aTimeout
+    EqpSlotMiscBonus ->
+      aTimeout  -- usually better items have longer timeout
+      + aMaxCalm + aSmell
+      + aNocto  -- powerful, but hard to boost over aSight
     EqpSlotAddHurtMelee -> aHurtMelee
-    EqpSlotAddHurtRanged -> aHurtRanged
     EqpSlotAddArmorMelee -> aArmorMelee
     EqpSlotAddArmorRanged -> aArmorRanged
     EqpSlotAddMaxHP -> aMaxHP
-    EqpSlotAddMaxCalm -> aMaxCalm
     EqpSlotAddSpeed -> aSpeed
     EqpSlotAddSight -> aSight
-    EqpSlotAddSmell -> aSmell
-    EqpSlotAddShine -> aShine
-    EqpSlotAddNocto -> aNocto
+    EqpSlotLightSource -> aShine
     EqpSlotWeapon ->
       let p (Hurt d) = [Dice.meanDice d]
           p (Burn d) = [Dice.meanDice d]

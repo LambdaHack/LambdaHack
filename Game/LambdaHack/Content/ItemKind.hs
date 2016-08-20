@@ -151,20 +151,15 @@ data Feature =
   deriving (Show, Eq, Ord, Generic)
 
 data EqpSlot =
-    EqpSlotPeriodic
-  | EqpSlotTimeout
+    EqpSlotMiscBonus
   | EqpSlotAddHurtMelee
   | EqpSlotAddArmorMelee
-  | EqpSlotAddHurtRanged
   | EqpSlotAddArmorRanged
   | EqpSlotAddMaxHP
-  | EqpSlotAddMaxCalm
   | EqpSlotAddSpeed
   | EqpSlotAddSight
-  | EqpSlotAddSmell
-  | EqpSlotAddShine
-  | EqpSlotAddNocto
-  | EqpSlotWeapon  -- ^ a hack exclusively for AI that shares weapons
+  | EqpSlotLightSource
+  | EqpSlotWeapon
   | EqpSlotAddAbility Ability.Ability
   deriving (Show, Eq, Ord, Generic)
 
