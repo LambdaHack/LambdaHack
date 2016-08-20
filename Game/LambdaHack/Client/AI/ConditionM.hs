@@ -130,14 +130,17 @@ condOnTriggerableM aid = do
 -- for short distances.
 threatDistList :: MonadClient m => ActorId -> m [(Int, (ActorId, Actor))]
 threatDistList aid = do
+  actorAspect <- getsClient sactorAspect
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allAtWar <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let strongActor (aid2, b2) = do
-        activeItems <- activeItemsClient aid2
-        actorMaxSkE <- enemyMaxAbFromItems activeItems aid2
+        let ar = case EM.lookup aid2 actorAspect of
+              Just aspectRecord -> aspectRecord
+              Nothing -> assert `failure` aid2
+        actorMaxSkE <- enemyMaxAb aid2
         let nonmoving = EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
-        return $! not (hpTooLowFromItems b2 activeItems || nonmoving)
+        return $! not (hpTooLow b2 ar || nonmoving)
   allThreats <- filterM strongActor allAtWar
   let addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
   return $ sortBy (comparing fst) $ map addDist allThreats
@@ -314,6 +317,7 @@ desirableItem canEsc use itemFull =
 -- | Require the actor is in a bad position to melee or can't melee at all.
 condMeleeBadM :: MonadClient m => ActorId -> m Bool
 condMeleeBadM aid = do
+  actorAspect <- getsClient sactorAspect
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
   mtgtPos <- aidTgtToPos aid (blid b) btarget
@@ -333,14 +337,16 @@ condMeleeBadM aid = do
         _ -> const False
       closeFriends = filter (closeEnough . snd) friends
       strongActor (aid2, b2) = do
+        let ar = case EM.lookup aid2 actorAspect of
+              Just aspectRecord -> aspectRecord
+              Nothing -> assert `failure` aid2
+        actorMaxSk2 <- enemyMaxAb aid2
         activeItems2 <- activeItemsClient aid2
-        actorMaxSk2 <- enemyMaxAbFromItems activeItems2 aid2
         let condUsableWeapon2 = any isMelee activeItems2
             canMelee2 = EM.findWithDefault 0 Ability.AbMelee actorMaxSk2 > 0
-            hpGood = not $ hpTooLowFromItems b2 activeItems2
+            hpGood = not $ hpTooLow b2 ar
         return $! hpGood && condUsableWeapon2 && canMelee2
   strongCloseFriends <- filterM strongActor closeFriends
-  actorAspect <- getsClient sactorAspect
   let noFriendlyHelp = length closeFriends < 3
                        && null strongCloseFriends
                        && length friends > 1  -- solo fighters aggresive
@@ -359,11 +365,14 @@ condMeleeBadM aid = do
 condShineBetraysM :: MonadClient m => ActorId -> m Bool
 condShineBetraysM aid = do
   b <- getsState $ getActorBody aid
-  eqpItems <- map snd <$> fullAssocsClient aid [CEqp]
-  let actorEqpShines = sumSlotNoFilterFromItems IK.EqpSlotAddShine eqpItems > 0
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+  let actorShines = aShine ar > 0
   aInAmbient <- getsState $ actorInAmbient b
-  return $! not aInAmbient     -- tile is dark, so actor could hide
-            && actorEqpShines  -- but actor betrayed by his equipped light
+  return $! not aInAmbient  -- tile is dark, so actor could hide
+            && actorShines  -- but actor betrayed by his eqp or organ light
 
 -- | Produce a list of acceptable adjacent points to flee to.
 fleeList :: MonadClient m => ActorId -> m ([(Int, Point)], [(Int, Point)])

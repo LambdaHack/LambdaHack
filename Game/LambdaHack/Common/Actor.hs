@@ -6,9 +6,8 @@ module Game.LambdaHack.Common.Actor
     -- * The@ Acto@r type
   , Actor(..), ResDelta(..), ActorAspect
   , deltaSerious, deltaMild, xM, minusM, minusTwoM, oneM
-  , bspeedFromItems, bspeed
-  , actorTemplate, braced, waitedLastTurn, actorDying, unoccupied
-  , hpTooLowFromItems, hpTooLow, hpHuge, calmEnough, hpEnough
+  , bspeed, actorTemplate, braced, waitedLastTurn, actorDying, unoccupied
+  , hpTooLow, hpHuge, calmEnough, hpEnough
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
   , keySelected, ppContainer, ppCStore, ppCStoreIn, verbCStore
@@ -26,13 +25,11 @@ import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | Actor properties that are changing throughout the game.
 -- If they are dublets of properties from @ActorKind@,
@@ -150,13 +147,6 @@ actorTemplate btrunk bsymbol bname bpronoun bcolor bhp bcalm
       bproj = False
   in Actor{..}
 
-bspeedFromItems :: Actor -> [ItemFull] -> Speed
-bspeedFromItems b activeItems =
-  case btrajectory b of
-    Nothing -> toSpeed $ max 1  -- avoid infinite wait
-               $ sumSlotNoFilterFromItems IK.EqpSlotAddSpeed activeItems
-    Just (_, speed) -> speed
-
 bspeed :: Actor -> AspectRecord -> Speed
 bspeed b AspectRecord{aSpeed} =
   case btrajectory b of
@@ -174,11 +164,6 @@ waitedLastTurn = bwait
 actorDying :: Actor -> Bool
 actorDying b = bhp b <= 0
                || bproj b && maybe True (null . fst) (btrajectory b)
-
-hpTooLowFromItems :: Actor -> [ItemFull] -> Bool
-hpTooLowFromItems b activeItems =
-  let maxHP = sumSlotNoFilterFromItems IK.EqpSlotAddMaxHP activeItems
-  in bhp b <= oneM || 5 * bhp b < xM maxHP && bhp b <= xM 10
 
 hpTooLow :: Actor -> AspectRecord -> Bool
 hpTooLow b AspectRecord{aMaxHP} =

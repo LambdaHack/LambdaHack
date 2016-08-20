@@ -41,6 +41,7 @@ pickActorToMove :: MonadClient m
                 -> m (ActorId, Actor)
 pickActorToMove refreshTarget = do
   Kind.COps{cotile} <- getsState scops
+  actorAspect <- getsClient sactorAspect
   mleader <- getsClient _sleader
   let oldAid = case mleader of
         Just aid -> aid
@@ -81,7 +82,6 @@ pickActorToMove refreshTarget = do
             not (aid == oldAid && waitedLastTurn b)  -- not stuck
       oursTgt <- filter goodGeneric <$> mapM refresh ours
       let actorVulnerable ((aid, body), _) = do
-            actorAspect <- getsClient sactorAspect
             let ar = case EM.lookup aid actorAspect of
                   Just aspectRecord -> aspectRecord
                   Nothing -> assert `failure` aid
@@ -90,7 +90,6 @@ pickActorToMove refreshTarget = do
             condMeleeBad <- condMeleeBadM aid
             threatDistL <- threatDistList aid
             (fleeL, _) <- fleeList aid
-            activeI <- activeItemsFunClient
             let abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
                 condNoUsableWeapon = all (not . isMelee) activeItems
                 canMelee = abInMaxSkill AbMelee && not condNoUsableWeapon
@@ -101,8 +100,8 @@ pickActorToMove refreshTarget = do
                 condThreatAdj = not $ null threatAdj
                 condFastThreatAdj =
                   any (\(_, (aid2, b2)) ->
-                        let activeItems2 = activeI aid2
-                        in bspeedFromItems b2 activeItems2 > bspeed body ar)
+                        let ar2 = actorAspect EM.! aid2
+                        in bspeed b2 ar2 > bspeed body ar)
                       threatAdj
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.

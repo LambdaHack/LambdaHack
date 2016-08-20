@@ -4,9 +4,7 @@ module Game.LambdaHack.Client.CommonM
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
   , actorSkillsClient, updateItemSlot, fullAssocsClient, activeItemsClient
-  , activeItemsFunClient, itemToFullClient, pickWeaponClient
-  , enemyMaxAb, enemyMaxAbFromItems
-  , updateSalter, createSalter
+  , itemToFullClient, pickWeaponClient, enemyMaxAb, updateSalter, createSalter
   , aspectRecordFromItemClient, aspectRecordFromActorClient, createSactorAspect
   ) where
 
@@ -240,16 +238,6 @@ activeItemsClient aid = do
   activeAssocs <- fullAssocsClient aid [CEqp, COrgan]
   return $! map snd activeAssocs
 
-activeItemsFunClient :: MonadClient m => m (ActorId -> [ItemFull])
-activeItemsFunClient = do
-  cops <- getsState scops
-  discoKind <- getsClient sdiscoKind
-  discoAspect <- getsClient sdiscoAspect
-  s <- getState
-  let activeI aid = map snd
-                    $ fullAssocs cops discoKind discoAspect aid [CEqp, COrgan] s
-  return activeI
-
 itemToFullClient :: MonadClient m => m (ItemId -> ItemQuant -> ItemFull)
 itemToFullClient = do
   cops <- getsState scops
@@ -348,33 +336,9 @@ createSactorAspect s = do
   let f b = aspectRecordFromActorState disco discoAspect b s
   modifyClient $ \cli -> cli {sactorAspect = EM.map f $ sactorD s}
 
-enemyMaxAbSum :: MonadClient m => [ItemFull] -> m Ability.Skills
-enemyMaxAbSum activeItems = do
-  let strengthAllAddAbility :: ItemFull -> Ability.Skills
-      strengthAllAddAbility itemFull = case itemDisco itemFull of
-        Just ItemDisco{itemAspect=Just aspectRecord} -> aAbility aspectRecord
-        Just ItemDisco{itemAspectMean} -> aAbility itemAspectMean
-        Nothing -> Ability.zeroSkills
-      sumSkills :: [ItemFull] -> Ability.Skills
-      sumSkills is =
-        let g itemFull = Ability.scaleSkills (itemK itemFull)
-                         $ strengthAllAddAbility itemFull
-        in foldr Ability.addSkills Ability.zeroSkills $ map g is
-  return $! sumSkills activeItems
-
-enemyMaxAbFromItems :: MonadClient m
-                    => [ItemFull] -> ActorId -> m Ability.Skills
-enemyMaxAbFromItems activeItems aid = do
-  actorAspect <- getsClient sactorAspect
-  case EM.lookup aid actorAspect of
-    Just aspectRecord -> return $! aAbility aspectRecord
-    Nothing -> enemyMaxAbSum activeItems
-
 enemyMaxAb :: MonadClient m => ActorId -> m Ability.Skills
 enemyMaxAb aid = do
   actorAspect <- getsClient sactorAspect
   case EM.lookup aid actorAspect of
     Just aspectRecord -> return $! aAbility aspectRecord
-    Nothing ->  do
-      activeItems <- activeItemsClient aid
-      enemyMaxAbSum activeItems
+    Nothing -> assert `failure` aid

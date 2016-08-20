@@ -3,8 +3,7 @@
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
-  , strengthEqpSlot, strengthEffect
-  , strongestSlot, sumSlotNoFilter, sumSlotNoFilterFromItems
+  , strengthEqpSlot, strengthEffect, strongestSlot, sumSlotNoFilter
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   , unknownMelee, filterRecharging, stripRecharging, stripOnSmash
@@ -147,11 +146,6 @@ sumSlotNoFilter eqpSlot AspectRecord{..} =
     EqpSlotAddNocto -> aNocto
     EqpSlotWeapon -> assert `failure` eqpSlot
     EqpSlotAddAbility ab -> EM.findWithDefault 0 ab aAbility
-
-sumSlotNoFilterFromItems :: EqpSlot -> [ItemFull] -> Int
-sumSlotNoFilterFromItems eqpSlot is =
-  let f itemFull = strengthFromEqpSlot eqpSlot itemFull * itemK itemFull
-  in sum $ map f is
 
 unknownAspect :: (Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =

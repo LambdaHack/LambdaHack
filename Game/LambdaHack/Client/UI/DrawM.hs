@@ -58,9 +58,11 @@ targetDesc target = do
     Just (TEnemy aid _) -> do
       side <- getsClient sside
       b <- getsState $ getActorBody aid
-      activeItems <- activeItemsClient aid
-      let maxHP = sumSlotNoFilterFromItems IK.EqpSlotAddMaxHP activeItems
-          percentage = 100 * bhp b `div` xM (max 5 maxHP)
+      actorAspect <- getsClient sactorAspect
+      let ar = case EM.lookup aid actorAspect of
+            Just aspectRecord -> aspectRecord
+            Nothing -> assert `failure` aid
+          percentage = 100 * bhp b `div` xM (max 5 $ aMaxHP ar)
           stars | percentage < 20  = "[____]"
                 | percentage < 40  = "[*___]"
                 | percentage < 60  = "[**__]"

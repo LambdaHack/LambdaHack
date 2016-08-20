@@ -80,7 +80,6 @@ actionStrategy aid = do
   aInAmbient <- getsState $ actorInAmbient body
   explored <- getsClient sexplored
   (fleeL, badVic) <- fleeList aid
-  activeI <- activeItemsFunClient
   actorAspect <- getsClient sactorAspect
   let ar = case EM.lookup aid actorAspect of
         Just aspectRecord -> aspectRecord
@@ -93,8 +92,8 @@ actionStrategy aid = do
       condThreatNearby = not $ null $ takeWhile ((<= 9) . fst) threatDistL
       speed1_5 = speedScale (3%2) (bspeed body ar)
       condFastThreatAdj = any (\(_, (aid2, b2)) ->
-                                let activeItems2 = activeI aid2
-                                in bspeedFromItems b2 activeItems2 > speed1_5)
+                                let ar2 = actorAspect EM.! aid2
+                                in bspeed b2 ar2 > speed1_5)
                           $ takeWhile ((== 1) . fst) threatDistL
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
