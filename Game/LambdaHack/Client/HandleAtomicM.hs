@@ -230,7 +230,7 @@ cmdAtomicFilterCli cmd = case cmd of
 -- with the global state from before the command is executed.
 cmdAtomicSemCli :: MonadClientSetup m => UpdAtomic -> m ()
 cmdAtomicSemCli cmd = case cmd of
-  UpdCreateActor aid b _ -> createActor aid b
+  UpdCreateActor aid b ais -> createActor aid b ais
   UpdDestroyActor aid b _ -> destroyActor aid b True
   UpdCreateItem iid itemBase (k, _) (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
@@ -238,7 +238,7 @@ cmdAtomicSemCli cmd = case cmd of
   UpdDestroyItem iid itemBase (k, _) (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
     when (store `elem` [CEqp, COrgan]) $ addItemToActor iid itemBase (-k) aid
-  UpdSpotActor aid b _ -> createActor aid b
+  UpdSpotActor aid b ais -> createActor aid b ais
   UpdLoseActor aid b _ -> destroyActor aid b False
   UpdSpotItem iid itemBase (k, _) (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
@@ -361,8 +361,8 @@ tileChangeAffectsBfs Kind.COps{coTileSpeedup} fromTile toTile =
   Tile.alterMinWalk coTileSpeedup fromTile
   /= Tile.alterMinWalk coTileSpeedup toTile
 
-createActor :: MonadClient m => ActorId -> Actor -> m ()
-createActor aid b = do
+createActor :: MonadClient m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
+createActor aid b ais = do
   let affect tgt = case tgt of
         TEnemyPos a _ _ permit | a == aid -> TEnemy a permit
         _ -> tgt
@@ -373,7 +373,7 @@ createActor aid b = do
   modifyClient $ \cli -> cli {sxhair = affect $ sxhair cli}
   side <- getsClient sside
   when (bfid b == side && not (bproj b)) $ do
-    aspectRecord <- aspectRecordFromActorClient b
+    aspectRecord <- aspectRecordFromActorClient b ais
     let f = EM.insert aid aspectRecord
     modifyClient $ \cli -> cli {sactorAspect = f $ sactorAspect cli}
 
