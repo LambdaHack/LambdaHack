@@ -93,9 +93,8 @@ condTgtNonmovingM aid = do
   btarget <- getsClient $ getTarget aid
   case btarget of
     Just (TEnemy enemy _) -> do
-      activeItems <- activeItemsClient enemy
-      let actorMaxSkE = sumSkills activeItems
-      return $! EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
+      actorMaxSk <- enemyMaxAb enemy
+      return $! EM.findWithDefault 0 Ability.AbMove actorMaxSk <= 0
     _ -> return False
 
 -- | Require that any non-dying foe is adjacent.
@@ -133,8 +132,8 @@ threatDistList aid = do
   allAtWar <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let strongActor (aid2, b2) = do
         activeItems <- activeItemsClient aid2
-        let actorMaxSkE = sumSkills activeItems
-            nonmoving = EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
+        actorMaxSkE <- enemyMaxAbFromItems activeItems aid2
+        let nonmoving = EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
         return $! not (hpTooLow b2 activeItems || nonmoving)
   allThreats <- filterM strongActor allAtWar
   let addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
@@ -179,8 +178,11 @@ condCanProjectM :: MonadClient m => Bool -> ActorId -> m Bool
 condCanProjectM maxSkills aid = do
   actorSk <- if maxSkills
              then do
-               activeItems <- activeItemsClient aid
-               return $! sumSkills activeItems
+               actorAspect <- getsClient sactorAspect
+               let ar = case EM.lookup aid actorAspect of
+                     Just aspectRecord -> aspectRecord
+                     Nothing -> assert `failure` aid
+               return $! aAbility ar
              else
                actorSkillsClient aid
   let skill = EM.findWithDefault 0 Ability.AbProject actorSk
@@ -323,17 +325,21 @@ condMeleeBadM aid = do
       closeFriends = filter (closeEnough . snd) friends
       strongActor (aid2, b2) = do
         activeItems2 <- activeItemsClient aid2
+        actorMaxSk2 <- enemyMaxAbFromItems activeItems2 aid2
         let condUsableWeapon2 = any isMelee activeItems2
-            actorMaxSk2 = sumSkills activeItems2
             canMelee2 = EM.findWithDefault 0 Ability.AbMelee actorMaxSk2 > 0
             hpGood = not $ hpTooLow b2 activeItems2
         return $! hpGood && condUsableWeapon2 && canMelee2
   strongCloseFriends <- filterM strongActor closeFriends
+  actorAspect <- getsClient sactorAspect
   let noFriendlyHelp = length closeFriends < 3
                        && null strongCloseFriends
                        && length friends > 1  -- solo fighters aggresive
                        && not (hpHuge b)  -- uniques, etc., aggresive
-  let actorMaxSk = sumSkills activeItems
+      ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      actorMaxSk = aAbility ar
   return $ condNoUsableWeapon
            || EM.findWithDefault 0 Ability.AbMelee actorMaxSk <= 0
            || noFriendlyHelp  -- still not getting friends' help

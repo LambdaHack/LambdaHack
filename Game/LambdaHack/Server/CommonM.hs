@@ -457,11 +457,12 @@ sumOrganEqpServer eqpSlot aid = do
 
 actorSkillsServer :: MonadServer m => ActorId -> m Ability.Skills
 actorSkillsServer aid  = do
-  activeItems <- activeItemsServer aid
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! aid
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let mleader = fst <$> gleader fact
-  getsState $ actorSkills mleader aid activeItems
+  getsState $ actorSkills mleader aid ar
 
 getCacheLucid :: MonadServer m => LevelId -> m FovLucid
 getCacheLucid lid = do

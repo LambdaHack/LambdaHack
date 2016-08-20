@@ -24,7 +24,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.ItemStrongest
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -49,7 +49,6 @@ targetStrategy aid = do
       nearby = rnearby stdRuleset
   itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
-  activeItems <- activeItemsClient aid
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   let stepAccesible :: AndPath -> Bool
       stepAccesible AndPath{pathList=q : _ : _} =  -- goal not adjacent
@@ -95,13 +94,17 @@ targetStrategy aid = do
   dungeon <- getsState sdungeon
   -- We assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
-  let actorMaxSk = sumSkills activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      actorMaxSk = aAbility ar
       canMove = EM.findWithDefault 0 AbMove actorMaxSk > 0
                 || EM.findWithDefault 0 AbDisplace actorMaxSk > 0
                 -- TODO: needed for now, because AI targets and shoots enemies
                 -- based on the path to them, not LOS to them.
                 || EM.findWithDefault 0 AbProject actorMaxSk > 0
-  actorMinSk <- getsState $ actorSkills Nothing aid activeItems
+  actorMinSk <- getsState $ actorSkills Nothing aid ar
   condCanProject <- condCanProjectM True aid
   condHpTooLow <- condHpTooLowM aid
   condEnoughGear <- condEnoughGearM aid
@@ -115,6 +118,7 @@ targetStrategy aid = do
   canEscape <- factionCanEscape (bfid b)
   explored <- getsClient sexplored
   smellRadius <- sumOrganEqpClient IK.EqpSlotAddSmell aid
+  activeItems <- activeItemsClient aid
   let condNoUsableWeapon = all (not . isMelee) activeItems
       lidExplored = ES.member (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
@@ -127,9 +131,8 @@ targetStrategy aid = do
       -- This is especially important for fences, tower defense actors, etc.
       -- If content gives nonmoving actor loot, this becomes problematic.
       targetableMelee aidE body = do
-        activeItemsE <- activeItemsClient aidE
-        let actorMaxSkE = sumSkills activeItemsE
-            attacksFriends = any (adjacent (bpos body) . bpos) friends
+        actorMaxSkE <- enemyMaxAb aidE
+        let attacksFriends = any (adjacent (bpos body) . bpos) friends
             n = if attacksFriends then rangedNearby else meleeNearby
             nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0
         return {-keep lazy-} $

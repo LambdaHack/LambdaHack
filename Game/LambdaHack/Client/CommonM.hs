@@ -5,6 +5,7 @@ module Game.LambdaHack.Client.CommonM
   , partAidLeader, partActorLeader, partPronounLeader
   , actorSkillsClient, updateItemSlot, fullAssocsClient, activeItemsClient
   , itemToFullClient, pickWeaponClient, sumOrganEqpClient
+  , enemyMaxAb, enemyMaxAbFromItems
   , updateSalter, createSalter
   , aspectRecordFromItemClient, aspectRecordFromActorClient, createSactorAspect
   ) where
@@ -186,7 +187,10 @@ makeLine onlyFirst body fpos epsOld = do
 
 actorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 actorSkillsClient aid = do
-  activeItems <- activeItemsClient aid
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   side <- getsClient sside
@@ -194,7 +198,7 @@ actorSkillsClient aid = do
   mleader1 <- if side == bfid body then getsClient _sleader else return Nothing
   let mleader2 = fst <$> gleader fact
       mleader = mleader1 `mplus` mleader2
-  getsState $ actorSkills mleader aid activeItems
+  getsState $ actorSkills mleader aid ar
 
 updateItemSlot :: MonadClient m
                => CStore -> Maybe ActorId -> ItemId -> m SlotChar
@@ -335,3 +339,34 @@ createSactorAspect s = do
   let as = fidActorNotProjAssocs side s
       f (aid, b) = (aid, aspectRecordFromActorState disco discoAspect b s)
   modifyClient $ \cli -> cli {sactorAspect = EM.fromDistinctAscList $ map f as}
+
+enemyMaxAbSum :: MonadClient m => [ItemFull] -> m Ability.Skills
+enemyMaxAbSum activeItems = do
+  let strengthAllAddAbility :: ItemFull -> Ability.Skills
+      strengthAllAddAbility itemFull = case itemDisco itemFull of
+        Just ItemDisco{itemAspect=Just aspectRecord} -> aAbility aspectRecord
+        Just ItemDisco{itemAspectMean} -> aAbility itemAspectMean
+        Nothing -> Ability.zeroSkills
+      sumSkills :: [ItemFull] -> Ability.Skills
+      sumSkills is =
+        let g itemFull = Ability.scaleSkills (itemK itemFull)
+                         $ strengthAllAddAbility itemFull
+        in foldr Ability.addSkills Ability.zeroSkills $ map g is
+  return $! sumSkills activeItems
+
+enemyMaxAbFromItems :: MonadClient m
+                    => [ItemFull] -> ActorId -> m Ability.Skills
+enemyMaxAbFromItems activeItems aid = do
+  actorAspect <- getsClient sactorAspect
+  case EM.lookup aid actorAspect of
+    Just aspectRecord -> return $! aAbility aspectRecord
+    Nothing -> enemyMaxAbSum activeItems
+
+enemyMaxAb :: MonadClient m => ActorId -> m Ability.Skills
+enemyMaxAb aid = do
+  actorAspect <- getsClient sactorAspect
+  case EM.lookup aid actorAspect of
+    Just aspectRecord -> return $! aAbility aspectRecord
+    Nothing ->  do
+      activeItems <- activeItemsClient aid
+      enemyMaxAbSum activeItems

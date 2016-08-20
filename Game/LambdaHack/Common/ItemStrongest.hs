@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
   , strengthEqpSlot, strengthEffect
-  , strongestSlot, sumSlotNoFilter, sumSkills
+  , strongestSlot, sumSlotNoFilter
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   , unknownMelee, filterRecharging, stripRecharging, stripOnSmash
@@ -17,7 +17,6 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ord as Ord
 
-import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Misc
@@ -134,18 +133,6 @@ sumSlotNoFilter :: EqpSlot -> [ItemFull] -> Int
 sumSlotNoFilter eqpSlot is =
   let f itemFull = strengthFromEqpSlot eqpSlot itemFull * itemK itemFull
   in sum $ map f is
-
-strengthAllAddAbility :: ItemFull -> Ability.Skills
-strengthAllAddAbility itemFull = case itemDisco itemFull of
-    Just ItemDisco{itemAspect=Just aspectRecord} -> aAbility aspectRecord
-    Just ItemDisco{itemAspectMean} -> aAbility itemAspectMean
-    Nothing -> Ability.zeroSkills
-
-sumSkills :: [ItemFull] -> Ability.Skills
-sumSkills is =
-  let g itemFull = Ability.scaleSkills (itemK itemFull)
-                   $ strengthAllAddAbility itemFull
-  in foldr Ability.addSkills Ability.zeroSkills $ map g is
 
 unknownAspect :: (Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =

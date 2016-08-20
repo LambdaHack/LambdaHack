@@ -318,15 +318,16 @@ actorInAmbient b s =
   let lvl = (EM.! blid b) . sdungeon $ s
   in Tile.isLit (Kind.coTileSpeedup $ scops s) (lvl `at` bpos b)
 
-actorSkills :: Maybe ActorId -> ActorId -> [ItemFull] -> State -> Ability.Skills
-actorSkills mleader aid activeItems s =
+actorSkills :: Maybe ActorId -> ActorId -> AspectRecord -> State
+            -> Ability.Skills
+actorSkills mleader aid ar s =
   let body = getActorBody aid s
       player = gplayer . (EM.! bfid body) . sfactionD $ s
       skillsFromTactic = tacticSkills $ ftactic player
       factionSkills
         | Just aid == mleader = Ability.zeroSkills
         | otherwise = fskillsOther player `Ability.addSkills` skillsFromTactic
-      itemSkills = sumSkills activeItems
+      itemSkills = aAbility ar
   in itemSkills `Ability.addSkills` factionSkills
 
 tacticSkills :: Tactic -> Ability.Skills
@@ -340,14 +341,13 @@ tacticSkills TRoam = Ability.zeroSkills
 tacticSkills TPatrol = Ability.zeroSkills
 
 -- Check whether an actor can displace an enemy. We assume they are adjacent.
-dispEnemy :: ActorId -> ActorId -> [ItemFull] -> State -> Bool
-dispEnemy source target activeItems s =
+dispEnemy :: ActorId -> ActorId -> Ability.Skills -> State -> Bool
+dispEnemy source target actorMaxSk s =
   let hasSupport b =
         let fact = (EM.! bfid b) . sfactionD $ s
             friendlyFid fid = fid == bfid b || isAllied fact fid
             sup = actorRegularList friendlyFid (blid b) s
         in any (adjacent (bpos b) . bpos) sup
-      actorMaxSk = sumSkills activeItems
       sb = getActorBody source s
       tb = getActorBody target s
   in bproj tb

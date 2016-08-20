@@ -64,7 +64,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -322,10 +321,9 @@ displaceAid target = do
   sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
-  activeItems <- activeItemsClient target
-  disp <- getsState $ dispEnemy leader target activeItems
-  let actorMaxSk = sumSkills activeItems
-      immobile = EM.findWithDefault 0 AbMove actorMaxSk <= 0
+  actorMaxSk <- enemyMaxAb target
+  disp <- getsState $ dispEnemy leader target actorMaxSk
+  let immobile = EM.findWithDefault 0 AbMove actorMaxSk <= 0
       tpos = bpos tb
       adj = checkAdjacent sb tb
       atWar = isAtWar tfact (bfid sb)

@@ -91,7 +91,11 @@ actionStrategy aid = do
                           $ takeWhile ((== 1) . fst) threatDistL
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
-  let actorMaxSk = sumSkills activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      actorMaxSk = aAbility ar
       abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
       stratToFreq :: MonadStateRead m
                   => Int -> m (Strategy RequestAnyAbility)
@@ -777,8 +781,8 @@ displaceFoe aid = do
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrHere = nFriends b + 1
       qualifyActor (aid2, body2) = do
-        activeItems <- activeItemsClient aid2
-        dEnemy <- getsState $ dispEnemy aid aid2 activeItems
+        actorMaxSk <- enemyMaxAb aid2
+        dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
           -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
         let nFr = nFriends body2
         return $! if displaceable body2 && dEnemy && nFr < nFrHere
@@ -832,8 +836,8 @@ displaceTowards aid source target = do
           Just _ -> return reject
           Nothing -> do
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
-            activeItems <- activeItemsClient aid2
-            dEnemy <- getsState $ dispEnemy aid aid2 activeItems
+            actorMaxSk <- enemyMaxAb aid2
+            dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
             if not (isAtWar tfact (bfid b)) || dEnemy then
               return $! returN "displace other" $ target `vectorToFrom` source
             else return reject  -- DisplaceDying, etc.
@@ -921,8 +925,8 @@ moveOrRunAid run source dir = do
     [(target, b2)] | run -> do
       -- @target@ can be a foe, as well as a friend.
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
-      activeItems <- activeItemsClient target
-      dEnemy <- getsState $ dispEnemy source target activeItems
+      actorMaxSk <- enemyMaxAb target
+      dEnemy <- getsState $ dispEnemy source target actorMaxSk
       if | boldpos sb == Just tpos && not (waitedLastTurn sb)
              -- avoid Displace loops
            || not (accessible cops lvl tpos) ->  -- DisplaceAccess

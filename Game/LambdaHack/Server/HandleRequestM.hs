@@ -278,8 +278,9 @@ reqDisplace source target = do
       adj = checkAdjacent sb tb
       atWar = isAtWar tfact (bfid sb)
       req = ReqDisplace target
-  activeItems <- activeItemsServer target
-  dEnemy <- getsState $ dispEnemy source target activeItems
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
+  dEnemy <- getsState $ dispEnemy source target $ aAbility ar
   if | not adj -> execFailure source req DisplaceDistant
      | atWar && not dEnemy -> do
        mweapon <- pickWeaponServer source

@@ -22,7 +22,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.ItemStrongest
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -81,12 +81,16 @@ pickActorToMove refreshTarget = do
             not (aid == oldAid && waitedLastTurn b)  -- not stuck
       oursTgt <- filter goodGeneric <$> mapM refresh ours
       let actorVulnerable ((aid, body), _) = do
+            actorAspect <- getsClient sactorAspect
+            let ar = case EM.lookup aid actorAspect of
+                  Just aspectRecord -> aspectRecord
+                  Nothing -> assert `failure` aid
+                actorMaxSk = aAbility ar
             activeItems <- activeItemsClient aid
             condMeleeBad <- condMeleeBadM aid
             threatDistL <- threatDistList aid
             (fleeL, _) <- fleeList aid
-            let actorMaxSk = sumSkills activeItems
-                abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
+            let abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
                 condNoUsableWeapon = all (not . isMelee) activeItems
                 canMelee = abInMaxSkill AbMelee && not condNoUsableWeapon
                 condCanFlee = not (null fleeL)

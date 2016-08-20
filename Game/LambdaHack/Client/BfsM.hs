@@ -21,7 +21,6 @@ import Data.Ord
 import Data.Word
 
 import Game.LambdaHack.Client.Bfs
-import Game.LambdaHack.Client.CommonM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -30,7 +29,6 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
@@ -154,8 +152,11 @@ condBFS aid = do
   -- to reset BFS after leader changes, but it would still lead to
   -- wasted movement if, e.g., non-leaders move but only leaders open doors
   -- and leader change is very rare.
-  activeItems <- activeItemsClient aid
-  let actorMaxSk = sumSkills activeItems
+  actorAspect <- getsClient sactorAspect
+  let ar = case EM.lookup aid actorAspect of
+        Just aspectRecord -> aspectRecord
+        Nothing -> assert `failure` aid
+      actorMaxSk = aAbility ar
       alterSkill =
         min (maxBound - 1)  -- @maxBound :: Word8@ means unalterable
             (toEnum $ EM.findWithDefault 0 Ability.AbAlter actorMaxSk)

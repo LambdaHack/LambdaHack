@@ -146,8 +146,9 @@ dominateFidSfx fid target = do
   -- Actors that don't move freely can't be dominated, for otherwise,
   -- when they are the last survivors, they could get stuck
   -- and the game wouldn't end.
-  activeItems <- activeItemsServer target
-  let actorMaxSk = sumSkills activeItems
+  actorAspect <- getsServer sactorAspect
+  let ar = actorAspect EM.! target
+      actorMaxSk = aAbility ar
       -- Check that the actor can move, also between levels and through doors.
       -- Otherwise, it's too awkward for human player to control.
       canMove = EM.findWithDefault 0 Ability.AbMove actorMaxSk > 0
