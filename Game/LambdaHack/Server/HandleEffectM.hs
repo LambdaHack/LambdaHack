@@ -21,7 +21,6 @@ import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.ItemDescription
 import Game.LambdaHack.Common.ItemStrongest
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -318,7 +317,7 @@ effectExplode execSfx cgroup target = do
   let itemFreq = [(cgroup, 1)]
       container = CActor target CEqp
   m2 <- rollAndRegisterItem (blid tb) itemFreq container False Nothing
-  let (iid, (ItemFull{..}, _)) = fromMaybe (assert `failure` cgroup) m2
+  let (iid, (ItemFull{itemBase, itemK}, _)) = fromMaybe (assert `failure` cgroup) m2
       Point x y = bpos tb
       projectN k100 (n, _) = do
         -- We pick a point at the border, not inside, to have a uniform
@@ -787,7 +786,7 @@ effectCreateItem target store grp tim = do
     _ -> do
       -- Multiple such items, so it's a periodic poison, etc., so just stack,
       -- or no such items at all, so create some.
-      iid <- registerItem itemFull itemKnown seed (itemK itemFull) c True
+      iid <- registerItem itemFull itemKnown seed c True
       unless (tim == IK.TimerNone) $ do
         bagAfter <- getsState $ getCBag c
         localTime <- getsState $ getLocalTime (blid tb)
@@ -884,10 +883,8 @@ effectPolyItem execSfx source target = do
         <+> ppCStoreIn cstore <> "."
       return False
     (iid, itemFull@ItemFull{..}) : _ -> case itemDisco of
-      Just ItemDisco{..} -> do
-        discoAspect <- getsServer sdiscoAspect
+      Just ItemDisco{itemKind, itemKindId, itemAspect = Just aspects} -> do
         let maxCount = Dice.maxDice $ IK.icount itemKind
-            aspects = discoAspect EM.! iid
         if | itemK < maxCount -> do
              execSfxAtomic $ SfxMsgFid (bfid sb) $
                "The purpose of repurpose is served by" <+> tshow maxCount
@@ -924,13 +921,11 @@ effectIdentify execSfx iidId source target = do
           execSfxAtomic $ SfxMsgFid (bfid sb) msg
           return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
-        (iid, itemFull@ItemFull{itemDisco=Just ItemDisco{..}}) : rest -> do
+        (iid, ItemFull{itemDisco=Just ItemDisco{..}}) : rest -> do
           -- TODO: use this (but faster, via traversing effects with 999?)
           -- also to prevent sending any other UpdDiscover.
           let ided = IK.Identified `elem` IK.ifeature itemKind
-              itemSecret = itemNoAspect itemFull
-              statsObvious = textAllAE 7 False store itemFull
-                             == textAllAE 7 False store itemSecret
+              statsObvious = Just itemAspectMean == itemAspect
           if ided && statsObvious
             then tryFull store rest
             else do

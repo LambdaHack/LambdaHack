@@ -2,7 +2,7 @@
 module Game.LambdaHack.Server.ItemM
   ( rollItem, rollAndRegisterItem, registerItem
   , placeItemsInDungeon, embedItemsInDungeon, fullAssocsServer
-  , activeItemsServer, itemToFullServer, mapActorCStore_
+  , itemToFullServer, mapActorCStore_
   ) where
 
 import Prelude ()
@@ -37,16 +37,16 @@ import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
 registerItem :: (MonadAtomic m, MonadServer m)
-             => ItemFull -> ItemKnown -> ItemSeed -> Int -> Container -> Bool
+             => ItemFull -> ItemKnown -> ItemSeed -> Container -> Bool
              -> m ItemId
-registerItem itemFull itemKnown@(_, aspectRecord) seed k container verbose = do
+registerItem itemFull itemKnown@(_, aspectRecord) seed container verbose = do
   itemRev <- getsServer sitemRev
   let cmd = if verbose then UpdCreateItem else UpdSpotItem
   case HM.lookup itemKnown itemRev of
     Just iid -> do
       -- TODO: try to avoid this case for createItems,
       -- to make items more interesting
-      execUpdAtomic $ cmd iid (itemBase itemFull) (k, []) container
+      execUpdAtomic $ cmd iid (itemBase itemFull) (itemK itemFull, []) container
       return iid
     Nothing -> do
       icounter <- getsServer sicounter
@@ -55,7 +55,8 @@ registerItem itemFull itemKnown@(_, aspectRecord) seed k container verbose = do
             , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
             , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
             , sicounter = succ icounter }
-      execUpdAtomic $ cmd icounter (itemBase itemFull) (k, []) container
+      execUpdAtomic
+        $ cmd icounter (itemBase itemFull) (itemK itemFull, []) container
       return $! icounter
 
 createLevelItem :: (MonadAtomic m, MonadServer m)
@@ -118,8 +119,7 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
                       else item {jname = trunkName}
           itemFull = itemFullRaw { itemK = fromMaybe (itemK itemFullRaw) mk
                                  , itemBase = itemTrunk }
-      iid <- registerItem itemFull itemKnown seed
-                          (itemK itemFull) container verbose
+      iid <- registerItem itemFull itemKnown seed container verbose
       return $ Just (iid, (itemFull, itemGroup))
 
 placeItemsInDungeon :: forall m. (MonadAtomic m, MonadServer m) => m ()
@@ -180,11 +180,6 @@ fullAssocsServer aid cstores = do
   discoKind <- getsServer sdiscoKind
   discoAspect <- getsServer sdiscoAspect
   getsState $ fullAssocs cops discoKind discoAspect aid cstores
-
-activeItemsServer :: MonadServer m => ActorId -> m [ItemFull]
-activeItemsServer aid = do
-  activeAssocs <- fullAssocsServer aid [CEqp, COrgan]
-  return $! map snd activeAssocs
 
 itemToFullServer :: MonadServer m => m (ItemId -> ItemQuant -> ItemFull)
 itemToFullServer = do

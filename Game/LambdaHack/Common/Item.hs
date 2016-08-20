@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Item
     -- * Item discovery types
   , ItemKindIx, KindMean(..), DiscoveryKind, ItemSeed
   , AspectRecord(..), emptyAspectRecord, sumAspectRecord, DiscoveryAspect
-  , ItemFull(..), ItemDisco(..), itemNoDisco, itemNoAspect
+  , ItemFull(..), ItemDisco(..), itemNoDisco
     -- * Inventory management types
   , ItemTimer, ItemQuant, ItemBag, ItemDict
   ) where
@@ -149,12 +149,6 @@ itemNoDisco :: (Item, Int) -> ItemFull
 itemNoDisco (itemBase, itemK) =
   ItemFull {itemBase, itemK, itemTimer = [], itemDisco=Nothing}
 
-itemNoAspect :: ItemFull -> ItemFull
-itemNoAspect itemFull@ItemFull{..} =
-  let f idisco = idisco {itemAspect = Nothing}
-      newDisco = fmap f itemDisco
-  in itemFull {itemDisco = newDisco}
-
 -- | Game items in actor possesion or strewn around the dungeon.
 -- The fields @jsymbol@, @jname@ and @jflavour@ make it possible to refer to
 -- and draw an unidentified item. Full information about item is available
@@ -285,8 +279,7 @@ addMeanAspect ar asp =
       in ar {aAbility = Ability.addSkills (EM.singleton ab n)
                                           (aAbility ar)}
 
-seedToAspect :: ItemSeed -> IK.ItemKind -> AbsDepth -> AbsDepth
-                     -> AspectRecord
+seedToAspect :: ItemSeed -> IK.ItemKind -> AbsDepth -> AbsDepth -> AspectRecord
 seedToAspect (ItemSeed itemSeed) kind ldepth totalDepth =
   let rollM = foldM (castAspect ldepth totalDepth) emptyAspectRecord
                     (IK.iaspects kind)

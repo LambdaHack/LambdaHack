@@ -195,8 +195,7 @@ applyPeriodicLevel lid = do
           Nothing -> return ()  -- item dropped
           Just kit -> do
             itemToF <- itemToFullServer
-            let itemFull = itemToF iid kit
-            case itemDisco itemFull of
+            case itemDisco $ itemToF iid kit of
               Just ItemDisco { itemAspect=Just aspectRecord
                              , itemKind=IK.ItemKind{IK.ieffects} } ->
                 when (aPeriodic aspectRecord) $ do

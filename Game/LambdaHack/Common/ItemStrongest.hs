@@ -132,7 +132,7 @@ strongestSlot eqpSlot is =
 sumSlotNoFilter :: EqpSlot -> AspectRecord -> Int
 sumSlotNoFilter eqpSlot AspectRecord{..} =
   case eqpSlot of
-    EqpSlotPeriodic -> if aPeriodic then aTimeout else 0
+    EqpSlotPeriodic -> assert `failure` eqpSlot
     EqpSlotTimeout -> aTimeout
     EqpSlotAddHurtMelee -> aHurtMelee
     EqpSlotAddHurtRanged -> aHurtRanged
@@ -159,7 +159,7 @@ unknownAspect f itemFull =
     Just ItemDisco{itemAspect=Nothing, itemKind=ItemKind{iaspects}} ->
       let unknown x = Dice.minDice x /= Dice.maxDice x
       in or $ concatMap (map unknown . f) iaspects
-    _ -> False
+    _ -> False  -- we don't know if it affect the aspect, so we assume 0
 
 unknownMelee :: [ItemFull] -> Bool
 unknownMelee =

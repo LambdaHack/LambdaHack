@@ -1,7 +1,7 @@
 -- | Descripitons of items.
 module Game.LambdaHack.Common.ItemDescription
   ( partItemN, partItem, partItemWs, partItemAW, partItemMediumAW, partItemWownW
-  , textAllAE, viewItem
+  , viewItem
   ) where
 
 import Prelude ()

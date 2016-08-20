@@ -502,11 +502,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let underAI = isAIFact fact
   mleader <- getsClient _sleader
-  bag <- getsState $ getActorBag aid cstore2
-  let kit = bag EM.! iid
-  itemToF <- itemToFullClient
   ItemSlots itemSlots _ <- getsClient sslots
-  let itemFull = itemToF iid kit
   case lookup iid $ map swap $ EM.assocs itemSlots of
     Just l -> do
       when (Just aid == mleader) $ do
@@ -519,7 +515,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
         itemAidVerbMU aid (MU.Text verb) iid (Right k) cstore2
       else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
         itemAidVerbMU aid (MU.Text verb) iid (Left $ Just k) cstore2
-    Nothing -> assert `failure` (iid, itemFull)
+    Nothing -> assert `failure` iid
 
 -- TODO: split into many top-level functions; factor out common parts
 quitFactionUI :: MonadClientUI m
@@ -656,7 +652,7 @@ discover :: MonadClientUI m
 discover c oldDiscoKind oldDiscoAspect iid = do
   let cstore = storeFromC c
   lid <- getsState $ lidFromC c
-  cops <- getsState scops
+  discoKind <- getsClient sdiscoKind
   localTime <- getsState $ getLocalTime lid
   itemToF <- itemToFullClient
   bag <- getsState $ getCBag c
@@ -672,13 +668,16 @@ discover c oldDiscoKind oldDiscoAspect iid = do
         [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
                                   "turn out to be"
         , knownName ]
-      oldItemFull =
-        itemToFull cops oldDiscoKind oldDiscoAspect
-                   iid (itemBase itemFull) (1, [])
+      jix = jkindIx $ itemBase itemFull
   -- Compare descriptions of all aspects and effects to determine
   -- if the discovery was meaningful to the player.
-  when (textAllAE 7 False cstore itemFull
-        /= textAllAE 7 False cstore oldItemFull) $
+  when (EM.member jix discoKind /= EM.member jix oldDiscoKind
+        || case EM.lookup iid oldDiscoAspect of
+          Just _ -> False
+          Nothing -> case itemDisco itemFull of
+            Just ItemDisco{itemAspectMean, itemAspect=Just ar} ->
+              ar /= itemAspectMean
+            _ -> False) $
     msgAdd msg
 
 -- * RespSfxAtomicUI
