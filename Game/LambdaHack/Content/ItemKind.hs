@@ -5,7 +5,6 @@ module Game.LambdaHack.Content.ItemKind
   , Effect(..), TimerDice(..)
   , Aspect(..), ThrowMod(..)
   , Feature(..), EqpSlot(..)
-  , slotName
   , toVelocity, toLinger, toOrganGameTurn, toOrganActorTurn, toOrganNone
   , validateSingleItemKind, validateAllItemKind
   ) where
@@ -145,7 +144,7 @@ data Feature =
   | ToThrow !ThrowMod       -- ^ parameters modifying a throw
   | Identified              -- ^ the item starts identified
   | Applicable              -- ^ AI and UI flag: consider applying
-  | EqpSlot !EqpSlot !Text  -- ^ AI and UI flag: goes to inventory
+  | EqpSlot !EqpSlot !Text  -- ^ AI and UI flag: goes into equipment
   | Precious                -- ^ can't throw or apply if not calm enough;
                             --   AI and UI flag: don't risk identifying by use
   | Tactic !Tactic          -- ^ overrides actor's tactic (TODO)
@@ -192,23 +191,6 @@ instance Binary ThrowMod
 instance Binary Feature
 
 instance Binary EqpSlot
-
-slotName :: EqpSlot -> Text
-slotName EqpSlotPeriodic = "periodicity"
-slotName EqpSlotTimeout = "timeout"
-slotName EqpSlotAddHurtMelee = "to melee damage"
-slotName EqpSlotAddArmorMelee = "melee armor"
-slotName EqpSlotAddHurtRanged = "to ranged damage"
-slotName EqpSlotAddArmorRanged = "ranged armor"
-slotName EqpSlotAddMaxHP = "max HP"
-slotName EqpSlotAddMaxCalm = "max Calm"
-slotName EqpSlotAddSpeed = "speed"
-slotName EqpSlotAddSight = "sight radius"
-slotName EqpSlotAddSmell = "smell radius"
-slotName EqpSlotAddShine = "shine radius"
-slotName EqpSlotAddNocto = "night vision radius"
-slotName EqpSlotWeapon = "weapon damage"
-slotName (EqpSlotAddAbility ab) = tshow ab <+> "ability"
 
 toVelocity :: Int -> Feature
 toVelocity n = ToThrow $ ThrowMod n 100

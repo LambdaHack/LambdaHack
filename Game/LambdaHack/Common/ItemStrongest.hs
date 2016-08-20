@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.ItemStrongest
   ( -- * Strongest items
     strengthOnSmash, strengthCreateOrgan, strengthDropOrgan
-  , strengthEqpSlot, strengthEffect, strongestSlot, sumSlotNoFilter
+  , strengthEqpSlot, strengthEffect, strongestSlot
     -- * Assorted
   , totalRange, computeTrajectory, itemTrajectory
   , unknownMelee, filterRecharging, stripRecharging, stripOnSmash
@@ -127,25 +127,6 @@ strongestSlot eqpSlot is =
         _ -> False
       slotIs = filter f is
   in strongestSlotNoFilter eqpSlot slotIs
-
-sumSlotNoFilter :: EqpSlot -> AspectRecord -> Int
-sumSlotNoFilter eqpSlot AspectRecord{..} =
-  case eqpSlot of
-    EqpSlotPeriodic -> assert `failure` eqpSlot
-    EqpSlotTimeout -> aTimeout
-    EqpSlotAddHurtMelee -> aHurtMelee
-    EqpSlotAddHurtRanged -> aHurtRanged
-    EqpSlotAddArmorMelee -> aArmorMelee
-    EqpSlotAddArmorRanged -> aArmorRanged
-    EqpSlotAddMaxHP -> aMaxHP
-    EqpSlotAddMaxCalm -> aMaxCalm
-    EqpSlotAddSpeed -> aSpeed
-    EqpSlotAddSight -> aSight
-    EqpSlotAddSmell -> aSmell
-    EqpSlotAddShine -> aShine
-    EqpSlotAddNocto -> aNocto
-    EqpSlotWeapon -> assert `failure` eqpSlot
-    EqpSlotAddAbility ab -> EM.findWithDefault 0 ab aAbility
 
 unknownAspect :: (Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f itemFull =

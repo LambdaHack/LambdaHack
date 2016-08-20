@@ -35,13 +35,11 @@ import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.ItemDescription
-import Game.LambdaHack.Common.ItemStrongest
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Content.ItemKind as IK
 
 newtype FailError = FailError {failError :: Text}
   deriving Show
@@ -198,35 +196,35 @@ statsOverlay aid = do
         Just aspectRecord -> aspectRecord
         Nothing -> assert `failure` aid
       block n = n + if braced b then 50 else 0
-      prSlot :: (Y, SlotChar) -> (IK.EqpSlot, Int -> Text) -> (Text, KYX)
-      prSlot (y, c) (eqpSlot, f) =
+      prSlot :: (Y, SlotChar) -> (AspectRecord -> Int, Text, Int -> Text)
+             -> (Text, KYX)
+      prSlot (y, c) (accessor, blurb, decorator) =
         let fullText t =
               makePhrase [ MU.Text $ slotLabel c
-                         , MU.Text $ T.justifyLeft 22 ' '
-                                   $ IK.slotName eqpSlot
+                         , MU.Text $ T.justifyLeft 22 ' ' blurb
                          , MU.Text t ]
-            valueText = f $ sumSlotNoFilter eqpSlot ar
+            valueText = decorator $ accessor ar
             ft = fullText valueText
         in (ft, (Right c, (y, 0, T.length ft)))
       -- Some values can be negative, for others 0 is equivalent but shorter.
       slotList =  -- TODO:  [IK.EqpSlotAddHurtMelee..IK.EqpSlotAddShine]
-        [ (IK.EqpSlotAddHurtMelee, \t -> tshow t <> "%")
+        [ (aHurtMelee, "to melee damage", \t -> tshow t <> "%")
         -- TODO: not applicable right now, IK.EqpSlotAddHurtRanged
-        , (IK.EqpSlotAddArmorMelee, \t -> "[" <> tshow (block t) <> "%]")
-        , (IK.EqpSlotAddArmorRanged, \t -> "{" <> tshow (block t) <> "%}")
-        , (IK.EqpSlotAddMaxHP, \t -> tshow $ max 0 t)
-        , (IK.EqpSlotAddMaxCalm, \t -> tshow $ max 0 t)
-        , (IK.EqpSlotAddSpeed, \t -> tshow (max 0 t) <> "m/10s")
-        , (IK.EqpSlotAddSight, \t ->
+        , (aArmorMelee, "melee armor", \t -> "[" <> tshow (block t) <> "%]")
+        , (aArmorRanged, "ranged armor",  \t -> "{" <> tshow (block t) <> "%}")
+        , (aMaxHP, "max HP", \t -> tshow $ max 0 t)
+        , (aMaxCalm, "max Calm", \t -> tshow $ max 0 t)
+        , (aSpeed, "speed", \t -> tshow (max 0 t) <> "m/10s")
+        , (aSight, "sight radius", \t ->
             let tmax = max 0 t
                 tcapped = min (fromIntegral $ bcalm b `div` (5 * oneM)) tmax
             in if tmax == tcapped
                then tshow tmax <> "m"
                else tshow tcapped <> "m (max" <+> tshow tmax <> "m)")
-        , (IK.EqpSlotAddSmell, \t -> tshow (max 0 t) <> "m")
-        , (IK.EqpSlotAddShine, \t -> tshow (max 0 t) <> "m")
-        , (IK.EqpSlotAddNocto, \t -> tshow (max 0 t) <> "m") ]
-        ++ [ (IK.EqpSlotAddAbility ab, tshow)
+        , (aSmell, "smell radius", \t -> tshow (max 0 t) <> "m")
+        , (aShine, "shine radius", \t -> tshow (max 0 t) <> "m")
+        , (aNocto, "night vision radius", \t -> tshow (max 0 t) <> "m") ]
+        ++ [ (EM.findWithDefault 0 ab . aAbility, tshow ab <+> "ability", tshow)
            | ab <- [minBound..maxBound] ]
       zipReslot = zipWith prSlot $ zip [0..] allZeroSlots
       (ts, kxs) = unzip $ zipReslot slotList

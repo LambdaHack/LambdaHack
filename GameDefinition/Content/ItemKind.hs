@@ -805,7 +805,7 @@ buckler = ItemKind
   , iaspects = [ AddArmorMelee 40
                , AddHurtMelee (-30)
                , Timeout $ d 3 + 3 - dl 3 |*| 2 ]
-  , ieffects = [ Hurt (1 * d 1)  -- to display xdy everywhre in Hurt
+  , ieffects = [ Hurt (1 * d 1)  -- to display xdy everywhere in Hurt
                , Recharging (PushActor (ThrowMod 200 50)) ]
   , ifeature = [ toVelocity 40  -- unwieldy to throw
                , Durable, EqpSlot EqpSlotAddArmorMelee "", Identified ]
